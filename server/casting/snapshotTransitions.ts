@@ -27,7 +27,11 @@ import {
   type ModelPackageSnapshot,
   type ModelPackageSnapshotSlot,
 } from "../../drizzle/schema";
-import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
+import {
+  CANONICAL_VIEW_ANGLES,
+  type CanonicalViewAngle,
+  type MintTier,
+} from "../../shared/boardTypes";
 import { withTransaction, type TransactionHandle } from "../db/connection";
 import { buildIdentityAnchor } from "./geminiClient";
 import { stableCanonicalJson, type GenerationOperationKind } from "./operationContract";
@@ -81,6 +85,9 @@ export interface CurrentSnapshotHead {
 export interface SnapshotTransitionContext {
   model: Model;
   current: CurrentSnapshotHead | null;
+  /** Raw legacy revision captured by the running receipt. The semantic
+   * "genesis" value maps to SQL NULL for the existing mint CAS. */
+  expectedIdentityRevisionId: string | null;
 }
 
 export interface SnapshotTransitionResult<Result> {
@@ -374,7 +381,11 @@ export async function commitModelSnapshotTransition<Result>(input: {
       });
     }
 
-    const mutation = await input.mutate(tx, { model, current });
+    const mutation = await input.mutate(tx, {
+      model,
+      current,
+      expectedIdentityRevisionId: expectedRevision === "genesis" ? null : expectedRevision,
+    });
     const { transition } = mutation;
     const packageReason = transition.packageReason as string;
     if (!(PACKAGE_SNAPSHOT_REASONS as readonly string[]).includes(packageReason) || packageReason === "bootstrap") {
@@ -751,6 +762,163 @@ interface GeneratedImageCandidate {
 export interface RefreshedSlotCandidate extends GeneratedImageCandidate {
   angle: CanonicalViewAngle;
   storageKey: string;
+}
+
+export interface GeneratedPackageSlotCandidate extends GeneratedImageCandidate {
+  angle: CanonicalViewAngle;
+  storageKey: string;
+}
+
+type GeneratedPackageMode = "add_views" | "late_view" | "mint";
+
+/**
+ * Add Views / late-view / mint settlement. All successful generated assets,
+ * their selected package state, and (for a true mint) the existing
+ * draft-to-active lifecycle transition and seal pointers commit together.
+ * Failed provider/gate attempts never enter this boundary.
+ */
+export async function commitGeneratedPackageSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  operationKind: "casting.add_views" | "casting.mint";
+  mode: GeneratedPackageMode;
+  mintTier: MintTier;
+  candidates: GeneratedPackageSlotCandidate[];
+  /** Required only for a true mint. */
+  mint?: { agencyId: string; name: string };
+}): Promise<SnapshotTransitionResult<{
+  generated: Array<{ angle: CanonicalViewAngle; imageUrl: string; assetId: number }>;
+  agencyId: string | null;
+  minted: boolean;
+}>> {
+  if (input.mode === "mint") {
+    if (input.operationKind !== "casting.mint") {
+      throw new Error("Only a mint operation may seal a generated package");
+    }
+    if (!input.mint?.agencyId.trim() || !input.mint.name.trim()) {
+      throw new Error("Mint settlement requires a name and agency id");
+    }
+  } else if (input.mint) {
+    throw new Error("Only a mint settlement may change model lifecycle");
+  }
+  if (input.mode !== "mint" && input.candidates.length === 0) {
+    throw new Error("View settlement requires at least one successful view");
+  }
+  const angles = new Set<CanonicalViewAngle>();
+  for (const candidate of input.candidates) {
+    assertGeneratedImageCandidate(candidate, "generated package view");
+    if (candidate.angle === "frontClose") throw new Error("Add Views cannot replace the identity anchor");
+    if (!candidate.storageKey.trim()) throw new Error("The generated package view storage key is unavailable");
+    if (angles.has(candidate.angle)) throw new Error("A generated package view appears more than once");
+    angles.add(candidate.angle);
+  }
+
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: input.operationKind,
+    mutate: async (tx, context) => {
+      if (!context.current) throw new Error("Add Views requires a bootstrapped snapshot head");
+      if (input.mode === "mint" && context.model.status !== "draft") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Already minted — add views without re-minting." });
+      }
+      if (input.mode === "add_views" && context.model.status !== "draft") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Minted views must use the late-view package path." });
+      }
+      if (input.mode === "late_view" && context.model.status === "draft") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Draft views must use the Add Views package path." });
+      }
+
+      const [anchor] = await tx
+        .select()
+        .from(modelAssets)
+        .where(and(
+          eq(modelAssets.id, context.current.identitySnapshot.anchorAssetId),
+          eq(modelAssets.modelId, input.modelId),
+        ))
+        .limit(1);
+      if (!anchor?.storageUrl?.trim() || anchor.viewType !== "frontClose") {
+        throw new Error("The model identity snapshot anchor is invalid");
+      }
+      const identityText = buildIdentityAnchor(
+        context.model.masterPrompt || "",
+        context.model.technicalSchema ?? undefined,
+      );
+      const generated: Array<{ angle: CanonicalViewAngle; imageUrl: string; assetId: number }> = [];
+      const slotChanges: SnapshotSlotChange[] = [];
+      for (const candidate of input.candidates) {
+        const [inserted] = await tx.insert(modelAssets).values({
+          modelId: input.modelId,
+          viewType: candidate.angle,
+          resolution: "1K",
+          storageUrl: candidate.storageUrl,
+          storageKey: candidate.storageKey,
+          pointsCost: candidate.pointsCost,
+          pinned: false,
+          provenance: {
+            inputs: [{ viewAngle: "frontClose", imageUrl: anchor.storageUrl }],
+            ...(candidate.engine ? { engine: candidate.engine } : {}),
+            mintTier: input.mintTier,
+            source: input.mode,
+            ...identityStampFor({
+              role: "display",
+              revisionId: currentRevisionId(context.model),
+              identityText,
+            }),
+          },
+        }).$returningId();
+        if (!inserted?.id) throw new Error(`The generated ${candidate.angle} view could not be saved`);
+        generated.push({ angle: candidate.angle, imageUrl: candidate.storageUrl, assetId: inserted.id });
+        slotChanges.push({
+          viewAngle: candidate.angle,
+          selectedAssetId: inserted.id,
+          compatibility: "current",
+          selectionReason: input.mode === "late_view" ? "late_view" : "generated",
+        });
+      }
+
+      if (input.mode === "mint") {
+        const minted = await tx
+          .update(models)
+          .set({
+            name: input.mint!.name.trim(),
+            agencyId: input.mint!.agencyId,
+            status: "active",
+            mintedAt: new Date(),
+          })
+          .where(and(
+            eq(models.id, input.modelId),
+            eq(models.userId, input.userId),
+            eq(models.status, "draft"),
+            isNull(models.deletedAt),
+            isNull(models.agencyId),
+            isNull(models.mintedAt),
+            sql`${models.identityRevisionId} <=> ${context.expectedIdentityRevisionId}`,
+          ));
+        if (affectedRows(minted) !== 1) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "The Cast changed before minting could finish. Review it and try again.",
+          });
+        }
+      }
+
+      return {
+        result: {
+          generated,
+          agencyId: input.mode === "mint" ? input.mint!.agencyId : context.model.agencyId ?? null,
+          minted: input.mode === "mint" || context.model.status !== "draft",
+        },
+        transition: {
+          packageReason: input.mode,
+          slotChanges,
+          ...(input.mode === "mint" ? { seal: true } : {}),
+        },
+      };
+    },
+  });
 }
 
 /** Paid refresh settlement: all successful refreshed assets and the package

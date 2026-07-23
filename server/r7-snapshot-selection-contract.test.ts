@@ -139,7 +139,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       .toBeLessThan(modelDeletion.indexOf("delete(modelAssets)"));
   });
 
-  it("allows only the reviewed compact, restore, refresh, iterate, headshot and Canvas-recast runtime adopters", async () => {
+  it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));
     const callers: string[] = [];
@@ -154,5 +154,9 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/routes/generation/castingImaging.ts",
       "server/routes/generation/castingRefinement.ts",
     ]);
+    const mintPackage = await readFile(new URL("./casting/mintPackage.ts", import.meta.url), "utf8");
+    expect(mintPackage).toContain("commitGeneratedPackageSnapshot");
+    expect(mintPackage).not.toContain("mintModelAtomically");
+    expect(mintPackage).not.toContain("export async function generatePackageSlot(");
   });
 });

@@ -55,7 +55,6 @@ vi.mock("./db", async (importOriginal) => {
     createGeneration: vi.fn(),
     updateGeneration: vi.fn(),
     updateModel: vi.fn(),
-    mintModelAtomically: vi.fn(),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
     createModelAsset: vi.fn(),
     markModelAssetsStale: vi.fn(),
@@ -328,6 +327,17 @@ vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
           });
       return { result };
     }),
+    commitGeneratedPackageSnapshot: vi.fn(async (input: any) => ({
+      result: {
+        generated: input.candidates.map((candidate: any, index: number) => ({
+          angle: candidate.angle,
+          imageUrl: candidate.storageUrl,
+          assetId: 800 + index,
+        })),
+        agencyId: input.mode === "mint" ? input.mint.agencyId : null,
+        minted: input.mode === "mint" || input.mode === "late_view",
+      },
+    })),
   };
 });
 
@@ -340,7 +350,6 @@ import {
   createGeneration,
   updateGeneration,
   updateModel,
-  mintModelAtomically,
   createModelAsset,
   updateBoardItem,
   addBoardItemVersion,
@@ -366,6 +375,7 @@ import {
 } from "./lib/boardOps";
 import { appRouter as productionRouter } from "./routers";
 import { storageDelete } from "./storage";
+import { commitGeneratedPackageSnapshot } from "./casting/snapshotTransitions";
 import { assertPublicOperationResult } from "./casting/operationContract";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -431,7 +441,17 @@ beforeEach(() => {
   vi.mocked(createGeneration).mockReset().mockResolvedValue({ success: true, generationId: 11 } as never);
   vi.mocked(updateGeneration).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(updateModel).mockReset().mockResolvedValue({ success: true } as never);
-  vi.mocked(mintModelAtomically).mockReset().mockResolvedValue({ success: true } as never);
+  vi.mocked(commitGeneratedPackageSnapshot).mockReset().mockImplementation(async (input) => ({
+    result: {
+      generated: input.candidates.map((candidate, index) => ({
+        angle: candidate.angle,
+        imageUrl: candidate.storageUrl,
+        assetId: 800 + index,
+      })),
+      agencyId: input.mode === "mint" ? input.mint?.agencyId ?? null : null,
+      minted: input.mode === "mint" || input.mode === "late_view",
+    },
+  }) as never);
   vi.mocked(createModelAsset).mockReset().mockResolvedValue({ success: true, assetId: 501 } as never);
   vi.mocked(updateBoardItem).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(addBoardItemVersion).mockReset().mockResolvedValue({ success: true } as never);
@@ -474,15 +494,12 @@ const CORE_MINUS_ONE = [
 describe("mint slot — createModelAsset returns { success:false }", () => {
   it("the slot is NOT ok, the model does NOT mint, the refund records once, the marker tells the truth", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
-    // First call (the slot's asset) fails; the marker insert then succeeds
-    vi.mocked(createModelAsset)
-      .mockResolvedValueOnce({ success: false } as never)
-      .mockResolvedValue({ success: true, assetId: 900 } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    vi.mocked(commitGeneratedPackageSnapshot).mockRejectedValueOnce(new Error("atomic package insert failed"));
+    vi.mocked(createModelAsset).mockResolvedValue({ success: true, assetId: 900 } as never);
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
 
     expect(res.minted).toBe(false);
     expect((res as Record<string, unknown>).mintAborted).toBe(true);
-    expect(mintModelAtomically).not.toHaveBeenCalled();
     expect(updateModel).not.toHaveBeenCalled(); // no name write on an aborted transition
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0].reason).toContain("couldn't be saved");
@@ -492,27 +509,27 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("legacy-mint-7:slot:threeQuarter"));
     expect(storageDelete).toHaveBeenCalledWith("casting/v.png");
     // The durable marker reflects the recorded refund
-    const markerCall = vi.mocked(createModelAsset).mock.calls[1][0] as { status: { refunded: number } };
+    const markerCall = vi.mocked(createModelAsset).mock.calls[0][0] as { status: { refunded: number } };
     expect(markerCall.status.refunded).toBe(res.failed[0].refunded);
   });
 
   it("a FAILED slot refund is persisted honestly: the marker says refunded 0, never a phantom refund", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
-    vi.mocked(createModelAsset)
-      .mockResolvedValueOnce({ success: false } as never)
-      .mockResolvedValue({ success: true, assetId: 900 } as never);
+    vi.mocked(commitGeneratedPackageSnapshot).mockRejectedValueOnce(new Error("atomic package insert failed"));
+    vi.mocked(createModelAsset).mockResolvedValue({ success: true, assetId: 900 } as never);
     vi.mocked(addCredits).mockResolvedValue({ success: false, error: "db down" } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.failed[0].refunded).toBe(0);
-    const markerCall = vi.mocked(createModelAsset).mock.calls[1][0] as { status: { refunded: number } };
+    const markerCall = vi.mocked(createModelAsset).mock.calls[0][0] as { status: { refunded: number } };
     expect(markerCall.status.refunded).toBe(0);
   });
 
   it("MARKER persistence is result-checked (final correction 6): a failed marker is reported, never promised", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
-    // Slot asset fails AND the marker insert fails (result-style, no throw)
+    vi.mocked(commitGeneratedPackageSnapshot).mockRejectedValueOnce(new Error("atomic package insert failed"));
+    // The durable marker insert fails (result-style, no throw).
     vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.minted).toBe(false);
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0].markerPersisted).toBe(false); // the truth reaches the response
@@ -522,11 +539,10 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
   it("a failed createGeneration fails the slot BEFORE any image call", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
     vi.mocked(createGeneration).mockResolvedValue({ success: false } as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.minted).toBe(false);
     expect(res.failed).toHaveLength(1);
     expect(generateRemainingViews).not.toHaveBeenCalled();
-    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 });
 
@@ -958,7 +974,7 @@ describe("public error sanitization at the paid doors", () => {
   it("mint slot: a raw internal error never lands in the PUBLIC failed-slot record; refund truth does", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
     vi.mocked(generateRemainingViews).mockRejectedValueOnce(new Error(RAW_INTERNAL));
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0].reason).toBe("Generation failed");
     expect(res.failed[0].refunded).toBeGreaterThan(0);
@@ -970,7 +986,7 @@ describe("public error sanitization at the paid doors", () => {
   it("mint slot: deliberately written PublicError wording (identity gate) passes through", async () => {
     vi.mocked(getModelAssets).mockResolvedValue(CORE_MINUS_ONE as never);
     vi.mocked(generateRemainingViews).mockRejectedValueOnce(new PublicError("The engine rejected this request. Adjust the instruction and try again."));
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.failed[0].reason).toBe("The engine rejected this request. Adjust the instruction and try again.");
   });
 

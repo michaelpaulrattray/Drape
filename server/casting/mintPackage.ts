@@ -31,9 +31,7 @@ import {
   createGeneration,
   updateGeneration,
   updateModel,
-  mintModelAtomically,
   deductPoints,
-  addCredits,
 } from "../db";
 import { generateFullBody, generateRemainingViews, CREDIT_COSTS } from "./aiService";
 import { recordRefund } from "./atomicCredits";
@@ -51,15 +49,17 @@ import {
 import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import {
   assetRevisionMembership,
-  currentRevisionId,
-  identityStampFor,
   isRestoreCompatible,
   selectIdentityAnchor,
 } from "./identity/anchorSelector";
 import { computeMintIntegrity, type MintIntegrity } from "./identity/mintIntegrity";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
 import { createModuleLogger } from "../logging/logger";
-import { commitRestoredSlotSnapshot } from "./snapshotTransitions";
+import {
+  commitGeneratedPackageSnapshot,
+  commitRestoredSlotSnapshot,
+  type GeneratedPackageSlotCandidate,
+} from "./snapshotTransitions";
 import { storageDelete } from "../storage";
 
 const log = createModuleLogger("casting/mintPackage");
@@ -111,8 +111,7 @@ export interface MintPackageInput {
    *  separate deliberate act; identity iteration stays free until it. */
   mint?: boolean;
   chargeReferenceId?: string;
-  expectedIdentityRevisionId?: string | null;
-  operationId?: string;
+  operationId: string;
   onCharged?: (amount: number) => void;
   onRefunded?: (amount: number) => void;
 }
@@ -308,39 +307,6 @@ export async function completePreparedPackageSlotAudit(
   }
 }
 
-export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalViewAngle): Promise<SlotGenResult> {
-  const candidate = await generatePackageSlotCandidate(ctx, angle);
-  if (!candidate.ok) return candidate;
-  const identityText = buildIdentityAnchor(ctx.model.masterPrompt, ctx.model.technicalSchema);
-  const created = await createModelAsset({
-    modelId: ctx.modelId,
-    viewType: angle,
-    resolution: "1K",
-    storageUrl: candidate.imageUrl,
-    storageKey: candidate.storageKey,
-    pointsCost: slotCost(angle),
-    provenance: {
-      inputs: [{ viewAngle: "frontClose", imageUrl: ctx.headshotUrl }],
-      engine: candidate.engineUsed,
-      ...(ctx.mintTier ? { mintTier: ctx.mintTier } : { source: "refresh" }),
-      ...identityStampFor({
-        role: "display",
-        revisionId: currentRevisionId(ctx.model),
-        identityText,
-      }),
-    },
-  });
-  if (!created.success || !created.assetId) {
-    return failPreparedPackageSlot(
-      ctx,
-      candidate,
-      `The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view generated but couldn't be saved`,
-    );
-  }
-  await completePreparedPackageSlotAudit(ctx, candidate);
-  return { ok: true, angle, imageUrl: candidate.imageUrl, assetId: created.assetId };
-}
-
 /**
  * The named-and-refunded slot failure (D-39/D-40, hardened per review
  * findings 1+2): the refund uses a deterministic id derived from the slot's
@@ -518,15 +484,68 @@ export async function executeMintPackage(input: MintPackageInput) {
     onRefunded: input.onRefunded,
     operationId: input.operationId,
   };
-  const results = await Promise.all(missing.map((angle) => generatePackageSlot(ctx, angle)));
-  const generated = results
-    .filter((r): r is Extract<SlotGenResult, { ok: true }> => r.ok)
-    .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl, assetId: r.assetId }));
-  const failed = results
+  const results = await Promise.all(missing.map((angle) => generatePackageSlotCandidate(ctx, angle)));
+  const candidates = results.filter((r): r is PreparedPackageSlot => r.ok);
+  let failed = results
     .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
     .map(({ angle, label, reason, refunded, refundReference, markerPersisted }) => ({
       angle, label, reason, refunded, refundReference, markerPersisted,
     }));
+
+  const settleCandidates = async (
+    mode: "add_views" | "late_view" | "mint",
+    mint?: { agencyId: string; name: string },
+  ) => {
+    if (candidates.length === 0 && mode !== "mint") {
+      return {
+        generated: [] as Array<{ angle: CanonicalViewAngle; imageUrl: string; assetId: number }>,
+        agencyId: model.agencyId ?? null,
+        minted: isModelMintedStatus(model.status),
+      };
+    }
+    try {
+      const settled = await commitGeneratedPackageSnapshot({
+        userId: input.userId,
+        modelId: input.modelId,
+        operationId: input.operationId,
+        operationKind: input.mint === false ? "casting.add_views" : "casting.mint",
+        mode,
+        mintTier: input.tier,
+        candidates: candidates.map((candidate): GeneratedPackageSlotCandidate => ({
+          angle: candidate.angle,
+          storageUrl: candidate.imageUrl,
+          storageKey: candidate.storageKey,
+          engine: candidate.engineUsed,
+          pointsCost: slotCost(candidate.angle),
+        })),
+        ...(mint ? { mint } : {}),
+      });
+      await Promise.all(candidates.map((candidate) => completePreparedPackageSlotAudit(ctx, candidate)));
+      return settled.result;
+    } catch (error) {
+      const reason = publicErrorMessage(error, "The generated views couldn't be saved");
+      const settlementFailures = await Promise.all(
+        candidates.map((candidate) => failPreparedPackageSlot(ctx, candidate, reason)),
+      );
+      failed = [
+        ...failed,
+        ...settlementFailures.map(({ angle, label, reason: slotReason, refunded, refundReference, markerPersisted }) => ({
+          angle,
+          label,
+          reason: slotReason,
+          refunded,
+          refundReference,
+          markerPersisted,
+        })),
+      ];
+      if (candidates.length === 0) throw error;
+      return {
+        generated: [] as Array<{ angle: CanonicalViewAngle; imageUrl: string; assetId: number }>,
+        agencyId: model.agencyId ?? null,
+        minted: isModelMintedStatus(model.status),
+      };
+    }
+  };
 
   // Trap ruling (a) as sharpened at VC-R6 final: views without minting —
   // the slots landed above with full gates and pricing; the model stays a
@@ -535,6 +554,8 @@ export async function executeMintPackage(input: MintPackageInput) {
   // the picker/board) — it never mints; naming-as-identity stays fused to
   // the mint moment.
   if (input.mint === false) {
+    const mode = model.status === "draft" ? "add_views" : "late_view";
+    const settled = await settleCandidates(mode);
     // Nicknames are a DRAFT affordance (D-42/D-55). A minted model reaching
     // here is the upgrade path — its name never changes through this door
     // (renames are models.update, FR-3(B)).
@@ -548,13 +569,19 @@ export async function executeMintPackage(input: MintPackageInput) {
       }
     }
     log.info(
-      { modelId: input.modelId, tier: input.tier, generated: generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
+      { modelId: input.modelId, tier: input.tier, generated: settled.generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
       "[MintPackage] views added, stays a draft",
     );
     // Honest state (Batch B): minted is STATUS truth — active or the legacy
     // locked alias. On the upgrade path the model IS minted; a draft carrying
     // a stray agencyId is still a draft and must never read minted here.
-    return { agencyId: model.agencyId ?? null, minted: isModelMintedStatus(model.status), tier: input.tier, generated, failed };
+    return {
+      agencyId: settled.agencyId,
+      minted: settled.minted,
+      tier: input.tier,
+      generated: settled.generated,
+      failed,
+    };
   }
 
   // §14 (R8, Batch C): a mint may not complete while a selected-tier view is
@@ -565,6 +592,7 @@ export async function executeMintPackage(input: MintPackageInput) {
   // (missing = ∅ ⇒ zero deduction), which is exactly M20's free
   // mint-transition retry.
   if (failed.length > 0) {
+    const settled = await settleCandidates("add_views");
     log.warn(
       { modelId: input.modelId, tier: input.tier, failed: failed.map((f) => f.angle) },
       "[MintPackage] slot failure during mint — views kept, transition aborted, model stays a draft",
@@ -573,44 +601,47 @@ export async function executeMintPackage(input: MintPackageInput) {
       agencyId: model.agencyId ?? null,
       minted: false,
       tier: input.tier,
-      generated,
+      generated: settled.generated,
       failed,
       mintAborted: true as const,
       message: REFUSAL_COPY.mintRetryCredit,
     };
   }
 
-  // Name + mint is one conditional transition: clean draft, expected
-  // identity revision, final name, agency id and mintedAt land together.
-  let agencyId = model.agencyId;
-  if (!agencyId) {
-    const chars = "0123456789ABCDEF";
-    let hash = "";
-    for (let i = 0; i < 6; i++) hash += chars[Math.floor(Math.random() * 16)];
-    agencyId = `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
-    const minted = await mintModelAtomically({
-      modelId: input.modelId,
-      userId: input.userId,
-      agencyId,
-      name: input.characterName.trim(),
-      // The operation receipt uses the semantic "genesis" revision, but the
-      // model row stores genesis as SQL NULL. This CAS must compare the raw
-      // persisted value or every never-edited draft falsely reads "changed".
-      expectedIdentityRevisionId:
-        input.expectedIdentityRevisionId === undefined
-          ? model.identityRevisionId ?? null
-          : input.expectedIdentityRevisionId,
-    });
-    if (!minted.success) {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: minted.error || "Failed to mint model" });
-    }
+  // Name, lifecycle, generated assets, package head, and both seal pointers
+  // are one atomic transition. The transition service retains the legacy
+  // identity-revision CAS using server-owned receipt truth.
+  const chars = "0123456789ABCDEF";
+  let hash = "";
+  for (let i = 0; i < 6; i++) hash += chars[Math.floor(Math.random() * 16)];
+  const agencyId = `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
+  const settled = await settleCandidates("mint", {
+    agencyId,
+    name: input.characterName.trim(),
+  });
+  if (!settled.minted) {
+    return {
+      agencyId: settled.agencyId,
+      minted: false,
+      tier: input.tier,
+      generated: settled.generated,
+      failed,
+      mintAborted: true as const,
+      message: REFUSAL_COPY.mintRetryCredit,
+    };
   }
 
   log.info(
-    { modelId: input.modelId, tier: input.tier, generated: generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
+    { modelId: input.modelId, tier: input.tier, generated: settled.generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
     "[MintPackage] minted",
   );
-  return { agencyId, minted: true, tier: input.tier, generated, failed };
+  return {
+    agencyId: settled.agencyId,
+    minted: settled.minted,
+    tier: input.tier,
+    generated: settled.generated,
+    failed,
+  };
 }
 
 /** A slot's failure marker, read from the durable status row. `refunded` is

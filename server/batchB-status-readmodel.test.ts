@@ -44,6 +44,27 @@ vi.mock("./casting/pdfService", () => ({
   generatePremiumIdentityPdf: vi.fn().mockReturnValue("cGRm"),
   PdfModelData: {},
 }));
+vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
+  return {
+    ...actual,
+    commitGeneratedPackageSnapshot: vi.fn(async (input: {
+      mode: "add_views" | "late_view" | "mint";
+      candidates: Array<{ angle: string; storageUrl: string }>;
+      mint?: { agencyId: string };
+    }) => ({
+      result: {
+        generated: input.candidates.map((candidate, index) => ({
+          angle: candidate.angle,
+          imageUrl: candidate.storageUrl,
+          assetId: 900 + index,
+        })),
+        agencyId: input.mode === "mint" ? input.mint?.agencyId ?? null : null,
+        minted: input.mode === "mint" || input.mode === "late_view",
+      },
+    })),
+  };
+});
 
 import {
   getModelById,
@@ -59,6 +80,7 @@ import { executeMintPackage } from "./casting/mintPackage";
 import { listCastableModels, executeFillFromLibrary } from "./lib/boardOps";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
+const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
 
 function authCtx(userId = 1): TrpcContext {
   const user: AuthenticatedUser = {
@@ -137,7 +159,7 @@ describe("mintPackage result.minted is status truth, never the requested action"
   it("stays-draft (mint:false) on a clean draft reports minted:false", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
     vi.mocked(getModelAssets).mockResolvedValue([headshot] as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "", mint: false });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "", mint: false, operationId: REQUEST_ID });
     expect(res.minted).toBe(false);
   });
 
@@ -145,14 +167,14 @@ describe("mintPackage result.minted is status truth, never the requested action"
     // The old !!agencyId derivation read this inconsistent row as minted.
     vi.mocked(getModelById).mockResolvedValue(model({ agencyId: "MOD-26-STRAY0" }) as never);
     vi.mocked(getModelAssets).mockResolvedValue([headshot] as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "", mint: false });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "", mint: false, operationId: REQUEST_ID });
     expect(res.minted).toBe(false);
   });
 
   it("upgrade (mint:false) on a legacy LOCKED model reports minted:true — even with the ID missing", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "locked", agencyId: null, mintedAt: new Date() }) as never);
     vi.mocked(getModelAssets).mockResolvedValue([headshot] as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "", mint: false });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "", mint: false, operationId: REQUEST_ID });
     expect(res.minted).toBe(true);
   });
 });

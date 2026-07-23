@@ -19,6 +19,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let commitIteratedIdentitySnapshot: typeof import("./casting/snapshotTransitions").commitIteratedIdentitySnapshot;
   let commitCanvasRecastSnapshot: typeof import("./casting/snapshotTransitions").commitCanvasRecastSnapshot;
   let commitRefreshedSlotsSnapshot: typeof import("./casting/snapshotTransitions").commitRefreshedSlotsSnapshot;
+  let commitGeneratedPackageSnapshot: typeof import("./casting/snapshotTransitions").commitGeneratedPackageSnapshot;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -38,6 +39,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       commitIteratedIdentitySnapshot,
       commitCanvasRecastSnapshot,
       commitRefreshedSlotsSnapshot,
+      commitGeneratedPackageSnapshot,
     } = await import("./casting/snapshotTransitions"));
   });
 
@@ -125,7 +127,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   async function startModelOperation(
     userId: number,
     modelId: number,
-    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" | "casting.headshot" | "casting.refresh" | "canvas.recast" = "casting.iterate",
+    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.add_views" | "casting.restore" | "casting.headshot" | "casting.refresh" | "canvas.recast" = "casting.iterate",
   ): Promise<string> {
     const claimed = await operations.claimGenerationOperation({
       userId,
@@ -686,6 +688,233 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     );
     expect(Number(afterModel.stateVersion)).toBe(Number(beforeModel.stateVersion));
     expect(afterModel.currentPackageSnapshotId).toBe(beforeModel.currentPackageSnapshotId);
+  }, 60_000);
+
+  it("adds multiple draft views as one package while preserving identity truth", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const operationId = await startModelOperation(userId, base.modelId, "casting.add_views");
+
+    const committed = await commitGeneratedPackageSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      operationKind: "casting.add_views",
+      mode: "add_views",
+      mintTier: "production",
+      candidates: [
+        {
+          angle: "backFull",
+          storageUrl: "https://example.invalid/back-generated.png",
+          storageKey: "casting/back-generated.png",
+          engine: "test-engine",
+          pointsCost: 300,
+        },
+        {
+          angle: "threeQuarter",
+          storageUrl: "https://example.invalid/three-quarter-generated.png",
+          storageKey: "casting/three-quarter-generated.png",
+          engine: "test-engine",
+          pointsCost: 300,
+        },
+      ],
+    });
+
+    expect(committed.result).toMatchObject({ minted: false, agencyId: null });
+    expect(committed.result.generated).toHaveLength(2);
+    expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(1);
+    const packageRow = await one(
+      "SELECT reason, identitySnapshotId FROM model_package_snapshots WHERE id = ?",
+      [committed.packageSnapshotId],
+    );
+    expect(packageRow).toMatchObject({ reason: "add_views", identitySnapshotId: base.identitySnapshotId });
+    const [slots] = await connection.execute<RowDataPacket[]>(
+      `SELECT viewAngle, compatibility, selectionReason FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? ORDER BY viewAngle`,
+      [committed.packageSnapshotId],
+    );
+    const byAngle = Object.fromEntries(slots.map((row) => [row.viewAngle, row]));
+    expect(byAngle.frontClose.selectionReason).toBe("carried");
+    expect(byAngle.sideClose.selectionReason).toBe("carried");
+    expect(byAngle.backFull).toMatchObject({ compatibility: "current", selectionReason: "generated" });
+    expect(byAngle.threeQuarter).toMatchObject({ compatibility: "current", selectionReason: "generated" });
+    const [assets] = await connection.execute<RowDataPacket[]>(
+      "SELECT storageKey, provenance FROM model_assets WHERE id IN (?, ?)",
+      committed.result.generated.map((row) => row.assetId),
+    );
+    expect(assets).toHaveLength(2);
+    for (const row of assets) {
+      const provenance = typeof row.provenance === "string" ? JSON.parse(row.provenance) : row.provenance;
+      expect(provenance).toMatchObject({
+        source: "add_views",
+        mintTier: "production",
+        identityRole: "display",
+        engine: "test-engine",
+      });
+    }
+  }, 60_000);
+
+  it("mints and seals one atomic package, then appends late views against the sealed identity", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const mintOperationId = await startModelOperation(userId, base.modelId, "casting.mint");
+
+    const minted = await commitGeneratedPackageSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId: mintOperationId,
+      operationKind: "casting.mint",
+      mode: "mint",
+      mintTier: "draft",
+      candidates: [],
+      mint: { agencyId: "MOD-27-A1B2C3", name: "Sealed Cast" },
+    });
+
+    expect(minted.result).toEqual({ generated: [], agencyId: "MOD-27-A1B2C3", minted: true });
+    const mintedModel = await one(
+      `SELECT name, agencyId, status, mintedAt, stateVersion, currentPackageSnapshotId,
+        sealedIdentitySnapshotId, sealedPackageSnapshotId
+       FROM models WHERE id = ?`,
+      [base.modelId],
+    );
+    expect(mintedModel.name).toBe("Sealed Cast");
+    expect(mintedModel.agencyId).toBe("MOD-27-A1B2C3");
+    expect(mintedModel.status).toBe("active");
+    expect(mintedModel.mintedAt).not.toBeNull();
+    expect(Number(mintedModel.stateVersion)).toBe(2);
+    expect(mintedModel.currentPackageSnapshotId).toBe(minted.packageSnapshotId);
+    expect(mintedModel.sealedIdentitySnapshotId).toBe(base.identitySnapshotId);
+    expect(mintedModel.sealedPackageSnapshotId).toBe(minted.packageSnapshotId);
+    expect(await one("SELECT reason FROM model_package_snapshots WHERE id = ?", [minted.packageSnapshotId]))
+      .toMatchObject({ reason: "mint" });
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId: mintOperationId,
+      result: { minted: true },
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+
+    const lateOperationId = await startModelOperation(userId, base.modelId, "casting.add_views");
+    const late = await commitGeneratedPackageSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId: lateOperationId,
+      operationKind: "casting.add_views",
+      mode: "late_view",
+      mintTier: "production",
+      candidates: [{
+        angle: "backFull",
+        storageUrl: "https://example.invalid/late-back.png",
+        storageKey: "casting/late-back.png",
+        engine: "test-engine",
+        pointsCost: 300,
+      }],
+    });
+
+    expect(late.result).toMatchObject({ minted: true, agencyId: "MOD-27-A1B2C3" });
+    const latePackage = await one(
+      "SELECT reason, identitySnapshotId FROM model_package_snapshots WHERE id = ?",
+      [late.packageSnapshotId],
+    );
+    expect(latePackage).toMatchObject({ reason: "late_view", identitySnapshotId: base.identitySnapshotId });
+    const lateSlot = await one(
+      `SELECT compatibility, selectionReason FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'backFull'`,
+      [late.packageSnapshotId],
+    );
+    expect(lateSlot).toMatchObject({ compatibility: "current", selectionReason: "late_view" });
+    const sealedAfterLate = await one(
+      "SELECT sealedIdentitySnapshotId, sealedPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    expect(sealedAfterLate.sealedIdentitySnapshotId).toBe(base.identitySnapshotId);
+    expect(sealedAfterLate.sealedPackageSnapshotId).toBe(minted.packageSnapshotId);
+  }, 60_000);
+
+  it("lazily seals a legacy minted Cast before accepting a late view", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId, "active");
+    await connection.execute(
+      "UPDATE models SET agencyId = 'MOD-27-LEGACY', mintedAt = NOW() WHERE id = ?",
+      [modelId],
+    );
+    await addAsset({ modelId, viewAngle: "frontClose", role: "anchor" });
+    const bootstrapped = await bootstrapModelSnapshot({ userId, modelId });
+    if (bootstrapped.status === "headless") throw new Error("bootstrap unexpectedly headless");
+    const sealed = await one(
+      "SELECT sealedIdentitySnapshotId, sealedPackageSnapshotId FROM models WHERE id = ?",
+      [modelId],
+    );
+    expect(sealed.sealedIdentitySnapshotId).toBe(bootstrapped.identitySnapshotId);
+    expect(sealed.sealedPackageSnapshotId).toBe(bootstrapped.packageSnapshotId);
+
+    const operationId = await startModelOperation(userId, modelId, "casting.add_views");
+    const late = await commitGeneratedPackageSnapshot({
+      userId,
+      modelId,
+      operationId,
+      operationKind: "casting.add_views",
+      mode: "late_view",
+      mintTier: "core",
+      candidates: [{
+        angle: "sideClose",
+        storageUrl: "https://example.invalid/legacy-late-side.png",
+        storageKey: "casting/legacy-late-side.png",
+        pointsCost: 300,
+      }],
+    });
+    expect(late.result).toMatchObject({ minted: true, agencyId: "MOD-27-LEGACY" });
+    expect(await one("SELECT identitySnapshotId, reason FROM model_package_snapshots WHERE id = ?", [late.packageSnapshotId]))
+      .toMatchObject({ identitySnapshotId: bootstrapped.identitySnapshotId, reason: "late_view" });
+  }, 60_000);
+
+  it("rolls back generated views, lifecycle, and seal pointers when mint settlement fails", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const operationId = await startModelOperation(userId, base.modelId, "casting.mint");
+    const beforeAssets = await count("model_assets", "modelId = ?", [base.modelId]);
+
+    await expect(commitGeneratedPackageSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      operationKind: "casting.mint",
+      mode: "mint",
+      mintTier: "core",
+      candidates: [
+        {
+          angle: "backFull",
+          storageUrl: "https://example.invalid/back-generated.png",
+          storageKey: "casting/back-generated.png",
+          pointsCost: 300,
+        },
+        {
+          angle: "threeQuarter",
+          storageUrl: "https://example.invalid/three-quarter-generated.png",
+          storageKey: `casting/${"x".repeat(300)}.png`,
+          pointsCost: 300,
+        },
+      ],
+      mint: { agencyId: "MOD-27-FAIL00", name: "Must Roll Back" },
+    })).rejects.toThrow();
+
+    expect(await count("model_assets", "modelId = ?", [base.modelId])).toBe(beforeAssets);
+    expect(await count("model_package_snapshots", "modelId = ?", [base.modelId])).toBe(1);
+    const model = await one(
+      `SELECT name, agencyId, status, mintedAt, stateVersion, currentPackageSnapshotId,
+        sealedIdentitySnapshotId, sealedPackageSnapshotId
+       FROM models WHERE id = ?`,
+      [base.modelId],
+    );
+    expect(model.name).toBe("Transition Cast");
+    expect(model.agencyId).toBeNull();
+    expect(model.status).toBe("draft");
+    expect(model.mintedAt).toBeNull();
+    expect(Number(model.stateVersion)).toBe(1);
+    expect(model.currentPackageSnapshotId).toBe(base.packageSnapshotId);
+    expect(model.sealedIdentitySnapshotId).toBeNull();
+    expect(model.sealedPackageSnapshotId).toBeNull();
   }, 60_000);
 
   it("commits an image-only refinement as one display asset and package selection", async () => {

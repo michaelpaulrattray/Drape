@@ -68,7 +68,7 @@ async function main() {
 
     run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
       "exec", "vitest", "run",
-      "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false",
+      "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
       "server/casting/snapshotBootstrap.test.ts",
       "server/r7-snapshot-selection-contract.test.ts",
       "server/r7-snapshot-bootstrap-db.test.ts",
@@ -98,7 +98,10 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error("[disposable] failed:", error);
-  process.exitCode = 1;
-});
+main().then(
+  () => process.exit(0),
+  (error) => {
+    console.error("[disposable] failed:", error);
+    process.exit(1);
+  },
+);

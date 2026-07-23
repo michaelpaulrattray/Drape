@@ -166,6 +166,21 @@ vi.mock("./casting/snapshotTransitions", () => ({
       })),
     },
   })),
+  commitGeneratedPackageSnapshot: vi.fn(async (input: {
+    mode: "add_views" | "late_view" | "mint";
+    candidates: Array<{ angle: string; storageUrl: string }>;
+    mint?: { agencyId: string };
+  }) => ({
+    result: {
+      generated: input.candidates.map((candidate, index) => ({
+        angle: candidate.angle,
+        imageUrl: candidate.storageUrl,
+        assetId: 800 + index,
+      })),
+      agencyId: input.mode === "mint" ? input.mint?.agencyId ?? null : null,
+      minted: input.mode === "mint" || input.mode === "late_view",
+    },
+  })),
   commitImageRefineSnapshot: vi.fn(async () => ({ result: { assetId: 501 } })),
   commitIteratedIdentitySnapshot: vi.fn(async () => ({
     result: {
@@ -206,7 +221,13 @@ import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPac
 import { executeRefreshSlots } from "./casting/refreshSlots";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
-import { commitDocumentCompactionSnapshot, commitHeadshotSnapshot, commitRefreshedSlotsSnapshot, commitRestoredSlotSnapshot } from "./casting/snapshotTransitions";
+import {
+  commitDocumentCompactionSnapshot,
+  commitGeneratedPackageSnapshot,
+  commitHeadshotSnapshot,
+  commitRefreshedSlotsSnapshot,
+  commitRestoredSlotSnapshot,
+} from "./casting/snapshotTransitions";
 import { storageDelete } from "./storage";
 import { beginDirectOperation } from "./casting/directOperation";
 import { appRouter as productionRouter } from "./routers";
@@ -225,6 +246,7 @@ const appRouter = {
         ...caller.generation,
         castingImage: (input: any) => caller.generation.castingImage({ clientRequestId: REQUEST_ID, ...input }),
         compactPrompt: (input: any) => caller.generation.compactPrompt({ clientRequestId: REQUEST_ID, ...input }),
+        mintPackage: (input: any) => caller.generation.mintPackage({ clientRequestId: REQUEST_ID, ...input }),
         restoreSlotVersion: (input: any) => caller.generation.restoreSlotVersion({ clientRequestId: REQUEST_ID, ...input }),
       },
     };
@@ -278,6 +300,7 @@ beforeEach(() => {
   vi.mocked(verifyViewIdentity).mockReset().mockResolvedValue({ ok: true, checked: true });
   vi.mocked(compactMasterPrompt).mockReset();
   vi.mocked(bootstrapModelSnapshot).mockClear();
+  vi.mocked(commitGeneratedPackageSnapshot).mockClear();
   vi.mocked(commitHeadshotSnapshot).mockClear();
   vi.mocked(commitDocumentCompactionSnapshot).mockClear();
   vi.mocked(commitRestoredSlotSnapshot).mockClear();
@@ -476,7 +499,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
   it("a STALE anchor refuses the mint BEFORE any deduction, with the anchor copy", async () => {
     vi.mocked(getModelAssets).mockResolvedValue([asset({ status: { state: "stale" } })] as never);
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "Vera" }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.mintAnchorInvalid });
     expect(deductPoints).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
@@ -487,7 +510,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
       asset({ id: 2, storageUrl: "https://r2/display.png", provenance: { identityRole: "display", identityText: CANON } }),
       asset({ id: 1, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityText: CANON } }),
     ] as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.minted).toBe(true);
     // Every mint-time slot generated from the AUTHORITATIVE anchor, not the display row
     for (const call of vi.mocked(generateRemainingViews).mock.calls) {
@@ -501,7 +524,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
       asset({ id: 2, viewType: "threeQuarter", storageUrl: "https://r2/tq.png", pinned: true, status: { state: "stale" } }),
     ] as never);
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("unpin") });
     expect(deductPoints).not.toHaveBeenCalled();
   });
@@ -513,7 +536,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
       asset({ id: 2, viewType: "threeQuarter", storageUrl: "https://r2/tq.png", provenance: { identityRevisionId: "rev-1" } }),
     ] as never);
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(deductPoints).not.toHaveBeenCalled();
   });
@@ -523,20 +546,23 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     vi.mocked(getModelAssets).mockResolvedValue([
       asset({ id: 1, provenance: { identityRole: "anchor", identityRevisionId: "rev-2" } }),
     ] as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "", mint: false });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "", mint: false, operationId: REQUEST_ID });
     expect(res.minted).toBe(false);
     expect(res.generated.length).toBeGreaterThan(0);
-    for (const call of vi.mocked(createModelAsset).mock.calls) {
-      const prov = (call[0] as { provenance: Record<string, unknown> }).provenance;
-      expect(prov.identityRole).toBe("display");
-      expect(prov.identityRevisionId).toBe("rev-2");
-    }
+    expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      operationId: REQUEST_ID,
+      operationKind: "casting.add_views",
+      mode: "add_views",
+      candidates: expect.arrayContaining([
+        expect.objectContaining({ angle: "threeQuarter", storageKey: "view/new.png" }),
+      ]),
+    }));
   });
 
   it("M20: a mid-mint slot failure ABORTS the transition — refund once, mint not taken, views kept", async () => {
     vi.mocked(getModelAssets).mockResolvedValue([asset({ id: 1 })] as never);
     vi.mocked(generateRemainingViews).mockRejectedValue(new Error("engine down"));
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.minted).toBe(false);
     expect((res as Record<string, unknown>).mintAborted).toBe(true);
     expect(res.failed.length).toBeGreaterThan(0);
@@ -551,10 +577,60 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
       asset({ id: 100 + i, viewType: vt, storageUrl: `https://r2/${vt}.png` }),
     );
     vi.mocked(getModelAssets).mockResolvedValue(full as never);
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.minted).toBe(true);
     expect(deductPoints).not.toHaveBeenCalled(); // zero missing ⇒ zero deduction
-    expect(mintModelAtomically).toHaveBeenCalledTimes(1);
+    expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      operationId: REQUEST_ID,
+      operationKind: "casting.mint",
+      mode: "mint",
+      candidates: [],
+      mint: expect.objectContaining({ name: "Vera" }),
+    }));
+  });
+});
+
+describe("mint/add-views snapshot ordering", () => {
+  const fullPackage = ["frontClose", "threeQuarter", "sideClose", "frontFull", "sideFull", "backFull"].map((vt, i) =>
+    asset({ id: 300 + i, viewType: vt, storageUrl: `https://r2/${vt}.png` }),
+  );
+
+  it("bootstraps before the running receipt and settles through the atomic package writer", async () => {
+    vi.mocked(getModelAssets).mockResolvedValue(fullPackage as never);
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    })).resolves.toMatchObject({ minted: true });
+
+    const bootstrapOrder = vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0];
+    const runningOrder = vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0];
+    expect(bootstrapOrder).toBeLessThan(runningOrder);
+    expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      operationId: REQUEST_ID,
+      operationKind: "casting.mint",
+      mode: "mint",
+      candidates: [],
+    }));
+  });
+
+  it("refuses a headless Cast for free before any paid work", async () => {
+    vi.mocked(getModelAssets).mockResolvedValue([] as never);
+    vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("headshot"),
+    });
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
   });
 });
 

@@ -91,7 +91,7 @@ describe("model lifecycle literal guard (Batch B)", () => {
     // rules (clean-draft check, refusal copy branch, nickname draft
     // affordance). server/lib/boardOps.ts — applyModelEdit's D-43 seal.
     const pins: Record<string, number> = {
-      "server/casting/mintPackage.ts": 3,
+      "server/casting/mintPackage.ts": 4,
       "server/lib/boardOps.ts": 1,
     };
     for (const rel of SCOPE) {
@@ -104,9 +104,8 @@ describe("model lifecycle literal guard (Batch B)", () => {
   });
 
   it("agencyId never rides a minted derivation — every minted+agencyId line carries the status predicate", () => {
-    // Pinned exceptions: the mint ceremony's own post-transition result
-    // (`minted: true` immediately after mintModelAtomically succeeds) and telemetry
-    // fields (hasAgencyId) are not read models.
+    // Pinned exceptions are telemetry and the server-owned atomic snapshot
+    // mint transition; neither derives lifecycle from agencyId presence.
     for (const rel of SCOPE) {
       const src = read(rel);
       for (const [i, line] of src.split("\n").entries()) {
@@ -115,7 +114,6 @@ describe("model lifecycle literal guard (Batch B)", () => {
           /isModelMintedStatus/.test(line) || // status truth drives, ID is detail
           /hasAgencyId/.test(line) || // telemetry
           /cleanDraft/.test(line) || // the mint ceremony's pinned TRANSITION guard (mutation allowlist)
-          /await mintModelAtomically\(/.test(line) || // the transition CALL itself, not a read
           /minted: true\b/.test(line) || // post-transition result — count-pinned separately below
           /^\s*(\/\/|\*)/.test(line) || // commentary
           /^\s*\}?,?\s*\[.*\]\s*\)?;?\s*$/.test(line); // React dependency arrays
@@ -133,11 +131,10 @@ describe("model lifecycle literal guard (Batch B)", () => {
   });
 
   it("literal minted:true exists only where proven — the mint ceremony's result and verify's guarded branch", () => {
-    // mintPackage: the post-transition return (mintModelAtomically just succeeded).
     // registry: verify's minted branch is only reachable AFTER the
     // !isModelMintedStatus guard returned the public-absence shape.
     const pins: Record<string, number> = {
-      "server/casting/mintPackage.ts": 1,
+      "server/casting/mintPackage.ts": 0,
       "server/routes/registry.ts": 1,
     };
     for (const rel of SERVER_READ_SCOPE) {

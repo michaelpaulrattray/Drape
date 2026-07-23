@@ -22,6 +22,7 @@ import {
   type ModelPackageSnapshotSlot,
 } from "../../drizzle/schema";
 import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
+import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { withTransaction, type TransactionHandle } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 import { buildIdentityAnchor } from "./geminiClient";
@@ -219,6 +220,12 @@ export async function bootstrapModelSnapshot(input: {
     ) {
       throw new Error("The model snapshot pointer and state version disagree");
     }
+    if (
+      isModelMintedStatus(model.status)
+      && (!!model.sealedIdentitySnapshotId !== !!model.sealedPackageSnapshotId)
+    ) {
+      throw new Error("The model snapshot seal pointers disagree");
+    }
     const assets = await tx
       .select()
       .from(modelAssets)
@@ -230,7 +237,37 @@ export async function bootstrapModelSnapshot(input: {
     const current = await currentHeadIn(tx, model);
     if (current) assertCurrentHeadClosure(current, assets);
     const identityMatches = current ? sameIdentity(model, derived, current.identitySnapshot) : false;
+    if (
+      isModelMintedStatus(model.status)
+      && model.sealedIdentitySnapshotId
+      && (
+        !current
+        || current.identitySnapshot.id !== model.sealedIdentitySnapshotId
+        || !identityMatches
+      )
+    ) {
+      throw new Error("The minted model no longer matches its sealed identity snapshot");
+    }
     if (current && identityMatches && sameSlots(derived, current.slots)) {
+      if (isModelMintedStatus(model.status)) {
+        if (!model.sealedIdentitySnapshotId) {
+          const sealed = await tx
+            .update(models)
+            .set({
+              sealedIdentitySnapshotId: current.identitySnapshot.id,
+              sealedPackageSnapshotId: current.packageSnapshot.id,
+            })
+            .where(and(
+              eq(models.id, model.id),
+              eq(models.userId, input.userId),
+              isNull(models.deletedAt),
+              ne(models.status, "archived"),
+              isNull(models.sealedIdentitySnapshotId),
+              isNull(models.sealedPackageSnapshotId),
+            ));
+          if (affectedRows(sealed) !== 1) throw new Error("The model changed during legacy snapshot sealing");
+        }
+      }
       return {
         status: "current",
         modelId: model.id,
@@ -288,7 +325,16 @@ export async function bootstrapModelSnapshot(input: {
     const nextStateVersion = model.stateVersion + 1;
     const updated = await tx
       .update(models)
-      .set({ currentPackageSnapshotId: packageSnapshotId, stateVersion: nextStateVersion })
+      .set({
+        currentPackageSnapshotId: packageSnapshotId,
+        stateVersion: nextStateVersion,
+        ...(isModelMintedStatus(model.status) && !model.sealedIdentitySnapshotId && !model.sealedPackageSnapshotId
+          ? {
+              sealedIdentitySnapshotId: identitySnapshotId,
+              sealedPackageSnapshotId: packageSnapshotId,
+            }
+          : {}),
+      })
       .where(and(
         eq(models.id, model.id),
         eq(models.userId, input.userId),

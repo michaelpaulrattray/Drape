@@ -61,6 +61,37 @@ vi.mock("./casting/directOperation", async (importOriginal) => {
     failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
   };
 });
+vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
+  return {
+    ...actual,
+    commitGeneratedPackageSnapshot: vi.fn(async (input: {
+      mode: "add_views" | "late_view" | "mint";
+      candidates: Array<{ angle: string; storageUrl: string }>;
+      mint?: { agencyId: string };
+    }) => ({
+      result: {
+        generated: input.candidates.map((candidate, index) => ({
+          angle: candidate.angle,
+          imageUrl: candidate.storageUrl,
+          assetId: 900 + index,
+        })),
+        agencyId: input.mode === "mint" ? input.mint?.agencyId ?? null : null,
+        minted: input.mode === "mint" || input.mode === "late_view",
+      },
+    })),
+  };
+});
+vi.mock("./casting/snapshotBootstrap", () => ({
+  bootstrapModelSnapshot: vi.fn().mockResolvedValue({
+    status: "current",
+    modelId: 7,
+    identitySnapshotId: "11111111-1111-4111-8111-111111111112",
+    packageSnapshotId: "11111111-1111-4111-8111-111111111113",
+    stateVersion: 1,
+    selectedSlotCount: 1,
+  }),
+}));
 vi.mock("./casting/finalCastDeletion", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/finalCastDeletion")>();
   return {
@@ -96,6 +127,7 @@ import {
 import { executeFinalCastDeletion, planFinalCastDeletion } from "./casting/finalCastDeletion";
 import { CREDIT_COSTS, generateCastingImage } from "./casting/aiService";
 import { beginDirectOperation } from "./casting/directOperation";
+import { commitGeneratedPackageSnapshot } from "./casting/snapshotTransitions";
 import { buildIdentityAnchor } from "./casting/geminiClient";
 import { appRouter as productionRouter } from "./routers";
 
@@ -217,6 +249,17 @@ beforeEach(() => {
   });
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true });
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 99 } as never);
+  vi.mocked(commitGeneratedPackageSnapshot).mockClear().mockImplementation(async (input) => ({
+    result: {
+      generated: input.candidates.map((candidate, index) => ({
+        angle: candidate.angle,
+        imageUrl: candidate.storageUrl,
+        assetId: 900 + index,
+      })),
+      agencyId: input.mode === "mint" ? input.mint?.agencyId ?? null : null,
+      minted: input.mode === "mint" || input.mode === "late_view",
+    },
+  }) as never);
   vi.mocked(generateCastingImage).mockClear();
   vi.mocked(beginDirectOperation).mockReset().mockResolvedValue({
     type: "execute",
@@ -524,7 +567,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     );
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductPoints).not.toHaveBeenCalled();
@@ -538,7 +581,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     );
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductPoints).not.toHaveBeenCalled();
@@ -549,7 +592,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     vi.mocked(getModelById).mockResolvedValue(model({ agencyId: "MOD-26-STRAY0" }) as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductPoints).not.toHaveBeenCalled();
@@ -561,7 +604,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     vi.mocked(getModelById).mockResolvedValue(model({ mintedAt: new Date() }) as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(deductPoints).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
@@ -573,7 +616,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     );
     vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "", mint: false });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "", mint: false, operationId: REQUEST_ID });
     expect(res.minted).toBe(true); // honest: the model IS minted
     expect(updateModel).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
@@ -585,7 +628,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     );
     vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
-    await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Sneaky Rename", mint: false });
+    await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Sneaky Rename", mint: false, operationId: REQUEST_ID });
     expect(updateModel).not.toHaveBeenCalled();
   });
 });
@@ -779,7 +822,7 @@ describe("executeMintPackage name guard + name persistence (review fix 2)", () =
   it("refuses a nameless mint before loading the model", async () => {
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "  " }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "  ", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(getModelById).not.toHaveBeenCalled();
   });
@@ -788,7 +831,7 @@ describe("executeMintPackage name guard + name persistence (review fix 2)", () =
     vi.mocked(getModelById).mockResolvedValue(null as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "", mint: false }),
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "", mint: false, operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(getModelById).toHaveBeenCalled();
   });
@@ -796,23 +839,33 @@ describe("executeMintPackage name guard + name persistence (review fix 2)", () =
   it("if the atomic mint write fails, name and mint abort together", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
     vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never); // full package → zero generation cost
-    vi.mocked(mintModelAtomically).mockResolvedValue({ success: false, error: "db down" });
+    vi.mocked(commitGeneratedPackageSnapshot).mockRejectedValueOnce(new Error("db down"));
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
-      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "  Vera  " }),
-    ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+      executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "  Vera  ", operationId: REQUEST_ID }),
+    ).rejects.toThrow("db down");
     expect(updateModel).not.toHaveBeenCalled();
-    expect(mintModelAtomically).toHaveBeenCalledWith(expect.objectContaining({ modelId: 7, name: "Vera" }));
+    expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      modelId: 7,
+      operationId: REQUEST_ID,
+      mode: "mint",
+      mint: expect.objectContaining({ name: "Vera" }),
+    }));
   });
 
   it("happy path: trimmed name and mint state persist atomically", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
     vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
-    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: " Vera " });
+    const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: " Vera ", operationId: REQUEST_ID });
     expect(res.minted).toBe(true);
     expect(updateModel).not.toHaveBeenCalled();
-    expect(mintModelAtomically).toHaveBeenCalledWith(expect.objectContaining({ modelId: 7, name: "Vera" }));
+    expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      modelId: 7,
+      operationId: REQUEST_ID,
+      mode: "mint",
+      mint: expect.objectContaining({ name: "Vera" }),
+    }));
   });
 });
 

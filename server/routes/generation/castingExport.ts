@@ -233,6 +233,13 @@ export const castingExportRouter = router({
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
         plan = await planMintPackage({ userId: ctx.user.id, modelId: input.modelId });
+        const snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        if (snapshotHead.status === "headless") {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This Cast needs a headshot before views can be added or it can be minted.",
+          });
+        }
       } catch (error) {
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
@@ -258,9 +265,6 @@ export const castingExportRouter = router({
           characterName: input.characterName ?? "",
           mint: input.mint,
           chargeReferenceId: started.chargeReferenceId,
-          // mintModelAtomically CASes the raw database column. Genesis is
-          // stored as NULL even though operation receipts expose "genesis".
-          expectedIdentityRevisionId: lockedModel.identityRevisionId,
           onCharged: (amount) => { chargedCredits = amount; },
           onRefunded: (amount) => { refundedCredits += amount; },
           operationId: gate.operationId,

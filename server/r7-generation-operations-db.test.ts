@@ -661,11 +661,37 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     // Minting in the still-open takeover repeats the fill again. It must
     // remove draft provenance and sync the model name without appending a
     // pretend image version.
+    const mintClaim = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: randomUUID(),
+      kind: "casting.mint",
+      modelId: pending.modelId,
+      payload: { modelId: pending.modelId, tier: "draft", mint: true },
+    });
+    if (mintClaim.type !== "claimed") throw new Error("mint claim failed");
+    await operations.acquireGenerationOperationLock({
+      userId,
+      operationId: mintClaim.operationId,
+      kind: "casting.mint",
+      lockKey: `model:${pending.modelId}`,
+    });
+    const snapshotBootstrap = await import("./casting/snapshotBootstrap");
+    await snapshotBootstrap.bootstrapModelSnapshot({ userId, modelId: pending.modelId });
+    const mintStarted = await operations.markGenerationOperationRunning({
+      userId,
+      operationId: mintClaim.operationId,
+      modelId: pending.modelId,
+      plannedCredits: 0,
+      phase: "minting",
+      requiredLockKey: `model:${pending.modelId}`,
+    });
     await expect(mintPackage.executeMintPackage({
       userId,
       modelId: pending.modelId,
       tier: "draft",
       characterName: "Foreground Minted",
+      operationId: mintClaim.operationId,
+      chargeReferenceId: mintStarted.chargeReferenceId,
     })).resolves.toMatchObject({ minted: true, generated: [], failed: [] });
     await expect(boardOps.executeFillFromLibrary({
       userId,
