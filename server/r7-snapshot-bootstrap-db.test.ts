@@ -8,6 +8,8 @@ const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
 describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () => {
   let connection: Connection;
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
+  let planSnapshotConvergence: typeof import("./casting/snapshotConvergence").planSnapshotConvergence;
+  let convergeSnapshotCohort: typeof import("./casting/snapshotConvergence").convergeSnapshotCohort;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -17,6 +19,7 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     process.env.DATABASE_URL = testDatabaseUrl!;
     connection = await mysql.createConnection(testDatabaseUrl!);
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
+    ({ planSnapshotConvergence, convergeSnapshotCohort } = await import("./casting/snapshotConvergence"));
   });
 
   beforeEach(async () => {
@@ -259,5 +262,99 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
       .rejects.toThrow("pointer and state version disagree");
     expect(await count("model_identity_snapshots")).toBe(0);
     expect(await count("model_package_snapshots")).toBe(0);
+  }, 60_000);
+
+  it("plans read-only, converges a fixed cohort, proves parity, and replays without duplicate heads", async () => {
+    const userId = await createUser();
+    const headedModelId = await createModel(userId);
+    await addAsset({ modelId: headedModelId, role: "anchor" });
+    const headlessModelId = await createModel(userId);
+
+    const plan = await planSnapshotConvergence({
+      userId,
+      modelIds: [],
+      expectedModelCount: 2,
+    });
+    expect(plan.subjects.map((subject) => subject.modelId)).toEqual([
+      headedModelId,
+      headlessModelId,
+    ]);
+    expect(plan.summary).toMatchObject({
+      auditedModels: 2,
+      parityModels: 1,
+      mismatchedModels: 1,
+    });
+    expect(await count("model_identity_snapshots")).toBe(0);
+    expect(await count("model_package_snapshots")).toBe(0);
+
+    const first = await convergeSnapshotCohort({
+      userId,
+      modelIds: [],
+      expectedModelCount: 2,
+    });
+    expect(first).toMatchObject({
+      success: true,
+      expectedModelCount: 2,
+      postflight: { auditedModels: 2, parityModels: 2, mismatchedModels: 0 },
+    });
+    expect(first.results).toEqual([
+      { modelId: headedModelId, status: "created", errorCode: null },
+      { modelId: headlessModelId, status: "headless", errorCode: null },
+    ]);
+    expect(await count("model_identity_snapshots")).toBe(1);
+    expect(await count("model_package_snapshots")).toBe(1);
+
+    const replay = await convergeSnapshotCohort({
+      userId,
+      modelIds: [],
+      expectedModelCount: 2,
+    });
+    expect(replay.success).toBe(true);
+    expect(replay.results).toEqual([
+      { modelId: headedModelId, status: "current", errorCode: null },
+      { modelId: headlessModelId, status: "headless", errorCode: null },
+    ]);
+    expect(await count("model_identity_snapshots")).toBe(1);
+    expect(await count("model_package_snapshots")).toBe(1);
+  }, 60_000);
+
+  it("refuses an unexpected cohort count before writing any snapshot", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    await addAsset({ modelId, role: "anchor" });
+    await expect(convergeSnapshotCohort({
+      userId,
+      modelIds: [],
+      expectedModelCount: 2,
+    })).rejects.toThrow("cohort count mismatch: expected 2, found 1");
+    expect(await count("model_identity_snapshots")).toBe(0);
+    expect(await count("model_package_snapshots")).toBe(0);
+  }, 60_000);
+
+  it("reports per-model bootstrap failures without exposing raw errors or claiming cohort parity", async () => {
+    const userId = await createUser();
+    const goodModelId = await createModel(userId);
+    await addAsset({ modelId: goodModelId, role: "anchor" });
+    const corruptModelId = await createModel(userId);
+    await addAsset({ modelId: corruptModelId, role: "anchor" });
+    await connection.execute(
+      "UPDATE models SET currentPackageSnapshotId = ?, stateVersion = 1 WHERE id = ?",
+      [randomUUID(), corruptModelId],
+    );
+
+    const result = await convergeSnapshotCohort({
+      userId,
+      modelIds: [],
+      expectedModelCount: 2,
+    });
+    expect(result.success).toBe(false);
+    expect(result.results).toEqual([
+      { modelId: goodModelId, status: "created", errorCode: null },
+      { modelId: corruptModelId, status: "failed", errorCode: "bootstrap_failed" },
+    ]);
+    expect(result.postflight.mismatchedModels).toBe(1);
+    expect(JSON.stringify(result)).not.toContain("snapshot head is invalid");
+    expect(await count("model_identity_snapshots", "modelId = ?", [goodModelId])).toBe(1);
+    expect(await count("model_identity_snapshots", "modelId = ?", [corruptModelId])).toBe(0);
   }, 60_000);
 });

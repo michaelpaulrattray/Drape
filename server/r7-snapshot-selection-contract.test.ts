@@ -153,6 +153,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     }
     expect(serverCallers).toEqual([
       "server/casting/snapshotConsumerShadow.ts",
+      "server/casting/snapshotConvergence.ts",
       "server/casting/snapshotShadowAudit.ts",
     ]);
 
@@ -166,12 +167,33 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     const script = await readFile(new URL("../scripts/audit-cast-snapshot-parity.ts", import.meta.url), "utf8");
     const auditContract = await readFile(new URL("./casting/snapshotShadowAudit.ts", import.meta.url), "utf8");
     const consumerShadow = await readFile(new URL("./casting/snapshotConsumerShadow.ts", import.meta.url), "utf8");
+    const convergence = await readFile(new URL("./casting/snapshotConvergence.ts", import.meta.url), "utf8");
     expect(script).not.toMatch(/storage(Put|Delete|List)|deductPoints|withAtomicCredits|Gemini|generateContent/);
     expect(consumerShadow).not.toMatch(
       /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
+    expect(convergence).not.toMatch(
+      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
+    expect(convergence).toContain("bootstrapModelSnapshot({");
     expect(script).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
     expect(auditContract).toContain("full-database scans are refused");
+
+    const convergenceScripts: string[] = [];
+    for (const file of await runtimeSources("scripts")) {
+      if ((await readFile(file, "utf8")).includes("snapshotConvergence")) {
+        convergenceScripts.push(file.replaceAll("\\", "/"));
+      }
+    }
+    expect(convergenceScripts).toEqual(["scripts/converge-cast-snapshots.ts"]);
+    const convergenceScript = await readFile(
+      new URL("../scripts/converge-cast-snapshots.ts", import.meta.url),
+      "utf8",
+    );
+    expect(convergenceScript).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
+    expect(convergenceScript).not.toMatch(
+      /storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
   });
 
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {
