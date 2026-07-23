@@ -87,14 +87,18 @@ vi.mock("./casting/aiService", async (importOriginal) => {
     ...actual,
     generateMasterPrompt: vi.fn().mockResolvedValue({ naturalDescription: "desc", technicalSchema: {} }),
     generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png", engineUsed: "test" }),
-    generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/fullbody/new.png", engineUsed: "test" }),
-    generateRemainingViews: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", engineUsed: "test" }),
+    generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/fullbody/new.png", storageKey: "fullbody/new.png", engineUsed: "test" }),
+    generateRemainingViews: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", storageKey: "view/new.png", engineUsed: "test" }),
     compactMasterPrompt: vi.fn(),
   };
 });
 vi.mock("./casting/backViewGate", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/backViewGate")>();
   return { ...actual, verifyViewIdentity: vi.fn().mockResolvedValue({ ok: true }) };
+});
+vi.mock("./storage", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./storage")>();
+  return { ...actual, storageDelete: vi.fn().mockResolvedValue({ success: true }) };
 });
 vi.mock("./casting/directOperation", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/directOperation")>();
@@ -153,6 +157,15 @@ vi.mock("./casting/snapshotTransitions", () => ({
     stateVersion: 2,
     selectedSlotCount: 2,
   })),
+  commitRefreshedSlotsSnapshot: vi.fn(async (input: { candidates: Array<{ angle: string; storageUrl: string }> }) => ({
+    result: {
+      refreshed: input.candidates.map((candidate, index) => ({
+        angle: candidate.angle,
+        imageUrl: candidate.storageUrl,
+        assetId: 700 + index,
+      })),
+    },
+  })),
   commitImageRefineSnapshot: vi.fn(async () => ({ result: { assetId: 501 } })),
   commitIteratedIdentitySnapshot: vi.fn(async () => ({
     result: {
@@ -179,6 +192,7 @@ import {
   deductCredits,
   addCredits,
   createGeneration,
+  updateGeneration,
 } from "./db";
 import {
   generateMasterPrompt,
@@ -187,11 +201,14 @@ import {
   compactMasterPrompt,
 } from "./casting/aiService";
 import { buildIdentityAnchor } from "./casting/geminiClient";
+import { verifyViewIdentity } from "./casting/backViewGate";
 import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPackage";
 import { executeRefreshSlots } from "./casting/refreshSlots";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
-import { commitDocumentCompactionSnapshot, commitHeadshotSnapshot, commitRestoredSlotSnapshot } from "./casting/snapshotTransitions";
+import { commitDocumentCompactionSnapshot, commitHeadshotSnapshot, commitRefreshedSlotsSnapshot, commitRestoredSlotSnapshot } from "./casting/snapshotTransitions";
+import { storageDelete } from "./storage";
+import { beginDirectOperation } from "./casting/directOperation";
 import { appRouter as productionRouter } from "./routers";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -248,19 +265,24 @@ beforeEach(() => {
     operationId: REQUEST_ID,
     chargeReferenceId: `op:${REQUEST_ID}:charge`,
   });
+  vi.mocked(beginDirectOperation).mockReset().mockResolvedValue({ type: "execute", operationId: REQUEST_ID });
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(addCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(createGeneration).mockClear().mockResolvedValue({ success: true, generationId: 11 } as never);
+  vi.mocked(updateGeneration).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(generateMasterPrompt).mockReset().mockResolvedValue({ naturalDescription: "desc", technicalSchema: {} } as never);
   vi.mocked(generateCastingImage).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png", engineUsed: "test" } as never);
-  vi.mocked(generateRemainingViews).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", engineUsed: "test" } as never);
+  vi.mocked(generateRemainingViews).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", storageKey: "view/new.png", engineUsed: "test" } as never);
+  vi.mocked(verifyViewIdentity).mockReset().mockResolvedValue({ ok: true, checked: true });
   vi.mocked(compactMasterPrompt).mockReset();
   vi.mocked(bootstrapModelSnapshot).mockClear();
   vi.mocked(commitHeadshotSnapshot).mockClear();
   vi.mocked(commitDocumentCompactionSnapshot).mockClear();
   vi.mocked(commitRestoredSlotSnapshot).mockClear();
+  vi.mocked(commitRefreshedSlotsSnapshot).mockClear();
+  vi.mocked(storageDelete).mockClear().mockResolvedValue({ success: true });
   tx.reset();
 });
 
@@ -544,11 +566,173 @@ describe("executeRefreshSlots consumes the §7 anchor (M9)", () => {
       asset({ id: 2, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityRevisionId: "rev-3" } }),
       asset({ id: 1, viewType: "threeQuarter", storageUrl: "https://r2/tq.png", provenance: { identityRevisionId: "rev-3" } }),
     ] as never);
-    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"] });
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID });
     expect(res.refreshed).toHaveLength(1);
     expect(vi.mocked(generateRemainingViews).mock.calls[0][1]).toBe("https://r2/anchor.png");
-    const prov = (vi.mocked(createModelAsset).mock.calls[0][0] as { provenance: Record<string, unknown> }).provenance;
-    expect(prov.identityRevisionId).toBe("rev-3");
+    expect(commitRefreshedSlotsSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      modelId: 7,
+      operationId: REQUEST_ID,
+      candidates: [expect.objectContaining({
+        angle: "threeQuarter",
+        storageKey: "view/new.png",
+      })],
+    }));
+  });
+
+  it("deletes the rejected first upload before a gated-view retry succeeds", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-3" }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue([
+      asset({ id: 2, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityRevisionId: "rev-3" } }),
+      asset({ id: 1, viewType: "sideFull", storageUrl: "https://r2/walk.png", provenance: { identityRevisionId: "rev-3" } }),
+    ] as never);
+    vi.mocked(generateRemainingViews)
+      .mockResolvedValueOnce({ imageUrl: "https://pub-test.r2.dev/view/rejected.png", storageKey: "view/rejected.png", engineUsed: "test" } as never)
+      .mockResolvedValueOnce({ imageUrl: "https://pub-test.r2.dev/view/accepted.png", storageKey: "view/accepted.png", engineUsed: "test" } as never);
+    vi.mocked(verifyViewIdentity)
+      .mockResolvedValueOnce({ ok: false, checked: true })
+      .mockResolvedValueOnce({ ok: true, checked: true });
+
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["sideFull"], operationId: REQUEST_ID });
+
+    expect(res.refreshed).toHaveLength(1);
+    expect(storageDelete).toHaveBeenCalledTimes(1);
+    expect(storageDelete).toHaveBeenCalledWith("view/rejected.png");
+    expect(commitRefreshedSlotsSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      candidates: [expect.objectContaining({ storageKey: "view/accepted.png" })],
+    }));
+  });
+
+  it("deletes both owned uploads and refunds once when a gated-view retry also fails", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-3" }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue([
+      asset({ id: 2, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityRevisionId: "rev-3" } }),
+      asset({ id: 1, viewType: "backFull", storageUrl: "https://r2/back.png", provenance: { identityRevisionId: "rev-3" } }),
+    ] as never);
+    vi.mocked(generateRemainingViews)
+      .mockResolvedValueOnce({ imageUrl: "https://pub-test.r2.dev/view/rejected-1.png", storageKey: "view/rejected-1.png", engineUsed: "test" } as never)
+      .mockResolvedValueOnce({ imageUrl: "https://pub-test.r2.dev/view/rejected-2.png", storageKey: "view/rejected-2.png", engineUsed: "test" } as never);
+    vi.mocked(verifyViewIdentity)
+      .mockResolvedValueOnce({ ok: false, checked: true })
+      .mockResolvedValueOnce({ ok: false, checked: true });
+
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["backFull"], operationId: REQUEST_ID });
+
+    expect(res.refreshed).toEqual([]);
+    expect(res.failed).toHaveLength(1);
+    expect(res.failed[0]).toMatchObject({ angle: "backFull", refunded: 300 });
+    expect(storageDelete).toHaveBeenCalledTimes(2);
+    expect(storageDelete).toHaveBeenNthCalledWith(1, "view/rejected-1.png");
+    expect(storageDelete).toHaveBeenNthCalledWith(2, "view/rejected-2.png");
+    expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
+    expect(addCredits).toHaveBeenCalledTimes(1);
+  });
+
+  it("cleans exact candidate keys and refunds when the atomic package settlement fails", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-3" }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue([
+      asset({ id: 2, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityRevisionId: "rev-3" } }),
+      asset({ id: 1, viewType: "threeQuarter", storageUrl: "https://r2/tq.png", provenance: { identityRevisionId: "rev-3" } }),
+    ] as never);
+    vi.mocked(commitRefreshedSlotsSnapshot).mockRejectedValueOnce(new Error("snapshot commit failed"));
+
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID });
+
+    expect(res.refreshed).toEqual([]);
+    expect(res.failed).toHaveLength(1);
+    expect(res.failed[0]).toMatchObject({ angle: "threeQuarter", refunded: 300 });
+    expect(storageDelete).toHaveBeenCalledWith("view/new.png");
+    expect(addCredits).toHaveBeenCalledTimes(1);
+    expect(updateGeneration).toHaveBeenCalledWith(11, expect.objectContaining({ status: "failed" }));
+  });
+
+  it("keeps a committed refresh when generation-audit completion throws", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-3" }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue([
+      asset({ id: 2, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityRevisionId: "rev-3" } }),
+      asset({ id: 1, viewType: "threeQuarter", storageUrl: "https://r2/tq.png", provenance: { identityRevisionId: "rev-3" } }),
+    ] as never);
+    vi.mocked(updateGeneration).mockRejectedValueOnce(new Error("audit unavailable"));
+
+    const res = await executeRefreshSlots({ userId: 1, modelId: 7, angles: ["threeQuarter"], operationId: REQUEST_ID });
+
+    expect(res.refreshed).toHaveLength(1);
+    expect(res.failed).toEqual([]);
+    expect(storageDelete).not.toHaveBeenCalled();
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+});
+
+describe("generation.refreshSlots snapshot adoption", () => {
+  const staleRefreshAssets = () => [
+    asset({ id: 2, storageUrl: "https://r2/anchor.png", provenance: { identityRole: "anchor", identityRevisionId: "rev-3" } }),
+    asset({
+      id: 1,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/tq.png",
+      provenance: { identityRevisionId: "rev-2" },
+      status: { state: "stale", reason: "identity_changed" },
+    }),
+  ];
+
+  it("bootstraps before the running receipt, provider work and atomic refresh commit", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-3" }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue(staleRefreshAssets() as never);
+    const caller = productionRouter.createCaller(authCtx());
+
+    const result = await caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["threeQuarter"],
+    });
+
+    expect(result.refreshed).toHaveLength(1);
+    expect(bootstrapModelSnapshot).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
+    expect(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(generateRemainingViews).mock.invocationCallOrder[0]);
+    expect(vi.mocked(generateRemainingViews).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(commitRefreshedSlotsSnapshot).mock.invocationCallOrder[0]);
+  });
+
+  it("a headless Cast seals before a running receipt, credits, provider or transition", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-3" }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue(staleRefreshAssets() as never);
+    vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["threeQuarter"],
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("headshot") });
+
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("a successful replay bypasses bootstrap and all paid refresh work", async () => {
+    vi.mocked(beginDirectOperation).mockResolvedValueOnce({
+      type: "replay",
+      result: { refreshed: [], failedAngles: [] },
+    } as never);
+    const caller = productionRouter.createCaller(authCtx());
+
+    const result = await caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["threeQuarter"],
+    });
+
+    expect(result).toMatchObject({ refreshed: [], failed: [] });
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
   });
 });
 

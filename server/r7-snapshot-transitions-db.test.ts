@@ -18,6 +18,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let commitImageRefineSnapshot: typeof import("./casting/snapshotTransitions").commitImageRefineSnapshot;
   let commitIteratedIdentitySnapshot: typeof import("./casting/snapshotTransitions").commitIteratedIdentitySnapshot;
   let commitCanvasRecastSnapshot: typeof import("./casting/snapshotTransitions").commitCanvasRecastSnapshot;
+  let commitRefreshedSlotsSnapshot: typeof import("./casting/snapshotTransitions").commitRefreshedSlotsSnapshot;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -36,6 +37,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       commitImageRefineSnapshot,
       commitIteratedIdentitySnapshot,
       commitCanvasRecastSnapshot,
+      commitRefreshedSlotsSnapshot,
     } = await import("./casting/snapshotTransitions"));
   });
 
@@ -123,7 +125,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   async function startModelOperation(
     userId: number,
     modelId: number,
-    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" | "casting.headshot" | "canvas.recast" = "casting.iterate",
+    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" | "casting.headshot" | "casting.refresh" | "canvas.recast" = "casting.iterate",
   ): Promise<string> {
     const claimed = await operations.claimGenerationOperation({
       userId,
@@ -571,6 +573,119 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     expect(Number(selectedHead.selectedAssetId)).toBe(anchorAssetId);
     expect(selectedHead.selectionReason).toBe("carried");
     expect(await count("model_identity_snapshots", "modelId = ?", [modelId])).toBe(1);
+  }, 60_000);
+
+  it("commits every successful refreshed view in one package snapshot", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const backAssetId = await addAsset({
+      modelId: base.modelId,
+      viewAngle: "backFull",
+      url: "https://example.invalid/back-old.png",
+    });
+    const converged = await bootstrapModelSnapshot({ userId, modelId: base.modelId });
+    if (converged.status === "headless") throw new Error("bootstrap unexpectedly headless");
+    const priorIdentitySnapshotId = converged.identitySnapshotId;
+    const operationId = await startModelOperation(userId, base.modelId, "casting.refresh");
+
+    const committed = await commitRefreshedSlotsSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      candidates: [
+        {
+          angle: "sideClose",
+          storageUrl: "https://example.invalid/side-refreshed.png",
+          storageKey: "casting/side-refreshed.png",
+          engine: "test-engine",
+          pointsCost: 300,
+        },
+        {
+          angle: "backFull",
+          storageUrl: "https://example.invalid/back-refreshed.png",
+          storageKey: "casting/back-refreshed.png",
+          engine: "test-engine",
+          pointsCost: 300,
+        },
+      ],
+    });
+
+    expect(committed.result.refreshed).toHaveLength(2);
+    expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(1);
+    const packageRow = await one(
+      "SELECT reason, identitySnapshotId FROM model_package_snapshots WHERE id = ?",
+      [committed.packageSnapshotId],
+    );
+    expect(packageRow.reason).toBe("slot_refresh");
+    expect(packageRow.identitySnapshotId).toBe(priorIdentitySnapshotId);
+    const [slots] = await connection.execute<RowDataPacket[]>(
+      `SELECT viewAngle, selectedAssetId, compatibility, selectionReason, sourceSelectionId
+       FROM model_package_snapshot_slots WHERE packageSnapshotId = ? ORDER BY viewAngle`,
+      [committed.packageSnapshotId],
+    );
+    const byAngle = Object.fromEntries(slots.map((row) => [row.viewAngle, row]));
+    expect(byAngle.frontClose.selectionReason).toBe("carried");
+    expect(Number(byAngle.frontClose.selectedAssetId)).toBe(base.anchorAssetId);
+    for (const angle of ["sideClose", "backFull"] as const) {
+      expect(byAngle[angle]).toMatchObject({ compatibility: "current", selectionReason: "refreshed" });
+      expect(Number(byAngle[angle].selectedAssetId)).not.toBe(angle === "sideClose" ? base.sideAssetId : backAssetId);
+      expect(byAngle[angle].sourceSelectionId).toBeTruthy();
+    }
+    const [assets] = await connection.execute<RowDataPacket[]>(
+      `SELECT viewType, storageKey, pointsCost, provenance FROM model_assets
+       WHERE id IN (?, ?) ORDER BY viewType`,
+      committed.result.refreshed.map((row) => row.assetId),
+    );
+    expect(assets).toHaveLength(2);
+    for (const row of assets) {
+      const provenance = typeof row.provenance === "string" ? JSON.parse(row.provenance) : row.provenance;
+      expect(row.storageKey).toMatch(/^casting\/(side|back)-refreshed\.png$/);
+      expect(Number(row.pointsCost)).toBe(300);
+      expect(provenance).toMatchObject({ source: "refresh", identityRole: "display", engine: "test-engine" });
+    }
+  }, 60_000);
+
+  it("rolls back every refreshed asset when one candidate cannot be persisted", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    await addAsset({ modelId: base.modelId, viewAngle: "backFull" });
+    await bootstrapModelSnapshot({ userId, modelId: base.modelId });
+    const operationId = await startModelOperation(userId, base.modelId, "casting.refresh");
+    const beforeAssets = await count("model_assets", "modelId = ?", [base.modelId]);
+    const beforePackages = await count("model_package_snapshots", "modelId = ?", [base.modelId]);
+    const beforeModel = await one(
+      "SELECT stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    );
+
+    await expect(commitRefreshedSlotsSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      candidates: [
+        {
+          angle: "sideClose",
+          storageUrl: "https://example.invalid/side-refreshed.png",
+          storageKey: "casting/side-refreshed.png",
+          pointsCost: 300,
+        },
+        {
+          angle: "backFull",
+          storageUrl: "https://example.invalid/back-refreshed.png",
+          storageKey: `casting/${"x".repeat(300)}.png`,
+          pointsCost: 300,
+        },
+      ],
+    })).rejects.toThrow();
+
+    expect(await count("model_assets", "modelId = ?", [base.modelId])).toBe(beforeAssets);
+    expect(await count("model_package_snapshots", "modelId = ?", [base.modelId])).toBe(beforePackages);
+    const afterModel = await one(
+      "SELECT stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    expect(Number(afterModel.stateVersion)).toBe(Number(beforeModel.stateVersion));
+    expect(afterModel.currentPackageSnapshotId).toBe(beforeModel.currentPackageSnapshotId);
   }, 60_000);
 
   it("commits an image-only refinement as one display asset and package selection", async () => {

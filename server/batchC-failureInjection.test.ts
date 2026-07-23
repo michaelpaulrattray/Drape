@@ -182,8 +182,8 @@ vi.mock("./casting/aiService", async (importOriginal) => {
     generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/x.png", storageKey: "casting/x.png", engineUsed: "test" }),
     generateCastingImageRaw: vi.fn().mockResolvedValue({ imageBase64: "data:image/png;base64,eA==", engineUsed: "test" }),
     uploadRawCandidate: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/gated.png", storageKey: "casting/gated.png" }),
-    generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/b.png", engineUsed: "test" }),
-    generateRemainingViews: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/v.png", engineUsed: "test" }),
+    generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/b.png", storageKey: "casting/b.png", engineUsed: "test" }),
+    generateRemainingViews: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/v.png", storageKey: "casting/v.png", engineUsed: "test" }),
     iterateModel: vi.fn().mockResolvedValue({
       imageUrl: "https://pub-test.r2.dev/i.png",
       storageKey: "iterate/i.png",
@@ -490,6 +490,7 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     // Refund recorded exactly once, under the slot's deterministic id
     expect(addCredits).toHaveBeenCalledTimes(1);
     expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("legacy-mint-7:slot:threeQuarter"));
+    expect(storageDelete).toHaveBeenCalledWith("casting/v.png");
     // The durable marker reflects the recorded refund
     const markerCall = vi.mocked(createModelAsset).mock.calls[1][0] as { status: { refunded: number } };
     expect(markerCall.status.refunded).toBe(res.failed[0].refunded);

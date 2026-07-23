@@ -3,9 +3,9 @@
  *
  * Refreshing a slot regenerates that ONE view against the model's CURRENT
  * headshot + identity text (the house pattern, shared with mint via
- * generatePackageSlot) and writes a NEW model_assets row — newest-wins, so
- * the read model picks it up with zero read-side changes and any stale
- * status clears by construction.
+ * generatePackageSlotCandidate) and commits the successful assets plus one
+ * package snapshot atomically. Legacy readers still see the same newest
+ * asset rows during the dual-write period.
  *
  * Structural refusals, enforced BEFORE any money moves (D-43/D-15):
  *  - `frontClose` is NEVER refreshable — the headshot IS the minted
@@ -24,11 +24,13 @@ import { TRPCError } from "@trpc/server";
 import { getModelById, getModelAssets, deductPoints } from "../db";
 import {
   computePackageSlots,
-  generatePackageSlot,
+  completePreparedPackageSlotAudit,
+  failPreparedPackageSlot,
+  generatePackageSlotCandidate,
   slotCost,
   type PackageSlot,
+  type PreparedPackageSlot,
   type SlotGenContext,
-  type SlotGenResult,
 } from "./mintPackage";
 import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTypes";
 // V8: refusal law lives in shared/refreshPolicy so the client's stale count
@@ -37,6 +39,7 @@ import { refreshRefusalFor, type RefreshRefusal } from "../../shared/refreshPoli
 import { assertNotArchived } from "./modelGuards";
 import { selectIdentityAnchor } from "./identity/anchorSelector";
 import { createModuleLogger } from "../logging/logger";
+import { commitRefreshedSlotsSnapshot } from "./snapshotTransitions";
 
 const log = createModuleLogger("casting/refreshSlots");
 
@@ -115,7 +118,7 @@ export async function executeRefreshSlots(input: {
   chargeReferenceId?: string;
   onCharged?: (amount: number) => void;
   onRefunded?: (amount: number) => void;
-  operationId?: string;
+  operationId: string;
 }): Promise<RefreshResult> {
   const { model, assets, slots } = await loadModelSlots(input);
 
@@ -153,9 +156,9 @@ export async function executeRefreshSlots(input: {
 
   // §7 (Batch C): refresh regenerates from the AUTHORITATIVE identity anchor
   // via the shared selector — never from a newer display-only headshot
-  // refinement. Outputs are stamped with the current revision inside
-  // generatePackageSlot, so a refresh is the resolution leg of every
-  // allowed identity edit.
+  // refinement. The atomic snapshot transition stamps every successful
+  // output with the current revision, so refresh remains the resolution leg
+  // of every allowed identity edit.
   const anchor = selectIdentityAnchor(assets);
   if (!anchor?.storageUrl) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no headshot to refresh against" });
@@ -184,16 +187,49 @@ export async function executeRefreshSlots(input: {
     onRefunded: input.onRefunded,
     operationId: input.operationId,
   };
-  // Parallel: the image queue caps concurrency; per-slot failures refund named
-  const results = await Promise.all(input.angles.map((angle) => generatePackageSlot(ctx, angle)));
-  const refreshed = results
-    .filter((r): r is Extract<SlotGenResult, { ok: true }> => r.ok)
-    .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl, assetId: r.assetId! }));
+  // Parallel provider/gate work; only successful owned candidates enter the
+  // one atomic asset + package-snapshot settlement below.
+  const results = await Promise.all(input.angles.map((angle) => generatePackageSlotCandidate(ctx, angle)));
+  const candidates = results.filter((r): r is PreparedPackageSlot => r.ok);
   const failed = results
-    .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
+    .filter((r): r is Exclude<(typeof results)[number], PreparedPackageSlot> => !r.ok)
     .map(({ angle, label, reason, refunded, refundReference, markerPersisted }) => ({
       angle, label, reason, refunded, refundReference, markerPersisted,
     }));
+  let refreshed: RefreshResult["refreshed"] = [];
+  if (candidates.length > 0) {
+    try {
+      const committed = await commitRefreshedSlotsSnapshot({
+        userId: input.userId,
+        modelId: input.modelId,
+        operationId: input.operationId,
+        candidates: candidates.map((candidate) => ({
+          angle: candidate.angle,
+          storageUrl: candidate.imageUrl,
+          storageKey: candidate.storageKey,
+          engine: candidate.engineUsed,
+          pointsCost: slotCost(candidate.angle),
+        })),
+      });
+      refreshed = committed.result.refreshed;
+    } catch (error) {
+      log.error(
+        { modelId: input.modelId, angles: candidates.map((candidate) => candidate.angle), error: error instanceof Error ? error.name : "unknown" },
+        "[RefreshSlots] atomic refresh settlement failed",
+      );
+      const settlementFailures = await Promise.all(candidates.map((candidate) => failPreparedPackageSlot(
+        ctx,
+        candidate,
+        `The ${VIEW_ANGLE_LABELS[candidate.angle].toLowerCase()} view generated but couldn't be saved`,
+      )));
+      failed.push(...settlementFailures);
+    }
+    if (refreshed.length > 0) {
+      // The snapshot commit is the durable boundary. Audit-row gaps are
+      // logged but can never delete/refund already-selected package assets.
+      await Promise.all(candidates.map((candidate) => completePreparedPackageSlotAudit(ctx, candidate)));
+    }
+  }
 
   log.info(
     { modelId: input.modelId, refreshed: refreshed.map((r) => r.angle), failed: failed.map((f) => f.angle) },

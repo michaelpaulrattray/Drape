@@ -130,6 +130,24 @@ describe("no raw newest-headshot selector bypasses the shared anchor selector (M
   });
 });
 
+describe("package generation preserves exact storage ownership", () => {
+  it.each([
+    ["generateFullBody", "export async function generateRemainingViews"],
+    ["generateRemainingViews", "export interface IterationGenerationOptions"],
+  ])("%s returns the persisted image and exact storage key", (functionName, endMarker) => {
+    const src = serverFile("casting/aiService.ts");
+    const start = src.indexOf(`export async function ${functionName}`);
+    const end = src.indexOf(endMarker, start + 1);
+    const block = src.slice(start, end);
+
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    expect(block).toContain("): Promise<PersistedGenerationResult>");
+    expect(block).toContain("uploadRawCandidate(");
+    expect(block).toContain("...uploaded");
+  });
+});
+
 describe("masked editing stays closed (M3)", () => {
   it("the server mask refusal remains before admission, charging, and generation", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");

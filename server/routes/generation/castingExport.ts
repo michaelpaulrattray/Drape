@@ -525,6 +525,13 @@ export const castingExportRouter = router({
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
         plan = await planRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
+        const snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        if (snapshotHead.status === "headless") {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This Cast needs a headshot before its views can be refreshed.",
+          });
+        }
       } catch (error) {
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }

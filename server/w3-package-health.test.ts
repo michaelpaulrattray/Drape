@@ -135,7 +135,7 @@ describe('W3 package-health wiring', () => {
     expect(history).toContain('restoreSlotVersion');
     expect(dialog).toContain('useCastingPackageRefresh');
     expect(refresh).toContain('refreshSlots.useMutation');
-    expect(read('server/casting/refreshSlots.ts')).toContain('assetId: r.assetId!');
+    expect(read('server/casting/refreshSlots.ts')).toContain('refreshed = committed.result.refreshed');
   });
 
   it('is reachable from the Studio strip and both mint hosts', () => {

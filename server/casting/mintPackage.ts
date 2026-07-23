@@ -60,6 +60,7 @@ import { computeMintIntegrity, type MintIntegrity } from "./identity/mintIntegri
 import { REFUSAL_COPY } from "./identity/refusalCopy";
 import { createModuleLogger } from "../logging/logger";
 import { commitRestoredSlotSnapshot } from "./snapshotTransitions";
+import { storageDelete } from "../storage";
 
 const log = createModuleLogger("casting/mintPackage");
 
@@ -157,17 +158,30 @@ export type SlotGenResult =
       markerPersisted: boolean;
     };
 
+export interface PreparedPackageSlot {
+  ok: true;
+  angle: CanonicalViewAngle;
+  imageUrl: string;
+  storageKey: string;
+  engineUsed?: string;
+  generationId: number;
+}
+
+export type PreparedPackageSlotResult = PreparedPackageSlot | Extract<SlotGenResult, { ok: false }>;
+
 /**
  * Generate ONE package slot — the house pattern, extracted so mint and
  * refresh can never drift: audit row → generate from the current headshot +
  * identity text → per-angle identity gate (back + walk, retry-then-refund)
- * → asset row with D-12 provenance (exact inputs + verbatim identityText).
- * Failures are NAMED-AND-REFUNDED and persist as durable marker rows.
+ * → owned candidate with its exact storage key. Failures are
+ * NAMED-AND-REFUNDED and persist as durable marker rows.
  * The caller has already deducted this slot's cost.
  */
-export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalViewAngle): Promise<SlotGenResult> {
+export async function generatePackageSlotCandidate(
+  ctx: SlotGenContext,
+  angle: CanonicalViewAngle,
+): Promise<PreparedPackageSlotResult> {
   const gender = (ctx.model.technicalSchema as { subject?: { sex?: string } })?.subject?.sex || "female";
-  const identityText = buildIdentityAnchor(ctx.model.masterPrompt, ctx.model.technicalSchema);
   const genRecord = await createGeneration({
     userId: ctx.userId,
     modelId: ctx.modelId,
@@ -185,6 +199,7 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
     log.error({ modelId: ctx.modelId, angle }, "[PackageSlot] createGeneration failed — slot fails before any image call");
     return await failSlot(ctx, angle, "The view couldn't start", null);
   }
+  let ownedCandidate: PreparedPackageSlot | null = null;
   try {
     const generate = () =>
       angle === "frontFull"
@@ -195,54 +210,40 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
         // refuses the identity anchor), hence the narrowing.
         : generateRemainingViews(ctx.model.masterPrompt, ctx.headshotUrl, gender, angle as SingleViewAngle, ctx.model.technicalSchema);
 
-    let result = await generate();
+    const prepareOwnedCandidate = (result: Awaited<ReturnType<typeof generate>>): PreparedPackageSlot => {
+      const storageKey = result.storageKey?.trim();
+      if (!storageKey) {
+        throw new PublicError(`The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view generated without an owned storage key`);
+      }
+      return {
+        ok: true,
+        angle,
+        imageUrl: result.imageUrl,
+        storageKey,
+        engineUsed: result.engineUsed,
+        generationId: genRecord.generationId!,
+      };
+    };
+    ownedCandidate = prepareOwnedCandidate(await generate());
 
     // Gated angles (back + walk, D-46) pass the identity gate — one auto-retry (D-39)
     if (isGatedAngle(angle)) {
-      const verdict = await verifyViewIdentity(ctx.headshotUrl, result.imageUrl, angle);
+      const verdict = await verifyViewIdentity(ctx.headshotUrl, ownedCandidate.imageUrl, angle);
       if (!verdict.ok) {
         log.warn({ modelId: ctx.modelId, angle }, "[PackageSlot] view failed the gate — retrying once");
-        result = await generate();
-        const second = await verifyViewIdentity(ctx.headshotUrl, result.imageUrl, angle);
+        await deletePreparedPackageSlot(ownedCandidate, ctx.modelId);
+        ownedCandidate = null;
+        ownedCandidate = prepareOwnedCandidate(await generate());
+        const second = await verifyViewIdentity(ctx.headshotUrl, ownedCandidate.imageUrl, angle);
         if (!second.ok) {
           throw new PublicError(`The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view could not match this identity (checked twice)`);
         }
       }
     }
 
-    const created = await createModelAsset({
-      modelId: ctx.modelId,
-      viewType: angle,
-      resolution: "1K",
-      storageUrl: result.imageUrl,
-      pointsCost: slotCost(angle),
-      provenance: {
-        inputs: [{ viewAngle: "frontClose", imageUrl: ctx.headshotUrl }],
-        engine: result.engineUsed,
-        ...(ctx.mintTier ? { mintTier: ctx.mintTier } : { source: "refresh" }),
-        // §7 (Batch C): ordinary view outputs are `display` role, stamped
-        // with the identity revision they generated under (M8/M9 ⊕); the
-        // verbatim identityText doubles as the D-12 fingerprint.
-        ...identityStampFor({
-          role: "display",
-          revisionId: currentRevisionId(ctx.model),
-          identityText,
-        }),
-      },
-    });
-    // Review finding 2: the asset row IS the slot's durable paid result — a
-    // failed write means the slot FAILED (refund + durable marker), never
-    // `{ ok:true, assetId:null }` that could carry a mint transition.
-    if (!created.success || !created.assetId) {
-      throw new PublicError(`The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view generated but couldn't be saved`);
-    }
-    const auditDone = await updateGeneration(genRecord.generationId, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
-    if (!auditDone.success) {
-      // The durable asset exists — an audit gap, never a slot failure/refund
-      log.error({ modelId: ctx.modelId, angle, generationId: genRecord.generationId }, "[PackageSlot] audit-row completion write failed — audit gap, slot stands");
-    }
-    return { ok: true, angle, imageUrl: result.imageUrl, assetId: created.assetId };
+    return ownedCandidate;
   } catch (error) {
+    if (ownedCandidate) await deletePreparedPackageSlot(ownedCandidate, ctx.modelId);
     // The slot reason is PUBLIC (persisted on the failed-slot marker, rendered
     // on ViewTabs/CastNode): deliberately written TRPCError/PublicError
     // wording passes through; raw internal error text never does (final
@@ -251,6 +252,93 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
     const reason = publicErrorMessage(error, "Generation failed");
     return await failSlot(ctx, angle, reason, genRecord.generationId ?? null);
   }
+}
+
+async function deletePreparedPackageSlot(candidate: PreparedPackageSlot, modelId: number): Promise<void> {
+  try {
+    const deleted = await storageDelete(candidate.storageKey);
+    if (!deleted.success) {
+      log.error(
+        { modelId, angle: candidate.angle, errorCode: deleted.errorCode, retryable: deleted.retryable },
+        "[PackageSlot] generated candidate cleanup failed",
+      );
+    }
+  } catch (error) {
+    log.error(
+      { modelId, angle: candidate.angle, error: error instanceof Error ? error.name : "unknown" },
+      "[PackageSlot] generated candidate cleanup threw",
+    );
+  }
+}
+
+export async function failPreparedPackageSlot(
+  ctx: SlotGenContext,
+  candidate: PreparedPackageSlot,
+  reason: string,
+): Promise<Extract<SlotGenResult, { ok: false }>> {
+  await deletePreparedPackageSlot(candidate, ctx.modelId);
+  return failSlot(ctx, candidate.angle, reason, candidate.generationId);
+}
+
+export async function completePreparedPackageSlotAudit(
+  ctx: Pick<SlotGenContext, "modelId">,
+  candidate: PreparedPackageSlot,
+): Promise<void> {
+  try {
+    const auditDone = await updateGeneration(candidate.generationId, {
+      status: "completed",
+      resultUrl: candidate.imageUrl,
+      completedAt: new Date(),
+    });
+    if (auditDone.success) return;
+    log.error(
+      { modelId: ctx.modelId, angle: candidate.angle, generationId: candidate.generationId },
+      "[PackageSlot] audit-row completion write failed — audit gap, slot stands",
+    );
+  } catch (error) {
+    log.error(
+      {
+        modelId: ctx.modelId,
+        angle: candidate.angle,
+        generationId: candidate.generationId,
+        error: error instanceof Error ? error.name : "unknown",
+      },
+      "[PackageSlot] audit-row completion write threw — audit gap, slot stands",
+    );
+  }
+}
+
+export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalViewAngle): Promise<SlotGenResult> {
+  const candidate = await generatePackageSlotCandidate(ctx, angle);
+  if (!candidate.ok) return candidate;
+  const identityText = buildIdentityAnchor(ctx.model.masterPrompt, ctx.model.technicalSchema);
+  const created = await createModelAsset({
+    modelId: ctx.modelId,
+    viewType: angle,
+    resolution: "1K",
+    storageUrl: candidate.imageUrl,
+    storageKey: candidate.storageKey,
+    pointsCost: slotCost(angle),
+    provenance: {
+      inputs: [{ viewAngle: "frontClose", imageUrl: ctx.headshotUrl }],
+      engine: candidate.engineUsed,
+      ...(ctx.mintTier ? { mintTier: ctx.mintTier } : { source: "refresh" }),
+      ...identityStampFor({
+        role: "display",
+        revisionId: currentRevisionId(ctx.model),
+        identityText,
+      }),
+    },
+  });
+  if (!created.success || !created.assetId) {
+    return failPreparedPackageSlot(
+      ctx,
+      candidate,
+      `The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view generated but couldn't be saved`,
+    );
+  }
+  await completePreparedPackageSlotAudit(ctx, candidate);
+  return { ok: true, angle, imageUrl: candidate.imageUrl, assetId: created.assetId };
 }
 
 /**

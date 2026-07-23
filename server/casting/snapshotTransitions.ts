@@ -748,6 +748,96 @@ interface GeneratedImageCandidate {
   pointsCost: number;
 }
 
+export interface RefreshedSlotCandidate extends GeneratedImageCandidate {
+  angle: CanonicalViewAngle;
+  storageKey: string;
+}
+
+/** Paid refresh settlement: all successful refreshed assets and the package
+ * selection that makes them current commit together. Provider/gate failures
+ * are settled before this boundary and never enter the snapshot. */
+export async function commitRefreshedSlotsSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  candidates: RefreshedSlotCandidate[];
+}): Promise<SnapshotTransitionResult<{
+  refreshed: Array<{ angle: CanonicalViewAngle; imageUrl: string; assetId: number }>;
+}>> {
+  if (input.candidates.length === 0) throw new Error("Refresh settlement requires at least one successful view");
+  const angles = new Set<CanonicalViewAngle>();
+  for (const candidate of input.candidates) {
+    assertGeneratedImageCandidate(candidate, "refreshed view");
+    if (candidate.angle === "frontClose") throw new Error("The identity anchor cannot be refreshed");
+    if (!candidate.storageKey.trim()) throw new Error("The refreshed view storage key is unavailable");
+    if (angles.has(candidate.angle)) throw new Error("A refreshed view appears more than once");
+    angles.add(candidate.angle);
+  }
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "casting.refresh",
+    mutate: async (tx, context) => {
+      if (!context.current) throw new Error("View refresh requires a bootstrapped snapshot head");
+      const [anchor] = await tx
+        .select()
+        .from(modelAssets)
+        .where(and(
+          eq(modelAssets.id, context.current.identitySnapshot.anchorAssetId),
+          eq(modelAssets.modelId, input.modelId),
+        ))
+        .limit(1);
+      if (!anchor?.storageUrl?.trim() || anchor.viewType !== "frontClose") {
+        throw new Error("The model identity snapshot anchor is invalid");
+      }
+      const identityText = buildIdentityAnchor(
+        context.model.masterPrompt || "",
+        context.model.technicalSchema ?? undefined,
+      );
+      const refreshed: Array<{
+        angle: CanonicalViewAngle;
+        imageUrl: string;
+        assetId: number;
+      }> = [];
+      const slotChanges: SnapshotSlotChange[] = [];
+      for (const candidate of input.candidates) {
+        const [inserted] = await tx.insert(modelAssets).values({
+          modelId: input.modelId,
+          viewType: candidate.angle,
+          resolution: "1K",
+          storageUrl: candidate.storageUrl,
+          storageKey: candidate.storageKey,
+          pointsCost: candidate.pointsCost,
+          pinned: false,
+          provenance: {
+            inputs: [{ viewAngle: "frontClose", imageUrl: anchor.storageUrl }],
+            ...(candidate.engine ? { engine: candidate.engine } : {}),
+            source: "refresh",
+            ...identityStampFor({
+              role: "display",
+              revisionId: currentRevisionId(context.model),
+              identityText,
+            }),
+          },
+        }).$returningId();
+        if (!inserted?.id) throw new Error(`The refreshed ${candidate.angle} view could not be saved`);
+        refreshed.push({ angle: candidate.angle, imageUrl: candidate.storageUrl, assetId: inserted.id });
+        slotChanges.push({
+          viewAngle: candidate.angle,
+          selectedAssetId: inserted.id,
+          compatibility: "current",
+          selectionReason: "refreshed",
+        });
+      }
+      return {
+        result: { refreshed },
+        transition: { packageReason: "slot_refresh", slotChanges },
+      };
+    },
+  });
+}
+
 const CANVAS_RECAST_IDENTITY_RECIPE_VERSION = "r7-canvas-recast-v1";
 const CANVAS_REROLL_RECIPE_VERSION = "r7-canvas-reroll-v1";
 

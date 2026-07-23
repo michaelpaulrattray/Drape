@@ -273,16 +273,16 @@ export async function generateFullBody(
   gender: string,
   technicalSchema?: any,
   bodyType?: string
-): Promise<GenerationResult> {
+): Promise<PersistedGenerationResult> {
   const headshotBase64 = await fetchImageAsBase64(headshotUrl);
 
   const base64Result = await gemini.generateFullBody(masterPrompt, headshotBase64, gender, technicalSchema, bodyType);
 
   // Upload base64 to S3 for persistent storage
-  const s3Url = await uploadBase64ToS3(base64Result, "fullbody");
+  const uploaded = await uploadRawCandidate(base64Result, "fullbody");
 
   return {
-    imageUrl: s3Url,
+    ...uploaded,
     engineUsed: IMAGE_PRO, // May be flash fallback but we don't track here
   };
 }
@@ -298,17 +298,17 @@ export async function generateRemainingViews(
   gender: string,
   viewType: SingleViewAngle,
   technicalSchema?: any
-): Promise<GenerationResult> {
+): Promise<PersistedGenerationResult> {
   const sourceBase64 = await fetchImageAsBase64(sourceImageUrl);
 
   // Use the new single view generation function
   const result = await gemini.generateSingleView(masterPrompt, sourceBase64, gender, viewType, technicalSchema);
 
   // Upload base64 to S3 for persistent storage
-  const s3Url = await uploadBase64ToS3(result.imageUrl, viewType);
+  const uploaded = await uploadRawCandidate(result.imageUrl, viewType);
 
   return {
-    imageUrl: s3Url,
+    ...uploaded,
     engineUsed: result.engineUsed,
   };
 }
