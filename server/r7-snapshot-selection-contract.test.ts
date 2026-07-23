@@ -151,7 +151,10 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       if (normalized.endsWith("/casting/snapshotShadow.ts")) continue;
       if ((await readFile(file, "utf8")).includes("snapshotShadow")) serverCallers.push(normalized);
     }
-    expect(serverCallers).toEqual(["server/casting/snapshotShadowAudit.ts"]);
+    expect(serverCallers).toEqual([
+      "server/casting/snapshotConsumerShadow.ts",
+      "server/casting/snapshotShadowAudit.ts",
+    ]);
 
     const scriptCallers: string[] = [];
     for (const file of await runtimeSources("scripts")) {
@@ -162,7 +165,11 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(scriptCallers).toEqual(["scripts/audit-cast-snapshot-parity.ts"]);
     const script = await readFile(new URL("../scripts/audit-cast-snapshot-parity.ts", import.meta.url), "utf8");
     const auditContract = await readFile(new URL("./casting/snapshotShadowAudit.ts", import.meta.url), "utf8");
+    const consumerShadow = await readFile(new URL("./casting/snapshotConsumerShadow.ts", import.meta.url), "utf8");
     expect(script).not.toMatch(/storage(Put|Delete|List)|deductPoints|withAtomicCredits|Gemini|generateContent/);
+    expect(consumerShadow).not.toMatch(
+      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
     expect(script).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
     expect(auditContract).toContain("full-database scans are refused");
   });

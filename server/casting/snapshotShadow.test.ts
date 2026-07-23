@@ -97,7 +97,12 @@ function parityState(): SnapshotShadowState {
       sealedPackageSnapshotId: null,
     },
     assets: [
-      asset({ id: 2, viewType: "sideClose", storageUrl: "https://secret.invalid/side.png" }),
+      asset({
+        id: 2,
+        viewType: "sideClose",
+        storageUrl: "https://secret.invalid/side.png",
+        provenance: { identityRevisionId: "genesis" },
+      }),
       asset({
         id: 1,
         viewType: "frontClose",
@@ -130,6 +135,11 @@ describe("R7-7A4 snapshot shadow comparator", () => {
     });
     expect(report.legacyIdentity.hash).toMatch(/^[a-f0-9]{64}$/);
     expect(report.legacyPackage.hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(Object.values(report.consumerParity).every((surface) => (
+      surface.parity
+      && /^[a-f0-9]{64}$/.test(surface.legacyHash ?? "")
+      && /^[a-f0-9]{64}$/.test(surface.snapshotHash ?? "")
+    ))).toBe(true);
     const serialized = JSON.stringify(report);
     expect(serialized).not.toContain("SECRET editorial identity");
     expect(serialized).not.toContain("secret.invalid");
@@ -178,8 +188,51 @@ describe("R7-7A4 snapshot shadow comparator", () => {
       "displayed_headshot",
       "slot_asset",
       "slot_compatibility",
+      "consumer_package_state",
+      "consumer_mint_plan",
+      "consumer_refresh_plan",
+      "consumer_export",
+      "consumer_board_library",
+      "consumer_models_registry",
     ]));
     expect(JSON.stringify(report)).not.toContain("drifted identity");
+  });
+
+  it("detects a mint-plan decision mismatch that structural selection parity alone cannot see", () => {
+    const state = parityState();
+    state.assets[0] = {
+      ...state.assets[0],
+      provenance: null,
+    };
+    const report = compareSnapshotShadowState(state);
+    expect(report.mismatchKinds).toEqual(["consumer_mint_plan"]);
+    expect(report.consumerParity.casting_mint_plan.parity).toBe(false);
+    expect(report.consumerParity.casting_package_state.parity).toBe(true);
+    expect(report.consumerParity.casting_refresh_plan.parity).toBe(true);
+  });
+
+  it("keeps pinned stale selections and unselected failure markers in consumer parity", () => {
+    const state = parityState();
+    state.assets[0] = {
+      ...state.assets[0],
+      pinned: true,
+      status: { state: "stale" },
+    };
+    state.currentSlots[1] = {
+      ...state.currentSlots[1],
+      compatibility: "stale",
+    };
+    state.assets.unshift(asset({
+      id: 9,
+      viewType: "backFull",
+      storageUrl: "",
+      storageKey: null,
+      status: { state: "failed", refunded: 300 },
+    }));
+    const report = compareSnapshotShadowState(state);
+    expect(report.parity).toBe(true);
+    expect(report.mismatchKinds).toEqual([]);
+    expect(Object.values(report.consumerParity).every((surface) => surface.parity)).toBe(true);
   });
 
   it("fails closed on invalid selections and incomplete minted seals", () => {

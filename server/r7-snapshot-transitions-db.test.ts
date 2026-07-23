@@ -178,7 +178,11 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   }> {
     const modelId = await createModel(userId);
     const anchorAssetId = await addAsset({ modelId, viewAngle: "frontClose", role: "anchor" });
-    const sideAssetId = await addAsset({ modelId, viewAngle: "sideClose" });
+    const sideAssetId = await addAsset({
+      modelId,
+      viewAngle: "sideClose",
+      revisionId: "genesis",
+    });
     const head = await bootstrapModelSnapshot({ userId, modelId });
     if (head.status === "headless") throw new Error("bootstrap unexpectedly headless");
     return {
@@ -258,7 +262,14 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     const report = await compareModelSnapshotShadow({ userId, modelId: base.modelId });
 
     expect(report.parity).toBe(false);
-    expect(report.mismatchKinds).toEqual(["identity_documents", "slot_asset"]);
+    expect(report.mismatchKinds).toEqual([
+      "identity_documents",
+      "slot_asset",
+      "consumer_package_state",
+      "consumer_mint_plan",
+      "consumer_export",
+      "consumer_models_registry",
+    ]);
     expect(report.legacyPackage.displayedHeadshotAssetId).toBe(base.anchorAssetId);
     expect(report.legacyPackage.hash).not.toBe(report.snapshotPackage.hash);
     expect(report.legacyIdentity.hash).not.toBe(report.snapshotIdentity.hash);
@@ -295,6 +306,11 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       "snapshot_selection_invalid",
       "seal_pointer_pair",
       "mint_seal_missing",
+      "consumer_package_state",
+      "consumer_mint_plan",
+      "consumer_refresh_plan",
+      "consumer_export",
+      "consumer_models_registry",
     ]);
     await expect(compareModelSnapshotShadow({
       userId: foreignUserId,

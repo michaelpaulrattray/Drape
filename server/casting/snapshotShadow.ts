@@ -25,6 +25,10 @@ import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { withTransaction, type TransactionHandle } from "../db/connection";
 import { deriveBootstrapState } from "./snapshotBootstrap";
 import { stableCanonicalJson } from "./operationContract";
+import {
+  compareSnapshotConsumers,
+  type SnapshotConsumerShadow,
+} from "./snapshotConsumerShadow";
 
 export const SNAPSHOT_SHADOW_MISMATCH_KINDS = [
   "snapshot_pointer_state",
@@ -49,6 +53,12 @@ export const SNAPSHOT_SHADOW_MISMATCH_KINDS = [
   "sealed_identity_missing",
   "sealed_identity_mismatch",
   "sealed_package_identity_mismatch",
+  "consumer_package_state",
+  "consumer_mint_plan",
+  "consumer_refresh_plan",
+  "consumer_export",
+  "consumer_board_library",
+  "consumer_models_registry",
 ] as const;
 
 export type SnapshotShadowMismatchKind = typeof SNAPSHOT_SHADOW_MISMATCH_KINDS[number];
@@ -91,6 +101,7 @@ export interface SnapshotShadowReport {
   snapshotIdentity: ShadowIdentitySummary;
   legacyPackage: ShadowPackageSummary;
   snapshotPackage: ShadowPackageSummary;
+  consumerParity: SnapshotConsumerShadow;
   mismatchKinds: SnapshotShadowMismatchKind[];
 }
 
@@ -177,6 +188,12 @@ const MISMATCH_SURFACES: Record<SnapshotShadowMismatchKind, readonly SnapshotSha
     "mint_seal",
   ],
   sealed_package_identity_mismatch: ["casting_export", "models_registry", "mint_seal"],
+  consumer_package_state: ["casting_package_state"],
+  consumer_mint_plan: ["casting_mint_plan"],
+  consumer_refresh_plan: ["casting_refresh_plan"],
+  consumer_export: ["casting_export"],
+  consumer_board_library: ["board_library"],
+  consumer_models_registry: ["models_registry"],
 };
 
 export function affectedSnapshotShadowSurfaces(
@@ -197,6 +214,7 @@ export interface SnapshotShadowState {
     | "masterPrompt"
     | "technicalSchema"
     | "preferences"
+    | "identityRevisionId"
     | "currentPackageSnapshotId"
     | "stateVersion"
     | "sealedIdentitySnapshotId"
@@ -372,6 +390,14 @@ export function compareSnapshotShadowState(input: SnapshotShadowState): Snapshot
     mismatch.add("sealed_package_identity_mismatch");
   }
 
+  const consumerParity = compareSnapshotConsumers(input);
+  if (!consumerParity.casting_package_state.parity) mismatch.add("consumer_package_state");
+  if (!consumerParity.casting_mint_plan.parity) mismatch.add("consumer_mint_plan");
+  if (!consumerParity.casting_refresh_plan.parity) mismatch.add("consumer_refresh_plan");
+  if (!consumerParity.casting_export.parity) mismatch.add("consumer_export");
+  if (!consumerParity.board_library.parity) mismatch.add("consumer_board_library");
+  if (!consumerParity.models_registry.parity) mismatch.add("consumer_models_registry");
+
   const legacyRows = derived?.slots ?? [];
   const snapshotRows = input.currentSlots.map((slot) => ({
     viewAngle: slot.viewAngle,
@@ -416,6 +442,7 @@ export function compareSnapshotShadowState(input: SnapshotShadowState): Snapshot
       displayedHeadshotAssetId: snapshotDisplayedHeadshotAssetId,
       selectedSlotCount: input.currentSlots.length,
     },
+    consumerParity,
     mismatchKinds,
   };
 }
