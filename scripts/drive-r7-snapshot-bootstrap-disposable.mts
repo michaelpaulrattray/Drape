@@ -29,6 +29,42 @@ async function applyMigrations(connection: mysql.Connection) {
   }
 }
 
+async function dropDisposableDatabase(input: {
+  serverUrl: URL;
+  databaseName: string;
+  safeName: RegExp;
+}) {
+  if (!input.safeName.test(input.databaseName)) {
+    throw new Error("Cleanup guard refused database name");
+  }
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    let cleanup: mysql.Connection | undefined;
+    try {
+      cleanup = await mysql.createConnection({
+        uri: input.serverUrl.toString(),
+        connectTimeout: 15_000,
+        enableKeepAlive: true,
+      });
+      await cleanup.query(`DROP DATABASE IF EXISTS \`${input.databaseName}\``);
+      console.log(`[disposable] dropped ${input.databaseName}`);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 5) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
+      }
+    } finally {
+      await cleanup?.end().catch(() => undefined);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Disposable database cleanup failed");
+}
+
 async function main() {
   const configured = process.env.DATABASE_URL;
   if (!configured) throw new Error("DATABASE_URL is required (development DB only)");
@@ -81,17 +117,10 @@ async function main() {
     console.log("[disposable] R7-7A bootstrap, transition, rollback and race gates passed");
   } finally {
     if (created) {
-      if (!safeName.test(databaseName)) throw new Error("Cleanup guard refused database name");
       // The Railway public proxy may close a connection while the multi-minute
       // DB suite runs. Cleanup must not depend on that original socket.
       await admin.end().catch(() => undefined);
-      const cleanup = await mysql.createConnection({ uri: serverUrl.toString(), connectTimeout: 15_000 });
-      try {
-        await cleanup.query(`DROP DATABASE IF EXISTS \`${databaseName}\``);
-        console.log(`[disposable] dropped ${databaseName}`);
-      } finally {
-        await cleanup.end();
-      }
+      await dropDisposableDatabase({ serverUrl, databaseName, safeName });
     } else {
       await admin.end();
     }

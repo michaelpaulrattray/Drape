@@ -144,6 +144,29 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       .toBeLessThan(modelDeletion.indexOf("delete(modelAssets)"));
   });
 
+  it("keeps the A4 shadow audit private, read-only and caller-bounded", async () => {
+    const serverCallers: string[] = [];
+    for (const file of await runtimeSources("server")) {
+      const normalized = file.replaceAll("\\", "/");
+      if (normalized.endsWith("/casting/snapshotShadow.ts")) continue;
+      if ((await readFile(file, "utf8")).includes("snapshotShadow")) serverCallers.push(normalized);
+    }
+    expect(serverCallers).toEqual(["server/casting/snapshotShadowAudit.ts"]);
+
+    const scriptCallers: string[] = [];
+    for (const file of await runtimeSources("scripts")) {
+      if ((await readFile(file, "utf8")).includes("snapshotShadow")) {
+        scriptCallers.push(file.replaceAll("\\", "/"));
+      }
+    }
+    expect(scriptCallers).toEqual(["scripts/audit-cast-snapshot-parity.ts"]);
+    const script = await readFile(new URL("../scripts/audit-cast-snapshot-parity.ts", import.meta.url), "utf8");
+    const auditContract = await readFile(new URL("./casting/snapshotShadowAudit.ts", import.meta.url), "utf8");
+    expect(script).not.toMatch(/storage(Put|Delete|List)|deductPoints|withAtomicCredits|Gemini|generateContent/);
+    expect(script).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
+    expect(auditContract).toContain("full-database scans are refused");
+  });
+
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));

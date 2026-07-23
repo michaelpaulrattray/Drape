@@ -7,7 +7,7 @@
  */
 import { createHash } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, type SQL } from "drizzle-orm";
 import {
   modelAssets,
   modelIdentitySnapshots,
@@ -53,6 +53,19 @@ export const SNAPSHOT_SHADOW_MISMATCH_KINDS = [
 
 export type SnapshotShadowMismatchKind = typeof SNAPSHOT_SHADOW_MISMATCH_KINDS[number];
 
+export const SNAPSHOT_SHADOW_SURFACES = [
+  "identity_profile",
+  "casting_package_state",
+  "casting_mint_plan",
+  "casting_refresh_plan",
+  "casting_export",
+  "board_library",
+  "models_registry",
+  "mint_seal",
+] as const;
+
+export type SnapshotShadowSurface = typeof SNAPSHOT_SHADOW_SURFACES[number];
+
 interface ShadowIdentitySummary {
   hash: string | null;
   anchorAssetId: number | null;
@@ -79,6 +92,101 @@ export interface SnapshotShadowReport {
   legacyPackage: ShadowPackageSummary;
   snapshotPackage: ShadowPackageSummary;
   mismatchKinds: SnapshotShadowMismatchKind[];
+}
+
+const ALL_SHADOW_SURFACES: readonly SnapshotShadowSurface[] = SNAPSHOT_SHADOW_SURFACES;
+
+const MISMATCH_SURFACES: Record<SnapshotShadowMismatchKind, readonly SnapshotShadowSurface[]> = {
+  snapshot_pointer_state: ALL_SHADOW_SURFACES,
+  snapshot_head_missing: ALL_SHADOW_SURFACES,
+  snapshot_head_unexpected: ALL_SHADOW_SURFACES,
+  current_package_missing: ALL_SHADOW_SURFACES,
+  current_identity_missing: ALL_SHADOW_SURFACES,
+  identity_documents: [
+    "identity_profile",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "models_registry",
+  ],
+  identity_text_hash: [
+    "identity_profile",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "models_registry",
+  ],
+  identity_anchor: [
+    "identity_profile",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "models_registry",
+  ],
+  displayed_headshot: [
+    "casting_package_state",
+    "casting_mint_plan",
+    "casting_export",
+    "board_library",
+    "models_registry",
+  ],
+  slot_missing_snapshot: [
+    "casting_package_state",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "board_library",
+    "models_registry",
+  ],
+  slot_missing_legacy: [
+    "casting_package_state",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "board_library",
+    "models_registry",
+  ],
+  slot_asset: [
+    "casting_package_state",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "board_library",
+    "models_registry",
+  ],
+  slot_compatibility: [
+    "casting_package_state",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "board_library",
+  ],
+  snapshot_selection_invalid: ALL_SHADOW_SURFACES,
+  snapshot_duplicate_selection: ALL_SHADOW_SURFACES,
+  seal_pointer_pair: ["casting_mint_plan", "casting_export", "models_registry", "mint_seal"],
+  mint_seal_missing: ["casting_mint_plan", "casting_export", "models_registry", "mint_seal"],
+  draft_seal_present: ["casting_mint_plan", "casting_export", "models_registry", "mint_seal"],
+  sealed_package_missing: ["casting_export", "models_registry", "mint_seal"],
+  sealed_identity_missing: ["casting_export", "models_registry", "mint_seal"],
+  sealed_identity_mismatch: [
+    "identity_profile",
+    "casting_mint_plan",
+    "casting_refresh_plan",
+    "casting_export",
+    "models_registry",
+    "mint_seal",
+  ],
+  sealed_package_identity_mismatch: ["casting_export", "models_registry", "mint_seal"],
+};
+
+export function affectedSnapshotShadowSurfaces(
+  report: Pick<SnapshotShadowReport, "mismatchKinds">,
+): SnapshotShadowSurface[] {
+  const affected = new Set<SnapshotShadowSurface>();
+  for (const mismatch of report.mismatchKinds) {
+    for (const surface of MISMATCH_SURFACES[mismatch]) affected.add(surface);
+  }
+  return SNAPSHOT_SHADOW_SURFACES.filter((surface) => affected.has(surface));
 }
 
 export interface SnapshotShadowState {
@@ -403,4 +511,45 @@ export async function compareModelSnapshotShadow(input: {
   return withTransaction(async (tx) => compareSnapshotShadowState(
     await readSnapshotShadowStateIn(tx, input),
   ));
+}
+
+/**
+ * Guarded cohort primitive for the read-only A4 audit script. A selector is
+ * mandatory so an accidental invocation cannot scan every Cast in a database.
+ * Every model in the cohort is compared inside the same consistent transaction.
+ */
+export async function compareSnapshotShadowCohort(input: {
+  userId?: number;
+  modelIds?: number[];
+}): Promise<SnapshotShadowReport[]> {
+  const modelIds = Array.from(new Set(input.modelIds ?? []))
+    .filter((id) => Number.isInteger(id) && id > 0)
+    .sort((a, b) => a - b);
+  if (!input.userId && modelIds.length === 0) {
+    throw new Error("A snapshot shadow cohort requires a user id or at least one model id");
+  }
+  if (input.userId !== undefined && (!Number.isInteger(input.userId) || input.userId <= 0)) {
+    throw new Error("Snapshot shadow cohort user id must be a positive integer");
+  }
+  return withTransaction(async (tx) => {
+    const filters: SQL[] = [
+      isNull(models.deletedAt),
+      ne(models.status, "archived"),
+    ];
+    if (input.userId !== undefined) filters.push(eq(models.userId, input.userId));
+    if (modelIds.length > 0) filters.push(inArray(models.id, modelIds));
+    const subjects = await tx
+      .select({ id: models.id, userId: models.userId })
+      .from(models)
+      .where(and(...filters))
+      .orderBy(models.id);
+    const reports: SnapshotShadowReport[] = [];
+    for (const subject of subjects) {
+      reports.push(compareSnapshotShadowState(await readSnapshotShadowStateIn(tx, {
+        userId: subject.userId,
+        modelId: subject.id,
+      })));
+    }
+    return reports;
+  });
 }

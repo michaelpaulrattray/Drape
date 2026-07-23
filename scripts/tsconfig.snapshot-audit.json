@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["./audit-cast-snapshot-parity.ts"],
+  "exclude": ["../node_modules", "../build", "../dist", "../**/*.test.ts"],
+  "compilerOptions": {
+    "incremental": false,
+    "noEmit": true
+  }
+}

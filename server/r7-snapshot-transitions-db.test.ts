@@ -12,6 +12,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let operations: typeof import("./db/generationOperations");
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
   let compareModelSnapshotShadow: typeof import("./casting/snapshotShadow").compareModelSnapshotShadow;
+  let compareSnapshotShadowCohort: typeof import("./casting/snapshotShadow").compareSnapshotShadowCohort;
   let commitModelSnapshotTransition: typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
   let commitDocumentCompactionSnapshot: typeof import("./casting/snapshotTransitions").commitDocumentCompactionSnapshot;
   let commitRestoredSlotSnapshot: typeof import("./casting/snapshotTransitions").commitRestoredSlotSnapshot;
@@ -28,10 +29,14 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       throw new Error("R7-7A3 DB tests require the guarded snapshot disposable database");
     }
     process.env.DATABASE_URL = testDatabaseUrl!;
-    connection = await mysql.createConnection(testDatabaseUrl!);
+    connection = await mysql.createConnection({
+      uri: testDatabaseUrl!,
+      connectTimeout: 15_000,
+      enableKeepAlive: true,
+    });
     operations = await import("./db/generationOperations");
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
-    ({ compareModelSnapshotShadow } = await import("./casting/snapshotShadow"));
+    ({ compareModelSnapshotShadow, compareSnapshotShadowCohort } = await import("./casting/snapshotShadow"));
     ({
       commitModelSnapshotTransition,
       commitDocumentCompactionSnapshot,
@@ -46,6 +51,12 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   });
 
   beforeEach(async () => {
+    await connection?.end().catch(() => undefined);
+    connection = await mysql.createConnection({
+      uri: testDatabaseUrl!,
+      connectTimeout: 15_000,
+      enableKeepAlive: true,
+    });
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
     for (const table of [
       "generation_operation_locks",
@@ -65,7 +76,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   }, 60_000);
 
   afterAll(async () => {
-    await connection?.end();
+    await connection?.end().catch(() => undefined);
     const db = await (await import("./db/connection")).getDb();
     if (db && typeof (db as { $client?: { end?: () => Promise<void> } }).$client?.end === "function") {
       await (db as { $client: { end: () => Promise<void> } }).$client.end();
@@ -289,6 +300,30 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId: foreignUserId,
       modelId: base.modelId,
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  }, 60_000);
+
+  it("bounds cohort scans by user/model selectors and excludes archived or tombstoned Casts", async () => {
+    const firstUserId = await createUser();
+    const first = await createBootstrappedModel(firstUserId);
+    const second = await createBootstrappedModel(firstUserId);
+    const deleted = await createBootstrappedModel(firstUserId);
+    const otherUserId = await createUser();
+    const other = await createBootstrappedModel(otherUserId);
+    await connection.execute("UPDATE models SET status = 'archived' WHERE id = ?", [second.modelId]);
+    await connection.execute("UPDATE models SET deletedAt = NOW(3) WHERE id = ?", [deleted.modelId]);
+
+    await expect(compareSnapshotShadowCohort({})).rejects.toThrow(
+      "requires a user id or at least one model id",
+    );
+    expect((await compareSnapshotShadowCohort({ userId: firstUserId }))
+      .map((item) => item.modelId)).toEqual([first.modelId]);
+    expect((await compareSnapshotShadowCohort({
+      modelIds: [other.modelId, first.modelId, other.modelId],
+    })).map((item) => item.modelId)).toEqual([first.modelId, other.modelId]);
+    expect((await compareSnapshotShadowCohort({
+      userId: firstUserId,
+      modelIds: [first.modelId, other.modelId],
+    })).map((item) => item.modelId)).toEqual([first.modelId]);
   }, 60_000);
 
   it("creates the first headshot and initial identity/package snapshots atomically", async () => {
