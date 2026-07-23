@@ -139,7 +139,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       .toBeLessThan(modelDeletion.indexOf("delete(modelAssets)"));
   });
 
-  it("allows only the reviewed compact-prompt and slot-restore runtime adopters", async () => {
+  it("allows only the reviewed compact, restore, iterate and headshot runtime adopters", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));
     const callers: string[] = [];
@@ -149,6 +149,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     }
     expect(callers).toEqual([
       "server/casting/mintPackage.ts",
+      "server/routes/generation/castingImaging.ts",
       "server/routes/generation/castingRefinement.ts",
     ]);
   });

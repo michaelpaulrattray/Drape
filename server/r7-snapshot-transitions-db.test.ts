@@ -14,6 +14,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let commitModelSnapshotTransition: typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
   let commitDocumentCompactionSnapshot: typeof import("./casting/snapshotTransitions").commitDocumentCompactionSnapshot;
   let commitRestoredSlotSnapshot: typeof import("./casting/snapshotTransitions").commitRestoredSlotSnapshot;
+  let commitHeadshotSnapshot: typeof import("./casting/snapshotTransitions").commitHeadshotSnapshot;
   let commitImageRefineSnapshot: typeof import("./casting/snapshotTransitions").commitImageRefineSnapshot;
   let commitIteratedIdentitySnapshot: typeof import("./casting/snapshotTransitions").commitIteratedIdentitySnapshot;
 
@@ -30,6 +31,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       commitModelSnapshotTransition,
       commitDocumentCompactionSnapshot,
       commitRestoredSlotSnapshot,
+      commitHeadshotSnapshot,
       commitImageRefineSnapshot,
       commitIteratedIdentitySnapshot,
     } = await import("./casting/snapshotTransitions"));
@@ -111,7 +113,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   async function startModelOperation(
     userId: number,
     modelId: number,
-    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" = "casting.iterate",
+    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" | "casting.headshot" = "casting.iterate",
   ): Promise<string> {
     const claimed = await operations.claimGenerationOperation({
       userId,
@@ -160,6 +162,106 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       packageSnapshotId: head.packageSnapshotId,
     };
   }
+
+  it("creates the first headshot and initial identity/package snapshots atomically", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    const operationId = await startModelOperation(userId, modelId, "casting.headshot");
+
+    const committed = await commitHeadshotSnapshot({
+      userId,
+      modelId,
+      operationId,
+      candidate: {
+        storageUrl: "https://example.invalid/first-headshot.png",
+        storageKey: "casting/first-headshot.png",
+        pointsCost: 350,
+        engine: "test-engine",
+      },
+    });
+
+    expect(committed.result).toMatchObject({
+      isReRoll: false,
+      identityRevisionId: "genesis",
+      staledAssetIds: [],
+    });
+    expect(await count("model_assets", "modelId = ?", [modelId])).toBe(1);
+    expect(await count("model_identity_snapshots", "modelId = ? AND reason = 'create'", [modelId])).toBe(1);
+    expect(await count("model_package_snapshots", "modelId = ? AND reason = 'create'", [modelId])).toBe(1);
+    const assetRow = await one(
+      "SELECT storageKey, provenance FROM model_assets WHERE id = ?",
+      [committed.result.assetId],
+    );
+    const provenance = typeof assetRow.provenance === "string"
+      ? JSON.parse(assetRow.provenance)
+      : assetRow.provenance;
+    expect(assetRow.storageKey).toBe("casting/first-headshot.png");
+    expect(provenance).toMatchObject({
+      identityRole: "anchor",
+      identityRevisionId: "genesis",
+      engine: "test-engine",
+    });
+    const modelRow = await one(
+      "SELECT stateVersion, currentPackageSnapshotId, identityRevisionId FROM models WHERE id = ?",
+      [modelId],
+    );
+    expect(Number(modelRow.stateVersion)).toBe(1);
+    expect(modelRow.currentPackageSnapshotId).toBe(committed.packageSnapshotId);
+    expect(modelRow.identityRevisionId).toBeNull();
+  });
+
+  it("re-rolls a draft headshot with a new revision and stale-all package truth", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    await connection.execute("UPDATE model_assets SET pinned = 1 WHERE id = ?", [base.sideAssetId]);
+    const backAssetId = await addAsset({ modelId: base.modelId, viewAngle: "backFull" });
+    // Converge the just-added legacy view before the receipt captures truth.
+    await bootstrapModelSnapshot({ userId, modelId: base.modelId });
+    const operationId = await startModelOperation(userId, base.modelId, "casting.headshot");
+
+    const committed = await commitHeadshotSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      candidate: {
+        storageUrl: "https://example.invalid/rerolled-headshot.png",
+        storageKey: "casting/rerolled-headshot.png",
+        pointsCost: 350,
+        engine: "test-engine",
+      },
+    });
+
+    expect(committed.result.isReRoll).toBe(true);
+    expect(committed.result.identityRevisionId).toMatch(/^rev-/);
+    expect(new Set(committed.result.staledAssetIds)).toEqual(new Set([base.sideAssetId, backAssetId]));
+    const staleRows = await connection.execute<RowDataPacket[]>(
+      "SELECT id, pinned, status FROM model_assets WHERE id IN (?, ?) ORDER BY id",
+      [base.sideAssetId, backAssetId],
+    );
+    expect(staleRows[0]).toHaveLength(2);
+    for (const row of staleRows[0]) {
+      const status = typeof row.status === "string" ? JSON.parse(row.status) : row.status;
+      expect(status?.state).toBe("stale");
+    }
+    expect(Number(staleRows[0].find((row) => Number(row.id) === base.sideAssetId)?.pinned)).toBe(1);
+    expect(await count("model_identity_snapshots", "modelId = ? AND reason = 'anchor_reroll'", [base.modelId])).toBe(1);
+    expect(await count("model_package_snapshots", "modelId = ? AND reason = 'identity_change'", [base.modelId])).toBe(1);
+    const selected = await one(
+      `SELECT s.selectedAssetId, s.compatibility
+         FROM model_package_snapshot_slots s
+        WHERE s.packageSnapshotId = ? AND s.viewAngle = 'frontClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(Number(selected.selectedAssetId)).toBe(committed.result.assetId);
+    expect(selected.compatibility).toBe("current");
+    const carriedSide = await one(
+      `SELECT compatibility, selectionReason
+         FROM model_package_snapshot_slots
+        WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(carriedSide).toMatchObject({ compatibility: "stale", selectionReason: "carried" });
+  });
 
   it("appends a package state, copies unchanged slots and advances the head once", async () => {
     const userId = await createUser();

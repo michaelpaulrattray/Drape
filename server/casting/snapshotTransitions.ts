@@ -741,12 +741,131 @@ export async function commitRestoredSlotSnapshot(input: {
   });
 }
 
-interface IterationCandidate {
+interface GeneratedImageCandidate {
   storageUrl: string;
   storageKey?: string;
   engine?: string;
   pointsCost: number;
+}
+
+interface IterationCandidate extends GeneratedImageCandidate {
   targetAssetId: number;
+}
+
+function assertGeneratedImageCandidate(candidate: GeneratedImageCandidate, label: string): void {
+  if (!candidate.storageUrl.trim()) throw new Error(`The generated ${label} is unavailable`);
+  if (!Number.isInteger(candidate.pointsCost) || candidate.pointsCost < 0) {
+    throw new Error(`The ${label} cost is invalid`);
+  }
+}
+
+const HEADSHOT_CREATE_RECIPE_VERSION = "r7-headshot-create-v1";
+const HEADSHOT_REROLL_RECIPE_VERSION = "r7-headshot-reroll-v1";
+
+/** Paid headshot generation owns both lifecycle shapes:
+ *  - the first headshot creates the initial identity/package snapshot;
+ *  - a later draft re-roll advances the legacy revision, replaces the
+ *    anchor and stales every filled sibling, pinned included.
+ *
+ * Mode is derived from transaction-owned rows. The caller cannot label a
+ * re-roll as creation or weaken the stale-all rule. */
+export async function commitHeadshotSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  candidate: GeneratedImageCandidate & { storageKey: string };
+}): Promise<SnapshotTransitionResult<{
+  assetId: number;
+  isReRoll: boolean;
+  identityRevisionId: string;
+  staledAssetIds: number[];
+}>> {
+  assertGeneratedImageCandidate(input.candidate, "headshot");
+  if (!input.candidate.storageKey.trim()) throw new Error("The generated headshot storage key is unavailable");
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "casting.headshot",
+    mutate: async (tx, context) => {
+      if (context.model.status !== "draft") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `${context.model.name || "This model"} is minted — their headshot is their identity. Fork to explore a new face.`,
+        });
+      }
+      const assets = await tx
+        .select()
+        .from(modelAssets)
+        .where(eq(modelAssets.modelId, input.modelId))
+        .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+      const hasHeadshot = assets.some((asset) => asset.viewType === "frontClose" && !!asset.storageUrl?.trim());
+      if (hasHeadshot !== !!context.current) {
+        throw new Error("The headshot ledger and snapshot head disagree");
+      }
+
+      const identityText = buildIdentityAnchor(
+        context.model.masterPrompt || "",
+        context.model.technicalSchema ?? undefined,
+      );
+      const revisionId = hasHeadshot ? mintRevisionId() : currentRevisionId(context.model);
+      const staleIds = hasHeadshot ? selectStaleSiblingHeads(assets, "frontClose") : [];
+      if (hasHeadshot) {
+        const updated = await tx.update(models).set({ identityRevisionId: revisionId }).where(and(
+          eq(models.id, input.modelId),
+          eq(models.userId, input.userId),
+          eq(models.status, "draft"),
+          isNull(models.deletedAt),
+        ));
+        if (affectedRows(updated) !== 1) throw new Error("The draft identity is no longer available");
+      }
+
+      const [inserted] = await tx.insert(modelAssets).values({
+        modelId: input.modelId,
+        viewType: "frontClose",
+        resolution: "1K",
+        storageUrl: input.candidate.storageUrl,
+        storageKey: input.candidate.storageKey,
+        pointsCost: input.candidate.pointsCost,
+        pinned: false,
+        provenance: {
+          ...(input.candidate.engine ? { engine: input.candidate.engine } : {}),
+          ...identityStampFor({ role: "anchor", revisionId, identityText }),
+        },
+      }).$returningId();
+      if (!inserted?.id) throw new Error("The generated headshot could not be saved");
+      if (staleIds.length > 0) {
+        await tx.update(modelAssets)
+          .set({ status: { state: "stale", at: new Date().toISOString() } })
+          .where(inArray(modelAssets.id, staleIds));
+      }
+
+      return {
+        result: {
+          assetId: inserted.id,
+          isReRoll: hasHeadshot,
+          identityRevisionId: revisionId,
+          staledAssetIds: staleIds,
+        },
+        transition: {
+          packageReason: hasHeadshot ? "identity_change" : "create",
+          identity: {
+            reason: hasHeadshot ? "anchor_reroll" : "create",
+            anchorAssetId: inserted.id,
+            recipeVersion: hasHeadshot
+              ? HEADSHOT_REROLL_RECIPE_VERSION
+              : HEADSHOT_CREATE_RECIPE_VERSION,
+          },
+          slotChanges: [{
+            viewAngle: "frontClose",
+            selectedAssetId: inserted.id,
+            compatibility: "current",
+            selectionReason: "generated",
+          }],
+        },
+      };
+    },
+  });
 }
 
 async function selectedIterationTargetIn(
@@ -770,10 +889,7 @@ async function selectedIterationTargetIn(
 }
 
 function assertIterationCandidate(candidate: IterationCandidate): void {
-  if (!candidate.storageUrl.trim()) throw new Error("The generated iteration image is unavailable");
-  if (!Number.isInteger(candidate.pointsCost) || candidate.pointsCost < 0) {
-    throw new Error("The iteration cost is invalid");
-  }
+  assertGeneratedImageCandidate(candidate, "iteration image");
 }
 
 /** Paid image-only iteration: one legacy display asset plus one complete

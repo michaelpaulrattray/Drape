@@ -179,7 +179,7 @@ vi.mock("./casting/aiService", async (importOriginal) => {
   return {
     ...actual,
     generateMasterPrompt: vi.fn().mockResolvedValue({ naturalDescription: "desc", technicalSchema: {} }),
-    generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/x.png", engineUsed: "test" }),
+    generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/x.png", storageKey: "casting/x.png", engineUsed: "test" }),
     generateCastingImageRaw: vi.fn().mockResolvedValue({ imageBase64: "data:image/png;base64,eA==", engineUsed: "test" }),
     uploadRawCandidate: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/gated.png", storageKey: "casting/gated.png" }),
     generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/b.png", engineUsed: "test" }),
@@ -244,6 +244,26 @@ vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
   return {
     ...actual,
+    commitHeadshotSnapshot: vi.fn(async (input: any) => {
+      const db = await import("./db");
+      const created = await db.createModelAsset({
+        modelId: input.modelId,
+        viewType: "frontClose",
+        storageUrl: input.candidate.storageUrl,
+        storageKey: input.candidate.storageKey,
+        pointsCost: input.candidate.pointsCost,
+        provenance: { identityRole: "anchor", identityRevisionId: "genesis" },
+      });
+      if (!created.success || !created.assetId) throw new Error("insert failed");
+      return {
+        result: {
+          assetId: created.assetId,
+          isReRoll: false,
+          identityRevisionId: "genesis",
+          staledAssetIds: [],
+        },
+      };
+    }),
     commitImageRefineSnapshot: vi.fn(async (input: any) => {
       const db = await import("./db");
       const rows = await db.getModelAssets(input.modelId);
@@ -583,11 +603,17 @@ describe("generation.castingImage boundaries", () => {
   it("initial-cast asset write failure refunds once with honest copy", async () => {
     vi.mocked(getModelAssets).mockResolvedValue([] as never);
     vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
+    vi.mocked(generateCastingImage).mockResolvedValueOnce({
+      imageUrl: "https://pub-test.r2.dev/x.png",
+      storageKey: "casting/x.png",
+      engineUsed: "test",
+    } as never);
     const caller = appRouter.createCaller(authCtx());
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
       message: expect.stringContaining("refunded"),
     });
     expect(addCredits).toHaveBeenCalledTimes(1);
+    expect(storageDelete).toHaveBeenCalledWith("casting/x.png");
   });
 });
 

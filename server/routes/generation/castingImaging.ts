@@ -1,6 +1,6 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, getModelAssets, createModelAsset,
+  getModelById, getModelAssets,
   createGeneration, updateGeneration, markGenerationOperationRunning,
 } from "../../db";
 import { deductPoints } from "../../db";
@@ -16,11 +16,12 @@ import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rate
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
-import { buildIdentityAnchor } from "../../casting/geminiClient";
-import { currentRevisionId, identityStampFor } from "../../casting/identity/anchorSelector";
-import { commitAnchorReRoll } from "../../casting/identity/identityCommit";
+import { currentRevisionId } from "../../casting/identity/anchorSelector";
 import { createModuleLogger } from "../../logging/logger";
 import { modelOperationLockKey } from "../../casting/operationContract";
+import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
+import { commitHeadshotSnapshot } from "../../casting/snapshotTransitions";
+import { storageDelete } from "../../storage";
 import {
   beginDirectOperation,
   completeDirectOperationFailure,
@@ -97,7 +98,6 @@ export const castingImagingRouter = router({
       }
 
       let lockedModel;
-      let priorAssets;
       try {
         // Replays bypass admission controls: the work was already admitted
         // and must return its receipt without consuming another rate slot.
@@ -120,15 +120,18 @@ export const castingImagingRouter = router({
         }
         // Daily quota enforcement — prevent one user from exhausting Gemini RPD
         await enforceDailyQuota(ctx.user.id);
-        priorAssets = await getModelAssets(input.modelId);
       } catch (error) {
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
 
-      // R4 (ratified): a headshot RE-ROLL is an identity-changing anchor
-      // operation — resolved BEFORE money so the post-generation writes are
-      // deterministic. An empty draft (initial cast) flags nothing.
-      const isReRoll = priorAssets.some((a) => a.viewType === "frontClose" && a.storageUrl);
+      try {
+        // Existing headshots converge before the running receipt captures
+        // authority. A first headshot remains legitimately headless until
+        // the atomic create transition commits after generation.
+        await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
 
       const started = await markGenerationOperationRunning({
         userId: ctx.user.id,
@@ -199,6 +202,7 @@ export const castingImagingRouter = router({
       }
       const generationId = genResult.generationId;
       let durableSaved = false;
+      let uploadedStorageKey: string | undefined;
 
       try {
         // Generate image
@@ -229,54 +233,22 @@ export const castingImagingRouter = router({
             message: "No image generated",
           });
         }
+        uploadedStorageKey = result.storageKey;
 
         // Credits already deducted before generation - no need to deduct again
 
-        // §7 identity stamping (Batch C):
-        //  - INITIAL cast headshot ⇒ role `anchor` under the model's current
-        //    (genesis) revision — the anchor authority every consumer reads.
-        //  - RE-ROLL (R4 ratified) ⇒ an identity-changing anchor operation:
-        //    role `anchor`, a NEW identityRevisionId on the model row, and
-        //    stale flags on every filled sibling view, PINNED INCLUDED.
-        const identityText = buildIdentityAnchor(lockedModel.masterPrompt || "", lockedModel.technicalSchema ?? undefined);
-        const anchorValues = {
+        const committed = await commitHeadshotSnapshot({
+          userId: ctx.user.id,
           modelId: input.modelId,
-          viewType: "frontClose" as const,
-          resolution: "1K" as const,
-          storageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.castingImage,
-          provenance: {
-            engine: result.engineUsed,
-            // Initial cast: anchor under the model's current (genesis) revision
-            ...identityStampFor({ role: "anchor", revisionId: currentRevisionId(lockedModel), identityText }),
-          },
-        };
-
-        let assetResult: { success: boolean; assetId?: number };
-        if (isReRoll) {
-          // Atomic anchor change (shared R4 commit): new anchor row + new
-          // revision + stale flags land together or not at all (§8.6/9).
-          const reRoll = await commitAnchorReRoll({
-            modelId: input.modelId,
+          operationId: gate.operationId,
+          candidate: {
             storageUrl: result.imageUrl,
+            storageKey: result.storageKey,
             pointsCost: POINT_COSTS.castingImage,
             engine: result.engineUsed,
-            identityText,
-            assets: priorAssets,
-          });
-          assetResult = { success: true, assetId: reRoll.assetId };
-        } else {
-          assetResult = await createModelAsset(anchorValues);
-          // Review finding 2: the asset row IS the durable paid result — a
-          // failed write must never return success/assetId:undefined. Throw
-          // into the refund path below (which appends the refund TRUTH).
-          if (!assetResult.success || !assetResult.assetId) {
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "The headshot generated but couldn't be saved.",
-            });
-          }
-        }
+          },
+        });
+        const assetResult = { success: true, assetId: committed.result.assetId };
         durableSaved = true;
 
         // The durable result is saved. An audit-row failure past this point
@@ -292,7 +264,6 @@ export const castingImagingRouter = router({
             "[castingImage] audit-row completion write failed AFTER a saved headshot — audit gap, result stands",
           );
         }
-
         await completeDirectOperationSuccess({
           userId: ctx.user.id,
           operationId: gate.operationId,
@@ -303,7 +274,7 @@ export const castingImagingRouter = router({
           },
           chargedCredits,
           refundedCredits,
-          ...(!isReRoll && input.originBoardId && input.originItemId
+          ...(!committed.result.isReRoll && input.originBoardId && input.originItemId
             ? { landing: { status: "pending" as const } }
             : {}),
         });
@@ -321,6 +292,16 @@ export const castingImagingRouter = router({
         // The asset row is the durable paid result. Receipt finalization owns
         // recovery after this boundary; never refund a result that was saved.
         if (durableSaved) throw error;
+        if (uploadedStorageKey) {
+          try {
+            const deleted = await storageDelete(uploadedStorageKey);
+            if (!deleted.success) {
+              log.error({ modelId: input.modelId }, "[castingImage] uploaded candidate cleanup failed after commit rollback");
+            }
+          } catch (cleanupError) {
+            log.error({ err: cleanupError, modelId: input.modelId }, "[castingImage] uploaded candidate cleanup threw after commit rollback");
+          }
+        }
         // Refund credits on failure — everything inside the try precedes or
         // IS the durable-result write, so a refund here is always correct.
         // The outgoing message carries the refund TRUTH (final correction 1).

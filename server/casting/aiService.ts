@@ -55,7 +55,12 @@ export interface MasterPrompt {
 
 interface GenerationResult {
   imageUrl: string;
+  storageKey?: string;
   engineUsed?: string;
+}
+
+interface PersistedGenerationResult extends GenerationResult {
+  storageKey: string;
 }
 
 export interface RawGenerationResult {
@@ -244,16 +249,17 @@ export async function generateCastingImageRaw(
 export async function generateCastingImage(
   masterPrompt: string,
   options: CastingGenerationOptions = {},
-): Promise<GenerationResult> {
+): Promise<PersistedGenerationResult> {
   const result = await generateCastingImageRaw(masterPrompt, options);
 
   // Upload base64 to S3 for persistent storage
-  const s3Url = await uploadBase64ToS3(result.imageBase64, "casting");
+  const uploaded = await uploadRawCandidate(result.imageBase64, "casting");
 
-  log.info({ data: s3Url.substring(0, 80) + '...' }, '[aiService.generateCastingImage] Uploaded to S3:');
+  log.info({ data: uploaded.imageUrl.substring(0, 80) + '...' }, '[aiService.generateCastingImage] Uploaded to S3:');
 
   return {
-    imageUrl: s3Url,
+    imageUrl: uploaded.imageUrl,
+    storageKey: uploaded.storageKey,
     engineUsed: result.engineUsed,
   };
 }

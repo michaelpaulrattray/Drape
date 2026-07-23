@@ -86,7 +86,7 @@ vi.mock("./casting/aiService", async (importOriginal) => {
   return {
     ...actual,
     generateMasterPrompt: vi.fn().mockResolvedValue({ naturalDescription: "desc", technicalSchema: {} }),
-    generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", engineUsed: "test" }),
+    generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png", engineUsed: "test" }),
     generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/fullbody/new.png", engineUsed: "test" }),
     generateRemainingViews: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", engineUsed: "test" }),
     compactMasterPrompt: vi.fn(),
@@ -118,6 +118,19 @@ vi.mock("./casting/snapshotBootstrap", () => ({
   }),
 }));
 vi.mock("./casting/snapshotTransitions", () => ({
+  commitHeadshotSnapshot: vi.fn(async (input: { modelId: number }) => {
+    const db = await import("./db");
+    const assets = await db.getModelAssets(input.modelId);
+    const isReRoll = assets.some((row) => row.viewType === "frontClose" && !!row.storageUrl);
+    return {
+      result: {
+        assetId: 501,
+        isReRoll,
+        identityRevisionId: isReRoll ? "rev-next" : "genesis",
+        staledAssetIds: isReRoll ? assets.filter((row) => row.viewType !== "frontClose").map((row) => row.id) : [],
+      },
+    };
+  }),
   commitDocumentCompactionSnapshot: vi.fn(async (input: { compactedMasterPrompt: string }) => ({
     result: { masterPrompt: input.compactedMasterPrompt },
     modelId: 7,
@@ -178,7 +191,7 @@ import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPac
 import { executeRefreshSlots } from "./casting/refreshSlots";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
-import { commitDocumentCompactionSnapshot, commitRestoredSlotSnapshot } from "./casting/snapshotTransitions";
+import { commitDocumentCompactionSnapshot, commitHeadshotSnapshot, commitRestoredSlotSnapshot } from "./casting/snapshotTransitions";
 import { appRouter as productionRouter } from "./routers";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -241,10 +254,11 @@ beforeEach(() => {
   vi.mocked(addCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(createGeneration).mockClear().mockResolvedValue({ success: true, generationId: 11 } as never);
   vi.mocked(generateMasterPrompt).mockReset().mockResolvedValue({ naturalDescription: "desc", technicalSchema: {} } as never);
-  vi.mocked(generateCastingImage).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", engineUsed: "test" } as never);
+  vi.mocked(generateCastingImage).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png", engineUsed: "test" } as never);
   vi.mocked(generateRemainingViews).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", engineUsed: "test" } as never);
   vi.mocked(compactMasterPrompt).mockReset();
   vi.mocked(bootstrapModelSnapshot).mockClear();
+  vi.mocked(commitHeadshotSnapshot).mockClear();
   vi.mocked(commitDocumentCompactionSnapshot).mockClear();
   vi.mocked(commitRestoredSlotSnapshot).mockClear();
   tx.reset();
@@ -263,19 +277,31 @@ describe("generation.castingImage (M10)", () => {
     expect(generateCastingImage).not.toHaveBeenCalled();
   });
 
-  it("INITIAL headshot on an empty draft: anchor role + genesis revision, no stale flags, no re-roll tx", async () => {
+  it("INITIAL headshot on an empty draft delegates one exact-key atomic create transition", async () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.generation.castingImage({ modelId: 7 });
     expect(result.success).toBe(true);
-    expect(createModelAsset).toHaveBeenCalledTimes(1);
-    const row = vi.mocked(createModelAsset).mock.calls[0][0] as { provenance: Record<string, unknown> };
-    expect(row.provenance.identityRole).toBe("anchor");
-    expect(row.provenance.identityRevisionId).toBe("genesis");
-    expect(tx.assetInserts).toEqual([]); // no transactional re-roll path
-    expect(tx.staleUpdates).toEqual([]);
+    expect(bootstrapModelSnapshot).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(commitHeadshotSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      modelId: 7,
+      operationId: REQUEST_ID,
+      candidate: expect.objectContaining({
+        storageUrl: "https://pub-test.r2.dev/casting/new.png",
+        storageKey: "casting/new.png",
+        pointsCost: 350,
+      }),
+    }));
+    expect(vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
+    expect(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(generateCastingImage).mock.invocationCallOrder[0]);
+    expect(vi.mocked(generateCastingImage).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(commitHeadshotSnapshot).mock.invocationCallOrder[0]);
+    expect(createModelAsset).not.toHaveBeenCalled();
   });
 
-  it("RE-ROLL (R4): new anchor + NEW revision + stale flags PINNED INCLUDED, in one transaction", async () => {
+  it("RE-ROLL (R4) delegates to the same server-owned transition after bootstrap", async () => {
     vi.mocked(getModelAssets).mockResolvedValue([
       asset({ id: 1 }),
       asset({ id: 2, viewType: "sideClose", storageUrl: "https://r2/side.png", pinned: true }),
@@ -284,15 +310,21 @@ describe("generation.castingImage (M10)", () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.generation.castingImage({ modelId: 7 });
     expect(result.success).toBe(true);
-    // Everything landed inside the transaction
-    expect(tx.assetInserts).toHaveLength(1);
-    const anchorRow = tx.assetInserts[0] as { provenance: Record<string, unknown> };
-    expect(anchorRow.provenance.identityRole).toBe("anchor");
-    expect(String(anchorRow.provenance.identityRevisionId)).toMatch(/^rev-/);
-    expect(tx.modelUpdates).toHaveLength(1); // models.identityRevisionId
-    expect(String(tx.modelUpdates[0].identityRevisionId)).toMatch(/^rev-/);
-    expect(tx.staleUpdates).toHaveLength(1); // sideClose (pinned!) + frontFull staled together
-    expect(createModelAsset).not.toHaveBeenCalled(); // not the non-tx path
+    expect(commitHeadshotSnapshot).toHaveBeenCalledTimes(1);
+    expect(createModelAsset).not.toHaveBeenCalled();
+  });
+
+  it("snapshot bootstrap failure seals the claimed operation before receipt, credits, provider, or commit", async () => {
+    vi.mocked(bootstrapModelSnapshot).mockRejectedValueOnce(new Error("snapshot bootstrap failed"));
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.castingImage({ modelId: 7 }))
+      .rejects.toThrow("snapshot bootstrap failed");
+
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateCastingImage).not.toHaveBeenCalled();
+    expect(commitHeadshotSnapshot).not.toHaveBeenCalled();
   });
 
   it("guard-order regression: minted refuses before deduction", async () => {
