@@ -82,7 +82,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(after).toEqual(expected);
   });
 
-  it("allows snapshot authority only inside the bounded A2/A3 foundation services", async () => {
+  it("allows snapshot authority only inside the bounded A2/A3 services and the private A4 shadow reader", async () => {
     const files = (await Promise.all([
       runtimeSources("server"),
       runtimeSources("client/src"),
@@ -102,6 +102,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     const allowedAuthority = new Set([
       "server/casting/snapshotBootstrap.ts",
       "server/casting/finalCastDeletion.ts",
+      "server/casting/snapshotShadow.ts",
       "server/casting/snapshotTransitions.ts",
       "server/db/accountDeletion.ts",
       "server/db/generationOperations.ts",
@@ -115,6 +116,10 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       }
     }
     expect(hits).toEqual([]);
+
+    const shadowReader = await readFile(new URL("./casting/snapshotShadow.ts", import.meta.url), "utf8");
+    expect(shadowReader).not.toMatch(/\btx\s*\.\s*(insert|update|delete)\s*\(/);
+    expect(shadowReader).not.toMatch(/deductPoints|withAtomicCredits|storage(Put|Delete)|Gemini|generateContent/);
   });
 
   it("captures receipt expectations and removes snapshot rows at both erasure boundaries", async () => {

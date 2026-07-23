@@ -11,6 +11,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let connection: Connection;
   let operations: typeof import("./db/generationOperations");
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
+  let compareModelSnapshotShadow: typeof import("./casting/snapshotShadow").compareModelSnapshotShadow;
   let commitModelSnapshotTransition: typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
   let commitDocumentCompactionSnapshot: typeof import("./casting/snapshotTransitions").commitDocumentCompactionSnapshot;
   let commitRestoredSlotSnapshot: typeof import("./casting/snapshotTransitions").commitRestoredSlotSnapshot;
@@ -30,6 +31,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     connection = await mysql.createConnection(testDatabaseUrl!);
     operations = await import("./db/generationOperations");
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
+    ({ compareModelSnapshotShadow } = await import("./casting/snapshotShadow"));
     ({
       commitModelSnapshotTransition,
       commitDocumentCompactionSnapshot,
@@ -176,6 +178,118 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       packageSnapshotId: head.packageSnapshotId,
     };
   }
+
+  it("compares a converged head read-only without exposing identity or storage content", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const beforeModel = await one(
+      `SELECT stateVersion, currentPackageSnapshotId, sealedIdentitySnapshotId,
+        sealedPackageSnapshotId, masterPrompt, technicalSchema, preferences
+       FROM models WHERE id = ?`,
+      [base.modelId],
+    );
+    const beforeCounts = {
+      identities: await count("model_identity_snapshots", "modelId = ?", [base.modelId]),
+      packages: await count("model_package_snapshots", "modelId = ?", [base.modelId]),
+      slots: await count(
+        "model_package_snapshot_slots",
+        "packageSnapshotId = ?",
+        [base.packageSnapshotId],
+      ),
+      assets: await count("model_assets", "modelId = ?", [base.modelId]),
+    };
+
+    const report = await compareModelSnapshotShadow({ userId, modelId: base.modelId });
+
+    expect(report).toMatchObject({
+      modelId: base.modelId,
+      parity: true,
+      headState: "current",
+      stateVersion: 1,
+      currentPackageSnapshotId: base.packageSnapshotId,
+      currentIdentitySnapshotId: base.identitySnapshotId,
+      mismatchKinds: [],
+    });
+    expect(JSON.stringify(report)).not.toMatch(
+      /identity-v1|hairColor|example\.invalid|models\/|storageKey|masterPrompt|technicalSchema|preferences/,
+    );
+    expect(await one(
+      `SELECT stateVersion, currentPackageSnapshotId, sealedIdentitySnapshotId,
+        sealedPackageSnapshotId, masterPrompt, technicalSchema, preferences
+       FROM models WHERE id = ?`,
+      [base.modelId],
+    )).toEqual(beforeModel);
+    expect({
+      identities: await count("model_identity_snapshots", "modelId = ?", [base.modelId]),
+      packages: await count("model_package_snapshots", "modelId = ?", [base.modelId]),
+      slots: await count(
+        "model_package_snapshot_slots",
+        "packageSnapshotId = ?",
+        [base.packageSnapshotId],
+      ),
+      assets: await count("model_assets", "modelId = ?", [base.modelId]),
+    }).toEqual(beforeCounts);
+  }, 60_000);
+
+  it("reports legacy document and selected-slot drift using only bounded mismatch kinds and hashes", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    await connection.execute(
+      "UPDATE models SET masterPrompt = 'PRIVATE DRIFTED IDENTITY DOCUMENT' WHERE id = ?",
+      [base.modelId],
+    );
+    const newerSideId = await addAsset({
+      modelId: base.modelId,
+      viewAngle: "sideClose",
+      url: "https://example.invalid/private-newer-side.png",
+    });
+
+    const report = await compareModelSnapshotShadow({ userId, modelId: base.modelId });
+
+    expect(report.parity).toBe(false);
+    expect(report.mismatchKinds).toEqual(["identity_documents", "slot_asset"]);
+    expect(report.legacyPackage.displayedHeadshotAssetId).toBe(base.anchorAssetId);
+    expect(report.legacyPackage.hash).not.toBe(report.snapshotPackage.hash);
+    expect(report.legacyIdentity.hash).not.toBe(report.snapshotIdentity.hash);
+    expect(JSON.stringify(report)).not.toMatch(
+      /PRIVATE DRIFTED|private-newer-side|example\.invalid|storageKey|masterPrompt/,
+    );
+    expect(newerSideId).not.toBe(base.sideAssetId);
+  }, 60_000);
+
+  it("fails closed for cross-model selections, incomplete mint seals, and foreign owners", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const foreignUserId = await createUser();
+    const foreignModelId = await createModel(foreignUserId);
+    const foreignSideId = await addAsset({ modelId: foreignModelId, viewAngle: "sideClose" });
+    await connection.execute(
+      `UPDATE model_package_snapshot_slots
+       SET selectedAssetId = ?
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [foreignSideId, base.packageSnapshotId],
+    );
+    await connection.execute(
+      `UPDATE models
+       SET status = 'active', sealedIdentitySnapshotId = ?, sealedPackageSnapshotId = NULL
+       WHERE id = ?`,
+      [base.identitySnapshotId, base.modelId],
+    );
+
+    const report = await compareModelSnapshotShadow({ userId, modelId: base.modelId });
+
+    expect(report.parity).toBe(false);
+    expect(report.mismatchKinds).toEqual([
+      "slot_asset",
+      "snapshot_selection_invalid",
+      "seal_pointer_pair",
+      "mint_seal_missing",
+    ]);
+    await expect(compareModelSnapshotShadow({
+      userId: foreignUserId,
+      modelId: base.modelId,
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  }, 60_000);
 
   it("creates the first headshot and initial identity/package snapshots atomically", async () => {
     const userId = await createUser();
