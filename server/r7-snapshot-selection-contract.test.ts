@@ -100,6 +100,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "expectedPackageSnapshotId",
     ];
     const allowedAuthority = new Set([
+      "server/casting/effectiveCastState.ts",
       "server/casting/snapshotBootstrap.ts",
       "server/casting/finalCastDeletion.ts",
       "server/casting/snapshotShadow.ts",
@@ -120,6 +121,55 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     const shadowReader = await readFile(new URL("./casting/snapshotShadow.ts", import.meta.url), "utf8");
     expect(shadowReader).not.toMatch(/\btx\s*\.\s*(insert|update|delete)\s*\(/);
     expect(shadowReader).not.toMatch(/deductPoints|withAtomicCredits|storage(Put|Delete)|Gemini|generateContent/);
+  });
+
+  it("keeps the B1 effective resolver private, read-only and scope-server-owned", async () => {
+    const effectiveCallers: string[] = [];
+    const scopeCallers: string[] = [];
+    for (const file of await runtimeSources("server")) {
+      const normalized = file.replaceAll("\\", "/");
+      const content = await readFile(file, "utf8");
+      if (
+        !normalized.endsWith("/casting/effectiveCastState.ts")
+        && content.includes("effectiveCastState")
+      ) {
+        effectiveCallers.push(normalized);
+      }
+      if (
+        !normalized.endsWith("/casting/snapshotReadScope.ts")
+        && content.includes("snapshotReadScope")
+      ) {
+        scopeCallers.push(normalized);
+      }
+    }
+    expect(effectiveCallers).toEqual([]);
+    expect(scopeCallers).toEqual(["server/_core/env.ts"]);
+
+    const resolver = await readFile(
+      new URL("./casting/effectiveCastState.ts", import.meta.url),
+      "utf8",
+    );
+    const scope = await readFile(
+      new URL("./casting/snapshotReadScope.ts", import.meta.url),
+      "utf8",
+    );
+    expect(resolver).not.toMatch(/\btx\s*\.\s*(insert|update|delete)\s*\(/);
+    expect(resolver).not.toMatch(
+      /deductPoints|withAtomicCredits|storage(Put|Delete|List)|Gemini|generateContent|Slack/i,
+    );
+    expect(scope).not.toMatch(/client|localStorage|sessionStorage|window\./);
+    expect(scope).toContain('process.env[SNAPSHOT_READ_SCOPE_ENV]');
+    expect(scope).not.toMatch(/currentPackageSnapshotId|selectedAssetId|stateVersion/);
+
+    const driver = await readFile(
+      new URL("../scripts/drive-r7-7b1-effective-reader-disposable.mts", import.meta.url),
+      "utf8",
+    );
+    expect(driver).toContain('const PREFIX = "drape_r7_7b1_disposable_"');
+    expect(driver).toContain("Refusing disposable database work under a production app id");
+    expect(driver).toContain("configured development URL must target the railway MySQL database");
+    expect(driver).toContain("DROP DATABASE IF EXISTS");
+    expect(driver).not.toMatch(/storage(Put|Delete|List)|deductPoints|withAtomicCredits|Gemini|generateContent/i);
   });
 
   it("captures receipt expectations and removes snapshot rows at both erasure boundaries", async () => {

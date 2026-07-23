@@ -1,3 +1,5 @@
+import { parseSnapshotReadScope } from "../casting/snapshotReadScope";
+
 /**
  * Vars the server cannot run without. Each entry explains what breaks when
  * it is missing, because several of these fail silently at request time
@@ -45,6 +47,10 @@ export function validateEnv(): void {
         `Set them in .env at the repo root (see CLAUDE.md for the full list).`
     );
   }
+
+  // R7-7B is off by default. A malformed rollout scope must stop startup
+  // rather than partially or ambiguously enabling snapshot reads.
+  parseSnapshotReadScope(process.env.R7_SNAPSHOT_READ_SCOPE);
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {
     if (!process.env[key]) {

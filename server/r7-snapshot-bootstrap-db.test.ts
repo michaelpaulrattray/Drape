@@ -8,17 +8,21 @@ const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
 describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () => {
   let connection: Connection;
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
+  let resolveOwnedEffectiveCastState: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastState;
   let planSnapshotConvergence: typeof import("./casting/snapshotConvergence").planSnapshotConvergence;
   let convergeSnapshotCohort: typeof import("./casting/snapshotConvergence").convergeSnapshotCohort;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
-    if (!parsed.pathname.slice(1).startsWith("drape_r7_7a2_disposable_")) {
-      throw new Error("R7-7A2 DB tests require the guarded disposable database");
+    if (!/^(?:drape_r7_7a2_disposable_|drape_r7_7b1_disposable_)/.test(
+      parsed.pathname.slice(1),
+    )) {
+      throw new Error("Snapshot DB tests require a guarded disposable database");
     }
     process.env.DATABASE_URL = testDatabaseUrl!;
     connection = await mysql.createConnection(testDatabaseUrl!);
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
+    ({ resolveOwnedEffectiveCastState } = await import("./casting/effectiveCastState"));
     ({ planSnapshotConvergence, convergeSnapshotCohort } = await import("./casting/snapshotConvergence"));
   });
 
@@ -147,6 +151,65 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     });
     expect(await count("model_identity_snapshots")).toBe(1);
     expect(await count("model_package_snapshots")).toBe(1);
+  }, 60_000);
+
+  it("resolves a real bootstrapped head and preserves anchor/display separation", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    const anchorId = await addAsset({ modelId, role: "anchor" });
+    const displayId = await addAsset({ modelId, role: "display" });
+    await addAsset({ modelId, viewType: "sideClose" });
+    await bootstrapModelSnapshot({ userId, modelId });
+
+    const state = await resolveOwnedEffectiveCastState({ userId, modelId });
+    expect(state).toMatchObject({
+      authority: "snapshot",
+      status: "current",
+      stateVersion: 1,
+      anchor: { id: anchorId },
+      displayedHeadshot: { id: displayId },
+    });
+    expect(state.selectedViews.map((view) => view.angle)).toEqual([
+      "frontClose",
+      "sideClose",
+    ]);
+  }, 60_000);
+
+  it("refuses foreign ownership and a pointerless anchored Cast without writes", async () => {
+    const ownerId = await createUser("owner");
+    const strangerId = await createUser("stranger");
+    const modelId = await createModel(ownerId);
+    await addAsset({ modelId, role: "anchor" });
+
+    await expect(resolveOwnedEffectiveCastState({ userId: strangerId, modelId }))
+      .rejects.toMatchObject({ code: "model_not_found" });
+    await expect(resolveOwnedEffectiveCastState({ userId: ownerId, modelId }))
+      .rejects.toMatchObject({ code: "snapshot_head_missing" });
+    expect(await count("model_identity_snapshots", "modelId = ?", [modelId])).toBe(0);
+    expect(await count("model_package_snapshots", "modelId = ?", [modelId])).toBe(0);
+    expect(Number((await one("SELECT stateVersion FROM models WHERE id = ?", [modelId])).stateVersion))
+      .toBe(0);
+  }, 60_000);
+
+  it("refuses a cross-model selected asset through the transactional loader", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    await addAsset({ modelId, role: "anchor" });
+    await addAsset({ modelId, viewType: "sideClose" });
+    await bootstrapModelSnapshot({ userId, modelId });
+
+    const otherModelId = await createModel(userId);
+    const otherAssetId = await addAsset({ modelId: otherModelId, viewType: "sideClose" });
+    await connection.execute(
+      `UPDATE model_package_snapshot_slots
+       SET selectedAssetId = ?
+       WHERE packageSnapshotId = (SELECT currentPackageSnapshotId FROM models WHERE id = ?)
+         AND viewAngle = 'sideClose'`,
+      [otherAssetId, modelId],
+    );
+
+    await expect(resolveOwnedEffectiveCastState({ userId, modelId }))
+      .rejects.toMatchObject({ code: "slot_asset_invalid" });
   }, 60_000);
 
   it("converges package drift without inventing a new identity snapshot", async () => {
