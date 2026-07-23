@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import mysql, { type Connection, type ResultSetHeader, type RowDataPacket } from "mysql2/promise";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { modelAssets, models } from "../drizzle/schema";
+import { boardItems, boardItemVersions, modelAssets, models } from "../drizzle/schema";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
@@ -17,6 +17,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let commitHeadshotSnapshot: typeof import("./casting/snapshotTransitions").commitHeadshotSnapshot;
   let commitImageRefineSnapshot: typeof import("./casting/snapshotTransitions").commitImageRefineSnapshot;
   let commitIteratedIdentitySnapshot: typeof import("./casting/snapshotTransitions").commitIteratedIdentitySnapshot;
+  let commitCanvasRecastSnapshot: typeof import("./casting/snapshotTransitions").commitCanvasRecastSnapshot;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -34,6 +35,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       commitHeadshotSnapshot,
       commitImageRefineSnapshot,
       commitIteratedIdentitySnapshot,
+      commitCanvasRecastSnapshot,
     } = await import("./casting/snapshotTransitions"));
   });
 
@@ -47,6 +49,10 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       "model_identity_snapshots",
       "model_assets",
       "models",
+      "board_item_versions",
+      "board_edges",
+      "board_items",
+      "boards",
       "users",
     ]) await connection.query(`TRUNCATE TABLE \`${table}\``);
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
@@ -54,6 +60,10 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
 
   afterAll(async () => {
     await connection?.end();
+    const db = await (await import("./db/connection")).getDb();
+    if (db && typeof (db as { $client?: { end?: () => Promise<void> } }).$client?.end === "function") {
+      await (db as { $client: { end: () => Promise<void> } }).$client.end();
+    }
     delete process.env.DATABASE_URL;
   });
 
@@ -113,7 +123,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   async function startModelOperation(
     userId: number,
     modelId: number,
-    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" | "casting.headshot" = "casting.iterate",
+    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" | "casting.headshot" | "canvas.recast" = "casting.iterate",
   ): Promise<string> {
     const claimed = await operations.claimGenerationOperation({
       userId,
@@ -262,6 +272,154 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     );
     expect(carriedSide).toMatchObject({ compatibility: "stale", selectionReason: "carried" });
   });
+
+  it("commits a structured Canvas recast, stale-all snapshot and board landing atomically", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    await connection.execute("UPDATE model_assets SET pinned = 1 WHERE id = ?", [base.sideAssetId]);
+    const [board] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO boards (userId, name, startedWith) VALUES (?, 'Recast board', 'casting')",
+      [userId],
+    );
+    const [item] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO board_items
+        (boardId, type, kind, label, imageUrl, sourceModelId, metadata)
+       VALUES (?, 'model', 'cast_config', 'Cast', 'https://example.invalid/original.png', ?, JSON_OBJECT())`,
+      [board.insertId, base.modelId],
+    );
+    await connection.execute(
+      `INSERT INTO board_item_versions (itemId, version, imageUrl, tool)
+       VALUES (?, 1, 'https://example.invalid/original.png', 'initial')`,
+      [item.insertId],
+    );
+    const operationId = await startModelOperation(userId, base.modelId, "canvas.recast");
+
+    const committed = await commitCanvasRecastSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      patch: {
+        source: "structured",
+        edits: [{
+          kind: "leaf",
+          leaf: "person.face.jawline",
+          operation: "modify",
+          value: "Sharp / Chiseled",
+        }],
+      },
+      candidate: {
+        storageUrl: "https://example.invalid/canvas-recast.png",
+        storageKey: "casting/canvas-recast.png",
+        pointsCost: 350,
+        engine: "test-engine",
+      },
+      landing: async (tx) => {
+        await tx.update(boardItems).set({
+          imageUrl: "https://example.invalid/canvas-recast.png",
+          metadata: { version: 2, isGenerating: false },
+        }).where(eq(boardItems.id, item.insertId));
+        await tx.insert(boardItemVersions).values({
+          itemId: item.insertId,
+          version: 2,
+          imageUrl: "https://example.invalid/canvas-recast.png",
+          tool: "attributes",
+        });
+      },
+    });
+
+    expect(committed.result.identityRevisionId).toMatch(/^rev-/);
+    expect(committed.result.staledAssetIds).toContain(base.sideAssetId);
+    expect(await count("model_identity_snapshots", "modelId = ? AND reason = 'identity_edit'", [base.modelId])).toBe(1);
+    expect(await count("model_package_snapshots", "modelId = ? AND reason = 'identity_change'", [base.modelId])).toBe(1);
+    const modelRow = await one("SELECT masterPrompt, preferences, stateVersion FROM models WHERE id = ?", [base.modelId]);
+    const preferences = typeof modelRow.preferences === "string" ? JSON.parse(modelRow.preferences) : modelRow.preferences;
+    expect(preferences.jawline).toBe("Sharp / Chiseled");
+    expect(String(modelRow.masterPrompt)).toContain("Sharp / Chiseled");
+    expect(Number(modelRow.stateVersion)).toBe(2);
+    const assetRow = await one("SELECT storageKey, provenance FROM model_assets WHERE id = ?", [committed.result.assetId]);
+    const provenance = typeof assetRow.provenance === "string" ? JSON.parse(assetRow.provenance) : assetRow.provenance;
+    expect(assetRow.storageKey).toBe("casting/canvas-recast.png");
+    expect(provenance).toMatchObject({
+      identityRole: "anchor",
+      identityEditSource: "structured",
+      engine: "test-engine",
+    });
+    const itemRow = await one("SELECT imageUrl, metadata FROM board_items WHERE id = ?", [item.insertId]);
+    expect(itemRow.imageUrl).toBe("https://example.invalid/canvas-recast.png");
+    expect(await count("board_item_versions", "itemId = ?", [item.insertId])).toBe(2);
+    const stale = await one("SELECT pinned, status FROM model_assets WHERE id = ?", [base.sideAssetId]);
+    const staleStatus = typeof stale.status === "string" ? JSON.parse(stale.status) : stale.status;
+    expect(Number(stale.pinned)).toBe(1);
+    expect(staleStatus?.state).toBe("stale");
+  }, 60_000);
+
+  it("commits a Canvas reroll without changing documents", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const before = await one(
+      "SELECT masterPrompt, technicalSchema, preferences FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    const operationId = await startModelOperation(userId, base.modelId, "canvas.recast");
+    const committed = await commitCanvasRecastSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      patch: null,
+      candidate: {
+        storageUrl: "https://example.invalid/canvas-reroll.png",
+        storageKey: "casting/canvas-reroll.png",
+        pointsCost: 350,
+        engine: "test-engine",
+      },
+      landing: async () => undefined,
+    });
+    const after = await one(
+      "SELECT masterPrompt, technicalSchema, preferences FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    expect(after.masterPrompt).toBe(before.masterPrompt);
+    expect(JSON.stringify(after.technicalSchema)).toBe(JSON.stringify(before.technicalSchema));
+    expect(JSON.stringify(after.preferences)).toBe(JSON.stringify(before.preferences));
+    expect(await count("model_identity_snapshots", "modelId = ? AND reason = 'anchor_reroll'", [base.modelId])).toBe(1);
+    expect(await count("model_package_snapshots", "modelId = ? AND reason = 'identity_change'", [base.modelId])).toBe(1);
+    expect(committed.result.releasedDependents).toEqual([]);
+  }, 60_000);
+
+  it("rolls the Canvas landing and identity transition back together", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const beforeModel = await one(
+      "SELECT identityRevisionId, stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    const beforeAssets = await count("model_assets", "modelId = ?", [base.modelId]);
+    const beforeIdentities = await count("model_identity_snapshots", "modelId = ?", [base.modelId]);
+    const beforePackages = await count("model_package_snapshots", "modelId = ?", [base.modelId]);
+    const operationId = await startModelOperation(userId, base.modelId, "canvas.recast");
+
+    await expect(commitCanvasRecastSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      patch: null,
+      candidate: {
+        storageUrl: "https://example.invalid/rollback-reroll.png",
+        storageKey: "casting/rollback-reroll.png",
+        pointsCost: 350,
+      },
+      landing: async () => { throw new Error("board landing failed"); },
+    })).rejects.toThrow("board landing failed");
+
+    const afterModel = await one(
+      "SELECT identityRevisionId, stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    expect(afterModel).toMatchObject(beforeModel);
+    expect(await count("model_assets", "modelId = ?", [base.modelId])).toBe(beforeAssets);
+    expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(beforeIdentities);
+    expect(await count("model_package_snapshots", "modelId = ?", [base.modelId])).toBe(beforePackages);
+  }, 60_000);
 
   it("appends a package state, copies unchanged slots and advances the head once", async () => {
     const userId = await createUser();

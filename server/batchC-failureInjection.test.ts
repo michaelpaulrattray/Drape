@@ -298,6 +298,36 @@ vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
       });
       return { result };
     }),
+    commitCanvasRecastSnapshot: vi.fn(async (input: any) => {
+      const db = await import("./db");
+      const identity = await import("./casting/identity/identityCommit");
+      const gemini = await import("./casting/geminiClient");
+      const model = await db.getModelById(input.modelId);
+      const assets = await db.getModelAssets(input.modelId);
+      if (!model) throw new Error("model fixture missing");
+      const result = input.patch
+        ? await identity.commitIdentityEdit({
+            model,
+            patch: input.patch,
+            newAnchor: {
+              storageUrl: input.candidate.storageUrl,
+              pointsCost: input.candidate.pointsCost,
+              engine: input.candidate.engine,
+            },
+            assets,
+            landing: input.landing,
+          })
+        : await identity.commitAnchorReRoll({
+            modelId: input.modelId,
+            storageUrl: input.candidate.storageUrl,
+            pointsCost: input.candidate.pointsCost,
+            engine: input.candidate.engine,
+            identityText: gemini.buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined),
+            assets,
+            landing: input.landing,
+          });
+      return { result };
+    }),
   };
 });
 
@@ -764,6 +794,7 @@ describe("applyModelEdit boundaries", () => {
     expect(verifyIdentityEdit).not.toHaveBeenCalled();
     expect(generateCastingImageRaw).not.toHaveBeenCalled();
     expect(generateCastingImage).toHaveBeenCalledTimes(1);
+    expect(storageDelete).toHaveBeenCalledWith("casting/x.png");
   });
 
   it("RECAST (rerun, empty changes) is an anchor re-roll, not a 'nothing to change' refusal", async () => {

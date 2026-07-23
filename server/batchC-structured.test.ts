@@ -134,7 +134,7 @@ vi.mock("./casting/aiService", async (importOriginal) => {
   return {
     ...actual,
     generateMasterPrompt: vi.fn().mockResolvedValue({ naturalDescription: "new desc", technicalSchema: {} }),
-    generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", engineUsed: "test" }),
+    generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png", engineUsed: "test" }),
     generateCastingImageRaw: vi.fn().mockResolvedValue({ imageBase64: "data:image/png;base64,bmV3", engineUsed: "test" }),
     uploadRawCandidate: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png" }),
   };
@@ -142,6 +142,19 @@ vi.mock("./casting/aiService", async (importOriginal) => {
 vi.mock("./casting/promptParser", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/promptParser")>();
   return { ...actual, parseCastingPrompt: vi.fn().mockResolvedValue({}) };
+});
+vi.mock("./casting/snapshotBootstrap", () => ({
+  bootstrapModelSnapshot: vi.fn().mockResolvedValue({
+    status: "current",
+    modelId: 7,
+    packageSnapshotId: "pkg-current",
+    identitySnapshotId: "identity-current",
+    stateVersion: 1,
+  }),
+}));
+vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
+  return { ...actual, commitCanvasRecastSnapshot: vi.fn() };
 });
 
 import {
@@ -160,6 +173,10 @@ import {
   finalizeGenerationOperationSuccess,
 } from "./db";
 import { generateMasterPrompt, generateCastingImage, generateCastingImageRaw } from "./casting/aiService";
+import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
+import { commitCanvasRecastSnapshot } from "./casting/snapshotTransitions";
+import { commitAnchorReRoll, commitIdentityEdit } from "./casting/identity/identityCommit";
+import { buildIdentityAnchor } from "./casting/geminiClient";
 import {
   executeApplyModelEdit as executeApplyModelEditRaw,
   executeRunGeneration as executeRunGenerationRaw,
@@ -234,6 +251,47 @@ beforeEach(() => {
   vi.mocked(markGenerationOperationRunning).mockClear();
   vi.mocked(bindGenerationOperationModel).mockClear();
   vi.mocked(finalizeGenerationOperationSuccess).mockClear();
+  vi.mocked(bootstrapModelSnapshot).mockClear().mockResolvedValue({
+    status: "current",
+    modelId: 7,
+    packageSnapshotId: "pkg-current",
+    identitySnapshotId: "identity-current",
+    stateVersion: 1,
+  });
+  vi.mocked(commitCanvasRecastSnapshot).mockReset().mockImplementation(async (input) => {
+    const currentModel = await getModelById(input.modelId);
+    const assets = await getModelAssets(input.modelId);
+    if (!currentModel) throw new Error("model fixture missing");
+    const result = input.patch
+      ? await commitIdentityEdit({
+          model: currentModel,
+          patch: input.patch,
+          newAnchor: {
+            storageUrl: input.candidate.storageUrl,
+            pointsCost: input.candidate.pointsCost,
+            engine: input.candidate.engine,
+          },
+          assets,
+          landing: input.landing,
+        })
+      : await commitAnchorReRoll({
+          modelId: input.modelId,
+          storageUrl: input.candidate.storageUrl,
+          pointsCost: input.candidate.pointsCost,
+          engine: input.candidate.engine,
+          identityText: buildIdentityAnchor(currentModel.masterPrompt || "", currentModel.technicalSchema ?? undefined),
+          assets,
+          landing: input.landing,
+        });
+    return {
+      result: { ...result, releasedDependents: "releasedDependents" in result ? result.releasedDependents : [] },
+      modelId: input.modelId,
+      identitySnapshotId: "identity-next",
+      packageSnapshotId: "package-next",
+      stateVersion: 2,
+      selectedSlotCount: 2,
+    };
+  });
   operation.reset();
   tx.reset();
 });
@@ -365,6 +423,10 @@ describe("R7-1E Canvas operation receipts", () => {
     expect(acquireGenerationOperationLock).toHaveBeenCalledWith(expect.objectContaining({
       lockKey: "model:7",
     }));
+    expect(bootstrapModelSnapshot).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0],
+    );
     expect(finalizeGenerationOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
       result,
       chargedCredits: 350,
@@ -376,6 +438,24 @@ describe("R7-1E Canvas operation receipts", () => {
     const replay = await caller.boardOps.applyModelEdit.execute(input);
     expect(replay).toEqual(result);
     expect(generateCastingImageRaw).toHaveBeenCalledTimes(paidCalls);
+  });
+
+  it("a headless Canvas recast refuses before running, charging, or generation", async () => {
+    vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.boardOps.applyModelEdit.execute({
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      decision: "update",
+      changes: { jawline: "Sharp / Chiseled" },
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "Generate a headshot before recasting this Cast.",
+    });
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateCastingImageRaw).not.toHaveBeenCalled();
   });
 
   it("forks under the source-model lock while preserving the new draft as the paid result", async () => {
@@ -398,6 +478,7 @@ describe("R7-1E Canvas operation receipts", () => {
     expect(acquireGenerationOperationLock).toHaveBeenCalledWith(expect.objectContaining({
       lockKey: "model:7",
     }));
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
     expect(result).toMatchObject({ decision: "fork", modelId: 88, placed: true });
     expect(finalizeGenerationOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
       result,

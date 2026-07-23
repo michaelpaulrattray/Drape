@@ -53,7 +53,8 @@ import { publicErrorMessage } from "./publicError";
 import type { TransactionHandle } from "../db/connection";
 import { validateCreationIntent } from "../casting/identity/creationIntake";
 import { buildStructuredPatch } from "../casting/identity/structuredEdit";
-import { commitAnchorReRoll, commitIdentityEdit, computeIdentityCommit } from "../casting/identity/identityCommit";
+import { computeIdentityCommit } from "../casting/identity/identityCommit";
+import { commitCanvasRecastSnapshot } from "../casting/snapshotTransitions";
 import { currentRevisionId, identityStampFor } from "../casting/identity/anchorSelector";
 import { buildIdentityAnchor } from "../casting/geminiClient";
 import {
@@ -980,7 +981,6 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the update" });
       }
       auditGenerationId = genRecord.generationId;
-      const assets = await getModelAssets(model.id);
       const generationOptions = {
         castingBrand: (generationDoc.preferences as { castingBrand?: string }).castingBrand || "Generic",
         frame: "HEADSHOT" as const,
@@ -991,7 +991,10 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       };
       const generationPrompt = buildReinforcedPrompt(generationDoc.masterPrompt, generationDoc.preferences as never);
       const result = isRerun
-        ? await generateCastingImage(generationPrompt, generationOptions)
+        ? await generateCastingImage(generationPrompt, generationOptions).then((generated) => {
+            uploadedStorageKey = generated.storageKey;
+            return generated;
+          })
         : await (async () => {
             // Founder ruling (2026-07-18): changing Casting panel fields is
             // an intentional RECAST, not a same-person surgical iteration.
@@ -1062,29 +1065,41 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       if (isRerun) {
         // R4 re-roll: same shared atomic commit `castingImage` uses — new
         // anchor + new revision + stale-all (pinned included), no doc change
-        const reRoll = await commitAnchorReRoll({
+        if (!uploadedStorageKey) throw new Error("The recast storage key is unavailable");
+        const reRoll = await commitCanvasRecastSnapshot({
+          userId: input.userId,
           modelId: model.id,
-          storageUrl: result.imageUrl,
-          pointsCost: cost,
-          engine: result.engineUsed,
-          identityText: buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined),
-          assets,
+          operationId: input.operationId,
+          patch: null,
+          candidate: {
+            storageUrl: result.imageUrl,
+            storageKey: uploadedStorageKey,
+            pointsCost: cost,
+            engine: result.engineUsed,
+          },
           landing,
         });
-        committedRevision = reRoll.identityRevisionId;
+        committedRevision = reRoll.result.identityRevisionId;
       } else {
         // §8.6 ATOMIC COMMIT: preferences patch + schema writes + fragments +
         // new anchor (role `anchor`) + new identityRevisionId + stale flags on
         // every filled sibling view, PINNED INCLUDED — all-or-nothing, WITH
         // the board landing in the same transaction (final correction 3).
-        const commit = await commitIdentityEdit({
-          model,
+        if (!uploadedStorageKey) throw new Error("The recast storage key is unavailable");
+        const commit = await commitCanvasRecastSnapshot({
+          userId: input.userId,
+          modelId: model.id,
+          operationId: input.operationId,
           patch: identityPatch!,
-          newAnchor: { storageUrl: result.imageUrl, pointsCost: cost, engine: result.engineUsed },
-          assets,
+          candidate: {
+            storageUrl: result.imageUrl,
+            storageKey: uploadedStorageKey,
+            pointsCost: cost,
+            engine: result.engineUsed,
+          },
           landing,
         });
-        committedRevision = commit.identityRevisionId;
+        committedRevision = commit.result.identityRevisionId;
       }
 
       // The identity is durably committed — an audit-row failure past this

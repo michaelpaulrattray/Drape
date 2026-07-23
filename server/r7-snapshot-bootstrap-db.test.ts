@@ -34,6 +34,10 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
 
   afterAll(async () => {
     await connection?.end();
+    const db = await (await import("./db/connection")).getDb();
+    if (db && typeof (db as { $client?: { end?: () => Promise<void> } }).$client?.end === "function") {
+      await (db as { $client: { end: () => Promise<void> } }).$client.end();
+    }
     delete process.env.DATABASE_URL;
   });
 

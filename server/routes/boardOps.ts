@@ -32,7 +32,9 @@ import {
   beginDirectOperation,
   completeDirectOperationFailure,
   completeDirectOperationSuccess,
+  failClaimedDirectOperation,
 } from "../casting/directOperation";
+import { bootstrapModelSnapshot } from "../casting/snapshotBootstrap";
 
 async function requireBoardOwnership(boardId: number, userId: number) {
   const board = await getBoardById(boardId);
@@ -81,6 +83,7 @@ async function executeCanvasOperation<Result extends PublicOperationResult>(inpu
   lockKey: string;
   expectedIdentityRevisionId?: string | null;
   plannedCredits: number;
+  prepareBeforeRunning?: () => Promise<void>;
   execute: (context: {
     operationId: string;
     chargeReferenceId: string;
@@ -99,6 +102,18 @@ async function executeCanvasOperation<Result extends PublicOperationResult>(inpu
     lockKey: input.lockKey,
   });
   if (gate.type === "replay") return gate.result as Result;
+
+  if (input.prepareBeforeRunning) {
+    try {
+      await input.prepareBeforeRunning();
+    } catch (error) {
+      return failClaimedDirectOperation({
+        userId: input.userId,
+        operationId: gate.operationId,
+        error,
+      });
+    }
+  }
 
   const started = await markGenerationOperationRunning({
     userId: input.userId,
@@ -450,6 +465,20 @@ export const boardOpsRouter = router({
           lockKey: modelOperationLockKey(model.id),
           expectedIdentityRevisionId: currentRevisionId(model),
           plannedCredits: CREDIT_COSTS.castingImage,
+          prepareBeforeRunning: input.decision === "update"
+            ? async () => {
+                const snapshotHead = await bootstrapModelSnapshot({
+                  userId: ctx.user.id,
+                  modelId: model.id,
+                });
+                if (snapshotHead.status === "headless") {
+                  throw new TRPCError({
+                    code: "PRECONDITION_FAILED",
+                    message: "Generate a headshot before recasting this Cast.",
+                  });
+                }
+              }
+            : undefined,
           execute: ({ operationId, chargeReferenceId, onCharged, onRefunded }) => boardOps.executeApplyModelEdit({
             userId: ctx.user.id,
             itemId: input.itemId,

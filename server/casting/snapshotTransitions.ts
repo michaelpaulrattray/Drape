@@ -748,6 +748,115 @@ interface GeneratedImageCandidate {
   pointsCost: number;
 }
 
+const CANVAS_RECAST_IDENTITY_RECIPE_VERSION = "r7-canvas-recast-v1";
+const CANVAS_REROLL_RECIPE_VERSION = "r7-canvas-reroll-v1";
+
+/** Paid Canvas recast: legacy identity, asset, stale-state and Canvas landing
+ * writes commit with the immutable snapshot pair or all roll back. A null
+ * patch is the explicit anchor re-roll mode and preserves the documents. */
+export async function commitCanvasRecastSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  patch: AuthorizedIdentityPatch | null;
+  candidate: GeneratedImageCandidate & { storageKey: string };
+  landing: (tx: TransactionHandle) => Promise<void>;
+}): Promise<SnapshotTransitionResult<{
+  assetId: number;
+  identityRevisionId: string;
+  staledAssetIds: number[];
+  releasedDependents: string[];
+}>> {
+  assertGeneratedImageCandidate(input.candidate, "Canvas recast");
+  if (!input.candidate.storageKey.trim()) throw new Error("The generated Canvas recast storage key is unavailable");
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "canvas.recast",
+    mutate: async (tx, context) => {
+      if (!context.current) throw new Error("Canvas recast requires a bootstrapped snapshot head");
+      if (context.model.status !== "draft") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Minted identity is immutable — fork it." });
+      }
+      const assets = await tx
+        .select()
+        .from(modelAssets)
+        .where(eq(modelAssets.modelId, input.modelId))
+        .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+      const computed = input.patch ? computeIdentityCommit(context.model, input.patch) : null;
+      const revisionId = mintRevisionId();
+      const masterPrompt = computed?.masterPrompt ?? context.model.masterPrompt ?? "";
+      const technicalSchema = computed?.technicalSchema ?? context.model.technicalSchema ?? {};
+      const identityText = buildIdentityAnchor(masterPrompt, technicalSchema);
+      const staleIds = selectStaleSiblingHeads(assets, "frontClose");
+      const updated = await tx.update(models).set({
+        ...(computed ? {
+          masterPrompt: computed.masterPrompt,
+          technicalSchema: computed.technicalSchema,
+          preferences: computed.preferences,
+        } : {}),
+        identityRevisionId: revisionId,
+      }).where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        eq(models.status, "draft"),
+        isNull(models.deletedAt),
+      ));
+      if (affectedRows(updated) !== 1) throw new Error("The draft identity is no longer available");
+      const [inserted] = await tx.insert(modelAssets).values({
+        modelId: input.modelId,
+        viewType: "frontClose",
+        resolution: "1K",
+        storageUrl: input.candidate.storageUrl,
+        storageKey: input.candidate.storageKey,
+        pointsCost: input.candidate.pointsCost,
+        pinned: false,
+        provenance: {
+          ...(input.candidate.engine ? { engine: input.candidate.engine } : {}),
+          ...identityStampFor({ role: "anchor", revisionId, identityText }),
+          ...(input.patch && computed ? {
+            identityEdits: input.patch.edits,
+            identityEditSource: input.patch.source,
+            releasedIdentityDependents: computed.releasedDependents,
+          } : {}),
+        },
+      }).$returningId();
+      if (!inserted?.id) throw new Error("The Canvas recast could not be saved");
+      if (staleIds.length > 0) {
+        await tx.update(modelAssets)
+          .set({ status: { state: "stale", at: new Date().toISOString() } })
+          .where(inArray(modelAssets.id, staleIds));
+      }
+      await input.landing(tx);
+      return {
+        result: {
+          assetId: inserted.id,
+          identityRevisionId: revisionId,
+          staledAssetIds: staleIds,
+          releasedDependents: computed?.releasedDependents ?? [],
+        },
+        transition: {
+          packageReason: "identity_change",
+          identity: {
+            reason: input.patch ? "identity_edit" : "anchor_reroll",
+            anchorAssetId: inserted.id,
+            recipeVersion: input.patch
+              ? CANVAS_RECAST_IDENTITY_RECIPE_VERSION
+              : CANVAS_REROLL_RECIPE_VERSION,
+          },
+          slotChanges: [{
+            viewAngle: "frontClose",
+            selectedAssetId: inserted.id,
+            compatibility: "current",
+            selectionReason: "generated",
+          }],
+        },
+      };
+    },
+  });
+}
+
 interface IterationCandidate extends GeneratedImageCandidate {
   targetAssetId: number;
 }

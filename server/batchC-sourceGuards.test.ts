@@ -97,6 +97,15 @@ describe("image-only branches never write identity documents or stale flags (M17
   });
 });
 
+describe("Canvas recast has one atomic snapshot writer", () => {
+  it("removes the legacy identity commit doors from boardOps", () => {
+    const src = serverFile("lib/boardOps.ts");
+    expect(src).toContain("commitCanvasRecastSnapshot");
+    expect(src).not.toContain("commitAnchorReRoll");
+    expect(src).not.toContain("commitIdentityEdit");
+  });
+});
+
 describe("no stale writer exempts pinned assets (§14)", () => {
   it("the shared stale selection carries no pinned filter", () => {
     const src = serverFile("casting/identity/anchorSelector.ts");
