@@ -127,16 +127,23 @@ export function useSessionRestore(isAuthenticated: boolean) {
     // the dead-link effect above clears the entry.)
     const isMinted = isModelMintedStatus(model.status);
 
-    // Restore canvas state
-    const headshot = model.assets?.find((a: { viewType: string }) => a.viewType === 'frontClose');
-    const fullBody = model.assets?.find((a: { viewType: string }) => a.viewType === 'frontFull');
+    const selectedAssets = (
+      'selectedAssets' in model && Array.isArray(model.selectedAssets)
+        ? model.selectedAssets
+        : undefined
+    ) as Array<{ id: number; viewType: string; storageUrl: string }> | undefined;
+    const currentAssets = selectedAssets ?? model.assets ?? [];
+
+    // Restore canvas state from explicit package selection when available.
+    const headshot = currentAssets.find((a: { viewType: string }) => a.viewType === 'frontClose');
+    const fullBody = currentAssets.find((a: { viewType: string }) => a.viewType === 'frontFull');
 
     setCanvas({
       hasModel: !!headshot,
       hasFullBody: !!fullBody,
       // Audit V4: "all views" is the D-39 canonical six, not the era-0 trio
       hasAllViews: CANONICAL_VIEW_ANGLES.every((vt) =>
-        (model.assets ?? []).some((a: { viewType: string; storageUrl: string }) => a.viewType === vt && a.storageUrl),
+        currentAssets.some((a: { viewType: string; storageUrl: string }) => a.viewType === vt && a.storageUrl),
       ),
       modelSource: 'cast',
       uploadedModelUrl: null,
@@ -148,7 +155,10 @@ export function useSessionRestore(isAuthenticated: boolean) {
 
     // Restore generation store assets with full history reconstruction
     const allAssets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
-    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(allAssets);
+    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(
+      allAssets,
+      selectedAssets,
+    );
 
     if (rebuilt.length > 0) {
       const genStore = useCastingGenerationStore.getState();

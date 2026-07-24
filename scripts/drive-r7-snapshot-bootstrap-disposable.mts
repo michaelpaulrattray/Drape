@@ -67,14 +67,20 @@ async function dropDisposableDatabase(input: {
 
 async function main() {
   const args = process.argv.slice(2);
-  const allowedArgs = new Set(["--focused-b3", "--focused-iterate", "--focused-canvas"]);
+  const allowedArgs = new Set([
+    "--focused-b3",
+    "--focused-iterate",
+    "--focused-canvas",
+    "--focused-b4",
+  ]);
   if (args.some((arg) => !allowedArgs.has(arg))) {
     throw new Error(`Unknown argument: ${args.find((arg) => !allowedArgs.has(arg))}`);
   }
   const focusedB3 = args.includes("--focused-b3");
   const focusedIterate = args.includes("--focused-iterate");
   const focusedCanvas = args.includes("--focused-canvas");
-  if ([focusedB3, focusedIterate, focusedCanvas].filter(Boolean).length > 1) {
+  const focusedB4 = args.includes("--focused-b4");
+  if ([focusedB3, focusedIterate, focusedCanvas, focusedB4].filter(Boolean).length > 1) {
     throw new Error("Choose only one focused disposable gate");
   }
   const configured = process.env.DATABASE_URL;
@@ -134,6 +140,13 @@ async function main() {
               "--testNamePattern=snapshot.*Canvas",
               "server/r7-snapshot-transitions-db.test.ts",
             ]
+          : focusedB4
+            ? [
+                "exec", "vitest", "run",
+                "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
+                "--testNamePattern=bounded owned cohort",
+                "server/r7-snapshot-bootstrap-db.test.ts",
+              ]
       : [
           "exec", "vitest", "run",
           "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
@@ -154,6 +167,8 @@ async function main() {
           ? "[disposable] R7-7B3 snapshot-selected iteration gate passed"
           : focusedCanvas
             ? "[disposable] R7-7B3 snapshot Canvas authority gate passed"
+            : focusedB4
+              ? "[disposable] R7-7B4 bounded projection resolver gate passed"
           : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed",
     );
   } finally {

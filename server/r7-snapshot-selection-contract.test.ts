@@ -101,6 +101,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     ];
     const allowedAuthority = new Set([
       "server/casting/effectiveCastState.ts",
+      "server/casting/modelReadProjections.ts",
       "server/casting/snapshotBootstrap.ts",
       "server/casting/finalCastDeletion.ts",
       "server/casting/snapshotShadow.ts",
@@ -145,12 +146,14 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(effectiveCallers).toEqual([
       "server/casting/effectiveCastRead.ts",
       "server/casting/mintPackage.ts",
+      "server/casting/modelReadProjections.ts",
       "server/casting/refreshSlots.ts",
       "server/routes/generation/castingImaging.ts",
       "server/routes/generation/castingRefinement.ts",
     ]);
     expect(scopeCallers).toEqual([
       "server/casting/mintPackage.ts",
+      "server/casting/modelReadProjections.ts",
       "server/casting/refreshSlots.ts",
       "server/casting/snapshotTransitions.ts",
       "server/lib/boardOps.ts",
@@ -158,6 +161,9 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/routes/generation/castingExport.ts",
       "server/routes/generation/castingImaging.ts",
       "server/routes/generation/castingRefinement.ts",
+      "server/routes/lobby.ts",
+      "server/routes/models.ts",
+      "server/routes/wardrobe.ts",
       "server/_core/env.ts",
     ]);
 
@@ -268,9 +274,11 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(transitionDriver).toContain('"--focused-b3"');
     expect(transitionDriver).toContain('"--focused-iterate"');
     expect(transitionDriver).toContain('"--focused-canvas"');
+    expect(transitionDriver).toContain('"--focused-b4"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*ledger"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot-selected.*iteration"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*Canvas"');
+    expect(transitionDriver).toContain('"--testNamePattern=bounded owned cohort"');
   });
 
   it("keeps snapshot PDF image authority server-only and caller-bounded", async () => {

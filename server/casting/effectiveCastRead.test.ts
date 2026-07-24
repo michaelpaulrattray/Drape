@@ -5,18 +5,24 @@ vi.mock("./effectiveCastState", async (importOriginal) => {
   return {
     ...actual,
     resolveOwnedEffectiveCastState: vi.fn(),
+    resolveOwnedEffectiveCastStates: vi.fn(),
   };
 });
 
 import {
   EffectiveCastStateError,
   resolveOwnedEffectiveCastState,
+  resolveOwnedEffectiveCastStates,
 } from "./effectiveCastState";
-import { resolveEffectiveCastStateForRead } from "./effectiveCastRead";
+import {
+  resolveEffectiveCastStateForRead,
+  resolveEffectiveCastStatesForRead,
+} from "./effectiveCastRead";
 
 describe("R7-7B2 effective Cast read adapter", () => {
   beforeEach(() => {
     vi.mocked(resolveOwnedEffectiveCastState).mockReset();
+    vi.mocked(resolveOwnedEffectiveCastStates).mockReset();
   });
 
   it("keeps missing and foreign subjects non-leaking", async () => {
@@ -41,5 +47,15 @@ describe("R7-7B2 effective Cast read adapter", () => {
     vi.mocked(resolveOwnedEffectiveCastState).mockRejectedValueOnce(failure);
     await expect(resolveEffectiveCastStateForRead({ userId: 1, modelId: 7 }))
       .rejects.toBe(failure);
+  });
+
+  it("applies the same non-leaking error map to bounded batch projections", async () => {
+    vi.mocked(resolveOwnedEffectiveCastStates)
+      .mockRejectedValueOnce(new EffectiveCastStateError("slot_asset_invalid"));
+    await expect(resolveEffectiveCastStatesForRead({ userId: 1, modelIds: [7, 8] }))
+      .rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: expect.stringContaining("No credits were used"),
+      });
   });
 });

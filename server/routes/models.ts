@@ -23,6 +23,9 @@ import {
   planFinalCastDeletion,
   summarizeFinalCastDeletion,
 } from "../casting/finalCastDeletion";
+import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
+import { projectEffectiveModelForClient } from "../casting/modelReadProjections";
 const log = createModuleLogger("routes/models");
 
 export function isFinalModelDeleteEnabled(): boolean {
@@ -190,8 +193,15 @@ export const modelsRouter = router({
 
   // Get a specific model by ID
   get: protectedProcedure
-    .input(z.object({ modelId: z.number() }))
+    .input(z.object({ modelId: z.number() }).strict())
     .query(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      if (readMode === "snapshot") {
+        return projectEffectiveModelForClient(await resolveEffectiveCastStateForRead({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+        }));
+      }
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });

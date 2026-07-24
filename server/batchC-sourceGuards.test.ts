@@ -284,6 +284,64 @@ describe("Canvas package-consumption reads stay server-owned", () => {
   });
 });
 
+describe("B4 account-owned model projections stay snapshot-selected", () => {
+  it("captures rollout mode at models.get, picker, lobby, and gallery routes", () => {
+    const modelsRoute = serverFile("routes/models.ts");
+    const getBlock = modelsRoute.slice(
+      modelsRoute.indexOf("get: protectedProcedure"),
+      modelsRoute.indexOf("// Update model display name"),
+    );
+    expect(getBlock).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+    expect(getBlock).toContain("projectEffectiveModelForClient");
+    expect(getBlock).not.toMatch(/input\.(readMode|snapshotId|packageSnapshotId|identitySnapshotId)/);
+
+    const boardRoute = serverFile("routes/boardOps.ts");
+    const picker = boardRoute.slice(
+      boardRoute.indexOf("listCastableModels: protectedProcedure"),
+      boardRoute.indexOf("/** D-28: fill"),
+    );
+    expect(picker).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+    expect(picker).toMatch(/listCastableModels\([\s\S]*?readMode\)/);
+
+    const lobby = serverFile("routes/lobby.ts");
+    expect(lobby).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+    expect(lobby).toContain("getUserDraftModelsWithThumbnailForRead");
+    expect(lobby).toContain("getUserMintedModelsWithThumbnailForRead");
+
+    const wardrobe = serverFile("routes/wardrobe.ts");
+    for (const procedure of ["listMinted", "listDrafts"]) {
+      const start = wardrobe.indexOf(`${procedure}: protectedProcedure`);
+      const block = wardrobe.slice(start, wardrobe.indexOf("}),", start) + 3);
+      expect(block).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+      expect(block).toContain("readMode,");
+    }
+  });
+
+  it("keeps ledger history separate from selected presentation in the server and client hydration", () => {
+    const projection = serverFile("casting/modelReadProjections.ts");
+    expect(projection).toContain("assets: [...state.ledger.assets]");
+    expect(projection).toContain("selectedAssets: selectedAssetsFromEffectiveState(state).map");
+    expect(projection).toContain("id: asset.id");
+    expect(projection).toContain("viewType: asset.viewType");
+    expect(projection).toContain("storageUrl: asset.storageUrl");
+    expect(projection).toContain('selectedAssetForAngle(state, "frontFull")');
+    expect(projection).toContain('selectedAssetForAngle(state, "frontClose")');
+    expect(projection).not.toMatch(/currentPackageSnapshotId:\s*state\./);
+
+    const history = clientFile("features/casting/utils/buildHistoryFromAssets.ts");
+    expect(history).toContain("selectedAssets?: AssetWithMeta[]");
+    expect(history).toContain("if (selectionDiffers) history.push(selected)");
+    for (const rel of [
+      "features/studio/hooks/useResumeDraft.ts",
+      "features/studio/hooks/useSessionPersistence.ts",
+      "features/studio/hooks/useLoadWardrobeModel.ts",
+      "features/studio/components/CastingWorkspace.tsx",
+    ]) {
+      expect(clientFile(rel)).toContain("selectedAssets");
+    }
+  });
+});
+
 describe("package generation preserves exact storage ownership", () => {
   it.each([
     ["generateFullBody", "export async function generateRemainingViews"],

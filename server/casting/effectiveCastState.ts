@@ -7,7 +7,7 @@
  * failure summaries; newest-filled order never chooses current state here.
  */
 import { createHash } from "node:crypto";
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import {
   modelAssets,
   modelIdentitySnapshots,
@@ -26,7 +26,7 @@ import {
   type CanonicalViewAngle,
 } from "../../shared/boardTypes";
 import { isModelMintedStatus } from "../../shared/modelLifecycle";
-import { withTransaction, type TransactionHandle } from "../db/connection";
+import { withTransaction } from "../db/connection";
 import { assetIdentityRole, selectIdentityAnchor } from "./identity/anchorSelector";
 
 export const EFFECTIVE_CAST_STATE_ERROR_CODES = [
@@ -297,84 +297,129 @@ export function buildEffectiveCastState(rows: EffectiveCastStateRows): Effective
   };
 }
 
-async function loadEffectiveCastStateRowsIn(
-  tx: TransactionHandle,
-  input: { userId: number; modelId: number },
-): Promise<EffectiveCastStateRows> {
-  const [model] = await tx
-    .select()
-    .from(models)
-    .where(and(
-      eq(models.id, input.modelId),
-      eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
-    ))
-    .limit(1);
-  if (!model) fail("model_not_found");
+function validPositiveId(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0;
+}
 
-  const assets = await tx
-    .select()
-    .from(modelAssets)
-    .where(eq(modelAssets.modelId, model.id))
-    .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+/**
+ * Owner-scoped, transaction-consistent batch resolver for outward account
+ * projections. All requested subjects must be live and owned by the caller;
+ * one missing/foreign row refuses the whole projection rather than silently
+ * dropping it. Ledger rows are loaded in one query and remain history only.
+ */
+export async function resolveOwnedEffectiveCastStates(input: {
+  userId: number;
+  modelIds: readonly number[];
+}): Promise<Map<number, EffectiveCastState>> {
+  if (!validPositiveId(input.userId)) fail("model_not_found");
+  if (input.modelIds.length === 0) return new Map();
+  if (
+    input.modelIds.some((modelId) => !validPositiveId(modelId))
+    || new Set(input.modelIds).size !== input.modelIds.length
+  ) {
+    fail("model_not_found");
+  }
 
-  const currentPackage = model.currentPackageSnapshotId
-    ? (await tx
-        .select()
-        .from(modelPackageSnapshots)
-        .where(and(
-          eq(modelPackageSnapshots.id, model.currentPackageSnapshotId),
-          eq(modelPackageSnapshots.modelId, model.id),
-        ))
-        .limit(1))[0] ?? null
-    : null;
-  const currentIdentity = currentPackage
-    ? (await tx
-        .select()
-        .from(modelIdentitySnapshots)
-        .where(and(
-          eq(modelIdentitySnapshots.id, currentPackage.identitySnapshotId),
-          eq(modelIdentitySnapshots.modelId, model.id),
-        ))
-        .limit(1))[0] ?? null
-    : null;
-  const currentSlots = currentPackage
-    ? await tx
-        .select()
-        .from(modelPackageSnapshotSlots)
-        .where(eq(modelPackageSnapshotSlots.packageSnapshotId, currentPackage.id))
-    : [];
-  const sealedPackage = model.sealedPackageSnapshotId
-    ? (await tx
-        .select()
-        .from(modelPackageSnapshots)
-        .where(and(
-          eq(modelPackageSnapshots.id, model.sealedPackageSnapshotId),
-          eq(modelPackageSnapshots.modelId, model.id),
-        ))
-        .limit(1))[0] ?? null
-    : null;
-  const sealedIdentity = model.sealedIdentitySnapshotId
-    ? (await tx
-        .select()
-        .from(modelIdentitySnapshots)
-        .where(and(
-          eq(modelIdentitySnapshots.id, model.sealedIdentitySnapshotId),
-          eq(modelIdentitySnapshots.modelId, model.id),
-        ))
-        .limit(1))[0] ?? null
-    : null;
+  return withTransaction(async (tx) => {
+    const subjectRows = await tx
+      .select()
+      .from(models)
+      .where(and(
+        inArray(models.id, [...input.modelIds]),
+        eq(models.userId, input.userId),
+        isNull(models.deletedAt),
+        ne(models.status, "archived"),
+      ));
+    if (subjectRows.length !== input.modelIds.length) fail("model_not_found");
 
-  return {
-    model,
-    assets,
-    currentPackage,
-    currentIdentity,
-    currentSlots,
-    sealedPackage,
-    sealedIdentity,
-  };
+    const assets = await tx
+      .select()
+      .from(modelAssets)
+      .where(inArray(modelAssets.modelId, [...input.modelIds]))
+      .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+
+    const packageIds = Array.from(new Set(subjectRows.flatMap((model) => [
+      model.currentPackageSnapshotId,
+      model.sealedPackageSnapshotId,
+    ].filter((value): value is string => !!value))));
+    const packages = packageIds.length > 0
+      ? await tx
+          .select()
+          .from(modelPackageSnapshots)
+          .where(and(
+            inArray(modelPackageSnapshots.id, packageIds),
+            inArray(modelPackageSnapshots.modelId, [...input.modelIds]),
+          ))
+      : [];
+
+    const identityIds = Array.from(new Set([
+      ...packages.map((snapshot) => snapshot.identitySnapshotId),
+      ...subjectRows
+        .map((model) => model.sealedIdentitySnapshotId)
+        .filter((value): value is string => !!value),
+    ]));
+    const identities = identityIds.length > 0
+      ? await tx
+          .select()
+          .from(modelIdentitySnapshots)
+          .where(and(
+            inArray(modelIdentitySnapshots.id, identityIds),
+            inArray(modelIdentitySnapshots.modelId, [...input.modelIds]),
+          ))
+      : [];
+
+    const currentPackageIds = subjectRows
+      .map((model) => model.currentPackageSnapshotId)
+      .filter((value): value is string => !!value);
+    const slots = currentPackageIds.length > 0
+      ? await tx
+          .select()
+          .from(modelPackageSnapshotSlots)
+          .where(inArray(modelPackageSnapshotSlots.packageSnapshotId, currentPackageIds))
+      : [];
+
+    const assetsByModel = new Map<number, ModelAsset[]>();
+    for (const asset of assets) {
+      const grouped = assetsByModel.get(asset.modelId) ?? [];
+      grouped.push(asset);
+      assetsByModel.set(asset.modelId, grouped);
+    }
+    const packageById = new Map(packages.map((snapshot) => [snapshot.id, snapshot]));
+    const identityById = new Map(identities.map((snapshot) => [snapshot.id, snapshot]));
+    const slotsByPackage = new Map<string, ModelPackageSnapshotSlot[]>();
+    for (const slot of slots) {
+      const grouped = slotsByPackage.get(slot.packageSnapshotId) ?? [];
+      grouped.push(slot);
+      slotsByPackage.set(slot.packageSnapshotId, grouped);
+    }
+    const modelById = new Map(subjectRows.map((model) => [model.id, model]));
+    const resolved = new Map<number, EffectiveCastState>();
+    for (const modelId of input.modelIds) {
+      const model = modelById.get(modelId);
+      if (!model) fail("model_not_found");
+      const currentPackage = model.currentPackageSnapshotId
+        ? packageById.get(model.currentPackageSnapshotId) ?? null
+        : null;
+      resolved.set(modelId, buildEffectiveCastState({
+        model,
+        assets: assetsByModel.get(modelId) ?? [],
+        currentPackage,
+        currentIdentity: currentPackage
+          ? identityById.get(currentPackage.identitySnapshotId) ?? null
+          : null,
+        currentSlots: currentPackage
+          ? slotsByPackage.get(currentPackage.id) ?? []
+          : [],
+        sealedPackage: model.sealedPackageSnapshotId
+          ? packageById.get(model.sealedPackageSnapshotId) ?? null
+          : null,
+        sealedIdentity: model.sealedIdentitySnapshotId
+          ? identityById.get(model.sealedIdentitySnapshotId) ?? null
+          : null,
+      }));
+    }
+    return resolved;
+  });
 }
 
 /**
@@ -384,15 +429,12 @@ export async function resolveOwnedEffectiveCastState(input: {
   userId: number;
   modelId: number;
 }): Promise<EffectiveCastState> {
-  if (
-    !Number.isSafeInteger(input.userId)
-    || input.userId <= 0
-    || !Number.isSafeInteger(input.modelId)
-    || input.modelId <= 0
-  ) {
+  if (!validPositiveId(input.userId) || !validPositiveId(input.modelId)) {
     fail("model_not_found");
   }
-  return withTransaction(async (tx) => buildEffectiveCastState(
-    await loadEffectiveCastStateRowsIn(tx, input),
-  ));
+  const states = await resolveOwnedEffectiveCastStates({
+    userId: input.userId,
+    modelIds: [input.modelId],
+  });
+  return states.get(input.modelId) ?? fail("model_not_found");
 }

@@ -12,7 +12,11 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getUserBoards, getPlacedModelIds } from "../db/boards";
 import { getRecentUserSessions } from "../db/wardrobe";
-import { getUserDraftModelsWithThumbnail, getUserMintedModelsWithThumbnail } from "../db/models";
+import {
+  getUserDraftModelsWithThumbnailForRead,
+  getUserMintedModelsWithThumbnailForRead,
+} from "../casting/modelReadProjections";
+import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { DRAFT_AUTO_NAME } from "../lib/boardOps";
 
 // 8 = two clean rows at the lobby's 4-across laptop layout; Home is a
@@ -127,14 +131,23 @@ export const lobbyRouter = router({
   recentWork: protectedProcedure
     .input(z.object({
       limit: z.number().int().min(1).max(50).default(DEFAULT_LIMIT),
-    }).optional())
+    }).strict().optional())
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? DEFAULT_LIMIT;
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       const [boards, sessions, drafts, minted, placedModelIds] = await Promise.all([
         getUserBoards(ctx.user.id, "active"),
         getRecentUserSessions(ctx.user.id),
-        getUserDraftModelsWithThumbnail(ctx.user.id, CASTS_LIMIT),
-        getUserMintedModelsWithThumbnail(ctx.user.id, CASTS_LIMIT),
+        getUserDraftModelsWithThumbnailForRead({
+          userId: ctx.user.id,
+          limit: CASTS_LIMIT,
+          readMode,
+        }),
+        getUserMintedModelsWithThumbnailForRead({
+          userId: ctx.user.id,
+          limit: CASTS_LIMIT,
+          readMode,
+        }),
         getPlacedModelIds(ctx.user.id),
       ]);
       // One casting source: named drafts + minted models (F3). The merge's

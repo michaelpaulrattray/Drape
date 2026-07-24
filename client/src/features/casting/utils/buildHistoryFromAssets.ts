@@ -27,8 +27,10 @@ interface AssetWithMeta {
 }
 
 export function buildHistoryFromAssets(
-  allAssets: AssetWithMeta[]
+  allAssets: AssetWithMeta[],
+  selectedAssets?: AssetWithMeta[],
 ): { history: GeneratedAsset[][]; historyIndex: number; currentAssets: GeneratedAsset[] } {
+  const hasSelectedProjection = selectedAssets !== undefined;
   // Group by viewType — DB returns newest first. All six package slots
   // (D-39) hydrate; the old frontClose/frontFull/sideClose whitelist made a
   // Production mint look three slots short on re-edit (VC-R3b bug 1).
@@ -77,8 +79,28 @@ export function buildHistoryFromAssets(
     history.push(snapshot);
   }
 
+  const selected = (selectedAssets ?? [])
+    .filter((asset) => PACKAGE_VIEW_TYPES.includes(asset.viewType) && !!asset.storageUrl)
+    .map((asset) => ({
+      id: asset.id,
+      viewType: asset.viewType,
+      storageUrl: asset.storageUrl,
+    }));
+  if (selected.length > 0) {
+    const currentIds = new Map(history[history.length - 1].map((asset) => [asset.viewType, asset.id]));
+    const selectionDiffers = selected.some((asset) => currentIds.get(asset.viewType) !== asset.id)
+      || selected.length !== currentIds.size;
+    // A package restore can select a historical mix that cannot be inferred
+    // from asset creation order. Preserve the ledger-derived history and add
+    // the server-selected package as the current presentation state.
+    if (selectionDiffers) history.push(selected);
+  }
+
+  if (hasSelectedProjection && selected.length === 0) {
+    return { history, historyIndex: -1, currentAssets: [] };
+  }
   const historyIndex = history.length - 1;
-  const currentAssets = history[historyIndex];
+  const currentAssets = hasSelectedProjection ? selected : history[historyIndex];
 
   return { history, historyIndex, currentAssets };
 }

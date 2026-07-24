@@ -26,7 +26,11 @@ import {
   createGeneration,
   saveLook, getUserLooksByModel, getUserLooks, renameLook, deleteLook,
 } from "../db";
-import { getUserMintedModelsWithThumbnail, getUserDraftModelsWithThumbnail } from "../db/models";
+import {
+  getUserDraftModelsWithThumbnailForRead,
+  getUserMintedModelsWithThumbnailForRead,
+} from "../casting/modelReadProjections";
+import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { storagePut } from "../storage";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
@@ -797,16 +801,26 @@ const outfitRouter = router({
 const modelRouter = router({
   /** List user's exported/minted models with thumbnails for the lobby gallery */
   listMinted: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).strict().optional())
     .query(async ({ ctx, input }) => {
-      return await getUserMintedModelsWithThumbnail(ctx.user.id, input?.limit ?? 20);
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      return await getUserMintedModelsWithThumbnailForRead({
+        userId: ctx.user.id,
+        limit: input?.limit ?? 20,
+        readMode,
+      });
     }),
 
   /** List user's draft (unfinished) models with thumbnails for the lobby "Draft Casts" row */
   listDrafts: protectedProcedure
-    .input(z.object({ limit: z.number().min(1).max(10).default(4) }).optional())
+    .input(z.object({ limit: z.number().min(1).max(10).default(4) }).strict().optional())
     .query(async ({ ctx, input }) => {
-      return await getUserDraftModelsWithThumbnail(ctx.user.id, input?.limit ?? 4);
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      return await getUserDraftModelsWithThumbnailForRead({
+        userId: ctx.user.id,
+        limit: input?.limit ?? 4,
+        readMode,
+      });
     }),
 
   upload: protectedProcedure

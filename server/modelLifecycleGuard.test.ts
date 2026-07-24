@@ -215,8 +215,8 @@ describe("model lifecycle literal guard (Batch B)", () => {
   it("the minted-gallery DB source filters by the shared minted-status list, never a bare 'active'", () => {
     const src = read("server/db/models.ts");
     const mintedGallery = src.slice(
-      src.indexOf("export async function getUserMintedModelsWithThumbnail"),
-      src.indexOf("export async function getUserDraftModelsWithThumbnail"),
+      src.indexOf("export async function getUserMintedModels("),
+      src.indexOf("export async function getUserDraftModels("),
     );
     expect(mintedGallery).toContain("inArray(models.status, [...MODEL_MINTED_STATUSES])");
     expect(mintedGallery).toContain("isNull(models.deletedAt)");

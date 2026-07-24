@@ -62,6 +62,7 @@ interface LoadedCastingModel {
   technicalSchema?: unknown;
   preferences?: unknown;
   assets?: Array<{ id: number; viewType: string; storageUrl: string }>;
+  selectedAssets?: Array<{ id: number; viewType: string; storageUrl: string }>;
 }
 
 export interface CastingWorkspaceProps {
@@ -189,7 +190,10 @@ export function CastingWorkspace({
 
   const applyModelTruth = useCallback((model: LoadedCastingModel) => {
     const genStore = useCastingGenerationStore.getState();
-    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(model.assets ?? []);
+    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(
+      model.assets ?? [],
+      model.selectedAssets,
+    );
 
     genStore.setCurrentModelId(model.id);
     if (rebuilt.length > 0) {

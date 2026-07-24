@@ -37,6 +37,7 @@ type FullModel = {
   technicalSchema?: unknown;
   preferences?: unknown;
   assets?: Array<{ id: number; viewType: string; storageUrl: string }>;
+  selectedAssets?: Array<{ id: number; viewType: string; storageUrl: string }>;
 };
 
 /** Hydrate casting generation + form stores from a fully fetched model */
@@ -50,7 +51,10 @@ function hydrateCastingStores(fullModel: FullModel) {
     genStore.setCurrentTechnicalSchema(fullModel.technicalSchema as Record<string, unknown>);
   }
   const allAssets = (fullModel.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
-  const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(allAssets);
+  const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(
+    allAssets,
+    fullModel.selectedAssets,
+  );
   if (rebuilt.length > 0) {
     genStore.setCurrentAssets(rebuilt);
     genStore.setHistory(history);
@@ -99,7 +103,7 @@ export function useLoadWardrobeModel() {
     // return false so the caller falls back to the start screen instead of
     // loading the row as an editable not-minted model.
     if (!isModelAvailableStatus(model.status)) return false;
-    const assets = model.assets || [];
+    const assets = model.selectedAssets ?? model.assets ?? [];
     const image =
       assets.find((a) => a.viewType === 'frontFull') ??
       assets.find((a) => a.viewType === 'frontClose') ??

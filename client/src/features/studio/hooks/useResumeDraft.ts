@@ -55,7 +55,15 @@ export function useResumeDraft() {
 
     // Rebuild generation history from the model's assets
     const assets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
-    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(assets);
+    const selectedAssets = (
+      'selectedAssets' in model && Array.isArray(model.selectedAssets)
+        ? model.selectedAssets
+        : undefined
+    ) as Array<{ id: number; viewType: string; storageUrl: string }> | undefined;
+    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(
+      assets,
+      selectedAssets,
+    );
     if (rebuilt.length > 0) {
       genStore.setCurrentAssets(rebuilt);
       genStore.setHistory(history);
@@ -63,8 +71,9 @@ export function useResumeDraft() {
       useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
     }
 
-    const headshot = assets.find((a) => a.viewType === 'frontClose');
-    const fullBody = assets.find((a) => a.viewType === 'frontFull');
+    const current = selectedAssets ?? assets;
+    const headshot = current.find((a) => a.viewType === 'frontClose');
+    const fullBody = current.find((a) => a.viewType === 'frontFull');
     // Batch B: minted is the shared status read model — legacy 'locked'
     // restores as minted, never as an editable draft. (Archived can't reach
     // here: models.get reads it as deleted, FR-4.)
@@ -78,7 +87,7 @@ export function useResumeDraft() {
       hasFullBody: !!fullBody,
       // Audit V4: "all views" is the D-39 canonical six, not the era-0 trio
       hasAllViews: CANONICAL_VIEW_ANGLES.every((vt) =>
-        assets.some((a) => a.viewType === vt && a.storageUrl),
+        current.some((a) => a.viewType === vt && a.storageUrl),
       ),
       modelSource: 'cast',
       uploadedModelUrl: null,

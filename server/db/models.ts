@@ -198,15 +198,13 @@ export async function mintModelAtomically(
  * never from the row's gallery-of-origin.
  * Used by the studio lobby "My Models" gallery.
  */
-export async function getUserMintedModelsWithThumbnail(
+export async function getUserMintedModels(
   userId: number,
-  limit: number = 20
+  limit: number = 20,
 ) {
   const db = await getDb();
   if (!db) return [];
-
-  // Get minted models for this user (status truth: active | legacy locked)
-  const userModels = await db
+  return db
     .select({
       id: models.id,
       name: models.name,
@@ -225,8 +223,16 @@ export async function getUserMintedModelsWithThumbnail(
     ))
     .orderBy(desc(models.mintedAt))
     .limit(limit);
+}
 
+export async function getUserMintedModelsWithThumbnail(
+  userId: number,
+  limit: number = 20
+) {
+  const userModels = await getUserMintedModels(userId, limit);
   if (userModels.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
 
   // Get frontFull assets for these models
   const modelIds = userModels.map((m) => m.id);
@@ -274,14 +280,13 @@ export async function getUserMintedModelsWithThumbnail(
  * Only returns models with status 'draft' that have at least one asset.
  * Used by the studio lobby "Draft Casts" row.
  */
-export async function getUserDraftModelsWithThumbnail(
+export async function getUserDraftModels(
   userId: number,
-  limit: number = 3
+  limit: number = 3,
 ) {
   const db = await getDb();
   if (!db) return [];
-
-  const draftModels = await db
+  return db
     .select({
       id: models.id,
       name: models.name,
@@ -295,8 +300,16 @@ export async function getUserDraftModelsWithThumbnail(
     .where(and(eq(models.userId, userId), eq(models.status, "draft"), isNull(models.deletedAt)))
     .orderBy(desc(models.createdAt))
     .limit(limit);
+}
 
+export async function getUserDraftModelsWithThumbnail(
+  userId: number,
+  limit: number = 3
+) {
+  const draftModels = await getUserDraftModels(userId, limit);
   if (draftModels.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
 
   const modelIds = draftModels.map((m) => m.id);
   const assets = await db

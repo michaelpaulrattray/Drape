@@ -9,8 +9,18 @@ import { TRPCError } from "@trpc/server";
 import {
   EffectiveCastStateError,
   resolveOwnedEffectiveCastState,
+  resolveOwnedEffectiveCastStates,
   type EffectiveCastState,
 } from "./effectiveCastState";
+
+function mapEffectiveCastStateError(error: unknown): never {
+  if (!(error instanceof EffectiveCastStateError)) throw error;
+  throw new TRPCError({
+    code: error.code === "model_not_found" ? "NOT_FOUND" : "PRECONDITION_FAILED",
+    message: error.message,
+    cause: error,
+  });
+}
 
 export async function resolveEffectiveCastStateForRead(input: {
   userId: number;
@@ -19,11 +29,17 @@ export async function resolveEffectiveCastStateForRead(input: {
   try {
     return await resolveOwnedEffectiveCastState(input);
   } catch (error) {
-    if (!(error instanceof EffectiveCastStateError)) throw error;
-    throw new TRPCError({
-      code: error.code === "model_not_found" ? "NOT_FOUND" : "PRECONDITION_FAILED",
-      message: error.message,
-      cause: error,
-    });
+    return mapEffectiveCastStateError(error);
+  }
+}
+
+export async function resolveEffectiveCastStatesForRead(input: {
+  userId: number;
+  modelIds: readonly number[];
+}): Promise<Map<number, EffectiveCastState>> {
+  try {
+    return await resolveOwnedEffectiveCastStates(input);
+  } catch (error) {
+    return mapEffectiveCastStateError(error);
   }
 }

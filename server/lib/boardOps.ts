@@ -57,8 +57,14 @@ import { computeIdentityCommit } from "../casting/identity/identityCommit";
 import { commitCanvasRecastSnapshot } from "../casting/snapshotTransitions";
 import { currentRevisionId, identityStampFor } from "../casting/identity/anchorSelector";
 import { buildIdentityAnchor } from "../casting/geminiClient";
-import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
+import {
+  resolveEffectiveCastStateForRead,
+  resolveEffectiveCastStatesForRead,
+} from "../casting/effectiveCastRead";
 import type { SnapshotReadMode } from "../casting/snapshotReadScope";
+import {
+  selectedAssetForAngle,
+} from "../casting/modelReadProjections";
 import {
   clearEngineChoiceForChanges,
   prepareCandidatePreferences,
@@ -701,12 +707,24 @@ export async function executeFillFromLibrary(input: {
  *  for every surface that needs the honest-naming rule (picker, lobby feed). */
 export const DRAFT_AUTO_NAME = "Draft Model";
 
-export async function listCastableModels(userId: number, limit = 30) {
+export async function listCastableModels(
+  userId: number,
+  limit = 30,
+  readMode: SnapshotReadMode = "r6",
+) {
   const { getUserModels, getHeadshotsForModels } = await import("../db");
   const models = await getUserModels(userId, limit * 2); // headroom for filtering
-  // TWO queries total (R5 build-log N+1 fix): the per-model getModelAssets
-  // loop put the picker's first paint past 10s at ~30 models on a remote DB
-  const headshots = await getHeadshotsForModels(models.map((m) => m.id));
+  // Snapshot mode resolves the frozen model cohort in one transaction. R6
+  // keeps the historical two-query newest-frontClose reader byte-for-byte.
+  const headshots = readMode === "r6"
+    ? await getHeadshotsForModels(models.map((m) => m.id))
+    : new Map(Array.from((await resolveEffectiveCastStatesForRead({
+        userId,
+        modelIds: models.map((model) => model.id),
+      })).entries()).flatMap(([modelId, state]) => {
+        const selected = selectedAssetForAngle(state, "frontClose");
+        return selected ? [[modelId, selected.storageUrl] as const] : [];
+      }));
   const out: Array<{ id: number; name: string | null; headshotUrl: string; draft: boolean }> = [];
   for (const model of models) {
     if (out.length >= limit) break;

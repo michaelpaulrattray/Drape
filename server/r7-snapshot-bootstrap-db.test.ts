@@ -9,6 +9,8 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
   let connection: Connection;
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
   let resolveOwnedEffectiveCastState: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastState;
+  let resolveOwnedEffectiveCastStates: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastStates;
+  let getUserDraftModelsWithThumbnailForRead: typeof import("./casting/modelReadProjections").getUserDraftModelsWithThumbnailForRead;
   let getPackageState: typeof import("./casting/mintPackage").getPackageState;
   let planMintPackage: typeof import("./casting/mintPackage").planMintPackage;
   let planRefreshSlots: typeof import("./casting/refreshSlots").planRefreshSlots;
@@ -25,7 +27,8 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     process.env.DATABASE_URL = testDatabaseUrl!;
     connection = await mysql.createConnection(testDatabaseUrl!);
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
-    ({ resolveOwnedEffectiveCastState } = await import("./casting/effectiveCastState"));
+    ({ resolveOwnedEffectiveCastState, resolveOwnedEffectiveCastStates } = await import("./casting/effectiveCastState"));
+    ({ getUserDraftModelsWithThumbnailForRead } = await import("./casting/modelReadProjections"));
     ({ getPackageState, planMintPackage } = await import("./casting/mintPackage"));
     ({ planRefreshSlots } = await import("./casting/refreshSlots"));
     ({ planSnapshotConvergence, convergeSnapshotCohort } = await import("./casting/snapshotConvergence"));
@@ -178,6 +181,48 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
       "frontClose",
       "sideClose",
     ]);
+  }, 60_000);
+
+  it("resolves a bounded owned cohort in one consistent batch without newest-ledger selection", async () => {
+    const userId = await createUser();
+    const firstModelId = await createModel(userId);
+    const firstSelected = await addAsset({
+      modelId: firstModelId,
+      role: "anchor",
+      url: "https://example.invalid/first-selected.png",
+    });
+    await bootstrapModelSnapshot({ userId, modelId: firstModelId });
+    await addAsset({
+      modelId: firstModelId,
+      role: "display",
+      url: "https://example.invalid/first-newer-unselected.png",
+    });
+
+    const secondModelId = await createModel(userId);
+    const secondSelected = await addAsset({
+      modelId: secondModelId,
+      role: "anchor",
+      url: "https://example.invalid/second-selected.png",
+    });
+    await bootstrapModelSnapshot({ userId, modelId: secondModelId });
+
+    const states = await resolveOwnedEffectiveCastStates({
+      userId,
+      modelIds: [firstModelId, secondModelId],
+    });
+
+    expect(Array.from(states.keys())).toEqual([firstModelId, secondModelId]);
+    expect(states.get(firstModelId)?.displayedHeadshot?.id).toBe(firstSelected);
+    expect(states.get(secondModelId)?.displayedHeadshot?.id).toBe(secondSelected);
+    expect(states.get(firstModelId)?.ledger.assets).toHaveLength(2);
+
+    const drafts = await getUserDraftModelsWithThumbnailForRead({
+      userId,
+      limit: 10,
+      readMode: "snapshot",
+    });
+    expect(drafts.find((row) => row.id === firstModelId)?.thumbnailUrl)
+      .toBe("https://example.invalid/first-selected.png");
   }, 60_000);
 
   it("projects package, mint and refresh plans from the selected snapshot head", async () => {

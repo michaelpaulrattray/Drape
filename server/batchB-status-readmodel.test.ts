@@ -53,6 +53,7 @@ vi.mock("./casting/snapshotReadScope", async (importOriginal) => {
 });
 vi.mock("./casting/effectiveCastRead", () => ({
   resolveEffectiveCastStateForRead: vi.fn(),
+  resolveEffectiveCastStatesForRead: vi.fn(),
 }));
 vi.mock("./casting/snapshotPdfImages", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/snapshotPdfImages")>();
@@ -96,7 +97,10 @@ import { appRouter } from "./routers";
 import { executeMintPackage } from "./casting/mintPackage";
 import { listCastableModels, executeFillFromLibrary } from "./lib/boardOps";
 import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
-import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
+import {
+  resolveEffectiveCastStateForRead,
+  resolveEffectiveCastStatesForRead,
+} from "./casting/effectiveCastRead";
 import {
   resolveSnapshotPdfImages,
   SnapshotPdfImageError,
@@ -140,6 +144,53 @@ const model = (over: Record<string, unknown> = {}) => ({
 
 const R2_BASE = process.env.R2_PUBLIC_URL || "https://pub-test.r2.dev";
 const headshot = { id: 42, modelId: 7, viewType: "frontClose", storageUrl: `${R2_BASE}/models/7/frontClose.png`, pinned: false, status: null, createdAt: new Date() };
+const selectedHeadshot = {
+  ...headshot,
+  id: 41,
+  storageUrl: `${R2_BASE}/models/7/selected-frontClose.png`,
+};
+
+function snapshotState(over: Record<string, unknown> = {}) {
+  const snapshotModel = model({
+    currentPackageSnapshotId: "package-current",
+    stateVersion: 2,
+    identityRevisionId: "revision-current",
+    sealedIdentitySnapshotId: null,
+    sealedPackageSnapshotId: null,
+    ...over,
+  });
+  return {
+    authority: "snapshot",
+    status: "current",
+    model: snapshotModel,
+    stateVersion: 2,
+    package: { id: "package-current", modelId: snapshotModel.id },
+    identity: {
+      id: "identity-current",
+      modelId: snapshotModel.id,
+      masterPrompt: "immutable prompt",
+      technicalSchema: { immutable: true },
+      preferences: { hair: "selected" },
+    },
+    anchor: selectedHeadshot,
+    displayedHeadshot: selectedHeadshot,
+    selectedViews: [{
+      angle: "frontClose",
+      compatibility: "current",
+      selection: {
+        id: "slot-front",
+        packageSnapshotId: "package-current",
+        selectedAssetId: selectedHeadshot.id,
+        viewAngle: "frontClose",
+        compatibility: "current",
+      },
+      asset: selectedHeadshot,
+    }],
+    sealedPackage: null,
+    sealedIdentity: null,
+    ledger: { assets: [headshot, selectedHeadshot] },
+  };
+}
 
 beforeEach(() => {
   vi.mocked(getModelById).mockReset();
@@ -149,6 +200,7 @@ beforeEach(() => {
   vi.mocked(getHeadshotsForModels).mockReset().mockResolvedValue(new Map());
   vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
   vi.mocked(resolveEffectiveCastStateForRead).mockReset();
+  vi.mocked(resolveEffectiveCastStatesForRead).mockReset();
   vi.mocked(resolveSnapshotPdfImages).mockReset();
 });
 
@@ -208,6 +260,23 @@ describe("mintPackage result.minted is status truth, never the requested action"
 // ─── Picker — draft flag is status truth; unavailable rows never surface ───
 
 describe("listCastableModels derives draft from status, never from 'not minted'", () => {
+  it("snapshot mode uses the selected frontClose and never calls the R6 headshot query", async () => {
+    vi.mocked(getUserModels).mockResolvedValue([model()] as never);
+    vi.mocked(resolveEffectiveCastStatesForRead).mockResolvedValue(
+      new Map([[7, snapshotState() as never]]),
+    );
+
+    const out = await listCastableModels(1, 30, "snapshot");
+
+    expect(out).toEqual([{
+      id: 7,
+      name: "Test Model",
+      headshotUrl: selectedHeadshot.storageUrl,
+      draft: true,
+    }]);
+    expect(getHeadshotsForModels).not.toHaveBeenCalled();
+  });
+
   it("draft flags per status; a stray agencyId draft is still a draft", async () => {
     vi.mocked(getUserModels).mockResolvedValue([
       model({ id: 1, status: "draft" }),
@@ -241,6 +310,36 @@ describe("listCastableModels derives draft from status, never from 'not minted'"
 });
 
 // ─── Board fill — provenance draft flag is status truth ────────────────────
+
+describe("models.get snapshot projection", () => {
+  it("returns immutable documents plus selected assets while retaining ledger history", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(snapshotState() as never);
+
+    const result = await appRouter.createCaller(authCtx()).models.get({ modelId: 7 });
+
+    expect(result.masterPrompt).toBe("immutable prompt");
+    expect(result.technicalSchema).toEqual({ immutable: true });
+    expect(result.preferences).toEqual({ hair: "selected" });
+    expect(result.assets.map((asset) => asset.id)).toEqual([42, 41]);
+    expect("selectedAssets" in result && result.selectedAssets.map((asset) => asset.id)).toEqual([41]);
+    expect(result).not.toHaveProperty("currentPackageSnapshotId");
+    expect(result).not.toHaveProperty("sealedIdentitySnapshotId");
+    expect(result).not.toHaveProperty("sealedPackageSnapshotId");
+    expect(result).not.toHaveProperty("stateVersion");
+    expect(result).not.toHaveProperty("identityRevisionId");
+    expect(getModelById).not.toHaveBeenCalled();
+    expect(getModelAssets).not.toHaveBeenCalled();
+  });
+
+  it("rejects a client-supplied readMode instead of accepting authority from the wire", async () => {
+    await expect(appRouter.createCaller(authCtx()).models.get({
+      modelId: 7,
+      readMode: "snapshot",
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(captureSnapshotReadMode).not.toHaveBeenCalled();
+  });
+});
 
 describe("fillFromLibrary stamps draft from status truth", () => {
   const boardItem = { id: 11, boardId: 3, deletedAt: null, metadata: {}, label: null };
