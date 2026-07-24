@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node", "vite/client"],
+    "skipLibCheck": true
+  },
+  "include": [
+    "drive-r7-b4-browser.mts",
+    "r7-b4-browser-seed.mts",
+    "r7-b4-browser-drive.mts",
+    "../server/**/*.ts",
+    "../shared/**/*.ts",
+    "../drizzle/**/*.ts"
+  ],
+  "exclude": [
+    "../**/*.test.ts"
+  ]
+}

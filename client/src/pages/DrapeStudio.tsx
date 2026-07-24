@@ -32,6 +32,7 @@ import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
 import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
+import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 import type { MintTier } from '@shared/boardTypes';
 
 export default function DrapeStudio() {
@@ -184,6 +185,7 @@ export default function DrapeStudio() {
 
     void updateDraftName.mutateAsync({ modelId: currentModelId, name: pendingName })
       .then(() => {
+        publishCastProjectionChanged(currentModelId);
         // Cache refresh is follow-up optics, not part of the durable save.
         // Its failure must never falsely claim the name was forgotten.
         void Promise.all([

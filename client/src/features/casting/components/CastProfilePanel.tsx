@@ -8,6 +8,7 @@ import { useCastingFormStore } from '@/features/casting/stores/useCastingFormSto
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { resolvedEngineChoices, type RequiredCastField } from '@/features/casting/engineChoicePersistence';
 import { castingIdentityLabel, honestModelName } from '@/features/casting/modelDisplayTruth';
+import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 
 interface CastProfilePanelProps {
   onFork?: () => void;
@@ -141,6 +142,7 @@ export function CastProfilePanel({
       await updateName.mutateAsync({ modelId: currentModelId, name: nextName });
       setModelName(nextName);
       setEditingName(false);
+      publishCastProjectionChanged(currentModelId);
       void Promise.all([
         utils.models.get.invalidate({ modelId: currentModelId }),
         utils.boardOps.listCastableModels.invalidate(),

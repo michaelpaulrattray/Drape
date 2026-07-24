@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
+import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { createClientRequestId } from '@shared/clientRequestId';
 
@@ -59,6 +60,7 @@ export function SlotVersionHistory({ modelId, angle, onUsed, className }: SlotVe
       );
       setSelectedAssetId(null);
       onUsed?.();
+      publishCastProjectionChanged(result.modelId);
     },
     onError: (error) => toast.error(error.message),
     onSettled: async (_data, _error, variables) => {

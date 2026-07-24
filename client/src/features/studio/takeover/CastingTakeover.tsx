@@ -35,6 +35,7 @@ import { IdentityChangeDialog } from './IdentityChangeDialog';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
 import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
+import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 import type { MintTier } from '@shared/boardTypes';
 
 export interface CastEditContext {
@@ -337,6 +338,7 @@ export function CastingTakeover({
 
     void updateDraftName.mutateAsync({ modelId: currentModelId, name: pendingName })
       .then(() => {
+        publishCastProjectionChanged(currentModelId);
         // Cache refresh is follow-up optics, not part of the durable save.
         // Its failure must never falsely claim the name was forgotten.
         void Promise.all([

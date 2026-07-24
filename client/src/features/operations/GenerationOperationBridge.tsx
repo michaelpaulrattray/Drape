@@ -14,6 +14,10 @@ import {
   type GenerationOperationDto,
 } from "./generationOperationProjection";
 import { subscribeCastDeleted } from "./castDeletionSync";
+import {
+  publishCastProjectionChanged,
+  subscribeCastProjectionChanged,
+} from "./castProjectionSync";
 
 const VISIBLE_POLL_MS = 2_500;
 
@@ -59,25 +63,38 @@ export function GenerationOperationBridge() {
   const landRef = useRef(land.mutateAsync);
   landRef.current = land.mutateAsync;
 
+  const invalidateCastProjection = async (modelId: number) => {
+    await Promise.allSettled([
+      utils.models.list.invalidate(),
+      utils.models.get.invalidate({ modelId }),
+      utils.wardrobe.model.listMinted.invalidate(),
+      utils.wardrobe.model.listDrafts.invalidate(),
+      utils.lobby.recentWork.invalidate(),
+      utils.boardOps.listCastableModels.invalidate(),
+      utils.boards.getItems.invalidate(),
+      utils.boards.getItemModelInfo.invalidate(),
+      utils.generation.packageState.invalidate({ modelId }),
+      utils.generation.refreshSlotsPlan.invalidate({ modelId }),
+      utils.generation.mintPackagePlan.invalidate({ modelId }),
+      utils.generation.exportPlan.invalidate({ modelId }),
+    ]);
+  };
+  const invalidateCastProjectionRef = useRef(invalidateCastProjection);
+  invalidateCastProjectionRef.current = invalidateCastProjection;
+
   const invalidateResult = async (operation: GenerationOperationDto) => {
     const work: Promise<unknown>[] = [
       utils.credits.getBalance.invalidate(),
-      utils.boardOps.listCastableModels.invalidate(),
-      utils.models.list.invalidate(),
     ];
     if (operation.originBoardId) {
       work.push(utils.boards.getItems.invalidate({ boardId: operation.originBoardId }));
       work.push(utils.boardOps.listEdges.invalidate({ boardId: operation.originBoardId }));
     }
     if (operation.modelId) {
-      work.push(utils.models.get.invalidate({ modelId: operation.modelId }));
-      work.push(utils.generation.packageState.invalidate({ modelId: operation.modelId }));
-      // Model-backed receipts do not all carry a board origin (for example a
-      // package-complete mint). Refresh every warm placement query so live
-      // model status/name truth reaches linked Cast nodes after detachment.
-      if (!operation.originBoardId) work.push(utils.boards.getItems.invalidate());
+      work.push(invalidateCastProjection(operation.modelId));
     }
     await Promise.allSettled(work);
+    if (operation.modelId) publishCastProjectionChanged(operation.modelId);
   };
   const invalidateResultRef = useRef(invalidateResult);
   invalidateResultRef.current = invalidateResult;
@@ -140,6 +157,13 @@ export function GenerationOperationBridge() {
       utils.wardrobe.looks.listAll.invalidate(),
     ]);
   }), [utils]);
+
+  // Terminal-operation acknowledgement is intentionally one-owner. Without
+  // this signal, whichever tab acknowledges first can hide the receipt from
+  // every other tab before its warm selected-package caches are invalidated.
+  useEffect(() => subscribeCastProjectionChanged(({ modelId }) => {
+    void invalidateCastProjectionRef.current(modelId);
+  }), []);
 
   useEffect(() => () => {
     for (const timer of Array.from(retryTimersRef.current.values())) clearTimeout(timer);
