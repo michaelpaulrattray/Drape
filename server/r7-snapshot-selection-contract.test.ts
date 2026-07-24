@@ -166,6 +166,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/routes/models.ts",
       "server/routes/registry.ts",
       "server/routes/wardrobe.ts",
+      "server/wardrobe/modelImageAuthority.ts",
       "server/_core/env.ts",
     ]);
 
@@ -302,6 +303,28 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(source).not.toMatch(
       /deductPoints|withAtomicCredits|storage(Put|Get|Delete|List)|Gemini|generateContent|tx\s*\.\s*(insert|update|delete)/i,
     );
+  });
+
+  it("keeps Wardrobe session image authority read-only and route-bounded", async () => {
+    const callers: string[] = [];
+    for (const file of await runtimeSources("server")) {
+      const normalized = file.replaceAll("\\", "/");
+      if (normalized.endsWith("/wardrobe/modelImageAuthority.ts")) continue;
+      const content = await readFile(file, "utf8");
+      if (content.includes("modelImageAuthority")) callers.push(normalized);
+    }
+    expect(callers).toEqual(["server/routes/wardrobe.ts"]);
+
+    const source = await readFile(
+      new URL("./wardrobe/modelImageAuthority.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source).not.toMatch(
+      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue|analyzeTattoos/i,
+    );
+    expect(source).toContain('view.angle === "frontFull"');
+    expect(source).toContain("session.modelId == null");
+    expect(source).toContain("return session.modelImageUrl");
   });
 
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {

@@ -44,6 +44,10 @@ import { classifyEditSize } from "../wardrobe/editClassifier";
 import { checkIdentityMatch } from "../wardrobe/identityCheck";
 import { seedSession, clearSession } from "../wardrobe/vtoSession";
 import { getImageAspectBucket, type GarmentForVTO } from "../wardrobe/utils";
+import {
+  resolveWardrobeSessionCreateImage,
+  resolveWardrobeSessionUseImage,
+} from "../wardrobe/modelImageAuthority";
 
 const log = createModuleLogger("routes/wardrobe");
 
@@ -654,12 +658,19 @@ const sessionRouter = router({
     .input(z.object({
       modelId: z.number().optional(),
       modelImageUrl: z.string().url(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      const modelImageUrl = await resolveWardrobeSessionCreateImage({
+        userId: ctx.user.id,
+        modelId: input.modelId ?? null,
+        requestedImageUrl: input.modelImageUrl,
+        readMode,
+      });
       const sessionId = await createSession({
         userId: ctx.user.id,
         modelId: input.modelId ?? null,
-        modelImageUrl: input.modelImageUrl,
+        modelImageUrl,
         history: [],
         historyIndex: 0,
         activeGarmentIds: [],
@@ -732,12 +743,32 @@ const sessionRouter = router({
       modelImageUrl: z.string().url(),
       resultUrl: z.string().url(),
       outfitDescription: z.string().optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      let modelImageUrl = input.modelImageUrl;
+      if (readMode === "snapshot") {
+        const persistentSessionId = Number(input.sessionId);
+        if (
+          !/^[1-9]\d*$/.test(input.sessionId)
+          || !Number.isSafeInteger(persistentSessionId)
+        ) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Wardrobe session not found",
+          });
+        }
+        modelImageUrl = await resolveWardrobeSessionUseImage({
+          userId: ctx.user.id,
+          sessionId: persistentSessionId,
+          requestedImageUrl: input.modelImageUrl,
+          readMode,
+        });
+      }
       await seedSession(
         ctx.user.id,
         input.sessionId,
-        input.modelImageUrl,
+        modelImageUrl,
         input.resultUrl,
         input.outfitDescription,
       );
