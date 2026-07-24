@@ -22,6 +22,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let commitCanvasRecastSnapshot: typeof import("./casting/snapshotTransitions").commitCanvasRecastSnapshot;
   let commitRefreshedSlotsSnapshot: typeof import("./casting/snapshotTransitions").commitRefreshedSlotsSnapshot;
   let commitGeneratedPackageSnapshot: typeof import("./casting/snapshotTransitions").commitGeneratedPackageSnapshot;
+  let canvasBoardOps: typeof import("./lib/boardOps");
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -48,6 +49,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       commitRefreshedSlotsSnapshot,
       commitGeneratedPackageSnapshot,
     } = await import("./casting/snapshotTransitions"));
+    canvasBoardOps = await import("./lib/boardOps");
   });
 
   beforeEach(async () => {
@@ -732,6 +734,121 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     expect(JSON.stringify(current.snapshotSchema)).toBe(JSON.stringify(immutable.technicalSchema));
     expect(JSON.stringify(current.preferences)).toBe(JSON.stringify(immutable.preferences));
     expect(JSON.stringify(current.snapshotPreferences)).toBe(JSON.stringify(immutable.preferences));
+  }, 60_000);
+
+  it("snapshot Canvas Library fill uses the selected frontClose instead of a newer ledger row", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const selected = await one(
+      "SELECT storageUrl FROM model_assets WHERE id = ?",
+      [base.anchorAssetId],
+    );
+    const newerUrl = `https://example.invalid/newer-unselected-front-${randomUUID()}.png`;
+    await addAsset({
+      modelId: base.modelId,
+      viewAngle: "frontClose",
+      role: "display",
+      url: newerUrl,
+    });
+    const [board] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO boards (userId, name, startedWith) VALUES (?, 'Library fill board', 'casting')",
+      [userId],
+    );
+    const [item] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO board_items
+        (boardId, type, kind, label, imageUrl, sourceModelId, metadata)
+       VALUES (?, 'model', 'cast_config', NULL, NULL, NULL, JSON_OBJECT())`,
+      [board.insertId],
+    );
+
+    const result = await canvasBoardOps.executeFillFromLibrary({
+      userId,
+      itemId: item.insertId,
+      modelId: base.modelId,
+      readMode: "snapshot",
+    });
+
+    expect(result.imageUrl).toBe(selected.storageUrl);
+    expect(result.imageUrl).not.toBe(newerUrl);
+    const landed = await one(
+      "SELECT imageUrl, sourceModelId, metadata FROM board_items WHERE id = ?",
+      [item.insertId],
+    );
+    const metadata = typeof landed.metadata === "string"
+      ? JSON.parse(landed.metadata)
+      : landed.metadata;
+    expect(landed.imageUrl).toBe(selected.storageUrl);
+    expect(Number(landed.sourceModelId)).toBe(base.modelId);
+    expect(metadata.provenance).toMatchObject({
+      type: "library_cast",
+      modelId: base.modelId,
+      viewAngle: "frontClose",
+    });
+    expect(await count("board_item_versions", "itemId = ?", [item.insertId])).toBe(1);
+  }, 60_000);
+
+  it("snapshot Canvas pop-out uses the selected angle instead of a newer ledger row", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const selected = await one(
+      "SELECT storageUrl FROM model_assets WHERE id = ?",
+      [base.sideAssetId],
+    );
+    const newerUrl = `https://example.invalid/newer-unselected-side-${randomUUID()}.png`;
+    await addAsset({
+      modelId: base.modelId,
+      viewAngle: "sideClose",
+      revisionId: "genesis",
+      url: newerUrl,
+    });
+    const [board] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO boards (userId, name, startedWith) VALUES (?, 'Pop-out board', 'casting')",
+      [userId],
+    );
+    const [root] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO board_items
+        (boardId, type, kind, label, imageUrl, sourceModelId, metadata)
+       VALUES (?, 'model', 'cast_config', 'Selected Cast', ?, ?,
+         JSON_OBJECT('provenance', JSON_OBJECT(
+           'type', 'library_cast',
+           'modelId', ?,
+           'viewAngle', 'frontClose'
+         )))`,
+      [board.insertId, "https://example.invalid/root.png", base.modelId, base.modelId],
+    );
+
+    const result = await canvasBoardOps.executePopOutView({
+      userId,
+      boardId: board.insertId,
+      itemId: root.insertId,
+      angle: "sideClose",
+      readMode: "snapshot",
+    });
+
+    expect(result.imageUrl).toBe(selected.storageUrl);
+    expect(result.imageUrl).not.toBe(newerUrl);
+    const popped = await one(
+      "SELECT imageUrl, sourceModelId, metadata FROM board_items WHERE id = ?",
+      [result.itemId],
+    );
+    const metadata = typeof popped.metadata === "string"
+      ? JSON.parse(popped.metadata)
+      : popped.metadata;
+    expect(popped.imageUrl).toBe(selected.storageUrl);
+    expect(Number(popped.sourceModelId)).toBe(base.modelId);
+    expect(metadata.provenance).toMatchObject({
+      type: "cast_view",
+      modelId: base.modelId,
+      rootItemId: root.insertId,
+      viewAngle: "sideClose",
+      inputs: [{ itemId: root.insertId, imageUrl: selected.storageUrl }],
+    });
+    expect(await count("board_item_versions", "itemId = ?", [result.itemId])).toBe(1);
+    expect(await count(
+      "board_edges",
+      "sourceItemId = ? AND targetItemId = ? AND relation = 'generated_from_cast'",
+      [root.insertId, result.itemId],
+    )).toBe(1);
   }, 60_000);
 
   it("rolls the Canvas landing and identity transition back together", async () => {

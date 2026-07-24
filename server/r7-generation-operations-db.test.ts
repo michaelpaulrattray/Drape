@@ -651,6 +651,7 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       userId,
       itemId: target.itemId,
       modelId: pending.modelId,
+      readMode: "r6",
     })).resolves.toMatchObject({ draft: true, modelId: pending.modelId });
     let [[versionCount]] = await connection.query<RowDataPacket[]>(
       "SELECT COUNT(*) AS n FROM board_item_versions WHERE itemId = ?",
@@ -697,6 +698,7 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       userId,
       itemId: target.itemId,
       modelId: pending.modelId,
+      readMode: "r6",
     })).resolves.toMatchObject({ draft: false, label: "Foreground Minted" });
 
     const [[item]] = await connection.query<RowDataPacket[]>(

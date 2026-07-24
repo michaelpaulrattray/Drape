@@ -73,7 +73,12 @@ import type {
 } from "../../shared/boardTypes";
 import { VIEW_ANGLE_LABELS, CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { isModelDraftStatus, isModelAvailableStatus } from "../../shared/modelLifecycle";
-import type { BoardItemKind, BoardEdgeRelation, Model } from "../../drizzle/schema";
+import type {
+  BoardItemKind,
+  BoardEdgeRelation,
+  Model,
+  ModelAsset,
+} from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete } from "../storage";
 
@@ -557,22 +562,64 @@ export function libraryCastViewAngle(viewType: string): CanonicalViewAngle {
     : "frontClose";
 }
 
-export async function executeFillFromLibrary(input: {
+/**
+ * Server-owned image authority for free Canvas package-consumption actions.
+ *
+ * Snapshot mode selects only the explicit package slot. The R6 branch keeps
+ * the existing newest-ledger behavior byte-for-byte as the rollout fallback.
+ */
+export async function resolveCanvasPackageView(input: {
   userId: number;
-  itemId: number;
   modelId: number;
-}) {
-  const item = await getBoardItemById(input.itemId);
-  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  angle: CanonicalViewAngle;
+  readMode: SnapshotReadMode;
+  /** Closed rollback policy: Library fill historically falls back to row 0;
+   * pop-out historically skips empty failure markers. */
+  r6Selection: "fill_front_close" | "filled_angle";
+}): Promise<{ model: Model; asset: ModelAsset | null }> {
+  if (input.readMode === "snapshot") {
+    const state = await resolveEffectiveCastStateForRead({
+      userId: input.userId,
+      modelId: input.modelId,
+    });
+    const selected = state.status === "current"
+      ? state.selectedViews.find((view) => view.angle === input.angle)?.asset ?? null
+      : null;
+    return { model: state.model, asset: selected };
+  }
 
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
-
-  // Canonical reference imagery only (D-28 constraint): the frontClose asset.
+  assertNotArchived(model);
   const assets = await getModelAssets(input.modelId);
-  const headshot = assets.find((a) => a.viewType === "frontClose") ?? assets[0];
+  const matching = input.r6Selection === "fill_front_close"
+    ? assets.find((asset) => asset.viewType === input.angle) ?? assets[0] ?? null
+    : assets.find(
+        (asset) => asset.viewType === input.angle && !!asset.storageUrl,
+      ) ?? null;
+  return {
+    model,
+    asset: matching,
+  };
+}
+
+export async function executeFillFromLibrary(input: {
+  userId: number;
+  itemId: number;
+  modelId: number;
+  readMode: SnapshotReadMode;
+}) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+
+  const { model, asset: headshot } = await resolveCanvasPackageView({
+    userId: input.userId,
+    modelId: input.modelId,
+    angle: "frontClose",
+    readMode: input.readMode,
+    r6Selection: "fill_front_close",
+  });
   if (!headshot?.storageUrl) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no canonical imagery yet" });
   }
@@ -1611,6 +1658,7 @@ export async function executePopOutView(input: {
   boardId: number;
   itemId: number; // the root placement
   angle: CanonicalViewAngle;
+  readMode: SnapshotReadMode;
   position?: { x: number; y: number }; // pin-spawn passes the drop point
 }) {
   const item = await getBoardItemById(input.itemId);
@@ -1622,15 +1670,14 @@ export async function executePopOutView(input: {
   }
   const modelId = prov.modelId;
 
-  const model = await getModelById(modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
-
-  // The angle's CURRENT image — newest filled row (the read model's rule)
-  const assets = await getModelAssets(modelId);
-  const assetRow = assets.find((a) => a.viewType === input.angle && a.storageUrl);
-  if (!assetRow) {
+  const { asset: assetRow } = await resolveCanvasPackageView({
+    userId: input.userId,
+    modelId,
+    angle: input.angle,
+    readMode: input.readMode,
+    r6Selection: "filled_angle",
+  });
+  if (!assetRow?.storageUrl) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
       message: `${VIEW_ANGLE_LABELS[input.angle]} hasn't been cast yet — add it from the comp card`,

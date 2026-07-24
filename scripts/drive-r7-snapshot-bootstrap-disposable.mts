@@ -153,7 +153,7 @@ async function main() {
         : focusedIterate
           ? "[disposable] R7-7B3 snapshot-selected iteration gate passed"
           : focusedCanvas
-            ? "[disposable] R7-7B3 snapshot Canvas recast/reroll gate passed"
+            ? "[disposable] R7-7B3 snapshot Canvas authority gate passed"
           : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed",
     );
   } finally {

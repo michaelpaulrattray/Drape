@@ -253,14 +253,24 @@ describe("fillFromLibrary stamps draft from status truth", () => {
     vi.mocked(getBoardItemById).mockResolvedValue(boardItem as never);
     vi.mocked(getModelById).mockResolvedValue(model({ status, agencyId }) as never);
     vi.mocked(getModelAssets).mockResolvedValue([headshot] as never);
-    const res = await executeFillFromLibrary({ userId: 1, itemId: 11, modelId: 7 });
+    const res = await executeFillFromLibrary({
+      userId: 1,
+      itemId: 11,
+      modelId: 7,
+      readMode: "r6",
+    });
     expect(res.draft).toBe(draft);
   });
 
   it("archived source refuses NOT_FOUND (FR-4 degradation stays server-guarded)", async () => {
     vi.mocked(getBoardItemById).mockResolvedValue(boardItem as never);
     vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
-    await expect(executeFillFromLibrary({ userId: 1, itemId: 11, modelId: 7 })).rejects.toMatchObject({
+    await expect(executeFillFromLibrary({
+      userId: 1,
+      itemId: 11,
+      modelId: 7,
+      readMode: "r6",
+    })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });

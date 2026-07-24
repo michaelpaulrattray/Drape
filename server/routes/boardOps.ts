@@ -420,14 +420,16 @@ export const boardOpsRouter = router({
       boardId: z.number().int().positive(),
       itemId: z.number().int().positive(),
       modelId: z.number().int().positive(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       await requireBoardOwnership(input.boardId, ctx.user.id);
       await boardOps.requireItemInBoard(input.itemId, input.boardId);
       return boardOps.executeFillFromLibrary({
         userId: ctx.user.id,
         itemId: input.itemId,
         modelId: input.modelId,
+        readMode,
       });
     }),
 
@@ -587,8 +589,9 @@ export const boardOpsRouter = router({
         itemId: z.number().int().positive(),
         angle: z.enum(CANONICAL_VIEW_ANGLES),
         position: positionSchema.optional(),
-      }))
+      }).strict())
       .mutation(async ({ ctx, input }) => {
+        const readMode = captureSnapshotReadMode(ctx.user.id);
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
         return boardOps.executePopOutView({
@@ -596,6 +599,7 @@ export const boardOpsRouter = router({
           boardId: input.boardId,
           itemId: input.itemId,
           angle: input.angle,
+          readMode,
           position: input.position,
         });
       }),

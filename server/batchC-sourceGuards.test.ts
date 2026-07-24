@@ -251,6 +251,39 @@ describe("Canvas recast snapshot reads stay server-owned", () => {
   });
 });
 
+describe("Canvas package-consumption reads stay server-owned", () => {
+  it("captures the rollout mode at both free mutation doors and threads it into the service", () => {
+    const route = serverFile("routes/boardOps.ts");
+    const fillBlock = route.slice(
+      route.indexOf("fillFromLibrary: protectedProcedure"),
+      route.indexOf("/** R3", route.indexOf("fillFromLibrary: protectedProcedure")),
+    );
+    const popOutBlock = route.slice(
+      route.indexOf("popOutView: router"),
+      route.indexOf("/** R5: dematerialize", route.indexOf("popOutView: router")),
+    );
+    for (const block of [fillBlock, popOutBlock]) {
+      expect(block).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+      expect(block).toMatch(/execute(?:FillFromLibrary|PopOutView)\(\{[\s\S]*?readMode,/);
+      expect(block).not.toMatch(/input\.(readMode|snapshotId|packageSnapshotId|identitySnapshotId)/);
+    }
+  });
+
+  it("selects explicit package slots in snapshot mode and retains the R6 ledger branch", () => {
+    const source = serverFile("lib/boardOps.ts");
+    const authority = source.slice(
+      source.indexOf("export async function resolveCanvasPackageView"),
+      source.indexOf("export async function executeFillFromLibrary"),
+    );
+    expect(authority).toContain('input.readMode === "snapshot"');
+    expect(authority).toContain("resolveEffectiveCastStateForRead");
+    expect(authority).toContain("state.selectedViews.find");
+    expect(authority).toContain("getModelAssets(input.modelId)");
+    expect(source).toMatch(/executeFillFromLibrary[\s\S]*?resolveCanvasPackageView\(\{[\s\S]*?angle:\s*"frontClose"/);
+    expect(source).toMatch(/executePopOutView[\s\S]*?resolveCanvasPackageView\(\{[\s\S]*?angle:\s*input\.angle/);
+  });
+});
+
 describe("package generation preserves exact storage ownership", () => {
   it.each([
     ["generateFullBody", "export async function generateRemainingViews"],
