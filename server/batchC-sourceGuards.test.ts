@@ -340,6 +340,31 @@ describe("B4 account-owned model projections stay snapshot-selected", () => {
       expect(clientFile(rel)).toContain("selectedAssets");
     }
   });
+
+  it("projects registry and board info from selected immutable truth", () => {
+    const registry = serverFile("routes/registry.ts");
+    const lookup = registry.slice(
+      registry.indexOf("lookup: publicProcedure"),
+      registry.indexOf("// Verify if a model ID exists"),
+    );
+    expect(lookup).toContain("const readMode = captureSnapshotReadMode(model.userId)");
+    expect(lookup).toContain("resolveEffectiveCastStateForRead");
+    expect(lookup).toContain("projectEffectiveRegistryBundle");
+    expect(lookup).toContain("getModelAssets(model.id)");
+    expect(lookup).not.toMatch(/input\.(readMode|snapshotId|packageSnapshotId|identitySnapshotId)/);
+
+    const boards = serverFile("routes/boards.ts");
+    const info = boards.slice(boards.indexOf("getItemModelInfo: protectedProcedure"));
+    expect(info).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+    expect(info).toContain("resolveEffectiveCastStateForRead");
+    expect(info).toContain("projectEffectiveBoardModelInfo");
+    expect(info).toContain("getModelAssets(item.sourceModelId)");
+    expect(info).not.toMatch(/input\.(readMode|snapshotId|packageSnapshotId|identitySnapshotId)/);
+
+    const projection = serverFile("casting/modelReadProjections.ts");
+    expect(projection).toContain("assets: state.selectedViews.map");
+    expect(projection).toContain("latestAssetId: state.status === \"current\" ? state.displayedHeadshot.id : null");
+  });
 });
 
 describe("package generation preserves exact storage ownership", () => {

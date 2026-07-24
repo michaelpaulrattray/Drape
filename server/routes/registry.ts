@@ -3,6 +3,9 @@ import { getModelByAgencyId, getModelAssets } from "../db";
 import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
+import { projectEffectiveRegistryBundle } from "../casting/modelReadProjections";
 
 export const registryRouter = router({
   // Public lookup by agencyId - for cross-app model retrieval
@@ -12,7 +15,7 @@ export const registryRouter = router({
   lookup: publicProcedure
     .input(z.object({
       agencyId: z.string().regex(/^MOD-\d{2}-[A-F0-9]{6}$/, "Invalid Model ID format"),
-    }))
+    }).strict())
     .query(async ({ input }) => {
       const model = await getModelByAgencyId(input.agencyId);
 
@@ -27,6 +30,24 @@ export const registryRouter = router({
           code: "NOT_FOUND",
           message: "Model not found or not yet minted"
         });
+      }
+
+      // Public registry scope belongs to the Cast owner. The caller supplies
+      // only the agency id; it cannot select the read authority.
+      const readMode = captureSnapshotReadMode(model.userId);
+      if (readMode === "snapshot") {
+        const state = await resolveEffectiveCastStateForRead({
+          userId: model.userId,
+          modelId: model.id,
+        });
+        const bundle = projectEffectiveRegistryBundle(state);
+        if (!bundle) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This Cast is temporarily unavailable.",
+          });
+        }
+        return bundle;
       }
 
       // Get associated assets

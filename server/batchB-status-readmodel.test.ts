@@ -29,6 +29,7 @@ vi.mock("./db", async (importOriginal) => {
     getUserModels: vi.fn().mockResolvedValue([]),
     getHeadshotsForModels: vi.fn().mockResolvedValue(new Map()),
     getUserById: vi.fn(),
+    getBoardById: vi.fn(),
     getBoardItemById: vi.fn(),
     updateBoardItem: vi.fn().mockResolvedValue(undefined),
     addBoardItemVersion: vi.fn().mockResolvedValue(undefined),
@@ -91,6 +92,7 @@ import {
   getUserModels,
   getHeadshotsForModels,
   getUserById,
+  getBoardById,
   getBoardItemById,
 } from "./db";
 import { appRouter } from "./routers";
@@ -143,11 +145,26 @@ const model = (over: Record<string, unknown> = {}) => ({
 });
 
 const R2_BASE = process.env.R2_PUBLIC_URL || "https://pub-test.r2.dev";
-const headshot = { id: 42, modelId: 7, viewType: "frontClose", storageUrl: `${R2_BASE}/models/7/frontClose.png`, pinned: false, status: null, createdAt: new Date() };
+const headshot = {
+  id: 42,
+  modelId: 7,
+  viewType: "frontClose",
+  storageUrl: `${R2_BASE}/models/7/frontClose.png`,
+  resolution: "1024x1024",
+  pinned: false,
+  status: null,
+  createdAt: new Date(),
+};
 const selectedHeadshot = {
   ...headshot,
   id: 41,
   storageUrl: `${R2_BASE}/models/7/selected-frontClose.png`,
+};
+const failedMarker = {
+  ...headshot,
+  id: 43,
+  storageUrl: "",
+  status: { state: "failed", refunded: 350 },
 };
 
 function snapshotState(over: Record<string, unknown> = {}) {
@@ -198,6 +215,8 @@ beforeEach(() => {
   vi.mocked(getModelByAgencyId).mockReset();
   vi.mocked(getUserModels).mockReset().mockResolvedValue([]);
   vi.mocked(getHeadshotsForModels).mockReset().mockResolvedValue(new Map());
+  vi.mocked(getBoardById).mockReset();
+  vi.mocked(getBoardItemById).mockReset();
   vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
   vi.mocked(resolveEffectiveCastStateForRead).mockReset();
   vi.mocked(resolveEffectiveCastStatesForRead).mockReset();
@@ -378,6 +397,75 @@ describe("fillFromLibrary stamps draft from status truth", () => {
 // ─── Registry — lookup and verify agree; locked is retrievable ─────────────
 
 describe("registry read model", () => {
+  it("uses the owner-scoped snapshot package and excludes newer ledger history", async () => {
+    vi.mocked(getModelByAgencyId).mockResolvedValue(
+      model({
+        userId: 9,
+        status: "active",
+        agencyId: "MOD-26-ABCDEF",
+        mintedAt: new Date(),
+      }) as never,
+    );
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    const state = snapshotState({
+      userId: 9,
+      status: "active",
+      agencyId: "MOD-26-ABCDEF",
+      mintedAt: new Date(),
+    });
+    state.ledger.assets.unshift(failedMarker);
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(state as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.registry.lookup({ agencyId: "MOD-26-ABCDEF" });
+
+    expect(captureSnapshotReadMode).toHaveBeenCalledWith(9);
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledWith({
+      userId: 9,
+      modelId: 7,
+    });
+    expect(result).toMatchObject({
+      masterPrompt: "immutable prompt",
+      technicalSchema: { immutable: true },
+      preferences: { hair: "selected" },
+      assets: [{
+        viewType: "frontClose",
+        resolution: "1024x1024",
+        storageUrl: selectedHeadshot.storageUrl,
+      }],
+    });
+    expect(result.assets).toHaveLength(1);
+    expect(getModelAssets).not.toHaveBeenCalled();
+  });
+
+  it("rejects client-supplied registry read authority", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.registry.lookup({
+      agencyId: "MOD-26-ABCDEF",
+      readMode: "snapshot",
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(captureSnapshotReadMode).not.toHaveBeenCalled();
+  });
+
+  it("never falls back to the public ledger when snapshot resolution refuses", async () => {
+    vi.mocked(getModelByAgencyId).mockResolvedValue(
+      model({
+        status: "active",
+        agencyId: "MOD-26-ABCDEF",
+        mintedAt: new Date(),
+      }) as never,
+    );
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockRejectedValue(
+      new Error("corrupt snapshot"),
+    );
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.registry.lookup({ agencyId: "MOD-26-ABCDEF" }))
+      .rejects.toThrow("corrupt snapshot");
+    expect(getModelAssets).not.toHaveBeenCalled();
+  });
+
   it("lookup returns a legacy LOCKED identity (minted by status)", async () => {
     vi.mocked(getModelByAgencyId).mockResolvedValue(
       model({ status: "locked", agencyId: "MOD-26-ABCDEF", mintedAt: new Date() }) as never,
@@ -439,6 +527,88 @@ describe("registry read model", () => {
 });
 
 // ─── Export — minted read-state + the SEPARATE agencyId integrity check ────
+
+describe("boards.getItemModelInfo snapshot projection", () => {
+  const item = {
+    id: 11,
+    boardId: 3,
+    type: "model",
+    label: "Selected Cast",
+    imageUrl: selectedHeadshot.storageUrl,
+    metadata: {},
+    createdAt: new Date(),
+    sourceModelId: 7,
+    deletedAt: null,
+  };
+
+  beforeEach(() => {
+    vi.mocked(getBoardItemById).mockResolvedValue(item as never);
+    vi.mocked(getBoardById).mockResolvedValue({
+      id: 3,
+      userId: 1,
+      status: "active",
+    } as never);
+  });
+
+  it("uses immutable documents and selected frontClose as the compatibility asset id", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model() as never);
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    const state = snapshotState();
+    state.ledger.assets.unshift(failedMarker);
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(state as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.boards.getItemModelInfo({ itemId: 11 });
+
+    expect(result).toMatchObject({
+      model: {
+        id: 7,
+        masterPrompt: "immutable prompt",
+        technicalSchema: { immutable: true },
+        preferences: { hair: "selected" },
+      },
+      sourceArchived: false,
+      sourceDraft: true,
+      assetCount: 1,
+      latestAssetId: selectedHeadshot.id,
+    });
+    expect(getModelAssets).not.toHaveBeenCalled();
+  });
+
+  it("keeps the R6 newest-ledger compatibility field unchanged when scope is off", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model() as never);
+    vi.mocked(getModelAssets).mockResolvedValue([failedMarker, headshot, selectedHeadshot] as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.boards.getItemModelInfo({ itemId: 11 });
+
+    expect(result.assetCount).toBe(3);
+    expect(result.latestAssetId).toBe(failedMarker.id);
+    expect(resolveEffectiveCastStateForRead).not.toHaveBeenCalled();
+  });
+
+  it("rejects client-supplied board-info read authority", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.boards.getItemModelInfo({
+      itemId: 11,
+      readMode: "snapshot",
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(captureSnapshotReadMode).not.toHaveBeenCalled();
+  });
+
+  it("never falls back to model assets when snapshot resolution refuses", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model() as never);
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockRejectedValue(
+      new Error("corrupt snapshot"),
+    );
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.boards.getItemModelInfo({ itemId: 11 }))
+      .rejects.toThrow("corrupt snapshot");
+    expect(getModelAssets).not.toHaveBeenCalled();
+  });
+});
 
 describe("generatePdf: status read-state and agencyId integrity are separate contracts", () => {
   const pdfInput = { modelId: 7, modelName: "TEST", images: {} };

@@ -11,6 +11,8 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
   let resolveOwnedEffectiveCastState: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastState;
   let resolveOwnedEffectiveCastStates: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastStates;
   let getUserDraftModelsWithThumbnailForRead: typeof import("./casting/modelReadProjections").getUserDraftModelsWithThumbnailForRead;
+  let projectEffectiveRegistryBundle: typeof import("./casting/modelReadProjections").projectEffectiveRegistryBundle;
+  let projectEffectiveBoardModelInfo: typeof import("./casting/modelReadProjections").projectEffectiveBoardModelInfo;
   let getPackageState: typeof import("./casting/mintPackage").getPackageState;
   let planMintPackage: typeof import("./casting/mintPackage").planMintPackage;
   let planRefreshSlots: typeof import("./casting/refreshSlots").planRefreshSlots;
@@ -28,7 +30,11 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     connection = await mysql.createConnection(testDatabaseUrl!);
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
     ({ resolveOwnedEffectiveCastState, resolveOwnedEffectiveCastStates } = await import("./casting/effectiveCastState"));
-    ({ getUserDraftModelsWithThumbnailForRead } = await import("./casting/modelReadProjections"));
+    ({
+      getUserDraftModelsWithThumbnailForRead,
+      projectEffectiveRegistryBundle,
+      projectEffectiveBoardModelInfo,
+    } = await import("./casting/modelReadProjections"));
     ({ getPackageState, planMintPackage } = await import("./casting/mintPackage"));
     ({ planRefreshSlots } = await import("./casting/refreshSlots"));
     ({ planSnapshotConvergence, convergeSnapshotCohort } = await import("./casting/snapshotConvergence"));
@@ -215,6 +221,19 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     expect(states.get(firstModelId)?.displayedHeadshot?.id).toBe(firstSelected);
     expect(states.get(secondModelId)?.displayedHeadshot?.id).toBe(secondSelected);
     expect(states.get(firstModelId)?.ledger.assets).toHaveLength(2);
+
+    const firstState = states.get(firstModelId);
+    expect(firstState).toBeDefined();
+    expect(projectEffectiveRegistryBundle(firstState!)).toMatchObject({
+      assets: [{
+        viewType: "frontClose",
+        storageUrl: "https://example.invalid/first-selected.png",
+      }],
+    });
+    expect(projectEffectiveBoardModelInfo(firstState!)).toMatchObject({
+      assetCount: 1,
+      latestAssetId: firstSelected,
+    });
 
     const drafts = await getUserDraftModelsWithThumbnailForRead({
       userId,

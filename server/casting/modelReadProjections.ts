@@ -59,6 +59,46 @@ export function projectEffectiveModelForClient(state: EffectiveCastState) {
   };
 }
 
+/** Public registry bundle: selected package only, never ledger history/markers. */
+export function projectEffectiveRegistryBundle(state: EffectiveCastState) {
+  if (state.status !== "current") return null;
+  return {
+    agencyId: state.model.agencyId,
+    name: state.model.name,
+    masterPrompt: state.identity.masterPrompt,
+    technicalSchema: state.identity.technicalSchema,
+    preferences: state.identity.preferences,
+    mintedAt: state.model.mintedAt,
+    assets: state.selectedViews.map(({ asset }) => ({
+      viewType: asset.viewType,
+      resolution: asset.resolution,
+      storageUrl: asset.storageUrl,
+    })),
+  };
+}
+
+/**
+ * Board info projection. The historical field name `latestAssetId` remains for
+ * wire compatibility, but snapshot mode returns the selected frontClose id.
+ */
+export function projectEffectiveBoardModelInfo(state: EffectiveCastState) {
+  const identity = state.status === "current" ? state.identity : null;
+  return {
+    model: {
+      id: state.model.id,
+      name: state.model.name,
+      agencyId: state.model.agencyId,
+      masterPrompt: identity?.masterPrompt ?? state.model.masterPrompt,
+      technicalSchema: identity?.technicalSchema ?? state.model.technicalSchema,
+      preferences: identity?.preferences ?? state.model.preferences,
+      status: state.model.status,
+      createdAt: state.model.createdAt,
+    },
+    assetCount: state.status === "current" ? state.selectedViews.length : 0,
+    latestAssetId: state.status === "current" ? state.displayedHeadshot.id : null,
+  };
+}
+
 export async function getUserMintedModelsWithThumbnailForRead(input: {
   userId: number;
   limit: number;

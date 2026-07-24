@@ -33,6 +33,9 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
 import { isModelAvailableStatus, isModelDraftStatus } from "../../shared/modelLifecycle";
+import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
+import { projectEffectiveBoardModelInfo } from "../casting/modelReadProjections";
 
 const log = createModuleLogger("routes/boards");
 
@@ -412,8 +415,9 @@ export const boardsRouter = router({
 
   /** Get linked model info for a board item (specs, master prompt, assets) */
   getItemModelInfo: protectedProcedure
-    .input(z.object({ itemId: z.number().int().positive() }))
+    .input(z.object({ itemId: z.number().int().positive() }).strict())
     .query(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       const item = await getBoardItemById(input.itemId);
       if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
 
@@ -444,6 +448,28 @@ export const boardsRouter = router({
       const sourceArchived = !isModelAvailableStatus(sourceModel?.status);
       const sourceDraft = isModelDraftStatus(sourceModel?.status);
       const model = sourceModel && !sourceArchived ? sourceModel : null;
+      if (model && readMode === "snapshot") {
+        const state = await resolveEffectiveCastStateForRead({
+          userId: ctx.user.id,
+          modelId: item.sourceModelId,
+        });
+        const projected = projectEffectiveBoardModelInfo(state);
+        return {
+          item: {
+            id: item.id,
+            type: item.type,
+            label: item.label,
+            imageUrl: item.imageUrl,
+            metadata: item.metadata,
+            createdAt: item.createdAt,
+          },
+          model: projected.model,
+          sourceArchived: false,
+          sourceDraft: isModelDraftStatus(state.model.status),
+          assetCount: projected.assetCount,
+          latestAssetId: projected.latestAssetId,
+        };
+      }
       const assets = model ? await getModelAssets(item.sourceModelId) : [];
 
       return {

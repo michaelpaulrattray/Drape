@@ -21,7 +21,9 @@ import { resolveEffectiveCastStatesForRead } from "./casting/effectiveCastRead";
 import {
   getUserDraftModelsWithThumbnailForRead,
   getUserMintedModelsWithThumbnailForRead,
+  projectEffectiveBoardModelInfo,
   projectEffectiveModelForClient,
+  projectEffectiveRegistryBundle,
 } from "./casting/modelReadProjections";
 import { buildHistoryFromAssets } from "../client/src/features/casting/utils/buildHistoryFromAssets";
 
@@ -51,6 +53,7 @@ function asset(id: number, viewType: "frontClose" | "frontFull", storageUrl: str
     viewType,
     storageUrl,
     storageKey: `models/7/${id}.png`,
+    resolution: "1024x1024",
     pinned: false,
     status: null,
     provenance: null,
@@ -184,6 +187,41 @@ describe("snapshot thumbnail projections", () => {
 });
 
 describe("selected package hydration", () => {
+  it("projects registry and board model info from selected immutable truth only", () => {
+    const state = currentState() as never;
+
+    expect(projectEffectiveRegistryBundle(state)).toEqual({
+      agencyId: mutableModel.agencyId,
+      name: mutableModel.name,
+      masterPrompt: "immutable prompt",
+      technicalSchema: { immutable: true },
+      preferences: { hair: "immutable" },
+      mintedAt: mutableModel.mintedAt,
+      assets: [
+        {
+          viewType: "frontClose",
+          resolution: "1024x1024",
+          storageUrl: selectedFront.storageUrl,
+        },
+        {
+          viewType: "frontFull",
+          resolution: "1024x1024",
+          storageUrl: selectedFull.storageUrl,
+        },
+      ],
+    });
+
+    expect(projectEffectiveBoardModelInfo(state)).toEqual({
+      model: expect.objectContaining({
+        masterPrompt: "immutable prompt",
+        technicalSchema: { immutable: true },
+        preferences: { hair: "immutable" },
+      }),
+      assetCount: 2,
+      latestAssetId: selectedFront.id,
+    });
+  });
+
   it("exposes selected presentation as a minimal public DTO", () => {
     const projected = projectEffectiveModelForClient(currentState() as never);
 

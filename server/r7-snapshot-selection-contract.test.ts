@@ -158,11 +158,13 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/snapshotTransitions.ts",
       "server/lib/boardOps.ts",
       "server/routes/boardOps.ts",
+      "server/routes/boards.ts",
       "server/routes/generation/castingExport.ts",
       "server/routes/generation/castingImaging.ts",
       "server/routes/generation/castingRefinement.ts",
       "server/routes/lobby.ts",
       "server/routes/models.ts",
+      "server/routes/registry.ts",
       "server/routes/wardrobe.ts",
       "server/_core/env.ts",
     ]);
