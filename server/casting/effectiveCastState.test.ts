@@ -180,6 +180,21 @@ describe("R7-7B1 effective Cast state", () => {
     });
   });
 
+  it("refuses a minted model that claims to be genuinely headless", () => {
+    const rows = currentRows();
+    rows.model = {
+      ...rows.model,
+      status: "active",
+      currentPackageSnapshotId: null,
+      stateVersion: 0,
+    };
+    rows.assets = [asset({ id: 2, role: "display" })];
+    rows.currentPackage = null;
+    rows.currentIdentity = null;
+    rows.currentSlots = [];
+    expectCode(() => buildEffectiveCastState(rows), "mint_seal_missing");
+  });
+
   it("refuses a pointerless model that already has an anchor", () => {
     const rows = currentRows();
     rows.model = {

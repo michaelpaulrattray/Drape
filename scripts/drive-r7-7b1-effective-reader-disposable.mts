@@ -1,21 +1,26 @@
-/** Guarded disposable-MySQL gate for the private R7-7B1 effective reader. */
+/** Guarded disposable-MySQL gate for the private R7-7B1/B2 effective reader. */
 import "dotenv/config";
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 import mysql from "mysql2/promise";
 
 const PREFIX = "drape_r7_7b1_disposable_";
 
 function run(command: string, args: string[], env: NodeJS.ProcessEnv) {
-  const executable = process.platform === "win32" ? "cmd.exe" : command;
-  const executableArgs = process.platform === "win32"
-    ? ["/d", "/s", "/c", [command, ...args].join(" ")]
-    : args;
+  const pnpmEntry = process.platform === "win32" && process.env.APPDATA
+    ? join(process.env.APPDATA, "npm", "node_modules", "pnpm", "bin", "pnpm.cjs")
+    : null;
+  const useNodePnpm = !!pnpmEntry && existsSync(pnpmEntry);
+  const executable = useNodePnpm ? process.execPath : command;
+  const executableArgs = useNodePnpm ? [pnpmEntry, ...args] : args;
   const result = spawnSync(executable, executableArgs, {
+    cwd: process.cwd(),
     env,
     stdio: "inherit",
-    timeout: 180_000,
+    timeout: 600_000,
   });
   if (result.error) throw result.error;
   if (result.status !== 0) {
@@ -71,6 +76,7 @@ async function dropDisposableDatabase(input: {
 }
 
 async function main() {
+  const focusedB2 = process.argv.includes("--focused-b2");
   const configured = process.env.DATABASE_URL;
   if (!configured) throw new Error("DATABASE_URL is required (development DB only)");
   if ((process.env.VITE_APP_ID ?? "").toLowerCase().includes("production")) {
@@ -118,20 +124,43 @@ async function main() {
       await connection.end();
     }
 
+    const projectionFiles = focusedB2
+      ? ["server/r7-snapshot-bootstrap-db.test.ts"]
+      : [
+        "server/casting/snapshotReadScope.test.ts",
+        "server/casting/effectiveCastRead.test.ts",
+        "server/casting/effectiveCastState.test.ts",
+        "server/casting/effectiveCastProjections.test.ts",
+        "server/r7-snapshot-selection-contract.test.ts",
+        "server/r7-snapshot-bootstrap-db.test.ts",
+      ];
     run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
       "exec", "vitest", "run",
       "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false",
       "--maxWorkers=1", "--reporter=verbose",
-      "server/casting/snapshotReadScope.test.ts",
-      "server/casting/effectiveCastState.test.ts",
-      "server/r7-snapshot-selection-contract.test.ts",
-      "server/r7-snapshot-bootstrap-db.test.ts",
+      ...projectionFiles,
+      ...(focusedB2
+        ? ["-t", "projects package, mint and refresh plans from the selected snapshot head"]
+        : []),
     ], {
       ...process.env,
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),
     });
-    console.log("[disposable] R7-7B1 effective-reader gates passed");
+    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
+      "exec", "vitest", "run",
+      "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false",
+      "--maxWorkers=1", "--reporter=verbose",
+      "server/r7-generation-operations-db.test.ts",
+      ...(focusedB2
+        ? ["-t", "captures server-owned snapshot expectations when a model operation starts"]
+        : []),
+    ], {
+      ...process.env,
+      DATABASE_URL: "",
+      TEST_DATABASE_URL: testUrl.toString(),
+    });
+    console.log("[disposable] R7-7B1/B2 effective-reader gates passed");
   } finally {
     if (created) {
       await admin.end().catch(() => undefined);

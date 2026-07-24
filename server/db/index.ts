@@ -69,6 +69,7 @@ export {
   claimGenerationOperation,
   acquireGenerationOperationLock,
   markGenerationOperationRunning,
+  assertGenerationOperationSnapshotHead,
   bindGenerationOperationModel,
   finalizeClaimedGenerationOperationSuccess,
   finalizeClaimedGenerationOperationFailure,

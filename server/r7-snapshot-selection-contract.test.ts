@@ -142,8 +142,16 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
         scopeCallers.push(normalized);
       }
     }
-    expect(effectiveCallers).toEqual([]);
-    expect(scopeCallers).toEqual(["server/_core/env.ts"]);
+    expect(effectiveCallers).toEqual([
+      "server/casting/effectiveCastRead.ts",
+      "server/casting/mintPackage.ts",
+    ]);
+    expect(scopeCallers).toEqual([
+      "server/casting/mintPackage.ts",
+      "server/casting/refreshSlots.ts",
+      "server/routes/generation/castingExport.ts",
+      "server/_core/env.ts",
+    ]);
 
     const resolver = await readFile(
       new URL("./casting/effectiveCastState.ts", import.meta.url),

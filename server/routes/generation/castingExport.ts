@@ -1,7 +1,7 @@
 import { publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getUserGenerations, getUserById, getModelAssets,
-  markGenerationOperationRunning,
+  markGenerationOperationRunning, assertGenerationOperationSnapshotHead,
 } from "../../db";
 import { CREDIT_COSTS, POINT_COSTS } from "../../casting/aiService";
 import {
@@ -33,6 +33,8 @@ import {
   failClaimedDirectOperation,
 } from "../../casting/directOperation";
 import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
+import { captureSnapshotReadMode } from "../../casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "../../casting/effectiveCastRead";
 const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
@@ -52,7 +54,12 @@ export const castingExportRouter = router({
   exportPlan: protectedProcedure
     .input(z.object({ modelId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
-      const state = await getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      const state = await getPackageState({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+        readMode,
+      });
       const viewCount = state.slots.filter((slot) => slot.filled && slot.url).length;
       return buildExportPlan(viewCount, CREDIT_COSTS.upscale);
     }),
@@ -147,7 +154,8 @@ export const castingExportRouter = router({
   mintPackagePlan: protectedProcedure
     .input(z.object({ modelId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
-      return planMintPackage({ userId: ctx.user.id, modelId: input.modelId });
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      return planMintPackage({ userId: ctx.user.id, modelId: input.modelId, readMode });
     }),
 
   /** D-39 tiered mint execute: generates the tier's missing views (back
@@ -163,6 +171,7 @@ export const castingExportRouter = router({
       mint: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       const initialModel = await getModelById(input.modelId);
       if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
       if (initialModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -201,7 +210,11 @@ export const castingExportRouter = router({
             ? [{ angle: item.angle as (typeof CANONICAL_VIEW_ANGLES)[number], imageUrl: asset.storageUrl, assetId: asset.id }]
             : [];
         });
-        const state = await getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+        const state = await getPackageState({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          readMode,
+        });
         const failedAngles = Array.isArray(saved?.failedAngles) ? saved.failedAngles : [];
         const failed = state.slots.flatMap((slot) =>
           failedAngles.includes(slot.angle) && slot.failed
@@ -232,8 +245,14 @@ export const castingExportRouter = router({
         if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
-        plan = await planMintPackage({ userId: ctx.user.id, modelId: input.modelId });
-        const snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        plan = await planMintPackage({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          readMode,
+        });
+        const snapshotHead = readMode === "snapshot"
+          ? await resolveEffectiveCastStateForRead({ userId: ctx.user.id, modelId: input.modelId })
+          : await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
         if (snapshotHead.status === "headless") {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
@@ -254,6 +273,21 @@ export const castingExportRouter = router({
         phase: "minting",
         heartbeat: true,
       });
+      try {
+        await assertGenerationOperationSnapshotHead({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          modelId: input.modelId,
+        });
+      } catch (error) {
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error,
+          chargedCredits: 0,
+          refundedCredits: 0,
+        });
+      }
       let chargedCredits = 0;
       let refundedCredits = 0;
       let durableResult = false;
@@ -301,7 +335,8 @@ export const castingExportRouter = router({
   packageState: protectedProcedure
     .input(z.object({ modelId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
-      return getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      return getPackageState({ userId: ctx.user.id, modelId: input.modelId, readMode });
     }),
 
   /** R5 per-slot pin (D-21 on the package ledger): pinned = accepted-final,
@@ -466,7 +501,13 @@ export const castingExportRouter = router({
         .optional(),
     }))
     .query(async ({ ctx, input }) => {
-      return planRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      return planRefreshSlots({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+        angles: input.angles,
+        readMode,
+      });
     }),
 
   /** R5 refresh execute: regenerates the slots against the CURRENT headshot,
@@ -482,6 +523,7 @@ export const castingExportRouter = router({
         }),
     }))
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       const initialModel = await getModelById(input.modelId);
       if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
       if (initialModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -507,7 +549,11 @@ export const castingExportRouter = router({
             ? [{ angle: item.angle as (typeof CANONICAL_VIEW_ANGLES)[number], imageUrl: asset.storageUrl, assetId: asset.id }]
             : [];
         });
-        const state = await getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+        const state = await getPackageState({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          readMode,
+        });
         const failedAngles = Array.isArray(saved?.failedAngles) ? saved.failedAngles : [];
         const failed = state.slots.flatMap((slot) =>
           failedAngles.includes(slot.angle) && slot.failed
@@ -528,8 +574,15 @@ export const castingExportRouter = router({
         if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
-        plan = await planRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
-        const snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        plan = await planRefreshSlots({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          angles: input.angles,
+          readMode,
+        });
+        const snapshotHead = readMode === "snapshot"
+          ? await resolveEffectiveCastStateForRead({ userId: ctx.user.id, modelId: input.modelId })
+          : await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
         if (snapshotHead.status === "headless") {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
@@ -549,6 +602,21 @@ export const castingExportRouter = router({
         phase: "refreshing",
         heartbeat: true,
       });
+      try {
+        await assertGenerationOperationSnapshotHead({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          modelId: input.modelId,
+        });
+      } catch (error) {
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error,
+          chargedCredits: 0,
+          refundedCredits: 0,
+        });
+      }
       let chargedCredits = 0;
       let refundedCredits = 0;
       let durableResult = false;

@@ -9,6 +9,9 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
   let connection: Connection;
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
   let resolveOwnedEffectiveCastState: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastState;
+  let getPackageState: typeof import("./casting/mintPackage").getPackageState;
+  let planMintPackage: typeof import("./casting/mintPackage").planMintPackage;
+  let planRefreshSlots: typeof import("./casting/refreshSlots").planRefreshSlots;
   let planSnapshotConvergence: typeof import("./casting/snapshotConvergence").planSnapshotConvergence;
   let convergeSnapshotCohort: typeof import("./casting/snapshotConvergence").convergeSnapshotCohort;
 
@@ -23,6 +26,8 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     connection = await mysql.createConnection(testDatabaseUrl!);
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
     ({ resolveOwnedEffectiveCastState } = await import("./casting/effectiveCastState"));
+    ({ getPackageState, planMintPackage } = await import("./casting/mintPackage"));
+    ({ planRefreshSlots } = await import("./casting/refreshSlots"));
     ({ planSnapshotConvergence, convergeSnapshotCohort } = await import("./casting/snapshotConvergence"));
   });
 
@@ -173,6 +178,68 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
       "frontClose",
       "sideClose",
     ]);
+  }, 60_000);
+
+  it("projects package, mint and refresh plans from the selected snapshot head", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    await addAsset({
+      modelId,
+      role: "anchor",
+      url: "https://example.invalid/selected-headshot.png",
+    });
+    const selectedSideId = await addAsset({
+      modelId,
+      viewType: "sideClose",
+      stale: true,
+      url: "https://example.invalid/selected-side.png",
+    });
+    await bootstrapModelSnapshot({ userId, modelId });
+
+    // This row is newer in the legacy ledger, but the snapshot head still
+    // explicitly selects selectedSideId. It contributes history only.
+    await addAsset({
+      modelId,
+      viewType: "sideClose",
+      url: "https://example.invalid/newer-unselected-side.png",
+    });
+
+    const packageState = await getPackageState({
+      userId,
+      modelId,
+      readMode: "snapshot",
+    });
+    expect(packageState.pinningAvailable).toBe(false);
+    expect(packageState.slots.find((slot) => slot.angle === "sideClose")).toMatchObject({
+      url: "https://example.invalid/selected-side.png",
+      stale: true,
+      version: 2,
+    });
+
+    const effective = await resolveOwnedEffectiveCastState({ userId, modelId });
+    expect(
+      effective.status === "current"
+        ? effective.selectedViews.find((view) => view.angle === "sideClose")?.asset.id
+        : null,
+    ).toBe(selectedSideId);
+
+    const mintPlan = await planMintPackage({
+      userId,
+      modelId,
+      readMode: "snapshot",
+    });
+    expect(mintPlan.tiers.core.missing).toEqual(["threeQuarter", "frontFull"]);
+    expect(mintPlan.integrity.core.tierViews.find((view) => view.angle === "sideClose"))
+      .toMatchObject({ present: true, ok: false, reason: "stale" });
+
+    const refreshPlan = await planRefreshSlots({
+      userId,
+      modelId,
+      angles: ["sideClose"],
+      readMode: "snapshot",
+    });
+    expect(refreshPlan.refreshable).toEqual(["sideClose"]);
+    expect(refreshPlan.totalCost).toBeGreaterThan(0);
   }, 60_000);
 
   it("refuses foreign ownership and a pointerless anchored Cast without writes", async () => {

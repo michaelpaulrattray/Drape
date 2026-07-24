@@ -42,6 +42,7 @@ vi.mock("./db", async (importOriginal) => {
     mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
     bindGenerationOperationModel: vi.fn().mockResolvedValue(undefined),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
+    assertGenerationOperationSnapshotHead: vi.fn().mockResolvedValue(undefined),
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 501 }),
     markModelAssetsStale: vi.fn().mockResolvedValue({ success: true }),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),
@@ -202,6 +203,7 @@ import {
   createModelAsset,
   updateModel,
   markGenerationOperationRunning,
+  assertGenerationOperationSnapshotHead,
   mintModelAtomically,
   deductPoints,
   deductCredits,
@@ -287,6 +289,7 @@ beforeEach(() => {
     operationId: REQUEST_ID,
     chargeReferenceId: `op:${REQUEST_ID}:charge`,
   });
+  vi.mocked(assertGenerationOperationSnapshotHead).mockClear().mockResolvedValue(undefined);
   vi.mocked(beginDirectOperation).mockReset().mockResolvedValue({ type: "execute", operationId: REQUEST_ID });
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
@@ -607,6 +610,8 @@ describe("mint/add-views snapshot ordering", () => {
     const bootstrapOrder = vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0];
     const runningOrder = vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0];
     expect(bootstrapOrder).toBeLessThan(runningOrder);
+    expect(runningOrder)
+      .toBeLessThan(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0]);
     expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
       operationId: REQUEST_ID,
       operationKind: "casting.mint",
@@ -628,6 +633,23 @@ describe("mint/add-views snapshot ordering", () => {
       message: expect.stringContaining("headshot"),
     });
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("refuses a receipt-head drift before mint credits or provider work", async () => {
+    vi.mocked(getModelAssets).mockResolvedValue(fullPackage as never);
+    vi.mocked(assertGenerationOperationSnapshotHead)
+      .mockRejectedValueOnce(new Error("snapshot head changed before execution"));
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    })).rejects.toThrow("snapshot head changed before execution");
+
     expect(deductPoints).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
@@ -767,6 +789,8 @@ describe("generation.refreshSlots snapshot adoption", () => {
     expect(vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
     expect(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0]);
+    expect(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(generateRemainingViews).mock.invocationCallOrder[0]);
     expect(vi.mocked(generateRemainingViews).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(commitRefreshedSlotsSnapshot).mock.invocationCallOrder[0]);
@@ -785,6 +809,24 @@ describe("generation.refreshSlots snapshot adoption", () => {
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("headshot") });
 
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("refuses a receipt-head drift before refresh credits or provider work", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-3" }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue(staleRefreshAssets() as never);
+    vi.mocked(assertGenerationOperationSnapshotHead)
+      .mockRejectedValueOnce(new Error("snapshot head changed before execution"));
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["threeQuarter"],
+    })).rejects.toThrow("snapshot head changed before execution");
+
     expect(deductPoints).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();

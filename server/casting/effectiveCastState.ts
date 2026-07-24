@@ -153,6 +153,10 @@ export function buildEffectiveCastState(rows: EffectiveCastStateRows): Effective
     if (model.sealedIdentitySnapshotId || model.sealedPackageSnapshotId) {
       fail("seal_pointer_pair");
     }
+    // A minted Cast cannot be genuinely headless: minting seals a complete
+    // identity/package pair. Refuse this corrupt legacy shape instead of
+    // presenting it as an ordinary empty draft.
+    if (isModelMintedStatus(model.status)) fail("mint_seal_missing");
     return {
       authority: "snapshot",
       status: "headless",

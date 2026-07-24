@@ -24,6 +24,7 @@ import { TRPCError } from "@trpc/server";
 import { getModelById, getModelAssets, deductPoints } from "../db";
 import {
   computePackageSlots,
+  computeEffectivePackageSlots,
   completePreparedPackageSlotAudit,
   failPreparedPackageSlot,
   generatePackageSlotCandidate,
@@ -32,6 +33,8 @@ import {
   type PreparedPackageSlot,
   type SlotGenContext,
 } from "./mintPackage";
+import { resolveEffectiveCastStateForRead } from "./effectiveCastRead";
+import type { SnapshotReadMode } from "./snapshotReadScope";
 import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTypes";
 // V8: refusal law lives in shared/refreshPolicy so the client's stale count
 // and this plan's rows derive from the SAME predicate — they cannot disagree
@@ -94,7 +97,15 @@ export async function planRefreshSlots(input: {
   userId: number;
   modelId: number;
   angles?: CanonicalViewAngle[];
+  readMode?: SnapshotReadMode;
 }): Promise<RefreshPlan & { modelId: number }> {
+  if (input.readMode === "snapshot") {
+    const state = await resolveEffectiveCastStateForRead(input);
+    return {
+      modelId: input.modelId,
+      ...computeRefreshPlan(computeEffectivePackageSlots(state), input.angles),
+    };
+  }
   const { slots } = await loadModelSlots(input);
   return { modelId: input.modelId, ...computeRefreshPlan(slots, input.angles) };
 }

@@ -1017,6 +1017,79 @@ export async function markGenerationOperationRunning(input: {
   return { operationId: input.operationId, chargeReferenceId };
 }
 
+/**
+ * Re-resolve the model's snapshot head after the running receipt captured it
+ * and before a paid executor begins. The operation's model lock is the
+ * concurrency fence; this read proves the receipt still names the exact
+ * state/package/identity head the executor is about to spend against.
+ */
+export async function assertGenerationOperationSnapshotHead(input: {
+  userId: number;
+  operationId: string;
+  modelId: number;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertPositiveId(input.modelId, "modelId");
+  await withTransaction(async (tx) => {
+    const operation = await getOperationForUser(input.userId, input.operationId, tx);
+    if (
+      !operation
+      || operation.status !== "running"
+      || operation.modelId !== input.modelId
+    ) {
+      throw new Error("Generation operation is not running for this model");
+    }
+
+    const lockKey = modelOperationLockKey(input.modelId);
+    const [lock] = await tx
+      .select({ operationId: generationOperationLocks.operationId })
+      .from(generationOperationLocks)
+      .where(eq(generationOperationLocks.lockKey, lockKey))
+      .limit(1);
+    if (lock?.operationId !== input.operationId) {
+      throw new Error("Generation operation no longer owns the model lock");
+    }
+
+    const [model] = await tx
+      .select({
+        stateVersion: models.stateVersion,
+        currentPackageSnapshotId: models.currentPackageSnapshotId,
+      })
+      .from(models)
+      .where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        ne(models.status, "archived"),
+        isNull(models.deletedAt),
+      ))
+      .limit(1);
+    if (!model) throw new Error("Generation operation model is no longer available");
+
+    let identitySnapshotId: string | null = null;
+    if (model.currentPackageSnapshotId) {
+      const [head] = await tx
+        .select({ identitySnapshotId: modelPackageSnapshots.identitySnapshotId })
+        .from(modelPackageSnapshots)
+        .where(and(
+          eq(modelPackageSnapshots.id, model.currentPackageSnapshotId),
+          eq(modelPackageSnapshots.modelId, input.modelId),
+        ))
+        .limit(1);
+      if (!head) throw new Error("Generation operation model snapshot head is invalid");
+      identitySnapshotId = head.identitySnapshotId;
+    }
+
+    if (
+      operation.expectedStateVersion !== model.stateVersion
+      || (operation.expectedPackageSnapshotId ?? null) !== (model.currentPackageSnapshotId ?? null)
+      || (operation.expectedIdentitySnapshotId ?? null) !== identitySnapshotId
+    ) {
+      throw new Error("Generation operation model snapshot head changed before execution");
+    }
+  });
+}
+
 export async function heartbeatGenerationOperation(input: {
   userId: number;
   operationId: string;

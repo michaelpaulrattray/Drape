@@ -1047,6 +1047,11 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       plannedCredits: 350,
       requiredLockKey: lockKey,
     });
+    await expect(operations.assertGenerationOperationSnapshotHead({
+      userId,
+      operationId: claimed.operationId,
+      modelId: created.modelId,
+    })).resolves.toBeUndefined();
 
     const [[receipt]] = await connection.query<RowDataPacket[]>(
       `SELECT expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId
@@ -1058,6 +1063,16 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       expectedIdentitySnapshotId: bootstrapped.identitySnapshotId,
       expectedPackageSnapshotId: bootstrapped.packageSnapshotId,
     });
+
+    await connection.execute(
+      "UPDATE models SET stateVersion = stateVersion + 1 WHERE id = ?",
+      [created.modelId],
+    );
+    await expect(operations.assertGenerationOperationSnapshotHead({
+      userId,
+      operationId: claimed.operationId,
+      modelId: created.modelId,
+    })).rejects.toThrow("snapshot head changed before execution");
   }, 30_000);
 
   it("refuses a claim-then-archive race and a cross-model snapshot head before running", async () => {

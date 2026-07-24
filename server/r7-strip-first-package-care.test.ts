@@ -59,7 +59,9 @@ describe('R7-4A strip-first package care', () => {
   it('keeps server planning authoritative before refresh credits move', () => {
     const route = read('server/routes/generation/castingExport.ts');
     const executor = read('server/casting/refreshSlots.ts');
-    expect(route).toContain('planRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles })');
+    expect(route).toContain('planRefreshSlots({');
+    expect(route).toContain('angles: input.angles,');
+    expect(route).toContain('readMode,');
     expect(executor).toContain('// Structural refusals before any money moves');
     expect(executor).toContain('await deductPoints(');
   });

@@ -52,7 +52,11 @@ import {
   isRestoreCompatible,
   selectIdentityAnchor,
 } from "./identity/anchorSelector";
-import { computeMintIntegrity, type MintIntegrity } from "./identity/mintIntegrity";
+import {
+  computeMintIntegrity,
+  computeMintIntegrityForSelection,
+  type MintIntegrity,
+} from "./identity/mintIntegrity";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
 import { createModuleLogger } from "../logging/logger";
 import {
@@ -61,6 +65,9 @@ import {
   type GeneratedPackageSlotCandidate,
 } from "./snapshotTransitions";
 import { storageDelete } from "../storage";
+import { resolveEffectiveCastStateForRead } from "./effectiveCastRead";
+import type { EffectiveCastState } from "./effectiveCastState";
+import type { SnapshotReadMode } from "./snapshotReadScope";
 
 const log = createModuleLogger("casting/mintPackage");
 
@@ -78,7 +85,16 @@ export function tierCosts(existingAngles: string[]): Record<MintTier, { missing:
   return out;
 }
 
-export async function planMintPackage(input: { userId: number; modelId: number }) {
+export async function planMintPackage(input: {
+  userId: number;
+  modelId: number;
+  readMode?: SnapshotReadMode;
+}) {
+  if (input.readMode === "snapshot") {
+    return planMintPackageFromEffectiveState(
+      await resolveEffectiveCastStateForRead(input),
+    );
+  }
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -96,6 +112,59 @@ export async function planMintPackage(input: { userId: number; modelId: number }
   return {
     tiers: tierCosts(existing),
     hasHeadshot: existing.includes("frontClose"),
+    integrity,
+  };
+}
+
+/** Pure snapshot-authority mint plan. The asset ledger supplies provenance,
+ * version/failure evidence only; explicit package slots choose current views. */
+export function planMintPackageFromEffectiveState(state: EffectiveCastState) {
+  const assets = [...state.ledger.assets];
+  const selectedByAngle = new Map<CanonicalViewAngle, (typeof assets)[number] | null>();
+  const selectedById = new Map<number, (typeof assets)[number]>();
+
+  if (state.status === "current") {
+    for (const view of state.selectedViews) {
+      const selected = view.compatibility === "stale"
+        ? { ...view.asset, status: { state: "stale" } }
+        : view.asset;
+      selectedByAngle.set(view.angle, selected);
+      selectedById.set(selected.id, selected);
+    }
+  }
+
+  const existing = state.status === "current"
+    ? state.selectedViews.map((view) => view.angle)
+    : [];
+  const identityText = state.status === "current" ? state.identity.identityText : "";
+  const anchor = state.status === "current"
+    ? selectedById.get(state.anchor.id) ?? state.anchor
+    : null;
+  const displayedHeadshot = state.status === "current"
+    ? selectedByAngle.get("frontClose") ?? null
+    : null;
+  const integrity = {} as Record<MintTier, MintIntegrity>;
+  for (const tier of ["draft", "core", "production"] as const) {
+    integrity[tier] = computeMintIntegrityForSelection(
+      state.model,
+      assets,
+      MINT_TIER_SLOTS[tier],
+      identityText,
+      {
+        anchor,
+        displayedHeadshot,
+        hasDisplayedHeadshotSelection:
+          state.status === "current"
+          && state.selectedViews.some((view) => view.angle === "frontClose"),
+        selectedByAngle,
+      },
+    );
+  }
+  return {
+    tiers: tierCosts(existing),
+    hasHeadshot:
+      state.status === "current"
+      && state.selectedViews.some((view) => view.angle === "frontClose"),
     integrity,
   };
 }
@@ -678,6 +747,30 @@ interface SlotAssetRow {
   createdAt?: Date | string | null;
 }
 
+function failedSlotFromLedger(
+  assets: readonly SlotAssetRow[],
+  angle: CanonicalViewAngle,
+): SlotFailure | null {
+  const forAngle = assets.filter((asset) => asset.viewType === angle);
+  const filled = forAngle.find((asset) => asset.storageUrl);
+  const newest = forAngle[0];
+  const status = newest?.status as {
+    state?: string;
+    reason?: string;
+    refunded?: number;
+    refundReference?: string;
+    at?: string;
+  } | undefined;
+  return !filled && status?.state === "failed"
+    ? {
+        reason: status.reason ?? "The identity check didn't pass",
+        refunded: status.refunded ?? 0,
+        ...(status.refundReference ? { refundReference: status.refundReference } : {}),
+        at: status.at ?? "",
+      }
+    : null;
+}
+
 /** Pure per-slot computation — filled wins; else the newest attempt's failure
  *  marker surfaces. `assets` MUST be newest-first (getModelAssets order).
  *  Exported for tests. */
@@ -685,18 +778,6 @@ export function computePackageSlots(assets: SlotAssetRow[]): PackageSlot[] {
   return (Object.keys(VIEW_ANGLE_LABELS) as CanonicalViewAngle[]).map((angle) => {
     const forAngle = assets.filter((a) => a.viewType === angle);
     const filledRow = forAngle.find((a) => a.storageUrl);
-    // Failed only when nothing is filled AND the newest attempt is a marker
-    const newest = forAngle[0];
-    const status = newest?.status as { state?: string; reason?: string; refunded?: number; refundReference?: string; at?: string } | undefined;
-    const failed =
-      !filledRow && status?.state === "failed"
-        ? {
-            reason: status.reason ?? "The identity check didn't pass",
-            refunded: status.refunded ?? 0,
-            ...(status.refundReference ? { refundReference: status.refundReference } : {}),
-            at: status.at ?? "",
-          }
-        : null;
     const filledStatus = filledRow?.status as { state?: string } | undefined;
     return {
       angle,
@@ -706,13 +787,50 @@ export function computePackageSlots(assets: SlotAssetRow[]): PackageSlot[] {
       pinned: filledRow?.pinned ?? false,
       stale: filledStatus?.state === "stale",
       version: forAngle.filter((a) => a.storageUrl).length,
-      failed,
+      failed: failedSlotFromLedger(assets, angle),
+    };
+  });
+}
+
+/** Pure snapshot package projection. Explicit slots select; the asset ledger
+ * contributes only history counts and failed-attempt/refund evidence. */
+export function computeEffectivePackageSlots(state: EffectiveCastState): PackageSlot[] {
+  const selected = state.status === "current"
+    ? new Map(state.selectedViews.map((view) => [view.angle, view]))
+    : new Map<CanonicalViewAngle, never>();
+  const ledger = [...state.ledger.assets];
+  return (Object.keys(VIEW_ANGLE_LABELS) as CanonicalViewAngle[]).map((angle) => {
+    const view = selected.get(angle);
+    return {
+      angle,
+      label: VIEW_ANGLE_LABELS[angle],
+      filled: !!view,
+      url: view?.asset.storageUrl ?? null,
+      pinned: view?.asset.pinned ?? false,
+      stale: view?.compatibility === "stale",
+      version: ledger.filter((asset) => asset.viewType === angle && !!asset.storageUrl).length,
+      failed: failedSlotFromLedger(ledger, angle),
     };
   });
 }
 
 /** Package completeness — the model-level slot read (D-39c; R5's comp card reads this). */
-export async function getPackageState(input: { userId: number; modelId: number }) {
+export async function getPackageState(input: {
+  userId: number;
+  modelId: number;
+  readMode?: SnapshotReadMode;
+}) {
+  if (input.readMode === "snapshot") {
+    const state = await resolveEffectiveCastStateForRead(input);
+    return {
+      modelId: input.modelId,
+      minted: isModelMintedStatus(state.model.status),
+      slots: computeEffectivePackageSlots(state),
+      // Presentation capability only. B6 removes the mutation surface; this
+      // field lets clients hide it without granting them read authority.
+      pinningAvailable: false as const,
+    };
+  }
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
