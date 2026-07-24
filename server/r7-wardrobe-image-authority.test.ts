@@ -8,6 +8,32 @@ vi.mock("./db", async (importOriginal) => {
     createSession: vi.fn(),
     capUserSessions: vi.fn(),
     getSessionById: vi.fn(),
+    getGarmentById: vi.fn(),
+    createGeneration: vi.fn(),
+    updateSession: vi.fn(),
+  };
+});
+
+vi.mock("./casting/atomicCredits", () => ({
+  withAtomicCredits: vi.fn(async (
+    _input: unknown,
+    work: () => Promise<unknown>,
+  ) => work()),
+}));
+
+vi.mock("./db/dailyQuota", () => ({
+  enforceDailyQuota: vi.fn(),
+}));
+
+vi.mock("./security/rateLimit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./security/rateLimit")>();
+  return {
+    ...actual,
+    checkRateLimit: vi.fn().mockReturnValue({
+      allowed: true,
+      remaining: 10,
+      resetIn: 0,
+    }),
   };
 });
 
@@ -29,13 +55,45 @@ vi.mock("./wardrobe/vtoSession", () => ({
   clearSession: vi.fn(),
 }));
 
+vi.mock("./wardrobe/vtoGeneration", () => ({
+  generateVirtualTryOn: vi.fn(),
+  incrementalComposite: vi.fn(),
+}));
+
+vi.mock("./wardrobe/garmentRefinement", () => ({
+  refineGarment: vi.fn(),
+}));
+
+vi.mock("./wardrobe/identityCheck", () => ({
+  checkIdentityMatch: vi.fn(),
+}));
+
+vi.mock("./wardrobe/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./wardrobe/utils")>();
+  return {
+    ...actual,
+    getImageAspectBucket: vi.fn(),
+  };
+});
+
 import {
   capUserSessions,
+  createGeneration,
   createSession,
+  getGarmentById,
   getSessionById,
+  updateSession,
 } from "./db";
+import { withAtomicCredits } from "./casting/atomicCredits";
 import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
+import {
+  generateVirtualTryOn,
+  incrementalComposite,
+} from "./wardrobe/vtoGeneration";
+import { refineGarment } from "./wardrobe/garmentRefinement";
+import { checkIdentityMatch } from "./wardrobe/identityCheck";
+import { getImageAspectBucket } from "./wardrobe/utils";
 import { seedSession } from "./wardrobe/vtoSession";
 import { appRouter } from "./routers";
 
@@ -89,6 +147,48 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     vi.mocked(createSession).mockResolvedValue(91);
     vi.mocked(capUserSessions).mockResolvedValue(undefined);
     vi.mocked(seedSession).mockResolvedValue(undefined);
+    vi.mocked(getSessionById).mockResolvedValue({
+      id: 91,
+      userId: 7,
+      modelId: 42,
+      modelImageUrl: "https://old.example/original.png",
+      history: [],
+      historyIndex: 0,
+      activeGarmentIds: [],
+      tattooMapData: null,
+      styleNotes: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(currentState());
+    vi.mocked(getGarmentById).mockResolvedValue({
+      id: 3,
+      userId: 7,
+      slotType: "tops",
+      shortName: "Black jacket",
+      description: "A black jacket",
+      tags: [],
+      isolatedImageUrl: "https://garments.example/jacket.png",
+      originalImageUrl: "https://garments.example/original.png",
+      sourceImageUrl: null,
+      status: "ready",
+    } as Awaited<ReturnType<typeof getGarmentById>>);
+    vi.mocked(createGeneration).mockResolvedValue({
+      success: true,
+      generationId: 501,
+    });
+    vi.mocked(updateSession).mockResolvedValue(undefined);
+    vi.mocked(getImageAspectBucket).mockResolvedValue("3:4");
+    vi.mocked(generateVirtualTryOn).mockResolvedValue({
+      resultUrl: "https://results.example/full.png",
+    });
+    vi.mocked(incrementalComposite).mockResolvedValue({
+      resultUrl: "https://results.example/incremental.png",
+    });
+    vi.mocked(refineGarment).mockResolvedValue({
+      resultUrl: "https://results.example/refined.png",
+    });
+    vi.mocked(checkIdentityMatch).mockResolvedValue(true);
   });
 
   afterAll(() => {
@@ -220,7 +320,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       id: 91,
       userId: 7,
       modelId: null,
-      modelImageUrl: "https://uploads.example/captured.png",
+      modelImageUrl: "https://pub-test.r2.dev/7-models/upload-captured.png",
     } as Awaited<ReturnType<typeof getSessionById>>);
 
     await appRouter.createCaller(authCtx()).wardrobe.sessions.seedChat({
@@ -233,7 +333,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     expect(seedSession).toHaveBeenCalledWith(
       7,
       "91",
-      "https://uploads.example/captured.png",
+      "https://pub-test.r2.dev/7-models/upload-captured.png",
       "https://results.example/look.png",
       undefined,
     );
@@ -261,5 +361,175 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
 
     expect(seedSession).not.toHaveBeenCalled();
+  });
+
+  it("uses the selected session-owned image for full VTO before paid work", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(
+      currentState("https://selected.example/current-body.png"),
+    );
+
+    const result = await appRouter.createCaller(authCtx()).wardrobe.vto.generate({
+      modelImageUrl: "https://forged.example/substitute.png",
+      garmentIds: [3],
+      sessionId: 91,
+    });
+
+    expect(result).toEqual({ resultUrl: "https://results.example/full.png" });
+    expect(getImageAspectBucket).toHaveBeenCalledWith(
+      "https://selected.example/current-body.png",
+    );
+    expect(generateVirtualTryOn).toHaveBeenCalledWith(expect.objectContaining({
+      modelImageUrl: "https://selected.example/current-body.png",
+      sessionId: "91",
+    }));
+    expect(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(createGeneration).mock.invocationCallOrder[0]);
+    expect(vi.mocked(createGeneration).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(withAtomicCredits).mock.invocationCallOrder[0]);
+    expect(vi.mocked(withAtomicCredits).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(generateVirtualTryOn).mock.invocationCallOrder[0]);
+  });
+
+  it("refuses missing snapshot session authority before generation or credits", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getSessionById).mockResolvedValue(null);
+
+    await expect(appRouter.createCaller(authCtx()).wardrobe.vto.generate({
+      modelImageUrl: "https://forged.example/substitute.png",
+      garmentIds: [3],
+      sessionId: 91,
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    expect(getGarmentById).not.toHaveBeenCalled();
+    expect(createGeneration).not.toHaveBeenCalled();
+    expect(withAtomicCredits).not.toHaveBeenCalled();
+    expect(getImageAspectBucket).not.toHaveBeenCalled();
+    expect(generateVirtualTryOn).not.toHaveBeenCalled();
+  });
+
+  it("uses an upload session's durable image for full VTO", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getSessionById).mockResolvedValue({
+      id: 91,
+      userId: 7,
+      modelId: null,
+      modelImageUrl: "https://pub-test.r2.dev/7-models/upload-captured.png",
+    } as Awaited<ReturnType<typeof getSessionById>>);
+
+    await appRouter.createCaller(authCtx()).wardrobe.vto.generate({
+      modelImageUrl: "https://forged.example/substitute.png",
+      garmentIds: [3],
+      sessionId: 91,
+    });
+
+    expect(resolveEffectiveCastStateForRead).not.toHaveBeenCalled();
+    expect(generateVirtualTryOn).toHaveBeenCalledWith(expect.objectContaining({
+      modelImageUrl: "https://pub-test.r2.dev/7-models/upload-captured.png",
+    }));
+  });
+
+  it("refuses a legacy upload session outside the owned namespace before paid work", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getSessionById).mockResolvedValue({
+      id: 91,
+      userId: 7,
+      modelId: null,
+      modelImageUrl: "https://legacy-external.example/model.png",
+    } as Awaited<ReturnType<typeof getSessionById>>);
+
+    await expect(appRouter.createCaller(authCtx()).wardrobe.vto.generate({
+      modelImageUrl: "https://forged.example/substitute.png",
+      garmentIds: [3],
+      sessionId: 91,
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(createGeneration).not.toHaveBeenCalled();
+    expect(withAtomicCredits).not.toHaveBeenCalled();
+    expect(generateVirtualTryOn).not.toHaveBeenCalled();
+  });
+
+  it("uses the selected session-owned image for incremental VTO", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+
+    await appRouter.createCaller(authCtx()).wardrobe.vto.incremental({
+      previousResultUrl: "https://results.example/previous.png",
+      modelImageUrl: "https://forged.example/substitute.png",
+      changedGarmentIds: [3],
+      changedSlots: ["tops"],
+      allGarmentIds: [3],
+      sessionId: 91,
+    });
+
+    expect(getImageAspectBucket).toHaveBeenCalledWith(
+      "https://selected.example/front-full.png",
+    );
+    expect(incrementalComposite).toHaveBeenCalledWith(expect.objectContaining({
+      modelImageUrl: "https://selected.example/front-full.png",
+      sessionId: "91",
+    }));
+  });
+
+  it("uses the selected session-owned image for refinement and identity checking", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    const caller = appRouter.createCaller(authCtx());
+
+    await caller.wardrobe.vto.refine({
+      currentResultUrl: "https://results.example/current.png",
+      modelImageUrl: "https://forged.example/substitute.png",
+      garmentId: 3,
+      instruction: "Make the jacket more fitted",
+      sessionId: 91,
+    });
+    await caller.wardrobe.vto.checkIdentity({
+      modelImageUrl: "https://forged.example/substitute.png",
+      resultImageUrl: "https://results.example/refined.png",
+      sessionId: 91,
+    });
+
+    expect(refineGarment).toHaveBeenCalledWith(expect.objectContaining({
+      modelImageUrl: "https://selected.example/front-full.png",
+      sessionId: "91",
+    }));
+    expect(checkIdentityMatch).toHaveBeenCalledWith(
+      "https://selected.example/front-full.png",
+      "https://results.example/refined.png",
+    );
+  });
+
+  it("preserves raw model-image inputs for all R6 execution paths", async () => {
+    const caller = appRouter.createCaller(authCtx());
+
+    await caller.wardrobe.vto.generate({
+      modelImageUrl: "https://legacy.example/model.png",
+      garmentIds: [3],
+    });
+    await caller.wardrobe.vto.checkIdentity({
+      modelImageUrl: "https://legacy.example/model.png",
+      resultImageUrl: "https://results.example/full.png",
+    });
+
+    expect(getSessionById).not.toHaveBeenCalled();
+    expect(resolveEffectiveCastStateForRead).not.toHaveBeenCalled();
+    expect(generateVirtualTryOn).toHaveBeenCalledWith(expect.objectContaining({
+      modelImageUrl: "https://legacy.example/model.png",
+      sessionId: "default",
+    }));
+    expect(checkIdentityMatch).toHaveBeenCalledWith(
+      "https://legacy.example/model.png",
+      "https://results.example/full.png",
+    );
+  });
+
+  it("rejects client read authority on the paid VTO wire", async () => {
+    await expect(appRouter.createCaller(authCtx()).wardrobe.vto.generate({
+      modelImageUrl: "https://legacy.example/model.png",
+      garmentIds: [3],
+      readMode: "r6",
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+    expect(captureSnapshotReadMode).not.toHaveBeenCalled();
+    expect(createGeneration).not.toHaveBeenCalled();
+    expect(withAtomicCredits).not.toHaveBeenCalled();
   });
 });

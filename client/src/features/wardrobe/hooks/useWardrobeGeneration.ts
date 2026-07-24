@@ -496,7 +496,11 @@ export function useWardrobeGeneration({
       // Identity check — only on first attempt, not on auto-retries
       if (!identityRetryRef.current) {
         identityMutation
-          .mutateAsync({ modelImageUrl, resultImageUrl: result.resultUrl })
+          .mutateAsync({
+            modelImageUrl,
+            resultImageUrl: result.resultUrl,
+            sessionId: sessionId ?? undefined,
+          })
           .then((res) => {
             if (!res.match && genId === generationIdRef.current) {
               console.warn("[Identity Check] Drift detected — regenerating");

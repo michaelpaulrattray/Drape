@@ -263,10 +263,17 @@ const vtoRouter = router({
         promptFragment: z.string(),
       }).optional(),
       sessionId: z.number().optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
+      const modelImageUrl = await resolveWardrobeSessionUseImage({
+        userId: ctx.user.id,
+        sessionId: input.sessionId,
+        requestedImageUrl: input.modelImageUrl,
+        readMode,
+      });
 
       // Fetch garments and validate ownership
       const garments = await Promise.all(
@@ -297,9 +304,9 @@ const vtoRouter = router({
           referenceId: `gen-${genResult.generationId}`,
         },
         async () => {
-          const aspectRatio = await getImageAspectBucket(input.modelImageUrl);
+          const aspectRatio = await getImageAspectBucket(modelImageUrl);
           return generateVirtualTryOn({
-            modelImageUrl: input.modelImageUrl,
+            modelImageUrl,
             garments: garments.map((g) => toGarmentForVTO(g, input.styleNotes?.[String(g.id)])),
             tattooMap: input.tattooMap,
             userId: String(ctx.user.id),
@@ -345,10 +352,17 @@ const vtoRouter = router({
       }).optional(),
       isStyleRefresh: z.boolean().optional(),
       sessionId: z.number().optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
+      const modelImageUrl = await resolveWardrobeSessionUseImage({
+        userId: ctx.user.id,
+        sessionId: input.sessionId,
+        requestedImageUrl: input.modelImageUrl,
+        readMode,
+      });
 
       // Fetch all garments
       const allGarments = await Promise.all(
@@ -386,10 +400,10 @@ const vtoRouter = router({
           referenceId: `gen-${genResult.generationId}`,
         },
         async () => {
-          const aspectRatio = await getImageAspectBucket(input.modelImageUrl);
+          const aspectRatio = await getImageAspectBucket(modelImageUrl);
           return incrementalComposite({
             previousResultUrl: input.previousResultUrl,
-            modelImageUrl: input.modelImageUrl,
+            modelImageUrl,
             changedGarments: changedGarments.map((g) => toGarmentForVTO(g, input.styleNotes?.[String(g.id)])),
             changedSlots: input.changedSlots,
             allGarments: allGarments.map((g) => toGarmentForVTO(g, input.styleNotes?.[String(g.id)])),
@@ -435,10 +449,17 @@ const vtoRouter = router({
         promptFragment: z.string(),
       }).optional(),
       sessionId: z.number().optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
+      const modelImageUrl = await resolveWardrobeSessionUseImage({
+        userId: ctx.user.id,
+        sessionId: input.sessionId,
+        requestedImageUrl: input.modelImageUrl,
+        readMode,
+      });
 
       const garment = await getGarmentById(input.garmentId);
       if (!garment || garment.userId !== ctx.user.id) {
@@ -490,10 +511,10 @@ const vtoRouter = router({
           referenceId: `gen-${genResult.generationId}`,
         },
         async () => {
-          const aspectRatio = await getImageAspectBucket(input.modelImageUrl);
+          const aspectRatio = await getImageAspectBucket(modelImageUrl);
           return refineGarment({
             resultImageUrl: input.currentResultUrl,
-            modelImageUrl: input.modelImageUrl,
+            modelImageUrl,
             garmentLabel: garment.shortName || "garment",
             category: garment.slotType,
             instruction: input.instruction,
@@ -546,10 +567,18 @@ const vtoRouter = router({
     .input(z.object({
       modelImageUrl: z.string().url(),
       resultImageUrl: z.string().url(),
-    }))
+      sessionId: z.number().optional(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
-      const match = await checkIdentityMatch(input.modelImageUrl, input.resultImageUrl);
+      const modelImageUrl = await resolveWardrobeSessionUseImage({
+        userId: ctx.user.id,
+        sessionId: input.sessionId,
+        requestedImageUrl: input.modelImageUrl,
+        readMode,
+      });
+      const match = await checkIdentityMatch(modelImageUrl, input.resultImageUrl);
       return { match };
     }),
 });
@@ -746,25 +775,12 @@ const sessionRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
-      let modelImageUrl = input.modelImageUrl;
-      if (readMode === "snapshot") {
-        const persistentSessionId = Number(input.sessionId);
-        if (
-          !/^[1-9]\d*$/.test(input.sessionId)
-          || !Number.isSafeInteger(persistentSessionId)
-        ) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Wardrobe session not found",
-          });
-        }
-        modelImageUrl = await resolveWardrobeSessionUseImage({
-          userId: ctx.user.id,
-          sessionId: persistentSessionId,
-          requestedImageUrl: input.modelImageUrl,
-          readMode,
-        });
-      }
+      const modelImageUrl = await resolveWardrobeSessionUseImage({
+        userId: ctx.user.id,
+        sessionId: input.sessionId,
+        requestedImageUrl: input.modelImageUrl,
+        readMode,
+      });
       await seedSession(
         ctx.user.id,
         input.sessionId,

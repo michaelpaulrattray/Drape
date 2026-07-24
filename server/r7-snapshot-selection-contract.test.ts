@@ -320,11 +320,32 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "utf8",
     );
     expect(source).not.toMatch(
-      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue|analyzeTattoos/i,
+      /\b(?:tx|db)\.(insert|update|delete)\(|\.for\(\s*["']update["']\s*\)|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue|analyzeTattoos/i,
     );
     expect(source).toContain('view.angle === "frontFull"');
     expect(source).toContain("session.modelId == null");
-    expect(source).toContain("return session.modelImageUrl");
+    expect(source).toContain("requestedImageUrl: session.modelImageUrl");
+
+    const route = await readFile(
+      new URL("./routes/wardrobe.ts", import.meta.url),
+      "utf8",
+    );
+    expect(route.match(/resolveWardrobeSessionUseImage\(\{/g)).toHaveLength(5);
+    expect(route).not.toContain("getImageAspectBucket(input.modelImageUrl)");
+    expect(route).not.toContain(
+      "checkIdentityMatch(input.modelImageUrl, input.resultImageUrl)",
+    );
+
+    const client = await readFile(
+      new URL(
+        "../client/src/features/wardrobe/hooks/useWardrobeGeneration.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(client).toMatch(
+      /identityMutation[\s\S]*resultImageUrl:\s*result\.resultUrl,[\s\S]*sessionId:\s*sessionId\s*\?\?\s*undefined/,
+    );
   });
 
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {

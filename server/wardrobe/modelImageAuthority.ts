@@ -95,20 +95,37 @@ export async function resolveWardrobeSessionCreateImage(input: {
  */
 export async function resolveWardrobeSessionUseImage(input: {
   userId: number;
-  sessionId: number;
+  sessionId: number | string | null | undefined;
   requestedImageUrl: string;
   readMode: SnapshotReadMode;
 }): Promise<string> {
   if (input.readMode === "r6") return input.requestedImageUrl;
 
-  const session = await getSessionById(input.sessionId);
+  const serializedSessionId = String(input.sessionId ?? "");
+  const sessionId = Number(serializedSessionId);
+  if (
+    !/^[1-9]\d*$/.test(serializedSessionId)
+    || !Number.isSafeInteger(sessionId)
+  ) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Wardrobe session not found",
+    });
+  }
+
+  const session = await getSessionById(sessionId);
   if (!session || session.userId !== input.userId) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "Wardrobe session not found",
     });
   }
-  if (session.modelId == null) return session.modelImageUrl;
+  if (session.modelId == null) {
+    return assertOwnedWardrobeUpload({
+      userId: input.userId,
+      requestedImageUrl: session.modelImageUrl,
+    });
+  }
 
   return resolveSelectedCastFullBody({
     userId: input.userId,
