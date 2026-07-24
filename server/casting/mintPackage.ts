@@ -142,9 +142,13 @@ export function snapshotMintExecutionAuthority(
 
   if (state.status === "current") {
     for (const view of state.selectedViews) {
-      const selected = view.compatibility === "stale"
-        ? { ...view.asset, status: { state: "stale" } }
-        : view.asset;
+      // R7-7B6: snapshot selection is the accepted version ceremony. Legacy
+      // row pins are dormant rollback data and cannot change mint validity.
+      const selected = {
+        ...view.asset,
+        pinned: false,
+        ...(view.compatibility === "stale" ? { status: { state: "stale" } } : {}),
+      };
       selectedByAngle.set(view.angle, selected);
       selectedById.set(selected.id, selected);
     }
@@ -857,7 +861,9 @@ export function computeEffectivePackageSlots(state: EffectiveCastState): Package
       label: VIEW_ANGLE_LABELS[angle],
       filled: !!view,
       url: view?.asset.storageUrl ?? null,
-      pinned: view?.asset.pinned ?? false,
+      // R7-7B6: the selected package owns current truth. A dormant legacy
+      // asset pin cannot suppress stale pressure or a deliberate refresh.
+      pinned: false,
       stale: view?.compatibility === "stale",
       version: ledger.filter((asset) => asset.viewType === angle && !!asset.storageUrl).length,
       failed: failedSlotFromLedger(ledger, angle),

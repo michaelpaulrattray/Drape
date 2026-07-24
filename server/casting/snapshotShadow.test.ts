@@ -211,7 +211,7 @@ describe("R7-7A4 snapshot shadow comparator", () => {
     expect(report.consumerParity.casting_refresh_plan.parity).toBe(true);
   });
 
-  it("keeps pinned stale selections and unselected failure markers in consumer parity", () => {
+  it("surfaces legacy pins as B6 consumer drift while preserving failure-marker truth", () => {
     const state = parityState();
     state.assets[0] = {
       ...state.assets[0],
@@ -230,9 +230,15 @@ describe("R7-7A4 snapshot shadow comparator", () => {
       status: { state: "failed", refunded: 300 },
     }));
     const report = compareSnapshotShadowState(state);
-    expect(report.parity).toBe(true);
-    expect(report.mismatchKinds).toEqual([]);
-    expect(Object.values(report.consumerParity).every((surface) => surface.parity)).toBe(true);
+    expect(report.parity).toBe(false);
+    expect(report.mismatchKinds).toEqual([
+      "consumer_package_state",
+      "consumer_refresh_plan",
+    ]);
+    expect(report.consumerParity.casting_mint_plan.parity).toBe(true);
+    expect(report.consumerParity.casting_export.parity).toBe(true);
+    expect(report.consumerParity.board_library.parity).toBe(true);
+    expect(report.consumerParity.models_registry.parity).toBe(true);
   });
 
   it("fails closed on invalid selections and incomplete minted seals", () => {

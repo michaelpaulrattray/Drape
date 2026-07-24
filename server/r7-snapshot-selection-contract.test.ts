@@ -197,6 +197,66 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(driver).not.toMatch(/storage(Put|Delete|List)|deductPoints|withAtomicCredits|Gemini|generateContent/i);
   });
 
+  it("retires Cast-slot pins only behind server-projected snapshot capability", async () => {
+    const route = await readFile(
+      new URL("./routes/generation/castingExport.ts", import.meta.url),
+      "utf8",
+    );
+    const packageReader = await readFile(
+      new URL("./casting/mintPackage.ts", import.meta.url),
+      "utf8",
+    );
+    const details = await readFile(
+      new URL("../client/src/features/casting/components/PackageHealthDialog.tsx", import.meta.url),
+      "utf8",
+    );
+    const sheet = await readFile(
+      new URL("../client/src/features/boards/canvas/nodes/useSheetController.ts", import.meta.url),
+      "utf8",
+    );
+    const castNode = await readFile(
+      new URL("../client/src/features/boards/canvas/nodes/CastNode.tsx", import.meta.url),
+      "utf8",
+    );
+    const boardPins = await readFile(
+      new URL("./lib/boardOps.ts", import.meta.url),
+      "utf8",
+    );
+
+    const pinDoor = route.slice(
+      route.indexOf("setSlotPinned: protectedProcedure"),
+      route.indexOf("slotVersions: protectedProcedure"),
+    );
+    expect(pinDoor.indexOf("captureSnapshotReadMode(ctx.user.id)"))
+      .toBeLessThan(pinDoor.indexOf("getModelById(input.modelId)"));
+    expect(pinDoor.indexOf("captureSnapshotReadMode(ctx.user.id)"))
+      .toBeLessThan(pinDoor.indexOf("beginDirectOperation({"));
+    expect(pinDoor).toContain("This Cast already keeps the version you chose.");
+    expect(pinDoor).toContain("}).strict())");
+
+    expect(packageReader).toContain("pinningAvailable: false as const");
+    expect(packageReader).toContain("pinned: false,");
+    expect(details).toContain("packageQuery.data?.pinningAvailable !== false");
+    expect(details).toContain("pinningAvailable && needsAction && plan?.refusal === 'pinned'");
+    expect(sheet).toContain("if (modelId && pinningAvailable)");
+    expect(castNode).toContain("sheet.pinningAvailable && slot.filled");
+
+    const clientPinCallers: string[] = [];
+    for (const file of await runtimeSources("client/src")) {
+      if ((await readFile(file, "utf8")).includes("setSlotPinned")) {
+        clientPinCallers.push(file.replaceAll("\\", "/"));
+      }
+    }
+    expect(clientPinCallers).toEqual([
+      "client/src/features/boards/canvas/nodes/useSheetController.ts",
+      "client/src/features/casting/components/PackageHealthDialog.tsx",
+    ]);
+
+    // Board placement pins are a separate presentation mechanism and remain.
+    expect(boardPins).toContain("export async function executeSetNodePinned");
+    expect(boardPins).toContain("metadata: input.pinned ? { pinned: true, status: null }");
+  });
+
   it("captures receipt expectations and removes snapshot rows at both erasure boundaries", async () => {
     const operations = await readFile(new URL("./db/generationOperations.ts", import.meta.url), "utf8");
     expect(operations).toContain("expectedStateVersion,");

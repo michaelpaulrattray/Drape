@@ -21,7 +21,8 @@ describe('R7-4A strip-first package care', () => {
     expect(strip).toContain('Refresh ${label} for ${refreshCost.toLocaleString()} credits');
     expect(strip).toContain("cost={plan?.refusal === null ? plan.cost : undefined}");
     expect(strip).toContain('Refresh all<br />{actionableCost.toLocaleString()} credits');
-    expect(strip).toContain("const hasDetails = packageSlots.some((slot) => slot.version > 1 || (slot.stale && slot.pinned))");
+    expect(strip).toContain("const pinningAvailable = packageQuery.data?.pinningAvailable !== false");
+    expect(strip).toContain("(pinningAvailable && slot.stale && slot.pinned)");
     expect(strip).not.toContain('Stale dot');
     expect(strip).not.toContain("'Package health'");
   });

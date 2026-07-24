@@ -102,6 +102,7 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
   const [bulkRefreshOpen, setBulkRefreshOpen] = useState(false);
 
   const slots = (packageQuery.data?.slots ?? []) as SheetSlotState[];
+  const pinningAvailable = packageQuery.data?.pinningAvailable !== false;
   const filledCount = slots.filter((s) => s.filled).length;
   const minted = packageQuery.data?.minted === true;
   /** The comp card renders once a package has ≥2 filled slots — MINTED OR
@@ -205,6 +206,7 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     staleHeadshot,
     completeCard,
     minted,
+    pinningAvailable,
     filledCount,
     popoverAngle,
     setPopoverAngle,
@@ -214,10 +216,9 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     poppedItemId: popoverAngle ? poppedByAngle.get(popoverAngle) ?? null : null,
     refreshPlan: planQuery.data,
     prefetchPlan,
-    // Aggregate refresh. The stale-writer is LIVE: an identity-classified
-    // edit on a draft view marks the sibling head rows stale
-    // (castingRefinement.ts iterate → markModelAssetsStale; pinned exempt).
-    // Rows = unpinned stale slots the plan allows.
+    // Aggregate refresh. Snapshot mode projects legacy pins as dormant, so
+    // every stale selected sibling follows the same deliberate refresh law.
+    // R6 keeps its historical pin refusal until rollout is complete.
     bulkRefreshOpen,
     setBulkRefreshOpen,
     bulkStaleRows: (planQuery.data?.slots ?? [])
@@ -230,7 +231,9 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
       if (modelId && angles.length > 0) refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles });
     },
     setPinned: (angle: CanonicalViewAngle, pinned: boolean) => {
-      if (modelId) pinMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle, pinned });
+      if (modelId && pinningAvailable) {
+        pinMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle, pinned });
+      }
     },
     popOut: (angle: CanonicalViewAngle) => {
       window.dispatchEvent(

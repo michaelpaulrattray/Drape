@@ -67,6 +67,7 @@ export function CastingDetailsDialog() {
     { modelId: modelId ?? 0 },
     { enabled: open && !!modelId, staleTime: 0 },
   );
+  const pinningAvailable = packageQuery.data?.pinningAvailable !== false;
   const pinMutation = trpc.generation.setSlotPinned.useMutation({
     onSuccess: (_result, variables) => { void invalidate(variables.modelId); },
     onError: (error) => toast.error(error.message),
@@ -160,7 +161,7 @@ export function CastingDetailsDialog() {
                           ? blocker.message
                           : slot.failed
                           ? `Retry needed — ${slot.failed.reason}`
-                          : slot.stale && slot.pinned
+                          : pinningAvailable && slot.stale && slot.pinned
                             ? 'Pinned and out of sync — unpin first'
                             : slot.stale
                               ? 'Out of sync with the current identity'
@@ -171,7 +172,7 @@ export function CastingDetailsDialog() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {needsAction && plan?.refusal === 'pinned' ? (
+                    {pinningAvailable && needsAction && plan?.refusal === 'pinned' ? (
                       <button type="button" onClick={() => modelId && pinMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle: slot.angle, pinned: false })} disabled={pinMutation.isPending} className="text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink disabled:opacity-40">
                         Unpin
                       </button>

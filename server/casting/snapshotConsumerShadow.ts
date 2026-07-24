@@ -117,7 +117,9 @@ function normalizedSnapshotPackage(
       angle,
       selectedAssetId: selection?.selectedAssetId ?? null,
       filled: !!asset?.storageUrl,
-      pinned: !!asset?.pinned,
+      // R7-7B6 snapshot readers retire Cast-slot pins. Keeping this side
+      // unpinned makes the audit surface legacy pin drift until convergence.
+      pinned: false,
       stale: selection?.compatibility === "stale",
       version: state.assets.filter((row) => row.viewType === angle && !!row.storageUrl).length,
       failed: failure.failed,
@@ -210,6 +212,8 @@ function normalizeSnapshotMintPlan(state: SnapshotShadowState) {
       asset
         ? {
             ...asset,
+            // R7-7B6: selected-version truth supersedes the legacy pin.
+            pinned: false,
             // Package compatibility is immutable snapshot truth. Preserve
             // provenance while projecting stale state through the shared
             // mint-integrity law.

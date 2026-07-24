@@ -275,7 +275,10 @@ export function ViewTabs() {
     (total, slot) => total + (planByAngle.get(slot.angle)?.cost ?? 0),
     0,
   );
-  const hasDetails = packageSlots.some((slot) => slot.version > 1 || (slot.stale && slot.pinned));
+  const pinningAvailable = packageQuery.data?.pinningAvailable !== false;
+  const hasDetails = packageSlots.some(
+    (slot) => slot.version > 1 || (pinningAvailable && slot.stale && slot.pinned),
+  );
   const [hovered, setHovered] = useState(false);
 
   const getAsset = (vt: ViewType) => currentAssets.find((a) => a.viewType === vt);

@@ -40,6 +40,7 @@ vi.mock("./db", async (importOriginal) => {
     createGeneration: vi.fn().mockResolvedValue({ success: true, generationId: 11 }),
     updateGeneration: vi.fn().mockResolvedValue({ success: true }),
     updateModel: vi.fn().mockResolvedValue({ success: true }),
+    setModelAssetPinned: vi.fn().mockResolvedValue({ success: true }),
     mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
     bindGenerationOperationModel: vi.fn().mockResolvedValue(undefined),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
@@ -213,6 +214,7 @@ import {
   createModel,
   createModelAsset,
   updateModel,
+  setModelAssetPinned,
   markGenerationOperationRunning,
   assertGenerationOperationSnapshotHead,
   mintModelAtomically,
@@ -299,6 +301,7 @@ beforeEach(() => {
   vi.mocked(createModel).mockClear().mockResolvedValue({ success: true, modelId: 77 } as never);
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 501 } as never);
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true } as never);
+  vi.mocked(setModelAssetPinned).mockClear().mockResolvedValue({ success: true });
   vi.mocked(markGenerationOperationRunning).mockClear().mockResolvedValue({
     operationId: REQUEST_ID,
     chargeReferenceId: `op:${REQUEST_ID}:charge`,
@@ -1557,5 +1560,59 @@ describe("generation.restoreSlotVersion snapshot adoption", () => {
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("headshot") });
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
     expect(commitRestoredSlotSnapshot).not.toHaveBeenCalled();
+  });
+});
+
+describe("generation.setSlotPinned B6 retirement", () => {
+  it("refuses snapshot-enabled accounts before model reads or operation claim", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValueOnce("snapshot");
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.setSlotPinned({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angle: "sideClose",
+      pinned: true,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "This Cast already keeps the version you chose. Use version history to choose another.",
+    });
+
+    expect(captureSnapshotReadMode).toHaveBeenCalledTimes(1);
+    expect(getModelById).not.toHaveBeenCalled();
+    expect(beginDirectOperation).not.toHaveBeenCalled();
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(setModelAssetPinned).not.toHaveBeenCalled();
+  });
+
+  it("keeps the R6 pin writer available while rollout scope is off", async () => {
+    vi.mocked(getModelAssets).mockResolvedValueOnce([
+      asset({ id: 44, viewType: "sideClose", storageUrl: "https://r2/side.png" }),
+    ] as never);
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.setSlotPinned({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angle: "sideClose",
+      pinned: true,
+    })).resolves.toEqual({ modelId: 7, angle: "sideClose", pinned: true });
+
+    expect(captureSnapshotReadMode).toHaveBeenCalledTimes(1);
+    expect(beginDirectOperation).toHaveBeenCalledTimes(1);
+    expect(setModelAssetPinned).toHaveBeenCalledWith(44, true);
+  });
+
+  it("rejects client-supplied read authority before mode capture", async () => {
+    const caller = productionRouter.createCaller(authCtx());
+    await expect(caller.generation.setSlotPinned({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angle: "sideClose",
+      pinned: true,
+      readMode: "r6",
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(captureSnapshotReadMode).not.toHaveBeenCalled();
+    expect(beginDirectOperation).not.toHaveBeenCalled();
   });
 });

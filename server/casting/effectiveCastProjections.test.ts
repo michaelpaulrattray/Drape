@@ -161,7 +161,7 @@ describe("R7-7B2 effective Cast projections", () => {
     ]);
     expect(slots.find((slot) => slot.angle === "sideClose")).toMatchObject({
       url: "https://example.invalid/3.png",
-      pinned: true,
+      pinned: false,
       stale: true,
       version: 2,
       failed: null,
@@ -189,7 +189,7 @@ describe("R7-7B2 effective Cast projections", () => {
     expect(plan.tiers.draft.missing).toEqual([]);
     expect(plan.integrity.draft.ok).toBe(true);
     expect(plan.integrity.core.tierViews.find((view) => view.angle === "sideClose"))
-      .toMatchObject({ present: true, ok: false, reason: "pinned_stale" });
+      .toMatchObject({ present: true, ok: false, reason: "stale" });
     expect(plan.integrity.production.ok).toBe(false);
   });
 
@@ -200,9 +200,10 @@ describe("R7-7B2 effective Cast projections", () => {
     expect(plan.slots.find((slot) => slot.angle === "frontClose")?.refusal)
       .toBe("identity_anchor");
     expect(plan.slots.find((slot) => slot.angle === "sideClose")?.refusal)
-      .toBe("pinned");
+      .toBeNull();
     expect(plan.refreshable).toEqual([
       "threeQuarter",
+      "sideClose",
       "frontFull",
       "sideFull",
       "backFull",

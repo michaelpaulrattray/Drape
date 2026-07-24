@@ -374,16 +374,23 @@ export const castingExportRouter = router({
       return getPackageState({ userId: ctx.user.id, modelId: input.modelId, readMode });
     }),
 
-  /** R5 per-slot pin (D-21 on the package ledger): pinned = accepted-final,
-   *  exempt from staleness pressure and bulk refresh. Free — no rate gate. */
+  /** Legacy R5 per-slot pin. Snapshot-selected accounts retire this mutation:
+   *  choosing a version is the accepted-selection ceremony. */
   setSlotPinned: protectedProcedure
     .input(z.object({
       clientRequestId: z.string().uuid(),
       modelId: z.number().int().positive(),
       angle: z.enum(CANONICAL_VIEW_ANGLES),
       pinned: z.boolean(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      if (readMode === "snapshot") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This Cast already keeps the version you chose. Use version history to choose another.",
+        });
+      }
       const model = await getModelById(input.modelId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
       if (model.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
