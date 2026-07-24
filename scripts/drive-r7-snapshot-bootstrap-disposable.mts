@@ -67,10 +67,15 @@ async function dropDisposableDatabase(input: {
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.some((arg) => arg !== "--focused-b3")) {
-    throw new Error(`Unknown argument: ${args.find((arg) => arg !== "--focused-b3")}`);
+  const allowedArgs = new Set(["--focused-b3", "--focused-iterate"]);
+  if (args.some((arg) => !allowedArgs.has(arg))) {
+    throw new Error(`Unknown argument: ${args.find((arg) => !allowedArgs.has(arg))}`);
   }
   const focusedB3 = args.includes("--focused-b3");
+  const focusedIterate = args.includes("--focused-iterate");
+  if (focusedB3 && focusedIterate) {
+    throw new Error("Choose only one focused disposable gate");
+  }
   const configured = process.env.DATABASE_URL;
   if (!configured) throw new Error("DATABASE_URL is required (development DB only)");
   if ((process.env.VITE_APP_ID ?? "").toLowerCase().includes("production")) {
@@ -114,6 +119,13 @@ async function main() {
           "--testNamePattern=snapshot.*ledger",
           "server/r7-snapshot-transitions-db.test.ts",
         ]
+      : focusedIterate
+        ? [
+            "exec", "vitest", "run",
+            "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
+            "--testNamePattern=snapshot-selected.*iteration",
+            "server/r7-snapshot-transitions-db.test.ts",
+          ]
       : [
           "exec", "vitest", "run",
           "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
@@ -127,9 +139,13 @@ async function main() {
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),
     });
-    console.log(focusedB3
-      ? "[disposable] R7-7B3 snapshot-selected restore gate passed"
-      : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed");
+    console.log(
+      focusedB3
+        ? "[disposable] R7-7B3 snapshot-selected restore gate passed"
+        : focusedIterate
+          ? "[disposable] R7-7B3 snapshot-selected iteration gate passed"
+          : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed",
+    );
   } finally {
     if (created) {
       // The Railway public proxy may close a connection while the multi-minute

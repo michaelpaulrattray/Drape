@@ -2,6 +2,7 @@ import { protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getModelAssets,
   createGeneration, updateGeneration, markGenerationOperationRunning,
+  assertGenerationOperationSnapshotHead,
 } from "../../db";
 import {
   iterateModel, iterateModelRaw, uploadRawCandidate, enhanceUserPrompt,
@@ -54,12 +55,63 @@ import {
   failClaimedDirectOperation,
 } from "../../casting/directOperation";
 import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
+import { captureSnapshotReadMode } from "../../casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "../../casting/effectiveCastRead";
+import type { EffectiveCastState } from "../../casting/effectiveCastState";
+import type { Model, ModelAsset } from "../../../drizzle/schema";
 import {
   commitDocumentCompactionSnapshot,
   commitImageRefineSnapshot,
   commitIteratedIdentitySnapshot,
 } from "../../casting/snapshotTransitions";
 const log = createModuleLogger("routes/generation");
+
+interface IterationReadTruth {
+  model: Model;
+  assets: ModelAsset[];
+  targetAsset: ModelAsset;
+  anchorAssetId: number | null;
+  displayedHeadshotAssetId: number | null;
+  targetBelongsToCurrentIdentity: boolean;
+}
+
+function snapshotIterationReadTruth(
+  state: EffectiveCastState,
+  targetAssetId: number,
+): IterationReadTruth {
+  if (state.status !== "current") {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "This Cast has no headshot package to refine.",
+    });
+  }
+  const selected = state.selectedViews.find((view) => view.asset.id === targetAssetId);
+  if (!selected) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Select the current Cast view before editing it.",
+    });
+  }
+  if (selected.compatibility !== "current") {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Refresh this Cast view before editing it.",
+    });
+  }
+  return {
+    model: {
+      ...state.model,
+      masterPrompt: state.identity.masterPrompt,
+      technicalSchema: state.identity.technicalSchema,
+      preferences: state.identity.preferences,
+    },
+    assets: Array.from(state.ledger.assets),
+    targetAsset: selected.asset,
+    anchorAssetId: state.anchor.id,
+    displayedHeadshotAssetId: state.displayedHeadshot.id,
+    targetBelongsToCurrentIdentity: true,
+  };
+}
 
 export const castingRefinementRouter = router({
   // Iterate/refine a model image
@@ -68,6 +120,7 @@ export const castingRefinementRouter = router({
   iterate: protectedProcedure
     .input(iterateInputSchema)
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       // MASKED EDITS CLOSED (Batch 0, R6 execution plan): the edit classifier
       // reads only the feedback text, and masked submissions carry fixed or
       // arbitrary text that names no mark — so a mask could change a minted
@@ -182,16 +235,44 @@ export const castingRefinementRouter = router({
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
 
-      // Get the asset being iterated
-      const assets = await getModelAssets(input.modelId);
-      const targetAsset = assets.find(a => a.id === input.assetId);
-      if (!targetAsset) {
+      let effectiveState: EffectiveCastState | null = null;
+      let readTruth: IterationReadTruth;
+      try {
+        if (readMode === "snapshot") {
+          effectiveState = await resolveEffectiveCastStateForRead({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+          });
+          readTruth = snapshotIterationReadTruth(effectiveState, input.assetId);
+        } else {
+          const r6Assets = await getModelAssets(input.modelId);
+          const r6Target = r6Assets.find((asset) => asset.id === input.assetId);
+          if (!r6Target) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
+          }
+          const currentIdentityText = buildIdentityAnchor(
+            lockedModel.masterPrompt || "",
+            lockedModel.technicalSchema ?? undefined,
+          );
+          readTruth = {
+            model: lockedModel,
+            assets: r6Assets,
+            targetAsset: r6Target,
+            anchorAssetId: selectIdentityAnchor(r6Assets)?.id ?? null,
+            displayedHeadshotAssetId: selectDisplayedHeadshot(r6Assets)?.id ?? null,
+            targetBelongsToCurrentIdentity: isRestoreCompatible(
+              assetRevisionMembership(r6Target, lockedModel, currentIdentityText),
+            ),
+          };
+        }
+      } catch (error) {
         return failClaimedDirectOperation({
           userId: ctx.user.id,
           operationId: gate.operationId,
-          error: new TRPCError({ code: "NOT_FOUND", message: "Asset not found" }),
+          error,
         });
       }
+      let { model: generationModel, assets, targetAsset } = readTruth;
 
       // V1+V14 (Batch A-coupled): per-view framing from the exhaustive
       // canonical maps — the close trio (frontClose/sideClose/threeQuarter)
@@ -218,20 +299,12 @@ export const castingRefinementRouter = router({
       // complete HERE, before the generation record, the deduction, and the
       // image-model call, so every refusal class is free (R2, fail-closed).
       // The F4 minted-identity fork copy still flows from the same boundary.
-      const anchor = selectIdentityAnchor(assets);
-      const displayedHeadshot = selectDisplayedHeadshot(assets);
-      const currentIdentityText = buildIdentityAnchor(
-        lockedModel.masterPrompt || "",
-        lockedModel.technicalSchema ?? undefined,
-      );
       const decision = await authorizeEditRequest({
-        model: lockedModel,
+        model: generationModel,
         targetAsset: { id: targetAsset.id, viewType: targetAsset.viewType },
-        anchorAssetId: anchor?.id ?? null,
-        displayedHeadshotAssetId: displayedHeadshot?.id ?? null,
-        targetBelongsToCurrentIdentity: isRestoreCompatible(
-          assetRevisionMembership(targetAsset, lockedModel, currentIdentityText),
-        ),
+        anchorAssetId: readTruth.anchorAssetId,
+        displayedHeadshotAssetId: readTruth.displayedHeadshotAssetId,
+        targetBelongsToCurrentIdentity: readTruth.targetBelongsToCurrentIdentity,
         feedback: input.feedback,
         referenceAttached: !!input.referenceImage,
         referenceImageBase64: input.referenceImage,
@@ -275,21 +348,23 @@ export const castingRefinementRouter = router({
       // R7-7A3 dual-write ordering: converge the current R6 package while
       // this operation owns model:<id>, then capture that exact head on the
       // running receipt. The paid provider call starts only afterwards.
-      let snapshotHead: Awaited<ReturnType<typeof bootstrapModelSnapshot>>;
-      try {
-        snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
-      } catch (error) {
-        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
-      }
-      if (snapshotHead.status === "headless") {
-        return failClaimedDirectOperation({
-          userId: ctx.user.id,
-          operationId: gate.operationId,
-          error: new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "This Cast has no headshot package to refine.",
-          }),
-        });
+      if (readMode === "r6") {
+        let snapshotHead: Awaited<ReturnType<typeof bootstrapModelSnapshot>>;
+        try {
+          snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        } catch (error) {
+          return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+        }
+        if (snapshotHead.status === "headless") {
+          return failClaimedDirectOperation({
+            userId: ctx.user.id,
+            operationId: gate.operationId,
+            error: new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "This Cast has no headshot package to refine.",
+            }),
+          });
+        }
       }
 
       const generationMetadata = {
@@ -330,6 +405,40 @@ export const castingRefinementRouter = router({
         phase: "generating",
         heartbeat: true,
       });
+      try {
+        await assertGenerationOperationSnapshotHead({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          modelId: input.modelId,
+        });
+        if (readMode === "snapshot") {
+          effectiveState = await resolveEffectiveCastStateForRead({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+          });
+          readTruth = snapshotIterationReadTruth(effectiveState, input.assetId);
+          ({ model: generationModel, assets, targetAsset } = readTruth);
+        }
+      } catch (error) {
+        const auditFailed = await updateGeneration(genResult.generationId, {
+          status: "failed",
+          errorMessage: error instanceof Error ? error.message : "Snapshot authority check failed",
+          completedAt: new Date(),
+        });
+        if (!auditFailed.success) {
+          log.error(
+            { modelId: input.modelId, generationId: genResult.generationId },
+            "[iterate] pre-charge snapshot refusal audit write failed",
+          );
+        }
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          chargedCredits: 0,
+          refundedCredits: 0,
+          error,
+        });
+      }
       const chargeReferenceId = started.chargeReferenceId;
       let chargedCredits = 0;
       let refundedCredits = 0;
@@ -354,18 +463,18 @@ export const castingRefinementRouter = router({
             // only through the §8.6 atomic commit below, built from the
             // handler-normalized patch — never by appending the raw sentence,
             // and never by an LLM schema rewrite on the paid path.
-            const prefs = (lockedModel.preferences || {}) as any;
+            const prefs = (generationModel.preferences || {}) as any;
             const ethnicityHint = buildEthnicityHint(prefs);
             const reinforcedPrompt = identityPatch
               ? buildIdentityEditReinforcedPrompt(
-                  lockedModel.masterPrompt || "",
+                  generationModel.masterPrompt || "",
                   prefs,
                   identityPatch,
                 )
-              : buildReinforcedPrompt(lockedModel.masterPrompt || "", prefs);
+              : buildReinforcedPrompt(generationModel.masterPrompt || "", prefs);
 
             const commonOptions = {
-              castingBrand: (lockedModel.technicalSchema as any)?.context?.casting_for,
+              castingBrand: (generationModel.technicalSchema as any)?.context?.casting_for,
               frame: framing.crop,
               viewAngle: framing.viewAngle,
               additionalReference: input.referenceImage,
@@ -373,7 +482,7 @@ export const castingRefinementRouter = router({
               ethnicityHint,
               userId: String(ctx.user.id),
               modelId: input.modelId,
-              technicalSchema: lockedModel.technicalSchema ?? undefined,
+              technicalSchema: generationModel.technicalSchema ?? undefined,
             } as const;
 
             const iterResult = authorization.class === "identity"
@@ -381,7 +490,7 @@ export const castingRefinementRouter = router({
                   sourceImage: targetAsset.storageUrl,
                   patch: identityPatch!,
                   frame: framing.crop,
-                  modelName: lockedModel.name,
+                  modelName: generationModel.name,
                   generate: (attempt) => {
                     const firstVerdict = identityGateAudit[0]?.verdict;
                     const retryDirectives = attempt === 2 && firstVerdict
@@ -441,6 +550,7 @@ export const castingRefinementRouter = router({
               userId: ctx.user.id,
               modelId: input.modelId,
               operationId: gate.operationId,
+              readMode,
               patch: identityPatch!,
               candidate: {
                 targetAssetId: targetAsset.id,
@@ -541,6 +651,7 @@ export const castingRefinementRouter = router({
             userId: ctx.user.id,
             modelId: input.modelId,
             operationId: gate.operationId,
+            readMode,
             candidate: {
               targetAssetId: targetAsset.id,
               storageUrl: result.imageUrl,

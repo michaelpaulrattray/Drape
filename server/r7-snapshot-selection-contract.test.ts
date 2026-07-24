@@ -147,6 +147,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/mintPackage.ts",
       "server/casting/refreshSlots.ts",
       "server/routes/generation/castingImaging.ts",
+      "server/routes/generation/castingRefinement.ts",
     ]);
     expect(scopeCallers).toEqual([
       "server/casting/mintPackage.ts",
@@ -154,6 +155,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/snapshotTransitions.ts",
       "server/routes/generation/castingExport.ts",
       "server/routes/generation/castingImaging.ts",
+      "server/routes/generation/castingRefinement.ts",
       "server/_core/env.ts",
     ]);
 
@@ -262,7 +264,9 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "utf8",
     );
     expect(transitionDriver).toContain('"--focused-b3"');
+    expect(transitionDriver).toContain('"--focused-iterate"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*ledger"');
+    expect(transitionDriver).toContain('"--testNamePattern=snapshot-selected.*iteration"');
   });
 
   it("keeps snapshot PDF image authority server-only and caller-bounded", async () => {

@@ -402,6 +402,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      readMode: "r6",
       candidate: {
         storageUrl: "https://example.invalid/rerolled-headshot.png",
         storageKey: "casting/rerolled-headshot.png",
@@ -516,6 +517,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      readMode: "r6",
       patch: {
         source: "structured",
         edits: [{
@@ -1197,6 +1199,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      readMode: "r6",
       candidate: {
         targetAssetId: base.sideAssetId,
         storageUrl: "https://example.invalid/side-refined.png",
@@ -1249,6 +1252,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      readMode: "r6",
       patch: {
         source: "text",
         edits: [{
@@ -1317,6 +1321,141 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(2);
     expect(await one("SELECT reason, anchorAssetId, createdByOperationId FROM model_identity_snapshots WHERE id = ?", [committed.identitySnapshotId]))
       .toMatchObject({ reason: "identity_edit", anchorAssetId: committed.result.assetId, createdByOperationId: operationId });
+  }, 60_000);
+
+  it("snapshot-selected iteration refuses a filled historical asset that the package did not select", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const historicalAssetId = await addAsset({
+      modelId: base.modelId,
+      viewAngle: "sideClose",
+      role: "display",
+      revisionId: "genesis",
+      url: "https://example.invalid/unselected-side.png",
+    });
+    const operationId = await startModelOperation(userId, base.modelId, "casting.iterate");
+    const assetsBefore = await count("model_assets", "modelId = ?", [base.modelId]);
+
+    await expect(commitImageRefineSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      readMode: "snapshot",
+      candidate: {
+        targetAssetId: historicalAssetId,
+        storageUrl: "https://example.invalid/should-not-land.png",
+        storageKey: "models/should-not-land.png",
+        engine: "test",
+        pointsCost: 350,
+      },
+      imageOnlyCategories: ["image.lighting"],
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(await count("model_assets", "modelId = ?", [base.modelId])).toBe(assetsBefore);
+    expect(await one(
+      "SELECT stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    )).toEqual({
+      stateVersion: 1,
+      currentPackageSnapshotId: base.packageSnapshotId,
+    });
+  }, 60_000);
+
+  it("snapshot-selected iteration refuses a stale selected view before it can become current", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    await connection.execute(
+      `UPDATE model_package_snapshot_slots
+       SET compatibility = 'stale'
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [base.packageSnapshotId],
+    );
+    await connection.execute(
+      "UPDATE model_assets SET status = JSON_OBJECT('state', 'stale') WHERE id = ?",
+      [base.sideAssetId],
+    );
+    const operationId = await startModelOperation(userId, base.modelId, "casting.iterate");
+    const assetsBefore = await count("model_assets", "modelId = ?", [base.modelId]);
+
+    await expect(commitImageRefineSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      readMode: "snapshot",
+      candidate: {
+        targetAssetId: base.sideAssetId,
+        storageUrl: "https://example.invalid/should-not-launder.png",
+        storageKey: "models/should-not-launder.png",
+        engine: "test",
+        pointsCost: 350,
+      },
+      imageOnlyCategories: ["image.lighting"],
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(await count("model_assets", "modelId = ?", [base.modelId])).toBe(assetsBefore);
+    expect(await one(
+      "SELECT stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    )).toEqual({
+      stateVersion: 1,
+      currentPackageSnapshotId: base.packageSnapshotId,
+    });
+  }, 60_000);
+
+  it("snapshot-selected iteration applies the patch to immutable identity documents, not mutable drift", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    await connection.execute(
+      `UPDATE models
+       SET masterPrompt = 'MUTABLE DRIFT',
+           technicalSchema = JSON_OBJECT('hair', 'poison-green'),
+           preferences = JSON_OBJECT('hairColor', 'Poison Green')
+       WHERE id = ?`,
+      [base.modelId],
+    );
+    const operationId = await startModelOperation(userId, base.modelId, "casting.iterate");
+
+    const committed = await commitIteratedIdentitySnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      readMode: "snapshot",
+      patch: {
+        source: "text",
+        edits: [{
+          kind: "leaf",
+          leaf: "person.hair.color",
+          operation: "modify",
+          value: { base: "Hot Pink", override: "" },
+        }],
+      },
+      candidate: {
+        targetAssetId: base.anchorAssetId,
+        storageUrl: "https://example.invalid/snapshot-head-pink.png",
+        storageKey: "models/snapshot-head-pink.png",
+        engine: "test",
+        pointsCost: 350,
+      },
+    });
+
+    const model = await one(
+      "SELECT masterPrompt, preferences FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    expect(model.masterPrompt).toContain("identity-v1");
+    expect(model.masterPrompt).toContain("Hot Pink");
+    expect(model.masterPrompt).not.toContain("MUTABLE DRIFT");
+    const preferences = typeof model.preferences === "string"
+      ? JSON.parse(model.preferences)
+      : model.preferences;
+    expect(preferences.hairColor).toBe("Hot Pink");
+    const identity = await one(
+      "SELECT parentSnapshotId, masterPrompt, preferences FROM model_identity_snapshots WHERE id = ?",
+      [committed.identitySnapshotId],
+    );
+    expect(identity.parentSnapshotId).toBe(base.identitySnapshotId);
+    expect(identity.masterPrompt).toBe(model.masterPrompt);
+    expect(identity.masterPrompt).not.toContain("MUTABLE DRIFT");
   }, 60_000);
 
   it("pairs an identity append with a package append and stales every carried sibling", async () => {
@@ -1482,6 +1621,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId: refineOperationId,
+      readMode: "r6",
       candidate: {
         targetAssetId: base.sideAssetId,
         storageUrl: "https://example.invalid/minted-side-refined.png",

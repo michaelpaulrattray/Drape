@@ -57,6 +57,7 @@ vi.mock("../db", async (importOriginal) => {
     deductCredits: vi.fn().mockResolvedValue({ success: true }),
     addCredits: vi.fn().mockResolvedValue({ success: true }),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
+    assertGenerationOperationSnapshotHead: vi.fn().mockResolvedValue(undefined),
   };
 });
 vi.mock("../db/connection", async (importOriginal) => {

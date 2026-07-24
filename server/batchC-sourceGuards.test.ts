@@ -166,6 +166,48 @@ describe("headshot snapshot reads stay server-owned", () => {
   });
 });
 
+describe("iteration snapshot reads stay server-owned", () => {
+  it("captures one mode, selects only package views, and validates the receipt head before money", () => {
+    const src = serverFile("routes/generation/castingRefinement.ts");
+    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
+    expect(iterateBlock).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+    expect(iterateBlock).toContain("resolveEffectiveCastStateForRead");
+    expect(src).toContain("state.selectedViews.find");
+    expect(iterateBlock).toContain('if (readMode === "r6")');
+    expect(iterateBlock).toContain("assertGenerationOperationSnapshotHead");
+    expect(iterateBlock).toContain("generationModel.masterPrompt");
+    expect(iterateBlock).toContain("generationModel.technicalSchema");
+    expect(iterateBlock).toContain("generationModel.preferences");
+    expect(iterateBlock).toMatch(/commitImageRefineSnapshot\(\{[\s\S]*?readMode,/);
+    expect(iterateBlock).toMatch(/commitIteratedIdentitySnapshot\(\{[\s\S]*?readMode,/);
+    expect(iterateBlock.indexOf("assertGenerationOperationSnapshotHead"))
+      .toBeLessThan(iterateBlock.indexOf("withAtomicCredits"));
+    const input = serverFile("routes/generation/iterateInput.ts");
+    expect(input).not.toContain("readMode");
+  });
+
+  it("the atomic writers independently reject unselected snapshot targets and use immutable identity documents", () => {
+    const src = serverFile("casting/snapshotTransitions.ts");
+    const imageBlock = src.slice(
+      src.indexOf("export async function commitImageRefineSnapshot"),
+      src.indexOf("export async function commitIteratedIdentitySnapshot"),
+    );
+    const identityBlock = src.slice(
+      src.indexOf("export async function commitIteratedIdentitySnapshot"),
+      src.length,
+    );
+    expect(imageBlock).toContain('input.readMode === "snapshot"');
+    expect(imageBlock).toContain("context.current.slots.find");
+    expect(imageBlock).toContain('selectedTarget?.compatibility !== "current"');
+    expect(imageBlock).toContain("context.current.identitySnapshot");
+    expect(identityBlock).toContain('input.readMode === "snapshot"');
+    expect(identityBlock).toContain("context.current.slots.find");
+    expect(identityBlock).toContain('selectedTarget?.compatibility !== "current"');
+    expect(identityBlock).toContain("context.current.identitySnapshot.masterPrompt");
+    expect(identityBlock).toContain("computeIdentityCommit(identityModel, input.patch)");
+  });
+});
+
 describe("package generation preserves exact storage ownership", () => {
   it.each([
     ["generateFullBody", "export async function generateRemainingViews"],

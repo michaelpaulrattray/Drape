@@ -240,6 +240,16 @@ vi.mock("./casting/snapshotBootstrap", () => ({
     selectedSlotCount: 1,
   }),
 }));
+vi.mock("./casting/snapshotReadScope", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotReadScope")>();
+  return {
+    ...actual,
+    captureSnapshotReadMode: vi.fn().mockReturnValue("r6"),
+  };
+});
+vi.mock("./casting/effectiveCastRead", () => ({
+  resolveEffectiveCastStateForRead: vi.fn(),
+}));
 vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
   return {
@@ -359,6 +369,7 @@ import {
   deductPoints,
   deductCredits,
   addCredits,
+  assertGenerationOperationSnapshotHead,
 } from "./db";
 import { addBoardEdge, getEdgesFrom } from "./db/boardEdges";
 import {
@@ -376,7 +387,13 @@ import {
 } from "./lib/boardOps";
 import { appRouter as productionRouter } from "./routers";
 import { storageDelete } from "./storage";
-import { commitGeneratedPackageSnapshot } from "./casting/snapshotTransitions";
+import {
+  commitGeneratedPackageSnapshot,
+  commitImageRefineSnapshot,
+  commitIteratedIdentitySnapshot,
+} from "./casting/snapshotTransitions";
+import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
 import { assertPublicOperationResult } from "./casting/operationContract";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -427,6 +444,34 @@ const asset = (over: Record<string, unknown> = {}) => ({
   id: 100, modelId: 7, viewType: "frontClose", storageUrl: "https://r2/head.png",
   pinned: false, status: null, provenance: { identityRole: "anchor", identityRevisionId: "rev-a" }, createdAt: new Date(), ...over,
 });
+const effectiveState = (over: Record<string, unknown> = {}) => ({
+  status: "current",
+  model: model({
+    masterPrompt: "mutable drift",
+    technicalSchema: { context: { casting_for: "Mutable Drift" } },
+    preferences: { gender: "Male" },
+    stateVersion: 1,
+    currentPackageSnapshotId: "11111111-1111-4111-8111-111111111115",
+  }),
+  identity: {
+    id: "11111111-1111-4111-8111-111111111114",
+    modelId: 7,
+    masterPrompt: "immutable snapshot prompt",
+    technicalSchema: { context: { casting_for: "Snapshot Brand" } },
+    preferences: { gender: "Female" },
+    identityText: "immutable identity text",
+    anchorAssetId: 100,
+  },
+  anchor: asset(),
+  displayedHeadshot: asset(),
+  selectedViews: [{
+    angle: "frontClose",
+    compatibility: "current",
+    asset: asset(),
+  }],
+  ledger: { assets: [asset()] },
+  ...over,
+});
 const boardItem = (over: Record<string, unknown> = {}) => ({
   id: 3, boardId: 2, kind: "image", label: "Cast", imageUrl: "https://r2/head.png",
   positionX: 0, positionY: 0, width: 280, height: 420, deletedAt: null, sourceModelId: 7,
@@ -468,6 +513,11 @@ beforeEach(() => {
   vi.mocked(generateCastingImage).mockClear();
   vi.mocked(generateCastingImageRaw).mockClear();
   vi.mocked(clearCastingSession).mockClear();
+  vi.mocked(assertGenerationOperationSnapshotHead).mockReset().mockResolvedValue(undefined);
+  vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
+  vi.mocked(resolveEffectiveCastStateForRead).mockReset();
+  vi.mocked(commitImageRefineSnapshot).mockClear();
+  vi.mocked(commitIteratedIdentitySnapshot).mockClear();
   vi.mocked(uploadRawCandidate).mockReset().mockResolvedValue({
     imageUrl: "https://pub-test.r2.dev/gated.png",
     storageKey: "casting/gated.png",
@@ -550,6 +600,138 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
 // ── iterate: image-only asset failure vs post-commit audit failure ──────────
 
 describe("generation.iterate boundaries", () => {
+  it("snapshot image refinement generates from the selected immutable package truth", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.generation.iterate({
+      modelId: 7,
+      feedback: "brighten the lighting",
+      assetId: 100,
+    });
+
+    expect(result.success).toBe(true);
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledTimes(2);
+    expect(iterateModel).toHaveBeenCalledWith(
+      expect.stringContaining("immutable snapshot prompt"),
+      "https://r2/head.png",
+      "brighten the lighting",
+      expect.objectContaining({
+        castingBrand: "Snapshot Brand",
+        technicalSchema: { context: { casting_for: "Snapshot Brand" } },
+      }),
+    );
+    expect(commitImageRefineSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        readMode: "snapshot",
+        candidate: expect.objectContaining({ targetAssetId: 100 }),
+      }),
+    );
+    expect(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[1]);
+    expect(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[1])
+      .toBeLessThan(vi.mocked(iterateModel).mock.invocationCallOrder[0]);
+  });
+
+  it("snapshot iteration refuses an unselected historical asset before audit, money, or generation", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({
+        modelId: 7,
+        feedback: "brighten the lighting",
+        assetId: 999,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledTimes(1);
+    expect(createGeneration).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
+    expect(iterateModel).not.toHaveBeenCalled();
+    expect(commitImageRefineSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("snapshot iteration refuses a selected stale view instead of laundering it into current truth", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState({
+      selectedViews: [{
+        angle: "frontClose",
+        compatibility: "stale",
+        asset: asset({ status: { state: "stale" } }),
+      }],
+    }) as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({
+        modelId: 7,
+        feedback: "brighten the lighting",
+        assetId: 100,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(createGeneration).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
+    expect(iterateModel).not.toHaveBeenCalled();
+    expect(commitImageRefineSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("snapshot authority drift after the running receipt fails free and seals the audit row", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead)
+      .mockResolvedValueOnce(effectiveState() as never)
+      .mockRejectedValueOnce(new Error("snapshot drift"));
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({
+        modelId: 7,
+        feedback: "brighten the lighting",
+        assetId: 100,
+      }),
+    ).rejects.toThrow("snapshot drift");
+
+    expect(createGeneration).toHaveBeenCalledTimes(1);
+    expect(updateGeneration).toHaveBeenCalledWith(11, expect.objectContaining({
+      status: "failed",
+    }));
+    expect(deductCredits).not.toHaveBeenCalled();
+    expect(iterateModel).not.toHaveBeenCalled();
+    expect(commitImageRefineSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("snapshot identity iteration threads immutable documents and mode into the atomic writer", async () => {
+    llmScript.classify = '{"kind":"identity","categories":["person.face.jawline"],"operations":{}}';
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    await caller.generation.iterate({
+      modelId: 7,
+      feedback: "make the jawline broader",
+      assetId: 100,
+    });
+
+    expect(iterateModelRaw).toHaveBeenCalledWith(
+      expect.stringContaining("immutable snapshot prompt"),
+      "https://r2/head.png",
+      "make the jawline broader",
+      expect.objectContaining({
+        castingBrand: "Snapshot Brand",
+        technicalSchema: { context: { casting_for: "Snapshot Brand" } },
+      }),
+    );
+    expect(commitIteratedIdentitySnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        readMode: "snapshot",
+        candidate: expect.objectContaining({ targetAssetId: 100 }),
+      }),
+    );
+  });
+
   it("image-only: generation success + asset write failure ⇒ refund once (derived id), honest error", async () => {
     vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
     const caller = appRouter.createCaller(authCtx());

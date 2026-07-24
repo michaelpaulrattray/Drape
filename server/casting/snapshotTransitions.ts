@@ -1297,6 +1297,7 @@ export async function commitImageRefineSnapshot(input: {
   userId: number;
   modelId: number;
   operationId: string;
+  readMode: SnapshotReadMode;
   candidate: IterationCandidate;
   imageOnlyCategories: string[];
 }): Promise<SnapshotTransitionResult<{ assetId: number }>> {
@@ -1313,9 +1314,30 @@ export async function commitImageRefineSnapshot(input: {
         input.modelId,
         input.candidate.targetAssetId,
       );
+      const selectedTarget = context.current.slots.find(
+        (slot) => slot.selectedAssetId === target.id,
+      );
+      if (input.readMode === "snapshot" && !selectedTarget) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "The selected Cast view is no longer current.",
+        });
+      }
+      if (
+        input.readMode === "snapshot"
+        && selectedTarget?.compatibility !== "current"
+      ) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Refresh this Cast view before editing it.",
+        });
+      }
+      const identityAuthority = input.readMode === "snapshot"
+        ? context.current.identitySnapshot
+        : context.model;
       const currentIdentityText = buildIdentityAnchor(
-        context.model.masterPrompt || "",
-        context.model.technicalSchema ?? undefined,
+        identityAuthority.masterPrompt || "",
+        identityAuthority.technicalSchema ?? undefined,
       );
       const [inserted] = await tx.insert(modelAssets).values({
         modelId: input.modelId,
@@ -1361,6 +1383,7 @@ export async function commitIteratedIdentitySnapshot(input: {
   userId: number;
   modelId: number;
   operationId: string;
+  readMode: SnapshotReadMode;
   patch: AuthorizedIdentityPatch;
   candidate: IterationCandidate;
 }): Promise<SnapshotTransitionResult<IdentityCommitResult>> {
@@ -1386,12 +1409,38 @@ export async function commitIteratedIdentitySnapshot(input: {
           message: "Identity changes happen on the current headshot.",
         });
       }
+      const selectedTarget = context.current.slots.find(
+        (slot) => slot.selectedAssetId === target.id,
+      );
+      if (input.readMode === "snapshot" && !selectedTarget) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "The selected Cast headshot is no longer current.",
+        });
+      }
+      if (
+        input.readMode === "snapshot"
+        && selectedTarget?.compatibility !== "current"
+      ) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Refresh this Cast's identity before changing it.",
+        });
+      }
       const assets = await tx
         .select()
         .from(modelAssets)
         .where(eq(modelAssets.modelId, input.modelId))
         .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
-      const computed = computeIdentityCommit(context.model, input.patch);
+      const identityModel = input.readMode === "snapshot"
+        ? {
+            ...context.model,
+            masterPrompt: context.current.identitySnapshot.masterPrompt,
+            technicalSchema: context.current.identitySnapshot.technicalSchema,
+            preferences: context.current.identitySnapshot.preferences,
+          }
+        : context.model;
+      const computed = computeIdentityCommit(identityModel, input.patch);
       const revisionId = mintRevisionId();
       const identityText = buildIdentityAnchor(computed.masterPrompt, computed.technicalSchema);
       const staleIds = selectStaleSiblingHeads(assets, "frontClose");
