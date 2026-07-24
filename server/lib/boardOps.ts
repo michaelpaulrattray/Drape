@@ -862,7 +862,7 @@ export async function prepareCanvasRecastAuthority(input: {
   if (!isModelDraftStatus(resolved.model.status)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "This identity is minted and immutable â€” fork it as a new model instead.",
+      message: "This identity is minted and immutable — fork it as a new model instead.",
     });
   }
 
