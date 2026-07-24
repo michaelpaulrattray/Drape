@@ -149,6 +149,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(scopeCallers).toEqual([
       "server/casting/mintPackage.ts",
       "server/casting/refreshSlots.ts",
+      "server/casting/snapshotTransitions.ts",
       "server/routes/generation/castingExport.ts",
       "server/_core/env.ts",
     ]);
@@ -252,6 +253,13 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(convergenceScript).not.toMatch(
       /storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
+
+    const transitionDriver = await readFile(
+      new URL("../scripts/drive-r7-snapshot-bootstrap-disposable.mts", import.meta.url),
+      "utf8",
+    );
+    expect(transitionDriver).toContain('"--focused-b3"');
+    expect(transitionDriver).toContain('"--testNamePattern=snapshot.*ledger"');
   });
 
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {

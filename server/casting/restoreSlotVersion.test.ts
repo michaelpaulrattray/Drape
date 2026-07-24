@@ -145,6 +145,57 @@ describe("prepareRestoreSlotTransition — copy-forward within the current revis
     );
   });
 
+  it("snapshot mode treats the package selection as current, not a newer unselected ledger row", async () => {
+    const selected = ASSETS.find((candidate) => candidate.id === 20)!;
+    const prepared = prepareRestoreSlotTransition({
+      userId: 42,
+      model: MODEL,
+      assets: ASSETS,
+      angle: "sideClose",
+      assetId: 30,
+      snapshotTruth: {
+        identityText: CANON_TEXT,
+        selectedAsset: selected,
+      },
+    });
+    expect(prepared.url).toBe("https://r2/side-v3.png");
+    expect(prepared.assetInsert.provenance).toMatchObject({ restoredFromAssetId: 30 });
+  });
+
+  it("snapshot mode refuses the selected package version even when a newer ledger row exists", async () => {
+    const selected = ASSETS.find((candidate) => candidate.id === 20)!;
+    expect(() => prepareRestoreSlotTransition({
+      userId: 42,
+      model: MODEL,
+      assets: ASSETS,
+      angle: "sideClose",
+      assetId: 20,
+      snapshotTruth: {
+        identityText: CANON_TEXT,
+        selectedAsset: selected,
+      },
+    })).toThrowError(expect.objectContaining({
+      code: "PRECONDITION_FAILED",
+      message: "That's already the current version",
+    }));
+  });
+
+  it("snapshot mode uses the immutable identity text for legacy compatibility", async () => {
+    const selected = ASSETS.find((candidate) => candidate.id === 20)!;
+    const driftedLegacyModel = { ...MODEL, masterPrompt: "different mutable document" };
+    expect(() => prepareRestoreSlotTransition({
+      userId: 42,
+      model: driftedLegacyModel,
+      assets: ASSETS,
+      angle: "sideClose",
+      assetId: 10,
+      snapshotTruth: {
+        identityText: CANON_TEXT,
+        selectedAsset: selected,
+      },
+    })).not.toThrow();
+  });
+
   it("refuses a no-op: restoring a row whose image equals the head (drive-2 ledger pollution)", async () => {
     const assets = [
       { id: 30, viewType: "sideClose", storageUrl: "https://r2/same.png", resolution: "1K", storageKey: "k3", pinned: false, provenance: { identityRevisionId: "rev-a" }, createdAt: new Date("2026-07-12T03:00:00Z") },

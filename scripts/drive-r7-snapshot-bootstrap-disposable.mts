@@ -66,6 +66,11 @@ async function dropDisposableDatabase(input: {
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  if (args.some((arg) => arg !== "--focused-b3")) {
+    throw new Error(`Unknown argument: ${args.find((arg) => arg !== "--focused-b3")}`);
+  }
+  const focusedB3 = args.includes("--focused-b3");
   const configured = process.env.DATABASE_URL;
   if (!configured) throw new Error("DATABASE_URL is required (development DB only)");
   if ((process.env.VITE_APP_ID ?? "").toLowerCase().includes("production")) {
@@ -102,19 +107,29 @@ async function main() {
       await connection.end();
     }
 
-    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
-      "exec", "vitest", "run",
-      "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
-      "server/casting/snapshotBootstrap.test.ts",
-      "server/r7-snapshot-selection-contract.test.ts",
-      "server/r7-snapshot-bootstrap-db.test.ts",
-      "server/r7-snapshot-transitions-db.test.ts",
-    ], {
+    const vitestArgs = focusedB3
+      ? [
+          "exec", "vitest", "run",
+          "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
+          "--testNamePattern=snapshot.*ledger",
+          "server/r7-snapshot-transitions-db.test.ts",
+        ]
+      : [
+          "exec", "vitest", "run",
+          "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
+          "server/casting/snapshotBootstrap.test.ts",
+          "server/r7-snapshot-selection-contract.test.ts",
+          "server/r7-snapshot-bootstrap-db.test.ts",
+          "server/r7-snapshot-transitions-db.test.ts",
+        ];
+    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", vitestArgs, {
       ...process.env,
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),
     });
-    console.log("[disposable] R7-7A bootstrap, transition, rollback and race gates passed");
+    console.log(focusedB3
+      ? "[disposable] R7-7B3 snapshot-selected restore gate passed"
+      : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed");
   } finally {
     if (created) {
       // The Railway public proxy may close a connection while the multi-minute

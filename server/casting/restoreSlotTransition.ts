@@ -27,14 +27,23 @@ interface RestoreAssetTruth {
   provenance?: unknown;
 }
 
-/** Pure R6 restore law shared by the legacy-facing service and the atomic
- * R7 snapshot writer. `assets` must be the model's rows newest-first. */
+interface SnapshotRestoreTruth {
+  /** Immutable identity canon selected by the current package snapshot. */
+  identityText: string;
+  /** Null means the current package has no selection for this angle. */
+  selectedAsset: RestoreAssetTruth | null;
+}
+
+/** Pure restore law shared by the legacy-facing service and the atomic
+ * snapshot writer. `assets` must be the model's rows newest-first. R6 omits
+ * `snapshotTruth`; snapshot mode supplies only server-resolved current truth. */
 export function prepareRestoreSlotTransition(input: {
   userId: number;
   model: RestoreModelTruth;
   assets: RestoreAssetTruth[];
   angle: CanonicalViewAngle;
   assetId: number;
+  snapshotTruth?: SnapshotRestoreTruth;
 }): {
   assetInsert: InsertModelAsset;
   url: string;
@@ -51,10 +60,11 @@ export function prepareRestoreSlotTransition(input: {
     });
   }
 
-  const currentIdentityText = buildIdentityAnchor(
-    input.model.masterPrompt || "",
-    input.model.technicalSchema ?? undefined,
-  );
+  const currentIdentityText = input.snapshotTruth?.identityText
+    ?? buildIdentityAnchor(
+      input.model.masterPrompt || "",
+      input.model.technicalSchema ?? undefined,
+    );
   const membership = assetRevisionMembership(source, input.model, currentIdentityText);
   if (!isRestoreCompatible(membership)) {
     throw new TRPCError({
@@ -67,7 +77,22 @@ export function prepareRestoreSlotTransition(input: {
   }
 
   const filled = input.assets.filter((asset) => asset.viewType === input.angle && !!asset.storageUrl);
-  const head = filled[0];
+  const head = input.snapshotTruth
+    ? input.snapshotTruth.selectedAsset
+    : filled[0];
+  if (
+    head
+    && (
+      head.viewType !== input.angle
+      || !head.storageUrl
+      || !input.assets.some((asset) => asset.id === head.id)
+    )
+  ) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "The current saved view is unavailable. No changes were made.",
+    });
+  }
   if (head?.id === source.id) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "That's already the current version" });
   }

@@ -927,14 +927,15 @@ export async function getSlotVersions(input: {
  *  a backward mutation (the board's `revertItemVersion` keeps its opposite
  *  semantics and its name). Zero generation cost; the restored row arrives
  *  UNPINNED (a pin marks a row, not a lineage) with `restoredFromAssetId`
- *  provenance so the D-12 audit chain stays whole. Newest-wins promotes it
- *  instantly for every consumer (comp card, composer, hydration, vN). */
+ *  provenance so the D-12 audit chain stays whole. The atomic package append
+ *  selects it immediately for snapshot readers; R6 keeps newest-filled truth. */
 export async function executeRestoreSlotVersion(input: {
   userId: number;
   modelId: number;
   operationId: string;
   angle: CanonicalViewAngle;
   assetId: number;
+  readMode: SnapshotReadMode;
 }): Promise<{ modelId: number; angle: CanonicalViewAngle; assetId: number; url: string; version: number }> {
   return (await commitRestoredSlotSnapshot(input)).result;
 }

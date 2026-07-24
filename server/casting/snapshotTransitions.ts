@@ -47,6 +47,7 @@ import {
   type IdentityCommitResult,
 } from "./identity/identityCommit";
 import type { AuthorizedIdentityPatch } from "./identity/identityTypes";
+import type { SnapshotReadMode } from "./snapshotReadScope";
 
 type IdentitySnapshotReason = (typeof IDENTITY_SNAPSHOT_REASONS)[number];
 type PackageSnapshotReason = (typeof PACKAGE_SNAPSHOT_REASONS)[number];
@@ -692,14 +693,16 @@ export async function commitDocumentCompactionSnapshot(input: {
   });
 }
 
-/** Free D-53 copy-forward restore, now committed as one legacy asset append
- * plus one immutable package selection. R6 remains the read authority. */
+/** Free D-53 copy-forward restore, committed as one legacy asset append plus
+ * one immutable package selection. The server-captured read mode chooses only
+ * how current identity/selection truth is interpreted inside the transaction. */
 export async function commitRestoredSlotSnapshot(input: {
   userId: number;
   modelId: number;
   operationId: string;
   angle: CanonicalViewAngle;
   assetId: number;
+  readMode: SnapshotReadMode;
 }): Promise<SnapshotTransitionResult<{
   modelId: number;
   angle: CanonicalViewAngle;
@@ -719,12 +722,30 @@ export async function commitRestoredSlotSnapshot(input: {
         .from(modelAssets)
         .where(eq(modelAssets.modelId, input.modelId))
         .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+      const selectedSlot = input.readMode === "snapshot"
+        ? context.current.slots.find((slot) => slot.viewAngle === input.angle)
+        : undefined;
+      const selectedAsset = selectedSlot
+        ? assets.find((asset) => asset.id === selectedSlot.selectedAssetId) ?? null
+        : null;
+      if (selectedSlot && !selectedAsset) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "The current saved view is unavailable. No changes were made.",
+        });
+      }
       const prepared = prepareRestoreSlotTransition({
         userId: input.userId,
         model: context.model,
         assets,
         angle: input.angle,
         assetId: input.assetId,
+        ...(input.readMode === "snapshot" ? {
+          snapshotTruth: {
+            identityText: context.current.identitySnapshot.identityText,
+            selectedAsset,
+          },
+        } : {}),
       });
       const [inserted] = await tx.insert(modelAssets).values(prepared.assetInsert).$returningId();
       if (!inserted?.id) {

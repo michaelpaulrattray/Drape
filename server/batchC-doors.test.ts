@@ -122,6 +122,16 @@ vi.mock("./casting/snapshotBootstrap", () => ({
     selectedSlotCount: 1,
   }),
 }));
+vi.mock("./casting/snapshotReadScope", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotReadScope")>();
+  return {
+    ...actual,
+    captureSnapshotReadMode: vi.fn().mockReturnValue("r6"),
+  };
+});
+vi.mock("./casting/effectiveCastRead", () => ({
+  resolveEffectiveCastStateForRead: vi.fn(),
+}));
 vi.mock("./casting/snapshotTransitions", () => ({
   commitHeadshotSnapshot: vi.fn(async (input: { modelId: number }) => {
     const db = await import("./db");
@@ -223,6 +233,8 @@ import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPac
 import { executeRefreshSlots } from "./casting/refreshSlots";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
+import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
 import {
   commitDocumentCompactionSnapshot,
   commitGeneratedPackageSnapshot,
@@ -303,6 +315,8 @@ beforeEach(() => {
   vi.mocked(verifyViewIdentity).mockReset().mockResolvedValue({ ok: true, checked: true });
   vi.mocked(compactMasterPrompt).mockReset();
   vi.mocked(bootstrapModelSnapshot).mockClear();
+  vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
+  vi.mocked(resolveEffectiveCastStateForRead).mockReset();
   vi.mocked(commitGeneratedPackageSnapshot).mockClear();
   vi.mocked(commitHeadshotSnapshot).mockClear();
   vi.mocked(commitDocumentCompactionSnapshot).mockClear();
@@ -868,6 +882,7 @@ describe("executeRestoreSlotVersion stays free (M13/M20)", () => {
       operationId: REQUEST_ID,
       angle: "threeQuarter",
       assetId: 1,
+      readMode: "r6",
     });
     expect(deductPoints).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
@@ -877,6 +892,7 @@ describe("executeRestoreSlotVersion stays free (M13/M20)", () => {
       operationId: REQUEST_ID,
       angle: "threeQuarter",
       assetId: 1,
+      readMode: "r6",
     });
   });
 });
@@ -893,13 +909,117 @@ describe("generation.restoreSlotVersion snapshot adoption", () => {
     expect(result).toMatchObject({ modelId: 7, angle: "threeQuarter", assetId: 99 });
     expect(bootstrapModelSnapshot).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
     expect(markGenerationOperationRunning).toHaveBeenCalled();
-    expect(commitRestoredSlotSnapshot).toHaveBeenCalled();
+    expect(commitRestoredSlotSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      readMode: "r6",
+    }));
     expect(vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
     expect(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(commitRestoredSlotSnapshot).mock.invocationCallOrder[0]);
     expect(deductPoints).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
+  });
+
+  it("snapshot mode preflights against selected truth, skips bootstrap, and threads one server-owned mode", async () => {
+    const selected = asset({
+      id: 40,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/selected.png",
+      provenance: { identityText: CANON },
+    });
+    const newerUnselected = asset({
+      id: 41,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/newer-unselected.png",
+      provenance: { identityText: CANON },
+    });
+    vi.mocked(captureSnapshotReadMode).mockReturnValueOnce("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValueOnce({
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 1,
+      package: {},
+      identity: { identityText: CANON },
+      anchor: asset(),
+      displayedHeadshot: asset(),
+      selectedViews: [{
+        angle: "threeQuarter",
+        compatibility: "current",
+        selection: {},
+        asset: selected,
+      }],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [newerUnselected, selected] },
+    } as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    await caller.generation.restoreSlotVersion({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angle: "threeQuarter",
+      assetId: 41,
+    });
+
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
+    expect(markGenerationOperationRunning).toHaveBeenCalledWith(expect.objectContaining({
+      expectedIdentityRevisionId: "rev-snapshot",
+    }));
+    expect(commitRestoredSlotSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      modelId: 7,
+      operationId: REQUEST_ID,
+      angle: "threeQuarter",
+      assetId: 41,
+      readMode: "snapshot",
+    }));
+  });
+
+  it("snapshot mode refuses a selected-current restore before running the receipt", async () => {
+    const selected = asset({
+      id: 40,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/selected.png",
+      provenance: { identityText: CANON },
+    });
+    vi.mocked(captureSnapshotReadMode).mockReturnValueOnce("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValueOnce({
+      authority: "snapshot",
+      status: "current",
+      model: model(),
+      stateVersion: 1,
+      package: {},
+      identity: { identityText: CANON },
+      anchor: asset(),
+      displayedHeadshot: asset(),
+      selectedViews: [{
+        angle: "threeQuarter",
+        compatibility: "current",
+        selection: {},
+        asset: selected,
+      }],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [selected] },
+    } as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.generation.restoreSlotVersion({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angle: "threeQuarter",
+      assetId: 40,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "That's already the current version",
+    });
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(commitRestoredSlotSnapshot).not.toHaveBeenCalled();
   });
 
   it("a headless Cast refuses before a running receipt or restore transition", async () => {

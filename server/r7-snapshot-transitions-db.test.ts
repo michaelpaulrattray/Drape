@@ -703,6 +703,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       operationId,
       angle: "sideClose",
       assetId: sourceAssetId,
+      readMode: "r6",
     });
 
     expect(committed.result.url).toBe("https://example.invalid/side-old.png");
@@ -739,6 +740,62 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     );
     expect(Number(selectedHead.selectedAssetId)).toBe(anchorAssetId);
     expect(selectedHead.selectionReason).toBe("carried");
+    expect(await count("model_identity_snapshots", "modelId = ?", [modelId])).toBe(1);
+  }, 60_000);
+
+  it("snapshot restore treats the package selection as current when the ledger has a newer unselected row", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    await addAsset({
+      modelId,
+      viewAngle: "frontClose",
+      role: "anchor",
+      revisionId: "genesis",
+    });
+    const selectedSideAssetId = await addAsset({
+      modelId,
+      viewAngle: "sideClose",
+      revisionId: "genesis",
+      url: "https://example.invalid/side-selected.png",
+    });
+    const head = await bootstrapModelSnapshot({ userId, modelId });
+    if (head.status === "headless") throw new Error("bootstrap unexpectedly headless");
+    const previousSideSlot = await one(
+      `SELECT id FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [head.packageSnapshotId],
+    );
+    const newerUnselectedAssetId = await addAsset({
+      modelId,
+      viewAngle: "sideClose",
+      revisionId: "genesis",
+      url: "https://example.invalid/side-newer-unselected.png",
+    });
+    const operationId = await startModelOperation(userId, modelId, "casting.restore");
+
+    const committed = await commitRestoredSlotSnapshot({
+      userId,
+      modelId,
+      operationId,
+      angle: "sideClose",
+      assetId: newerUnselectedAssetId,
+      readMode: "snapshot",
+    });
+
+    expect(committed.result.url).toBe("https://example.invalid/side-newer-unselected.png");
+    expect(committed.result.version).toBe(3);
+    expect(committed.result.assetId).not.toBe(newerUnselectedAssetId);
+    const selectedSide = await one(
+      `SELECT selectedAssetId, compatibility, selectionReason, sourceSelectionId
+       FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(Number(selectedSide.selectedAssetId)).toBe(committed.result.assetId);
+    expect(selectedSide.compatibility).toBe("current");
+    expect(selectedSide.selectionReason).toBe("restored");
+    expect(selectedSide.sourceSelectionId).toBe(previousSideSlot.id);
+    expect(Number(selectedSideAssetId)).not.toBe(newerUnselectedAssetId);
     expect(await count("model_identity_snapshots", "modelId = ?", [modelId])).toBe(1);
   }, 60_000);
 

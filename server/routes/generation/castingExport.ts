@@ -35,6 +35,7 @@ import {
 import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "../../casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "../../casting/effectiveCastRead";
+import { prepareRestoreSlotTransition } from "../../casting/restoreSlotTransition";
 const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
@@ -413,6 +414,7 @@ export const castingExportRouter = router({
       assetId: z.number().int().positive(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       const model = await getModelById(input.modelId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
       if (model.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -439,27 +441,53 @@ export const castingExportRouter = router({
           version: assets.filter((candidate) => candidate.viewType === input.angle && candidate.storageUrl).length,
         };
       }
-      let snapshotHead: Awaited<ReturnType<typeof bootstrapModelSnapshot>>;
+      let expectedRevisionModel = model;
       try {
-        snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        if (readMode === "snapshot") {
+          const effective = await resolveEffectiveCastStateForRead({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+          });
+          if (effective.status === "headless") {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "This Cast has no headshot package to restore.",
+            });
+          }
+          prepareRestoreSlotTransition({
+            userId: ctx.user.id,
+            model: effective.model,
+            assets: [...effective.ledger.assets],
+            angle: input.angle,
+            assetId: input.assetId,
+            snapshotTruth: {
+              identityText: effective.identity.identityText,
+              selectedAsset:
+                effective.selectedViews.find((view) => view.angle === input.angle)?.asset
+                ?? null,
+            },
+          });
+          expectedRevisionModel = effective.model;
+        } else {
+          const snapshotHead = await bootstrapModelSnapshot({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+          });
+          if (snapshotHead.status === "headless") {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "This Cast has no headshot package to restore.",
+            });
+          }
+        }
       } catch (error) {
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
-      }
-      if (snapshotHead.status === "headless") {
-        return failClaimedDirectOperation({
-          userId: ctx.user.id,
-          operationId: gate.operationId,
-          error: new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "This Cast has no headshot package to restore.",
-          }),
-        });
       }
       await markGenerationOperationRunning({
         userId: ctx.user.id,
         operationId: gate.operationId,
         modelId: input.modelId,
-        expectedIdentityRevisionId: currentRevisionId(model),
+        expectedIdentityRevisionId: currentRevisionId(expectedRevisionModel),
         plannedCredits: 0,
         requiredLockKey: lockKey,
         phase: "finalizing",
@@ -473,6 +501,7 @@ export const castingExportRouter = router({
           operationId: gate.operationId,
           angle: input.angle,
           assetId: input.assetId,
+          readMode,
         });
         durableResult = true;
         await completeDirectOperationSuccess({
