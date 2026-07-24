@@ -442,6 +442,55 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     expect(carriedSide).toMatchObject({ compatibility: "stale", selectionReason: "carried" });
   });
 
+  it("snapshot headshot keeps the ledger transition on immutable identity documents", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const originalIdentity = await one(
+      `SELECT masterPrompt, technicalSchema, preferences
+         FROM model_identity_snapshots
+        WHERE id = (SELECT identitySnapshotId FROM model_package_snapshots
+                     WHERE id = (SELECT currentPackageSnapshotId FROM models WHERE id = ?))`,
+      [base.modelId],
+    );
+    await connection.execute(
+      `UPDATE models
+          SET masterPrompt = 'drifted legacy prompt',
+              technicalSchema = JSON_OBJECT('drifted', TRUE),
+              preferences = JSON_OBJECT('drifted', TRUE)
+        WHERE id = ?`,
+      [base.modelId],
+    );
+    const operationId = await startModelOperation(userId, base.modelId, "casting.headshot");
+
+    const committed = await commitHeadshotSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      readMode: "snapshot",
+      candidate: {
+        storageUrl: "https://example.invalid/snapshot-rerolled-headshot.png",
+        storageKey: "casting/snapshot-rerolled-headshot.png",
+        pointsCost: 350,
+        engine: "test-engine",
+      },
+    });
+
+    const modelRow = await one(
+      "SELECT masterPrompt, technicalSchema, preferences FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    const newIdentity = await one(
+      "SELECT masterPrompt, technicalSchema, preferences FROM model_identity_snapshots WHERE id = ?",
+      [committed.identitySnapshotId],
+    );
+    expect(modelRow.masterPrompt).toBe(originalIdentity.masterPrompt);
+    expect(newIdentity.masterPrompt).toBe(originalIdentity.masterPrompt);
+    expect(modelRow.technicalSchema).toEqual(originalIdentity.technicalSchema);
+    expect(newIdentity.technicalSchema).toEqual(originalIdentity.technicalSchema);
+    expect(modelRow.preferences).toEqual(originalIdentity.preferences);
+    expect(newIdentity.preferences).toEqual(originalIdentity.preferences);
+  });
+
   it("commits a structured Canvas recast, stale-all snapshot and board landing atomically", async () => {
     const userId = await createUser();
     const base = await createBootstrappedModel(userId);

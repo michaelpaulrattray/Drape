@@ -141,6 +141,31 @@ describe("no raw newest-headshot selector bypasses the shared anchor selector (M
   });
 });
 
+describe("headshot snapshot reads stay server-owned", () => {
+  it("captures one mode, validates the receipt head before money, and uses immutable identity documents", () => {
+    const src = serverFile("routes/generation/castingImaging.ts");
+    expect(src).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+    expect(src).toContain("resolveEffectiveCastStateForRead");
+    expect(src).toContain("assertGenerationOperationSnapshotHead");
+    expect(src).toContain("state.identity.masterPrompt");
+    expect(src).toContain("state.identity.technicalSchema");
+    expect(src).toContain("state.identity.preferences");
+    expect(src).toMatch(/commitHeadshotSnapshot\(\{[\s\S]*?readMode,/);
+    expect(src).toMatch(
+      /assertGenerationOperationSnapshotHead\([\s\S]*?deductPoints\(/,
+    );
+    const input = src.slice(src.indexOf(".input(z.object({"), src.indexOf("}).strict()"));
+    expect(input).not.toContain("readMode");
+    const transition = serverFile("casting/snapshotTransitions.ts");
+    const headshotBlock = transition.slice(
+      transition.indexOf("export async function commitHeadshotSnapshot"),
+      transition.indexOf("async function selectedIterationTargetIn"),
+    );
+    expect(headshotBlock).toContain('input.readMode === "snapshot" && context.current');
+    expect(headshotBlock).toContain("context.current.identitySnapshot");
+  });
+});
+
 describe("package generation preserves exact storage ownership", () => {
   it.each([
     ["generateFullBody", "export async function generateRemainingViews"],

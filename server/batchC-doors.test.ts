@@ -360,6 +360,8 @@ describe("generation.castingImage (M10)", () => {
     expect(vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
     expect(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0]);
+    expect(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(generateCastingImage).mock.invocationCallOrder[0]);
     expect(vi.mocked(generateCastingImage).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(commitHeadshotSnapshot).mock.invocationCallOrder[0]);
@@ -398,6 +400,159 @@ describe("generation.castingImage (M10)", () => {
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(deductPoints).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
+  });
+
+  it("snapshot reroll generates from immutable identity truth without bootstrap", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getModelById).mockResolvedValue(model({
+      masterPrompt: "mutable legacy prompt",
+      technicalSchema: { context: { casting_for: "Legacy Brand" } },
+      preferences: { ethnicity: "Legacy" },
+      identityRevisionId: "rev-snapshot",
+    }) as never);
+    const snapshotAnchor = asset({
+      id: 20,
+      storageUrl: "https://r2/snapshot-anchor.png",
+      provenance: { identityRole: "anchor", identityRevisionId: "rev-snapshot" },
+    });
+    const effective = {
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: {
+          context: { casting_for: "Snapshot Brand" },
+          subject: { sex: "male" },
+        },
+        preferences: {},
+        identityText: CANON,
+      },
+      anchor: snapshotAnchor,
+      displayedHeadshot: snapshotAnchor,
+      selectedViews: [{
+        angle: "frontClose",
+        compatibility: "current",
+        selection: {},
+        asset: snapshotAnchor,
+      }],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [snapshotAnchor] },
+    } as never;
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effective);
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.castingImage({ modelId: 7 }))
+      .resolves.toMatchObject({ success: true, assetId: 501 });
+
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledTimes(2);
+    expect(generateCastingImage).toHaveBeenCalledWith(
+      expect.stringContaining("immutable snapshot prompt"),
+      expect.objectContaining({
+        castingBrand: "Snapshot Brand",
+        technicalSchema: {
+          context: { casting_for: "Snapshot Brand" },
+          subject: { sex: "male" },
+        },
+      }),
+    );
+    expect(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[1]);
+    expect(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[1])
+      .toBeLessThan(vi.mocked(generateCastingImage).mock.invocationCallOrder[0]);
+  });
+
+  it("snapshot headless first cast uses draft documents without inventing a prior head", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getModelById).mockResolvedValue(model({
+      masterPrompt: "first cast prompt",
+      technicalSchema: { context: { casting_for: "First Cast" } },
+      preferences: {},
+    }) as never);
+    const headless = {
+      authority: "snapshot",
+      status: "headless",
+      model: model({
+        masterPrompt: "first cast prompt",
+        technicalSchema: { context: { casting_for: "First Cast" } },
+        preferences: {},
+      }),
+      stateVersion: 0,
+      package: null,
+      identity: null,
+      anchor: null,
+      displayedHeadshot: null,
+      selectedViews: [],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [] },
+    } as never;
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(headless);
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.castingImage({ modelId: 7 }))
+      .resolves.toMatchObject({ success: true });
+
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledTimes(2);
+    expect(generateCastingImage).toHaveBeenCalledWith(
+      expect.stringContaining("first cast prompt"),
+      expect.objectContaining({ castingBrand: "First Cast" }),
+    );
+    expect(commitHeadshotSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it("snapshot re-resolution failure seals free before credits, provider, or commit", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    const snapshotAnchor = asset({
+      id: 20,
+      storageUrl: "https://r2/snapshot-anchor.png",
+      provenance: { identityRole: "anchor", identityRevisionId: "rev-snapshot" },
+    });
+    const effective = {
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: {},
+        preferences: {},
+        identityText: CANON,
+      },
+      anchor: snapshotAnchor,
+      displayedHeadshot: snapshotAnchor,
+      selectedViews: [{
+        angle: "frontClose",
+        compatibility: "current",
+        selection: {},
+        asset: snapshotAnchor,
+      }],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [snapshotAnchor] },
+    } as never;
+    vi.mocked(resolveEffectiveCastStateForRead)
+      .mockResolvedValueOnce(effective)
+      .mockRejectedValueOnce(new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "This Cast is temporarily unavailable. No credits were used.",
+      }));
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.castingImage({ modelId: 7 }))
+      .rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(createGeneration).not.toHaveBeenCalled();
+    expect(generateCastingImage).not.toHaveBeenCalled();
+    expect(commitHeadshotSnapshot).not.toHaveBeenCalled();
   });
 });
 

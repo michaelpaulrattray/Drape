@@ -1161,6 +1161,7 @@ export async function commitHeadshotSnapshot(input: {
   userId: number;
   modelId: number;
   operationId: string;
+  readMode?: SnapshotReadMode;
   candidate: GeneratedImageCandidate & { storageKey: string };
 }): Promise<SnapshotTransitionResult<{
   assetId: number;
@@ -1192,14 +1193,24 @@ export async function commitHeadshotSnapshot(input: {
         throw new Error("The headshot ledger and snapshot head disagree");
       }
 
+      const identityAuthority = input.readMode === "snapshot" && context.current
+        ? context.current.identitySnapshot
+        : context.model;
       const identityText = buildIdentityAnchor(
-        context.model.masterPrompt || "",
-        context.model.technicalSchema ?? undefined,
+        identityAuthority.masterPrompt || "",
+        identityAuthority.technicalSchema ?? undefined,
       );
       const revisionId = hasHeadshot ? mintRevisionId() : currentRevisionId(context.model);
       const staleIds = hasHeadshot ? selectStaleSiblingHeads(assets, "frontClose") : [];
       if (hasHeadshot) {
-        const updated = await tx.update(models).set({ identityRevisionId: revisionId }).where(and(
+        const updated = await tx.update(models).set({
+          identityRevisionId: revisionId,
+          ...(input.readMode === "snapshot" && context.current ? {
+            masterPrompt: identityAuthority.masterPrompt,
+            technicalSchema: identityAuthority.technicalSchema,
+            preferences: identityAuthority.preferences,
+          } : {}),
+        }).where(and(
           eq(models.id, input.modelId),
           eq(models.userId, input.userId),
           eq(models.status, "draft"),

@@ -146,12 +146,14 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/effectiveCastRead.ts",
       "server/casting/mintPackage.ts",
       "server/casting/refreshSlots.ts",
+      "server/routes/generation/castingImaging.ts",
     ]);
     expect(scopeCallers).toEqual([
       "server/casting/mintPackage.ts",
       "server/casting/refreshSlots.ts",
       "server/casting/snapshotTransitions.ts",
       "server/routes/generation/castingExport.ts",
+      "server/routes/generation/castingImaging.ts",
       "server/_core/env.ts",
     ]);
 

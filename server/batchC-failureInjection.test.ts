@@ -56,6 +56,7 @@ vi.mock("./db", async (importOriginal) => {
     updateGeneration: vi.fn(),
     updateModel: vi.fn(),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
+    assertGenerationOperationSnapshotHead: vi.fn().mockResolvedValue(undefined),
     createModelAsset: vi.fn(),
     markModelAssetsStale: vi.fn(),
     updateBoardItem: vi.fn(),

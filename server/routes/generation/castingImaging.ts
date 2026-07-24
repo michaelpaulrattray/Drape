@@ -2,6 +2,7 @@ import { protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getModelAssets,
   createGeneration, updateGeneration, markGenerationOperationRunning,
+  assertGenerationOperationSnapshotHead,
 } from "../../db";
 import { deductPoints } from "../../db";
 import {
@@ -20,6 +21,9 @@ import { currentRevisionId } from "../../casting/identity/anchorSelector";
 import { createModuleLogger } from "../../logging/logger";
 import { modelOperationLockKey } from "../../casting/operationContract";
 import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
+import { captureSnapshotReadMode } from "../../casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "../../casting/effectiveCastRead";
+import type { EffectiveCastState } from "../../casting/effectiveCastState";
 import { commitHeadshotSnapshot } from "../../casting/snapshotTransitions";
 import { storageDelete } from "../../storage";
 import {
@@ -29,6 +33,23 @@ import {
   failClaimedDirectOperation,
 } from "../../casting/directOperation";
 const log = createModuleLogger("routes/generation");
+
+function snapshotHeadshotGenerationModel(
+  state: EffectiveCastState,
+  fallback: {
+    masterPrompt: string;
+    technicalSchema: unknown;
+    preferences: unknown;
+  },
+) {
+  return state.status === "current"
+    ? {
+        masterPrompt: state.identity.masterPrompt,
+        technicalSchema: state.identity.technicalSchema,
+        preferences: state.identity.preferences,
+      }
+    : fallback;
+}
 
 export const castingImagingRouter = router({
   // Generate casting image (headshot).
@@ -53,6 +74,7 @@ export const castingImagingRouter = router({
       }
     }))
     .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
       // Batch 0 (R6 execution plan, review fix 1): authorization BEFORE money.
       // The old order deducted credits first and threw NOT_FOUND/FORBIDDEN
       // outside the refund path — a rejected request silently kept the
@@ -124,11 +146,22 @@ export const castingImagingRouter = router({
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
 
+      let effectiveState: EffectiveCastState | null = null;
       try {
-        // Existing headshots converge before the running receipt captures
-        // authority. A first headshot remains legitimately headless until
-        // the atomic create transition commits after generation.
-        await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        if (readMode === "snapshot") {
+          // Enabled accounts never repair or rediscover current truth from
+          // newest-filled rows inside a paid request. A genuinely first Cast
+          // remains headless; an existing head must validate as-is.
+          effectiveState = await resolveEffectiveCastStateForRead({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+          });
+        } else {
+          // Existing R6 headshots converge before the running receipt captures
+          // authority. A first headshot remains legitimately headless until
+          // the atomic create transition commits after generation.
+          await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+        }
       } catch (error) {
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
@@ -143,6 +176,31 @@ export const castingImagingRouter = router({
         phase: "generating",
         heartbeat: true,
       });
+
+      try {
+        await assertGenerationOperationSnapshotHead({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          modelId: input.modelId,
+        });
+        if (readMode === "snapshot") {
+          // Re-resolve after the receipt-head assertion so generation never
+          // uses an earlier request read. The held model operation lock keeps
+          // this authority stable through the atomic transition.
+          effectiveState = await resolveEffectiveCastStateForRead({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+          });
+        }
+      } catch (error) {
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          chargedCredits: 0,
+          refundedCredits: 0,
+          error,
+        });
+      }
 
       // ATOMIC credit deduction BEFORE generation to prevent race conditions
       // Credits are deducted first, then refunded if generation fails. The
@@ -205,12 +263,15 @@ export const castingImagingRouter = router({
       let uploadedStorageKey: string | undefined;
 
       try {
+        const generationModel = readMode === "snapshot" && effectiveState
+          ? snapshotHeadshotGenerationModel(effectiveState, lockedModel)
+          : lockedModel;
         // Generate image
-        const castingBrand = (lockedModel.technicalSchema as any)?.context?.casting_for || 'Generic';
-        const prefs = (lockedModel.preferences || {}) as any;
+        const castingBrand = (generationModel.technicalSchema as any)?.context?.casting_for || 'Generic';
+        const prefs = (generationModel.preferences || {}) as any;
         const ethnicityHint = buildEthnicityHint(prefs);
-        const reinforcedPrompt = buildReinforcedPrompt(lockedModel.masterPrompt, prefs);
-        log.info({ castingBrand, modelId: input.modelId, ethnicityHint, hasOverrides: reinforcedPrompt !== lockedModel.masterPrompt }, '[castingImage] Generating with brand');
+        const reinforcedPrompt = buildReinforcedPrompt(generationModel.masterPrompt, prefs);
+        log.info({ castingBrand, modelId: input.modelId, ethnicityHint, hasOverrides: reinforcedPrompt !== generationModel.masterPrompt }, '[castingImage] Generating with brand');
 
         const result = await generateCastingImage(
           reinforcedPrompt,
@@ -220,7 +281,7 @@ export const castingImagingRouter = router({
             ethnicityHint,
             userId: String(ctx.user.id),
             modelId: input.modelId,
-            technicalSchema: lockedModel.technicalSchema ?? undefined,
+            technicalSchema: generationModel.technicalSchema ?? undefined,
           }
         );
 
@@ -241,6 +302,7 @@ export const castingImagingRouter = router({
           userId: ctx.user.id,
           modelId: input.modelId,
           operationId: gate.operationId,
+          readMode,
           candidate: {
             storageUrl: result.imageUrl,
             storageKey: result.storageKey,
