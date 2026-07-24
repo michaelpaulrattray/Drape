@@ -687,6 +687,7 @@ export const castingExportRouter = router({
           userId: ctx.user.id,
           modelId: input.modelId,
           angles: input.angles,
+          readMode,
           chargeReferenceId: started.chargeReferenceId,
           onCharged: (amount) => { chargedCredits = amount; },
           onRefunded: (amount) => { refundedCredits += amount; },

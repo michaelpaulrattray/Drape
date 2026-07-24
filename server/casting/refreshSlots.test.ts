@@ -7,7 +7,10 @@
  * through slotCost (D-15) and total only over the refreshable set.
  */
 import { describe, it, expect } from "vitest";
-import { computeRefreshPlan } from "./refreshSlots";
+import {
+  computeRefreshPlan,
+  snapshotRefreshExecutionAuthority,
+} from "./refreshSlots";
 import { computePackageSlots, slotCost } from "./mintPackage";
 import { CREDIT_COSTS } from "./aiService";
 
@@ -128,5 +131,87 @@ describe("computePackageSlots — R5 additions (stale + version)", () => {
       filled("frontClose"),
     ]);
     expect(slots.find((s) => s.angle === "sideClose")!.stale).toBe(false);
+  });
+});
+
+describe("snapshot refresh execution authority", () => {
+  it("uses explicit selections, immutable identity documents, and the identity anchor", () => {
+    const anchor = {
+      id: 1,
+      modelId: 7,
+      viewType: "frontClose",
+      storageUrl: "https://r2/snapshot-anchor.png",
+      pinned: false,
+      status: null,
+    };
+    const displayed = {
+      ...anchor,
+      id: 2,
+      storageUrl: "https://r2/displayed.png",
+    };
+    const selected = {
+      ...anchor,
+      id: 3,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/selected-three-quarter.png",
+    };
+    const newerUnselected = {
+      ...selected,
+      id: 4,
+      storageUrl: "https://r2/newer-unselected.png",
+      pinned: true,
+    };
+
+    const authority = snapshotRefreshExecutionAuthority({
+      authority: "snapshot",
+      status: "current",
+      model: {
+        id: 7,
+        status: "draft",
+        masterPrompt: "mutable legacy prompt",
+        technicalSchema: { subject: { sex: "female" } },
+        preferences: { bodyType: "Mutable" },
+        identityRevisionId: "rev-current",
+      },
+      stateVersion: 2,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: { subject: { sex: "male" } },
+        preferences: { bodyType: "Athletic" },
+      },
+      anchor,
+      displayedHeadshot: displayed,
+      selectedViews: [
+        {
+          angle: "frontClose",
+          compatibility: "current",
+          selection: {},
+          asset: displayed,
+        },
+        {
+          angle: "threeQuarter",
+          compatibility: "stale",
+          selection: {},
+          asset: selected,
+        },
+      ],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [newerUnselected, selected, displayed, anchor] },
+    } as never);
+
+    expect(authority.anchorUrl).toBe("https://r2/snapshot-anchor.png");
+    expect(authority.generationModel).toEqual({
+      masterPrompt: "immutable snapshot prompt",
+      technicalSchema: { subject: { sex: "male" } },
+      preferences: { bodyType: "Athletic" },
+      identityRevisionId: "rev-current",
+    });
+    expect(authority.slots.find((slot) => slot.angle === "threeQuarter")).toMatchObject({
+      url: "https://r2/selected-three-quarter.png",
+      pinned: false,
+      stale: true,
+    });
   });
 });

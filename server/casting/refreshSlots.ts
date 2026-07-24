@@ -34,6 +34,7 @@ import {
   type SlotGenContext,
 } from "./mintPackage";
 import { resolveEffectiveCastStateForRead } from "./effectiveCastRead";
+import type { EffectiveCastState } from "./effectiveCastState";
 import type { SnapshotReadMode } from "./snapshotReadScope";
 import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTypes";
 // V8: refusal law lives in shared/refreshPolicy so the client's stale count
@@ -93,6 +94,56 @@ async function loadModelSlots(input: { userId: number; modelId: number }) {
   return { model, assets, slots: computePackageSlots(assets) };
 }
 
+interface RefreshExecutionAuthority {
+  modelStatus: string;
+  generationModel: SlotGenContext["model"];
+  slots: PackageSlot[];
+  anchorUrl: string | null;
+}
+
+/**
+ * Snapshot execution authority is composed only from the explicit package
+ * selection and immutable identity document. The ledger remains history and
+ * failure evidence; a newer unselected row cannot become the refresh target,
+ * anchor, pin state, or generation prompt.
+ */
+export function snapshotRefreshExecutionAuthority(
+  state: EffectiveCastState,
+): RefreshExecutionAuthority {
+  return {
+    modelStatus: state.model.status,
+    generationModel: state.status === "current"
+      ? {
+          masterPrompt: state.identity.masterPrompt,
+          technicalSchema: state.identity.technicalSchema,
+          preferences: state.identity.preferences,
+          identityRevisionId: state.model.identityRevisionId,
+        }
+      : state.model,
+    slots: computeEffectivePackageSlots(state),
+    anchorUrl: state.status === "current" ? state.anchor.storageUrl : null,
+  };
+}
+
+async function loadRefreshExecutionAuthority(input: {
+  userId: number;
+  modelId: number;
+  readMode?: SnapshotReadMode;
+}): Promise<RefreshExecutionAuthority> {
+  if (input.readMode === "snapshot") {
+    return snapshotRefreshExecutionAuthority(
+      await resolveEffectiveCastStateForRead(input),
+    );
+  }
+  const { model, assets, slots } = await loadModelSlots(input);
+  return {
+    modelStatus: model.status,
+    generationModel: model,
+    slots,
+    anchorUrl: selectIdentityAnchor(assets)?.storageUrl ?? null,
+  };
+}
+
 export async function planRefreshSlots(input: {
   userId: number;
   modelId: number;
@@ -126,12 +177,18 @@ export async function executeRefreshSlots(input: {
   userId: number;
   modelId: number;
   angles: CanonicalViewAngle[];
+  readMode?: SnapshotReadMode;
   chargeReferenceId?: string;
   onCharged?: (amount: number) => void;
   onRefunded?: (amount: number) => void;
   operationId: string;
 }): Promise<RefreshResult> {
-  const { model, assets, slots } = await loadModelSlots(input);
+  const {
+    modelStatus,
+    generationModel,
+    slots,
+    anchorUrl,
+  } = await loadRefreshExecutionAuthority(input);
 
   // Structural refusals before any money moves
   for (const angle of input.angles) {
@@ -146,7 +203,7 @@ export async function executeRefreshSlots(input: {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
         message:
-          model.status === "draft"
+          modelStatus === "draft"
             ? "The headshot anchors every view. Edit it in the environment — she stays a draft, and the other views will flag for a refresh."
             : "The headshot is this identity — changing it forks a new model.",
       });
@@ -170,8 +227,7 @@ export async function executeRefreshSlots(input: {
   // refinement. The atomic snapshot transition stamps every successful
   // output with the current revision, so refresh remains the resolution leg
   // of every allowed identity edit.
-  const anchor = selectIdentityAnchor(assets);
-  if (!anchor?.storageUrl) {
+  if (!anchorUrl) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no headshot to refresh against" });
   }
 
@@ -191,8 +247,8 @@ export async function executeRefreshSlots(input: {
   const ctx: SlotGenContext = {
     userId: input.userId,
     modelId: input.modelId,
-    model,
-    headshotUrl: anchor.storageUrl,
+    model: generationModel,
+    headshotUrl: anchorUrl,
     reasonLabel: "Refresh",
     chargeReferenceId: input.chargeReferenceId ?? `legacy-refresh-${input.modelId}`,
     onRefunded: input.onRefunded,

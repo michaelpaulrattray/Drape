@@ -126,7 +126,8 @@ describe("no raw newest-headshot selector bypasses the shared anchor selector (M
   it("refresh no longer feeds slot generation from the newest-filled slot url", () => {
     const src = serverFile("casting/refreshSlots.ts");
     expect(src).not.toMatch(/headshotUrl:\s*headshot\.url/);
-    expect(src).toMatch(/headshotUrl:\s*anchor\.storageUrl/);
+    expect(src).toContain('anchorUrl: state.status === "current" ? state.anchor.storageUrl : null');
+    expect(src).toMatch(/headshotUrl:\s*anchorUrl/);
   });
 });
 

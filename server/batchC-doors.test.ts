@@ -16,6 +16,7 @@
  *    current revision.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./_core/context";
 
 const tx = vi.hoisted(() => ({
@@ -862,6 +863,165 @@ describe("generation.refreshSlots snapshot adoption", () => {
     expect(result).toMatchObject({ refreshed: [], failed: [] });
     expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("snapshot execution keeps the selected slot, immutable identity, and anchor through generation", async () => {
+    const snapshotAnchor = asset({
+      id: 20,
+      storageUrl: "https://r2/snapshot-anchor.png",
+      provenance: { identityRole: "anchor", identityRevisionId: "rev-snapshot" },
+    });
+    const displayed = asset({
+      id: 21,
+      storageUrl: "https://r2/displayed-headshot.png",
+      provenance: { identityRole: "display", identityRevisionId: "rev-snapshot" },
+    });
+    const selected = asset({
+      id: 22,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/selected-three-quarter.png",
+      provenance: { identityRevisionId: "rev-old" },
+      status: { state: "stale", reason: "identity_changed" },
+    });
+    const newerUnselected = asset({
+      id: 23,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/newer-unselected.png",
+      pinned: true,
+      provenance: { identityRevisionId: "rev-snapshot" },
+    });
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getModelById).mockResolvedValue(model({
+      masterPrompt: "mutable legacy prompt",
+      technicalSchema: { subject: { sex: "female" } },
+      preferences: { bodyType: "Mutable" },
+      identityRevisionId: "rev-snapshot",
+    }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue([
+      newerUnselected,
+      selected,
+      displayed,
+      snapshotAnchor,
+    ] as never);
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue({
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: { subject: { sex: "male" } },
+        preferences: { bodyType: "Athletic" },
+        identityText: CANON,
+      },
+      anchor: snapshotAnchor,
+      displayedHeadshot: displayed,
+      selectedViews: [
+        {
+          angle: "frontClose",
+          compatibility: "current",
+          selection: {},
+          asset: displayed,
+        },
+        {
+          angle: "threeQuarter",
+          compatibility: "stale",
+          selection: {},
+          asset: selected,
+        },
+      ],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [newerUnselected, selected, displayed, snapshotAnchor] },
+    } as never);
+    const caller = productionRouter.createCaller(authCtx());
+
+    const result = await caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["threeQuarter"],
+    });
+
+    expect(result.refreshed).toHaveLength(1);
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(getModelAssets).not.toHaveBeenCalled();
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledTimes(3);
+    expect(generateRemainingViews).toHaveBeenCalledWith(
+      "immutable snapshot prompt",
+      "https://r2/snapshot-anchor.png",
+      "male",
+      "threeQuarter",
+      { subject: { sex: "male" } },
+    );
+    expect(commitRefreshedSlotsSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it("snapshot executor re-resolution refuses free if authority becomes unavailable", async () => {
+    const snapshotAnchor = asset({
+      id: 20,
+      storageUrl: "https://r2/snapshot-anchor.png",
+      provenance: { identityRole: "anchor", identityRevisionId: "rev-snapshot" },
+    });
+    const selected = asset({
+      id: 22,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/selected-three-quarter.png",
+      status: { state: "stale", reason: "identity_changed" },
+    });
+    const effective = {
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: {},
+        preferences: {},
+        identityText: CANON,
+      },
+      anchor: snapshotAnchor,
+      displayedHeadshot: snapshotAnchor,
+      selectedViews: [
+        {
+          angle: "frontClose",
+          compatibility: "current",
+          selection: {},
+          asset: snapshotAnchor,
+        },
+        {
+          angle: "threeQuarter",
+          compatibility: "stale",
+          selection: {},
+          asset: selected,
+        },
+      ],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [selected, snapshotAnchor] },
+    } as never;
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-snapshot" }) as never);
+    vi.mocked(resolveEffectiveCastStateForRead)
+      .mockResolvedValueOnce(effective)
+      .mockResolvedValueOnce(effective)
+      .mockRejectedValueOnce(new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "This Cast is temporarily unavailable. No credits were used.",
+      }));
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["threeQuarter"],
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
     expect(deductPoints).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
