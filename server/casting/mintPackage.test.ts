@@ -5,7 +5,13 @@
  * always sums to the from-scratch production price.
  */
 import { describe, it, expect } from "vitest";
-import { tierCosts, slotCost, computePackageSlots, newestFilledAssetId } from "./mintPackage";
+import {
+  tierCosts,
+  slotCost,
+  computePackageSlots,
+  newestFilledAssetId,
+  snapshotMintExecutionAuthority,
+} from "./mintPackage";
 import { MINT_TIER_SLOTS } from "../../shared/boardTypes";
 import { CREDIT_COSTS } from "./aiService";
 
@@ -68,6 +74,91 @@ describe("tierCosts", () => {
     expect(slotCost("threeQuarter")).toBe(CREDIT_COSTS.multiView);
     expect(slotCost("sideFull")).toBe(CREDIT_COSTS.multiView);
     expect(slotCost("backFull")).toBe(CREDIT_COSTS.multiView);
+  });
+});
+
+describe("snapshot mint execution authority", () => {
+  it("uses only selected slots plus immutable identity and anchor truth", () => {
+    const anchor = {
+      id: 1,
+      modelId: 7,
+      viewType: "frontClose",
+      storageUrl: "https://r2/snapshot-anchor.png",
+      pinned: false,
+      status: null,
+    };
+    const displayed = {
+      ...anchor,
+      id: 2,
+      storageUrl: "https://r2/displayed.png",
+    };
+    const selected = {
+      ...anchor,
+      id: 3,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/selected-three-quarter.png",
+    };
+    const newerUnselected = {
+      ...selected,
+      id: 4,
+      storageUrl: "https://r2/newer-unselected.png",
+      pinned: true,
+    };
+
+    const authority = snapshotMintExecutionAuthority({
+      authority: "snapshot",
+      status: "current",
+      model: {
+        id: 7,
+        status: "draft",
+        masterPrompt: "mutable legacy prompt",
+        technicalSchema: { subject: { sex: "female" } },
+        preferences: { bodyType: "Mutable" },
+        identityRevisionId: "rev-current",
+      },
+      stateVersion: 2,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: { subject: { sex: "male" } },
+        preferences: { bodyType: "Athletic" },
+        identityText: "immutable identity text",
+      },
+      anchor,
+      displayedHeadshot: displayed,
+      selectedViews: [
+        {
+          angle: "frontClose",
+          compatibility: "current",
+          selection: {},
+          asset: displayed,
+        },
+        {
+          angle: "threeQuarter",
+          compatibility: "stale",
+          selection: {},
+          asset: selected,
+        },
+      ],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [newerUnselected, selected, displayed, anchor] },
+    } as never);
+
+    expect(authority.existingAngles).toEqual(["frontClose", "threeQuarter"]);
+    expect(authority.generationModel).toEqual({
+      masterPrompt: "immutable snapshot prompt",
+      technicalSchema: { subject: { sex: "male" } },
+      preferences: { bodyType: "Athletic" },
+      identityRevisionId: "rev-current",
+    });
+    expect(authority.selection.anchor?.storageUrl).toBe("https://r2/snapshot-anchor.png");
+    expect(authority.selection.selectedByAngle.get("threeQuarter")).toMatchObject({
+      id: 3,
+      storageUrl: "https://r2/selected-three-quarter.png",
+      status: { state: "stale" },
+      pinned: false,
+    });
   });
 });
 

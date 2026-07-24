@@ -225,6 +225,7 @@ import {
 import {
   generateMasterPrompt,
   generateCastingImage,
+  generateFullBody,
   generateRemainingViews,
   compactMasterPrompt,
 } from "./casting/aiService";
@@ -312,6 +313,7 @@ beforeEach(() => {
   vi.mocked(updateGeneration).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(generateMasterPrompt).mockReset().mockResolvedValue({ naturalDescription: "desc", technicalSchema: {} } as never);
   vi.mocked(generateCastingImage).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png", engineUsed: "test" } as never);
+  vi.mocked(generateFullBody).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/fullbody/new.png", storageKey: "fullbody/new.png", engineUsed: "test" } as never);
   vi.mocked(generateRemainingViews).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", storageKey: "view/new.png", engineUsed: "test" } as never);
   vi.mocked(verifyViewIdentity).mockReset().mockResolvedValue({ ok: true, checked: true });
   vi.mocked(compactMasterPrompt).mockReset();
@@ -559,6 +561,75 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     expect(deductPoints).not.toHaveBeenCalled();
   });
 
+  it("snapshot mint refuses a stale selected tier view even when a newer unselected ledger row is fresh", async () => {
+    const snapshotAnchor = asset({
+      id: 20,
+      storageUrl: "https://r2/snapshot-anchor.png",
+      provenance: { identityRole: "anchor", identityRevisionId: "rev-snapshot" },
+    });
+    const selected = asset({
+      id: 21,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/selected-three-quarter.png",
+      provenance: { identityRevisionId: "rev-snapshot" },
+    });
+    const newerUnselected = asset({
+      id: 22,
+      viewType: "threeQuarter",
+      storageUrl: "https://r2/newer-unselected.png",
+      provenance: { identityRevisionId: "rev-snapshot" },
+    });
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue({
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: {},
+        preferences: {},
+        identityText: CANON,
+      },
+      anchor: snapshotAnchor,
+      displayedHeadshot: snapshotAnchor,
+      selectedViews: [
+        {
+          angle: "frontClose",
+          compatibility: "current",
+          selection: {},
+          asset: snapshotAnchor,
+        },
+        {
+          angle: "threeQuarter",
+          compatibility: "stale",
+          selection: {},
+          asset: selected,
+        },
+      ],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [newerUnselected, selected, snapshotAnchor] },
+    } as never);
+
+    await expect(executeMintPackage({
+      userId: 1,
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+      readMode: "snapshot",
+      operationId: REQUEST_ID,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("refresh"),
+    });
+
+    expect(getModelAssets).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
+  });
+
   it("M8 ⊕: add-views (mint:false) consumes the anchor and stamps outputs with the CURRENT revision", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ identityRevisionId: "rev-2" }) as never);
     vi.mocked(getModelAssets).mockResolvedValue([
@@ -667,6 +738,144 @@ describe("mint/add-views snapshot ordering", () => {
 
     expect(deductPoints).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("snapshot Add Views generates from selected package gaps, immutable identity, and the identity anchor", async () => {
+    const snapshotAnchor = asset({
+      id: 20,
+      storageUrl: "https://r2/snapshot-anchor.png",
+      provenance: { identityRole: "anchor", identityRevisionId: "rev-snapshot" },
+    });
+    const displayed = asset({
+      id: 21,
+      storageUrl: "https://r2/displayed-headshot.png",
+      provenance: { identityRole: "display", identityRevisionId: "rev-snapshot" },
+    });
+    const newerUnselected = [
+      asset({ id: 22, viewType: "threeQuarter", storageUrl: "https://r2/unselected-three-quarter.png" }),
+      asset({ id: 23, viewType: "sideClose", storageUrl: "https://r2/unselected-side-close.png" }),
+      asset({ id: 24, viewType: "frontFull", storageUrl: "https://r2/unselected-front-full.png" }),
+    ];
+    const effective = {
+      authority: "snapshot",
+      status: "current",
+      model: model({
+        masterPrompt: "mutable legacy prompt",
+        technicalSchema: { subject: { sex: "female" } },
+        preferences: { bodyType: "Mutable" },
+        identityRevisionId: "rev-snapshot",
+      }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: { subject: { sex: "male" } },
+        preferences: { bodyType: "Athletic" },
+        identityText: CANON,
+      },
+      anchor: snapshotAnchor,
+      displayedHeadshot: displayed,
+      selectedViews: [{
+        angle: "frontClose",
+        compatibility: "current",
+        selection: {},
+        asset: displayed,
+      }],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [...newerUnselected, displayed, snapshotAnchor] },
+    } as never;
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effective);
+    const caller = appRouter.createCaller(authCtx());
+
+    const result = await caller.generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      mint: false,
+    });
+
+    expect(result.generated.map((row) => row.angle).sort())
+      .toEqual(["frontFull", "sideClose", "threeQuarter"].sort());
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(getModelAssets).not.toHaveBeenCalled();
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledTimes(3);
+    expect(generateRemainingViews).toHaveBeenCalledWith(
+      "immutable snapshot prompt",
+      "https://r2/snapshot-anchor.png",
+      "male",
+      expect.any(String),
+      { subject: { sex: "male" } },
+    );
+    expect(generateFullBody).toHaveBeenCalledWith(
+      "immutable snapshot prompt",
+      "https://r2/snapshot-anchor.png",
+      "male",
+      { subject: { sex: "male" } },
+      "Athletic",
+    );
+    expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      operationKind: "casting.add_views",
+      mode: "add_views",
+      candidates: expect.arrayContaining([
+        expect.objectContaining({ angle: "threeQuarter" }),
+        expect.objectContaining({ angle: "sideClose" }),
+        expect.objectContaining({ angle: "frontFull" }),
+      ]),
+    }));
+  });
+
+  it("snapshot executor re-resolution refuses free before Add Views provider work", async () => {
+    const snapshotAnchor = asset({
+      id: 20,
+      storageUrl: "https://r2/snapshot-anchor.png",
+      provenance: { identityRole: "anchor", identityRevisionId: "rev-snapshot" },
+    });
+    const effective = {
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: {},
+        preferences: {},
+        identityText: CANON,
+      },
+      anchor: snapshotAnchor,
+      displayedHeadshot: snapshotAnchor,
+      selectedViews: [{
+        angle: "frontClose",
+        compatibility: "current",
+        selection: {},
+        asset: snapshotAnchor,
+      }],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [snapshotAnchor] },
+    } as never;
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead)
+      .mockResolvedValueOnce(effective)
+      .mockResolvedValueOnce(effective)
+      .mockRejectedValueOnce(new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "This Cast is temporarily unavailable. No credits were used.",
+      }));
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      mint: false,
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(generateFullBody).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
   });
 });

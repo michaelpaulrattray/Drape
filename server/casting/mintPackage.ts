@@ -51,10 +51,12 @@ import {
   assetRevisionMembership,
   isRestoreCompatible,
   selectIdentityAnchor,
+  type AnchorAssetRow,
 } from "./identity/anchorSelector";
 import {
   computeMintIntegrity,
   computeMintIntegrityForSelection,
+  type MintIntegritySelection,
   type MintIntegrity,
 } from "./identity/mintIntegrity";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
@@ -116,12 +118,27 @@ export async function planMintPackage(input: {
   };
 }
 
-/** Pure snapshot-authority mint plan. The asset ledger supplies provenance,
- * version/failure evidence only; explicit package slots choose current views. */
-export function planMintPackageFromEffectiveState(state: EffectiveCastState) {
+export interface SnapshotMintExecutionAuthority {
+  model: EffectiveCastState["model"];
+  generationModel: SlotGenContext["model"];
+  assets: AnchorAssetRow[];
+  existingAngles: CanonicalViewAngle[];
+  identityText: string;
+  selection: MintIntegritySelection;
+}
+
+/**
+ * Snapshot authority for both the quoted mint plan and paid execution.
+ * Explicit package slots choose current views; immutable identity documents
+ * and the identity snapshot's anchor drive generation. The asset ledger
+ * remains provenance/history and failure evidence only.
+ */
+export function snapshotMintExecutionAuthority(
+  state: EffectiveCastState,
+): SnapshotMintExecutionAuthority {
   const assets = [...state.ledger.assets];
-  const selectedByAngle = new Map<CanonicalViewAngle, (typeof assets)[number] | null>();
-  const selectedById = new Map<number, (typeof assets)[number]>();
+  const selectedByAngle = new Map<CanonicalViewAngle, AnchorAssetRow | null>();
+  const selectedById = new Map<number, AnchorAssetRow>();
 
   if (state.status === "current") {
     for (const view of state.selectedViews) {
@@ -133,38 +150,53 @@ export function planMintPackageFromEffectiveState(state: EffectiveCastState) {
     }
   }
 
-  const existing = state.status === "current"
-    ? state.selectedViews.map((view) => view.angle)
-    : [];
-  const identityText = state.status === "current" ? state.identity.identityText : "";
-  const anchor = state.status === "current"
-    ? selectedById.get(state.anchor.id) ?? state.anchor
-    : null;
-  const displayedHeadshot = state.status === "current"
-    ? selectedByAngle.get("frontClose") ?? null
-    : null;
+  return {
+    model: state.model,
+    generationModel: state.status === "current"
+      ? {
+          masterPrompt: state.identity.masterPrompt,
+          technicalSchema: state.identity.technicalSchema,
+          preferences: state.identity.preferences,
+          identityRevisionId: state.model.identityRevisionId,
+        }
+      : state.model,
+    assets,
+    existingAngles: state.status === "current"
+      ? state.selectedViews.map((view) => view.angle)
+      : [],
+    identityText: state.status === "current" ? state.identity.identityText : "",
+    selection: {
+      anchor: state.status === "current"
+        ? selectedById.get(state.anchor.id) ?? state.anchor
+        : null,
+      displayedHeadshot: state.status === "current"
+        ? selectedByAngle.get("frontClose") ?? null
+        : null,
+      hasDisplayedHeadshotSelection:
+        state.status === "current"
+        && state.selectedViews.some((view) => view.angle === "frontClose"),
+      selectedByAngle,
+    },
+  };
+}
+
+/** Pure snapshot-authority mint plan. The asset ledger supplies provenance,
+ * version/failure evidence only; explicit package slots choose current views. */
+export function planMintPackageFromEffectiveState(state: EffectiveCastState) {
+  const authority = snapshotMintExecutionAuthority(state);
   const integrity = {} as Record<MintTier, MintIntegrity>;
   for (const tier of ["draft", "core", "production"] as const) {
     integrity[tier] = computeMintIntegrityForSelection(
-      state.model,
-      assets,
+      authority.model,
+      authority.assets,
       MINT_TIER_SLOTS[tier],
-      identityText,
-      {
-        anchor,
-        displayedHeadshot,
-        hasDisplayedHeadshotSelection:
-          state.status === "current"
-          && state.selectedViews.some((view) => view.angle === "frontClose"),
-        selectedByAngle,
-      },
+      authority.identityText,
+      authority.selection,
     );
   }
   return {
-    tiers: tierCosts(existing),
-    hasHeadshot:
-      state.status === "current"
-      && state.selectedViews.some((view) => view.angle === "frontClose"),
+    tiers: tierCosts(authority.existingAngles),
+    hasHeadshot: authority.selection.hasDisplayedHeadshotSelection,
     integrity,
   };
 }
@@ -179,6 +211,7 @@ export interface MintPackageInput {
    *  headshot, never mint state) but the model STAYS A DRAFT. Minting is a
    *  separate deliberate act; identity iteration stays free until it. */
   mint?: boolean;
+  readMode?: SnapshotReadMode;
   chargeReferenceId?: string;
   operationId: string;
   onCharged?: (amount: number) => void;
@@ -464,10 +497,15 @@ export async function executeMintPackage(input: MintPackageInput) {
   if (input.mint !== false && !input.characterName?.trim()) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "A name is required to mint" });
   }
-  const model = await getModelById(input.modelId);
+  const effective = input.readMode === "snapshot"
+    ? await resolveEffectiveCastStateForRead(input)
+    : null;
+  const model = effective?.model ?? await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
+  if (!effective) {
+    if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+    assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
+  }
 
   // MINT-TRANSITION INVARIANT (Batch 0, review item 1): the only legal
   // transition through this boundary is a CLEAN draft → active. Adding
@@ -493,11 +531,14 @@ export async function executeMintPackage(input: MintPackageInput) {
     }
   }
 
-  const assets = await getModelAssets(input.modelId);
+  const snapshotAuthority = effective
+    ? snapshotMintExecutionAuthority(effective)
+    : null;
+  const assets = snapshotAuthority?.assets ?? await getModelAssets(input.modelId);
   // §7 (Batch C): every identity consumer — including every mint-time slot
   // generation — uses the AUTHORITATIVE anchor via the shared selector. A
   // newer display-only headshot refinement never silently replaces it.
-  const anchor = selectIdentityAnchor(assets);
+  const anchor = snapshotAuthority?.selection.anchor ?? selectIdentityAnchor(assets);
   if (!anchor) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Cast a headshot before minting" });
   }
@@ -509,8 +550,17 @@ export async function executeMintPackage(input: MintPackageInput) {
   // legally passes. Add-views (mint:false) is not the mint transition and
   // takes no integrity gate.
   if (input.mint !== false) {
-    const identityText = buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined);
-    const integrity = computeMintIntegrity(model, assets, MINT_TIER_SLOTS[input.tier], identityText);
+    const identityText = snapshotAuthority?.identityText
+      ?? buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined);
+    const integrity = snapshotAuthority
+      ? computeMintIntegrityForSelection(
+          snapshotAuthority.model,
+          snapshotAuthority.assets,
+          MINT_TIER_SLOTS[input.tier],
+          identityText,
+          snapshotAuthority.selection,
+        )
+      : computeMintIntegrity(model, assets, MINT_TIER_SLOTS[input.tier], identityText);
     if (!integrity.ok) {
       const firstTierFailure = integrity.tierViews.find((v) => !v.ok);
       const message = !integrity.anchor.ok
@@ -526,7 +576,8 @@ export async function executeMintPackage(input: MintPackageInput) {
     }
   }
 
-  const existing = assets.filter((a) => a.storageUrl).map((a) => a.viewType);
+  const existing = snapshotAuthority?.existingAngles
+    ?? assets.filter((a) => a.storageUrl).map((a) => a.viewType);
   const { missing, cost: totalCost } = tierCosts(existing)[input.tier];
 
   // Deduct the tier total up front (atomic-credits contract)
@@ -545,7 +596,7 @@ export async function executeMintPackage(input: MintPackageInput) {
   const ctx: SlotGenContext = {
     userId: input.userId,
     modelId: input.modelId,
-    model,
+    model: snapshotAuthority?.generationModel ?? model,
     headshotUrl: anchor.storageUrl!,
     reasonLabel: "Mint package",
     mintTier: input.tier,

@@ -129,6 +129,16 @@ describe("no raw newest-headshot selector bypasses the shared anchor selector (M
     expect(src).toContain('anchorUrl: state.status === "current" ? state.anchor.storageUrl : null');
     expect(src).toMatch(/headshotUrl:\s*anchorUrl/);
   });
+  it("mint/Add Views uses snapshot selections, identity documents, and anchor in snapshot mode", () => {
+    const src = serverFile("casting/mintPackage.ts");
+    expect(src).toContain("snapshotMintExecutionAuthority");
+    expect(src).toContain("state.identity.masterPrompt");
+    expect(src).toContain("selectedByAngle.set(view.angle, selected)");
+    expect(src).toContain("selectedById.get(state.anchor.id) ?? state.anchor");
+    expect(src).toContain("model: snapshotAuthority?.generationModel ?? model");
+    const route = serverFile("routes/generation/castingExport.ts");
+    expect(route).toMatch(/executeMintPackage\(\{[\s\S]*?readMode,/);
+  });
 });
 
 describe("package generation preserves exact storage ownership", () => {

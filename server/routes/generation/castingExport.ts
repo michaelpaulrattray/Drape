@@ -332,6 +332,7 @@ export const castingExportRouter = router({
           tier: input.tier,
           characterName: input.characterName ?? "",
           mint: input.mint,
+          readMode,
           chargeReferenceId: started.chargeReferenceId,
           onCharged: (amount) => { chargedCredits = amount; },
           onRefunded: (amount) => { refundedCredits += amount; },
