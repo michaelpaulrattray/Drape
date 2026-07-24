@@ -585,6 +585,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      readMode: "r6",
       patch: null,
       candidate: {
         storageUrl: "https://example.invalid/canvas-reroll.png",
@@ -606,6 +607,133 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     expect(committed.result.releasedDependents).toEqual([]);
   }, 60_000);
 
+  it("snapshot Canvas structured recast derives from immutable documents and repairs mutable drift", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    await connection.execute(
+      `UPDATE models
+       SET masterPrompt = 'MUTABLE DRIFT',
+           technicalSchema = JSON_OBJECT('hair', 'platinum'),
+           preferences = JSON_OBJECT('hairColor', 'Platinum')
+       WHERE id = ?`,
+      [base.modelId],
+    );
+    const operationId = await startModelOperation(userId, base.modelId, "canvas.recast");
+
+    await commitCanvasRecastSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      readMode: "snapshot",
+      patch: {
+        source: "structured",
+        edits: [{
+          kind: "leaf",
+          leaf: "person.face.jawline",
+          operation: "modify",
+          value: "Sharp / Chiseled",
+        }],
+      },
+      candidate: {
+        storageUrl: "https://example.invalid/snapshot-canvas-recast.png",
+        storageKey: "casting/snapshot-canvas-recast.png",
+        pointsCost: 350,
+        engine: "test-engine",
+      },
+      landing: async () => undefined,
+    });
+
+    const current = await one(
+      `SELECT m.masterPrompt, m.technicalSchema, m.preferences,
+        i.masterPrompt AS snapshotPrompt,
+        i.technicalSchema AS snapshotSchema,
+        i.preferences AS snapshotPreferences
+       FROM models m
+       JOIN model_package_snapshots p ON p.id = m.currentPackageSnapshotId
+       JOIN model_identity_snapshots i ON i.id = p.identitySnapshotId
+       WHERE m.id = ?`,
+      [base.modelId],
+    );
+    const modelSchema = typeof current.technicalSchema === "string"
+      ? JSON.parse(current.technicalSchema)
+      : current.technicalSchema;
+    const snapshotSchema = typeof current.snapshotSchema === "string"
+      ? JSON.parse(current.snapshotSchema)
+      : current.snapshotSchema;
+    const modelPreferences = typeof current.preferences === "string"
+      ? JSON.parse(current.preferences)
+      : current.preferences;
+    const snapshotPreferences = typeof current.snapshotPreferences === "string"
+      ? JSON.parse(current.snapshotPreferences)
+      : current.snapshotPreferences;
+    expect(String(current.masterPrompt)).toContain("identity-v1");
+    expect(String(current.masterPrompt)).toContain("Sharp / Chiseled");
+    expect(String(current.masterPrompt)).not.toContain("MUTABLE DRIFT");
+    expect(current.snapshotPrompt).toBe(current.masterPrompt);
+    expect(modelSchema).toEqual({
+      hair: "brown",
+      facial_features: { jawline: "Sharp / Chiseled" },
+    });
+    expect(snapshotSchema).toEqual(modelSchema);
+    expect(modelPreferences).toMatchObject({
+      hairColor: "Brown",
+      jawline: "Sharp / Chiseled",
+    });
+    expect(snapshotPreferences).toEqual(modelPreferences);
+  }, 60_000);
+
+  it("snapshot Canvas reroll restores immutable documents before appending the new identity head", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const immutable = await one(
+      `SELECT masterPrompt, technicalSchema, preferences
+       FROM model_identity_snapshots WHERE id = ?`,
+      [base.identitySnapshotId],
+    );
+    await connection.execute(
+      `UPDATE models
+       SET masterPrompt = 'MUTABLE REROLL DRIFT',
+           technicalSchema = JSON_OBJECT('hair', 'silver'),
+           preferences = JSON_OBJECT('hairColor', 'Silver')
+       WHERE id = ?`,
+      [base.modelId],
+    );
+    const operationId = await startModelOperation(userId, base.modelId, "canvas.recast");
+
+    await commitCanvasRecastSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      readMode: "snapshot",
+      patch: null,
+      candidate: {
+        storageUrl: "https://example.invalid/snapshot-canvas-reroll.png",
+        storageKey: "casting/snapshot-canvas-reroll.png",
+        pointsCost: 350,
+        engine: "test-engine",
+      },
+      landing: async () => undefined,
+    });
+
+    const current = await one(
+      `SELECT m.masterPrompt, m.technicalSchema, m.preferences,
+        i.masterPrompt AS snapshotPrompt,
+        i.technicalSchema AS snapshotSchema,
+        i.preferences AS snapshotPreferences
+       FROM models m
+       JOIN model_package_snapshots p ON p.id = m.currentPackageSnapshotId
+       JOIN model_identity_snapshots i ON i.id = p.identitySnapshotId
+       WHERE m.id = ?`,
+      [base.modelId],
+    );
+    expect(current.masterPrompt).toBe(immutable.masterPrompt);
+    expect(current.snapshotPrompt).toBe(immutable.masterPrompt);
+    expect(JSON.stringify(current.technicalSchema)).toBe(JSON.stringify(immutable.technicalSchema));
+    expect(JSON.stringify(current.snapshotSchema)).toBe(JSON.stringify(immutable.technicalSchema));
+    expect(JSON.stringify(current.preferences)).toBe(JSON.stringify(immutable.preferences));
+    expect(JSON.stringify(current.snapshotPreferences)).toBe(JSON.stringify(immutable.preferences));
+  }, 60_000);
+
   it("rolls the Canvas landing and identity transition back together", async () => {
     const userId = await createUser();
     const base = await createBootstrappedModel(userId);
@@ -622,6 +750,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      readMode: "r6",
       patch: null,
       candidate: {
         storageUrl: "https://example.invalid/rollback-reroll.png",

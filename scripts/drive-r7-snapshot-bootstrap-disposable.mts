@@ -67,13 +67,14 @@ async function dropDisposableDatabase(input: {
 
 async function main() {
   const args = process.argv.slice(2);
-  const allowedArgs = new Set(["--focused-b3", "--focused-iterate"]);
+  const allowedArgs = new Set(["--focused-b3", "--focused-iterate", "--focused-canvas"]);
   if (args.some((arg) => !allowedArgs.has(arg))) {
     throw new Error(`Unknown argument: ${args.find((arg) => !allowedArgs.has(arg))}`);
   }
   const focusedB3 = args.includes("--focused-b3");
   const focusedIterate = args.includes("--focused-iterate");
-  if (focusedB3 && focusedIterate) {
+  const focusedCanvas = args.includes("--focused-canvas");
+  if ([focusedB3, focusedIterate, focusedCanvas].filter(Boolean).length > 1) {
     throw new Error("Choose only one focused disposable gate");
   }
   const configured = process.env.DATABASE_URL;
@@ -126,6 +127,13 @@ async function main() {
             "--testNamePattern=snapshot-selected.*iteration",
             "server/r7-snapshot-transitions-db.test.ts",
           ]
+        : focusedCanvas
+          ? [
+              "exec", "vitest", "run",
+              "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
+              "--testNamePattern=snapshot.*Canvas",
+              "server/r7-snapshot-transitions-db.test.ts",
+            ]
       : [
           "exec", "vitest", "run",
           "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
@@ -144,6 +152,8 @@ async function main() {
         ? "[disposable] R7-7B3 snapshot-selected restore gate passed"
         : focusedIterate
           ? "[disposable] R7-7B3 snapshot-selected iteration gate passed"
+          : focusedCanvas
+            ? "[disposable] R7-7B3 snapshot Canvas recast/reroll gate passed"
           : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed",
     );
   } finally {

@@ -1037,6 +1037,7 @@ export async function commitCanvasRecastSnapshot(input: {
   userId: number;
   modelId: number;
   operationId: string;
+  readMode: SnapshotReadMode;
   patch: AuthorizedIdentityPatch | null;
   candidate: GeneratedImageCandidate & { storageKey: string };
   landing: (tx: TransactionHandle) => Promise<void>;
@@ -1063,10 +1064,21 @@ export async function commitCanvasRecastSnapshot(input: {
         .from(modelAssets)
         .where(eq(modelAssets.modelId, input.modelId))
         .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
-      const computed = input.patch ? computeIdentityCommit(context.model, input.patch) : null;
+      const identityAuthority = input.readMode === "snapshot"
+        ? context.current.identitySnapshot
+        : context.model;
+      const identityModel = input.readMode === "snapshot"
+        ? {
+            ...context.model,
+            masterPrompt: identityAuthority.masterPrompt,
+            technicalSchema: identityAuthority.technicalSchema,
+            preferences: identityAuthority.preferences,
+          }
+        : context.model;
+      const computed = input.patch ? computeIdentityCommit(identityModel, input.patch) : null;
       const revisionId = mintRevisionId();
-      const masterPrompt = computed?.masterPrompt ?? context.model.masterPrompt ?? "";
-      const technicalSchema = computed?.technicalSchema ?? context.model.technicalSchema ?? {};
+      const masterPrompt = computed?.masterPrompt ?? identityAuthority.masterPrompt ?? "";
+      const technicalSchema = computed?.technicalSchema ?? identityAuthority.technicalSchema ?? {};
       const identityText = buildIdentityAnchor(masterPrompt, technicalSchema);
       const staleIds = selectStaleSiblingHeads(assets, "frontClose");
       const updated = await tx.update(models).set({
@@ -1074,6 +1086,10 @@ export async function commitCanvasRecastSnapshot(input: {
           masterPrompt: computed.masterPrompt,
           technicalSchema: computed.technicalSchema,
           preferences: computed.preferences,
+        } : input.readMode === "snapshot" ? {
+          masterPrompt: identityAuthority.masterPrompt,
+          technicalSchema: identityAuthority.technicalSchema,
+          preferences: identityAuthority.preferences,
         } : {}),
         identityRevisionId: revisionId,
       }).where(and(

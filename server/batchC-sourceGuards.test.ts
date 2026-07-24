@@ -208,6 +208,49 @@ describe("iteration snapshot reads stay server-owned", () => {
   });
 });
 
+describe("Canvas recast snapshot reads stay server-owned", () => {
+  it("captures one mode, validates before running, asserts the receipt head before money, and threads mode into the executor", () => {
+    const route = serverFile("routes/boardOps.ts");
+    const executeBlock = route.slice(
+      route.indexOf("applyModelEdit: router"),
+      route.indexOf("/** R4", route.indexOf("applyModelEdit: router")),
+    );
+    expect(executeBlock).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
+    expect(executeBlock).toContain("prepareCanvasRecastAuthority");
+    expect(executeBlock).toContain('if (readMode === "r6")');
+    expect(executeBlock).toContain("assertGenerationOperationSnapshotHead");
+    expect(executeBlock).toMatch(/executeApplyModelEdit\(\{[\s\S]*?readMode,/);
+    expect(route.indexOf("input.verifyAfterRunning"))
+      .toBeLessThan(route.indexOf("const result = await input.execute"));
+    expect(executeBlock).not.toMatch(/input\.(readMode|snapshotId|packageSnapshotId|identitySnapshotId)/);
+  });
+
+  it("the executor resolves immutable documents after the receipt assertion and the writer independently reapplies them", () => {
+    const boardOps = serverFile("lib/boardOps.ts");
+    const authorityBlock = boardOps.slice(
+      boardOps.indexOf("export async function prepareCanvasRecastAuthority"),
+      boardOps.indexOf("/**", boardOps.indexOf("export async function prepareCanvasRecastAuthority") + 10),
+    );
+    expect(authorityBlock).toContain("resolveEffectiveCastStateForRead");
+    expect(authorityBlock).toContain("state.identity.masterPrompt");
+    expect(authorityBlock).toContain("state.identity.technicalSchema");
+    expect(authorityBlock).toContain("state.identity.preferences");
+    expect(authorityBlock).toContain("computeIdentityCommit(authorityModel, structured.patch)");
+    expect(boardOps).toMatch(/commitCanvasRecastSnapshot\(\{[\s\S]*?readMode:\s*input\.readMode,/);
+
+    const transitions = serverFile("casting/snapshotTransitions.ts");
+    const recastBlock = transitions.slice(
+      transitions.indexOf("export async function commitCanvasRecastSnapshot"),
+      transitions.indexOf("interface IterationCandidate"),
+    );
+    expect(recastBlock).toContain('input.readMode === "snapshot"');
+    expect(recastBlock).toContain("context.current.identitySnapshot");
+    expect(recastBlock).toContain("computeIdentityCommit(identityModel, input.patch)");
+    expect(recastBlock).toContain("masterPrompt: identityAuthority.masterPrompt");
+    expect(recastBlock).toContain("preferences: identityAuthority.preferences");
+  });
+});
+
 describe("package generation preserves exact storage ownership", () => {
   it.each([
     ["generateFullBody", "export async function generateRemainingViews"],

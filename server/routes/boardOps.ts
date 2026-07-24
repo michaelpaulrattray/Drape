@@ -9,6 +9,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
+  assertGenerationOperationSnapshotHead,
   bindGenerationOperationModel,
   getBoardById,
   markGenerationOperationRunning,
@@ -35,6 +36,7 @@ import {
   failClaimedDirectOperation,
 } from "../casting/directOperation";
 import { bootstrapModelSnapshot } from "../casting/snapshotBootstrap";
+import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 
 async function requireBoardOwnership(boardId: number, userId: number) {
   const board = await getBoardById(boardId);
@@ -84,6 +86,7 @@ async function executeCanvasOperation<Result extends PublicOperationResult>(inpu
   expectedIdentityRevisionId?: string | null;
   plannedCredits: number;
   prepareBeforeRunning?: () => Promise<void>;
+  verifyAfterRunning?: (context: { operationId: string }) => Promise<void>;
   execute: (context: {
     operationId: string;
     chargeReferenceId: string;
@@ -129,6 +132,9 @@ async function executeCanvasOperation<Result extends PublicOperationResult>(inpu
   let refundedCredits = 0;
   let durableResult = false;
   try {
+    if (input.verifyAfterRunning) {
+      await input.verifyAfterRunning({ operationId: gate.operationId });
+    }
     const result = await input.execute({
       operationId: gate.operationId,
       chargeReferenceId: started.chargeReferenceId,
@@ -444,6 +450,7 @@ export const boardOpsRouter = router({
         intent: z.enum(["edit", "rerun"]).optional(),
       }).strict())
       .mutation(async ({ ctx, input }) => {
+        const readMode = captureSnapshotReadMode(ctx.user.id);
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
         const { model } = await boardOps.resolveModelBackedBoardOperation({ userId: ctx.user.id, itemId: input.itemId });
@@ -467,17 +474,33 @@ export const boardOpsRouter = router({
           plannedCredits: CREDIT_COSTS.castingImage,
           prepareBeforeRunning: input.decision === "update"
             ? async () => {
-                const snapshotHead = await bootstrapModelSnapshot({
-                  userId: ctx.user.id,
-                  modelId: model.id,
-                });
-                if (snapshotHead.status === "headless") {
-                  throw new TRPCError({
-                    code: "PRECONDITION_FAILED",
-                    message: "Generate a headshot before recasting this Cast.",
+                if (readMode === "r6") {
+                  const snapshotHead = await bootstrapModelSnapshot({
+                    userId: ctx.user.id,
+                    modelId: model.id,
                   });
+                  if (snapshotHead.status === "headless") {
+                    throw new TRPCError({
+                      code: "PRECONDITION_FAILED",
+                      message: "Generate a headshot before recasting this Cast.",
+                    });
+                  }
                 }
+                await boardOps.prepareCanvasRecastAuthority({
+                  userId: ctx.user.id,
+                  itemId: input.itemId,
+                  changes: input.changes,
+                  intent: input.intent,
+                  readMode,
+                });
               }
+            : undefined,
+          verifyAfterRunning: input.decision === "update"
+            ? ({ operationId }) => assertGenerationOperationSnapshotHead({
+                userId: ctx.user.id,
+                operationId,
+                modelId: model.id,
+              })
             : undefined,
           execute: ({ operationId, chargeReferenceId, onCharged, onRefunded }) => boardOps.executeApplyModelEdit({
             userId: ctx.user.id,
@@ -485,6 +508,7 @@ export const boardOpsRouter = router({
             decision: input.decision,
             changes: input.changes,
             intent: input.intent,
+            readMode,
             chargeReferenceId,
             operationId,
             onCharged,

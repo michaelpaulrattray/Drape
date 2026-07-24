@@ -57,6 +57,8 @@ import { computeIdentityCommit } from "../casting/identity/identityCommit";
 import { commitCanvasRecastSnapshot } from "../casting/snapshotTransitions";
 import { currentRevisionId, identityStampFor } from "../casting/identity/anchorSelector";
 import { buildIdentityAnchor } from "../casting/geminiClient";
+import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
+import type { SnapshotReadMode } from "../casting/snapshotReadScope";
 import {
   clearEngineChoiceForChanges,
   prepareCandidatePreferences,
@@ -71,7 +73,7 @@ import type {
 } from "../../shared/boardTypes";
 import { VIEW_ANGLE_LABELS, CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { isModelDraftStatus, isModelAvailableStatus } from "../../shared/modelLifecycle";
-import type { BoardItemKind, BoardEdgeRelation } from "../../drizzle/schema";
+import type { BoardItemKind, BoardEdgeRelation, Model } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete } from "../storage";
 
@@ -755,6 +757,7 @@ export interface ApplyModelEditInput {
   /** 'rerun' = the R4 fork/recast gesture (same engine path, version rows
    *  stamp `tool:'rerun'`); 'edit' = an environment save (default). */
   intent?: "edit" | "rerun";
+  readMode: SnapshotReadMode;
   chargeReferenceId: string;
   operationId: string;
   onCharged: (amount: number) => void;
@@ -777,6 +780,80 @@ export async function resolveModelBackedBoardOperation(input: { userId: number; 
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model);
   return { item, model, provenance };
+}
+
+/** Server-owned read authority for a Canvas update. The route calls this
+ * before the receipt starts so typed refusals stay free; the paid executor
+ * calls it again after the receipt-head assertion so generation never trusts
+ * the earlier request read. */
+export async function prepareCanvasRecastAuthority(input: {
+  userId: number;
+  itemId: number;
+  changes: Record<string, unknown>;
+  intent?: "edit" | "rerun";
+  readMode: SnapshotReadMode;
+}) {
+  const resolved = await resolveModelBackedBoardOperation(input);
+  if (!isModelDraftStatus(resolved.model.status)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This identity is minted and immutable â€” fork it as a new model instead.",
+    });
+  }
+
+  let authorityModel: Model = resolved.model;
+  if (input.readMode === "snapshot") {
+    const state = await resolveEffectiveCastStateForRead({
+      userId: input.userId,
+      modelId: resolved.model.id,
+    });
+    if (state.status !== "current") {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Generate a headshot before recasting this Cast.",
+      });
+    }
+    authorityModel = {
+      ...state.model,
+      masterPrompt: state.identity.masterPrompt,
+      technicalSchema: state.identity.technicalSchema,
+      preferences: state.identity.preferences,
+    };
+  }
+
+  const current = (authorityModel.preferences ?? {}) as Record<string, unknown>;
+  const isRerun = input.intent === "rerun" && Object.keys(input.changes).length === 0;
+  let identityPatch: import("../casting/identity/identityTypes").AuthorizedIdentityPatch | null = null;
+  let generationDoc = {
+    masterPrompt: authorityModel.masterPrompt || "",
+    preferences: current,
+    technicalSchema: authorityModel.technicalSchema ?? {},
+  };
+  let releasedIdentityDependents: string[] = [];
+  if (!isRerun) {
+    const structured = buildStructuredPatch(input.changes, current);
+    if (!structured.ok) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: structured.message });
+    }
+    identityPatch = structured.patch;
+    const computed = computeIdentityCommit(authorityModel, structured.patch);
+    generationDoc = {
+      masterPrompt: computed.masterPrompt,
+      preferences: computed.preferences as Record<string, unknown>,
+      technicalSchema: computed.technicalSchema,
+    };
+    releasedIdentityDependents = computed.releasedDependents;
+  }
+
+  return {
+    resolved,
+    authorityModel,
+    current,
+    isRerun,
+    identityPatch,
+    generationDoc,
+    releasedIdentityDependents,
+  };
 }
 
 /**
@@ -882,7 +959,10 @@ async function generateCastCandidate(opts: {
 }
 
 export async function executeApplyModelEdit(input: ApplyModelEditInput) {
-  const resolved = await resolveModelBackedBoardOperation(input);
+  const prepared = input.decision === "update"
+    ? await prepareCanvasRecastAuthority(input)
+    : null;
+  const resolved = prepared?.resolved ?? await resolveModelBackedBoardOperation(input);
   const { item, model } = resolved;
   const meta = readMeta(item);
   const prov = resolved.provenance;
@@ -904,7 +984,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   }
   await enforceDailyQuota(input.userId);
 
-  const current = (model.preferences ?? {}) as Record<string, unknown>;
+  const current = prepared?.current ?? (model.preferences ?? {}) as Record<string, unknown>;
   const cost = CREDIT_COSTS.castingImage;
 
   if (input.decision === "update") {
@@ -921,32 +1001,12 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     // RE-ROLL from the current document (new anchor + new revision + stale
     // flags), never a structured patch and never a "nothing to change"
     // refusal.
-    const isRerun = input.intent === "rerun" && Object.keys(input.changes).length === 0;
-    let identityPatch: import("../casting/identity/identityTypes").AuthorizedIdentityPatch | null = null;
-    let generationDoc = {
-      masterPrompt: model.masterPrompt || "",
-      preferences: current,
-      technicalSchema: model.technicalSchema ?? {},
-    };
-    let releasedIdentityDependents: string[] = [];
-    if (!isRerun) {
-      const structured = buildStructuredPatch(input.changes, current);
-      if (!structured.ok) {
-        log.warn({ itemId: input.itemId, code: structured.code }, "applyModelEdit update refused (free)");
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: structured.message });
-      }
-      identityPatch = structured.patch;
-      // The post-commit document, computed purely — generation reads the
-      // deliberately updated identity; the atomic commit below persists the
-      // exact same computation.
-      const computed = computeIdentityCommit(model, structured.patch);
-      generationDoc = {
-        masterPrompt: computed.masterPrompt,
-        preferences: computed.preferences as Record<string, unknown>,
-        technicalSchema: computed.technicalSchema,
-      };
-      releasedIdentityDependents = computed.releasedDependents;
-    }
+    const { isRerun } = prepared!;
+    const {
+      identityPatch,
+      generationDoc,
+      releasedIdentityDependents,
+    } = prepared!;
 
     const deduct = await deductPoints(
       input.userId, cost, "generation",
@@ -1070,6 +1130,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
           userId: input.userId,
           modelId: model.id,
           operationId: input.operationId,
+          readMode: input.readMode,
           patch: null,
           candidate: {
             storageUrl: result.imageUrl,
@@ -1090,6 +1151,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
           userId: input.userId,
           modelId: model.id,
           operationId: input.operationId,
+          readMode: input.readMode,
           patch: identityPatch!,
           candidate: {
             storageUrl: result.imageUrl,

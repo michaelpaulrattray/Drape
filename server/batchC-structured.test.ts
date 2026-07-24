@@ -69,6 +69,7 @@ vi.mock("./db", async (importOriginal) => {
       operationId: "11111111-1111-4111-8111-111111111111",
       chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge",
     }),
+    assertGenerationOperationSnapshotHead: vi.fn().mockResolvedValue(undefined),
     bindGenerationOperationModel: vi.fn().mockResolvedValue(undefined),
     finalizeGenerationOperationSuccess: vi.fn().mockResolvedValue(undefined),
     finalizeGenerationOperationFailure: vi.fn().mockResolvedValue(undefined),
@@ -152,6 +153,12 @@ vi.mock("./casting/snapshotBootstrap", () => ({
     stateVersion: 1,
   }),
 }));
+vi.mock("./casting/snapshotReadScope", () => ({
+  captureSnapshotReadMode: vi.fn().mockReturnValue("r6"),
+}));
+vi.mock("./casting/effectiveCastRead", () => ({
+  resolveEffectiveCastStateForRead: vi.fn(),
+}));
 vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
   return { ...actual, commitCanvasRecastSnapshot: vi.fn() };
@@ -169,11 +176,14 @@ import {
   claimGenerationOperation,
   acquireGenerationOperationLock,
   markGenerationOperationRunning,
+  assertGenerationOperationSnapshotHead,
   bindGenerationOperationModel,
   finalizeGenerationOperationSuccess,
 } from "./db";
 import { generateMasterPrompt, generateCastingImage, generateCastingImageRaw } from "./casting/aiService";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
+import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
 import { commitCanvasRecastSnapshot } from "./casting/snapshotTransitions";
 import { commitAnchorReRoll, commitIdentityEdit } from "./casting/identity/identityCommit";
 import { buildIdentityAnchor } from "./casting/geminiClient";
@@ -192,8 +202,8 @@ const accounting = (reference: string) => ({
   onCharged: () => undefined,
   onRefunded: () => undefined,
 });
-const executeApplyModelEdit = (input: Omit<Parameters<typeof executeApplyModelEditRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded">) =>
-  executeApplyModelEditRaw({ ...input, ...accounting(`apply-edit-${input.itemId}-test`) });
+const executeApplyModelEdit = (input: Omit<Parameters<typeof executeApplyModelEditRaw>[0], "readMode" | "chargeReferenceId" | "onCharged" | "onRefunded">) =>
+  executeApplyModelEditRaw({ ...input, readMode: "r6", ...accounting(`apply-edit-${input.itemId}-test`) });
 const executeRunGeneration = (input: Omit<Parameters<typeof executeRunGenerationRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded" | "onModelCreated">) =>
   executeRunGenerationRaw({ ...input, ...accounting(`board-item-${input.itemId}-test`), onModelCreated: () => undefined });
 const executeRunVariations = (input: Omit<Parameters<typeof executeRunVariationsRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded">) =>
@@ -230,6 +240,40 @@ const model = (over: Record<string, unknown> = {}) => ({
   preferences: { gender: "Female", jawline: "Soft / Rounded", features: "gap teeth" },
   identityRevisionId: null, createdAt: new Date(), ...over,
 });
+const snapshotAsset = (over: Record<string, unknown> = {}) => ({
+  id: 1, modelId: 7, viewType: "frontClose", storageUrl: "https://r2/head.png",
+  storageKey: "casting/head.png", pinned: false, status: null,
+  provenance: { identityRole: "anchor", identityRevisionId: "genesis" },
+  createdAt: new Date(), ...over,
+});
+const effectiveState = (over: Record<string, unknown> = {}) => ({
+  status: "current",
+  model: model({
+    masterPrompt: "MUTABLE DRIFT",
+    technicalSchema: { context: { casting_for: "Mutable Drift" } },
+    preferences: { gender: "Male", jawline: "Soft / Rounded" },
+    stateVersion: 1,
+    currentPackageSnapshotId: "11111111-1111-4111-8111-111111111115",
+  }),
+  identity: {
+    id: "11111111-1111-4111-8111-111111111114",
+    modelId: 7,
+    masterPrompt: "immutable snapshot prompt",
+    technicalSchema: { context: { casting_for: "Snapshot Brand" } },
+    preferences: { gender: "Female", jawline: "Soft / Rounded" },
+    identityText: "immutable identity text",
+    anchorAssetId: 1,
+  },
+  anchor: snapshotAsset(),
+  displayedHeadshot: snapshotAsset(),
+  selectedViews: [{
+    angle: "frontClose",
+    compatibility: "current",
+    asset: snapshotAsset(),
+  }],
+  ledger: { assets: [snapshotAsset()] },
+  ...over,
+});
 
 beforeEach(() => {
   vi.mocked(getBoardById).mockReset().mockResolvedValue({ id: 2, userId: 1 } as never);
@@ -249,6 +293,7 @@ beforeEach(() => {
   vi.mocked(claimGenerationOperation).mockClear();
   vi.mocked(acquireGenerationOperationLock).mockClear();
   vi.mocked(markGenerationOperationRunning).mockClear();
+  vi.mocked(assertGenerationOperationSnapshotHead).mockClear().mockResolvedValue(undefined);
   vi.mocked(bindGenerationOperationModel).mockClear();
   vi.mocked(finalizeGenerationOperationSuccess).mockClear();
   vi.mocked(bootstrapModelSnapshot).mockClear().mockResolvedValue({
@@ -258,6 +303,8 @@ beforeEach(() => {
     identitySnapshotId: "identity-current",
     stateVersion: 1,
   });
+  vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
+  vi.mocked(resolveEffectiveCastStateForRead).mockReset().mockResolvedValue(effectiveState() as never);
   vi.mocked(commitCanvasRecastSnapshot).mockReset().mockImplementation(async (input) => {
     const currentModel = await getModelById(input.modelId);
     const assets = await getModelAssets(input.modelId);
@@ -438,6 +485,92 @@ describe("R7-1E Canvas operation receipts", () => {
     const replay = await caller.boardOps.applyModelEdit.execute(input);
     expect(replay).toEqual(result);
     expect(generateCastingImageRaw).toHaveBeenCalledTimes(paidCalls);
+  });
+
+  it("snapshot recast validates before running, re-resolves after the receipt head, and generates from immutable documents", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
+    const caller = appRouter.createCaller(authCtx());
+
+    await caller.boardOps.applyModelEdit.execute({
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      decision: "update",
+      changes: { jawline: "Sharp / Chiseled" },
+    });
+
+    expect(captureSnapshotReadMode).toHaveBeenCalledTimes(1);
+    expect(captureSnapshotReadMode).toHaveBeenCalledWith(1);
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledTimes(2);
+    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
+    expect(assertGenerationOperationSnapshotHead).toHaveBeenCalledWith({
+      userId: 1,
+      operationId: REQUEST_ID,
+      modelId: 7,
+    });
+    expect(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(deductPoints).mock.invocationCallOrder[0],
+    );
+    const [prompt, options] = vi.mocked(generateCastingImageRaw).mock.calls[0];
+    expect(prompt).toContain("immutable snapshot prompt");
+    expect(prompt).not.toContain("MUTABLE DRIFT");
+    expect(options).toMatchObject({
+      castingBrand: "Generic",
+      technicalSchema: { context: { casting_for: "Snapshot Brand" } },
+    });
+    expect(commitCanvasRecastSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      readMode: "snapshot",
+      patch: expect.objectContaining({ source: "structured" }),
+    }));
+  });
+
+  it("snapshot recast seals a second-resolution failure at zero charge before provider work", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead)
+      .mockResolvedValueOnce(effectiveState() as never)
+      .mockRejectedValueOnce(new Error("snapshot read unavailable"));
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.boardOps.applyModelEdit.execute({
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      decision: "update",
+      changes: { jawline: "Sharp / Chiseled" },
+    })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+
+    expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
+    expect(assertGenerationOperationSnapshotHead).toHaveBeenCalledTimes(1);
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateCastingImageRaw).not.toHaveBeenCalled();
+    expect(commitCanvasRecastSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("snapshot reroll preserves immutable documents and threads snapshot mode into the atomic writer", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effectiveState() as never);
+    const caller = appRouter.createCaller(authCtx());
+
+    await caller.boardOps.applyModelEdit.execute({
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      decision: "update",
+      changes: {},
+      intent: "rerun",
+    });
+
+    const [prompt, options] = vi.mocked(generateCastingImage).mock.calls[0];
+    expect(prompt).toContain("immutable snapshot prompt");
+    expect(prompt).not.toContain("MUTABLE DRIFT");
+    expect(options).toMatchObject({
+      technicalSchema: { context: { casting_for: "Snapshot Brand" } },
+    });
+    expect(commitCanvasRecastSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      readMode: "snapshot",
+      patch: null,
+    }));
   });
 
   it("a headless Canvas recast refuses before running, charging, or generation", async () => {
