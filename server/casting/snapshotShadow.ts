@@ -447,7 +447,12 @@ export function compareSnapshotShadowState(input: SnapshotShadowState): Snapshot
   };
 }
 
-async function readSnapshotShadowStateIn(
+/**
+ * Transaction-scoped loader shared by the read-only audit and the bounded B6
+ * pin-convergence tool. Callers that mutate must take the model row lock before
+ * invoking this function; this loader itself remains select-only.
+ */
+export async function readSnapshotShadowStateIn(
   tx: TransactionHandle,
   input: { userId: number; modelId: number },
 ): Promise<SnapshotShadowState> {

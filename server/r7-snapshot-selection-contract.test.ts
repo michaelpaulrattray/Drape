@@ -155,6 +155,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/mintPackage.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/refreshSlots.ts",
+      "server/casting/snapshotPinConvergence.ts",
       "server/casting/snapshotTransitions.ts",
       "server/lib/boardOps.ts",
       "server/routes/boardOps.ts",
@@ -289,6 +290,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(serverCallers).toEqual([
       "server/casting/snapshotConsumerShadow.ts",
       "server/casting/snapshotConvergence.ts",
+      "server/casting/snapshotPinConvergence.ts",
       "server/casting/snapshotShadowAudit.ts",
     ]);
 
@@ -338,10 +340,57 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(transitionDriver).toContain('"--focused-iterate"');
     expect(transitionDriver).toContain('"--focused-canvas"');
     expect(transitionDriver).toContain('"--focused-b4"');
+    expect(transitionDriver).toContain('"--focused-b6"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*ledger"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot-selected.*iteration"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*Canvas"');
     expect(transitionDriver).toContain('"--testNamePattern=bounded owned cohort"');
+    expect(transitionDriver).toContain('"--testNamePattern=pin.*convergence"');
+  });
+
+  it("keeps B6 pin convergence bounded, private, and limited to Cast-slot pins", async () => {
+    const serverCallers: string[] = [];
+    for (const file of await runtimeSources("server")) {
+      const normalized = file.replaceAll("\\", "/");
+      if (normalized.endsWith("/casting/snapshotPinConvergence.ts")) continue;
+      if ((await readFile(file, "utf8")).includes("snapshotPinConvergence")) {
+        serverCallers.push(normalized);
+      }
+    }
+    expect(serverCallers).toEqual([]);
+
+    const scriptCallers: string[] = [];
+    for (const file of await runtimeSources("scripts")) {
+      if ((await readFile(file, "utf8")).includes("snapshotPinConvergence")) {
+        scriptCallers.push(file.replaceAll("\\", "/"));
+      }
+    }
+    expect(scriptCallers).toEqual(["scripts/converge-cast-pins.ts"]);
+
+    const source = await readFile(
+      new URL("./casting/snapshotPinConvergence.ts", import.meta.url),
+      "utf8",
+    );
+    const script = await readFile(
+      new URL("../scripts/converge-cast-pins.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source.match(/\.update\(modelAssets\)/g)).toHaveLength(1);
+    expect(source).toContain(".set({ pinned: false })");
+    expect(source).not.toMatch(
+      /boardItems|board_items|storage(Put|Get|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
+    expect(source).not.toMatch(/\.insert\(|\.delete\(/);
+    expect(source).toContain('.for("update")');
+    expect(source).toContain("generationOperationLocks");
+    expect(source).toContain('captureSnapshotReadMode(subject.userId) !== "snapshot"');
+    expect(source).toContain("compareSnapshotShadowState(postState).parity");
+    expect(script).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
+    expect(script.indexOf("if (!args.apply)"))
+      .toBeLessThan(script.indexOf("convergeSnapshotPins(args)"));
+    expect(script).not.toMatch(
+      /storage(Put|Get|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
   });
 
   it("keeps snapshot PDF image authority server-only and caller-bounded", async () => {

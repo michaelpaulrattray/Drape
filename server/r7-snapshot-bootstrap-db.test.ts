@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
+const originalSnapshotReadScope = process.env.R7_SNAPSHOT_READ_SCOPE;
 
 describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () => {
   let connection: Connection;
@@ -18,6 +19,8 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
   let planRefreshSlots: typeof import("./casting/refreshSlots").planRefreshSlots;
   let planSnapshotConvergence: typeof import("./casting/snapshotConvergence").planSnapshotConvergence;
   let convergeSnapshotCohort: typeof import("./casting/snapshotConvergence").convergeSnapshotCohort;
+  let planSnapshotPinConvergence: typeof import("./casting/snapshotPinConvergence").planSnapshotPinConvergence;
+  let convergeSnapshotPins: typeof import("./casting/snapshotPinConvergence").convergeSnapshotPins;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -38,11 +41,17 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     ({ getPackageState, planMintPackage } = await import("./casting/mintPackage"));
     ({ planRefreshSlots } = await import("./casting/refreshSlots"));
     ({ planSnapshotConvergence, convergeSnapshotCohort } = await import("./casting/snapshotConvergence"));
+    ({ planSnapshotPinConvergence, convergeSnapshotPins } = await import("./casting/snapshotPinConvergence"));
   });
 
   beforeEach(async () => {
+    delete process.env.R7_SNAPSHOT_READ_SCOPE;
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
     for (const table of [
+      "generation_operation_locks",
+      "generation_operations",
+      "board_items",
+      "boards",
       "model_package_snapshot_slots",
       "model_package_snapshots",
       "model_identity_snapshots",
@@ -60,6 +69,8 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
       await (db as { $client: { end: () => Promise<void> } }).$client.end();
     }
     delete process.env.DATABASE_URL;
+    if (originalSnapshotReadScope === undefined) delete process.env.R7_SNAPSHOT_READ_SCOPE;
+    else process.env.R7_SNAPSHOT_READ_SCOPE = originalSnapshotReadScope;
   });
 
   async function createUser(label = "owner"): Promise<number> {
@@ -550,5 +561,208 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     expect(JSON.stringify(result)).not.toContain("snapshot head is invalid");
     expect(await count("model_identity_snapshots", "modelId = ?", [goodModelId])).toBe(1);
     expect(await count("model_identity_snapshots", "modelId = ?", [corruptModelId])).toBe(0);
+  }, 60_000);
+
+  it("plans pin convergence read-only, clears only Cast-slot pins, proves parity, and replays", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    await addAsset({ modelId, role: "anchor" });
+    const sideId = await addAsset({ modelId, viewType: "sideClose" });
+    await bootstrapModelSnapshot({ userId, modelId });
+    await connection.execute("UPDATE model_assets SET pinned = 1 WHERE id = ?", [sideId]);
+    const [board] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO boards (userId, name, startedWith) VALUES (?, 'Pin boundary', 'blank')",
+      [userId],
+    );
+    const [item] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO board_items
+        (boardId, type, kind, sourceModelId, metadata)
+       VALUES (?, 'model', 'cast_config', ?, JSON_OBJECT('pinned', true, 'status', null))`,
+      [board.insertId, modelId],
+    );
+    const before = await one(
+      "SELECT stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [modelId],
+    );
+
+    const disabledPlan = await planSnapshotPinConvergence({
+      userId,
+      modelIds: [],
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 1,
+    });
+    expect(disabledPlan).toMatchObject({
+      ready: false,
+      models: [{
+        modelId,
+        pinnedRows: 1,
+        status: "blocked",
+        errorCode: "scope_not_enabled",
+      }],
+    });
+    expect(Number((await one("SELECT pinned FROM model_assets WHERE id = ?", [sideId])).pinned))
+      .toBe(1);
+
+    process.env.R7_SNAPSHOT_READ_SCOPE = `users:${userId}`;
+    const plan = await planSnapshotPinConvergence({
+      userId,
+      modelIds: [],
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 1,
+    });
+    expect(plan).toMatchObject({
+      ready: true,
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 1,
+      models: [{
+        modelId,
+        pinnedRows: 1,
+        status: "ready",
+        errorCode: null,
+      }],
+    });
+    expect(Number((await one("SELECT pinned FROM model_assets WHERE id = ?", [sideId])).pinned))
+      .toBe(1);
+
+    const applied = await convergeSnapshotPins({
+      userId,
+      modelIds: [],
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 1,
+    });
+    expect(applied).toMatchObject({
+      success: true,
+      results: [{
+        modelId,
+        pinnedRowsBefore: 1,
+        clearedRows: 1,
+        status: "cleared",
+        errorCode: null,
+      }],
+      postflight: {
+        auditedModels: 1,
+        parityModels: 1,
+        mismatchedModels: 0,
+        remainingPinnedRows: 0,
+      },
+    });
+    expect(await one(
+      "SELECT stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [modelId],
+    )).toEqual(before);
+    expect((await one(
+      "SELECT JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.pinned')) AS pinned FROM board_items WHERE id = ?",
+      [item.insertId],
+    )).pinned).toBe("true");
+
+    const replay = await convergeSnapshotPins({
+      userId,
+      modelIds: [],
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 0,
+    });
+    expect(replay).toMatchObject({
+      success: true,
+      results: [{
+        modelId,
+        pinnedRowsBefore: 0,
+        clearedRows: 0,
+        status: "clean",
+        errorCode: null,
+      }],
+      postflight: { remainingPinnedRows: 0, mismatchedModels: 0 },
+    });
+  }, 60_000);
+
+  it("pin convergence refuses an active model operation and leaves its pin untouched", async () => {
+    const userId = await createUser();
+    process.env.R7_SNAPSHOT_READ_SCOPE = `users:${userId}`;
+    const modelId = await createModel(userId);
+    const anchorId = await addAsset({ modelId, role: "anchor" });
+    await bootstrapModelSnapshot({ userId, modelId });
+    await connection.execute("UPDATE model_assets SET pinned = 1 WHERE id = ?", [anchorId]);
+    const operationId = randomUUID();
+    await connection.execute(
+      `INSERT INTO generation_operations
+        (id, userId, clientRequestId, kind, modelId, payloadHash, status)
+       VALUES (?, ?, ?, 'casting.pin', ?, ?, 'running')`,
+      [operationId, userId, randomUUID(), modelId, "a".repeat(64)],
+    );
+    await connection.execute(
+      `INSERT INTO generation_operation_locks
+        (lockKey, operationId, kind, expiresAt)
+       VALUES (?, ?, 'casting.pin', DATE_ADD(NOW(), INTERVAL 10 MINUTE))`,
+      [`model:${modelId}`, operationId],
+    );
+
+    const result = await convergeSnapshotPins({
+      userId,
+      modelIds: [],
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 1,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      preflight: [{
+        modelId,
+        pinnedRows: 1,
+        status: "blocked",
+        errorCode: "active_operation",
+      }],
+      results: [{
+        modelId,
+        clearedRows: 0,
+        status: "failed",
+        errorCode: "active_operation",
+      }],
+      postflight: { remainingPinnedRows: 1 },
+    });
+    expect(Number((await one("SELECT pinned FROM model_assets WHERE id = ?", [anchorId])).pinned))
+      .toBe(1);
+  }, 60_000);
+
+  it("pin convergence refuses unrelated snapshot drift and an unexpected count before writing", async () => {
+    const userId = await createUser();
+    process.env.R7_SNAPSHOT_READ_SCOPE = `users:${userId}`;
+    const modelId = await createModel(userId);
+    const anchorId = await addAsset({ modelId, role: "anchor" });
+    await bootstrapModelSnapshot({ userId, modelId });
+    await connection.execute("UPDATE model_assets SET pinned = 1 WHERE id = ?", [anchorId]);
+    await connection.execute(
+      "UPDATE models SET masterPrompt = 'unconverged drift' WHERE id = ?",
+      [modelId],
+    );
+
+    await expect(planSnapshotPinConvergence({
+      userId,
+      modelIds: [],
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 2,
+    })).rejects.toThrow("pinned-row count mismatch: expected 2, found 1");
+    expect(Number((await one("SELECT pinned FROM model_assets WHERE id = ?", [anchorId])).pinned))
+      .toBe(1);
+
+    const result = await convergeSnapshotPins({
+      userId,
+      modelIds: [],
+      expectedModelCount: 1,
+      expectedPinnedRowCount: 1,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      preflight: [{
+        modelId,
+        status: "blocked",
+        errorCode: "parity_blocked",
+      }],
+      results: [{
+        modelId,
+        clearedRows: 0,
+        status: "failed",
+        errorCode: "parity_blocked",
+      }],
+    });
+    expect(Number((await one("SELECT pinned FROM model_assets WHERE id = ?", [anchorId])).pinned))
+      .toBe(1);
   }, 60_000);
 });
