@@ -44,6 +44,23 @@ vi.mock("./casting/pdfService", () => ({
   generatePremiumIdentityPdf: vi.fn().mockReturnValue("cGRm"),
   PdfModelData: {},
 }));
+vi.mock("./casting/snapshotReadScope", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotReadScope")>();
+  return {
+    ...actual,
+    captureSnapshotReadMode: vi.fn().mockReturnValue("r6"),
+  };
+});
+vi.mock("./casting/effectiveCastRead", () => ({
+  resolveEffectiveCastStateForRead: vi.fn(),
+}));
+vi.mock("./casting/snapshotPdfImages", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotPdfImages")>();
+  return {
+    ...actual,
+    resolveSnapshotPdfImages: vi.fn(),
+  };
+});
 vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
   return {
@@ -78,6 +95,12 @@ import {
 import { appRouter } from "./routers";
 import { executeMintPackage } from "./casting/mintPackage";
 import { listCastableModels, executeFillFromLibrary } from "./lib/boardOps";
+import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
+import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
+import {
+  resolveSnapshotPdfImages,
+  SnapshotPdfImageError,
+} from "./casting/snapshotPdfImages";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -124,6 +147,9 @@ beforeEach(() => {
   vi.mocked(getModelByAgencyId).mockReset();
   vi.mocked(getUserModels).mockReset().mockResolvedValue([]);
   vi.mocked(getHeadshotsForModels).mockReset().mockResolvedValue(new Map());
+  vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
+  vi.mocked(resolveEffectiveCastStateForRead).mockReset();
+  vi.mocked(resolveSnapshotPdfImages).mockReset();
 });
 
 // ─── generation.packageState — minted is status truth ──────────────────────
@@ -376,5 +402,125 @@ describe("generatePdf: status read-state and agencyId integrity are separate con
     // The legacy client field says TEST; the persisted server row is the
     // identity-name authority and must win.
     expect(pdfData.modelName).toBe("Test Model");
+  });
+
+  it("R6 keeps the client-prepared image manifest unchanged", async () => {
+    const { generatePremiumIdentityPdf } = await import("./casting/pdfService");
+    vi.mocked(generatePremiumIdentityPdf).mockClear();
+    vi.mocked(getModelById).mockResolvedValue(
+      model({ status: "active", agencyId: "MOD-26-R6", mintedAt: new Date() }) as never,
+    );
+    vi.mocked(getUserById).mockResolvedValue({
+      id: 1,
+      name: "Owner",
+      openId: "owner",
+      createdAt: new Date(),
+    } as never);
+    const clientImages = { headshot: "data:image/png;base64,CLIENT" };
+
+    await appRouter.createCaller(authCtx()).generation.generatePdf({
+      modelId: 7,
+      images: clientImages,
+    });
+
+    expect(resolveEffectiveCastStateForRead).not.toHaveBeenCalled();
+    expect(resolveSnapshotPdfImages).not.toHaveBeenCalled();
+    expect(vi.mocked(generatePremiumIdentityPdf).mock.calls[0][0]).toMatchObject({
+      images: clientImages,
+      masterPrompt: "prompt",
+    });
+  });
+
+  it("snapshot mode ignores client images and uses selected views plus immutable identity documents", async () => {
+    const { generatePremiumIdentityPdf } = await import("./casting/pdfService");
+    vi.mocked(generatePremiumIdentityPdf).mockClear();
+    const effectiveModel = model({
+      status: "active",
+      agencyId: "MOD-26-SNAPSHOT",
+      mintedAt: new Date(),
+      masterPrompt: "mutable prompt",
+      technicalSchema: { subject: { age: "99" } },
+      preferences: { hairColor: "Mutable" },
+    });
+    vi.mocked(captureSnapshotReadMode).mockReturnValueOnce("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValueOnce({
+      authority: "snapshot",
+      status: "current",
+      model: effectiveModel,
+      stateVersion: 1,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: { subject: { age: "30" } },
+        preferences: { hairColor: "Brown" },
+      },
+      anchor: headshot,
+      displayedHeadshot: headshot,
+      selectedViews: [{ angle: "frontClose", asset: headshot }],
+      sealedPackage: {},
+      sealedIdentity: {},
+      ledger: { assets: [headshot] },
+    } as never);
+    const serverImages = { headshot: "data:image/png;base64,SERVER" };
+    vi.mocked(resolveSnapshotPdfImages).mockResolvedValueOnce(serverImages);
+    vi.mocked(getUserById).mockResolvedValue({
+      id: 1,
+      name: "Owner",
+      openId: "owner",
+      createdAt: new Date(),
+    } as never);
+
+    await appRouter.createCaller(authCtx()).generation.generatePdf({
+      modelId: 7,
+      images: { headshot: "data:image/png;base64,CLIENT-FORGED" },
+    });
+
+    expect(captureSnapshotReadMode).toHaveBeenCalledTimes(1);
+    expect(getModelById).not.toHaveBeenCalled();
+    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(resolveSnapshotPdfImages).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ angle: "frontClose" })]),
+    );
+    expect(vi.mocked(generatePremiumIdentityPdf).mock.calls[0][0]).toMatchObject({
+      images: serverImages,
+      masterPrompt: "immutable snapshot prompt",
+      preferences: expect.objectContaining({ age: "30", hairColor: "Brown" }),
+    });
+  });
+
+  it("snapshot image preparation refuses with static copy before PDF generation", async () => {
+    const { generatePremiumIdentityPdf } = await import("./casting/pdfService");
+    vi.mocked(generatePremiumIdentityPdf).mockClear();
+    vi.mocked(captureSnapshotReadMode).mockReturnValueOnce("snapshot");
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValueOnce({
+      authority: "snapshot",
+      status: "current",
+      model: model({ status: "active", agencyId: "MOD-26-SNAPSHOT", mintedAt: new Date() }),
+      stateVersion: 1,
+      package: {},
+      identity: { masterPrompt: "snapshot", technicalSchema: {}, preferences: {} },
+      anchor: headshot,
+      displayedHeadshot: headshot,
+      selectedViews: [{ angle: "frontClose", asset: headshot }],
+      sealedPackage: {},
+      sealedIdentity: {},
+      ledger: { assets: [headshot] },
+    } as never);
+    vi.mocked(resolveSnapshotPdfImages).mockRejectedValueOnce(new SnapshotPdfImageError());
+    vi.mocked(getUserById).mockResolvedValue({
+      id: 1,
+      name: "Owner",
+      openId: "owner",
+      createdAt: new Date(),
+    } as never);
+
+    await expect(appRouter.createCaller(authCtx()).generation.generatePdf({
+      modelId: 7,
+      images: { headshot: "data:image/png;base64,CLIENT" },
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("No credits were used"),
+    });
+    expect(generatePremiumIdentityPdf).not.toHaveBeenCalled();
   });
 });

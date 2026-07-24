@@ -36,6 +36,10 @@ import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "../../casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "../../casting/effectiveCastRead";
 import { prepareRestoreSlotTransition } from "../../casting/restoreSlotTransition";
+import {
+  resolveSnapshotPdfImages,
+  SnapshotPdfImageError,
+} from "../../casting/snapshotPdfImages";
 const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
@@ -79,12 +83,18 @@ export const castingExportRouter = router({
       }),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Get the model
-      const model = await getModelById(input.modelId);
-      if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      }
-      if (model.userId !== ctx.user.id) {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      const effective = readMode === "snapshot"
+        ? await resolveEffectiveCastStateForRead({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+          })
+        : null;
+      // R6 keeps the existing owner/row path. Snapshot mode obtains the same
+      // row only through the non-leaking, fail-closed effective-state resolver.
+      const model = effective?.model ?? await getModelById(input.modelId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (readMode === "r6" && model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       // FR-4 first: archived reads as deleted (NOT_FOUND, never a mint hint)
@@ -121,7 +131,30 @@ export const castingExportRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
 
-      const prefs = resolvePdfPreferences(model.technicalSchema, model.preferences);
+      const identity = effective?.status === "current" ? effective.identity : null;
+      const prefs = resolvePdfPreferences(
+        identity?.technicalSchema ?? model.technicalSchema,
+        identity?.preferences ?? model.preferences,
+      );
+      let images = input.images;
+      if (readMode === "snapshot") {
+        if (!effective || effective.status !== "current") {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This Cast has no saved identity package to export.",
+          });
+        }
+        try {
+          images = await resolveSnapshotPdfImages(effective.selectedViews);
+        } catch (error) {
+          if (!(error instanceof SnapshotPdfImageError)) throw error;
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `${error.message} No credits were used.`,
+            cause: error,
+          });
+        }
+      }
 
       // Prepare PDF data
       const pdfData: PdfModelData = {
@@ -132,9 +165,9 @@ export const castingExportRouter = router({
         mintedAt: model.mintedAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
         ownerName: user.displayName || user.name || 'Unknown',
         ownerId: user.openId,
-        masterPrompt: model.masterPrompt || 'No master prompt available',
+        masterPrompt: identity?.masterPrompt ?? (model.masterPrompt || 'No master prompt available'),
         preferences: prefs,
-        images: input.images,
+        images,
       };
 
       // Generate PDF

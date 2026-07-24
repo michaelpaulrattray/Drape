@@ -262,6 +262,27 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*ledger"');
   });
 
+  it("keeps snapshot PDF image authority server-only and caller-bounded", async () => {
+    const callers: string[] = [];
+    for (const file of await runtimeSources("server")) {
+      const normalized = file.replaceAll("\\", "/");
+      if (normalized.endsWith("/casting/snapshotPdfImages.ts")) continue;
+      const content = await readFile(file, "utf8");
+      if (content.includes("snapshotPdfImages")) callers.push(normalized);
+    }
+    expect(callers).toEqual(["server/routes/generation/castingExport.ts"]);
+
+    const source = await readFile(
+      new URL("./casting/snapshotPdfImages.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain('redirect: "error"');
+    expect(source).toContain("validateProxyUrl");
+    expect(source).not.toMatch(
+      /deductPoints|withAtomicCredits|storage(Put|Get|Delete|List)|Gemini|generateContent|tx\s*\.\s*(insert|update|delete)/i,
+    );
+  });
+
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));
