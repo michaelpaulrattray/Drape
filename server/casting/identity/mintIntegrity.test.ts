@@ -106,6 +106,7 @@ describe("check 3 — tier-view validity", () => {
     const unpinned = computeMintIntegrity(revModel, [anchor, goodView("threeQuarter", { status: { state: "stale" } })], TIER, CANON);
     const failure = unpinned.tierViews.find((v) => v.angle === "threeQuarter")!;
     expect(failure).toMatchObject({ ok: false, reason: "stale" });
+    expect(failure.message).not.toContain("unpin");
 
     const pinned = computeMintIntegrity(
       revModel,

@@ -117,7 +117,7 @@ export const REFUSAL_COPY = {
 
   /** §14 check 3 — tier-view validity (cross-revision uses §7.4's copy). */
   mintTierViewStale: (label: string) =>
-    `${label} is out of sync with the current identity — refresh it (unpin first if pinned) before minting.`,
+    `${label} is out of sync with the current identity — refresh it before minting.`,
   mintTierViewCrossRevision: (label: string) =>
     `${label} belongs to an earlier identity and can't be minted with the current cast. Refresh it before minting.`,
   mintTierViewFailed: (label: string) =>
