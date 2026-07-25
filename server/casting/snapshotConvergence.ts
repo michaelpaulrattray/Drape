@@ -8,9 +8,14 @@
  * model-id cohort.
  */
 import { and, eq, inArray, isNull, ne, type SQL } from "drizzle-orm";
-import { models } from "../../drizzle/schema";
+import { generationOperationLocks, models } from "../../drizzle/schema";
 import { withTransaction } from "../db/connection";
-import { bootstrapModelSnapshot, type SnapshotBootstrapResult } from "./snapshotBootstrap";
+import {
+  bootstrapIdleModelSnapshot,
+  SnapshotBootstrapActiveOperationError,
+  type SnapshotBootstrapResult,
+} from "./snapshotBootstrap";
+import { modelOperationLockKey } from "./operationContract";
 import {
   compareSnapshotShadowCohort,
   type SnapshotShadowReport,
@@ -32,6 +37,8 @@ export interface SnapshotConvergenceSubject {
 }
 
 export interface SnapshotConvergencePlan {
+  ready: boolean;
+  activeOperationModelIds: number[];
   subjects: SnapshotConvergenceSubject[];
   summary: SnapshotShadowAuditSummary;
   models: SnapshotShadowReport[];
@@ -40,7 +47,7 @@ export interface SnapshotConvergencePlan {
 export interface SnapshotConvergenceModelResult {
   modelId: number;
   status: SnapshotBootstrapResult["status"] | "failed";
-  errorCode: "bootstrap_failed" | null;
+  errorCode: "bootstrap_failed" | "active_operation" | "cohort_blocked" | null;
 }
 
 export interface SnapshotConvergenceResult {
@@ -67,9 +74,12 @@ function normalizeSelector(input: SnapshotConvergenceSelector): SnapshotConverge
   return { ...input, modelIds };
 }
 
-async function listSubjects(
+async function listSubjectsAndActiveOperations(
   input: Pick<SnapshotConvergenceSelector, "userId" | "modelIds">,
-): Promise<SnapshotConvergenceSubject[]> {
+): Promise<{
+  subjects: SnapshotConvergenceSubject[];
+  activeOperationModelIds: number[];
+}> {
   return withTransaction(async (tx) => {
     const filters: SQL[] = [
       isNull(models.deletedAt),
@@ -77,12 +87,31 @@ async function listSubjects(
     ];
     if (input.userId !== undefined) filters.push(eq(models.userId, input.userId));
     if (input.modelIds.length > 0) filters.push(inArray(models.id, input.modelIds));
-    const rows = await tx
+    const subjects = await tx
       .select({ modelId: models.id, userId: models.userId })
       .from(models)
       .where(and(...filters))
       .orderBy(models.id);
-    return rows;
+    const lockKeys = new Map(
+      subjects.map((subject) => [
+        modelOperationLockKey(subject.modelId),
+        subject.modelId,
+      ]),
+    );
+    const activeLocks = lockKeys.size === 0
+      ? []
+      : await tx
+          .select({ lockKey: generationOperationLocks.lockKey })
+          .from(generationOperationLocks)
+          .where(inArray(
+            generationOperationLocks.lockKey,
+            Array.from(lockKeys.keys()),
+          ));
+    const activeOperationModelIds = activeLocks
+      .map((lock) => lockKeys.get(lock.lockKey))
+      .filter((modelId): modelId is number => modelId !== undefined)
+      .sort((left, right) => left - right);
+    return { subjects, activeOperationModelIds };
   });
 }
 
@@ -112,13 +141,15 @@ export async function planSnapshotConvergence(
   rawInput: SnapshotConvergenceSelector,
 ): Promise<SnapshotConvergencePlan> {
   const input = normalizeSelector(rawInput);
-  const subjects = await listSubjects(input);
+  const { subjects, activeOperationModelIds } = await listSubjectsAndActiveOperations(input);
   assertExpectedCount(subjects, input.expectedModelCount);
   const models = await reportsForSubjects(input, subjects);
   if (models.length !== subjects.length) {
     throw new Error("Snapshot convergence cohort changed during the read-only preflight");
   }
   return {
+    ready: activeOperationModelIds.length === 0,
+    activeOperationModelIds,
     subjects,
     summary: summarizeSnapshotShadowReports(models).summary,
     models,
@@ -130,10 +161,26 @@ export async function convergeSnapshotCohort(
 ): Promise<SnapshotConvergenceResult> {
   const input = normalizeSelector(rawInput);
   const preflight = await planSnapshotConvergence(input);
+  if (!preflight.ready) {
+    const activeModelIds = new Set(preflight.activeOperationModelIds);
+    return {
+      success: false,
+      expectedModelCount: input.expectedModelCount,
+      preflight: preflight.summary,
+      results: preflight.subjects.map((subject) => ({
+        modelId: subject.modelId,
+        status: "failed",
+        errorCode: activeModelIds.has(subject.modelId)
+          ? "active_operation"
+          : "cohort_blocked",
+      })),
+      postflight: preflight.summary,
+    };
+  }
   const results: SnapshotConvergenceModelResult[] = [];
   for (const subject of preflight.subjects) {
     try {
-      const result = await bootstrapModelSnapshot({
+      const result = await bootstrapIdleModelSnapshot({
         userId: subject.userId,
         modelId: subject.modelId,
       });
@@ -142,13 +189,15 @@ export async function convergeSnapshotCohort(
         status: result.status,
         errorCode: null,
       });
-    } catch {
+    } catch (error) {
       // The CLI/report deliberately exposes no raw DB, prompt, model or
       // identity error text. Support can investigate this bounded model id.
       results.push({
         modelId: subject.modelId,
         status: "failed",
-        errorCode: "bootstrap_failed",
+        errorCode: error instanceof SnapshotBootstrapActiveOperationError
+          ? "active_operation"
+          : "bootstrap_failed",
       });
     }
   }
@@ -156,7 +205,8 @@ export async function convergeSnapshotCohort(
   const postModels = await reportsForSubjects(input, preflight.subjects);
   const postflight = summarizeSnapshotShadowReports(postModels).summary;
   const success = (
-    results.every((result) => result.status !== "failed")
+    preflight.ready
+    && results.every((result) => result.status !== "failed")
     && postModels.length === input.expectedModelCount
     && postflight.mismatchedModels === 0
   );

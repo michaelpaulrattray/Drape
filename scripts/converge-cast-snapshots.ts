@@ -40,10 +40,12 @@ async function main(): Promise<number> {
       console.log(JSON.stringify({
         mode: "read_only",
         expectedModelCount: args.expectedModelCount,
+        ready: plan.ready,
+        activeOperationModelIds: plan.activeOperationModelIds,
         subjects: plan.subjects.map((subject) => subject.modelId),
         summary: plan.summary,
       }, null, 2));
-      return plan.summary.mismatchedModels > 0 ? 2 : 0;
+      return !plan.ready || plan.summary.mismatchedModels > 0 ? 2 : 0;
     }
     const result = await convergeSnapshotCohort(args);
     console.log(JSON.stringify({ mode: "apply", ...result }, null, 2));

@@ -9,6 +9,7 @@ const originalSnapshotReadScope = process.env.R7_SNAPSHOT_READ_SCOPE;
 describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () => {
   let connection: Connection;
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
+  let bootstrapIdleModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapIdleModelSnapshot;
   let resolveOwnedEffectiveCastState: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastState;
   let resolveOwnedEffectiveCastStates: typeof import("./casting/effectiveCastState").resolveOwnedEffectiveCastStates;
   let getUserDraftModelsWithThumbnailForRead: typeof import("./casting/modelReadProjections").getUserDraftModelsWithThumbnailForRead;
@@ -31,7 +32,7 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     }
     process.env.DATABASE_URL = testDatabaseUrl!;
     connection = await mysql.createConnection(testDatabaseUrl!);
-    ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
+    ({ bootstrapModelSnapshot, bootstrapIdleModelSnapshot } = await import("./casting/snapshotBootstrap"));
     ({ resolveOwnedEffectiveCastState, resolveOwnedEffectiveCastStates } = await import("./casting/effectiveCastState"));
     ({
       getUserDraftModelsWithThumbnailForRead,
@@ -526,6 +527,8 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
       headedModelId,
       headlessModelId,
     ]);
+    expect(plan.ready).toBe(true);
+    expect(plan.activeOperationModelIds).toEqual([]);
     expect(plan.summary).toMatchObject({
       auditedModels: 2,
       parityModels: 1,
@@ -563,6 +566,77 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     ]);
     expect(await count("model_identity_snapshots")).toBe(1);
     expect(await count("model_package_snapshots")).toBe(1);
+  }, 60_000);
+
+  it("blocks the whole convergence cohort while preserving operation-owned bootstrap", async () => {
+    const userId = await createUser("active-convergence");
+    const lockedModelId = await createModel(userId);
+    await addAsset({ modelId: lockedModelId, role: "anchor" });
+    const idleModelId = await createModel(userId);
+    await addAsset({ modelId: idleModelId, role: "anchor" });
+    await connection.execute(
+      `INSERT INTO generation_operation_locks
+        (lockKey, operationId, kind, expiresAt)
+       VALUES (?, ?, 'casting.iterate', DATE_ADD(NOW(), INTERVAL 10 MINUTE))`,
+      [`model:${lockedModelId}`, randomUUID()],
+    );
+
+    const plan = await planSnapshotConvergence({
+      userId,
+      modelIds: [lockedModelId, idleModelId],
+      expectedModelCount: 2,
+    });
+    expect(plan.ready).toBe(false);
+    expect(plan.activeOperationModelIds).toEqual([lockedModelId]);
+
+    const blocked = await convergeSnapshotCohort({
+      userId,
+      modelIds: [lockedModelId, idleModelId],
+      expectedModelCount: 2,
+    });
+    expect(blocked).toMatchObject({
+      success: false,
+      results: [
+        {
+          modelId: lockedModelId,
+          status: "failed",
+          errorCode: "active_operation",
+        },
+        {
+          modelId: idleModelId,
+          status: "failed",
+          errorCode: "cohort_blocked",
+        },
+      ],
+    });
+    expect(await count("model_identity_snapshots")).toBe(0);
+    expect(await count("model_package_snapshots")).toBe(0);
+    expect(await one(
+      "SELECT currentPackageSnapshotId, stateVersion FROM models WHERE id = ?",
+      [lockedModelId],
+    )).toEqual({ currentPackageSnapshotId: null, stateVersion: 0 });
+    expect(await one(
+      "SELECT currentPackageSnapshotId, stateVersion FROM models WHERE id = ?",
+      [idleModelId],
+    )).toEqual({ currentPackageSnapshotId: null, stateVersion: 0 });
+
+    await expect(bootstrapIdleModelSnapshot({
+      userId,
+      modelId: lockedModelId,
+    })).rejects.toMatchObject({ code: "active_operation" });
+    await expect(bootstrapModelSnapshot({
+      userId,
+      modelId: lockedModelId,
+    })).resolves.toMatchObject({ status: "created", modelId: lockedModelId });
+
+    await connection.execute(
+      "DELETE FROM generation_operation_locks WHERE lockKey = ?",
+      [`model:${lockedModelId}`],
+    );
+    await expect(bootstrapIdleModelSnapshot({
+      userId,
+      modelId: idleModelId,
+    })).resolves.toMatchObject({ status: "created", modelId: idleModelId });
   }, 60_000);
 
   it("refuses an unexpected cohort count before writing any snapshot", async () => {

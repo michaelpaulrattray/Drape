@@ -312,7 +312,18 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(convergence).not.toMatch(
       /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
-    expect(convergence).toContain("bootstrapModelSnapshot({");
+    expect(convergence).toContain("bootstrapIdleModelSnapshot({");
+    expect(convergence).not.toContain("bootstrapModelSnapshot({");
+    expect(convergence).toContain('"active_operation"');
+    expect(convergence).toContain('"cohort_blocked"');
+    expect(convergence).toContain("activeOperationModelIds");
+    const bootstrap = await readFile(
+      new URL("./casting/snapshotBootstrap.ts", import.meta.url),
+      "utf8",
+    );
+    expect(bootstrap).toContain("generationOperationLocks");
+    expect(bootstrap).toContain("modelOperationLockKey(model.id)");
+    expect(bootstrap).toContain('.for("update")');
     expect(script).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
     expect(auditContract).toContain("full-database scans are refused");
 
@@ -330,6 +341,9 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(convergenceScript).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
     expect(convergenceScript).not.toMatch(
       /storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
+    expect(convergenceScript).toContain(
+      "return !plan.ready || plan.summary.mismatchedModels > 0 ? 2 : 0;",
     );
 
     const transitionDriver = await readFile(

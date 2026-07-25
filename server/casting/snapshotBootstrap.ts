@@ -11,6 +11,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import {
   modelAssets,
+  generationOperationLocks,
   modelIdentitySnapshots,
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
@@ -27,7 +28,7 @@ import { withTransaction, type TransactionHandle } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 import { buildIdentityAnchor } from "./geminiClient";
 import { selectIdentityAnchor, isStaleAsset } from "./identity/anchorSelector";
-import { stableCanonicalJson } from "./operationContract";
+import { modelOperationLockKey, stableCanonicalJson } from "./operationContract";
 
 const log = createModuleLogger("casting/snapshotBootstrap");
 
@@ -56,6 +57,15 @@ export type SnapshotBootstrapResult =
       stateVersion: number;
       selectedSlotCount: number;
     };
+
+export class SnapshotBootstrapActiveOperationError extends Error {
+  readonly code = "active_operation" as const;
+
+  constructor() {
+    super("Snapshot bootstrap is blocked by an active model operation");
+    this.name = "SnapshotBootstrapActiveOperationError";
+  }
+}
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -208,12 +218,27 @@ async function nextSequencesIn(tx: TransactionHandle, modelId: number): Promise<
  * Private and free. The model row lock is the bootstrap serialization point;
  * later A3 user operations must additionally hold the durable model lock.
  */
-export async function bootstrapModelSnapshot(input: {
+async function runBootstrap(input: {
   userId: number;
   modelId: number;
-}): Promise<SnapshotBootstrapResult> {
+}, refuseActiveOperation: boolean): Promise<SnapshotBootstrapResult> {
   return withTransaction(async (tx) => {
     const model = await lockedOwnedModelIn(tx, input);
+    if (refuseActiveOperation) {
+      // Model row -> exact operation-lock key is the global order used by
+      // snapshot transitions and pin convergence. Under InnoDB repeatable
+      // read, the missing primary-key lookup also gap-locks a racing insert.
+      const [activeOperation] = await tx
+        .select({ operationId: generationOperationLocks.operationId })
+        .from(generationOperationLocks)
+        .where(eq(
+          generationOperationLocks.lockKey,
+          modelOperationLockKey(model.id),
+        ))
+        .limit(1)
+        .for("update");
+      if (activeOperation) throw new SnapshotBootstrapActiveOperationError();
+    }
     if (
       (!model.currentPackageSnapshotId && model.stateVersion !== 0)
       || (model.currentPackageSnapshotId && model.stateVersion <= 0)
@@ -362,4 +387,26 @@ export async function bootstrapModelSnapshot(input: {
       selectedSlotCount: derived.slots.length,
     };
   });
+}
+
+/**
+ * General bootstrap used by operation-owned runtime paths. Those callers may
+ * legitimately hold the model operation lock themselves.
+ */
+export async function bootstrapModelSnapshot(input: {
+  userId: number;
+  modelId: number;
+}): Promise<SnapshotBootstrapResult> {
+  return runBootstrap(input, false);
+}
+
+/**
+ * Operator convergence bootstrap. Refuses any durable model operation and
+ * fences a new one from starting until this short transaction commits.
+ */
+export async function bootstrapIdleModelSnapshot(input: {
+  userId: number;
+  modelId: number;
+}): Promise<SnapshotBootstrapResult> {
+  return runBootstrap(input, true);
 }
