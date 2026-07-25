@@ -407,8 +407,15 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       new URL("./casting/snapshotPdfImages.ts", import.meta.url),
       "utf8",
     );
-    expect(source).toContain('redirect: "error"');
-    expect(source).toContain("validateProxyUrl");
+    expect(source).toContain("fetchTrustedImage");
+    const fetchAuthority = await readFile(
+      new URL("./security/trustedImageFetch.ts", import.meta.url),
+      "utf8",
+    );
+    expect(fetchAuthority).toContain('redirect: "error"');
+    expect(fetchAuthority).toContain("validateProxyUrl");
+    expect(fetchAuthority).toContain("AbortController");
+    expect(fetchAuthority).toContain("supportedImageMime");
     expect(source).not.toMatch(
       /deductPoints|withAtomicCredits|storage(Put|Get|Delete|List)|Gemini|generateContent|tx\s*\.\s*(insert|update|delete)/i,
     );

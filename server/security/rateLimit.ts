@@ -10,6 +10,14 @@ interface RateLimitEntry {
   windowStart: number;
 }
 
+export const TRUSTED_PROXY_HOPS = 1;
+
+export function configureTrustedProxy(app: {
+  set(setting: "trust proxy", value: number): unknown;
+}): void {
+  app.set("trust proxy", TRUSTED_PROXY_HOPS);
+}
+
 // In-memory store for rate limiting (per IP/identifier)
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
@@ -76,24 +84,12 @@ export function checkRateLimit(
 }
 
 /**
- * Get client IP from request, handling proxies
+ * Get the client IP only from Express. `configureTrustedProxy` makes Express
+ * trust exactly Railway's final proxy hop; raw forwarding headers are never
+ * accepted as authority here.
  */
-export function getClientIp(req: { headers: Record<string, string | string[] | undefined>; ip?: string }): string {
-  // Check X-Forwarded-For header (common for proxies/load balancers)
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) {
-    const ip = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
-    return ip.trim();
-  }
-  
-  // Check X-Real-IP header
-  const realIp = req.headers['x-real-ip'];
-  if (realIp) {
-    return Array.isArray(realIp) ? realIp[0] : realIp;
-  }
-  
-  // Fall back to req.ip
-  return req.ip || 'unknown';
+export function getClientIp(req: { ip?: string }): string {
+  return req.ip?.trim() || "unknown";
 }
 
 // Pre-configured rate limit configs

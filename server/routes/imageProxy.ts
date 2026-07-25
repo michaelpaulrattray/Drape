@@ -1,88 +1,134 @@
 /**
- * Image proxy endpoint — streams S3 images through our server
- * to bypass CORS restrictions for download and clipboard copy.
+ * Authenticated image proxy for same-origin download and clipboard actions.
  *
- * GET /api/image-proxy?url=<encoded_url>&download=1
- *   - download=1: sets Content-Disposition: attachment for browser download
- *   - Without download: streams with proper content-type for clipboard use
+ * Server-owned URL validation, redirect refusal, timeout, byte cap and
+ * magic-byte verification all live in `fetchTrustedImage`.
  */
 import { Router, type Request, type Response } from "express";
+import type { User } from "../../drizzle/schema";
+import { sdk } from "../_core/sdk";
 import { createModuleLogger } from "../logging/logger";
+import {
+  checkUserRateLimit,
+  rateLimitError,
+  type RateLimitConfig,
+} from "../security/rateLimit";
+import {
+  fetchTrustedImage,
+  type TrustedImage,
+} from "../security/trustedImageFetch";
 import { validateProxyUrl } from "../security/urlValidator";
 
 const log = createModuleLogger("imageProxy");
-const router = Router();
 
-/**
- * Only allow proxying from our storage providers (S3 / R2 presigned URLs).
- * Matched as exact hostname or dot-boundary suffix — never substring, which
- * would let e.g. "s3.amazonaws.com.attacker.com" through.
- */
+const IMAGE_PROXY_RATE_LIMIT = {
+  windowMs: 60 * 1000,
+  maxRequests: 60,
+  keyPrefix: "image_proxy",
+} satisfies RateLimitConfig;
+
+type ImageProxyUser = Pick<User, "id" | "suspendedAt" | "lockedUntil">;
+
+type ImageProxyDependencies = {
+  authenticateRequest(req: Request): Promise<ImageProxyUser>;
+  fetchImage(url: string): Promise<TrustedImage>;
+  rateLimit(userId: number): {
+    allowed: boolean;
+    remaining: number;
+    resetIn: number;
+  };
+};
+
+const productionDependencies: ImageProxyDependencies = {
+  authenticateRequest: (req) => sdk.authenticateRequest(req),
+  fetchImage: (url) => fetchTrustedImage(url),
+  rateLimit: (userId) => checkUserRateLimit(userId, IMAGE_PROXY_RATE_LIMIT),
+};
+
 export function isAllowedUrl(url: string): boolean {
-  // Keep every server-side image fetch behind the same exact-host SSRF
-  // authority. Production assets use the configured public R2 host
-  // (*.r2.dev), which the old route-local suffix list rejected.
   return validateProxyUrl(url).valid;
 }
 
-router.get("/api/image-proxy", async (req: Request, res: Response) => {
-  const url = req.query.url as string;
-  const download = req.query.download === "1";
-
-  if (!url) {
-    res.status(400).json({ error: "Missing url parameter" });
-    return;
-  }
-
-  if (!isAllowedUrl(url)) {
-    res.status(403).json({ error: "URL not allowed" });
-    return;
-  }
-
+function safeDownloadFilename(url: string, mime: TrustedImage["mime"]): string {
+  const fallbackExtension = mime === "image/jpeg" ? "jpg" : mime.slice("image/".length);
+  let candidate = "";
   try {
-    const upstream = await fetch(url);
-    if (!upstream.ok) {
-      res.status(502).json({ error: "Failed to fetch image" });
+    const encoded = new URL(url).pathname.split("/").pop() ?? "";
+    candidate = decodeURIComponent(encoded);
+  } catch {
+    // The URL was already validated; a malformed path escape only affects the
+    // optional filename and must not become response-header input.
+  }
+  const safe = candidate.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 128);
+  return safe || `drape-image.${fallbackExtension}`;
+}
+
+function fixedError(res: Response, status: number, message: string): void {
+  res.status(status).json({ error: message });
+}
+
+export function createImageProxyRouter(
+  dependencies: ImageProxyDependencies = productionDependencies,
+) {
+  const router = Router();
+
+  router.get("/api/image-proxy", async (req: Request, res: Response) => {
+    let user: ImageProxyUser;
+    try {
+      user = await dependencies.authenticateRequest(req);
+    } catch {
+      fixedError(res, 401, "Authentication required");
       return;
     }
 
-    const contentType = upstream.headers.get("content-type") || "image/png";
-    const contentLength = upstream.headers.get("content-length");
-
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Cache-Control", "private, max-age=3600");
-
-    if (contentLength) {
-      res.setHeader("Content-Length", contentLength);
+    if (
+      user.suspendedAt
+      || (user.lockedUntil && new Date(user.lockedUntil) > new Date())
+    ) {
+      fixedError(res, 403, "Access denied");
+      return;
     }
 
-    if (download) {
-      // Extract filename from URL or use default
-      const urlPath = new URL(url).pathname;
-      const filename = urlPath.split("/").pop() || "drape-image.png";
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    const rate = dependencies.rateLimit(user.id);
+    if (!rate.allowed) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil(rate.resetIn / 1000))));
+      fixedError(res, 429, rateLimitError(rate.resetIn));
+      return;
     }
 
-    // Stream the response
-    if (upstream.body) {
-      const reader = upstream.body.getReader();
-      const pump = async () => {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) { res.end(); return; }
-          res.write(value);
-        }
-      };
-      await pump();
-    } else {
-      res.end();
+    const url = typeof req.query.url === "string" ? req.query.url : "";
+    const download = req.query.download === "1";
+    if (!url) {
+      fixedError(res, 400, "Missing url parameter");
+      return;
     }
-  } catch (err: any) {
-    log.error({ err: err.message }, "[ImageProxy] Error streaming image");
-    if (!res.headersSent) {
-      res.status(500).json({ error: "Internal error" });
+    if (!isAllowedUrl(url)) {
+      fixedError(res, 403, "URL not allowed");
+      return;
     }
-  }
-});
 
-export default router;
+    try {
+      const image = await dependencies.fetchImage(url);
+      res.setHeader("Content-Type", image.mime);
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      if (download) {
+        const filename = safeDownloadFilename(url, image.mime);
+        res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      }
+      res.status(200).send(image.bytes);
+    } catch (error) {
+      log.warn(
+        {
+          userId: user.id,
+          errorType: error instanceof Error ? error.name : "unknown",
+        },
+        "Image proxy fetch refused",
+      );
+      fixedError(res, 502, "Image unavailable");
+    }
+  });
+
+  return router;
+}
+
+export default createImageProxyRouter();

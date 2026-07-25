@@ -10,6 +10,7 @@ import { handleStripeWebhook } from "../stripe/webhooks";
 import { securityHeaders } from "../security/securityHeaders";
 import { correlationIdMiddleware } from "../security/correlationId";
 import { requestContextMiddleware } from "../logging/requestContextMiddleware";
+import { configureTrustedProxy } from "../security/rateLimit";
 import heroProxyRouter from "../heroProxy";
 import imageProxyRouter from "../routes/imageProxy";
 import { healthHandler } from "../health";
@@ -140,6 +141,7 @@ async function startServer() {
   validateEnv();
 
   const app = express();
+  configureTrustedProxy(app);
   const server = createServer(app);
   httpServer = server;
 

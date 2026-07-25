@@ -1,10 +1,23 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { checkRateLimit, getClientIp, rateLimitError, RATE_LIMITS } from './rateLimit';
+import express from "express";
+import type { AddressInfo } from "node:net";
+import { readFile } from "node:fs/promises";
+import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
+import {
+  checkRateLimit,
+  configureTrustedProxy,
+  getClientIp,
+  rateLimitError,
+  RATE_LIMITS,
+} from './rateLimit';
 
 describe('Rate Limiting', () => {
   beforeEach(() => {
     // Reset the rate limit store between tests by waiting for cleanup
     vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('checkRateLimit', () => {
@@ -92,31 +105,20 @@ describe('Rate Limiting', () => {
   });
 
   describe('getClientIp', () => {
-    it('should extract IP from X-Forwarded-For header', () => {
+    it('ignores forwarding headers and trusts only Express-derived req.ip', () => {
       const req = {
         headers: {
           'x-forwarded-for': '192.168.1.1, 10.0.0.1',
-        },
-        ip: '127.0.0.1',
-      };
-
-      expect(getClientIp(req)).toBe('192.168.1.1');
-    });
-
-    it('should extract IP from X-Real-IP header', () => {
-      const req = {
-        headers: {
           'x-real-ip': '192.168.1.2',
         },
         ip: '127.0.0.1',
       };
 
-      expect(getClientIp(req)).toBe('192.168.1.2');
+      expect(getClientIp(req)).toBe('127.0.0.1');
     });
 
     it('should fall back to req.ip', () => {
       const req = {
-        headers: {},
         ip: '127.0.0.1',
       };
 
@@ -124,11 +126,39 @@ describe('Rate Limiting', () => {
     });
 
     it('should return unknown for missing IP', () => {
-      const req = {
-        headers: {},
-      };
+      expect(getClientIp({})).toBe('unknown');
+    });
 
-      expect(getClientIp(req)).toBe('unknown');
+    it("trusts exactly Railway's final proxy hop on a real Express request", async () => {
+      vi.useRealTimers();
+      const app = express();
+      configureTrustedProxy(app);
+      app.get("/ip", (req, res) => {
+        res.json({ ip: getClientIp(req) });
+      });
+      const server = app.listen(0, "127.0.0.1");
+      await new Promise<void>((resolve) => server.once("listening", resolve));
+      try {
+        const port = (server.address() as AddressInfo).port;
+        const response = await fetch(`http://127.0.0.1:${port}/ip`, {
+          headers: {
+            // The leftmost value is client-controlled. With exactly one
+            // trusted proxy, Express selects the rightmost forwarded value.
+            "x-forwarded-for": "198.51.100.50, 203.0.113.20",
+          },
+        });
+        expect(await response.json()).toEqual({ ip: "203.0.113.20" });
+      } finally {
+        await new Promise<void>((resolve, reject) => server.close((error) => {
+          if (error) reject(error);
+          else resolve();
+        }));
+      }
+    });
+
+    it("keeps the trusted-proxy configuration on the production request path", async () => {
+      const source = await readFile(new URL("../_core/index.ts", import.meta.url), "utf8");
+      expect(source).toContain("configureTrustedProxy(app)");
     });
   });
 
