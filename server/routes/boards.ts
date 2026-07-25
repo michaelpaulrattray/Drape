@@ -24,9 +24,9 @@ import {
   getModelById,
   getModelAssets,
   getModelStatusesIn,
-  addBoardItemVersion,
+  addOwnedBoardItemVersion,
+  revertOwnedBoardItemVersion,
   getBoardItemVersions,
-  getLatestVersionNumber,
   getVersionCount,
 } from "../db";
 import { z } from "zod";
@@ -280,21 +280,17 @@ export const boardsRouter = router({
       height: z.number().int().min(50).max(2000).optional(),
       zIndex: z.number().int().min(0).max(9999).optional(),
       metadata: z.record(z.string(), z.unknown()).optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      const item = await getBoardItemById(input.itemId);
-      if (!item) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-      }
-      await requireBoardOwnership(item.boardId, ctx.user.id);
-
       const { itemId, ...data } = input;
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([_, v]) => v !== undefined)
       );
-      if (Object.keys(cleanData).length > 0) {
-        await updateBoardItem(itemId, cleanData);
-      }
+      await updateBoardItem({
+        userId: ctx.user.id,
+        itemId,
+        data: cleanData,
+      });
       return { success: true };
     }),
 
@@ -323,14 +319,12 @@ export const boardsRouter = router({
 
   /** Delete a single item from a board */
   deleteItem: protectedProcedure
-    .input(z.object({ itemId: z.number().int().positive() }))
+    .input(z.object({ itemId: z.number().int().positive() }).strict())
     .mutation(async ({ ctx, input }) => {
-      const item = await getBoardItemById(input.itemId);
-      if (!item) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-      }
-      await requireBoardOwnership(item.boardId, ctx.user.id);
-      await deleteBoardItem(input.itemId);
+      await deleteBoardItem({
+        userId: ctx.user.id,
+        itemId: input.itemId,
+      });
       return { success: true };
     }),
 
@@ -359,23 +353,18 @@ export const boardsRouter = router({
       imageUrl: z.string(),
       prompt: z.string().max(2000).optional(),
       tool: z.enum(["chat", "surgical", "eraser", "initial"]).default("initial"),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      const item = await getBoardItemById(input.itemId);
-      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-      await requireBoardOwnership(item.boardId, ctx.user.id);
-
-      const latestVersion = await getLatestVersionNumber(input.itemId);
-      const versionId = await addBoardItemVersion({
+      const created = await addOwnedBoardItemVersion({
+        userId: ctx.user.id,
         itemId: input.itemId,
-        version: latestVersion + 1,
         imageUrl: input.imageUrl,
         prompt: input.prompt ?? null,
         tool: input.tool,
       });
 
-      log.info({ userId: ctx.user.id, itemId: input.itemId, version: latestVersion + 1 }, "Item version saved");
-      return { id: versionId, version: latestVersion + 1 };
+      log.info({ userId: ctx.user.id, itemId: input.itemId, version: created.version }, "Item version saved");
+      return created;
     }),
 
   /** Get all versions for a board item */
@@ -395,19 +384,15 @@ export const boardsRouter = router({
     .input(z.object({
       itemId: z.number().int().positive(),
       versionId: z.number().int().positive(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      const item = await getBoardItemById(input.itemId);
-      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-      await requireBoardOwnership(item.boardId, ctx.user.id);
-
-      const versions = await getBoardItemVersions(input.itemId);
-      const target = versions.find(v => v.id === input.versionId);
-      if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "Version not found" });
-
-      await updateBoardItem(input.itemId, { imageUrl: target.imageUrl });
+      const imageUrl = await revertOwnedBoardItemVersion({
+        userId: ctx.user.id,
+        itemId: input.itemId,
+        versionId: input.versionId,
+      });
       log.info({ userId: ctx.user.id, itemId: input.itemId, versionId: input.versionId }, "Item reverted to version");
-      return { success: true, imageUrl: target.imageUrl };
+      return { success: true, imageUrl };
     }),
 
   /** Get version count for a board item (used by VersionHistoryBadge) */

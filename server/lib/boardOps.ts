@@ -14,7 +14,7 @@ import {
   getBoardItems,
   getBoardItemById,
   getOwnedBoardItemById,
-  updateBoardItem,
+  mergeBoardItemMetadata,
   batchUpdateBoardItemPositions,
   softDeleteBoardItems,
   undoDeleteBoardItems,
@@ -183,26 +183,37 @@ export async function executeCreateNode(input: CreateNodeInput) {
 // ── updateNodeMetadata (debounced config writes) ───────────────────────────
 
 export async function executeUpdateNodeMetadata(input: {
+  userId: number;
   itemId: number;
   metadata: Record<string, unknown>;
   label?: string;
 }) {
-  const item = await getBoardItemById(input.itemId);
-  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
-  const merged = { ...readMeta(item), ...input.metadata };
-  await updateBoardItem(input.itemId, { metadata: merged, ...(input.label !== undefined ? { label: input.label } : {}) });
+  await mergeBoardItemMetadata(input);
   return { itemId: input.itemId };
 }
 
 // ── markNodeStatus / setNodePinned ─────────────────────────────────────────
 
-export async function executeMarkNodeStatus(input: { itemId: number; status: NodeStatus | null }) {
-  return executeUpdateNodeMetadata({ itemId: input.itemId, metadata: { status: input.status } });
+export async function executeMarkNodeStatus(input: {
+  userId: number;
+  itemId: number;
+  status: NodeStatus | null;
+}) {
+  return executeUpdateNodeMetadata({
+    userId: input.userId,
+    itemId: input.itemId,
+    metadata: { status: input.status },
+  });
 }
 
-export async function executeSetNodePinned(input: { itemId: number; pinned: boolean }) {
+export async function executeSetNodePinned(input: {
+  userId: number;
+  itemId: number;
+  pinned: boolean;
+}) {
   // Pinning also clears staleness — pinned = accepted as finished work (3c)
   return executeUpdateNodeMetadata({
+    userId: input.userId,
     itemId: input.itemId,
     metadata: input.pinned ? { pinned: true, status: null } : { pinned: false },
   });
@@ -500,6 +511,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     const baseMessage = publicErrorMessage(error, "Generation failed.");
     const truthful = `${baseMessage} ${refundTruth(outcome)}`;
     await executeMarkNodeStatus({
+      userId: input.userId,
       itemId: input.itemId,
       status: { type: "error", message: truthful },
     }).catch((statusError) => {

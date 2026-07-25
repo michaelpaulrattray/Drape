@@ -62,6 +62,7 @@ vi.mock("./db", async (importOriginal) => {
     createModelAsset: vi.fn(),
     markModelAssetsStale: vi.fn(),
     updateBoardItem: vi.fn(),
+    mergeBoardItemMetadata: vi.fn(),
     addBoardItemVersion: vi.fn(),
     getLatestVersionNumber: vi.fn(),
     addBoardItem: vi.fn(),
@@ -367,6 +368,7 @@ import {
   updateModel,
   createModelAsset,
   updateBoardItem,
+  mergeBoardItemMetadata,
   addBoardItemVersion,
   getLatestVersionNumber,
   addBoardItem,
@@ -504,6 +506,7 @@ beforeEach(() => {
   }) as never);
   vi.mocked(createModelAsset).mockReset().mockResolvedValue({ success: true, assetId: 501 } as never);
   vi.mocked(updateBoardItem).mockReset().mockResolvedValue({ success: true } as never);
+  vi.mocked(mergeBoardItemMetadata).mockReset().mockResolvedValue(undefined);
   vi.mocked(addBoardItemVersion).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(getLatestVersionNumber).mockReset().mockResolvedValue(1 as never);
   vi.mocked(addBoardItem).mockReset().mockResolvedValue(55 as never);
@@ -1209,11 +1212,11 @@ describe("public error sanitization at the paid doors", () => {
       executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "sharp editorial Nordic face" }),
     ).rejects.toMatchObject({ message: expect.not.stringContaining("SECRET_TOKEN") });
     // the persisted node status (board card copy) is sanitized too
-    const statusWrite = vi.mocked(updateBoardItem).mock.calls.find(
-      (c) => ((c[1] as { metadata?: { status?: { message?: string } } }).metadata?.status?.message ?? "").length > 0,
+    const statusWrite = vi.mocked(mergeBoardItemMetadata).mock.calls.find(
+      (c) => ((c[0] as { metadata?: { status?: { message?: string } } }).metadata?.status?.message ?? "").length > 0,
     );
     expect(statusWrite).toBeDefined();
-    const statusMessage = (statusWrite![1] as { metadata: { status: { message: string } } }).metadata.status.message;
+    const statusMessage = (statusWrite![0] as { metadata: { status: { message: string } } }).metadata.status.message;
     expect(statusMessage).not.toContain("SECRET_TOKEN");
     expect(statusMessage).toContain("Generation failed.");
     expect(statusMessage).toContain("refunded");

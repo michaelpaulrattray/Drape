@@ -54,6 +54,7 @@ vi.mock("./db", async (importOriginal) => {
     updateModel: vi.fn().mockResolvedValue({ success: true }),
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 501 }),
     updateBoardItem: vi.fn().mockResolvedValue({ success: true }),
+    mergeBoardItemMetadata: vi.fn().mockResolvedValue(undefined),
     addBoardItemVersion: vi.fn().mockResolvedValue({ success: true }),
     getLatestVersionNumber: vi.fn().mockResolvedValue(1),
     addBoardItem: vi.fn().mockResolvedValue({ success: true, itemId: 55 }),

@@ -375,8 +375,12 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
     await expect(boardsDb.addBoardItem({
       boardId: boardB.insertId, type: "model", kind: "cast_config", sourceModelId: modelId,
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(boardsDb.updateBoardItem(historyOnly.insertId, {
-      metadata: { provenance: { type: "library_cast", modelId, viewAngle: "frontClose" } },
+    await expect(boardsDb.updateBoardItem({
+      userId,
+      itemId: historyOnly.insertId,
+      data: {
+        metadata: { provenance: { type: "library_cast", modelId, viewAngle: "frontClose" } },
+      },
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(await row("SELECT sourceModelId FROM board_items WHERE id = ?", [historyOnly.insertId]))
       .toEqual({ sourceModelId: null });

@@ -3,14 +3,19 @@ import { appRouter } from "./routers";
 import { TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./_core/context";
 import {
+  addOwnedBoardItemVersion,
   createModel,
   createSession,
+  deleteBoardItem,
   fillEmptyCastNodeWithVersionIn,
   getBoardItemById,
   getBoardItemVersions,
   getSessionById,
+  mergeBoardItemMetadata,
+  revertOwnedBoardItemVersion,
   softDeleteBoardItems,
   stampBoardItemWithVersionIn,
+  updateBoardItem,
   updateBoardItemIn,
   updateSession,
   withTransaction,
@@ -348,7 +353,7 @@ describe.skipIf(!dbAvailable)("boards", () => {
   });
 
   describe("C1 durable ownership", () => {
-    it("rejects client-supplied authority fields at all four wire boundaries", async () => {
+    it("rejects client-supplied authority fields at every hardened wire boundary", async () => {
       const caller = appRouter.createCaller(createAuthContext(400));
 
       await expect(caller.boards.batchUpdatePositions({
@@ -369,6 +374,43 @@ describe.skipIf(!dbAvailable)("boards", () => {
       await expect(caller.boardOps.removeEdge({
         boardId: 1,
         edgeId: 1,
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boards.updateItem({
+        itemId: 1,
+        label: "forged",
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boards.deleteItem({
+        itemId: 1,
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boards.addItemVersion({
+        itemId: 1,
+        imageUrl: "https://example.com/version.png",
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boards.revertItemVersion({
+        itemId: 1,
+        versionId: 1,
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boardOps.updateNodeMetadata({
+        boardId: 1,
+        itemId: 1,
+        metadata: {},
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boardOps.markNodeStatus({
+        boardId: 1,
+        itemId: 1,
+        status: null,
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boardOps.setNodePinned({
+        boardId: 1,
+        itemId: 1,
+        pinned: true,
         userId: 999,
       } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     });
@@ -618,6 +660,123 @@ describe.skipIf(!dbAvailable)("boards", () => {
       expect((await getBoardItemById(itemB))?.label).toBe("Owner B stamped");
       expect((await getBoardItemVersions(itemB)).map((version) => version.itemId))
         .toEqual([itemB]);
+    });
+
+    it("single-item metadata, update, and delete helpers prove ownership in their writes", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(415));
+      const ownerB = appRouter.createCaller(createAuthContext(416));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: itemA } = await ownerA.boards.addItem({
+        boardId: boardA,
+        type: "note",
+        label: "Owner A",
+        metadata: { retained: "yes" },
+      });
+      const { id: itemB } = await ownerB.boards.addItem({
+        boardId: boardB,
+        type: "note",
+        label: "Owner B",
+      });
+
+      await expect(updateBoardItem({
+        userId: 416,
+        itemId: itemA,
+        data: { label: "Compromised" },
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(mergeBoardItemMetadata({
+        userId: 416,
+        itemId: itemA,
+        metadata: { compromised: true },
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(deleteBoardItem({
+        userId: 416,
+        itemId: itemA,
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      expect(await getBoardItemById(itemA)).toMatchObject({
+        label: "Owner A",
+        metadata: { retained: "yes" },
+      });
+
+      await ownerB.boards.updateItem({
+        itemId: itemB,
+        label: "Owner B updated",
+      });
+      await ownerB.boardOps.updateNodeMetadata({
+        boardId: boardB,
+        itemId: itemB,
+        metadata: { pinned: true },
+      });
+      expect(await getBoardItemById(itemB)).toMatchObject({
+        label: "Owner B updated",
+        metadata: { pinned: true },
+      });
+      await ownerB.boards.deleteItem({ itemId: itemB });
+      expect(await getBoardItemById(itemB)).toBeNull();
+      expect((await getBoardItemById(itemA))?.label).toBe("Owner A");
+    });
+
+    it("version insert and revert anchor the client version id to an owned item", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(417));
+      const ownerB = appRouter.createCaller(createAuthContext(418));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: itemA } = await ownerA.boards.addItem({
+        boardId: boardA,
+        type: "note",
+        imageUrl: "https://example.com/a-current.png",
+      });
+      const { id: itemB } = await ownerB.boards.addItem({
+        boardId: boardB,
+        type: "note",
+        imageUrl: "https://example.com/b-current.png",
+      });
+
+      await expect(addOwnedBoardItemVersion({
+        userId: 418,
+        itemId: itemA,
+        imageUrl: "https://example.com/foreign-version.png",
+        tool: "initial",
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(await getBoardItemVersions(itemA)).toHaveLength(0);
+
+      const versionA = await ownerA.boards.addItemVersion({
+        itemId: itemA,
+        imageUrl: "https://example.com/a-history.png",
+        tool: "initial",
+      });
+      const versionB = await ownerB.boards.addItemVersion({
+        itemId: itemB,
+        imageUrl: "https://example.com/b-history.png",
+        tool: "initial",
+      });
+      expect(versionA.version).toBe(1);
+      expect(versionB.version).toBe(1);
+
+      await expect(ownerB.boards.revertItemVersion({
+        itemId: itemB,
+        versionId: versionA.id,
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(revertOwnedBoardItemVersion({
+        userId: 418,
+        itemId: itemA,
+        versionId: versionA.id,
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect((await getBoardItemById(itemA))?.imageUrl)
+        .toBe("https://example.com/a-current.png");
+      expect((await getBoardItemById(itemB))?.imageUrl)
+        .toBe("https://example.com/b-current.png");
+
+      await expect(ownerA.boards.revertItemVersion({
+        itemId: itemA,
+        versionId: versionA.id,
+      })).resolves.toEqual({
+        success: true,
+        imageUrl: "https://example.com/a-history.png",
+      });
+      expect((await getBoardItemById(itemA))?.imageUrl)
+        .toBe("https://example.com/a-history.png");
     });
 
     it("Wardrobe session reads and writes scope ownership in the database statement", async () => {

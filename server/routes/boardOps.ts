@@ -283,11 +283,16 @@ export const boardOpsRouter = router({
       itemId: z.number().int().positive(),
       metadata: z.record(z.string(), z.unknown()),
       label: z.string().max(256).optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
       await boardOps.requireItemInBoard(input.itemId, input.boardId);
-      return boardOps.executeUpdateNodeMetadata(input);
+      return boardOps.executeUpdateNodeMetadata({
+        userId: ctx.user.id,
+        itemId: input.itemId,
+        metadata: input.metadata,
+        label: input.label,
+      });
     }),
 
   markNodeStatus: protectedProcedure
@@ -295,11 +300,15 @@ export const boardOpsRouter = router({
       boardId: z.number().int().positive(),
       itemId: z.number().int().positive(),
       status: statusSchema,
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
       await boardOps.requireItemInBoard(input.itemId, input.boardId);
-      return boardOps.executeMarkNodeStatus({ itemId: input.itemId, status: input.status as NodeStatus | null });
+      return boardOps.executeMarkNodeStatus({
+        userId: ctx.user.id,
+        itemId: input.itemId,
+        status: input.status as NodeStatus | null,
+      });
     }),
 
   setNodePinned: protectedProcedure
@@ -307,11 +316,15 @@ export const boardOpsRouter = router({
       boardId: z.number().int().positive(),
       itemId: z.number().int().positive(),
       pinned: z.boolean(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
       await boardOps.requireItemInBoard(input.itemId, input.boardId);
-      return boardOps.executeSetNodePinned(input);
+      return boardOps.executeSetNodePinned({
+        userId: ctx.user.id,
+        itemId: input.itemId,
+        pinned: input.pinned,
+      });
     }),
 
   moveNodes: protectedProcedure

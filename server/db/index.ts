@@ -240,6 +240,7 @@ export {
   getBoardItemById,
   getOwnedBoardItemById,
   updateBoardItem,
+  mergeBoardItemMetadata,
   batchUpdateBoardItemPositions,
   deleteBoardItem,
   deleteBoardItems,
@@ -247,6 +248,8 @@ export {
   undoDeleteBoardItems,
   // Board Item Versions
   addBoardItemVersion,
+  addOwnedBoardItemVersion,
+  revertOwnedBoardItemVersion,
   getBoardItemVersions,
   getLatestVersionNumber,
   getVersionCount,

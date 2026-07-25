@@ -32,6 +32,7 @@ vi.mock("./db", async (importOriginal) => {
     getBoardItemById: boardItemReader,
     getOwnedBoardItemById: boardItemReader,
     updateBoardItem: vi.fn().mockResolvedValue(undefined),
+    mergeBoardItemMetadata: vi.fn().mockResolvedValue(undefined),
     addBoardItemVersion: vi.fn().mockResolvedValue(undefined),
     getLatestVersionNumber: vi.fn().mockResolvedValue(0),
     withTransaction: vi.fn(async (callback: (tx: unknown) => unknown) => callback({})),

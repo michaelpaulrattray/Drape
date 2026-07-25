@@ -504,6 +504,49 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(boardOps).toContain("boardId: item.boardId");
   });
 
+  it("keeps every remaining single-item Canvas write owner-scoped", async () => {
+    const boardDb = await readFile(
+      new URL("./db/boards.ts", import.meta.url),
+      "utf8",
+    );
+    expect(boardDb).toMatch(
+      /updateOwnedBoardItemIn[\s\S]*ownedBoardItemScope\(input\)[\s\S]*\.for\("update"\)[\s\S]*\.update\(boardItems\)[\s\S]*ownedBoardItemScope\(input\)/,
+    );
+    expect(boardDb).toMatch(
+      /updateOwnedBoardItemIn[\s\S]*assertOwnedAvailableModelIn[\s\S]*\.for\("update"\)/,
+    );
+    expect(boardDb).toMatch(
+      /deleteBoardItem[\s\S]*\.delete\(boardItems\)[\s\S]*ownedBoardItemScope\(input\)[\s\S]*affectedRows\(deleted\)\s*!==\s*1/,
+    );
+    expect(boardDb).toMatch(
+      /addOwnedBoardItemVersion[\s\S]*\.for\("update"\)[\s\S]*\.insert\(boardItemVersions\)[\s\S]*\.select\([\s\S]*ownedBoardItemScope\(input\)/,
+    );
+    expect(boardDb).toMatch(
+      /revertOwnedBoardItemVersion[\s\S]*eq\(boardItemVersions\.id,\s*input\.versionId\)[\s\S]*eq\(boardItemVersions\.itemId,\s*item\.id\)[\s\S]*boards\.userId[\s\S]*ownedBoardItemScope\(input\)/,
+    );
+
+    const boardOps = await readFile(
+      new URL("./lib/boardOps.ts", import.meta.url),
+      "utf8",
+    );
+    expect(boardOps).toContain("mergeBoardItemMetadata(input)");
+    expect(boardOps).not.toContain("updateBoardItem(input.itemId");
+
+    const routes = await readFile(
+      new URL("./routes/boardOps.ts", import.meta.url),
+      "utf8",
+    );
+    expect(routes).toMatch(
+      /executeUpdateNodeMetadata\(\{[\s\S]*userId:\s*ctx\.user\.id/,
+    );
+    expect(routes).toMatch(
+      /executeMarkNodeStatus\(\{[\s\S]*userId:\s*ctx\.user\.id/,
+    );
+    expect(routes).toMatch(
+      /executeSetNodePinned\(\{[\s\S]*userId:\s*ctx\.user\.id/,
+    );
+  });
+
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));
