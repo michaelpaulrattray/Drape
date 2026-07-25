@@ -6,6 +6,7 @@
 
 import { IMAGE_PRO } from "@shared/modelRegistry";
 import type { CanonicalViewAngle } from "@shared/boardTypes";
+import { randomUUID } from "node:crypto";
 import * as gemini from "./geminiService";
 import type { SingleViewAngle } from "./geminiViews";
 import { storagePut } from "../storage";
@@ -123,7 +124,7 @@ async function uploadBase64ToS3(base64DataUrl: string, prefix: string): Promise<
 export async function uploadRawCandidate(base64DataUrl: string, prefix: string): Promise<UploadedGenerationResult> {
   const base64Data = base64DataUrl.replace(/^data:.*?;base64,/, "");
   const buffer = Buffer.from(base64Data, "base64");
-  const filename = `${prefix}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+  const filename = `${prefix}/${Date.now()}-${randomUUID()}.png`;
   const { key, url } = await storagePut(filename, buffer, "image/png");
   return { imageUrl: url, storageKey: key };
 }

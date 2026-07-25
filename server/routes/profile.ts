@@ -1,4 +1,5 @@
 import { protectedProcedure, router } from "../_core/trpc";
+import { randomUUID } from "node:crypto";
 import { getUserById, updateUserProfile, getUserStorageInfo, updateUserStorageUsed, markCanvasIntroSeen } from "../db";
 import { storagePut, storageDelete } from "../storage";
 import { z } from "zod";
@@ -80,7 +81,7 @@ export const profileRouter = router({
 
       // Generate unique key
       const ext = input.mimeType.split("/")[1];
-      const key = `avatars/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const key = `avatars/${ctx.user.id}/${Date.now()}-${randomUUID()}.${ext}`;
       
       // Convert base64 to buffer
       const buffer = Buffer.from(input.base64Data, "base64");
@@ -141,7 +142,7 @@ export const profileRouter = router({
 
       // Generate unique key
       const ext = input.mimeType.split("/")[1];
-      const key = `banners/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const key = `banners/${ctx.user.id}/${Date.now()}-${randomUUID()}.${ext}`;
       
       // Convert base64 to buffer
       const buffer = Buffer.from(input.base64Data, "base64");

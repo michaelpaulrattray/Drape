@@ -246,7 +246,7 @@ describe("Model Minting System", () => {
     expect(alreadyMinted.agencyId).toBe("MOD-26-EXISTING");
   });
 
-  it("should validate agencyId format for registry lookup", () => {
+  it("should validate the public Cast ID format", () => {
     const validFormat = /^MOD-\d{2}-[A-F0-9]{6}$/;
     
     // Valid IDs
@@ -261,19 +261,17 @@ describe("Model Minting System", () => {
     expect("MOD-26-G1B2C3").not.toMatch(validFormat); // Invalid hex char
   });
 
-  it("should only allow cross-app retrieval for minted models", () => {
-    // Batch B: the registry's rule is the SHARED read model (minted by
-    // status — legacy 'locked' counts) plus its own agencyId integrity
-    // requirement. This replica must use the same predicate as the route,
-    // never a hand-rolled status === "active".
-    const canRetrieve = (model: { status: string; agencyId: string | null }) =>
+  it("should only treat minted models as carrying a valid public Cast ID", () => {
+    // Public Cast IDs are lifecycle metadata: legacy "locked" is minted,
+    // while a stray id on a draft never changes its lifecycle authority.
+    const hasMintedCastId = (model: { status: string; agencyId: string | null }) =>
       isModelMintedStatus(model.status) && model.agencyId !== null;
 
-    expect(canRetrieve({ status: "draft", agencyId: null })).toBe(false);
-    expect(canRetrieve({ status: "draft", agencyId: "MOD-26-A1B2C3" })).toBe(false); // stray ID
-    expect(canRetrieve({ status: "active", agencyId: "MOD-26-A1B2C3" })).toBe(true);
-    expect(canRetrieve({ status: "locked", agencyId: "MOD-26-A1B2C3" })).toBe(true); // legacy alias
-    expect(canRetrieve({ status: "archived", agencyId: "MOD-26-A1B2C3" })).toBe(false);
+    expect(hasMintedCastId({ status: "draft", agencyId: null })).toBe(false);
+    expect(hasMintedCastId({ status: "draft", agencyId: "MOD-26-A1B2C3" })).toBe(false); // stray ID
+    expect(hasMintedCastId({ status: "active", agencyId: "MOD-26-A1B2C3" })).toBe(true);
+    expect(hasMintedCastId({ status: "locked", agencyId: "MOD-26-A1B2C3" })).toBe(true); // legacy alias
+    expect(hasMintedCastId({ status: "archived", agencyId: "MOD-26-A1B2C3" })).toBe(false);
   });
 });
 

@@ -9,6 +9,7 @@
  * Credit cost: 2 points
  */
 import sharp from "sharp";
+import { randomUUID } from "node:crypto";
 import { detectGarmentsInImage, type DetectedItem } from "./garmentDetection";
 import { uploadBase64ToS3 } from "./utils";
 import { storagePut } from "../storage";
@@ -107,7 +108,7 @@ export async function decomposeOutfit(
     try {
       const croppedBuffer = await cropGarment(sourceBuffer, item.box_2d);
 
-      const suffix = Math.random().toString(36).slice(2, 8);
+      const suffix = randomUUID();
       const key = `${userId}-wardrobe/decomposed/${item.id}-${suffix}.png`;
       const { url: cropUrl } = await storagePut(key, croppedBuffer, "image/png");
 

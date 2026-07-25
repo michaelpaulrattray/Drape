@@ -10,6 +10,7 @@ import {
   SAFETY_SETTINGS,
   extractBase64Data,
 } from "../casting/geminiClient";
+import { randomUUID } from "node:crypto";
 import { withTextQueue, withImageQueue } from "../casting/geminiQueue";
 import { storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
@@ -87,7 +88,7 @@ export async function uploadBase64ToS3(
 ): Promise<string> {
   const base64Data = base64DataUrl.replace(/^data:.*?;base64,/, "");
   const buffer = Buffer.from(base64Data, "base64");
-  const filename = `${prefix}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+  const filename = `${prefix}/${Date.now()}-${randomUUID()}.png`;
   const { url } = await storagePut(filename, buffer, "image/png");
   return url;
 }

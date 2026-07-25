@@ -10,6 +10,7 @@
  *   model.listMinted / upload / analyzeTattoos / checkQuality
  */
 import { protectedProcedure, router } from "../_core/trpc";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { withAtomicCredits } from "../casting/atomicCredits";
@@ -117,7 +118,7 @@ const garmentRouter = router({
       await enforceDailyQuota(ctx.user.id);
 
       // Upload original image to S3
-      const suffix = Math.random().toString(36).slice(2, 8);
+      const suffix = randomUUID();
       const fileKey = `${ctx.user.id}-wardrobe/original-${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
@@ -214,7 +215,7 @@ const garmentRouter = router({
       throwIfRateLimited(ctx.user.id);
 
       // Upload to S3
-      const suffix = Math.random().toString(36).slice(2, 8);
+      const suffix = randomUUID();
       const fileKey = `${ctx.user.id}-wardrobe/scan-${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
@@ -594,7 +595,7 @@ const decomposeRouter = router({
       throwIfRateLimited(ctx.user.id);
 
       // Upload to S3 first
-      const suffix = Math.random().toString(36).slice(2, 8);
+      const suffix = randomUUID();
       const fileKey = `${ctx.user.id}-wardrobe/decompose-${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
@@ -878,7 +879,7 @@ const modelRouter = router({
     .mutation(async ({ ctx, input }) => {
       throwIfRateLimited(ctx.user.id);
 
-      const suffix = Math.random().toString(36).slice(2, 10);
+      const suffix = randomUUID();
       const fileKey = `${ctx.user.id}-models/upload-${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),

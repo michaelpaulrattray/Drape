@@ -2,6 +2,7 @@
  * Tests for moderator attachments router — upload, link, and list change request attachments.
  */
 import { describe, it, expect } from "vitest";
+import { randomUUID } from "node:crypto";
 
 // ── Upload validation tests ──
 
@@ -59,7 +60,7 @@ describe("moderatorAttachments", () => {
     it("should generate unique file keys with user ID and timestamp", () => {
       const userId = 42;
       const timestamp = Date.now();
-      const suffix = Math.random().toString(36).slice(2, 10);
+      const suffix = randomUUID();
       const sanitizedName = "test.png";
       const fileKey = `change-requests/${userId}/${timestamp}-${suffix}-${sanitizedName}`;
 

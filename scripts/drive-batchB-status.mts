@@ -4,7 +4,7 @@
  * review corrections).
  *
  * FREE ops only: every leg is a read or a refusal; nothing here can reach
- * Gemini or move credits (B7 proves the balance is untouched). DEV-ONLY and
+ * Gemini or move credits (B6 proves the balance is untouched). DEV-ONLY and
  * hard-guarded:
  *   - refuses unless DRIVE_ALLOW_DB_FIXTURES=1 is set explicitly (this drive
  *     INSERTS AND DELETES fixture rows in the connected database — the
@@ -29,12 +29,9 @@
  *       locked presents as minted; archived absent
  *   B4  gallery source (wardrobe.model.listMinted): active AND legacy locked
  *       arrive, each carrying status; drafts and archived never do
- *   B5  registry lookup AND verify agree — locked retrievable + minted:true;
- *       a stray-ID draft and an archived identity are PUBLICLY ABSENT through
- *       both endpoints (exists:false, no timestamp — review correction 2)
- *   B6  wardrobe.sessions.getRecent carries modelStatus truth (locked) and
+ *   B5  wardrobe.sessions.getRecent carries modelStatus truth (locked) and
  *       surfaces the archived link honestly for the resume path
- *   B7  balance unchanged — the whole drive was free
+ *   B6  balance unchanged — the whole drive was free
  *
  * Usage: pnpm dev (separate terminal), then:
  *   DRIVE_ALLOW_DB_FIXTURES=1 npx tsx scripts/drive-batchB-status.mts
@@ -279,52 +276,23 @@ try {
   check("B4d gallery: stray-ID draft never arrives", !galleryById.has(strayDraftId));
   check("B4e gallery: archived never arrives", !galleryById.has(archivedId));
 
-  // ── B5: registry lookup AND verify agree; non-minted rows publicly absent ─
-  const b5a = await query("registry.lookup", { agencyId: LOCKED_ID });
-  check("B5a registry.lookup(locked) returns the bundle", b5a.status === 200 && b5a.text.includes(LOCKED_ID), `status=${b5a.status}`);
-  const b5b = json((await query("registry.verify", { agencyId: LOCKED_ID })).text);
-  check("B5b registry.verify(locked): exists:true minted:true", b5b?.exists === true && b5b?.minted === true, JSON.stringify(b5b));
-  const b5c = await query("registry.lookup", { agencyId: STRAY_ID });
-  check("B5c registry.lookup(stray-ID draft) → NOT_FOUND", b5c.status === 404, `status=${b5c.status}`);
-  const b5d = json((await query("registry.verify", { agencyId: STRAY_ID })).text);
-  check(
-    "B5d registry.verify(stray-ID draft): PUBLICLY ABSENT (exists:false, no timestamp)",
-    b5d?.exists === false && b5d?.minted === false && b5d?.mintedAt === undefined,
-    JSON.stringify(b5d),
-  );
-  const b5e = await query("registry.lookup", { agencyId: ARCHIVED_ID });
-  check("B5e registry.lookup(archived, ID intact) → NOT_FOUND", b5e.status === 404, `status=${b5e.status}`);
-  const b5f = json((await query("registry.verify", { agencyId: ARCHIVED_ID })).text);
-  check(
-    "B5f registry.verify(archived): PUBLICLY ABSENT (exists:false, no timestamp)",
-    b5f?.exists === false && b5f?.minted === false && b5f?.mintedAt === undefined,
-    JSON.stringify(b5f),
-  );
-  // The hidden-row shape must be byte-identical to a truly absent ID
-  const b5g = json((await query("registry.verify", { agencyId: `MOD-26-${runHex}FFFF` })).text);
-  check(
-    "B5g verify(hidden row) shape === verify(no row) shape (no existence leak)",
-    JSON.stringify(b5f) === JSON.stringify(b5g),
-    `hidden=${JSON.stringify(b5f)} absent=${JSON.stringify(b5g)}`,
-  );
-
-  // ── B6: session payload carries model status truth ─────────────────────
+  // ── B5: session payload carries model status truth ─────────────────────
   const sessions = json((await query("wardrobe.sessions.getRecent")).text) as Array<{
     sessionId: number; modelId: number | null; modelStatus?: string | null;
   }>;
   const lockedSession = sessions?.find((s) => s.sessionId === lockedSessionId);
   const archivedSession = sessions?.find((s) => s.sessionId === archivedSessionId);
-  check("B6a getRecent: locked-model session carries modelStatus 'locked'", lockedSession?.modelStatus === "locked", `modelStatus=${lockedSession?.modelStatus}`);
+  check("B5a getRecent: locked-model session carries modelStatus 'locked'", lockedSession?.modelStatus === "locked", `modelStatus=${lockedSession?.modelStatus}`);
   check(
-    "B6b getRecent: archived-model session carries modelStatus 'archived' (resume degrades the link, keeps imagery)",
+    "B5b getRecent: archived-model session carries modelStatus 'archived' (resume degrades the link, keeps imagery)",
     archivedSession?.modelStatus === "archived",
     `modelStatus=${archivedSession?.modelStatus}`,
   );
 
-  // ── B7: the whole drive was free ────────────────────────────────────────
+  // ── B6: the whole drive was free ────────────────────────────────────────
   const balanceAfter = json((await query("credits.getBalance")).text);
   check(
-    "B7 balance untouched (free drive)",
+    "B6 balance untouched (free drive)",
     JSON.stringify(balanceBefore) === JSON.stringify(balanceAfter),
     `before=${JSON.stringify(balanceBefore)} after=${JSON.stringify(balanceAfter)}`,
   );

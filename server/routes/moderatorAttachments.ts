@@ -2,6 +2,7 @@
  * Moderator Attachments Router — upload/list/link file attachments for change requests.
  */
 import { moderatorProcedure, router } from "../_core/trpc";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -40,7 +41,7 @@ export const moderatorAttachmentsRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB` });
       }
 
-      const suffix = Math.random().toString(36).slice(2, 10);
+      const suffix = randomUUID();
       const sanitizedName = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
       const fileKey = `change-requests/${ctx.user.id}/${Date.now()}-${suffix}-${sanitizedName}`;
 
