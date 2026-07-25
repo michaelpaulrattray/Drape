@@ -70,6 +70,7 @@ import { storageDelete } from "../storage";
 import { resolveEffectiveCastStateForRead } from "./effectiveCastRead";
 import type { EffectiveCastState } from "./effectiveCastState";
 import type { SnapshotReadMode } from "./snapshotReadScope";
+import { withUniqueCastPublicId } from "./castPublicId";
 
 const log = createModuleLogger("casting/mintPackage");
 
@@ -618,7 +619,7 @@ export async function executeMintPackage(input: MintPackageInput) {
 
   const settleCandidates = async (
     mode: "add_views" | "late_view" | "mint",
-    mint?: { agencyId: string; name: string },
+    mint?: { name: string },
   ) => {
     if (candidates.length === 0 && mode !== "mint") {
       return {
@@ -628,7 +629,7 @@ export async function executeMintPackage(input: MintPackageInput) {
       };
     }
     try {
-      const settled = await commitGeneratedPackageSnapshot({
+      const commit = (agencyId?: string) => commitGeneratedPackageSnapshot({
         userId: input.userId,
         modelId: input.modelId,
         operationId: input.operationId,
@@ -642,8 +643,11 @@ export async function executeMintPackage(input: MintPackageInput) {
           engine: candidate.engineUsed,
           pointsCost: slotCost(candidate.angle),
         })),
-        ...(mint ? { mint } : {}),
+        ...(mint && agencyId ? { mint: { agencyId, name: mint.name } } : {}),
       });
+      const settled = mint
+        ? await withUniqueCastPublicId((agencyId) => commit(agencyId))
+        : await commit();
       await Promise.all(candidates.map((candidate) => completePreparedPackageSlotAudit(ctx, candidate)));
       return settled.result;
     } catch (error) {
@@ -735,12 +739,7 @@ export async function executeMintPackage(input: MintPackageInput) {
   // Name, lifecycle, generated assets, package head, and both seal pointers
   // are one atomic transition. The transition service retains the legacy
   // identity-revision CAS using server-owned receipt truth.
-  const chars = "0123456789ABCDEF";
-  let hash = "";
-  for (let i = 0; i < 6; i++) hash += chars[Math.floor(Math.random() * 16)];
-  const agencyId = `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
   const settled = await settleCandidates("mint", {
-    agencyId,
     name: input.characterName.trim(),
   });
   if (!settled.minted) {

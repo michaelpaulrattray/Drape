@@ -168,9 +168,9 @@ try {
 
   // ── Fixtures (run-unique agency IDs; tracked as they are created) ─────────
   const R2 = process.env.R2_PUBLIC_URL ?? "https://pub-test.r2.dev";
-  // Registry format is MOD-YY-[A-F0-9]{6}: 2 unique hex chars per run + a
-  // fixed role hex suffix keeps IDs valid, distinct, and collision-free
-  // across interrupted runs.
+  // Deliberately legacy MOD-* fixtures: persisted IDs stay valid after newly
+  // minted Casts move to cryptographic KI-* identifiers. A fixed role suffix
+  // keeps this bounded driver's rows distinct across interrupted runs.
   const runHex = randomBytes(1).toString("hex").toUpperCase(); // 2 hex chars
   const agencyIdFor = (role: string) => `MOD-26-${runHex}${role}`; // role = 4 hex chars
 

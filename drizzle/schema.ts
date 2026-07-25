@@ -200,7 +200,7 @@ export const PACKAGE_SLOT_SELECTION_REASONS = [
 export const models = mysqlTable("models", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  agencyId: varchar("agencyId", { length: 32 }).unique(), // e.g., "MOD-26-A1B2C3" - null until minted on export
+  agencyId: varchar("agencyId", { length: 32 }).unique(), // new: "KI-XXXX-XXXX-XXXX-XXXX"; legacy MOD-* remains valid
   name: varchar("name", { length: 128 }), // User-assigned name
   masterPrompt: text("masterPrompt").notNull(), // Full generation prompt
   technicalSchema: json("technicalSchema").notNull(), // JSON object with model specs

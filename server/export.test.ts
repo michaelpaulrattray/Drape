@@ -5,6 +5,7 @@
  * exportViews.test.ts; this file does not carry another hardcoded copy.
  */
 import { describe, it, expect } from "vitest";
+import { CAST_PUBLIC_ID_PATTERN } from "./casting/castPublicId";
 import { isModelMintedStatus } from "../shared/modelLifecycle";
 import { resolveExportEligibility } from "../shared/exportEligibility";
 
@@ -183,9 +184,8 @@ describe("Mint Status", () => {
     expect(isModelMintedStatus("archived")).toBe(false);
   });
 
-  it("agencyId format should match MOD-YY-XXXXXX pattern (integrity detail, not read state)", () => {
-    const agencyId = "MOD-26-A1B2C3";
-    expect(agencyId).toMatch(/^MOD-\d{2}-[A-F0-9]{6}$/);
+  it("newly minted agencyIds use the KI format (still separate from read state)", () => {
+    expect("KI-7M4Q-X9PD-2R8K-N6TW").toMatch(CAST_PUBLIC_ID_PATTERN);
   });
 });
 

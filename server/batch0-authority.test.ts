@@ -131,6 +131,7 @@ import { CREDIT_COSTS, generateCastingImage } from "./casting/aiService";
 import { beginDirectOperation } from "./casting/directOperation";
 import { commitGeneratedPackageSnapshot } from "./casting/snapshotTransitions";
 import { buildIdentityAnchor } from "./casting/geminiClient";
+import { CAST_PUBLIC_ID_PATTERN } from "./casting/castPublicId";
 import { appRouter as productionRouter } from "./routers";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -866,8 +867,55 @@ describe("executeMintPackage name guard + name persistence (review fix 2)", () =
       modelId: 7,
       operationId: REQUEST_ID,
       mode: "mint",
-      mint: expect.objectContaining({ name: "Vera" }),
+      mint: expect.objectContaining({
+        name: "Vera",
+        agencyId: expect.stringMatching(CAST_PUBLIC_ID_PATTERN),
+      }),
     }));
+  });
+
+  it("retries only an agencyId unique collision without charging or regenerating", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model() as never);
+    vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
+    const collision = Object.assign(
+      new Error("Duplicate agency id"),
+      {
+        code: "ER_DUP_ENTRY",
+        errno: 1062,
+        sqlMessage: "Duplicate entry for key 'models.models_agencyId_unique'",
+      },
+    );
+    vi.mocked(commitGeneratedPackageSnapshot)
+      .mockRejectedValueOnce(collision)
+      .mockImplementationOnce(async (input) => ({
+        result: {
+          generated: [],
+          agencyId: input.mint?.agencyId ?? null,
+          minted: true,
+        },
+      }) as never);
+
+    const { executeMintPackage } = await import("./casting/mintPackage");
+    const result = await executeMintPackage({
+      userId: 1,
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+      operationId: REQUEST_ID,
+    });
+
+    expect(result).toMatchObject({
+      minted: true,
+      agencyId: expect.stringMatching(CAST_PUBLIC_ID_PATTERN),
+    });
+    expect(commitGeneratedPackageSnapshot).toHaveBeenCalledTimes(2);
+    const attemptedIds = vi.mocked(commitGeneratedPackageSnapshot).mock.calls
+      .map(([input]) => input.mint?.agencyId);
+    expect(attemptedIds).toHaveLength(2);
+    expect(attemptedIds[0]).toMatch(CAST_PUBLIC_ID_PATTERN);
+    expect(attemptedIds[1]).toMatch(CAST_PUBLIC_ID_PATTERN);
+    expect(attemptedIds[0]).not.toBe(attemptedIds[1]);
+    expect(deductPoints).not.toHaveBeenCalled();
   });
 });
 

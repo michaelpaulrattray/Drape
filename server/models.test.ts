@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { CREDIT_COSTS } from "./casting/aiService";
+import { CAST_PUBLIC_ID_PATTERN } from "./casting/castPublicId";
+import { resolveExportEligibility } from "../shared/exportEligibility";
 import { isModelMintedStatus } from "../shared/modelLifecycle";
 
 /**
@@ -183,16 +185,8 @@ describe("Generation Status Flow", () => {
 });
 
 describe("Agency ID Generation", () => {
-  it("should follow correct format pattern", () => {
-    // Format: MOD-YY-XXXXXX
-    const pattern = /^MOD-\d{2}-[A-Z0-9]{6}$/;
-    
-    // Example valid IDs
-    const validIds = ["MOD-26-A1B2C3", "MOD-26-XYZ789", "MOD-25-000000"];
-    
-    validIds.forEach((id) => {
-      expect(id).toMatch(pattern);
-    });
+  it("newly minted Casts use the cryptographic KI format", () => {
+    expect("KI-7M4Q-X9PD-2R8K-N6TW").toMatch(CAST_PUBLIC_ID_PATTERN);
   });
 });
 
@@ -246,19 +240,13 @@ describe("Model Minting System", () => {
     expect(alreadyMinted.agencyId).toBe("MOD-26-EXISTING");
   });
 
-  it("should validate the public Cast ID format", () => {
-    const validFormat = /^MOD-\d{2}-[A-F0-9]{6}$/;
-    
-    // Valid IDs
-    expect("MOD-26-A1B2C3").toMatch(validFormat);
-    expect("MOD-25-FFFFFF").toMatch(validFormat);
-    expect("MOD-26-000000").toMatch(validFormat);
-    
-    // Invalid IDs
-    expect("MOD-2-A1B2C3").not.toMatch(validFormat); // Year too short
-    expect("MOD-26-A1B2C").not.toMatch(validFormat); // Hash too short
-    expect("AG-26-A1B2C3").not.toMatch(validFormat); // Wrong prefix
-    expect("MOD-26-G1B2C3").not.toMatch(validFormat); // Invalid hex char
+  it("keeps legacy MOD identifiers as opaque persisted identity data", () => {
+    const legacyAgencyId = "MOD-26-A1B2C3";
+    expect(legacyAgencyId).not.toMatch(CAST_PUBLIC_ID_PATTERN);
+    expect(resolveExportEligibility({
+      status: "active",
+      agencyId: legacyAgencyId,
+    })).toEqual({ ok: true, agencyId: legacyAgencyId });
   });
 
   it("should only treat minted models as carrying a valid public Cast ID", () => {

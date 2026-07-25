@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import mysql, { type Connection, type ResultSetHeader, type RowDataPacket } from "mysql2/promise";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { boardItems, boardItemVersions, modelAssets, models } from "../drizzle/schema";
+import { withUniqueCastPublicId } from "./casting/castPublicId";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
@@ -1347,6 +1348,49 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     );
     expect(sealedAfterLate.sealedIdentitySnapshotId).toBe(base.identitySnapshotId);
     expect(sealedAfterLate.sealedPackageSnapshotId).toBe(minted.packageSnapshotId);
+  }, 60_000);
+
+  it("retries a real agencyId unique-index collision without leaving a partial mint", async () => {
+    const userId = await createUser();
+    const reservedModelId = await createModel(userId, "active");
+    const collidingId = "KI-2222-2222-2222-2222";
+    const committedId = "KI-3333-3333-3333-3333";
+    await connection.execute(
+      "UPDATE models SET agencyId = ?, mintedAt = NOW() WHERE id = ?",
+      [collidingId, reservedModelId],
+    );
+
+    const base = await createBootstrappedModel(userId);
+    const operationId = await startModelOperation(userId, base.modelId, "casting.mint");
+    const ids = [collidingId, committedId];
+    const minted = await withUniqueCastPublicId(
+      (agencyId) => commitGeneratedPackageSnapshot({
+        userId,
+        modelId: base.modelId,
+        operationId,
+        operationKind: "casting.mint",
+        mode: "mint",
+        mintTier: "draft",
+        candidates: [],
+        mint: { agencyId, name: "Collision Safe Cast" },
+      }),
+      {
+        generate: () => ids.shift()!,
+        maxAttempts: 2,
+      },
+    );
+
+    expect(minted.result).toEqual({
+      generated: [],
+      agencyId: committedId,
+      minted: true,
+    });
+    expect(await count("model_package_snapshots", "modelId = ?", [base.modelId]))
+      .toBe(2); // bootstrap + one committed mint; the collision rolled back
+    expect(await count("model_assets", "modelId = ?", [base.modelId]))
+      .toBe(2); // bootstrap assets only; no retry residue
+    expect(await one("SELECT agencyId, status FROM models WHERE id = ?", [base.modelId]))
+      .toMatchObject({ agencyId: committedId, status: "active" });
   }, 60_000);
 
   it("lazily seals a legacy minted Cast before accepting a late view", async () => {

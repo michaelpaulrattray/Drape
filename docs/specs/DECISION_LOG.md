@@ -688,6 +688,14 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Migration boundary:** today's `userId` ownership remains correct until the team feature is deliberately designed. Adding teams requires an explicit workspace/membership schema and data migration, role and invitation/revocation rules, workspace credit/billing decisions, and a reviewed conversion of owner-scoped queries. It must never be approximated by accepting a workspace id from the client or by sharing account credentials.
 
+### D-67 — New public Cast identifiers use cryptographic Klieg Identity codes *(founder-ratified 2026-07-25)*
+
+**New format:** newly minted Casts receive a human-readable `KI-XXXX-XXXX-XXXX-XXXX` identifier ("Klieg Identity"). The 16-character payload is generated from Node cryptographic randomness with an unambiguous 32-character alphabet, providing 80 bits of entropy. The identifier is presentation and integrity data; model lifecycle and authority continue to come from server-owned status and ownership, never from the ID's spelling.
+
+**Compatibility:** existing `MOD-*` identifiers remain valid permanently and are never rewritten. Exports, PDFs, Studio, Canvas, and lifecycle readers treat persisted identifiers as opaque strings, so old and new Casts coexist without a migration.
+
+**Collision boundary:** `models.agencyId` remains database-unique. A new mint retries with a fresh cryptographic identifier only when MySQL reports that exact unique constraint, with a bounded attempt count. The already-generated package candidates are reused inside the atomic mint settlement; an ID collision never repeats provider work, charges credits again, or leaves a partial lifecycle/package transition.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
