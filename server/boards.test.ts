@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import { TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./_core/context";
+import { getBoardItemById } from "./db";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -331,6 +332,170 @@ describe.skipIf(!dbAvailable)("boards", () => {
 
       const items = await caller.boards.getItems({ boardId });
       expect(items).toHaveLength(3);
+    });
+  });
+
+  describe("C1 durable ownership", () => {
+    it("rejects client-supplied authority fields at all four wire boundaries", async () => {
+      const caller = appRouter.createCaller(createAuthContext(400));
+
+      await expect(caller.boards.batchUpdatePositions({
+        boardId: 1,
+        updates: [{ id: 1, positionX: 0, positionY: 0 }],
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boards.deleteItems({
+        boardId: 1,
+        itemIds: [1],
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boardOps.undoDelete({
+        boardId: 1,
+        itemIds: [1],
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.boardOps.removeEdge({
+        boardId: 1,
+        edgeId: 1,
+        userId: 999,
+      } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    });
+
+    it("rejects a mixed-board position batch before changing either user's item", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(401));
+      const ownerB = appRouter.createCaller(createAuthContext(402));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: itemA } = await ownerA.boards.addItem({
+        boardId: boardA,
+        type: "note",
+        positionX: 10,
+        positionY: 20,
+      });
+      const { id: itemB } = await ownerB.boards.addItem({
+        boardId: boardB,
+        type: "note",
+        positionX: 30,
+        positionY: 40,
+      });
+
+      await expect(ownerB.boards.batchUpdatePositions({
+        boardId: boardB,
+        updates: [
+          { id: itemB, positionX: 300, positionY: 400 },
+          { id: itemA, positionX: 500, positionY: 600 },
+        ],
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      const [afterA] = await ownerA.boards.getItems({ boardId: boardA });
+      const [afterB] = await ownerB.boards.getItems({ boardId: boardB });
+      expect({ x: afterA?.positionX, y: afterA?.positionY }).toEqual({ x: 10, y: 20 });
+      expect({ x: afterB?.positionX, y: afterB?.positionY }).toEqual({ x: 30, y: 40 });
+
+      await ownerB.boards.batchUpdatePositions({
+        boardId: boardB,
+        updates: [{ id: itemB, positionX: 300, positionY: 400 }],
+      });
+      const [landedB] = await ownerB.boards.getItems({ boardId: boardB });
+      expect({ x: landedB?.positionX, y: landedB?.positionY }).toEqual({ x: 300, y: 400 });
+      expect((await ownerA.boards.getItems({ boardId: boardA }))[0]?.positionX).toBe(10);
+
+      await ownerB.boardOps.moveNodes({
+        boardId: boardB,
+        moves: [{ itemId: itemB, x: 350, y: 450 }],
+      });
+      const [movedB] = await ownerB.boards.getItems({ boardId: boardB });
+      expect({ x: movedB?.positionX, y: movedB?.positionY }).toEqual({ x: 350, y: 450 });
+    });
+
+    it("rejects a mixed-board hard-delete batch without deleting any row", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(403));
+      const ownerB = appRouter.createCaller(createAuthContext(404));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: itemA } = await ownerA.boards.addItem({ boardId: boardA, type: "note" });
+      const { id: itemB } = await ownerB.boards.addItem({ boardId: boardB, type: "note" });
+
+      await expect(ownerB.boards.deleteItems({
+        boardId: boardB,
+        itemIds: [itemB, itemA],
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      expect((await ownerA.boards.getItems({ boardId: boardA })).map((item) => item.id))
+        .toContain(itemA);
+      expect((await ownerB.boards.getItems({ boardId: boardB })).map((item) => item.id))
+        .toContain(itemB);
+
+      await ownerB.boards.deleteItems({ boardId: boardB, itemIds: [itemB] });
+      expect((await ownerB.boards.getItems({ boardId: boardB })).map((item) => item.id))
+        .not.toContain(itemB);
+      expect((await ownerA.boards.getItems({ boardId: boardA })).map((item) => item.id))
+        .toContain(itemA);
+    });
+
+    it("rejects a mixed-board undo before restoring either user's deleted item", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(405));
+      const ownerB = appRouter.createCaller(createAuthContext(406));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: itemA } = await ownerA.boards.addItem({ boardId: boardA, type: "note" });
+      const { id: itemB } = await ownerB.boards.addItem({ boardId: boardB, type: "note" });
+      await ownerA.boardOps.deleteNode.execute({ boardId: boardA, itemId: itemA });
+      await ownerB.boardOps.deleteNode.execute({ boardId: boardB, itemId: itemB });
+
+      await expect(ownerB.boardOps.undoDelete({
+        boardId: boardB,
+        itemIds: [itemB, itemA],
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      expect((await getBoardItemById(itemA))?.deletedAt).not.toBeNull();
+      expect((await getBoardItemById(itemB))?.deletedAt).not.toBeNull();
+
+      await expect(ownerB.boardOps.undoDelete({
+        boardId: boardB,
+        itemIds: [itemB],
+      })).resolves.toEqual({ restored: 1 });
+      expect((await getBoardItemById(itemA))?.deletedAt).not.toBeNull();
+      expect((await getBoardItemById(itemB))?.deletedAt).toBeNull();
+    });
+
+    it("cannot remove another board's edge and leaves both edge sets intact", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(407));
+      const ownerB = appRouter.createCaller(createAuthContext(408));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: sourceA } = await ownerA.boards.addItem({ boardId: boardA, type: "note" });
+      const { id: targetA } = await ownerA.boards.addItem({ boardId: boardA, type: "note" });
+      const { id: sourceB } = await ownerB.boards.addItem({ boardId: boardB, type: "note" });
+      const { id: targetB } = await ownerB.boards.addItem({ boardId: boardB, type: "note" });
+      const { edgeId: edgeA } = await ownerA.boardOps.addEdge({
+        boardId: boardA,
+        sourceItemId: sourceA,
+        targetItemId: targetA,
+        relation: "reference_for",
+      });
+      const { edgeId: edgeB } = await ownerB.boardOps.addEdge({
+        boardId: boardB,
+        sourceItemId: sourceB,
+        targetItemId: targetB,
+        relation: "reference_for",
+      });
+
+      await expect(ownerB.boardOps.removeEdge({
+        boardId: boardB,
+        edgeId: edgeA,
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      expect((await ownerA.boardOps.listEdges({ boardId: boardA })).map((edge) => edge.id))
+        .toContain(edgeA);
+      expect((await ownerB.boardOps.listEdges({ boardId: boardB })).map((edge) => edge.id))
+        .toContain(edgeB);
+
+      await ownerB.boardOps.removeEdge({ boardId: boardB, edgeId: edgeB });
+      expect((await ownerB.boardOps.listEdges({ boardId: boardB })).map((edge) => edge.id))
+        .not.toContain(edgeB);
+      expect((await ownerA.boardOps.listEdges({ boardId: boardA })).map((edge) => edge.id))
+        .toContain(edgeA);
     });
   });
 });

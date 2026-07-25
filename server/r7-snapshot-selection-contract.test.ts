@@ -341,6 +341,9 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(transitionDriver).toContain('"--focused-canvas"');
     expect(transitionDriver).toContain('"--focused-b4"');
     expect(transitionDriver).toContain('"--focused-b6"');
+    expect(transitionDriver).toContain('"--focused-c1"');
+    expect(transitionDriver).toContain('"--testNamePattern=C1.*durable.*ownership"');
+    expect(transitionDriver).toContain('"server/boards.test.ts"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*ledger"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot-selected.*iteration"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*Canvas"');

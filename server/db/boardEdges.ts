@@ -3,7 +3,13 @@
  */
 import { eq, and, inArray, or } from "drizzle-orm";
 import { getDb } from "./connection";
-import { boardEdges, type InsertBoardEdge, type BoardEdgeRelation } from "../../drizzle/schema";
+import { TRPCError } from "@trpc/server";
+import {
+  boards,
+  boardEdges,
+  type InsertBoardEdge,
+  type BoardEdgeRelation,
+} from "../../drizzle/schema";
 
 export async function addBoardEdge(data: InsertBoardEdge) {
   const db = (await getDb())!;
@@ -37,9 +43,37 @@ export async function getEdgesFrom(sourceItemId: number, relation?: BoardEdgeRel
     );
 }
 
-export async function removeBoardEdge(edgeId: number) {
+function affectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    return (result[0] as { affectedRows?: number } | undefined)?.affectedRows ?? 0;
+  }
+  return (result as { affectedRows?: number } | undefined)?.affectedRows ?? 0;
+}
+
+export async function removeBoardEdge(input: {
+  userId: number;
+  boardId: number;
+  edgeId: number;
+}) {
   const db = (await getDb())!;
-  await db.delete(boardEdges).where(eq(boardEdges.id, edgeId));
+  const removed = await db
+    .delete(boardEdges)
+    .where(
+      and(
+        eq(boardEdges.id, input.edgeId),
+        eq(boardEdges.boardId, input.boardId),
+        inArray(
+          boardEdges.boardId,
+          db
+            .select({ id: boards.id })
+            .from(boards)
+            .where(and(eq(boards.id, input.boardId), eq(boards.userId, input.userId))),
+        ),
+      ),
+    );
+  if (affectedRows(removed) !== 1) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Board edge not found" });
+  }
 }
 
 export async function removeEdgesForItems(itemIds: number[]) {

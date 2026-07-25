@@ -324,14 +324,17 @@ export const boardOpsRouter = router({
         width: z.number().int().min(50).max(2000).optional(),
         height: z.number().int().min(50).max(2000).optional(),
         zIndex: z.number().int().min(0).max(9999).optional(),
-      })).min(1).max(100),
-    }))
+      }).strict()).min(1).max(100),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
       for (const move of input.moves) {
         await boardOps.requireItemInBoard(move.itemId, input.boardId);
       }
-      return boardOps.executeMoveNodes(input);
+      return boardOps.executeMoveNodes({
+        userId: ctx.user.id,
+        ...input,
+      });
     }),
 
   deleteNode: router({
@@ -379,10 +382,13 @@ export const boardOpsRouter = router({
     .input(z.object({
       boardId: z.number().int().positive(),
       itemIds: z.array(z.number().int().positive()).min(1).max(100),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
-      return boardOps.executeUndoDelete(input);
+      return boardOps.executeUndoDelete({
+        userId: ctx.user.id,
+        ...input,
+      });
     }),
 
   addEdge: protectedProcedure
@@ -401,10 +407,16 @@ export const boardOpsRouter = router({
     }),
 
   removeEdge: protectedProcedure
-    .input(z.object({ boardId: z.number().int().positive(), edgeId: z.number().int().positive() }))
+    .input(z.object({
+      boardId: z.number().int().positive(),
+      edgeId: z.number().int().positive(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
-      return boardOps.executeRemoveEdge(input);
+      return boardOps.executeRemoveEdge({
+        userId: ctx.user.id,
+        ...input,
+      });
     }),
 
   /** D-28 picker data: models with canonical headshots only. */

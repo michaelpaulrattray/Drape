@@ -210,10 +210,14 @@ export async function executeSetNodePinned(input: { itemId: number; pinned: bool
 // ── moveNodes ──────────────────────────────────────────────────────────────
 
 export async function executeMoveNodes(input: {
+  userId: number;
+  boardId: number;
   moves: Array<{ itemId: number; x: number; y: number; width?: number; height?: number; zIndex?: number }>;
 }) {
-  await batchUpdateBoardItemPositions(
-    input.moves.map((m) => ({
+  await batchUpdateBoardItemPositions({
+    userId: input.userId,
+    boardId: input.boardId,
+    updates: input.moves.map((m) => ({
       id: m.itemId,
       positionX: Math.round(m.x),
       positionY: Math.round(m.y),
@@ -221,7 +225,7 @@ export async function executeMoveNodes(input: {
       height: m.height,
       zIndex: m.zIndex,
     })),
-  );
+  });
   return { moved: input.moves.length };
 }
 
@@ -273,9 +277,13 @@ export const planDeleteNode = (input: { itemId: number }) =>
 export const executeDeleteNode = (input: { itemId: number }) =>
   executeDeleteNodes({ itemIds: [input.itemId] });
 
-export async function executeUndoDelete(input: { itemIds: number[] }) {
-  await undoDeleteBoardItems(input.itemIds);
-  return { restored: input.itemIds.length };
+export async function executeUndoDelete(input: {
+  userId: number;
+  boardId: number;
+  itemIds: number[];
+}) {
+  const restored = await undoDeleteBoardItems(input);
+  return { restored };
 }
 
 // ── addEdge / removeEdge ───────────────────────────────────────────────────
@@ -291,8 +299,12 @@ export async function executeAddEdge(input: {
   return { edgeId };
 }
 
-export async function executeRemoveEdge(input: { edgeId: number }) {
-  await removeBoardEdge(input.edgeId);
+export async function executeRemoveEdge(input: {
+  userId: number;
+  boardId: number;
+  edgeId: number;
+}) {
+  await removeBoardEdge(input);
   return { removed: true };
 }
 
@@ -1800,7 +1812,13 @@ export async function executeCollapseView(input: { userId: number; boardId: numb
   }
   const edges = await getEdgesForItem(input.itemId);
   const moves = planCollapseEdgeMoves(edges, prov.rootItemId, input.itemId, prov.viewAngle);
-  for (const edgeId of moves.removeEdgeIds) await removeBoardEdge(edgeId);
+  for (const edgeId of moves.removeEdgeIds) {
+    await removeBoardEdge({
+      userId: input.userId,
+      boardId: input.boardId,
+      edgeId,
+    });
+  }
   for (const add of moves.addEdges) await addBoardEdge({ boardId: input.boardId, ...add });
   await softDeleteBoardItems([input.itemId]);
   log.info({ itemId: input.itemId, reanchored: moves.addEdges.length }, "View collapsed into sheet");

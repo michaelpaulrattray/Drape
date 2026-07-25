@@ -309,11 +309,15 @@ export const boardsRouter = router({
         width: z.number().int().min(50).max(2000).optional(),
         height: z.number().int().min(50).max(2000).optional(),
         zIndex: z.number().int().min(0).max(9999).optional(),
-      })).min(1).max(100),
-    }))
+      }).strict()).min(1).max(100),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
-      await batchUpdateBoardItemPositions(input.updates);
+      await batchUpdateBoardItemPositions({
+        userId: ctx.user.id,
+        boardId: input.boardId,
+        updates: input.updates,
+      });
       return { success: true };
     }),
 
@@ -335,10 +339,14 @@ export const boardsRouter = router({
     .input(z.object({
       boardId: z.number().int().positive(),
       itemIds: z.array(z.number().int().positive()).min(1).max(100),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
-      await deleteBoardItems(input.itemIds);
+      await deleteBoardItems({
+        userId: ctx.user.id,
+        boardId: input.boardId,
+        itemIds: input.itemIds,
+      });
       return { success: true };
     }),
 

@@ -1,7 +1,7 @@
 /**
  * Board DB Helpers — CRUD operations for boards and board items.
  */
-import { eq, and, desc, asc, inArray, sql, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, sql, isNull, isNotNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import {
@@ -146,13 +146,134 @@ export async function softDeleteBoardItems(itemIds: number[]) {
     .where(inArray(boardItems.id, itemIds));
 }
 
-export async function undoDeleteBoardItems(itemIds: number[]) {
-  if (itemIds.length === 0) return;
-  const db = (await getDb())!;
-  await db
-    .update(boardItems)
-    .set({ deletedAt: null })
-    .where(inArray(boardItems.id, itemIds));
+type OwnedBoardItemMutation = {
+  userId: number;
+  boardId: number;
+  itemIds: number[];
+};
+
+type BoardItemPositionUpdate = {
+  id: number;
+  positionX: number;
+  positionY: number;
+  width?: number;
+  height?: number;
+  zIndex?: number;
+};
+
+function affectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    return (result[0] as { affectedRows?: number } | undefined)?.affectedRows ?? 0;
+  }
+  return (result as { affectedRows?: number } | undefined)?.affectedRows ?? 0;
+}
+
+function uniqueItemIds(itemIds: number[]): number[] {
+  const unique = Array.from(new Set(itemIds));
+  if (unique.length !== itemIds.length) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Duplicate board item ids are not allowed",
+    });
+  }
+  return unique.sort((a, b) => a - b);
+}
+
+function ownedBoardExists(userId: number, boardId: number) {
+  return sql<boolean>`exists (
+    select 1
+    from ${boards}
+    where ${boards.id} = ${boardId}
+      and ${boards.userId} = ${userId}
+  )`;
+}
+
+async function lockOwnedBoardItemsIn(
+  tx: TransactionHandle,
+  input: OwnedBoardItemMutation,
+) {
+  const itemIds = uniqueItemIds(input.itemIds);
+  if (itemIds.length === 0) return [];
+
+  const [board] = await tx
+    .select({ id: boards.id })
+    .from(boards)
+    .where(and(eq(boards.id, input.boardId), eq(boards.userId, input.userId)))
+    .for("update");
+  if (!board) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+  }
+
+  const rows = await tx
+    .select({
+      id: boardItems.id,
+      deletedAt: boardItems.deletedAt,
+      positionX: boardItems.positionX,
+      positionY: boardItems.positionY,
+      width: boardItems.width,
+      height: boardItems.height,
+      zIndex: boardItems.zIndex,
+    })
+    .from(boardItems)
+    .where(
+      and(
+        eq(boardItems.boardId, input.boardId),
+        inArray(boardItems.id, itemIds),
+        ownedBoardExists(input.userId, input.boardId),
+      ),
+    )
+    .orderBy(asc(boardItems.id))
+    .for("update");
+
+  if (rows.length !== itemIds.length) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Board item not found",
+    });
+  }
+  return rows;
+}
+
+function boardItemWriteScope(input: {
+  userId: number;
+  boardId: number;
+  itemId: number;
+}) {
+  return and(
+    eq(boardItems.id, input.itemId),
+    eq(boardItems.boardId, input.boardId),
+    ownedBoardExists(input.userId, input.boardId),
+  );
+}
+
+export async function undoDeleteBoardItems(input: OwnedBoardItemMutation) {
+  if (input.itemIds.length === 0) return 0;
+  return withTransaction(async (tx) => {
+    const rows = await lockOwnedBoardItemsIn(tx, input);
+    const restoreIds = rows
+      .filter((row) => row.deletedAt !== null)
+      .map((row) => row.id);
+    if (restoreIds.length === 0) return 0;
+
+    const restored = await tx
+      .update(boardItems)
+      .set({ deletedAt: null })
+      .where(
+        and(
+          eq(boardItems.boardId, input.boardId),
+          inArray(boardItems.id, restoreIds),
+          isNotNull(boardItems.deletedAt),
+          ownedBoardExists(input.userId, input.boardId),
+        ),
+      );
+    if (affectedRows(restored) !== restoreIds.length) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Board item not found",
+      });
+    }
+    return restoreIds.length;
+  });
 }
 
 export async function getBoardItemById(itemId: number) {
@@ -187,18 +308,50 @@ export async function updateBoardItem(
 }
 
 export async function batchUpdateBoardItemPositions(
-  updates: Array<{ id: number; positionX: number; positionY: number; width?: number; height?: number; zIndex?: number }>
+  input: {
+    userId: number;
+    boardId: number;
+    updates: BoardItemPositionUpdate[];
+  },
 ) {
-  const db = (await getDb())!;
-  // Execute updates sequentially — batch size is small (canvas items)
-  for (const update of updates) {
-    const { id, ...data } = update;
-    // Filter out undefined values
-    const cleanData = Object.fromEntries(
-      Object.entries(data).filter(([_, v]) => v !== undefined)
-    );
-    await db.update(boardItems).set(cleanData).where(eq(boardItems.id, id));
-  }
+  if (input.updates.length === 0) return;
+  await withTransaction(async (tx) => {
+    const rows = await lockOwnedBoardItemsIn(tx, {
+      userId: input.userId,
+      boardId: input.boardId,
+      itemIds: input.updates.map((update) => update.id),
+    });
+    const rowsById = new Map(rows.map((row) => [row.id, row]));
+
+    // The full batch is validated before the first write. A mixed-board or
+    // mixed-owner request therefore writes nothing.
+    for (const update of input.updates) {
+      const current = rowsById.get(update.id)!;
+      const { id, ...data } = update;
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined),
+      ) as Omit<BoardItemPositionUpdate, "id">;
+      const changed = Object.entries(cleanData).some(
+        ([key, value]) => current[key as keyof typeof current] !== value,
+      );
+      if (!changed) continue;
+
+      const updated = await tx
+        .update(boardItems)
+        .set(cleanData)
+        .where(boardItemWriteScope({
+          userId: input.userId,
+          boardId: input.boardId,
+          itemId: id,
+        }));
+      if (affectedRows(updated) !== 1) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Board item not found",
+        });
+      }
+    }
+  });
 }
 
 export async function deleteBoardItem(itemId: number) {
@@ -206,10 +359,26 @@ export async function deleteBoardItem(itemId: number) {
   await db.delete(boardItems).where(eq(boardItems.id, itemId));
 }
 
-export async function deleteBoardItems(itemIds: number[]) {
-  if (itemIds.length === 0) return;
-  const db = (await getDb())!;
-  await db.delete(boardItems).where(inArray(boardItems.id, itemIds));
+export async function deleteBoardItems(input: OwnedBoardItemMutation) {
+  if (input.itemIds.length === 0) return;
+  await withTransaction(async (tx) => {
+    const rows = await lockOwnedBoardItemsIn(tx, input);
+    const deleted = await tx
+      .delete(boardItems)
+      .where(
+        and(
+          eq(boardItems.boardId, input.boardId),
+          inArray(boardItems.id, rows.map((row) => row.id)),
+          ownedBoardExists(input.userId, input.boardId),
+        ),
+      );
+    if (affectedRows(deleted) !== rows.length) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Board item not found",
+      });
+    }
+  });
 }
 
 // ── Board Item Versions ──────────────────────────────────────────────────

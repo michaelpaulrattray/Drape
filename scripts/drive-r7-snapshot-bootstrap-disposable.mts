@@ -73,6 +73,7 @@ async function main() {
     "--focused-canvas",
     "--focused-b4",
     "--focused-b6",
+    "--focused-c1",
   ]);
   if (args.some((arg) => !allowedArgs.has(arg))) {
     throw new Error(`Unknown argument: ${args.find((arg) => !allowedArgs.has(arg))}`);
@@ -82,7 +83,8 @@ async function main() {
   const focusedCanvas = args.includes("--focused-canvas");
   const focusedB4 = args.includes("--focused-b4");
   const focusedB6 = args.includes("--focused-b6");
-  if ([focusedB3, focusedIterate, focusedCanvas, focusedB4, focusedB6].filter(Boolean).length > 1) {
+  const focusedC1 = args.includes("--focused-c1");
+  if ([focusedB3, focusedIterate, focusedCanvas, focusedB4, focusedB6, focusedC1].filter(Boolean).length > 1) {
     throw new Error("Choose only one focused disposable gate");
   }
   const configured = process.env.DATABASE_URL;
@@ -156,6 +158,13 @@ async function main() {
                   "--testNamePattern=pin.*convergence",
                   "server/r7-snapshot-bootstrap-db.test.ts",
                 ]
+              : focusedC1
+                ? [
+                    "exec", "vitest", "run",
+                    "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
+                    "--testNamePattern=C1.*durable.*ownership",
+                    "server/boards.test.ts",
+                  ]
       : [
           "exec", "vitest", "run",
           "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
@@ -180,6 +189,8 @@ async function main() {
               ? "[disposable] R7-7B4 bounded projection resolver gate passed"
               : focusedB6
                 ? "[disposable] R7-7B6 bounded pin convergence gate passed"
+                : focusedC1
+                  ? "[disposable] C1 durable board ownership gate passed"
           : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed",
     );
   } finally {
