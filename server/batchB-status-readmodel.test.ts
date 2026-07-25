@@ -8,7 +8,6 @@
  *   mint-package result (executeMintPackage)    — minted is status truth, not the requested action
  *   picker (boardOps.listCastableModels)        — draft is status truth; unavailable rows never surface
  *   board fill (boardOps.fillFromLibrary)       — draft provenance is status truth
- *   registry (registry.lookup / registry.verify)— minted is status truth; the two agree
  *   export (generation.generatePdf)             — minted read-state + SEPARATE agencyId integrity
  *
  * Plus the agencyId-mismatch table: a stray ID on a draft never reads
@@ -25,7 +24,6 @@ vi.mock("./db", async (importOriginal) => {
     ...actual,
     getModelById: vi.fn(),
     getModelAssets: vi.fn().mockResolvedValue([]),
-    getModelByAgencyId: vi.fn(),
     getUserModels: vi.fn().mockResolvedValue([]),
     getHeadshotsForModels: vi.fn().mockResolvedValue(new Map()),
     getUserById: vi.fn(),
@@ -88,7 +86,6 @@ vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
 import {
   getModelById,
   getModelAssets,
-  getModelByAgencyId,
   getUserModels,
   getHeadshotsForModels,
   getUserById,
@@ -212,7 +209,6 @@ function snapshotState(over: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.mocked(getModelById).mockReset();
   vi.mocked(getModelAssets).mockReset().mockResolvedValue([]);
-  vi.mocked(getModelByAgencyId).mockReset();
   vi.mocked(getUserModels).mockReset().mockResolvedValue([]);
   vi.mocked(getHeadshotsForModels).mockReset().mockResolvedValue(new Map());
   vi.mocked(getBoardById).mockReset();
@@ -394,135 +390,9 @@ describe("fillFromLibrary stamps draft from status truth", () => {
   });
 });
 
-// ─── Registry — lookup and verify agree; locked is retrievable ─────────────
-
-describe("registry read model", () => {
-  it("uses the owner-scoped snapshot package and excludes newer ledger history", async () => {
-    vi.mocked(getModelByAgencyId).mockResolvedValue(
-      model({
-        userId: 9,
-        status: "active",
-        agencyId: "MOD-26-ABCDEF",
-        mintedAt: new Date(),
-      }) as never,
-    );
-    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
-    const state = snapshotState({
-      userId: 9,
-      status: "active",
-      agencyId: "MOD-26-ABCDEF",
-      mintedAt: new Date(),
-    });
-    state.ledger.assets.unshift(failedMarker);
-    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(state as never);
-
-    const caller = appRouter.createCaller(authCtx());
-    const result = await caller.registry.lookup({ agencyId: "MOD-26-ABCDEF" });
-
-    expect(captureSnapshotReadMode).toHaveBeenCalledWith(9);
-    expect(resolveEffectiveCastStateForRead).toHaveBeenCalledWith({
-      userId: 9,
-      modelId: 7,
-    });
-    expect(result).toMatchObject({
-      masterPrompt: "immutable prompt",
-      technicalSchema: { immutable: true },
-      preferences: { hair: "selected" },
-      assets: [{
-        viewType: "frontClose",
-        resolution: "1024x1024",
-        storageUrl: selectedHeadshot.storageUrl,
-      }],
-    });
-    expect(result.assets).toHaveLength(1);
-    expect(getModelAssets).not.toHaveBeenCalled();
-  });
-
-  it("rejects client-supplied registry read authority", async () => {
-    const caller = appRouter.createCaller(authCtx());
-    await expect(caller.registry.lookup({
-      agencyId: "MOD-26-ABCDEF",
-      readMode: "snapshot",
-    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(captureSnapshotReadMode).not.toHaveBeenCalled();
-  });
-
-  it("never falls back to the public ledger when snapshot resolution refuses", async () => {
-    vi.mocked(getModelByAgencyId).mockResolvedValue(
-      model({
-        status: "active",
-        agencyId: "MOD-26-ABCDEF",
-        mintedAt: new Date(),
-      }) as never,
-    );
-    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
-    vi.mocked(resolveEffectiveCastStateForRead).mockRejectedValue(
-      new Error("corrupt snapshot"),
-    );
-
-    const caller = appRouter.createCaller(authCtx());
-    await expect(caller.registry.lookup({ agencyId: "MOD-26-ABCDEF" }))
-      .rejects.toThrow("corrupt snapshot");
-    expect(getModelAssets).not.toHaveBeenCalled();
-  });
-
-  it("lookup returns a legacy LOCKED identity (minted by status)", async () => {
-    vi.mocked(getModelByAgencyId).mockResolvedValue(
-      model({ status: "locked", agencyId: "MOD-26-ABCDEF", mintedAt: new Date() }) as never,
-    );
-    vi.mocked(getModelAssets).mockResolvedValue([headshot] as never);
-    const caller = appRouter.createCaller(authCtx());
-    const res = await caller.registry.lookup({ agencyId: "MOD-26-ABCDEF" });
-    expect(res.agencyId).toBe("MOD-26-ABCDEF");
-  });
-
-  it("lookup refuses a draft carrying a stray agencyId (NOT_FOUND, never a bundle)", async () => {
-    // hex-valid ID so the request passes input validation and reaches the read model
-    vi.mocked(getModelByAgencyId).mockResolvedValue(model({ agencyId: "MOD-26-0AB1C2" }) as never);
-    const caller = appRouter.createCaller(authCtx());
-    await expect(caller.registry.lookup({ agencyId: "MOD-26-0AB1C2" })).rejects.toMatchObject({ code: "NOT_FOUND" });
-  });
-
-  it("lookup refuses an archived identity even with its ID intact", async () => {
-    vi.mocked(getModelByAgencyId).mockResolvedValue(
-      model({ status: "archived", agencyId: "MOD-26-ABCDEF", mintedAt: new Date() }) as never,
-    );
-    const caller = appRouter.createCaller(authCtx());
-    await expect(caller.registry.lookup({ agencyId: "MOD-26-ABCDEF" })).rejects.toMatchObject({ code: "NOT_FOUND" });
-  });
-
-  it("verify agrees with lookup for all four statuses — non-minted rows are PUBLICLY ABSENT", async () => {
-    // Review correction 2: verify must not leak the existence of rows that
-    // lookup hides. Draft/archived/unknown return the exact same shape as a
-    // row that does not exist: exists:false, minted:false, no timestamp.
-    const caller = appRouter.createCaller(authCtx());
-    const mintedAt = new Date();
-    const table: Array<[string, boolean]> = [
-      ["draft", false], // stray-ID draft: publicly absent
-      ["active", true],
-      ["locked", true],
-      ["archived", false], // FR-4: deleted everywhere, existence included
-      ["somefuturestatus", false], // unknown: conservative absence
-    ];
-    for (const [status, minted] of table) {
-      vi.mocked(getModelByAgencyId).mockResolvedValue(
-        model({ status, agencyId: "MOD-26-ABCDEF", mintedAt }) as never,
-      );
-      const res = await caller.registry.verify({ agencyId: "MOD-26-ABCDEF" });
-      expect(res.exists, `verify exists for ${status}`).toBe(minted);
-      expect(res.minted, `verify minted for ${status}`).toBe(minted);
-      expect("mintedAt" in res ? res.mintedAt : undefined, `verify mintedAt for ${status}`).toEqual(
-        minted ? mintedAt : undefined,
-      );
-    }
-    // The hidden-row shape is byte-identical to the no-row shape
-    vi.mocked(getModelByAgencyId).mockResolvedValue(
-      model({ status: "archived", agencyId: "MOD-26-ABCDEF", mintedAt }) as never,
-    );
-    const hidden = await caller.registry.verify({ agencyId: "MOD-26-ABCDEF" });
-    vi.mocked(getModelByAgencyId).mockResolvedValue(null as never);
-    const absent = await caller.registry.verify({ agencyId: "MOD-26-ABCDEF" });
-    expect(hidden).toEqual(absent);
+describe("public registry removal", () => {
+  it("does not register an unauthenticated registry namespace", () => {
+    expect(Object.keys(appRouter._def.record)).not.toContain("registry");
   });
 });
 

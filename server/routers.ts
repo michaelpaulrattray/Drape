@@ -13,7 +13,6 @@ import { waitlistRouter } from "./routes/waitlist";
 import { newsletterRouter } from "./routes/newsletter";
 import { modelsRouter } from "./routes/models";
 import { profileRouter } from "./routes/profile";
-import { registryRouter } from "./routes/registry";
 import { generationRouter } from "./routes/generation";
 import { billingRouter } from "./routes/billing";
 import { usageRouter } from "./routes/usage";
@@ -41,7 +40,6 @@ export const appRouter = router({
   models: modelsRouter,
   generation: generationRouter,
   profile: profileRouter,
-  registry: registryRouter,
   billing: billingRouter,
   usage: usageRouter,
   newsletter: newsletterRouter,

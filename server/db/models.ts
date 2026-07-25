@@ -54,18 +54,6 @@ export async function getModelById(modelId: number) {
   return result.length > 0 ? result[0] : null;
 }
 
-export async function getModelByAgencyId(agencyId: string) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(models)
-    .where(eq(models.agencyId, agencyId))
-    .limit(1);
-  return result.length > 0 ? result[0] : null;
-}
-
 export async function getUserModels(userId: number, limit: number = 50) {
   const db = await getDb();
   if (!db) return [];

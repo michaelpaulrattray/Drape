@@ -270,7 +270,6 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       "consumer_package_state",
       "consumer_mint_plan",
       "consumer_export",
-      "consumer_models_registry",
     ]);
     expect(report.legacyPackage.displayedHeadshotAssetId).toBe(base.anchorAssetId);
     expect(report.legacyPackage.hash).not.toBe(report.snapshotPackage.hash);
@@ -312,7 +311,6 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       "consumer_mint_plan",
       "consumer_refresh_plan",
       "consumer_export",
-      "consumer_models_registry",
     ]);
     await expect(compareModelSnapshotShadow({
       userId: foreignUserId,

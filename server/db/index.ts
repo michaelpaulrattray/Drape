@@ -50,7 +50,6 @@ export {
 export {
   createModel,
   getModelById,
-  getModelByAgencyId,
   getUserModels,
   getModelStatusesIn,
   updateModel,

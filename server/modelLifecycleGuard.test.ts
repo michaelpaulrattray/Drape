@@ -52,7 +52,6 @@ const CLIENT_READ_SCOPE = [
 const SERVER_READ_SCOPE = [
   "server/casting/mintPackage.ts",
   "server/lib/boardOps.ts",
-  "server/routes/registry.ts",
   "server/routes/generation/castingExport.ts",
   "server/db/models.ts",
   "server/db/wardrobe.ts",
@@ -130,24 +129,14 @@ describe("model lifecycle literal guard (Batch B)", () => {
     }
   });
 
-  it("literal minted:true exists only where proven — the mint ceremony's result and verify's guarded branch", () => {
-    // registry: verify's minted branch is only reachable AFTER the
-    // !isModelMintedStatus guard returned the public-absence shape.
-    const pins: Record<string, number> = {
-      "server/casting/mintPackage.ts": 0,
-      "server/routes/registry.ts": 1,
-    };
+  it("literal minted:true does not replace the shared lifecycle predicate", () => {
     for (const rel of SERVER_READ_SCOPE) {
       const src = read(rel);
       expect(
         count(src, /minted:\s*true\b/g),
         `${rel}: minted:true may exist only where the mint state is proven`,
-      ).toBe(pins[rel] ?? 0);
+      ).toBe(0);
     }
-    // The registry pin stays honest only while the guard clause precedes it
-    const registry = read("server/routes/registry.ts");
-    expect(registry.indexOf("!isModelMintedStatus(model.status)")).toBeGreaterThan(-1);
-    expect(registry.indexOf("!isModelMintedStatus(model.status)")).toBeLessThan(registry.indexOf("minted: true"));
   });
 
   it("the gallery hardcode stays dead: no isMinted:true literal in the studio store or the gate", () => {
@@ -188,7 +177,6 @@ describe("model lifecycle literal guard (Batch B)", () => {
       "client/src/features/boards/components/NodeInfoPanel.tsx",
       "server/casting/mintPackage.ts",
       "server/lib/boardOps.ts",
-      "server/routes/registry.ts",
       "server/db/models.ts",
     ];
     for (const rel of mustImport) {

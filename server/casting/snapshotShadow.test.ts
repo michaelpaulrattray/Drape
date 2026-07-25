@@ -9,8 +9,11 @@ import type {
 import { buildIdentityAnchor } from "./geminiClient";
 import {
   compareSnapshotShadowState,
+  SNAPSHOT_SHADOW_MISMATCH_KINDS,
+  SNAPSHOT_SHADOW_SURFACES,
   type SnapshotShadowState,
 } from "./snapshotShadow";
+import { SNAPSHOT_CONSUMER_SURFACES } from "./snapshotConsumerShadow";
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -119,6 +122,26 @@ function parityState(): SnapshotShadowState {
 }
 
 describe("R7-7A4 snapshot shadow comparator", () => {
+  it("excludes the retired public registry while preserving every live consumer", () => {
+    expect(SNAPSHOT_CONSUMER_SURFACES).toEqual([
+      "casting_package_state",
+      "casting_mint_plan",
+      "casting_refresh_plan",
+      "casting_export",
+      "board_library",
+    ]);
+    expect(SNAPSHOT_SHADOW_SURFACES).toEqual([
+      "identity_profile",
+      "casting_package_state",
+      "casting_mint_plan",
+      "casting_refresh_plan",
+      "casting_export",
+      "board_library",
+      "mint_seal",
+    ]);
+    expect(SNAPSHOT_SHADOW_MISMATCH_KINDS).not.toContain("consumer_models_registry");
+  });
+
   it("reports parity using only ids, counts, enums, booleans and hashes", () => {
     const report = compareSnapshotShadowState(parityState());
     expect(report).toMatchObject({
@@ -193,7 +216,6 @@ describe("R7-7A4 snapshot shadow comparator", () => {
       "consumer_refresh_plan",
       "consumer_export",
       "consumer_board_library",
-      "consumer_models_registry",
     ]));
     expect(JSON.stringify(report)).not.toContain("drifted identity");
   });
@@ -238,7 +260,6 @@ describe("R7-7A4 snapshot shadow comparator", () => {
     expect(report.consumerParity.casting_mint_plan.parity).toBe(true);
     expect(report.consumerParity.casting_export.parity).toBe(true);
     expect(report.consumerParity.board_library.parity).toBe(true);
-    expect(report.consumerParity.models_registry.parity).toBe(true);
   });
 
   it("fails closed on invalid selections and incomplete minted seals", () => {

@@ -23,7 +23,6 @@ import {
   getUserMintedModelsWithThumbnailForRead,
   projectEffectiveBoardModelInfo,
   projectEffectiveModelForClient,
-  projectEffectiveRegistryBundle,
 } from "./casting/modelReadProjections";
 import { buildHistoryFromAssets } from "../client/src/features/casting/utils/buildHistoryFromAssets";
 
@@ -187,29 +186,8 @@ describe("snapshot thumbnail projections", () => {
 });
 
 describe("selected package hydration", () => {
-  it("projects registry and board model info from selected immutable truth only", () => {
+  it("projects board model info from selected immutable truth only", () => {
     const state = currentState() as never;
-
-    expect(projectEffectiveRegistryBundle(state)).toEqual({
-      agencyId: mutableModel.agencyId,
-      name: mutableModel.name,
-      masterPrompt: "immutable prompt",
-      technicalSchema: { immutable: true },
-      preferences: { hair: "immutable" },
-      mintedAt: mutableModel.mintedAt,
-      assets: [
-        {
-          viewType: "frontClose",
-          resolution: "1024x1024",
-          storageUrl: selectedFront.storageUrl,
-        },
-        {
-          viewType: "frontFull",
-          resolution: "1024x1024",
-          storageUrl: selectedFull.storageUrl,
-        },
-      ],
-    });
 
     expect(projectEffectiveBoardModelInfo(state)).toEqual({
       model: expect.objectContaining({

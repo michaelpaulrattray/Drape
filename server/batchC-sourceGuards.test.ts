@@ -341,18 +341,13 @@ describe("B4 account-owned model projections stay snapshot-selected", () => {
     }
   });
 
-  it("projects registry and board info from selected immutable truth", () => {
-    const registry = serverFile("routes/registry.ts");
-    const lookup = registry.slice(
-      registry.indexOf("lookup: publicProcedure"),
-      registry.indexOf("// Verify if a model ID exists"),
-    );
-    expect(lookup).toContain("const readMode = captureSnapshotReadMode(model.userId)");
-    expect(lookup).toContain("resolveEffectiveCastStateForRead");
-    expect(lookup).toContain("projectEffectiveRegistryBundle");
-    expect(lookup).toContain("getModelAssets(model.id)");
-    expect(lookup).not.toMatch(/input\.(readMode|snapshotId|packageSnapshotId|identitySnapshotId)/);
+  it("keeps the dormant public model registry deleted", () => {
+    expect(fs.existsSync(path.join(__dirname, "routes", "registry.ts"))).toBe(false);
+    const routers = serverFile("routers.ts");
+    expect(routers).not.toMatch(/registryRouter|registry:\s*registryRouter/);
+  });
 
+  it("projects board info from selected immutable truth", () => {
     const boards = serverFile("routes/boards.ts");
     const info = boards.slice(boards.indexOf("getItemModelInfo: protectedProcedure"));
     expect(info).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
@@ -362,7 +357,9 @@ describe("B4 account-owned model projections stay snapshot-selected", () => {
     expect(info).not.toMatch(/input\.(readMode|snapshotId|packageSnapshotId|identitySnapshotId)/);
 
     const projection = serverFile("casting/modelReadProjections.ts");
-    expect(projection).toContain("assets: state.selectedViews.map");
+    expect(projection).toContain(
+      "assetCount: state.status === \"current\" ? state.selectedViews.length : 0",
+    );
     expect(projection).toContain("latestAssetId: state.status === \"current\" ? state.displayedHeadshot.id : null");
   });
 });

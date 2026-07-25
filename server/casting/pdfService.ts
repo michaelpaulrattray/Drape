@@ -807,7 +807,7 @@ function createLegalPage(doc: jsPDF, data: PdfModelData, pageNum: number, totalP
     ['PERMITTED USES', 'The Owner may use this digital identity for: advertising and marketing campaigns, editorial content and publications, social media and digital platforms, merchandise and product visualization, film, television, and video production, virtual and augmented reality applications, and any derivative works.'],
     ['RESTRICTIONS', 'This digital identity may not be used to: create defamatory, illegal, or harmful content, impersonate real individuals without consent, generate content that violates applicable laws, or claim the identity represents a real human being in contexts where such representation would be misleading.'],
     ['AUTHENTICITY DECLARATION', 'This identity is a procedurally generated digital composite created using artificial intelligence. It does not represent any real person, living or deceased. The unique characteristics of this identity are the result of algorithmic generation and do not infringe upon any individual\'s likeness rights.'],
-    ['PROVENANCE', 'This identity was generated and minted through Drape\u2122 Casting Studio. The generation parameters, timestamps, and cryptographic signatures are permanently recorded and can be verified against the Drape\u2122 registry.'],
+    ['PROVENANCE', 'This identity was generated and minted through Drape\u2122 Casting Studio. Its generation parameters and timestamps are recorded in Drape\u2122\u2019s internal audit trail.'],
   ];
 
   let legalY = 40;

@@ -58,7 +58,6 @@ export const SNAPSHOT_SHADOW_MISMATCH_KINDS = [
   "consumer_refresh_plan",
   "consumer_export",
   "consumer_board_library",
-  "consumer_models_registry",
 ] as const;
 
 export type SnapshotShadowMismatchKind = typeof SNAPSHOT_SHADOW_MISMATCH_KINDS[number];
@@ -70,7 +69,6 @@ export const SNAPSHOT_SHADOW_SURFACES = [
   "casting_refresh_plan",
   "casting_export",
   "board_library",
-  "models_registry",
   "mint_seal",
 ] as const;
 
@@ -118,28 +116,24 @@ const MISMATCH_SURFACES: Record<SnapshotShadowMismatchKind, readonly SnapshotSha
     "casting_mint_plan",
     "casting_refresh_plan",
     "casting_export",
-    "models_registry",
   ],
   identity_text_hash: [
     "identity_profile",
     "casting_mint_plan",
     "casting_refresh_plan",
     "casting_export",
-    "models_registry",
   ],
   identity_anchor: [
     "identity_profile",
     "casting_mint_plan",
     "casting_refresh_plan",
     "casting_export",
-    "models_registry",
   ],
   displayed_headshot: [
     "casting_package_state",
     "casting_mint_plan",
     "casting_export",
     "board_library",
-    "models_registry",
   ],
   slot_missing_snapshot: [
     "casting_package_state",
@@ -147,7 +141,6 @@ const MISMATCH_SURFACES: Record<SnapshotShadowMismatchKind, readonly SnapshotSha
     "casting_refresh_plan",
     "casting_export",
     "board_library",
-    "models_registry",
   ],
   slot_missing_legacy: [
     "casting_package_state",
@@ -155,7 +148,6 @@ const MISMATCH_SURFACES: Record<SnapshotShadowMismatchKind, readonly SnapshotSha
     "casting_refresh_plan",
     "casting_export",
     "board_library",
-    "models_registry",
   ],
   slot_asset: [
     "casting_package_state",
@@ -163,7 +155,6 @@ const MISMATCH_SURFACES: Record<SnapshotShadowMismatchKind, readonly SnapshotSha
     "casting_refresh_plan",
     "casting_export",
     "board_library",
-    "models_registry",
   ],
   slot_compatibility: [
     "casting_package_state",
@@ -174,26 +165,24 @@ const MISMATCH_SURFACES: Record<SnapshotShadowMismatchKind, readonly SnapshotSha
   ],
   snapshot_selection_invalid: ALL_SHADOW_SURFACES,
   snapshot_duplicate_selection: ALL_SHADOW_SURFACES,
-  seal_pointer_pair: ["casting_mint_plan", "casting_export", "models_registry", "mint_seal"],
-  mint_seal_missing: ["casting_mint_plan", "casting_export", "models_registry", "mint_seal"],
-  draft_seal_present: ["casting_mint_plan", "casting_export", "models_registry", "mint_seal"],
-  sealed_package_missing: ["casting_export", "models_registry", "mint_seal"],
-  sealed_identity_missing: ["casting_export", "models_registry", "mint_seal"],
+  seal_pointer_pair: ["casting_mint_plan", "casting_export", "mint_seal"],
+  mint_seal_missing: ["casting_mint_plan", "casting_export", "mint_seal"],
+  draft_seal_present: ["casting_mint_plan", "casting_export", "mint_seal"],
+  sealed_package_missing: ["casting_export", "mint_seal"],
+  sealed_identity_missing: ["casting_export", "mint_seal"],
   sealed_identity_mismatch: [
     "identity_profile",
     "casting_mint_plan",
     "casting_refresh_plan",
     "casting_export",
-    "models_registry",
     "mint_seal",
   ],
-  sealed_package_identity_mismatch: ["casting_export", "models_registry", "mint_seal"],
+  sealed_package_identity_mismatch: ["casting_export", "mint_seal"],
   consumer_package_state: ["casting_package_state"],
   consumer_mint_plan: ["casting_mint_plan"],
   consumer_refresh_plan: ["casting_refresh_plan"],
   consumer_export: ["casting_export"],
   consumer_board_library: ["board_library"],
-  consumer_models_registry: ["models_registry"],
 };
 
 export function affectedSnapshotShadowSurfaces(
@@ -396,7 +385,6 @@ export function compareSnapshotShadowState(input: SnapshotShadowState): Snapshot
   if (!consumerParity.casting_refresh_plan.parity) mismatch.add("consumer_refresh_plan");
   if (!consumerParity.casting_export.parity) mismatch.add("consumer_export");
   if (!consumerParity.board_library.parity) mismatch.add("consumer_board_library");
-  if (!consumerParity.models_registry.parity) mismatch.add("consumer_models_registry");
 
   const legacyRows = derived?.slots ?? [];
   const snapshotRows = input.currentSlots.map((slot) => ({

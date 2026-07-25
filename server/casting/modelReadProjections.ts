@@ -59,24 +59,6 @@ export function projectEffectiveModelForClient(state: EffectiveCastState) {
   };
 }
 
-/** Public registry bundle: selected package only, never ledger history/markers. */
-export function projectEffectiveRegistryBundle(state: EffectiveCastState) {
-  if (state.status !== "current") return null;
-  return {
-    agencyId: state.model.agencyId,
-    name: state.model.name,
-    masterPrompt: state.identity.masterPrompt,
-    technicalSchema: state.identity.technicalSchema,
-    preferences: state.identity.preferences,
-    mintedAt: state.model.mintedAt,
-    assets: state.selectedViews.map(({ asset }) => ({
-      viewType: asset.viewType,
-      resolution: asset.resolution,
-      storageUrl: asset.storageUrl,
-    })),
-  };
-}
-
 /**
  * Board info projection. The historical field name `latestAssetId` remains for
  * wire compatibility, but snapshot mode returns the selected frontClose id.

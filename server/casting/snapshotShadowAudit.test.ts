@@ -74,7 +74,6 @@ describe("R7-7A4 snapshot shadow cohort audit", () => {
       "casting_refresh_plan",
       "casting_export",
       "board_library",
-      "models_registry",
       "mint_seal",
     ]);
     expect(result.summary.affectedSurfaces.identity_profile).toBe(1);

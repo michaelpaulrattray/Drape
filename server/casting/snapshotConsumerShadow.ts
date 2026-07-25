@@ -27,13 +27,15 @@ import { tierCosts, type PackageSlot } from "./mintPackage";
 import { computeRefreshPlan } from "./refreshSlots";
 import type { SnapshotShadowState } from "./snapshotShadow";
 
+// H6 retired the unauthenticated model registry. Its digest was byte-for-byte
+// identical to casting_export, so removing it drops no parity signal; this list
+// now contains runtime consumers only.
 export const SNAPSHOT_CONSUMER_SURFACES = [
   "casting_package_state",
   "casting_mint_plan",
   "casting_refresh_plan",
   "casting_export",
   "board_library",
-  "models_registry",
 ] as const;
 
 export type SnapshotConsumerSurface = typeof SNAPSHOT_CONSUMER_SURFACES[number];
@@ -344,11 +346,5 @@ export function compareSnapshotConsumers(state: SnapshotShadowState): SnapshotCo
         : null,
     ),
     board_library: digest(legacyFront, snapshotFront),
-    models_registry: digest(
-      legacyManifest && legacyIdentity ? { identity: legacyIdentity, slots: legacyManifest } : null,
-      snapshotManifest && snapshotIdentity
-        ? { identity: snapshotIdentity, slots: snapshotManifest }
-        : null,
-    ),
   };
 }
