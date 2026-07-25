@@ -1,8 +1,8 @@
 # Drape security audit — full review and remediation plan
 
 **Status:** current security document for Drape. Supersedes `docs/archive/SECURITY_AUDIT.md` (2026-02-06) and `docs/archive/security-audit.md` (2026-07-09), both now deleted — recoverable from git history if the originals are ever needed.
-**Implementation status:** C1, C2, H1, H6, and M7 option 1 are implemented and committed on local `main`. They have not been pushed or deployed by this workstream; production status must be verified separately before any finding is called closed in production. All remaining findings must be resolved or explicitly accepted before the invite gate opens.
-**Audit date:** 2026-07-25. **Branch:** `main`. **Method:** read-only source review of the server, plus `pnpm audit`. Independent second review was attempted and could not be completed, so every finding here rests on a single reviewer — treat the "Verified healthy" section in particular as unconfirmed by a second pair of eyes.
+**Implementation status:** C1, C2, H1, H6, M7 option 1, and M10 are implemented and committed on local `main`. The C1 follow-through also closes the remaining known guard-dependent Canvas writes and scopes Wardrobe session access at the durable statement; R7's outward account and Cast reads now use positive response projections. These commits have not been pushed or deployed by this workstream; production status must be verified separately before any finding is called closed in production. All remaining findings must be resolved or explicitly accepted before the invite gate opens.
+**Audit date:** 2026-07-25. **Branch:** `main`. **Method:** read-only source review of the server, plus `pnpm audit`. The original audit findings came from one reviewer; the implementation slices recorded in the ledger were subsequently reviewed independently and tested as described in their commits. Findings that remain open still need their own implementation review.
 
 ---
 
@@ -20,11 +20,14 @@ Everything here is verified against the code. Two concerns raised during review 
 
 | Finding | Local implementation | Production |
 |---|---|---|
-| C1 — board child-ID ownership | `705eeb3` — durable owner/board-scoped locks and writes, exact-count refusal, cross-tenant DB tests | Not deployed or verified by this documentation update |
+| C1 — board child-ID ownership | `705eeb3`, completed by `3ef6dd9` and `71c0459` — all known Canvas child writes now prove ownership in the durable statement; mixed/foreign cohorts refuse atomically, and cross-tenant DB tests prove victim rows remain unchanged | Not deployed or verified by this documentation update |
 | C2 — image proxy SSRF | `6d23000` — authentication, per-user rate limit, redirect refusal, timeout, byte cap, streamed-size enforcement, and magic-byte validation through shared fetch authority | Not deployed or verified by this documentation update |
 | H1 — spoofable client IP | `6d23000` — Railway one-hop trust configuration plus `req.ip`-only rate-limit identity | Not deployed or verified by this documentation update |
 | H6 — public Cast registry | `cc45ba7` — route, router namespace, DB lookup, projection, and duplicate parity consumer removed; absence tests added | Not deployed or verified by this documentation update |
 | M7 option 1 — guessable storage keys | `2e25674` — all current server storage writers use `node:crypto` `randomUUID()`; inventory guard rejects weak future writers | Not deployed or verified by this documentation update |
+| M10 — full user row in `auth.me` | `8ccfece` — response replaced with an explicit six-field allowlist; exact-key and sentinel tests keep future user-table columns server-only | Not deployed or verified by this documentation update |
+| Invariant 1 extension — Wardrobe session ownership | `3ef6dd9` — session reads and writes carry authenticated ownership into the database statement; foreign sessions are indistinguishable from missing ones | Not deployed or verified by this documentation update |
+| Invariant 8 — explicit Cast read projections | `def36e6` — `models.list`, R6 `models.get`, and snapshot `models.get` return positive model/asset allowlists instead of spreading database rows | Not deployed or verified by this documentation update |
 
 The finding narratives below preserve the audit-baseline evidence. Each implemented finding carries an explicit local status note; do not read the historical vulnerable-code description as the current local implementation.
 
@@ -57,7 +60,7 @@ Timing key: **During R7** = reachable without an account and isolated from casti
 
 ### C1 — Cross-tenant board destruction (IDOR) · CRITICAL · **IMPLEMENTED LOCALLY 2026-07-25 — pending deployment**
 
-**Current local status.** Fixed in `705eeb3`. The four durable database helpers now lock and prove the caller-owned board, re-anchor every child id to that board in the same statement, reject duplicates, require exact cohort/write counts, and roll back mixed or incomplete batches. Cross-tenant disposable-MySQL tests prove refusal and re-read the victim rows unchanged; legitimate owner behavior is also covered.
+**Current local status.** The original four vulnerable procedures were fixed in `705eeb3`. Follow-through commits `3ef6dd9` and `71c0459` applied the same durable-statement law to the remaining known Canvas child writes, including metadata, status, presentation-pin, delete, version-create, and version-restore paths. The helpers prove the caller-owned parent and re-anchor every client child id in the statement that reads or writes it; bounded batches reject duplicates and require exact cohort/write counts. Cross-tenant disposable-MySQL tests prove refusal and re-read victim rows unchanged, while legitimate owner behavior is also covered. Router guards may remain for product copy, but they are no longer the authority boundary for Canvas writes.
 
 Four procedures verify you own the *board*, then pass client-supplied *child ids* straight into queries that filter on the child id alone:
 
@@ -349,7 +352,7 @@ Target length: one screen. The test of success is that a future agent can answer
 
 | Phase | Items | When |
 |---|---|---|
-| 0 | C1, C2, H1, H6, M7 option 1 | Implemented and committed on local `main`; push/deploy and production verification remain separate |
+| 0 | C1 and its Canvas/Wardrobe ownership follow-through, C2, H1, H6, M7 option 1, M10, and R7 explicit Cast projections | Implemented and committed on local `main`; push/deploy and production verification remain separate |
 | 1 | H3 (allowlist fails closed), H5 (wire up velocity limits), H2 (IP blocking decision), H4 (Slack approval decision) | Immediately post-R7 |
 | 2 | M1 (sameSite), M2 (upload sizes), M5 (appId), L3, L4 | Post-R7 |
 | 3 | Access-control matrix in CLAUDE.md, `.strict()` on public/auth/billing schemas, consistent 429s | Post-R7, alongside phase 2 |
@@ -410,9 +413,11 @@ A cell-by-cell verification of the capability grid against the code (performed w
 
 **Fix.** Drop `resultUrl` (and raw `metadata`) from the moderator projection and CSV, or replace with a boolean `hasResult`. Whether staff ever need image access for abuse review is a founder decision; the default per the 2026-07-25 ruling is no.
 
-### M10 — `auth.me` serves the full users row, including `passwordHash` · MEDIUM · **WORKING-TREE FIX EXISTS; NOT YET REVIEWED OR COMMITTED**
+### M10 — `auth.me` served the full users row, including `passwordHash` · MEDIUM · **IMPLEMENTED LOCALLY 2026-07-25 — pending deployment**
 
-`auth.me` returns `ctx.user` verbatim in committed code, and `ctx.user` is a full `SELECT *` row (`server/db/users.ts:116`) — so every session check ships the user's own bcrypt hash to the browser. Self-only (no cross-user exposure), but a free offline-cracking target in any logged, cached, or intercepted response. An unstaged working-tree change in `server/routes/auth.ts` strips `passwordHash`, but it must not be treated as delivered until separately reviewed and committed. The moderator/admin user queries were checked and are safe — they use explicit column projections (`server/db/admin.ts:46,165`). Root cause is the bare-`select()`-to-serializer pattern; CLAUDE.md invariant 8 forbids it.
+**Current local status.** Fixed in `8ccfece`. `auth.me` now returns a positive allowlist of exactly `name`, `email`, `avatarUrl`, `role`, `approved`, and `canvasIntroSeen`. It does not spread or return the database row. Behavioral tests populate every server-only user field with sentinels, assert the exact response keys, and prove unauthenticated callers still receive `null`. Because the tRPC response type is inferred from this projection, client code cannot silently depend on a removed private field.
+
+At the audit baseline, `auth.me` returned `ctx.user` verbatim and `ctx.user` was a full `SELECT *` row (`server/db/users.ts:116`), so every session check shipped the user's own bcrypt hash and other internal account fields to the browser. The exposure was self-only, but it created an unnecessary offline-cracking target in any logged, cached, or intercepted response. The moderator/admin user queries were checked and remain explicit projections (`server/db/admin.ts:46,165`). The root cause was the bare-row-to-serializer pattern; CLAUDE.md invariant 8 now forbids it.
 
 ### M11 — The "immutable audit log" provides no tamper evidence · MEDIUM · Post-R7, with the H4 decision
 
