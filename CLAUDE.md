@@ -66,6 +66,69 @@ Two login paths, both ending in a JWT (jose, HS256, signed with `JWT_SECRET`) se
 
 `sdk.ts` handles session JWT sign/verify only (no external OAuth server). `verifySession` requires a non-empty `appId` in the JWT payload, which is why `VITE_APP_ID` must be set. A session whose user is missing from the DB is rejected outright. Owner notifications (`_core/notification.ts`) go to the Slack webhooks (#admin-actions, falling back to #security-alerts) and log a warning when none is configured.
 
+## Access control — expected behaviour
+
+Who may do what, and **where that must be enforced**. Current findings: `docs/specs/SECURITY_AUDIT_2026-07-25.md`.
+
+### Capability grid
+
+| Resource | Anonymous | Signed in, unapproved | Signed in, approved | Moderator | Admin |
+|---|---|---|---|---|---|
+| Models / casts | none | none | read/write/delete own | generation metadata only¹ | same as moderator¹ |
+| Boards, items, edges | none | none | read/write/delete own | none | aggregate counts only |
+| Wardrobe | none | none | read/write/delete own | none | aggregate counts only |
+| Credits / billing | price lists only | none | read own, checkout own | read any transactions (support) | adjust any |
+| Registry (minted casts) | none — route deleted² | none | none | none | none |
+| Audit logs | none | none | none | read any | read any |
+| Admin actions | none | none | none | none | write any |
+
+¹ Admins pass the moderator middleware (`server/_core/trpc.ts:131`), so they inherit the entire moderator surface — there are no separate admin content endpoints for casts, boards or wardrobe. **Known violation:** the moderator generation history and its CSV export currently return `resultUrl` — the image itself, on a permanent public URL. See "Currently not enforced".
+² The former `registry.lookup` / `registry.verify` namespace has been deleted from the root router. Absence tests prevent it from being silently restored.
+
+Resources not in the grid (profile, referrals, bug reports, invite codes, announcements…) default to **owner-only for users, none for staff**; anything broader is a deliberate, documented exception.
+
+Unapproved accounts are *intended* to be able to sign in and redeem an access code, and nothing else — no generation, no board writes, no billing. **This is not currently enforced on the API.** `requireUser` (`server/_core/trpc.ts:32`) checks suspension and lockout but not `approved`; the only approval checks are on the two login screens, and `/api/auth/verify-email` issues a session without one. A signed-in unapproved user can call every protected procedure. See M8. Do not treat the beta gate as an access-control boundary until that is fixed.
+
+**"Metadata only" is a boundary, not a convenience.** Staff roles may see that a generation happened — kind, timestamp, credit cost, status — for support, billing and abuse work. They must not be given the creative content: `masterPrompt`, `technicalSchema`, `preferences`, or the images. Do not add those fields to a moderator or admin projection. (The prompt half of this boundary holds today; the image half does not — see "Currently not enforced".)
+
+### A customer's cast is their work — founder ruling, 2026-07-25
+
+> *"If a marketing team or content creator comes on the platform and makes a model that's theirs, no one should be able to steal or copy that work."*
+
+This is a product commitment, and it governs anything that could expose a cast:
+
+- **Never expose `masterPrompt`, `technicalSchema` or `preferences` outside the owning account.** Together they are the complete recipe for reproducing the cast. This is the single most sensitive field group in the product — treat it the way you would treat a password, not the way you would treat a caption.
+- **The former public Cast registry is deleted.** `registry.lookup`, `registry.verify`, their root-router namespace, and the projection that exposed identity documents are gone. Do not reinstate a public registry without an explicit founder decision on shape.
+- **Generated images sit at permanently public R2 URLs.** By design (`server/storage.ts:5`), because URLs are persisted in database records. In practice a cast's images are protected only by the URL being hard to guess, and anyone who ever obtains one keeps access until the object is deleted. Every current `storagePut` writer uses `crypto.randomUUID()` and a repository-wide guard rejects `Math.random()` in storage writers. See M7 — whether images move behind authentication is still an open decision.
+
+### Enforcement invariants
+
+The grid says *what*; these say *where*. The grid alone would not have caught any of the defects found in July 2026 — every one of those procedures "knew" the rule and applied it in the wrong place.
+
+1. **Scope the owner in the statement that reads or writes.** A `SELECT` to check ownership followed by a write keyed on id alone is insufficient — it leaves a check-then-write race and it is what went wrong. Pass `ownerId` into the db helper and put it in the `WHERE`, or scope through the parent with a join or subquery. (D-64, `docs/specs/DECISION_LOG.md:669`.)
+2. **Re-anchor child ids to the owned parent in that same statement.** Verifying `boardId` does not validate the `itemIds` sent alongside it.
+3. **`userId` always comes from `ctx.user.id`** — never from procedure input. Applies to record scoping, credit spend, quota, and rate-limit keys.
+4. **`.strict()` on every input schema**, so unknown fields are rejected rather than silently dropped. (Required on all new code and all public/auth/billing schemas now; legacy coverage is ~36 of 210 — see M4.)
+5. **Public endpoints are an enumerated allowlist.** Each is rate-limited, `.strict()`-validated, and structurally unable to mutate another user's data. Adding one is a deliberate decision, not a default. The current list (verified against local `main` on 2026-07-25): tRPC `system.health`, `auth.me`/`logout`, `billing.getPlans`, `credits.getCosts`, `generation.castingExport.costs`, `announcements.getActive`, `waitlist.join`/`getStats`, `newsletter.subscribe`, `access.validate`, `referral.validate`; Express: the auth routes, `/api/auth/verify-email`, `/api/health` (IP-rate-limited), `/api/hero/*`, `/api/webhooks/stripe`, `/api/slack/interactions`. `/api/image-proxy` is authenticated and user-rate-limited; the former registry namespace is absent.
+6. **Rate limits return a real `TOO_MANY_REQUESTS`**, not a 200 carrying an error field the client cannot distinguish from a validation failure.
+7. **A control that is not invoked does not exist.** If you add a protection, something must call it on the request path, a test must prove it *blocks*, and it must refuse — not allow — when a dependency is missing or unconfigured.
+8. **Read paths return an explicit projection.** Never let a bare `select()` or a spread DB row cross the serialization boundary — that is how `passwordHash` reached `auth.me` and image URLs reached the moderator surface. Sensitive field groups stay out by construction, not by callers remembering to omit them.
+9. **Every route that mints a session cookie enforces the same gates as login.** `/api/auth/verify-email` issuing sessions without the approval check (M8) is the counterexample. A new issuance site is an enumerated decision, like a new public endpoint.
+
+### Currently not enforced — do not rely on these
+
+Documented and believed working; verified inert. Fixes are queued post-R7:
+
+- **The staff image boundary** — `moderator.getUserGenerationHistory` and `moderatorExports.exportUserGenerationHistoryCsv` return `resultUrl` (permanent public image URLs) for any user's generations. Prompts do not leak; images do.
+- **Admin allowlist** (`server/security/adminSecurity.ts`) — admits everyone when empty, and it is empty in production. Admin access is role-only.
+- **Slack approval for sensitive admin actions** — the sensitive procedures in `server/routes/admin/users.ts` execute directly, and the approval flow self-approves when Slack is unconfigured.
+- **IP blocking** (`server/db/ipBlocking.ts`) — blocks are recorded, never checked during a request.
+- **Credit-purchase velocity limits** — helpers and Slack alert exist, no call site in the checkout path.
+- **The beta approval gate** — enforced on the login screens and in the UI, not in `requireUser`. See M8.
+- **The "immutable" audit log** (`adminSecurity.ts`) — invoked, but the hash chain is in-memory (resets every deploy) and its Slack backup no-ops when Slack is unconfigured. There is currently no tamper evidence.
+
+Most of these followed the same path: helper or rule written, docs written, todo ticked, call site never added — and the last is the nastier variant, invoked but inert under the current configuration. Invariants 7 and 8 exist because of them. The grid above was re-verified cell-by-cell against the code on 2026-07-25.
+
 ## Design system conventions
 
 - Design tokens in `client/src/styles/tokens.css`: monochrome palette (black `#0A0A0A`, surface `#EBEBEB`, white), 4px spacing grid, Inter font. Reference via `var(--token-name)`; don't hardcode colors/spacing.

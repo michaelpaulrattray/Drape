@@ -4606,3 +4606,16 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Fix Wardrobe still not selectable after full-body cast (investigate hasFullBody not being set correctly)
 - [ ] Add subtle pulse to Wardrobe tool rail icon when full-body cast is ready
 - [ ] Improve loading indicator readability — scan line and tip text hard to read against blurred skin-tone backgrounds
+
+---
+
+## Correction — 2026-07-25 (security audit)
+
+Four items above were marked complete but were never wired into a request path. The helpers, the database tables, the Slack alerts and the documentation were all built; the call site was not. Entries are left as-is because this is a historical log, but they should not be read as delivered:
+
+- `[x] Add IP blocking check to rate limiter middleware` (~line 2539) — `isIpBlocked` is never called during a request. Blocked addresses are recorded and not stopped. (H2)
+- `[x] Implement admin allowlist` (~line 2576) — returns true for everyone when the list is empty, which it is in production. (H3)
+- `[x] Update sensitive admin procedures to require Slack approval` (~line 2596) — those procedures execute directly; the approval router is a parallel optional route, and it self-approves when Slack is unconfigured. (H4)
+- Credit-purchase velocity limits — helpers and Slack alert exist, no call site in the checkout path. (H5)
+
+See `docs/specs/SECURITY_AUDIT_2026-07-25.md`. When ticking off a security control in future, the box means "something calls it and a test proves it blocks", not "the code exists".
