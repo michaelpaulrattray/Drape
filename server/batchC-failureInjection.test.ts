@@ -45,10 +45,12 @@ const llmScript = vi.hoisted(() => ({
 
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
+  const boardItemReader = vi.fn();
   return {
     ...actual,
     getBoardById: vi.fn(),
-    getBoardItemById: vi.fn(),
+    getBoardItemById: boardItemReader,
+    getOwnedBoardItemById: boardItemReader,
     getModelById: vi.fn(),
     getModelAssets: vi.fn(),
     createModel: vi.fn(),
@@ -96,9 +98,11 @@ vi.mock("./db", async (importOriginal) => {
       tx.inserts.push({ ...input.edge, targetItemId: itemId });
       return itemId;
     }),
-    updateBoardItemIn: vi.fn(async (_transaction: unknown, _itemId: number, values: Record<string, unknown>) => {
+    updateBoardItemIn: vi.fn(async (_transaction: unknown, input: {
+      data: Record<string, unknown>;
+    }) => {
       if (tx.failStaleStatusUpdate) throw new Error("downstream stale write failed");
-      tx.updates.push(values);
+      tx.updates.push(input.data);
       return { success: true };
     }),
     deductPoints: vi.fn(),

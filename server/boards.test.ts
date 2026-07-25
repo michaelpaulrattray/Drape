@@ -2,7 +2,19 @@ import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import { TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./_core/context";
-import { getBoardItemById } from "./db";
+import {
+  createModel,
+  createSession,
+  fillEmptyCastNodeWithVersionIn,
+  getBoardItemById,
+  getBoardItemVersions,
+  getSessionById,
+  softDeleteBoardItems,
+  stampBoardItemWithVersionIn,
+  updateBoardItemIn,
+  updateSession,
+  withTransaction,
+} from "./db";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -496,6 +508,140 @@ describe.skipIf(!dbAvailable)("boards", () => {
         .not.toContain(edgeB);
       expect((await ownerA.boardOps.listEdges({ boardId: boardA })).map((edge) => edge.id))
         .toContain(edgeA);
+    });
+
+    it("soft-delete rejects a mixed-owner cohort before changing either row", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(409));
+      const ownerB = appRouter.createCaller(createAuthContext(410));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: itemA } = await ownerA.boards.addItem({ boardId: boardA, type: "note" });
+      const { id: itemB } = await ownerB.boards.addItem({ boardId: boardB, type: "note" });
+
+      await expect(softDeleteBoardItems({
+        userId: 410,
+        boardId: boardB,
+        itemIds: [itemB, itemA],
+      })).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      expect((await getBoardItemById(itemA))?.deletedAt).toBeNull();
+      expect((await getBoardItemById(itemB))?.deletedAt).toBeNull();
+
+      await softDeleteBoardItems({
+        userId: 410,
+        boardId: boardB,
+        itemIds: [itemB],
+      });
+      expect((await getBoardItemById(itemA))?.deletedAt).toBeNull();
+      expect((await getBoardItemById(itemB))?.deletedAt).not.toBeNull();
+    });
+
+    it("R7 landing helpers cannot stamp, stale, fill, or version another owner's node", async () => {
+      const ownerA = appRouter.createCaller(createAuthContext(411));
+      const ownerB = appRouter.createCaller(createAuthContext(412));
+      const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
+      const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
+      const { id: itemA } = await ownerA.boards.addItem({
+        boardId: boardA,
+        type: "note",
+        label: "Owner A",
+      });
+      const { id: itemB } = await ownerB.boards.addItem({
+        boardId: boardB,
+        type: "note",
+        label: "Owner B",
+      });
+      const model = await createModel({
+        userId: 412,
+        name: "Owner B Cast",
+        masterPrompt: "Owner B immutable prompt",
+        technicalSchema: {},
+        preferences: {},
+        status: "draft",
+      });
+      if (!model.modelId) throw new Error("test model insert failed");
+
+      await expect(withTransaction((tx) => stampBoardItemWithVersionIn(tx, {
+        userId: 412,
+        boardId: boardB,
+        itemId: itemA,
+        update: { label: "Compromised" },
+        version: {
+          version: 1,
+          imageUrl: "https://example.com/foreign-stamp.png",
+          tool: "initial",
+        },
+      }))).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      await expect(withTransaction((tx) => updateBoardItemIn(tx, {
+        userId: 412,
+        boardId: boardB,
+        itemId: itemA,
+        data: { label: "Compromised" },
+      }))).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      await expect(withTransaction((tx) => fillEmptyCastNodeWithVersionIn(tx, {
+        userId: 412,
+        boardId: boardB,
+        itemId: itemA,
+        modelId: model.modelId!,
+        build: () => ({
+          update: {
+            label: "Compromised",
+            imageUrl: "https://example.com/foreign-fill.png",
+            sourceModelId: model.modelId!,
+          },
+          version: {
+            imageUrl: "https://example.com/foreign-fill.png",
+            tool: "initial",
+          },
+        }),
+      }))).resolves.toBe("not_found");
+
+      expect((await getBoardItemById(itemA))?.label).toBe("Owner A");
+      expect(await getBoardItemVersions(itemA)).toHaveLength(0);
+
+      await withTransaction((tx) => stampBoardItemWithVersionIn(tx, {
+        userId: 412,
+        boardId: boardB,
+        itemId: itemB,
+        update: {
+          label: "Owner B stamped",
+          imageUrl: "https://example.com/owner-b-stamp.png",
+        },
+        version: {
+          version: 1,
+          imageUrl: "https://example.com/owner-b-stamp.png",
+          tool: "initial",
+        },
+      }));
+      expect((await getBoardItemById(itemB))?.label).toBe("Owner B stamped");
+      expect((await getBoardItemVersions(itemB)).map((version) => version.itemId))
+        .toEqual([itemB]);
+    });
+
+    it("Wardrobe session reads and writes scope ownership in the database statement", async () => {
+      const sessionId = await createSession({
+        userId: 413,
+        modelId: null,
+        modelImageUrl: "https://example.com/owner-413.png",
+        history: ["https://example.com/original.png"],
+        historyIndex: 0,
+        activeGarmentIds: [],
+      });
+
+      await expect(getSessionById(sessionId, 414)).resolves.toBeNull();
+      await updateSession(sessionId, 414, {
+        history: ["https://example.com/foreign.png"],
+      });
+      expect((await getSessionById(sessionId, 413))?.history)
+        .toEqual(["https://example.com/original.png"]);
+
+      await updateSession(sessionId, 413, {
+        history: ["https://example.com/owned.png"],
+      });
+      expect((await getSessionById(sessionId, 413))?.history)
+        .toEqual(["https://example.com/owned.png"]);
     });
   });
 });

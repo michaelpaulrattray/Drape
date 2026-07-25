@@ -238,6 +238,7 @@ export {
   addBoardItems,
   getBoardItems,
   getBoardItemById,
+  getOwnedBoardItemById,
   updateBoardItem,
   batchUpdateBoardItemPositions,
   deleteBoardItem,

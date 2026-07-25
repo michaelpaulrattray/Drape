@@ -137,13 +137,33 @@ export async function getBoardItems(boardId: number) {
 
 // ── Soft delete (foundations Decision 7 — delete is undoable) ─────────────
 
-export async function softDeleteBoardItems(itemIds: number[]) {
-  if (itemIds.length === 0) return;
-  const db = (await getDb())!;
-  await db
-    .update(boardItems)
-    .set({ deletedAt: new Date() })
-    .where(inArray(boardItems.id, itemIds));
+export async function softDeleteBoardItems(input: OwnedBoardItemMutation) {
+  if (input.itemIds.length === 0) return;
+  await withTransaction(async (tx) => {
+    const rows = await lockOwnedBoardItemsIn(tx, input);
+    const aliveIds = rows
+      .filter((row) => row.deletedAt === null)
+      .map((row) => row.id);
+    if (aliveIds.length === 0) return;
+
+    const deleted = await tx
+      .update(boardItems)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          eq(boardItems.boardId, input.boardId),
+          inArray(boardItems.id, aliveIds),
+          isNull(boardItems.deletedAt),
+          ownedBoardExists(input.userId, input.boardId),
+        ),
+      );
+    if (affectedRows(deleted) !== aliveIds.length) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Board item not found",
+      });
+    }
+  });
 }
 
 type OwnedBoardItemMutation = {
@@ -282,6 +302,29 @@ export async function getBoardItemById(itemId: number) {
     .select()
     .from(boardItems)
     .where(eq(boardItems.id, itemId))
+    .limit(1);
+  return item || null;
+}
+
+export async function getOwnedBoardItemById(input: {
+  userId: number;
+  itemId: number;
+}) {
+  const db = (await getDb())!;
+  const [item] = await db
+    .select()
+    .from(boardItems)
+    .where(
+      and(
+        eq(boardItems.id, input.itemId),
+        sql<boolean>`exists (
+          select 1
+          from ${boards}
+          where ${boards.id} = ${boardItems.boardId}
+            and ${boards.userId} = ${input.userId}
+        )`,
+      ),
+    )
     .limit(1);
   return item || null;
 }
@@ -438,11 +481,13 @@ export async function addBoardItemVersion(data: InsertBoardItemVersion) {
 // runs inside these transactions — callers finish generation first.
 
 export interface StampBoardItemWithVersionInput {
+  userId: number;
+  boardId: number;
   itemId: number;
   update: Partial<
     Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">
   >;
-  version: InsertBoardItemVersion;
+  version: Omit<InsertBoardItemVersion, "itemId">;
 }
 
 /** The stamp's writes on an EXISTING transaction — used by landings that must
@@ -455,17 +500,27 @@ export async function stampBoardItemWithVersionIn(
   const [item] = await tx
     .select({ boardId: boardItems.boardId, sourceModelId: boardItems.sourceModelId, metadata: boardItems.metadata })
     .from(boardItems)
-    .where(eq(boardItems.id, input.itemId))
-    .limit(1);
-  if (!item) throw new Error("Board item not found");
+    .where(boardItemWriteScope(input))
+    .limit(1)
+    .for("update");
+  if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Board item not found" });
   if (input.update.sourceModelId !== undefined || input.update.metadata !== undefined) {
     await fenceBoardModelReferencesIn(tx, item.boardId, {
       sourceModelId: input.update.sourceModelId !== undefined ? input.update.sourceModelId : item.sourceModelId,
       metadata: input.update.metadata !== undefined ? input.update.metadata : item.metadata,
     });
   }
-  await tx.update(boardItems).set(input.update).where(eq(boardItems.id, input.itemId));
-  await tx.insert(boardItemVersions).values(input.version);
+  const updated = await tx
+    .update(boardItems)
+    .set(input.update)
+    .where(boardItemWriteScope(input));
+  if (affectedRows(updated) !== 1) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Board item not found" });
+  }
+  await tx.insert(boardItemVersions).values({
+    ...input.version,
+    itemId: input.itemId,
+  });
 }
 
 /** Node restamp + its version row, atomically. */
@@ -483,6 +538,7 @@ export type FillEmptyCastNodeResult = "filled" | "reconciled" | "not_found" | "n
 export async function fillEmptyCastNodeWithVersionIn(
   tx: TransactionHandle,
   input: {
+    userId: number;
     boardId: number;
     itemId: number;
     /** Lock this model before the board item so deletion and landing share a
@@ -504,12 +560,15 @@ export async function fillEmptyCastNodeWithVersionIn(
     };
   },
 ): Promise<FillEmptyCastNodeResult> {
-  const boardUserId = await boardOwnerIn(tx, input.boardId);
-  await assertOwnedAvailableModelIn(tx, { modelId: input.modelId, userId: boardUserId });
+  await assertOwnedAvailableModelIn(tx, { modelId: input.modelId, userId: input.userId });
   const [item] = await tx
     .select()
     .from(boardItems)
-    .where(and(eq(boardItems.id, input.itemId), eq(boardItems.boardId, input.boardId)))
+    .where(and(
+      eq(boardItems.id, input.itemId),
+      eq(boardItems.boardId, input.boardId),
+      ownedBoardExists(input.userId, input.boardId),
+    ))
     .limit(1)
     .for("update");
   if (!item) return "not_found";
@@ -562,6 +621,7 @@ export async function fillEmptyCastNodeWithVersionIn(
         isNull(boardItems.deletedAt),
         eq(boardItems.sourceModelId, reconcile.sourceModelId),
         eq(boardItems.imageUrl, reconcile.imageUrl),
+        ownedBoardExists(input.userId, input.boardId),
       ));
     const header = result as { affectedRows?: number } | [{ affectedRows?: number }];
     const changed = Array.isArray(header) ? header[0]?.affectedRows : header.affectedRows;
@@ -586,6 +646,7 @@ export async function fillEmptyCastNodeWithVersionIn(
       isNull(boardItems.deletedAt),
       isNull(boardItems.imageUrl),
       isNull(boardItems.sourceModelId),
+      ownedBoardExists(input.userId, input.boardId),
     ));
   const header = result as { affectedRows?: number } | [{ affectedRows?: number }];
   const changed = Array.isArray(header) ? header[0]?.affectedRows : header.affectedRows;
@@ -601,22 +662,33 @@ export async function fillEmptyCastNodeWithVersionIn(
 /** A single board-item update on an EXISTING transaction (same landing use). */
 export async function updateBoardItemIn(
   tx: TransactionHandle,
-  itemId: number,
-  data: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">>,
+  input: {
+    userId: number;
+    boardId: number;
+    itemId: number;
+    data: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">>;
+  },
 ): Promise<void> {
   const [item] = await tx
     .select({ boardId: boardItems.boardId, sourceModelId: boardItems.sourceModelId, metadata: boardItems.metadata })
     .from(boardItems)
-    .where(eq(boardItems.id, itemId))
-    .limit(1);
-  if (!item) throw new Error("Board item not found");
-  if (data.sourceModelId !== undefined || data.metadata !== undefined) {
+    .where(boardItemWriteScope(input))
+    .limit(1)
+    .for("update");
+  if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Board item not found" });
+  if (input.data.sourceModelId !== undefined || input.data.metadata !== undefined) {
     await fenceBoardModelReferencesIn(tx, item.boardId, {
-      sourceModelId: data.sourceModelId !== undefined ? data.sourceModelId : item.sourceModelId,
-      metadata: data.metadata !== undefined ? data.metadata : item.metadata,
+      sourceModelId: input.data.sourceModelId !== undefined ? input.data.sourceModelId : item.sourceModelId,
+      metadata: input.data.metadata !== undefined ? input.data.metadata : item.metadata,
     });
   }
-  await tx.update(boardItems).set(data).where(eq(boardItems.id, itemId));
+  const updated = await tx
+    .update(boardItems)
+    .set(input.data)
+    .where(boardItemWriteScope(input));
+  if (affectedRows(updated) !== 1) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Board item not found" });
+  }
 }
 
 /** A placed LINKED node — item + initial version + lineage edge — atomically.

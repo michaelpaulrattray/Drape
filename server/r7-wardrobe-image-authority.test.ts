@@ -312,6 +312,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       "https://results.example/look.png",
       undefined,
     );
+    expect(getSessionById).toHaveBeenCalledWith(91, 7);
   });
 
   it("seeds an upload-only session with its durable captured image", async () => {
@@ -383,6 +384,14 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       modelImageUrl: "https://selected.example/current-body.png",
       sessionId: "91",
     }));
+    expect(getSessionById).toHaveBeenCalledWith(91, 7);
+    expect(updateSession).toHaveBeenCalledWith(
+      91,
+      7,
+      expect.objectContaining({
+        history: expect.arrayContaining(["https://results.example/full.png"]),
+      }),
+    );
     expect(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(createGeneration).mock.invocationCallOrder[0]);
     expect(vi.mocked(createGeneration).mock.invocationCallOrder[0])

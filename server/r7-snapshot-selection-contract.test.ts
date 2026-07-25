@@ -443,6 +443,18 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(source).toContain('view.angle === "frontFull"');
     expect(source).toContain("session.modelId == null");
     expect(source).toContain("requestedImageUrl: session.modelImageUrl");
+    expect(source).toContain("getSessionById(sessionId, input.userId)");
+
+    const wardrobeDb = await readFile(
+      new URL("./db/wardrobe.ts", import.meta.url),
+      "utf8",
+    );
+    expect(wardrobeDb).toMatch(
+      /getSessionById[\s\S]*eq\(wardrobeSessions\.id,\s*sessionId\)[\s\S]*eq\(wardrobeSessions\.userId,\s*userId\)/,
+    );
+    expect(wardrobeDb).toMatch(
+      /updateSession[\s\S]*eq\(wardrobeSessions\.id,\s*sessionId\)[\s\S]*eq\(wardrobeSessions\.userId,\s*userId\)/,
+    );
 
     const route = await readFile(
       new URL("./routes/wardrobe.ts", import.meta.url),
@@ -464,6 +476,32 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(client).toMatch(
       /identityMutation[\s\S]*resultImageUrl:\s*result\.resultUrl,[\s\S]*sessionId:\s*sessionId\s*\?\?\s*undefined/,
     );
+  });
+
+  it("keeps Canvas landing writes scoped to the authenticated board owner", async () => {
+    const boardDb = await readFile(
+      new URL("./db/boards.ts", import.meta.url),
+      "utf8",
+    );
+    expect(boardDb).toMatch(
+      /softDeleteBoardItems[\s\S]*lockOwnedBoardItemsIn[\s\S]*ownedBoardExists\(input\.userId,\s*input\.boardId\)/,
+    );
+    expect(boardDb).toMatch(
+      /stampBoardItemWithVersionIn[\s\S]*boardItemWriteScope\(input\)[\s\S]*itemId:\s*input\.itemId/,
+    );
+    expect(boardDb).toMatch(
+      /fillEmptyCastNodeWithVersionIn[\s\S]*ownedBoardExists\(input\.userId,\s*input\.boardId\)/,
+    );
+    expect(boardDb).toMatch(
+      /updateBoardItemIn[\s\S]*boardItemWriteScope\(input\)/,
+    );
+
+    const boardOps = await readFile(
+      new URL("./lib/boardOps.ts", import.meta.url),
+      "utf8",
+    );
+    expect(boardOps).toContain("getOwnedBoardItemById(input)");
+    expect(boardOps).toContain("boardId: item.boardId");
   });
 
   it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {

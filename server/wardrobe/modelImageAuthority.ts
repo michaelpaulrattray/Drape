@@ -113,7 +113,7 @@ export async function resolveWardrobeSessionUseImage(input: {
     });
   }
 
-  const session = await getSessionById(sessionId);
+  const session = await getSessionById(sessionId, input.userId);
   if (!session || session.userId !== input.userId) {
     throw new TRPCError({
       code: "NOT_FOUND",

@@ -339,18 +339,21 @@ export const boardOpsRouter = router({
 
   deleteNode: router({
     plan: protectedProcedure
-      .input(z.object({ boardId: z.number().int().positive(), itemId: z.number().int().positive() }))
+      .input(z.object({ boardId: z.number().int().positive(), itemId: z.number().int().positive() }).strict())
       .query(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
         return boardOps.planDeleteNode(input);
       }),
     execute: protectedProcedure
-      .input(z.object({ boardId: z.number().int().positive(), itemId: z.number().int().positive() }))
+      .input(z.object({ boardId: z.number().int().positive(), itemId: z.number().int().positive() }).strict())
       .mutation(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
-        return boardOps.executeDeleteNode(input);
+        return boardOps.executeDeleteNode({
+          userId: ctx.user.id,
+          ...input,
+        });
       }),
   }),
 
@@ -360,7 +363,7 @@ export const boardOpsRouter = router({
       .input(z.object({
         boardId: z.number().int().positive(),
         itemIds: z.array(z.number().int().positive()).min(1).max(100),
-      }))
+      }).strict())
       .query(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         for (const id of input.itemIds) await boardOps.requireItemInBoard(id, input.boardId);
@@ -370,11 +373,14 @@ export const boardOpsRouter = router({
       .input(z.object({
         boardId: z.number().int().positive(),
         itemIds: z.array(z.number().int().positive()).min(1).max(100),
-      }))
+      }).strict())
       .mutation(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         for (const id of input.itemIds) await boardOps.requireItemInBoard(id, input.boardId);
-        return boardOps.executeDeleteNodes(input);
+        return boardOps.executeDeleteNodes({
+          userId: ctx.user.id,
+          ...input,
+        });
       }),
   }),
 
@@ -468,7 +474,10 @@ export const boardOpsRouter = router({
         const readMode = captureSnapshotReadMode(ctx.user.id);
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
-        const { model } = await boardOps.resolveModelBackedBoardOperation({ userId: ctx.user.id, itemId: input.itemId });
+        const { model } = await boardOps.resolveModelBackedBoardOperation({
+          userId: ctx.user.id,
+          itemId: input.itemId,
+        });
         const kind = input.decision === "fork" ? "canvas.fork" : "canvas.recast";
         return executeCanvasOperation({
           userId: ctx.user.id,
@@ -556,7 +565,10 @@ export const boardOpsRouter = router({
       .mutation(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
-        const { model } = await boardOps.resolveModelBackedBoardOperation({ userId: ctx.user.id, itemId: input.itemId });
+        const { model } = await boardOps.resolveModelBackedBoardOperation({
+          userId: ctx.user.id,
+          itemId: input.itemId,
+        });
         return executeCanvasOperation({
           userId: ctx.user.id,
           clientRequestId: input.clientRequestId,

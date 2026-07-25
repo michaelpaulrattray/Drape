@@ -539,6 +539,7 @@ export async function landGenerationOperationResult(input: {
     const draft = isModelDraftStatus(model.status);
     const honestName = draft && model.name === DRAFT_AUTO_NAME ? null : model.name;
     const fill = await fillEmptyCastNodeWithVersionIn(tx, {
+      userId: input.userId,
       boardId: input.boardId,
       itemId: input.itemId,
       modelId,

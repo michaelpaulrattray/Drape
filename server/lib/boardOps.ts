@@ -13,6 +13,7 @@ import {
   addBoardItem,
   getBoardItems,
   getBoardItemById,
+  getOwnedBoardItemById,
   updateBoardItem,
   batchUpdateBoardItemPositions,
   softDeleteBoardItems,
@@ -265,17 +266,28 @@ export async function planDeleteNodes(input: { itemIds: number[] }): Promise<Ope
   return { ...emptyPlan("deleteNodes"), deletes: unit };
 }
 
-export async function executeDeleteNodes(input: { itemIds: number[] }) {
+export async function executeDeleteNodes(input: {
+  userId: number;
+  boardId: number;
+  itemIds: number[];
+}) {
   const unit = await cascadeUnits(input.itemIds);
-  await softDeleteBoardItems(unit);
+  await softDeleteBoardItems({
+    userId: input.userId,
+    boardId: input.boardId,
+    itemIds: unit,
+  });
   // Edges + versions survive intact — undo restores everything (Decision 7)
   return { deletedItemIds: unit };
 }
 
 export const planDeleteNode = (input: { itemId: number }) =>
   planDeleteNodes({ itemIds: [input.itemId] });
-export const executeDeleteNode = (input: { itemId: number }) =>
-  executeDeleteNodes({ itemIds: [input.itemId] });
+export const executeDeleteNode = (input: {
+  userId: number;
+  boardId: number;
+  itemId: number;
+}) => executeDeleteNodes({ ...input, itemIds: [input.itemId] });
 
 export async function executeUndoDelete(input: {
   userId: number;
@@ -338,7 +350,7 @@ export interface RunGenerationInput {
 }
 
 export async function executeRunGeneration(input: RunGenerationInput) {
-  const item = await getBoardItemById(input.itemId);
+  const item = await getOwnedBoardItemById(input);
   if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
 
   const rate = checkRateLimit(`user:${input.userId}`, RATE_LIMITS.generation);
@@ -517,6 +529,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     // Final correction 4: the node stamp and its version row are one domain
     // record — they commit together or not at all (no half-versioned node).
     const fill = await withTransaction((tx) => fillEmptyCastNodeWithVersionIn(tx, {
+      userId: input.userId,
       boardId: item.boardId,
       itemId: input.itemId,
       modelId,
@@ -628,7 +641,7 @@ export async function executeFillFromLibrary(input: {
   modelId: number;
   readMode: SnapshotReadMode;
 }) {
-  const item = await getBoardItemById(input.itemId);
+  const item = await getOwnedBoardItemById(input);
   if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
 
   const { model, asset: headshot } = await resolveCanvasPackageView({
@@ -659,6 +672,7 @@ export async function executeFillFromLibrary(input: {
   // Unnamed drafts render as unnamed (D-42) — never the fake auto-name
   const honestName = draft && model.name === DRAFT_AUTO_NAME ? null : model.name;
   const fill = await withTransaction((tx) => fillEmptyCastNodeWithVersionIn(tx, {
+    userId: input.userId,
     boardId: item.boardId,
     itemId: input.itemId,
     modelId: input.modelId,
@@ -845,8 +859,11 @@ export interface ApplyModelEditInput {
  * its model-wide operation lock. Execute paths call this again after the lock
  * so ownership/lifecycle truth cannot change between the claim and the paid
  * work. */
-export async function resolveModelBackedBoardOperation(input: { userId: number; itemId: number }) {
-  const item = await getBoardItemById(input.itemId);
+export async function resolveModelBackedBoardOperation(input: {
+  userId: number;
+  itemId: number;
+}) {
+  const item = await getOwnedBoardItemById(input);
   if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
   const provenance = readMeta(item).provenance;
   if (!provenance || !("modelId" in provenance)) {
@@ -1183,19 +1200,26 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       }
       const landing = async (tx: TransactionHandle) => {
         await stampBoardItemWithVersionIn(tx, {
+          userId: input.userId,
+          boardId: item.boardId,
           itemId: input.itemId,
           update: {
             imageUrl: result.imageUrl,
             metadata: { ...meta, provenance: newProv, attributes: landingPrefs, status: null, isGenerating: false, version },
           },
           version: {
-            itemId: input.itemId, version, imageUrl: result.imageUrl,
+            version, imageUrl: result.imageUrl,
             prompt: input.intent === "rerun" ? "Recast" : `Recast from settings: ${Object.keys(input.changes).join(", ")}`,
             tool: input.intent === "rerun" ? "rerun" : "attributes",
           },
         });
         for (const target of staleTargets) {
-          await updateBoardItemIn(tx, target.id, { metadata: target.metadata });
+          await updateBoardItemIn(tx, {
+            userId: input.userId,
+            boardId: item.boardId,
+            itemId: target.id,
+            data: { metadata: target.metadata },
+          });
         }
       };
 
@@ -1820,7 +1844,11 @@ export async function executeCollapseView(input: { userId: number; boardId: numb
     });
   }
   for (const add of moves.addEdges) await addBoardEdge({ boardId: input.boardId, ...add });
-  await softDeleteBoardItems([input.itemId]);
+  await softDeleteBoardItems({
+    userId: input.userId,
+    boardId: input.boardId,
+    itemIds: [input.itemId],
+  });
   log.info({ itemId: input.itemId, reanchored: moves.addEdges.length }, "View collapsed into sheet");
   return { collapsed: true, rootItemId: prov.rootItemId, reanchored: moves.addEdges.length };
 }

@@ -3,13 +3,15 @@ import type { TrpcContext } from "./_core/context";
 
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
+  const boardItemReader = vi.fn();
   return {
     ...actual,
     addBoardItem: vi.fn().mockResolvedValue(77),
     addBoardItemVersion: vi.fn().mockResolvedValue(undefined),
     fillEmptyCastNodeWithVersionIn: vi.fn().mockResolvedValue("filled"),
     getBoardById: vi.fn(),
-    getBoardItemById: vi.fn(),
+    getBoardItemById: boardItemReader,
+    getOwnedBoardItemById: boardItemReader,
     getBoardItems: vi.fn().mockResolvedValue([]),
     getModelAssets: vi.fn().mockResolvedValue([]),
     getModelById: vi.fn(),

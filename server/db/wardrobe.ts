@@ -142,12 +142,17 @@ export async function createSession(data: InsertWardrobeSession) {
   });
 }
 
-export async function getSessionById(sessionId: number) {
+export async function getSessionById(sessionId: number, userId: number) {
   const db = (await getDb())!;
   const [session] = await db
     .select()
     .from(wardrobeSessions)
-    .where(eq(wardrobeSessions.id, sessionId))
+    .where(
+      and(
+        eq(wardrobeSessions.id, sessionId),
+        eq(wardrobeSessions.userId, userId),
+      ),
+    )
     .limit(1);
   return session || null;
 }
@@ -163,13 +168,19 @@ export async function getUserSessions(userId: number) {
 
 export async function updateSession(
   sessionId: number,
+  userId: number,
   data: Partial<InsertWardrobeSession>,
 ) {
   const db = (await getDb())!;
   await db
     .update(wardrobeSessions)
     .set(data)
-    .where(eq(wardrobeSessions.id, sessionId));
+    .where(
+      and(
+        eq(wardrobeSessions.id, sessionId),
+        eq(wardrobeSessions.userId, userId),
+      ),
+    );
 }
 
 export async function deleteSession(sessionId: number, userId: number) {

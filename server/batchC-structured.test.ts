@@ -40,10 +40,12 @@ const operation = vi.hoisted(() => ({
 
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
+  const boardItemReader = vi.fn();
   return {
     ...actual,
     getBoardById: vi.fn(),
-    getBoardItemById: vi.fn(),
+    getBoardItemById: boardItemReader,
+    getOwnedBoardItemById: boardItemReader,
     getModelById: vi.fn(),
     getModelAssets: vi.fn(),
     createModel: vi.fn().mockResolvedValue({ success: true, modelId: 88 }),

@@ -319,11 +319,11 @@ const vtoRouter = router({
 
       // Update session history if provided
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId);
-        if (session && session.userId === ctx.user.id) {
+        const session = await getSessionById(input.sessionId, ctx.user.id);
+        if (session) {
           const history = (session.history as string[] || []);
           history.push(result.resultUrl);
-          await updateSession(input.sessionId, {
+          await updateSession(input.sessionId, ctx.user.id, {
             history,
             historyIndex: history.length - 1,
             activeGarmentIds: input.garmentIds,
@@ -419,11 +419,11 @@ const vtoRouter = router({
 
       // Persist incremental result to DB session
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId);
-        if (session && session.userId === ctx.user.id) {
+        const session = await getSessionById(input.sessionId, ctx.user.id);
+        if (session) {
           const history = (session.history as string[] || []);
           history.push(result.resultUrl);
-          await updateSession(input.sessionId, {
+          await updateSession(input.sessionId, ctx.user.id, {
             history,
             historyIndex: history.length - 1,
             activeGarmentIds: input.allGarmentIds,
@@ -531,11 +531,11 @@ const vtoRouter = router({
 
       // Persist refinement result to DB session
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId);
-        if (session && session.userId === ctx.user.id) {
+        const session = await getSessionById(input.sessionId, ctx.user.id);
+        if (session) {
           const history = (session.history as string[] || []);
           history.push(result.resultUrl);
-          await updateSession(input.sessionId, {
+          await updateSession(input.sessionId, ctx.user.id, {
             history,
             historyIndex: history.length - 1,
           });
@@ -711,10 +711,10 @@ const sessionRouter = router({
     }),
 
   get: protectedProcedure
-    .input(z.object({ sessionId: z.number() }))
+    .input(z.object({ sessionId: z.number() }).strict())
     .query(async ({ ctx, input }) => {
-      const session = await getSessionById(input.sessionId);
-      if (!session || session.userId !== ctx.user.id) {
+      const session = await getSessionById(input.sessionId, ctx.user.id);
+      if (!session) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
       return session;
@@ -745,22 +745,22 @@ const sessionRouter = router({
       activeGarmentIds: z.array(z.number()).optional(),
       tattooMapData: z.any().optional(),
       styleNotes: z.record(z.string(), z.string()).optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      const session = await getSessionById(input.sessionId);
-      if (!session || session.userId !== ctx.user.id) {
+      const session = await getSessionById(input.sessionId, ctx.user.id);
+      if (!session) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
       const { sessionId, ...updateData } = input;
-      await updateSession(sessionId, updateData);
+      await updateSession(sessionId, ctx.user.id, updateData);
       return { success: true };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ sessionId: z.number() }))
+    .input(z.object({ sessionId: z.number() }).strict())
     .mutation(async ({ ctx, input }) => {
-      const session = await getSessionById(input.sessionId);
-      if (!session || session.userId !== ctx.user.id) {
+      const session = await getSessionById(input.sessionId, ctx.user.id);
+      if (!session) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
       await deleteSession(input.sessionId, ctx.user.id);
