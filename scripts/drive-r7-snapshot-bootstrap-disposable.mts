@@ -74,6 +74,7 @@ async function main() {
     "--focused-b4",
     "--focused-b6",
     "--focused-c1",
+    "--focused-inventory",
   ]);
   if (args.some((arg) => !allowedArgs.has(arg))) {
     throw new Error(`Unknown argument: ${args.find((arg) => !allowedArgs.has(arg))}`);
@@ -84,7 +85,8 @@ async function main() {
   const focusedB4 = args.includes("--focused-b4");
   const focusedB6 = args.includes("--focused-b6");
   const focusedC1 = args.includes("--focused-c1");
-  if ([focusedB3, focusedIterate, focusedCanvas, focusedB4, focusedB6, focusedC1].filter(Boolean).length > 1) {
+  const focusedInventory = args.includes("--focused-inventory");
+  if ([focusedB3, focusedIterate, focusedCanvas, focusedB4, focusedB6, focusedC1, focusedInventory].filter(Boolean).length > 1) {
     throw new Error("Choose only one focused disposable gate");
   }
   const configured = process.env.DATABASE_URL;
@@ -165,6 +167,13 @@ async function main() {
                     "--testNamePattern=C1.*durable.*ownership",
                     "server/boards.test.ts",
                   ]
+                : focusedInventory
+                  ? [
+                      "exec", "vitest", "run",
+                      "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
+                      "--testNamePattern=cohort.*inventory",
+                      "server/r7-snapshot-bootstrap-db.test.ts",
+                    ]
       : [
           "exec", "vitest", "run",
           "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false", "--reporter=verbose",
@@ -191,6 +200,8 @@ async function main() {
                 ? "[disposable] R7-7B6 bounded pin convergence gate passed"
                 : focusedC1
                   ? "[disposable] C1 durable board ownership gate passed"
+                  : focusedInventory
+                    ? "[disposable] R7-7B7 cohort inventory gate passed"
           : "[disposable] R7-7A bootstrap, transition, rollback and race gates passed",
     );
   } finally {

@@ -20,6 +20,7 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
   let convergeSnapshotCohort: typeof import("./casting/snapshotConvergence").convergeSnapshotCohort;
   let planSnapshotPinConvergence: typeof import("./casting/snapshotPinConvergence").planSnapshotPinConvergence;
   let convergeSnapshotPins: typeof import("./casting/snapshotPinConvergence").convergeSnapshotPins;
+  let inventorySnapshotCohorts: typeof import("./casting/snapshotCohortInventory").inventorySnapshotCohorts;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -40,6 +41,7 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     ({ planRefreshSlots } = await import("./casting/refreshSlots"));
     ({ planSnapshotConvergence, convergeSnapshotCohort } = await import("./casting/snapshotConvergence"));
     ({ planSnapshotPinConvergence, convergeSnapshotPins } = await import("./casting/snapshotPinConvergence"));
+    ({ inventorySnapshotCohorts } = await import("./casting/snapshotCohortInventory"));
   });
 
   beforeEach(async () => {
@@ -125,6 +127,54 @@ describeWithDatabase("R7-7A2 convergent snapshot bootstrap (disposable DB)", () 
     if (!rows[0]) throw new Error("Expected one row");
     return rows[0];
   }
+
+  it("reports a bounded numeric cohort inventory and excludes deleted or archived Casts", async () => {
+    const firstUserId = await createUser("inventory-first");
+    const secondUserId = await createUser("inventory-second");
+    const excludedUserId = await createUser("inventory-excluded");
+
+    await createModel(firstUserId);
+    const firstMintedId = await createModel(firstUserId, { status: "active" });
+    await connection.execute(
+      "UPDATE models SET currentPackageSnapshotId = ? WHERE id = ?",
+      ["11111111-1111-4111-8111-111111111111", firstMintedId],
+    );
+
+    const secondMintedId = await createModel(secondUserId, { status: "locked" });
+    await connection.execute(
+      "UPDATE models SET currentPackageSnapshotId = ? WHERE id = ?",
+      ["22222222-2222-4222-8222-222222222222", secondMintedId],
+    );
+    await createModel(secondUserId, { status: "archived" });
+    await createModel(secondUserId, { deleted: true });
+    await createModel(excludedUserId, { status: "archived" });
+    await createModel(excludedUserId, { deleted: true });
+
+    await expect(inventorySnapshotCohorts({ maxUsers: 1 })).resolves.toEqual({
+      capped: true,
+      totalUsers: 2,
+    });
+    await expect(inventorySnapshotCohorts({ maxUsers: 2 })).resolves.toEqual({
+      capped: false,
+      totalUsers: 2,
+      users: [
+        {
+          userId: firstUserId,
+          liveModels: 2,
+          mintedModels: 1,
+          modelsWithSnapshotHead: 1,
+          modelsWithoutSnapshotHead: 1,
+        },
+        {
+          userId: secondUserId,
+          liveModels: 1,
+          mintedModels: 1,
+          modelsWithSnapshotHead: 1,
+          modelsWithoutSnapshotHead: 0,
+        },
+      ],
+    });
+  }, 60_000);
 
   it("leaves a model without an anchor snapshot-headless", async () => {
     const userId = await createUser();

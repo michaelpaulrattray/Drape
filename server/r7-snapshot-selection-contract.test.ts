@@ -103,6 +103,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/effectiveCastState.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/snapshotBootstrap.ts",
+      "server/casting/snapshotCohortInventory.ts",
       "server/casting/finalCastDeletion.ts",
       "server/casting/snapshotShadow.ts",
       "server/casting/snapshotTransitions.ts",
@@ -341,6 +342,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(transitionDriver).toContain('"--focused-b4"');
     expect(transitionDriver).toContain('"--focused-b6"');
     expect(transitionDriver).toContain('"--focused-c1"');
+    expect(transitionDriver).toContain('"--focused-inventory"');
     expect(transitionDriver).toContain('"--testNamePattern=C1.*durable.*ownership"');
     expect(transitionDriver).toContain('"server/boards.test.ts"');
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*ledger"');
@@ -348,6 +350,49 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(transitionDriver).toContain('"--testNamePattern=snapshot.*Canvas"');
     expect(transitionDriver).toContain('"--testNamePattern=bounded owned cohort"');
     expect(transitionDriver).toContain('"--testNamePattern=pin.*convergence"');
+    expect(transitionDriver).toContain('"--testNamePattern=cohort.*inventory"');
+  });
+
+  it("keeps the B7 cohort inventory numeric-only, read-only and CLI-private", async () => {
+    const serverCallers: string[] = [];
+    for (const file of await runtimeSources("server")) {
+      const normalized = file.replaceAll("\\", "/");
+      if (normalized.endsWith("/casting/snapshotCohortInventory.ts")) continue;
+      if ((await readFile(file, "utf8")).includes("snapshotCohortInventory")) {
+        serverCallers.push(normalized);
+      }
+    }
+    expect(serverCallers).toEqual([]);
+
+    const scriptCallers: string[] = [];
+    for (const file of await runtimeSources("scripts")) {
+      if ((await readFile(file, "utf8")).includes("snapshotCohortInventory")) {
+        scriptCallers.push(file.replaceAll("\\", "/"));
+      }
+    }
+    expect(scriptCallers).toEqual(["scripts/inventory-cast-cohorts.ts"]);
+
+    const service = await readFile(
+      new URL("./casting/snapshotCohortInventory.ts", import.meta.url),
+      "utf8",
+    );
+    const script = await readFile(
+      new URL("../scripts/inventory-cast-cohorts.ts", import.meta.url),
+      "utf8",
+    );
+    expect(service).not.toMatch(
+      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
+    expect(service).toContain("COUNT(DISTINCT");
+    expect(service).toContain("if (totalUsers > input.maxUsers)");
+    expect(service).toContain(".limit(input.maxUsers)");
+    expect(service).toContain("isNull(models.deletedAt)");
+    expect(service).toContain('ne(models.status, "archived")');
+    expect(script).not.toMatch(
+      /storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+    );
+    expect(script).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
+    expect(script).toContain("cohort_inventory_failed");
   });
 
   it("keeps B6 pin convergence bounded, private, and limited to Cast-slot pins", async () => {
