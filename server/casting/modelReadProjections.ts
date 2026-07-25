@@ -11,6 +11,7 @@ import {
   getUserMintedModels,
   getUserMintedModelsWithThumbnail,
 } from "../db/models";
+import type { Model, ModelAsset } from "../../drizzle/schema";
 import {
   resolveEffectiveCastStatesForRead,
 } from "./effectiveCastRead";
@@ -32,30 +33,71 @@ export function selectedAssetForAngle(
 }
 
 /**
- * Safe models.get projection. Snapshot pointer ids, seals, stateVersion and
- * the rollback-only mutable revision id do not cross the public boundary.
+ * Positive public allowlist for model-assets history. Storage management,
+ * spend, generation status and provenance remain server-only.
+ */
+export function projectModelAssetForClient(
+  asset: Pick<ModelAsset, "id" | "viewType" | "storageUrl">,
+) {
+  return {
+    id: asset.id,
+    viewType: asset.viewType,
+    storageUrl: asset.storageUrl,
+  };
+}
+
+function projectModelFieldsForClient(
+  model: Model,
+  documents?: Pick<Model, "masterPrompt" | "technicalSchema" | "preferences">,
+) {
+  return {
+    id: model.id,
+    name: model.name,
+    agencyId: model.agencyId,
+    masterPrompt: documents?.masterPrompt ?? model.masterPrompt,
+    technicalSchema: documents?.technicalSchema ?? model.technicalSchema,
+    preferences: documents?.preferences ?? model.preferences,
+    status: model.status,
+    mintedAt: model.mintedAt,
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
+  };
+}
+
+/** Minimal account-library row; identity documents are loaded by models.get. */
+export function projectModelSummaryForClient(model: Model) {
+  return {
+    id: model.id,
+    name: model.name,
+    agencyId: model.agencyId,
+    status: model.status,
+    mintedAt: model.mintedAt,
+    createdAt: model.createdAt,
+    updatedAt: model.updatedAt,
+  };
+}
+
+/** Positive allowlist for the scope-off/R6 models.get response. */
+export function projectModelForClient(
+  model: Model,
+  assets: readonly ModelAsset[],
+) {
+  return {
+    ...projectModelFieldsForClient(model),
+    assets: assets.map(projectModelAssetForClient),
+  };
+}
+
+/**
+ * Safe snapshot models.get projection. Only the same explicit model fields
+ * as R6 plus the selected package DTO cross the public boundary.
  */
 export function projectEffectiveModelForClient(state: EffectiveCastState) {
-  const {
-    currentPackageSnapshotId: _currentPackageSnapshotId,
-    sealedIdentitySnapshotId: _sealedIdentitySnapshotId,
-    sealedPackageSnapshotId: _sealedPackageSnapshotId,
-    stateVersion: _stateVersion,
-    identityRevisionId: _identityRevisionId,
-    ...publicModel
-  } = state.model;
   const identity = state.status === "current" ? state.identity : null;
   return {
-    ...publicModel,
-    masterPrompt: identity?.masterPrompt ?? state.model.masterPrompt,
-    technicalSchema: identity?.technicalSchema ?? state.model.technicalSchema,
-    preferences: identity?.preferences ?? state.model.preferences,
-    assets: [...state.ledger.assets],
-    selectedAssets: selectedAssetsFromEffectiveState(state).map((asset) => ({
-      id: asset.id,
-      viewType: asset.viewType,
-      storageUrl: asset.storageUrl,
-    })),
+    ...projectModelFieldsForClient(state.model, identity ?? undefined),
+    assets: state.ledger.assets.map(projectModelAssetForClient),
+    selectedAssets: selectedAssetsFromEffectiveState(state).map(projectModelAssetForClient),
   };
 }
 

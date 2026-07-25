@@ -25,7 +25,11 @@ import {
 } from "../casting/finalCastDeletion";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
-import { projectEffectiveModelForClient } from "../casting/modelReadProjections";
+import {
+  projectEffectiveModelForClient,
+  projectModelForClient,
+  projectModelSummaryForClient,
+} from "../casting/modelReadProjections";
 const log = createModuleLogger("routes/models");
 
 export function isFinalModelDeleteEnabled(): boolean {
@@ -188,7 +192,7 @@ export const modelsRouter = router({
     .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
     .query(async ({ ctx, input }) => {
       const models = await getUserModels(ctx.user.id, input?.limit ?? 50);
-      return models;
+      return models.map(projectModelSummaryForClient);
     }),
 
   // Get a specific model by ID
@@ -214,7 +218,7 @@ export const modelsRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
       }
       const assets = await getModelAssets(input.modelId);
-      return { ...model, assets };
+      return projectModelForClient(model, assets);
     }),
 
   // Update model display name. STATUS IS NOT ACCEPTED HERE (Batch 0, R6

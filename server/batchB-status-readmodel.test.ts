@@ -330,6 +330,83 @@ describe("listCastableModels derives draft from status, never from 'not minted'"
 // ─── Board fill — provenance draft flag is status truth ────────────────────
 
 describe("models.get snapshot projection", () => {
+  it("models.list returns only the account-library summary allowlist", async () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    const updatedAt = new Date("2026-01-02T00:00:00.000Z");
+    vi.mocked(getUserModels).mockResolvedValue([model({
+      createdAt,
+      updatedAt,
+      userId: 1,
+      masterPrompt: "server-only-master-prompt",
+      technicalSchema: { server: "only" },
+      preferences: { server: "only" },
+      currentPackageSnapshotId: "server-only-package",
+      futureServerOnlyField: "server-only-model-secret",
+    })] as never);
+
+    const result = await appRouter.createCaller(authCtx()).models.list({ limit: 10 });
+
+    expect(result).toEqual([{
+      id: 7,
+      name: "Test Model",
+      agencyId: null,
+      status: "draft",
+      mintedAt: null,
+      createdAt,
+      updatedAt,
+    }]);
+    expect(JSON.stringify(result)).not.toMatch(
+      /server-only|masterPrompt|technicalSchema|preferences|currentPackageSnapshotId/,
+    );
+  });
+
+  it("uses the explicit public allowlist in R6 mode too", async () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    const updatedAt = new Date("2026-01-02T00:00:00.000Z");
+    vi.mocked(getModelById).mockResolvedValue(model({
+      createdAt,
+      updatedAt,
+      userId: 1,
+      currentPackageSnapshotId: "server-only-package",
+      stateVersion: 9,
+      identityRevisionId: "server-only-revision",
+      deletedAt: null,
+      futureServerOnlyField: "server-only-model-secret",
+    }) as never);
+    vi.mocked(getModelAssets).mockResolvedValue([{
+      ...headshot,
+      storageKey: "server-only/storage-key.png",
+      pointsCost: 350,
+      provenance: { server: "only" },
+      futureServerOnlyField: "server-only-asset-secret",
+    }] as never);
+
+    const result = await appRouter.createCaller(authCtx()).models.get({ modelId: 7 });
+
+    expect(Object.keys(result).sort()).toEqual([
+      "agencyId",
+      "assets",
+      "createdAt",
+      "id",
+      "masterPrompt",
+      "mintedAt",
+      "name",
+      "preferences",
+      "status",
+      "technicalSchema",
+      "updatedAt",
+    ]);
+    expect(result.assets).toEqual([{
+      id: headshot.id,
+      viewType: headshot.viewType,
+      storageUrl: headshot.storageUrl,
+    }]);
+    expect(JSON.stringify(result)).not.toMatch(
+      /server-only|storageKey|pointsCost|provenance|currentPackageSnapshotId|identityRevisionId/,
+    );
+    expect(resolveEffectiveCastStateForRead).not.toHaveBeenCalled();
+  });
+
   it("returns immutable documents plus selected assets while retaining ledger history", async () => {
     vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
     vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(snapshotState() as never);

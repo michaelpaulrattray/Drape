@@ -319,14 +319,41 @@ describe("B4 account-owned model projections stay snapshot-selected", () => {
 
   it("keeps ledger history separate from selected presentation in the server and client hydration", () => {
     const projection = serverFile("casting/modelReadProjections.ts");
-    expect(projection).toContain("assets: [...state.ledger.assets]");
-    expect(projection).toContain("selectedAssets: selectedAssetsFromEffectiveState(state).map");
-    expect(projection).toContain("id: asset.id");
-    expect(projection).toContain("viewType: asset.viewType");
-    expect(projection).toContain("storageUrl: asset.storageUrl");
+    const outwardProjection = projection.slice(
+      projection.indexOf("export function projectModelAssetForClient"),
+      projection.indexOf("/**\n * Board info projection"),
+    );
+    expect(projection).toContain("assets: state.ledger.assets.map(projectModelAssetForClient)");
+    expect(projection).toContain("selectedAssets: selectedAssetsFromEffectiveState(state).map(projectModelAssetForClient)");
+    expect(outwardProjection).toContain("id: asset.id");
+    expect(outwardProjection).toContain("viewType: asset.viewType");
+    expect(outwardProjection).toContain("storageUrl: asset.storageUrl");
+    expect(outwardProjection).not.toMatch(/\.\.\.(?:state\.model|model|asset)\b/);
+    for (const privateField of [
+      "userId:",
+      "identityRevisionId:",
+      "currentPackageSnapshotId:",
+      "stateVersion:",
+      "sealedIdentitySnapshotId:",
+      "sealedPackageSnapshotId:",
+      "deletedAt:",
+      "modelId: asset.modelId",
+      "storageKey:",
+      "pointsCost:",
+      "pinned:",
+      "status: asset.status",
+      "provenance:",
+    ]) {
+      expect(outwardProjection).not.toContain(privateField);
+    }
     expect(projection).toContain('selectedAssetForAngle(state, "frontFull")');
     expect(projection).toContain('selectedAssetForAngle(state, "frontClose")');
     expect(projection).not.toMatch(/currentPackageSnapshotId:\s*state\./);
+    const modelsRoute = serverFile("routes/models.ts");
+    expect(modelsRoute).toContain("return models.map(projectModelSummaryForClient)");
+    expect(modelsRoute).toContain("return projectModelForClient(model, assets)");
+    expect(modelsRoute).not.toContain("return models;");
+    expect(modelsRoute).not.toContain("return { ...model, assets }");
 
     const history = clientFile("features/casting/utils/buildHistoryFromAssets.ts");
     expect(history).toContain("selectedAssets?: AssetWithMeta[]");

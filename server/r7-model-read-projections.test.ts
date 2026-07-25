@@ -23,8 +23,11 @@ import {
   getUserMintedModelsWithThumbnailForRead,
   projectEffectiveBoardModelInfo,
   projectEffectiveModelForClient,
+  projectModelForClient,
+  projectModelSummaryForClient,
 } from "./casting/modelReadProjections";
 import { buildHistoryFromAssets } from "../client/src/features/casting/utils/buildHistoryFromAssets";
+import type { Model, ModelAsset } from "../drizzle/schema";
 
 const mutableModel = {
   id: 7,
@@ -41,18 +44,24 @@ const mutableModel = {
   sealedIdentitySnapshotId: "identity-sealed",
   sealedPackageSnapshotId: "package-sealed",
   mintedAt: new Date("2026-01-02"),
+  deletedAt: null,
   createdAt: new Date("2026-01-01"),
   updatedAt: new Date("2026-01-03"),
-};
+} satisfies Model;
 
-function asset(id: number, viewType: "frontClose" | "frontFull", storageUrl: string) {
+function asset(
+  id: number,
+  viewType: "frontClose" | "frontFull",
+  storageUrl: string,
+): ModelAsset {
   return {
     id,
     modelId: 7,
     viewType,
     storageUrl,
     storageKey: `models/7/${id}.png`,
-    resolution: "1024x1024",
+    resolution: "1K",
+    pointsCost: 350,
     pinned: false,
     status: null,
     provenance: null,
@@ -64,7 +73,7 @@ const selectedFront = asset(11, "frontClose", "https://images.example/selected-f
 const selectedFull = asset(12, "frontFull", "https://images.example/selected-full.png");
 const newerUnselected = asset(99, "frontFull", "https://images.example/newer-full.png");
 
-function currentState(status: "active" | "draft" = "active") {
+function currentState(status: Model["status"] = "active") {
   const model = { ...mutableModel, status };
   return {
     authority: "snapshot",
@@ -186,6 +195,26 @@ describe("snapshot thumbnail projections", () => {
 });
 
 describe("selected package hydration", () => {
+  it("keeps account-library model rows on a minimal positive allowlist", () => {
+    const projected = projectModelSummaryForClient({
+      ...mutableModel,
+      futureServerOnlyField: "server-only-model-secret",
+    } as never);
+
+    expect(projected).toEqual({
+      id: mutableModel.id,
+      name: mutableModel.name,
+      agencyId: mutableModel.agencyId,
+      status: mutableModel.status,
+      mintedAt: mutableModel.mintedAt,
+      createdAt: mutableModel.createdAt,
+      updatedAt: mutableModel.updatedAt,
+    });
+    expect(JSON.stringify(projected)).not.toMatch(
+      /server-only|masterPrompt|technicalSchema|preferences|currentPackageSnapshotId/,
+    );
+  });
+
   it("projects board model info from selected immutable truth only", () => {
     const state = currentState() as never;
 
@@ -201,7 +230,13 @@ describe("selected package hydration", () => {
   });
 
   it("exposes selected presentation as a minimal public DTO", () => {
-    const projected = projectEffectiveModelForClient(currentState() as never);
+    const state = currentState() as ReturnType<typeof currentState> & {
+      model: Record<string, unknown>;
+      ledger: { assets: Array<Record<string, unknown>> };
+    };
+    state.model.futureServerOnlyField = "server-only-model-secret";
+    state.ledger.assets[0].futureServerOnlyField = "server-only-asset-secret";
+    const projected = projectEffectiveModelForClient(state as never);
 
     expect(projected.selectedAssets).toEqual([
       {
@@ -215,8 +250,69 @@ describe("selected package hydration", () => {
         storageUrl: selectedFull.storageUrl,
       },
     ]);
+    expect(Object.keys(projected).sort()).toEqual([
+      "agencyId",
+      "assets",
+      "createdAt",
+      "id",
+      "masterPrompt",
+      "mintedAt",
+      "name",
+      "preferences",
+      "selectedAssets",
+      "status",
+      "technicalSchema",
+      "updatedAt",
+    ]);
+    expect(projected.assets.map((row) => Object.keys(row).sort())).toEqual([
+      ["id", "storageUrl", "viewType"],
+      ["id", "storageUrl", "viewType"],
+      ["id", "storageUrl", "viewType"],
+    ]);
+    expect(JSON.stringify(projected)).not.toMatch(
+      /server-only|storageKey|pointsCost|provenance|currentPackageSnapshotId|identityRevisionId/,
+    );
     expect(projected.selectedAssets[0]).not.toHaveProperty("storageKey");
     expect(projected.selectedAssets[0]).not.toHaveProperty("provenance");
+  });
+
+  it("uses the same positive allowlist for the scope-off model and ledger", () => {
+    const projected = projectModelForClient(
+      {
+        ...mutableModel,
+        userId: 1,
+        deletedAt: null,
+        futureServerOnlyField: "server-only-model-secret",
+      } as never,
+      [{
+        ...newerUnselected,
+        pointsCost: 350,
+        futureServerOnlyField: "server-only-asset-secret",
+      }] as never,
+    );
+
+    expect(Object.keys(projected).sort()).toEqual([
+      "agencyId",
+      "assets",
+      "createdAt",
+      "id",
+      "masterPrompt",
+      "mintedAt",
+      "name",
+      "preferences",
+      "status",
+      "technicalSchema",
+      "updatedAt",
+    ]);
+    expect(projected.assets).toEqual([{
+      id: newerUnselected.id,
+      viewType: newerUnselected.viewType,
+      storageUrl: newerUnselected.storageUrl,
+    }]);
+    expect("selectedAssets" in projected).toBe(false);
+    expect(JSON.stringify(projected)).not.toMatch(
+      /server-only|storageKey|pointsCost|provenance|currentPackageSnapshotId|identityRevisionId/,
+    );
   });
 
   it("keeps the full ledger history but makes a restored package the current state", () => {
