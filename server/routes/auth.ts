@@ -6,7 +6,20 @@ import { TRPCError } from "@trpc/server";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 
 export const authRouter = router({
-  me: publicProcedure.query(opts => opts.ctx.user),
+  me: publicProcedure.query(({ ctx }) => {
+    if (!ctx.user) return null;
+    // Invariant 8: expose only fields the authenticated client actually uses.
+    // This must remain a positive projection so future users-table columns stay
+    // server-only unless they are deliberately reviewed into this boundary.
+    return {
+      name: ctx.user.name,
+      email: ctx.user.email,
+      avatarUrl: ctx.user.avatarUrl,
+      role: ctx.user.role,
+      approved: ctx.user.approved,
+      canvasIntroSeen: ctx.user.canvasIntroSeen,
+    };
+  }),
   logout: publicProcedure.mutation(({ ctx }) => {
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

@@ -14,7 +14,7 @@ import { trpc } from '@/lib/trpc';
 import { UserCard } from '@/components/UserCard';
 
 interface LobbyRailProps {
-  user: { id: number; name: string | null; avatarUrl?: string | null; role?: string } | null;
+  user: { name: string | null; avatarUrl?: string | null; role?: string } | null;
   profileImage?: string | null;
   onLogout: () => void;
   onOpenSettings: () => void;
