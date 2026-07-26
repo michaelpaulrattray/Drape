@@ -30,6 +30,7 @@ import { wardrobeRouter } from "./routes/wardrobe";
 import { boardsRouter } from "./routes/boards";
 import { boardOpsRouter } from "./routes/boardOps";
 import { lobbyRouter } from "./routes/lobby";
+import { evidenceRouter } from "./routes/evidence";
 
 export const appRouter = router({
   system: systemRouter,
@@ -57,6 +58,7 @@ export const appRouter = router({
   boards: boardsRouter,
   boardOps: boardOpsRouter,
   lobby: lobbyRouter,
+  evidence: evidenceRouter,
 });
 
 export type AppRouter = typeof appRouter;

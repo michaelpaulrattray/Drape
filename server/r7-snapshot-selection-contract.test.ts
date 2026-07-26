@@ -110,6 +110,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/snapshotTransitions.ts",
       "server/db/accountDeletion.ts",
       "server/db/evidenceIngestion.ts",
+      "server/db/evidenceOperations.ts",
       "server/db/generationOperations.ts",
     ]);
     const hits: string[] = [];

@@ -45,6 +45,7 @@ export async function beginDirectOperation(input: {
   originItemId?: number | null;
   payload: unknown;
   lockKey?: string;
+  resumeClaimedEvidence?: boolean;
 }): Promise<DirectOperationGate> {
   const claim = await claimGenerationOperation(input);
   switch (claim.type) {

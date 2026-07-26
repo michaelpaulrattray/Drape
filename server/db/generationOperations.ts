@@ -648,7 +648,7 @@ async function getOperationForUser(
 }
 
 export async function claimGenerationOperation(
-  input: ClaimGenerationOperationInput,
+  input: ClaimGenerationOperationInput & { resumeClaimedEvidence?: boolean },
 ): Promise<GenerationOperationOutcome> {
   assertPositiveId(input.userId, "userId");
   assertGenerationOperationKind(input.kind);
@@ -675,6 +675,18 @@ export async function claimGenerationOperation(
     if (preexisting.subjectDeletedAt) return outcomeFromExisting(preexisting);
     if (preexisting.kind !== input.kind || preexisting.payloadHash !== payloadHash) {
       return { type: "payload_conflict", operationId: preexisting.id };
+    }
+    if (
+      input.resumeClaimedEvidence === true
+      && preexisting.status === "claimed"
+      && (preexisting.kind === "evidence_plate_ingest"
+        || preexisting.kind === "evidence_plate_discard")
+    ) {
+      return {
+        type: "claimed",
+        operationId: preexisting.id,
+        payloadHash: preexisting.payloadHash,
+      };
     }
     return outcomeFromExisting(preexisting);
   }
@@ -1277,27 +1289,43 @@ export async function finalizeClaimedGenerationOperationSuccess(input: {
   assertPublicOperationResult(input.result);
   await stopOperationHeartbeat(input.operationId);
   await withTransaction(async (tx) => {
-    const finalized = await tx
-      .update(generationOperations)
-      .set({
-        status: "succeeded",
-        result: input.result,
-        errorCode: null,
-        publicMessage: null,
-        chargedCredits: 0,
-        refundedCredits: 0,
-        completedAt: new Date(),
-      })
-      .where(and(
-        eq(generationOperations.id, input.operationId),
-        eq(generationOperations.userId, input.userId),
-        eq(generationOperations.status, "claimed"),
-      ));
-    if (affectedRows(finalized) !== 1) {
-      throw new Error("Claimed operation success finalization lost its state race");
-    }
-    await tx.delete(generationOperationLocks).where(eq(generationOperationLocks.operationId, input.operationId));
+    await finalizeClaimedGenerationOperationSuccessIn(tx, input);
   });
+}
+
+/**
+ * Transaction-scoped form used when a free claimed operation and its durable
+ * product mutation must become visible atomically.
+ */
+export async function finalizeClaimedGenerationOperationSuccessIn(
+  tx: TransactionHandle,
+  input: { userId: number; operationId: string; result: unknown },
+): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertPublicOperationResult(input.result);
+  const finalized = await tx
+    .update(generationOperations)
+    .set({
+      status: "succeeded",
+      result: input.result,
+      errorCode: null,
+      publicMessage: null,
+      chargedCredits: 0,
+      refundedCredits: 0,
+      completedAt: new Date(),
+    })
+    .where(and(
+      eq(generationOperations.id, input.operationId),
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.status, "claimed"),
+    ));
+  if (affectedRows(finalized) !== 1) {
+    throw new Error("Claimed operation success finalization lost its state race");
+  }
+  await tx.delete(generationOperationLocks).where(
+    eq(generationOperationLocks.operationId, input.operationId),
+  );
 }
 
 /** Structural/authorization truth may change after the resource lock is won.
@@ -1544,5 +1572,27 @@ export async function getGenerationOperationOutcome(
   assertPositiveId(userId, "userId");
   assertOperationIdentity(operationId);
   const operation = await getOperationForUser(userId, operationId);
+  return operation ? outcomeFromExisting(operation) : null;
+}
+
+export async function getGenerationOperationOutcomeByRequest(input: {
+  userId: number;
+  clientRequestId: string;
+  kind: GenerationOperationKind;
+}): Promise<GenerationOperationOutcome | null> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.clientRequestId);
+  assertGenerationOperationKind(input.kind);
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [operation] = await db
+    .select()
+    .from(generationOperations)
+    .where(and(
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.clientRequestId, input.clientRequestId),
+      eq(generationOperations.kind, input.kind),
+    ))
+    .limit(1);
   return operation ? outcomeFromExisting(operation) : null;
 }

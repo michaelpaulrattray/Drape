@@ -13,6 +13,7 @@ import { checkRateLimit, RATE_LIMITS } from "../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
+import { getEvidenceDeliveryAdapter } from "../casting/evidence/evidenceDeliveryRuntime";
 const log = createModuleLogger("routes/account");
 
 export const accountRouter = router({
@@ -37,7 +38,10 @@ export const accountRouter = router({
       metadata: { requestedAt: new Date().toISOString() },
     });
 
-    const data = await exportUserData(userId);
+    const data = await exportUserData(
+      userId,
+      getEvidenceDeliveryAdapter() ?? undefined,
+    );
     if (!data) {
       throw new TRPCError({
         code: "NOT_FOUND",

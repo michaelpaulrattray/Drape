@@ -117,6 +117,19 @@ async function main() {
       R7_7C1_LEGACY_MODEL_BATCH_ID: legacyModelBatchId,
       R7_7C1_LEGACY_ACCOUNT_BATCH_ID: legacyAccountBatchId,
     });
+    // C4's operation-bound route service is deliberately isolated from the
+    // C1/C2 schema/runtime files so hosted-MySQL latency cannot make unrelated
+    // five-second schema assertions contend with its longer transactions.
+    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
+      "exec",
+      "vitest",
+      "run",
+      "server/r7-evidence-operations-db.test.ts",
+    ], {
+      ...process.env,
+      DATABASE_URL: "",
+      TEST_DATABASE_URL: testUrl.toString(),
+    });
     // C3 resets the complete disposable fixture between lifecycle cases. Run
     // it in a separate process so its resets cannot race C1/C2 suites.
     run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
@@ -129,7 +142,7 @@ async function main() {
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),
     });
-    console.log("[disposable] R7-7C1/C2/C3 migration, ingestion, recovery and lifecycle gates passed");
+    console.log("[disposable] R7-7C1/C2/C3/C4 migration, ingestion, replay, recovery and lifecycle gates passed");
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) {

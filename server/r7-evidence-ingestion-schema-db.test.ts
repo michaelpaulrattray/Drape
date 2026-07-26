@@ -185,7 +185,7 @@ describeWithDatabase("R7-7C1 owned-evidence schema (disposable DB)", () => {
       sourceX: "0.100000000",
       sourceWidth: "0.500000000",
     });
-  });
+  }, 20_000);
 
   it("rejects duplicate operation/key identities and unreviewed enum values", async () => {
     const operationId = randomUUID();

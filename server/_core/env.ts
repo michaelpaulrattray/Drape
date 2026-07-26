@@ -1,4 +1,8 @@
 import { parseSnapshotReadScope } from "../casting/snapshotReadScope";
+import {
+  EVIDENCE_INGEST_SCOPE_ENV,
+  validateEvidenceIngestEnvironment,
+} from "../casting/evidence/evidenceIngestScope";
 
 /**
  * Vars the server cannot run without. Each entry explains what breaks when
@@ -51,6 +55,10 @@ export function validateEnv(): void {
   // R7-7B is off by default. A malformed rollout scope must stop startup
   // rather than partially or ambiguously enabling snapshot reads.
   parseSnapshotReadScope(process.env.R7_SNAPSHOT_READ_SCOPE);
+  validateEvidenceIngestEnvironment({
+    scope: process.env[EVIDENCE_INGEST_SCOPE_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+  });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {
     if (!process.env[key]) {
