@@ -11,11 +11,13 @@
  */
 import { useLocation } from 'wouter';
 import { Settings, CreditCard, Gift, LogOut, LayoutDashboard, Eye } from 'lucide-react';
+import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
 interface UserCardProps {
   userInitial: string;
   userName: string;
   profileImage?: string | null;
+  profileIdentity?: { name?: string | null; email?: string | null } | string;
   creditsBalance: number;
   role?: string | null;
   onOpenSettings: () => void;
@@ -28,6 +30,7 @@ export function UserCard({
   userInitial,
   userName,
   profileImage,
+  profileIdentity,
   creditsBalance,
   role,
   onOpenSettings,
@@ -46,22 +49,12 @@ export function UserCard({
           className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
           style={{ border: '1.5px solid rgba(0,0,0,0.08)' }}
         >
-          {profileImage ? (
-            <img
-              src={profileImage}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ background: '#1a1a1a' }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>
-                {userInitial}
-              </span>
-            </div>
-          )}
+          <ProfileAvatar
+            src={profileImage}
+            identity={profileIdentity ?? userName ?? userInitial}
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
         </div>
         <div className="flex-1 min-w-0">
           <p

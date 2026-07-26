@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, PanelLeft } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
+import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
 export interface StudioSlimHeaderProps {
   title: string;
@@ -64,8 +65,6 @@ export function StudioSlimHeader({
       window.removeEventListener('keydown', onKey);
     };
   }, [menuOpen]);
-
-  const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
 
   const menuItem =
     'w-full text-left px-3 py-2 text-canvas-md text-canvas-ink-soft hover:bg-canvas-surface-inset hover:text-canvas-ink transition-colors';
@@ -130,11 +129,12 @@ export function StudioSlimHeader({
             aria-label="Profile"
             className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center bg-canvas-surface-inset border-hairline border-canvas-border text-canvas-xs font-medium text-canvas-ink-soft hover:border-canvas-border-strong transition-colors"
           >
-            {profileImage ? (
-              <img src={profileImage} alt="" className="w-full h-full object-cover" />
-            ) : (
-              initial
-            )}
+            <ProfileAvatar
+              src={profileImage}
+              identity={user ?? "drape"}
+              alt=""
+              className="w-full h-full object-cover"
+            />
           </button>
           {menuOpen && (
             <div className="absolute right-0 top-9 z-50 w-52 py-1.5 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border-strong">

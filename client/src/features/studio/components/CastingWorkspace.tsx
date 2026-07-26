@@ -96,7 +96,6 @@ export function CastingWorkspace({
     prefs,
     modelName,
     engineChoice,
-    updatePrefs,
     setPrefs,
     setEngineChoices,
   } = useCastingFormStore();
@@ -113,6 +112,8 @@ export function CastingWorkspace({
   const utils = trpc.useUtils();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [pendingParseResult, setPendingParseResult] = useState<ParsePromptResult | null>(null);
+  const [autoGenerateRequest, setAutoGenerateRequest] = useState(0);
+  const handledAutoGenerateRequestRef = useRef(0);
   const previousHasAssetsRef = useRef(false);
   const identityChangeSnapshotRef = useRef<{
     prefs: ModelPreferences;
@@ -399,15 +400,51 @@ export function CastingWorkspace({
     previousHasAssetsRef.current = hasAssets;
   }, [hasAssets, setShowMobilePanel]);
 
-  const handleStartParsed = useCallback((result: ParsePromptResult) => {
-    setPendingParseResult(result);
+  const queueAutomaticGeneration = useCallback(() => {
     setDetailsOpen(true);
+    setAutoGenerateRequest((request) => request + 1);
   }, []);
 
+  const handleStartParsed = useCallback((result: ParsePromptResult) => {
+    const form = useCastingFormStore.getState();
+    form.updatePrefs(result.preferences as Partial<ModelPreferences>);
+    form.markUnsetRequiredAsEngineChoice();
+    setPendingParseResult(result);
+    queueAutomaticGeneration();
+  }, [queueAutomaticGeneration]);
+
   const handleSurprise = useCallback(() => {
-    updatePrefs(generateRandomPreferences());
-    setDetailsOpen(true);
-  }, [updatePrefs]);
+    const form = useCastingFormStore.getState();
+    form.updatePrefs(generateRandomPreferences());
+    form.setEngineChoices({});
+    queueAutomaticGeneration();
+  }, [queueAutomaticGeneration]);
+
+  // Brief submit and Surprise me are direct verbs. The store mutations above
+  // are synchronous; wait for this hook to re-render with that exact snapshot
+  // before starting one generation. The ref prevents React Strict Mode from
+  // duplicating a paid action.
+  useEffect(() => {
+    if (
+      autoGenerateRequest === 0 ||
+      handledAutoGenerateRequestRef.current === autoGenerateRequest ||
+      !isFormValid ||
+      !creditsData ||
+      genState.isGenerating ||
+      currentModelId !== null
+    ) {
+      return;
+    }
+    handledAutoGenerateRequestRef.current = autoGenerateRequest;
+    void handleGenerate();
+  }, [
+    autoGenerateRequest,
+    creditsData,
+    currentModelId,
+    genState.isGenerating,
+    handleGenerate,
+    isFormValid,
+  ]);
 
   const openPackageUpgrade = useCallback(() => {
     window.dispatchEvent(new CustomEvent('casting-open-package-upgrade'));

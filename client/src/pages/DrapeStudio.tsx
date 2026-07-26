@@ -164,6 +164,9 @@ export default function DrapeStudio() {
     currentModelId,
     currentAssets,
     refetchCreditsWithWarning,
+    // Lobby-started casting returns to the Cast library when the durable mint
+    // completes. Wardrobe remains a separate deliberate tool choice.
+    onMinted: () => navigate('/app/models'),
   });
 
   const dismissCastModal = useCallback((typedName: string) => {
@@ -401,8 +404,6 @@ export default function DrapeStudio() {
         planTier={creditsData?.planTier || 'free'}
         onOpenBilling={() => { setShowSettings(false); setIsBillingOpen(true); }}
         onOpenTopup={() => { setShowSettings(false); setIsTopupOpen(true); }}
-        defaultAvatar=""
-        defaultBanner=""
       />
 
       <BillingModal

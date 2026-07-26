@@ -8,6 +8,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SignJWT, jwtVerify } from "jose";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { checkRateLimit } from "../security/rateLimit";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 // Use a test secret for state token tests
 const TEST_SECRET = "test-jwt-secret-for-google-oauth-tests";
@@ -236,5 +238,18 @@ describe("Google OAuth — Callback Error Handling", () => {
     // Both new and returning users redirect to the /app lobby on success
     const successRedirect = "/app";
     expect(successRedirect).toBe("/app");
+  });
+});
+
+describe("Google OAuth — profile media boundary", () => {
+  it("never persists Google's third-party picture URL", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "server/routes/googleAuth.ts"),
+      "utf8",
+    );
+
+    expect(source).not.toMatch(/\bpicture\b/);
+    expect(source).toContain("avatarUrl: existingUser.avatarUrl || null");
+    expect(source).toContain("avatarUrl: null");
   });
 });

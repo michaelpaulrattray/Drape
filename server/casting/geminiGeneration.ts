@@ -456,7 +456,18 @@ export function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: 
     Preserve the brief's recognizable subculture, character, energy, and social archetype.
     Translate it into a credible casting portrait without sanitizing it into a generic luxury-fashion face.
     Explicit structured attributes below are exact requirements and win on conflict.
-    Brand and vibe should art-direct this brief, not replace it.` : ""}
+    Brand and vibe should art-direct this brief, not replace it.
+
+    ARCHETYPE FIDELITY GATE:
+    - The natural_description MUST make the named archetype recognizable through
+      concrete casting choices: facial character, grooming, hair silhouette,
+      bearing, and camera presence. Do this without clothing, accessories, or makeup.
+    - The technical_schema context.casting_for MUST retain the user's named
+      archetype or profession in plain language.
+    - A named cultural or social archetype (for example K-pop star, punk musician,
+      skater, or corporate lawyer) may never be replaced by a generic fashion-brand
+      type. If the output would fit the same brief after removing that phrase, it
+      is not specific enough and must be rewritten before returning JSON.` : ""}
 
     ── IDENTITY ──
     - Gender: ${prefs.gender || "ENGINE'S CHOICE — cast whoever best serves the brand direction"}

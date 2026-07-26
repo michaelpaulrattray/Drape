@@ -63,6 +63,7 @@ export function NodeFloatingToolbar({
   return (
     <TooltipProvider delayDuration={300}>
       <div
+        data-node-action-toolbar
         className={cn(
           "absolute left-1/2 flex items-center gap-0.5 p-0.5 bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-pill",
           position === "top" ? "-top-2" : "-bottom-2",

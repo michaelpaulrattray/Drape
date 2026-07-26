@@ -249,6 +249,21 @@ describe("buildNewPromptContent — honest engine-choice directives (D-41)", () 
     expect(out).toContain("Age: 24");
     expect(out).toContain("Length: Long");
   });
+
+  it("makes a named K-pop archetype a concrete output contract, not disposable mood", () => {
+    const out = buildNewPromptContent({
+      userPrompt: "mid-20s male Korean K-pop star",
+      gender: "Male",
+      age: "25",
+      ethnicity: "Korean",
+    }, "skin");
+
+    expect(out).toContain("mid-20s male Korean K-pop star");
+    expect(out).toContain("ARCHETYPE FIDELITY GATE");
+    expect(out).toContain("context.casting_for MUST retain");
+    expect(out).toContain("may never be replaced by a generic fashion-brand");
+    expect(out).toContain("not specific enough and must be rewritten");
+  });
 });
 
 describe("buildNewPromptContent — override-preferring reads (PARSER_PROMPT_V2 §4)", () => {

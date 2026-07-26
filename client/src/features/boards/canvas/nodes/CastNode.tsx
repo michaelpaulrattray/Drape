@@ -8,7 +8,8 @@
  * cast new. No inline prompt, no attribute chrome; configuration and
  * post-cast editing consolidate in the casting environment (D-35, gated).
  *
- * R4: selection raises the floating toolbar (Decision 7 grammar). Rerun
+ * Right-click raises the floating action toolbar; a normal click only
+ * selects the node. Rerun
  * opens the ForkRecastPopover (3f, as amended by D-43 — recast sealed on
  * minted); Variations opens the plan-priced popover; Duplicate/Delete/Info
  * dispatch to BoardPage (which owns modals, the trust net, and optimistic
@@ -85,6 +86,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const utils = trpc.useUtils();
   const containerRef = useRef<HTMLDivElement>(null);
   const [popover, setPopover] = useState<NodePopover>(null);
+  const [contextActionsOpen, setContextActionsOpen] = useState(false);
   useRegisterCanvasLayer(`cast-node-popover-${data.itemId}`, popover !== null);
 
   const prov = data.provenance;
@@ -94,6 +96,33 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // image area is a 3:4 portrait matching the generation ratio exactly.
   const isView = prov?.type === "cast_view";
   const cardWidth = isView ? 200 : 280;
+
+  useEffect(() => {
+    const openForNode = (event: Event) => {
+      const itemId = (event as CustomEvent<{ itemId?: number }>).detail?.itemId;
+      if (itemId === data.itemId) setContextActionsOpen(true);
+      else setContextActionsOpen(false);
+    };
+    const closeOnPointer = (event: MouseEvent) => {
+      if (
+        (event.target as HTMLElement | null)?.closest?.("[data-node-action-toolbar]")
+      ) {
+        return;
+      }
+      setContextActionsOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setContextActionsOpen(false);
+    };
+    window.addEventListener("board-open-node-actions", openForNode);
+    document.addEventListener("mousedown", closeOnPointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("board-open-node-actions", openForNode);
+      document.removeEventListener("mousedown", closeOnPointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [data.itemId]);
   // D-42: placed drafts wear their status in the label row
   const isDraft = isLibrary && (
     typeof data.sourceDraft === "boolean"
@@ -389,7 +418,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // D-50: in a multi-selection the group toolbar replaces per-node toolbars
   const multiSelect = useIsMultiSelect();
   const showToolbar =
-    selected && !multiSelect && !controller.isEmpty && controller.promptState !== "generating";
+    contextActionsOpen && !multiSelect && !controller.isEmpty && controller.promptState !== "generating";
 
   return (
     <div ref={containerRef} className="relative" style={{ width: cardWidth }}>
@@ -555,7 +584,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
             <CharacterSheetImageArea
               tiles={sheet.tiles}
               activeTileAngle={sheet.popoverAngle}
-              onTileClick={(angle, el) => {
+              onTileContextMenu={(angle, el) => {
                 tileAnchorRef.current = el;
                 sheet.prefetchPlan();
                 sheet.setPopoverAngle(angle);

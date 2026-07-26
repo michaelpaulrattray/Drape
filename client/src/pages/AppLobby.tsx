@@ -23,12 +23,13 @@ import { BillingModal } from '@/features/billing';
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
 import { ReferralModal } from '@/features/referral/ReferralModal';
 import ProfileSettingsModal from '@/components/ProfileSettingsModal';
+import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
 function MobileHeader({
   user,
   onLogout,
 }: {
-  user: { name: string | null; avatarUrl?: string | null };
+  user: { name: string | null; email?: string | null; avatarUrl?: string | null };
   onLogout: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,21 +39,13 @@ function MobileHeader({
       <img src="/drape-logo.svg" alt="drape" style={{ height: 20 }} />
       <div className="relative">
         <button onClick={() => setMenuOpen(!menuOpen)} className="block" aria-label="Account menu">
-          {user.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt={user.name ?? 'User'}
-              className="w-8 h-8 rounded-full object-cover"
-              style={{ border: '2px solid rgba(0,0,0,0.06)' }}
-            />
-          ) : (
-            <span
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: '#1a1a1a', color: '#fff', fontSize: 13, fontWeight: 600 }}
-            >
-              {(user.name ?? '?').charAt(0).toUpperCase()}
-            </span>
-          )}
+          <ProfileAvatar
+            src={user.avatarUrl}
+            identity={user}
+            alt={user.name ?? 'User'}
+            className="w-8 h-8 rounded-full object-cover"
+            style={{ border: '2px solid rgba(0,0,0,0.06)' }}
+          />
         </button>
         {menuOpen && (
           <>
@@ -172,8 +165,6 @@ export default function AppLobby() {
         planTier={creditsData?.planTier || 'free'}
         onOpenBilling={() => { setShowSettings(false); setIsBillingOpen(true); }}
         onOpenTopup={() => { setShowSettings(false); setIsTopupOpen(true); }}
-        defaultAvatar=""
-        defaultBanner=""
       />
       <BillingModal
         isOpen={isBillingOpen}

@@ -9,9 +9,10 @@
  *
  * Restraint rules (D-29 — the card must not become a mini-app):
  *  - tiles are images only at rest; NO buttons, labels, or toolbars in tiles
- *  - the one per-view surface is the tile-click popover (hosted by CastNode)
+ *  - the one per-view surface is the tile right-click popover (hosted by CastNode)
  *  - ghost tiles are the D-39c add-view affordance (upgrade anytime)
- *  - per-tile status dots stay screen-legible at any zoom (D-37 survivor)
+ *  - stale views communicate through dimming alone; failure evidence keeps
+ *    the one screen-legible status dot
  */
 import { useRef } from "react";
 import { Plus } from "lucide-react";
@@ -49,8 +50,9 @@ export interface CharacterSheetImageAreaProps {
   tiles: SheetTile[];
   /** The tile whose popover is open — holds the inset ring. */
   activeTileAngle: CanonicalViewAngle | null;
-  /** Tile click — CastNode anchors the per-view popover to the element. */
-  onTileClick: (angle: CanonicalViewAngle, el: HTMLElement) => void;
+  /** Tile right-click — CastNode anchors the per-view popover. A normal
+   *  click belongs to React Flow selection and opens no menu. */
+  onTileContextMenu: (angle: CanonicalViewAngle, el: HTMLElement) => void;
   /** Tile double-click — opens the viewer on the CLICKED view (VC-R5 fix 5). */
   onTileDoubleClick: (angle: CanonicalViewAngle, url: string) => void;
   /** Ghost click — opens the takeover with upgrade intent (D-39c/D-51). */
@@ -60,7 +62,7 @@ export interface CharacterSheetImageAreaProps {
 export function CharacterSheetImageArea({
   tiles,
   activeTileAngle,
-  onTileClick,
+  onTileContextMenu,
   onTileDoubleClick,
   onGhostClick,
 }: CharacterSheetImageAreaProps) {
@@ -90,7 +92,16 @@ export function CharacterSheetImageArea({
               key={tile.angle}
               type="button"
               style={{ gridArea: area }}
-              onClick={tile.failed ? (e) => onTileClick(tile.angle, e.currentTarget) : onGhostClick}
+              onClick={tile.failed ? undefined : onGhostClick}
+              onContextMenu={
+                tile.failed
+                  ? (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onTileContextMenu(tile.angle, event.currentTarget);
+                    }
+                  : undefined
+              }
               className={cn(
                 "relative bg-canvas-surface-inset flex flex-col items-center justify-center gap-0.5",
                 "text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors group",
@@ -114,7 +125,11 @@ export function CharacterSheetImageArea({
             key={tile.angle}
             type="button"
             style={{ gridArea: area }}
-            onClick={(e) => onTileClick(tile.angle, e.currentTarget)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onTileContextMenu(tile.angle, event.currentTarget);
+            }}
             onDoubleClick={(e) => {
               // stopPropagation: React Flow's node dblclick would otherwise
               // open the viewer on the ROOT headshot over this one (fix 5)
@@ -144,13 +159,6 @@ export function CharacterSheetImageArea({
               <span className="absolute inset-x-[22%] top-1/2 h-[2px] -translate-y-1/2 bg-canvas-surface rounded-full overflow-hidden">
                 <span className="block h-full w-1/2 bg-canvas-ink opacity-45 animate-pulse" />
               </span>
-            )}
-            {/* Screen-legible status dot (D-37): stale = ink, never invisible */}
-            {tile.stale && !tile.pinned && !tile.refreshing && (
-              <span
-                className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-canvas-ink"
-                style={{ transform: `scale(${dotScale})`, transformOrigin: "top right" }}
-              />
             )}
             {/* Popped-out marker: the view also lives on the board */}
             {tile.poppedOut && (

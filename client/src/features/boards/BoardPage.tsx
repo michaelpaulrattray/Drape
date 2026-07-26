@@ -1761,6 +1761,19 @@ function BoardPageImpl() {
       e.preventDefault();
       setAddNodeMenu(null);
       const item = items?.find((i) => i.id === itemId);
+      const provenance = (item?.metadata as { provenance?: { type?: string } } | null)?.provenance;
+      const isCastNode =
+        (item?.kind === 'cast_config' && !!(item.imageUrl || item.sourceModelId)) ||
+        provenance?.type === 'cast_root' ||
+        provenance?.type === 'cast_view' ||
+        provenance?.type === 'library_cast';
+      if (isCastNode) {
+        setNodeContextMenu(null);
+        window.dispatchEvent(
+          new CustomEvent('board-open-node-actions', { detail: { itemId } }),
+        );
+        return;
+      }
       setNodeContextMenu({
         x: e.clientX,
         y: e.clientY,

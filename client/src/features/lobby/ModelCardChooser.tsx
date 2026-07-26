@@ -138,7 +138,7 @@ export function ModelCardChooser({ model, onClose }: { model: ChooserModel | nul
                 <CharacterSheetImageArea
                   tiles={tiles}
                   activeTileAngle={null}
-                  onTileClick={() => {}}
+                  onTileContextMenu={() => {}}
                   onTileDoubleClick={() => {}}
                   onGhostClick={() => {}}
                 />

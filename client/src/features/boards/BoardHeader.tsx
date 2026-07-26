@@ -10,6 +10,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowLeft, Check, Pencil } from 'lucide-react';
+import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
 interface BoardHeaderProps {
   name: string;
@@ -84,8 +85,6 @@ export function BoardHeader({
     },
     [commitRename, name],
   );
-
-  const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
 
   return (
     <header
@@ -162,11 +161,12 @@ export function BoardHeader({
             aria-label="Profile"
             className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center bg-canvas-surface-inset border-hairline border-canvas-border text-canvas-xs font-medium text-canvas-ink-soft hover:border-canvas-border-strong transition-colors"
           >
-            {profileImage ? (
-              <img src={profileImage} alt="" className="w-full h-full object-cover" />
-            ) : (
-              initial
-            )}
+            <ProfileAvatar
+              src={profileImage}
+              identity={user}
+              alt=""
+              className="w-full h-full object-cover"
+            />
           </button>
           {menuOpen && (
             <div className="absolute right-0 top-9 z-50 w-52 py-1.5 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border-strong">

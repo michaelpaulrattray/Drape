@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { compressImage, AVATAR_COMPRESSION, BANNER_COMPRESSION } from "@/lib/imageUtils";
+import { ProfileAvatar, ProfileCover } from "./ProfileVisual";
 import {
   Upload,
   Check,
@@ -17,8 +18,6 @@ interface ProfileTabProps {
   bannerImage: string | null;
   onProfileImageChange: (url: string) => void;
   onBannerImageChange: (url: string) => void;
-  defaultAvatar: string;
-  defaultBanner: string;
   onProfileUpdate?: () => void;
   isOpen: boolean;
 }
@@ -29,8 +28,6 @@ export function ProfileTab({
   bannerImage,
   onProfileImageChange,
   onBannerImageChange,
-  defaultAvatar,
-  defaultBanner,
   onProfileUpdate,
   isOpen,
 }: ProfileTabProps) {
@@ -214,8 +211,9 @@ export function ProfileTab({
           Cover Image
         </label>
         <div className="relative h-32 rounded-xl overflow-hidden border border-gray-200 group">
-          <img
-            src={localBannerPreview || bannerImage || profileData?.bannerUrl || defaultBanner}
+          <ProfileCover
+            src={localBannerPreview || bannerImage || profileData?.bannerUrl}
+            identity={user ?? "drape"}
             alt="Cover"
             className="w-full h-full object-cover"
             style={{ filter: 'grayscale(50%) brightness(0.8)' }}
@@ -258,8 +256,9 @@ export function ProfileTab({
         <div className="flex items-center gap-4">
           <div className="relative group">
             <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-200">
-              <img
-                src={localAvatarPreview || profileImage || profileData?.avatarUrl || defaultAvatar}
+              <ProfileAvatar
+                src={localAvatarPreview || profileImage || profileData?.avatarUrl}
+                identity={user ?? "drape"}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />

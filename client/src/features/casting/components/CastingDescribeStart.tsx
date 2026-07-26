@@ -26,7 +26,8 @@ export function shouldShowCastingDescribeStart({
 
 /**
  * Act 1 of Casting: one sentence is the whole room. The expert selector sheet
- * remains one deliberate click away and translation never starts generation.
+ * remains one deliberate click away. A brief or Surprise me starts casting
+ * immediately; the expert selector is the explicit review-first path.
  */
 export function CastingDescribeStart({
   briefField,

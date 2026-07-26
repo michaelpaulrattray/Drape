@@ -24,8 +24,8 @@ interface UseCastGateParams {
   currentModelId: number | null;
   currentAssets: GeneratedAsset[];
   refetchCreditsWithWarning: () => void;
-  /** Override the post-mint destination: the studio transitions to wardrobe
-   *  by default; the board takeover (D-35) lands the model on its node. */
+  /** Host-owned post-mint destination. Studio returns to the Cast library;
+   *  the board takeover (D-35) lands the model on its node. */
   onMinted?: (modelId: number, characterName: string) => void;
   /** D-55 (VC-R6 final): a stays-draft confirm succeeded — the host lands
    *  the DRAFT on its node (session stays open; the walkable loop must not
@@ -193,7 +193,7 @@ export function useCastGate({
             // Takeover host: land the model on the board node
             onMinted(currentModelId, characterName);
           } else {
-            // Studio default: transition to wardrobe
+            // Legacy fallback for hosts that have not supplied a destination.
             setActiveTool('wardrobe');
           }
         }

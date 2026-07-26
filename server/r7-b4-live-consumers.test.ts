@@ -20,6 +20,22 @@ describe('R7-7B4 live selected-package consumer closure', () => {
     expect(board).toContain('utils.generation.packageState.prefetch({ modelId })');
   });
 
+  it('keeps stale views dim-only and reserves node actions for right-click', () => {
+    const sheet = source('client/src/features/boards/canvas/CharacterSheetImageArea.tsx');
+    const castNode = source('client/src/features/boards/canvas/nodes/CastNode.tsx');
+    const imageNode = source('client/src/features/boards/canvas/nodes/ImageNode.tsx');
+    const board = source('client/src/features/boards/BoardPage.tsx');
+
+    expect(sheet).toContain('tile.stale && !tile.pinned && "opacity-70"');
+    expect(sheet).not.toContain('tile.stale && !tile.pinned && !tile.refreshing');
+    expect(sheet).toContain('onContextMenu={(event) =>');
+    expect(sheet).not.toContain('onClick={(e) => onTile');
+    expect(castNode).toContain('contextActionsOpen && !multiSelect');
+    expect(castNode).not.toContain('selected && !multiSelect && !controller.isEmpty');
+    expect(imageNode).not.toContain('<NodeFloatingToolbar');
+    expect(board).toContain("new CustomEvent('board-open-node-actions'");
+  });
+
   it('keeps the spawn menu and library chooser on the same packageState cache', () => {
     const spawn = source('client/src/features/boards/canvas/SpawnMenu.tsx');
     const chooser = source('client/src/features/lobby/ModelCardChooser.tsx');

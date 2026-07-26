@@ -12,9 +12,10 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { UserCard } from '@/components/UserCard';
+import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
 interface LobbyRailProps {
-  user: { name: string | null; avatarUrl?: string | null; role?: string } | null;
+  user: { name: string | null; email?: string | null; avatarUrl?: string | null; role?: string } | null;
   profileImage?: string | null;
   onLogout: () => void;
   onOpenSettings: () => void;
@@ -136,21 +137,13 @@ export function LobbyRail({
               className="flex items-center gap-2.5 w-full py-1.5 text-left"
               aria-label="Account menu"
             >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={user.name ?? 'User'}
-                  className="w-7 h-7 rounded-full object-cover flex-shrink-0"
-                  style={{ border: '1px solid rgba(0,0,0,0.06)' }}
-                />
-              ) : (
-                <span
-                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: '#1a1a1a', color: '#fff', fontSize: 11, fontWeight: 600 }}
-                >
-                  {(user.name ?? '?').charAt(0).toUpperCase()}
-                </span>
-              )}
+              <ProfileAvatar
+                src={avatarUrl}
+                identity={user}
+                alt={user.name ?? 'User'}
+                className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                style={{ border: '1px solid rgba(0,0,0,0.06)' }}
+              />
               <span className="min-w-0">
                 <span
                   className="block truncate"
@@ -182,6 +175,7 @@ export function LobbyRail({
                     userInitial={(user.name ?? '?').charAt(0).toUpperCase()}
                     userName={user.name ?? 'Account'}
                     profileImage={avatarUrl}
+                    profileIdentity={user}
                     creditsBalance={credits?.balance ?? 0}
                     role={user.role}
                     onOpenSettings={() => {

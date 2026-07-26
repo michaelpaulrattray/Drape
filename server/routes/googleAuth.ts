@@ -147,7 +147,7 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
       return;
     }
 
-    const { email, name, sub: googleId, picture } = payload;
+    const { email, name, sub: googleId } = payload;
 
     // Block disposable emails
     if (isDisposableEmail(email)) {
@@ -210,7 +210,10 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
       await db.upsertUser({
         openId: existingUser.openId,
         name: existingUser.name || name || "",
-        avatarUrl: existingUser.avatarUrl || picture || null,
+        // Keep profile media on Drape-owned storage. Google profile-photo
+        // hosts are intentionally outside the production image policy; the
+        // client supplies a stable first-party visual until the user uploads.
+        avatarUrl: existingUser.avatarUrl || null,
         loginMethod: "google",
         lastSignedIn: new Date(),
         ...(existingUser.authProvider === "email" ? {} : { authProvider: "google" }),
@@ -262,7 +265,7 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         openId,
         name: name || "",
         email,
-        avatarUrl: picture || null,
+        avatarUrl: null,
         loginMethod: "google",
         lastSignedIn: new Date(),
         authProvider: "google",

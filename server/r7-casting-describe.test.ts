@@ -47,21 +47,20 @@ describe("R7-3 Casting Act 1 — one obvious first action", () => {
     expect(shouldShowCastingDescribeStart({ ...base, mintedEdit: true })).toBe(false);
   });
 
-  it("keeps translation and Surprise me free of generation calls", () => {
+  it("turns a brief or Surprise me into exactly one automatic generation request", () => {
     const workspace = read("client/src/features/studio/components/CastingWorkspace.tsx");
-    const surpriseBlock = workspace.slice(
-      workspace.indexOf("const handleSurprise"),
-      workspace.indexOf("const handleNewModel"),
-    );
-    const startBlock = workspace.slice(
-      workspace.indexOf("if (showDescribeStart)"),
-      workspace.indexOf("return (", workspace.indexOf("if (showDescribeStart)") + 30),
-    );
 
-    expect(surpriseBlock).toContain("updatePrefs(generateRandomPreferences())");
-    expect(surpriseBlock).toContain("setDetailsOpen(true)");
-    expect(surpriseBlock).not.toContain("handleGenerate");
-    expect(startBlock).not.toContain("handleGenerate");
+    expect(workspace).toContain("form.updatePrefs(result.preferences");
+    expect(workspace).toContain("form.markUnsetRequiredAsEngineChoice()");
+    expect(workspace).toContain("form.updatePrefs(generateRandomPreferences())");
+    expect(workspace).toContain("queueAutomaticGeneration()");
+    expect(workspace).toContain(
+      "handledAutoGenerateRequestRef.current === autoGenerateRequest",
+    );
+    expect(workspace).toContain(
+      "handledAutoGenerateRequestRef.current = autoGenerateRequest",
+    );
+    expect(workspace.match(/void handleGenerate\(\)/g)).toHaveLength(1);
   });
 
   it("hands the translated brief to the existing ControlPanel choreography", () => {
@@ -73,7 +72,17 @@ describe("R7-3 Casting Act 1 — one obvious first action", () => {
     expect(workspace).toContain("initialParseResult={pendingParseResult}");
     expect(controlPanel).toContain("handleParsed(initialParseResult)");
     expect(controlPanel).toContain("Brief translated");
-    expect(promptField).toContain("Enter to translate — nothing generates yet");
+    expect(promptField).toContain("Press Enter to start casting");
+  });
+
+  it("returns a Studio mint to the Cast library while board-hosted casting keeps its landing callback", () => {
+    const studio = read("client/src/pages/DrapeStudio.tsx");
+    const gate = read("client/src/features/studio/hooks/useCastGate.ts");
+    const takeover = read("client/src/features/studio/takeover/CastingTakeover.tsx");
+
+    expect(studio).toContain("onMinted: () => navigate('/app/models')");
+    expect(takeover).toContain("onMinted: (modelId, characterName) =>");
+    expect(gate).toContain("onMinted(currentModelId, characterName)");
   });
 
   it("makes the details-stage portrait passive so the footer stays the one paid door", () => {

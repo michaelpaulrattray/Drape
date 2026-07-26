@@ -31,8 +31,6 @@ interface ProfileSettingsModalProps {
   onBannerImageChange: (url: string) => void;
   creditsBalance: number;
   planTier: string;
-  defaultAvatar: string;
-  defaultBanner: string;
   onOpenBilling?: () => void;
   onOpenTopup?: () => void;
 }
@@ -48,8 +46,6 @@ export default function ProfileSettingsModal({
   onBannerImageChange,
   creditsBalance,
   planTier,
-  defaultAvatar,
-  defaultBanner,
   onOpenBilling,
   onOpenTopup,
 }: ProfileSettingsModalProps) {
@@ -75,8 +71,6 @@ export default function ProfileSettingsModal({
           bannerImage={bannerImage}
           onProfileImageChange={onProfileImageChange}
           onBannerImageChange={onBannerImageChange}
-          defaultAvatar={defaultAvatar}
-          defaultBanner={defaultBanner}
           onProfileUpdate={onProfileUpdate}
           isOpen={isOpen}
         />

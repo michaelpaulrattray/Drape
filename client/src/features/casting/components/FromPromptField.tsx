@@ -86,7 +86,7 @@ export function FromPromptField({ onParsed, variant = "panel" }: FromPromptField
       </div>
       {isHero && (
         <p className="mt-2 px-1 text-canvas-sm text-canvas-ink-faint">
-          Enter to translate — nothing generates yet
+          Press Enter to start casting
         </p>
       )}
     </div>
