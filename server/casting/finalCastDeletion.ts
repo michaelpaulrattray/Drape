@@ -11,10 +11,13 @@ import {
   generationOperationLocks,
   generationOperations,
   generations,
+  castingEvidenceIngestions,
   modelAssets,
+  modelEvidenceCrops,
   modelIdentitySnapshots,
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
+  modelReferencePlates,
   models,
   wardrobeLooks,
   wardrobeSessions,
@@ -28,10 +31,14 @@ import {
   readCastProvenance,
 } from "./deletionAudit";
 import { createModuleLogger } from "../logging/logger";
+import { assertOwnedEvidenceStorageKey } from "./evidence/evidenceLifecycle";
 
 const log = createModuleLogger("casting/finalCastDeletion");
 
 export interface FinalCastDeletionCounts {
+  evidenceIngestions: number;
+  referencePlates: number;
+  evidenceCrops: number;
   assets: number;
   identitySnapshots: number;
   packageSnapshots: number;
@@ -599,6 +606,21 @@ export async function executeFinalCastDeletion(input: {
     if (ownedLock?.operationId !== input.operationId) throw new Error("Deletion no longer owns the model lock");
 
     const assets = await tx.select().from(modelAssets).where(eq(modelAssets.modelId, input.modelId)).for("update");
+    const evidenceIngestions = await tx
+      .select()
+      .from(castingEvidenceIngestions)
+      .where(eq(castingEvidenceIngestions.modelId, input.modelId))
+      .for("update");
+    const referencePlates = await tx
+      .select()
+      .from(modelReferencePlates)
+      .where(eq(modelReferencePlates.modelId, input.modelId))
+      .for("update");
+    const evidenceCrops = await tx
+      .select()
+      .from(modelEvidenceCrops)
+      .where(eq(modelEvidenceCrops.modelId, input.modelId))
+      .for("update");
     const identitySnapshots = await tx
       .select({ id: modelIdentitySnapshots.id })
       .from(modelIdentitySnapshots)
@@ -637,6 +659,42 @@ export async function executeFinalCastDeletion(input: {
     const sessions = await tx.select().from(wardrobeSessions).where(eq(wardrobeSessions.modelId, input.modelId)).for("update");
     const looks = await tx.select().from(wardrobeLooks).where(eq(wardrobeLooks.modelId, input.modelId)).for("update");
     const storageKeys = new Set<string>();
+    for (const receipt of evidenceIngestions) {
+      if (receipt.userId !== input.userId) {
+        throw new Error("Evidence receipt ownership disagrees with its Cast");
+      }
+      assertOwnedEvidenceStorageKey({
+        storageKey: receipt.storageKey,
+        userId: receipt.userId,
+        modelId: receipt.modelId,
+        purpose: receipt.purpose,
+      });
+      storageKeys.add(receipt.storageKey);
+    }
+    for (const plate of referencePlates) {
+      if (plate.userId !== input.userId) {
+        throw new Error("Reference plate ownership disagrees with its Cast");
+      }
+      assertOwnedEvidenceStorageKey({
+        storageKey: plate.storageKey,
+        userId: plate.userId,
+        modelId: plate.modelId,
+        purpose: plate.kind,
+      });
+      storageKeys.add(plate.storageKey);
+    }
+    for (const crop of evidenceCrops) {
+      if (crop.userId !== input.userId) {
+        throw new Error("Evidence crop ownership disagrees with its Cast");
+      }
+      assertOwnedEvidenceStorageKey({
+        storageKey: crop.storageKey,
+        userId: crop.userId,
+        modelId: crop.modelId,
+        purpose: "evidence_crop",
+      });
+      storageKeys.add(crop.storageKey);
+    }
     for (const asset of assets) {
       collectManifestKey(storageKeys, currentPublicUrl, { storageKey: asset.storageKey, url: asset.storageUrl });
     }
@@ -692,6 +750,18 @@ export async function executeFinalCastDeletion(input: {
 
     await tx.delete(wardrobeLooks).where(eq(wardrobeLooks.modelId, input.modelId));
     await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, input.modelId));
+    await tx.delete(modelEvidenceCrops).where(and(
+      eq(modelEvidenceCrops.modelId, input.modelId),
+      eq(modelEvidenceCrops.userId, input.userId),
+    ));
+    await tx.delete(modelReferencePlates).where(and(
+      eq(modelReferencePlates.modelId, input.modelId),
+      eq(modelReferencePlates.userId, input.userId),
+    ));
+    await tx.delete(castingEvidenceIngestions).where(and(
+      eq(castingEvidenceIngestions.modelId, input.modelId),
+      eq(castingEvidenceIngestions.userId, input.userId),
+    ));
     if (packageSnapshotIds.length > 0) {
       await tx.delete(modelPackageSnapshotSlots)
         .where(inArray(modelPackageSnapshotSlots.packageSnapshotId, packageSnapshotIds));
@@ -768,6 +838,9 @@ export async function executeFinalCastDeletion(input: {
     if (affectedRows(tombstoned) !== 1) throw new Error("Deletion lost the model tombstone race");
 
     const counts: FinalCastDeletionCounts = {
+      evidenceIngestions: evidenceIngestions.length,
+      referencePlates: referencePlates.length,
+      evidenceCrops: evidenceCrops.length,
       assets: assets.length,
       identitySnapshots: identitySnapshots.length,
       packageSnapshots: packageSnapshots.length,

@@ -121,7 +121,7 @@ describe("R7-7C1 owned-evidence schema contract", () => {
     expect(after).toEqual(expected);
   });
 
-  it("keeps C1 inert and the existing cleanup delete loop kind-agnostic", async () => {
+  it("keeps cumulative evidence reachability closed and the cleanup delete loop kind-agnostic", async () => {
     const evidenceTokens = [
       "castingEvidenceIngestions",
       "modelReferencePlates",
@@ -135,7 +135,12 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       }
     }
     expect(callers).toEqual([
+      "server/casting/finalCastDeletion.ts",
+      "server/db/accountDeletion.ts",
       "server/db/evidenceIngestion.ts",
+      "server/db/evidenceRecovery.ts",
+      "server/db/gdprExport.ts",
+      "server/db/storageCleanup.ts",
     ]);
 
     const cleanupDb = await readFile(

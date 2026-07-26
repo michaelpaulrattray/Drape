@@ -14,6 +14,7 @@ import {
   parseCastDeletionAuditArgs,
   parseJsonValue,
 } from "../server/casting/deletionAudit";
+import { auditEvidenceOrphans } from "../server/casting/evidence/evidenceOrphanAudit";
 
 const args = parseCastDeletionAuditArgs(process.argv.slice(2));
 process.env.DATABASE_URL = args.databaseUrl;
@@ -82,6 +83,56 @@ try {
       batch.status === "succeeded" && (itemsByBatch.get(String(batch.id))?.length ?? 0) > 0
     ).length,
   };
+  const evidence = auditEvidenceOrphans({
+    models: (await rows("SELECT id, userId FROM models")).map((row) => ({
+      id: Number(row.id),
+      userId: Number(row.userId),
+    })),
+    receipts: (await rows(
+      "SELECT id, userId, modelId, operationId, purpose, status, storageKey, attachedEntityKind, attachedEntityId, cleanupBatchId FROM casting_evidence_ingestions",
+    )).map((row) => ({
+      ...row,
+      id: String(row.id),
+      userId: Number(row.userId),
+      modelId: Number(row.modelId),
+      operationId: String(row.operationId),
+      storageKey: String(row.storageKey),
+      attachedEntityKind: row.attachedEntityKind == null ? null : String(row.attachedEntityKind),
+      attachedEntityId: row.attachedEntityId == null ? null : String(row.attachedEntityId),
+      cleanupBatchId: row.cleanupBatchId == null ? null : String(row.cleanupBatchId),
+    })) as Parameters<typeof auditEvidenceOrphans>[0]["receipts"],
+    referencePlates: (await rows(
+      "SELECT id, userId, modelId, storageKey, createdByOperationId FROM model_reference_plates",
+    )).map((row) => ({
+      id: String(row.id),
+      userId: Number(row.userId),
+      modelId: Number(row.modelId),
+      storageKey: String(row.storageKey),
+      createdByOperationId: String(row.createdByOperationId),
+    })),
+    crops: (await rows(
+      "SELECT id, userId, modelId, plateId, storageKey, createdByOperationId FROM model_evidence_crops",
+    )).map((row) => ({
+      id: String(row.id),
+      userId: Number(row.userId),
+      modelId: Number(row.modelId),
+      plateId: String(row.plateId),
+      storageKey: String(row.storageKey),
+      createdByOperationId: String(row.createdByOperationId),
+    })),
+    cleanupBatches: (await rows(
+      "SELECT id, userId, operationId, kind FROM storage_cleanup_batches WHERE kind = 'evidence_cleanup'",
+    )).map((row) => ({
+      id: String(row.id),
+      userId: Number(row.userId),
+      operationId: String(row.operationId),
+      kind: String(row.kind),
+    })),
+    cleanupItems: itemRows.map((row) => ({
+      batchId: String(row.batchId),
+      storageKey: String(row.storageKey),
+    })),
+  });
 
   let bucket: null | {
     objects: number;
@@ -104,7 +155,13 @@ try {
       ).length,
     };
   }
-  process.stdout.write(`${JSON.stringify({ mode: "read-only", referenceCounts, reconciliation, bucket })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    mode: "read-only",
+    referenceCounts,
+    reconciliation,
+    evidence,
+    bucket,
+  })}\n`);
 } finally {
   await connection.end();
 }

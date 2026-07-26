@@ -16,8 +16,15 @@ import {
   generations,
   referrals,
   changeRequests,
+  modelEvidenceCrops,
+  modelReferencePlates,
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
+import {
+  resolveEvidenceOwnerDelivery,
+  type EvidenceDeliveryAdapter,
+} from "../casting/evidence/evidenceDelivery";
+import { assertOwnedEvidenceStorageKey } from "../casting/evidence/evidenceLifecycle";
 
 export interface GdprExportData {
   exportedAt: string;
@@ -61,6 +68,38 @@ export interface GdprExportData {
       createdAt: string;
     }>;
   }>;
+  evidence: {
+    referencePlates: Array<{
+      kind: string;
+      mime: string;
+      width: number;
+      height: number;
+      byteSize: number;
+      createdAt: string;
+      ownerDelivery: string;
+    }>;
+    crops: Array<{
+      ontologyVersion: string;
+      zone: string;
+      surface: string;
+      side: string;
+      sourceRectangle: {
+        x: string;
+        y: string;
+        width: string;
+        height: string;
+      };
+      sourceImageWidth: number;
+      sourceImageHeight: number;
+      mime: string;
+      width: number;
+      height: number;
+      byteSize: number;
+      cropRecipeVersion: string;
+      createdAt: string;
+      ownerDelivery: string;
+    }>;
+  };
   generations: Array<{
     type: string;
     status: string;
@@ -91,7 +130,10 @@ export interface GdprExportData {
  * Collect all personal data for a user in GDPR-compliant export format.
  * Excludes internal IDs, S3 keys, IP addresses, and admin metadata.
  */
-export async function exportUserData(userId: number): Promise<GdprExportData | null> {
+export async function exportUserData(
+  userId: number,
+  evidenceDelivery?: EvidenceDeliveryAdapter,
+): Promise<GdprExportData | null> {
   const db = await getDb();
   if (!db) return null;
 
@@ -158,6 +200,75 @@ export async function exportUserData(userId: number): Promise<GdprExportData | n
       };
     })
   );
+
+  // Evidence contains customer-uploaded likeness data. It is exported only
+  // through the owner-delivery adapter; raw object keys, ingestion receipts,
+  // cleanup leases, and operation internals never enter the DTO.
+  const referencePlates = await db
+    .select()
+    .from(modelReferencePlates)
+    .where(eq(modelReferencePlates.userId, userId))
+    .orderBy(desc(modelReferencePlates.createdAt));
+  const evidenceCrops = await db
+    .select()
+    .from(modelEvidenceCrops)
+    .where(eq(modelEvidenceCrops.userId, userId))
+    .orderBy(desc(modelEvidenceCrops.createdAt));
+  if ((referencePlates.length > 0 || evidenceCrops.length > 0) && !evidenceDelivery) {
+    throw new Error("Evidence owner delivery is unavailable for GDPR export");
+  }
+  const exportedReferencePlates = await Promise.all(referencePlates.map(async (plate) => {
+    assertOwnedEvidenceStorageKey({
+      storageKey: plate.storageKey,
+      userId: plate.userId,
+      modelId: plate.modelId,
+      purpose: plate.kind,
+    });
+    return {
+      kind: plate.kind,
+      mime: plate.mime,
+      width: plate.width,
+      height: plate.height,
+      byteSize: plate.byteSize,
+      createdAt: plate.createdAt.toISOString(),
+      ownerDelivery: await resolveEvidenceOwnerDelivery(evidenceDelivery!, {
+        userId,
+        key: plate.storageKey,
+      }),
+    };
+  }));
+  const exportedEvidenceCrops = await Promise.all(evidenceCrops.map(async (crop) => {
+    assertOwnedEvidenceStorageKey({
+      storageKey: crop.storageKey,
+      userId: crop.userId,
+      modelId: crop.modelId,
+      purpose: "evidence_crop",
+    });
+    return {
+      ontologyVersion: crop.ontologyVersion,
+      zone: crop.zone,
+      surface: crop.surface,
+      side: crop.side,
+      sourceRectangle: {
+        x: crop.sourceX,
+        y: crop.sourceY,
+        width: crop.sourceWidth,
+        height: crop.sourceHeight,
+      },
+      sourceImageWidth: crop.sourceImageWidth,
+      sourceImageHeight: crop.sourceImageHeight,
+      mime: crop.mime,
+      width: crop.width,
+      height: crop.height,
+      byteSize: crop.byteSize,
+      cropRecipeVersion: crop.cropRecipeVersion,
+      createdAt: crop.createdAt.toISOString(),
+      ownerDelivery: await resolveEvidenceOwnerDelivery(evidenceDelivery!, {
+        userId,
+        key: crop.storageKey,
+      }),
+    };
+  }));
 
   // 5. Generations
   const gens = await db
@@ -231,6 +342,10 @@ export async function exportUserData(userId: number): Promise<GdprExportData | n
       createdAt: t.createdAt.toISOString(),
     })),
     models: modelsWithAssets,
+    evidence: {
+      referencePlates: exportedReferencePlates,
+      crops: exportedEvidenceCrops,
+    },
     generations: gens.map((g) => ({
       type: g.type,
       status: g.status,

@@ -9,7 +9,12 @@ import {
   settleStorageCleanupItemFailure,
   settleStorageCleanupItemSuccess,
 } from "../db/storageCleanup";
+import {
+  planNextEvidenceIngestionCleanup,
+  settleCompletedEvidenceCleanups,
+} from "../db/evidenceRecovery";
 import { createModuleLogger } from "../logging/logger";
+import { sweepStaleGenerationOperations } from "./operationRecovery";
 
 const log = createModuleLogger("casting/storageCleanupWorker");
 const DEFAULT_LEASE_MS = 60_000;
@@ -128,10 +133,27 @@ export function startStorageCleanupWorker(): void {
     if (sweepRunning) return;
     sweepRunning = true;
     try {
+      // Evidence receipts use a shorter recovery window than the generic
+      // operation sweeper. Free-fail stale operation authority first, then
+      // manifest at most one exact evidence key for deletion.
+      await sweepStaleGenerationOperations({ limit: 5 });
+      await planNextEvidenceIngestionCleanup();
+      await settleCompletedEvidenceCleanups({ limit: 10 });
       const result = await processNextStorageCleanupBatch();
       if (result.claimed) log.info(result, "[StorageCleanup] bounded batch processed");
+      await settleCompletedEvidenceCleanups({ limit: 10 });
       const health = await getStorageCleanupHealth();
-      if (health.partialBatches || health.failedBatches || health.staleLeases) {
+      if (
+        health.partialBatches
+        || health.failedBatches
+        || health.staleLeases
+        || health.cleanupPendingEvidenceReceipts
+        || health.failedEvidenceManifests
+        || (
+          health.oldestNonAttachedEvidenceAgeMs !== null
+          && health.oldestNonAttachedEvidenceAgeMs >= 15 * 60 * 1000
+        )
+      ) {
         log.warn(health, "[StorageCleanup] cleanup health requires attention");
       }
     } catch (error) {

@@ -117,7 +117,19 @@ async function main() {
       R7_7C1_LEGACY_MODEL_BATCH_ID: legacyModelBatchId,
       R7_7C1_LEGACY_ACCOUNT_BATCH_ID: legacyAccountBatchId,
     });
-    console.log("[disposable] R7-7C1/C2 migration, mixed-runtime, constraint and ingestion gates passed");
+    // C3 resets the complete disposable fixture between lifecycle cases. Run
+    // it in a separate process so its resets cannot race C1/C2 suites.
+    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
+      "exec",
+      "vitest",
+      "run",
+      "server/r7-evidence-lifecycle-db.test.ts",
+    ], {
+      ...process.env,
+      DATABASE_URL: "",
+      TEST_DATABASE_URL: testUrl.toString(),
+    });
+    console.log("[disposable] R7-7C1/C2/C3 migration, ingestion, recovery and lifecycle gates passed");
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) {

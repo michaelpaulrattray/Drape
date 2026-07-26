@@ -5,8 +5,9 @@
  * creates a manifest inside its deletion transaction; R7-5D later owns the
  * lease/worker state machine.
  */
-import { and, asc, eq, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import {
+  castingEvidenceIngestions,
   storageCleanupBatches,
   storageCleanupItems,
   type StorageCleanupBatch,
@@ -365,10 +366,16 @@ export async function getStorageCleanupHealth(now = new Date()): Promise<{
   failedBatches: number;
   retainedFailedItems: number;
   staleLeases: number;
+  plannedEvidenceReceipts: number;
+  storedEvidenceReceipts: number;
+  cleanupPendingEvidenceReceipts: number;
+  failedEvidenceManifests: number;
+  oldestNonAttachedEvidenceAgeMs: number | null;
 }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const batches = await db.select({
+    id: storageCleanupBatches.id,
     status: storageCleanupBatches.status,
     leaseToken: storageCleanupBatches.leaseToken,
     leaseExpiresAt: storageCleanupBatches.leaseExpiresAt,
@@ -376,6 +383,25 @@ export async function getStorageCleanupHealth(now = new Date()): Promise<{
     .from(storageCleanupBatches);
   const failedItems = await db.select({ id: storageCleanupItems.id }).from(storageCleanupItems)
     .where(eq(storageCleanupItems.status, "failed"));
+  const evidenceReceipts = await db
+    .select({
+      status: castingEvidenceIngestions.status,
+      cleanupBatchId: castingEvidenceIngestions.cleanupBatchId,
+      createdAt: castingEvidenceIngestions.createdAt,
+    })
+    .from(castingEvidenceIngestions)
+    .where(inArray(castingEvidenceIngestions.status, [
+      "planned",
+      "stored",
+      "cleanup_pending",
+    ]));
+  const batchStatusById = new Map(batches.map((batch) => [batch.id, batch.status]));
+  const oldestNonAttached = evidenceReceipts.reduce<Date | null>(
+    (oldest, receipt) => !oldest || receipt.createdAt < oldest
+      ? receipt.createdAt
+      : oldest,
+    null,
+  );
   return {
     pendingBatches: batches.filter((row) => row.status === "pending").length,
     processingBatches: batches.filter((row) => row.status === "processing").length,
@@ -389,6 +415,18 @@ export async function getStorageCleanupHealth(now = new Date()): Promise<{
       && row.leaseExpiresAt !== null
       && row.leaseExpiresAt <= now
     ).length,
+    plannedEvidenceReceipts: evidenceReceipts.filter((row) => row.status === "planned").length,
+    storedEvidenceReceipts: evidenceReceipts.filter((row) => row.status === "stored").length,
+    cleanupPendingEvidenceReceipts: evidenceReceipts
+      .filter((row) => row.status === "cleanup_pending").length,
+    failedEvidenceManifests: evidenceReceipts.filter((row) => {
+      if (!row.cleanupBatchId) return false;
+      const status = batchStatusById.get(row.cleanupBatchId);
+      return status === "partial" || status === "failed";
+    }).length,
+    oldestNonAttachedEvidenceAgeMs: oldestNonAttached
+      ? Math.max(0, now.getTime() - oldestNonAttached.getTime())
+      : null,
   };
 }
 
