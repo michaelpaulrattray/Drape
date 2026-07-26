@@ -531,7 +531,10 @@ export async function discardReferencePlateOperation(input: {
       userId: input.userId,
       operationId: input.operationId,
       kind: "evidence_cleanup",
-      storageKeys: [plate.storageKey],
+      storageItems: [{
+        storageKey: plate.storageKey,
+        storageBackend: "private_evidence_r2",
+      }],
     });
     const queued = await tx
       .update(castingEvidenceIngestions)

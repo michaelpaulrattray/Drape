@@ -261,7 +261,7 @@ describeWithDatabase("R7-7C4 evidence operations (disposable DB)", () => {
       [receipt.cleanupBatchId],
     );
     const [[item]] = await connection.query<RowDataPacket[]>(
-      "SELECT storageKey FROM storage_cleanup_items WHERE batchId = ?",
+      "SELECT storageKey, storageBackend FROM storage_cleanup_items WHERE batchId = ?",
       [receipt.cleanupBatchId],
     );
     const [[discardOperation]] = await connection.query<RowDataPacket[]>(
@@ -274,6 +274,7 @@ describeWithDatabase("R7-7C4 evidence operations (disposable DB)", () => {
       operationId: discardOperation.id,
     });
     expect(item.storageKey).toBe(receipt.storageKey);
+    expect(item.storageBackend).toBe("private_evidence_r2");
     expect(discardOperation.status).toBe("succeeded");
     expect(discardOperation.chargedCredits).toBe(0);
     expect(discardOperation.refundedCredits).toBe(0);

@@ -136,6 +136,7 @@ describe("R7-7C3 evidence rollback orphan audit", () => {
     state.cleanupItems = [{
       batchId: "batch-1",
       storageKey: receipt.storageKey,
+      storageBackend: "private_evidence_r2",
     }];
     const linked = auditEvidenceOrphans(state);
     expect(linked.cleanupLinkMismatches).toBe(0);
@@ -145,6 +146,13 @@ describe("R7-7C3 evidence rollback orphan audit", () => {
     state.cleanupItems[0] = {
       ...state.cleanupItems[0],
       storageKey: `users/7/models/9/evidence/plates/${cropId}.webp`,
+    };
+    expect(auditEvidenceOrphans(state).cleanupLinkMismatches).toBe(1);
+
+    state.cleanupItems[0] = {
+      ...state.cleanupItems[0],
+      storageKey: receipt.storageKey,
+      storageBackend: "public_r2",
     };
     expect(auditEvidenceOrphans(state).cleanupLinkMismatches).toBe(1);
   });
@@ -175,6 +183,7 @@ describe("R7-7C3 evidence rollback orphan audit", () => {
     state.cleanupItems = [{
       batchId: "batch-discard",
       storageKey: receipt.storageKey,
+      storageBackend: "private_evidence_r2",
     }];
 
     expect(auditEvidenceOrphans(state).cleanupLinkMismatches).toBe(0);
@@ -201,6 +210,7 @@ describe("R7-7C3 evidence rollback orphan audit", () => {
     state.cleanupItems = [{
       batchId: "batch-deleted-source",
       storageKey: receipt.storageKey,
+      storageBackend: "private_evidence_r2",
     }];
 
     expect(auditEvidenceOrphans(state).cleanupLinkMismatches).toBe(1);

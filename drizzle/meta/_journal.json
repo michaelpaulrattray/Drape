@@ -85,6 +85,13 @@
       "when": 1785036902208,
       "tag": "0011_r7_evidence_ingestion",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1785054504386,
+      "tag": "0012_r7_private_evidence_cleanup_backend",
+      "breakpoints": true
     }
   ]
 }

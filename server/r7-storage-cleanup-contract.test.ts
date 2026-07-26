@@ -3,20 +3,26 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   assertStorageCleanupBatchKind,
+  assertStorageCleanupBackend,
   assertStorageCleanupBatchStatus,
   assertStorageCleanupCounts,
   assertStorageCleanupItemStatus,
   buildStorageCleanupManifest,
-  normalizeCleanupManifestKeys,
+  normalizeCleanupManifestItems,
 } from "./casting/storageCleanupContract";
 
 describe("R7-5B storage-cleanup contract", () => {
   it("normalizes, deduplicates and sorts exact owned keys", () => {
-    expect(normalizeCleanupManifestKeys([
-      "/models/12/back.png",
-      "models/12/head.png",
-      " models/12/back.png ",
-    ])).toEqual(["models/12/back.png", "models/12/head.png"]);
+    expect(normalizeCleanupManifestItems([
+      { storageKey: "/models/12/back.png", storageBackend: "public_r2" },
+      { storageKey: "models/12/head.png", storageBackend: "public_r2" },
+      { storageKey: " models/12/back.png ", storageBackend: "public_r2" },
+      { storageKey: "models/12/back.png", storageBackend: "private_evidence_r2" },
+    ])).toEqual([
+      { storageKey: "models/12/back.png", storageBackend: "private_evidence_r2" },
+      { storageKey: "models/12/back.png", storageBackend: "public_r2" },
+      { storageKey: "models/12/head.png", storageBackend: "public_r2" },
+    ]);
   });
 
   it.each([
@@ -26,9 +32,19 @@ describe("R7-5B storage-cleanup contract", () => {
     ["empty key", " / "],
     ["overlong key", `models/${"x".repeat(506)}`],
   ])("refuses an unsafe %s before it can become cleanup authority", (_label, key) => {
-    expect(() => normalizeCleanupManifestKeys([key])).toThrow(
+    expect(() => normalizeCleanupManifestItems([{
+      storageKey: key,
+      storageBackend: "public_r2",
+    }])).toThrow(
       "Storage-cleanup manifests require normalized keys",
     );
+  });
+
+  it("refuses an unknown backend instead of inferring deletion authority", () => {
+    expect(() => normalizeCleanupManifestItems([{
+      storageKey: "models/12/head.png",
+      storageBackend: "inferred",
+    }])).toThrow("Unknown storage-cleanup backend");
   });
 
   it("builds a count-bound manifest with strict UUID and owner inputs", () => {
@@ -37,27 +53,34 @@ describe("R7-5B storage-cleanup contract", () => {
       userId: 41,
       operationId,
       kind: "model_delete",
-      storageKeys: ["models/41/head.png", "models/41/head.png", "models/41/back.png"],
+      storageItems: [
+        { storageKey: "models/41/head.png", storageBackend: "public_r2" },
+        { storageKey: "models/41/head.png", storageBackend: "public_r2" },
+        { storageKey: "models/41/back.png", storageBackend: "public_r2" },
+      ],
     });
     expect(manifest).toMatchObject({
       userId: 41,
       operationId,
       kind: "model_delete",
       expectedCount: 2,
-      storageKeys: ["models/41/back.png", "models/41/head.png"],
+      storageItems: [
+        { storageKey: "models/41/back.png", storageBackend: "public_r2" },
+        { storageKey: "models/41/head.png", storageBackend: "public_r2" },
+      ],
     });
     expect(manifest.id).toMatch(/^[0-9a-f-]{36}$/i);
     expect(() => buildStorageCleanupManifest({
       userId: 0,
       operationId,
       kind: "model_delete",
-      storageKeys: [],
+      storageItems: [],
     })).toThrow("userId must be a positive integer");
     expect(() => buildStorageCleanupManifest({
       userId: 41,
       operationId: "not-a-request-id",
       kind: "model_delete",
-      storageKeys: [],
+      storageItems: [],
     })).toThrow();
   });
 
@@ -71,9 +94,13 @@ describe("R7-5B storage-cleanup contract", () => {
     for (const kind of ["model_delete", "account_delete", "evidence_cleanup"] as const) {
       expect(() => assertStorageCleanupBatchKind(kind)).not.toThrow();
     }
+    for (const backend of ["public_r2", "private_evidence_r2"] as const) {
+      expect(() => assertStorageCleanupBackend(backend)).not.toThrow();
+    }
     expect(() => assertStorageCleanupBatchStatus("complete")).toThrow();
     expect(() => assertStorageCleanupItemStatus("partial")).toThrow();
     expect(() => assertStorageCleanupBatchKind("url_delete")).toThrow();
+    expect(() => assertStorageCleanupBackend("prefix_inferred")).toThrow();
 
     expect(() => assertStorageCleanupCounts({
       status: "pending", expectedCount: 2, deletedCount: 0, failedCount: 0,

@@ -35,6 +35,7 @@ describe("R7-7C3 evidence lifecycle contract", () => {
     expect(deleteBatch).toBeLessThan(settleAfter);
     expect(run).toContain("cleanupPendingEvidenceReceipts");
     expect(run).toContain("failedEvidenceManifests");
+    expect(run).toContain("pendingPrivateBatches");
     expect(run).toContain("oldestNonAttachedEvidenceAgeMs");
   });
 

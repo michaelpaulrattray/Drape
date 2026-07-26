@@ -51,6 +51,7 @@ import { getDb, withTransaction } from "./connection";
 import type { TransactionHandle } from "./connection";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
 import { classifyStorageReference, parseJsonValue } from "../casting/deletionAudit";
+import type { StorageCleanupManifestItem } from "../casting/storageCleanupContract";
 import { createModuleLogger } from "../logging/logger";
 import { assertOwnedEvidenceStorageKey } from "../casting/evidence/evidenceLifecycle";
 const log = createModuleLogger("db/accountDeletion");
@@ -101,12 +102,13 @@ function addOwnedAccountKey(
 
 /** Account erasure owns all rows selected by user id. This collector uses the
  * same exact-origin law as Cast deletion and includes model-less VTO attempts. */
-export async function collectAccountOwnedStorageKeysIn(
+export async function collectAccountOwnedStorageItemsIn(
   tx: TransactionHandle,
   userId: number,
   currentPublicUrl: string,
-): Promise<string[]> {
-  const keys = new Set<string>();
+): Promise<StorageCleanupManifestItem[]> {
+  const publicKeys = new Set<string>();
+  const privateEvidenceKeys = new Set<string>();
   const userRows = await tx
     .select({
       avatarKey: users.avatarKey,
@@ -116,8 +118,8 @@ export async function collectAccountOwnedStorageKeysIn(
     .where(eq(users.id, userId))
     .limit(1);
   if (userRows[0]) {
-    addOwnedAccountKey(keys, currentPublicUrl, { storageKey: userRows[0].avatarKey });
-    addOwnedAccountKey(keys, currentPublicUrl, { storageKey: userRows[0].bannerKey });
+    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: userRows[0].avatarKey });
+    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: userRows[0].bannerKey });
   }
 
   const userModels = await tx
@@ -130,7 +132,7 @@ export async function collectAccountOwnedStorageKeysIn(
       .select({ storageKey: modelAssets.storageKey, storageUrl: modelAssets.storageUrl })
       .from(modelAssets)
       .where(inArray(modelAssets.modelId, modelIds));
-    for (const asset of assets) addOwnedAccountKey(keys, currentPublicUrl, {
+    for (const asset of assets) addOwnedAccountKey(publicKeys, currentPublicUrl, {
       storageKey: asset.storageKey,
       url: asset.storageUrl,
     });
@@ -173,7 +175,7 @@ export async function collectAccountOwnedStorageKeysIn(
       modelId: receipt.modelId,
       purpose: receipt.purpose,
     });
-    keys.add(receipt.storageKey);
+    privateEvidenceKeys.add(receipt.storageKey);
   }
   for (const plate of referencePlates) {
     if (plate.userId !== userId) {
@@ -185,7 +187,7 @@ export async function collectAccountOwnedStorageKeysIn(
       modelId: plate.modelId,
       purpose: plate.kind,
     });
-    keys.add(plate.storageKey);
+    privateEvidenceKeys.add(plate.storageKey);
   }
   for (const crop of evidenceCrops) {
     if (crop.userId !== userId) {
@@ -197,30 +199,30 @@ export async function collectAccountOwnedStorageKeysIn(
       modelId: crop.modelId,
       purpose: "evidence_crop",
     });
-    keys.add(crop.storageKey);
+    privateEvidenceKeys.add(crop.storageKey);
   }
 
   const attempts = await tx.select({ resultUrl: generations.resultUrl })
     .from(generations).where(eq(generations.userId, userId));
-  for (const attempt of attempts) addOwnedAccountKey(keys, currentPublicUrl, { url: attempt.resultUrl });
+  for (const attempt of attempts) addOwnedAccountKey(publicKeys, currentPublicUrl, { url: attempt.resultUrl });
 
   const attachments = await tx
     .select({ fileKey: changeRequestAttachments.fileKey, url: changeRequestAttachments.url })
     .from(changeRequestAttachments)
     .where(eq(changeRequestAttachments.uploadedById, userId));
-  for (const attachment of attachments) addOwnedAccountKey(keys, currentPublicUrl, {
+  for (const attachment of attachments) addOwnedAccountKey(publicKeys, currentPublicUrl, {
     storageKey: attachment.fileKey,
     url: attachment.url,
   });
 
   const garments = await tx.select().from(wardrobeGarments).where(eq(wardrobeGarments.userId, userId));
   for (const garment of garments) {
-    addOwnedAccountKey(keys, currentPublicUrl, { storageKey: garment.originalImageKey });
-    addOwnedAccountKey(keys, currentPublicUrl, { storageKey: garment.isolatedImageKey });
-    addOwnedAccountKey(keys, currentPublicUrl, { storageKey: garment.sourceImageKey });
+    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.originalImageKey });
+    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.isolatedImageKey });
+    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.sourceImageKey });
   }
   const outfits = await tx.select().from(wardrobeOutfits).where(eq(wardrobeOutfits.userId, userId));
-  for (const outfit of outfits) addOwnedAccountKey(keys, currentPublicUrl, {
+  for (const outfit of outfits) addOwnedAccountKey(publicKeys, currentPublicUrl, {
     storageKey: outfit.resultThumbKey,
     url: outfit.resultThumbUrl,
   });
@@ -230,23 +232,35 @@ export async function collectAccountOwnedStorageKeysIn(
     // generated history is deletion authority when no explicit key exists.
     const history = parseJsonValue(session.history);
     if (Array.isArray(history)) {
-      for (const url of history) addOwnedAccountKey(keys, currentPublicUrl, { url });
+      for (const url of history) addOwnedAccountKey(publicKeys, currentPublicUrl, { url });
     }
   }
   const looks = await tx.select().from(wardrobeLooks).where(eq(wardrobeLooks.userId, userId));
-  for (const look of looks) addOwnedAccountKey(keys, currentPublicUrl, { url: look.imageUrl });
+  for (const look of looks) addOwnedAccountKey(publicKeys, currentPublicUrl, { url: look.imageUrl });
 
   const userBoards = await tx.select().from(boards).where(eq(boards.userId, userId));
-  for (const board of userBoards) addOwnedAccountKey(keys, currentPublicUrl, { storageKey: board.thumbnailKey });
+  for (const board of userBoards) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: board.thumbnailKey });
   if (userBoards.length > 0) {
     const boardIds = userBoards.map((board) => board.id);
     const items = await tx.select().from(boardItems).where(inArray(boardItems.boardId, boardIds));
-    for (const item of items) addOwnedAccountKey(keys, currentPublicUrl, { storageKey: item.imageKey });
+    for (const item of items) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: item.imageKey });
     // URL-only Canvas references/history can be shared inputs. The dry-run
     // orphan audit counts them, but they are not automatic delete authority.
   }
 
-  return Array.from(keys).sort();
+  return [
+    ...Array.from(privateEvidenceKeys, (storageKey) => ({
+      storageKey,
+      storageBackend: "private_evidence_r2" as const,
+    })),
+    ...Array.from(publicKeys, (storageKey) => ({
+      storageKey,
+      storageBackend: "public_r2" as const,
+    })),
+  ].sort((left, right) =>
+    left.storageBackend.localeCompare(right.storageBackend)
+    || left.storageKey.localeCompare(right.storageKey)
+  );
 }
 
 /**
@@ -309,12 +323,12 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
     await withTransaction(async (tx) => {
       const currentPublicUrl = process.env.R2_PUBLIC_URL ?? "";
       if (!currentPublicUrl) throw new Error("R2_PUBLIC_URL is required for account cleanup");
-      const storageKeys = await collectAccountOwnedStorageKeysIn(tx, userId, currentPublicUrl);
+      const storageItems = await collectAccountOwnedStorageItemsIn(tx, userId, currentPublicUrl);
       const manifest = await createStorageCleanupManifestIn(tx, {
         userId,
         operationId,
         kind: "account_delete",
-        storageKeys,
+        storageItems,
       });
       cleanupBatchId = manifest.id;
       cleanupObjects = manifest.expectedCount;

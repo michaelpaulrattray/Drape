@@ -146,7 +146,11 @@ describeWithDatabase("R7-5B final Cast-deletion schema (disposable DB)", () => {
       userId,
       operationId,
       kind: "model_delete",
-      storageKeys: ["models/a/head.png", "/models/a/back.png", "models/a/head.png"],
+      storageItems: [
+        { storageKey: "models/a/head.png", storageBackend: "public_r2" },
+        { storageKey: "/models/a/back.png", storageBackend: "public_r2" },
+        { storageKey: "models/a/head.png", storageBackend: "public_r2" },
+      ],
     }));
     expect(manifest.expectedCount).toBe(2);
 
@@ -165,8 +169,20 @@ describeWithDatabase("R7-5B final Cast-deletion schema (disposable DB)", () => {
       attemptedAt: null,
     });
     await expect(cleanupDb.getStorageCleanupItemsForBatch(manifest.id)).resolves.toMatchObject([
-      { batchId: manifest.id, storageKey: "models/a/back.png", status: "pending", attempts: 0 },
-      { batchId: manifest.id, storageKey: "models/a/head.png", status: "pending", attempts: 0 },
+      {
+        batchId: manifest.id,
+        storageKey: "models/a/back.png",
+        storageBackend: "public_r2",
+        status: "pending",
+        attempts: 0,
+      },
+      {
+        batchId: manifest.id,
+        storageKey: "models/a/head.png",
+        storageBackend: "public_r2",
+        status: "pending",
+        attempts: 0,
+      },
     ]);
   });
 
@@ -177,7 +193,10 @@ describeWithDatabase("R7-5B final Cast-deletion schema (disposable DB)", () => {
         userId,
         operationId,
         kind: "model_delete",
-        storageKeys: ["models/rollback/head.png", "models/rollback/back.png"],
+        storageItems: [
+          { storageKey: "models/rollback/head.png", storageBackend: "public_r2" },
+          { storageKey: "models/rollback/back.png", storageBackend: "public_r2" },
+        ],
       });
       throw new Error("injected source-row failure");
     })).rejects.toThrow("injected source-row failure");
@@ -200,17 +219,17 @@ describeWithDatabase("R7-5B final Cast-deletion schema (disposable DB)", () => {
       userId,
       operationId,
       kind: "model_delete",
-      storageKeys: ["models/unique/head.png"],
+      storageItems: [{ storageKey: "models/unique/head.png", storageBackend: "public_r2" }],
     }));
     await expect(withTransaction((tx) => cleanupDb.createStorageCleanupManifestIn(tx, {
       id: randomUUID(),
       userId,
       operationId,
       kind: "model_delete",
-      storageKeys: ["models/unique/other.png"],
+      storageItems: [{ storageKey: "models/unique/other.png", storageBackend: "public_r2" }],
     }))).rejects.toThrow();
     await expect(connection.execute(
-      "INSERT INTO storage_cleanup_items (batchId, storageKey) VALUES (?, ?)",
+      "INSERT INTO storage_cleanup_items (batchId, storageKey, storageBackend) VALUES (?, ?, 'public_r2')",
       [first.id, "models/unique/head.png"],
     )).rejects.toThrow();
 
@@ -226,13 +245,62 @@ describeWithDatabase("R7-5B final Cast-deletion schema (disposable DB)", () => {
     expect(Number(items.n)).toBe(1);
   });
 
+  it("persists explicit backends, keeps tuple identity, and preserves the old-runtime default", async () => {
+    const sharedKey = "users/1/models/999999999/evidence/plates/11111111-1111-4111-8111-111111111111.webp";
+    const first = await withTransaction((tx) => cleanupDb.createStorageCleanupManifestIn(tx, {
+      userId,
+      operationId: randomUUID(),
+      kind: "model_delete",
+      storageItems: [
+        { storageKey: sharedKey, storageBackend: "public_r2" },
+        { storageKey: sharedKey, storageBackend: "private_evidence_r2" },
+      ],
+    }));
+    expect(first.expectedCount).toBe(2);
+    await expect(cleanupDb.getStorageCleanupItemsForBatch(first.id)).resolves.toMatchObject([
+      { storageKey: sharedKey, storageBackend: "private_evidence_r2" },
+      { storageKey: sharedKey, storageBackend: "public_r2" },
+    ]);
+
+    const later = await withTransaction((tx) => cleanupDb.createStorageCleanupManifestIn(tx, {
+      userId,
+      operationId: randomUUID(),
+      kind: "account_delete",
+      storageItems: [{ storageKey: sharedKey, storageBackend: "private_evidence_r2" }],
+    }));
+    expect(later.expectedCount).toBe(1);
+
+    const legacyBatchId = randomUUID();
+    await connection.execute(
+      "INSERT INTO storage_cleanup_batches (id, userId, operationId, kind) VALUES (?, ?, ?, 'model_delete')",
+      [legacyBatchId, userId, randomUUID()],
+    );
+    await connection.execute(
+      "INSERT INTO storage_cleanup_items (batchId, storageKey) VALUES (?, 'models/legacy/default.png')",
+      [legacyBatchId],
+    );
+    const [[legacyItem]] = await connection.query<RowDataPacket[]>(
+      "SELECT storageBackend FROM storage_cleanup_items WHERE batchId = ?",
+      [legacyBatchId],
+    );
+    expect(legacyItem.storageBackend).toBe("public_r2");
+
+    await expect(connection.execute(
+      "INSERT INTO storage_cleanup_items (batchId, storageKey, storageBackend) VALUES (?, ?, 'private_evidence_r2')",
+      [first.id, sharedKey],
+    )).rejects.toThrow();
+  });
+
   it("refuses invalid keys before insert and invalid closed statuses at MySQL", async () => {
     const operationId = randomUUID();
     await expect(withTransaction((tx) => cleanupDb.createStorageCleanupManifestIn(tx, {
       userId,
       operationId,
       kind: "model_delete",
-      storageKeys: ["https://external.example/not-owned.png"],
+      storageItems: [{
+        storageKey: "https://external.example/not-owned.png",
+        storageBackend: "public_r2",
+      }],
     }))).rejects.toThrow("normalized keys");
     await expect(cleanupDb.getStorageCleanupBatchByOperation(userId, operationId)).resolves.toBeNull();
 

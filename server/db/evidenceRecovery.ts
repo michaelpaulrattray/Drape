@@ -58,7 +58,10 @@ async function existingEvidenceCleanupBatchIn(
     .for("update");
   if (!batch) return null;
   const items = await tx
-    .select({ storageKey: storageCleanupItems.storageKey })
+    .select({
+      storageKey: storageCleanupItems.storageKey,
+      storageBackend: storageCleanupItems.storageBackend,
+    })
     .from(storageCleanupItems)
     .where(eq(storageCleanupItems.batchId, batch.id))
     .for("update");
@@ -68,6 +71,7 @@ async function existingEvidenceCleanupBatchIn(
     || batch.expectedCount !== 1
     || items.length !== 1
     || items[0]?.storageKey !== receipt.storageKey
+    || items[0]?.storageBackend !== "private_evidence_r2"
   ) {
     throw new Error("Evidence cleanup operation is bound to another manifest");
   }
@@ -129,7 +133,10 @@ export async function planNextEvidenceIngestionCleanup(input: {
       userId: receipt.userId,
       operationId: receipt.operationId,
       kind: "evidence_cleanup",
-      storageKeys: [receipt.storageKey],
+      storageItems: [{
+        storageKey: receipt.storageKey,
+        storageBackend: "private_evidence_r2",
+      }],
     });
     const linked = await tx
       .update(castingEvidenceIngestions)

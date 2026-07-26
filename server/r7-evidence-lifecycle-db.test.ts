@@ -27,7 +27,11 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
-    if (!parsed.pathname.slice(1).startsWith("drape_r7_7c1_disposable_")) {
+    const databaseName = parsed.pathname.slice(1);
+    if (
+      !databaseName.startsWith("drape_r7_7c1_disposable_")
+      && !databaseName.startsWith("drape_r7_7c5a_disposable_")
+    ) {
       throw new Error("R7-7C3 DB tests require the guarded R7-7C disposable database");
     }
     process.env.DATABASE_URL = testDatabaseUrl!;
@@ -144,7 +148,7 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
     return rows[0] ?? null;
   }
 
-  it("free-fails a stale claimed evidence operation before exact-key cleanup and settles cleaned", async () => {
+  it("free-fails a stale claim and holds private cleanup without attempt burn before the adapter", async () => {
     const { userId, modelId } = await createOwnerAndModel();
     const operationId = randomUUID();
     const receipt = await insertReceipt({
@@ -177,16 +181,24 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
     expect(planned).toMatchObject({ receiptId: receipt.id, storageKey: receipt.storageKey });
     const deleteObject = vi.fn(async () => ({ success: true }));
     const processed = await cleanupWorker.processNextStorageCleanupBatch({ deleteObject });
-    expect(processed).toMatchObject({ claimed: true, deleted: 1, status: "succeeded" });
-    expect(deleteObject).toHaveBeenCalledExactlyOnceWith(receipt.storageKey);
-    expect(await recovery.settleCompletedEvidenceCleanups()).toBe(1);
+    expect(processed).toMatchObject({ claimed: false, deleted: 0 });
+    expect(deleteObject).not.toHaveBeenCalled();
+    expect(await one(
+      "SELECT storageBackend, status, attempts FROM storage_cleanup_items WHERE batchId = ?",
+      [planned?.batchId],
+    )).toEqual({
+      storageBackend: "private_evidence_r2",
+      status: "pending",
+      attempts: 0,
+    });
+    expect(await recovery.settleCompletedEvidenceCleanups()).toBe(0);
     expect((await one(
       "SELECT status, cleanupBatchId FROM casting_evidence_ingestions WHERE id = ?",
       [receipt.id],
-    ))).toMatchObject({ status: "cleaned", cleanupBatchId: planned?.batchId });
+    ))).toMatchObject({ status: "cleanup_pending", cleanupBatchId: planned?.batchId });
   }, 30_000);
 
-  it("keeps active and recovery-required operations out of cleanup and reports failed manifests", async () => {
+  it("keeps active operations out and reports adapter-pending private cleanup honestly", async () => {
     const { userId, modelId } = await createOwnerAndModel();
     for (const status of ["claimed", "recovery_required"] as const) {
       const operationId = randomUUID();
@@ -210,10 +222,19 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
       maxAttempts: 1,
       deleteObject: async () => ({ success: false, retryable: false, errorCode: "REFUSED" }),
     });
-    expect(processed.status).toBe("failed");
+    expect(processed).toMatchObject({ claimed: false, deleted: 0 });
     const health = await cleanupDb.getStorageCleanupHealth();
     expect(health.cleanupPendingEvidenceReceipts).toBe(1);
-    expect(health.failedEvidenceManifests).toBe(1);
+    expect(health.failedEvidenceManifests).toBe(0);
+    expect(health.pendingPrivateBatches).toBe(1);
+    expect(await one(
+      "SELECT storageBackend, status, attempts FROM storage_cleanup_items WHERE batchId = ?",
+      [planned?.batchId],
+    )).toEqual({
+      storageBackend: "private_evidence_r2",
+      status: "pending",
+      attempts: 0,
+    });
     expect(await recovery.settleCompletedEvidenceCleanups()).toBe(0);
   }, 30_000);
 
@@ -230,6 +251,12 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
          contentHash, createdByOperationId)
        VALUES (?, ?, ?, 'uploaded_reference', ?, 'image/webp', 640, 960, 4096, ?, ?)`,
       [plate.entityId, userId, modelId, plate.storageKey, "a".repeat(64), plate.operationId],
+    );
+    await connection.execute(
+      `INSERT INTO model_assets
+        (modelId, viewType, storageUrl, storageKey, pointsCost)
+       VALUES (?, 'frontClose', ?, ?, 0)`,
+      [modelId, `${PUBLIC_URL}/${plate.storageKey}`, plate.storageKey],
     );
     const crop = await insertReceipt({
       userId,
@@ -280,7 +307,8 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
       evidenceIngestions: 2,
       referencePlates: 1,
       evidenceCrops: 1,
-      cleanupObjects: 2,
+      assets: 1,
+      cleanupObjects: 3,
     });
     expect(Number((await one(
       "SELECT COUNT(*) AS n FROM casting_evidence_ingestions WHERE modelId = ?",
@@ -291,16 +319,19 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
       [modelId],
     ))?.n)).toBe(0);
     const [manifestItems] = await connection.query<RowDataPacket[]>(
-      `SELECT i.storageKey
+      `SELECT i.storageKey, i.storageBackend
        FROM storage_cleanup_items i
        INNER JOIN storage_cleanup_batches b ON b.id = i.batchId
        WHERE b.operationId = ?
-       ORDER BY i.storageKey`,
+       ORDER BY i.storageKey, i.storageBackend`,
       [deleteOperationId],
     );
-    expect(manifestItems.map((row) => row.storageKey)).toEqual(
-      [plate.storageKey, crop.storageKey].sort(),
-    );
+    expect(manifestItems).toHaveLength(3);
+    expect(manifestItems).toEqual(expect.arrayContaining([
+      { storageKey: crop.storageKey, storageBackend: "private_evidence_r2" },
+      { storageKey: plate.storageKey, storageBackend: "private_evidence_r2" },
+      { storageKey: plate.storageKey, storageBackend: "public_r2" },
+    ]));
   }, 30_000);
 
   it("exports owner-delivery metadata only, then account deletion manifests and removes evidence", async () => {
@@ -335,10 +366,13 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
       evidenceCrops: 0,
     });
     const [items] = await connection.query<RowDataPacket[]>(
-      "SELECT storageKey FROM storage_cleanup_items WHERE batchId = ?",
+      "SELECT storageKey, storageBackend FROM storage_cleanup_items WHERE batchId = ?",
       [deleted.cleanupBatchId],
     );
-    expect(items.map((row) => row.storageKey)).toContain(plate.storageKey);
+    expect(items).toContainEqual({
+      storageKey: plate.storageKey,
+      storageBackend: "private_evidence_r2",
+    });
     expect(await one("SELECT id FROM casting_evidence_ingestions WHERE id = ?", [plate.id]))
       .toBeNull();
   }, 30_000);

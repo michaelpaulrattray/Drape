@@ -503,6 +503,12 @@ export const STORAGE_CLEANUP_ITEM_STATUSES = [
 ] as const;
 export type StorageCleanupItemStatus = typeof STORAGE_CLEANUP_ITEM_STATUSES[number];
 
+export const STORAGE_CLEANUP_BACKENDS = [
+  "public_r2",
+  "private_evidence_r2",
+] as const;
+export type StorageCleanupBackend = typeof STORAGE_CLEANUP_BACKENDS[number];
+
 /**
  * One durable cleanup intent. The source transaction creates this manifest
  * before scrubbing its source rows; the later worker owns only these keys.
@@ -537,6 +543,9 @@ export const storageCleanupItems = mysqlTable("storage_cleanup_items", {
   id: int("id").autoincrement().primaryKey(),
   batchId: varchar("batchId", { length: 36 }).notNull(),
   storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  storageBackend: mysqlEnum("storageBackend", STORAGE_CLEANUP_BACKENDS)
+    .default("public_r2")
+    .notNull(),
   status: mysqlEnum("status", STORAGE_CLEANUP_ITEM_STATUSES)
     .default("pending")
     .notNull(),
@@ -546,7 +555,8 @@ export const storageCleanupItems = mysqlTable("storage_cleanup_items", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ([
-  uniqueIndex("uq_storage_cleanup_items_batch_key").on(table.batchId, table.storageKey),
+  uniqueIndex("uq_storage_cleanup_items_batch_key")
+    .on(table.batchId, table.storageBackend, table.storageKey),
   index("idx_storage_cleanup_items_status_next").on(table.status, table.nextAttemptAt),
 ]));
 

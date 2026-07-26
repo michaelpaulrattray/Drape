@@ -62,7 +62,9 @@ try {
   }
 
   const batchRows = await rows("SELECT id, status, expectedCount, deletedCount, failedCount, leaseExpiresAt FROM storage_cleanup_batches");
-  const itemRows = await rows("SELECT batchId, storageKey, status FROM storage_cleanup_items");
+  const itemRows = await rows(
+    "SELECT batchId, storageKey, storageBackend, status FROM storage_cleanup_items",
+  );
   const queued = new Set<string>();
   for (const item of itemRows) {
     const key = normalizeOwnedStorageKey(item.storageKey);
@@ -145,6 +147,7 @@ try {
     cleanupItems: itemRows.map((row) => ({
       batchId: String(row.batchId),
       storageKey: String(row.storageKey),
+      storageBackend: String(row.storageBackend),
     })),
   });
 

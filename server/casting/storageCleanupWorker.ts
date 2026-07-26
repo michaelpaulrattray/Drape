@@ -149,6 +149,7 @@ export function startStorageCleanupWorker(): void {
         || health.staleLeases
         || health.cleanupPendingEvidenceReceipts
         || health.failedEvidenceManifests
+        || health.pendingPrivateBatches
         || (
           health.oldestNonAttachedEvidenceAgeMs !== null
           && health.oldestNonAttachedEvidenceAgeMs >= 15 * 60 * 1000

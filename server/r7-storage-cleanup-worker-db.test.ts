@@ -64,7 +64,10 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
       userId,
       operationId,
       kind: "model_delete",
-      storageKeys: keys,
+      storageItems: keys.map((storageKey) => ({
+        storageKey,
+        storageBackend: "public_r2" as const,
+      })),
     }));
   }
 
@@ -87,6 +90,43 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
     const stored = await batchById(created.id);
     expect(stored).toMatchObject({ status: "succeeded", expectedCount: 2, deletedCount: 2, failedCount: 0 });
     await expect(cleanupDb.getStorageCleanupItemsForBatch(created.id)).resolves.toEqual([]);
+  }, DB_TEST_TIMEOUT);
+
+  it("skips private and mixed batches without attempt burn while public cleanup continues", async () => {
+    const privateBatch = await withTransaction((tx) => cleanupDb.createStorageCleanupManifestIn(tx, {
+      userId,
+      operationId: randomUUID(),
+      kind: "evidence_cleanup",
+      storageItems: [{
+        storageKey: "users/1/models/999999999/evidence/plates/11111111-1111-4111-8111-111111111111.webp",
+        storageBackend: "private_evidence_r2",
+      }],
+    }));
+    const publicBatch = await manifest(["models/public/still-flows.png"]);
+    const calls: string[] = [];
+    await expect(worker.processNextStorageCleanupBatch({
+      deleteObject: async (key) => {
+        calls.push(key);
+        return { success: true };
+      },
+    })).resolves.toMatchObject({
+      claimed: true,
+      batchId: publicBatch.id,
+      status: "succeeded",
+    });
+    expect(calls).toEqual(["models/public/still-flows.png"]);
+    await expect(cleanupDb.getStorageCleanupItemsForBatch(privateBatch.id)).resolves.toMatchObject([
+      {
+        storageBackend: "private_evidence_r2",
+        status: "pending",
+        attempts: 0,
+      },
+    ]);
+    await expect(worker.processNextStorageCleanupBatch({
+      deleteObject: async () => {
+        throw new Error("private item must not reach the public delete client");
+      },
+    })).resolves.toMatchObject({ claimed: false });
   }, DB_TEST_TIMEOUT);
 
   it("recovers a crash after object deletion by replaying the idempotent delete", async () => {
@@ -189,17 +229,17 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
       "INSERT INTO wardrobe_sessions (userId, modelId, modelImageUrl, history) VALUES (?, NULL, ?, JSON_ARRAY(?, ?))",
       [userId, "https://owned.example/uploads/model.png", "https://owned.example/vto/history.png", "https://external.example/vto/shared.png"],
     );
-    const keys = await withTransaction((tx) => accountDeletion.collectAccountOwnedStorageKeysIn(
+    const items = await withTransaction((tx) => accountDeletion.collectAccountOwnedStorageItemsIn(
       tx,
       userId,
       "https://owned.example",
     ));
-    expect(keys).toEqual([
-      "users/test/avatar.png",
-      "vto/history.png",
-      "vto/result.png",
+    expect(items).toEqual([
+      { storageKey: "users/test/avatar.png", storageBackend: "public_r2" },
+      { storageKey: "vto/history.png", storageBackend: "public_r2" },
+      { storageKey: "vto/result.png", storageBackend: "public_r2" },
     ]);
-    expect(keys.some((key) => key.includes("external"))).toBe(false);
+    expect(items.some((item) => item.storageKey.includes("external"))).toBe(false);
   }, DB_TEST_TIMEOUT);
 
   it("account deletion erases every Wardrobe/Canvas source row whose owned key is queued", async () => {

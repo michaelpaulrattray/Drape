@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import {
   STORAGE_CLEANUP_BATCH_KINDS,
   STORAGE_CLEANUP_BATCH_STATUSES,
+  STORAGE_CLEANUP_BACKENDS,
   STORAGE_CLEANUP_ITEM_STATUSES,
   type StorageCleanupBatchKind,
   type StorageCleanupBatchStatus,
+  type StorageCleanupBackend,
   type StorageCleanupItemStatus,
 } from "../../drizzle/schema";
 import { normalizeOwnedStorageKey } from "./deletionAudit";
@@ -15,8 +17,13 @@ export interface StorageCleanupManifest {
   userId: number;
   operationId: string;
   kind: StorageCleanupBatchKind;
-  storageKeys: string[];
+  storageItems: StorageCleanupManifestItem[];
   expectedCount: number;
+}
+
+export interface StorageCleanupManifestItem {
+  storageKey: string;
+  storageBackend: StorageCleanupBackend;
 }
 
 function assertPositiveInteger(value: unknown, label: string): asserts value is number {
@@ -46,6 +53,12 @@ export function assertStorageCleanupBatchStatus(value: unknown): asserts value i
 export function assertStorageCleanupItemStatus(value: unknown): asserts value is StorageCleanupItemStatus {
   if (!STORAGE_CLEANUP_ITEM_STATUSES.includes(value as StorageCleanupItemStatus)) {
     throw new TypeError("Unknown storage-cleanup item status");
+  }
+}
+
+export function assertStorageCleanupBackend(value: unknown): asserts value is StorageCleanupBackend {
+  if (!STORAGE_CLEANUP_BACKENDS.includes(value as StorageCleanupBackend)) {
+    throw new TypeError("Unknown storage-cleanup backend");
   }
 }
 
@@ -79,16 +92,29 @@ export function assertStorageCleanupCounts(input: {
   }
 }
 
-export function normalizeCleanupManifestKeys(storageKeys: readonly unknown[]): string[] {
-  const keys = new Set<string>();
-  for (const candidate of storageKeys) {
-    const key = normalizeOwnedStorageKey(candidate);
+export function normalizeCleanupManifestItems(
+  storageItems: readonly {
+    storageKey: unknown;
+    storageBackend: unknown;
+  }[],
+): StorageCleanupManifestItem[] {
+  const items = new Map<string, StorageCleanupManifestItem>();
+  for (const candidate of storageItems) {
+    assertStorageCleanupBackend(candidate.storageBackend);
+    const key = normalizeOwnedStorageKey(candidate.storageKey);
     if (!key || key.length > 512) {
       throw new TypeError("Storage-cleanup manifests require normalized keys of at most 512 characters");
     }
-    keys.add(key);
+    const item = {
+      storageKey: key,
+      storageBackend: candidate.storageBackend,
+    };
+    items.set(`${item.storageBackend}\0${item.storageKey}`, item);
   }
-  return Array.from(keys).sort();
+  return Array.from(items.values()).sort((left, right) =>
+    left.storageBackend.localeCompare(right.storageBackend)
+    || left.storageKey.localeCompare(right.storageKey)
+  );
 }
 
 export function buildStorageCleanupManifest(input: {
@@ -96,20 +122,23 @@ export function buildStorageCleanupManifest(input: {
   userId: number;
   operationId: string;
   kind: StorageCleanupBatchKind;
-  storageKeys: readonly unknown[];
+  storageItems: readonly {
+    storageKey: unknown;
+    storageBackend: unknown;
+  }[];
 }): StorageCleanupManifest {
   assertPositiveInteger(input.userId, "userId");
   assertClientRequestId(input.operationId);
   assertStorageCleanupBatchKind(input.kind);
   const id = input.id ?? randomUUID();
   assertClientRequestId(id);
-  const storageKeys = normalizeCleanupManifestKeys(input.storageKeys);
+  const storageItems = normalizeCleanupManifestItems(input.storageItems);
   return {
     id,
     userId: input.userId,
     operationId: input.operationId,
     kind: input.kind,
-    storageKeys,
-    expectedCount: storageKeys.length,
+    storageItems,
+    expectedCount: storageItems.length,
   };
 }

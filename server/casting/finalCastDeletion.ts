@@ -659,6 +659,7 @@ export async function executeFinalCastDeletion(input: {
     const sessions = await tx.select().from(wardrobeSessions).where(eq(wardrobeSessions.modelId, input.modelId)).for("update");
     const looks = await tx.select().from(wardrobeLooks).where(eq(wardrobeLooks.modelId, input.modelId)).for("update");
     const storageKeys = new Set<string>();
+    const privateEvidenceKeys = new Set<string>();
     for (const receipt of evidenceIngestions) {
       if (receipt.userId !== input.userId) {
         throw new Error("Evidence receipt ownership disagrees with its Cast");
@@ -669,7 +670,7 @@ export async function executeFinalCastDeletion(input: {
         modelId: receipt.modelId,
         purpose: receipt.purpose,
       });
-      storageKeys.add(receipt.storageKey);
+      privateEvidenceKeys.add(receipt.storageKey);
     }
     for (const plate of referencePlates) {
       if (plate.userId !== input.userId) {
@@ -681,7 +682,7 @@ export async function executeFinalCastDeletion(input: {
         modelId: plate.modelId,
         purpose: plate.kind,
       });
-      storageKeys.add(plate.storageKey);
+      privateEvidenceKeys.add(plate.storageKey);
     }
     for (const crop of evidenceCrops) {
       if (crop.userId !== input.userId) {
@@ -693,7 +694,7 @@ export async function executeFinalCastDeletion(input: {
         modelId: crop.modelId,
         purpose: "evidence_crop",
       });
-      storageKeys.add(crop.storageKey);
+      privateEvidenceKeys.add(crop.storageKey);
     }
     for (const asset of assets) {
       collectManifestKey(storageKeys, currentPublicUrl, { storageKey: asset.storageKey, url: asset.storageUrl });
@@ -729,7 +730,16 @@ export async function executeFinalCastDeletion(input: {
       userId: input.userId,
       operationId: input.operationId,
       kind: "model_delete",
-      storageKeys: Array.from(storageKeys),
+      storageItems: [
+        ...Array.from(privateEvidenceKeys, (storageKey) => ({
+          storageKey,
+          storageBackend: "private_evidence_r2" as const,
+        })),
+        ...Array.from(storageKeys, (storageKey) => ({
+          storageKey,
+          storageBackend: "public_r2" as const,
+        })),
+      ],
     });
     failAt("after_manifest", input.failurePoint);
     const manifestKeyCount = storageKeys.size;

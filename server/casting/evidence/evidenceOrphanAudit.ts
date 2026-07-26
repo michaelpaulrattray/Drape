@@ -39,6 +39,7 @@ interface EvidenceCleanupBatchAuditRow {
 interface EvidenceCleanupItemAuditRow {
   batchId: string;
   storageKey: string;
+  storageBackend: string;
 }
 
 interface EvidenceOperationAuditRow {
@@ -222,6 +223,7 @@ export function auditEvidenceOrphans(input: {
       || !operationMatchesReceipt
       || items.length !== 1
       || items[0]?.storageKey !== receipt.storageKey
+      || items[0]?.storageBackend !== "private_evidence_r2"
     ) {
       cleanupLinkMismatches += 1;
     }
@@ -231,6 +233,7 @@ export function auditEvidenceOrphans(input: {
     const operation = operationById.get(batch.operationId);
     const retainedItemsBelongToBatchOwner =
       (itemsByBatch.get(batch.id) ?? []).every((item) => {
+        if (item.storageBackend !== "private_evidence_r2") return false;
         try {
           return parseEvidenceStorageKey(item.storageKey).userId === batch.userId;
         } catch {
