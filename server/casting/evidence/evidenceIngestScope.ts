@@ -29,6 +29,24 @@ export class EvidenceIngestWorkerConfigurationError extends Error {
   }
 }
 
+export class EvidenceIngestAdapterConfigurationError extends Error {
+  constructor() {
+    super(
+      `${EVIDENCE_INGEST_SCOPE_ENV} cannot be enabled unless the private evidence adapter is fully configured`,
+    );
+    this.name = "EvidenceIngestAdapterConfigurationError";
+  }
+}
+
+export class EvidenceIngestRuntimeNotReadyError extends Error {
+  constructor() {
+    super(
+      `${EVIDENCE_INGEST_SCOPE_ENV} cannot be enabled before authenticated private evidence delivery and cleanup routing are installed`,
+    );
+    this.name = "EvidenceIngestRuntimeNotReadyError";
+  }
+}
+
 export function parseEvidenceIngestScope(raw: string | undefined): EvidenceIngestScope {
   if (raw === undefined || raw === "" || raw === "off") return { kind: "off" };
   if (raw === "all") return { kind: "all" };
@@ -73,10 +91,18 @@ export function captureEvidenceIngestEnabled(userId: number): boolean {
 export function validateEvidenceIngestEnvironment(input: {
   scope: string | undefined;
   cleanupWorker: string | undefined;
+  adapterConfigured?: boolean;
+  productReady?: boolean;
 }): EvidenceIngestScope {
   const parsed = parseEvidenceIngestScope(input.scope);
   if (parsed.kind !== "off" && input.cleanupWorker !== "true") {
     throw new EvidenceIngestWorkerConfigurationError();
+  }
+  if (parsed.kind !== "off" && input.adapterConfigured !== true) {
+    throw new EvidenceIngestAdapterConfigurationError();
+  }
+  if (parsed.kind !== "off" && input.productReady !== true) {
+    throw new EvidenceIngestRuntimeNotReadyError();
   }
   return parsed;
 }

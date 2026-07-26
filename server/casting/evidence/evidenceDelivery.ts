@@ -22,7 +22,38 @@ export interface EvidenceDeliveryAdapter {
     mime: "image/webp",
   ): Promise<{ key: string }>;
   resolveOwnerDelivery(userId: number, key: string): Promise<string>;
-  deleteExact(key: string): Promise<void>;
+  deleteExact(key: string): Promise<EvidenceDeleteResult>;
+}
+
+export type EvidenceDeleteErrorCode =
+  | "private_storage_unavailable"
+  | "private_storage_refused"
+  | "private_storage_invalid_request";
+
+export type EvidenceDeleteResult =
+  | { success: true }
+  | {
+    success: false;
+    errorCode: EvidenceDeleteErrorCode;
+    retryable: boolean;
+  };
+
+export interface CanonicalEvidenceRead {
+  key: string;
+  mime: "image/webp";
+  byteSize: number;
+  body: AsyncIterable<Uint8Array>;
+  abort(): void;
+}
+
+export interface PrivateEvidenceStorageAdapter extends EvidenceDeliveryAdapter {
+  readCanonical(input: {
+    key: string;
+    expectedByteSize: number;
+  }): Promise<CanonicalEvidenceRead>;
+  listCanonicalKeys(input?: {
+    maxKeys?: number;
+  }): Promise<readonly string[]>;
 }
 
 export class EvidenceDeliveryError extends Error {

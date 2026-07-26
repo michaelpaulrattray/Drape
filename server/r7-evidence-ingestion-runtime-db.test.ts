@@ -90,7 +90,7 @@ describeWithDatabase("R7-7C2 evidence ingestion runtime (disposable DB)", () => 
     return {
       putCanonical,
       resolveOwnerDelivery: async (_userId, key) => `disposable-owner://${key}`,
-      deleteExact: async () => undefined,
+      deleteExact: async () => ({ success: true }),
     };
   }
 

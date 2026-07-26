@@ -347,7 +347,7 @@ describeWithDatabase("R7-7C3 evidence lifecycle (disposable DB)", () => {
     const adapter = {
       putCanonical: vi.fn(),
       resolveOwnerDelivery: vi.fn(async (_owner: number, key: string) => `owner://${key}`),
-      deleteExact: vi.fn(),
+      deleteExact: vi.fn(async () => ({ success: true })),
     };
     const exported = await gdpr.exportUserData(userId, adapter);
     expect(exported?.evidence.referencePlates).toEqual([expect.objectContaining({

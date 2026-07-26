@@ -107,7 +107,7 @@ describeWithDatabase("R7-7C4 evidence operations (disposable DB)", () => {
       resolveOwnerDelivery: vi.fn(async (userId, key) => (
         `owner://${userId}/${encodeURIComponent(key)}`
       )),
-      deleteExact: vi.fn(async () => undefined),
+      deleteExact: vi.fn(async () => ({ success: true })),
     };
     return { value, objects };
   }
@@ -193,7 +193,7 @@ describeWithDatabase("R7-7C4 evidence operations (disposable DB)", () => {
         return { key: attempt === 1 ? `${key}.wrong` : key };
       }),
       resolveOwnerDelivery: vi.fn(async (_userId, key) => `owner://${key}`),
-      deleteExact: vi.fn(async () => undefined),
+      deleteExact: vi.fn(async () => ({ success: true })),
     };
     await expect(stageOwnedReferencePlate({ delivery: value }, {
       userId: ownerId,

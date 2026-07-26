@@ -3,6 +3,10 @@ import {
   EVIDENCE_INGEST_SCOPE_ENV,
   validateEvidenceIngestEnvironment,
 } from "../casting/evidence/evidenceIngestScope";
+import {
+  EVIDENCE_PRODUCT_DELIVERY_READY,
+  privateEvidenceAdapterConfigured,
+} from "../casting/evidence/evidenceDeliveryRuntime";
 
 /**
  * Vars the server cannot run without. Each entry explains what breaks when
@@ -58,6 +62,8 @@ export function validateEnv(): void {
   validateEvidenceIngestEnvironment({
     scope: process.env[EVIDENCE_INGEST_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+    adapterConfigured: privateEvidenceAdapterConfigured(),
+    productReady: EVIDENCE_PRODUCT_DELIVERY_READY,
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

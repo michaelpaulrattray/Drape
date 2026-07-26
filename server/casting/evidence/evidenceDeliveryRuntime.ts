@@ -1,14 +1,24 @@
 import type { EvidenceDeliveryAdapter } from "./evidenceDelivery";
+import { parsePrivateEvidenceStorageConfig } from "./privateEvidenceStorage";
 
 /**
- * R7-7C deliberately ships without a production evidence adapter. Founder
- * privacy policy must choose private authenticated delivery or permanent
- * public URLs before a real adapter may be installed here.
+ * C5B installs the private adapter authority, but product traffic stays
+ * unreachable until C5C lands both authenticated delivery and cleanup
+ * routing. This constant is intentionally consumed by boot validation so an
+ * operator cannot enable the existing ingest routes against a half-installed
+ * product boundary.
  */
+export const EVIDENCE_PRODUCT_DELIVERY_READY = false;
+
 export function getEvidenceDeliveryAdapter(): EvidenceDeliveryAdapter | null {
   return null;
 }
 
 export function evidenceDeliveryConfigured(): boolean {
-  return getEvidenceDeliveryAdapter() !== null;
+  return EVIDENCE_PRODUCT_DELIVERY_READY
+    && getEvidenceDeliveryAdapter() !== null;
+}
+
+export function privateEvidenceAdapterConfigured(): boolean {
+  return parsePrivateEvidenceStorageConfig(process.env) !== null;
 }

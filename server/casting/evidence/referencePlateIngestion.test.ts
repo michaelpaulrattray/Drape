@@ -66,7 +66,7 @@ function fakeDelivery(
       events.push("resolve");
       return `disposable-owner://${key}`;
     }),
-    deleteExact: vi.fn(async () => undefined),
+    deleteExact: vi.fn(async () => ({ success: true })),
     ...overrides,
   };
 }

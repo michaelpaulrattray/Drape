@@ -7,6 +7,10 @@ import mysql, {
   type ResultSetHeader,
   type RowDataPacket,
 } from "mysql2/promise";
+import {
+  PrivateEvidenceSchemaMismatchError,
+  assertPrivateEvidenceCleanupSchemaWithClient,
+} from "../server/casting/evidence/privateEvidenceSchema";
 
 const PREFIX = "drape_r7_7c5a_disposable_";
 
@@ -127,7 +131,16 @@ async function main() {
         "INSERT INTO storage_cleanup_items (batchId, storageKey) VALUES (?, 'models/pre-0012/public.png')",
         [legacyBatchId],
       );
+      await assertPrivateEvidenceCleanupSchemaWithClient(connection)
+        .then(() => {
+          throw new Error("Adapter-capable runtime accepted the pre-0012 schema");
+        })
+        .catch((error) => {
+          if (!(error instanceof PrivateEvidenceSchemaMismatchError)) throw error;
+        });
+      console.log("[disposable] adapter-capable runtime refused the pre-0012 schema");
       await applyMigrationRange(connection, 12, 12);
+      await assertPrivateEvidenceCleanupSchemaWithClient(connection);
       const [[backfilled]] = await connection.query<RowDataPacket[]>(
         "SELECT storageBackend FROM storage_cleanup_items WHERE batchId = ?",
         [legacyBatchId],

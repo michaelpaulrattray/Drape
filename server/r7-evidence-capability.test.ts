@@ -4,12 +4,18 @@ import type { User } from "../drizzle/schema";
 import type { TrpcContext } from "./_core/context";
 import {
   EvidenceIngestScopeConfigurationError,
+  EvidenceIngestAdapterConfigurationError,
+  EvidenceIngestRuntimeNotReadyError,
   EvidenceIngestWorkerConfigurationError,
   evidenceIngestEnabledForUser,
   parseEvidenceIngestScope,
   validateEvidenceIngestEnvironment,
 } from "./casting/evidence/evidenceIngestScope";
 import { appRouter } from "./routers";
+import {
+  evidenceDeliveryConfigured,
+  getEvidenceDeliveryAdapter,
+} from "./casting/evidence/evidenceDeliveryRuntime";
 
 function context(userId = 77): TrpcContext {
   return {
@@ -52,10 +58,27 @@ describe("R7-7C4 evidence capability", () => {
     })).toThrowError(
       new EvidenceIngestWorkerConfigurationError(),
     );
+    expect(() => validateEvidenceIngestEnvironment({
+      scope: "users:2",
+      cleanupWorker: "true",
+    })).toThrowError(new EvidenceIngestAdapterConfigurationError());
+    expect(() => validateEvidenceIngestEnvironment({
+      scope: "users:2",
+      cleanupWorker: "true",
+      adapterConfigured: true,
+    })).toThrowError(new EvidenceIngestRuntimeNotReadyError());
     expect(validateEvidenceIngestEnvironment({
       scope: "users:2",
       cleanupWorker: "true",
+      adapterConfigured: true,
+      productReady: true,
     })).toEqual({ kind: "users", userIds: [2] });
+    expect(validateEvidenceIngestEnvironment({
+      scope: "off",
+      cleanupWorker: undefined,
+      adapterConfigured: false,
+      productReady: false,
+    })).toEqual({ kind: "off" });
   });
 
   it("reports false and refuses both mutations while scope is off", async () => {
@@ -87,12 +110,15 @@ describe("R7-7C4 evidence capability", () => {
     }
   });
 
-  it("keeps the production adapter deliberately unconfigured and the wire strict", async () => {
+  it("keeps the C5B adapter unreachable from product routes and the wire strict", async () => {
+    expect(getEvidenceDeliveryAdapter()).toBeNull();
+    expect(evidenceDeliveryConfigured()).toBe(false);
     const runtime = await readFile(
       new URL("./casting/evidence/evidenceDeliveryRuntime.ts", import.meta.url),
       "utf8",
     );
     expect(runtime).toContain("return null");
+    expect(runtime).toContain("EVIDENCE_PRODUCT_DELIVERY_READY = false");
     expect(runtime).not.toMatch(/storagePut|R2_|S3Client|resolveOwnerDelivery\s*:/);
 
     const route = await readFile(
@@ -108,6 +134,12 @@ describe("R7-7C4 evidence capability", () => {
     const env = await readFile(new URL("./_core/env.ts", import.meta.url), "utf8");
     expect(env).toContain("validateEvidenceIngestEnvironment");
     expect(env).toContain("process.env.ENABLE_STORAGE_CLEANUP_WORKER");
+    expect(env).toContain("privateEvidenceAdapterConfigured()");
+    expect(env).toContain("EVIDENCE_PRODUCT_DELIVERY_READY");
+
+    const boot = await readFile(new URL("./_core/index.ts", import.meta.url), "utf8");
+    expect(boot.indexOf("await assertPrivateEvidenceCleanupSchema()"))
+      .toBeLessThan(boot.indexOf("const app = express()"));
   });
 
   it("pins claimed-only evidence operations and atomic product finalization", async () => {

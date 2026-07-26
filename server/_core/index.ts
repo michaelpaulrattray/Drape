@@ -15,6 +15,7 @@ import heroProxyRouter from "../heroProxy";
 import imageProxyRouter from "../routes/imageProxy";
 import { healthHandler } from "../health";
 import { validateEnv } from "./env";
+import { assertPrivateEvidenceCleanupSchema } from "../casting/evidence/privateEvidenceSchema";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("server");
 
@@ -139,6 +140,9 @@ function registerShutdownHandlers(): void {
 async function startServer() {
   // Fail fast if critical env vars are missing (see server/_core/env.ts)
   validateEnv();
+  // C5B is the first private-adapter-capable build. Refuse traffic until the
+  // cleanup backend column and exact tuple index from migration 0012 exist.
+  await assertPrivateEvidenceCleanupSchema();
 
   const app = express();
   configureTrustedProxy(app);
