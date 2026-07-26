@@ -166,7 +166,7 @@ Validation order:
     bytes.
 
 The wire schema uses one derived encoded-length constant:
-`ceil(10 MiB * 4 / 3) + maximum accepted data-URL prefix`. It refuses an
+`4 * ceil(10 MiB / 3) + maximum accepted data-URL prefix`. It refuses an
 oversized string before decoding and leaves honest headroom below the existing
 15 MiB Express request limit.
 

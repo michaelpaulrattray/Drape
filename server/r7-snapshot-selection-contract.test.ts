@@ -101,6 +101,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     ];
     const allowedAuthority = new Set([
       "server/casting/effectiveCastState.ts",
+      "server/casting/evidence/referencePlateIngestion.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/snapshotBootstrap.ts",
       "server/casting/snapshotCohortInventory.ts",
@@ -108,6 +109,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/snapshotShadow.ts",
       "server/casting/snapshotTransitions.ts",
       "server/db/accountDeletion.ts",
+      "server/db/evidenceIngestion.ts",
       "server/db/generationOperations.ts",
     ]);
     const hits: string[] = [];

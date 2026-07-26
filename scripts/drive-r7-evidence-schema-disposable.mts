@@ -1,4 +1,4 @@
-/** Guarded disposable-MySQL gate for R7-7C1 migration 0011. */
+/** Guarded disposable-MySQL gate for R7-7C1/C2 migration and runtime. */
 import "dotenv/config";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -109,6 +109,7 @@ async function main() {
       "run",
       "server/r7-evidence-ingestion-contract.test.ts",
       "server/r7-evidence-ingestion-schema-db.test.ts",
+      "server/r7-evidence-ingestion-runtime-db.test.ts",
     ], {
       ...process.env,
       DATABASE_URL: "",
@@ -116,7 +117,7 @@ async function main() {
       R7_7C1_LEGACY_MODEL_BATCH_ID: legacyModelBatchId,
       R7_7C1_LEGACY_ACCOUNT_BATCH_ID: legacyAccountBatchId,
     });
-    console.log("[disposable] R7-7C1 migration, mixed-runtime and constraint gates passed");
+    console.log("[disposable] R7-7C1/C2 migration, mixed-runtime, constraint and ingestion gates passed");
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) {

@@ -134,7 +134,9 @@ describe("R7-7C1 owned-evidence schema contract", () => {
         callers.push(file.replaceAll("\\", "/"));
       }
     }
-    expect(callers).toEqual([]);
+    expect(callers).toEqual([
+      "server/db/evidenceIngestion.ts",
+    ]);
 
     const cleanupDb = await readFile(
       new URL("./db/storageCleanup.ts", import.meta.url),
