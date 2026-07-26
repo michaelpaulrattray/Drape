@@ -15,7 +15,6 @@ const db = vi.hoisted(() => ({
   getModelById: vi.fn(),
   getModelAssets: vi.fn(),
   createModelAsset: vi.fn(),
-  setModelAssetPinned: vi.fn(),
   createGeneration: vi.fn(),
   updateGeneration: vi.fn(),
   updateModel: vi.fn(),

@@ -27,7 +27,6 @@ import {
   getModelById,
   getModelAssets,
   createModelAsset,
-  setModelAssetPinned,
   createGeneration,
   updateGeneration,
   updateModel,
@@ -895,43 +894,14 @@ export async function getPackageState(input: {
   // Batch B: minted is status truth (active | legacy locked) — agencyId is
   // integrity detail, never the read-model discriminator (a stray ID on a
   // draft must not read minted; a legacy locked row must).
-  return { modelId: input.modelId, minted: isModelMintedStatus(model.status), slots: computePackageSlots(assets) };
-}
-
-/** The row pin/refresh act on: the NEWEST filled row for the angle — the same
- *  selection rule computePackageSlots renders, so state changes always land on
- *  the row the user is looking at. Pure; exported for tests. */
-export function newestFilledAssetId(
-  assets: Array<{ id: number; viewType: string; storageUrl: string }>,
-  angle: CanonicalViewAngle,
-): number | null {
-  const row = assets.find((a) => a.viewType === angle && a.storageUrl);
-  return row?.id ?? null;
-}
-
-/** R5 per-slot pin toggle (D-21 on the package ledger). Model-asset pins are
- *  a DIFFERENT ledger from board-item pins (boardOps.executeSetNodePinned) —
- *  one marks a package view accepted-final, the other marks a placement. */
-export async function executeSetSlotPinned(input: {
-  userId: number;
-  modelId: number;
-  angle: CanonicalViewAngle;
-  pinned: boolean;
-}): Promise<{ modelId: number; angle: CanonicalViewAngle; pinned: boolean }> {
-  const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
-  const assets = await getModelAssets(input.modelId);
-  const assetId = newestFilledAssetId(assets, input.angle);
-  if (assetId === null) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: `${VIEW_ANGLE_LABELS[input.angle]} has no cast view to pin yet`,
-    });
-  }
-  await setModelAssetPinned(assetId, input.pinned);
-  return { modelId: input.modelId, angle: input.angle, pinned: input.pinned };
+  return {
+    modelId: input.modelId,
+    minted: isModelMintedStatus(model.status),
+    slots: computePackageSlots(assets),
+    // Kept for one deploy-skew cycle so an older cached client hides the
+    // retired controls even if operators temporarily return reads to R6.
+    pinningAvailable: false as const,
+  };
 }
 
 // ── D-53: the slot ledger is the single version history ─────────────────────

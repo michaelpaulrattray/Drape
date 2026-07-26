@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
-import { createClientRequestId } from '@shared/clientRequestId';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
 import { SlotVersionHistory } from '@/features/casting/components/SlotVersionHistory';
 
@@ -21,7 +19,6 @@ export function CastingDetailsDialog() {
   const open = useCastingRefreshStore((s) => s.detailsOpen);
   const setOpen = useCastingRefreshStore((s) => s.setDetailsOpen);
   const {
-    invalidate,
     isPending: refreshPending,
     refreshingSet,
     refreshAngles,
@@ -67,12 +64,6 @@ export function CastingDetailsDialog() {
     { modelId: modelId ?? 0 },
     { enabled: open && !!modelId, staleTime: 0 },
   );
-  const pinningAvailable = packageQuery.data?.pinningAvailable !== false;
-  const pinMutation = trpc.generation.setSlotPinned.useMutation({
-    onSuccess: (_result, variables) => { void invalidate(variables.modelId); },
-    onError: (error) => toast.error(error.message),
-  });
-
   if (!open) return null;
 
   const slots = packageQuery.data?.slots ?? [];
@@ -161,22 +152,16 @@ export function CastingDetailsDialog() {
                           ? blocker.message
                           : slot.failed
                           ? `Retry needed — ${slot.failed.reason}`
-                          : pinningAvailable && slot.stale && slot.pinned
-                            ? 'Pinned and out of sync — unpin first'
-                            : slot.stale
-                              ? 'Out of sync with the current identity'
-                              : slot.filled
-                                ? 'Current identity version'
-                                : 'Not added yet'}
+                          : slot.stale
+                            ? 'Out of sync with the current identity'
+                            : slot.filled
+                              ? 'Current identity version'
+                              : 'Not added yet'}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {pinningAvailable && needsAction && plan?.refusal === 'pinned' ? (
-                      <button type="button" onClick={() => modelId && pinMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle: slot.angle, pinned: false })} disabled={pinMutation.isPending} className="text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink disabled:opacity-40">
-                        Unpin
-                      </button>
-                    ) : canRefresh ? (
+                    {canRefresh ? (
                       <button type="button" onClick={() => refreshAngles([slot.angle])} disabled={busy || refreshPending} className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
                         {busy ? 'Refreshing…' : `${slot.failed ? 'Retry' : 'Refresh'} · ${(plan?.cost ?? 0).toLocaleString()} credits`}
                       </button>

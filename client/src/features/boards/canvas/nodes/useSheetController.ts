@@ -4,7 +4,7 @@
  *
  * D-24 clean: tRPC + shared types only — no casting stores. Board mutations
  * (pop out / collapse) dispatch window events to BoardPage per the house
- * node→page contract; MODEL-level mutations (refresh, pin) live here.
+ * node→page contract; model-level refresh mutations live here.
  *
  * Query sharing: listEdges/getItems use the same keys BoardPage holds, so
  * React Query serves them from cache — the controller adds zero requests.
@@ -102,7 +102,6 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
   const [bulkRefreshOpen, setBulkRefreshOpen] = useState(false);
 
   const slots = (packageQuery.data?.slots ?? []) as SheetSlotState[];
-  const pinningAvailable = packageQuery.data?.pinningAvailable !== false;
   const filledCount = slots.filter((s) => s.filled).length;
   const minted = packageQuery.data?.minted === true;
   /** The comp card renders once a package has ≥2 filled slots — MINTED OR
@@ -173,22 +172,6 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     [slots, poppedByAngle, refreshingAngles],
   );
 
-  const pinMutation = trpc.generation.setSlotPinned.useMutation({
-    // Optimistic flip (D-38) — the glyph changing IS the feedback (D-40)
-    onMutate: ({ angle, pinned }) => {
-      if (!modelId) return;
-      utils.generation.packageState.setData({ modelId }, (old) =>
-        old
-          ? { ...old, slots: old.slots.map((s) => (s.angle === angle ? { ...s, pinned } : s)) }
-          : old,
-      );
-    },
-    onError: (err) => {
-      toast.error(err.message);
-      invalidatePackage();
-    },
-  });
-
   return {
     isSheet,
     modelId,
@@ -206,7 +189,6 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     staleHeadshot,
     completeCard,
     minted,
-    pinningAvailable,
     filledCount,
     popoverAngle,
     setPopoverAngle,
@@ -216,9 +198,8 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     poppedItemId: popoverAngle ? poppedByAngle.get(popoverAngle) ?? null : null,
     refreshPlan: planQuery.data,
     prefetchPlan,
-    // Aggregate refresh. Snapshot mode projects legacy pins as dormant, so
-    // every stale selected sibling follows the same deliberate refresh law.
-    // R6 keeps its historical pin refusal until rollout is complete.
+    // Aggregate refresh. Legacy package pins are retired; every stale selected
+    // sibling follows the same deliberate refresh law.
     bulkRefreshOpen,
     setBulkRefreshOpen,
     bulkStaleRows: (planQuery.data?.slots ?? [])
@@ -229,11 +210,6 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     },
     refreshSlots: (angles: CanonicalViewAngle[]) => {
       if (modelId && angles.length > 0) refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles });
-    },
-    setPinned: (angle: CanonicalViewAngle, pinned: boolean) => {
-      if (modelId && pinningAvailable) {
-        pinMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle, pinned });
-      }
     },
     popOut: (angle: CanonicalViewAngle) => {
       window.dispatchEvent(

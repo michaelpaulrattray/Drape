@@ -610,8 +610,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                   const isHeadshot = slot.angle === "frontClose";
                   const planSlot = sheet.refreshPlan?.slots.find((s) => s.angle === slot.angle);
                   const refreshCost = planSlot ? planSlot.cost : null;
-                  const slotPinned = sheet.pinningAvailable && slot.pinned;
-                  const refreshable = !isHeadshot && !slotPinned && (slot.filled || !!slot.failed);
+                  const refreshable = !isHeadshot && (slot.filled || !!slot.failed);
                   const close = () => sheet.setPopoverAngle(null);
                   return (
                     <div className="flex flex-col gap-1.5">
@@ -633,9 +632,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                       {versionsOpen && slot.version > 1 && sheet.modelId && (
                         <SlotVersionHistory modelId={sheet.modelId} angle={slot.angle} />
                       )}
-                      {slotPinned ? (
-                        <div className="text-canvas-xs text-canvas-ink-soft">Pinned — kept as finished work</div>
-                      ) : slot.failed ? (
+                      {slot.failed ? (
                         // Batch C final correction 1: the money line is the
                         // ledger's truth, never an unconditional claim
                         <div className="text-canvas-xs text-canvas-ink-soft">
@@ -703,7 +700,6 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           <button
                             type="button"
                             disabled={!refreshable}
-                            title={slotPinned ? "Pinned — unpin to refresh" : undefined}
                             className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-between gap-2"
                             onClick={() => {
                               sheet.refreshSlot(slot.angle);
@@ -712,15 +708,6 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           >
                             <span>{slot.failed && !slot.filled ? "Retry" : "Refresh"}</span>
                             <CostLabel credits={refreshCost} />
-                          </button>
-                        )}
-                        {sheet.pinningAvailable && slot.filled && (
-                          <button
-                            type="button"
-                            className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
-                            onClick={() => sheet.setPinned(slot.angle, !slotPinned)}
-                          >
-                            {slotPinned ? "Unpin" : "Pin"}
                           </button>
                         )}
                         <button

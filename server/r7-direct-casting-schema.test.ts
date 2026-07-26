@@ -30,7 +30,6 @@ describe("R7-1D direct Casting execute schemas", () => {
       () => caller.generation.iterate({ clientRequestId: "retry", modelId: 7, assetId: 1, feedback: "lighting" } as never),
       () => caller.generation.mintPackage({ clientRequestId: "retry", modelId: 7, tier: "draft", characterName: "Name" } as never),
       () => caller.generation.refreshSlots({ clientRequestId: "retry", modelId: 7, angles: ["sideClose"] } as never),
-      () => caller.generation.setSlotPinned({ clientRequestId: "retry", modelId: 7, angle: "sideClose", pinned: true } as never),
       () => caller.generation.restoreSlotVersion({ clientRequestId: "retry", modelId: 7, angle: "sideClose", assetId: 1 } as never),
       () => caller.generation.compactPrompt({ clientRequestId: "retry", modelId: 7 } as never),
       () => caller.boardOps.runGeneration.execute({ clientRequestId: "retry", boardId: 2, itemId: 3 } as never),

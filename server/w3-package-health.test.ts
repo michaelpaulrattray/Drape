@@ -125,13 +125,12 @@ describe('W3 durable in-flight projection', () => {
 });
 
 describe('W3 package-health wiring', () => {
-  it('reuses server plan/refresh/restore/pin truth and preserves real refresh asset ids', () => {
+  it('reuses server plan/refresh/restore truth and preserves real refresh asset ids', () => {
     const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
     const refresh = read('client/src/features/casting/hooks/useCastingPackageRefresh.ts');
     const history = read('client/src/features/casting/components/SlotVersionHistory.tsx');
-    for (const contract of ['refreshSlotsPlan', 'setSlotPinned']) {
-      expect(dialog).toContain(contract);
-    }
+    expect(dialog).toContain('refreshSlotsPlan');
+    expect(dialog).not.toContain('setSlotPinned');
     expect(history).toContain('restoreSlotVersion');
     expect(dialog).toContain('useCastingPackageRefresh');
     expect(refresh).toContain('refreshSlots.useMutation');

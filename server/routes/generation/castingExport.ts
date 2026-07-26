@@ -8,7 +8,6 @@ import {
   planMintPackage,
   executeMintPackage,
   getPackageState,
-  executeSetSlotPinned,
   getSlotVersions,
   executeRestoreSlotVersion,
 } from "../../casting/mintPackage";
@@ -372,65 +371,6 @@ export const castingExportRouter = router({
     .query(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
       return getPackageState({ userId: ctx.user.id, modelId: input.modelId, readMode });
-    }),
-
-  /** Legacy R5 per-slot pin. Snapshot-selected accounts retire this mutation:
-   *  choosing a version is the accepted-selection ceremony. */
-  setSlotPinned: protectedProcedure
-    .input(z.object({
-      clientRequestId: z.string().uuid(),
-      modelId: z.number().int().positive(),
-      angle: z.enum(CANONICAL_VIEW_ANGLES),
-      pinned: z.boolean(),
-    }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const readMode = captureSnapshotReadMode(ctx.user.id);
-      if (readMode === "snapshot") {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "This Cast already keeps the version you chose. Use version history to choose another.",
-        });
-      }
-      const model = await getModelById(input.modelId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      if (model.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-      assertNotArchived(model);
-      const lockKey = modelOperationLockKey(input.modelId);
-      const gate = await beginDirectOperation({
-        userId: ctx.user.id,
-        clientRequestId: input.clientRequestId,
-        kind: "casting.pin",
-        modelId: input.modelId,
-        payload: { modelId: input.modelId, angle: input.angle, pinned: input.pinned },
-        lockKey,
-      });
-      if (gate.type === "replay") return { modelId: input.modelId, angle: input.angle, pinned: input.pinned };
-      await markGenerationOperationRunning({
-        userId: ctx.user.id,
-        operationId: gate.operationId,
-        modelId: input.modelId,
-        expectedIdentityRevisionId: currentRevisionId(model),
-        plannedCredits: 0,
-        requiredLockKey: lockKey,
-        phase: "finalizing",
-        heartbeat: true,
-      });
-      let durableResult = false;
-      try {
-        const result = await executeSetSlotPinned({ userId: ctx.user.id, modelId: input.modelId, angle: input.angle, pinned: input.pinned });
-        durableResult = true;
-        await completeDirectOperationSuccess({
-          userId: ctx.user.id,
-          operationId: gate.operationId,
-          result: { modelId: result.modelId, angle: result.angle, pinned: result.pinned },
-          chargedCredits: 0,
-          refundedCredits: 0,
-        });
-        return result;
-      } catch (error) {
-        if (durableResult) throw error;
-        return completeDirectOperationFailure({ userId: ctx.user.id, operationId: gate.operationId, error, chargedCredits: 0, refundedCredits: 0 });
-      }
     }),
 
   /** D-53: filled rows for one angle, newest first — the tile thumb-strip. */

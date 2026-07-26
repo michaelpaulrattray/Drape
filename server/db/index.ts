@@ -55,7 +55,6 @@ export {
   updateModel,
   mintModelAtomically,
   createModelAsset,
-  setModelAssetPinned,
   markModelAssetsStale,
   getModelAssets,
   getHeadshotsForModels,
