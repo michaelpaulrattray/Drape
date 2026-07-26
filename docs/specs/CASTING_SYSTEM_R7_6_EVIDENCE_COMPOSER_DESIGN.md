@@ -203,7 +203,9 @@ No model-wide `hasBodyArt` keyword or prose grep controls prompting. Prompt rule
 
 - UUID, user ID, model ID;
 - kind: `uploaded_reference`, `selected_cast_view`, `accepted_candidate`, `legacy_adoption`;
-- exact owned storage key and server-derived public URL;
+- exact owned storage key and server-derived authenticated owner-delivery
+  locator; evidence objects never use a permanent public or presigned URL
+  (D-68);
 - MIME, dimensions, byte size, content hash;
 - source asset ID where applicable;
 - created operation and timestamp.

@@ -364,19 +364,16 @@ No public procedure, generation worker/scheduler, provider, credit,
 snapshot-transition, `model_assets`, Canvas, or Wardrobe writer may import the
 ingestion service.
 
-Customer-uploaded reference photos may contain real likenesses. Previous M7
-discussion concerns generated images and does not decide this new privacy
-posture. Before `users:1` can be enabled, the founder must explicitly choose:
-
-- **recommended strongest posture:** private object storage served only through
-  an authenticated, owner-scoped delivery path; or
-- permanent unauthenticated, unguessable public URLs, explicitly accepting
-  link-lifetime exposure.
+Customer-uploaded reference photos may contain real likenesses. The founder
+selected the strongest posture in D-68: a separate private object bucket
+served only through an authenticated, owner-scoped Drape delivery path. No
+permanent public or presigned evidence URL is permitted.
 
 Migration and scope-off runtime work can proceed without this ruling because
 the schema persists only posture-neutral keys and all put/serve behavior sits
-behind the adapter. No production adapter that permits a real upload, and no
-founder enablement, may land before the ruling.
+behind the adapter. `CASTING_SYSTEM_R7_7C_PRIVATE_EVIDENCE_DELIVERY_PLAN.md`
+governs the adapter, explicit cleanup-backend migration, private bucket
+ceremony, and founder enablement.
 
 ## 9. Verification slices
 

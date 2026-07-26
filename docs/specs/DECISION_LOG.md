@@ -696,6 +696,18 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Collision boundary:** `models.agencyId` remains database-unique. A new mint retries with a fresh cryptographic identifier only when MySQL reports that exact unique constraint, with a bounded attempt count. The already-generated package candidates are reused inside the atomic mint settlement; an ID collision never repeats provider work, charges credits again, or leaves a partial lifecycle/package transition.
 
+### D-68 — Customer evidence uses private authenticated delivery *(founder-ratified 2026-07-26)*
+
+**Privacy posture:** customer-uploaded reference plates and evidence crops may contain real likenesses, tattoos, scars, or other sensitive identity evidence. They live in a separate private R2 bucket. Drape does not issue permanent public URLs or presigned evidence URLs. The authenticated owner receives a same-origin Drape delivery route whose database read re-proves owner, live Cast, evidence kind, and child identity before the private object is read.
+
+**UX boundary:** strongest security and durability must not make the product feel worse. Evidence renders as an ordinary in-product image with no extra prompt, download ceremony, manual refresh, or repeated full download when the immutable content is unchanged. Owner-private conditional caching revalidates authentication and ownership before a 304 response; privacy remains invisible to the normal Studio/Canvas/Wardrobe experience.
+
+**Storage boundary:** the existing `R2_BUCKET` remains the permanent-public generated-image bucket because persisted product URLs depend on it. Evidence never enters that bucket. The private adapter uses a separately named `R2_EVIDENCE_BUCKET` and a dedicated least-privilege credential restricted to that bucket; no public development URL or custom domain is enabled for it.
+
+**Cleanup authority:** every durable cleanup item records its storage backend explicitly. The worker never guesses a bucket from a key prefix, URL, batch kind, or caller. Public objects delete through the public adapter; evidence objects delete through the private adapter. If private delivery is unavailable, private cleanup remains pending without false success or attempt burn.
+
+**Rollout boundary:** migration, adapter deployment, bucket provisioning, and founder-only evidence enablement remain separate reviewed operations. Evidence scope stays off until the private put/read/delete ceremony and authenticated owner-delivery tests pass. After the first real evidence write, rollback may use only an adapter-capable build; a pre-adapter runtime is no longer a valid cleanup authority.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
