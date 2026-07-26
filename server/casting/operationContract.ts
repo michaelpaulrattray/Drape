@@ -7,6 +7,8 @@ export const GENERATION_OPERATION_KINDS = [
   "casting.iterate",
   "casting.mint",
   "casting.add_views",
+  "evidence_plate_ingest",
+  "evidence_plate_discard",
   "casting.refresh",
   "casting.restore",
   "casting.pin",

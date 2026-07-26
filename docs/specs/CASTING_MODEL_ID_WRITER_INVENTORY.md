@@ -56,6 +56,19 @@ These are implementation findings, not product-boundary changes. Uploaded Wardro
 
 `model_package_snapshot_slots` carries package and asset ids rather than a direct `modelId`. It is nevertheless a deletion dependency reached through `model_package_snapshots.modelId`; the same deletion transaction must remove it first. The new `models.currentPackageSnapshotId` / seal pointers and generation-operation expected snapshot ids are semantic snapshot references, not additional integer model attachment doors.
 
+## R7-7C owned-evidence `modelId` tables *(C1 schema only)*
+
+| Durable writer | Production entry points | Current authority | R7-7 disposition |
+|---|---|---|---|
+| `casting_evidence_ingestions.modelId` | None in R7-7C1 | Migration 0011 and disposable schema proof only; no runtime source imports the table | R7-7C3 must extend final Cast/account deletion and the exact-key orphan audit before R7-7C4 adds any route. Later writers must prove owner/model closure in the durable statement. |
+| `model_reference_plates.modelId` | None in R7-7C1 | Migration 0011 and disposable schema proof only; no runtime source imports the table | R7-7C3 must add exact-key deletion/GDPR handling before capability. R7-7C4 may insert only under the owned live-draft lock and operation receipt. |
+| `model_evidence_crops.modelId` | None in R7-7C1 | Migration 0011 and disposable schema proof only; no runtime source imports the table | R7-7C3 must add exact-key deletion/GDPR handling before capability. Any later crop writer must re-anchor the plate, owner, and model inside the same durable transaction. |
+
+All three tables deliberately omit database foreign keys for mixed-version
+deletion safety. That does not weaken application authority: it makes the C3
+deletion manifest and C4 owner-scoped insertion statements mandatory before a
+runtime caller can exist.
+
 ## `generations.modelId`
 
 | Durable writer | Production entry points | Current authority | R7-5 disposition |

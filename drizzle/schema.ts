@@ -1,4 +1,16 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, index, uniqueIndex } from "drizzle-orm/mysql-core";
+import {
+  boolean,
+  decimal,
+  index,
+  int,
+  json,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -467,7 +479,11 @@ export type InsertGenerationOperationLock = typeof generationOperationLocks.$inf
 // OWNED STORAGE CLEANUP (R7-5)
 // ============================================================================
 
-export const STORAGE_CLEANUP_BATCH_KINDS = ["model_delete", "account_delete"] as const;
+export const STORAGE_CLEANUP_BATCH_KINDS = [
+  "model_delete",
+  "account_delete",
+  "evidence_cleanup",
+] as const;
 export type StorageCleanupBatchKind = typeof STORAGE_CLEANUP_BATCH_KINDS[number];
 
 export const STORAGE_CLEANUP_BATCH_STATUSES = [
@@ -536,6 +552,153 @@ export const storageCleanupItems = mysqlTable("storage_cleanup_items", {
 
 export type StorageCleanupItem = typeof storageCleanupItems.$inferSelect;
 export type InsertStorageCleanupItem = typeof storageCleanupItems.$inferInsert;
+
+// ============================================================================
+// OWNED CAST EVIDENCE (R7-7C)
+// ============================================================================
+
+export const CASTING_EVIDENCE_INGESTION_PURPOSES = [
+  "reference_plate",
+  "evidence_crop",
+] as const;
+export type CastingEvidenceIngestionPurpose =
+  typeof CASTING_EVIDENCE_INGESTION_PURPOSES[number];
+
+export const CASTING_EVIDENCE_INGESTION_STATUSES = [
+  "planned",
+  "stored",
+  "attached",
+  "cleanup_pending",
+  "cleaned",
+] as const;
+export type CastingEvidenceIngestionStatus =
+  typeof CASTING_EVIDENCE_INGESTION_STATUSES[number];
+
+export const CASTING_EVIDENCE_ENTITY_KINDS = [
+  "reference_plate",
+  "evidence_crop",
+] as const;
+export type CastingEvidenceEntityKind =
+  typeof CASTING_EVIDENCE_ENTITY_KINDS[number];
+
+export const MODEL_REFERENCE_PLATE_KINDS = ["uploaded_reference"] as const;
+export type ModelReferencePlateKind = typeof MODEL_REFERENCE_PLATE_KINDS[number];
+
+/**
+ * Mutable R2/MySQL crash-recovery receipt. It persists exact owned keys and
+ * closed metadata only—never bytes, prompts, URLs, or provider output.
+ *
+ * Deliberately no DB foreign keys: mixed-version deletion must never be
+ * blocked or cascade evidence rows without first creating an exact-key
+ * cleanup manifest.
+ */
+export const castingEvidenceIngestions = mysqlTable("casting_evidence_ingestions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull(),
+  modelId: int("modelId").notNull(),
+  operationId: varchar("operationId", { length: 36 }).notNull(),
+  purpose: mysqlEnum("purpose", CASTING_EVIDENCE_INGESTION_PURPOSES).notNull(),
+  status: mysqlEnum("status", CASTING_EVIDENCE_INGESTION_STATUSES)
+    .default("planned")
+    .notNull(),
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  mime: varchar("mime", { length: 32 }).notNull(),
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  byteSize: int("byteSize").notNull(),
+  contentHash: varchar("contentHash", { length: 64 }).notNull(),
+  attachedEntityKind: mysqlEnum("attachedEntityKind", CASTING_EVIDENCE_ENTITY_KINDS),
+  attachedEntityId: varchar("attachedEntityId", { length: 36 }),
+  cleanupBatchId: varchar("cleanupBatchId", { length: 36 }),
+  attachedAt: timestamp("attachedAt"),
+  cleanupQueuedAt: timestamp("cleanupQueuedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_casting_evidence_ingestions_operation").on(table.operationId),
+  uniqueIndex("uq_casting_evidence_ingestions_storage_key").on(table.storageKey),
+  index("idx_casting_evidence_ingestions_status_updated").on(table.status, table.updatedAt),
+  index("idx_casting_evidence_ingestions_owner_model_status").on(
+    table.userId,
+    table.modelId,
+    table.status,
+  ),
+]));
+
+export type CastingEvidenceIngestion = typeof castingEvidenceIngestions.$inferSelect;
+export type InsertCastingEvidenceIngestion = typeof castingEvidenceIngestions.$inferInsert;
+
+/**
+ * Immutable owner-uploaded reference plate. Only an exact owned key is
+ * persisted; a delivery locator is resolved at read time by the later adapter.
+ */
+export const modelReferencePlates = mysqlTable("model_reference_plates", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull(),
+  modelId: int("modelId").notNull(),
+  kind: mysqlEnum("kind", MODEL_REFERENCE_PLATE_KINDS).notNull(),
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  mime: varchar("mime", { length: 32 }).notNull(),
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  byteSize: int("byteSize").notNull(),
+  contentHash: varchar("contentHash", { length: 64 }).notNull(),
+  createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_model_reference_plates_storage_key").on(table.storageKey),
+  uniqueIndex("uq_model_reference_plates_operation").on(table.createdByOperationId),
+  index("idx_model_reference_plates_owner_model_created").on(
+    table.userId,
+    table.modelId,
+    table.createdAt,
+  ),
+]));
+
+export type ModelReferencePlate = typeof modelReferencePlates.$inferSelect;
+export type InsertModelReferencePlate = typeof modelReferencePlates.$inferInsert;
+
+/**
+ * Immutable contextual crop. Zone/surface/side are versioned ontology labels,
+ * not client authority; the later server recipe owns their closed validation.
+ */
+export const modelEvidenceCrops = mysqlTable("model_evidence_crops", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull(),
+  modelId: int("modelId").notNull(),
+  plateId: varchar("plateId", { length: 36 }).notNull(),
+  ontologyVersion: varchar("ontologyVersion", { length: 64 }).notNull(),
+  zone: varchar("zone", { length: 64 }).notNull(),
+  surface: varchar("surface", { length: 64 }).notNull(),
+  side: varchar("side", { length: 32 }).notNull(),
+  sourceX: decimal("sourceX", { precision: 10, scale: 9 }).notNull(),
+  sourceY: decimal("sourceY", { precision: 10, scale: 9 }).notNull(),
+  sourceWidth: decimal("sourceWidth", { precision: 10, scale: 9 }).notNull(),
+  sourceHeight: decimal("sourceHeight", { precision: 10, scale: 9 }).notNull(),
+  sourceImageWidth: int("sourceImageWidth").notNull(),
+  sourceImageHeight: int("sourceImageHeight").notNull(),
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  mime: varchar("mime", { length: 32 }).notNull(),
+  width: int("width").notNull(),
+  height: int("height").notNull(),
+  byteSize: int("byteSize").notNull(),
+  contentHash: varchar("contentHash", { length: 64 }).notNull(),
+  cropRecipeVersion: varchar("cropRecipeVersion", { length: 64 }).notNull(),
+  createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_model_evidence_crops_storage_key").on(table.storageKey),
+  uniqueIndex("uq_model_evidence_crops_operation").on(table.createdByOperationId),
+  index("idx_model_evidence_crops_plate").on(table.plateId),
+  index("idx_model_evidence_crops_owner_model_created").on(
+    table.userId,
+    table.modelId,
+    table.createdAt,
+  ),
+]));
+
+export type ModelEvidenceCrop = typeof modelEvidenceCrops.$inferSelect;
+export type InsertModelEvidenceCrop = typeof modelEvidenceCrops.$inferInsert;
 
 
 /**

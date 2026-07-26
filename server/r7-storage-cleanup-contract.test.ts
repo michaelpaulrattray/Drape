@@ -68,7 +68,7 @@ describe("R7-5B storage-cleanup contract", () => {
     for (const status of ["pending", "processing", "succeeded", "failed"] as const) {
       expect(() => assertStorageCleanupItemStatus(status)).not.toThrow();
     }
-    for (const kind of ["model_delete", "account_delete"] as const) {
+    for (const kind of ["model_delete", "account_delete", "evidence_cleanup"] as const) {
       expect(() => assertStorageCleanupBatchKind(kind)).not.toThrow();
     }
     expect(() => assertStorageCleanupBatchStatus("complete")).toThrow();
