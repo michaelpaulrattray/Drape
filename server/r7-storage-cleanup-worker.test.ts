@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { storageCleanupRetryDelayMs } from "./casting/storageCleanupWorker";
+import {
+  storageCleanupHealthRequiresAttention,
+  storageCleanupRetryDelayMs,
+} from "./casting/storageCleanupWorker";
 
 describe("R7-5D storage-cleanup worker contract", () => {
   it("uses bounded exponential backoff", () => {
@@ -34,5 +37,28 @@ describe("R7-5D storage-cleanup worker contract", () => {
     );
     expect(deleteBlock).not.toContain("Storage delete failed for ${key}");
     expect(deleteBlock).not.toContain("err?.message ?? err");
+  });
+
+  it("raises the single health warning for pending private cleanup work", () => {
+    const healthy = {
+      pendingBatches: 0,
+      processingBatches: 0,
+      succeededBatches: 0,
+      partialBatches: 0,
+      failedBatches: 0,
+      retainedFailedItems: 0,
+      staleLeases: 0,
+      plannedEvidenceReceipts: 0,
+      storedEvidenceReceipts: 0,
+      cleanupPendingEvidenceReceipts: 0,
+      failedEvidenceManifests: 0,
+      pendingPrivateBatches: 0,
+      oldestNonAttachedEvidenceAgeMs: null,
+    };
+    expect(storageCleanupHealthRequiresAttention(healthy)).toBe(false);
+    expect(storageCleanupHealthRequiresAttention({
+      ...healthy,
+      pendingPrivateBatches: 1,
+    })).toBe(true);
   });
 });

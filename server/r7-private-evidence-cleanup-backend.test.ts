@@ -108,9 +108,10 @@ describe("R7-7C5A private evidence cleanup backend", () => {
     expect(persistence).toContain(
       'eq(storageCleanupItems.storageBackend, "private_evidence_r2")',
     );
-    expect(persistence.match(
-      /eq\(storageCleanupItems\.storageBackend, "private_evidence_r2"\)/g,
-    )).toHaveLength(3);
+    expect(persistence).toContain(
+      "const privateEvidenceFence = () => input.privateEvidenceAvailable",
+    );
+    expect(persistence.match(/privateEvidenceFence\(\)/g)).toHaveLength(2);
     expect(persistence).not.toMatch(
       /insert\(storageCleanupItems\)[\s\S]*?storageKey,\s*status:/,
     );
@@ -131,6 +132,8 @@ describe("R7-7C5A private evidence cleanup backend", () => {
     expect(driver).toContain("DROP DATABASE IF EXISTS");
     expect(driver).toContain("TEST_DATABASE_URL: testUrl.toString()");
     expect(driver).toContain('process.argv.includes("--focused-lifecycle")');
+    expect(driver).toContain('process.argv.includes("--focused-delivery")');
+    expect(driver).toContain("Focused disposable modes are mutually exclusive");
     expect(driver).not.toContain("railway up");
     expect(driver).not.toContain("railway variables");
   });

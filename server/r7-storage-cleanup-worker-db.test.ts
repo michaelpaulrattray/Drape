@@ -129,6 +129,41 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
     })).resolves.toMatchObject({ claimed: false });
   }, DB_TEST_TIMEOUT);
 
+  it("routes each explicit backend through its one exact delete authority", async () => {
+    const privateKey =
+      "users/1/models/999999999/evidence/plates/11111111-1111-4111-8111-111111111111.webp";
+    const mixed = await withTransaction((tx) => cleanupDb.createStorageCleanupManifestIn(tx, {
+      userId,
+      operationId: randomUUID(),
+      kind: "model_delete",
+      storageItems: [
+        { storageKey: "models/mixed/public.png", storageBackend: "public_r2" },
+        { storageKey: privateKey, storageBackend: "private_evidence_r2" },
+      ],
+    }));
+    const publicCalls: string[] = [];
+    const privateCalls: string[] = [];
+    await expect(worker.processNextStorageCleanupBatch({
+      deleteObject: async (storageKey) => {
+        publicCalls.push(storageKey);
+        return { success: true };
+      },
+      deletePrivateObject: async (storageKey) => {
+        privateCalls.push(storageKey);
+        return { success: true };
+      },
+    })).resolves.toMatchObject({
+      claimed: true,
+      batchId: mixed.id,
+      deleted: 2,
+      status: "succeeded",
+    });
+    expect(publicCalls).toEqual(["models/mixed/public.png"]);
+    expect(privateCalls).toEqual([privateKey]);
+    await expect(cleanupDb.getStorageCleanupItemsForBatch(mixed.id))
+      .resolves.toEqual([]);
+  }, DB_TEST_TIMEOUT);
+
   it("recovers a crash after object deletion by replaying the idempotent delete", async () => {
     const created = await manifest(["models/crash/head.png"]);
     const now = new Date("2026-07-21T00:00:00.000Z");

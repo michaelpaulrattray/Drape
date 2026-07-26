@@ -33,10 +33,15 @@ describe("R7-7C3 evidence lifecycle contract", () => {
     expect(plan).toBeLessThan(settleBefore);
     expect(settleBefore).toBeLessThan(deleteBatch);
     expect(deleteBatch).toBeLessThan(settleAfter);
-    expect(run).toContain("cleanupPendingEvidenceReceipts");
-    expect(run).toContain("failedEvidenceManifests");
-    expect(run).toContain("pendingPrivateBatches");
-    expect(run).toContain("oldestNonAttachedEvidenceAgeMs");
+    expect(run).toContain("storageCleanupHealthRequiresAttention(health)");
+    const healthGuard = worker.slice(
+      worker.indexOf("export function storageCleanupHealthRequiresAttention"),
+      worker.indexOf("export async function processNextStorageCleanupBatch"),
+    );
+    expect(healthGuard).toContain("cleanupPendingEvidenceReceipts");
+    expect(healthGuard).toContain("failedEvidenceManifests");
+    expect(healthGuard).toContain("pendingPrivateBatches");
+    expect(healthGuard).toContain("oldestNonAttachedEvidenceAgeMs");
   });
 
   it("pins the shorter recovery window, active-operation fence and exact manifest binding", async () => {

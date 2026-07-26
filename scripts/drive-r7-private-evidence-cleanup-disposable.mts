@@ -161,14 +161,22 @@ async function main() {
       R7_5B_LEGACY_OPERATION_ID: legacyOperationId,
       R7_5B_LEGACY_ITEM_ID: String(legacyItemId),
     };
-    const suites = process.argv.includes("--focused-lifecycle")
+    const focusedLifecycle = process.argv.includes("--focused-lifecycle");
+    const focusedDelivery = process.argv.includes("--focused-delivery");
+    if (focusedLifecycle && focusedDelivery) {
+      throw new Error("Focused disposable modes are mutually exclusive");
+    }
+    const suites = focusedLifecycle
       ? ["server/r7-evidence-lifecycle-db.test.ts"]
-      : [
+      : focusedDelivery
+        ? ["server/r7-evidence-delivery-db.test.ts"]
+        : [
         "server/r7-cast-deletion-schema-db.test.ts",
         "server/r7-storage-cleanup-worker-db.test.ts",
         "server/r7-evidence-operations-db.test.ts",
         "server/r7-evidence-lifecycle-db.test.ts",
-      ];
+        "server/r7-evidence-delivery-db.test.ts",
+        ];
     for (const suite of suites) {
       run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
         "exec",

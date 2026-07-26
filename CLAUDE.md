@@ -109,7 +109,7 @@ The grid says *what*; these say *where*. The grid alone would not have caught an
 2. **Re-anchor child ids to the owned parent in that same statement.** Verifying `boardId` does not validate the `itemIds` sent alongside it.
 3. **`userId` always comes from `ctx.user.id`** — never from procedure input. Applies to record scoping, credit spend, quota, and rate-limit keys.
 4. **`.strict()` on every input schema**, so unknown fields are rejected rather than silently dropped. (Required on all new code and all public/auth/billing schemas now; legacy coverage is ~36 of 210 — see M4.)
-5. **Public endpoints are an enumerated allowlist.** Each is rate-limited, `.strict()`-validated, and structurally unable to mutate another user's data. Adding one is a deliberate decision, not a default. The current list (verified against local `main` on 2026-07-25): tRPC `system.health`, `auth.me`/`logout`, `billing.getPlans`, `credits.getCosts`, `generation.castingExport.costs`, `announcements.getActive`, `waitlist.join`/`getStats`, `newsletter.subscribe`, `access.validate`, `referral.validate`; Express: the auth routes, `/api/auth/verify-email`, `/api/health` (IP-rate-limited), `/api/hero/*`, `/api/webhooks/stripe`, `/api/slack/interactions`. `/api/image-proxy` is authenticated and user-rate-limited; the former registry namespace is absent.
+5. **Public endpoints are an enumerated allowlist.** Each is rate-limited, `.strict()`-validated, and structurally unable to mutate another user's data. Adding one is a deliberate decision, not a default. The current list (verified against local `main` on 2026-07-26): tRPC `system.health`, `auth.me`/`logout`, `billing.getPlans`, `credits.getCosts`, `generation.castingExport.costs`, `announcements.getActive`, `waitlist.join`/`getStats`, `newsletter.subscribe`, `access.validate`, `referral.validate`; Express: the auth routes, `/api/auth/verify-email`, `/api/health` (IP-rate-limited), `/api/hero/*`, `/api/webhooks/stripe`, `/api/slack/interactions`. `/api/image-proxy` and `/api/evidence/:kind/:entityId` are authenticated and user-rate-limited; the evidence route additionally re-proves the child, live Cast, and owner in one database statement. The former registry namespace is absent.
 6. **Rate limits return a real `TOO_MANY_REQUESTS`**, not a 200 carrying an error field the client cannot distinguish from a validation failure.
 7. **A control that is not invoked does not exist.** If you add a protection, something must call it on the request path, a test must prove it *blocks*, and it must refuse — not allow — when a dependency is missing or unconfigured.
 8. **Read paths return an explicit projection.** Never let a bare `select()` or a spread DB row cross the serialization boundary — that is how `passwordHash` reached `auth.me` and image URLs reached the moderator surface. Sensitive field groups stay out by construction, not by callers remembering to omit them.
@@ -158,6 +158,9 @@ Most of these followed the same path: helper or rule written, docs written, todo
 
 ### Optional .env vars (feature-gated)
 
+- `R7_EVIDENCE_INGEST_SCOPE` — `off`/absent, `all`, or `users:<ids>`; any non-off value fails startup unless the cleanup worker and private evidence adapter are fully configured
+- `ENABLE_STORAGE_CLEANUP_WORKER=true` — required before evidence ingest can be enabled
+- `R2_EVIDENCE_BUCKET`, `R2_EVIDENCE_ACCESS_KEY_ID`, `R2_EVIDENCE_SECRET_ACCESS_KEY` — dedicated private evidence bucket and least-privilege credential; uses `R2_ENDPOINT` but never `R2_PUBLIC_URL`
 - `RESEND_API_KEY` — verification emails (signup breaks without it unless dev-mode skip applies)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth login
 - `VITE_STRIPE_PUBLISHABLE_KEY` — client-side Stripe

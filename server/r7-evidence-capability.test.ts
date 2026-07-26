@@ -110,15 +110,15 @@ describe("R7-7C4 evidence capability", () => {
     }
   });
 
-  it("keeps the C5B adapter unreachable from product routes and the wire strict", async () => {
+  it("keeps product delivery unavailable without private configuration and the wire strict", async () => {
     expect(getEvidenceDeliveryAdapter()).toBeNull();
     expect(evidenceDeliveryConfigured()).toBe(false);
     const runtime = await readFile(
       new URL("./casting/evidence/evidenceDeliveryRuntime.ts", import.meta.url),
       "utf8",
     );
-    expect(runtime).toContain("return null");
-    expect(runtime).toContain("EVIDENCE_PRODUCT_DELIVERY_READY = false");
+    expect(runtime).toContain("EVIDENCE_PRODUCT_DELIVERY_READY = true");
+    expect(runtime).toContain("getConfiguredPrivateEvidenceStorageAdapter()");
     expect(runtime).not.toMatch(/storagePut|R2_|S3Client|resolveOwnerDelivery\s*:/);
 
     const route = await readFile(

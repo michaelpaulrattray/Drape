@@ -13,6 +13,7 @@ import { requestContextMiddleware } from "../logging/requestContextMiddleware";
 import { configureTrustedProxy } from "../security/rateLimit";
 import heroProxyRouter from "../heroProxy";
 import imageProxyRouter from "../routes/imageProxy";
+import evidenceDeliveryRouter from "../routes/evidenceDelivery";
 import { healthHandler } from "../health";
 import { validateEnv } from "./env";
 import { assertPrivateEvidenceCleanupSchema } from "../casting/evidence/privateEvidenceSchema";
@@ -221,6 +222,9 @@ async function startServer() {
 
   // Image proxy for download/clipboard (bypasses CORS for S3 images)
   app.use(imageProxyRouter);
+
+  // Authenticated owner-only private evidence images.
+  app.use(evidenceDeliveryRouter);
 
   // tRPC API with centralized error logging
   app.use(

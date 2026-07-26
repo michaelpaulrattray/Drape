@@ -95,8 +95,20 @@ export async function claimNextStorageCleanupBatch(input: {
   leaseToken: string;
   now: Date;
   leaseExpiresAt: Date;
+  privateEvidenceAvailable?: boolean;
 }): Promise<ClaimedStorageCleanupBatch | null> {
   return withTransaction(async (tx) => {
+    const privateEvidenceFence = () => input.privateEvidenceAvailable
+      ? undefined
+      : notExists(
+        tx
+          .select({ one: sql`1` })
+          .from(storageCleanupItems)
+          .where(and(
+            eq(storageCleanupItems.batchId, storageCleanupBatches.id),
+            eq(storageCleanupItems.storageBackend, "private_evidence_r2"),
+          )),
+      );
     const [batch] = await tx
       .select()
       .from(storageCleanupBatches)
@@ -111,17 +123,9 @@ export async function claimNextStorageCleanupBatch(input: {
             ),
           ),
         ),
-        // C5A has no private adapter. Keep private and mixed batches wholly
+        // Without the private adapter, keep private and mixed batches wholly
         // pending without attempt burn or wrong-bucket false success.
-        notExists(
-          tx
-            .select({ one: sql`1` })
-            .from(storageCleanupItems)
-            .where(and(
-              eq(storageCleanupItems.batchId, storageCleanupBatches.id),
-              eq(storageCleanupItems.storageBackend, "private_evidence_r2"),
-            )),
-        ),
+        privateEvidenceFence(),
       ))
       .orderBy(asc(storageCleanupBatches.createdAt))
       .limit(1)
@@ -148,15 +152,7 @@ export async function claimNextStorageCleanupBatch(input: {
             ),
           ),
         ),
-        notExists(
-          tx
-            .select({ one: sql`1` })
-            .from(storageCleanupItems)
-            .where(and(
-              eq(storageCleanupItems.batchId, storageCleanupBatches.id),
-              eq(storageCleanupItems.storageBackend, "private_evidence_r2"),
-            )),
-        ),
+        privateEvidenceFence(),
       ));
     if (affectedRows(claimed) !== 1) return null;
     await tx

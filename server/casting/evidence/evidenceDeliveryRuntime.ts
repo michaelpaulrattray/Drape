@@ -1,17 +1,18 @@
-import type { EvidenceDeliveryAdapter } from "./evidenceDelivery";
-import { parsePrivateEvidenceStorageConfig } from "./privateEvidenceStorage";
+import type { PrivateEvidenceStorageAdapter } from "./evidenceDelivery";
+import {
+  getConfiguredPrivateEvidenceStorageAdapter,
+  parsePrivateEvidenceStorageConfig,
+} from "./privateEvidenceStorage";
 
 /**
- * C5B installs the private adapter authority, but product traffic stays
- * unreachable until C5C lands both authenticated delivery and cleanup
- * routing. This constant is intentionally consumed by boot validation so an
- * operator cannot enable the existing ingest routes against a half-installed
- * product boundary.
+ * C5C completes authenticated delivery and backend-aware cleanup routing.
+ * Boot validation consumes this constant so a non-off scope cannot run
+ * against a partial evidence boundary.
  */
-export const EVIDENCE_PRODUCT_DELIVERY_READY = false;
+export const EVIDENCE_PRODUCT_DELIVERY_READY = true;
 
-export function getEvidenceDeliveryAdapter(): EvidenceDeliveryAdapter | null {
-  return null;
+export function getEvidenceDeliveryAdapter(): PrivateEvidenceStorageAdapter | null {
+  return getConfiguredPrivateEvidenceStorageAdapter();
 }
 
 export function evidenceDeliveryConfigured(): boolean {

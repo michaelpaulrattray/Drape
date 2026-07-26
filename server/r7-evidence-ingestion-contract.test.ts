@@ -137,6 +137,7 @@ describe("R7-7C1 owned-evidence schema contract", () => {
     expect(callers).toEqual([
       "server/casting/finalCastDeletion.ts",
       "server/db/accountDeletion.ts",
+      "server/db/evidenceDelivery.ts",
       "server/db/evidenceIngestion.ts",
       "server/db/evidenceOperations.ts",
       "server/db/evidenceRecovery.ts",

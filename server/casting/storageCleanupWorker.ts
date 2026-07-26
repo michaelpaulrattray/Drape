@@ -15,6 +15,7 @@ import {
 } from "../db/evidenceRecovery";
 import { createModuleLogger } from "../logging/logger";
 import { sweepStaleGenerationOperations } from "./operationRecovery";
+import { getConfiguredPrivateEvidenceStorageAdapter } from "./evidence/privateEvidenceStorage";
 
 const log = createModuleLogger("casting/storageCleanupWorker");
 const DEFAULT_LEASE_MS = 60_000;
@@ -31,12 +32,32 @@ export function storageCleanupRetryDelayMs(attempt: number): number {
   return schedule[Math.min(Math.max(attempt - 1, 0), schedule.length - 1)];
 }
 
+type StorageCleanupHealth = Awaited<ReturnType<typeof getStorageCleanupHealth>>;
+
+export function storageCleanupHealthRequiresAttention(
+  health: StorageCleanupHealth,
+): boolean {
+  return Boolean(
+    health.partialBatches
+    || health.failedBatches
+    || health.staleLeases
+    || health.cleanupPendingEvidenceReceipts
+    || health.failedEvidenceManifests
+    || health.pendingPrivateBatches
+    || (
+      health.oldestNonAttachedEvidenceAgeMs !== null
+      && health.oldestNonAttachedEvidenceAgeMs >= 15 * 60 * 1000
+    ),
+  );
+}
+
 export async function processNextStorageCleanupBatch(input: {
   now?: Date;
   clock?: () => Date;
   leaseMs?: number;
   maxAttempts?: number;
   deleteObject?: (storageKey: string) => Promise<StorageDeleteResult>;
+  deletePrivateObject?: (storageKey: string) => Promise<StorageDeleteResult>;
 } = {}): Promise<{
   claimed: boolean;
   batchId?: string;
@@ -51,12 +72,20 @@ export async function processNextStorageCleanupBatch(input: {
   const maxAttempts = input.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
   if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0) throw new TypeError("leaseMs must be positive");
   if (!Number.isSafeInteger(maxAttempts) || maxAttempts <= 0) throw new TypeError("maxAttempts must be positive");
-  const deleteObject = input.deleteObject ?? storageDelete;
+  const deletePublicObject = input.deleteObject ?? storageDelete;
+  const configuredPrivateAdapter = input.deletePrivateObject
+    ? null
+    : getConfiguredPrivateEvidenceStorageAdapter();
+  const deletePrivateObject = input.deletePrivateObject
+    ?? (configuredPrivateAdapter
+      ? (storageKey: string) => configuredPrivateAdapter.deleteExact(storageKey)
+      : null);
   const leaseToken = randomUUID();
   const claimed = await claimNextStorageCleanupBatch({
     leaseToken,
     now,
     leaseExpiresAt: new Date(now.getTime() + leaseMs),
+    privateEvidenceAvailable: deletePrivateObject !== null,
   });
   if (!claimed) return { claimed: false, deleted: 0, retried: 0, failed: 0 };
 
@@ -81,7 +110,9 @@ export async function processNextStorageCleanupBatch(input: {
     if (!item) break;
     let result: StorageDeleteResult;
     try {
-      result = await deleteObject(item.storageKey);
+      result = item.storageBackend === "private_evidence_r2"
+        ? await deletePrivateObject!(item.storageKey)
+        : await deletePublicObject(item.storageKey);
     } catch (error) {
       result = {
         success: false,
@@ -143,18 +174,7 @@ export function startStorageCleanupWorker(): void {
       if (result.claimed) log.info(result, "[StorageCleanup] bounded batch processed");
       await settleCompletedEvidenceCleanups({ limit: 10 });
       const health = await getStorageCleanupHealth();
-      if (
-        health.partialBatches
-        || health.failedBatches
-        || health.staleLeases
-        || health.cleanupPendingEvidenceReceipts
-        || health.failedEvidenceManifests
-        || health.pendingPrivateBatches
-        || (
-          health.oldestNonAttachedEvidenceAgeMs !== null
-          && health.oldestNonAttachedEvidenceAgeMs >= 15 * 60 * 1000
-        )
-      ) {
+      if (storageCleanupHealthRequiresAttention(health)) {
         log.warn(health, "[StorageCleanup] cleanup health requires attention");
       }
     } catch (error) {

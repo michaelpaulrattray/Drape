@@ -105,7 +105,10 @@ class SDKServer {
     }
   }
 
-  async authenticateRequest(req: Request): Promise<User> {
+  async authenticateRequest(
+    req: Request,
+    options: { recordActivity?: boolean } = {},
+  ): Promise<User> {
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
@@ -120,10 +123,12 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: new Date(),
-    });
+    if (options.recordActivity !== false) {
+      await db.upsertUser({
+        openId: user.openId,
+        lastSignedIn: new Date(),
+      });
+    }
 
     return user;
   }
