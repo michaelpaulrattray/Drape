@@ -84,9 +84,23 @@ try {
     ).length,
   };
   const evidence = auditEvidenceOrphans({
+    users: (await rows("SELECT id FROM users")).map((row) => ({
+      id: Number(row.id),
+    })),
     models: (await rows("SELECT id, userId FROM models")).map((row) => ({
       id: Number(row.id),
       userId: Number(row.userId),
+    })),
+    // Keep this closed list aligned with evidence operation kinds that may own
+    // an evidence_cleanup manifest.
+    operations: (await rows(
+      "SELECT id, userId, modelId, kind, subjectDeletedAt FROM generation_operations WHERE kind IN ('evidence_plate_ingest', 'evidence_crop_ingest', 'evidence_plate_discard')",
+    )).map((row) => ({
+      id: String(row.id),
+      userId: Number(row.userId),
+      modelId: row.modelId == null ? null : Number(row.modelId),
+      kind: String(row.kind),
+      subjectDeletedAt: row.subjectDeletedAt == null ? null : String(row.subjectDeletedAt),
     })),
     receipts: (await rows(
       "SELECT id, userId, modelId, operationId, purpose, status, storageKey, attachedEntityKind, attachedEntityId, cleanupBatchId FROM casting_evidence_ingestions",

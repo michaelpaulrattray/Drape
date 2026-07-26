@@ -41,6 +41,14 @@ interface EvidenceCleanupItemAuditRow {
   storageKey: string;
 }
 
+interface EvidenceOperationAuditRow {
+  id: string;
+  userId: number;
+  modelId: number | null;
+  kind: string;
+  subjectDeletedAt: Date | string | null;
+}
+
 export interface EvidenceOrphanAuditReport {
   receipts: number;
   referencePlates: number;
@@ -67,16 +75,27 @@ function expectedKeyKind(purpose: EvidencePurpose): "plate" | "crop" {
  * metadata is returned or logged.
  */
 export function auditEvidenceOrphans(input: {
+  users: Array<{ id: number }>;
   models: Array<{ id: number; userId: number }>;
+  operations: EvidenceOperationAuditRow[];
   receipts: EvidenceReceiptAuditRow[];
   referencePlates: EvidenceEntityAuditRow[];
   crops: Array<EvidenceEntityAuditRow & { plateId: string }>;
   cleanupBatches: EvidenceCleanupBatchAuditRow[];
   cleanupItems: EvidenceCleanupItemAuditRow[];
 }): EvidenceOrphanAuditReport {
+  const userIds = new Set(input.users.map((user) => user.id));
   const modelOwners = new Map(input.models.map((model) => [model.id, model.userId]));
+  const operationById = new Map(
+    input.operations.map((operation) => [operation.id, operation]),
+  );
   const receiptByOperation = new Map(
     input.receipts.map((receipt) => [receipt.operationId, receipt]),
+  );
+  const receiptByCleanupBatch = new Map(
+    input.receipts
+      .filter((receipt) => receipt.cleanupBatchId !== null)
+      .map((receipt) => [receipt.cleanupBatchId!, receipt]),
   );
   const plateById = new Map(input.referencePlates.map((plate) => [plate.id, plate]));
   const plateByIdAndReceipt = new Map(
@@ -186,11 +205,21 @@ export function auditEvidenceOrphans(input: {
   for (const receipt of input.receipts.filter((row) => row.cleanupBatchId !== null)) {
     const batch = batchesById.get(receipt.cleanupBatchId!);
     const items = itemsByBatch.get(receipt.cleanupBatchId!) ?? [];
+    const cleanupOperation = batch
+      ? operationById.get(batch.operationId)
+      : undefined;
+    const operationMatchesReceipt =
+      batch?.operationId === receipt.operationId
+      || (
+        cleanupOperation?.kind === "evidence_plate_discard"
+        && cleanupOperation.userId === receipt.userId
+        && cleanupOperation.modelId === receipt.modelId
+      );
     if (
       !batch
       || batch.kind !== "evidence_cleanup"
       || batch.userId !== receipt.userId
-      || batch.operationId !== receipt.operationId
+      || !operationMatchesReceipt
       || items.length !== 1
       || items[0]?.storageKey !== receipt.storageKey
     ) {
@@ -198,8 +227,26 @@ export function auditEvidenceOrphans(input: {
     }
   }
   for (const batch of input.cleanupBatches.filter((row) => row.kind === "evidence_cleanup")) {
-    const receipt = receiptByOperation.get(batch.operationId);
-    if (!receipt || receipt.cleanupBatchId !== batch.id) cleanupLinkMismatches += 1;
+    if (receiptByCleanupBatch.has(batch.id)) continue;
+    const operation = operationById.get(batch.operationId);
+    const retainedItemsBelongToBatchOwner =
+      (itemsByBatch.get(batch.id) ?? []).every((item) => {
+        try {
+          return parseEvidenceStorageKey(item.storageKey).userId === batch.userId;
+        } catch {
+          return false;
+        }
+      });
+    const belongsToDeletedCast =
+      operation?.userId === batch.userId
+      && operation.subjectDeletedAt !== null;
+    const belongsToDeletedAccount = !userIds.has(batch.userId);
+    if (
+      !retainedItemsBelongToBatchOwner
+      || (!belongsToDeletedCast && !belongsToDeletedAccount)
+    ) {
+      cleanupLinkMismatches += 1;
+    }
   }
 
   const outstandingNonAttachedReceipts = input.receipts.filter((receipt) =>
