@@ -84,12 +84,12 @@ async function planReferencePlate(
     const head = await lockOwnedDraftModelIn(tx, input);
     const inserted = await tx.execute(sql`
       INSERT INTO casting_evidence_ingestions (
-        id, userId, modelId, operationId, purpose, status, storageKey,
+        id, userId, modelId, operationId, stepKey, purpose, status, storageKey,
         mime, width, height, byteSize, contentHash
       )
       SELECT
         ${input.ingestionId}, ${input.userId}, ${input.modelId},
-        ${input.operationId}, 'reference_plate', 'planned', ${input.storageKey},
+        ${input.operationId}, ${input.stepKey}, 'reference_plate', 'planned', ${input.storageKey},
         ${input.image.mime}, ${input.image.width}, ${input.image.height},
         ${input.image.byteSize}, ${input.image.contentHash}
       FROM models
@@ -120,6 +120,7 @@ async function markReferencePlateStored(
         eq(castingEvidenceIngestions.userId, input.userId),
         eq(castingEvidenceIngestions.modelId, input.modelId),
         eq(castingEvidenceIngestions.operationId, input.operationId),
+        eq(castingEvidenceIngestions.stepKey, input.stepKey),
         eq(castingEvidenceIngestions.purpose, "reference_plate"),
         eq(castingEvidenceIngestions.status, "planned"),
         eq(castingEvidenceIngestions.storageKey, input.storageKey),
@@ -156,6 +157,7 @@ async function attachReferencePlate(
         eq(castingEvidenceIngestions.userId, input.userId),
         eq(castingEvidenceIngestions.modelId, input.modelId),
         eq(castingEvidenceIngestions.operationId, input.operationId),
+        eq(castingEvidenceIngestions.stepKey, input.stepKey),
         eq(castingEvidenceIngestions.purpose, "reference_plate"),
         eq(castingEvidenceIngestions.status, "stored"),
         eq(castingEvidenceIngestions.storageKey, input.storageKey),
@@ -170,13 +172,13 @@ async function attachReferencePlate(
     const inserted = await tx.execute(sql`
       INSERT INTO model_reference_plates (
         id, userId, modelId, kind, storageKey, mime, width, height,
-        byteSize, contentHash, createdByOperationId
+        byteSize, contentHash, createdByOperationId, createdByOperationStepKey
       )
       SELECT
         ${input.plateId}, ${input.userId}, ${input.modelId},
         'uploaded_reference', ${input.storageKey}, ${input.image.mime},
         ${input.image.width}, ${input.image.height}, ${input.image.byteSize},
-        ${input.image.contentHash}, ${input.operationId}
+        ${input.image.contentHash}, ${input.operationId}, ${input.stepKey}
       FROM models
       WHERE models.id = ${input.modelId}
         AND models.userId = ${input.userId}
@@ -204,6 +206,7 @@ async function attachReferencePlate(
         eq(castingEvidenceIngestions.userId, input.userId),
         eq(castingEvidenceIngestions.modelId, input.modelId),
         eq(castingEvidenceIngestions.operationId, input.operationId),
+        eq(castingEvidenceIngestions.stepKey, input.stepKey),
         eq(castingEvidenceIngestions.status, "stored"),
         eq(castingEvidenceIngestions.storageKey, input.storageKey),
         eq(castingEvidenceIngestions.contentHash, input.image.contentHash),

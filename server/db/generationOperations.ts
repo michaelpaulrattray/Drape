@@ -35,6 +35,7 @@ import {
   operationChargeReference,
   type GenerationOperationLandingStatus,
 } from "../casting/operationContract";
+import { availableModelWhere } from "../casting/modelAvailability";
 import { createModuleLogger } from "../logging/logger";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { fillEmptyCastNodeWithVersionIn } from "./boards";
@@ -923,8 +924,7 @@ export async function markGenerationOperationRunning(input: {
         .where(and(
           eq(models.id, effectiveModelId),
           eq(models.userId, input.userId),
-          ne(models.status, "archived"),
-          isNull(models.deletedAt),
+          availableModelWhere(),
         ))
         .limit(1)
         .for("update");
@@ -1073,8 +1073,7 @@ export async function assertGenerationOperationSnapshotHead(input: {
       .where(and(
         eq(models.id, input.modelId),
         eq(models.userId, input.userId),
-        ne(models.status, "archived"),
-        isNull(models.deletedAt),
+        availableModelWhere(),
       ))
       .limit(1);
     if (!model) throw new Error("Generation operation model is no longer available");

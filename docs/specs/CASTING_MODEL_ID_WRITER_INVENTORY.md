@@ -69,6 +69,21 @@ deletion safety. That does not weaken application authority: it makes the C3
 deletion manifest and C4 owner-scoped insertion statements mandatory before a
 runtime caller can exist.
 
+## R7-7D Ink/Add `modelId` tables *(D1 schema; D2 lifecycle foundation)*
+
+| Durable writer | Production entry points | Current authority | R7-7 disposition |
+|---|---|---|---|
+| `model_identity_feature_intents.modelId` | None in D2 | No product route or generation caller; future intent creation must resolve the authenticated owner and available Cast in the durable statement | D2 expiry and both deletion boundaries remove the row. D3 may create it only under the model operation lock. |
+| `casting_evidence_candidates.modelId` | None in D2 | Candidate delivery joins the candidate, intent, ready attempt, owner, model, pending status, and expiry in one read-only statement | D2 expiry writes an exact cleanup manifest before lifecycle changes. D3 generation remains gated. |
+| `model_identity_features.modelId` | Inert Fork service only | Fork runs only under a pre-claimed `evidence_fork_copy` operation and copies into an invisible provisioning subject before atomic publication | D2 final Cast/account deletion remove the row. Later Ink acceptance must write under the same model lock. |
+| `model_identity_feature_versions.modelId` | Inert Fork service only | Same operation and transaction as the owned feature; source assets, plates, crops, and accepted candidate plate are re-anchored to the source graph before independent copies are written | Snapshot selection and deletion own the complete dependency graph. |
+| `model_snapshot_feature_selections.modelId` | Inert Fork service only | Inserted only with the new target identity snapshot and independently cloned feature/version ids, then made visible in the same publication transaction | Delete before feature versions/features and snapshot rows. |
+
+`casting_evidence_candidate_attempts` has no direct `modelId`; it is reached
+through `casting_evidence_candidates.modelId`. D2 expiry and deletion still
+collect its private candidate key and any promoted public key before removing
+the candidate graph.
+
 ## `generations.modelId`
 
 | Durable writer | Production entry points | Current authority | R7-5 disposition |

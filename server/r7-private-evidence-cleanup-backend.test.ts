@@ -86,8 +86,10 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       .map(({ file }) => file)
       .sort();
     expect(callers).toEqual([
+      "server/casting/evidence/evidenceFork.ts",
       "server/casting/finalCastDeletion.ts",
       "server/db/accountDeletion.ts",
+      "server/db/evidenceCandidates.ts",
       "server/db/evidenceOperations.ts",
       "server/db/evidenceRecovery.ts",
     ]);

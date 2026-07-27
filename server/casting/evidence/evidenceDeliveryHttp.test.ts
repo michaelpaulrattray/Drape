@@ -108,4 +108,38 @@ describe("R7-7C5B owner-private evidence cache authority", () => {
     })).rejects.toMatchObject({ code: "owner_mismatch" });
     expect(readCanonical).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps candidate URL identity separate from its private plate key", async () => {
+    const candidateId = "20000000-0000-4000-8000-000000000002";
+    const privatePlateId = "30000000-0000-4000-8000-000000000003";
+    const candidateKey =
+      `users/1/models/4/evidence/candidates/${privatePlateId}.webp`;
+    const readCanonical = vi.fn(async () => ({
+      key: candidateKey,
+      mime: "image/webp" as const,
+      byteSize: 12,
+      body: {
+        async *[Symbol.asyncIterator]() {
+          yield new Uint8Array(12);
+        },
+      },
+      abort: vi.fn(),
+    }));
+    await expect(prepareEvidenceHttpRead({
+      adapter: adapter(readCanonical),
+      evidence: {
+        ...evidence,
+        kind: "candidate",
+        entityId: candidateId,
+        storageKind: "candidate",
+        storageEntityId: privatePlateId,
+        storageKey: candidateKey,
+      },
+      jwtSecret: "server-only-secret",
+    })).resolves.toMatchObject({ status: "read" });
+    expect(readCanonical).toHaveBeenCalledWith({
+      key: candidateKey,
+      expectedByteSize: 12,
+    });
+  });
 });

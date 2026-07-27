@@ -179,6 +179,11 @@ describe("R7-5 Cast dependency and writer coverage", () => {
       "casting_evidence_ingestions.modelId",
       "model_reference_plates.modelId",
       "model_evidence_crops.modelId",
+      "model_identity_feature_intents.modelId",
+      "casting_evidence_candidates.modelId",
+      "model_identity_features.modelId",
+      "model_identity_feature_versions.modelId",
+      "model_snapshot_feature_selections.modelId",
       "generations.modelId",
       "generation_operations.modelId",
       "wardrobe_sessions.modelId",
@@ -189,7 +194,7 @@ describe("R7-5 Cast dependency and writer coverage", () => {
     ]) {
       expect(inventory, `missing inventory row for ${table}`).toContain(table);
     }
-    expect(schema.match(/modelId:\s*int\("modelId"\)/g)).toHaveLength(11);
+    expect(schema.match(/modelId:\s*int\("modelId"\)/g)).toHaveLength(16);
     expect(schema).toContain('sourceModelId: int("sourceModelId")');
   });
 

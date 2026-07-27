@@ -62,7 +62,7 @@ describe("R7-7C2 evidence runtime contract", () => {
       "utf8",
     );
     expect(delivery).toContain(
-      "^users/([1-9][0-9]*)/models/([1-9][0-9]*)/evidence/(plates|crops)/",
+      "^users/([1-9][0-9]*)/models/([1-9][0-9]*)/evidence/(plates|crops|candidates)/",
     );
     expect(delivery).toContain("if (stored.key !== input.key)");
     expect(delivery).toContain("if (parsed.userId !== input.userId)");

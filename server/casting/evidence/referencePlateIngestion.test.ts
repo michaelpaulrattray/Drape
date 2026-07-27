@@ -138,6 +138,7 @@ describe("R7-7C2 posture-neutral evidence delivery", () => {
       userId: 1,
       modelId: 4,
       operationId,
+      stepKey: "reference",
       image,
     });
     expect(events).toEqual([
@@ -177,6 +178,7 @@ describe("R7-7C2 posture-neutral evidence delivery", () => {
       userId: 1,
       modelId: 4,
       operationId,
+      stepKey: "reference",
       image,
     })).rejects.toThrow("disposable store failed");
     expect(events).toEqual(["plan:start", "plan:commit", "put:failed"]);
@@ -198,6 +200,7 @@ describe("R7-7C2 posture-neutral evidence delivery", () => {
       userId: 1,
       modelId: 4,
       operationId,
+      stepKey: "reference",
       image,
     })).rejects.toMatchObject({ code: "returned_key_mismatch" });
     expect(events).toEqual(["plan:start", "plan:commit", "put:mismatch"]);
@@ -213,6 +216,7 @@ describe("R7-7C2 posture-neutral evidence delivery", () => {
       userId: 1,
       modelId: 4,
       operationId,
+      stepKey: "reference",
       image: { ...image, contentHash: "b".repeat(64) },
     })).rejects.toMatchObject({ code: "decode_failed" });
     expect(events).toEqual([]);

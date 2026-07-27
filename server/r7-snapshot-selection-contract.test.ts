@@ -30,10 +30,12 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(PACKAGE_SNAPSHOT_REASONS).toEqual([
       "bootstrap", "create", "identity_change", "image_refine", "slot_generate",
       "slot_refresh", "slot_restore", "add_views", "whole_restore", "mint", "late_view",
+      "evidence_accept",
     ]);
     expect(PACKAGE_SLOT_COMPATIBILITY).toEqual(["current", "stale", "unverified"]);
     expect(PACKAGE_SLOT_SELECTION_REASONS).toEqual([
       "generated", "carried", "refreshed", "restored", "late_view", "bootstrap",
+      "evidence_accept",
     ]);
   });
 
@@ -101,6 +103,8 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     ];
     const allowedAuthority = new Set([
       "server/casting/effectiveCastState.ts",
+      "server/casting/evidence/evidenceComposerSchema.ts",
+      "server/casting/evidence/evidenceFork.ts",
       "server/casting/evidence/referencePlateIngestion.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/snapshotBootstrap.ts",
@@ -156,6 +160,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/routes/generation/castingRefinement.ts",
     ]);
     expect(scopeCallers).toEqual([
+      "server/casting/evidence/evidenceComposerScope.ts",
       "server/casting/mintPackage.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/refreshSlots.ts",
@@ -398,8 +403,8 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(service).toContain("COUNT(DISTINCT");
     expect(service).toContain("if (totalUsers > input.maxUsers)");
     expect(service).toContain(".limit(input.maxUsers)");
-    expect(service).toContain("isNull(models.deletedAt)");
-    expect(service).toContain('ne(models.status, "archived")');
+    expect(service).toContain("availableModelWhere()");
+    expect(service).not.toContain('ne(models.status, "archived")');
     expect(script).not.toMatch(
       /storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );

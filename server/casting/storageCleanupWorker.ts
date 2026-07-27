@@ -16,6 +16,11 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { sweepStaleGenerationOperations } from "./operationRecovery";
 import { getConfiguredPrivateEvidenceStorageAdapter } from "./evidence/privateEvidenceStorage";
+import {
+  expireNextReadyEvidenceCandidate,
+  settleNextCompletedCandidateCleanup,
+} from "../db/evidenceCandidates";
+import { settleNextCompletedEvidenceForkCleanup } from "./evidence/evidenceFork";
 
 const log = createModuleLogger("casting/storageCleanupWorker");
 const DEFAULT_LEASE_MS = 60_000;
@@ -170,9 +175,18 @@ export function startStorageCleanupWorker(): void {
       await sweepStaleGenerationOperations({ limit: 5 });
       await planNextEvidenceIngestionCleanup();
       await settleCompletedEvidenceCleanups({ limit: 10 });
+      await settleNextCompletedEvidenceForkCleanup();
+      if (process.env.ENABLE_EVIDENCE_CANDIDATE_WORKER === "true") {
+        await expireNextReadyEvidenceCandidate();
+        await settleNextCompletedCandidateCleanup();
+      }
       const result = await processNextStorageCleanupBatch();
       if (result.claimed) log.info(result, "[StorageCleanup] bounded batch processed");
       await settleCompletedEvidenceCleanups({ limit: 10 });
+      await settleNextCompletedEvidenceForkCleanup();
+      if (process.env.ENABLE_EVIDENCE_CANDIDATE_WORKER === "true") {
+        await settleNextCompletedCandidateCleanup();
+      }
       const health = await getStorageCleanupHealth();
       if (storageCleanupHealthRequiresAttention(health)) {
         log.warn(health, "[StorageCleanup] cleanup health requires attention");

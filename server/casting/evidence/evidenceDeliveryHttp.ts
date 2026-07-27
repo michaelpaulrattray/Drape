@@ -19,6 +19,11 @@ export interface AuthorizedEvidenceDelivery {
   storageKey: string;
   byteSize: number;
   contentHash: string;
+  /** Candidate URLs are keyed by candidate id while the private object is
+   * keyed by its independent private-plate id. Ordinary plate/crop reads
+   * omit these and use kind/entityId for both namespaces. */
+  storageKind?: EvidenceStorageKind;
+  storageEntityId?: string;
 }
 
 export type PreparedEvidenceHttpRead =
@@ -77,11 +82,13 @@ export async function prepareEvidenceHttpRead(input: {
   ifNoneMatch?: string;
 }): Promise<PreparedEvidenceHttpRead> {
   const parsed = parseEvidenceStorageKey(input.evidence.storageKey);
+  const storageKind = input.evidence.storageKind ?? input.evidence.kind;
+  const storageEntityId = input.evidence.storageEntityId ?? input.evidence.entityId;
   if (
     parsed.userId !== input.evidence.ownerId
     || parsed.modelId !== input.evidence.modelId
-    || parsed.kind !== input.evidence.kind
-    || parsed.entityId !== input.evidence.entityId
+    || parsed.kind !== storageKind
+    || parsed.entityId !== storageEntityId
   ) {
     throw new EvidenceDeliveryError("owner_mismatch");
   }

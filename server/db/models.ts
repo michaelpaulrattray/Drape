@@ -2,7 +2,7 @@
  * Models Domain — model CRUD, minting, and model asset management.
  */
 
-import { eq, ne, desc, and, inArray, isNull, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, isNull, sql } from "drizzle-orm";
 import {
   models,
   modelAssets,
@@ -12,6 +12,7 @@ import {
 import { getDb } from "./connection";
 import { MODEL_MINTED_STATUSES } from "../../shared/modelLifecycle";
 import { createModuleLogger } from "../logging/logger";
+import { availableModelWhere } from "../casting/modelAvailability";
 const log = createModuleLogger("db/models");
 
 export async function createModel(
@@ -49,7 +50,7 @@ export async function getModelById(modelId: number) {
   const result = await db
     .select()
     .from(models)
-    .where(and(eq(models.id, modelId), isNull(models.deletedAt), ne(models.status, "archived")))
+    .where(and(eq(models.id, modelId), availableModelWhere()))
     .limit(1);
   return result.length > 0 ? result[0] : null;
 }
@@ -63,7 +64,7 @@ export async function getUserModels(userId: number, limit: number = 50) {
   return await db
     .select()
     .from(models)
-    .where(and(eq(models.userId, userId), ne(models.status, "archived"), isNull(models.deletedAt)))
+    .where(and(eq(models.userId, userId), availableModelWhere()))
     .orderBy(desc(models.createdAt))
     .limit(limit);
 }
@@ -87,8 +88,7 @@ export async function getModelStatusesIn(
     .where(and(
       inArray(models.id, modelIds),
       eq(models.userId, userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ));
   return new Map(rows.map((row) => [row.id, { status: row.status, name: row.name }]));
 }
@@ -108,7 +108,7 @@ export async function updateModel(
     const updated = await db
       .update(models)
       .set(data)
-      .where(and(eq(models.id, modelId), isNull(models.deletedAt), ne(models.status, "archived")));
+      .where(and(eq(models.id, modelId), availableModelWhere()));
     const affected = Array.isArray(updated)
       ? (updated[0] as { affectedRows?: number } | undefined)?.affectedRows ?? 0
       : (updated as { affectedRows?: number }).affectedRows ?? 0;
@@ -116,7 +116,7 @@ export async function updateModel(
       const [available] = await db
         .select({ id: models.id })
         .from(models)
-        .where(and(eq(models.id, modelId), isNull(models.deletedAt), ne(models.status, "archived")))
+        .where(and(eq(models.id, modelId), availableModelWhere()))
         .limit(1);
       if (!available) return { success: false, error: "Model not found" };
     }

@@ -31,8 +31,8 @@ describe("R7-5C final Cast deletion source contracts", () => {
   it("hides tombstones and their old receipts from ordinary reads", () => {
     const modelDb = source("server/db/models.ts");
     const operationsDb = source("server/db/generationOperations.ts");
-    expect(modelDb).toContain("isNull(models.deletedAt)");
-    expect(modelDb).toContain('ne(models.status, "archived")');
+    expect(modelDb).toContain("availableModelWhere()");
+    expect(modelDb).not.toContain('ne(models.status, "archived")');
     expect(operationsDb).toContain("if (!operation || operation.subjectDeletedAt) return null");
     expect(operationsDb).toContain("isNull(generationOperations.subjectDeletedAt)");
   });

@@ -119,6 +119,7 @@ describeWithDatabase("R7-7C2 evidence ingestion runtime (disposable DB)", () => 
       userId: ownerId,
       modelId,
       operationId,
+      stepKey: "reference",
       image,
     });
 
@@ -173,6 +174,7 @@ describeWithDatabase("R7-7C2 evidence ingestion runtime (disposable DB)", () => 
       userId: ownerId,
       modelId,
       operationId: randomUUID(),
+      stepKey: "reference",
       image,
     })).rejects.toMatchObject({ code: "returned_key_mismatch" });
 
@@ -204,6 +206,7 @@ describeWithDatabase("R7-7C2 evidence ingestion runtime (disposable DB)", () => 
       userId: ownerId,
       modelId,
       operationId: randomUUID(),
+      stepKey: "reference",
       image,
     })).rejects.toMatchObject({ code: "snapshot_head_changed" });
 
@@ -242,6 +245,7 @@ describeWithDatabase("R7-7C2 evidence ingestion runtime (disposable DB)", () => 
         userId: attempt.userId,
         modelId,
         operationId: randomUUID(),
+        stepKey: "reference",
         image,
       })).rejects.toMatchObject({ code: "model_unavailable" });
       const [receipts] = await connection.query<RowDataPacket[]>(

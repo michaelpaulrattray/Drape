@@ -11,7 +11,7 @@
  * Only model_assets.pinned is mutated. Canvas board-item metadata pins are a
  * separate presentation mechanism and are never read or written here.
  */
-import { and, eq, inArray, isNull, ne, type SQL } from "drizzle-orm";
+import { and, eq, inArray, type SQL } from "drizzle-orm";
 import {
   generationOperationLocks,
   modelAssets,
@@ -25,6 +25,7 @@ import {
   type SnapshotShadowState,
 } from "./snapshotShadow";
 import { captureSnapshotReadMode } from "./snapshotReadScope";
+import { availableModelWhere } from "./modelAvailability";
 
 export interface SnapshotPinConvergenceSelector {
   userId?: number;
@@ -146,8 +147,7 @@ async function listSubjectsIn(
   input: Pick<SnapshotPinConvergenceSelector, "userId" | "modelIds">,
 ): Promise<SnapshotPinConvergenceSubject[]> {
   const filters: SQL[] = [
-    isNull(models.deletedAt),
-    ne(models.status, "archived"),
+    availableModelWhere(),
   ];
   if (input.userId !== undefined) filters.push(eq(models.userId, input.userId));
   if (input.modelIds.length > 0) filters.push(inArray(models.id, input.modelIds));
@@ -291,8 +291,7 @@ async function lockFrozenSubjectIn(
     .where(and(
       eq(models.id, subject.modelId),
       eq(models.userId, subject.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ))
     .limit(1)
     .for("update");

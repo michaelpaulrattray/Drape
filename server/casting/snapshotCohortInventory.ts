@@ -1,6 +1,7 @@
-import { and, isNull, ne, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { models } from "../../drizzle/schema";
 import { withTransaction } from "../db/connection";
+import { availableModelWhere } from "./modelAvailability";
 
 export interface SnapshotCohortInventoryArgs {
   databaseUrl: string;
@@ -190,10 +191,7 @@ export async function inventorySnapshotCohorts(input: {
   maxUsers: number;
 }): Promise<SnapshotCohortInventoryResult> {
   positiveSafeInteger(input.maxUsers, "Snapshot cohort maximum users");
-  const liveModelWhere = and(
-    isNull(models.deletedAt),
-    ne(models.status, "archived"),
-  );
+  const liveModelWhere = availableModelWhere();
 
   return withTransaction(async (tx) => {
     const [totalRow] = await tx

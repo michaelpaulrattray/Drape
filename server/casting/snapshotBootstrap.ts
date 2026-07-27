@@ -8,7 +8,7 @@
  */
 import { createHash, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import {
   modelAssets,
   generationOperationLocks,
@@ -29,6 +29,7 @@ import { createModuleLogger } from "../logging/logger";
 import { buildIdentityAnchor } from "./geminiClient";
 import { selectIdentityAnchor, isStaleAsset } from "./identity/anchorSelector";
 import { modelOperationLockKey, stableCanonicalJson } from "./operationContract";
+import { availableModelWhere } from "./modelAvailability";
 
 const log = createModuleLogger("casting/snapshotBootstrap");
 
@@ -135,8 +136,7 @@ async function lockedOwnedModelIn(
     .where(and(
       eq(models.id, input.modelId),
       eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ))
     .limit(1)
     .for("update");
@@ -285,8 +285,7 @@ async function runBootstrap(input: {
             .where(and(
               eq(models.id, model.id),
               eq(models.userId, input.userId),
-              isNull(models.deletedAt),
-              ne(models.status, "archived"),
+              availableModelWhere(),
               isNull(models.sealedIdentitySnapshotId),
               isNull(models.sealedPackageSnapshotId),
             ));
@@ -363,8 +362,7 @@ async function runBootstrap(input: {
       .where(and(
         eq(models.id, model.id),
         eq(models.userId, input.userId),
-        isNull(models.deletedAt),
-        ne(models.status, "archived"),
+        availableModelWhere(),
         eq(models.stateVersion, model.stateVersion),
         sql`${models.currentPackageSnapshotId} <=> ${model.currentPackageSnapshotId}`,
       ));

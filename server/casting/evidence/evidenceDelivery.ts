@@ -1,12 +1,13 @@
 import type { CanonicalEvidenceImage } from "./imageValidation";
+import { createHash } from "node:crypto";
 
 const UUID_PATTERN =
   "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
 const EVIDENCE_KEY_PATTERN = new RegExp(
-  `^users/([1-9][0-9]*)/models/([1-9][0-9]*)/evidence/(plates|crops)/(${UUID_PATTERN})\\.webp$`,
+  `^users/([1-9][0-9]*)/models/([1-9][0-9]*)/evidence/(plates|crops|candidates)/(${UUID_PATTERN})\\.webp$`,
 );
 
-export type EvidenceStorageKind = "plate" | "crop";
+export type EvidenceStorageKind = "plate" | "crop" | "candidate";
 
 export interface ParsedEvidenceKey {
   userId: number;
@@ -85,7 +86,11 @@ export function parseEvidenceStorageKey(key: string): ParsedEvidenceKey {
   return {
     userId,
     modelId,
-    kind: match[3] === "plates" ? "plate" : "crop",
+    kind: match[3] === "plates"
+      ? "plate"
+      : match[3] === "crops"
+        ? "crop"
+        : "candidate",
     entityId: match[4],
   };
 }
@@ -99,7 +104,11 @@ function buildEvidenceStorageKey(input: {
   if (!positiveId(input.userId) || !positiveId(input.modelId)) {
     throw new EvidenceDeliveryError("invalid_key");
   }
-  const segment = input.kind === "plate" ? "plates" : "crops";
+  const segment = input.kind === "plate"
+    ? "plates"
+    : input.kind === "crop"
+      ? "crops"
+      : "candidates";
   const key =
     `users/${input.userId}/models/${input.modelId}/evidence/${segment}/${input.entityId}.webp`;
   parseEvidenceStorageKey(key);
@@ -132,6 +141,19 @@ export function buildEvidenceCropStorageKey(input: {
   });
 }
 
+export function buildEvidenceCandidateStorageKey(input: {
+  userId: number;
+  modelId: number;
+  privatePlateId: string;
+}): string {
+  return buildEvidenceStorageKey({
+    userId: input.userId,
+    modelId: input.modelId,
+    entityId: input.privatePlateId,
+    kind: "candidate",
+  });
+}
+
 export async function putCanonicalEvidence(
   adapter: EvidenceDeliveryAdapter,
   input: { key: string; image: CanonicalEvidenceImage },
@@ -160,4 +182,71 @@ export async function resolveEvidenceOwnerDelivery(
     throw new EvidenceDeliveryError("invalid_delivery");
   }
   return delivery;
+}
+
+async function readAllCanonical(input: CanonicalEvidenceRead): Promise<Buffer> {
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for await (const chunk of input.body) {
+      total += chunk.byteLength;
+      if (total > input.byteSize) throw new EvidenceDeliveryError("invalid_delivery");
+      chunks.push(chunk);
+    }
+  } finally {
+    input.abort();
+  }
+  if (total !== input.byteSize) throw new EvidenceDeliveryError("invalid_delivery");
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), total);
+}
+
+/**
+ * Copy one private canonical object while proving both source and destination
+ * bytes against the immutable database hash. Fork never aliases source keys.
+ */
+export async function copyCanonicalEvidenceExact(
+  adapter: PrivateEvidenceStorageAdapter,
+  input: {
+    sourceKey: string;
+    destinationKey: string;
+    byteSize: number;
+    contentHash: string;
+  },
+): Promise<void> {
+  parseEvidenceStorageKey(input.sourceKey);
+  parseEvidenceStorageKey(input.destinationKey);
+  if (
+    !/^[0-9a-f]{64}$/.test(input.contentHash)
+    || !Number.isSafeInteger(input.byteSize)
+    || input.byteSize <= 0
+  ) {
+    throw new EvidenceDeliveryError("invalid_delivery");
+  }
+  const source = await adapter.readCanonical({
+    key: input.sourceKey,
+    expectedByteSize: input.byteSize,
+  });
+  const bytes = await readAllCanonical(source);
+  if (createHash("sha256").update(bytes).digest("hex") !== input.contentHash) {
+    throw new EvidenceDeliveryError("invalid_delivery");
+  }
+  await putCanonicalEvidence(adapter, {
+    key: input.destinationKey,
+    image: {
+      bytes,
+      mime: "image/webp",
+      width: 1,
+      height: 1,
+      byteSize: bytes.byteLength,
+      contentHash: input.contentHash,
+    },
+  });
+  const copied = await adapter.readCanonical({
+    key: input.destinationKey,
+    expectedByteSize: input.byteSize,
+  });
+  const copiedBytes = await readAllCanonical(copied);
+  if (createHash("sha256").update(copiedBytes).digest("hex") !== input.contentHash) {
+    throw new EvidenceDeliveryError("invalid_delivery");
+  }
 }

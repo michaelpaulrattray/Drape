@@ -1,7 +1,8 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { models } from "../../drizzle/schema";
 import type { TransactionHandle } from "./connection";
+import { availableModelWhere } from "../casting/modelAvailability";
 
 /**
  * Durable R7-5 model-reference fence.
@@ -22,8 +23,7 @@ export async function assertOwnedAvailableModelIn(
     .where(and(
       eq(models.id, input.modelId),
       eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ))
     .limit(1)
     .for("update");

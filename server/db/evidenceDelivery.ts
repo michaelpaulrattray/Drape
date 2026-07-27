@@ -1,5 +1,8 @@
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, gt, isNotNull } from "drizzle-orm";
 import {
+  castingEvidenceCandidateAttempts,
+  castingEvidenceCandidates,
+  modelIdentityFeatureIntents,
   modelEvidenceCrops,
   modelReferencePlates,
   models,
@@ -9,6 +12,7 @@ import type {
 } from "../casting/evidence/evidenceDeliveryHttp";
 import type { EvidenceStorageKind } from "../casting/evidence/evidenceDelivery";
 import { getDb } from "./connection";
+import { availableModelWhere } from "../casting/modelAvailability";
 
 /**
  * Resolve one evidence object through a statement that proves the child,
@@ -22,6 +26,65 @@ export async function readOwnedEvidenceDelivery(input: {
 }): Promise<AuthorizedEvidenceDelivery | null> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (input.kind === "candidate") {
+    const [row] = await db
+      .select({
+        ownerId: castingEvidenceCandidates.userId,
+        modelId: castingEvidenceCandidates.modelId,
+        entityId: castingEvidenceCandidates.id,
+        storageEntityId: castingEvidenceCandidateAttempts.privatePlateId,
+        storageKey: castingEvidenceCandidateAttempts.privateStorageKey,
+        byteSize: castingEvidenceCandidateAttempts.byteSize,
+        contentHash: castingEvidenceCandidateAttempts.contentHash,
+      })
+      .from(castingEvidenceCandidates)
+      .innerJoin(modelIdentityFeatureIntents, and(
+        eq(modelIdentityFeatureIntents.id, castingEvidenceCandidates.intentId),
+        eq(modelIdentityFeatureIntents.userId, input.userId),
+        eq(modelIdentityFeatureIntents.modelId, castingEvidenceCandidates.modelId),
+        eq(modelIdentityFeatureIntents.status, "pending"),
+      ))
+      .innerJoin(castingEvidenceCandidateAttempts, and(
+        eq(castingEvidenceCandidateAttempts.id, castingEvidenceCandidates.readyAttemptId),
+        eq(castingEvidenceCandidateAttempts.candidateId, castingEvidenceCandidates.id),
+        eq(castingEvidenceCandidateAttempts.status, "probe_passed"),
+        isNotNull(castingEvidenceCandidateAttempts.privateStorageKey),
+        isNotNull(castingEvidenceCandidateAttempts.byteSize),
+        isNotNull(castingEvidenceCandidateAttempts.contentHash),
+      ))
+      .innerJoin(models, and(
+        eq(models.id, castingEvidenceCandidates.modelId),
+        eq(models.userId, input.userId),
+        availableModelWhere(),
+      ))
+      .where(and(
+        eq(castingEvidenceCandidates.id, input.entityId),
+        eq(castingEvidenceCandidates.userId, input.userId),
+        eq(castingEvidenceCandidates.status, "ready"),
+        isNotNull(castingEvidenceCandidates.expiresAt),
+        gt(castingEvidenceCandidates.expiresAt, new Date()),
+      ))
+      .limit(1);
+    if (
+      !row
+      || row.storageKey === null
+      || row.byteSize === null
+      || row.contentHash === null
+    ) {
+      return null;
+    }
+    return {
+      ownerId: row.ownerId,
+      modelId: row.modelId,
+      kind: "candidate",
+      entityId: row.entityId,
+      storageKind: "candidate",
+      storageEntityId: row.storageEntityId,
+      storageKey: row.storageKey,
+      byteSize: row.byteSize,
+      contentHash: row.contentHash,
+    };
+  }
   if (input.kind === "plate") {
     const [row] = await db
       .select({
@@ -36,8 +99,7 @@ export async function readOwnedEvidenceDelivery(input: {
       .innerJoin(models, and(
         eq(models.id, modelReferencePlates.modelId),
         eq(models.userId, input.userId),
-        isNull(models.deletedAt),
-        ne(models.status, "archived"),
+        availableModelWhere(),
       ))
       .where(and(
         eq(modelReferencePlates.id, input.entityId),
@@ -60,8 +122,7 @@ export async function readOwnedEvidenceDelivery(input: {
     .innerJoin(models, and(
       eq(models.id, modelEvidenceCrops.modelId),
       eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ))
     .where(and(
       eq(modelEvidenceCrops.id, input.entityId),

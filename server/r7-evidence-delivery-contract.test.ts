@@ -32,15 +32,15 @@ describe("R7-7C5C evidence delivery contract", () => {
     expect(route).not.toMatch(/storageKey|bucket|providerMessage/);
   });
 
-  it("anchors both child kinds to a live owned Cast in the database statement", async () => {
+  it("anchors all three child kinds to an available owned Cast in the database statement", async () => {
     const db = await source("server/db/evidenceDelivery.ts");
-    expect(db.match(/eq\(models\.userId, input\.userId\)/g)).toHaveLength(2);
+    expect(db.match(/eq\(models\.userId, input\.userId\)/g)).toHaveLength(3);
     expect(db.match(/eq\(modelReferencePlates\.userId, input\.userId\)/g))
       .toHaveLength(1);
     expect(db.match(/eq\(modelEvidenceCrops\.userId, input\.userId\)/g))
       .toHaveLength(1);
-    expect(db.match(/isNull\(models\.deletedAt\)/g)).toHaveLength(2);
-    expect(db.match(/ne\(models\.status, "archived"\)/g)).toHaveLength(2);
+    expect(db.match(/availableModelWhere\(\)/g)).toHaveLength(3);
+    expect(db).not.toMatch(/ne\(models\.status, "archived"\)/);
   });
 
   it("keeps retryable failures behind the shared placeholder component", async () => {

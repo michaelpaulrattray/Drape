@@ -40,6 +40,7 @@ export interface PreparedEvidencePlate {
   plateId: string;
   storageKey: string;
   status: "planned" | "stored";
+  stepKey: string;
   expectedHead: EvidenceModelHead;
 }
 
@@ -165,6 +166,7 @@ export async function prepareReferencePlateOperation(input: {
   userId: number;
   modelId: number;
   operationId: string;
+  stepKey: string;
   ingestionId: string;
   plateId: string;
   image: CanonicalEvidenceImage;
@@ -219,6 +221,7 @@ export async function prepareReferencePlateOperation(input: {
         plateId: parsed.entityId,
         storageKey: existing.storageKey,
         status: existing.status,
+        stepKey: existing.stepKey,
         expectedHead: existingExpectedHead,
       };
     }
@@ -254,6 +257,7 @@ export async function prepareReferencePlateOperation(input: {
       userId: input.userId,
       modelId: input.modelId,
       operationId: input.operationId,
+      stepKey: input.stepKey,
       purpose: "reference_plate",
       status: "planned",
       storageKey,
@@ -268,6 +272,7 @@ export async function prepareReferencePlateOperation(input: {
       plateId: input.plateId,
       storageKey,
       status: "planned",
+      stepKey: input.stepKey,
       expectedHead: currentHead,
     };
   });
@@ -289,6 +294,7 @@ export async function markReferencePlateOperationStored(input: {
         eq(castingEvidenceIngestions.userId, input.userId),
         eq(castingEvidenceIngestions.modelId, input.modelId),
         eq(castingEvidenceIngestions.operationId, input.operationId),
+        eq(castingEvidenceIngestions.stepKey, input.prepared.stepKey),
         eq(castingEvidenceIngestions.storageKey, input.prepared.storageKey),
         eq(castingEvidenceIngestions.contentHash, input.image.contentHash),
       ))
@@ -303,6 +309,7 @@ export async function markReferencePlateOperationStored(input: {
       .set({ status: "stored" })
       .where(and(
         eq(castingEvidenceIngestions.id, receipt.id),
+        eq(castingEvidenceIngestions.stepKey, input.prepared.stepKey),
         eq(castingEvidenceIngestions.status, "planned"),
         eq(castingEvidenceIngestions.storageKey, receipt.storageKey),
         eq(castingEvidenceIngestions.contentHash, receipt.contentHash),
@@ -355,6 +362,7 @@ export async function attachAndCompleteReferencePlateOperation(input: {
         eq(castingEvidenceIngestions.userId, input.userId),
         eq(castingEvidenceIngestions.modelId, input.modelId),
         eq(castingEvidenceIngestions.operationId, input.operationId),
+        eq(castingEvidenceIngestions.stepKey, input.prepared.stepKey),
         eq(castingEvidenceIngestions.purpose, "reference_plate"),
         eq(castingEvidenceIngestions.status, "stored"),
         eq(castingEvidenceIngestions.storageKey, input.prepared.storageKey),
@@ -367,13 +375,13 @@ export async function attachAndCompleteReferencePlateOperation(input: {
     const inserted = await tx.execute(sql`
       INSERT INTO model_reference_plates (
         id, userId, modelId, kind, storageKey, mime, width, height,
-        byteSize, contentHash, createdByOperationId
+        byteSize, contentHash, createdByOperationId, createdByOperationStepKey
       )
       SELECT
         ${input.prepared.plateId}, ${input.userId}, ${input.modelId},
         'uploaded_reference', ${input.prepared.storageKey}, ${input.image.mime},
         ${input.image.width}, ${input.image.height}, ${input.image.byteSize},
-        ${input.image.contentHash}, ${input.operationId}
+        ${input.image.contentHash}, ${input.operationId}, ${input.prepared.stepKey}
       FROM models
       WHERE models.id = ${input.modelId}
         AND models.userId = ${input.userId}
@@ -396,6 +404,7 @@ export async function attachAndCompleteReferencePlateOperation(input: {
       })
       .where(and(
         eq(castingEvidenceIngestions.id, receipt.id),
+        eq(castingEvidenceIngestions.stepKey, input.prepared.stepKey),
         eq(castingEvidenceIngestions.status, "stored"),
         eq(castingEvidenceIngestions.storageKey, receipt.storageKey),
         eq(castingEvidenceIngestions.contentHash, receipt.contentHash),

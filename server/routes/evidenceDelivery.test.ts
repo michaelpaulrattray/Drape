@@ -107,6 +107,24 @@ describe("R7-7C5C authenticated evidence delivery", () => {
     }
   });
 
+  it("routes candidate previews through the same authenticated boundary", async () => {
+    const deps = dependencies();
+    vi.mocked(deps.load).mockResolvedValueOnce({
+      ...evidence,
+      kind: "candidate",
+      storageKind: "plate",
+    });
+    await withRoute(deps, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/evidence/candidate/${entityId}`);
+      expect(response.status).toBe(200);
+    });
+    expect(deps.load).toHaveBeenCalledWith({
+      userId: 7,
+      kind: "candidate",
+      entityId,
+    });
+  });
+
   it("streams ordinary private image bytes with cache and sniffing protections", async () => {
     const deps = dependencies();
     await withRoute(deps, async (baseUrl) => {

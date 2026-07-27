@@ -7,7 +7,7 @@
  * failure summaries; newest-filled order never chooses current state here.
  */
 import { createHash } from "node:crypto";
-import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   modelAssets,
   modelIdentitySnapshots,
@@ -28,6 +28,7 @@ import {
 import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { withTransaction } from "../db/connection";
 import { assetIdentityRole, selectIdentityAnchor } from "./identity/anchorSelector";
+import { availableModelWhere } from "./modelAvailability";
 
 export const EFFECTIVE_CAST_STATE_ERROR_CODES = [
   "model_not_found",
@@ -327,8 +328,7 @@ export async function resolveOwnedEffectiveCastStates(input: {
       .where(and(
         inArray(models.id, [...input.modelIds]),
         eq(models.userId, input.userId),
-        isNull(models.deletedAt),
-        ne(models.status, "archived"),
+        availableModelWhere(),
       ));
     if (subjectRows.length !== input.modelIds.length) fail("model_not_found");
 

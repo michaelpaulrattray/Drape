@@ -81,7 +81,7 @@ function routeIdentity(req: Request): {
   const kind = req.params.kind;
   const entityId = req.params.entityId;
   if (
-    (kind !== "plate" && kind !== "crop")
+    (kind !== "plate" && kind !== "crop" && kind !== "candidate")
     || typeof entityId !== "string"
     || !ENTITY_ID_PATTERN.test(entityId)
   ) {
@@ -141,7 +141,11 @@ export function createEvidenceDeliveryRouter(
         fixedError(res, 503, "Evidence image is temporarily unavailable");
         return;
       }
-      if (!evidence) {
+      if (
+        !evidence
+        || evidence.kind !== identity.kind
+        || evidence.entityId !== identity.entityId
+      ) {
         fixedError(res, 404, "Evidence image not found");
         return;
       }

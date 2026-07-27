@@ -9,9 +9,11 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
+import { createHash } from "node:crypto";
 import { ENV } from "./_core/env";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("storage");
@@ -67,6 +69,62 @@ function buildPublicUrl(publicUrl: string, key: string): string {
   return `${publicUrl}/${encodedKey}`;
 }
 
+const MAX_FORK_COPY_BYTES = 20 * 1024 * 1024;
+
+function destroyStorageBody(body: unknown): void {
+  if (
+    body
+    && typeof body === "object"
+    && "destroy" in body
+    && typeof body.destroy === "function"
+  ) {
+    body.destroy();
+  }
+}
+
+async function readStorageBytesExact(
+  config: StorageConfig,
+  key: string,
+): Promise<{ bytes: Buffer; contentType: string; contentHash: string }> {
+  const response = await getClient(config).send(new GetObjectCommand({
+    Bucket: config.bucket,
+    Key: key,
+  }));
+  const declared = Number(response.ContentLength);
+  if (
+    !response.Body
+    || !Number.isSafeInteger(declared)
+    || declared <= 0
+    || declared > MAX_FORK_COPY_BYTES
+    || typeof response.ContentType !== "string"
+    || !response.ContentType.startsWith("image/")
+  ) {
+    destroyStorageBody(response.Body);
+    throw new Error("Storage copy source is unavailable");
+  }
+  const chunks: Buffer[] = [];
+  let total = 0;
+  try {
+    for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+      const buffer = Buffer.from(chunk);
+      total += buffer.length;
+      if (total > declared || total > MAX_FORK_COPY_BYTES) {
+        throw new Error("Storage copy source is unavailable");
+      }
+      chunks.push(buffer);
+    }
+  } finally {
+    destroyStorageBody(response.Body);
+  }
+  if (total !== declared) throw new Error("Storage copy source is unavailable");
+  const bytes = Buffer.concat(chunks, total);
+  return {
+    bytes,
+    contentType: response.ContentType,
+    contentHash: createHash("sha256").update(bytes).digest("hex"),
+  };
+}
+
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
@@ -98,6 +156,61 @@ export async function storageGet(
   const config = getStorageConfig();
   const key = normalizeKey(relKey);
   return { key, url: buildPublicUrl(config.publicUrl, key) };
+}
+
+/**
+ * Fork-only exact public-object copy. It reads, bounds and hashes the source,
+ * writes a distinct destination, then re-reads and hashes the destination.
+ */
+export async function storageCopyExact(input: {
+  sourceKey: string;
+  destinationKey: string;
+}): Promise<{
+  key: string;
+  url: string;
+  byteSize: number;
+  contentHash: string;
+  contentType: string;
+}> {
+  const config = getStorageConfig();
+  const sourceKey = normalizeKey(input.sourceKey);
+  const destinationKey = normalizeKey(input.destinationKey);
+  if (
+    !sourceKey
+    || !destinationKey
+    || sourceKey === destinationKey
+    || destinationKey.length > 256
+  ) {
+    throw new Error("Storage copy identity is invalid");
+  }
+  const source = await readStorageBytesExact(config, sourceKey);
+  try {
+    await getClient(config).send(
+      new PutObjectCommand({
+        Bucket: config.bucket,
+        Key: destinationKey,
+        Body: source.bytes,
+        ContentType: source.contentType,
+      }),
+    );
+  } catch {
+    throw new Error("Storage copy failed");
+  }
+  const destination = await readStorageBytesExact(config, destinationKey);
+  if (
+    destination.bytes.length !== source.bytes.length
+    || destination.contentHash !== source.contentHash
+    || destination.contentType !== source.contentType
+  ) {
+    throw new Error("Storage copy verification failed");
+  }
+  return {
+    key: destinationKey,
+    url: buildPublicUrl(config.publicUrl, destinationKey),
+    byteSize: destination.bytes.length,
+    contentHash: destination.contentHash,
+    contentType: destination.contentType,
+  };
 }
 
 export async function storageDelete(

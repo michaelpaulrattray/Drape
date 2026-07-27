@@ -11,10 +11,16 @@ import {
   generationOperationLocks,
   generationOperations,
   generations,
+  castingEvidenceCandidateAttempts,
+  castingEvidenceCandidates,
   castingEvidenceIngestions,
   modelAssets,
   modelEvidenceCrops,
   modelIdentitySnapshots,
+  modelIdentityFeatureIntents,
+  modelIdentityFeatures,
+  modelIdentityFeatureVersions,
+  modelSnapshotFeatureSelections,
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
   modelReferencePlates,
@@ -32,10 +38,18 @@ import {
 } from "./deletionAudit";
 import { createModuleLogger } from "../logging/logger";
 import { assertOwnedEvidenceStorageKey } from "./evidence/evidenceLifecycle";
+import { parseEvidenceStorageKey } from "./evidence/evidenceDelivery";
+import { availableModelWhere } from "./modelAvailability";
 
 const log = createModuleLogger("casting/finalCastDeletion");
 
 export interface FinalCastDeletionCounts {
+  evidenceCandidates: number;
+  evidenceCandidateAttempts: number;
+  featureIntents: number;
+  identityFeatures: number;
+  identityFeatureVersions: number;
+  snapshotFeatureSelections: number;
   evidenceIngestions: number;
   referencePlates: number;
   evidenceCrops: number;
@@ -170,8 +184,7 @@ async function lockModelIn(tx: TransactionHandle, input: { modelId: number; user
     .where(and(
       eq(models.id, input.modelId),
       eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ))
     .limit(1)
     .for("update");
@@ -530,8 +543,7 @@ export async function planFinalCastDeletion(input: {
       .where(and(
         eq(models.id, input.modelId),
         eq(models.userId, input.userId),
-        isNull(models.deletedAt),
-        ne(models.status, "archived"),
+        availableModelWhere(),
       ))
       .limit(1);
     if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -611,6 +623,39 @@ export async function executeFinalCastDeletion(input: {
       .from(castingEvidenceIngestions)
       .where(eq(castingEvidenceIngestions.modelId, input.modelId))
       .for("update");
+    const evidenceCandidates = await tx
+      .select()
+      .from(castingEvidenceCandidates)
+      .where(eq(castingEvidenceCandidates.modelId, input.modelId))
+      .for("update");
+    const candidateIds = evidenceCandidates.map((candidate) => candidate.id);
+    const evidenceCandidateAttempts = candidateIds.length > 0
+      ? await tx
+        .select()
+        .from(castingEvidenceCandidateAttempts)
+        .where(inArray(castingEvidenceCandidateAttempts.candidateId, candidateIds))
+        .for("update")
+      : [];
+    const featureIntents = await tx
+      .select()
+      .from(modelIdentityFeatureIntents)
+      .where(eq(modelIdentityFeatureIntents.modelId, input.modelId))
+      .for("update");
+    const identityFeatures = await tx
+      .select()
+      .from(modelIdentityFeatures)
+      .where(eq(modelIdentityFeatures.modelId, input.modelId))
+      .for("update");
+    const identityFeatureVersions = await tx
+      .select()
+      .from(modelIdentityFeatureVersions)
+      .where(eq(modelIdentityFeatureVersions.modelId, input.modelId))
+      .for("update");
+    const snapshotFeatureSelections = await tx
+      .select()
+      .from(modelSnapshotFeatureSelections)
+      .where(eq(modelSnapshotFeatureSelections.modelId, input.modelId))
+      .for("update");
     const referencePlates = await tx
       .select()
       .from(modelReferencePlates)
@@ -671,6 +716,23 @@ export async function executeFinalCastDeletion(input: {
         purpose: receipt.purpose,
       });
       privateEvidenceKeys.add(receipt.storageKey);
+    }
+    for (const attempt of evidenceCandidateAttempts) {
+      if (attempt.privateStorageKey) {
+        const parsed = parseEvidenceStorageKey(attempt.privateStorageKey);
+        if (
+          parsed.userId !== input.userId
+          || parsed.modelId !== input.modelId
+          || parsed.kind !== "candidate"
+          || parsed.entityId !== attempt.privatePlateId
+        ) {
+          throw new Error("Evidence candidate ownership disagrees with its Cast");
+        }
+        privateEvidenceKeys.add(attempt.privateStorageKey);
+      }
+      if (attempt.promotedPublicStorageKey) {
+        storageKeys.add(attempt.promotedPublicStorageKey);
+      }
     }
     for (const plate of referencePlates) {
       if (plate.userId !== input.userId) {
@@ -760,6 +822,20 @@ export async function executeFinalCastDeletion(input: {
 
     await tx.delete(wardrobeLooks).where(eq(wardrobeLooks.modelId, input.modelId));
     await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, input.modelId));
+    await tx.delete(modelSnapshotFeatureSelections)
+      .where(eq(modelSnapshotFeatureSelections.modelId, input.modelId));
+    await tx.delete(modelIdentityFeatureVersions)
+      .where(eq(modelIdentityFeatureVersions.modelId, input.modelId));
+    await tx.delete(modelIdentityFeatures)
+      .where(eq(modelIdentityFeatures.modelId, input.modelId));
+    if (candidateIds.length > 0) {
+      await tx.delete(castingEvidenceCandidateAttempts)
+        .where(inArray(castingEvidenceCandidateAttempts.candidateId, candidateIds));
+    }
+    await tx.delete(castingEvidenceCandidates)
+      .where(eq(castingEvidenceCandidates.modelId, input.modelId));
+    await tx.delete(modelIdentityFeatureIntents)
+      .where(eq(modelIdentityFeatureIntents.modelId, input.modelId));
     await tx.delete(modelEvidenceCrops).where(and(
       eq(modelEvidenceCrops.modelId, input.modelId),
       eq(modelEvidenceCrops.userId, input.userId),
@@ -842,12 +918,17 @@ export async function executeFinalCastDeletion(input: {
     }).where(and(
       eq(models.id, input.modelId),
       eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ));
     if (affectedRows(tombstoned) !== 1) throw new Error("Deletion lost the model tombstone race");
 
     const counts: FinalCastDeletionCounts = {
+      evidenceCandidates: evidenceCandidates.length,
+      evidenceCandidateAttempts: evidenceCandidateAttempts.length,
+      featureIntents: featureIntents.length,
+      identityFeatures: identityFeatures.length,
+      identityFeatureVersions: identityFeatureVersions.length,
+      snapshotFeatureSelections: snapshotFeatureSelections.length,
       evidenceIngestions: evidenceIngestions.length,
       referencePlates: referencePlates.length,
       evidenceCrops: evidenceCrops.length,

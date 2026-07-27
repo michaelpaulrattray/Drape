@@ -8,7 +8,7 @@
  */
 import { createHash, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   generationOperationLocks,
   generationOperations,
@@ -33,6 +33,7 @@ import {
   type MintTier,
 } from "../../shared/boardTypes";
 import { withTransaction, type TransactionHandle } from "../db/connection";
+import { availableModelWhere } from "./modelAvailability";
 import { buildIdentityAnchor } from "./geminiClient";
 import { stableCanonicalJson, type GenerationOperationKind } from "./operationContract";
 import { prepareRestoreSlotTransition } from "./restoreSlotTransition";
@@ -156,8 +157,7 @@ async function lockedOwnedModelIn(
     .where(and(
       eq(models.id, input.modelId),
       eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ))
     .limit(1)
     .for("update");
@@ -421,8 +421,7 @@ export async function commitModelSnapshotTransition<Result>(input: {
       .where(and(
         eq(models.id, input.modelId),
         eq(models.userId, input.userId),
-        isNull(models.deletedAt),
-        ne(models.status, "archived"),
+        availableModelWhere(),
       ))
       .limit(1);
     if (!postModel) throw new Error("Model is no longer available");
@@ -629,8 +628,7 @@ export async function commitModelSnapshotTransition<Result>(input: {
       .where(and(
         eq(models.id, input.modelId),
         eq(models.userId, input.userId),
-        isNull(models.deletedAt),
-        ne(models.status, "archived"),
+        availableModelWhere(),
         eq(models.stateVersion, model.stateVersion),
         sql`${models.currentPackageSnapshotId} <=> ${model.currentPackageSnapshotId}`,
       ));

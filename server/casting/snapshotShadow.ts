@@ -7,7 +7,7 @@
  */
 import { createHash } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray, isNull, ne, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, type SQL } from "drizzle-orm";
 import {
   modelAssets,
   modelIdentitySnapshots,
@@ -25,6 +25,7 @@ import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { withTransaction, type TransactionHandle } from "../db/connection";
 import { deriveBootstrapState } from "./snapshotBootstrap";
 import { stableCanonicalJson } from "./operationContract";
+import { availableModelWhere } from "./modelAvailability";
 import {
   compareSnapshotConsumers,
   type SnapshotConsumerShadow,
@@ -450,8 +451,7 @@ export async function readSnapshotShadowStateIn(
     .where(and(
       eq(models.id, input.modelId),
       eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ))
     .limit(1);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -553,8 +553,7 @@ export async function compareSnapshotShadowCohort(input: {
   }
   return withTransaction(async (tx) => {
     const filters: SQL[] = [
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ];
     if (input.userId !== undefined) filters.push(eq(models.userId, input.userId));
     if (modelIds.length > 0) filters.push(inArray(models.id, modelIds));

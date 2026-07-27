@@ -23,6 +23,7 @@ export interface PlannedReferencePlate {
   userId: number;
   modelId: number;
   operationId: string;
+  stepKey: string;
   ingestionId: string;
   plateId: string;
   storageKey: string;
@@ -75,12 +76,16 @@ export async function stageCanonicalReferencePlate(
     userId: number;
     modelId: number;
     operationId: string;
+    stepKey: string;
     image: CanonicalEvidenceImage;
   },
 ): Promise<StagedReferencePlate> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
   assertUuid(input.operationId, "operationId");
+  if (!/^[a-z][a-z0-9_-]{0,63}$/.test(input.stepKey)) {
+    throw new TypeError("stepKey must be a closed operation step");
+  }
   await assertCanonicalEvidenceImage(input.image);
   const generateId = dependencies.generateId ?? randomUUID;
   const ingestionId = generateId();
@@ -100,6 +105,7 @@ export async function stageCanonicalReferencePlate(
     userId: input.userId,
     modelId: input.modelId,
     operationId: input.operationId,
+    stepKey: input.stepKey,
     ingestionId,
     plateId,
     storageKey,

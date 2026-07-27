@@ -161,6 +161,7 @@ export async function stageOwnedReferencePlate(
       userId: input.userId,
       modelId: input.modelId,
       operationId: gate.operationId,
+      stepKey: "reference",
       ingestionId: generateId(),
       plateId: generateId(),
       image,

@@ -17,7 +17,7 @@
  * If anything fails, the transaction rolls back — no partial identity state
  * survives (§8.6 step 9). Credit consequences belong to the caller (M20).
  */
-import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { models, modelAssets } from "../../../drizzle/schema";
 import { withTransaction, type TransactionHandle } from "../../db/connection";
 import { buildIdentityAnchor } from "../geminiClient";
@@ -28,6 +28,7 @@ import {
   type AuthorizedIdentityPatch,
   type TechnicalSchema,
 } from "./identityTypes";
+import { availableModelWhere } from "../modelAvailability";
 
 function affectedRows(result: unknown): number {
   const header = result as { affectedRows?: number } | [{ affectedRows?: number }];
@@ -282,7 +283,7 @@ export async function commitAnchorReRoll(input: {
     const updated = await tx
       .update(models)
       .set({ identityRevisionId: revisionId })
-      .where(and(eq(models.id, input.modelId), isNull(models.deletedAt), ne(models.status, "archived")));
+      .where(and(eq(models.id, input.modelId), availableModelWhere()));
     if (affectedRows(updated) !== 1) throw new Error("Model is no longer available");
     if (staleIds.length > 0) {
       await tx
@@ -318,7 +319,7 @@ export async function commitIdentityEdit(input: IdentityCommitInput): Promise<Id
         preferences: computed.preferences,
         identityRevisionId: revisionId,
       })
-      .where(and(eq(models.id, input.model.id), isNull(models.deletedAt), ne(models.status, "archived")));
+      .where(and(eq(models.id, input.model.id), availableModelWhere()));
     if (affectedRows(updated) !== 1) throw new Error("Model is no longer available");
 
     const [inserted] = await tx

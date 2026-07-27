@@ -7,7 +7,7 @@
  * idempotent bootstrap transaction, then proves parity over the same frozen
  * model-id cohort.
  */
-import { and, eq, inArray, isNull, ne, type SQL } from "drizzle-orm";
+import { and, eq, inArray, type SQL } from "drizzle-orm";
 import { generationOperationLocks, models } from "../../drizzle/schema";
 import { withTransaction } from "../db/connection";
 import {
@@ -24,6 +24,7 @@ import {
   summarizeSnapshotShadowReports,
   type SnapshotShadowAuditSummary,
 } from "./snapshotShadowAudit";
+import { availableModelWhere } from "./modelAvailability";
 
 export interface SnapshotConvergenceSelector {
   userId?: number;
@@ -82,8 +83,7 @@ async function listSubjectsAndActiveOperations(
 }> {
   return withTransaction(async (tx) => {
     const filters: SQL[] = [
-      isNull(models.deletedAt),
-      ne(models.status, "archived"),
+      availableModelWhere(),
     ];
     if (input.userId !== undefined) filters.push(eq(models.userId, input.userId));
     if (input.modelIds.length > 0) filters.push(inArray(models.id, input.modelIds));

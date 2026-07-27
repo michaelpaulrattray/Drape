@@ -8,6 +8,7 @@
 import { and, asc, eq, inArray, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import {
   castingEvidenceIngestions,
+  generationOperations,
   storageCleanupBatches,
   storageCleanupItems,
   type StorageCleanupBatch,
@@ -109,6 +110,15 @@ export async function claimNextStorageCleanupBatch(input: {
             eq(storageCleanupItems.storageBackend, "private_evidence_r2"),
           )),
       );
+    const inFlightOperationFence = () => notExists(
+      tx
+        .select({ one: sql`1` })
+        .from(generationOperations)
+        .where(and(
+          eq(generationOperations.id, storageCleanupBatches.operationId),
+          inArray(generationOperations.status, ["claimed", "running"]),
+        )),
+    );
     const [batch] = await tx
       .select()
       .from(storageCleanupBatches)
@@ -126,6 +136,10 @@ export async function claimNextStorageCleanupBatch(input: {
         // Without the private adapter, keep private and mixed batches wholly
         // pending without attempt burn or wrong-bucket false success.
         privateEvidenceFence(),
+        // A Fork commits cleanup authority before it starts copying. Keep that
+        // manifest held at the durable claim boundary until the owning
+        // operation succeeds, fails, or becomes recovery-required.
+        inFlightOperationFence(),
       ))
       .orderBy(asc(storageCleanupBatches.createdAt))
       .limit(1)
@@ -153,6 +167,7 @@ export async function claimNextStorageCleanupBatch(input: {
           ),
         ),
         privateEvidenceFence(),
+        inFlightOperationFence(),
       ));
     if (affectedRows(claimed) !== 1) return null;
     await tx

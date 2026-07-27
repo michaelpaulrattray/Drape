@@ -27,10 +27,16 @@ import {
   creditTransactions,
   models,
   modelAssets,
+  castingEvidenceCandidateAttempts,
+  castingEvidenceCandidates,
   castingEvidenceIngestions,
   modelEvidenceCrops,
   modelReferencePlates,
   modelIdentitySnapshots,
+  modelIdentityFeatureIntents,
+  modelIdentityFeatures,
+  modelIdentityFeatureVersions,
+  modelSnapshotFeatureSelections,
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
   generations,
@@ -54,6 +60,7 @@ import { classifyStorageReference, parseJsonValue } from "../casting/deletionAud
 import type { StorageCleanupManifestItem } from "../casting/storageCleanupContract";
 import { createModuleLogger } from "../logging/logger";
 import { assertOwnedEvidenceStorageKey } from "../casting/evidence/evidenceLifecycle";
+import { parseEvidenceStorageKey } from "../casting/evidence/evidenceDelivery";
 const log = createModuleLogger("db/accountDeletion");
 
 export interface DeletionResult {
@@ -73,6 +80,12 @@ export interface DeletionResult {
     wardrobeOutfits: number;
     wardrobeGarments: number;
     evidenceIngestions: number;
+    evidenceCandidates: number;
+    evidenceCandidateAttempts: number;
+    featureIntents: number;
+    identityFeatures: number;
+    identityFeatureVersions: number;
+    snapshotFeatureSelections: number;
     referencePlates: number;
     evidenceCrops: number;
     modelPackageSnapshotSlots: number;
@@ -147,6 +160,23 @@ export async function collectAccountOwnedStorageItemsIn(
         inArray(castingEvidenceIngestions.modelId, modelIds),
       )
       : eq(castingEvidenceIngestions.userId, userId));
+  const candidateAttempts = await tx
+    .select({
+      attempt: castingEvidenceCandidateAttempts,
+      ownerId: castingEvidenceCandidates.userId,
+      modelId: castingEvidenceCandidates.modelId,
+    })
+    .from(castingEvidenceCandidateAttempts)
+    .innerJoin(
+      castingEvidenceCandidates,
+      eq(castingEvidenceCandidates.id, castingEvidenceCandidateAttempts.candidateId),
+    )
+    .where(modelIds.length > 0
+      ? or(
+        eq(castingEvidenceCandidates.userId, userId),
+        inArray(castingEvidenceCandidates.modelId, modelIds),
+      )
+      : eq(castingEvidenceCandidates.userId, userId));
   const referencePlates = await tx
     .select()
     .from(modelReferencePlates)
@@ -176,6 +206,26 @@ export async function collectAccountOwnedStorageItemsIn(
       purpose: receipt.purpose,
     });
     privateEvidenceKeys.add(receipt.storageKey);
+  }
+  for (const row of candidateAttempts) {
+    if (row.ownerId !== userId) {
+      throw new Error("Evidence candidate ownership disagrees with the deleting account");
+    }
+    if (row.attempt.privateStorageKey) {
+      const parsed = parseEvidenceStorageKey(row.attempt.privateStorageKey);
+      if (
+        parsed.userId !== userId
+        || parsed.modelId !== row.modelId
+        || parsed.kind !== "candidate"
+        || parsed.entityId !== row.attempt.privatePlateId
+      ) {
+        throw new Error("Evidence candidate key ownership is invalid");
+      }
+      privateEvidenceKeys.add(row.attempt.privateStorageKey);
+    }
+    if (row.attempt.promotedPublicStorageKey) {
+      publicKeys.add(row.attempt.promotedPublicStorageKey);
+    }
   }
   for (const plate of referencePlates) {
     if (plate.userId !== userId) {
@@ -278,7 +328,9 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         changeRequestAttachments: 0, changeRequests: 0, referrals: 0,
         boardEdges: 0, boardItemVersions: 0, boardItems: 0, boards: 0,
         wardrobeLooks: 0, wardrobeSessions: 0, wardrobeOutfits: 0, wardrobeGarments: 0,
-        evidenceIngestions: 0, referencePlates: 0, evidenceCrops: 0,
+        evidenceIngestions: 0, evidenceCandidates: 0, evidenceCandidateAttempts: 0,
+        featureIntents: 0, identityFeatures: 0, identityFeatureVersions: 0,
+        snapshotFeatureSelections: 0, referencePlates: 0, evidenceCrops: 0,
         modelPackageSnapshotSlots: 0, modelPackageSnapshots: 0, modelIdentitySnapshots: 0,
         modelAssets: 0, models: 0, generations: 0,
         creditTransactions: 0, credits: 0, auditLogsAnonymized: 0, user: 0,
@@ -300,6 +352,12 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
     wardrobeOutfits: 0,
     wardrobeGarments: 0,
     evidenceIngestions: 0,
+    evidenceCandidates: 0,
+    evidenceCandidateAttempts: 0,
+    featureIntents: 0,
+    identityFeatures: 0,
+    identityFeatureVersions: 0,
+    snapshotFeatureSelections: 0,
     referencePlates: 0,
     evidenceCrops: 0,
     modelPackageSnapshotSlots: 0,
@@ -415,6 +473,35 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .select({ id: models.id })
         .from(models)
         .where(eq(models.userId, userId));
+      const modelIds = userModels.map((model) => model.id);
+
+      const candidateRows = await tx
+        .select({ id: castingEvidenceCandidates.id })
+        .from(castingEvidenceCandidates)
+        .where(eq(castingEvidenceCandidates.userId, userId));
+      const candidateIds = candidateRows.map((candidate) => candidate.id);
+      if (modelIds.length > 0) {
+        const selectionResult = await tx.delete(modelSnapshotFeatureSelections)
+          .where(inArray(modelSnapshotFeatureSelections.modelId, modelIds));
+        counts.snapshotFeatureSelections = (selectionResult as any)[0]?.affectedRows ?? 0;
+        const versionResult = await tx.delete(modelIdentityFeatureVersions)
+          .where(inArray(modelIdentityFeatureVersions.modelId, modelIds));
+        counts.identityFeatureVersions = (versionResult as any)[0]?.affectedRows ?? 0;
+        const featureResult = await tx.delete(modelIdentityFeatures)
+          .where(inArray(modelIdentityFeatures.modelId, modelIds));
+        counts.identityFeatures = (featureResult as any)[0]?.affectedRows ?? 0;
+      }
+      if (candidateIds.length > 0) {
+        const attemptResult = await tx.delete(castingEvidenceCandidateAttempts)
+          .where(inArray(castingEvidenceCandidateAttempts.candidateId, candidateIds));
+        counts.evidenceCandidateAttempts = (attemptResult as any)[0]?.affectedRows ?? 0;
+      }
+      const candidateResult = await tx.delete(castingEvidenceCandidates)
+        .where(eq(castingEvidenceCandidates.userId, userId));
+      counts.evidenceCandidates = (candidateResult as any)[0]?.affectedRows ?? 0;
+      const intentResult = await tx.delete(modelIdentityFeatureIntents)
+        .where(eq(modelIdentityFeatureIntents.userId, userId));
+      counts.featureIntents = (intentResult as any)[0]?.affectedRows ?? 0;
 
       const cropResult = await tx
         .delete(modelEvidenceCrops)
@@ -430,7 +517,6 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       counts.evidenceIngestions = (ingestionResult as any)[0]?.affectedRows ?? 0;
 
       if (userModels.length > 0) {
-        const modelIds = userModels.map((m: { id: number }) => m.id);
         const packageRows = await tx
           .select({ id: modelPackageSnapshots.id })
           .from(modelPackageSnapshots)
