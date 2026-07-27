@@ -11,14 +11,16 @@ import {
   modelSnapshotFeatureSelections,
   models,
   storageCleanupBatches,
+  storageCleanupItems,
 } from "../../drizzle/schema";
 import { INK_ADD_CAPABILITY_KEY } from "../casting/evidence/evidenceCandidateContract";
 import { parseEvidenceStorageKey } from "../casting/evidence/evidenceDelivery";
+import { parseInkCandidatePublicStorageKey } from "../casting/evidence/inkCandidatePublicStorage";
 import { INK_ADD_TARGET_VIEW } from "../casting/evidence/composer/inkAddRecipe";
 import { availableModelWhere } from "../casting/modelAvailability";
 import { modelOperationLockKey } from "../casting/operationContract";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
-import { getDb, withTransaction } from "./connection";
+import { getDb, withTransaction, type TransactionHandle } from "./connection";
 
 export const INK_ACCEPT_PUBLIC_MESSAGE =
   "The tattoo preview could not be accepted. Your Cast was not changed.";
@@ -70,6 +72,83 @@ function affectedRows(result: unknown): number {
     return Number((result[0] as { affectedRows?: unknown } | undefined)?.affectedRows ?? 0);
   }
   return Number((result as { affectedRows?: unknown })?.affectedRows ?? 0);
+}
+
+async function reusableReservedPublicKeyIn(
+  tx: TransactionHandle,
+  input: {
+    key: string;
+    userId: number;
+    modelId: number;
+    candidateId: string;
+  },
+): Promise<string> {
+  let parsed;
+  try {
+    parsed = parseInkCandidatePublicStorageKey(input.key);
+  } catch {
+    throw new InkAcceptanceStateError("public_key_changed");
+  }
+  if (
+    parsed.userId !== input.userId
+    || parsed.modelId !== input.modelId
+    || parsed.candidateId !== input.candidateId
+  ) {
+    throw new InkAcceptanceStateError("public_key_changed");
+  }
+  const [failedReservationOwner] = await tx
+    .select({ id: generationOperations.id })
+    .from(generationOperations)
+    .where(and(
+      eq(generationOperations.id, parsed.operationId),
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.modelId, input.modelId),
+      eq(generationOperations.kind, "evidence_candidate_accept"),
+      eq(generationOperations.status, "failed"),
+    ))
+    .limit(1)
+    .for("update");
+  if (!failedReservationOwner) {
+    throw new InkAcceptanceStateError("public_key_changed");
+  }
+  const [unsettledItem] = await tx
+    .select({ id: storageCleanupItems.id })
+    .from(storageCleanupItems)
+    .where(and(
+      eq(storageCleanupItems.storageBackend, "public_r2"),
+      eq(storageCleanupItems.storageKey, input.key),
+    ))
+    .limit(1)
+    .for("update");
+  if (unsettledItem) {
+    throw new InkAcceptanceStateError("public_key_changed");
+  }
+  const [cleanup] = await tx
+    .select({
+      status: storageCleanupBatches.status,
+      expectedCount: storageCleanupBatches.expectedCount,
+      deletedCount: storageCleanupBatches.deletedCount,
+      failedCount: storageCleanupBatches.failedCount,
+    })
+    .from(storageCleanupBatches)
+    .where(and(
+      eq(storageCleanupBatches.operationId, parsed.operationId),
+      eq(storageCleanupBatches.userId, input.userId),
+      eq(storageCleanupBatches.kind, "candidate_cleanup"),
+    ))
+    .limit(1)
+    .for("update");
+  if (
+    cleanup
+    && (
+      cleanup.status !== "succeeded"
+      || cleanup.expectedCount !== cleanup.deletedCount
+      || cleanup.failedCount !== 0
+    )
+  ) {
+    throw new InkAcceptanceStateError("public_key_changed");
+  }
+  return input.key;
 }
 
 export async function findOwnedInkCandidateClaimSubject(input: {
@@ -247,11 +326,17 @@ export async function prepareInkCandidateAcceptance(input: {
     if (selectedFeature) {
       throw new InkAcceptanceStateError("feature_already_selected");
     }
+    let publicStorageKey = input.publicStorageKey;
     if (
       attempt.promotedPublicStorageKey
       && attempt.promotedPublicStorageKey !== input.publicStorageKey
     ) {
-      throw new InkAcceptanceStateError("public_key_changed");
+      publicStorageKey = await reusableReservedPublicKeyIn(tx, {
+        key: attempt.promotedPublicStorageKey,
+        userId: input.userId,
+        modelId: input.modelId,
+        candidateId: candidate.id,
+      });
     }
     if (!attempt.promotedPublicStorageKey) {
       const reserved = await tx
@@ -290,7 +375,7 @@ export async function prepareInkCandidateAcceptance(input: {
       contentHash: attempt.contentHash,
       width: attempt.width,
       height: attempt.height,
-      publicStorageKey: input.publicStorageKey,
+      publicStorageKey,
       expectedStateVersion: candidate.expectedStateVersion,
       identitySnapshotId: candidate.identitySnapshotId,
       packageSnapshotId: candidate.packageSnapshotId,

@@ -27,6 +27,7 @@ import {
   type InkCandidateAcceptedResult,
 } from "./inkAcceptanceCommit";
 import { captureEvidenceComposerEnabled } from "./evidenceComposerScope";
+import { inkCandidatePublicStorageKey } from "./inkCandidatePublicStorage";
 
 const ACCEPT_FAILURE =
   "The tattoo preview could not be accepted. Your Cast was not changed.";
@@ -47,15 +48,6 @@ export interface InkCandidateAcceptanceDependencies {
   queueCleanup?: typeof queueUnacceptedPublicCopyCleanup;
   completeFailure?: typeof completeDirectOperationFailure;
   requireRecovery?: typeof requireDirectOperationRecovery;
-}
-
-function publicStorageKey(input: {
-  userId: number;
-  modelId: number;
-  candidateId: string;
-  operationId: string;
-}): string {
-  return `users/${input.userId}/models/${input.modelId}/generated/ink/${input.candidateId}/${input.operationId}.webp`;
 }
 
 function closedAcceptedResult(value: unknown): InkCandidateAcceptedResult {
@@ -174,7 +166,7 @@ export async function acceptInkAddCandidate(
       phase: "saving",
       heartbeat: false,
     });
-    const destination = publicStorageKey({
+    const destination = inkCandidatePublicStorageKey({
       userId: input.userId,
       modelId: subject.modelId,
       candidateId: input.candidateId,

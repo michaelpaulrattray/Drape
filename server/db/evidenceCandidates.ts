@@ -7,6 +7,7 @@ import {
   isNotNull,
   isNull,
   lte,
+  notExists,
 } from "drizzle-orm";
 import {
   castingEvidenceCandidateAttempts,
@@ -407,5 +408,62 @@ export async function settleNextCompletedCandidateCleanup(): Promise<{
       throw new Error("Candidate cleanup scrubbing lost its state race");
     }
     return { candidateId: row.candidate.id, cleanupBatchId: row.batchId };
+  });
+}
+
+/**
+ * Cancel can resolve an intent before any candidate was generated. In that
+ * case there is no candidate row to drive the ordinary reconciler, so the
+ * successful operation-owned cleanup batch is the exact scrub authority.
+ */
+export async function settleNextCompletedIntentOnlyCleanup(): Promise<{
+  intentId: string;
+  cleanupBatchId: string;
+} | null> {
+  return withTransaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        intentId: modelIdentityFeatureIntents.id,
+        batchId: storageCleanupBatches.id,
+      })
+      .from(modelIdentityFeatureIntents)
+      .innerJoin(
+        storageCleanupBatches,
+        eq(
+          storageCleanupBatches.operationId,
+          modelIdentityFeatureIntents.resolvedByOperationId,
+        ),
+      )
+      .where(and(
+        eq(modelIdentityFeatureIntents.status, "cancelled"),
+        isNotNull(modelIdentityFeatureIntents.normalizedDescriptor),
+        eq(storageCleanupBatches.kind, "candidate_cleanup"),
+        eq(storageCleanupBatches.status, "succeeded"),
+        notExists(
+          tx
+            .select({ id: castingEvidenceCandidates.id })
+            .from(castingEvidenceCandidates)
+            .where(eq(
+              castingEvidenceCandidates.intentId,
+              modelIdentityFeatureIntents.id,
+            )),
+        ),
+      ))
+      .orderBy(asc(modelIdentityFeatureIntents.resolvedAt))
+      .limit(1)
+      .for("update");
+    if (!row) return null;
+    const scrubbed = await tx
+      .update(modelIdentityFeatureIntents)
+      .set({ normalizedDescriptor: null })
+      .where(and(
+        eq(modelIdentityFeatureIntents.id, row.intentId),
+        eq(modelIdentityFeatureIntents.status, "cancelled"),
+        isNotNull(modelIdentityFeatureIntents.normalizedDescriptor),
+      ));
+    if (affectedRows(scrubbed) !== 1) {
+      throw new Error("Intent-only candidate cleanup scrubbing lost its state race");
+    }
+    return { intentId: row.intentId, cleanupBatchId: row.batchId };
   });
 }

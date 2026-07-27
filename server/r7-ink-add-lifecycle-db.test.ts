@@ -43,8 +43,14 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./db/inkAddCandidates").findActiveOwnedInkCandidate;
   let prepareInkCandidateAcceptance:
     typeof import("./db/inkAddAcceptance").prepareInkCandidateAcceptance;
+  let queueUnacceptedPublicCopyCleanup:
+    typeof import("./db/inkAddAcceptance").queueUnacceptedPublicCopyCleanup;
   let commitInkCandidateAcceptance:
     typeof import("./casting/evidence/inkAcceptanceCommit").commitInkCandidateAcceptance;
+  let cancelInkAddIntent:
+    typeof import("./casting/evidence/inkIntentCancellation").cancelInkAddIntent;
+  let settleNextCompletedIntentOnlyCleanup:
+    typeof import("./db/evidenceCandidates").settleNextCompletedIntentOnlyCleanup;
   let getUserDailyGenerationCount:
     typeof import("./db/dailyQuota").getUserDailyGenerationCount;
   let readOwnedEvidenceDelivery:
@@ -85,9 +91,18 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       invalidateInkCandidate,
       findActiveOwnedInkCandidate,
     } = await import("./db/inkAddCandidates"));
-    ({ prepareInkCandidateAcceptance } = await import("./db/inkAddAcceptance"));
+    ({
+      prepareInkCandidateAcceptance,
+      queueUnacceptedPublicCopyCleanup,
+    } = await import("./db/inkAddAcceptance"));
     ({ commitInkCandidateAcceptance } = await import(
       "./casting/evidence/inkAcceptanceCommit"
+    ));
+    ({ cancelInkAddIntent } = await import(
+      "./casting/evidence/inkIntentCancellation"
+    ));
+    ({ settleNextCompletedIntentOnlyCleanup } = await import(
+      "./db/evidenceCandidates"
     ));
     ({ getUserDailyGenerationCount } = await import("./db/dailyQuota"));
     ({ readOwnedEvidenceDelivery } = await import("./db/evidenceDelivery"));
@@ -339,6 +354,51 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       deleteExact: vi.fn(),
       listCanonicalKeys: vi.fn(),
     } as PrivateEvidenceStorageAdapter;
+  }
+
+  async function readyInkCandidate(
+    source: Awaited<ReturnType<typeof fixture>>,
+  ) {
+    const intentId = await pendingInkIntent(source);
+    const operationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    const candidate = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId,
+      operationKind: "evidence_candidate_generate",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    await markInkCandidateAttemptGenerating(candidate);
+    await markInkCandidateAttemptStored({
+      prepared: candidate,
+      image: {
+        mime: "image/webp",
+        width: 512,
+        height: 768,
+        byteSize: webp.length,
+        contentHash: webpHash,
+      },
+    });
+    await completeInkCandidateReady({
+      prepared: candidate,
+      probe: passCandidateProbe(),
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+    await connection.execute(
+      "DELETE FROM generation_operation_locks WHERE operationId = ?",
+      [operationId],
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET status = 'succeeded', chargedCredits = 350, completedAt = NOW() WHERE id = ?",
+      [operationId],
+    );
+    return { intentId, candidate };
   }
 
   it("publishes a free independent Fork only after every object and graph copy verifies", async () => {
@@ -929,6 +989,216 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       chargedCredits: 0,
       refundedCredits: 0,
       lockOwner: null,
+    });
+  }, 90_000);
+
+  it("refuses Accept retry until its public copy is deleted, then safely reuses the reserved key", async () => {
+    const source = await fixture({ status: "draft" });
+    const { candidate } = await readyInkCandidate(source);
+    const firstOperationId = await runningAcceptOperation(source);
+    const firstPublicKey =
+      `users/${source.userId}/models/${source.modelId}/generated/ink/${candidate.candidateId}/${firstOperationId}.webp`;
+    await expect(prepareInkCandidateAcceptance({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: firstOperationId,
+      candidateId: candidate.candidateId,
+      publicStorageKey: firstPublicKey,
+    })).resolves.toMatchObject({ publicStorageKey: firstPublicKey });
+    await queueUnacceptedPublicCopyCleanup({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: firstOperationId,
+      publicStorageKey: firstPublicKey,
+    });
+    await connection.execute(
+      "DELETE FROM generation_operation_locks WHERE operationId = ?",
+      [firstOperationId],
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET status = 'failed', publicMessage = 'accept_failed', completedAt = NOW() WHERE id = ?",
+      [firstOperationId],
+    );
+
+    const blockedOperationId = await runningAcceptOperation(source);
+    const blockedPublicKey =
+      `users/${source.userId}/models/${source.modelId}/generated/ink/${candidate.candidateId}/${blockedOperationId}.webp`;
+    await expect(prepareInkCandidateAcceptance({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: blockedOperationId,
+      candidateId: candidate.candidateId,
+      publicStorageKey: blockedPublicKey,
+    })).rejects.toMatchObject({ code: "public_key_changed" });
+    await connection.execute(
+      "DELETE FROM generation_operation_locks WHERE operationId = ?",
+      [blockedOperationId],
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET status = 'failed', publicMessage = 'accept_failed', completedAt = NOW() WHERE id = ?",
+      [blockedOperationId],
+    );
+
+    const deletedKeys: string[] = [];
+    await expect(processNextStorageCleanupBatch({
+      deleteObject: async (storageKey) => {
+        deletedKeys.push(storageKey);
+        return { success: true };
+      },
+      deletePrivateObject: async () => ({ success: true }),
+    })).resolves.toMatchObject({
+      claimed: true,
+      deleted: 1,
+      failed: 0,
+      status: "succeeded",
+    });
+    expect(deletedKeys).toEqual([firstPublicKey]);
+
+    const retryOperationId = await runningAcceptOperation(source);
+    const freshPublicKey =
+      `users/${source.userId}/models/${source.modelId}/generated/ink/${candidate.candidateId}/${retryOperationId}.webp`;
+    await expect(prepareInkCandidateAcceptance({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: retryOperationId,
+      candidateId: candidate.candidateId,
+      publicStorageKey: freshPublicKey,
+    })).resolves.toMatchObject({
+      operationId: retryOperationId,
+      publicStorageKey: firstPublicKey,
+    });
+    const [[attempt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, promotedPublicStorageKey FROM casting_evidence_candidate_attempts WHERE id = ?",
+      [candidate.attemptId],
+    );
+    expect(attempt).toEqual({
+      status: "probe_passed",
+      promotedPublicStorageKey: firstPublicKey,
+    });
+  }, 90_000);
+
+  it("cancels an intent without a candidate for free and scrubs it only after cleanup succeeds", async () => {
+    const source = await fixture({ status: "draft" });
+    const intentId = await pendingInkIntent(source);
+    const requestId = randomUUID();
+
+    await expect(cancelInkAddIntent({
+      enabledForUser: () => true,
+    }, {
+      userId: source.userId,
+      intentId,
+      clientRequestId: requestId,
+    })).resolves.toEqual({
+      intentId,
+      candidateId: null,
+      status: "cancelled",
+      cleanupObjects: 0,
+      chargedCredits: 0,
+    });
+    const [[state]] = await connection.query<RowDataPacket[]>(
+      "SELECT m.stateVersion, m.currentPackageSnapshotId, i.status AS intentStatus, i.activeCapabilityKey, i.normalizedDescriptor, o.status AS operationStatus, o.plannedCredits, o.chargedCredits, o.refundedCredits, l.operationId AS lockOwner, b.status AS cleanupStatus, b.expectedCount FROM models m JOIN model_identity_feature_intents i ON i.modelId = m.id JOIN generation_operations o ON o.id = i.resolvedByOperationId LEFT JOIN generation_operation_locks l ON l.operationId = o.id JOIN storage_cleanup_batches b ON b.operationId = o.id WHERE i.id = ?",
+      [intentId],
+    );
+    expect(state).toMatchObject({
+      stateVersion: 1,
+      currentPackageSnapshotId: source.packageId,
+      intentStatus: "cancelled",
+      activeCapabilityKey: null,
+      normalizedDescriptor: "small black geometric sun",
+      operationStatus: "succeeded",
+      plannedCredits: 0,
+      chargedCredits: 0,
+      refundedCredits: 0,
+      lockOwner: null,
+      cleanupStatus: "pending",
+      expectedCount: 0,
+    });
+    await expect(cancelInkAddIntent({
+      enabledForUser: () => true,
+    }, {
+      userId: source.userId,
+      intentId,
+      clientRequestId: requestId,
+    })).resolves.toMatchObject({ status: "cancelled", chargedCredits: 0 });
+    await expect(processNextStorageCleanupBatch({
+      deleteObject: async () => ({ success: true }),
+      deletePrivateObject: async () => ({ success: true }),
+    })).resolves.toMatchObject({
+      claimed: true,
+      deleted: 0,
+      failed: 0,
+      status: "succeeded",
+    });
+    await expect(settleNextCompletedIntentOnlyCleanup()).resolves.toEqual({
+      intentId,
+      cleanupBatchId: expect.any(String),
+    });
+    const [[scrubbed]] = await connection.query<RowDataPacket[]>(
+      "SELECT normalizedDescriptor FROM model_identity_feature_intents WHERE id = ?",
+      [intentId],
+    );
+    expect(scrubbed.normalizedDescriptor).toBeNull();
+  }, 90_000);
+
+  it("cancels a ready candidate atomically and deletes its private attempt without changing the Cast", async () => {
+    const source = await fixture({ status: "draft" });
+    const { intentId, candidate } = await readyInkCandidate(source);
+    const deletedPrivateKeys: string[] = [];
+
+    await expect(cancelInkAddIntent({
+      enabledForUser: () => true,
+    }, {
+      userId: source.userId,
+      intentId,
+      clientRequestId: randomUUID(),
+    })).resolves.toEqual({
+      intentId,
+      candidateId: candidate.candidateId,
+      status: "cancelled",
+      cleanupObjects: 1,
+      chargedCredits: 0,
+    });
+    const [[state]] = await connection.query<RowDataPacket[]>(
+      "SELECT m.stateVersion, m.currentPackageSnapshotId, c.status AS candidateStatus, c.activeSlot, a.status AS attemptStatus, a.cleanupBatchId, i.status AS intentStatus, i.activeCapabilityKey FROM models m JOIN model_identity_feature_intents i ON i.modelId = m.id JOIN casting_evidence_candidates c ON c.intentId = i.id JOIN casting_evidence_candidate_attempts a ON a.candidateId = c.id WHERE i.id = ?",
+      [intentId],
+    );
+    expect(state).toMatchObject({
+      stateVersion: 1,
+      currentPackageSnapshotId: source.packageId,
+      candidateStatus: "cancelled",
+      activeSlot: null,
+      attemptStatus: "cleanup_pending",
+      cleanupBatchId: expect.any(String),
+      intentStatus: "cancelled",
+      activeCapabilityKey: null,
+    });
+    await expect(processNextStorageCleanupBatch({
+      deleteObject: async () => ({ success: true }),
+      deletePrivateObject: async (storageKey) => {
+        deletedPrivateKeys.push(storageKey);
+        return { success: true };
+      },
+    })).resolves.toMatchObject({
+      claimed: true,
+      deleted: 1,
+      failed: 0,
+      status: "succeeded",
+    });
+    expect(deletedPrivateKeys).toEqual([candidate.privateStorageKey]);
+    await expect(settleNextCompletedCandidateCleanup()).resolves.toEqual({
+      candidateId: candidate.candidateId,
+      cleanupBatchId: state.cleanupBatchId,
+    });
+    const [[scrubbed]] = await connection.query<RowDataPacket[]>(
+      "SELECT i.normalizedDescriptor, a.status AS attemptStatus, a.privateStorageKey, a.contentHash, a.byteSize FROM model_identity_feature_intents i JOIN casting_evidence_candidate_attempts a ON a.candidateId = ? WHERE i.id = ?",
+      [candidate.candidateId, intentId],
+    );
+    expect(scrubbed).toEqual({
+      normalizedDescriptor: null,
+      attemptStatus: "cleaned",
+      privateStorageKey: null,
+      contentHash: null,
+      byteSize: null,
     });
   }, 90_000);
 

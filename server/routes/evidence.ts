@@ -32,6 +32,7 @@ import {
   retryInkAddCandidate,
 } from "../casting/evidence/inkCandidateGeneration";
 import { acceptInkAddCandidate } from "../casting/evidence/inkCandidateAcceptance";
+import { cancelInkAddIntent } from "../casting/evidence/inkIntentCancellation";
 
 const EVIDENCE_INGEST_LIMIT = {
   maxRequests: 10,
@@ -184,6 +185,20 @@ export const evidenceRouter = router({
         });
       }
       return acceptInkAddCandidate({ delivery }, {
+        userId: ctx.user.id,
+        ...input,
+      });
+    }),
+
+  cancelInkAddIntent: protectedProcedure
+    .input(z.object({
+      intentId: z.string().uuid(),
+      clientRequestId: z.string().uuid(),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireInkCapability(ctx.user.id);
+      enforceRateLimit(ctx.user.id);
+      return cancelInkAddIntent({}, {
         userId: ctx.user.id,
         ...input,
       });

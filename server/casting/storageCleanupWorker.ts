@@ -19,6 +19,7 @@ import { getConfiguredPrivateEvidenceStorageAdapter } from "./evidence/privateEv
 import {
   expireNextReadyEvidenceCandidate,
   settleNextCompletedCandidateCleanup,
+  settleNextCompletedIntentOnlyCleanup,
   settleNextCompletedSupersededAttemptCleanup,
 } from "../db/evidenceCandidates";
 import { settleNextCompletedEvidenceForkCleanup } from "./evidence/evidenceFork";
@@ -181,6 +182,7 @@ export function startStorageCleanupWorker(): void {
         await expireNextReadyEvidenceCandidate();
         await settleNextCompletedSupersededAttemptCleanup();
         await settleNextCompletedCandidateCleanup();
+        await settleNextCompletedIntentOnlyCleanup();
       }
       const result = await processNextStorageCleanupBatch();
       if (result.claimed) log.info(result, "[StorageCleanup] bounded batch processed");
@@ -189,6 +191,7 @@ export function startStorageCleanupWorker(): void {
       if (process.env.ENABLE_EVIDENCE_CANDIDATE_WORKER === "true") {
         await settleNextCompletedSupersededAttemptCleanup();
         await settleNextCompletedCandidateCleanup();
+        await settleNextCompletedIntentOnlyCleanup();
       }
       const health = await getStorageCleanupHealth();
       if (storageCleanupHealthRequiresAttention(health)) {

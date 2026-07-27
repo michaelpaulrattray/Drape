@@ -30,6 +30,7 @@ import {
   buildEvidenceCandidateStorageKey,
   parseEvidenceStorageKey,
 } from "../casting/evidence/evidenceDelivery";
+import { parseInkCandidatePublicStorageKey } from "../casting/evidence/inkCandidatePublicStorage";
 import { availableModelWhere } from "../casting/modelAvailability";
 import { modelOperationLockKey } from "../casting/operationContract";
 import { buildEffectiveCastState } from "../casting/effectiveCastState";
@@ -256,10 +257,13 @@ async function rejectReadyCandidateForRetryIn(
     .where(eq(castingEvidenceCandidateAttempts.candidateId, candidate.id))
     .orderBy(asc(castingEvidenceCandidateAttempts.attemptNumber))
     .for("update");
-  const storageItems = attempts
-    .filter((attempt) => attempt.privateStorageKey !== null)
-    .map((attempt) => {
-      const parsed = parseEvidenceStorageKey(attempt.privateStorageKey!);
+  const storageItems: Array<{
+    storageKey: string;
+    storageBackend: "private_evidence_r2" | "public_r2";
+  }> = [];
+  for (const attempt of attempts) {
+    if (attempt.privateStorageKey) {
+      const parsed = parseEvidenceStorageKey(attempt.privateStorageKey);
       if (
         parsed.userId !== input.userId
         || parsed.modelId !== input.modelId
@@ -268,11 +272,28 @@ async function rejectReadyCandidateForRetryIn(
       ) {
         throw new InkCandidateStateError("attempt_unavailable");
       }
-      return {
-        storageKey: attempt.privateStorageKey!,
-        storageBackend: "private_evidence_r2" as const,
-      };
-    });
+      storageItems.push({
+        storageKey: attempt.privateStorageKey,
+        storageBackend: "private_evidence_r2",
+      });
+    }
+    if (attempt.promotedPublicStorageKey) {
+      const parsed = parseInkCandidatePublicStorageKey(
+        attempt.promotedPublicStorageKey,
+      );
+      if (
+        parsed.userId !== input.userId
+        || parsed.modelId !== input.modelId
+        || parsed.candidateId !== candidate.id
+      ) {
+        throw new InkCandidateStateError("attempt_unavailable");
+      }
+      storageItems.push({
+        storageKey: attempt.promotedPublicStorageKey,
+        storageBackend: "public_r2",
+      });
+    }
+  }
   const manifest = await createStorageCleanupManifestIn(tx, {
     id: randomUUID(),
     userId: input.userId,

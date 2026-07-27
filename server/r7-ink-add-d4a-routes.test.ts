@@ -55,6 +55,10 @@ describe("R7-7D D4A closed route boundary", () => {
       candidateId: "66666666-6666-4666-8666-666666666666",
       clientRequestId: "77777777-7777-4777-8777-777777777777",
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(caller.evidence.cancelInkAddIntent({
+      intentId: "22222222-2222-4222-8222-222222222222",
+      clientRequestId: "88888888-8888-4888-8888-888888888888",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
   it("rejects forged authority and unknown placement at the strict wire", async () => {
@@ -90,6 +94,13 @@ describe("R7-7D D4A closed route boundary", () => {
       userId: 999,
       modelId: 4,
       publicStorageKey: "foreign/key.webp",
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.evidence.cancelInkAddIntent({
+      intentId: "22222222-2222-4222-8222-222222222222",
+      clientRequestId: "88888888-8888-4888-8888-888888888888",
+      userId: 999,
+      modelId: 4,
+      cleanupBatchId: "99999999-9999-4999-8999-999999999999",
     } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 });
