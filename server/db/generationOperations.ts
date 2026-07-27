@@ -1596,3 +1596,33 @@ export async function getGenerationOperationOutcomeByRequest(input: {
     .limit(1);
   return operation ? outcomeFromExisting(operation) : null;
 }
+
+
+/**
+ * Read-only replay preflight that preserves the same payload-conflict law as
+ * claimGenerationOperation. This is used when a terminal replay must be
+ * returned before the mutable subject is inspected again.
+ */
+export async function getGenerationOperationOutcomeByClaim(
+  input: ClaimGenerationOperationInput,
+): Promise<GenerationOperationOutcome | null> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.clientRequestId);
+  assertGenerationOperationKind(input.kind);
+  const payloadHash = hashGenerationOperationClaim(input);
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [operation] = await db
+    .select()
+    .from(generationOperations)
+    .where(and(
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.clientRequestId, input.clientRequestId),
+    ))
+    .limit(1);
+  if (!operation) return null;
+  if (operation.kind !== input.kind || operation.payloadHash !== payloadHash) {
+    return { type: "payload_conflict", operationId: operation.id };
+  }
+  return outcomeFromExisting(operation);
+}

@@ -11,7 +11,7 @@
  * Limit is configurable via DAILY_GENERATION_LIMIT env var (default: 50).
  */
 
-import { eq, and, gte, sql, count } from "drizzle-orm";
+import { eq, and, gte, sql } from "drizzle-orm";
 import { generations } from "../../drizzle/schema";
 import { getDb } from "./connection";
 
@@ -28,6 +28,7 @@ const IMAGE_GEN_TYPES = [
   "wardrobeComposite",
   "wardrobeRefinement",
   "wardrobeDigitize",
+  "evidenceCandidate",
 ] as const;
 
 /**
@@ -44,13 +45,19 @@ export async function getUserDailyGenerationCount(
   todayStart.setUTCHours(0, 0, 0, 0);
 
   const result = await db
-    .select({ total: count() })
+    .select({
+      total: sql<number>`COUNT(DISTINCT CASE
+        WHEN ${generations.type} = 'evidenceCandidate'
+          THEN CONCAT('operation:', ${generations.operationId})
+        ELSE CONCAT('generation:', ${generations.id})
+      END)`,
+    })
     .from(generations)
     .where(
       and(
         eq(generations.userId, userId),
         gte(generations.createdAt, todayStart),
-        sql`${generations.type} IN ('castingImage', 'fullBody', 'multiView', 'iteration', 'upscale', 'wardrobeVTO', 'wardrobeComposite', 'wardrobeRefinement', 'wardrobeDigitize')`,
+        sql`${generations.type} IN ('castingImage', 'fullBody', 'multiView', 'iteration', 'upscale', 'wardrobeVTO', 'wardrobeComposite', 'wardrobeRefinement', 'wardrobeDigitize', 'evidenceCandidate')`,
         sql`${generations.status} != 'failed'`,
       ),
     );

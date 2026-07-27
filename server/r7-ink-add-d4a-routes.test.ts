@@ -29,7 +29,7 @@ describe("R7-7D D4A closed route boundary", () => {
     });
   });
 
-  it("refuses intent and reference mutations before provider, storage, or DB work", async () => {
+  it("refuses all intent, reference, and generation mutations while compile-closed", async () => {
     const caller = appRouter.createCaller(context());
     await expect(caller.evidence.beginInkAddIntent({
       modelId: 4,
@@ -42,6 +42,14 @@ describe("R7-7D D4A closed route boundary", () => {
       intentId: "22222222-2222-4222-8222-222222222222",
       clientRequestId: "33333333-3333-4333-8333-333333333333",
       imageDataUrl: "not-read",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(caller.evidence.generateInkAddCandidate({
+      intentId: "22222222-2222-4222-8222-222222222222",
+      clientRequestId: "44444444-4444-4444-8444-444444444444",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(caller.evidence.retryInkAddCandidate({
+      intentId: "22222222-2222-4222-8222-222222222222",
+      clientRequestId: "55555555-5555-4555-8555-555555555555",
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
@@ -61,6 +69,16 @@ describe("R7-7D D4A closed route boundary", () => {
       side: "shoulder",
       description: "small fine-line star",
       clientRequestId: "11111111-1111-4111-8111-111111111111",
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.evidence.generateInkAddCandidate({
+      intentId: "22222222-2222-4222-8222-222222222222",
+      clientRequestId: "44444444-4444-4444-8444-444444444444",
+      userId: 999,
+    } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.evidence.retryInkAddCandidate({
+      intentId: "22222222-2222-4222-8222-222222222222",
+      clientRequestId: "55555555-5555-4555-8555-555555555555",
+      userId: 999,
     } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 });

@@ -19,6 +19,7 @@ import { getConfiguredPrivateEvidenceStorageAdapter } from "./evidence/privateEv
 import {
   expireNextReadyEvidenceCandidate,
   settleNextCompletedCandidateCleanup,
+  settleNextCompletedSupersededAttemptCleanup,
 } from "../db/evidenceCandidates";
 import { settleNextCompletedEvidenceForkCleanup } from "./evidence/evidenceFork";
 
@@ -178,6 +179,7 @@ export function startStorageCleanupWorker(): void {
       await settleNextCompletedEvidenceForkCleanup();
       if (process.env.ENABLE_EVIDENCE_CANDIDATE_WORKER === "true") {
         await expireNextReadyEvidenceCandidate();
+        await settleNextCompletedSupersededAttemptCleanup();
         await settleNextCompletedCandidateCleanup();
       }
       const result = await processNextStorageCleanupBatch();
@@ -185,6 +187,7 @@ export function startStorageCleanupWorker(): void {
       await settleCompletedEvidenceCleanups({ limit: 10 });
       await settleNextCompletedEvidenceForkCleanup();
       if (process.env.ENABLE_EVIDENCE_CANDIDATE_WORKER === "true") {
+        await settleNextCompletedSupersededAttemptCleanup();
         await settleNextCompletedCandidateCleanup();
       }
       const health = await getStorageCleanupHealth();

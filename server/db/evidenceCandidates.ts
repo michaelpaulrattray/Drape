@@ -267,6 +267,78 @@ export async function expireNextReadyEvidenceCandidate(input: {
 }
 
 /**
+ * A failed first attempt may be deleted while its included retry becomes the
+ * active ready result. Scrub that superseded attempt after exact-key deletion
+ * without resolving or hiding the still-active candidate.
+ */
+export async function settleNextCompletedSupersededAttemptCleanup(): Promise<{
+  candidateId: string;
+  attemptId: string;
+  cleanupBatchId: string;
+} | null> {
+  return withTransaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        attemptId: castingEvidenceCandidateAttempts.id,
+        candidateId: castingEvidenceCandidateAttempts.candidateId,
+        batchId: storageCleanupBatches.id,
+      })
+      .from(castingEvidenceCandidateAttempts)
+      .innerJoin(
+        castingEvidenceCandidates,
+        eq(
+          castingEvidenceCandidates.id,
+          castingEvidenceCandidateAttempts.candidateId,
+        ),
+      )
+      .innerJoin(
+        storageCleanupBatches,
+        eq(
+          storageCleanupBatches.id,
+          castingEvidenceCandidateAttempts.cleanupBatchId,
+        ),
+      )
+      .where(and(
+        eq(castingEvidenceCandidateAttempts.status, "cleanup_pending"),
+        inArray(castingEvidenceCandidates.status, ["processing", "ready"]),
+        eq(castingEvidenceCandidates.activeSlot, "active"),
+        eq(storageCleanupBatches.kind, "candidate_cleanup"),
+        eq(storageCleanupBatches.status, "succeeded"),
+      ))
+      .orderBy(asc(castingEvidenceCandidateAttempts.createdAt))
+      .limit(1)
+      .for("update");
+    if (!row) return null;
+    const scrubbed = await tx
+      .update(castingEvidenceCandidateAttempts)
+      .set({
+        status: "cleaned",
+        privateStorageKey: null,
+        mime: null,
+        width: null,
+        height: null,
+        byteSize: null,
+        contentHash: null,
+        promotedPublicStorageKey: null,
+      })
+      .where(and(
+        eq(castingEvidenceCandidateAttempts.id, row.attemptId),
+        eq(castingEvidenceCandidateAttempts.candidateId, row.candidateId),
+        eq(castingEvidenceCandidateAttempts.status, "cleanup_pending"),
+        eq(castingEvidenceCandidateAttempts.cleanupBatchId, row.batchId),
+      ));
+    if (affectedRows(scrubbed) !== 1) {
+      throw new Error("Superseded candidate attempt cleanup lost its state race");
+    }
+    return {
+      candidateId: row.candidateId,
+      attemptId: row.attemptId,
+      cleanupBatchId: row.batchId,
+    };
+  });
+}
+
+/**
  * Scrub sensitive candidate metadata only after the exact-key worker proves
  * every object in the manifest was deleted.
  */

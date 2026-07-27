@@ -116,6 +116,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/db/evidenceIngestion.ts",
       "server/db/evidenceOperations.ts",
       "server/db/generationOperations.ts",
+      "server/db/inkAddCandidates.ts",
       "server/db/inkAddIntents.ts",
     ]);
     const hits: string[] = [];
@@ -157,6 +158,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/mintPackage.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/refreshSlots.ts",
+      "server/db/inkAddCandidates.ts",
       "server/db/inkAddIntents.ts",
       "server/routes/generation/castingImaging.ts",
       "server/routes/generation/castingRefinement.ts",
@@ -297,6 +299,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/snapshotConvergence.ts",
       "server/casting/snapshotPinConvergence.ts",
       "server/casting/snapshotShadowAudit.ts",
+      "server/db/inkAddCandidates.ts",
       "server/db/inkAddIntents.ts",
     ]);
 

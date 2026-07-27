@@ -1,4 +1,4 @@
-/** Guarded disposable-MySQL gate for the inert R7-7D D2 lifecycle slice. */
+/** Guarded disposable-MySQL gate for the cumulative inert R7-7D lifecycle. */
 import "dotenv/config";
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -90,7 +90,7 @@ async function main() {
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),
     });
-    console.log("[disposable] R7-7D D2 lifecycle and Fork gates passed");
+    console.log("[disposable] cumulative R7-7D lifecycle gates passed");
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) throw new Error("Cleanup guard refused database name");

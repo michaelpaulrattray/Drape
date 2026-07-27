@@ -248,6 +248,33 @@ export interface OwnedPendingInkIntent {
   referencePlateId: string | null;
 }
 
+export async function findOwnedInkIntentClaimSubject(input: {
+  userId: number;
+  intentId: string;
+}): Promise<{ id: string; modelId: number } | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [intent] = await db
+    .select({
+      id: modelIdentityFeatureIntents.id,
+      modelId: modelIdentityFeatureIntents.modelId,
+    })
+    .from(modelIdentityFeatureIntents)
+    .innerJoin(models, and(
+      eq(models.id, modelIdentityFeatureIntents.modelId),
+      eq(models.userId, input.userId),
+      eq(models.status, "draft"),
+      isNull(models.deletedAt),
+    ))
+    .where(and(
+      eq(modelIdentityFeatureIntents.id, input.intentId),
+      eq(modelIdentityFeatureIntents.userId, input.userId),
+      eq(modelIdentityFeatureIntents.capabilityKey, INK_ADD_CAPABILITY_KEY),
+    ))
+    .limit(1);
+  return intent ?? null;
+}
+
 export async function findOwnedPendingInkIntent(input: {
   userId: number;
   intentId: string;

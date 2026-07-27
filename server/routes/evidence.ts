@@ -27,6 +27,10 @@ import {
 } from "../casting/evidence/composer/inkAddRecipe";
 import { MAX_EVIDENCE_DATA_URL_LENGTH } from "../casting/evidence/imageValidation";
 import { checkUserRateLimit } from "../security/rateLimit";
+import {
+  generateInkAddCandidate,
+  retryInkAddCandidate,
+} from "../casting/evidence/inkCandidateGeneration";
 
 const EVIDENCE_INGEST_LIMIT = {
   maxRequests: 10,
@@ -116,6 +120,48 @@ export const evidenceRouter = router({
         });
       }
       return stageOwnedInkIntentReference({ delivery }, {
+        userId: ctx.user.id,
+        ...input,
+      });
+    }),
+
+  generateInkAddCandidate: protectedProcedure
+    .input(z.object({
+      intentId: z.string().uuid(),
+      clientRequestId: z.string().uuid(),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireInkCapability(ctx.user.id);
+      enforceRateLimit(ctx.user.id);
+      const delivery = getEvidenceDeliveryAdapter();
+      if (!delivery) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Tattoo previews are not available for this account.",
+        });
+      }
+      return generateInkAddCandidate({ delivery }, {
+        userId: ctx.user.id,
+        ...input,
+      });
+    }),
+
+  retryInkAddCandidate: protectedProcedure
+    .input(z.object({
+      intentId: z.string().uuid(),
+      clientRequestId: z.string().uuid(),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireInkCapability(ctx.user.id);
+      enforceRateLimit(ctx.user.id);
+      const delivery = getEvidenceDeliveryAdapter();
+      if (!delivery) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Tattoo previews are not available for this account.",
+        });
+      }
+      return retryInkAddCandidate({ delivery }, {
         userId: ctx.user.id,
         ...input,
       });

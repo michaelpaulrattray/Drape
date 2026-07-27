@@ -26,8 +26,10 @@ describe("R7-7D D4A intent/reference contract", () => {
     const route = await source("./routes/evidence.ts");
     expect(route).toContain("beginInkAddIntent: protectedProcedure");
     expect(route).toContain("attachInkIntentReference: protectedProcedure");
+    expect(route).toContain("generateInkAddCandidate: protectedProcedure");
+    expect(route).toContain("retryInkAddCandidate: protectedProcedure");
     expect(route).toContain("inkCapability: protectedProcedure");
-    expect(route.match(/\.strict\(\)/g)).toHaveLength(5);
+    expect(route.match(/\.strict\(\)/g)).toHaveLength(7);
     expect(route).not.toMatch(
       /userId:\s*z\.|ownerId:\s*z\.|packageSnapshotId:\s*z\.|identitySnapshotId:\s*z\.|storageKey:\s*z\.|contentHash:\s*z\./,
     );
@@ -85,7 +87,7 @@ describe("R7-7D D4A intent/reference contract", () => {
       source("../client/src/features/studio/takeover/CastingTakeover.tsx"),
     ]);
     expect(clientFiles.join("\n")).not.toMatch(
-      /inkCapability|beginInkAddIntent|attachInkIntentReference/,
+      /inkCapability|beginInkAddIntent|attachInkIntentReference|generateInkAddCandidate|retryInkAddCandidate/,
     );
   });
 });

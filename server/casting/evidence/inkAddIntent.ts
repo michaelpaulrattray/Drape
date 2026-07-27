@@ -37,6 +37,7 @@ import {
   INK_ADD_TARGET_VIEW,
   type InkAddSide,
 } from "./composer/inkAddRecipe";
+import { readActiveInkCandidate } from "./inkCandidateGeneration";
 
 const INK_INTENT_TEMPORARILY_UNAVAILABLE =
   "Tattoo previews are temporarily unavailable. Nothing was charged.";
@@ -53,10 +54,10 @@ export interface InkAddCapabilityDto {
     description: string;
     side: InkAddSide;
     referenceDeliveryUrl: string | null;
-    candidateId: null;
-    candidateStatus: null;
-    candidateDeliveryUrl: null;
-    expiresAt: null;
+    candidateId: string | null;
+    candidateStatus: "processing" | "ready" | null;
+    candidateDeliveryUrl: string | null;
+    expiresAt: string | null;
   };
 }
 
@@ -233,6 +234,12 @@ export async function readInkAddCapability(
         modelId: input.modelId,
       })
     : null;
+  const candidate = active
+    ? await readActiveInkCandidate({
+        userId: input.userId,
+        intentId: active.id,
+      })
+    : null;
   return {
     inkAdd: enabled,
     priceCredits: INK_ADD_PRICE_CREDITS,
@@ -246,10 +253,10 @@ export async function readInkAddCapability(
           referenceDeliveryUrl: active.referencePlateId
             ? `/api/evidence/plate/${active.referencePlateId}`
             : null,
-          candidateId: null,
-          candidateStatus: null,
-          candidateDeliveryUrl: null,
-          expiresAt: null,
+          candidateId: candidate?.candidateId ?? null,
+          candidateStatus: candidate?.candidateStatus ?? null,
+          candidateDeliveryUrl: candidate?.candidateDeliveryUrl ?? null,
+          expiresAt: candidate?.expiresAt ?? null,
         }
       : null,
   };

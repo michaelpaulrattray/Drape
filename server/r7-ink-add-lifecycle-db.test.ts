@@ -25,6 +25,24 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./db/evidenceCandidates").expireNextReadyEvidenceCandidate;
   let settleNextCompletedCandidateCleanup:
     typeof import("./db/evidenceCandidates").settleNextCompletedCandidateCleanup;
+  let settleNextCompletedSupersededAttemptCleanup:
+    typeof import("./db/evidenceCandidates").settleNextCompletedSupersededAttemptCleanup;
+  let prepareInkCandidateGeneration:
+    typeof import("./db/inkAddCandidates").prepareInkCandidateGeneration;
+  let markInkCandidateAttemptGenerating:
+    typeof import("./db/inkAddCandidates").markInkCandidateAttemptGenerating;
+  let markInkCandidateAttemptStored:
+    typeof import("./db/inkAddCandidates").markInkCandidateAttemptStored;
+  let prepareIncludedInkCandidateRetry:
+    typeof import("./db/inkAddCandidates").prepareIncludedInkCandidateRetry;
+  let completeInkCandidateReady:
+    typeof import("./db/inkAddCandidates").completeInkCandidateReady;
+  let invalidateInkCandidate:
+    typeof import("./db/inkAddCandidates").invalidateInkCandidate;
+  let findActiveOwnedInkCandidate:
+    typeof import("./db/inkAddCandidates").findActiveOwnedInkCandidate;
+  let getUserDailyGenerationCount:
+    typeof import("./db/dailyQuota").getUserDailyGenerationCount;
   let readOwnedEvidenceDelivery:
     typeof import("./db/evidenceDelivery").readOwnedEvidenceDelivery;
   let getModelById: typeof import("./db/models").getModelById;
@@ -52,7 +70,18 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     ({
       expireNextReadyEvidenceCandidate,
       settleNextCompletedCandidateCleanup,
+      settleNextCompletedSupersededAttemptCleanup,
     } = await import("./db/evidenceCandidates"));
+    ({
+      prepareInkCandidateGeneration,
+      markInkCandidateAttemptGenerating,
+      markInkCandidateAttemptStored,
+      prepareIncludedInkCandidateRetry,
+      completeInkCandidateReady,
+      invalidateInkCandidate,
+      findActiveOwnedInkCandidate,
+    } = await import("./db/inkAddCandidates"));
+    ({ getUserDailyGenerationCount } = await import("./db/dailyQuota"));
     ({ readOwnedEvidenceDelivery } = await import("./db/evidenceDelivery"));
     ({ getModelById, getUserModels } = await import("./db/models"));
     ({ resolveEffectiveCastStateForRead } = await import("./casting/effectiveCastRead"));
@@ -198,6 +227,60 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [`model:${modelId}`, operationId],
     );
     return operationId;
+  }
+
+  async function pendingInkIntent(
+    source: Awaited<ReturnType<typeof fixture>>,
+  ) {
+    const operationId = await claimedIntentBegin(source.userId, source.modelId);
+    const intentId = randomUUID();
+    await commitBeginInkAddIntent({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      intentId,
+      sourceAssetId: source.fullAssetId,
+      side: "left",
+      normalizedDescriptor: "small black geometric sun",
+    });
+    return intentId;
+  }
+
+  async function runningCandidateOperation(
+    source: Awaited<ReturnType<typeof fixture>>,
+    kind: "evidence_candidate_generate" | "evidence_candidate_retry",
+  ) {
+    const operationId = randomUUID();
+    await connection.execute(
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, phase) VALUES (?, ?, ?, ?, ?, ?, 'running', 1, ?, ?, 350, 'validating')",
+      [
+        operationId,
+        source.userId,
+        randomUUID(),
+        kind,
+        source.modelId,
+        "d".repeat(64),
+        source.identityId,
+        source.packageId,
+      ],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      [`model:${source.modelId}`, operationId, kind],
+    );
+    return operationId;
+  }
+
+  function passCandidateProbe() {
+    return {
+      predictedVisibility: "pass" as const,
+      identityOutcome: "pass" as const,
+      placementOutcome: "pass" as const,
+      featureMatchOutcome: "pass" as const,
+      poseFramingOutcome: "pass" as const,
+      unexpectedInkOutcome: "pass" as const,
+      overallOutcome: "pass" as const,
+    };
   }
 
   function privateAdapter(objects: Map<string, Buffer>): PrivateEvidenceStorageAdapter {
@@ -576,6 +659,283 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     expect(Number(plateCount.count)).toBe(1);
   }, 90_000);
 
+  it("reserves and publishes one owner-only private candidate from locked snapshot truth", async () => {
+    const source = await fixture({ status: "draft" });
+    const intentId = await pendingInkIntent(source);
+    const operationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    const prepared = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId,
+      operationKind: "evidence_candidate_generate",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    expect(prepared).toMatchObject({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      intentId,
+      attemptNumber: 1,
+      sourceAssetId: source.fullAssetId,
+      identitySnapshotId: source.identityId,
+      packageSnapshotId: source.packageId,
+    });
+    const [[child]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, pointsCost, resultUrl, metadata FROM generations WHERE id = ?",
+      [prepared.generationId],
+    );
+    expect(child).toMatchObject({
+      status: "pending",
+      pointsCost: 350,
+      resultUrl: null,
+    });
+    expect(child.metadata).toEqual({
+      candidateId: prepared.candidateId,
+      attemptNumber: 1,
+      billingRole: "charged_attempt",
+      engine: "gemini-3-pro-image-preview",
+      recipeVersion: "ink.add.front_upper_torso.composer.v1",
+    });
+
+    await markInkCandidateAttemptGenerating(prepared);
+    await markInkCandidateAttemptStored({
+      prepared,
+      image: {
+        mime: "image/webp",
+        width: 512,
+        height: 768,
+        byteSize: webp.length,
+        contentHash: webpHash,
+      },
+    });
+    await completeInkCandidateReady({
+      prepared,
+      probe: passCandidateProbe(),
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+    await expect(findActiveOwnedInkCandidate({
+      userId: source.userId,
+      intentId,
+    })).resolves.toMatchObject({
+      id: prepared.candidateId,
+      status: "ready",
+    });
+    await expect(findActiveOwnedInkCandidate({
+      userId: source.userId + 1,
+      intentId,
+    })).resolves.toBeNull();
+    await expect(readOwnedEvidenceDelivery({
+      userId: source.userId,
+      kind: "candidate",
+      entityId: prepared.candidateId,
+    })).resolves.toMatchObject({
+      entityId: prepared.candidateId,
+      storageEntityId: prepared.privatePlateId,
+      storageKey: prepared.privateStorageKey,
+    });
+    await expect(readOwnedEvidenceDelivery({
+      userId: source.userId + 1,
+      kind: "candidate",
+      entityId: prepared.candidateId,
+    })).resolves.toBeNull();
+  }, 90_000);
+
+  it("keeps an included retry under one quota unit, scrubs attempt one, and replaces ready atomically", async () => {
+    const source = await fixture({ status: "draft" });
+    const intentId = await pendingInkIntent(source);
+    const operationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    const first = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId,
+      operationKind: "evidence_candidate_generate",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    await markInkCandidateAttemptGenerating(first);
+    await markInkCandidateAttemptStored({
+      prepared: first,
+      image: {
+        mime: "image/webp",
+        width: 512,
+        height: 768,
+        byteSize: webp.length,
+        contentHash: webpHash,
+      },
+    });
+    const second = await prepareIncludedInkCandidateRetry({
+      prepared: first,
+      probe: {
+        ...passCandidateProbe(),
+        placementOutcome: "fail",
+        overallOutcome: "fail",
+      },
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    expect(second.attemptNumber).toBe(2);
+    const [children] = await connection.query<RowDataPacket[]>(
+      "SELECT status, pointsCost, resultUrl FROM generations WHERE operationId = ? ORDER BY id",
+      [operationId],
+    );
+    expect(children).toEqual([
+      { status: "failed", pointsCost: 350, resultUrl: null },
+      { status: "pending", pointsCost: 0, resultUrl: null },
+    ]);
+    await expect(getUserDailyGenerationCount(source.userId)).resolves.toBe(1);
+
+    await markInkCandidateAttemptGenerating(second);
+    await markInkCandidateAttemptStored({
+      prepared: second,
+      image: {
+        mime: "image/webp",
+        width: 512,
+        height: 768,
+        byteSize: webp.length,
+        contentHash: webpHash,
+      },
+    });
+    await completeInkCandidateReady({
+      prepared: second,
+      probe: passCandidateProbe(),
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+    const [[firstAttempt]] = await connection.query<RowDataPacket[]>(
+      "SELECT cleanupBatchId FROM casting_evidence_candidate_attempts WHERE id = ?",
+      [first.attemptId],
+    );
+    await connection.execute(
+      "DELETE FROM storage_cleanup_items WHERE batchId = ?",
+      [firstAttempt.cleanupBatchId],
+    );
+    await connection.execute(
+      "UPDATE storage_cleanup_batches SET status = 'succeeded', deletedCount = expectedCount, failedCount = 0 WHERE id = ?",
+      [firstAttempt.cleanupBatchId],
+    );
+    await expect(settleNextCompletedSupersededAttemptCleanup()).resolves.toEqual({
+      candidateId: first.candidateId,
+      attemptId: first.attemptId,
+      cleanupBatchId: firstAttempt.cleanupBatchId,
+    });
+    const [[scrubbed]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, privateStorageKey, contentHash, byteSize FROM casting_evidence_candidate_attempts WHERE id = ?",
+      [first.attemptId],
+    );
+    expect(scrubbed).toEqual({
+      status: "cleaned",
+      privateStorageKey: null,
+      contentHash: null,
+      byteSize: null,
+    });
+    await connection.execute(
+      "DELETE FROM generation_operation_locks WHERE operationId = ?",
+      [operationId],
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET status = 'succeeded', chargedCredits = 350, completedAt = NOW() WHERE id = ?",
+      [operationId],
+    );
+
+    const retryOperationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_retry",
+    );
+    const replacement = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId: retryOperationId,
+      operationKind: "evidence_candidate_retry",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    const [candidates] = await connection.query<RowDataPacket[]>(
+      "SELECT id, status, activeSlot FROM casting_evidence_candidates WHERE intentId = ? ORDER BY createdAt, id",
+      [intentId],
+    );
+    expect(candidates).toEqual([
+      { id: first.candidateId, status: "rejected", activeSlot: null },
+      { id: replacement.candidateId, status: "processing", activeSlot: "active" },
+    ]);
+  }, 90_000);
+
+  it("fails every child attempt and consumes no quota when an included retry aborts", async () => {
+    const source = await fixture({ status: "draft" });
+    const intentId = await pendingInkIntent(source);
+    const operationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    const first = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId,
+      operationKind: "evidence_candidate_generate",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    await markInkCandidateAttemptGenerating(first);
+    await markInkCandidateAttemptStored({
+      prepared: first,
+      image: {
+        mime: "image/webp",
+        width: 512,
+        height: 768,
+        byteSize: webp.length,
+        contentHash: webpHash,
+      },
+    });
+    const second = await prepareIncludedInkCandidateRetry({
+      prepared: first,
+      probe: {
+        ...passCandidateProbe(),
+        placementOutcome: "fail",
+        overallOutcome: "fail",
+      },
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    await markInkCandidateAttemptGenerating(second);
+
+    // The service catch path may still hold attempt one. Invalidation closes
+    // the whole candidate episode, not merely the supplied child attempt.
+    await invalidateInkCandidate({
+      prepared: first,
+      publicError: "candidate_failed",
+    });
+
+    const [children] = await connection.query<RowDataPacket[]>(
+      "SELECT status, resultUrl, completedAt FROM generations WHERE operationId = ? ORDER BY id",
+      [operationId],
+    );
+    expect(children).toHaveLength(2);
+    expect(children.every((child) =>
+      child.status === "failed"
+      && child.resultUrl === null
+      && child.completedAt instanceof Date
+    )).toBe(true);
+    await expect(getUserDailyGenerationCount(source.userId)).resolves.toBe(0);
+    const [[candidate]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, activeSlot FROM casting_evidence_candidates WHERE id = ?",
+      [first.candidateId],
+    );
+    expect(candidate).toEqual({ status: "invalid", activeSlot: null });
+  }, 90_000);
+
   it("refuses foreign selected assets and already-selected typed features before intent creation", async () => {
     const victim = await fixture({ status: "draft" });
     const attacker = await fixture({ status: "draft" });
@@ -610,12 +970,13 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [featureId, attacker.modelId, featureOperationId],
     );
     await connection.execute(
-      "INSERT INTO model_identity_feature_versions (id, modelId, featureId, operation, ontologyVersion, zone, surface, side, normalizedDescriptor, sourceAssetId, sourceViewAngle, recipeVersion, createdByOperationId) VALUES (?, ?, ?, 'present', 'd4a', 'front_upper_torso', 'anterior', 'left', 'existing star', ?, 'frontFull', 'd4a', ?)",
+      "INSERT INTO model_identity_feature_versions (id, modelId, featureId, operation, ontologyVersion, zone, surface, side, normalizedDescriptor, sourceAssetId, sourceViewAngle, acceptedCandidatePlateId, recipeVersion, createdByOperationId) VALUES (?, ?, ?, 'present', 'd4a', 'front_upper_torso', 'anterior', 'left', 'existing star', ?, 'frontFull', ?, 'd4a', ?)",
       [
         versionId,
         attacker.modelId,
         featureId,
         attacker.fullAssetId,
+        randomUUID(),
         featureOperationId,
       ],
     );
