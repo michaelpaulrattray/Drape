@@ -681,7 +681,8 @@ export async function claimGenerationOperation(
       input.resumeClaimedEvidence === true
       && preexisting.status === "claimed"
       && (preexisting.kind === "evidence_plate_ingest"
-        || preexisting.kind === "evidence_plate_discard")
+        || preexisting.kind === "evidence_plate_discard"
+        || preexisting.kind === "evidence_intent_reference")
     ) {
       return {
         type: "claimed",

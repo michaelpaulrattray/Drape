@@ -173,11 +173,16 @@ describe("R7-7D migration and reachability contract", () => {
     }
   });
 
-  it("has no product route caller for the D1 candidate contract", async () => {
+  it("keeps the D1 candidate contract private while allowing only the closed D4A scope route", async () => {
     const routes = await sourceFiles(new URL("./routes/", import.meta.url));
-    const contents = await Promise.all(routes.map((file) => readFile(file, "utf8")));
-    expect(contents.join("\n")).not.toMatch(
-      /evidenceCandidateContract|evidenceComposerScope|evidenceComposerSchema/,
-    );
+    const scopeCallers: string[] = [];
+    for (const file of routes) {
+      const source = await readFile(file, "utf8");
+      expect(source).not.toMatch(/evidenceCandidateContract|evidenceComposerSchema/);
+      if (source.includes("evidenceComposerScope")) {
+        scopeCallers.push(file.pathname.replace(/^.*\/server\//, "server/"));
+      }
+    }
+    expect(scopeCallers).toEqual(["server/routes/evidence.ts"]);
   });
 });

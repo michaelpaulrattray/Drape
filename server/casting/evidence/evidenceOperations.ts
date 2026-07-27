@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { TRPCError, type TRPC_ERROR_CODE_KEY } from "@trpc/server";
 import {
   beginDirectOperation,
+  failClaimedDirectOperation,
   type DirectOperationGate,
 } from "../directOperation";
 import { modelOperationLockKey } from "../operationContract";
@@ -26,6 +27,7 @@ import {
   type EvidencePlateClosedResult,
 } from "../../db/evidenceOperations";
 import { getGenerationOperationOutcomeByRequest } from "../../db/generationOperations";
+import { findOwnedPendingInkIntent } from "../../db/inkAddIntents";
 
 export interface EvidenceOperationDependencies {
   delivery: EvidenceDeliveryAdapter;
@@ -103,26 +105,123 @@ async function ownerResponse(
   };
 }
 
-function operationFailure(error: unknown): never {
-  if (error instanceof TRPCError) throw error;
+function toOperationFailure(error: unknown): TRPCError {
+  if (error instanceof TRPCError) return error;
   if (error instanceof EvidenceImageValidationError) {
-    throw new TRPCError({
+    return new TRPCError({
       code: error.code.includes("too_large") ? "PAYLOAD_TOO_LARGE" : "BAD_REQUEST",
       message: error.message,
     });
   }
   if (error instanceof EvidenceOperationStateError) {
-    const code = error.code === "model_unavailable" || error.code === "plate_unavailable"
+    const code = error.code === "model_unavailable"
+      || error.code === "plate_unavailable"
+      || error.code === "intent_unavailable"
       ? "NOT_FOUND"
       : error.code === "plate_in_use"
+        || error.code === "reference_already_attached"
         ? "PRECONDITION_FAILED"
         : "CONFLICT";
-    throw new TRPCError({ code, message: error.message });
+    return new TRPCError({ code, message: error.message });
   }
-  throw new TRPCError({
+  return new TRPCError({
     code: "INTERNAL_SERVER_ERROR",
     message: "The reference image action could not be completed. Nothing was charged.",
   });
+}
+
+function operationFailure(error: unknown): never {
+  throw toOperationFailure(error);
+}
+
+/**
+ * D4 intent-owned variant. The client supplies only the intent id and bytes;
+ * owner/model/head authority is recovered from the pending intent and then
+ * re-proved under the model operation lock in the database layer.
+ */
+export async function stageOwnedInkIntentReference(
+  dependencies: EvidenceOperationDependencies,
+  input: {
+    userId: number;
+    intentId: string;
+    clientRequestId: string;
+    imageDataUrl: string;
+  },
+): Promise<EvidencePlateResponse> {
+  let claimedOperationId: string | null = null;
+  try {
+    const intent = await findOwnedPendingInkIntent({
+      userId: input.userId,
+      intentId: input.intentId,
+    });
+    if (!intent) throw new EvidenceOperationStateError("intent_unavailable");
+    const image = await canonicalizeEvidenceDataUrl(input.imageDataUrl);
+    const begin = dependencies.begin ?? beginDirectOperation;
+    const gate = await begin({
+      userId: input.userId,
+      clientRequestId: input.clientRequestId,
+      kind: "evidence_intent_reference",
+      modelId: intent.modelId,
+      payload: {
+        intentId: input.intentId,
+        contentHash: image.contentHash,
+      },
+      lockKey: modelOperationLockKey(intent.modelId),
+      resumeClaimedEvidence: true,
+    });
+    if (gate.type === "replay") {
+      return ownerResponse(
+        dependencies.delivery,
+        input.userId,
+        closedPlateResult(gate.result),
+      );
+    }
+    claimedOperationId = gate.operationId;
+    const generateId = dependencies.generateId ?? randomUUID;
+    const prepared = await prepareReferencePlateOperation({
+      userId: input.userId,
+      modelId: intent.modelId,
+      operationId: gate.operationId,
+      operationKind: "evidence_intent_reference",
+      featureIntentId: intent.id,
+      stepKey: "reference",
+      ingestionId: generateId(),
+      plateId: generateId(),
+      image,
+    });
+    await putCanonicalEvidence(dependencies.delivery, {
+      key: prepared.storageKey,
+      image,
+    });
+    await markReferencePlateOperationStored({
+      userId: input.userId,
+      modelId: intent.modelId,
+      operationId: gate.operationId,
+      prepared,
+      image,
+    });
+    const result = await attachAndCompleteReferencePlateOperation({
+      userId: input.userId,
+      modelId: intent.modelId,
+      operationId: gate.operationId,
+      operationKind: "evidence_intent_reference",
+      prepared,
+      image,
+    });
+    // The database mutation and receipt are now terminal. A subsequent
+    // delivery-URL failure must not try to rewrite the succeeded operation.
+    claimedOperationId = null;
+    return ownerResponse(dependencies.delivery, input.userId, result);
+  } catch (error) {
+    if (claimedOperationId) {
+      return failClaimedDirectOperation({
+        userId: input.userId,
+        operationId: claimedOperationId,
+        error: toOperationFailure(error),
+      });
+    }
+    return operationFailure(error);
+  }
 }
 
 export async function stageOwnedReferencePlate(

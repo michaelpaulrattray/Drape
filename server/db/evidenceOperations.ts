@@ -4,6 +4,7 @@ import {
   castingEvidenceIngestions,
   generationOperationLocks,
   generationOperations,
+  modelIdentityFeatureIntents,
   modelEvidenceCrops,
   modelReferencePlates,
   models,
@@ -15,6 +16,7 @@ import {
 import type { CanonicalEvidenceImage } from "../casting/evidence/imageValidation";
 import type { EvidenceModelHead } from "../casting/evidence/referencePlateIngestion";
 import { modelOperationLockKey } from "../casting/operationContract";
+import { INK_ADD_CAPABILITY_KEY } from "../casting/evidence/evidenceCandidateContract";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { finalizeClaimedGenerationOperationSuccessIn } from "./generationOperations";
@@ -26,7 +28,9 @@ export class EvidenceOperationStateError extends Error {
     | "receipt_conflict"
     | "snapshot_head_changed"
     | "plate_unavailable"
-    | "plate_in_use";
+    | "plate_in_use"
+    | "intent_unavailable"
+    | "reference_already_attached";
 
   constructor(code: EvidenceOperationStateError["code"]) {
     super("The reference image action could not be completed. Nothing was charged.");
@@ -42,6 +46,7 @@ export interface PreparedEvidencePlate {
   status: "planned" | "stored";
   stepKey: string;
   expectedHead: EvidenceModelHead;
+  featureIntentId: string | null;
 }
 
 function affectedRows(result: unknown): number {
@@ -94,7 +99,10 @@ async function lockClaimedEvidenceOperationIn(
     userId: number;
     modelId: number;
     operationId: string;
-    kind: "evidence_plate_ingest" | "evidence_plate_discard";
+    kind:
+      | "evidence_plate_ingest"
+      | "evidence_plate_discard"
+      | "evidence_intent_reference";
   },
 ) {
   const [operation] = await tx
@@ -170,15 +178,57 @@ export async function prepareReferencePlateOperation(input: {
   ingestionId: string;
   plateId: string;
   image: CanonicalEvidenceImage;
+  operationKind?: "evidence_plate_ingest" | "evidence_intent_reference";
+  featureIntentId?: string | null;
 }): Promise<PreparedEvidencePlate> {
   return withTransaction(async (tx) => {
     const model = await lockOwnedDraftModelIn(tx, input);
+    const operationKind = input.operationKind ?? "evidence_plate_ingest";
     const operation = await lockClaimedEvidenceOperationIn(tx, {
       ...input,
-      kind: "evidence_plate_ingest",
+      kind: operationKind,
     });
     const currentHead = headFromModel(model);
     const existingExpectedHead = expectedHeadFromOperation(operation);
+    if (operationKind === "evidence_intent_reference") {
+      if (!input.featureIntentId) {
+        throw new EvidenceOperationStateError("intent_unavailable");
+      }
+      const [intent] = await tx
+        .select()
+        .from(modelIdentityFeatureIntents)
+        .where(and(
+          eq(modelIdentityFeatureIntents.id, input.featureIntentId),
+          eq(modelIdentityFeatureIntents.userId, input.userId),
+          eq(modelIdentityFeatureIntents.modelId, input.modelId),
+          eq(modelIdentityFeatureIntents.capabilityKey, INK_ADD_CAPABILITY_KEY),
+          eq(
+            modelIdentityFeatureIntents.activeCapabilityKey,
+            INK_ADD_CAPABILITY_KEY,
+          ),
+          eq(modelIdentityFeatureIntents.status, "pending"),
+        ))
+        .limit(1)
+        .for("update");
+      if (
+        !intent
+        || intent.expectedStateVersion !== model.stateVersion
+        || intent.packageSnapshotId !== model.currentPackageSnapshotId
+      ) {
+        throw new EvidenceOperationStateError("intent_unavailable");
+      }
+      const [existingPlate] = await tx
+        .select({ id: modelReferencePlates.id })
+        .from(modelReferencePlates)
+        .where(eq(modelReferencePlates.featureIntentId, intent.id))
+        .limit(1)
+        .for("update");
+      if (existingPlate) {
+        throw new EvidenceOperationStateError("reference_already_attached");
+      }
+    } else if (input.featureIntentId) {
+      throw new EvidenceOperationStateError("receipt_conflict");
+    }
 
     const [existing] = await tx
       .select()
@@ -223,6 +273,7 @@ export async function prepareReferencePlateOperation(input: {
         status: existing.status,
         stepKey: existing.stepKey,
         expectedHead: existingExpectedHead,
+        featureIntentId: input.featureIntentId ?? null,
       };
     }
 
@@ -245,7 +296,7 @@ export async function prepareReferencePlateOperation(input: {
         eq(generationOperations.id, input.operationId),
         eq(generationOperations.userId, input.userId),
         eq(generationOperations.modelId, input.modelId),
-        eq(generationOperations.kind, "evidence_plate_ingest"),
+        eq(generationOperations.kind, operationKind),
         eq(generationOperations.status, "claimed"),
         isNull(generationOperations.expectedStateVersion),
       ));
@@ -274,6 +325,7 @@ export async function prepareReferencePlateOperation(input: {
       status: "planned",
       stepKey: input.stepKey,
       expectedHead: currentHead,
+      featureIntentId: input.featureIntentId ?? null,
     };
   });
 }
@@ -335,6 +387,7 @@ export async function attachAndCompleteReferencePlateOperation(input: {
   operationId: string;
   prepared: PreparedEvidencePlate;
   image: CanonicalEvidenceImage;
+  operationKind?: "evidence_plate_ingest" | "evidence_intent_reference";
 }): Promise<EvidencePlateClosedResult> {
   const result: EvidencePlateClosedResult = {
     plateId: input.prepared.plateId,
@@ -346,13 +399,42 @@ export async function attachAndCompleteReferencePlateOperation(input: {
   };
   return withTransaction(async (tx) => {
     const model = await lockOwnedDraftModelIn(tx, input);
+    const operationKind = input.operationKind ?? "evidence_plate_ingest";
     const operation = await lockClaimedEvidenceOperationIn(tx, {
       ...input,
-      kind: "evidence_plate_ingest",
+      kind: operationKind,
     });
     const expectedHead = expectedHeadFromOperation(operation);
     if (!expectedHead || !headsEqual(headFromModel(model), expectedHead)) {
       throw new EvidenceOperationStateError("snapshot_head_changed");
+    }
+    if (operationKind === "evidence_intent_reference") {
+      if (!input.prepared.featureIntentId) {
+        throw new EvidenceOperationStateError("intent_unavailable");
+      }
+      const [intent] = await tx
+        .select()
+        .from(modelIdentityFeatureIntents)
+        .where(and(
+          eq(modelIdentityFeatureIntents.id, input.prepared.featureIntentId),
+          eq(modelIdentityFeatureIntents.userId, input.userId),
+          eq(modelIdentityFeatureIntents.modelId, input.modelId),
+          eq(modelIdentityFeatureIntents.status, "pending"),
+          eq(
+            modelIdentityFeatureIntents.activeCapabilityKey,
+            INK_ADD_CAPABILITY_KEY,
+          ),
+          eq(modelIdentityFeatureIntents.expectedStateVersion, model.stateVersion),
+          eq(
+            modelIdentityFeatureIntents.packageSnapshotId,
+            expectedHead.currentPackageSnapshotId!,
+          ),
+        ))
+        .limit(1)
+        .for("update");
+      if (!intent) throw new EvidenceOperationStateError("intent_unavailable");
+    } else if (input.prepared.featureIntentId) {
+      throw new EvidenceOperationStateError("receipt_conflict");
     }
     const [receipt] = await tx
       .select()
@@ -374,11 +456,12 @@ export async function attachAndCompleteReferencePlateOperation(input: {
 
     const inserted = await tx.execute(sql`
       INSERT INTO model_reference_plates (
-        id, userId, modelId, kind, storageKey, mime, width, height,
+        id, userId, modelId, featureIntentId, kind, storageKey, mime, width, height,
         byteSize, contentHash, createdByOperationId, createdByOperationStepKey
       )
       SELECT
         ${input.prepared.plateId}, ${input.userId}, ${input.modelId},
+        ${input.prepared.featureIntentId},
         'uploaded_reference', ${input.prepared.storageKey}, ${input.image.mime},
         ${input.image.width}, ${input.image.height}, ${input.image.byteSize},
         ${input.image.contentHash}, ${input.operationId}, ${input.prepared.stepKey}
@@ -390,6 +473,20 @@ export async function attachAndCompleteReferencePlateOperation(input: {
         AND models.stateVersion = ${expectedHead.stateVersion}
         AND models.currentPackageSnapshotId <=> ${expectedHead.currentPackageSnapshotId}
         AND models.identityRevisionId <=> ${expectedHead.identityRevisionId}
+        AND (
+          ${input.prepared.featureIntentId} IS NULL
+          OR EXISTS (
+            SELECT 1
+            FROM model_identity_feature_intents intent
+            WHERE intent.id = ${input.prepared.featureIntentId}
+              AND intent.userId = ${input.userId}
+              AND intent.modelId = ${input.modelId}
+              AND intent.status = 'pending'
+              AND intent.activeCapabilityKey = ${INK_ADD_CAPABILITY_KEY}
+              AND intent.expectedStateVersion = models.stateVersion
+              AND intent.packageSnapshotId = models.currentPackageSnapshotId
+          )
+        )
     `);
     if (affectedRows(inserted) !== 1) {
       throw new EvidenceOperationStateError("receipt_conflict");

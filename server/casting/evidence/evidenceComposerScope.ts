@@ -13,6 +13,13 @@ export const EVIDENCE_COMPOSER_RECIPE_ENV = "R7_EVIDENCE_COMPOSER_RECIPE";
 export const EVIDENCE_CANDIDATE_WORKER_ENV =
   "ENABLE_EVIDENCE_CANDIDATE_WORKER";
 
+/**
+ * D4 installs the complete server workflow behind a compile-time closed
+ * product door. D5 is the first slice allowed to turn this true after the
+ * founder UI and end-to-end acceptance evidence exist.
+ */
+export const INK_ADD_PRODUCT_READY = false as const;
+
 export type EvidenceComposerScope =
   | { kind: "off" }
   | { kind: "users"; userIds: readonly number[] }
@@ -95,6 +102,27 @@ export interface EvidenceComposerEnvironment {
   scope: EvidenceComposerScope;
   recipe: EvidenceComposerRecipe;
   candidateWorkerEnabled: boolean;
+}
+
+export function evidenceComposerEnabledForUser(
+  scope: EvidenceComposerScope,
+  userId: number,
+): boolean {
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    throw new TypeError("Evidence composer scope requires a positive integer user id");
+  }
+  return INK_ADD_PRODUCT_READY
+    && (
+      scope.kind === "all"
+      || (scope.kind === "users" && scope.userIds.includes(userId))
+    );
+}
+
+export function captureEvidenceComposerEnabled(userId: number): boolean {
+  return evidenceComposerEnabledForUser(
+    parseEvidenceComposerScope(process.env[EVIDENCE_COMPOSER_SCOPE_ENV]),
+    userId,
+  );
 }
 
 /**

@@ -4,6 +4,7 @@ import mysql, {
   type ResultSetHeader,
   type RowDataPacket,
 } from "mysql2/promise";
+import sharp from "sharp";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PrivateEvidenceStorageAdapter } from "./casting/evidence/evidenceDelivery";
 
@@ -32,6 +33,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./casting/effectiveCastRead").resolveEffectiveCastStateForRead;
   let processNextStorageCleanupBatch:
     typeof import("./casting/storageCleanupWorker").processNextStorageCleanupBatch;
+  let commitBeginInkAddIntent:
+    typeof import("./db/inkAddIntents").commitBeginInkAddIntent;
+  let stageOwnedInkIntentReference:
+    typeof import("./casting/evidence/evidenceOperations").stageOwnedInkIntentReference;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -52,6 +57,8 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     ({ getModelById, getUserModels } = await import("./db/models"));
     ({ resolveEffectiveCastStateForRead } = await import("./casting/effectiveCastRead"));
     ({ processNextStorageCleanupBatch } = await import("./casting/storageCleanupWorker"));
+    ({ commitBeginInkAddIntent } = await import("./db/inkAddIntents"));
+    ({ stageOwnedInkIntentReference } = await import("./casting/evidence/evidenceOperations"));
   });
 
   beforeEach(async () => {
@@ -91,7 +98,9 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     delete process.env.DATABASE_URL;
   });
 
-  async function fixture(input: { withFeature?: boolean } = {}) {
+  async function fixture(
+    input: { withFeature?: boolean; status?: "active" | "draft" } = {},
+  ) {
     const [user] = await connection.execute<ResultSetHeader>(
       "INSERT INTO users (openId, name, approved, emailVerified) VALUES (?, 'D2 owner', 1, 1)",
       [`r7-d2-${randomUUID()}`],
@@ -100,12 +109,12 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     const identityId = randomUUID();
     const packageId = randomUUID();
     const [model] = await connection.execute<ResultSetHeader>(
-      "INSERT INTO models (userId, name, masterPrompt, technicalSchema, preferences, status, currentPackageSnapshotId, stateVersion) VALUES (?, 'Source', 'identity', JSON_OBJECT(), JSON_OBJECT(), 'active', ?, 1)",
-      [userId, packageId],
+      "INSERT INTO models (userId, name, masterPrompt, technicalSchema, preferences, status, currentPackageSnapshotId, stateVersion) VALUES (?, 'Source', 'identity', JSON_OBJECT(), JSON_OBJECT(), ?, ?, 1)",
+      [userId, input.status ?? "active", packageId],
     );
     const modelId = model.insertId;
     const [head] = await connection.execute<ResultSetHeader>(
-      "INSERT INTO model_assets (modelId, viewType, storageUrl, storageKey, pointsCost, pinned) VALUES (?, 'frontClose', ?, ?, 0, 0)",
+      "INSERT INTO model_assets (modelId, viewType, storageUrl, storageKey, pointsCost, pinned, provenance) VALUES (?, 'frontClose', ?, ?, 0, 0, JSON_OBJECT('identityRole', 'anchor'))",
       [modelId, "https://public.example/source-head.webp", `users/${userId}/models/${modelId}/source-head.webp`],
     );
     const [full] = await connection.execute<ResultSetHeader>(
@@ -173,6 +182,19 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     );
     await connection.execute(
       "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_fork_copy', DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      [`model:${modelId}`, operationId],
+    );
+    return operationId;
+  }
+
+  async function claimedIntentBegin(userId: number, modelId: number) {
+    const operationId = randomUUID();
+    await connection.execute(
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status) VALUES (?, ?, ?, 'evidence_intent_begin', ?, ?, 'claimed')",
+      [operationId, userId, randomUUID(), modelId, "c".repeat(64)],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_intent_begin', DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
       [`model:${modelId}`, operationId],
     );
     return operationId;
@@ -445,5 +467,185 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [intentId],
     );
     expect(intent).toEqual({ status: "cancelled", normalizedDescriptor: null });
+  }, 90_000);
+
+  it("creates one exact-head intent and attaches one owner-scoped private reference", async () => {
+    const source = await fixture({ status: "draft" });
+    const operationId = await claimedIntentBegin(source.userId, source.modelId);
+    const intentId = randomUUID();
+    await expect(commitBeginInkAddIntent({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      intentId,
+      sourceAssetId: source.fullAssetId,
+      side: "left",
+      normalizedDescriptor: "fine-line Gemini twins",
+    })).resolves.toEqual({ intentId });
+
+    const [[intent]] = await connection.query<RowDataPacket[]>(
+      "SELECT userId, modelId, status, side, normalizedDescriptor, sourceAssetId, expectedStateVersion, identitySnapshotId, packageSnapshotId FROM model_identity_feature_intents WHERE id = ?",
+      [intentId],
+    );
+    expect(intent).toMatchObject({
+      userId: source.userId,
+      modelId: source.modelId,
+      status: "pending",
+      side: "left",
+      normalizedDescriptor: "fine-line Gemini twins",
+      sourceAssetId: source.fullAssetId,
+      expectedStateVersion: 1,
+      identitySnapshotId: source.identityId,
+      packageSnapshotId: source.packageId,
+    });
+    const [[completed]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, result, expectedStateVersion, expectedPackageSnapshotId FROM generation_operations WHERE id = ?",
+      [operationId],
+    );
+    expect(completed.status).toBe("succeeded");
+    expect(completed.expectedStateVersion).toBe(1);
+    expect(completed.expectedPackageSnapshotId).toBe(source.packageId);
+    expect(completed.result).toEqual({ intentId });
+    const [[lockCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM generation_operation_locks WHERE operationId = ?",
+      [operationId],
+    );
+    expect(Number(lockCount.count)).toBe(0);
+
+    const png = await sharp({
+      create: {
+        width: 256,
+        height: 256,
+        channels: 4,
+        background: { r: 30, g: 30, b: 30, alpha: 1 },
+      },
+    }).png().toBuffer();
+    const objects = new Map<string, Buffer>();
+    const delivery = privateAdapter(objects);
+    vi.mocked(delivery.resolveOwnerDelivery).mockImplementation(
+      async (_userId, key) => {
+        const id = key.split("/").at(-1)!.replace(/\.webp$/, "");
+        return `/api/evidence/plate/${id}`;
+      },
+    );
+    const imageDataUrl = `data:image/png;base64,${png.toString("base64")}`;
+    const referenceRequestId = randomUUID();
+    const reference = await stageOwnedInkIntentReference({ delivery }, {
+      userId: source.userId,
+      intentId,
+      clientRequestId: referenceRequestId,
+      imageDataUrl,
+    });
+    expect(reference.delivery).toBe(`/api/evidence/plate/${reference.plateId}`);
+    expect(objects.size).toBe(1);
+    const [[plate]] = await connection.query<RowDataPacket[]>(
+      "SELECT userId, modelId, featureIntentId, kind, storageKey, contentHash FROM model_reference_plates WHERE id = ?",
+      [reference.plateId],
+    );
+    expect(plate).toMatchObject({
+      userId: source.userId,
+      modelId: source.modelId,
+      featureIntentId: intentId,
+      kind: "uploaded_reference",
+      contentHash: reference.contentHash,
+    });
+
+    await expect(stageOwnedInkIntentReference({ delivery }, {
+      userId: source.userId,
+      intentId,
+      clientRequestId: referenceRequestId,
+      imageDataUrl,
+    })).resolves.toEqual(reference);
+    expect(objects.size).toBe(1);
+    await expect(stageOwnedInkIntentReference({ delivery }, {
+      userId: source.userId,
+      intentId,
+      clientRequestId: randomUUID(),
+      imageDataUrl,
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(stageOwnedInkIntentReference({ delivery }, {
+      userId: source.userId + 999,
+      intentId,
+      clientRequestId: randomUUID(),
+      imageDataUrl,
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const [[plateCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM model_reference_plates WHERE featureIntentId = ?",
+      [intentId],
+    );
+    expect(Number(plateCount.count)).toBe(1);
+  }, 90_000);
+
+  it("refuses foreign selected assets and already-selected typed features before intent creation", async () => {
+    const victim = await fixture({ status: "draft" });
+    const attacker = await fixture({ status: "draft" });
+    const foreignOperationId = await claimedIntentBegin(
+      attacker.userId,
+      attacker.modelId,
+    );
+    await expect(commitBeginInkAddIntent({
+      userId: attacker.userId,
+      modelId: attacker.modelId,
+      operationId: foreignOperationId,
+      intentId: randomUUID(),
+      sourceAssetId: victim.fullAssetId,
+      side: "right",
+      normalizedDescriptor: "small black star",
+    })).rejects.toMatchObject({ code: "source_unavailable" });
+    const [[foreignCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM model_identity_feature_intents WHERE modelId = ?",
+      [attacker.modelId],
+    );
+    expect(Number(foreignCount.count)).toBe(0);
+
+    await connection.execute(
+      "DELETE FROM generation_operation_locks WHERE operationId = ?",
+      [foreignOperationId],
+    );
+    const featureId = randomUUID();
+    const versionId = randomUUID();
+    const featureOperationId = randomUUID();
+    await connection.execute(
+      "INSERT INTO model_identity_features (id, modelId, category, createdByOperationId) VALUES (?, ?, 'ink', ?)",
+      [featureId, attacker.modelId, featureOperationId],
+    );
+    await connection.execute(
+      "INSERT INTO model_identity_feature_versions (id, modelId, featureId, operation, ontologyVersion, zone, surface, side, normalizedDescriptor, sourceAssetId, sourceViewAngle, recipeVersion, createdByOperationId) VALUES (?, ?, ?, 'present', 'd4a', 'front_upper_torso', 'anterior', 'left', 'existing star', ?, 'frontFull', 'd4a', ?)",
+      [
+        versionId,
+        attacker.modelId,
+        featureId,
+        attacker.fullAssetId,
+        featureOperationId,
+      ],
+    );
+    await connection.execute(
+      "INSERT INTO model_snapshot_feature_selections (id, modelId, identitySnapshotId, featureId, featureVersionId, selectionReason) VALUES (?, ?, ?, ?, ?, 'accepted')",
+      [
+        randomUUID(),
+        attacker.modelId,
+        attacker.identityId,
+        featureId,
+        versionId,
+      ],
+    );
+    const featureBlockedOperationId = await claimedIntentBegin(
+      attacker.userId,
+      attacker.modelId,
+    );
+    await expect(commitBeginInkAddIntent({
+      userId: attacker.userId,
+      modelId: attacker.modelId,
+      operationId: featureBlockedOperationId,
+      intentId: randomUUID(),
+      sourceAssetId: attacker.fullAssetId,
+      side: "right",
+      normalizedDescriptor: "small black star",
+    })).rejects.toMatchObject({ code: "feature_already_selected" });
+    const [[featureBlockedCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM model_identity_feature_intents WHERE modelId = ?",
+      [attacker.modelId],
+    );
+    expect(Number(featureBlockedCount.count)).toBe(0);
   }, 90_000);
 });

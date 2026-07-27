@@ -11,6 +11,7 @@ import {
   EVIDENCE_CANDIDATE_WORKER_ENV,
   EVIDENCE_COMPOSER_RECIPE_ENV,
   EVIDENCE_COMPOSER_SCOPE_ENV,
+  INK_ADD_PRODUCT_READY,
   validateEvidenceComposerEnvironment,
 } from "../casting/evidence/evidenceComposerScope";
 
@@ -79,7 +80,7 @@ export function validateEnv(): void {
     snapshotScope: process.env.R7_SNAPSHOT_READ_SCOPE,
     ingestScope: process.env[EVIDENCE_INGEST_SCOPE_ENV],
     adapterConfigured: privateEvidenceAdapterConfigured(),
-    productReady: EVIDENCE_PRODUCT_DELIVERY_READY,
+    productReady: EVIDENCE_PRODUCT_DELIVERY_READY && INK_ADD_PRODUCT_READY,
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {
