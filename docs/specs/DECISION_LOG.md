@@ -298,6 +298,11 @@ VC-R4 verdict: **the grammar passes** — toolbar, fork-beside, delete/undo, key
 
 **What:** the founder withdraws his earlier "beside might feel better": beside is the FORK geometry (a different person joins the row), below is the VARIATIONS geometry (candidates of the same person). Two semantically different spawn types must not share a geometry. Revisit only at R5 if the sheet's node heights change the feel.
 
+**R7-7D correction (D-69):** D-69 supersedes the parenthetical identity
+meaning above. Fork now means an independent copy of the same Cast identity;
+this entry preserves only the historical Canvas placement choice. Recast may
+create a different person. Its Canvas geometry is not decided here.
+
 ### D-49 — Frames tool retired until pass 3 *(ruling R3)*
 
 **What:** the frames tool is removed from the pill and Add menu NOW — it was a legacy stub with no real job. Frames return at **pass 3 as export units** per the ratified frames-as-export proposal (D-20) — the tool comes back wearing its real job. Existing frame nodes keep rendering (FrameNode stays; only creation affordances are gone).
@@ -719,6 +724,46 @@ transactions, and generation history were unchanged. The final counts-only
 orphan audit is clean, production health is green on commit `380efb0`, and
 `R7_EVIDENCE_INGEST_SCOPE` is back to `off`. R7-7C stops here; R7-7D still
 requires its own plan and review.
+
+### D-69 — Fork-to-edit is a free identity-preserving copy; Recast remains the paid new-person action *(founder-ratified 2026-07-27)*
+
+**Product meaning:** Fork and Recast are separate actions. **Fork to edit**
+creates a free, independent, editable duplicate of the same Cast. The original
+remains unchanged. The duplicate receives its own model, snapshot, selected
+package objects, typed feature records, and copied private evidence keys, so
+deleting either Cast cannot break the other. **Recast** remains the separately
+labelled paid AI-generation action that may produce a different person.
+
+**Visibility and failure law:** a Fork under construction is not a draft and
+is invisible to Models, Studio, Canvas, Wardrobe, billing, snapshot
+bootstrap/shadow/convergence, evidence delivery, and export. It becomes a
+normal draft only after every required public/private object copy is
+byte/hash-verified and the complete snapshot/feature graph commits. Failure
+keeps it invisible, changes nothing on the source, charges no generation
+credits, and queues every pre-recorded destination key through exact-key
+cleanup.
+
+**Ink pilot price:** one delivered
+`ink.add.front_upper_torso.v1` candidate costs **350 credits**, equal to one
+current Cast iteration. The one system-invalid internal retry is included at
+zero additional credits. Accept costs zero. Cancel costs zero but does not
+refund an already-delivered valid candidate. A user-requested Retry replaces
+the old candidate and is a new disclosed 350-credit operation.
+
+**Pilot UX boundary:** R7-7D remains founder/calibration-only. After ink is
+accepted, feature-blind edit/refresh/restore/mint paths refuse rather than
+erase or contradict the selected evidence. The capability cannot widen to
+ordinary customers until R7-7E restores evidence-aware sibling refresh and
+the complete edit/refresh/mint experience.
+
+**Execution authority:** the reviewed implementation plan is
+`CASTING_SYSTEM_R7_7D_INK_ADD_PILOT_PLAN.md` at planning commit `57a67b0`.
+This ruling supplies the founder decisions required for bounded local
+D1/D2/D3/D4 implementation and review in the order recorded there. Every
+implementation slice still requires its recorded verification and review
+gate. It does not authorize migration, deployment, production
+provider/database/storage work, feature-flag enablement, or paid founder
+calibration; each remains separately gated.
 
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
