@@ -14,9 +14,12 @@ import {
   generationOperations,
   IDENTITY_SNAPSHOT_REASONS,
   modelAssets,
+  modelIdentityFeatures,
+  modelIdentityFeatureVersions,
   modelIdentitySnapshots,
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
+  modelSnapshotFeatureSelections,
   models,
   PACKAGE_SLOT_COMPATIBILITY,
   PACKAGE_SLOT_SELECTION_REASONS,
@@ -73,6 +76,18 @@ export interface SnapshotTransitionSpec {
   packageReason: Exclude<PackageSnapshotReason, "bootstrap">;
   identity?: SnapshotIdentityChange;
   slotChanges?: SnapshotSlotChange[];
+  /**
+   * Selected identity features never disappear implicitly. Existing writers
+   * must opt into carry-forward once a Cast owns feature selections.
+   */
+  featureSelections?: {
+    carryCurrent: true;
+    additions?: Array<{
+      featureId: string;
+      featureVersionId: string;
+      selectionReason: "accepted";
+    }>;
+  };
   /** Mint adoption sets this only after its existing draft→active CAS has
    * succeeded inside the same callback transaction. */
   seal?: boolean;
@@ -137,7 +152,7 @@ function assertReasonPair(identity: SnapshotIdentityChange, packageReason: Snaps
     identity_edit: "identity_change",
     anchor_reroll: "identity_change",
     document_compact: "identity_change",
-    evidence_accept: "identity_change",
+    evidence_accept: "evidence_accept",
     evidence_remove: "identity_change",
     restore: "whole_restore",
     fork_bootstrap: "create",
@@ -304,6 +319,10 @@ export async function commitModelSnapshotTransition<Result>(input: {
     tx: TransactionHandle,
     context: SnapshotTransitionContext,
   ) => Promise<{ result: Result; transition: SnapshotTransitionSpec }>;
+  finalize?: (
+    tx: TransactionHandle,
+    committed: SnapshotTransitionResult<Result>,
+  ) => Promise<void>;
 }): Promise<SnapshotTransitionResult<Result>> {
   return withTransaction(async (tx) => {
     // Shared lock order: model row → operation receipt → operation lock.
@@ -521,6 +540,28 @@ export async function commitModelSnapshotTransition<Result>(input: {
 
     const sequences = await nextSequencesIn(tx, input.modelId);
     let identitySnapshotId = current?.identitySnapshot.id ?? null;
+    const currentFeatureSelections = current
+      ? await tx
+        .select()
+        .from(modelSnapshotFeatureSelections)
+        .where(and(
+          eq(modelSnapshotFeatureSelections.modelId, input.modelId),
+          eq(
+            modelSnapshotFeatureSelections.identitySnapshotId,
+            current.identitySnapshot.id,
+          ),
+        ))
+      : [];
+    if (
+      transition.identity
+      && currentFeatureSelections.length > 0
+      && !transition.featureSelections?.carryCurrent
+    ) {
+      throw new Error("Identity transition is not feature-selection aware");
+    }
+    if (transition.featureSelections && !transition.identity) {
+      throw new Error("Package-only transitions cannot change identity features");
+    }
     if (transition.identity) {
       const [anchorAsset] = await tx
         .select({ id: modelAssets.id, modelId: modelAssets.modelId, viewType: modelAssets.viewType, storageUrl: modelAssets.storageUrl })
@@ -577,6 +618,70 @@ export async function commitModelSnapshotTransition<Result>(input: {
         recipeVersion: transition.identity.recipeVersion,
         createdByOperationId: input.operationId,
       });
+      const additions = transition.featureSelections?.additions ?? [];
+      const selectedFeatureIds = new Set(
+        currentFeatureSelections.map((selection) => selection.featureId),
+      );
+      const selectedVersionIds = new Set(
+        currentFeatureSelections.map((selection) => selection.featureVersionId),
+      );
+      for (const addition of additions) {
+        if (
+          !addition.featureId.trim()
+          || !addition.featureVersionId.trim()
+          || selectedFeatureIds.has(addition.featureId)
+          || selectedVersionIds.has(addition.featureVersionId)
+        ) {
+          throw new Error("Identity feature selection addition is invalid");
+        }
+        selectedFeatureIds.add(addition.featureId);
+        selectedVersionIds.add(addition.featureVersionId);
+      }
+      for (const addition of additions) {
+        const [ownedFeature] = await tx
+          .select({ id: modelIdentityFeatures.id })
+          .from(modelIdentityFeatures)
+          .where(and(
+            eq(modelIdentityFeatures.id, addition.featureId),
+            eq(modelIdentityFeatures.modelId, input.modelId),
+          ))
+          .limit(1);
+        const [ownedVersion] = await tx
+          .select({ id: modelIdentityFeatureVersions.id })
+          .from(modelIdentityFeatureVersions)
+          .where(and(
+            eq(modelIdentityFeatureVersions.id, addition.featureVersionId),
+            eq(modelIdentityFeatureVersions.modelId, input.modelId),
+            eq(modelIdentityFeatureVersions.featureId, addition.featureId),
+          ))
+          .limit(1);
+        if (!ownedFeature || !ownedVersion) {
+          throw new Error("Identity feature selection addition is invalid");
+        }
+      }
+      const nextSelections = [
+        ...currentFeatureSelections.map((selection) => ({
+          id: randomUUID(),
+          modelId: input.modelId,
+          identitySnapshotId: identitySnapshotId!,
+          featureId: selection.featureId,
+          featureVersionId: selection.featureVersionId,
+          selectionReason: "carried" as const,
+          sourceSelectionId: selection.id,
+        })),
+        ...additions.map((addition) => ({
+          id: randomUUID(),
+          modelId: input.modelId,
+          identitySnapshotId: identitySnapshotId!,
+          featureId: addition.featureId,
+          featureVersionId: addition.featureVersionId,
+          selectionReason: addition.selectionReason,
+          sourceSelectionId: null,
+        })),
+      ];
+      if (nextSelections.length > 0) {
+        await tx.insert(modelSnapshotFeatureSelections).values(nextSelections);
+      }
     }
     if (!identitySnapshotId) throw new Error("A first package transition requires an identity snapshot");
 
@@ -634,7 +739,7 @@ export async function commitModelSnapshotTransition<Result>(input: {
       ));
     if (affectedRows(advanced) !== 1) throw new Error("The model changed during snapshot transition");
 
-    return {
+    const committed = {
       result: mutation.result,
       modelId: input.modelId,
       identitySnapshotId,
@@ -642,6 +747,8 @@ export async function commitModelSnapshotTransition<Result>(input: {
       stateVersion: nextStateVersion,
       selectedSlotCount: finalSlots.length,
     };
+    if (input.finalize) await input.finalize(tx, committed);
+    return committed;
   });
 }
 

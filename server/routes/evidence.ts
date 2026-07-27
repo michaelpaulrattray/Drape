@@ -31,6 +31,7 @@ import {
   generateInkAddCandidate,
   retryInkAddCandidate,
 } from "../casting/evidence/inkCandidateGeneration";
+import { acceptInkAddCandidate } from "../casting/evidence/inkCandidateAcceptance";
 
 const EVIDENCE_INGEST_LIMIT = {
   maxRequests: 10,
@@ -162,6 +163,27 @@ export const evidenceRouter = router({
         });
       }
       return retryInkAddCandidate({ delivery }, {
+        userId: ctx.user.id,
+        ...input,
+      });
+    }),
+
+  acceptInkAddCandidate: protectedProcedure
+    .input(z.object({
+      candidateId: z.string().uuid(),
+      clientRequestId: z.string().uuid(),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireInkCapability(ctx.user.id);
+      enforceRateLimit(ctx.user.id);
+      const delivery = getEvidenceDeliveryAdapter();
+      if (!delivery) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Tattoo previews are not available for this account.",
+        });
+      }
+      return acceptInkAddCandidate({ delivery }, {
         userId: ctx.user.id,
         ...input,
       });

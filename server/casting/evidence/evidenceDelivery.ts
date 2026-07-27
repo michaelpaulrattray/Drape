@@ -200,6 +200,33 @@ async function readAllCanonical(input: CanonicalEvidenceRead): Promise<Buffer> {
   return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), total);
 }
 
+export async function readCanonicalEvidenceBytesExact(
+  adapter: PrivateEvidenceStorageAdapter,
+  input: {
+    key: string;
+    byteSize: number;
+    contentHash: string;
+  },
+): Promise<Buffer> {
+  parseEvidenceStorageKey(input.key);
+  if (
+    !/^[0-9a-f]{64}$/.test(input.contentHash)
+    || !Number.isSafeInteger(input.byteSize)
+    || input.byteSize <= 0
+  ) {
+    throw new EvidenceDeliveryError("invalid_delivery");
+  }
+  const source = await adapter.readCanonical({
+    key: input.key,
+    expectedByteSize: input.byteSize,
+  });
+  const bytes = await readAllCanonical(source);
+  if (createHash("sha256").update(bytes).digest("hex") !== input.contentHash) {
+    throw new EvidenceDeliveryError("invalid_delivery");
+  }
+  return bytes;
+}
+
 /**
  * Copy one private canonical object while proving both source and destination
  * bytes against the immutable database hash. Fork never aliases source keys.
@@ -222,14 +249,11 @@ export async function copyCanonicalEvidenceExact(
   ) {
     throw new EvidenceDeliveryError("invalid_delivery");
   }
-  const source = await adapter.readCanonical({
+  const bytes = await readCanonicalEvidenceBytesExact(adapter, {
     key: input.sourceKey,
-    expectedByteSize: input.byteSize,
+    byteSize: input.byteSize,
+    contentHash: input.contentHash,
   });
-  const bytes = await readAllCanonical(source);
-  if (createHash("sha256").update(bytes).digest("hex") !== input.contentHash) {
-    throw new EvidenceDeliveryError("invalid_delivery");
-  }
   await putCanonicalEvidence(adapter, {
     key: input.destinationKey,
     image: {

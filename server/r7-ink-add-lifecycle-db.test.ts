@@ -41,6 +41,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./db/inkAddCandidates").invalidateInkCandidate;
   let findActiveOwnedInkCandidate:
     typeof import("./db/inkAddCandidates").findActiveOwnedInkCandidate;
+  let prepareInkCandidateAcceptance:
+    typeof import("./db/inkAddAcceptance").prepareInkCandidateAcceptance;
+  let commitInkCandidateAcceptance:
+    typeof import("./casting/evidence/inkAcceptanceCommit").commitInkCandidateAcceptance;
   let getUserDailyGenerationCount:
     typeof import("./db/dailyQuota").getUserDailyGenerationCount;
   let readOwnedEvidenceDelivery:
@@ -81,6 +85,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       invalidateInkCandidate,
       findActiveOwnedInkCandidate,
     } = await import("./db/inkAddCandidates"));
+    ({ prepareInkCandidateAcceptance } = await import("./db/inkAddAcceptance"));
+    ({ commitInkCandidateAcceptance } = await import(
+      "./casting/evidence/inkAcceptanceCommit"
+    ));
     ({ getUserDailyGenerationCount } = await import("./db/dailyQuota"));
     ({ readOwnedEvidenceDelivery } = await import("./db/evidenceDelivery"));
     ({ getModelById, getUserModels } = await import("./db/models"));
@@ -267,6 +275,29 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     await connection.execute(
       "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
       [`model:${source.modelId}`, operationId, kind],
+    );
+    return operationId;
+  }
+
+  async function runningAcceptOperation(
+    source: Awaited<ReturnType<typeof fixture>>,
+  ) {
+    const operationId = randomUUID();
+    await connection.execute(
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, phase) VALUES (?, ?, ?, 'evidence_candidate_accept', ?, ?, 'running', NULL, 1, ?, ?, 0, 'saving')",
+      [
+        operationId,
+        source.userId,
+        randomUUID(),
+        source.modelId,
+        "e".repeat(64),
+        source.identityId,
+        source.packageId,
+      ],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_candidate_accept', DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      [`model:${source.modelId}`, operationId],
     );
     return operationId;
   }
@@ -744,6 +775,161 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       kind: "candidate",
       entityId: prepared.candidateId,
     })).resolves.toBeNull();
+  }, 90_000);
+
+  it("accepts one ready candidate as one atomic feature, asset, snapshot pair, and receipt", async () => {
+    const source = await fixture({ status: "draft" });
+    const intentId = await pendingInkIntent(source);
+    const generationOperationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    const candidate = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId: generationOperationId,
+      operationKind: "evidence_candidate_generate",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    await markInkCandidateAttemptGenerating(candidate);
+    await markInkCandidateAttemptStored({
+      prepared: candidate,
+      image: {
+        mime: "image/webp",
+        width: 512,
+        height: 768,
+        byteSize: webp.length,
+        contentHash: webpHash,
+      },
+    });
+    await completeInkCandidateReady({
+      prepared: candidate,
+      probe: passCandidateProbe(),
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+    await connection.execute(
+      "DELETE FROM generation_operation_locks WHERE operationId = ?",
+      [generationOperationId],
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET status = 'succeeded', chargedCredits = 350, completedAt = NOW() WHERE id = ?",
+      [generationOperationId],
+    );
+
+    const acceptOperationId = await runningAcceptOperation(source);
+    const publicKey =
+      `users/${source.userId}/models/${source.modelId}/generated/ink/${candidate.candidateId}/${acceptOperationId}.webp`;
+    const prepared = await prepareInkCandidateAcceptance({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: acceptOperationId,
+      candidateId: candidate.candidateId,
+      publicStorageKey: publicKey,
+      now: new Date("2026-07-28T00:00:00.000Z"),
+    });
+    const accepted = await commitInkCandidateAcceptance({
+      prepared,
+      publicStorageUrl: `https://public.example/${publicKey}`,
+      now: new Date("2026-07-28T00:00:01.000Z"),
+    });
+
+    expect(accepted).toMatchObject({
+      candidateId: candidate.candidateId,
+      status: "accepted",
+      modelId: source.modelId,
+      stateVersion: 2,
+      chargedCredits: 0,
+    });
+    const [[model]] = await connection.query<RowDataPacket[]>(
+      "SELECT stateVersion, currentPackageSnapshotId, identityRevisionId, masterPrompt, technicalSchema, preferences FROM models WHERE id = ?",
+      [source.modelId],
+    );
+    expect(model).toMatchObject({
+      stateVersion: 2,
+      currentPackageSnapshotId: accepted.packageSnapshotId,
+      identityRevisionId: expect.any(String),
+      masterPrompt: "identity",
+    });
+    const [[head]] = await connection.query<RowDataPacket[]>(
+      "SELECT i.parentSnapshotId, i.reason AS identityReason, i.anchorAssetId, i.masterPrompt, i.technicalSchema, i.preferences, p.parentPackageSnapshotId, p.reason AS packageReason FROM model_package_snapshots p JOIN model_identity_snapshots i ON i.id = p.identitySnapshotId WHERE p.id = ?",
+      [accepted.packageSnapshotId],
+    );
+    expect(head).toMatchObject({
+      parentSnapshotId: source.identityId,
+      identityReason: "evidence_accept",
+      anchorAssetId: source.headAssetId,
+      masterPrompt: "identity",
+      parentPackageSnapshotId: source.packageId,
+      packageReason: "evidence_accept",
+    });
+    expect(head.technicalSchema).toEqual(model.technicalSchema);
+    expect(head.preferences).toEqual(model.preferences);
+    const [slots] = await connection.query<RowDataPacket[]>(
+      "SELECT viewAngle, selectedAssetId, compatibility, selectionReason FROM model_package_snapshot_slots WHERE packageSnapshotId = ? ORDER BY viewAngle",
+      [accepted.packageSnapshotId],
+    );
+    expect(slots).toEqual([
+      {
+        viewAngle: "frontClose",
+        selectedAssetId: source.headAssetId,
+        compatibility: "stale",
+        selectionReason: "carried",
+      },
+      {
+        viewAngle: "frontFull",
+        selectedAssetId: accepted.assetId,
+        compatibility: "current",
+        selectionReason: "evidence_accept",
+      },
+    ]);
+    const [assets] = await connection.query<RowDataPacket[]>(
+      "SELECT id, viewType, pointsCost, storageKey, JSON_UNQUOTE(JSON_EXTRACT(status, '$.state')) AS state FROM model_assets WHERE modelId = ? ORDER BY id",
+      [source.modelId],
+    );
+    expect(assets).toEqual([
+      expect.objectContaining({ id: source.headAssetId, state: "stale" }),
+      expect.objectContaining({ id: source.fullAssetId, state: "stale" }),
+      expect.objectContaining({
+        id: accepted.assetId,
+        viewType: "frontFull",
+        pointsCost: 350,
+        storageKey: publicKey,
+        state: "current",
+      }),
+    ]);
+    const [[graph]] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM model_identity_features WHERE modelId = ?) AS features, (SELECT COUNT(*) FROM model_identity_feature_versions WHERE modelId = ?) AS versions, (SELECT COUNT(*) FROM model_snapshot_feature_selections WHERE identitySnapshotId = ?) AS selections, (SELECT COUNT(*) FROM model_reference_plates WHERE id = ? AND kind = 'accepted_candidate') AS plates",
+      [
+        source.modelId,
+        source.modelId,
+        accepted.identitySnapshotId,
+        candidate.privatePlateId,
+      ],
+    );
+    expect(graph).toEqual({
+      features: 1,
+      versions: 1,
+      selections: 1,
+      plates: 1,
+    });
+    const [[terminal]] = await connection.query<RowDataPacket[]>(
+      "SELECT c.status AS candidateStatus, c.activeSlot, i.status AS intentStatus, i.activeCapabilityKey, a.status AS attemptStatus, o.status AS operationStatus, o.chargedCredits, o.refundedCredits, l.operationId AS lockOwner FROM casting_evidence_candidates c JOIN model_identity_feature_intents i ON i.id = c.intentId JOIN casting_evidence_candidate_attempts a ON a.id = c.readyAttemptId JOIN generation_operations o ON o.id = ? LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE c.id = ?",
+      [acceptOperationId, candidate.candidateId],
+    );
+    expect(terminal).toEqual({
+      candidateStatus: "accepted",
+      activeSlot: null,
+      intentStatus: "resolved",
+      activeCapabilityKey: null,
+      attemptStatus: "promoted",
+      operationStatus: "succeeded",
+      chargedCredits: 0,
+      refundedCredits: 0,
+      lockOwner: null,
+    });
   }, 90_000);
 
   it("keeps an included retry under one quota unit, scrubs attempt one, and replaces ready atomically", async () => {

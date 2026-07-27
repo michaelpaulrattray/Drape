@@ -105,6 +105,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/effectiveCastState.ts",
       "server/casting/evidence/evidenceComposerSchema.ts",
       "server/casting/evidence/evidenceFork.ts",
+      "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/evidence/referencePlateIngestion.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/snapshotBootstrap.ts",
@@ -116,6 +117,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/db/evidenceIngestion.ts",
       "server/db/evidenceOperations.ts",
       "server/db/generationOperations.ts",
+      "server/db/inkAddAcceptance.ts",
       "server/db/inkAddCandidates.ts",
       "server/db/inkAddIntents.ts",
     ]);
@@ -624,6 +626,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       if (content.includes("snapshotTransitions")) callers.push(file.replaceAll("\\", "/"));
     }
     expect(callers).toEqual([
+      "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/mintPackage.ts",
       "server/casting/refreshSlots.ts",
       "server/lib/boardOps.ts",

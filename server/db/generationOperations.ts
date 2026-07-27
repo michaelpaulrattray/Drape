@@ -1481,6 +1481,50 @@ export async function finalizeGenerationOperationSuccess(input: {
   return { type: "replay_success", operationId: input.operationId, result: input.result };
 }
 
+/**
+ * Transaction-scoped success finalizer for a running free operation whose
+ * product mutation must become visible with its receipt and lock release.
+ * Callers already hold the operation row/lock in the shared model-first order.
+ */
+export async function finalizeRunningGenerationOperationSuccessIn(
+  tx: TransactionHandle,
+  input: {
+    userId: number;
+    operationId: string;
+    result: unknown;
+  },
+): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertPublicOperationResult(input.result);
+  const operation = await loadRunningOperation(tx, input.userId, input.operationId);
+  if (operation.plannedCredits !== 0) {
+    throw new Error("A transaction-scoped free success cannot finalize a paid operation");
+  }
+  const finalized = await tx
+    .update(generationOperations)
+    .set({
+      status: "succeeded",
+      result: input.result,
+      errorCode: null,
+      publicMessage: null,
+      chargedCredits: 0,
+      refundedCredits: 0,
+      completedAt: new Date(),
+    })
+    .where(and(
+      eq(generationOperations.id, input.operationId),
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.status, "running"),
+    ));
+  if (affectedRows(finalized) !== 1) {
+    throw new Error("Running free operation success finalization lost its state race");
+  }
+  await tx.delete(generationOperationLocks).where(
+    eq(generationOperationLocks.operationId, input.operationId),
+  );
+}
+
 export async function finalizeGenerationOperationFailure(input: {
   userId: number;
   operationId: string;

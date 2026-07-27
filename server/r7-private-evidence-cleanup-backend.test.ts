@@ -92,6 +92,7 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       "server/db/evidenceCandidates.ts",
       "server/db/evidenceOperations.ts",
       "server/db/evidenceRecovery.ts",
+      "server/db/inkAddAcceptance.ts",
       "server/db/inkAddCandidates.ts",
     ]);
     for (const file of callers) {

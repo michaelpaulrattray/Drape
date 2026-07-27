@@ -15,7 +15,7 @@ describe("R7-7D D4B candidate generation contract", () => {
     expect(scope).toContain("INK_ADD_PRODUCT_READY = false");
     expect(route).toContain("generateInkAddCandidate: protectedProcedure");
     expect(route).toContain("retryInkAddCandidate: protectedProcedure");
-    expect(route.match(/\.strict\(\)/g)).toHaveLength(7);
+    expect(route.match(/\.strict\(\)/g)).toHaveLength(8);
     expect(route).toContain("userId: ctx.user.id");
     expect(route).not.toMatch(
       /userId:\s*z\.|ownerId:\s*z\.|operationId:\s*z\.|storageKey:\s*z\.|engine:\s*z\./,
