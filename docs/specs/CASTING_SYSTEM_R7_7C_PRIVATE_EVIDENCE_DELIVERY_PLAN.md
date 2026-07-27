@@ -313,8 +313,21 @@ deleted before the ceremony passes.
 - evidence scope stays off through deploy;
 - passive health/worker checks;
 - separately authorized `users:1` upload/read/discard ceremony;
-- private bucket and database return to zero evidence objects/rows after the
-  discard proof.
+- private bucket returns to zero objects, and the database returns to zero live
+  plate, crop, and cleanup-item rows after the discard proof; the cleaned
+  receipt, succeeded cleanup batch, and zero-credit operation records remain
+  as the intended durable audit trail.
+
+**Completed 2026-07-27.** Production commit `380efb0` passed the bounded
+founder ceremony against user 1 / draft model 36. One synthetic 256×256
+reference plate was written to the private bucket through the real route,
+rendered through the authenticated owner delivery endpoint, and refused with
+HTTP 401 without a session. Discard then converged through the deployed cleanup
+worker. Final scope is `off`; health and database checks are green; the
+counts-only audit reports zero objects, plates, crops, cleanup items, orphan
+candidates, missing references, ownership mismatches, and cleanup-link
+mismatches. The model head, credits, point-transaction count, and generation
+rows remained unchanged.
 
 ## 10. Stop boundary
 

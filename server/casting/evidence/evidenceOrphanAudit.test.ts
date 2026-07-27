@@ -195,6 +195,46 @@ describe("R7-7C3 evidence rollback orphan audit", () => {
     expect(auditEvidenceOrphans(state).cleanupLinkMismatches).toBe(1);
   });
 
+  it("accepts a cleaned receipt only after its cleanup item is gone", () => {
+    const state = validState();
+    const receipt = state.receipts[0];
+    receipt.status = "cleaned";
+    receipt.attachedEntityKind = null;
+    receipt.attachedEntityId = null;
+    receipt.cleanupBatchId = "batch-cleaned";
+    state.referencePlates = [];
+    state.crops = [];
+    state.receipts = [receipt];
+    state.operations.push({
+      id: discardOperationId,
+      userId: 7,
+      modelId: 9,
+      kind: "evidence_plate_discard",
+      subjectDeletedAt: null,
+    });
+    state.cleanupBatches = [{
+      id: "batch-cleaned",
+      userId: 7,
+      operationId: discardOperationId,
+      kind: "evidence_cleanup",
+    }];
+    state.cleanupItems = [];
+
+    const settled = auditEvidenceOrphans(state);
+    expect(settled.cleanupLinkMismatches).toBe(0);
+    expect(settled.cleanedReceipts).toBe(1);
+    expect(settled.clean).toBe(true);
+
+    state.cleanupItems = [{
+      batchId: "batch-cleaned",
+      storageKey: receipt.storageKey,
+      storageBackend: "private_evidence_r2",
+    }];
+    const retained = auditEvidenceOrphans(state);
+    expect(retained.cleanupLinkMismatches).toBe(1);
+    expect(retained.clean).toBe(false);
+  });
+
   it("accepts retained cleanup batches only after their Cast or account is deleted", () => {
     const state = validState();
     const receipt = state.receipts[0];

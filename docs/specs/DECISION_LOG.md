@@ -708,6 +708,18 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Rollout boundary:** migration, adapter deployment, bucket provisioning, and founder-only evidence enablement remain separate reviewed operations. Evidence scope stays off until the private put/read/delete ceremony and authenticated owner-delivery tests pass. After the first real evidence write, rollback may use only an adapter-capable build; a pre-adapter runtime is no longer a valid cleanup authority.
 
+**Founder ceremony completed (2026-07-27):** the reviewed production adapter
+passed one bounded `users:1` stage/read/discard ceremony against a founder-owned
+draft. The synthetic private plate rendered through the authenticated owner
+route and returned HTTP 401 without a session. Worker cleanup settled to zero
+live private objects, plates, crops, and cleanup items; one cleaned receipt,
+one succeeded cleanup batch, and two succeeded zero-credit operation records
+remain as the durable audit trail. Model head, credit balance, point
+transactions, and generation history were unchanged. The final counts-only
+orphan audit is clean, production health is green on commit `380efb0`, and
+`R7_EVIDENCE_INGEST_SCOPE` is back to `off`. R7-7C stops here; R7-7D still
+requires its own plan and review.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

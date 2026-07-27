@@ -216,14 +216,19 @@ export function auditEvidenceOrphans(input: {
         && cleanupOperation.userId === receipt.userId
         && cleanupOperation.modelId === receipt.modelId
       );
+    const manifestMatchesReceipt = receipt.status === "cleaned"
+      ? items.length === 0
+      : (
+        items.length === 1
+        && items[0]?.storageKey === receipt.storageKey
+        && items[0]?.storageBackend === "private_evidence_r2"
+      );
     if (
       !batch
       || batch.kind !== "evidence_cleanup"
       || batch.userId !== receipt.userId
       || !operationMatchesReceipt
-      || items.length !== 1
-      || items[0]?.storageKey !== receipt.storageKey
-      || items[0]?.storageBackend !== "private_evidence_r2"
+      || !manifestMatchesReceipt
     ) {
       cleanupLinkMismatches += 1;
     }
