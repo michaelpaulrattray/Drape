@@ -10,6 +10,10 @@ interface SchemaQueryClient {
   ): Promise<[unknown, unknown]>;
 }
 
+interface PromiseConvertiblePool {
+  promise(): SchemaQueryClient;
+}
+
 interface ColumnRow {
   COLUMN_TYPE: string;
   IS_NULLABLE: string;
@@ -47,6 +51,25 @@ function columnRows(value: unknown): ColumnRow[] {
 
 function indexRows(value: unknown): IndexRow[] {
   return Array.isArray(value) ? value as IndexRow[] : [];
+}
+
+/**
+ * Drizzle exposes mysql2's callback-style Pool as `$client`. Awaiting its
+ * Query command is a programming error, so startup verification must cross
+ * the driver's explicit promise-wrapper boundary before issuing SQL.
+ */
+export function promiseSchemaQueryClient(
+  client: unknown,
+): SchemaQueryClient {
+  const promise = (client as Partial<PromiseConvertiblePool> | null)?.promise;
+  if (typeof promise !== "function") {
+    throw new Error("database promise client unavailable");
+  }
+  const wrapped = promise.call(client);
+  if (!wrapped || typeof wrapped.query !== "function") {
+    throw new Error("database promise query unavailable");
+  }
+  return wrapped;
 }
 
 export async function assertPrivateEvidenceCleanupSchemaWithClient(
@@ -115,7 +138,7 @@ export async function assertPrivateEvidenceCleanupSchema(
   const getClient = options.getClient ?? (async () => {
     const db = await getDb();
     if (!db) throw new Error("database unavailable");
-    return db.$client as unknown as SchemaQueryClient;
+    return promiseSchemaQueryClient(db.$client);
   });
   let lastError: unknown;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {

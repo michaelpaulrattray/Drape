@@ -5,6 +5,7 @@ import {
   PrivateEvidenceSchemaUnavailableError,
   assertPrivateEvidenceCleanupSchema,
   assertPrivateEvidenceCleanupSchemaWithClient,
+  promiseSchemaQueryClient,
 } from "./privateEvidenceSchema";
 
 function client(input: {
@@ -61,6 +62,27 @@ describe("R7-7C5B adapter-capable startup schema fence", () => {
     const express = source.indexOf("const app = express()");
     expect(assertion).toBeGreaterThan(0);
     expect(assertion).toBeLessThan(express);
+  });
+
+  it("crosses the production mysql2 pool's promise boundary before querying", async () => {
+    const promised = client({});
+    const rawQuery = vi.fn(() => {
+      throw new Error("callback Query must never be awaited");
+    });
+    const promise = vi.fn(() => promised);
+
+    await expect(assertPrivateEvidenceCleanupSchemaWithClient(
+      promiseSchemaQueryClient({ query: rawQuery, promise }),
+    )).resolves.toBeUndefined();
+    expect(promise).toHaveBeenCalledTimes(1);
+    expect(rawQuery).not.toHaveBeenCalled();
+    expect(promised.query).toHaveBeenCalledTimes(2);
+
+    const source = await readFile(
+      new URL("./privateEvidenceSchema.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain("promiseSchemaQueryClient(db.$client)");
   });
 
   it("retries transient verification failures but never retries a proven mismatch", async () => {
