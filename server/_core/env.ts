@@ -7,6 +7,12 @@ import {
   EVIDENCE_PRODUCT_DELIVERY_READY,
   privateEvidenceAdapterConfigured,
 } from "../casting/evidence/evidenceDeliveryRuntime";
+import {
+  EVIDENCE_CANDIDATE_WORKER_ENV,
+  EVIDENCE_COMPOSER_RECIPE_ENV,
+  EVIDENCE_COMPOSER_SCOPE_ENV,
+  validateEvidenceComposerEnvironment,
+} from "../casting/evidence/evidenceComposerScope";
 
 /**
  * Vars the server cannot run without. Each entry explains what breaks when
@@ -62,6 +68,16 @@ export function validateEnv(): void {
   validateEvidenceIngestEnvironment({
     scope: process.env[EVIDENCE_INGEST_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+    adapterConfigured: privateEvidenceAdapterConfigured(),
+    productReady: EVIDENCE_PRODUCT_DELIVERY_READY,
+  });
+  validateEvidenceComposerEnvironment({
+    scope: process.env[EVIDENCE_COMPOSER_SCOPE_ENV],
+    recipe: process.env[EVIDENCE_COMPOSER_RECIPE_ENV],
+    candidateWorker: process.env[EVIDENCE_CANDIDATE_WORKER_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+    snapshotScope: process.env.R7_SNAPSHOT_READ_SCOPE,
+    ingestScope: process.env[EVIDENCE_INGEST_SCOPE_ENV],
     adapterConfigured: privateEvidenceAdapterConfigured(),
     productReady: EVIDENCE_PRODUCT_DELIVERY_READY,
   });

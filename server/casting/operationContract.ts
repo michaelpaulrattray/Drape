@@ -9,6 +9,13 @@ export const GENERATION_OPERATION_KINDS = [
   "casting.add_views",
   "evidence_plate_ingest",
   "evidence_plate_discard",
+  "evidence_intent_begin",
+  "evidence_intent_reference",
+  "evidence_candidate_generate",
+  "evidence_candidate_retry",
+  "evidence_candidate_accept",
+  "evidence_candidate_cancel",
+  "evidence_fork_copy",
   "casting.refresh",
   "casting.restore",
   "casting.pin",
@@ -42,6 +49,10 @@ export const GENERATION_OPERATION_PHASES = [
   "landing",
   "finalizing",
   "reconciling",
+  "validating",
+  "probing",
+  "awaiting_acceptance",
+  "cleaning",
 ] as const;
 
 export type GenerationOperationPhase = typeof GENERATION_OPERATION_PHASES[number];

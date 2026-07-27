@@ -17,6 +17,12 @@ import evidenceDeliveryRouter from "../routes/evidenceDelivery";
 import { healthHandler } from "../health";
 import { validateEnv } from "./env";
 import { assertPrivateEvidenceCleanupSchema } from "../casting/evidence/privateEvidenceSchema";
+import {
+  assertEvidenceComposerSchema,
+} from "../casting/evidence/evidenceComposerSchema";
+import {
+  evidenceComposerSchemaRequired,
+} from "../casting/evidence/evidenceComposerScope";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("server");
 
@@ -144,6 +150,11 @@ async function startServer() {
   // C5B is the first private-adapter-capable build. Refuse traffic until the
   // cleanup backend column and exact tuple index from migration 0012 exist.
   await assertPrivateEvidenceCleanupSchema();
+  // R7-7D remains inert while scope is off. Any enabled cohort must prove the
+  // complete additive 0013 shape before Express can accept traffic.
+  if (evidenceComposerSchemaRequired()) {
+    await assertEvidenceComposerSchema();
+  }
 
   const app = express();
   configureTrustedProxy(app);

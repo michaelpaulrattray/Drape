@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   decimal,
   index,
   int,
@@ -11,6 +12,7 @@ import {
   uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -196,6 +198,7 @@ export const PACKAGE_SNAPSHOT_REASONS = [
   "whole_restore",
   "mint",
   "late_view",
+  "evidence_accept",
 ] as const;
 
 export const PACKAGE_SLOT_COMPATIBILITY = ["current", "stale", "unverified"] as const;
@@ -207,6 +210,7 @@ export const PACKAGE_SLOT_SELECTION_REASONS = [
   "restored",
   "late_view",
   "bootstrap",
+  "evidence_accept",
 ] as const;
 
 export const models = mysqlTable("models", {
@@ -217,7 +221,8 @@ export const models = mysqlTable("models", {
   masterPrompt: text("masterPrompt").notNull(), // Full generation prompt
   technicalSchema: json("technicalSchema").notNull(), // JSON object with model specs
   preferences: json("preferences").notNull(), // Original ModelPreferences input
-  status: mysqlEnum("status", ["draft", "active", "locked", "archived"]).default("draft").notNull(),
+  status: mysqlEnum("status", ["draft", "active", "locked", "archived", "provisioning"]).default("draft").notNull(),
+  // provisioning = invisible evidence-aware Fork under construction
   // draft = work in progress, mutable
   // active = minted with agencyId, identity locked
   // locked = permanently immutable (legacy support)
@@ -387,6 +392,7 @@ export const generations = mysqlTable("generations", {
     "wardrobeComposite",
     "wardrobeRefinement",
     "wardrobeDigitize",
+    "evidenceCandidate",
   ]).notNull(),
   status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
   pointsCost: int("pointsCost").notNull(),
@@ -483,6 +489,7 @@ export const STORAGE_CLEANUP_BATCH_KINDS = [
   "model_delete",
   "account_delete",
   "evidence_cleanup",
+  "candidate_cleanup",
 ] as const;
 export type StorageCleanupBatchKind = typeof STORAGE_CLEANUP_BATCH_KINDS[number];
 
@@ -570,6 +577,7 @@ export type InsertStorageCleanupItem = typeof storageCleanupItems.$inferInsert;
 export const CASTING_EVIDENCE_INGESTION_PURPOSES = [
   "reference_plate",
   "evidence_crop",
+  "fork_copy",
 ] as const;
 export type CastingEvidenceIngestionPurpose =
   typeof CASTING_EVIDENCE_INGESTION_PURPOSES[number];
@@ -591,7 +599,10 @@ export const CASTING_EVIDENCE_ENTITY_KINDS = [
 export type CastingEvidenceEntityKind =
   typeof CASTING_EVIDENCE_ENTITY_KINDS[number];
 
-export const MODEL_REFERENCE_PLATE_KINDS = ["uploaded_reference"] as const;
+export const MODEL_REFERENCE_PLATE_KINDS = [
+  "uploaded_reference",
+  "accepted_candidate",
+] as const;
 export type ModelReferencePlateKind = typeof MODEL_REFERENCE_PLATE_KINDS[number];
 
 /**
@@ -607,6 +618,7 @@ export const castingEvidenceIngestions = mysqlTable("casting_evidence_ingestions
   userId: int("userId").notNull(),
   modelId: int("modelId").notNull(),
   operationId: varchar("operationId", { length: 36 }).notNull(),
+  stepKey: varchar("stepKey", { length: 64 }).default("primary").notNull(),
   purpose: mysqlEnum("purpose", CASTING_EVIDENCE_INGESTION_PURPOSES).notNull(),
   status: mysqlEnum("status", CASTING_EVIDENCE_INGESTION_STATUSES)
     .default("planned")
@@ -625,7 +637,10 @@ export const castingEvidenceIngestions = mysqlTable("casting_evidence_ingestions
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ([
-  uniqueIndex("uq_casting_evidence_ingestions_operation").on(table.operationId),
+  uniqueIndex("uq_casting_evidence_ingestions_operation_step").on(
+    table.operationId,
+    table.stepKey,
+  ),
   uniqueIndex("uq_casting_evidence_ingestions_storage_key").on(table.storageKey),
   index("idx_casting_evidence_ingestions_status_updated").on(table.status, table.updatedAt),
   index("idx_casting_evidence_ingestions_owner_model_status").on(
@@ -646,6 +661,7 @@ export const modelReferencePlates = mysqlTable("model_reference_plates", {
   id: varchar("id", { length: 36 }).primaryKey(),
   userId: int("userId").notNull(),
   modelId: int("modelId").notNull(),
+  featureIntentId: varchar("featureIntentId", { length: 36 }),
   kind: mysqlEnum("kind", MODEL_REFERENCE_PLATE_KINDS).notNull(),
   storageKey: varchar("storageKey", { length: 512 }).notNull(),
   mime: varchar("mime", { length: 32 }).notNull(),
@@ -654,10 +670,17 @@ export const modelReferencePlates = mysqlTable("model_reference_plates", {
   byteSize: int("byteSize").notNull(),
   contentHash: varchar("contentHash", { length: 64 }).notNull(),
   createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
+  createdByOperationStepKey: varchar("createdByOperationStepKey", { length: 64 })
+    .default("primary")
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ([
   uniqueIndex("uq_model_reference_plates_storage_key").on(table.storageKey),
-  uniqueIndex("uq_model_reference_plates_operation").on(table.createdByOperationId),
+  uniqueIndex("uq_model_reference_plates_feature_intent").on(table.featureIntentId),
+  uniqueIndex("uq_model_reference_plates_operation_step").on(
+    table.createdByOperationId,
+    table.createdByOperationStepKey,
+  ),
   index("idx_model_reference_plates_owner_model_created").on(
     table.userId,
     table.modelId,
@@ -695,10 +718,16 @@ export const modelEvidenceCrops = mysqlTable("model_evidence_crops", {
   contentHash: varchar("contentHash", { length: 64 }).notNull(),
   cropRecipeVersion: varchar("cropRecipeVersion", { length: 64 }).notNull(),
   createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
+  createdByOperationStepKey: varchar("createdByOperationStepKey", { length: 64 })
+    .default("primary")
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ([
   uniqueIndex("uq_model_evidence_crops_storage_key").on(table.storageKey),
-  uniqueIndex("uq_model_evidence_crops_operation").on(table.createdByOperationId),
+  uniqueIndex("uq_model_evidence_crops_operation_step").on(
+    table.createdByOperationId,
+    table.createdByOperationStepKey,
+  ),
   index("idx_model_evidence_crops_plate").on(table.plateId),
   index("idx_model_evidence_crops_owner_model_created").on(
     table.userId,
@@ -709,6 +738,327 @@ export const modelEvidenceCrops = mysqlTable("model_evidence_crops", {
 
 export type ModelEvidenceCrop = typeof modelEvidenceCrops.$inferSelect;
 export type InsertModelEvidenceCrop = typeof modelEvidenceCrops.$inferInsert;
+
+// ============================================================================
+// R7-7D TYPED IDENTITY FEATURES AND CANDIDATES
+// ============================================================================
+
+export const IDENTITY_FEATURE_INTENT_STATUSES = [
+  "pending",
+  "resolved",
+  "cancelled",
+] as const;
+
+export const EVIDENCE_CANDIDATE_STATUSES = [
+  "processing",
+  "ready",
+  "accepted",
+  "rejected",
+  "cancelled",
+  "expired",
+  "invalid",
+] as const;
+
+export const EVIDENCE_CANDIDATE_ATTEMPT_STATUSES = [
+  "planned",
+  "generating",
+  "stored",
+  "probe_passed",
+  "probe_failed",
+  "probe_unknown",
+  "promoted",
+  "cleanup_pending",
+  "cleaned",
+] as const;
+
+export const EVIDENCE_PROBE_OUTCOMES = ["pass", "fail", "unknown"] as const;
+export const IDENTITY_FEATURE_SELECTION_REASONS = [
+  "accepted",
+  "carried",
+  "restored",
+] as const;
+
+/**
+ * One resumable, owner-scoped authoring session. The nullable active key uses
+ * MySQL's multiple-NULL uniqueness law to retain terminal history while
+ * allowing only one pending capability per model.
+ */
+export const modelIdentityFeatureIntents = mysqlTable(
+  "model_identity_feature_intents",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("userId").notNull(),
+    modelId: int("modelId").notNull(),
+    capabilityKey: varchar("capabilityKey", { length: 96 }).notNull(),
+    activeCapabilityKey: varchar("activeCapabilityKey", { length: 96 }),
+    status: mysqlEnum("status", IDENTITY_FEATURE_INTENT_STATUSES)
+      .default("pending")
+      .notNull(),
+    category: mysqlEnum("category", ["ink"]).notNull(),
+    operation: mysqlEnum("operation", ["add"]).notNull(),
+    ontologyVersion: varchar("ontologyVersion", { length: 64 }).notNull(),
+    zone: varchar("zone", { length: 64 }).notNull(),
+    surface: varchar("surface", { length: 64 }).notNull(),
+    side: varchar("side", { length: 32 }).notNull(),
+    normalizedDescriptor: varchar("normalizedDescriptor", { length: 512 }),
+    sourceAssetId: int("sourceAssetId").notNull(),
+    expectedStateVersion: int("expectedStateVersion").notNull(),
+    identitySnapshotId: varchar("identitySnapshotId", { length: 36 }).notNull(),
+    packageSnapshotId: varchar("packageSnapshotId", { length: 36 }).notNull(),
+    createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
+    resolvedByOperationId: varchar("resolvedByOperationId", { length: 36 }),
+    resolvedCandidateId: varchar("resolvedCandidateId", { length: 36 }),
+    resolvedFeatureId: varchar("resolvedFeatureId", { length: 36 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    resolvedAt: timestamp("resolvedAt"),
+  },
+  (table) => ([
+    uniqueIndex("uq_identity_feature_intents_model_active").on(
+      table.modelId,
+      table.activeCapabilityKey,
+    ),
+    uniqueIndex("uq_identity_feature_intents_created_operation").on(
+      table.createdByOperationId,
+    ),
+    index("idx_identity_feature_intents_owner_model_status").on(
+      table.userId,
+      table.modelId,
+      table.status,
+    ),
+    index("idx_identity_feature_intents_model_created").on(
+      table.modelId,
+      table.createdAt,
+    ),
+  ]),
+);
+
+export type ModelIdentityFeatureIntent =
+  typeof modelIdentityFeatureIntents.$inferSelect;
+export type InsertModelIdentityFeatureIntent =
+  typeof modelIdentityFeatureIntents.$inferInsert;
+
+/**
+ * One user-priced candidate episode. An episode may own one charged attempt
+ * and one included system retry, but only one ready candidate can remain
+ * active for its intent.
+ */
+export const castingEvidenceCandidates = mysqlTable(
+  "casting_evidence_candidates",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("userId").notNull(),
+    modelId: int("modelId").notNull(),
+    intentId: varchar("intentId", { length: 36 }).notNull(),
+    originatingOperationId: varchar("originatingOperationId", { length: 36 }).notNull(),
+    capabilityKey: varchar("capabilityKey", { length: 96 }).notNull(),
+    activeSlot: mysqlEnum("activeSlot", ["active"]),
+    expectedStateVersion: int("expectedStateVersion").notNull(),
+    identitySnapshotId: varchar("identitySnapshotId", { length: 36 }).notNull(),
+    packageSnapshotId: varchar("packageSnapshotId", { length: 36 }).notNull(),
+    targetViewAngle: mysqlEnum("targetViewAngle", ["frontFull"]).notNull(),
+    sourceAssetId: int("sourceAssetId").notNull(),
+    status: mysqlEnum("status", EVIDENCE_CANDIDATE_STATUSES)
+      .default("processing")
+      .notNull(),
+    readyAttemptId: varchar("readyAttemptId", { length: 36 }),
+    acceptedAssetId: int("acceptedAssetId"),
+    acceptedIdentitySnapshotId: varchar("acceptedIdentitySnapshotId", { length: 36 }),
+    acceptedPackageSnapshotId: varchar("acceptedPackageSnapshotId", { length: 36 }),
+    cleanupBatchId: varchar("cleanupBatchId", { length: 36 }),
+    composerRecipeVersion: varchar("composerRecipeVersion", { length: 64 }).notNull(),
+    probeRecipeVersion: varchar("probeRecipeVersion", { length: 64 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    expiresAt: timestamp("expiresAt"),
+    resolvedAt: timestamp("resolvedAt"),
+    resolvedByOperationId: varchar("resolvedByOperationId", { length: 36 }),
+  },
+  (table) => ([
+    uniqueIndex("uq_evidence_candidates_origin_operation").on(
+      table.originatingOperationId,
+    ),
+    uniqueIndex("uq_evidence_candidates_intent_active").on(
+      table.intentId,
+      table.activeSlot,
+    ),
+    index("idx_evidence_candidates_owner_model_status").on(
+      table.userId,
+      table.modelId,
+      table.status,
+    ),
+    index("idx_evidence_candidates_intent_created").on(
+      table.intentId,
+      table.createdAt,
+    ),
+    index("idx_evidence_candidates_status_expiry").on(
+      table.status,
+      table.expiresAt,
+    ),
+  ]),
+);
+
+export type CastingEvidenceCandidate =
+  typeof castingEvidenceCandidates.$inferSelect;
+export type InsertCastingEvidenceCandidate =
+  typeof castingEvidenceCandidates.$inferInsert;
+
+/**
+ * Crash-recovery receipt and exact-key owner for one internal attempt.
+ * Probe fields are deliberately closed; raw provider prose is never stored.
+ */
+export const castingEvidenceCandidateAttempts = mysqlTable(
+  "casting_evidence_candidate_attempts",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    candidateId: varchar("candidateId", { length: 36 }).notNull(),
+    attemptNumber: int("attemptNumber").notNull(),
+    generationId: int("generationId"),
+    status: mysqlEnum("status", EVIDENCE_CANDIDATE_ATTEMPT_STATUSES)
+      .default("planned")
+      .notNull(),
+    privatePlateId: varchar("privatePlateId", { length: 36 }).notNull(),
+    privateStorageKey: varchar("privateStorageKey", { length: 512 }),
+    mime: varchar("mime", { length: 32 }),
+    width: int("width"),
+    height: int("height"),
+    byteSize: int("byteSize"),
+    contentHash: varchar("contentHash", { length: 64 }),
+    promotedPublicStorageKey: varchar("promotedPublicStorageKey", { length: 512 }),
+    cleanupBatchId: varchar("cleanupBatchId", { length: 36 }),
+    actualImageEngine: varchar("actualImageEngine", { length: 64 }).notNull(),
+    composerRecipeVersion: varchar("composerRecipeVersion", { length: 64 }).notNull(),
+    probeModel: varchar("probeModel", { length: 64 }).notNull(),
+    probeRecipeVersion: varchar("probeRecipeVersion", { length: 64 }).notNull(),
+    predictedVisibility: mysqlEnum("predictedVisibility", EVIDENCE_PROBE_OUTCOMES),
+    identityOutcome: mysqlEnum("identityOutcome", EVIDENCE_PROBE_OUTCOMES),
+    placementOutcome: mysqlEnum("placementOutcome", EVIDENCE_PROBE_OUTCOMES),
+    featureMatchOutcome: mysqlEnum("featureMatchOutcome", EVIDENCE_PROBE_OUTCOMES),
+    poseFramingOutcome: mysqlEnum("poseFramingOutcome", EVIDENCE_PROBE_OUTCOMES),
+    unexpectedInkOutcome: mysqlEnum("unexpectedInkOutcome", EVIDENCE_PROBE_OUTCOMES),
+    overallOutcome: mysqlEnum("overallOutcome", EVIDENCE_PROBE_OUTCOMES),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    storedAt: timestamp("storedAt"),
+    probedAt: timestamp("probedAt"),
+    promotedAt: timestamp("promotedAt"),
+  },
+  (table) => ([
+    check(
+      "chk_evidence_candidate_attempt_number",
+      sql`${table.attemptNumber} in (1, 2)`,
+    ),
+    uniqueIndex("uq_evidence_candidate_attempt_number").on(
+      table.candidateId,
+      table.attemptNumber,
+    ),
+    uniqueIndex("uq_evidence_candidate_attempt_generation").on(table.generationId),
+    uniqueIndex("uq_evidence_candidate_attempt_plate").on(table.privatePlateId),
+    uniqueIndex("uq_evidence_candidate_attempt_private_key").on(table.privateStorageKey),
+    uniqueIndex("uq_evidence_candidate_attempt_public_key").on(
+      table.promotedPublicStorageKey,
+    ),
+    index("idx_evidence_candidate_attempt_status").on(
+      table.candidateId,
+      table.status,
+    ),
+  ]),
+);
+
+export type CastingEvidenceCandidateAttempt =
+  typeof castingEvidenceCandidateAttempts.$inferSelect;
+export type InsertCastingEvidenceCandidateAttempt =
+  typeof castingEvidenceCandidateAttempts.$inferInsert;
+
+export const modelIdentityFeatures = mysqlTable(
+  "model_identity_features",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    modelId: int("modelId").notNull(),
+    category: mysqlEnum("category", ["ink"]).notNull(),
+    createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ([
+    uniqueIndex("uq_identity_features_created_operation").on(
+      table.createdByOperationId,
+    ),
+    index("idx_identity_features_model_created").on(table.modelId, table.createdAt),
+  ]),
+);
+
+export type ModelIdentityFeature = typeof modelIdentityFeatures.$inferSelect;
+export type InsertModelIdentityFeature = typeof modelIdentityFeatures.$inferInsert;
+
+export const modelIdentityFeatureVersions = mysqlTable(
+  "model_identity_feature_versions",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    modelId: int("modelId").notNull(),
+    featureId: varchar("featureId", { length: 36 }).notNull(),
+    operation: mysqlEnum("operation", ["present"]).notNull(),
+    ontologyVersion: varchar("ontologyVersion", { length: 64 }).notNull(),
+    zone: varchar("zone", { length: 64 }).notNull(),
+    surface: varchar("surface", { length: 64 }).notNull(),
+    side: varchar("side", { length: 32 }).notNull(),
+    normalizedDescriptor: varchar("normalizedDescriptor", { length: 512 }).notNull(),
+    sourceAssetId: int("sourceAssetId").notNull(),
+    sourceViewAngle: mysqlEnum("sourceViewAngle", ["frontFull"]).notNull(),
+    sourceReferencePlateId: varchar("sourceReferencePlateId", { length: 36 }),
+    acceptedCandidatePlateId: varchar("acceptedCandidatePlateId", { length: 36 }).notNull(),
+    evidenceCropId: varchar("evidenceCropId", { length: 36 }),
+    recipeVersion: varchar("recipeVersion", { length: 64 }).notNull(),
+    createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ([
+    uniqueIndex("uq_identity_feature_versions_created_operation").on(
+      table.createdByOperationId,
+    ),
+    index("idx_identity_feature_versions_model_created").on(
+      table.modelId,
+      table.createdAt,
+    ),
+    index("idx_identity_feature_versions_feature").on(table.featureId),
+  ]),
+);
+
+export type ModelIdentityFeatureVersion =
+  typeof modelIdentityFeatureVersions.$inferSelect;
+export type InsertModelIdentityFeatureVersion =
+  typeof modelIdentityFeatureVersions.$inferInsert;
+
+export const modelSnapshotFeatureSelections = mysqlTable(
+  "model_snapshot_feature_selections",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    modelId: int("modelId").notNull(),
+    identitySnapshotId: varchar("identitySnapshotId", { length: 36 }).notNull(),
+    featureId: varchar("featureId", { length: 36 }).notNull(),
+    featureVersionId: varchar("featureVersionId", { length: 36 }).notNull(),
+    selectionReason: mysqlEnum(
+      "selectionReason",
+      IDENTITY_FEATURE_SELECTION_REASONS,
+    ).notNull(),
+    sourceSelectionId: varchar("sourceSelectionId", { length: 36 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ([
+    uniqueIndex("uq_snapshot_feature_selections_snapshot_feature").on(
+      table.identitySnapshotId,
+      table.featureId,
+    ),
+    uniqueIndex("uq_snapshot_feature_selections_snapshot_version").on(
+      table.identitySnapshotId,
+      table.featureVersionId,
+    ),
+    index("idx_snapshot_feature_selections_model").on(table.modelId),
+    index("idx_snapshot_feature_selections_snapshot").on(table.identitySnapshotId),
+    index("idx_snapshot_feature_selections_version").on(table.featureVersionId),
+  ]),
+);
+
+export type ModelSnapshotFeatureSelection =
+  typeof modelSnapshotFeatureSelections.$inferSelect;
+export type InsertModelSnapshotFeatureSelection =
+  typeof modelSnapshotFeatureSelections.$inferInsert;
 
 
 /**

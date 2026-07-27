@@ -27,10 +27,11 @@ describe("R7-7C1 owned-evidence schema contract", () => {
     return nested.flat();
   }
 
-  it("keeps every C1 vocabulary closed and excludes premature candidate policy", () => {
+  it("keeps C1 vocabulary closed while admitting only the reviewed D1 extensions", () => {
     expect(CASTING_EVIDENCE_INGESTION_PURPOSES).toEqual([
       "reference_plate",
       "evidence_crop",
+      "fork_copy",
     ]);
     expect(CASTING_EVIDENCE_INGESTION_STATUSES).toEqual([
       "planned",
@@ -43,11 +44,15 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       "reference_plate",
       "evidence_crop",
     ]);
-    expect(MODEL_REFERENCE_PLATE_KINDS).toEqual(["uploaded_reference"]);
+    expect(MODEL_REFERENCE_PLATE_KINDS).toEqual([
+      "uploaded_reference",
+      "accepted_candidate",
+    ]);
     expect(STORAGE_CLEANUP_BATCH_KINDS).toEqual([
       "model_delete",
       "account_delete",
       "evidence_cleanup",
+      "candidate_cleanup",
     ]);
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_ingest");
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_discard");
