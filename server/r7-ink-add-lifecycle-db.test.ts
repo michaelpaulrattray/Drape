@@ -65,6 +65,14 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./db/inkAddIntents").commitBeginInkAddIntent;
   let stageOwnedInkIntentReference:
     typeof import("./casting/evidence/evidenceOperations").stageOwnedInkIntentReference;
+  let sweepStaleGenerationOperations:
+    typeof import("./casting/operationRecovery").sweepStaleGenerationOperations;
+  let markGenerationOperationRunning:
+    typeof import("./db/generationOperations").markGenerationOperationRunning;
+  let commitModelSnapshotTransition:
+    typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
+  let inkCandidatePublicStorageKey:
+    typeof import("./casting/evidence/inkCandidatePublicStorage").inkCandidatePublicStorageKey;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -111,6 +119,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     ({ processNextStorageCleanupBatch } = await import("./casting/storageCleanupWorker"));
     ({ commitBeginInkAddIntent } = await import("./db/inkAddIntents"));
     ({ stageOwnedInkIntentReference } = await import("./casting/evidence/evidenceOperations"));
+    ({ sweepStaleGenerationOperations } = await import("./casting/operationRecovery"));
+    ({ markGenerationOperationRunning } = await import("./db/generationOperations"));
+    ({ commitModelSnapshotTransition } = await import("./casting/snapshotTransitions"));
+    ({ inkCandidatePublicStorageKey } = await import("./casting/evidence/inkCandidatePublicStorage"));
   });
 
   beforeEach(async () => {
@@ -121,6 +133,8 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       "generation_operation_locks",
       "generation_operations",
       "generations",
+      "point_transactions",
+      "points",
       "casting_evidence_candidate_attempts",
       "casting_evidence_candidates",
       "model_identity_feature_intents",
@@ -158,6 +172,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [`r7-d2-${randomUUID()}`],
     );
     const userId = user.insertId;
+    await connection.execute(
+      "INSERT INTO points (userId, balance) VALUES (?, 5000)",
+      [userId],
+    );
     const identityId = randomUUID();
     const packageId = randomUUID();
     const [model] = await connection.execute<ResultSetHeader>(
@@ -354,6 +372,25 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       deleteExact: vi.fn(),
       listCanonicalKeys: vi.fn(),
     } as PrivateEvidenceStorageAdapter;
+  }
+
+  async function chargeCandidateOperation(
+    source: Awaited<ReturnType<typeof fixture>>,
+    operationId: string,
+  ) {
+    const referenceId = `op:${operationId}:charge`;
+    await connection.execute(
+      "UPDATE points SET balance = balance - 350, creditsUsed = creditsUsed + 350 WHERE userId = ?",
+      [source.userId],
+    );
+    await connection.execute(
+      "INSERT INTO point_transactions (userId, amount, type, description, referenceId, balanceAfter, engineUsed) VALUES (?, -350, 'generation', 'Tattoo preview (pending)', ?, 4650, 'gemini-pro-image')",
+      [source.userId, referenceId],
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET chargeReferenceId = ?, leaseExpiresAt = DATE_SUB(NOW(), INTERVAL 1 MINUTE), heartbeatAt = DATE_SUB(NOW(), INTERVAL 2 MINUTE) WHERE id = ?",
+      [referenceId, operationId],
+    );
   }
 
   async function readyInkCandidate(
@@ -1077,6 +1114,167 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     });
   }, 90_000);
 
+  it("fails a crashed pre-commit Accept free and queues its exact reserved public key", async () => {
+    const source = await fixture({ status: "draft" });
+    const { candidate } = await readyInkCandidate(source);
+    const operationId = await runningAcceptOperation(source);
+    const publicStorageKey = inkCandidatePublicStorageKey({
+      userId: source.userId,
+      modelId: source.modelId,
+      candidateId: candidate.candidateId,
+      operationId,
+    });
+    await prepareInkCandidateAcceptance({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      candidateId: candidate.candidateId,
+      publicStorageKey,
+    });
+    await connection.execute(
+      "UPDATE generation_operations SET leaseExpiresAt = DATE_SUB(NOW(), INTERVAL 1 MINUTE), heartbeatAt = DATE_SUB(NOW(), INTERVAL 2 MINUTE) WHERE id = ?",
+      [operationId],
+    );
+
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(),
+      limit: 1,
+    })).resolves.toEqual({
+      inspected: 1,
+      resolved: 1,
+      recoveryRequired: 0,
+      skipped: 0,
+    });
+    const [[truth]] = await connection.query<RowDataPacket[]>(
+      "SELECT o.status AS operationStatus, o.chargedCredits, c.status AS candidateStatus, c.activeSlot, a.status AS attemptStatus, a.promotedPublicStorageKey, b.status AS cleanupStatus, b.expectedCount, i.storageKey, i.storageBackend, l.operationId AS lockOwner FROM generation_operations o JOIN casting_evidence_candidates c ON c.modelId = o.modelId JOIN casting_evidence_candidate_attempts a ON a.id = c.readyAttemptId JOIN storage_cleanup_batches b ON b.operationId = o.id JOIN storage_cleanup_items i ON i.batchId = b.id LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE o.id = ?",
+      [operationId],
+    );
+    expect(truth).toEqual({
+      operationStatus: "failed",
+      chargedCredits: 0,
+      candidateStatus: "ready",
+      activeSlot: "active",
+      attemptStatus: "probe_passed",
+      promotedPublicStorageKey: publicStorageKey,
+      cleanupStatus: "pending",
+      expectedCount: 1,
+      storageKey: publicStorageKey,
+      storageBackend: "public_r2",
+      lockOwner: null,
+    });
+  }, 90_000);
+
+  it("reconstructs an accepted graph and a cancelled tombstone from durable truth", async () => {
+    const acceptedSource = await fixture({ status: "draft" });
+    const { candidate: acceptedCandidate } = await readyInkCandidate(acceptedSource);
+    const acceptOperationId = await runningAcceptOperation(acceptedSource);
+    const publicStorageKey = inkCandidatePublicStorageKey({
+      userId: acceptedSource.userId,
+      modelId: acceptedSource.modelId,
+      candidateId: acceptedCandidate.candidateId,
+      operationId: acceptOperationId,
+    });
+    const prepared = await prepareInkCandidateAcceptance({
+      userId: acceptedSource.userId,
+      modelId: acceptedSource.modelId,
+      operationId: acceptOperationId,
+      candidateId: acceptedCandidate.candidateId,
+      publicStorageKey,
+    });
+    const accepted = await commitInkCandidateAcceptance({
+      prepared,
+      publicStorageUrl: `https://public.example/${publicStorageKey}`,
+    });
+    await connection.execute(
+      "UPDATE generation_operations SET status = 'running', result = NULL, completedAt = NULL, leaseExpiresAt = DATE_SUB(NOW(), INTERVAL 1 MINUTE), recoveryAttemptedAt = NULL WHERE id = ?",
+      [acceptOperationId],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_candidate_accept', DATE_SUB(NOW(), INTERVAL 1 MINUTE))",
+      [`model:${acceptedSource.modelId}`, acceptOperationId],
+    );
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(),
+      limit: 1,
+    })).resolves.toMatchObject({ inspected: 1, resolved: 1 });
+    const [[acceptedTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, JSON_UNQUOTE(JSON_EXTRACT(result, '$.candidateId')) AS candidateId, JSON_UNQUOTE(JSON_EXTRACT(result, '$.featureId')) AS featureId, JSON_EXTRACT(result, '$.stateVersion') AS stateVersion FROM generation_operations WHERE id = ?",
+      [acceptOperationId],
+    );
+    expect(acceptedTruth).toEqual({
+      status: "succeeded",
+      candidateId: acceptedCandidate.candidateId,
+      featureId: accepted.featureId,
+      stateVersion: accepted.stateVersion,
+    });
+
+    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+    for (const table of [
+      "storage_cleanup_items",
+      "storage_cleanup_batches",
+      "generation_operation_locks",
+      "generation_operations",
+      "generations",
+      "point_transactions",
+      "points",
+      "casting_evidence_candidate_attempts",
+      "casting_evidence_candidates",
+      "model_identity_feature_intents",
+      "model_snapshot_feature_selections",
+      "model_identity_feature_versions",
+      "model_identity_features",
+      "model_reference_plates",
+      "model_package_snapshot_slots",
+      "model_package_snapshots",
+      "model_identity_snapshots",
+      "model_assets",
+      "models",
+      "users",
+    ]) {
+      await connection.query(`TRUNCATE TABLE \`${table}\``);
+    }
+    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+    const cancelledSource = await fixture({ status: "draft" });
+    const { intentId, candidate: cancelledCandidate } =
+      await readyInkCandidate(cancelledSource);
+    const cancellation = await cancelInkAddIntent({
+      enabledForUser: () => true,
+    }, {
+      userId: cancelledSource.userId,
+      intentId,
+      clientRequestId: randomUUID(),
+    });
+    const [[cancelledRow]] = await connection.query<RowDataPacket[]>(
+      "SELECT resolvedByOperationId FROM casting_evidence_candidates WHERE id = ?",
+      [cancelledCandidate.candidateId],
+    );
+    const cancelOperationId = cancelledRow.resolvedByOperationId as string;
+    await connection.execute(
+      "UPDATE generation_operations SET status = 'running', result = NULL, completedAt = NULL, leaseExpiresAt = DATE_SUB(NOW(), INTERVAL 1 MINUTE), recoveryAttemptedAt = NULL WHERE id = ?",
+      [cancelOperationId],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_candidate_cancel', DATE_SUB(NOW(), INTERVAL 1 MINUTE))",
+      [`model:${cancelledSource.modelId}`, cancelOperationId],
+    );
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(),
+      limit: 1,
+    })).resolves.toMatchObject({ inspected: 1, resolved: 1 });
+    const [[cancelledTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, JSON_UNQUOTE(JSON_EXTRACT(result, '$.intentId')) AS intentId, JSON_UNQUOTE(JSON_EXTRACT(result, '$.candidateId')) AS candidateId, JSON_UNQUOTE(JSON_EXTRACT(result, '$.status')) AS resultStatus, JSON_EXTRACT(result, '$.cleanupObjects') AS cleanupObjects FROM generation_operations WHERE id = ?",
+      [cancelOperationId],
+    );
+    expect(cancelledTruth).toEqual({
+      status: "succeeded",
+      intentId,
+      candidateId: cancelledCandidate.candidateId,
+      resultStatus: "cancelled",
+      cleanupObjects: cancellation.cleanupObjects,
+    });
+  }, 180_000);
+
   it("cancels an intent without a candidate for free and scrubs it only after cleanup succeeds", async () => {
     const source = await fixture({ status: "draft" });
     const intentId = await pendingInkIntent(source);
@@ -1318,13 +1516,187 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       privatePlateId: randomUUID(),
     });
     const [candidates] = await connection.query<RowDataPacket[]>(
-      "SELECT id, status, activeSlot FROM casting_evidence_candidates WHERE intentId = ? ORDER BY createdAt, id",
+      "SELECT id, status, activeSlot, cleanupBatchId FROM casting_evidence_candidates WHERE intentId = ? ORDER BY createdAt, id",
       [intentId],
     );
     expect(candidates).toEqual([
-      { id: first.candidateId, status: "rejected", activeSlot: null },
-      { id: replacement.candidateId, status: "processing", activeSlot: "active" },
+      {
+        id: first.candidateId,
+        status: "rejected",
+        activeSlot: null,
+        cleanupBatchId: expect.any(String),
+      },
+      {
+        id: replacement.candidateId,
+        status: "processing",
+        activeSlot: "active",
+        cleanupBatchId: null,
+      },
     ]);
+    await connection.execute(
+      "DELETE FROM storage_cleanup_items WHERE batchId = ?",
+      [candidates[0].cleanupBatchId],
+    );
+    await connection.execute(
+      "UPDATE storage_cleanup_batches SET status = 'succeeded', deletedCount = expectedCount, failedCount = 0 WHERE id = ?",
+      [candidates[0].cleanupBatchId],
+    );
+    await expect(settleNextCompletedCandidateCleanup()).resolves.toEqual({
+      candidateId: first.candidateId,
+      cleanupBatchId: candidates[0].cleanupBatchId,
+    });
+    await expect(settleNextCompletedCandidateCleanup()).resolves.toBeNull();
+    const [[retryTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT i.normalizedDescriptor, c.status AS replacementStatus, c.activeSlot AS replacementSlot FROM model_identity_feature_intents i JOIN casting_evidence_candidates c ON c.intentId = i.id WHERE i.id = ? AND c.id = ?",
+      [intentId, replacement.candidateId],
+    );
+    expect(retryTruth).toEqual({
+      normalizedDescriptor: "small black geometric sun",
+      replacementStatus: "processing",
+      replacementSlot: "active",
+    });
+  }, 90_000);
+
+  it("reconstructs a crashed paid receipt from a durable ready candidate without refunding", async () => {
+    const source = await fixture({ status: "draft" });
+    const intentId = await pendingInkIntent(source);
+    const operationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    const prepared = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId,
+      operationKind: "evidence_candidate_generate",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    await markInkCandidateAttemptGenerating(prepared);
+    await markInkCandidateAttemptStored({
+      prepared,
+      image: {
+        mime: "image/webp",
+        width: 512,
+        height: 768,
+        byteSize: webp.length,
+        contentHash: webpHash,
+      },
+    });
+    await completeInkCandidateReady({
+      prepared,
+      probe: passCandidateProbe(),
+      expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+    });
+    await chargeCandidateOperation(source, operationId);
+
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(),
+      limit: 1,
+    })).resolves.toEqual({
+      inspected: 1,
+      resolved: 1,
+      recoveryRequired: 0,
+      skipped: 0,
+    });
+    const [[truth]] = await connection.query<RowDataPacket[]>(
+      "SELECT o.status, o.chargedCredits, o.refundedCredits, JSON_UNQUOTE(JSON_EXTRACT(o.result, '$.candidateId')) AS resultCandidateId, c.status AS candidateStatus, c.activeSlot, l.operationId AS lockOwner FROM generation_operations o JOIN casting_evidence_candidates c ON c.originatingOperationId = o.id LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE o.id = ?",
+      [operationId],
+    );
+    expect(truth).toEqual({
+      status: "succeeded",
+      chargedCredits: 350,
+      refundedCredits: 0,
+      resultCandidateId: prepared.candidateId,
+      candidateStatus: "ready",
+      activeSlot: "active",
+      lockOwner: null,
+    });
+    const [[refundCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM point_transactions WHERE userId = ? AND type = 'refund'",
+      [source.userId],
+    );
+    expect(Number(refundCount.count)).toBe(0);
+  }, 90_000);
+
+  it("invalidates and exactly-once refunds a crashed pre-boundary candidate while preserving its intent", async () => {
+    const source = await fixture({ status: "draft" });
+    const intentId = await pendingInkIntent(source);
+    const operationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    const prepared = await prepareInkCandidateGeneration({
+      userId: source.userId,
+      modelId: source.modelId,
+      intentId,
+      operationId,
+      operationKind: "evidence_candidate_generate",
+      candidateId: randomUUID(),
+      attemptId: randomUUID(),
+      privatePlateId: randomUUID(),
+    });
+    await markInkCandidateAttemptGenerating(prepared);
+    await chargeCandidateOperation(source, operationId);
+
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(),
+      limit: 1,
+    })).resolves.toEqual({
+      inspected: 1,
+      resolved: 1,
+      recoveryRequired: 0,
+      skipped: 0,
+    });
+    const [[truth]] = await connection.query<RowDataPacket[]>(
+      "SELECT o.status, o.chargedCredits, o.refundedCredits, c.status AS candidateStatus, c.activeSlot, c.cleanupBatchId, i.status AS intentStatus, i.activeCapabilityKey, i.normalizedDescriptor, a.status AS attemptStatus, l.operationId AS lockOwner FROM generation_operations o JOIN casting_evidence_candidates c ON c.originatingOperationId = o.id JOIN model_identity_feature_intents i ON i.id = c.intentId JOIN casting_evidence_candidate_attempts a ON a.candidateId = c.id LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE o.id = ?",
+      [operationId],
+    );
+    expect(truth).toEqual({
+      status: "failed",
+      chargedCredits: 350,
+      refundedCredits: 350,
+      candidateStatus: "invalid",
+      activeSlot: null,
+      cleanupBatchId: expect.any(String),
+      intentStatus: "pending",
+      activeCapabilityKey: "ink.add.front_upper_torso.v1",
+      normalizedDescriptor: "small black geometric sun",
+      attemptStatus: "cleanup_pending",
+      lockOwner: null,
+    });
+    const [ledger] = await connection.query<RowDataPacket[]>(
+      "SELECT amount, type, referenceId FROM point_transactions WHERE userId = ? ORDER BY id",
+      [source.userId],
+    );
+    expect(ledger).toEqual([
+      {
+        amount: -350,
+        type: "generation",
+        referenceId: `op:${operationId}:charge`,
+      },
+      {
+        amount: 350,
+        type: "refund",
+        referenceId: `refund:op:${operationId}:charge`,
+      },
+    ]);
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(Date.now() + 10 * 60_000),
+      limit: 1,
+    })).resolves.toEqual({
+      inspected: 0,
+      resolved: 0,
+      recoveryRequired: 0,
+      skipped: 0,
+    });
+    const [[refundCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM point_transactions WHERE userId = ? AND type = 'refund'",
+      [source.userId],
+    );
+    expect(Number(refundCount.count)).toBe(1);
   }, 90_000);
 
   it("fails every child attempt and consumes no quota when an included retry aborts", async () => {
@@ -1390,6 +1762,81 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [first.candidateId],
     );
     expect(candidate).toEqual({ status: "invalid", activeSlot: null });
+  }, 90_000);
+
+  it("refuses feature-blind operations before running and again before any transition mutation", async () => {
+    const source = await fixture({ status: "draft", withFeature: true });
+    const operationId = randomUUID();
+    await connection.execute(
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status) VALUES (?, ?, ?, 'casting.refresh', ?, ?, 'claimed')",
+      [
+        operationId,
+        source.userId,
+        randomUUID(),
+        source.modelId,
+        "f".repeat(64),
+      ],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'casting.refresh', DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      [`model:${source.modelId}`, operationId],
+    );
+    await expect(markGenerationOperationRunning({
+      userId: source.userId,
+      operationId,
+      modelId: source.modelId,
+      plannedCredits: 350,
+      requiredLockKey: `model:${source.modelId}`,
+      phase: "refreshing",
+      heartbeat: false,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+    });
+    const [[startTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT o.status, o.chargedCredits, o.refundedCredits, l.operationId AS lockOwner FROM generation_operations o LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE o.id = ?",
+      [operationId],
+    );
+    expect(startTruth).toEqual({
+      status: "failed",
+      chargedCredits: 0,
+      refundedCredits: 0,
+      lockOwner: null,
+    });
+
+    const bypassOperationId = await runningCandidateOperation(
+      source,
+      "evidence_candidate_generate",
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET kind = 'casting.refresh' WHERE id = ?",
+      [bypassOperationId],
+    );
+    await connection.execute(
+      "UPDATE generation_operation_locks SET kind = 'casting.refresh' WHERE operationId = ?",
+      [bypassOperationId],
+    );
+    const mutate = vi.fn();
+    await expect(commitModelSnapshotTransition({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: bypassOperationId,
+      expectedKind: "casting.refresh",
+      featureAuthority: "evidence_blind",
+      mutate,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+    });
+    expect(mutate).not.toHaveBeenCalled();
+    const [[transitionTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT o.status, m.stateVersion, m.currentPackageSnapshotId, l.operationId AS lockOwner FROM generation_operations o JOIN models m ON m.id = o.modelId LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE o.id = ?",
+      [bypassOperationId],
+    );
+    expect(transitionTruth).toEqual({
+      status: "running",
+      stateVersion: 1,
+      currentPackageSnapshotId: source.packageId,
+      lockOwner: bypassOperationId,
+    });
   }, 90_000);
 
   it("refuses foreign selected assets and already-selected typed features before intent creation", async () => {

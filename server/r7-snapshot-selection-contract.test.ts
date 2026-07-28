@@ -120,6 +120,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/db/inkAddAcceptance.ts",
       "server/db/inkAddCandidates.ts",
       "server/db/inkAddIntents.ts",
+      "server/db/inkAddRecovery.ts",
     ]);
     const hits: string[] = [];
     for (const file of files) {

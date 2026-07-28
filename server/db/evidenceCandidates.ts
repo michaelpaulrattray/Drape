@@ -3,11 +3,13 @@ import {
   and,
   asc,
   eq,
+  exists,
   inArray,
   isNotNull,
   isNull,
   lte,
   notExists,
+  or,
 } from "drizzle-orm";
 import {
   castingEvidenceCandidateAttempts,
@@ -367,13 +369,54 @@ export async function settleNextCompletedCandidateCleanup(): Promise<{
         ]),
         eq(storageCleanupBatches.kind, "candidate_cleanup"),
         eq(storageCleanupBatches.status, "succeeded"),
+        or(
+          exists(
+            tx
+              .select({ id: castingEvidenceCandidateAttempts.id })
+              .from(castingEvidenceCandidateAttempts)
+              .where(and(
+                eq(
+                  castingEvidenceCandidateAttempts.candidateId,
+                  castingEvidenceCandidates.id,
+                ),
+                eq(
+                  castingEvidenceCandidateAttempts.status,
+                  "cleanup_pending",
+                ),
+                eq(
+                  castingEvidenceCandidateAttempts.cleanupBatchId,
+                  storageCleanupBatches.id,
+                ),
+              )),
+          ),
+          exists(
+            tx
+              .select({ id: modelIdentityFeatureIntents.id })
+              .from(modelIdentityFeatureIntents)
+              .where(and(
+                eq(
+                  modelIdentityFeatureIntents.id,
+                  castingEvidenceCandidates.intentId,
+                ),
+                inArray(modelIdentityFeatureIntents.status, [
+                  "resolved",
+                  "cancelled",
+                ]),
+                isNotNull(modelIdentityFeatureIntents.normalizedDescriptor),
+              )),
+          ),
+        ),
       ))
       .orderBy(asc(castingEvidenceCandidates.resolvedAt))
       .limit(1)
       .for("update");
     if (!row) return null;
     const [intent] = await tx
-      .select({ id: modelIdentityFeatureIntents.id })
+      .select({
+        id: modelIdentityFeatureIntents.id,
+        status: modelIdentityFeatureIntents.status,
+        normalizedDescriptor: modelIdentityFeatureIntents.normalizedDescriptor,
+      })
       .from(modelIdentityFeatureIntents)
       .where(and(
         eq(modelIdentityFeatureIntents.id, row.candidate.intentId),
@@ -400,12 +443,24 @@ export async function settleNextCompletedCandidateCleanup(): Promise<{
         eq(castingEvidenceCandidateAttempts.status, "cleanup_pending"),
         eq(castingEvidenceCandidateAttempts.cleanupBatchId, row.batchId),
       ));
-    const scrubbed = await tx
-      .update(modelIdentityFeatureIntents)
-      .set({ normalizedDescriptor: null })
-      .where(eq(modelIdentityFeatureIntents.id, intent.id));
-    if (affectedRows(scrubbed) !== 1) {
-      throw new Error("Candidate cleanup scrubbing lost its state race");
+    if (
+      intent.status !== "pending"
+      && intent.normalizedDescriptor !== null
+    ) {
+      const scrubbed = await tx
+        .update(modelIdentityFeatureIntents)
+        .set({ normalizedDescriptor: null })
+        .where(and(
+          eq(modelIdentityFeatureIntents.id, intent.id),
+          inArray(modelIdentityFeatureIntents.status, [
+            "resolved",
+            "cancelled",
+          ]),
+          isNotNull(modelIdentityFeatureIntents.normalizedDescriptor),
+        ));
+      if (affectedRows(scrubbed) !== 1) {
+        throw new Error("Candidate cleanup scrubbing lost its state race");
+      }
     }
     return { candidateId: row.candidate.id, cleanupBatchId: row.batchId };
   });

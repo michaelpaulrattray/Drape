@@ -95,6 +95,7 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       "server/db/inkAddAcceptance.ts",
       "server/db/inkAddCancellation.ts",
       "server/db/inkAddCandidates.ts",
+      "server/db/inkAddRecovery.ts",
     ]);
     for (const file of callers) {
       const source = sources.find((candidate) => candidate.file === file)!.source;

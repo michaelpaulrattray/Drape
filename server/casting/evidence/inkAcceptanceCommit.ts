@@ -60,6 +60,7 @@ export async function commitInkCandidateAcceptance(input: {
     modelId: input.prepared.modelId,
     operationId: input.prepared.operationId,
     expectedKind: "evidence_candidate_accept",
+    featureAuthority: "evidence_aware",
     mutate: async (tx, context) => {
       if (!context.current || context.model.status !== "draft") {
         throw new InkAcceptanceStateError("model_unavailable");

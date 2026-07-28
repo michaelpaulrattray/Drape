@@ -18,6 +18,7 @@ import {
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
+import { projectEvidenceCandidateForModerator } from "../casting/evidence/moderatorEvidenceProjection";
 const log = createModuleLogger("db/moderatorQueries");
 
 // ============================================================================
@@ -310,7 +311,7 @@ export async function getDetailedGenerationHistory(
         : 0;
 
     return {
-      generations: gens,
+      generations: gens.map(projectEvidenceCandidateForModerator),
       total,
       summary: {
         totalGenerations,

@@ -17,7 +17,9 @@ import {
   finalizeGenerationOperationSuccess,
   markGenerationOperationRecoveryRequired,
 } from "../db/generationOperations";
+import { adjudicateStaleInkEvidenceOperation } from "../db/inkAddRecovery";
 import { createModuleLogger } from "../logging/logger";
+import { recordRefund } from "./atomicCredits";
 import type { PublicOperationResult } from "./operationContract";
 
 const log = createModuleLogger("casting/operationRecovery");
@@ -201,6 +203,136 @@ export async function adjudicateStaleGenerationOperation(
   if (!await claimRecoveryAttempt(operation, now)) return "skipped";
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  if (
+    operation.status === "running"
+    && (
+      operation.kind === "evidence_candidate_generate"
+      || operation.kind === "evidence_candidate_retry"
+      || operation.kind === "evidence_candidate_accept"
+      || operation.kind === "evidence_candidate_cancel"
+    )
+  ) {
+    const chargeRows = operation.chargeReferenceId
+      ? await db.select().from(creditTransactions).where(and(
+        eq(creditTransactions.userId, operation.userId),
+        eq(creditTransactions.referenceId, operation.chargeReferenceId),
+      ))
+      : [];
+    const refundRows = operation.chargeReferenceId
+      ? await db.select().from(creditTransactions).where(and(
+        eq(creditTransactions.userId, operation.userId),
+        eq(
+          creditTransactions.referenceId,
+          refundReferenceFor(operation.chargeReferenceId),
+        ),
+      ))
+      : [];
+    const charge = chargeRows[0];
+    const refund = refundRows[0];
+    const chargedCredits =
+      charge?.type === "generation" && charge.amount < 0
+        ? Math.abs(charge.amount)
+        : 0;
+    const refundedCredits =
+      refund?.type === "refund" && refund.amount > 0
+        ? refund.amount
+        : 0;
+    const accountingMismatch =
+      chargeRows.length > 1
+      || refundRows.length > 1
+      || (!!charge && (charge.type !== "generation" || charge.amount >= 0))
+      || (!!refund && (refund.type !== "refund" || refund.amount <= 0))
+      || chargedCredits > operation.plannedCredits
+      || refundedCredits > chargedCredits
+      || (
+        operation.plannedCredits > 0
+        && chargedCredits !== 0
+        && chargedCredits !== operation.plannedCredits
+      );
+    if (accountingMismatch) {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage:
+          `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+        chargedCredits,
+        refundedCredits,
+      });
+      return "recovery_required";
+    }
+    const evidenceDecision = await adjudicateStaleInkEvidenceOperation({
+      operation,
+      chargedCredits,
+      refundedCredits,
+      now,
+    });
+    if (evidenceDecision?.type === "durable_success") {
+      await finalizeGenerationOperationSuccess({
+        userId: operation.userId,
+        operationId: operation.id,
+        result: evidenceDecision.result,
+        chargedCredits: evidenceDecision.chargedCredits,
+        refundedCredits: evidenceDecision.refundedCredits,
+      });
+      return "durable_success";
+    }
+    if (evidenceDecision?.type === "terminal_failure") {
+      let finalRefundedCredits = refundedCredits;
+      if (evidenceDecision.needsRefund) {
+        if (!operation.chargeReferenceId || chargedCredits === 0) {
+          await markGenerationOperationRecoveryRequired({
+            userId: operation.userId,
+            operationId: operation.id,
+            publicMessage:
+              `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+            chargedCredits,
+            refundedCredits,
+          });
+          return "recovery_required";
+        }
+        const outcome = await recordRefund(
+          operation.userId,
+          chargedCredits,
+          "Recovery refund: tattoo preview stopped before delivery",
+          operation.chargeReferenceId,
+        );
+        if (!outcome.recorded) {
+          await markGenerationOperationRecoveryRequired({
+            userId: operation.userId,
+            operationId: operation.id,
+            publicMessage:
+              `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+            chargedCredits,
+            refundedCredits,
+          });
+          return "recovery_required";
+        }
+        finalRefundedCredits = outcome.amount;
+      }
+      await finalizeGenerationOperationFailure({
+        userId: operation.userId,
+        operationId: operation.id,
+        errorCode: evidenceDecision.errorCode,
+        publicMessage: evidenceDecision.publicMessage,
+        chargedCredits: evidenceDecision.chargedCredits,
+        refundedCredits: finalRefundedCredits,
+      });
+      return evidenceDecision.chargedCredits > 0
+        ? "paid_failure"
+        : "free_failure";
+    }
+    if (evidenceDecision?.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage:
+          `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+        chargedCredits,
+        refundedCredits,
+      });
+      return "recovery_required";
+    }
+  }
   const children = await db.select().from(generations).where(eq(generations.operationId, operation.id));
   const urls = children.flatMap((child) => child.resultUrl ? [child.resultUrl] : []);
   const assets = urls.length > 0

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gte, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import {
   boardItems,
@@ -9,6 +10,7 @@ import {
   generationOperations,
   modelAssets,
   modelIdentitySnapshots,
+  modelSnapshotFeatureSelections,
   modelPackageSnapshots,
   models,
   type Generation,
@@ -36,6 +38,10 @@ import {
   type GenerationOperationLandingStatus,
 } from "../casting/operationContract";
 import { availableModelWhere } from "../casting/modelAvailability";
+import {
+  FEATURE_BLIND_OPERATION_MESSAGE,
+  featureTransitionAuthorityFor,
+} from "../casting/evidence/featureTransitionAuthority";
 import { createModuleLogger } from "../logging/logger";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { fillEmptyCastNodeWithVersionIn } from "./boards";
@@ -953,6 +959,28 @@ export async function markGenerationOperationRunning(input: {
           .limit(1);
         if (!snapshot) throw new Error("Generation operation model snapshot head is invalid");
         expectedIdentitySnapshotId = snapshot.identitySnapshotId;
+        if (
+          featureTransitionAuthorityFor(operation.kind as GenerationOperationKind)
+          === "evidence_blind"
+        ) {
+          const [selectedFeature] = await tx
+            .select({ id: modelSnapshotFeatureSelections.id })
+            .from(modelSnapshotFeatureSelections)
+            .where(and(
+              eq(modelSnapshotFeatureSelections.modelId, effectiveModelId),
+              eq(
+                modelSnapshotFeatureSelections.identitySnapshotId,
+                expectedIdentitySnapshotId,
+              ),
+            ))
+            .limit(1);
+          if (selectedFeature) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: FEATURE_BLIND_OPERATION_MESSAGE,
+            });
+          }
+        }
       } else if (model.stateVersion !== 0) {
         throw new Error("Generation operation model snapshot pointer and state version disagree");
       }

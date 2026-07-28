@@ -154,6 +154,7 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       "server/db/inkAddCancellation.ts",
       "server/db/inkAddCandidates.ts",
       "server/db/inkAddIntents.ts",
+      "server/db/inkAddRecovery.ts",
       "server/db/storageCleanup.ts",
     ]);
 

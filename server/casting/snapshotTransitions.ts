@@ -50,6 +50,10 @@ import {
   computeIdentityCommit,
   type IdentityCommitResult,
 } from "./identity/identityCommit";
+import {
+  FEATURE_BLIND_OPERATION_MESSAGE,
+  type FeatureTransitionAuthority,
+} from "./evidence/featureTransitionAuthority";
 import type { AuthorizedIdentityPatch } from "./identity/identityTypes";
 import type { SnapshotReadMode } from "./snapshotReadScope";
 
@@ -315,6 +319,7 @@ export async function commitModelSnapshotTransition<Result>(input: {
   modelId: number;
   operationId: string;
   expectedKind: GenerationOperationKind;
+  featureAuthority: Exclude<FeatureTransitionAuthority, "not_applicable">;
   mutate: (
     tx: TransactionHandle,
     context: SnapshotTransitionContext,
@@ -401,6 +406,28 @@ export async function commitModelSnapshotTransition<Result>(input: {
       });
     }
 
+    const currentFeatureSelections = current
+      ? await tx
+        .select()
+        .from(modelSnapshotFeatureSelections)
+        .where(and(
+          eq(modelSnapshotFeatureSelections.modelId, input.modelId),
+          eq(
+            modelSnapshotFeatureSelections.identitySnapshotId,
+            current.identitySnapshot.id,
+          ),
+        ))
+      : [];
+    if (
+      currentFeatureSelections.length > 0
+      && input.featureAuthority === "evidence_blind"
+    ) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: FEATURE_BLIND_OPERATION_MESSAGE,
+      });
+    }
+
     const mutation = await input.mutate(tx, {
       model,
       current,
@@ -412,6 +439,22 @@ export async function commitModelSnapshotTransition<Result>(input: {
       throw new Error("Unknown live package snapshot reason");
     }
     if (transition.identity) assertReasonPair(transition.identity, transition.packageReason);
+    if (
+      input.featureAuthority === "document_only"
+      && (
+        transition.identity?.reason !== "document_compact"
+        || !transition.featureSelections?.carryCurrent
+        || (transition.slotChanges?.length ?? 0) > 0
+      )
+    ) {
+      throw new Error("Document-only feature authority cannot change identity pixels or selections");
+    }
+    if (
+      input.featureAuthority === "evidence_blind"
+      && transition.featureSelections
+    ) {
+      throw new Error("Evidence-blind transitions cannot claim feature-selection authority");
+    }
     if (transition.seal && transition.packageReason !== "mint") {
       throw new Error("Only a mint package transition may seal a Cast");
     }
@@ -540,18 +583,6 @@ export async function commitModelSnapshotTransition<Result>(input: {
 
     const sequences = await nextSequencesIn(tx, input.modelId);
     let identitySnapshotId = current?.identitySnapshot.id ?? null;
-    const currentFeatureSelections = current
-      ? await tx
-        .select()
-        .from(modelSnapshotFeatureSelections)
-        .where(and(
-          eq(modelSnapshotFeatureSelections.modelId, input.modelId),
-          eq(
-            modelSnapshotFeatureSelections.identitySnapshotId,
-            current.identitySnapshot.id,
-          ),
-        ))
-      : [];
     if (
       transition.identity
       && currentFeatureSelections.length > 0
@@ -771,6 +802,7 @@ export async function commitDocumentCompactionSnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: "casting.compact",
+    featureAuthority: "document_only",
     mutate: async (tx, context) => {
       if (!context.current) throw new Error("Prompt compaction requires a bootstrapped snapshot head");
       const updated = await tx
@@ -792,6 +824,7 @@ export async function commitDocumentCompactionSnapshot(input: {
             anchorAssetId: context.current.identitySnapshot.anchorAssetId,
             recipeVersion: DOCUMENT_COMPACTION_RECIPE_VERSION,
           },
+          featureSelections: { carryCurrent: true },
         },
       };
     },
@@ -820,6 +853,7 @@ export async function commitRestoredSlotSnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: "casting.restore",
+    featureAuthority: "evidence_blind",
     mutate: async (tx, context) => {
       if (!context.current) throw new Error("Slot restore requires a bootstrapped snapshot head");
       const assets = await tx
@@ -945,6 +979,7 @@ export async function commitGeneratedPackageSnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: input.operationKind,
+    featureAuthority: "evidence_blind",
     mutate: async (tx, context) => {
       if (!context.current) throw new Error("Add Views requires a bootstrapped snapshot head");
       if (input.mode === "mint" && context.model.status !== "draft") {
@@ -1072,6 +1107,7 @@ export async function commitRefreshedSlotsSnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: "casting.refresh",
+    featureAuthority: "evidence_blind",
     mutate: async (tx, context) => {
       if (!context.current) throw new Error("View refresh requires a bootstrapped snapshot head");
       const [anchor] = await tx
@@ -1159,6 +1195,7 @@ export async function commitCanvasRecastSnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: "canvas.recast",
+    featureAuthority: "evidence_blind",
     mutate: async (tx, context) => {
       if (!context.current) throw new Error("Canvas recast requires a bootstrapped snapshot head");
       if (context.model.status !== "draft") {
@@ -1297,6 +1334,7 @@ export async function commitHeadshotSnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: "casting.headshot",
+    featureAuthority: "evidence_blind",
     mutate: async (tx, context) => {
       if (context.model.status !== "draft") {
         throw new TRPCError({
@@ -1428,6 +1466,7 @@ export async function commitImageRefineSnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: "casting.iterate",
+    featureAuthority: "evidence_blind",
     mutate: async (tx, context) => {
       if (!context.current) throw new Error("Image refinement requires a bootstrapped snapshot head");
       const target = await selectedIterationTargetIn(
@@ -1514,6 +1553,7 @@ export async function commitIteratedIdentitySnapshot(input: {
     modelId: input.modelId,
     operationId: input.operationId,
     expectedKind: "casting.iterate",
+    featureAuthority: "evidence_blind",
     mutate: async (tx, context) => {
       if (!context.current) throw new Error("Identity iteration requires a bootstrapped snapshot head");
       if (context.model.status !== "draft") {
