@@ -8,7 +8,7 @@ export function CostLabel({ credits }: { credits: number | null }) {
   if (credits === null) return null; // plan still loading — never show a guess
   return (
     <span className="text-canvas-xs text-canvas-ink-faint whitespace-nowrap">
-      ~{credits.toLocaleString()} credits
+      {credits === 0 ? "Free" : `~${credits.toLocaleString()} credits`}
     </span>
   );
 }

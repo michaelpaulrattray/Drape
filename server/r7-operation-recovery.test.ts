@@ -43,17 +43,18 @@ describe("R7-2B conservative operation recovery", () => {
     })).toBe("recovery_required");
   });
 
-  it("links every paid Casting and Canvas child-attempt seam", () => {
+  it("links paid generation attempts and the free Fork copy audit seam", () => {
     const imaging = readFileSync("server/routes/generation/castingImaging.ts", "utf8");
     const refinement = readFileSync("server/routes/generation/castingRefinement.ts", "utf8");
     const packageSource = readFileSync("server/casting/mintPackage.ts", "utf8");
     const canvas = readFileSync("server/lib/boardOps.ts", "utf8");
+    const fork = readFileSync("server/casting/evidence/evidenceFork.ts", "utf8");
     expect(imaging).toContain('operationId: gate.operationId');
     expect(imaging).toContain('stepKey: "headshot"');
     expect(refinement).toContain('stepKey: "iterate"');
     expect(packageSource).toContain('stepKey: ctx.operationId ? `view:${angle}`');
     expect(canvas).toContain('stepKey: "recast"');
-    expect(canvas).toContain('stepKey: "fork"');
+    expect(fork).toContain('stepKey: `asset_${index + 1}`');
     expect(canvas).toContain('stepKey: `variation:${index}`');
   });
 

@@ -37,6 +37,9 @@ const operation = vi.hoisted(() => ({
     };
   },
 }));
+const evidenceRuntime = vi.hoisted(() => ({
+  adapter: null as object | null,
+}));
 
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
@@ -162,6 +165,26 @@ vi.mock("./casting/snapshotReadScope", () => ({
 vi.mock("./casting/effectiveCastRead", () => ({
   resolveEffectiveCastStateForRead: vi.fn(),
 }));
+vi.mock("./casting/evidence/evidenceDeliveryRuntime", () => ({
+  getEvidenceDeliveryAdapter: vi.fn(() => evidenceRuntime.adapter),
+}));
+vi.mock("./casting/evidence/evidenceFork", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/evidence/evidenceFork")>();
+  return {
+    ...actual,
+    productionEvidenceForkDependencies: vi.fn(() => ({ forkDependencies: true })),
+    forkEvidenceAwareCast: vi.fn().mockResolvedValue({
+      decision: "fork",
+      itemId: 3,
+      newItemId: 55,
+      modelId: 88,
+      imageUrl: "https://r2/fork.png",
+      viewAngle: "frontClose",
+      placed: true,
+      copiedObjects: 2,
+    }),
+  };
+});
 vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
   return { ...actual, commitCanvasRecastSnapshot: vi.fn() };
@@ -187,6 +210,10 @@ import { generateMasterPrompt, generateCastingImage, generateCastingImageRaw } f
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
+import {
+  forkEvidenceAwareCast,
+  productionEvidenceForkDependencies,
+} from "./casting/evidence/evidenceFork";
 import { commitCanvasRecastSnapshot } from "./casting/snapshotTransitions";
 import { commitAnchorReRoll, commitIdentityEdit } from "./casting/identity/identityCommit";
 import { buildIdentityAnchor } from "./casting/geminiClient";
@@ -308,6 +335,9 @@ beforeEach(() => {
   });
   vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
   vi.mocked(resolveEffectiveCastStateForRead).mockReset().mockResolvedValue(effectiveState() as never);
+  evidenceRuntime.adapter = null;
+  vi.mocked(forkEvidenceAwareCast).mockClear();
+  vi.mocked(productionEvidenceForkDependencies).mockClear();
   vi.mocked(commitCanvasRecastSnapshot).mockReset().mockImplementation(async (input) => {
     const currentModel = await getModelById(input.modelId);
     const assets = await getModelAssets(input.modelId);
@@ -594,7 +624,7 @@ describe("R7-1E Canvas operation receipts", () => {
     expect(generateCastingImageRaw).not.toHaveBeenCalled();
   });
 
-  it("forks under the source-model lock while preserving the new draft as the paid result", async () => {
+  it("allows an ordinary Fork when no private-evidence adapter is configured", async () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.boardOps.applyModelEdit.execute({
       clientRequestId: REQUEST_ID,
@@ -604,23 +634,54 @@ describe("R7-1E Canvas operation receipts", () => {
       changes: {},
       intent: "rerun",
     });
+    expect(productionEvidenceForkDependencies).toHaveBeenCalledWith(null);
+    expect(forkEvidenceAwareCast).toHaveBeenCalled();
+    expect(result).toMatchObject({ decision: "fork", modelId: 88, placed: true });
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+  });
+
+  it("routes a configured Fork through the zero-credit evidence copy and atomic Canvas placement", async () => {
+    evidenceRuntime.adapter = { privateEvidence: true };
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.boardOps.applyModelEdit.execute({
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      decision: "fork",
+      changes: { jawline: "Sharp / Chiseled" },
+    });
 
     expect(claimGenerationOperation).toHaveBeenCalledWith(expect.objectContaining({
-      kind: "canvas.fork",
+      kind: "evidence_fork_copy",
       modelId: 7,
       originBoardId: 2,
       originItemId: 3,
     }));
     expect(acquireGenerationOperationLock).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "evidence_fork_copy",
       lockKey: "model:7",
     }));
-    expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
-    expect(result).toMatchObject({ decision: "fork", modelId: 88, placed: true });
-    expect(finalizeGenerationOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
-      result,
-      chargedCredits: 350,
-      refundedCredits: 0,
-    }));
+    expect(bootstrapModelSnapshot).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(productionEvidenceForkDependencies).toHaveBeenCalledWith(evidenceRuntime.adapter);
+    expect(forkEvidenceAwareCast).toHaveBeenCalledWith(
+      { forkDependencies: true },
+      {
+        userId: 1,
+        sourceModelId: 7,
+        operationId: REQUEST_ID,
+        placement: { boardId: 2, sourceItemId: 3 },
+      },
+    );
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateCastingImage).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      decision: "fork",
+      newItemId: 55,
+      modelId: 88,
+      placed: true,
+    });
   });
 
   it("variations share one parent receipt with model ownership and the full planned total", async () => {
@@ -809,63 +870,6 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
 // ─── M22 ⊕: creation ordering — validation and refusal BEFORE money ─────────
 
 describe("creation doors reordered: refusal precedes deduction (M22)", () => {
-  it("fork intake refusal is FREE (this door used to deduct first)", async () => {
-    await expect(
-      executeApplyModelEdit({
-        userId: 1, itemId: 3, decision: "fork",
-        changes: { features: "always wearing sunglasses" },
-      }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.creationPresentation });
-    expect(deductPoints).not.toHaveBeenCalled();
-    expect(createModel).not.toHaveBeenCalled();
-  });
-
-  it("fork-from-refusal text passes intake when it is honest identity input (ink allowed at creation)", async () => {
-    const result = await executeApplyModelEdit({
-      userId: 1, itemId: 3, decision: "fork",
-      changes: { features: "add a small tattoo on the forearm" },
-    });
-    expect(result.decision).toBe("fork");
-    expect(deductPoints).toHaveBeenCalledTimes(1);
-  });
-
-  it("fork clears any persisted legacy referenceImage before creating the candidate (§10.3)", async () => {
-    vi.mocked(getModelById).mockResolvedValue(
-      model({ preferences: { gender: "Female", referenceImage: "data:image/png;base64,LEGACY" } }) as never,
-    );
-    await executeApplyModelEdit({ userId: 1, itemId: 3, decision: "fork", changes: { jawline: "Sharp / Chiseled" } });
-    const prefs = vi.mocked(createModel).mock.calls[0][0].preferences as Record<string, unknown>;
-    expect(prefs.referenceImage).toBeUndefined();
-    expect(generateCastingImage).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ modelId: 88 }),
-    );
-  });
-
-  it("fork preserves untouched Open flags, clears an explicitly set flag, and never prompts with metadata", async () => {
-    vi.mocked(getModelById).mockResolvedValue(model({
-      preferences: {
-        castingBrand: "Prada",
-        eyeColor: "Hazel",
-        hairColor: "Dark Brown",
-        engineChoice: { eyeColor: true, hairColor: true },
-      },
-    }) as never);
-
-    await executeApplyModelEdit({
-      userId: 1,
-      itemId: 3,
-      decision: "fork",
-      changes: { eyeColor: "Blue" },
-    });
-
-    const promptPrefs = vi.mocked(generateMasterPrompt).mock.calls[0][0] as unknown as Record<string, unknown>;
-    const storedPrefs = vi.mocked(createModel).mock.calls[0][0].preferences as Record<string, unknown>;
-    expect(promptPrefs.engineChoice).toBeUndefined();
-    expect(storedPrefs.engineChoice).toEqual({ hairColor: true });
-    expect(storedPrefs.eyeColor).toBe("Blue");
-  });
-
   it("canvas runGeneration: an intake refusal happens BEFORE the deduction (was deduct-then-parse)", async () => {
     await expect(
       executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "girl in a leather jacket" }),
@@ -922,9 +926,16 @@ describe("Canvas/Wardrobe isolation (M19) — no blanket grep, both sides explic
     expect(tx.modelUpdates.every((u) => !("masterPrompt" in u) && !("identityRevisionId" in u))).toBe(true);
   });
 
-  it("Edit Cast is the one deliberate door — and it reaches only the guarded update/fork boundary", async () => {
-    // fork: the original model row is never written
-    await executeApplyModelEdit({ userId: 1, itemId: 3, decision: "fork", changes: { jawline: "Sharp / Chiseled" } });
+  it("the paid edit service refuses Fork and never writes the source model", async () => {
+    await expect(executeApplyModelEdit({
+      userId: 1,
+      itemId: 3,
+      decision: "fork",
+      changes: { jawline: "Sharp / Chiseled" },
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "Fork is handled by the free exact-copy service.",
+    });
     expect(updateModel).not.toHaveBeenCalled();
     expect(tx.modelUpdates).toEqual([]);
   });

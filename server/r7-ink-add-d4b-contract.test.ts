@@ -6,13 +6,13 @@ async function source(path: string) {
 }
 
 describe("R7-7D D4B candidate generation contract", () => {
-  it("keeps generation compile-closed, owner-derived, strict, and client-inert", async () => {
+  it("keeps generation scope-gated, owner-derived, strict, and client-inert", async () => {
     const [scope, route, client] = await Promise.all([
       source("./casting/evidence/evidenceComposerScope.ts"),
       source("./routes/evidence.ts"),
       source("../client/src/features/studio/components/CastingWorkspace.tsx"),
     ]);
-    expect(scope).toContain("INK_ADD_PRODUCT_READY = false");
+    expect(scope).toContain("INK_ADD_PRODUCT_READY = true");
     expect(route).toContain("generateInkAddCandidate: protectedProcedure");
     expect(route).toContain("retryInkAddCandidate: protectedProcedure");
     expect(route.match(/\.strict\(\)/g)).toHaveLength(9);

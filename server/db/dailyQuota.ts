@@ -12,7 +12,7 @@
  */
 
 import { eq, and, gte, sql } from "drizzle-orm";
-import { generations } from "../../drizzle/schema";
+import { generationOperations, generations } from "../../drizzle/schema";
 import { getDb } from "./connection";
 
 const DAILY_LIMIT = parseInt(process.env.DAILY_GENERATION_LIMIT ?? "50", 10);
@@ -47,12 +47,18 @@ export async function getUserDailyGenerationCount(
   const result = await db
     .select({
       total: sql<number>`COUNT(DISTINCT CASE
+        WHEN ${generationOperations.kind} = 'evidence_fork_copy'
+          THEN NULL
         WHEN ${generations.type} = 'evidenceCandidate'
           THEN CONCAT('operation:', ${generations.operationId})
         ELSE CONCAT('generation:', ${generations.id})
       END)`,
     })
     .from(generations)
+    .leftJoin(
+      generationOperations,
+      eq(generationOperations.id, generations.operationId),
+    )
     .where(
       and(
         eq(generations.userId, userId),

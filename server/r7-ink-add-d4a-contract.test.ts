@@ -6,13 +6,13 @@ async function source(path: string) {
 }
 
 describe("R7-7D D4A intent/reference contract", () => {
-  it("keeps the product door compile-time closed through boot and requests", async () => {
+  it("opens the D7 product build while keeping boot and request scope fail-closed", async () => {
     const [scope, env, route] = await Promise.all([
       source("./casting/evidence/evidenceComposerScope.ts"),
       source("./_core/env.ts"),
       source("./routes/evidence.ts"),
     ]);
-    expect(scope).toContain("INK_ADD_PRODUCT_READY = false");
+    expect(scope).toContain("INK_ADD_PRODUCT_READY = true");
     expect(scope).toContain("INK_ADD_PRODUCT_READY\n    &&");
     expect(env).toContain(
       "productReady: EVIDENCE_PRODUCT_DELIVERY_READY && INK_ADD_PRODUCT_READY",

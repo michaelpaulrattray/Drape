@@ -293,7 +293,7 @@ export function CastProfilePanel({
         )}
         {onFork ? (
           <button type="button" onClick={onFork} className="w-full rounded-canvas-md bg-canvas-ink px-3 py-2.5 text-canvas-md font-medium" style={{ color: 'var(--color-canvas-surface)' }}>
-            Fork as new model
+            Fork to edit
           </button>
         ) : (
           <button type="button" onClick={() => navigate('/app/boards')} className="w-full rounded-canvas-md border-hairline border-canvas-border-strong px-3 py-2.5 text-canvas-md font-medium text-canvas-ink hover:bg-canvas-surface-inset">
@@ -301,7 +301,7 @@ export function CastProfilePanel({
           </button>
         )}
         <p className="text-center text-canvas-xs leading-relaxed text-canvas-ink-faint">
-          This identity is locked. Forking starts a separate draft; this cast stays unchanged.
+          Free exact copy. The new draft is independent; this Cast stays unchanged.
         </p>
         <button type="button" onClick={() => navigate('/app/models')} className="w-full text-center text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink">
           Export from Model Library

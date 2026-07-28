@@ -133,6 +133,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
   beforeEach(async () => {
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
     for (const table of [
+      "board_edges",
+      "board_item_versions",
+      "board_items",
+      "boards",
       "storage_cleanup_items",
       "storage_cleanup_batches",
       "generation_operation_locks",
@@ -549,6 +553,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       chargedCredits: 0,
       refundedCredits: 0,
     });
+    await expect(getUserDailyGenerationCount(source.userId)).resolves.toBe(0);
     const [cleanup] = await connection.query<RowDataPacket[]>(
       "SELECT id FROM storage_cleanup_batches WHERE operationId = ?",
       [operationId],
@@ -589,6 +594,243 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     expect(Array.from(privateObjects.keys()).some((key) =>
       key.includes(`/models/${result.modelId}/evidence/plates/`)
     )).toBe(true);
+  }, 90_000);
+
+  it("recovers a crashed claimed Fork, cleans its invisible shell, and permits a fresh ordinary Fork without a private adapter", async () => {
+    const source = await fixture();
+    const crashedOperationId = await claimedFork(source.userId, source.modelId);
+    const [shell] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO models (userId, name, masterPrompt, technicalSchema, preferences, status, stateVersion) SELECT userId, 'Interrupted copy', masterPrompt, technicalSchema, preferences, 'provisioning', 0 FROM models WHERE id = ?",
+      [source.modelId],
+    );
+    await connection.execute(
+      "INSERT INTO generations (userId, modelId, operationId, stepKey, type, status, pointsCost) VALUES (?, ?, ?, 'fork:prepare', 'evidenceCandidate', 'processing', 0)",
+      [source.userId, shell.insertId, crashedOperationId],
+    );
+    const cleanupBatchId = randomUUID();
+    const reservedKey =
+      `users/${source.userId}/models/${shell.insertId}/fork/${crashedOperationId}/frontClose.webp`;
+    await connection.execute(
+      "INSERT INTO storage_cleanup_batches (id, userId, operationId, kind, status, expectedCount, deletedCount, failedCount) VALUES (?, ?, ?, 'candidate_cleanup', 'pending', 1, 0, 0)",
+      [cleanupBatchId, source.userId, crashedOperationId],
+    );
+    await connection.execute(
+      "INSERT INTO storage_cleanup_items (batchId, storageKey, storageBackend, status, attempts) VALUES (?, ?, 'public_r2', 'pending', 0)",
+      [cleanupBatchId, reservedKey],
+    );
+    await connection.execute(
+      "UPDATE generation_operations SET updatedAt = DATE_SUB(NOW(), INTERVAL 20 MINUTE) WHERE id = ?",
+      [crashedOperationId],
+    );
+
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(),
+      limit: 10,
+    })).resolves.toMatchObject({ resolved: 1, recoveryRequired: 0 });
+    const [[recovered]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, chargedCredits, refundedCredits FROM generation_operations WHERE id = ?",
+      [crashedOperationId],
+    );
+    expect(recovered).toEqual({
+      status: "failed",
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    const [[lockCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM generation_operation_locks WHERE operationId = ?",
+      [crashedOperationId],
+    );
+    expect(Number(lockCount.count)).toBe(0);
+
+    await expect(processNextStorageCleanupBatch({
+      deleteObject: vi.fn(async (storageKey) => ({
+        success: storageKey === reservedKey,
+      })),
+      deletePrivateObject: vi.fn(async () => ({ success: false })),
+    })).resolves.toMatchObject({ claimed: true, deleted: 1, failed: 0 });
+    await expect(settleNextCompletedEvidenceForkCleanup()).resolves.toEqual({
+      operationId: crashedOperationId,
+      modelId: shell.insertId,
+    });
+    const [[shellCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM models WHERE id = ?",
+      [shell.insertId],
+    );
+    expect(Number(shellCount.count)).toBe(0);
+
+    const nextOperationId = await claimedFork(source.userId, source.modelId);
+    await expect(forkEvidenceAwareCast({
+      copyPublic: vi.fn(async ({ destinationKey }) => ({
+        key: destinationKey,
+        url: `https://public.example/${destinationKey}`,
+        byteSize: webp.length,
+        contentHash: webpHash,
+        contentType: "image/webp",
+      })),
+    }, {
+      userId: source.userId,
+      sourceModelId: source.modelId,
+      operationId: nextOperationId,
+    })).resolves.toMatchObject({ copiedObjects: 2 });
+  }, 120_000);
+
+  it("publishes the exact copy, Canvas node, v1, lineage, and landed receipt atomically", async () => {
+    const source = await fixture({ withFeature: true });
+    const [board] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO boards (userId, name, startedWith) VALUES (?, 'Fork board', 'casting')",
+      [source.userId],
+    );
+    const [sourceItem] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO board_items (boardId, type, kind, imageUrl, positionX, positionY, width, height, sourceModelId, metadata) VALUES (?, 'model', 'image', ?, 100, 200, 280, 420, ?, JSON_OBJECT('provenance', JSON_OBJECT('type', 'library_cast', 'modelId', ?, 'viewAngle', 'frontClose', 'draft', false)))",
+      [
+        board.insertId,
+        "https://public.example/source-head.webp",
+        source.modelId,
+        source.modelId,
+      ],
+    );
+    const operationId = await claimedFork(source.userId, source.modelId);
+    const result = await forkEvidenceAwareCast({
+      privateStorage: privateAdapter(new Map([
+        [source.privateSourceKey!, webp],
+      ])),
+      copyPublic: vi.fn(async ({ destinationKey }) => ({
+        key: destinationKey,
+        url: `https://public.example/${destinationKey}`,
+        byteSize: webp.length,
+        contentHash: webpHash,
+        contentType: "image/webp",
+      })),
+    }, {
+      userId: source.userId,
+      sourceModelId: source.modelId,
+      operationId,
+      placement: {
+        boardId: board.insertId,
+        sourceItemId: sourceItem.insertId,
+      },
+    });
+
+    expect(result).toMatchObject({
+      decision: "fork",
+      itemId: sourceItem.insertId,
+      placed: true,
+      viewAngle: "frontClose",
+    });
+    const [[placed]] = await connection.query<RowDataPacket[]>(
+      "SELECT boardId, imageUrl, positionX, positionY, width, height, sourceModelId, JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.provenance.type')) AS provenanceType, JSON_EXTRACT(metadata, '$.provenance.modelId') AS provenanceModelId FROM board_items WHERE id = ?",
+      [result.newItemId],
+    );
+    expect(placed).toMatchObject({
+      boardId: board.insertId,
+      imageUrl: result.imageUrl,
+      positionX: 440,
+      positionY: 200,
+      width: 280,
+      height: 420,
+      sourceModelId: result.modelId,
+      provenanceType: "library_cast",
+      provenanceModelId: result.modelId,
+    });
+    const [[version]] = await connection.query<RowDataPacket[]>(
+      "SELECT itemId, version, imageUrl, tool FROM board_item_versions WHERE itemId = ?",
+      [result.newItemId],
+    );
+    expect(version).toEqual({
+      itemId: result.newItemId,
+      version: 1,
+      imageUrl: result.imageUrl,
+      tool: "initial",
+    });
+    const [[edge]] = await connection.query<RowDataPacket[]>(
+      "SELECT boardId, sourceItemId, targetItemId, relation FROM board_edges WHERE targetItemId = ?",
+      [result.newItemId],
+    );
+    expect(edge).toEqual({
+      boardId: board.insertId,
+      sourceItemId: sourceItem.insertId,
+      targetItemId: result.newItemId,
+      relation: "forked_from",
+    });
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, plannedCredits, chargedCredits, refundedCredits, landingStatus, landedItemId, landingAcknowledgedAt FROM generation_operations WHERE id = ?",
+      [operationId],
+    );
+    expect(receipt).toMatchObject({
+      status: "succeeded",
+      plannedCredits: 0,
+      chargedCredits: 0,
+      refundedCredits: 0,
+      landingStatus: "landed",
+      landedItemId: result.newItemId,
+    });
+    expect(receipt.landingAcknowledgedAt).toBeTruthy();
+    const [[balance]] = await connection.query<RowDataPacket[]>(
+      "SELECT balance FROM points WHERE userId = ?",
+      [source.userId],
+    );
+    expect(balance.balance).toBe(5000);
+    const [[transactions]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM point_transactions WHERE userId = ?",
+      [source.userId],
+    );
+    expect(Number(transactions.count)).toBe(0);
+  }, 90_000);
+
+  it("refuses a foreign Canvas placement without publishing a visible copied Cast", async () => {
+    const source = await fixture();
+    const [otherUser] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO users (openId, name, approved, emailVerified) VALUES (?, 'Other owner', 1, 1)",
+      [`r7-d2-other-${randomUUID()}`],
+    );
+    const [foreignBoard] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO boards (userId, name, startedWith) VALUES (?, 'Foreign board', 'casting')",
+      [otherUser.insertId],
+    );
+    const [foreignItem] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO board_items (boardId, type, kind, imageUrl, sourceModelId) VALUES (?, 'model', 'image', ?, ?)",
+      [foreignBoard.insertId, "https://public.example/foreign.webp", source.modelId],
+    );
+    const operationId = await claimedFork(source.userId, source.modelId);
+    await expect(forkEvidenceAwareCast({
+      privateStorage: privateAdapter(new Map()),
+      copyPublic: vi.fn(async ({ destinationKey }) => ({
+        key: destinationKey,
+        url: `https://public.example/${destinationKey}`,
+        byteSize: webp.length,
+        contentHash: webpHash,
+        contentType: "image/webp",
+      })),
+    }, {
+      userId: source.userId,
+      sourceModelId: source.modelId,
+      operationId,
+      placement: {
+        boardId: foreignBoard.insertId,
+        sourceItemId: foreignItem.insertId,
+      },
+    })).rejects.toMatchObject({ code: "copy_unavailable" });
+
+    const [[foreignCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM board_items WHERE boardId = ?",
+      [foreignBoard.insertId],
+    );
+    expect(Number(foreignCount.count)).toBe(1);
+    const [[visibleCopies]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS count FROM models WHERE userId = ? AND status <> 'provisioning'",
+      [source.userId],
+    );
+    expect(Number(visibleCopies.count)).toBe(1);
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, chargedCredits, refundedCredits, landingStatus FROM generation_operations WHERE id = ?",
+      [operationId],
+    );
+    expect(receipt).toEqual({
+      status: "failed",
+      chargedCredits: 0,
+      refundedCredits: 0,
+      landingStatus: "not_applicable",
+    });
   }, 90_000);
 
   it("keeps failed provisioning invisible and removes it only after exact cleanup succeeds", async () => {

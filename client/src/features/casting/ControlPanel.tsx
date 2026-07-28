@@ -325,7 +325,7 @@ export function ControlPanel({
                 : isReadOnly
                 ? 'Identity locked'
                 : mintedEdit
-                  ? 'Identity locked — changes fork a new draft'
+                  ? 'Identity locked — fork an exact draft to edit'
                   : 'Build your model from scratch'}
             </div>
           </div>
@@ -388,7 +388,7 @@ export function ControlPanel({
           <p className="mt-0.5 text-canvas-sm text-canvas-ink-faint leading-normal">
             {resolvedOpenFields.map((item) => item.label).join(', ')} stay read-only in Profile.{' '}
             {mintedEdit
-              ? 'Choosing a value here becomes part of a new fork.'
+              ? 'Fork first, then choose a value on the new editable draft.'
               : identityChangeMode
                 ? 'Chosen values become part of the new draft.'
               : 'Choose a value here only to change this draft.'}

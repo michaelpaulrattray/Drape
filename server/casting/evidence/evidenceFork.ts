@@ -29,11 +29,15 @@ import {
 } from "../../../drizzle/schema";
 import { storageCopyExact } from "../../storage";
 import { withTransaction, type TransactionHandle } from "../../db/connection";
+import { placeEvidenceForkOnBoardIn } from "../../db/boards";
 import { createStorageCleanupManifestIn } from "../../db/storageCleanup";
 import {
   finalizeClaimedGenerationOperationFailure,
   finalizeClaimedGenerationOperationSuccessIn,
+  getGenerationOperationOutcome,
+  markClaimedGenerationOperationRecoveryRequired,
 } from "../../db/generationOperations";
+import { createModuleLogger } from "../../logging/logger";
 import { modelOperationLockKey } from "../operationContract";
 import { availableModelWhere } from "../modelAvailability";
 import {
@@ -44,6 +48,7 @@ import {
 } from "./evidenceDelivery";
 
 const PUBLIC_FORK_PREFIX = "fork";
+const log = createModuleLogger("casting/evidence/evidenceFork");
 
 export class EvidenceForkError extends Error {
   readonly code:
@@ -69,12 +74,32 @@ export interface EvidenceForkPublicCopy {
 }
 
 export interface EvidenceForkDependencies {
-  privateStorage: PrivateEvidenceStorageAdapter;
+  /** Required only when the source actually owns private evidence objects. */
+  privateStorage?: PrivateEvidenceStorageAdapter | null;
   copyPublic(input: {
     sourceKey: string;
     destinationKey: string;
   }): Promise<EvidenceForkPublicCopy>;
   generateId?: () => string;
+}
+
+export interface EvidenceForkPlacement {
+  boardId: number;
+  sourceItemId: number;
+}
+
+export interface EvidenceForkResult {
+  modelId: number;
+  copiedObjects: number;
+}
+
+export interface PlacedEvidenceForkResult extends EvidenceForkResult {
+  decision: "fork";
+  itemId: number;
+  newItemId: number;
+  imageUrl: string;
+  viewAngle: string;
+  placed: true;
 }
 
 interface PlannedPublicAsset {
@@ -413,8 +438,9 @@ async function commitEvidenceForkIn(
     prepared: PreparedEvidenceFork;
     publicCopies: Map<number, EvidenceForkPublicCopy>;
     generateId: () => string;
+    placement?: EvidenceForkPlacement;
   },
-): Promise<{ modelId: number; copiedObjects: number }> {
+): Promise<EvidenceForkResult | PlacedEvidenceForkResult> {
   const sourceModel = await lockSourceAndOperationIn(tx, input);
   if (!sameSourceHead(sourceModel, input.prepared)) {
     throw new EvidenceForkError("commit_conflict");
@@ -619,6 +645,49 @@ async function commitEvidenceForkIn(
       }),
     );
   }
+
+  let placementResult: Omit<
+    PlacedEvidenceForkResult,
+    "modelId" | "copiedObjects"
+  > | null = null;
+  if (input.placement) {
+    const displaySlot = input.prepared.graph.slots.find(
+      (slot) => slot.viewAngle === "frontClose",
+    ) ?? input.prepared.graph.slots.find(
+      (slot) => slot.viewAngle === "frontFull",
+    ) ?? input.prepared.graph.slots.find(
+      (slot) => slot.selectedAssetId === input.prepared.graph.identity.anchorAssetId,
+    ) ?? input.prepared.graph.slots[0];
+    const displaySource = displaySlot
+      ? input.prepared.graph.assets.find(
+          (asset) => asset.id === displaySlot.selectedAssetId,
+        )
+      : null;
+    const displayCopy = displaySource
+      ? input.publicCopies.get(displaySource.id)
+      : null;
+    if (!displaySlot || !displaySource || !displayCopy) {
+      throw new EvidenceForkError("snapshot_unavailable");
+    }
+    const newItemId = await placeEvidenceForkOnBoardIn(tx, {
+      userId: input.userId,
+      boardId: input.placement.boardId,
+      sourceItemId: input.placement.sourceItemId,
+      sourceModelId: input.sourceModelId,
+      targetModelId: target.id,
+      imageUrl: displayCopy.url,
+      viewAngle: displaySlot.viewAngle,
+    });
+    placementResult = {
+      decision: "fork",
+      itemId: input.placement.sourceItemId,
+      newItemId,
+      imageUrl: displayCopy.url,
+      viewAngle: displaySlot.viewAngle,
+      placed: true,
+    };
+  }
+
   const published = await tx.update(models).set({
     status: "draft",
     currentPackageSnapshotId: packageSnapshotId,
@@ -653,15 +722,23 @@ async function commitEvidenceForkIn(
     eq(generations.modelId, target.id),
     eq(generations.status, "processing"),
   ));
-  const result = {
+  const result: EvidenceForkResult | PlacedEvidenceForkResult = {
     modelId: target.id,
     copiedObjects:
       input.prepared.publicAssets.length + input.prepared.privateObjects.length,
+    ...(placementResult ?? {}),
   };
   await finalizeClaimedGenerationOperationSuccessIn(tx, {
     userId: input.userId,
     operationId: input.operationId,
     result,
+    ...(placementResult ? {
+      landing: {
+        status: "landed" as const,
+        landedItemId: placementResult.newItemId,
+        acknowledgedAt: new Date(),
+      },
+    } : {}),
   });
   return result;
 }
@@ -670,14 +747,32 @@ async function commitEvidenceForkIn(
  * Free identity-preserving Fork. No provider or credit API is imported.
  * Source and destination never share a public or private object key.
  */
-export async function forkEvidenceAwareCast(
+export function forkEvidenceAwareCast(
+  dependencies: EvidenceForkDependencies,
+  input: {
+    userId: number;
+    sourceModelId: number;
+    operationId: string;
+    placement: EvidenceForkPlacement;
+  },
+): Promise<PlacedEvidenceForkResult>;
+export function forkEvidenceAwareCast(
   dependencies: EvidenceForkDependencies,
   input: {
     userId: number;
     sourceModelId: number;
     operationId: string;
   },
-): Promise<{ modelId: number; copiedObjects: number }> {
+): Promise<EvidenceForkResult>;
+export async function forkEvidenceAwareCast(
+  dependencies: EvidenceForkDependencies,
+  input: {
+    userId: number;
+    sourceModelId: number;
+    operationId: string;
+    placement?: EvidenceForkPlacement;
+  },
+): Promise<EvidenceForkResult | PlacedEvidenceForkResult> {
   const generateId = dependencies.generateId ?? randomUUID;
   let prepared: PreparedEvidenceFork | null = null;
   try {
@@ -697,8 +792,11 @@ export async function forkEvidenceAwareCast(
       }
       publicCopies.set(planned.source.id, copied);
     }
+    if (prepared.privateObjects.length > 0 && !dependencies.privateStorage) {
+      throw new EvidenceForkError("copy_unavailable");
+    }
     for (const planned of prepared.privateObjects) {
-      await copyCanonicalEvidenceExact(dependencies.privateStorage, {
+      await copyCanonicalEvidenceExact(dependencies.privateStorage!, {
         sourceKey: planned.source.storageKey,
         destinationKey: planned.destinationKey,
         byteSize: planned.source.byteSize,
@@ -712,6 +810,17 @@ export async function forkEvidenceAwareCast(
       generateId,
     }));
   } catch (error) {
+    // A transport error can arrive after MySQL committed the copy, placement,
+    // and success receipt. Adjudicate the durable receipt before doing any
+    // failure work so an acknowledged-late success is returned, not presented
+    // as a retryable failure that could tempt the user into a second fork.
+    const durableOutcome = await getGenerationOperationOutcome(
+      input.userId,
+      input.operationId,
+    ).catch(() => null);
+    if (durableOutcome?.type === "replay_success") {
+      return durableOutcome.result as EvidenceForkResult | PlacedEvidenceForkResult;
+    }
     if (prepared) {
       await withTransaction(async (tx) => {
         await tx.update(generations).set({
@@ -725,12 +834,39 @@ export async function forkEvidenceAwareCast(
         ));
       }).catch(() => undefined);
     }
-    await finalizeClaimedGenerationOperationFailure({
-      userId: input.userId,
-      operationId: input.operationId,
-      errorCode: "FORK_COPY_FAILED",
-      publicMessage: "The Cast could not be copied. Nothing was charged.",
-    }).catch(() => undefined);
+    try {
+      await finalizeClaimedGenerationOperationFailure({
+        userId: input.userId,
+        operationId: input.operationId,
+        errorCode: "FORK_COPY_FAILED",
+        publicMessage: "The Cast could not be copied. Nothing was charged.",
+      });
+    } catch (receiptError) {
+      const existing = await getGenerationOperationOutcome(
+        input.userId,
+        input.operationId,
+      ).catch(() => null);
+      if (existing?.type === "replay_success") {
+        return existing.result as EvidenceForkResult | PlacedEvidenceForkResult;
+      }
+      if (existing?.type !== "replay_failure") {
+        const publicMessage =
+          `The result needs support review before this action can be retried. Operation ${input.operationId}.`;
+        try {
+          await markClaimedGenerationOperationRecoveryRequired({
+            userId: input.userId,
+            operationId: input.operationId,
+            publicMessage,
+          });
+        } catch (recoveryError) {
+          log.fatal(
+            { operationId: input.operationId, receiptError, err: recoveryError },
+            "[EvidenceFork] claimed receipt and recovery mark both failed",
+          );
+        }
+        throw new EvidenceForkError("operation_unavailable");
+      }
+    }
     throw error instanceof EvidenceForkError
       ? error
       : new EvidenceForkError("copy_unavailable");
@@ -738,9 +874,9 @@ export async function forkEvidenceAwareCast(
 }
 
 export const productionEvidenceForkDependencies = (
-  privateStorage: PrivateEvidenceStorageAdapter,
+  privateStorage?: PrivateEvidenceStorageAdapter | null,
 ): EvidenceForkDependencies => ({
-  privateStorage,
+  ...(privateStorage ? { privateStorage } : {}),
   copyPublic: storageCopyExact,
 });
 

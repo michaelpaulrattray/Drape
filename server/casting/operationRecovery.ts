@@ -15,6 +15,7 @@ import {
   finalizeClaimedGenerationOperationFailure,
   finalizeGenerationOperationFailure,
   finalizeGenerationOperationSuccess,
+  markClaimedGenerationOperationRecoveryRequired,
   markGenerationOperationRecoveryRequired,
 } from "../db/generationOperations";
 import { adjudicateStaleInkEvidenceOperation } from "../db/inkAddRecovery";
@@ -388,7 +389,18 @@ export async function adjudicateStaleGenerationOperation(
     possiblePartialWrite: operation.status === "running" && operation.plannedCredits === 0,
     ledgerDisagrees,
   };
-  let decision = classifyStaleOperation(evidence);
+  // evidence_fork_copy publishes its model, assets, optional Canvas placement,
+  // and success receipt in one transaction. A stale claimed receipt therefore
+  // proves that publication did not commit. Child rows and reserved cleanup
+  // objects are pre-publication evidence, not an ambiguous durable result.
+  let decision =
+    operation.status === "claimed"
+      && operation.kind === "evidence_fork_copy"
+      && operation.plannedCredits === 0
+      && chargedCredits === 0
+      && !ledgerDisagrees
+      ? "free_failure"
+      : classifyStaleOperation(evidence);
 
   const ensureFailedChildRefunds = async (): Promise<number | null> => {
     let total = 0;
@@ -463,13 +475,21 @@ export async function adjudicateStaleGenerationOperation(
   }
 
   const message = `This operation needs support review before it can be retried. Operation ${operation.id}.`;
-  await markGenerationOperationRecoveryRequired({
-    userId: operation.userId,
-    operationId: operation.id,
-    publicMessage: message,
-    chargedCredits,
-    refundedCredits: existingRefundCredits,
-  });
+  if (operation.status === "claimed") {
+    await markClaimedGenerationOperationRecoveryRequired({
+      userId: operation.userId,
+      operationId: operation.id,
+      publicMessage: message,
+    });
+  } else {
+    await markGenerationOperationRecoveryRequired({
+      userId: operation.userId,
+      operationId: operation.id,
+      publicMessage: message,
+      chargedCredits,
+      refundedCredits: existingRefundCredits,
+    });
+  }
   return "recovery_required";
 }
 

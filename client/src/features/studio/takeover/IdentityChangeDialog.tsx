@@ -43,7 +43,7 @@ export function IdentityChangeDialog({
   onCancel: () => void;
 }) {
   const plan = trpc.boardOps.applyModelEdit.plan.useQuery({ boardId, itemId });
-  const cost = plan.data?.estimatedCreditCost ?? null;
+  const cost = plan.data?.forkCreditCost ?? null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -67,25 +67,25 @@ export function IdentityChangeDialog({
       />
       <div className="relative w-[420px] max-w-[92vw] bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-md p-5">
         <p className="text-canvas-md font-medium text-canvas-ink mb-1.5">
-          {rerun ? "Fork this cast?" : contextOnly ? "This casts someone new" : "This is a new person"}
+          Fork to edit?
         </p>
         {rerun ? (
           <p className="text-canvas-sm text-canvas-ink-soft leading-relaxed">
-            The minted identity stays locked. Forking casts a separate draft from the same starting point.
+            Create an exact editable copy of this Cast. The original stays locked and unchanged.
           </p>
         ) : contextOnly ? (
           <p className="text-canvas-sm text-canvas-ink-soft leading-relaxed">
-            Brand and vibe are casting context, not a change to who this person is — and a
-            minted cast keeps its context. A fork carries your new {changedLabels.join(", ")} into a new draft.
+            The free Fork copies this Cast first, then opens the new draft with your{" "}
+            {changedLabels.join(", ")} edits still filled in.
           </p>
         ) : (
           <p className="text-canvas-sm text-canvas-ink-soft leading-relaxed">
-            Changing {changedLabels.join(", ")} means casting someone new — this identity is
-            minted and stays as it is.
+            The free Fork copies this Cast first, then opens the new draft with your changes
+            to {changedLabels.join(", ")} still filled in.
           </p>
         )}
         <p className="text-canvas-sm text-canvas-ink-soft leading-relaxed mt-1.5 mb-5">
-          Fork lands the new cast beside the original as an unnamed draft, connected by lineage.
+          The complete selected package and private evidence are copied to new storage. Nothing is generated or charged until you choose to cast from the new draft.
         </p>
 
         {errorMessage && (
@@ -109,10 +109,10 @@ export function IdentityChangeDialog({
             disabled={pending}
             className="px-3 py-1.5 rounded-canvas-pill text-canvas-xs font-medium bg-canvas-ink text-canvas-surface hover:opacity-90 transition-opacity inline-flex items-center gap-1.5 disabled:opacity-60"
           >
-            {pending ? "Forking…" : "Fork as new model"}
+            {pending ? "Copying…" : "Fork to edit"}
             {!pending && cost !== null && (
               <span className="opacity-70 font-normal whitespace-nowrap">
-                ~{cost.toLocaleString()} credits
+                {cost === 0 ? "Free" : `~${cost.toLocaleString()} credits`}
               </span>
             )}
           </button>

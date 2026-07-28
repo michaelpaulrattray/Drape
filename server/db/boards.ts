@@ -282,6 +282,94 @@ function ownedBoardItemScope(input: {
   );
 }
 
+/**
+ * D7 Fork placement. The source Cast node is re-anchored to its owned board
+ * and source model under lock before the new item, its first version, and its
+ * lineage edge are inserted. Callers already hold the source/target model
+ * locks, preserving the global model -> board -> item order.
+ */
+export async function placeEvidenceForkOnBoardIn(
+  tx: TransactionHandle,
+  input: {
+    userId: number;
+    boardId: number;
+    sourceItemId: number;
+    sourceModelId: number;
+    targetModelId: number;
+    imageUrl: string;
+    viewAngle: string;
+  },
+): Promise<number> {
+  const [board] = await tx
+    .select({ id: boards.id })
+    .from(boards)
+    .where(and(
+      eq(boards.id, input.boardId),
+      eq(boards.userId, input.userId),
+    ))
+    .limit(1)
+    .for("update");
+  if (!board) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
+  }
+
+  const [source] = await tx
+    .select({
+      id: boardItems.id,
+      positionX: boardItems.positionX,
+      positionY: boardItems.positionY,
+      width: boardItems.width,
+    })
+    .from(boardItems)
+    .where(and(
+      eq(boardItems.id, input.sourceItemId),
+      eq(boardItems.boardId, input.boardId),
+      eq(boardItems.sourceModelId, input.sourceModelId),
+      isNull(boardItems.deletedAt),
+      ownedBoardExists(input.userId, input.boardId),
+    ))
+    .limit(1)
+    .for("update");
+  if (!source) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Board item not found" });
+  }
+
+  const provenance = {
+    type: "library_cast",
+    modelId: input.targetModelId,
+    viewAngle: input.viewAngle,
+    draft: true,
+  };
+  const [inserted] = await tx.insert(boardItems).values({
+    boardId: input.boardId,
+    type: "model",
+    kind: "image",
+    imageUrl: input.imageUrl,
+    positionX: Math.round(source.positionX + source.width + 60),
+    positionY: Math.round(source.positionY),
+    width: 280,
+    height: 420,
+    metadata: { provenance, version: 1 },
+    sourceModelId: input.targetModelId,
+  }).$returningId();
+  if (!inserted?.id) throw new Error("Failed to place the copied Cast");
+
+  await tx.insert(boardItemVersions).values({
+    itemId: inserted.id,
+    version: 1,
+    imageUrl: input.imageUrl,
+    prompt: null,
+    tool: "initial",
+  });
+  await tx.insert(boardEdges).values({
+    boardId: input.boardId,
+    sourceItemId: source.id,
+    targetItemId: inserted.id,
+    relation: "forked_from",
+  });
+  return inserted.id;
+}
+
 export async function undoDeleteBoardItems(input: OwnedBoardItemMutation) {
   if (input.itemIds.length === 0) return 0;
   return withTransaction(async (tx) => {

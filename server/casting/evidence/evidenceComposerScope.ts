@@ -14,11 +14,11 @@ export const EVIDENCE_CANDIDATE_WORKER_ENV =
   "ENABLE_EVIDENCE_CANDIDATE_WORKER";
 
 /**
- * D4 installs the complete server workflow behind a compile-time closed
- * product door. D5 is the first slice allowed to turn this true after the
- * founder UI and end-to-end acceptance evidence exist.
+ * D7 opens the compile-time product door only after the complete workflow,
+ * founder UI, evidence-aware Fork, and cleanup/recovery boundaries exist.
+ * Runtime scope remains server-owned and defaults off.
  */
-export const INK_ADD_PRODUCT_READY = false as const;
+export const INK_ADD_PRODUCT_READY = true as const;
 
 export type EvidenceComposerScope =
   | { kind: "off" }

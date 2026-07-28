@@ -1327,11 +1327,30 @@ export async function finalizeClaimedGenerationOperationSuccess(input: {
  */
 export async function finalizeClaimedGenerationOperationSuccessIn(
   tx: TransactionHandle,
-  input: { userId: number; operationId: string; result: unknown },
+  input: {
+    userId: number;
+    operationId: string;
+    result: unknown;
+    landing?: {
+      status: GenerationOperationLandingStatus;
+      landedItemId?: number | null;
+      acknowledgedAt?: Date | null;
+    };
+  },
 ): Promise<void> {
   assertPositiveId(input.userId, "userId");
   assertOperationIdentity(input.operationId);
   assertPublicOperationResult(input.result);
+  if (input.landing) {
+    assertGenerationOperationLandingStatus(input.landing.status);
+    assertOptionalPositiveId(input.landing.landedItemId, "landedItemId");
+    if (input.landing.status === "landed" && !input.landing.landedItemId) {
+      throw new TypeError("A landed operation requires its board item id");
+    }
+    if (input.landing.status !== "landed" && input.landing.landedItemId) {
+      throw new TypeError("Only a landed operation can record a board item id");
+    }
+  }
   const finalized = await tx
     .update(generationOperations)
     .set({
@@ -1342,6 +1361,11 @@ export async function finalizeClaimedGenerationOperationSuccessIn(
       chargedCredits: 0,
       refundedCredits: 0,
       completedAt: new Date(),
+      ...(input.landing ? {
+        landingStatus: input.landing.status,
+        landedItemId: input.landing.landedItemId ?? null,
+        landingAcknowledgedAt: input.landing.acknowledgedAt ?? null,
+      } : {}),
     })
     .where(and(
       eq(generationOperations.id, input.operationId),

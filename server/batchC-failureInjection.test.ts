@@ -1017,42 +1017,6 @@ describe("applyModelEdit boundaries", () => {
     expect(deductPoints).toHaveBeenCalledTimes(1);
   });
 
-  it("FORK: candidate success + placement failure ⇒ TYPED PARTIAL SUCCESS (correction 5): resolves placed:false, NO refund, names the library", async () => {
-    tx.failBoardItemInsert = true; // the atomic placement's first write
-    const result = await executeApplyModelEdit({
-      userId: 1, itemId: 3, decision: "fork", changes: { jawline: "Sharp / Chiseled" },
-    });
-    // RESOLVES — never an error shape a client could retry into a second charge
-    expect(result.decision).toBe("fork");
-    expect((result as Record<string, unknown>).placed).toBe(false);
-    expect((result as Record<string, unknown>).newItemId).toBeNull();
-    expect(String((result as Record<string, unknown>).placementMessage)).toContain("model library");
-    expect(addCredits).not.toHaveBeenCalled();
-    // atomic placement: the failed landing wrote NO item, NO version, NO edge
-    expect(tx.inserts.some((i) => "kind" in i)).toBe(false);
-    expect(tx.inserts.some((i) => "relation" in i)).toBe(false);
-  });
-
-  it("FORK: placement's SECOND/THIRD write failure also rolls the whole placement back (correction 4)", async () => {
-    tx.failVersionInsert = true; // item insert succeeds, v1 row fails → tx rolls back
-    const result = await executeApplyModelEdit({
-      userId: 1, itemId: 3, decision: "fork", changes: { jawline: "Sharp / Chiseled" },
-    });
-    expect((result as Record<string, unknown>).placed).toBe(false);
-    expect(addCredits).not.toHaveBeenCalled();
-    // no half-versioned / unlinked placement escaped the transaction
-    expect(tx.inserts.some((i) => "relation" in i)).toBe(false);
-  });
-
-  it("FORK: candidate failure (asset write) ⇒ refund once, deterministic id", async () => {
-    vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
-    await expect(
-      executeApplyModelEdit({ userId: 1, itemId: 3, decision: "fork", changes: { jawline: "Sharp / Chiseled" } }),
-    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
-    expect(addCredits).toHaveBeenCalledTimes(1);
-    const refundRef = vi.mocked(addCredits).mock.calls[0][4] as string;
-    expect(refundRef.startsWith("refund:apply-edit-3-")).toBe(true);
-  });
 });
 
 // ── runGeneration + variations boundaries ────────────────────────────────────

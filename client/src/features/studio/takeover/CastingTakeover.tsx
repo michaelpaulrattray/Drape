@@ -15,7 +15,7 @@
  *
  * Studio-scoped code hosted by BoardPage — the D-24 boundary in practice.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -36,6 +36,7 @@ import { honestModelName } from '@/features/casting/modelDisplayTruth';
 import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
 import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
+import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
 import type { MintTier } from '@shared/boardTypes';
 
 export interface CastEditContext {
@@ -52,6 +53,9 @@ export interface CastEditContext {
   initialAngle?: string;
   /** The originating board node was still blank when this saved draft opened. */
   originNeedsLanding?: boolean;
+  /** The durable fork stays exact; these unsaved form edits are restored
+   *  locally in the new draft so the user does not enter them twice. */
+  initialPreferenceOverrides?: Record<string, unknown>;
 }
 
 export interface CastingTakeoverProps {
@@ -63,8 +67,9 @@ export interface CastingTakeoverProps {
    *  the originating node and closes. Carries client-held data for the D-38
    *  optimistic fill. */
   onMinted: (modelId: number, info: { name: string; headshotUrl: string | null }) => void;
-  /** Minted-edit save confirmed in the D-11 dialog — host closes the
-   *  takeover and runs boardOps.applyModelEdit with a node-local job.
+  /** Minted-edit save confirmed in the D-11 dialog — host closes after a
+   *  Recast, or switches directly into the new editable draft after a Fork.
+   *  Runs boardOps.applyModelEdit with a node-local job.
    *  Batch C (review finding 7): resolves when the server ACCEPTED the
    *  commit; rejects on a (free) refusal — the takeover then stays open with
    *  the user's changes intact and the dialog shows the server's message. */
@@ -373,6 +378,14 @@ export function CastingTakeover({
     const diff = diffPreferences(baselinePrefs as unknown as ModelPreferences, prefs);
     return Object.keys(diff.changes).length > 0 ? diff : null;
   }, [isMintedEdit, baselinePrefs, prefs]);
+  const draftUnsavedDiff = useMemo(() => {
+    if (!editContext?.draft || !persistedModel.data?.preferences) return null;
+    const baseline = editablePreferencesFromStored(
+      persistedModel.data.preferences,
+    ).preferences;
+    const diff = diffPreferences(baseline, prefs);
+    return Object.keys(diff.changes).length > 0 ? diff : null;
+  }, [editContext?.draft, persistedModel.data?.preferences, prefs]);
 
   // Authoring sessions: a landed draft (D-55) means closing abandons
   // nothing — the node carries the work; only an in-flight generation
@@ -381,6 +394,7 @@ export function CastingTakeover({
     ? unsavedDiff() !== null
     : genState.isGenerating
       || (isCasting && castingOperation !== 'mint')
+      || draftUnsavedDiff !== null
       || (currentModelId !== null && !draftLanded);
 
   const attemptClose = useCallback(() => {
@@ -573,7 +587,7 @@ export function CastingTakeover({
               onClick={handleForkProfile}
               className="px-4 py-1.5 rounded-canvas-pill transition-colors duration-200 disabled:opacity-40 text-canvas-md font-medium text-canvas-ink-soft bg-canvas-surface border-hairline border-canvas-border-strong hover:text-canvas-ink hover:border-canvas-ink"
             >
-              Fork model
+              Fork to edit
             </button>
           ) : (
             <button
@@ -605,6 +619,7 @@ export function CastingTakeover({
           isReadOnly={false}
           onNewModel={resetCastingSession}
           onForkMinted={isMintedEdit ? handleForkProfile : undefined}
+          initialPreferenceOverrides={editContext?.initialPreferenceOverrides}
         />
         {/* Cold-mount loader (P1): edit sessions hydrate the model first —
             never flash the default studio */}
@@ -631,6 +646,8 @@ export function CastingTakeover({
             <p className="text-canvas-md text-canvas-ink-soft mb-4" style={{ lineHeight: 1.55 }}>
               {isMintedEdit
                 ? 'Unsaved identity changes are discarded — the placed cast stays as it is.'
+                : draftUnsavedDiff
+                  ? 'The copied Cast is saved, but these field changes have not been generated. Leaving discards those changes.'
                 : isCasting && castingOperation !== 'mint'
                   ? 'Your new views will keep generating and appear on this card when they are ready.'
                 : genState.isGenerating && !hasHeadshot && needsBoardLanding
@@ -670,7 +687,8 @@ export function CastingTakeover({
       {/* The D-11 identity dialog (minted edits only). Finding 7: the
           dialog stays open through the round-trip — the takeover (and the
           user's changes) survive a free server refusal, which renders here
-          in context. Success closes the dialog; the host closes the room. */}
+          in context. Success closes the dialog; the host either closes after
+          Recast or remounts the room on the newly forked draft. */}
       {identityDialog && editContext && (
         <IdentityChangeDialog
           boardId={editContext.boardId}

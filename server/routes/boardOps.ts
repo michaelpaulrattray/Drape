@@ -37,6 +37,20 @@ import {
 } from "../casting/directOperation";
 import { bootstrapModelSnapshot } from "../casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
+import {
+  EvidenceForkError,
+  forkEvidenceAwareCast,
+  productionEvidenceForkDependencies,
+  type PlacedEvidenceForkResult,
+} from "../casting/evidence/evidenceFork";
+import { getEvidenceDeliveryAdapter } from "../casting/evidence/evidenceDeliveryRuntime";
+
+type CanvasRecastResult = {
+  decision: "update";
+  itemId: number;
+  modelId: number;
+  imageUrl: string;
+};
 
 async function requireBoardOwnership(boardId: number, userId: number) {
   const board = await getBoardById(boardId);
@@ -491,11 +505,66 @@ export const boardOpsRouter = router({
           userId: ctx.user.id,
           itemId: input.itemId,
         });
-        const kind = input.decision === "fork" ? "canvas.fork" : "canvas.recast";
-        return executeCanvasOperation({
+
+        if (input.decision === "fork") {
+          const privateStorage = getEvidenceDeliveryAdapter();
+          if (readMode === "r6") {
+            const snapshotHead = await bootstrapModelSnapshot({
+              userId: ctx.user.id,
+              modelId: model.id,
+            });
+            if (snapshotHead.status === "headless") {
+              throw new TRPCError({
+                code: "PRECONDITION_FAILED",
+                message: "Generate a headshot before forking this Cast.",
+              });
+            }
+          }
+          const gate = await beginDirectOperation({
+            userId: ctx.user.id,
+            clientRequestId: input.clientRequestId,
+            kind: "evidence_fork_copy",
+            modelId: model.id,
+            originBoardId: input.boardId,
+            originItemId: input.itemId,
+            payload: {
+              boardId: input.boardId,
+              itemId: input.itemId,
+              semantics: "exact_editable_copy",
+            },
+            lockKey: modelOperationLockKey(model.id),
+          });
+          if (gate.type === "replay") {
+            return gate.result as PlacedEvidenceForkResult;
+          }
+          try {
+            return await forkEvidenceAwareCast(
+              productionEvidenceForkDependencies(privateStorage),
+              {
+                userId: ctx.user.id,
+                sourceModelId: model.id,
+                operationId: gate.operationId,
+                placement: {
+                  boardId: input.boardId,
+                  sourceItemId: input.itemId,
+                },
+              },
+            );
+          } catch (error) {
+            if (error instanceof EvidenceForkError) {
+              throw new TRPCError({
+                code: "PRECONDITION_FAILED",
+                message: error.message,
+              });
+            }
+            throw error;
+          }
+        }
+
+        return executeCanvasOperation<CanvasRecastResult>({
           userId: ctx.user.id,
           clientRequestId: input.clientRequestId,
-          kind,
+          kind: "canvas.recast",
           modelId: model.id,
           originBoardId: input.boardId,
           originItemId: input.itemId,
@@ -509,48 +578,45 @@ export const boardOpsRouter = router({
           lockKey: modelOperationLockKey(model.id),
           expectedIdentityRevisionId: currentRevisionId(model),
           plannedCredits: CREDIT_COSTS.castingImage,
-          prepareBeforeRunning: input.decision === "update"
-            ? async () => {
-                if (readMode === "r6") {
-                  const snapshotHead = await bootstrapModelSnapshot({
-                    userId: ctx.user.id,
-                    modelId: model.id,
-                  });
-                  if (snapshotHead.status === "headless") {
-                    throw new TRPCError({
-                      code: "PRECONDITION_FAILED",
-                      message: "Generate a headshot before recasting this Cast.",
-                    });
-                  }
-                }
-                await boardOps.prepareCanvasRecastAuthority({
-                  userId: ctx.user.id,
-                  itemId: input.itemId,
-                  changes: input.changes,
-                  intent: input.intent,
-                  readMode,
+          prepareBeforeRunning: async () => {
+            if (readMode === "r6") {
+              const snapshotHead = await bootstrapModelSnapshot({
+                userId: ctx.user.id,
+                modelId: model.id,
+              });
+              if (snapshotHead.status === "headless") {
+                throw new TRPCError({
+                  code: "PRECONDITION_FAILED",
+                  message: "Generate a headshot before recasting this Cast.",
                 });
               }
-            : undefined,
-          verifyAfterRunning: input.decision === "update"
-            ? ({ operationId }) => assertGenerationOperationSnapshotHead({
-                userId: ctx.user.id,
-                operationId,
-                modelId: model.id,
-              })
-            : undefined,
-          execute: ({ operationId, chargeReferenceId, onCharged, onRefunded }) => boardOps.executeApplyModelEdit({
+            }
+            await boardOps.prepareCanvasRecastAuthority({
+              userId: ctx.user.id,
+              itemId: input.itemId,
+              changes: input.changes,
+              intent: input.intent,
+              readMode,
+            });
+          },
+          verifyAfterRunning: ({ operationId }) => assertGenerationOperationSnapshotHead({
             userId: ctx.user.id,
-            itemId: input.itemId,
-            decision: input.decision,
-            changes: input.changes,
-            intent: input.intent,
-            readMode,
-            chargeReferenceId,
             operationId,
-            onCharged,
-            onRefunded,
+            modelId: model.id,
           }),
+          execute: async ({ operationId, chargeReferenceId, onCharged, onRefunded }) =>
+            await boardOps.executeApplyModelEdit({
+              userId: ctx.user.id,
+              itemId: input.itemId,
+              decision: "update",
+              changes: input.changes,
+              intent: input.intent,
+              readMode,
+              chargeReferenceId,
+              operationId,
+              onCharged,
+              onRefunded,
+            }) as CanvasRecastResult,
         });
       }),
   }),

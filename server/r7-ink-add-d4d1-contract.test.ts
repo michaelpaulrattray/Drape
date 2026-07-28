@@ -6,14 +6,14 @@ async function source(path: string) {
 }
 
 describe("R7-7D D4D1 cancellation and retry-cleanup contract", () => {
-  it("keeps Cancel compile-closed, strict, owner-derived, free, and client-inert", async () => {
+  it("keeps Cancel scope-gated, strict, owner-derived, free, and client-inert", async () => {
     const [scope, route, service, client] = await Promise.all([
       source("./casting/evidence/evidenceComposerScope.ts"),
       source("./routes/evidence.ts"),
       source("./casting/evidence/inkIntentCancellation.ts"),
       source("../client/src/features/studio/components/CastingWorkspace.tsx"),
     ]);
-    expect(scope).toContain("INK_ADD_PRODUCT_READY = false");
+    expect(scope).toContain("INK_ADD_PRODUCT_READY = true");
     expect(route).toContain("cancelInkAddIntent: protectedProcedure");
     expect(route).toContain("intentId: z.string().uuid()");
     expect(route).toContain("clientRequestId: z.string().uuid()");

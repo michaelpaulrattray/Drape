@@ -11,7 +11,7 @@ describe('R7-3A minted Cast Profile', () => {
 
     expect(profile).toContain('data-cast-profile');
     expect(profile).toContain('Cast profile');
-    expect(profile).toContain('This identity is locked');
+    expect(profile).toContain('Free exact copy.');
     expect(profile).not.toContain('referenceImage');
     expect(profile).not.toContain('handleRefineSubmit');
     expect(profile).not.toContain('updatePref(');
@@ -41,9 +41,9 @@ describe('R7-3A minted Cast Profile', () => {
   it('routes identity change only through Fork and keeps export library-owned', () => {
     const profile = read('client/src/features/casting/components/CastProfilePanel.tsx');
 
-    expect(profile).toContain('Fork as new model');
+    expect(profile).toContain('Fork to edit');
     expect(profile).toContain('Fork from Canvas');
-    expect(profile).toContain('this cast stays unchanged');
+    expect(profile).toContain('this Cast stays unchanged');
     expect(profile).toContain("navigate('/app/models')");
     expect(profile).toContain('Export from Model Library');
   });
@@ -59,7 +59,8 @@ describe('R7-3A minted Cast Profile', () => {
     expect(workspace).toContain('isReadOnly={isReadOnly || mintedEdit}');
     expect(viewer).toContain('hasAssets && profileLocked');
     expect(viewer).toContain('data-cast-profile-lock');
-    expect(viewer).toContain("Fork to explore a different version");
+    expect(viewer).toContain("Fork to create an independent editable copy");
+    expect(viewer).toContain("Fork to edit");
   });
 
   it('uses the existing trusted board fork operation with an explicit rerun ceremony', () => {
@@ -70,8 +71,8 @@ describe('R7-3A minted Cast Profile', () => {
     expect(takeover).toContain("setIdentityDialog({ changes: {}, labels: [], intent: 'rerun' })");
     expect(takeover).toContain('onForkMinted={isMintedEdit ? handleForkProfile : undefined}');
     expect(takeover).toContain("onIdentityCommit(decision, changes, identityDialog.intent)");
-    expect(dialog).toContain('Fork this cast?');
-    expect(dialog).toContain('The minted identity stays locked');
+    expect(dialog).toContain('Fork to edit?');
+    expect(dialog).toContain('Create an exact editable copy of this Cast');
     expect(board).toContain("intent?: 'rerun'");
     expect(board).toContain('...(intent ? { intent } : {})');
   });

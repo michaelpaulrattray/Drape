@@ -33,24 +33,25 @@ export function ForkRecastPopoverContent({
     { boardId, itemId },
     { enabled: itemId > 0, staleTime: 60_000 },
   );
-  const cost = plan?.estimatedCreditCost ?? null;
+  const recastCost = plan?.estimatedCreditCost ?? null;
+  const forkCost = plan?.forkCreditCost ?? null;
   const who = name || "this cast";
 
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <p className="text-canvas-md font-medium text-canvas-ink">Rerun this cast</p>
+        <p className="text-canvas-md font-medium text-canvas-ink">Fork or recast</p>
         <p className="text-canvas-xs text-canvas-ink-soft mt-0.5">
-          A rerun casts a different person.
+          Fork keeps this person. Recast creates someone new.
         </p>
       </div>
 
       <div className="flex flex-col gap-2">
         <ChoiceRow
           autoFocus
-          title="Fork new cast"
-          description={`Keep ${who}; add another candidate beside them.`}
-          cost={cost}
+          title="Fork to edit"
+          description={`Create an independent editable copy of ${who}. The original stays unchanged.`}
+          cost={forkCost}
           onClick={onFork}
         />
         {isMinted ? (
@@ -64,7 +65,7 @@ export function ForkRecastPopoverContent({
           <ChoiceRow
             title="Recast this cast"
             description="Replace this draft's identity in place."
-            cost={cost}
+            cost={recastCost}
             onClick={onRecast}
           />
         )}

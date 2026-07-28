@@ -31,8 +31,10 @@ import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindin
 import { CastingDetailsDialog } from '@/features/casting/components/PackageHealthDialog';
 import {
   editablePreferencesFromStored,
+  REQUIRED_CAST_FIELDS,
   type EngineChoiceFlags,
 } from '@/features/casting/engineChoicePersistence';
+import { mergeCastingPreferenceChanges } from '@shared/mergeCastingPreferenceChanges';
 import type { ModelPreferences } from '@/features/casting/constants';
 import { generateRandomPreferences } from '@/features/casting/castingHelpers';
 import { FromPromptField, type ParsePromptResult } from '@/features/casting/components/FromPromptField';
@@ -72,6 +74,9 @@ export interface CastingWorkspaceProps {
   onNewModel: () => void;
   /** Canvas-hosted minted Profiles can fork directly beside their placement. */
   onForkMinted?: () => void;
+  /** One-shot, client-held edits carried into a freshly forked draft. The
+   *  durable fork remains an exact copy until the user explicitly generates. */
+  initialPreferenceOverrides?: Record<string, unknown>;
   /** Studio's entrance choreography; hosts without it default to visible. */
   leftReady?: boolean;
   rightReady?: boolean;
@@ -83,9 +88,12 @@ export function CastingWorkspace({
   isReadOnly,
   onNewModel,
   onForkMinted,
+  initialPreferenceOverrides,
   leftReady = true,
   rightReady = true,
 }: CastingWorkspaceProps) {
+  const initialPreferenceOverridesRef = useRef(initialPreferenceOverrides);
+  const restoredInitialOverridesRef = useRef(false);
   const { canvas, setCanvas } = useStudioStore();
   // R3: minted-edit sessions route saves through the host's identity dialog —
   // the panel's own generate button hides (it would bypass D-11)
@@ -212,8 +220,31 @@ export function CastingWorkspace({
     if (model.preferences) {
       const formStore = useCastingFormStore.getState();
       const restored = editablePreferencesFromStored(model.preferences);
-      formStore.setPrefs(restored.preferences);
-      formStore.setEngineChoices(restored.engineChoice);
+      const pendingOverrides =
+        !restoredInitialOverridesRef.current
+          ? initialPreferenceOverridesRef.current
+          : undefined;
+      const restoredPreferences = restored.preferences as unknown as Record<string, unknown>;
+      const mergedPreferences = pendingOverrides
+        ? mergeCastingPreferenceChanges(restoredPreferences, pendingOverrides)
+        : restoredPreferences;
+      formStore.setPrefs(mergedPreferences as unknown as typeof restored.preferences);
+      restoredInitialOverridesRef.current = true;
+      const engineChoice: EngineChoiceFlags = { ...restored.engineChoice };
+      if (pendingOverrides) {
+        const authorControlledFields = new Set(Object.keys(pendingOverrides));
+        if ("ethnicityBlend" in pendingOverrides) authorControlledFields.add("ethnicity");
+        if (
+          pendingOverrides.gender
+          && pendingOverrides.gender !== restoredPreferences.gender
+        ) {
+          authorControlledFields.add("hairStyle");
+        }
+        for (const field of REQUIRED_CAST_FIELDS) {
+          if (authorControlledFields.has(field)) delete engineChoice[field];
+        }
+      }
+      formStore.setEngineChoices(engineChoice);
       formStore.setModelName(model.name || '');
     }
 

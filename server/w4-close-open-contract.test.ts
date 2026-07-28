@@ -145,7 +145,8 @@ describe('W4 durable Open choices', () => {
   it('hydrates the flags and labels schema values read-only', () => {
     const workspace = read('client/src/features/studio/components/CastingWorkspace.tsx');
     expect(workspace).toContain('editablePreferencesFromStored');
-    expect(workspace).toContain('formStore.setEngineChoices(restored.engineChoice)');
+    expect(workspace).toContain('const engineChoice: EngineChoiceFlags = { ...restored.engineChoice }');
+    expect(workspace).toContain('formStore.setEngineChoices(engineChoice)');
     expect(read('client/src/features/casting/MasterPromptPanel.tsx')).toContain('Resolved at casting');
     expect(read('client/src/features/casting/ControlPanel.tsx')).toContain('Open choices resolved at casting');
     expect(read('server/routes/models.ts')).toContain('stripEngineChoiceMetadata(input.preferences)');

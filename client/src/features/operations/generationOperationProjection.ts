@@ -34,6 +34,7 @@ const ESTIMATED_MS: Record<string, number> = {
   "canvas.cast": 30_000,
   "canvas.recast": 30_000,
   "canvas.fork": 30_000,
+  "evidence_fork_copy": 8_000,
   "canvas.variations": 45_000,
 };
 

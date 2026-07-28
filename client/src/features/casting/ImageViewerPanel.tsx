@@ -397,12 +397,12 @@ export function ImageViewerPanel({
       <div className="min-w-0">
         <div className="text-canvas-md font-medium text-canvas-ink">Identity locked</div>
         <div className="mt-0.5 truncate text-canvas-sm text-canvas-ink-soft">
-          Fork to explore a different version of {profileName || 'this cast'}.
+          Fork to create an independent editable copy of {profileName || 'this Cast'}.
         </div>
       </div>
       {onForkProfile && (
         <button type="button" onClick={onForkProfile} className="flex-shrink-0 rounded-canvas-pill border-hairline border-canvas-border-strong px-3 py-1.5 text-canvas-sm font-medium text-canvas-ink hover:bg-canvas-surface-inset">
-          Fork model
+          Fork to edit
         </button>
       )}
     </div>

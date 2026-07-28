@@ -17,7 +17,7 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     boardOps: {
       applyModelEdit: {
-        plan: { useQuery: () => ({ data: { estimatedCreditCost: 350 } }) },
+        plan: { useQuery: () => ({ data: { estimatedCreditCost: 350, forkCreditCost: 0 } }) },
       },
     },
   },
@@ -42,16 +42,16 @@ function render(props: Partial<Parameters<typeof IdentityChangeDialog>[0]> = {})
 }
 
 describe("IdentityChangeDialog states", () => {
-  it("idle: fork door armed with the plan-derived cost", () => {
+  it("idle: free exact-copy door is armed", () => {
     const html = render();
-    expect(html).toContain("Fork as new model");
-    expect(html).toContain("~350");
+    expect(html).toContain("Fork to edit");
+    expect(html).toContain("Free");
     expect(html).not.toContain('disabled=""'); // the attribute, not the Tailwind class
   });
 
   it("PENDING: both buttons disabled — the paid fork cannot be re-fired mid-flight (correction 5)", () => {
     const html = render({ pending: true });
-    expect(html).toContain("Forking…");
+    expect(html).toContain("Copying…");
     // both the cancel and commit buttons carry the disabled ATTRIBUTE
     const disabledCount = (html.match(/disabled=""/g) ?? []).length;
     expect(disabledCount).toBe(2);
@@ -65,16 +65,16 @@ describe("IdentityChangeDialog states", () => {
     expect(html).toContain("Keep editing"); // the way back into the intact session
   });
 
-  it("identity changes keep the D-43 copy: a new person", () => {
+  it("identity edits stay filled in on the new exact-copy draft", () => {
     const html = render({ changedLabels: ["jawline", "hair length"] });
-    expect(html).toContain("This is a new person");
+    expect(html).toContain("opens the new draft with your changes");
     expect(html).toContain("jawline, hair length");
   });
 
   it("FOUNDER RULING: brand/vibe-only changes are casting CONTEXT — never a physical identity claim", () => {
     const html = render({ contextOnly: true, changedLabels: ["brand", "vibe"] });
-    expect(html).toContain("casting context");
     expect(html).not.toContain("This is a new person");
-    expect(html).toContain("keeps its context");
+    expect(html).toContain("brand, vibe");
+    expect(html).toContain("edits still filled in");
   });
 });

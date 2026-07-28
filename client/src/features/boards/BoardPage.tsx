@@ -1117,48 +1117,44 @@ function BoardPageImpl() {
         sourceModelId: null,
       };
       setPendingForks((pf) => [...pf, tempRow]);
-      startJob({ itemId: tempId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
+      startJob({ itemId: tempId, operation: 'applyModelEdit', estimatedDurationMs: 8_000 });
       return { tempId };
     },
     onSuccess: (result, vars, ctx) => {
       if (result.decision === 'fork' && ctx?.tempId) {
         completeJob(ctx.tempId);
-        // Batch C final correction 5: a TYPED PARTIAL SUCCESS — the fork was
-        // created and charged but the board placement failed. The paid
-        // action is DONE (never re-enabled for a repeat charge): drop the
-        // temp node, tell the user where the draft lives, refresh the picker.
-        if (result.placed === false) {
-          setPendingForks((pf) => pf.filter((p) => p.id !== ctx.tempId));
-          toast.error(result.placementMessage ?? 'The fork was created and charged — find it in your model library.', {
-            duration: 9000,
-          });
-          utils.boardOps.listCastableModels.invalidate();
-        } else {
-          // Reveal the real node in place; the prune effect drops this entry
-          // once the refetch delivers the server row. The real modelId must
-          // land WITH the swap — an Edit click in the refetch window would
-          // otherwise open a promotion session pointed at the -1 placeholder
-          // (dead environment, mint never arms).
-          setPendingForks((pf) =>
-            pf.map((p) =>
-              p.id === ctx.tempId
-                ? {
-                    ...p,
-                    id: result.newItemId!,
-                    imageUrl: result.imageUrl,
-                    metadata: {
-                      provenance: {
-                        type: 'library_cast',
-                        modelId: result.modelId,
-                        viewAngle: 'frontClose',
-                        draft: true,
-                      },
+        // The exact Cast copy and its board placement are one transaction:
+        // success always has a real node; failure leaves no visible draft.
+        setPendingForks((pf) =>
+          pf.map((p) =>
+            p.id === ctx.tempId
+              ? {
+                  ...p,
+                  id: result.newItemId,
+                  imageUrl: result.imageUrl,
+                  sourceModelId: result.modelId,
+                  metadata: {
+                    provenance: {
+                      type: 'library_cast',
+                      modelId: result.modelId,
+                      viewAngle: result.viewAngle,
+                      draft: true,
                     },
-                  }
-                : p,
-            ),
-          );
-        }
+                  },
+                }
+              : p,
+          ),
+        );
+        // A node-level "Fork to edit" should finish in the editable copy,
+        // not leave the user hunting for it. The minted-edit dialog already
+        // owns an open context and performs its richer handoff after the
+        // mutation promise resolves, so only open here when no room is active.
+        setCastEditContext((current) => current ?? {
+          boardId,
+          itemId: result.newItemId,
+          modelId: result.modelId,
+          draft: true,
+        });
       } else {
         completeJob(vars.itemId);
       }
@@ -1180,8 +1176,9 @@ function BoardPageImpl() {
     },
   });
 
-  // Batch C review finding 7: the takeover CLOSES ONLY AFTER the server
-  // accepted the commit. A free refusal (unsupported content, presentation
+  // Batch C review finding 7: the takeover transitions ONLY AFTER the server
+  // accepted the commit. Recast closes; Fork remounts on the new draft. A
+  // free refusal (unsupported content, presentation
   // routing) rejects the promise — the takeover stays open with the user's
   // changes intact and the D-11 dialog shows the server's message in
   // context, instead of dumping the user onto the board with a toast.
@@ -1195,7 +1192,7 @@ function BoardPageImpl() {
       if (decision === 'update') {
         startJob({ itemId: ctx.itemId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
       }
-      await applyModelEditMutation.mutateAsync({
+      const result = await applyModelEditMutation.mutateAsync({
         clientRequestId: createClientRequestId(),
         boardId,
         itemId: ctx.itemId,
@@ -1203,16 +1200,28 @@ function BoardPageImpl() {
         changes,
         ...(intent ? { intent } : {}),
       });
-      setCastEditContext(null);
+      if (result.decision === 'fork') {
+        // The server created an exact, independent copy. Continue directly
+        // in that editable draft and restore the user's unsaved form changes
+        // locally; no generation or charge occurs during this handoff.
+        setCastEditContext({
+          boardId,
+          itemId: result.newItemId,
+          modelId: result.modelId,
+          draft: true,
+          initialPreferenceOverrides: changes,
+        });
+      } else {
+        setCastEditContext(null);
+      }
     },
     [boardId, castEditContext, applyModelEditMutation, startJob],
   );
 
   // ── R4: fork / recast from the node's ForkRecastPopover (3f, D-43) ────────
-  // Both are the same identity engine as the environment's D-11 landing
-  // (applyModelEdit with empty changes); intent:'rerun' stamps the version
-  // ledger honestly. Recast is draft-only — the popover seals it on minted
-  // casts and the server guard refuses regardless.
+  // Fork is a free exact copy. Recast is the paid new-person engine and stays
+  // draft-only; the popover seals it on minted Casts and the server refuses
+  // regardless.
   useEffect(() => {
     const onFork = (e: Event) => {
       const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
@@ -2405,6 +2414,11 @@ function BoardPageImpl() {
           board: new casts, draft promotion, and minted edits (R3) */}
       {(castTakeoverItemId !== null || castEditContext !== null) && (
         <CastingTakeover
+          key={
+            castEditContext
+              ? `edit-${castEditContext.modelId}-${castEditContext.itemId}`
+              : `new-${castTakeoverItemId ?? 'cast'}`
+          }
           user={user}
           isAuthenticated={isAuthenticated}
           editContext={castEditContext}

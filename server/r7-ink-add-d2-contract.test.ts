@@ -111,14 +111,17 @@ describe("R7-7D D2 inert durability contract", () => {
     }
   });
 
-  it("has no product caller or generation authority while D2 remains off", () => {
+  it("wires one D7 product caller while keeping generation authority out of cleanup", () => {
     const runtimeCallers = [
       runtimeSources("server/routes"),
       runtimeSources("server/_core"),
       read("server/routers.ts"),
       read("server/casting/storageCleanupWorker.ts"),
     ].join("\n");
-    expect(runtimeCallers).not.toContain("forkEvidenceAwareCast(");
+    expect(runtimeCallers.match(/forkEvidenceAwareCast\(/g)).toHaveLength(1);
+    expect(read("server/routes/boardOps.ts")).toContain(
+      'kind: "evidence_fork_copy"',
+    );
     const worker = read("server/casting/storageCleanupWorker.ts");
     expect(worker).toContain(
       'process.env.ENABLE_EVIDENCE_CANDIDATE_WORKER === "true"',

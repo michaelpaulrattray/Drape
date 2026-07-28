@@ -67,7 +67,6 @@ import {
   selectedAssetForAngle,
 } from "../casting/modelReadProjections";
 import {
-  clearEngineChoiceForChanges,
   prepareCandidatePreferences,
 } from "../casting/engineChoiceMetadata";
 import { enforceDailyQuota } from "../db/dailyQuota";
@@ -88,6 +87,7 @@ import type {
 } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete } from "../storage";
+import { mergeCastingPreferenceChanges } from "../../shared/mergeCastingPreferenceChanges";
 
 const log = createModuleLogger("lib/boardOps");
 
@@ -787,16 +787,13 @@ export async function listCastableModels(
 
 // ── applyModelEdit (R3 — identity events, D-11/D-41) ───────────────────────
 //
-// The ONE landing path for identity edits made in the casting environment on
-// a placed cast. Every save routes through here (the D-11 dialog is the
-// confirm); the stage-lock never applies to minted edits. `decision`:
+// The paid Recast landing path for identity edits made in the casting
+// environment on a placed cast. D7 Fork-to-edit is a separate free exact-copy
+// operation in evidenceFork.ts and never enters this provider/credit path.
 //   update — the cast becomes a different person: attributes merge with both
 //            cross-field invalidation rules, the headshot regenerates, THIS
 //            node restamps (image + version row `tool:'attributes'`), and
 //            downstream edge targets go stale (R5 renders them richly).
-//   fork   — the original is untouched; a NEW unnamed draft model generates
-//            from the merged attributes and lands as a new node beside it,
-//            connected by a `forked_from` edge (D-42 draft presentation).
 
 /**
  * Cross-field invalidation (audit D1) + ethnicity dual-write (audit B4),
@@ -806,32 +803,7 @@ export function mergeAttributeChanges(
   current: Record<string, unknown>,
   changes: Record<string, unknown>,
 ): ModelPreferences {
-  const merged: Record<string, unknown> = { ...current, ...changes };
-
-  // Rule 1: a gender change clears gendered styling (unless the change set
-  // provides its own replacement values)
-  if (changes.gender && changes.gender !== current.gender) {
-    for (const f of ["hairStyle", "hairFade", "facialHair"]) {
-      if (!(f in changes)) merged[f] = "";
-    }
-  }
-  // Rule 2: a hair-style change resets its sub-selectors — the engine
-  // re-derives them for the new silhouette
-  if (changes.hairStyle && changes.hairStyle !== current.hairStyle) {
-    for (const f of ["hairLength", "hairTexture", "hairFringe", "hairParting", "hairVolume", "hairTuck", "hairFlyaways", "hairFade"]) {
-      if (!(f in changes)) merged[f] = "";
-    }
-  }
-  // Ethnicity dual-write: blend and legacy string stay in sync
-  const blend = changes.ethnicityBlend as Array<{ name: string; pct: number }> | undefined;
-  if (blend && blend.length > 0) {
-    merged.ethnicity = blend.map((e) => e.name).join(", ");
-  } else if (typeof changes.ethnicity === "string" && changes.ethnicity && !blend) {
-    const names = changes.ethnicity.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 2);
-    const pct = names.length === 2 ? 50 : 100;
-    merged.ethnicityBlend = names.map((name) => ({ name, pct }));
-  }
-  return merged as ModelPreferences;
+  return mergeCastingPreferenceChanges(current, changes) as ModelPreferences;
 }
 
 export async function planApplyModelEdit(input: { itemId: number }) {
@@ -847,7 +819,9 @@ export async function planApplyModelEdit(input: { itemId: number }) {
   return {
     ...emptyPlan("applyModelEdit"),
     estimatedCreditCost: CREDIT_COSTS.castingImage,
+    forkCreditCost: 0,
     estimatedDurationMs: 25_000,
+    forkEstimatedDurationMs: 8_000,
     affectedViewCount,
   };
 }
@@ -855,7 +829,7 @@ export async function planApplyModelEdit(input: { itemId: number }) {
 export interface ApplyModelEditInput {
   userId: number;
   itemId: number;
-  decision: "update" | "fork";
+  decision: "update";
   changes: Record<string, unknown>;
   /** 'rerun' = the R4 fork/recast gesture (same engine path, version rows
    *  stamp `tool:'rerun'`); 'edit' = an environment save (default). */
@@ -1065,10 +1039,14 @@ async function generateCastCandidate(opts: {
 }
 
 export async function executeApplyModelEdit(input: ApplyModelEditInput) {
-  const prepared = input.decision === "update"
-    ? await prepareCanvasRecastAuthority(input)
-    : null;
-  const resolved = prepared?.resolved ?? await resolveModelBackedBoardOperation(input);
+  if ((input as { decision: string }).decision !== "update") {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Fork is handled by the free exact-copy service.",
+    });
+  }
+  const prepared = await prepareCanvasRecastAuthority(input);
+  const resolved = prepared.resolved;
   const { item, model } = resolved;
   const meta = readMeta(item);
   const prov = resolved.provenance;
@@ -1077,7 +1055,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   // fork is the sole identity operation on any non-draft model. Keyed off
   // status !== 'draft' so no status value ('locked', 'archived', …) is a
   // loophole. Enforced HERE, where no client can bypass it.
-  if (input.decision === "update" && model.status !== "draft") {
+  if (model.status !== "draft") {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "This identity is minted and immutable — fork it as a new model instead.",
@@ -1090,7 +1068,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   }
   await enforceDailyQuota(input.userId);
 
-  const current = prepared?.current ?? (model.preferences ?? {}) as Record<string, unknown>;
+  const current = prepared.current;
   const cost = CREDIT_COSTS.castingImage;
 
   if (input.decision === "update") {
@@ -1344,107 +1322,6 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     return { decision: "update" as const, itemId: input.itemId, modelId: model.id, imageUrl };
   }
 
-  // decision === "fork" — a new unnamed draft, original untouched. This is a
-  // CREATION path: merge keeps its creation semantics, references are
-  // cleared (§10.3), and intake validation refuses FREE, before deduction
-  // (§10.2 — this door previously deducted first).
-  const merged = clearEngineChoiceForChanges(
-    mergeAttributeChanges(current, input.changes),
-    Object.keys(input.changes),
-  ) as ModelPreferences & Record<string, unknown>;
-  delete merged.referenceImage;
-  merged.userPrompt = ""; // inherited briefs are inert in NEW-mode derivation — see generateCastCandidate
-  const intake = validateCreationIntent(prepareCandidatePreferences(merged).promptPreferences as Record<string, unknown>);
-  if (!intake.ok) {
-    log.warn({ itemId: input.itemId, code: intake.code, channel: intake.channel }, "applyModelEdit fork refused at intake (free)");
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
-  }
-
-  const deduct = await deductPoints(
-    input.userId, cost, "generation",
-    `Identity fork (pending)`, input.chargeReferenceId,
-  );
-  if (!deduct.success) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
-  }
-  input.onCharged(cost);
-
-  // ── The PAID DURABLE-EFFECT boundary (review finding 3): the candidate
-  // (model row + headshot asset) is the paid result. Failure inside means
-  // nothing usable survived — refund once, checked, truth carried out.
-  let candidate: Awaited<ReturnType<typeof generateCastCandidate>>;
-  try {
-    candidate = await generateCastCandidate({
-      userId: input.userId, prefs: merged, cost,
-      operationId: input.operationId, stepKey: "fork",
-    });
-  } catch (error) {
-    log.error({ err: error, itemId: input.itemId }, "applyModelEdit fork failed inside the durable boundary");
-    const outcome = await recordRefund(input.userId, cost, `Identity fork failed (refund)`, input.chargeReferenceId);
-    if (outcome.recorded) input.onRefunded(outcome.amount);
-    const baseMessage = publicErrorMessage(error, "The fork failed.");
-    throw new TRPCError({
-      code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
-      message: `${baseMessage} ${refundTruth(outcome)}`,
-    });
-  }
-
-  // ── Past the boundary: the fork EXISTS and was rightly charged (it lives
-  // in the model library either way). The placement (item + v1 + lineage
-  // edge) is ONE atomic record (final correction 4); if it fails, the
-  // outcome is a TYPED PARTIAL SUCCESS (final correction 5) — never an error
-  // shape a client could treat as a free refusal and re-fire, which would
-  // charge a second fork.
-  const forkProvenance: Provenance = {
-    type: "library_cast",
-    modelId: candidate.modelId,
-    viewAngle: "frontClose",
-    attributes: merged as Record<string, unknown>,
-    draft: true,
-  };
-  try {
-    const newItemId = await placeLinkedBoardItem({
-      item: {
-        boardId: item.boardId,
-        type: legacyTypeForKind("image", forkProvenance) as never,
-        kind: "image",
-        imageUrl: candidate.imageUrl,
-        positionX: Math.round(item.positionX + item.width + 60),
-        positionY: Math.round(item.positionY),
-        width: 280,
-        height: 420,
-        metadata: { provenance: forkProvenance, version: 1 },
-        sourceModelId: candidate.modelId,
-      },
-      edge: { boardId: item.boardId, sourceItemId: input.itemId, relation: "forked_from" },
-      initialVersion: { imageUrl: candidate.imageUrl },
-    });
-
-    log.info({ itemId: input.itemId, newItemId, forkModelId: candidate.modelId }, "Identity forked");
-    return {
-      decision: "fork" as const,
-      itemId: input.itemId,
-      newItemId,
-      modelId: candidate.modelId,
-      imageUrl: candidate.imageUrl,
-      placed: true as const,
-    };
-  } catch (placementError) {
-    log.error(
-      { itemId: input.itemId, forkModelId: candidate.modelId, err: placementError instanceof Error ? placementError.message : String(placementError) },
-      "applyModelEdit fork: atomic board placement failed AFTER the paid candidate landed (nothing half-written) — no refund, the draft lives in the library",
-    );
-    return {
-      decision: "fork" as const,
-      itemId: input.itemId,
-      newItemId: null,
-      modelId: candidate.modelId,
-      imageUrl: candidate.imageUrl,
-      placed: false as const,
-      placementMessage:
-        "Your fork was created and charged — find the new draft in your model library. Placing it on the board failed; it was not charged twice.",
-    };
-  }
 }
 
 // ── runVariations (R4 — N sibling candidates, variant_of edges) ────────────
