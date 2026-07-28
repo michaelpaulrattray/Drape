@@ -16,6 +16,8 @@ export const GENERATION_OPERATION_KINDS = [
   "evidence_candidate_accept",
   "evidence_candidate_cancel",
   "evidence_fork_copy",
+  "evidence_package_sync",
+  "evidence_mint",
   "casting.refresh",
   "casting.restore",
   "casting.pin",

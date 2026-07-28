@@ -21,11 +21,128 @@ import {
 import { adjudicateStaleInkEvidenceOperation } from "../db/inkAddRecovery";
 import { createModuleLogger } from "../logging/logger";
 import { recordRefund } from "./atomicCredits";
-import type { PublicOperationResult } from "./operationContract";
+import {
+  assertGenerationOperationKind,
+  type GenerationOperationKind,
+  type PublicOperationResult,
+} from "./operationContract";
 
 const log = createModuleLogger("casting/operationRecovery");
 const STALE_CLAIM_MS = 15 * 60 * 1000;
 const RECOVERY_RETRY_MS = 5 * 60 * 1000;
+
+type PublicResultRecoveryStrategy =
+  | "headshot"
+  | "iterate"
+  | "refresh"
+  | "mint"
+  | "canvas_cast"
+  | "canvas_fork"
+  | "not_reconstructable";
+
+const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
+  Record<GenerationOperationKind, PublicResultRecoveryStrategy>
+> = {
+  "model.create": "not_reconstructable",
+  "casting.headshot": "headshot",
+  "casting.iterate": "iterate",
+  "casting.mint": "mint",
+  "casting.add_views": "mint",
+  evidence_plate_ingest: "not_reconstructable",
+  evidence_plate_discard: "not_reconstructable",
+  evidence_intent_begin: "not_reconstructable",
+  evidence_intent_reference: "not_reconstructable",
+  evidence_candidate_generate: "not_reconstructable",
+  evidence_candidate_retry: "not_reconstructable",
+  evidence_candidate_accept: "not_reconstructable",
+  evidence_candidate_cancel: "not_reconstructable",
+  evidence_fork_copy: "not_reconstructable",
+  evidence_package_sync: "not_reconstructable",
+  evidence_mint: "not_reconstructable",
+  "casting.refresh": "refresh",
+  "casting.restore": "not_reconstructable",
+  "casting.pin": "not_reconstructable",
+  "casting.compact": "not_reconstructable",
+  "model.delete": "not_reconstructable",
+  "canvas.cast": "canvas_cast",
+  "canvas.recast": "not_reconstructable",
+  "canvas.fork": "canvas_fork",
+  "canvas.variations": "not_reconstructable",
+};
+
+type StaleRecoveryStrategy =
+  | "standard"
+  | "ink_evidence"
+  | "evidence_fork"
+  | "pending_evidence_package_sync"
+  | "pending_evidence_mint";
+
+const STALE_RECOVERY_BY_KIND: Readonly<
+  Record<GenerationOperationKind, StaleRecoveryStrategy>
+> = {
+  "model.create": "standard",
+  "casting.headshot": "standard",
+  "casting.iterate": "standard",
+  "casting.mint": "standard",
+  "casting.add_views": "standard",
+  evidence_plate_ingest: "standard",
+  evidence_plate_discard: "standard",
+  evidence_intent_begin: "standard",
+  evidence_intent_reference: "standard",
+  evidence_candidate_generate: "ink_evidence",
+  evidence_candidate_retry: "ink_evidence",
+  evidence_candidate_accept: "ink_evidence",
+  evidence_candidate_cancel: "ink_evidence",
+  evidence_fork_copy: "evidence_fork",
+  // E1 declares these durable kinds before either executor is routed. A row
+  // appearing early is impossible through reviewed code and must never fall
+  // into generic recovery by accident.
+  evidence_package_sync: "pending_evidence_package_sync",
+  evidence_mint: "pending_evidence_mint",
+  "casting.refresh": "standard",
+  "casting.restore": "standard",
+  "casting.pin": "standard",
+  "casting.compact": "standard",
+  "model.delete": "standard",
+  "canvas.cast": "standard",
+  "canvas.recast": "standard",
+  "canvas.fork": "standard",
+  "canvas.variations": "standard",
+};
+
+const LANDING_RECOVERY_BY_KIND: Readonly<
+  Record<GenerationOperationKind, "pending" | "relink_required" | null>
+> = {
+  "model.create": null,
+  "casting.headshot": null,
+  "casting.iterate": null,
+  "casting.mint": null,
+  "casting.add_views": null,
+  evidence_plate_ingest: null,
+  evidence_plate_discard: null,
+  evidence_intent_begin: null,
+  evidence_intent_reference: null,
+  evidence_candidate_generate: null,
+  evidence_candidate_retry: null,
+  evidence_candidate_accept: null,
+  evidence_candidate_cancel: null,
+  evidence_fork_copy: null,
+  evidence_package_sync: null,
+  evidence_mint: null,
+  "casting.refresh": null,
+  "casting.restore": null,
+  "casting.pin": null,
+  "casting.compact": null,
+  "model.delete": null,
+  "canvas.cast": "pending",
+  "canvas.recast": null,
+  "canvas.fork": "relink_required",
+  "canvas.variations": null,
+};
+
+function assertNever(value: never): never {
+  throw new TypeError(`Unhandled operation recovery strategy: ${String(value)}`);
+}
 
 export type StaleOperationDecision =
   | "free_failure"
@@ -49,9 +166,9 @@ export interface StaleOperationEvidence {
 export function recoveredLandingState(kind: GenerationOperation["kind"]):
   | { landing: { status: "pending" | "relink_required" } }
   | Record<string, never> {
-  if (kind === "canvas.cast") return { landing: { status: "pending" } };
-  if (kind === "canvas.fork") return { landing: { status: "relink_required" } };
-  return {};
+  assertGenerationOperationKind(kind);
+  const landing = LANDING_RECOVERY_BY_KIND[kind];
+  return landing ? { landing: { status: landing } } : {};
 }
 
 /** Pure, deliberately conservative policy used by both the sweeper and tests. */
@@ -106,12 +223,14 @@ async function reconstructPublicResult(
     .filter((child) => child.status === "failed" && child.viewAngle)
     .map((child) => child.viewAngle!);
 
-  switch (operation.kind) {
-    case "casting.headshot": {
+  assertGenerationOperationKind(operation.kind);
+  const strategy = PUBLIC_RESULT_RECOVERY_BY_KIND[operation.kind];
+  switch (strategy) {
+    case "headshot": {
       const asset = assetFor(completed[0]);
       return asset ? { assetId: asset.id } : null;
     }
-    case "casting.iterate": {
+    case "iterate": {
       const child = completed[0];
       const asset = child ? assetFor(child) : null;
       const metadata = child?.metadata as { authorizationClass?: unknown } | null;
@@ -121,13 +240,12 @@ async function reconstructPublicResult(
         staledAngles: [],
       } : null;
     }
-    case "casting.refresh":
+    case "refresh":
       return {
         refreshed: completed.map((child) => ({ angle: child.viewAngle, assetId: assetFor(child)!.id })),
         failedAngles,
       };
-    case "casting.mint":
-    case "casting.add_views": {
+    case "mint": {
       const db = await getDb();
       if (!db || !operation.modelId) return null;
       const [model] = await db.select().from(models).where(eq(models.id, operation.modelId)).limit(1);
@@ -143,7 +261,7 @@ async function reconstructPublicResult(
         failedAngles,
       };
     }
-    case "canvas.cast": {
+    case "canvas_cast": {
       const child = completed[0];
       const asset = child ? assetFor(child) : null;
       if (!asset || !operation.modelId || !operation.originItemId) return null;
@@ -158,7 +276,7 @@ async function reconstructPublicResult(
         placementMessage: "Your cast was saved in Models. Reopen it from the library to place it on the Canvas.",
       };
     }
-    case "canvas.fork": {
+    case "canvas_fork": {
       const child = completed[0];
       const asset = child ? assetFor(child) : null;
       if (!asset || !child.modelId || !operation.originItemId) return null;
@@ -172,8 +290,10 @@ async function reconstructPublicResult(
         placementMessage: "Your fork was saved in Models. Reopen it from the library to place it on the Canvas.",
       };
     }
-    default:
+    case "not_reconstructable":
       return null;
+    default:
+      return assertNever(strategy);
   }
 }
 
@@ -204,14 +324,25 @@ export async function adjudicateStaleGenerationOperation(
   if (!await claimRecoveryAttempt(operation, now)) return "skipped";
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  assertGenerationOperationKind(operation.kind);
+  const recoveryStrategy = STALE_RECOVERY_BY_KIND[operation.kind];
+  if (
+    recoveryStrategy === "pending_evidence_package_sync"
+    || recoveryStrategy === "pending_evidence_mint"
+  ) {
+    await markGenerationOperationRecoveryRequired({
+      userId: operation.userId,
+      operationId: operation.id,
+      publicMessage:
+        `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+      chargedCredits: operation.chargedCredits,
+      refundedCredits: operation.refundedCredits,
+    });
+    return "recovery_required";
+  }
   if (
     operation.status === "running"
-    && (
-      operation.kind === "evidence_candidate_generate"
-      || operation.kind === "evidence_candidate_retry"
-      || operation.kind === "evidence_candidate_accept"
-      || operation.kind === "evidence_candidate_cancel"
-    )
+    && recoveryStrategy === "ink_evidence"
   ) {
     const chargeRows = operation.chargeReferenceId
       ? await db.select().from(creditTransactions).where(and(
@@ -395,7 +526,7 @@ export async function adjudicateStaleGenerationOperation(
   // objects are pre-publication evidence, not an ambiguous durable result.
   let decision =
     operation.status === "claimed"
-      && operation.kind === "evidence_fork_copy"
+      && recoveryStrategy === "evidence_fork"
       && operation.plannedCredits === 0
       && chargedCredits === 0
       && !ledgerDisagrees

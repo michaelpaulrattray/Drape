@@ -70,7 +70,8 @@ describe("R7-7D D7 product-ready and evidence-aware Fork contract", () => {
     expect(operations).toContain(
       "landingAcknowledgedAt: input.landing.acknowledgedAt ?? null",
     );
-    expect(recovery).toContain('operation.kind === "evidence_fork_copy"');
+    expect(recovery).toContain('evidence_fork_copy: "evidence_fork"');
+    expect(recovery).toContain('recoveryStrategy === "evidence_fork"');
     expect(recovery).toContain('operation.status === "claimed"');
     expect(recovery).toContain("finalizeClaimedGenerationOperationFailure");
   });

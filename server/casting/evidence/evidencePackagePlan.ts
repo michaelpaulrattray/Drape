@@ -1,0 +1,329 @@
+import type {
+  ModelIdentityFeature,
+  ModelIdentityFeatureVersion,
+  ModelReferencePlate,
+  ModelSnapshotFeatureSelection,
+} from "../../../drizzle/schema";
+import {
+  CANONICAL_VIEW_ANGLES,
+  VIEW_ANGLE_LABELS,
+  type CanonicalViewAngle,
+} from "../../../shared/boardTypes";
+import { isModelDraftStatus } from "../../../shared/modelLifecycle";
+import { slotCost } from "../packagePricing";
+import {
+  INK_ADD_COMPOSER_RECIPE_VERSION,
+  INK_ADD_ONTOLOGY_VERSION,
+  INK_ADD_SURFACE,
+  INK_ADD_TARGET_VIEW,
+  INK_ADD_ZONE,
+} from "./composer/inkAddRecipe";
+import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
+import {
+  inkPackageDirective,
+  type EvidencePackageDirective,
+} from "./evidencePackageRegistry";
+
+export const EVIDENCE_PACKAGE_REFUSALS = [
+  "feature_graph_unsupported",
+  "model_not_draft",
+  "identity_anchor",
+  "authoring_truth",
+  "already_current",
+  "compatibility_unverified",
+  "angle_not_supported",
+] as const;
+export type EvidencePackageRefusal = typeof EVIDENCE_PACKAGE_REFUSALS[number];
+
+export interface EvidencePackageSlotState {
+  angle: CanonicalViewAngle;
+  selectedAssetId: number | null;
+  compatibility: "current" | "stale" | "unverified" | null;
+  failed: boolean;
+}
+
+export interface EvidencePackageFeatureGraph {
+  userId: number;
+  modelId: number;
+  identitySnapshotId: string;
+  selections: readonly ModelSnapshotFeatureSelection[];
+  features: readonly ModelIdentityFeature[];
+  versions: readonly ModelIdentityFeatureVersion[];
+  plates: readonly ModelReferencePlate[];
+}
+
+export interface SupportedInkFeatureGraph {
+  selection: ModelSnapshotFeatureSelection;
+  feature: ModelIdentityFeature;
+  version: ModelIdentityFeatureVersion;
+  plate: ModelReferencePlate;
+}
+
+function positiveId(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0;
+}
+
+/**
+ * Positive closure proof for the pilot graph. Absence of a known bad row is
+ * never enough: the exact selection, feature, version, accepted plate, source
+ * asset, recipe and ontology must all agree.
+ */
+export function assessSupportedInkFeatureGraph(
+  graph: EvidencePackageFeatureGraph,
+  frontFullAssetId: number | null,
+): SupportedInkFeatureGraph | null {
+  if (
+    !positiveId(graph.userId)
+    || !positiveId(graph.modelId)
+    || !graph.identitySnapshotId
+    || graph.selections.length !== 1
+    || graph.features.length !== 1
+    || graph.versions.length !== 1
+    || graph.plates.length !== 1
+    || !positiveId(frontFullAssetId ?? 0)
+  ) {
+    return null;
+  }
+  const selection = graph.selections[0];
+  const feature = graph.features[0];
+  const version = graph.versions[0];
+  const plate = graph.plates[0];
+  if (
+    selection.modelId !== graph.modelId
+    || selection.identitySnapshotId !== graph.identitySnapshotId
+    || selection.featureId !== feature.id
+    || selection.featureVersionId !== version.id
+    || feature.modelId !== graph.modelId
+    || feature.category !== "ink"
+    || version.modelId !== graph.modelId
+    || version.featureId !== feature.id
+    || version.operation !== "present"
+    || version.ontologyVersion !== INK_ADD_ONTOLOGY_VERSION
+    || version.zone !== INK_ADD_ZONE
+    || version.surface !== INK_ADD_SURFACE
+    || version.sourceViewAngle !== INK_ADD_TARGET_VIEW
+    || version.sourceAssetId !== frontFullAssetId
+    || version.recipeVersion !== INK_ADD_COMPOSER_RECIPE_VERSION
+    || version.acceptedCandidatePlateId !== plate.id
+    || plate.userId !== graph.userId
+    || plate.modelId !== graph.modelId
+    || plate.kind !== "accepted_candidate"
+  ) {
+    return null;
+  }
+  if (!inkPackageDirective({
+    capabilityKey: INK_ADD_CAPABILITY_KEY,
+    ontologyVersion: version.ontologyVersion,
+    zone: version.zone,
+    surface: version.surface,
+    side: version.side,
+    angle: INK_ADD_TARGET_VIEW,
+  })) {
+    return null;
+  }
+  return { selection, feature, version, plate };
+}
+
+export type EvidencePackageSlotStatus =
+  | "current"
+  | "stale"
+  | "failed"
+  | "missing"
+  | "attention";
+
+export interface EvidencePackagePlanSlot {
+  angle: CanonicalViewAngle;
+  label: string;
+  status: EvidencePackageSlotStatus;
+  cost: number;
+  refusal: EvidencePackageRefusal | null;
+}
+
+export interface EvidencePackageSyncPlan {
+  modelId: number;
+  supported: boolean;
+  slots: EvidencePackagePlanSlot[];
+  actionableAngles: CanonicalViewAngle[];
+  refreshableAngles: CanonicalViewAngle[];
+  missingAngles: CanonicalViewAngle[];
+  totalCost: number;
+  zeroGenerationMintAvailable: boolean;
+}
+
+function normalizeSlots(
+  slots: readonly EvidencePackageSlotState[],
+): Map<CanonicalViewAngle, EvidencePackageSlotState> | null {
+  if (
+    slots.length !== CANONICAL_VIEW_ANGLES.length
+    || new Set(slots.map((slot) => slot.angle)).size !== slots.length
+  ) {
+    return null;
+  }
+  const map = new Map(slots.map((slot) => [slot.angle, slot]));
+  return CANONICAL_VIEW_ANGLES.every((angle) => map.has(angle)) ? map : null;
+}
+
+function attentionSlot(
+  angle: CanonicalViewAngle,
+  refusal: EvidencePackageRefusal,
+): EvidencePackagePlanSlot {
+  return {
+    angle,
+    label: VIEW_ANGLE_LABELS[angle],
+    status: "attention",
+    cost: 0,
+    refusal,
+  };
+}
+
+function slotPlan(input: {
+  slot: EvidencePackageSlotState;
+  directive: EvidencePackageDirective | null;
+}): EvidencePackagePlanSlot {
+  const { slot, directive } = input;
+  if (slot.angle === "frontClose") return attentionSlot(slot.angle, "identity_anchor");
+  if (!directive) return attentionSlot(slot.angle, "angle_not_supported");
+  if (directive.visibility === "authoring_truth") {
+    return attentionSlot(slot.angle, "authoring_truth");
+  }
+  if (slot.selectedAssetId !== null) {
+    if (slot.compatibility === "unverified" || slot.compatibility === null) {
+      return attentionSlot(slot.angle, "compatibility_unverified");
+    }
+    if (slot.compatibility === "current") {
+      return {
+        angle: slot.angle,
+        label: VIEW_ANGLE_LABELS[slot.angle],
+        status: "current",
+        cost: 0,
+        refusal: "already_current",
+      };
+    }
+    return {
+      angle: slot.angle,
+      label: VIEW_ANGLE_LABELS[slot.angle],
+      status: "stale",
+      cost: slotCost(slot.angle),
+      refusal: null,
+    };
+  }
+  if (directive.missingViewAuthority !== "compose") {
+    return attentionSlot(slot.angle, "angle_not_supported");
+  }
+  return {
+    angle: slot.angle,
+    label: VIEW_ANGLE_LABELS[slot.angle],
+    status: slot.failed ? "failed" : "missing",
+    cost: slotCost(slot.angle),
+    refusal: null,
+  };
+}
+
+/**
+ * Pure public plan. Private feature text, row IDs, plate locators and recipe
+ * internals never enter the returned shape.
+ */
+export function computeEvidencePackageSyncPlan(input: {
+  modelId: number;
+  modelStatus: unknown;
+  graph: EvidencePackageFeatureGraph;
+  slots: readonly EvidencePackageSlotState[];
+  requestedAngles?: readonly CanonicalViewAngle[];
+  requiredMintAngles: readonly CanonicalViewAngle[];
+  hasUnresolvedIntentOrReadyCandidate: boolean;
+}): EvidencePackageSyncPlan {
+  const byAngle = normalizeSlots(input.slots);
+  const frontFullAssetId = byAngle?.get("frontFull")?.selectedAssetId ?? null;
+  const supportedGraph = byAngle
+    ? assessSupportedInkFeatureGraph(input.graph, frontFullAssetId)
+    : null;
+  const modelDraft = isModelDraftStatus(input.modelStatus);
+  const requested = input.requestedAngles
+    ? new Set(input.requestedAngles)
+    : null;
+  const requestedValid = !requested
+    || (
+      requested.size === input.requestedAngles!.length
+      && input.requestedAngles!.every((angle) =>
+        (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)
+      )
+    );
+
+  if (
+    !positiveId(input.modelId)
+    || input.graph.modelId !== input.modelId
+    || !supportedGraph
+    || !byAngle
+    || !requestedValid
+  ) {
+    return {
+      modelId: input.modelId,
+      supported: false,
+      slots: CANONICAL_VIEW_ANGLES.map((angle) =>
+        attentionSlot(angle, "feature_graph_unsupported")
+      ),
+      actionableAngles: [],
+      refreshableAngles: [],
+      missingAngles: [],
+      totalCost: 0,
+      zeroGenerationMintAvailable: false,
+    };
+  }
+
+  const slots = CANONICAL_VIEW_ANGLES.map((angle) => slotPlan({
+    slot: byAngle.get(angle)!,
+    directive: inkPackageDirective({
+      capabilityKey: INK_ADD_CAPABILITY_KEY,
+      ontologyVersion: supportedGraph.version.ontologyVersion,
+      zone: supportedGraph.version.zone,
+      surface: supportedGraph.version.surface,
+      side: supportedGraph.version.side,
+      angle,
+    }),
+  }));
+  if (!modelDraft) {
+    return {
+      modelId: input.modelId,
+      supported: true,
+      slots: slots.map((slot) => attentionSlot(slot.angle, "model_not_draft")),
+      actionableAngles: [],
+      refreshableAngles: [],
+      missingAngles: [],
+      totalCost: 0,
+      zeroGenerationMintAvailable: false,
+    };
+  }
+
+  const actionable = slots.filter(
+    (slot) => slot.refusal === null && (!requested || requested.has(slot.angle)),
+  );
+  const requiredMintSet = new Set(input.requiredMintAngles);
+  const requiredMintAnglesValid =
+    requiredMintSet.size === input.requiredMintAngles.length
+    && input.requiredMintAngles.every((angle) =>
+      (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)
+    );
+  const zeroGenerationMintAvailable =
+    requiredMintAnglesValid
+    && !input.hasUnresolvedIntentOrReadyCandidate
+    && input.requiredMintAngles.every(
+      (angle) => {
+        const slot = byAngle.get(angle);
+        return !!slot?.selectedAssetId && slot.compatibility === "current";
+      },
+    );
+  return {
+    modelId: input.modelId,
+    supported: true,
+    slots,
+    actionableAngles: actionable.map((slot) => slot.angle),
+    refreshableAngles: actionable
+      .filter((slot) => slot.status === "stale" || slot.status === "failed")
+      .map((slot) => slot.angle),
+    missingAngles: actionable
+      .filter((slot) => slot.status === "missing")
+      .map((slot) => slot.angle),
+    totalCost: actionable.reduce((sum, slot) => sum + slot.cost, 0),
+    zeroGenerationMintAvailable,
+  };
+}

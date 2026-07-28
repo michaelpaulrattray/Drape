@@ -32,7 +32,7 @@ import {
   updateModel,
   deductPoints,
 } from "../db";
-import { generateFullBody, generateRemainingViews, CREDIT_COSTS } from "./aiService";
+import { generateFullBody, generateRemainingViews } from "./aiService";
 import { recordRefund } from "./atomicCredits";
 import { PublicError, publicErrorMessage } from "../lib/publicError";
 import type { SingleViewAngle } from "./geminiViews";
@@ -70,12 +70,11 @@ import { resolveEffectiveCastStateForRead } from "./effectiveCastRead";
 import type { EffectiveCastState } from "./effectiveCastState";
 import type { SnapshotReadMode } from "./snapshotReadScope";
 import { withUniqueCastPublicId } from "./castPublicId";
+import { slotCost } from "./packagePricing";
+
+export { slotCost } from "./packagePricing";
 
 const log = createModuleLogger("casting/mintPackage");
-
-export function slotCost(angle: CanonicalViewAngle): number {
-  return angle === "frontFull" ? CREDIT_COSTS.fullBody : CREDIT_COSTS.multiView;
-}
 
 /** Pure tier pricing over the slots still missing — exported for tests. */
 export function tierCosts(existingAngles: string[]): Record<MintTier, { missing: CanonicalViewAngle[]; cost: number }> {

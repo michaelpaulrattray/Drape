@@ -3,13 +3,9 @@ import {
   type CanonicalViewAngle,
 } from "../../../shared/boardTypes";
 import {
-  INK_ADD_ONTOLOGY_VERSION,
-  INK_ADD_SIDES,
-  INK_ADD_SURFACE,
-  INK_ADD_TARGET_VIEW,
-  INK_ADD_ZONE,
-} from "./composer/inkAddRecipe";
-import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
+  INK_ADD_PACKAGE_DIRECTIVES,
+  isSupportedInkPackageTuple,
+} from "./evidencePackageRegistry";
 
 /**
  * The close trio is framed as head-and-shoulders, so an upper-chest mark is
@@ -23,17 +19,6 @@ import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
  * structured placement from natural language, but the client never decides
  * which canonical views remain compatible.
  */
-const FRONT_UPPER_TORSO_BASE_VIEW_IMPACT = {
-  frontClose: "unaffected",
-  threeQuarter: "unaffected",
-  [INK_ADD_TARGET_VIEW]: "affected",
-  sideClose: "unaffected",
-  backFull: "unaffected",
-} as const satisfies Record<
-  Exclude<CanonicalViewAngle, "sideFull">,
-  "affected" | "unaffected"
->;
-
 export function affectedViewsForInkAdd(input: {
   capabilityKey: string;
   ontologyVersion: string;
@@ -41,19 +26,13 @@ export function affectedViewsForInkAdd(input: {
   surface: string;
   side: string;
 }): readonly CanonicalViewAngle[] {
-  const supportedSide = (INK_ADD_SIDES as readonly string[]).includes(input.side);
-  if (
-    input.capabilityKey !== INK_ADD_CAPABILITY_KEY
-    || input.ontologyVersion !== INK_ADD_ONTOLOGY_VERSION
-    || input.zone !== INK_ADD_ZONE
-    || input.surface !== INK_ADD_SURFACE
-    || !supportedSide
-  ) {
+  if (!isSupportedInkPackageTuple(input)) {
     // Unknown future ontology must fail closed: it may affect any view.
     return CANONICAL_VIEW_ANGLES;
   }
-  return CANONICAL_VIEW_ANGLES.filter((angle) => {
-    if (angle === "sideFull") return input.side !== "centre";
-    return FRONT_UPPER_TORSO_BASE_VIEW_IMPACT[angle] === "affected";
-  });
+  return CANONICAL_VIEW_ANGLES.filter(
+    (angle) =>
+      INK_ADD_PACKAGE_DIRECTIVES[angle][input.side]
+        .existingSelectionImpact === "affected",
+  );
 }
