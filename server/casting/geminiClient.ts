@@ -14,6 +14,7 @@ import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { ENV } from "../_core/env";
 import { createModuleLogger } from "../logging/logger";
+import { supportedImageMime } from "../security/trustedImageFetch";
 const log = createModuleLogger("casting/geminiClient");
 
 // Lazy import to avoid circular dependency (geminiQueue imports from geminiClient)
@@ -88,12 +89,49 @@ export const safeResponseText = (response: any): string => {
   }
 };
 
-/** Extract the first image data URL from a Gemini response */
+export const MAX_GENERATED_IMAGE_BYTES = 20 * 1024 * 1024;
+const MAX_GENERATED_IMAGE_BASE64_LENGTH =
+  Math.ceil(MAX_GENERATED_IMAGE_BYTES / 3) * 4;
+const GENERATED_IMAGE_MIMES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+function canonicalGeneratedImageDataUrl(data: unknown): string | null {
+  if (
+    typeof data !== "string"
+    || data.length === 0
+    || data.length % 4 !== 0
+    || data.length > MAX_GENERATED_IMAGE_BASE64_LENGTH
+    || !/^[A-Za-z0-9+/]+={0,2}$/.test(data)
+  ) {
+    return null;
+  }
+  const bytes = Buffer.from(data, "base64");
+  if (
+    bytes.length === 0
+    || bytes.length > MAX_GENERATED_IMAGE_BYTES
+    || bytes.toString("base64") !== data
+  ) {
+    return null;
+  }
+  const mime = supportedImageMime(bytes);
+  if (!mime || !GENERATED_IMAGE_MIMES.has(mime)) return null;
+  return `data:${mime};base64,${data}`;
+}
+
+/**
+ * Extract the first valid generated image. Provider MIME labels are advisory:
+ * the returned data URL is declared from byte magic and is re-verified at
+ * stricter feature/storage boundaries.
+ */
 export const extractImageFromResponse = (response: any): string | null => {
-  for (const part of response?.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:image/png;base64,${part.inlineData.data}`;
-    }
+  const parts = response?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return null;
+  for (const part of parts) {
+    const dataUrl = canonicalGeneratedImageDataUrl(part?.inlineData?.data);
+    if (dataUrl) return dataUrl;
   }
   return null;
 };

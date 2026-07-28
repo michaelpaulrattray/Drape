@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import sharp from "sharp";
+import { beforeAll, describe, it, expect } from "vitest";
 import {
   extractMimeType,
   extractBase64Data,
@@ -7,6 +8,7 @@ import {
   diagnoseResponse,
   formatGeminiError,
   buildIdentityAnchor,
+  MAX_GENERATED_IMAGE_BYTES,
 } from "./geminiClient";
 import {
   BRAND_PROFILES,
@@ -18,6 +20,25 @@ import {
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
 } from "./geminiPrompts";
 import { clearCastingSession } from "./geminiGeneration";
+import { canonicalizeEvidenceDataUrl } from "./evidence/imageValidation";
+import { validateNotPlaceholder } from "./placeholderDetection";
+
+let generatedJpeg: Buffer;
+let generatedPng: Buffer;
+let generatedWebp: Buffer;
+
+beforeAll(async () => {
+  const raw = Buffer.alloc(256 * 256 * 3);
+  for (let index = 0; index < raw.length; index++) {
+    raw[index] = (index * 37 + Math.floor(index / 97)) % 256;
+  }
+  const source = sharp(raw, {
+    raw: { width: 256, height: 256, channels: 3 },
+  });
+  generatedJpeg = await source.clone().jpeg({ quality: 92 }).toBuffer();
+  generatedPng = await source.clone().png().toBuffer();
+  generatedWebp = await source.clone().webp({ quality: 92 }).toBuffer();
+});
 
 /**
  * Phase 1 Migration Tests
@@ -81,23 +102,100 @@ describe("safeResponseText", () => {
 });
 
 describe("extractImageFromResponse", () => {
-  it("extracts image data URL from response", () => {
-    const response = {
-      candidates: [{
-        content: {
-          parts: [
-            { text: "some text" },
-            { inlineData: { data: "base64ImageData", mimeType: "image/png" } },
-          ],
-        },
-      }],
-    };
-    expect(extractImageFromResponse(response)).toBe("data:image/png;base64,base64ImageData");
+  const responseWithParts = (...parts: unknown[]) => ({
+    candidates: [{ content: { parts } }],
+  });
+
+  it("declares the generated image from byte magic, not the provider label", async () => {
+    const payload = generatedJpeg.toString("base64");
+    const extracted = extractImageFromResponse(responseWithParts(
+      { text: "some text" },
+      { inlineData: { data: payload, mimeType: "image/png" } },
+    ));
+    expect(extracted).toBe(`data:image/jpeg;base64,${payload}`);
+    await expect(canonicalizeEvidenceDataUrl(extracted!)).resolves.toMatchObject({
+      mime: "image/webp",
+      width: 256,
+      height: 256,
+    });
+  });
+
+  it.each([
+    ["PNG", () => generatedPng, "image/png"],
+    ["WebP", () => generatedWebp, "image/webp"],
+  ])("extracts valid %s bytes with their real MIME", async (
+    _label,
+    bytes,
+    expectedMime,
+  ) => {
+    const payload = bytes().toString("base64");
+    const extracted = extractImageFromResponse(responseWithParts({
+      inlineData: { data: payload, mimeType: "image/jpeg" },
+    }));
+    expect(extracted).toBe(`data:${expectedMime};base64,${payload}`);
+    await expect(canonicalizeEvidenceDataUrl(extracted!)).resolves.toMatchObject({
+      mime: "image/webp",
+      width: 256,
+      height: 256,
+    });
+  });
+
+  it("skips unusable parts and returns the first valid still image", () => {
+    const payload = generatedJpeg.toString("base64");
+    expect(extractImageFromResponse(responseWithParts(
+      { inlineData: { data: "not-base64", mimeType: "image/png" } },
+      { inlineData: { data: payload, mimeType: "image/png" } },
+    ))).toBe(`data:image/jpeg;base64,${payload}`);
+  });
+
+  it.each([
+    ["empty", ""],
+    ["non-string", 42],
+    ["invalid alphabet", "AAAA$==="],
+    ["missing padding", "aGVsbG8"],
+    ["non-canonical padding bits", "AB=="],
+    ["unsupported bytes", Buffer.from("plain text").toString("base64")],
+    ["GIF87a", Buffer.from("GIF87a").toString("base64")],
+    ["GIF89a", Buffer.from("GIF89a").toString("base64")],
+  ])("rejects %s inline image data", (_label, data) => {
+    expect(extractImageFromResponse(responseWithParts({
+      inlineData: { data, mimeType: "image/png" },
+    }))).toBeNull();
+  });
+
+  it("rejects an encoded payload above the shared generated-image ceiling", () => {
+    const oversized = "A".repeat(
+      Math.ceil(MAX_GENERATED_IMAGE_BYTES / 3) * 4 + 4,
+    );
+    expect(extractImageFromResponse(responseWithParts({
+      inlineData: { data: oversized, mimeType: "image/png" },
+    }))).toBeNull();
+  });
+
+  it("preserves casting payloads above 10 MiB but below the shared ceiling", () => {
+    const bytes = Buffer.alloc(10 * 1024 * 1024 + 1, 7);
+    bytes.set([0xff, 0xd8, 0xff], 0);
+    const payload = bytes.toString("base64");
+    expect(extractImageFromResponse(responseWithParts({
+      inlineData: { data: payload, mimeType: "image/png" },
+    }))).toBe(`data:image/jpeg;base64,${payload}`);
+  });
+
+  it("keeps placeholder validation compatible with a JPEG data URL", () => {
+    const payload = generatedJpeg.toString("base64");
+    const extracted = extractImageFromResponse(responseWithParts({
+      inlineData: { data: payload, mimeType: "image/png" },
+    }));
+    expect(() => validateNotPlaceholder(extracted!)).not.toThrow();
   });
 
   it("returns null when no image in response", () => {
     const response = {
-      candidates: [{ content: { parts: [{ text: "just text" }] } }],
+      candidates: [{
+        content: {
+          parts: [{ text: "just text" }],
+        },
+      }],
     };
     expect(extractImageFromResponse(response)).toBeNull();
   });
@@ -105,6 +203,7 @@ describe("extractImageFromResponse", () => {
   it("returns null for empty response", () => {
     expect(extractImageFromResponse(null)).toBeNull();
     expect(extractImageFromResponse({})).toBeNull();
+    expect(extractImageFromResponse({ candidates: [{ content: {} }] })).toBeNull();
   });
 });
 

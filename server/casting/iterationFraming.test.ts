@@ -37,7 +37,15 @@ const generateContentCalls: Array<{ parts: Array<{ text?: string }> }> = [];
 vi.mock("./geminiClient", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./geminiClient")>();
   // ≥5KB of noise so placeholderDetection's variance check passes
-  const noise = randomBytes(16384).toString("base64");
+  const sharp = (await import("sharp")).default;
+  const { randomBytes: randomImageBytes } = await import("node:crypto");
+  const noise = (
+    await sharp(randomImageBytes(256 * 256 * 3), {
+      raw: { width: 256, height: 256, channels: 3 },
+    })
+      .jpeg({ quality: 90 })
+      .toBuffer()
+  ).toString("base64");
   return {
     ...actual,
     getAiClient: () => ({
