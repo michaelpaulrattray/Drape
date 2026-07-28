@@ -90,6 +90,11 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     expect(commit).toContain("modelIdentityFeatureVersions");
     expect(commit).toContain('reason: "evidence_accept"');
     expect(commit).toContain('selectionReason: "evidence_accept"');
+    expect(commit).toContain("affectedViewsForInkAdd");
+    expect(commit).toContain("intent.capabilityKey !== INK_ADD_CAPABILITY_KEY");
+    expect(commit).toContain("modelIdentityFeatureIntents.activeCapabilityKey");
+    expect(commit).toContain("intent.ontologyVersion !== input.prepared.ontologyVersion");
+    expect(commit).toContain("staleViewAngles: affectedViewAngles");
     expect(commit).toContain("featureSelections");
     expect(commit).toContain("finalizeRunningGenerationOperationSuccessIn");
     expect(commit).toContain('status: "accepted"');
@@ -99,6 +104,9 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     expect(transitions).toContain('evidence_accept: "evidence_accept"');
     expect(transitions).toContain("Identity transition is not feature-selection aware");
     expect(transitions).toContain("modelSnapshotFeatureSelections");
+    expect(transitions).toContain('input.featureAuthority !== "evidence_aware"');
+    expect(transitions).toContain("uniqueAngles.size === 0");
+    expect(transitions).toContain("selectivelyStaleAngles");
     expect(transitions).toContain("eq(modelIdentityFeatures.modelId, input.modelId)");
     expect(transitions).toContain(
       "eq(modelIdentityFeatureVersions.featureId, addition.featureId)",

@@ -315,6 +315,13 @@ An authorized draft identity edit:
 7. sibling stale scoping — the R7-7 default remains the ratified R6 rule: **every filled sibling selection is copied as `stale`, pinned included** (D-56/R1; `server/casting/identity/identityCommit.ts` commits stale-all in one transaction). Narrowing to "physically affected siblings only" is a later calibrated capability behind its own flag; nothing in this step authorizes carrying a sibling as `current` until that affectedness rule ships with tests;
 8. model head CAS and operation finalization happen in the same transaction.
 
+**D-70 amendment:** that calibrated exception now exists only for the
+evidence-aware R7-7D Ink acceptance path. Its server-owned, exhaustive
+view-impact mapping preserves unaffected compatibility, fails closed for
+unknown capability/ontology/placement/framing, and is covered by unit and
+disposable-MySQL lifecycle tests. Ordinary identity edits retain the stale-all
+default above.
+
 Face, hair, skin, and body edits are no longer universally forced through a headshot. The authoring view must actually evidence the changed field. R7-6 requires a field-to-view/evidence matrix before any such expansion is enabled.
 
 Provisional authoring matrix for calibration:

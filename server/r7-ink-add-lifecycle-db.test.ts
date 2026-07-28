@@ -1151,6 +1151,30 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
 
   it("accepts one ready candidate as one atomic feature, asset, snapshot pair, and receipt", async () => {
     const source = await fixture({ status: "draft" });
+    const siblingAssetIds = new Map<string, number>();
+    for (const angle of ["threeQuarter", "sideClose", "sideFull", "backFull"] as const) {
+      const [asset] = await connection.execute<ResultSetHeader>(
+        "INSERT INTO model_assets (modelId, viewType, storageUrl, storageKey, pointsCost, pinned) VALUES (?, ?, ?, ?, 0, 0)",
+        [
+          source.modelId,
+          angle,
+          `https://public.example/source-${angle}.webp`,
+          `users/${source.userId}/models/${source.modelId}/source-${angle}.webp`,
+        ],
+      );
+      siblingAssetIds.set(angle, asset.insertId);
+      const compatibility = angle === "threeQuarter" ? "stale" : "current";
+      if (compatibility === "stale") {
+        await connection.execute(
+          "UPDATE model_assets SET status = JSON_OBJECT('state', 'stale') WHERE id = ?",
+          [asset.insertId],
+        );
+      }
+      await connection.execute(
+        "INSERT INTO model_package_snapshot_slots (id, packageSnapshotId, viewAngle, selectedAssetId, compatibility, selectionReason) VALUES (?, ?, ?, ?, ?, 'generated')",
+        [randomUUID(), source.packageId, angle, asset.insertId, compatibility],
+      );
+    }
     const intentId = await pendingInkIntent(source);
     const generationOperationId = await runningCandidateOperation(
       source,
@@ -1243,35 +1267,58 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       "SELECT viewAngle, selectedAssetId, compatibility, selectionReason FROM model_package_snapshot_slots WHERE packageSnapshotId = ? ORDER BY viewAngle",
       [accepted.packageSnapshotId],
     );
-    expect(slots).toEqual([
-      {
-        viewAngle: "frontClose",
-        selectedAssetId: source.headAssetId,
-        compatibility: "stale",
-        selectionReason: "carried",
-      },
-      {
-        viewAngle: "frontFull",
-        selectedAssetId: accepted.assetId,
-        compatibility: "current",
-        selectionReason: "evidence_accept",
-      },
-    ]);
+    const slotsByAngle = new Map(
+      slots.map((slot) => [slot.viewAngle, slot]),
+    );
+    expect(slotsByAngle.get("frontClose")).toEqual({
+      viewAngle: "frontClose",
+      selectedAssetId: source.headAssetId,
+      compatibility: "current",
+      selectionReason: "carried",
+    });
+    expect(slotsByAngle.get("threeQuarter")).toMatchObject({
+      selectedAssetId: siblingAssetIds.get("threeQuarter"),
+      compatibility: "stale",
+      selectionReason: "carried",
+    });
+    expect(slotsByAngle.get("sideClose")).toMatchObject({
+      selectedAssetId: siblingAssetIds.get("sideClose"),
+      compatibility: "current",
+      selectionReason: "carried",
+    });
+    expect(slotsByAngle.get("frontFull")).toEqual({
+      viewAngle: "frontFull",
+      selectedAssetId: accepted.assetId,
+      compatibility: "current",
+      selectionReason: "evidence_accept",
+    });
+    expect(slotsByAngle.get("sideFull")).toMatchObject({
+      selectedAssetId: siblingAssetIds.get("sideFull"),
+      compatibility: "stale",
+      selectionReason: "carried",
+    });
+    expect(slotsByAngle.get("backFull")).toMatchObject({
+      selectedAssetId: siblingAssetIds.get("backFull"),
+      compatibility: "current",
+      selectionReason: "carried",
+    });
     const [assets] = await connection.query<RowDataPacket[]>(
       "SELECT id, viewType, pointsCost, storageKey, JSON_UNQUOTE(JSON_EXTRACT(status, '$.state')) AS state FROM model_assets WHERE modelId = ? ORDER BY id",
       [source.modelId],
     );
-    expect(assets).toEqual([
-      expect.objectContaining({ id: source.headAssetId, state: "stale" }),
-      expect.objectContaining({ id: source.fullAssetId, state: "stale" }),
-      expect.objectContaining({
-        id: accepted.assetId,
-        viewType: "frontFull",
-        pointsCost: 350,
-        storageKey: publicKey,
-        state: "current",
-      }),
-    ]);
+    const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
+    expect(assetsById.get(source.headAssetId)).toMatchObject({ state: null });
+    expect(assetsById.get(source.fullAssetId)).toMatchObject({ state: "stale" });
+    expect(assetsById.get(siblingAssetIds.get("threeQuarter"))).toMatchObject({ state: "stale" });
+    expect(assetsById.get(siblingAssetIds.get("sideClose"))).toMatchObject({ state: null });
+    expect(assetsById.get(siblingAssetIds.get("sideFull"))).toMatchObject({ state: "stale" });
+    expect(assetsById.get(siblingAssetIds.get("backFull"))).toMatchObject({ state: null });
+    expect(assetsById.get(accepted.assetId)).toMatchObject({
+      viewType: "frontFull",
+      pointsCost: 350,
+      storageKey: publicKey,
+      state: "current",
+    });
     const [[graph]] = await connection.query<RowDataPacket[]>(
       "SELECT (SELECT COUNT(*) FROM model_identity_features WHERE modelId = ?) AS features, (SELECT COUNT(*) FROM model_identity_feature_versions WHERE modelId = ?) AS versions, (SELECT COUNT(*) FROM model_snapshot_feature_selections WHERE identitySnapshotId = ?) AS selections, (SELECT COUNT(*) FROM model_reference_plates WHERE id = ? AND kind = 'accepted_candidate') AS plates",
       [

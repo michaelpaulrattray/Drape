@@ -765,6 +765,32 @@ gate. It does not authorize migration, deployment, production
 provider/database/storage work, feature-flag enablement, or paid founder
 calibration; each remains separately gated.
 
+### D-70 — Evidence editing is natural-language-first and invalidates only views that can show the change *(founder-ratified 2026-07-28; amends R7-7D sibling-stale scope)*
+
+**Public interaction:** the finished evidence composer is one frictionless
+natural-language instruction, for example “add a small black star tattoo on
+her left chest.” The server may derive a closed anatomical zone, surface,
+laterality, operation, and visibility footprint internally, but users are not
+required to operate placement chips, technical selectors, forms, or an
+intermediate confirmation ceremony. Founder-only calibration controls may
+remain temporarily as a test harness; they are not the public product
+contract. Deliberate paid generation and explicit first-region Accept remain
+required.
+
+**View-impact law:** accepting evidence invalidates only selected views whose
+canonical framing and visible body surface could show that evidence.
+Unaffected views retain their prior compatibility; an already-stale view never
+becomes current merely because it is unaffected. Unknown ontology or framing
+fails closed by treating every view as possibly affected. No view refreshes or
+spends automatically.
+
+For `ink.add.front_upper_torso.v1`, the accepted `frontFull` replaces its
+source and remains current; the full-body profile `sideFull` may expose the
+front/lateral chest and becomes stale. `frontClose`, `threeQuarter`, and
+`sideClose` are head-and-shoulders crops, while `backFull` shows the posterior
+surface, so those views retain their prior compatibility. This server-owned
+mapping is authority; the client cannot supply or narrow it.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

@@ -74,6 +74,12 @@ export interface SnapshotIdentityChange {
   anchorAssetId: number;
   recipeVersion: string;
   restoredFromSnapshotId?: string | null;
+  /**
+   * Evidence-aware identity changes may prove that some selected views cannot
+   * display the changed anatomical region. Omission retains the conservative
+   * historical law: every carried slot becomes stale.
+   */
+  staleViewAngles?: readonly CanonicalViewAngle[];
 }
 
 export interface SnapshotTransitionSpec {
@@ -475,6 +481,19 @@ export async function commitModelSnapshotTransition<Result>(input: {
       if (transition.identity.reason === "document_compact" && (transition.slotChanges?.length ?? 0) > 0) {
         throw new Error("Document compaction cannot change package selections");
       }
+      if (transition.identity.staleViewAngles !== undefined) {
+        const uniqueAngles = new Set(transition.identity.staleViewAngles);
+        if (
+          input.featureAuthority !== "evidence_aware"
+          || uniqueAngles.size === 0
+          || uniqueAngles.size !== transition.identity.staleViewAngles.length
+          || transition.identity.staleViewAngles.some(
+            (angle) => !CANONICAL_VIEW_ANGLES.includes(angle),
+          )
+        ) {
+          throw new Error("Only evidence-aware identity changes may narrow stale view compatibility");
+        }
+      }
     }
 
     const [postModel] = await tx
@@ -541,6 +560,9 @@ export async function commitModelSnapshotTransition<Result>(input: {
     }
 
     const staleCarried = !!transition.identity && transition.identity.reason !== "document_compact";
+    const selectivelyStaleAngles = transition.identity?.staleViewAngles === undefined
+      ? null
+      : new Set(transition.identity.staleViewAngles);
     const finalByAngle = new Map<CanonicalViewAngle, {
       viewAngle: CanonicalViewAngle;
       selectedAssetId: number;
@@ -552,7 +574,13 @@ export async function commitModelSnapshotTransition<Result>(input: {
       finalByAngle.set(slot.viewAngle as CanonicalViewAngle, {
         viewAngle: slot.viewAngle as CanonicalViewAngle,
         selectedAssetId: slot.selectedAssetId,
-        compatibility: staleCarried ? "stale" : slot.compatibility,
+        compatibility: staleCarried
+          && (
+            selectivelyStaleAngles === null
+            || selectivelyStaleAngles.has(slot.viewAngle as CanonicalViewAngle)
+          )
+          ? "stale"
+          : slot.compatibility,
         selectionReason: "carried",
         sourceSelectionId: slot.id,
       });

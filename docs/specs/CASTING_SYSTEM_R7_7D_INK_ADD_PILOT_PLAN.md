@@ -4,7 +4,7 @@
 generation, credit movement, storage write, feature-flag change, production
 operation, or deployment by itself.
 
-**Authority:** D-43, D-56, D-62, D-65, D-68,
+**Authority:** D-43, D-56, D-62, D-65, D-68, D-70,
 `CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md`, the completed R7-7A/B/C
 snapshot and private-evidence boundaries, the R7 operation/credit contract,
 and the access-control invariants in `CLAUDE.md`.
@@ -32,8 +32,9 @@ R7-7D adds the first real evidence-composer action:
 - an undecided candidate expires after 30 days under the same no-refund and
   cleanup law as Cancel;
 - Accept selects the complete flattened output as the new `frontFull`, records
-  typed feature evidence, and marks every filled sibling stale without
-  regenerating or charging for any sibling.
+  typed feature evidence, and marks only selected views whose framing can show
+  the accepted anatomical region stale, without regenerating or charging for
+  any sibling. Unknown future regions fail closed to all views.
 
 The first enabled recipe is exactly:
 
@@ -99,10 +100,16 @@ the earlier view remains ordinary immutable history.
 
 The D founder pilot is intentionally not a generally releasable stopping
 point. Once ink is accepted, every feature-blind generation/edit door is
-fenced until R7-7E can compose that selected evidence. Because Accept also
-marks every filled sibling stale, the Cast cannot be minted until those
-evidence-aware refreshes exist. The UI discloses this pilot limitation before
-Generate; it is never discovered only after the user pays.
+fenced until R7-7E can compose that selected evidence. Accept marks only
+possibly-visible views stale, but mint remains fenced until evidence-aware
+refresh and mint authority exist. The UI discloses this pilot limitation
+before Generate; it is never discovered only after the user pays.
+
+**D-70 amendment:** the three placement chips above are a founder calibration
+harness, not the final public interaction. The finished composer accepts one
+natural-language instruction and derives the same server-owned zone, surface,
+side, and visibility footprint internally. It does not require users to
+operate placement controls or a technical confirmation form.
 
 ## 3. Current-code facts this plan builds on
 
@@ -832,7 +839,9 @@ Under the established lock order, one transaction:
 10. copies prior feature selections and adds the new accepted selection;
 11. inserts the paired package snapshot with reason `evidence_accept`;
 12. selects the new `frontFull` as `current`/`evidence_accept`;
-13. copies every other filled selected slot as `stale`/`carried`;
+13. copies filled selected slots as `carried`, preserving prior compatibility
+    for views that cannot show the accepted evidence and marking only
+    possibly-visible views `stale`;
 14. updates the model head with exact stateVersion/package/identity CAS;
 15. marks intent resolved, candidate accepted, attempt promoted, and clears
     both active-slot fields;
@@ -858,8 +867,9 @@ helper is not sufficient once the operation has moved to `running`.
 
 Accept never changes the mutable identity documents, anchor, mint seal, model
 status, credits, Canvas rows, or Wardrobe rows. Unrelated view bytes remain
-unchanged; their selected compatibility and legacy stale truth change only to
-the required stale state.
+unchanged. Their selected compatibility and legacy status remain unchanged
+unless the server-owned visibility mapping says the accepted region may
+appear in that view. Pre-existing stale truth is never promoted to current.
 
 ### 11.3 Ambiguous Accept recovery
 
@@ -1276,7 +1286,8 @@ parallelism does not authorize D4 or any capability enablement.
 - ready-candidate durable boundary at every injected failure;
 - Accept success creates exactly one asset, plate, feature/version, identity
   snapshot, package snapshot, feature selection, and head CAS;
-- documents/anchor unchanged; all filled siblings stale; no sibling generated;
+- documents/anchor unchanged; only possibly-visible siblings stale; no sibling
+  generated; unaffected and previously-stale compatibility remains honest;
 - Accept vs Accept/Edit/Mint/Delete/Cancel/Retry/expiry;
 - every feature-blind refresh/add-view/iterate/restore/recast/identity-edit
   path refuses before money/provider and leaves feature selections unchanged;
@@ -1311,7 +1322,8 @@ Every DB test uses disposable MySQL. No unit command receives production
 - one click from filled panel to generation;
 - candidate visibly noncanonical;
 - reload/another tab resumes;
-- Accept updates Full and dims/stales siblings without auto refresh;
+- Accept updates Full and dims/stales only possibly-visible siblings without
+  auto refresh; unaffected views keep their prior compatibility;
 - Cancel leaves Cast unchanged;
 - Retry warns replacement and charges exactly once;
 - private preview never leaks unauthenticated;

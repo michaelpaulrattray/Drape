@@ -19,8 +19,12 @@ import {
 } from "../../db/inkAddAcceptance";
 import { identityStampFor, mintRevisionId } from "../identity/anchorSelector";
 import { commitModelSnapshotTransition } from "../snapshotTransitions";
-import { INK_ADD_PRICE_CREDITS } from "./evidenceCandidateContract";
+import {
+  INK_ADD_CAPABILITY_KEY,
+  INK_ADD_PRICE_CREDITS,
+} from "./evidenceCandidateContract";
 import { INK_ADD_TARGET_VIEW } from "./composer/inkAddRecipe";
+import { affectedViewsForInkAdd } from "./inkViewImpact";
 
 const ACCEPT_RECIPE_VERSION = "r7-ink-add-accept-v1";
 
@@ -97,18 +101,35 @@ export async function commitInkCandidateAcceptance(input: {
           eq(modelIdentityFeatureIntents.userId, input.prepared.userId),
           eq(modelIdentityFeatureIntents.modelId, input.prepared.modelId),
           eq(modelIdentityFeatureIntents.status, "pending"),
+          eq(
+            modelIdentityFeatureIntents.activeCapabilityKey,
+            INK_ADD_CAPABILITY_KEY,
+          ),
         ))
         .limit(1)
         .for("update");
       if (
         !intent
+        || intent.capabilityKey !== INK_ADD_CAPABILITY_KEY
         || intent.normalizedDescriptor !== input.prepared.normalizedDescriptor
         || intent.sourceAssetId !== input.prepared.sourceAssetId
         || intent.identitySnapshotId !== input.prepared.identitySnapshotId
         || intent.packageSnapshotId !== input.prepared.packageSnapshotId
+        || intent.ontologyVersion !== input.prepared.ontologyVersion
+        || intent.zone !== input.prepared.zone
+        || intent.surface !== input.prepared.surface
+        || intent.side !== input.prepared.side
       ) {
         throw new InkAcceptanceStateError("candidate_unavailable");
       }
+      const affectedViewAngles = affectedViewsForInkAdd({
+        capabilityKey: intent.capabilityKey,
+        ontologyVersion: intent.ontologyVersion,
+        zone: intent.zone,
+        surface: intent.surface,
+        side: intent.side,
+      });
+      const affectedViewSet = new Set(affectedViewAngles);
       const [attempt] = await tx
         .select()
         .from(castingEvidenceCandidateAttempts)
@@ -194,7 +215,9 @@ export async function commitInkCandidateAcceptance(input: {
         throw new Error("Accepted candidate asset could not be saved");
       }
       const staleAssetIds = Array.from(new Set(
-        context.current.slots.map((slot) => slot.selectedAssetId),
+        context.current.slots
+          .filter((slot) => affectedViewSet.has(slot.viewAngle))
+          .map((slot) => slot.selectedAssetId),
       ));
       if (staleAssetIds.length > 0) {
         await tx
@@ -257,6 +280,7 @@ export async function commitInkCandidateAcceptance(input: {
             reason: "evidence_accept" as const,
             anchorAssetId: context.current.identitySnapshot.anchorAssetId,
             recipeVersion: ACCEPT_RECIPE_VERSION,
+            staleViewAngles: affectedViewAngles,
           },
           slotChanges: [{
             viewAngle: INK_ADD_TARGET_VIEW,
