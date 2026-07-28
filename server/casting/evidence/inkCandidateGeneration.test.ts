@@ -6,6 +6,7 @@ import type { PrivateEvidenceStorageAdapter } from "./evidenceDelivery";
 import type { CanonicalEvidenceImage } from "./imageValidation";
 import type { PreparedInkCandidateAttempt } from "../../db/inkAddCandidates";
 import {
+  buildInkProbeProviderConfig,
   generateInkAddCandidate,
   retryInkAddCandidate,
   type InkCandidateGenerationDependencies,
@@ -158,6 +159,40 @@ function dependencies(
 }
 
 describe("ink candidate generation", () => {
+  it("forwards the closed non-thinking probe configuration to the provider", () => {
+    const config = buildInkProbeProviderConfig({
+      kind: "visibility",
+      model: "gemini-2.5-flash",
+      recipeVersion: "ink.add.visibility.v1",
+      responseMimeType: "application/json",
+      responseSchema: {
+        upperTorsoVisible: "boolean",
+        materiallyOccluded: "boolean",
+        confidence: "integer_0_100",
+      },
+      thinkingBudget: 0,
+      includeThoughts: false,
+      maxOutputTokens: 4096,
+      prompt: "closed test prompt",
+      images: [],
+    });
+    expect(config).toMatchObject({
+      responseMimeType: "application/json",
+      thinkingConfig: {
+        thinkingBudget: 0,
+        includeThoughts: false,
+      },
+      maxOutputTokens: 4096,
+    });
+    expect(config.responseSchema).toMatchObject({
+      required: [
+        "upperTorsoVisible",
+        "materiallyOccluded",
+        "confidence",
+      ],
+    });
+  });
+
   it("delivers one private ready candidate under one 350-credit parent charge", async () => {
     const deps = dependencies();
     const result = await generateInkAddCandidate(deps, {

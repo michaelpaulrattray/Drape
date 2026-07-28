@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { GenerateContentConfig } from "@google/genai";
 import { TRPCError } from "@trpc/server";
 import {
   commitBeginInkAddIntent,
@@ -41,7 +42,13 @@ import {
   type InkAddSide,
 } from "./composer/inkAddRecipe";
 import { readActiveInkCandidate } from "./inkCandidateGeneration";
+import { createModuleLogger } from "../../logging/logger";
+import {
+  extractInkProviderTelemetry,
+  type InkProviderTelemetry,
+} from "./composer/inkProviderTelemetry";
 
+const log = createModuleLogger("casting/evidence/inkAddIntent");
 const INK_INTENT_TEMPORARILY_UNAVAILABLE =
   "Tattoo previews are temporarily unavailable. Nothing was charged.";
 const INK_INTENT_UNSUPPORTED =
@@ -81,6 +88,11 @@ export interface InkAddIntentDependencies {
     classify(request: InkAuthorizationRequest): Promise<unknown>;
   }) => Promise<InkAuthorizationResult>;
   classify?: (request: InkAuthorizationRequest) => Promise<unknown>;
+  warnAuthorizationUnknown?: (input: {
+    userId: number;
+    modelId: number;
+    provider: InkProviderTelemetry | null;
+  }) => void;
   begin?: BeginOperation;
   commit?: typeof commitBeginInkAddIntent;
   generateId?: () => string;
@@ -99,39 +111,59 @@ export interface InkAddCapabilityDependencies {
   readCandidate?: typeof readActiveInkCandidate;
 }
 
-async function classifyInkAdd(
+export function buildInkAuthorizationProviderConfig(
   request: InkAuthorizationRequest,
-): Promise<unknown> {
+): GenerateContentConfig {
   const properties = Object.fromEntries(
     Object.entries(request.responseSchema).map(([key, type]) => [
       key,
       { type: type === "boolean" ? "BOOLEAN" : "INTEGER" },
     ]),
   );
+  return {
+    responseMimeType: request.responseMimeType,
+    responseSchema: {
+      type: "OBJECT",
+      properties,
+      required: Object.keys(properties),
+    },
+    thinkingConfig: {
+      thinkingBudget: request.thinkingBudget,
+      includeThoughts: request.includeThoughts,
+    },
+    maxOutputTokens: request.maxOutputTokens,
+    safetySettings: SAFETY_SETTINGS,
+  };
+}
+
+async function classifyInkAdd(
+  request: InkAuthorizationRequest,
+  observe: (provider: InkProviderTelemetry) => void,
+): Promise<unknown> {
   const ai = getAiClient();
-  const response = await withTextQueue(
-    () => withTimeout(
-      ai.models.generateContent({
-        model: request.model,
-        contents: [{ parts: [{ text: request.prompt }] }],
-        config: {
-          responseMimeType: request.responseMimeType,
-          responseSchema: {
-            type: "OBJECT",
-            properties,
-            required: Object.keys(properties),
-            additionalProperties: false,
-          } as never,
-          maxOutputTokens: 256,
-          safetySettings: SAFETY_SETTINGS,
-        },
-      }),
-      15_000,
-      "InkAuthorization",
-    ),
-    "inkAuthorization",
-  );
-  return safeResponseText(response);
+  try {
+    const response = await withTextQueue(
+      () => withTimeout(
+        ai.models.generateContent({
+          model: request.model,
+          contents: [{ parts: [{ text: request.prompt }] }],
+          config: buildInkAuthorizationProviderConfig(request),
+        }),
+        15_000,
+        "InkAuthorization",
+      ),
+      "inkAuthorization",
+    );
+    const text = safeResponseText(response);
+    observe(extractInkProviderTelemetry({
+      response,
+      textLength: text.length,
+    }));
+    return text;
+  } catch (error) {
+    observe(extractInkProviderTelemetry({ error }));
+    throw error;
+  }
 }
 
 function closedIntentResult(value: unknown): BeginInkAddIntentResult {
@@ -204,13 +236,32 @@ export async function beginInkAddIntent(
     throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a valid tattoo placement." });
   }
 
+  let providerTelemetry: InkProviderTelemetry | null = null;
   const authorization = await (
     dependencies.authorize ?? authorizeInkAddDescription
   )({
     description: input.description,
-    classify: dependencies.classify ?? classifyInkAdd,
+    classify: dependencies.classify ?? ((request) =>
+      classifyInkAdd(request, (provider) => {
+        providerTelemetry = provider;
+      })),
   });
   if (!authorization.ok) {
+    if (authorization.code === "authorization_unknown") {
+      const diagnostic = {
+        userId: input.userId,
+        modelId: input.modelId,
+        provider: providerTelemetry,
+      };
+      if (dependencies.warnAuthorizationUnknown) {
+        dependencies.warnAuthorizationUnknown(diagnostic);
+      } else {
+        log.warn(
+          diagnostic,
+          "Ink authorization returned unavailable",
+        );
+      }
+    }
     throw new TRPCError({
       code: authorization.code === "authorization_unknown"
         ? "PRECONDITION_FAILED"

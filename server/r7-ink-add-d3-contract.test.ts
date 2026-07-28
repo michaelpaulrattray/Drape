@@ -60,9 +60,31 @@ describe("R7-7D D3 pure composer contract", () => {
     ), "utf8");
     expect(authorization).toContain("responseSchema: {");
     expect(authorization).toContain('confidence: "integer_0_100"');
+    expect(authorization).toContain("...INK_TEXT_PROVIDER_CONFIG");
     expect(intent).toContain("Object.entries(request.responseSchema)");
     expect(intent).toContain("required: Object.keys(properties)");
-    expect(intent).toContain("additionalProperties: false");
+    expect(intent).not.toContain("additionalProperties");
+    expect(intent).toContain("thinkingBudget: request.thinkingBudget");
+    expect(intent).toContain("maxOutputTokens: request.maxOutputTokens");
+    const candidate = fs.readFileSync(path.join(
+      root,
+      "server",
+      "casting",
+      "evidence",
+      "inkCandidateGeneration.ts",
+    ), "utf8");
+    expect(candidate).toContain("buildInkProbeProviderConfig(request)");
+    expect(candidate).toContain("thinkingBudget: request.thinkingBudget");
+    expect(candidate).toContain("maxOutputTokens: request.maxOutputTokens");
+  });
+
+  it("keeps provider diagnostics metadata-only", () => {
+    const telemetry = read("inkProviderTelemetry.ts");
+    expect(telemetry).toContain("extractInkProviderTelemetry");
+    expect(telemetry).not.toMatch(
+      /\bdescriptor\b|providerResponse|\.message\b|\.stack\b|\.body\b/,
+    );
+    expect(telemetry).not.toContain("node:fs");
   });
 
   it("keeps the calibration recorder local, allowlisted, and free of private payload fields", () => {

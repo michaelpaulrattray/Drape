@@ -11,6 +11,7 @@ import {
 import type { ComposerImage, ComposerImageMime } from "./inkComposer";
 import { normalizeInkDescriptor } from "./inkAuthorization";
 import { supportedImageMime } from "../../../security/trustedImageFetch";
+import { INK_TEXT_PROVIDER_CONFIG } from "./inkProviderTelemetry";
 
 export type InkProbeKind =
   | "visibility"
@@ -37,6 +38,9 @@ export interface InkProbeRequest {
     | typeof INK_ADD_VISIBILITY_RECIPE_VERSION;
   responseMimeType: "application/json";
   responseSchema: Readonly<Record<string, "boolean" | "integer_0_100">>;
+  thinkingBudget: typeof INK_TEXT_PROVIDER_CONFIG.thinkingBudget;
+  includeThoughts: typeof INK_TEXT_PROVIDER_CONFIG.includeThoughts;
+  maxOutputTokens: typeof INK_TEXT_PROVIDER_CONFIG.maxOutputTokens;
   prompt: string;
   images: readonly InkProbeInlineImage[];
 }
@@ -186,6 +190,7 @@ export function buildInkVisibilityProbeRequest(input: {
       materiallyOccluded: "boolean",
       confidence: "integer_0_100",
     },
+    ...INK_TEXT_PROVIDER_CONFIG,
     prompt: `Assess only whether the front upper torso is sufficiently visible
 for a bounded chest-tattoo edit. Pass requires a front-facing upper torso with
 both chest placement and skin region readable at useful scale. Clothing,
@@ -210,6 +215,7 @@ export function buildInkIdentityPoseProbeRequest(input: {
       poseFramingPreserved: "boolean",
       confidence: "integer_0_100",
     },
+    ...INK_TEXT_PROVIDER_CONFIG,
     prompt: `Image 1 is the immutable identity anchor. Image 2 is the original
 target. Image 3 is a candidate allowed to add one chest tattoo only. Determine
 whether Image 3 is the exact same person and whether pose, crop, camera,
@@ -259,6 +265,7 @@ export function buildInkFeaturePlacementProbeRequest(input: {
       noUnexpectedInk: "boolean",
       confidence: "integer_0_100",
     },
+    ...INK_TEXT_PROVIDER_CONFIG,
     prompt: `Image 1 is the original target. Image 2 is the candidate. ${
       input.evidenceReference
         ? "Image 3 is design evidence only."

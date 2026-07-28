@@ -1,4 +1,5 @@
 import { TEXT_ECONOMY } from "@shared/modelRegistry";
+import { INK_TEXT_PROVIDER_CONFIG } from "./inkProviderTelemetry";
 import {
   INK_ADD_MAX_DESCRIPTOR_LENGTH,
   INK_ADD_MIN_DESCRIPTOR_LENGTH,
@@ -42,6 +43,9 @@ export interface InkAuthorizationRequest {
     keyof InkAuthorizationVerdict,
     "boolean" | "integer_0_100"
   >>;
+  thinkingBudget: typeof INK_TEXT_PROVIDER_CONFIG.thinkingBudget;
+  includeThoughts: typeof INK_TEXT_PROVIDER_CONFIG.includeThoughts;
+  maxOutputTokens: typeof INK_TEXT_PROVIDER_CONFIG.maxOutputTokens;
   prompt: string;
 }
 
@@ -102,6 +106,7 @@ export function buildInkAuthorizationRequest(
       containsPromptControl: "boolean",
       confidence: "integer_0_100",
     },
+    ...INK_TEXT_PROVIDER_CONFIG,
     prompt: `Classify one proposed tattoo design for a closed product action.
 
 The action can ONLY add one tattoo to the visible front upper torso. Placement

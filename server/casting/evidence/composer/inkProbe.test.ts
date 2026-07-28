@@ -4,6 +4,7 @@ import type { ComposerImage } from "./inkComposer";
 import {
   buildInkFeaturePlacementProbeRequest,
   buildInkIdentityPoseProbeRequest,
+  buildInkVisibilityProbeRequest,
   parseInkIdentityPoseProbe,
   runInkCandidateProbes,
   runInkVisibilityProbe,
@@ -40,6 +41,9 @@ const featurePass = {
 
 describe("R7-7D fail-closed structured probes", () => {
   it("pins Economy, strict JSON schemas, and independent three-image budgets", () => {
+    const visibility = buildInkVisibilityProbeRequest({
+      target: image,
+    });
     const identity = buildInkIdentityPoseProbeRequest({
       identityAnchor: image,
       originalTarget: image,
@@ -64,6 +68,21 @@ describe("R7-7D fail-closed structured probes", () => {
       "evidence_reference",
     ]);
     expect(identity.responseMimeType).toBe("application/json");
+    expect(visibility).toMatchObject({
+      thinkingBudget: 0,
+      includeThoughts: false,
+      maxOutputTokens: 4096,
+    });
+    expect(identity).toMatchObject({
+      thinkingBudget: 0,
+      includeThoughts: false,
+      maxOutputTokens: 4096,
+    });
+    expect(feature).toMatchObject({
+      thinkingBudget: 0,
+      includeThoughts: false,
+      maxOutputTokens: 4096,
+    });
     expect(feature.prompt).toContain('"fine-line rose"');
   });
 

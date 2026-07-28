@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import type { GenerateContentConfig } from "@google/genai";
 import { TRPCError } from "@trpc/server";
 import { AspectRatio } from "../geminiTypes";
 import {
@@ -69,6 +70,9 @@ import { decideInkCandidateAttempt } from "./composer/inkRetryDecision";
 import { INK_ADD_IMAGE_ENGINE } from "./composer/inkAddRecipe";
 import { captureEvidenceComposerEnabled } from "./evidenceComposerScope";
 import { createModuleLogger } from "../../logging/logger";
+import {
+  extractInkProviderTelemetry,
+} from "./composer/inkProviderTelemetry";
 
 const log = createModuleLogger("casting/evidence/inkCandidateGeneration");
 const CANDIDATE_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
@@ -249,30 +253,58 @@ function responseSchema(request: InkProbeRequest) {
   };
 }
 
+export function buildInkProbeProviderConfig(
+  request: InkProbeRequest,
+): GenerateContentConfig {
+  return {
+    responseMimeType: request.responseMimeType,
+    responseSchema: responseSchema(request),
+    thinkingConfig: {
+      thinkingBudget: request.thinkingBudget,
+      includeThoughts: request.includeThoughts,
+    },
+    maxOutputTokens: request.maxOutputTokens,
+    safetySettings: SAFETY_SETTINGS,
+  };
+}
+
 async function defaultProbe(request: InkProbeRequest): Promise<unknown> {
   return withTextQueue(async () => {
-    const response = await withTimeout(
-      getAiClient().models.generateContent({
-        model: request.model,
-        contents: {
-          parts: [
-            ...request.images.map((image) => ({
-              inlineData: image.inlineData,
-            })),
-            { text: request.prompt },
-          ],
-        },
-        config: {
-          responseMimeType: request.responseMimeType,
-          responseSchema: responseSchema(request) as never,
-          maxOutputTokens: 256,
-          safetySettings: SAFETY_SETTINGS,
-        },
-      }),
-      20_000,
-      `InkProbe:${request.kind}`,
-    );
-    return safeResponseText(response);
+    try {
+      const response = await withTimeout(
+        getAiClient().models.generateContent({
+          model: request.model,
+          contents: {
+            parts: [
+              ...request.images.map((image) => ({
+                inlineData: image.inlineData,
+              })),
+              { text: request.prompt },
+            ],
+          },
+          config: buildInkProbeProviderConfig(request),
+        }),
+        20_000,
+        `InkProbe:${request.kind}`,
+      );
+      const text = safeResponseText(response);
+      if (!text) {
+        log.warn({
+          probeKind: request.kind,
+          provider: extractInkProviderTelemetry({
+            response,
+            textLength: 0,
+          }),
+        }, "Ink probe provider response was empty");
+      }
+      return text;
+    } catch (error) {
+      log.warn({
+        probeKind: request.kind,
+        provider: extractInkProviderTelemetry({ error }),
+      }, "Ink probe provider request failed");
+      throw error;
+    }
   }, `inkProbe:${request.kind}`);
 }
 

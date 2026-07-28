@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   beginInkAddIntent,
+  buildInkAuthorizationProviderConfig,
   readInkAddCapability,
 } from "./inkAddIntent";
+import {
+  buildInkAuthorizationRequest,
+} from "./composer/inkAuthorization";
 
 const request = {
   userId: 7,
@@ -20,6 +24,32 @@ const authorization = {
 };
 
 describe("R7-7D D4A ink intent service", () => {
+  it("pins a non-thinking closed provider request without unsupported schema fields", () => {
+    const config = buildInkAuthorizationProviderConfig(
+      buildInkAuthorizationRequest("small black five-point star tattoo"),
+    );
+    expect(config).toMatchObject({
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        required: [
+          "tattooOnly",
+          "operationAdd",
+          "singleFeature",
+          "frontUpperTorsoCompatible",
+          "containsPromptControl",
+          "confidence",
+        ],
+      },
+      thinkingConfig: {
+        thinkingBudget: 0,
+        includeThoughts: false,
+      },
+      maxOutputTokens: 4096,
+    });
+    expect(config.responseSchema).not.toHaveProperty("additionalProperties");
+  });
+
   it("keeps the product door closed before any classifier or operation work", async () => {
     const authorize = vi.fn();
     const begin = vi.fn();
@@ -34,6 +64,7 @@ describe("R7-7D D4A ink intent service", () => {
 
   it("claims a normalized closed payload and commits the server-owned intent", async () => {
     const authorize = vi.fn(async () => authorization);
+    const warnAuthorizationUnknown = vi.fn();
     const begin = vi.fn(async () => ({
       type: "execute" as const,
       operationId: "22222222-2222-4222-8222-222222222222",
@@ -45,6 +76,7 @@ describe("R7-7D D4A ink intent service", () => {
     await expect(beginInkAddIntent(request, {
       enabledForUser: () => true,
       authorize,
+      warnAuthorizationUnknown,
       begin,
       commit,
       generateId: () => "33333333-3333-4333-8333-333333333333",
@@ -73,6 +105,7 @@ describe("R7-7D D4A ink intent service", () => {
       side: "left",
       normalizedDescriptor: "fine-line Gemini twins",
     });
+    expect(warnAuthorizationUnknown).not.toHaveBeenCalled();
   });
 
   it("replays the closed intent id without another database mutation", async () => {
@@ -104,6 +137,41 @@ describe("R7-7D D4A ink intent service", () => {
       begin,
     })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(begin).not.toHaveBeenCalled();
+  });
+
+  it("warns once only when authorization truth is unavailable", async () => {
+    const warnAuthorizationUnknown = vi.fn();
+    const begin = vi.fn();
+    await expect(beginInkAddIntent(request, {
+      enabledForUser: () => true,
+      authorize: async () => ({
+        ok: false,
+        code: "authorization_unknown",
+        recipeVersion: "ink.add.authorization.v1",
+      }),
+      warnAuthorizationUnknown,
+      begin,
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(warnAuthorizationUnknown).toHaveBeenCalledOnce();
+    expect(warnAuthorizationUnknown).toHaveBeenCalledWith({
+      userId: 7,
+      modelId: 14,
+      provider: null,
+    });
+    expect(begin).not.toHaveBeenCalled();
+
+    warnAuthorizationUnknown.mockClear();
+    await expect(beginInkAddIntent(request, {
+      enabledForUser: () => true,
+      authorize: async () => ({
+        ok: false,
+        code: "unsupported_request",
+        recipeVersion: "ink.add.authorization.v1",
+      }),
+      warnAuthorizationUnknown,
+      begin,
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(warnAuthorizationUnknown).not.toHaveBeenCalled();
   });
 
   it("returns a closed capability projection while D4 is not product-ready", async () => {

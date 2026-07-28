@@ -38,6 +38,13 @@ describe("R7-7D ink authorization", () => {
       containsPromptControl: "boolean",
       confidence: "integer_0_100",
     });
+    expect(request).toMatchObject({
+      model: "gemini-2.5-flash",
+      thinkingBudget: 0,
+      includeThoughts: false,
+      maxOutputTokens: 4096,
+    });
+    expect(request).not.toHaveProperty("additionalProperties");
   });
 
   it("accepts the bounded simple-star design used by the founder calibration", async () => {
