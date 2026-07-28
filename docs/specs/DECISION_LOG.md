@@ -785,11 +785,39 @@ fails closed by treating every view as possibly affected. No view refreshes or
 spends automatically.
 
 For `ink.add.front_upper_torso.v1`, the accepted `frontFull` replaces its
-source and remains current; the full-body profile `sideFull` may expose the
-front/lateral chest and becomes stale. `frontClose`, `threeQuarter`, and
+source and remains current. A left- or right-chest mark makes the full-body
+profile `sideFull` stale because a regenerated Walk can deliberately expose
+that anatomical side. A centre-chest mark does not make a strict profile stale
+because that region is not reliably visible. `frontClose`, `threeQuarter`, and
 `sideClose` are head-and-shoulders crops, while `backFull` shows the posterior
 surface, so those views retain their prior compatibility. This server-owned
 mapping is authority; the client cannot supply or narrow it.
+
+### D-71 — Generated angle labels are intent, not anatomical proof *(founder-ratified 2026-07-28)*
+
+**What:** Side and three-quarter generation prompts may request a direction,
+but model output can drift or mirror the requested orientation. No
+evidence-aware operation may infer visible anatomical left/right from the
+canonical angle name or prompt alone.
+
+For a lateral tattoo, the server chooses the Walk direction that should expose
+the tattoo-bearing anatomical side, supplies an angle-and-side-specific visual
+placement guide, and then uses strict image probes to verify the actual
+visible anatomical side, placement, and framing. Unknown, contradictory, or
+unverified side truth refuses the canon commit and refunds under the normal
+operation law. The verified visible anatomical side is recorded in
+server-owned asset provenance. A centre-chest tattoo does not require a Walk
+refresh because a strict profile cannot reliably show it.
+
+**UX law:** the person simply describes the change in natural language. They
+never choose “face left,” “face right,” an anatomical side control, or a
+technical visibility setting. Direction selection, visual guidance,
+verification, and provenance are server-owned implementation details.
+
+**Scope:** this amends D-39 only for evidence-aware package generation. The
+canonical slot remains `sideFull` / Walk; its travel direction may vary to
+show selected evidence. Ordinary legacy generation may retain its existing
+prompt, but its requested direction is never treated as verified anatomy.
 
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 

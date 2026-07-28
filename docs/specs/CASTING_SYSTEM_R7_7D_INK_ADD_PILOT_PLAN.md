@@ -841,7 +841,9 @@ Under the established lock order, one transaction:
 12. selects the new `frontFull` as `current`/`evidence_accept`;
 13. copies filled selected slots as `carried`, preserving prior compatibility
     for views that cannot show the accepted evidence and marking only
-    possibly-visible views `stale`;
+    possibly-visible views `stale`; for the first recipe, lateral left/right
+    placement stales Walk while centre placement does not, because a strict
+    profile cannot reliably show the centre chest;
 14. updates the model head with exact stateVersion/package/identity CAS;
 15. marks intent resolved, candidate accepted, attempt promoted, and clears
     both active-slot fields;

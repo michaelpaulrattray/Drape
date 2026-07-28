@@ -9,8 +9,8 @@ import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
 import { affectedViewsForInkAdd } from "./inkViewImpact";
 
 describe("ink evidence view impact", () => {
-  it.each(["left", "centre", "right"] as const)(
-    "stales only body views that can show a %s upper-chest tattoo",
+  it.each(["left", "right"] as const)(
+    "stales Full and Walk for a lateral %s upper-chest tattoo",
     (side) => {
       expect(affectedViewsForInkAdd({
         capabilityKey: INK_ADD_CAPABILITY_KEY,
@@ -21,6 +21,16 @@ describe("ink evidence view impact", () => {
       })).toEqual(["frontFull", "sideFull"]);
     },
   );
+
+  it("keeps Walk current for a centre-chest tattoo that a strict profile cannot show", () => {
+    expect(affectedViewsForInkAdd({
+      capabilityKey: INK_ADD_CAPABILITY_KEY,
+      ontologyVersion: INK_ADD_ONTOLOGY_VERSION,
+      zone: INK_ADD_ZONE,
+      surface: INK_ADD_SURFACE,
+      side: "centre",
+    })).toEqual(["frontFull"]);
+  });
 
   it("keeps the headshot trio and rear view compatible", () => {
     const affected = new Set(affectedViewsForInkAdd({
@@ -94,7 +104,7 @@ describe("ink evidence view impact", () => {
       ["threeQuarter", "unaffected"],
       ["frontFull", "affected"],
       ["sideClose", "unaffected"],
-      ["sideFull", "affected"],
+      ["sideFull", "unaffected"],
       ["backFull", "unaffected"],
     ]);
   });
