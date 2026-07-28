@@ -141,6 +141,7 @@ describe("R7-7C1 owned-evidence schema contract", () => {
     }
     expect(callers).toEqual([
       "server/casting/evidence/evidenceFork.ts",
+      "server/casting/evidence/evidencePackageFeatureRows.ts",
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/finalCastDeletion.ts",
       "server/db/accountDeletion.ts",
@@ -162,8 +163,12 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       new URL("./db/storageCleanup.ts", import.meta.url),
       "utf8",
     );
-    expect(cleanupDb).not.toContain("storageCleanupBatches.kind");
-    expect(cleanupDb).not.toMatch(/switch\s*\([^)]*kind[^)]*\)/);
+    const cleanupWorker = cleanupDb.slice(
+      cleanupDb.indexOf("export async function claimNextStorageCleanupBatch"),
+      cleanupDb.indexOf("export async function getStorageCleanupHealth"),
+    );
+    expect(cleanupWorker).not.toContain("storageCleanupBatches.kind");
+    expect(cleanupWorker).not.toMatch(/switch\s*\([^)]*kind[^)]*\)/);
   });
 
   it("pins the guarded disposable driver to migration 0011 only", async () => {

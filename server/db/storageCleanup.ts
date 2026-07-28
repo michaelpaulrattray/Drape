@@ -61,6 +61,195 @@ export async function createStorageCleanupManifestIn(
   return manifest;
 }
 
+/**
+ * Reserve one exact candidate key under the operation's single cleanup
+ * batch. Evidence package retries and multi-view requests append to that
+ * locked batch rather than creating conflicting per-attempt batches.
+ */
+export async function reserveStorageCleanupItemForOperation(input: {
+  userId: number;
+  operationId: string;
+  kind: "candidate_cleanup";
+  storageKey: string;
+  storageBackend: "public_r2" | "private_evidence_r2";
+}): Promise<string> {
+  return withTransaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(storageCleanupBatches)
+      .where(and(
+        eq(storageCleanupBatches.userId, input.userId),
+        eq(storageCleanupBatches.operationId, input.operationId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!existing) {
+      const manifest = await createStorageCleanupManifestIn(tx, {
+        userId: input.userId,
+        operationId: input.operationId,
+        kind: input.kind,
+        storageItems: [{
+          storageKey: input.storageKey,
+          storageBackend: input.storageBackend,
+        }],
+      });
+      return manifest.id;
+    }
+    if (
+      existing.kind !== input.kind
+      || existing.status !== "pending"
+      || existing.deletedCount !== 0
+      || existing.failedCount !== 0
+      || existing.leaseToken !== null
+    ) {
+      throw new Error("Storage-cleanup reservation is not appendable");
+    }
+    await tx.insert(storageCleanupItems).values({
+      batchId: existing.id,
+      storageKey: input.storageKey,
+      storageBackend: input.storageBackend,
+      status: "pending",
+      attempts: 0,
+    });
+    const incremented = await tx
+      .update(storageCleanupBatches)
+      .set({
+        expectedCount: sql`${storageCleanupBatches.expectedCount} + 1`,
+      })
+      .where(and(
+        eq(storageCleanupBatches.id, existing.id),
+        eq(storageCleanupBatches.status, "pending"),
+        eq(storageCleanupBatches.expectedCount, existing.expectedCount),
+      ));
+    if (affectedRows(incremented) !== 1) {
+      throw new Error("Storage-cleanup reservation count changed");
+    }
+    return existing.id;
+  });
+}
+
+/**
+ * Consume exact reserved keys after they were either deleted or atomically
+ * adopted as canonical. Any other pending keys remain durably owned by the
+ * same batch for the cleanup worker.
+ */
+export async function consumeStorageCleanupReservationsIn(
+  tx: TransactionHandle,
+  input: {
+    batchId: string;
+    userId: number;
+    operationId: string;
+    kind: "candidate_cleanup";
+    storageItems: Array<{
+      storageKey: string;
+      storageBackend: "public_r2" | "private_evidence_r2";
+    }>;
+  },
+): Promise<void> {
+  const unique = new Map(
+    input.storageItems.map((item) => [
+      `${item.storageBackend}:${item.storageKey}`,
+      item,
+    ]),
+  );
+  if (unique.size !== input.storageItems.length || unique.size === 0) {
+    throw new Error("Storage-cleanup consumption is invalid");
+  }
+  const [batch] = await tx
+    .select()
+    .from(storageCleanupBatches)
+    .where(and(
+      eq(storageCleanupBatches.id, input.batchId),
+      eq(storageCleanupBatches.userId, input.userId),
+      eq(storageCleanupBatches.operationId, input.operationId),
+      eq(storageCleanupBatches.kind, input.kind),
+      eq(storageCleanupBatches.status, "pending"),
+    ))
+    .limit(1)
+    .for("update");
+  if (
+    !batch
+    || batch.deletedCount !== 0
+    || batch.failedCount !== 0
+    || batch.leaseToken !== null
+  ) {
+    throw new Error("Storage-cleanup reservation is invalid");
+  }
+  const allItems = await tx
+    .select()
+    .from(storageCleanupItems)
+    .where(eq(storageCleanupItems.batchId, batch.id))
+    .orderBy(asc(storageCleanupItems.id))
+    .for("update");
+  if (allItems.length !== batch.expectedCount) {
+    throw new Error("Storage-cleanup reservation count is invalid");
+  }
+  const consumed = allItems.filter((item) =>
+    unique.has(`${item.storageBackend}:${item.storageKey}`)
+    && item.status === "pending"
+  );
+  if (consumed.length !== unique.size) {
+    throw new Error("Storage-cleanup reservation item is invalid");
+  }
+  const removed = await tx
+    .delete(storageCleanupItems)
+    .where(and(
+      eq(storageCleanupItems.batchId, batch.id),
+      inArray(storageCleanupItems.id, consumed.map((item) => item.id)),
+      eq(storageCleanupItems.status, "pending"),
+    ));
+  if (affectedRows(removed) !== consumed.length) {
+    throw new Error("Storage-cleanup reservation item changed");
+  }
+  const remaining = allItems.length - consumed.length;
+  if (remaining === 0) {
+    const removedBatch = await tx
+      .delete(storageCleanupBatches)
+      .where(and(
+        eq(storageCleanupBatches.id, batch.id),
+        eq(storageCleanupBatches.status, "pending"),
+        eq(storageCleanupBatches.expectedCount, batch.expectedCount),
+      ));
+    if (affectedRows(removedBatch) !== 1) {
+      throw new Error("Storage-cleanup reservation batch changed");
+    }
+    return;
+  }
+  const updated = await tx
+    .update(storageCleanupBatches)
+    .set({ expectedCount: remaining })
+    .where(and(
+      eq(storageCleanupBatches.id, batch.id),
+      eq(storageCleanupBatches.status, "pending"),
+      eq(storageCleanupBatches.expectedCount, batch.expectedCount),
+    ));
+  if (affectedRows(updated) !== 1) {
+    throw new Error("Storage-cleanup reservation count changed");
+  }
+}
+
+export async function releaseStorageCleanupReservation(input: {
+  batchId: string;
+  userId: number;
+  operationId: string;
+  kind: "candidate_cleanup";
+  storageKey: string;
+  storageBackend: "public_r2" | "private_evidence_r2";
+}): Promise<void> {
+  await withTransaction((tx) =>
+    consumeStorageCleanupReservationsIn(tx, {
+      batchId: input.batchId,
+      userId: input.userId,
+      operationId: input.operationId,
+      kind: input.kind,
+      storageItems: [{
+        storageKey: input.storageKey,
+        storageBackend: input.storageBackend,
+      }],
+    })
+  );
+}
+
 export async function getStorageCleanupBatchByOperation(
   userId: number,
   operationId: string,

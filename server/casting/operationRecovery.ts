@@ -4,6 +4,8 @@ import {
   generationOperations,
   generations,
   modelAssets,
+  modelPackageSnapshots,
+  modelPackageSnapshotSlots,
   models,
   type Generation,
   type GenerationOperation,
@@ -21,11 +23,15 @@ import {
 import { adjudicateStaleInkEvidenceOperation } from "../db/inkAddRecovery";
 import { createModuleLogger } from "../logging/logger";
 import { recordRefund } from "./atomicCredits";
+import { slotCost } from "./packagePricing";
 import {
   assertGenerationOperationKind,
+  assertGenerationOperationProgress,
   type GenerationOperationKind,
   type PublicOperationResult,
 } from "./operationContract";
+import { isCanonicalViewType } from "../../shared/exportViews";
+import type { CanonicalViewAngle } from "../../shared/boardTypes";
 
 const log = createModuleLogger("casting/operationRecovery");
 const STALE_CLAIM_MS = 15 * 60 * 1000;
@@ -57,7 +63,7 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   evidence_candidate_accept: "not_reconstructable",
   evidence_candidate_cancel: "not_reconstructable",
   evidence_fork_copy: "not_reconstructable",
-  evidence_package_sync: "not_reconstructable",
+  evidence_package_sync: "refresh",
   evidence_mint: "not_reconstructable",
   "casting.refresh": "refresh",
   "casting.restore": "not_reconstructable",
@@ -74,7 +80,6 @@ type StaleRecoveryStrategy =
   | "standard"
   | "ink_evidence"
   | "evidence_fork"
-  | "pending_evidence_package_sync"
   | "pending_evidence_mint";
 
 const STALE_RECOVERY_BY_KIND: Readonly<
@@ -94,10 +99,9 @@ const STALE_RECOVERY_BY_KIND: Readonly<
   evidence_candidate_accept: "ink_evidence",
   evidence_candidate_cancel: "ink_evidence",
   evidence_fork_copy: "evidence_fork",
-  // E1 declares these durable kinds before either executor is routed. A row
-  // appearing early is impossible through reviewed code and must never fall
-  // into generic recovery by accident.
-  evidence_package_sync: "pending_evidence_package_sync",
+  // E2 owns package-sync recovery below. Evidence mint remains deliberately
+  // sealed until E3 installs its separate zero-generation adjudicator.
+  evidence_package_sync: "standard",
   evidence_mint: "pending_evidence_mint",
   "casting.refresh": "standard",
   "casting.restore": "standard",
@@ -200,10 +204,17 @@ function refundReferenceFor(referenceId: string): string {
   return normalizeCreditReferenceId(`refund:${referenceId}`);
 }
 
+function viewRefundReference(
+  operation: GenerationOperation,
+  angle: CanonicalViewAngle,
+): string {
+  return refundReferenceFor(`${operation.chargeReferenceId!}:slot:${angle}`);
+}
+
 function childRefundReference(operation: GenerationOperation, child: Generation): string {
   const charge = operation.chargeReferenceId!;
   if (child.stepKey?.startsWith("view:") && child.viewAngle) {
-    return refundReferenceFor(`${charge}:slot:${child.viewAngle}`);
+    return viewRefundReference(operation, child.viewAngle as CanonicalViewAngle);
   }
   if (child.stepKey?.startsWith("variation:")) {
     return refundReferenceFor(`${charge}:candidate:${child.stepKey.slice("variation:".length)}`);
@@ -316,6 +327,248 @@ async function claimRecoveryAttempt(operation: GenerationOperation, now: Date): 
   return (Array.isArray(affected) ? affected[0]?.affectedRows : affected.affectedRows) === 1;
 }
 
+type EvidencePackageRecovery =
+  | { type: "not_committed" }
+  | { type: "durable_success" }
+  | {
+      type: "terminal_failure";
+      chargedCredits: number;
+      refundedCredits: number;
+    }
+  | {
+      type: "recovery_required";
+      chargedCredits: number;
+      refundedCredits: number;
+    };
+
+export async function recoverEvidencePackageSyncOperation(
+  operation: GenerationOperation,
+): Promise<EvidencePackageRecovery> {
+  if (operation.kind !== "evidence_package_sync" || !operation.modelId) {
+    return { type: "not_committed" };
+  }
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const chargeRows = operation.chargeReferenceId
+    ? await db.select().from(creditTransactions).where(and(
+        eq(creditTransactions.userId, operation.userId),
+        eq(creditTransactions.referenceId, operation.chargeReferenceId),
+      ))
+    : [];
+  const charge = chargeRows[0];
+  const chargedCredits =
+    charge?.type === "generation" && charge.amount < 0
+      ? Math.abs(charge.amount)
+      : 0;
+  const snapshots = await db
+    .select()
+    .from(modelPackageSnapshots)
+    .where(and(
+      eq(modelPackageSnapshots.modelId, operation.modelId),
+      eq(modelPackageSnapshots.createdByOperationId, operation.id),
+    ));
+  if (snapshots.length === 0 && chargeRows.length === 0) {
+    return { type: "not_committed" };
+  }
+  try {
+    assertGenerationOperationProgress(operation.progress);
+  } catch {
+    return {
+      type: "recovery_required",
+      chargedCredits,
+      refundedCredits: 0,
+    };
+  }
+  const requestedAngles = operation.progress.steps.flatMap((step) =>
+    step.stepKey === `view:${step.viewAngle}`
+    && typeof step.viewAngle === "string"
+    && isCanonicalViewType(step.viewAngle)
+      ? [step.viewAngle]
+      : []
+  );
+  const uniqueAngles = new Set(requestedAngles);
+  const plannedFromSteps = requestedAngles.reduce((sum, angle) => {
+    try {
+      return sum + slotCost(angle);
+    } catch {
+      return Number.NaN;
+    }
+  }, 0);
+  if (
+    requestedAngles.length === 0
+    || uniqueAngles.size !== requestedAngles.length
+    || plannedFromSteps !== operation.plannedCredits
+  ) {
+    return {
+      type: "recovery_required",
+      chargedCredits: operation.chargedCredits,
+      refundedCredits: operation.refundedCredits,
+    };
+  }
+  const expectedRefunds = new Map(
+    requestedAngles.map((angle) => [
+      viewRefundReference(operation, angle),
+      slotCost(angle),
+    ]),
+  );
+  const refundRows = expectedRefunds.size > 0
+    ? await db.select().from(creditTransactions).where(and(
+        eq(creditTransactions.userId, operation.userId),
+        inArray(creditTransactions.referenceId, Array.from(expectedRefunds.keys())),
+      ))
+    : [];
+  const refundLedgerInvalid = refundRows.some((row) =>
+    row.referenceId === null
+    || row.type !== "refund"
+    || row.amount !== expectedRefunds.get(row.referenceId)
+  ) || new Set(refundRows.map((row) => row.referenceId)).size !== refundRows.length;
+  let refundedCredits = refundRows.reduce((sum, row) => sum + row.amount, 0);
+  const accountingInvalid =
+    chargeRows.length !== 1
+    || chargedCredits !== operation.plannedCredits
+    || refundLedgerInvalid
+    || refundedCredits > chargedCredits;
+  if (accountingInvalid || snapshots.length > 1) {
+    return {
+      type: "recovery_required",
+      chargedCredits,
+      refundedCredits,
+    };
+  }
+  const ensureAngleRefund = async (
+    angle: CanonicalViewAngle,
+  ): Promise<boolean> => {
+    const amount = slotCost(angle);
+    const result = await addCredits(
+      operation.userId,
+      amount,
+      "refund",
+      "Recovery refund: evidence package view did not settle",
+      viewRefundReference(operation, angle),
+    );
+    return result.success;
+  };
+  if (snapshots.length === 0) {
+    for (const angle of requestedAngles) {
+      if (!await ensureAngleRefund(angle)) {
+        return {
+          type: "recovery_required",
+          chargedCredits,
+          refundedCredits,
+        };
+      }
+    }
+    refundedCredits = chargedCredits;
+    await finalizeGenerationOperationFailure({
+      userId: operation.userId,
+      operationId: operation.id,
+      errorCode: "INTERNAL_SERVER_ERROR",
+      publicMessage:
+        "The view update stopped before it was saved. The charged credits were refunded.",
+      chargedCredits,
+      refundedCredits,
+    });
+    return { type: "terminal_failure", chargedCredits, refundedCredits };
+  }
+  const snapshot = snapshots[0];
+  const [model] = await db
+    .select()
+    .from(models)
+    .where(and(
+      eq(models.id, operation.modelId),
+      eq(models.userId, operation.userId),
+    ))
+    .limit(1);
+  if (!model || model.currentPackageSnapshotId !== snapshot.id) {
+    return { type: "recovery_required", chargedCredits, refundedCredits };
+  }
+  const slots = await db
+    .select()
+    .from(modelPackageSnapshotSlots)
+    .where(eq(modelPackageSnapshotSlots.packageSnapshotId, snapshot.id));
+  const changedSlots = slots.filter(
+    (slot) =>
+      uniqueAngles.has(slot.viewAngle)
+      && slot.compatibility === "current"
+      && slot.selectionReason !== "carried",
+  );
+  if (changedSlots.length === 0) {
+    return { type: "recovery_required", chargedCredits, refundedCredits };
+  }
+  const changedAngles = new Set(changedSlots.map((slot) => slot.viewAngle));
+  if (changedAngles.size !== changedSlots.length) {
+    return { type: "recovery_required", chargedCredits, refundedCredits };
+  }
+  const selectedIds = changedSlots.map((slot) => slot.selectedAssetId);
+  const assets = await db
+    .select()
+    .from(modelAssets)
+    .where(and(
+      eq(modelAssets.modelId, operation.modelId),
+      inArray(modelAssets.id, selectedIds),
+    ));
+  if (assets.length !== selectedIds.length) {
+    return { type: "recovery_required", chargedCredits, refundedCredits };
+  }
+  const assetById = new Map(assets.map((asset) => [asset.id, asset]));
+  const changedAssetInvalid = changedSlots.some((slot) => {
+    const asset = assetById.get(slot.selectedAssetId);
+    const provenance = asset?.provenance as {
+      source?: unknown;
+      acceptedFeatureVersionId?: unknown;
+    } | null;
+    return (
+      !asset?.storageUrl?.trim()
+      || asset.viewType !== slot.viewAngle
+      || asset.pointsCost !== slotCost(slot.viewAngle)
+      || provenance?.source !== "evidence_package_sync"
+      || typeof provenance.acceptedFeatureVersionId !== "string"
+      || provenance.acceptedFeatureVersionId.length === 0
+    );
+  });
+  const changedRefundReferences = new Set(
+    Array.from(changedAngles, (angle) =>
+      viewRefundReference(operation, angle as CanonicalViewAngle)
+    ),
+  );
+  if (
+    changedAssetInvalid
+    || refundRows.some((row) =>
+      row.referenceId !== null
+      && changedRefundReferences.has(row.referenceId)
+    )
+  ) {
+    return { type: "recovery_required", chargedCredits, refundedCredits };
+  }
+  const failedAngles = requestedAngles.filter((angle) => !changedAngles.has(angle));
+  for (const angle of failedAngles) {
+    if (!await ensureAngleRefund(angle)) {
+      return { type: "recovery_required", chargedCredits, refundedCredits };
+    }
+  }
+  refundedCredits = failedAngles.reduce(
+    (sum, angle) => sum + slotCost(angle),
+    0,
+  );
+  const refreshed = changedSlots.map((slot) => {
+    const asset = assetById.get(slot.selectedAssetId);
+    if (!asset?.storageUrl) throw new Error("Recovered package asset is invalid");
+    return {
+      angle: slot.viewAngle,
+      assetId: asset.id,
+    };
+  });
+  await finalizeGenerationOperationSuccess({
+    userId: operation.userId,
+    operationId: operation.id,
+    result: { refreshed, failedAngles },
+    chargedCredits,
+    refundedCredits,
+    terminalStatus: failedAngles.length ? "partial" : "succeeded",
+  });
+  return { type: "durable_success" };
+}
+
 export async function adjudicateStaleGenerationOperation(
   operation: GenerationOperation,
   now = new Date(),
@@ -326,10 +579,23 @@ export async function adjudicateStaleGenerationOperation(
   if (!db) throw new Error("Database not available");
   assertGenerationOperationKind(operation.kind);
   const recoveryStrategy = STALE_RECOVERY_BY_KIND[operation.kind];
-  if (
-    recoveryStrategy === "pending_evidence_package_sync"
-    || recoveryStrategy === "pending_evidence_mint"
-  ) {
+  if (operation.kind === "evidence_package_sync") {
+    const recovered = await recoverEvidencePackageSyncOperation(operation);
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "terminal_failure") return "paid_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage:
+          `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+        chargedCredits: recovered.chargedCredits,
+        refundedCredits: recovered.refundedCredits,
+      });
+      return "recovery_required";
+    }
+  }
+  if (recoveryStrategy === "pending_evidence_mint") {
     await markGenerationOperationRecoveryRequired({
       userId: operation.userId,
       operationId: operation.id,

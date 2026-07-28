@@ -43,6 +43,9 @@ vi.mock("./db", async (importOriginal) => {
     mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
     bindGenerationOperationModel: vi.fn().mockResolvedValue(undefined),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
+    handoffGenerationOperationToRecovery: vi.fn().mockResolvedValue(undefined),
+    getGenerationOperationKindByRequest: vi.fn().mockResolvedValue(null),
+    updateGenerationOperationProgress: vi.fn().mockResolvedValue(undefined),
     assertGenerationOperationSnapshotHead: vi.fn().mockResolvedValue(undefined),
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 501 }),
     markModelAssetsStale: vi.fn().mockResolvedValue({ success: true }),
@@ -133,6 +136,48 @@ vi.mock("./casting/snapshotReadScope", async (importOriginal) => {
 vi.mock("./casting/effectiveCastRead", () => ({
   resolveEffectiveCastStateForRead: vi.fn(),
 }));
+vi.mock("./casting/evidence/evidencePackageScope", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("./casting/evidence/evidencePackageScope")
+  >();
+  return {
+    ...actual,
+    captureEvidencePackageEnabled: vi.fn().mockReturnValue(false),
+  };
+});
+vi.mock("./casting/evidence/evidenceComposerScope", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("./casting/evidence/evidenceComposerScope")
+  >();
+  return {
+    ...actual,
+    captureEvidenceComposerEnabled: vi.fn().mockReturnValue(false),
+  };
+});
+vi.mock("./casting/evidence/evidencePackageAuthority", () => ({
+  classifyEvidencePackageRouteAuthority: vi.fn(),
+}));
+vi.mock("./casting/evidence/evidencePackageExecution", () => {
+  class EvidencePackageSettlementUncertainError extends Error {
+    constructor(readonly cause: unknown) {
+      super("Evidence package settlement outcome is uncertain");
+      this.name = "EvidencePackageSettlementUncertainError";
+    }
+  }
+  return {
+    EvidencePackageSettlementUncertainError,
+    executeEvidencePackageSync: vi.fn(),
+  };
+});
+vi.mock("./casting/evidence/evidenceDeliveryRuntime", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("./casting/evidence/evidenceDeliveryRuntime")
+  >();
+  return {
+    ...actual,
+    getEvidenceDeliveryAdapter: vi.fn(),
+  };
+});
 vi.mock("./casting/snapshotTransitions", () => ({
   commitHeadshotSnapshot: vi.fn(async (input: { modelId: number }) => {
     const db = await import("./db");
@@ -214,6 +259,9 @@ import {
   createModelAsset,
   updateModel,
   markGenerationOperationRunning,
+  handoffGenerationOperationToRecovery,
+  getGenerationOperationKindByRequest,
+  updateGenerationOperationProgress,
   assertGenerationOperationSnapshotHead,
   mintModelAtomically,
   deductPoints,
@@ -237,6 +285,14 @@ import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
+import { captureEvidencePackageEnabled } from "./casting/evidence/evidencePackageScope";
+import { captureEvidenceComposerEnabled } from "./casting/evidence/evidenceComposerScope";
+import { classifyEvidencePackageRouteAuthority } from "./casting/evidence/evidencePackageAuthority";
+import {
+  EvidencePackageSettlementUncertainError,
+  executeEvidencePackageSync,
+} from "./casting/evidence/evidencePackageExecution";
+import { getEvidenceDeliveryAdapter } from "./casting/evidence/evidenceDeliveryRuntime";
 import {
   commitDocumentCompactionSnapshot,
   commitGeneratedPackageSnapshot,
@@ -245,7 +301,10 @@ import {
   commitRestoredSlotSnapshot,
 } from "./casting/snapshotTransitions";
 import { storageDelete } from "./storage";
-import { beginDirectOperation } from "./casting/directOperation";
+import {
+  beginDirectOperation,
+  completeDirectOperationFailure,
+} from "./casting/directOperation";
 import { appRouter as productionRouter } from "./routers";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -303,8 +362,18 @@ beforeEach(() => {
     operationId: REQUEST_ID,
     chargeReferenceId: `op:${REQUEST_ID}:charge`,
   });
+  vi.mocked(handoffGenerationOperationToRecovery)
+    .mockReset()
+    .mockResolvedValue(undefined);
+  vi.mocked(getGenerationOperationKindByRequest)
+    .mockReset()
+    .mockResolvedValue(null);
+  vi.mocked(updateGenerationOperationProgress)
+    .mockReset()
+    .mockResolvedValue(undefined);
   vi.mocked(assertGenerationOperationSnapshotHead).mockClear().mockResolvedValue(undefined);
   vi.mocked(beginDirectOperation).mockReset().mockResolvedValue({ type: "execute", operationId: REQUEST_ID });
+  vi.mocked(completeDirectOperationFailure).mockClear();
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
@@ -320,6 +389,11 @@ beforeEach(() => {
   vi.mocked(bootstrapModelSnapshot).mockClear();
   vi.mocked(captureSnapshotReadMode).mockReset().mockReturnValue("r6");
   vi.mocked(resolveEffectiveCastStateForRead).mockReset();
+  vi.mocked(captureEvidencePackageEnabled).mockReset().mockReturnValue(false);
+  vi.mocked(captureEvidenceComposerEnabled).mockReset().mockReturnValue(false);
+  vi.mocked(classifyEvidencePackageRouteAuthority).mockReset();
+  vi.mocked(executeEvidencePackageSync).mockReset();
+  vi.mocked(getEvidenceDeliveryAdapter).mockReset().mockReturnValue(null);
   vi.mocked(commitGeneratedPackageSnapshot).mockClear();
   vi.mocked(commitHeadshotSnapshot).mockClear();
   vi.mocked(commitDocumentCompactionSnapshot).mockClear();
@@ -1232,6 +1306,29 @@ describe("generation.refreshSlots snapshot adoption", () => {
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
   });
 
+  it("keeps a stored ordinary refresh ordinary even when evidence routing is enabled", async () => {
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(getGenerationOperationKindByRequest)
+      .mockResolvedValue("casting.refresh");
+    vi.mocked(beginDirectOperation).mockResolvedValueOnce({
+      type: "replay",
+      result: { refreshed: [], failedAngles: [] },
+    } as never);
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["threeQuarter"],
+    })).resolves.toMatchObject({ refreshed: [], failed: [] });
+
+    expect(classifyEvidencePackageRouteAuthority).not.toHaveBeenCalled();
+    expect(beginDirectOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "casting.refresh",
+    }));
+    expect(executeEvidencePackageSync).not.toHaveBeenCalled();
+  });
+
   it("snapshot execution keeps the selected slot, immutable identity, and anchor through generation", async () => {
     const snapshotAnchor = asset({
       id: 20,
@@ -1389,6 +1486,153 @@ describe("generation.refreshSlots snapshot adoption", () => {
     expect(deductPoints).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("routes a supported founder request through the separately gated evidence executor", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(captureEvidenceComposerEnabled).mockReturnValue(true);
+    vi.mocked(classifyEvidencePackageRouteAuthority).mockResolvedValue({
+      type: "supported",
+      plan: {
+        modelId: 7,
+        supported: true,
+        actionableAngles: ["sideFull"],
+        totalCost: 300,
+        slots: [],
+        mint: { ready: false, blockers: ["missing_slot"] },
+      },
+    } as never);
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue({
+      status: "current",
+    } as never);
+    vi.mocked(getEvidenceDeliveryAdapter).mockReturnValue({} as never);
+    vi.mocked(executeEvidencePackageSync).mockResolvedValue({
+      refreshed: [{
+        angle: "sideFull",
+        imageUrl: "https://r2/evidence-walk.png",
+        assetId: 901,
+      }],
+      failed: [],
+    });
+    const caller = productionRouter.createCaller(authCtx());
+
+    const result = await caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["sideFull"],
+    });
+
+    expect(result.refreshed).toEqual([expect.objectContaining({
+      angle: "sideFull",
+      assetId: 901,
+    })]);
+    expect(beginDirectOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "evidence_package_sync",
+    }));
+    expect(updateGenerationOperationProgress).toHaveBeenCalledWith({
+      userId: 1,
+      operationId: REQUEST_ID,
+      phase: "refreshing",
+      progress: {
+        total: 1,
+        completed: 0,
+        failed: 0,
+        steps: [{
+          stepKey: "view:sideFull",
+          viewAngle: "sideFull",
+          status: "pending",
+        }],
+      },
+    });
+    expect(executeEvidencePackageSync).toHaveBeenCalledTimes(1);
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+  });
+
+  it("leaves an uncertain evidence settlement non-terminal for stale recovery", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(captureEvidenceComposerEnabled).mockReturnValue(true);
+    vi.mocked(classifyEvidencePackageRouteAuthority).mockResolvedValue({
+      type: "supported",
+      plan: {
+        modelId: 7,
+        supported: true,
+        actionableAngles: ["sideFull"],
+        totalCost: 300,
+        slots: [],
+        mint: { ready: false, blockers: ["missing_slot"] },
+      },
+    } as never);
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue({
+      status: "current",
+    } as never);
+    vi.mocked(getEvidenceDeliveryAdapter).mockReturnValue({} as never);
+    vi.mocked(executeEvidencePackageSync).mockRejectedValue(
+      new EvidencePackageSettlementUncertainError(
+        new Error("connection lost during commit"),
+      ),
+    );
+    const caller = productionRouter.createCaller(authCtx());
+
+    const refusal = await caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["sideFull"],
+    }).catch((error: unknown) => error);
+    expect(refusal).toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: expect.stringContaining(REQUEST_ID),
+    });
+    expect((refusal as Error).message).not.toContain(
+      "connection lost during commit",
+    );
+
+    expect(completeDirectOperationFailure).not.toHaveBeenCalled();
+    expect(handoffGenerationOperationToRecovery).toHaveBeenCalledWith({
+      userId: 1,
+      operationId: REQUEST_ID,
+    });
+  });
+
+  it("refuses unsupported evidence state before claiming, charging, or provider work", async () => {
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(classifyEvidencePackageRouteAuthority).mockResolvedValue({
+      type: "unsupported",
+    } as never);
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["sideFull"],
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(beginDirectOperation).not.toHaveBeenCalled();
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(executeEvidencePackageSync).not.toHaveBeenCalled();
+  });
+
+  it("does not resume a stored evidence executor while its package scope is off", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(getGenerationOperationKindByRequest)
+      .mockResolvedValue("evidence_package_sync");
+    const caller = productionRouter.createCaller(authCtx());
+
+    await expect(caller.generation.refreshSlots({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angles: ["sideFull"],
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(beginDirectOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "evidence_package_sync",
+    }));
+    expect(classifyEvidencePackageRouteAuthority).not.toHaveBeenCalled();
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(executeEvidencePackageSync).not.toHaveBeenCalled();
   });
 });
 

@@ -14,6 +14,10 @@ import {
   INK_ADD_PRODUCT_READY,
   validateEvidenceComposerEnvironment,
 } from "../casting/evidence/evidenceComposerScope";
+import {
+  EVIDENCE_PACKAGE_SCOPE_ENV,
+  validateEvidencePackageEnvironment,
+} from "../casting/evidence/evidencePackageScope";
 
 /**
  * Vars the server cannot run without. Each entry explains what breaks when
@@ -81,6 +85,10 @@ export function validateEnv(): void {
     ingestScope: process.env[EVIDENCE_INGEST_SCOPE_ENV],
     adapterConfigured: privateEvidenceAdapterConfigured(),
     productReady: EVIDENCE_PRODUCT_DELIVERY_READY && INK_ADD_PRODUCT_READY,
+  });
+  validateEvidencePackageEnvironment({
+    scope: process.env[EVIDENCE_PACKAGE_SCOPE_ENV],
+    composerScope: process.env[EVIDENCE_COMPOSER_SCOPE_ENV],
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

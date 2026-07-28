@@ -108,6 +108,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/evidence/referencePlateIngestion.ts",
       "server/casting/modelReadProjections.ts",
+      "server/casting/operationRecovery.ts",
       "server/casting/snapshotBootstrap.ts",
       "server/casting/snapshotCohortInventory.ts",
       "server/casting/finalCastDeletion.ts",
@@ -135,6 +136,16 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     const shadowReader = await readFile(new URL("./casting/snapshotShadow.ts", import.meta.url), "utf8");
     expect(shadowReader).not.toMatch(/\btx\s*\.\s*(insert|update|delete)\s*\(/);
     expect(shadowReader).not.toMatch(/deductPoints|withAtomicCredits|storage(Put|Delete)|Gemini|generateContent/);
+    const packageRecovery = await readFile(
+      new URL("./casting/operationRecovery.ts", import.meta.url),
+      "utf8",
+    );
+    expect(packageRecovery).toContain(
+      "export async function recoverEvidencePackageSyncOperation",
+    );
+    expect(packageRecovery).toContain(
+      'operation.kind !== "evidence_package_sync"',
+    );
   });
 
   it("keeps the B1 effective resolver private, read-only and scope-server-owned", async () => {
@@ -158,6 +169,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     }
     expect(effectiveCallers).toEqual([
       "server/casting/effectiveCastRead.ts",
+      "server/casting/evidence/evidencePackageAuthority.ts",
       "server/casting/mintPackage.ts",
       "server/casting/modelReadProjections.ts",
       "server/casting/refreshSlots.ts",
@@ -298,6 +310,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       if ((await readFile(file, "utf8")).includes("snapshotShadow")) serverCallers.push(normalized);
     }
     expect(serverCallers).toEqual([
+      "server/casting/evidence/evidencePackageAuthority.ts",
       "server/casting/snapshotConsumerShadow.ts",
       "server/casting/snapshotConvergence.ts",
       "server/casting/snapshotPinConvergence.ts",
@@ -627,6 +640,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       if (content.includes("snapshotTransitions")) callers.push(file.replaceAll("\\", "/"));
     }
     expect(callers).toEqual([
+      "server/casting/evidence/evidencePackageExecution.ts",
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/mintPackage.ts",
       "server/casting/refreshSlots.ts",

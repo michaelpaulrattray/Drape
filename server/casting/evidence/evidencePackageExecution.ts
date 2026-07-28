@@ -1,0 +1,730 @@
+import { createHash, randomUUID } from "node:crypto";
+import type { GenerateContentConfig } from "@google/genai";
+import { TRPCError } from "@trpc/server";
+import {
+  createGeneration,
+  createModelAsset,
+  deductPoints,
+  updateGeneration,
+} from "../../db";
+import {
+  recordRefund,
+  type RefundOutcome,
+} from "../atomicCredits";
+import {
+  diagnoseResponse,
+  extractImageFromResponse,
+  getAiClient,
+  safeResponseText,
+  SAFETY_SETTINGS,
+  withTimeout,
+} from "../geminiClient";
+import { AspectRatio } from "../geminiTypes";
+import { withImageQueue, withTextQueue } from "../geminiQueue";
+import { slotCost } from "../packagePricing";
+import {
+  commitEvidencePackageSyncSnapshot,
+  type EvidencePackageSyncCandidate,
+} from "../snapshotTransitions";
+import { fetchTrustedImage } from "../../security/trustedImageFetch";
+import { storageDelete, storagePut } from "../../storage";
+import {
+  releaseStorageCleanupReservation,
+  reserveStorageCleanupItemForOperation,
+} from "../../db/storageCleanup";
+import { createModuleLogger } from "../../logging/logger";
+import {
+  canonicalizeEvidenceDataUrl,
+  MAX_EVIDENCE_CANONICAL_BYTES,
+  type CanonicalEvidenceImage,
+} from "./imageValidation";
+import {
+  type CanonicalEvidenceRead,
+  type PrivateEvidenceStorageAdapter,
+} from "./evidenceDelivery";
+import {
+  buildEvidenceContextCrop,
+  buildEvidenceGuidedTarget,
+  buildEvidencePackageComposerRequest,
+  type EvidencePackageComposerRequest,
+} from "./evidencePackageComposition";
+import {
+  assessEvidencePackageProbe,
+  buildEvidencePackageProbeRequest,
+  parseEvidencePackageProbeResponse,
+  type EvidencePackageProbeFailure,
+  type EvidencePackageProbeRequest,
+} from "./evidencePackageProbe";
+import {
+  loadLockedEvidencePackageAuthority,
+  type EvidencePackagePrivateAuthority,
+  type EvidencePackagePrivateSlotAuthority,
+} from "./evidencePackageAuthority";
+import {
+  INK_ADD_IMAGE_ENGINE,
+  type InkAddSide,
+} from "./composer/inkAddRecipe";
+import type { ComposerImage } from "./composer/inkComposer";
+import { extractInkProviderTelemetry } from "./composer/inkProviderTelemetry";
+
+const log = createModuleLogger("casting/evidence/evidencePackageExecution");
+const PACKAGE_FAILURE = "The view could not be updated from its saved evidence.";
+
+export interface EvidencePackageSyncResult {
+  refreshed: Array<{
+    angle: EvidencePackagePrivateSlotAuthority["angle"];
+    imageUrl: string;
+    assetId: number;
+  }>;
+  failed: Array<{
+    angle: EvidencePackagePrivateSlotAuthority["angle"];
+    label: string;
+    reason: string;
+    refunded: number;
+    refundReference: string;
+    markerPersisted: boolean;
+  }>;
+}
+
+/**
+ * Settlement may have committed even though the database connection did not
+ * acknowledge it. The route must leave the receipt running for the stale
+ * recovery adjudicator; it must not delete candidate bytes, refund, or write a
+ * terminal failure speculatively.
+ */
+export class EvidencePackageSettlementUncertainError extends Error {
+  readonly cause: unknown;
+
+  constructor(cause: unknown) {
+    super("Evidence package settlement outcome is uncertain");
+    this.name = "EvidencePackageSettlementUncertainError";
+    this.cause = cause;
+  }
+}
+
+interface GeneratedCandidate {
+  candidate: EvidencePackageSyncCandidate;
+  generationId: number;
+}
+
+export interface EvidencePackageExecutionDependencies {
+  delivery: PrivateEvidenceStorageAdapter;
+  loadAuthority?: typeof loadLockedEvidencePackageAuthority;
+  fetchImage?: typeof fetchTrustedImage;
+  generate?: (request: EvidencePackageComposerRequest) => Promise<string>;
+  probe?: (request: EvidencePackageProbeRequest) => Promise<unknown>;
+  canonicalize?: typeof canonicalizeEvidenceDataUrl;
+  putPublic?: typeof storagePut;
+  deletePublic?: typeof storageDelete;
+  createAudit?: typeof createGeneration;
+  updateAudit?: typeof updateGeneration;
+  createFailureMarker?: typeof createModelAsset;
+  deduct?: typeof deductPoints;
+  refund?: typeof recordRefund;
+  commit?: typeof commitEvidencePackageSyncSnapshot;
+  reserveCleanup?: (input: {
+    userId: number;
+    operationId: string;
+    storageKey: string;
+  }) => Promise<string>;
+  releaseCleanup?: (input: {
+    batchId: string;
+    userId: number;
+    operationId: string;
+    storageKey: string;
+  }) => Promise<void>;
+  generateId?: () => string;
+}
+
+function composerImage(image: {
+  bytes: Uint8Array;
+  mime: string;
+}): ComposerImage {
+  if (
+    image.mime !== "image/jpeg"
+    && image.mime !== "image/png"
+    && image.mime !== "image/webp"
+  ) {
+    throw new TypeError("Evidence package image is unavailable");
+  }
+  return { bytes: image.bytes, mime: image.mime };
+}
+
+async function readPrivateExact(
+  adapter: PrivateEvidenceStorageAdapter,
+  plate: EvidencePackagePrivateAuthority["acceptedPlate"],
+): Promise<ComposerImage> {
+  if (
+    !Number.isSafeInteger(plate.byteSize)
+    || plate.byteSize <= 0
+    || plate.byteSize > MAX_EVIDENCE_CANONICAL_BYTES
+  ) {
+    throw new Error("Private evidence size is invalid");
+  }
+  const object: CanonicalEvidenceRead = await adapter.readCanonical({
+    key: plate.storageKey,
+    expectedByteSize: plate.byteSize,
+  });
+  const chunks: Buffer[] = [];
+  let total = 0;
+  try {
+    for await (const chunk of object.body) {
+      total += chunk.byteLength;
+      if (total > plate.byteSize) {
+        throw new Error("Private evidence overflow");
+      }
+      chunks.push(Buffer.from(chunk));
+    }
+  } finally {
+    object.abort();
+  }
+  if (total !== plate.byteSize) {
+    throw new Error("Private evidence size mismatch");
+  }
+  const bytes = Buffer.concat(chunks, total);
+  if (createHash("sha256").update(bytes).digest("hex") !== plate.contentHash) {
+    throw new Error("Private evidence hash mismatch");
+  }
+  return composerImage({ bytes, mime: plate.mime });
+}
+
+async function defaultGenerate(
+  request: EvidencePackageComposerRequest,
+): Promise<string> {
+  return withImageQueue(async () => {
+    const response = await withTimeout(
+      getAiClient().models.generateContent({
+        model: request.model,
+        contents: {
+          parts: [
+            ...request.images.map((image) => ({ inlineData: image.inlineData })),
+            { text: request.prompt },
+          ],
+        },
+        config: {
+          responseModalities: [...request.responseModalities],
+          imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
+          safetySettings: SAFETY_SETTINGS,
+        },
+      }),
+      90_000,
+      "EvidencePackageSync",
+    );
+    const diagnosis = diagnoseResponse(response);
+    if (diagnosis) throw new Error("Evidence package provider refused");
+    const image = extractImageFromResponse(response);
+    if (!image) throw new Error("Evidence package provider returned no image");
+    return image;
+  }, "evidencePackageSync");
+}
+
+function probeProviderSchema(
+  request: EvidencePackageProbeRequest,
+): GenerateContentConfig["responseSchema"] {
+  const enumValues: Record<string, readonly string[]> = {
+    observedVisibleAnatomicalSide: ["left", "right", "none", "unknown"],
+    observedTravelDirection: ["frame_left", "frame_right", "stationary", "unknown"],
+    featureRegionVisibility: ["visible", "hidden", "outside_frame", "unknown"],
+  };
+  const properties = Object.fromEntries(
+    Object.keys(request.responseSchema).map((key) => {
+      if (key === "confidence") return [key, { type: "INTEGER" }];
+      if (enumValues[key]) {
+        return [key, { type: "STRING", enum: [...enumValues[key]] }];
+      }
+      return [key, { type: "BOOLEAN" }];
+    }),
+  );
+  return {
+    type: "OBJECT",
+    properties,
+    required: Object.keys(properties),
+    additionalProperties: false,
+  } as GenerateContentConfig["responseSchema"];
+}
+
+async function defaultProbe(
+  request: EvidencePackageProbeRequest,
+): Promise<unknown> {
+  return withTextQueue(async () => {
+    try {
+      const response = await withTimeout(
+        getAiClient().models.generateContent({
+          model: request.model,
+          contents: {
+            parts: [
+              ...request.images.map((image) => ({ inlineData: image.inlineData })),
+              { text: request.prompt },
+            ],
+          },
+          config: {
+            responseMimeType: request.responseMimeType,
+            responseSchema: probeProviderSchema(request),
+            thinkingConfig: {
+              thinkingBudget: request.thinkingBudget,
+              includeThoughts: request.includeThoughts,
+            },
+            maxOutputTokens: request.maxOutputTokens,
+            safetySettings: SAFETY_SETTINGS,
+          },
+        }),
+        20_000,
+        "EvidencePackageProbe",
+      );
+      const text = safeResponseText(response);
+      if (!text) throw new Error("Evidence package probe returned no result");
+      return text;
+    } catch (error) {
+      log.warn({
+        provider: extractInkProviderTelemetry({ error }),
+      }, "Evidence package probe failed");
+      throw error;
+    }
+  }, "evidencePackageProbe");
+}
+
+function retryDirectives(
+  failure: EvidencePackageProbeFailure,
+): readonly (
+  | "identity"
+  | "framing"
+  | "visible_side"
+  | "placement"
+  | "feature_match"
+  | "unexpected_feature"
+)[] | null {
+  switch (failure) {
+    case "probe_unknown":
+      return null;
+    case "low_confidence":
+      return ["identity", "framing", "feature_match"];
+    case "identity_mismatch":
+      return ["identity"];
+    case "framing_mismatch":
+    case "continuity_mismatch":
+      return ["framing"];
+    case "visible_side_mismatch":
+    case "travel_direction_mismatch":
+      return ["visible_side"];
+    case "feature_visibility_mismatch":
+    case "feature_placement_failed":
+      return ["placement"];
+    case "feature_match_failed":
+      return ["feature_match"];
+    case "unexpected_feature":
+      return ["unexpected_feature"];
+  }
+}
+
+async function deleteCandidate(
+  dependencies: EvidencePackageExecutionDependencies,
+  candidate: GeneratedCandidate,
+  input: { userId: number; operationId: string },
+): Promise<void> {
+  const deleted = await (dependencies.deletePublic ?? storageDelete)(
+    candidate.candidate.storageKey,
+  );
+  if (!deleted.success) {
+    log.warn({
+      operationId: input.operationId,
+      storageKeyOwned: true,
+      retryable: deleted.retryable,
+    }, "Evidence package candidate remains reserved for cleanup");
+    return;
+  }
+  await (
+    dependencies.releaseCleanup
+    ?? ((releaseInput) => releaseStorageCleanupReservation({
+      ...releaseInput,
+      kind: "candidate_cleanup",
+      storageBackend: "public_r2",
+    }))
+  )({
+    batchId: candidate.candidate.cleanupBatchId,
+    userId: input.userId,
+    operationId: input.operationId,
+    storageKey: candidate.candidate.storageKey,
+  });
+}
+
+async function reservePublicCleanup(input: {
+  userId: number;
+  operationId: string;
+  storageKey: string;
+}): Promise<string> {
+  return reserveStorageCleanupItemForOperation({
+    userId: input.userId,
+    operationId: input.operationId,
+    kind: "candidate_cleanup",
+    storageKey: input.storageKey,
+    storageBackend: "public_r2",
+  });
+}
+
+async function runCandidateAttempt(input: {
+  dependencies: EvidencePackageExecutionDependencies;
+  authority: EvidencePackagePrivateAuthority;
+  slot: EvidencePackagePrivateSlotAuthority;
+  references: {
+    anchor: ComposerImage;
+    originalTarget: ComposerImage;
+    guidedTarget: ComposerImage;
+    acceptedPlate: ComposerImage;
+    acceptedCrop: ComposerImage;
+  };
+  attemptNumber: 1 | 2;
+  retry?: ReturnType<typeof retryDirectives>;
+  operationId: string;
+}): Promise<
+  | { type: "passed"; generated: GeneratedCandidate }
+  | { type: "retry"; directives: NonNullable<ReturnType<typeof retryDirectives>> }
+  | { type: "failed" }
+> {
+  const { dependencies, authority, slot, references } = input;
+  const publicStorageKey = [
+    "evidence-package",
+    String(authority.model.userId),
+    String(authority.model.id),
+    slot.angle,
+    `${dependencies.generateId?.() ?? randomUUID()}.png`,
+  ].join("/");
+  const cleanupBatchId = await (
+    dependencies.reserveCleanup ?? reservePublicCleanup
+  )({
+    userId: authority.model.userId,
+    operationId: input.operationId,
+    storageKey: publicStorageKey,
+  });
+  const audit = await (dependencies.createAudit ?? createGeneration)({
+    userId: authority.model.userId,
+    modelId: authority.model.id,
+    operationId: input.operationId,
+    stepKey: `view:${slot.angle}`,
+    viewAngle: slot.angle,
+    type: "multiView",
+    status: "processing",
+    // One child row represents the terminal accounting truth for its attempt.
+    // An included first-attempt miss is later closed as non-failing; if the
+    // second attempt fails, that terminal row owns the one view refund.
+    pointsCost: slotCost(slot.angle),
+    metadata: {
+      source: "evidence_package_sync",
+      viewType: slot.angle,
+      attemptNumber: input.attemptNumber,
+      publicStorageKey,
+    },
+  });
+  if (!audit.success || !audit.generationId) {
+    throw new Error("Evidence package audit could not start");
+  }
+  let generated: GeneratedCandidate | null = null;
+  try {
+    const dataUrl = await (dependencies.generate ?? defaultGenerate)(
+      buildEvidencePackageComposerRequest({
+        identityText: authority.identity.identityText,
+        normalizedDescriptor: authority.graph.version.normalizedDescriptor,
+        featureSide: authority.graph.version.side as InkAddSide,
+        directive: slot.directive,
+        attemptNumber: input.attemptNumber,
+        identityAnchor: references.anchor,
+        guidedTarget: references.guidedTarget,
+        acceptedEvidenceCrop: references.acceptedCrop,
+        retryDirectives: input.retry ?? undefined,
+      }),
+    );
+    const canonical: CanonicalEvidenceImage = await (
+      dependencies.canonicalize ?? canonicalizeEvidenceDataUrl
+    )(dataUrl);
+    const uploaded = await (dependencies.putPublic ?? storagePut)(
+      publicStorageKey,
+      canonical.bytes,
+      canonical.mime,
+    );
+    const response = parseEvidencePackageProbeResponse(
+      await (dependencies.probe ?? defaultProbe)(
+        buildEvidencePackageProbeRequest({
+          directive: slot.directive,
+          identityAnchor: references.anchor,
+          originalTarget: references.originalTarget,
+          acceptedEvidence: references.acceptedCrop,
+          candidate: composerImage(canonical),
+        }),
+      ),
+    );
+    const assessment = assessEvidencePackageProbe({
+      directive: slot.directive,
+      response,
+    });
+    generated = {
+      generationId: audit.generationId,
+      candidate: {
+        angle: slot.angle,
+        storageUrl: uploaded.url,
+        storageKey: uploaded.key,
+        engine: INK_ADD_IMAGE_ENGINE,
+        pointsCost: slotCost(slot.angle),
+        sourceAssetId: slot.target.id,
+        featureVersionId: authority.graph.version.id,
+        requiredVisibleAnatomicalSide:
+          slot.directive.requiredVisibleAnatomicalSide,
+        observedVisibleAnatomicalSide:
+          assessment.outcome === "pass"
+            ? assessment.observedVisibleAnatomicalSide
+            : response.observedVisibleAnatomicalSide,
+        observedTravelDirection:
+          assessment.outcome === "pass"
+            ? assessment.observedTravelDirection
+            : response.observedTravelDirection,
+        cleanupBatchId,
+      },
+    };
+    if (assessment.outcome === "pass") return { type: "passed", generated };
+    await deleteCandidate(dependencies, generated, {
+      userId: authority.model.userId,
+      operationId: input.operationId,
+    });
+    generated = null;
+    const retry = input.attemptNumber === 1
+      ? retryDirectives(assessment.failure)
+      : null;
+    await (dependencies.updateAudit ?? updateGeneration)(audit.generationId, {
+      status: retry ? "completed" : "failed",
+      errorMessage: retry ? null : PACKAGE_FAILURE,
+      completedAt: new Date(),
+    });
+    return retry ? { type: "retry", directives: retry } : { type: "failed" };
+  } catch (error) {
+    if (generated) {
+      await deleteCandidate(dependencies, generated, {
+        userId: authority.model.userId,
+        operationId: input.operationId,
+      });
+    }
+    await (dependencies.updateAudit ?? updateGeneration)(audit.generationId, {
+      status: "failed",
+      errorMessage: PACKAGE_FAILURE,
+      completedAt: new Date(),
+    }).catch(() => undefined);
+    throw error;
+  }
+}
+
+async function loadSlotReferences(
+  dependencies: EvidencePackageExecutionDependencies,
+  authority: EvidencePackagePrivateAuthority,
+  slot: EvidencePackagePrivateSlotAuthority,
+): Promise<{
+  anchor: ComposerImage;
+  originalTarget: ComposerImage;
+  guidedTarget: ComposerImage;
+  acceptedPlate: ComposerImage;
+  acceptedCrop: ComposerImage;
+}> {
+  const fetchImage = dependencies.fetchImage ?? fetchTrustedImage;
+  const [anchor, target, acceptedPlate] = await Promise.all([
+    fetchImage(authority.identityAnchor.storageUrl),
+    fetchImage(slot.target.storageUrl),
+    readPrivateExact(dependencies.delivery, authority.acceptedPlate),
+  ]);
+  const acceptedCrop = await buildEvidenceContextCrop({
+    acceptedPlateBytes: acceptedPlate.bytes,
+    side: authority.graph.version.side as InkAddSide,
+    ontologyVersion: authority.graph.version.ontologyVersion,
+    zone: authority.graph.version.zone,
+    surface: authority.graph.version.surface,
+    sourceViewAngle: authority.graph.version.sourceViewAngle,
+  });
+  const guidedTarget = await buildEvidenceGuidedTarget({
+    targetBytes: target.bytes,
+    directive: slot.directive,
+    featureSide: authority.graph.version.side as InkAddSide,
+  });
+  return {
+    anchor: composerImage(anchor),
+    originalTarget: composerImage(target),
+    guidedTarget: composerImage(guidedTarget),
+    acceptedPlate,
+    acceptedCrop: composerImage(acceptedCrop),
+  };
+}
+
+async function createFailure(input: {
+  dependencies: EvidencePackageExecutionDependencies;
+  authority: EvidencePackagePrivateAuthority;
+  slot: EvidencePackagePrivateSlotAuthority;
+  chargeReferenceId: string;
+}): Promise<EvidencePackageSyncResult["failed"][number]> {
+  const cost = slotCost(input.slot.angle);
+  const refund: RefundOutcome = await (
+    input.dependencies.refund ?? recordRefund
+  )(
+    input.authority.model.userId,
+    cost,
+    `Evidence package: ${input.slot.angle} failed (refund)`,
+    `${input.chargeReferenceId}:slot:${input.slot.angle}`,
+  );
+  const refunded = refund.recorded ? cost : 0;
+  const marker = await (
+    input.dependencies.createFailureMarker ?? createModelAsset
+  )({
+    modelId: input.authority.model.id,
+    viewType: input.slot.angle,
+    resolution: "1K",
+    storageUrl: "",
+    pointsCost: 0,
+    status: {
+      state: "failed",
+      reason: PACKAGE_FAILURE,
+      refunded,
+      refundReference: refund.reference,
+      at: new Date().toISOString(),
+    },
+    provenance: {
+      source: "evidence_package_sync",
+      acceptedFeatureVersionId: input.authority.graph.version.id,
+    },
+  }).catch(() => ({ success: false as const }));
+  return {
+    angle: input.slot.angle,
+    label: input.authority.plan.slots.find(
+      (slot) => slot.angle === input.slot.angle,
+    )!.label,
+    reason: PACKAGE_FAILURE,
+    refunded,
+    refundReference: refund.reference,
+    markerPersisted: marker.success,
+  };
+}
+
+export async function executeEvidencePackageSync(
+  dependencies: EvidencePackageExecutionDependencies,
+  input: {
+    userId: number;
+    modelId: number;
+    operationId: string;
+    angles: readonly EvidencePackagePrivateSlotAuthority["angle"][];
+    chargeReferenceId: string;
+    onCharged?: (amount: number) => void;
+    onRefunded?: (amount: number) => void;
+  },
+): Promise<EvidencePackageSyncResult> {
+  const authority = await (
+    dependencies.loadAuthority ?? loadLockedEvidencePackageAuthority
+  )({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    angles: input.angles,
+  });
+  const charged = await (dependencies.deduct ?? deductPoints)(
+    input.userId,
+    authority.plan.totalCost,
+    "generation",
+    "Evidence package synchronization (pending)",
+    input.chargeReferenceId,
+    INK_ADD_IMAGE_ENGINE,
+  );
+  if (!charged.success) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        charged.error
+        || `Insufficient credits. Need ${authority.plan.totalCost} credits.`,
+    });
+  }
+  input.onCharged?.(authority.plan.totalCost);
+
+  const passed: GeneratedCandidate[] = [];
+  const failed: EvidencePackageSyncResult["failed"] = [];
+  for (const slot of authority.slots) {
+    try {
+      const references = await loadSlotReferences(dependencies, authority, slot);
+      let outcome = await runCandidateAttempt({
+        dependencies,
+        authority,
+        slot,
+        references,
+        attemptNumber: 1,
+        operationId: input.operationId,
+      });
+      if (outcome.type === "retry") {
+        outcome = await runCandidateAttempt({
+          dependencies,
+          authority,
+          slot,
+          references,
+          attemptNumber: 2,
+          retry: outcome.directives,
+          operationId: input.operationId,
+        });
+      }
+      if (outcome.type === "passed") {
+        passed.push(outcome.generated);
+        continue;
+      }
+    } catch (error) {
+      log.error({
+        modelId: input.modelId,
+        angle: slot.angle,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      }, "Evidence package view failed");
+    }
+    const failure = await createFailure({
+      dependencies,
+      authority,
+      slot,
+      chargeReferenceId: input.chargeReferenceId,
+    });
+    if (failure.refunded > 0) input.onRefunded?.(failure.refunded);
+    failed.push(failure);
+  }
+
+  let refreshed: EvidencePackageSyncResult["refreshed"] = [];
+  if (passed.length > 0) {
+    try {
+      const committed = await (
+        dependencies.commit ?? commitEvidencePackageSyncSnapshot
+      )({
+        userId: input.userId,
+        modelId: input.modelId,
+        operationId: input.operationId,
+        candidates: passed.map((entry) => entry.candidate),
+      });
+      refreshed = committed.result.refreshed;
+      await Promise.all(passed.map((entry) =>
+        (dependencies.updateAudit ?? updateGeneration)(entry.generationId, {
+          status: "completed",
+          resultUrl: entry.candidate.storageUrl,
+          completedAt: new Date(),
+        }).catch(() => undefined)
+      ));
+    } catch (error) {
+      if (!(error instanceof TRPCError)) {
+        throw new EvidencePackageSettlementUncertainError(error);
+      }
+      log.error({
+        modelId: input.modelId,
+        angles: passed.map((entry) => entry.candidate.angle),
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      }, "Evidence package settlement failed");
+      for (const entry of passed) {
+        await deleteCandidate(dependencies, entry, {
+          userId: input.userId,
+          operationId: input.operationId,
+        }).catch(() => undefined);
+        const slot = authority.slots.find(
+          (candidate) => candidate.angle === entry.candidate.angle,
+        )!;
+        const failure = await createFailure({
+          dependencies,
+          authority,
+          slot,
+          chargeReferenceId: input.chargeReferenceId,
+        });
+        if (failure.refunded > 0) input.onRefunded?.(failure.refunded);
+        failed.push(failure);
+      }
+    }
+  }
+  return { refreshed, failed };
+}

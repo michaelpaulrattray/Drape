@@ -70,7 +70,8 @@ function graph(side: "left" | "centre" | "right" = "left"): EvidencePackageFeatu
     modelId: MODEL_ID,
     featureIntentId: null,
     kind: "accepted_candidate",
-    storageKey: "private/models/7/accepted.webp",
+    storageKey:
+      `users/${USER_ID}/models/${MODEL_ID}/evidence/candidates/${PLATE_ID}.webp`,
     mime: "image/webp",
     width: 1024,
     height: 1536,
@@ -93,6 +94,7 @@ function graph(side: "left" | "centre" | "right" = "left"): EvidencePackageFeatu
 
 function slots(input: {
   walk?: "current" | "stale" | "unverified" | "missing" | "failed";
+  walkPinned?: boolean;
 } = {}): EvidencePackageSlotState[] {
   const walk = input.walk ?? "stale";
   return CANONICAL_VIEW_ANGLES.map((angle, index) => {
@@ -101,6 +103,7 @@ function slots(input: {
         angle,
         selectedAssetId: 30,
         compatibility: "current",
+        pinned: false,
         failed: false,
       };
     }
@@ -111,6 +114,7 @@ function slots(input: {
           walk === "missing" || walk === "failed" ? null : 40,
         compatibility:
           walk === "missing" || walk === "failed" ? null : walk,
+        pinned: input.walkPinned ?? false,
         failed: walk === "failed",
       };
     }
@@ -118,6 +122,7 @@ function slots(input: {
       angle,
       selectedAssetId: 100 + index,
       compatibility: "current",
+      pinned: false,
       failed: false,
     };
   });
@@ -126,6 +131,7 @@ function slots(input: {
 function plan(input: {
   side?: "left" | "centre" | "right";
   walk?: "current" | "stale" | "unverified" | "missing" | "failed";
+  walkPinned?: boolean;
   status?: unknown;
   unresolved?: boolean;
 } = {}) {
@@ -133,7 +139,10 @@ function plan(input: {
     modelId: MODEL_ID,
     modelStatus: input.status ?? "draft",
     graph: graph(input.side),
-    slots: slots({ walk: input.walk }),
+    slots: slots({
+      walk: input.walk,
+      walkPinned: input.walkPinned,
+    }),
     requiredMintAngles: ["frontClose", "threeQuarter", "frontFull"],
     hasUnresolvedIntentOrReadyCandidate: input.unresolved ?? false,
   });
@@ -145,6 +154,19 @@ describe("evidence-aware package plan", () => {
     const wrongPlate = graph();
     wrongPlate.plates = [{ ...wrongPlate.plates[0], userId: 2 }];
     expect(assessSupportedInkFeatureGraph(wrongPlate, 30)).toBeNull();
+    const wrongKeyOwner = graph();
+    wrongKeyOwner.plates = [{
+      ...wrongKeyOwner.plates[0],
+      storageKey:
+        `users/2/models/${MODEL_ID}/evidence/candidates/${PLATE_ID}.webp`,
+    }];
+    expect(assessSupportedInkFeatureGraph(wrongKeyOwner, 30)).toBeNull();
+    const oversizedPlate = graph();
+    oversizedPlate.plates = [{
+      ...oversizedPlate.plates[0],
+      byteSize: Number.MAX_SAFE_INTEGER,
+    }];
+    expect(assessSupportedInkFeatureGraph(oversizedPlate, 30)).toBeNull();
   });
 
   it("quotes only a stale lateral Walk at the server-owned 300-credit cost", () => {
@@ -180,6 +202,18 @@ describe("evidence-aware package plan", () => {
         status: "attention",
         cost: 0,
         refusal: "compatibility_unverified",
+      });
+  });
+
+  it("refuses a pinned stale view instead of silently replacing accepted work", () => {
+    const result = plan({ walk: "stale", walkPinned: true });
+    expect(result.actionableAngles).toEqual([]);
+    expect(result.totalCost).toBe(0);
+    expect(result.slots.find((slot) => slot.angle === "sideFull"))
+      .toMatchObject({
+        status: "attention",
+        cost: 0,
+        refusal: "pinned",
       });
   });
 

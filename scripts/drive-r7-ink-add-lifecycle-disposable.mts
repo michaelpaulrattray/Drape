@@ -35,6 +35,13 @@ async function applyMigrations(connection: mysql.Connection) {
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  if (args.some((arg) => arg !== "--focused-e2")) {
+    throw new Error(
+      `Unknown argument: ${args.find((arg) => arg !== "--focused-e2")}`,
+    );
+  }
+  const focusedE2 = args.includes("--focused-e2");
   const configured = process.env.DATABASE_URL;
   if (!configured) throw new Error("DATABASE_URL is required (development DB only)");
   if (process.env.VITE_APP_ID !== "drape-local") {
@@ -80,17 +87,30 @@ async function main() {
     } finally {
       await connection.end();
     }
-    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
-      "exec",
-      "vitest",
-      "run",
-      "server/r7-ink-add-lifecycle-db.test.ts",
-    ], {
+    const testArgs = focusedE2
+      ? [
+          "exec",
+          "vitest",
+          "run",
+          "--testNamePattern=E2",
+          "server/r7-ink-add-lifecycle-db.test.ts",
+        ]
+      : [
+          "exec",
+          "vitest",
+          "run",
+          "server/r7-ink-add-lifecycle-db.test.ts",
+        ];
+    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", testArgs, {
       ...process.env,
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),
     });
-    console.log("[disposable] cumulative R7-7D lifecycle gates passed");
+    console.log(
+      focusedE2
+        ? "[disposable] R7-7E2 package settlement and rollback gates passed"
+        : "[disposable] cumulative R7-7D lifecycle gates passed",
+    );
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) throw new Error("Cleanup guard refused database name");

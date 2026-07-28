@@ -23,12 +23,20 @@ import {
   inkPackageDirective,
   type EvidencePackageDirective,
 } from "./evidencePackageRegistry";
+import { parseEvidenceStorageKey } from "./evidenceDelivery";
+import {
+  MAX_EVIDENCE_CANONICAL_BYTES,
+  MAX_EVIDENCE_DIMENSION,
+  MAX_EVIDENCE_PIXELS,
+  MIN_EVIDENCE_DIMENSION,
+} from "./imageValidation";
 
 export const EVIDENCE_PACKAGE_REFUSALS = [
   "feature_graph_unsupported",
   "model_not_draft",
   "identity_anchor",
   "authoring_truth",
+  "pinned",
   "already_current",
   "compatibility_unverified",
   "angle_not_supported",
@@ -39,6 +47,7 @@ export interface EvidencePackageSlotState {
   angle: CanonicalViewAngle;
   selectedAssetId: number | null;
   compatibility: "current" | "stale" | "unverified" | null;
+  pinned: boolean;
   failed: boolean;
 }
 
@@ -88,6 +97,12 @@ export function assessSupportedInkFeatureGraph(
   const feature = graph.features[0];
   const version = graph.versions[0];
   const plate = graph.plates[0];
+  let parsedPlateKey;
+  try {
+    parsedPlateKey = parseEvidenceStorageKey(plate.storageKey);
+  } catch {
+    return null;
+  }
   if (
     selection.modelId !== graph.modelId
     || selection.identitySnapshotId !== graph.identitySnapshotId
@@ -108,6 +123,20 @@ export function assessSupportedInkFeatureGraph(
     || plate.userId !== graph.userId
     || plate.modelId !== graph.modelId
     || plate.kind !== "accepted_candidate"
+    || parsedPlateKey.userId !== graph.userId
+    || parsedPlateKey.modelId !== graph.modelId
+    || plate.mime !== "image/webp"
+    || !Number.isSafeInteger(plate.byteSize)
+    || plate.byteSize <= 0
+    || plate.byteSize > MAX_EVIDENCE_CANONICAL_BYTES
+    || !/^[0-9a-f]{64}$/.test(plate.contentHash)
+    || !Number.isSafeInteger(plate.width)
+    || !Number.isSafeInteger(plate.height)
+    || plate.width < MIN_EVIDENCE_DIMENSION
+    || plate.height < MIN_EVIDENCE_DIMENSION
+    || plate.width > MAX_EVIDENCE_DIMENSION
+    || plate.height > MAX_EVIDENCE_DIMENSION
+    || plate.width * plate.height > MAX_EVIDENCE_PIXELS
   ) {
     return null;
   }
@@ -187,6 +216,9 @@ function slotPlan(input: {
     return attentionSlot(slot.angle, "authoring_truth");
   }
   if (slot.selectedAssetId !== null) {
+    if (slot.pinned) {
+      return attentionSlot(slot.angle, "pinned");
+    }
     if (slot.compatibility === "unverified" || slot.compatibility === null) {
       return attentionSlot(slot.angle, "compatibility_unverified");
     }

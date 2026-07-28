@@ -183,6 +183,9 @@ describe("R7-7D migration and reachability contract", () => {
         scopeCallers.push(file.pathname.replace(/^.*\/server\//, "server/"));
       }
     }
-    expect(scopeCallers).toEqual(["server/routes/evidence.ts"]);
+    expect(scopeCallers).toEqual([
+      "server/routes/evidence.ts",
+      "server/routes/generation/castingExport.ts",
+    ]);
   });
 });

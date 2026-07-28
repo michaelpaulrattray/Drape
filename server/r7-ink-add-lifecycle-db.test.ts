@@ -71,8 +71,16 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./casting/operationRecovery").sweepStaleGenerationOperations;
   let markGenerationOperationRunning:
     typeof import("./db/generationOperations").markGenerationOperationRunning;
+  let handoffGenerationOperationToRecovery:
+    typeof import("./db/generationOperations").handoffGenerationOperationToRecovery;
   let commitModelSnapshotTransition:
     typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
+  let commitEvidencePackageSyncSnapshot:
+    typeof import("./casting/snapshotTransitions").commitEvidencePackageSyncSnapshot;
+  let reserveStorageCleanupItemForOperation:
+    typeof import("./db/storageCleanup").reserveStorageCleanupItemForOperation;
+  let releaseStorageCleanupReservation:
+    typeof import("./db/storageCleanup").releaseStorageCleanupReservation;
   let inkCandidatePublicStorageKey:
     typeof import("./casting/evidence/inkCandidatePublicStorage").inkCandidatePublicStorageKey;
 
@@ -125,8 +133,18 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     } = await import("./db/inkAddIntents"));
     ({ stageOwnedInkIntentReference } = await import("./casting/evidence/evidenceOperations"));
     ({ sweepStaleGenerationOperations } = await import("./casting/operationRecovery"));
-    ({ markGenerationOperationRunning } = await import("./db/generationOperations"));
-    ({ commitModelSnapshotTransition } = await import("./casting/snapshotTransitions"));
+    ({
+      markGenerationOperationRunning,
+      handoffGenerationOperationToRecovery,
+    } = await import("./db/generationOperations"));
+    ({
+      commitModelSnapshotTransition,
+      commitEvidencePackageSyncSnapshot,
+    } = await import("./casting/snapshotTransitions"));
+    ({
+      reserveStorageCleanupItemForOperation,
+      releaseStorageCleanupReservation,
+    } = await import("./db/storageCleanup"));
     ({ inkCandidatePublicStorageKey } = await import("./casting/evidence/inkCandidatePublicStorage"));
   });
 
@@ -342,6 +360,64 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [`model:${source.modelId}`, operationId],
     );
     return operationId;
+  }
+
+  async function runningEvidencePackageOperation(
+    source: Awaited<ReturnType<typeof fixture>>,
+  ) {
+    const operationId = randomUUID();
+    await connection.execute(
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, phase) VALUES (?, ?, ?, 'evidence_package_sync', ?, ?, 'running', NULL, 1, ?, ?, 300, 'refreshing')",
+      [
+        operationId,
+        source.userId,
+        randomUUID(),
+        source.modelId,
+        "f".repeat(64),
+        source.identityId,
+        source.packageId,
+      ],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_package_sync', DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      [`model:${source.modelId}`, operationId],
+    );
+    return operationId;
+  }
+
+  async function evidencePackageFixture() {
+    const source = await fixture({ withFeature: true, status: "draft" });
+    const [walk] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO model_assets (modelId, viewType, storageUrl, storageKey, pointsCost, pinned) VALUES (?, 'sideFull', ?, ?, 0, 0)",
+      [
+        source.modelId,
+        "https://public.example/source-walk.webp",
+        `users/${source.userId}/models/${source.modelId}/source-walk.webp`,
+      ],
+    );
+    await connection.execute(
+      "INSERT INTO model_package_snapshot_slots (id, packageSnapshotId, viewAngle, selectedAssetId, compatibility, selectionReason) VALUES (?, ?, 'sideFull', ?, 'stale', 'carried')",
+      [randomUUID(), source.packageId, walk.insertId],
+    );
+    await connection.execute(
+      `UPDATE model_identity_feature_versions
+       SET ontologyVersion = 'body-zones.front-upper-torso.v1',
+           zone = 'front_upper_torso',
+           surface = 'anterior',
+           side = 'left',
+           recipeVersion = 'ink.add.front_upper_torso.composer.v1'
+       WHERE modelId = ?`,
+      [source.modelId],
+    );
+    const [[version]] = await connection.query<RowDataPacket[]>(
+      "SELECT id FROM model_identity_feature_versions WHERE modelId = ?",
+      [source.modelId],
+    );
+    return {
+      ...source,
+      walkAssetId: walk.insertId,
+      featureVersionId: String(version.id),
+    };
   }
 
   function passCandidateProbe() {
@@ -2233,5 +2309,249 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [attacker.modelId],
     );
     expect(Number(featureBlockedCount.count)).toBe(0);
+  }, 90_000);
+
+  it("E2 atomically settles a stale Walk and consumes its exact cleanup reservation", async () => {
+    const source = await evidencePackageFixture();
+    const operationId = await runningEvidencePackageOperation(source);
+    const rejectedKey =
+      `users/${source.userId}/models/${source.modelId}/evidence-package/${randomUUID()}.webp`;
+    const candidateKey =
+      `users/${source.userId}/models/${source.modelId}/evidence-package/${randomUUID()}.webp`;
+    const cleanupBatchId = await reserveStorageCleanupItemForOperation({
+      userId: source.userId,
+      operationId,
+      kind: "candidate_cleanup",
+      storageKey: rejectedKey,
+      storageBackend: "public_r2",
+    });
+    expect(await reserveStorageCleanupItemForOperation({
+      userId: source.userId,
+      operationId,
+      kind: "candidate_cleanup",
+      storageKey: candidateKey,
+      storageBackend: "public_r2",
+    })).toBe(cleanupBatchId);
+    await releaseStorageCleanupReservation({
+      batchId: cleanupBatchId,
+      userId: source.userId,
+      operationId,
+      kind: "candidate_cleanup",
+      storageKey: rejectedKey,
+      storageBackend: "public_r2",
+    });
+    const [[retryReservation]] = await connection.query<RowDataPacket[]>(
+      "SELECT b.expectedCount, COUNT(i.id) AS items FROM storage_cleanup_batches b LEFT JOIN storage_cleanup_items i ON i.batchId = b.id WHERE b.id = ? GROUP BY b.id",
+      [cleanupBatchId],
+    );
+    expect({
+      expectedCount: Number(retryReservation.expectedCount),
+      items: Number(retryReservation.items),
+    }).toEqual({ expectedCount: 1, items: 1 });
+
+    const committed = await commitEvidencePackageSyncSnapshot({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      candidates: [{
+        angle: "sideFull",
+        storageUrl: `https://public.example/${randomUUID()}.webp`,
+        storageKey: candidateKey,
+        engine: "test",
+        pointsCost: 300,
+        sourceAssetId: source.walkAssetId,
+        featureVersionId: source.featureVersionId,
+        requiredVisibleAnatomicalSide: "left",
+        observedVisibleAnatomicalSide: "left",
+        observedTravelDirection: "frame_right",
+        cleanupBatchId,
+      }],
+    });
+
+    expect(committed.result.refreshed).toEqual([{
+      angle: "sideFull",
+      imageUrl: expect.stringContaining("https://public.example/"),
+      assetId: expect.any(Number),
+    }]);
+    const [[modelTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [source.modelId],
+    );
+    expect(modelTruth).toEqual({
+      stateVersion: 2,
+      currentPackageSnapshotId: committed.packageSnapshotId,
+    });
+    const [slots] = await connection.query<RowDataPacket[]>(
+      "SELECT viewAngle, selectedAssetId, compatibility FROM model_package_snapshot_slots WHERE packageSnapshotId = ? ORDER BY viewAngle",
+      [committed.packageSnapshotId],
+    );
+    expect(slots).toEqual(expect.arrayContaining([
+      {
+        viewAngle: "frontFull",
+        selectedAssetId: source.fullAssetId,
+        compatibility: "current",
+      },
+      {
+        viewAngle: "sideFull",
+        selectedAssetId: committed.result.refreshed[0].assetId,
+        compatibility: "current",
+      },
+    ]));
+    const [[assetTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT viewType, pointsCost, JSON_UNQUOTE(JSON_EXTRACT(provenance, '$.source')) AS source, JSON_UNQUOTE(JSON_EXTRACT(provenance, '$.acceptedFeatureVersionId')) AS featureVersionId FROM model_assets WHERE id = ?",
+      [committed.result.refreshed[0].assetId],
+    );
+    expect(assetTruth).toEqual({
+      viewType: "sideFull",
+      pointsCost: 300,
+      source: "evidence_package_sync",
+      featureVersionId: source.featureVersionId,
+    });
+    const [[cleanupTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM storage_cleanup_batches WHERE id = ?) AS batches, (SELECT COUNT(*) FROM storage_cleanup_items WHERE batchId = ?) AS items",
+      [cleanupBatchId, cleanupBatchId],
+    );
+    expect({
+      batches: Number(cleanupTruth.batches),
+      items: Number(cleanupTruth.items),
+    }).toEqual({ batches: 0, items: 0 });
+  }, 90_000);
+
+  it("E2 hands an uncertain running receipt to recovery without releasing its lock", async () => {
+    const source = await evidencePackageFixture();
+    const operationId = await runningEvidencePackageOperation(source);
+    await handoffGenerationOperationToRecovery({
+      userId: source.userId,
+      operationId,
+      now: new Date(Date.now() - 60_000),
+    });
+
+    const [[truth]] = await connection.query<RowDataPacket[]>(
+      "SELECT o.status, o.leaseExpiresAt <= NOW() AS operationDue, l.operationId AS lockOwner, l.expiresAt <= NOW() AS lockDue FROM generation_operations o LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE o.id = ?",
+      [operationId],
+    );
+    expect({
+      status: truth.status,
+      operationDue: Number(truth.operationDue),
+      lockOwner: truth.lockOwner,
+      lockDue: Number(truth.lockDue),
+    }).toEqual({
+      status: "running",
+      operationDue: 1,
+      lockOwner: operationId,
+      lockDue: 1,
+    });
+  }, 90_000);
+
+  it("E2 rolls the evidence asset and snapshot back when cleanup ownership is incomplete", async () => {
+    const source = await evidencePackageFixture();
+    const operationId = await runningEvidencePackageOperation(source);
+    const cleanupBatchId = randomUUID();
+    const candidateKey =
+      `users/${source.userId}/models/${source.modelId}/evidence-package/${randomUUID()}.webp`;
+    await connection.execute(
+      "INSERT INTO storage_cleanup_batches (id, userId, operationId, kind, status, expectedCount, deletedCount, failedCount) VALUES (?, ?, ?, 'candidate_cleanup', 'pending', 1, 0, 0)",
+      [cleanupBatchId, source.userId, operationId],
+    );
+    const [[before]] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM model_assets WHERE modelId = ?) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = ?) AS snapshots",
+      [source.modelId, source.modelId],
+    );
+
+    await expect(commitEvidencePackageSyncSnapshot({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      candidates: [{
+        angle: "sideFull",
+        storageUrl: `https://public.example/${randomUUID()}.webp`,
+        storageKey: candidateKey,
+        engine: "test",
+        pointsCost: 300,
+        sourceAssetId: source.walkAssetId,
+        featureVersionId: source.featureVersionId,
+        requiredVisibleAnatomicalSide: "left",
+        observedVisibleAnatomicalSide: "left",
+        observedTravelDirection: "frame_right",
+        cleanupBatchId,
+      }],
+    })).rejects.toThrow(/cleanup reservation.*invalid/i);
+
+    const [[after]] = await connection.query<RowDataPacket[]>(
+      "SELECT m.stateVersion, m.currentPackageSnapshotId, (SELECT COUNT(*) FROM model_assets WHERE modelId = m.id) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = m.id) AS snapshots, (SELECT COUNT(*) FROM storage_cleanup_batches WHERE id = ?) AS cleanupBatches FROM models m WHERE m.id = ?",
+      [cleanupBatchId, source.modelId],
+    );
+    expect({
+      stateVersion: after.stateVersion,
+      currentPackageSnapshotId: after.currentPackageSnapshotId,
+      assets: Number(after.assets),
+      snapshots: Number(after.snapshots),
+      cleanupBatches: Number(after.cleanupBatches),
+    }).toEqual({
+      stateVersion: 1,
+      currentPackageSnapshotId: source.packageId,
+      assets: Number(before.assets),
+      snapshots: Number(before.snapshots),
+      cleanupBatches: 1,
+    });
+  }, 90_000);
+
+  it("E2 refuses a pinned stale view again under the locked settlement reproof", async () => {
+    const source = await evidencePackageFixture();
+    const operationId = await runningEvidencePackageOperation(source);
+    const candidateKey =
+      `users/${source.userId}/models/${source.modelId}/evidence-package/${randomUUID()}.webp`;
+    const cleanupBatchId = await reserveStorageCleanupItemForOperation({
+      userId: source.userId,
+      operationId,
+      kind: "candidate_cleanup",
+      storageKey: candidateKey,
+      storageBackend: "public_r2",
+    });
+    await connection.execute(
+      "UPDATE model_assets SET pinned = 1 WHERE id = ? AND modelId = ?",
+      [source.walkAssetId, source.modelId],
+    );
+    const [[before]] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM model_assets WHERE modelId = ?) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = ?) AS snapshots",
+      [source.modelId, source.modelId],
+    );
+
+    await expect(commitEvidencePackageSyncSnapshot({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      candidates: [{
+        angle: "sideFull",
+        storageUrl: `https://public.example/${randomUUID()}.webp`,
+        storageKey: candidateKey,
+        engine: "test",
+        pointsCost: 300,
+        sourceAssetId: source.walkAssetId,
+        featureVersionId: source.featureVersionId,
+        requiredVisibleAnatomicalSide: "left",
+        observedVisibleAnatomicalSide: "left",
+        observedTravelDirection: "frame_right",
+        cleanupBatchId,
+      }],
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+
+    const [[after]] = await connection.query<RowDataPacket[]>(
+      "SELECT m.stateVersion, m.currentPackageSnapshotId, (SELECT COUNT(*) FROM model_assets WHERE modelId = m.id) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = m.id) AS snapshots, (SELECT COUNT(*) FROM storage_cleanup_batches WHERE id = ?) AS cleanupBatches FROM models m WHERE m.id = ?",
+      [cleanupBatchId, source.modelId],
+    );
+    expect({
+      stateVersion: after.stateVersion,
+      currentPackageSnapshotId: after.currentPackageSnapshotId,
+      assets: Number(after.assets),
+      snapshots: Number(after.snapshots),
+      cleanupBatches: Number(after.cleanupBatches),
+    }).toEqual({
+      stateVersion: 1,
+      currentPackageSnapshotId: source.packageId,
+      assets: Number(before.assets),
+      snapshots: Number(before.snapshots),
+      cleanupBatches: 1,
+    });
   }, 90_000);
 });

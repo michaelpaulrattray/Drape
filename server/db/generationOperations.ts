@@ -1174,6 +1174,45 @@ export async function heartbeatGenerationOperation(input: {
   return { heartbeatAt, leaseExpiresAt };
 }
 
+/**
+ * Hand an uncertain in-process settlement to the stale-operation adjudicator.
+ * The receipt and lock stay intact, but their lease stops renewing and becomes
+ * immediately eligible for the CAS-guarded recovery sweep.
+ */
+export async function handoffGenerationOperationToRecovery(input: {
+  userId: number;
+  operationId: string;
+  now?: Date;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  const heartbeatFailure = await stopOperationHeartbeat(input.operationId);
+  if (heartbeatFailure) {
+    log.warn(
+      { operationId: input.operationId },
+      "[GenerationOperations] uncertain settlement heartbeat had already failed",
+    );
+  }
+  const now = input.now ?? new Date();
+  await withTransaction(async (tx) => {
+    const handedOff = await tx
+      .update(generationOperations)
+      .set({ heartbeatAt: now, leaseExpiresAt: now })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.status, "running"),
+      ));
+    if (affectedRows(handedOff) !== 1) {
+      throw new Error("Only the owned running operation can enter recovery");
+    }
+    await tx
+      .update(generationOperationLocks)
+      .set({ expiresAt: now })
+      .where(eq(generationOperationLocks.operationId, input.operationId));
+  });
+}
+
 export async function updateGenerationOperationProgress(input: {
   userId: number;
   operationId: string;
@@ -1691,6 +1730,33 @@ export async function getGenerationOperationOutcomeByRequest(input: {
     ))
     .limit(1);
   return operation ? outcomeFromExisting(operation) : null;
+}
+
+/**
+ * Read only the stored operation kind before a route derives mutable-state
+ * authority. This is the replay-family fence: an existing receipt selects its
+ * original executor; current feature state may select a kind only when no
+ * receipt exists.
+ */
+export async function getGenerationOperationKindByRequest(input: {
+  userId: number;
+  clientRequestId: string;
+}): Promise<GenerationOperationKind | null> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.clientRequestId);
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [operation] = await db
+    .select({ kind: generationOperations.kind })
+    .from(generationOperations)
+    .where(and(
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.clientRequestId, input.clientRequestId),
+    ))
+    .limit(1);
+  if (!operation) return null;
+  assertGenerationOperationKind(operation.kind);
+  return operation.kind;
 }
 
 

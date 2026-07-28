@@ -36,6 +36,7 @@ import {
   type MintTier,
 } from "../../shared/boardTypes";
 import { withTransaction, type TransactionHandle } from "../db/connection";
+import { consumeStorageCleanupReservationsIn } from "../db/storageCleanup";
 import { availableModelWhere } from "./modelAvailability";
 import { buildIdentityAnchor } from "./geminiClient";
 import { stableCanonicalJson, type GenerationOperationKind } from "./operationContract";
@@ -54,6 +55,25 @@ import {
   FEATURE_BLIND_OPERATION_MESSAGE,
   type FeatureTransitionAuthority,
 } from "./evidence/featureTransitionAuthority";
+import {
+  assessSupportedInkFeatureGraph,
+} from "./evidence/evidencePackagePlan";
+import {
+  readEvidencePackageFeatureRowsIn,
+} from "./evidence/evidencePackageFeatureRows";
+import {
+  EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION,
+} from "./evidence/evidencePackageComposition";
+import {
+  EVIDENCE_PACKAGE_PROBE_RECIPE_VERSION,
+  type ObservedAnatomicalSide,
+  type ObservedTravelDirection,
+} from "./evidence/evidencePackageProbe";
+import {
+  EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION,
+  inkPackageDirective,
+} from "./evidence/evidencePackageRegistry";
+import { INK_ADD_CAPABILITY_KEY } from "./evidence/evidenceCandidateContract";
 import type { AuthorizedIdentityPatch } from "./identity/identityTypes";
 import type { SnapshotReadMode } from "./snapshotReadScope";
 
@@ -957,6 +977,17 @@ export interface GeneratedPackageSlotCandidate extends GeneratedImageCandidate {
   storageKey: string;
 }
 
+export interface EvidencePackageSyncCandidate extends GeneratedImageCandidate {
+  angle: CanonicalViewAngle;
+  storageKey: string;
+  sourceAssetId: number;
+  featureVersionId: string;
+  requiredVisibleAnatomicalSide: "left" | "right" | null;
+  observedVisibleAnatomicalSide: ObservedAnatomicalSide;
+  observedTravelDirection: ObservedTravelDirection;
+  cleanupBatchId: string;
+}
+
 type GeneratedPackageMode = "add_views" | "late_view" | "mint";
 
 /**
@@ -1191,6 +1222,202 @@ export async function commitRefreshedSlotsSnapshot(input: {
       return {
         result: { refreshed },
         transition: { packageReason: "slot_refresh", slotChanges },
+      };
+    },
+  });
+}
+
+/**
+ * Evidence-aware package synchronization. Candidate pixels remain
+ * non-canonical until this transaction re-proves the exact selected feature
+ * graph and stale/missing slot state under the operation lock.
+ */
+export async function commitEvidencePackageSyncSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  candidates: EvidencePackageSyncCandidate[];
+}): Promise<SnapshotTransitionResult<{
+  refreshed: Array<{ angle: CanonicalViewAngle; imageUrl: string; assetId: number }>;
+}>> {
+  if (input.candidates.length === 0) {
+    throw new Error("Evidence package settlement requires a successful view");
+  }
+  const angles = new Set<CanonicalViewAngle>();
+  for (const candidate of input.candidates) {
+    assertGeneratedImageCandidate(candidate, "evidence package view");
+    if (
+      candidate.angle === "frontClose"
+      || candidate.angle === "frontFull"
+      || !candidate.storageKey.trim()
+      || !candidate.featureVersionId.trim()
+      || angles.has(candidate.angle)
+    ) {
+      throw new Error("Evidence package candidate is invalid");
+    }
+    angles.add(candidate.angle);
+  }
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "evidence_package_sync",
+    featureAuthority: "evidence_aware",
+    mutate: async (tx, context) => {
+      if (!context.current) {
+        throw new Error("Evidence package synchronization requires a snapshot head");
+      }
+      if (context.model.status !== "draft") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Minted identity is immutable — fork it.",
+        });
+      }
+      const frontFullSlot = context.current.slots.find(
+        (slot) => slot.viewAngle === "frontFull",
+      );
+      const featureRows = await readEvidencePackageFeatureRowsIn(tx, {
+        userId: input.userId,
+        modelId: input.modelId,
+        identitySnapshotId: context.current.identitySnapshot.id,
+      });
+      const graph = assessSupportedInkFeatureGraph(
+        featureRows.graph,
+        frontFullSlot?.selectedAssetId ?? null,
+      );
+      if (!graph || featureRows.hasUnresolvedIntentOrReadyCandidate) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This Cast's saved feature evidence changed. Nothing was saved.",
+        });
+      }
+      const sourceIds = Array.from(new Set(input.candidates.map(
+        (candidate) => candidate.sourceAssetId,
+      )));
+      const sourceAssets = await tx
+        .select()
+        .from(modelAssets)
+        .where(and(
+          eq(modelAssets.modelId, input.modelId),
+          inArray(modelAssets.id, sourceIds),
+        ));
+      const sourceById = new Map(sourceAssets.map((asset) => [asset.id, asset]));
+      const refreshed: Array<{
+        angle: CanonicalViewAngle;
+        imageUrl: string;
+        assetId: number;
+      }> = [];
+      const slotChanges: SnapshotSlotChange[] = [];
+      const identityText = context.current.identitySnapshot.identityText;
+      for (const candidate of input.candidates) {
+        const existing = context.current.slots.find(
+          (slot) => slot.viewAngle === candidate.angle,
+        );
+        if (existing?.compatibility === "current") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "This view is already current. Nothing was saved.",
+          });
+        }
+        const expectedSourceId =
+          existing?.selectedAssetId ?? frontFullSlot?.selectedAssetId;
+        const source = sourceById.get(candidate.sourceAssetId);
+        const directive = inkPackageDirective({
+          capabilityKey: INK_ADD_CAPABILITY_KEY,
+          ontologyVersion: graph.version.ontologyVersion,
+          zone: graph.version.zone,
+          surface: graph.version.surface,
+          side: graph.version.side,
+          angle: candidate.angle,
+        });
+        if (
+          !source
+          || source.id !== expectedSourceId
+          || source.viewType !== (existing ? candidate.angle : "frontFull")
+          || !source.storageUrl?.trim()
+          || (existing !== undefined && source.pinned)
+          || !directive
+          || directive.visibility === "authoring_truth"
+          || candidate.featureVersionId !== graph.version.id
+          || candidate.requiredVisibleAnatomicalSide
+            !== directive.requiredVisibleAnatomicalSide
+        ) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "This Cast's saved feature evidence changed. Nothing was saved.",
+          });
+        }
+        const [inserted] = await tx.insert(modelAssets).values({
+          modelId: input.modelId,
+          viewType: candidate.angle,
+          resolution: "1K",
+          storageUrl: candidate.storageUrl,
+          storageKey: candidate.storageKey,
+          pointsCost: candidate.pointsCost,
+          pinned: false,
+          provenance: {
+            source: "evidence_package_sync",
+            ...(candidate.engine ? { engine: candidate.engine } : {}),
+            composerRecipeVersion: EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION,
+            probeRecipeVersion: EVIDENCE_PACKAGE_PROBE_RECIPE_VERSION,
+            guideRecipeVersion: EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION,
+            sourceAngle: source.viewType,
+            sourceAssetId: source.id,
+            acceptedFeatureVersionId: graph.version.id,
+            requiredVisibleAnatomicalSide:
+              candidate.requiredVisibleAnatomicalSide,
+            observedVisibleAnatomicalSide:
+              candidate.observedVisibleAnatomicalSide,
+            observedTravelDirection: candidate.observedTravelDirection,
+            ...identityStampFor({
+              role: "display",
+              revisionId: currentRevisionId(context.model),
+              identityText,
+            }),
+          },
+        }).$returningId();
+        if (!inserted?.id) {
+          throw new Error(`The synchronized ${candidate.angle} view could not be saved`);
+        }
+        refreshed.push({
+          angle: candidate.angle,
+          imageUrl: candidate.storageUrl,
+          assetId: inserted.id,
+        });
+        slotChanges.push({
+          viewAngle: candidate.angle,
+          selectedAssetId: inserted.id,
+          compatibility: "current",
+          selectionReason: existing ? "refreshed" : "generated",
+        });
+      }
+      const cleanupByBatch = new Map<string, Array<{
+        storageKey: string;
+        storageBackend: "public_r2";
+      }>>();
+      for (const candidate of input.candidates) {
+        const items = cleanupByBatch.get(candidate.cleanupBatchId) ?? [];
+        items.push({
+          storageKey: candidate.storageKey,
+          storageBackend: "public_r2",
+        });
+        cleanupByBatch.set(candidate.cleanupBatchId, items);
+      }
+      for (const [batchId, storageItems] of Array.from(cleanupByBatch.entries())) {
+        await consumeStorageCleanupReservationsIn(tx, {
+          batchId,
+          userId: input.userId,
+          operationId: input.operationId,
+          kind: "candidate_cleanup",
+          storageItems,
+        });
+      }
+      return {
+        result: { refreshed },
+        transition: {
+          packageReason: "slot_refresh",
+          slotChanges,
+        },
       };
     },
   });

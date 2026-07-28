@@ -46,7 +46,7 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       .toEqual([...CANONICAL_VIEW_ANGLES].sort());
   });
 
-  it("keeps E1 pure, unrouted, and unable to spend or persist", async () => {
+  it("keeps the E1 foundation pure while E2 runtime reachability stays exact", async () => {
     const serverRoot = new URL("./", import.meta.url);
     const sources = await Promise.all(E1_RUNTIME_FILES.map(async (relativePath) => ({
       relativePath,
@@ -72,13 +72,27 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
     }
     expect(importers.sort()).toEqual([
       "casting/aiService.ts",
+      "casting/evidence/evidencePackageAuthority.ts",
       "casting/evidence/evidencePackageComposition.ts",
+      "casting/evidence/evidencePackageExecution.ts",
+      "casting/evidence/evidencePackageFeatureRows.ts",
       "casting/evidence/evidencePackagePlan.ts",
       "casting/evidence/evidencePackageProbe.ts",
       "casting/evidence/inkViewImpact.ts",
       "casting/mintPackage.ts",
+      "casting/operationRecovery.ts",
       "casting/packagePricing.ts",
+      "casting/snapshotTransitions.ts",
+      "routes/generation/castingExport.ts",
     ]);
+
+    const route = await readFile(
+      new URL("./routes/generation/castingExport.ts", import.meta.url),
+      "utf8",
+    );
+    expect(route).toContain("captureEvidencePackageEnabled");
+    expect(route).toContain("executeEvidencePackageSync");
+    expect(route).toContain("resolveOperationKindForReplay");
   });
 
   it("keeps recovery policy exhaustive for the declared operation kinds", async () => {

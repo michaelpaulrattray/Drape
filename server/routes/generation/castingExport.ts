@@ -2,6 +2,9 @@ import { publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getUserGenerations, getUserById, getModelAssets,
   markGenerationOperationRunning, assertGenerationOperationSnapshotHead,
+  getGenerationOperationKindByRequest,
+  handoffGenerationOperationToRecovery,
+  updateGenerationOperationProgress,
 } from "../../db";
 import { CREDIT_COSTS, POINT_COSTS } from "../../casting/aiService";
 import {
@@ -39,6 +42,28 @@ import {
   resolveSnapshotPdfImages,
   SnapshotPdfImageError,
 } from "../../casting/snapshotPdfImages";
+import {
+  classifyEvidencePackageRouteAuthority,
+} from "../../casting/evidence/evidencePackageAuthority";
+import {
+  EvidencePackageSettlementUncertainError,
+  executeEvidencePackageSync,
+} from "../../casting/evidence/evidencePackageExecution";
+import {
+  captureEvidenceComposerEnabled,
+} from "../../casting/evidence/evidenceComposerScope";
+import {
+  captureEvidencePackageEnabled,
+} from "../../casting/evidence/evidencePackageScope";
+import {
+  getEvidenceDeliveryAdapter,
+} from "../../casting/evidence/evidenceDeliveryRuntime";
+import {
+  FEATURE_BLIND_OPERATION_MESSAGE,
+} from "../../casting/evidence/featureTransitionAuthority";
+import {
+  resolveOperationKindForReplay,
+} from "../../casting/evidence/operationReplayFamily";
 const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
@@ -540,10 +565,53 @@ export const castingExportRouter = router({
       assertNotArchived(initialModel);
 
       const lockKey = modelOperationLockKey(input.modelId);
+      const evidencePackageEnabled =
+        captureEvidencePackageEnabled(ctx.user.id);
+      const storedKind = await getGenerationOperationKindByRequest({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+      });
+      let evidenceRoute:
+        | Awaited<ReturnType<typeof classifyEvidencePackageRouteAuthority>>
+        | null = null;
+      let derivedKind: "casting.refresh" | "evidence_package_sync" =
+        "casting.refresh";
+      if (!storedKind && evidencePackageEnabled) {
+        evidenceRoute = await classifyEvidencePackageRouteAuthority({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          angles: input.angles,
+        });
+        if (evidenceRoute.type !== "featureless") {
+          if (
+            evidenceRoute.type !== "supported"
+            || readMode !== "snapshot"
+            || !captureEvidenceComposerEnabled(ctx.user.id)
+          ) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: FEATURE_BLIND_OPERATION_MESSAGE,
+            });
+          }
+          derivedKind = "evidence_package_sync";
+        }
+      }
+      const kindResolution = resolveOperationKindForReplay({
+        family: "refresh",
+        derivedKind,
+        storedKind,
+      });
+      if (kindResolution.type === "family_conflict") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "That request id was already used for a different action. Nothing was run.",
+        });
+      }
+      const operationKind = kindResolution.kind;
       const gate = await beginDirectOperation({
         userId: ctx.user.id,
         clientRequestId: input.clientRequestId,
-        kind: "casting.refresh",
+        kind: operationKind,
         modelId: input.modelId,
         payload: { modelId: input.modelId, angles: [...input.angles].sort() },
         lockKey,
@@ -584,12 +652,38 @@ export const castingExportRouter = router({
         if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
-        plan = await planRefreshSlots({
-          userId: ctx.user.id,
-          modelId: input.modelId,
-          angles: input.angles,
-          readMode,
-        });
+        if (operationKind === "evidence_package_sync") {
+          if (
+            readMode !== "snapshot"
+            || !captureEvidenceComposerEnabled(ctx.user.id)
+            || !evidencePackageEnabled
+          ) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: FEATURE_BLIND_OPERATION_MESSAGE,
+            });
+          }
+          const classified = evidenceRoute
+            ?? await classifyEvidencePackageRouteAuthority({
+              userId: ctx.user.id,
+              modelId: input.modelId,
+              angles: input.angles,
+            });
+          if (classified.type !== "supported") {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: FEATURE_BLIND_OPERATION_MESSAGE,
+            });
+          }
+          plan = classified.plan;
+        } else {
+          plan = await planRefreshSlots({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+            angles: input.angles,
+            readMode,
+          });
+        }
         const snapshotHead = readMode === "snapshot"
           ? await resolveEffectiveCastStateForRead({ userId: ctx.user.id, modelId: input.modelId })
           : await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
@@ -612,6 +706,23 @@ export const castingExportRouter = router({
         phase: "refreshing",
         heartbeat: true,
       });
+      if (operationKind === "evidence_package_sync") {
+        await updateGenerationOperationProgress({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          phase: "refreshing",
+          progress: {
+            total: input.angles.length,
+            completed: 0,
+            failed: 0,
+            steps: input.angles.map((angle) => ({
+              stepKey: `view:${angle}`,
+              viewAngle: angle,
+              status: "pending" as const,
+            })),
+          },
+        });
+      }
       try {
         await assertGenerationOperationSnapshotHead({
           userId: ctx.user.id,
@@ -631,16 +742,35 @@ export const castingExportRouter = router({
       let refundedCredits = 0;
       let durableResult = false;
       try {
-        const result = await executeRefreshSlots({
-          userId: ctx.user.id,
-          modelId: input.modelId,
-          angles: input.angles,
-          readMode,
-          chargeReferenceId: started.chargeReferenceId,
-          onCharged: (amount) => { chargedCredits = amount; },
-          onRefunded: (amount) => { refundedCredits += amount; },
-          operationId: gate.operationId,
-        });
+        const result = operationKind === "evidence_package_sync"
+          ? await (() => {
+              const delivery = getEvidenceDeliveryAdapter();
+              if (!delivery) {
+                throw new TRPCError({
+                  code: "PRECONDITION_FAILED",
+                  message: FEATURE_BLIND_OPERATION_MESSAGE,
+                });
+              }
+              return executeEvidencePackageSync({ delivery }, {
+                userId: ctx.user.id,
+                modelId: input.modelId,
+                angles: input.angles,
+                chargeReferenceId: started.chargeReferenceId,
+                onCharged: (amount) => { chargedCredits = amount; },
+                onRefunded: (amount) => { refundedCredits += amount; },
+                operationId: gate.operationId,
+              });
+            })()
+          : await executeRefreshSlots({
+              userId: ctx.user.id,
+              modelId: input.modelId,
+              angles: input.angles,
+              readMode,
+              chargeReferenceId: started.chargeReferenceId,
+              onCharged: (amount) => { chargedCredits = amount; },
+              onRefunded: (amount) => { refundedCredits += amount; },
+              operationId: gate.operationId,
+            });
         durableResult = true;
         await completeDirectOperationSuccess({
           userId: ctx.user.id,
@@ -655,6 +785,26 @@ export const castingExportRouter = router({
         return result;
       } catch (error) {
         if (durableResult) throw error;
+        if (error instanceof EvidencePackageSettlementUncertainError) {
+          await handoffGenerationOperationToRecovery({
+            userId: ctx.user.id,
+            operationId: gate.operationId,
+          }).catch((handoffError) => {
+            log.fatal({
+              operationId: gate.operationId,
+              errorName:
+                handoffError instanceof Error
+                  ? handoffError.name
+                  : "UnknownError",
+            }, "Evidence package recovery handoff failed");
+          });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              `This view update is still being reconciled. Operation ${gate.operationId}.`,
+            cause: error,
+          });
+        }
         return completeDirectOperationFailure({
           userId: ctx.user.id,
           operationId: gate.operationId,

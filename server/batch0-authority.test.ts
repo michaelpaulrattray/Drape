@@ -32,6 +32,8 @@ vi.mock("./db", async (importOriginal) => {
     updateModel: vi.fn().mockResolvedValue({ success: true }),
     mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
+    getGenerationOperationKindByRequest: vi.fn().mockResolvedValue(null),
+    updateGenerationOperationProgress: vi.fn().mockResolvedValue(undefined),
     deleteModel: vi.fn().mockResolvedValue({ success: true }),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),
     createGeneration: vi.fn().mockResolvedValue({ success: true, generationId: 1 }),

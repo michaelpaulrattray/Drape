@@ -197,19 +197,9 @@ export function affectedSnapshotShadowSurfaces(
 }
 
 export interface SnapshotShadowState {
-  model: Pick<
-    Model,
-    | "id"
-    | "status"
-    | "masterPrompt"
-    | "technicalSchema"
-    | "preferences"
-    | "identityRevisionId"
-    | "currentPackageSnapshotId"
-    | "stateVersion"
-    | "sealedIdentitySnapshotId"
-    | "sealedPackageSnapshotId"
-  >;
+  /** Full owner-scoped internal row. Public reports project only closed
+   * counts/ids; transition authorities need the complete durable subject. */
+  model: Model;
   /** Newest-first, exactly like getModelAssets. */
   assets: ModelAsset[];
   currentPackage: ModelPackageSnapshot | null;
