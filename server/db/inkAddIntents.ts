@@ -248,6 +248,66 @@ export interface OwnedPendingInkIntent {
   referencePlateId: string | null;
 }
 
+export type OwnedInkAddAvailability =
+  | "eligible"
+  | "model_unavailable"
+  | "source_unavailable"
+  | "feature_selected";
+
+/**
+ * Read-only, owner-scoped capability truth for the Studio door. This mirrors
+ * the load-bearing begin-intent checks without taking locks or granting write
+ * authority; the mutation repeats every proof under the model lock.
+ */
+export async function inspectOwnedInkAddAvailability(input: {
+  userId: number;
+  modelId: number;
+}): Promise<OwnedInkAddAvailability> {
+  return withTransaction(async (tx) => {
+    const [model] = await tx
+      .select()
+      .from(models)
+      .where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        eq(models.status, "draft"),
+        isNull(models.deletedAt),
+      ))
+      .limit(1);
+    if (!model) return "model_unavailable";
+
+    let state: EffectiveCastState;
+    try {
+      const shadow = await readSnapshotShadowStateIn(tx, input);
+      state = buildEffectiveCastState({ ...shadow, model });
+    } catch {
+      return "source_unavailable";
+    }
+    if (state.status !== "current" || !state.package || !state.identity) {
+      return "source_unavailable";
+    }
+    const source = state.selectedViews.find(
+      (view) => view.angle === INK_ADD_TARGET_VIEW,
+    );
+    if (!source || source.compatibility !== "current") {
+      return "source_unavailable";
+    }
+
+    const [selectedFeature] = await tx
+      .select({ featureId: modelSnapshotFeatureSelections.featureId })
+      .from(modelSnapshotFeatureSelections)
+      .where(and(
+        eq(modelSnapshotFeatureSelections.modelId, input.modelId),
+        eq(
+          modelSnapshotFeatureSelections.identitySnapshotId,
+          state.identity.id,
+        ),
+      ))
+      .limit(1);
+    return selectedFeature ? "feature_selected" : "eligible";
+  });
+}
+
 export async function findOwnedInkIntentClaimSubject(input: {
   userId: number;
   intentId: string;

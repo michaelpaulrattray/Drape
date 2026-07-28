@@ -78,6 +78,7 @@ describe('R7-7B4 live selected-package consumer closure', () => {
       'generation.refreshSlotsPlan',
       'generation.mintPackagePlan',
       'generation.exportPlan',
+      'evidence.inkCapability',
     ]) {
       expect(bridge).toContain(`${key}.invalidate`);
     }
@@ -100,6 +101,7 @@ describe('R7-7B4 live selected-package consumer closure', () => {
     expect(callers).toEqual([
       'features/casting/components/CastProfilePanel.tsx',
       'features/casting/components/SlotVersionHistory.tsx',
+      'features/casting/evidence/useInkAddWorkflow.ts',
       'features/operations/GenerationOperationBridge.tsx',
       'features/studio/takeover/CastingTakeover.tsx',
       'pages/DrapeStudio.tsx',

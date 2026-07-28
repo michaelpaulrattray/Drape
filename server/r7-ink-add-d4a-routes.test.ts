@@ -22,6 +22,7 @@ describe("R7-7D D4A closed route boundary", () => {
       appRouter.createCaller(context()).evidence.inkCapability({ modelId: 4 }),
     ).resolves.toEqual({
       inkAdd: false,
+      subjectStatus: "disabled",
       priceCredits: 350,
       targetView: "frontFull",
       placements: ["left", "centre", "right"],

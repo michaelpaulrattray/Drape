@@ -106,7 +106,7 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     expect(transitions).toContain("if (input.finalize) await input.finalize(tx, committed)");
   });
 
-  it("adds no client reachability before D5", async () => {
+  it("limits D5 acceptance reachability to the explicit loaded-preview callback", async () => {
     const hits: string[] = [];
     for (const file of await runtimeFiles("client/src")) {
       const source = await readFile(file, "utf8");
@@ -118,6 +118,12 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
         hits.push(file.replaceAll("\\", "/"));
       }
     }
-    expect(hits).toEqual([]);
+    expect(hits).toEqual([
+      "client/src/features/casting/evidence/useInkAddWorkflow.ts",
+    ]);
+    const workflow = await readFile(hits[0]!, "utf8");
+    expect(workflow).toContain("const accept = useCallback(async () =>");
+    expect(workflow).toContain('candidateImage.phase !== "loaded"');
+    expect(workflow).toContain("await acceptCandidate.mutateAsync");
   });
 });

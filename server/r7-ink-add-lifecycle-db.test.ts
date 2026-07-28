@@ -63,6 +63,8 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./casting/storageCleanupWorker").processNextStorageCleanupBatch;
   let commitBeginInkAddIntent:
     typeof import("./db/inkAddIntents").commitBeginInkAddIntent;
+  let inspectOwnedInkAddAvailability:
+    typeof import("./db/inkAddIntents").inspectOwnedInkAddAvailability;
   let stageOwnedInkIntentReference:
     typeof import("./casting/evidence/evidenceOperations").stageOwnedInkIntentReference;
   let sweepStaleGenerationOperations:
@@ -117,7 +119,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     ({ getModelById, getUserModels } = await import("./db/models"));
     ({ resolveEffectiveCastStateForRead } = await import("./casting/effectiveCastRead"));
     ({ processNextStorageCleanupBatch } = await import("./casting/storageCleanupWorker"));
-    ({ commitBeginInkAddIntent } = await import("./db/inkAddIntents"));
+    ({
+      commitBeginInkAddIntent,
+      inspectOwnedInkAddAvailability,
+    } = await import("./db/inkAddIntents"));
     ({ stageOwnedInkIntentReference } = await import("./casting/evidence/evidenceOperations"));
     ({ sweepStaleGenerationOperations } = await import("./casting/operationRecovery"));
     ({ markGenerationOperationRunning } = await import("./db/generationOperations"));
@@ -437,6 +442,34 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     );
     return { intentId, candidate };
   }
+
+  it("derives the inline Add tattoo door from owner-scoped selected snapshot truth", async () => {
+    const eligible = await fixture({ status: "draft" });
+    await expect(inspectOwnedInkAddAvailability({
+      userId: eligible.userId,
+      modelId: eligible.modelId,
+    })).resolves.toBe("eligible");
+
+    const selected = await fixture({ status: "draft", withFeature: true });
+    await expect(inspectOwnedInkAddAvailability({
+      userId: selected.userId,
+      modelId: selected.modelId,
+    })).resolves.toBe("feature_selected");
+
+    await expect(inspectOwnedInkAddAvailability({
+      userId: eligible.userId,
+      modelId: selected.modelId,
+    })).resolves.toBe("model_unavailable");
+
+    await connection.execute(
+      "DELETE FROM model_package_snapshot_slots WHERE packageSnapshotId = ? AND viewAngle = 'frontFull'",
+      [eligible.packageId],
+    );
+    await expect(inspectOwnedInkAddAvailability({
+      userId: eligible.userId,
+      modelId: eligible.modelId,
+    })).resolves.toBe("source_unavailable");
+  }, 60_000);
 
   it("publishes a free independent Fork only after every object and graph copy verifies", async () => {
     const source = await fixture({ withFeature: true });

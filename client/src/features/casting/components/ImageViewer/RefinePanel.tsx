@@ -1,4 +1,4 @@
-import { RefObject, useRef, useState, useEffect } from 'react';
+import { RefObject, useRef, useState, useEffect, type ReactNode } from 'react';
 import { Sparkles, SendHorizontal } from 'lucide-react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 
@@ -33,6 +33,7 @@ interface RefinePanelProps {
   handleRefineSubmit: () => void;
   referenceImage?: string;
   onInputChanged?: () => void;
+  asideAction?: ReactNode;
 }
 
 // The floating bar shell — flat surface, hairline border, no shadow (D-40 language)
@@ -62,6 +63,7 @@ export function RefinePanel({
   handleRefineSubmit,
   referenceImage,
   onInputChanged,
+  asideAction,
 }: RefinePanelProps) {
   const {
     activeTool,
@@ -153,9 +155,12 @@ export function RefinePanel({
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="min-w-0 px-1 pb-2">
-        <p className="text-canvas-md font-medium text-canvas-ink">Refine this person</p>
-        <p className="text-canvas-sm text-canvas-ink-faint">Keeps their identity</p>
+      <div className="flex min-w-0 items-end justify-between gap-3 px-1 pb-2">
+        <div>
+          <p className="text-canvas-md font-medium text-canvas-ink">Refine this person</p>
+          <p className="text-canvas-sm text-canvas-ink-faint">Keeps their identity</p>
+        </div>
+        {asideAction}
       </div>
 
       <div className={`flex items-end gap-2 p-1.5 ${barShellClass}`}>

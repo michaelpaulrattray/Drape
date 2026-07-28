@@ -13,8 +13,10 @@ const ACTIVE_STATUSES = new Set(["claimed", "running"]);
 
 const PHASE_COPY: Record<string, string> = {
   planning: "Preparing…",
+  validating: "Checking request…",
   generating: "Generating…",
   saving: "Saving result…",
+  cleaning: "Removing private preview…",
   refreshing: "Refreshing views…",
   minting: "Casting model…",
   landing: "Placing result…",
@@ -150,6 +152,10 @@ const STUDIO_HEADLINE_KINDS = new Set([
   "casting.headshot",
   "casting.iterate",
   "casting.mint",
+  "evidence_candidate_generate",
+  "evidence_candidate_retry",
+  "evidence_candidate_accept",
+  "evidence_candidate_cancel",
 ]);
 
 /** One durable operation owns Studio's headline state for a model. Recovery

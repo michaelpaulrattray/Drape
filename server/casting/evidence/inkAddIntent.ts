@@ -3,8 +3,11 @@ import { TRPCError } from "@trpc/server";
 import {
   commitBeginInkAddIntent,
   findActiveOwnedInkIntent,
+  inspectOwnedInkAddAvailability,
   InkAddIntentStateError,
   type BeginInkAddIntentResult,
+  type OwnedInkAddAvailability,
+  type OwnedPendingInkIntent,
 } from "../../db/inkAddIntents";
 import {
   beginDirectOperation,
@@ -46,6 +49,13 @@ const INK_INTENT_UNSUPPORTED =
 
 export interface InkAddCapabilityDto {
   inkAdd: boolean;
+  subjectStatus:
+    | "disabled"
+    | "eligible"
+    | "active"
+    | "model_unavailable"
+    | "source_unavailable"
+    | "feature_selected";
   priceCredits: typeof INK_ADD_PRICE_CREDITS;
   targetView: typeof INK_ADD_TARGET_VIEW;
   placements: readonly InkAddSide[];
@@ -74,6 +84,19 @@ export interface InkAddIntentDependencies {
   begin?: BeginOperation;
   commit?: typeof commitBeginInkAddIntent;
   generateId?: () => string;
+}
+
+export interface InkAddCapabilityDependencies {
+  enabledForUser?: (userId: number) => boolean;
+  findActiveIntent?: (input: {
+    userId: number;
+    modelId: number;
+  }) => Promise<OwnedPendingInkIntent | null>;
+  inspectAvailability?: (input: {
+    userId: number;
+    modelId: number;
+  }) => Promise<OwnedInkAddAvailability>;
+  readCandidate?: typeof readActiveInkCandidate;
 }
 
 async function classifyInkAdd(
@@ -223,25 +246,38 @@ export async function beginInkAddIntent(
 
 export async function readInkAddCapability(
   input: { userId: number; modelId?: number },
-  dependencies: Pick<InkAddIntentDependencies, "enabledForUser"> = {},
+  dependencies: InkAddCapabilityDependencies = {},
 ): Promise<InkAddCapabilityDto> {
   const enabledForUser =
     dependencies.enabledForUser ?? captureEvidenceComposerEnabled;
   const enabled = enabledForUser(input.userId);
   const active = enabled && input.modelId
-    ? await findActiveOwnedInkIntent({
+    ? await (dependencies.findActiveIntent ?? findActiveOwnedInkIntent)({
         userId: input.userId,
         modelId: input.modelId,
       })
     : null;
   const candidate = active
-    ? await readActiveInkCandidate({
+    ? await (dependencies.readCandidate ?? readActiveInkCandidate)({
         userId: input.userId,
         intentId: active.id,
       })
     : null;
+  const availability = enabled && input.modelId && !active
+    ? await (
+        dependencies.inspectAvailability ?? inspectOwnedInkAddAvailability
+      )({
+        userId: input.userId,
+        modelId: input.modelId,
+      })
+    : null;
   return {
     inkAdd: enabled,
+    subjectStatus: !enabled
+      ? "disabled"
+      : active
+        ? "active"
+        : availability ?? "model_unavailable",
     priceCredits: INK_ADD_PRICE_CREDITS,
     targetView: INK_ADD_TARGET_VIEW,
     placements: INK_ADD_SIDES,

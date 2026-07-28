@@ -102,6 +102,7 @@ export function CastingWorkspace({
   const { genState, setGenState, currentModelId, currentAssets } = useCastingGenerationStore();
   const {
     activeView,
+    setActiveView,
     activeTool: castingActiveTool,
     showMobilePanel,
     setShowMobilePanel,
@@ -225,6 +226,23 @@ export function CastingWorkspace({
       });
     }
   }, []);
+
+  const handleInkAccepted = useCallback(async (modelId: number) => {
+    await Promise.allSettled([
+      utils.models.get.invalidate({ modelId }),
+      utils.models.list.invalidate(),
+      utils.generation.packageState.invalidate({ modelId }),
+      utils.generation.refreshSlotsPlan.invalidate({ modelId }),
+      utils.generation.mintPackagePlan.invalidate({ modelId }),
+      utils.credits.getBalance.invalidate(),
+    ]);
+    const model = await utils.models.get.fetch({ modelId });
+    if (model && useCastingGenerationStore.getState().currentModelId === modelId) {
+      applyModelTruth(model as LoadedCastingModel);
+      setActiveView("frontFull");
+      toast.success("Tattoo accepted");
+    }
+  }, [applyModelTruth, setActiveView, utils]);
 
   // R7-2E: the app bridge is the sole query owner. Studio consumes its
   // durable projection and reloads model truth after a matching operation
@@ -581,6 +599,7 @@ export function CastingWorkspace({
           profileLocked={showCastProfile}
           profileName={modelName}
           onForkProfile={onForkMinted}
+          onInkAccepted={handleInkAccepted}
         />
       </div>
 

@@ -74,11 +74,16 @@ describe("R7-3B server-backed casting clarification", () => {
 
   it("does not let durable spinner settlement erase a returned clarification", () => {
     const workspace = read("client/src/features/studio/components/CastingWorkspace.tsx");
+    const settlementStart = workspace.indexOf("if (durableDisplayRef.current)");
     const settlement = workspace.slice(
-      workspace.indexOf("if (durableDisplayRef.current)"),
-      workspace.indexOf("}, [applyModelTruth"),
+      settlementStart,
+      workspace.indexOf(
+        "}, [applyModelTruth, currentModelId, durableOperations",
+        settlementStart,
+      ),
     );
 
+    expect(settlementStart).toBeGreaterThan(-1);
     expect(settlement).toContain("clarification: store.genState.clarification ?? null");
   });
 });

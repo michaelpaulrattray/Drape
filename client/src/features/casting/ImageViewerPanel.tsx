@@ -14,6 +14,12 @@ import { trpc } from "@/lib/trpc";
 import { CREDIT_COSTS, type GeneratedAsset, type GenerationState } from "@/features/casting/constants";
 import { StudioCanvas } from "@/features/studio/components/StudioCanvas";
 import { ImageActionBar } from "@/features/studio/components/ImageActionBar";
+import {
+  InkAddComposer,
+  InkAddDoor,
+  InkFeaturePilotLock,
+} from "./evidence/InkAddPanel";
+import { useInkAddWorkflow } from "./evidence/useInkAddWorkflow";
 
 // ============ View Labels ============
 
@@ -46,6 +52,7 @@ interface ImageViewerPanelProps {
   profileLocked?: boolean;
   profileName?: string;
   onForkProfile?: () => void;
+  onInkAccepted: (modelId: number) => Promise<void>;
 }
 
 // ============ Main Component ============
@@ -71,6 +78,7 @@ export function ImageViewerPanel({
   profileLocked = false,
   profileName,
   onForkProfile,
+  onInkAccepted,
 }: ImageViewerPanelProps) {
   const { prefs, updatePref } = useCastingFormStore();
   const {
@@ -95,8 +103,31 @@ export function ImageViewerPanel({
   const {
     activeView,
     activeTool,
+    setActiveView,
     setRefineInput,
   } = useCastingUIStore();
+  const frontFullAsset = currentAssets.find(
+    (asset) => asset.viewType === "frontFull",
+  ) ?? null;
+  const inkWorkflow = useInkAddWorkflow({
+    modelId: currentModelId,
+    sourceAssetId: frontFullAsset?.id ?? null,
+    onAccepted: onInkAccepted,
+  });
+
+  useEffect(() => {
+    if (
+      (inkWorkflow.panelOpen || inkWorkflow.activeIntent)
+      && activeView !== "frontFull"
+    ) {
+      setActiveView("frontFull");
+    }
+  }, [
+    activeView,
+    inkWorkflow.activeIntent,
+    inkWorkflow.panelOpen,
+    setActiveView,
+  ]);
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
@@ -144,6 +175,23 @@ export function ImageViewerPanel({
   const isFormReady = formProgress >= 50;
   const hasAssets = currentAssets.length > 0;
   const hasResult = hasAssets;
+  const inkCandidateReady =
+    inkWorkflow.activeIntent?.candidateStatus === "ready";
+  const inkBusy =
+    inkWorkflow.action !== null
+    || inkWorkflow.activeIntent?.candidateStatus === "processing";
+  const inkFeatureSelected =
+    inkWorkflow.capability?.subjectStatus === "feature_selected";
+  const inkDoorAvailable =
+    activeView === "frontFull"
+    && inkWorkflow.capability?.subjectStatus === "eligible"
+    && !genState.isGenerating
+    && !isReadOnly
+    && !profileLocked;
+  const inkDisplayUrl = inkCandidateReady
+    && inkWorkflow.candidateImage.phase === "loaded"
+    ? inkWorkflow.candidateImage.objectUrl
+    : null;
 
   // Casting-specific keyboard handler
   const castingKeyHandler = useCallback((e: KeyboardEvent) => {
@@ -175,7 +223,9 @@ export function ImageViewerPanel({
   // vN are the SAME number now (the client-stack denominator died)
   const ledgerVersion =
     packageQuery.data?.slots.find((s) => s.angle === activeView)?.version ?? null;
-  const statusLabel = genState.isGenerating
+  const statusLabel = inkCandidateReady
+    ? "Preview · not part of this Cast"
+    : genState.isGenerating
     ? (genState.currentStep || 'Generating...')
     : isReadOnly && hasResult
       ? `${viewName} \u00b7 final`
@@ -189,6 +239,16 @@ export function ImageViewerPanel({
   const topOverlay = (
     <>
       <ViewTabs />
+      {inkCandidateReady && (
+        <div className="absolute left-1/2 top-14 z-30 -translate-x-1/2 rounded-canvas-pill border-hairline border-canvas-border-strong bg-canvas-surface px-3 py-1.5">
+          <span className="text-canvas-xs font-medium uppercase tracking-[0.12em] text-canvas-ink">
+            Preview
+          </span>
+          <span className="ml-2 text-canvas-sm text-canvas-ink-soft">
+            Not part of this Cast yet
+          </span>
+        </div>
+      )}
       {/* A1 stage 2 (D-53 rider): the fork-guidance surface — the seal's
           refusal teaches the doors where the edit happened (F4/D-40), with
           a WORKING Fork door (routes into the D-11 fork ceremony carrying
@@ -346,6 +406,13 @@ export function ImageViewerPanel({
         </button>
       )}
     </div>
+  ) : hasAssets && inkFeatureSelected ? (
+    <InkFeaturePilotLock />
+  ) : hasAssets && inkWorkflow.panelOpen ? (
+    <InkAddComposer
+      workflow={inkWorkflow}
+      externallyBusy={genState.isGenerating}
+    />
   ) : hasAssets && !isReadOnly ? (
     <div className="w-full max-w-2xl mx-auto" onClick={e => e.stopPropagation()}>
         {/* Inline Masking Helper */}
@@ -410,17 +477,28 @@ export function ImageViewerPanel({
           onInputChanged={genState.clarification
             ? () => setGenState((previous) => ({ ...previous, clarification: null }))
             : undefined}
+          asideAction={inkDoorAvailable
+            ? <InkAddDoor onOpen={inkWorkflow.openPanel} />
+            : undefined}
         />
     </div>
   ) : undefined;
 
   return (
     <StudioCanvas
-      displayUrl={hasAssets ? currentImageUrl ?? null : null}
-      imageAlt="Active View"
+      displayUrl={hasAssets ? inkDisplayUrl ?? currentImageUrl ?? null : null}
+      imageAlt={inkCandidateReady ? "Tattoo preview" : "Active View"}
       imageRef={imageRef}
-      isGenerating={genState.isGenerating}
-      generatingMessage={genState.currentStep}
+      isGenerating={genState.isGenerating || inkBusy}
+      generatingMessage={
+        inkWorkflow.action === "accept"
+          ? "Accepting tattoo preview…"
+          : inkWorkflow.action === "cancel"
+            ? "Removing private preview…"
+            : inkBusy
+              ? "Generating tattoo preview…"
+              : genState.currentStep
+      }
       hasResult={hasResult}
       // D-53: casting's session undo is RETIRED — the slot ledger is the
       // version history ("Use this version" in the tile thumb-strip);
@@ -437,20 +515,31 @@ export function ImageViewerPanel({
       ) : undefined}
       onClearError={() => setGenState((p) => ({ ...p, error: null }))}
       onRetry={isReadOnly ? () => {} : handleRetry}
-      compareUrl={compareUrl}
+      compareUrl={inkWorkflow.panelOpen || inkFeatureSelected ? null : compareUrl}
       compareLabel={compareLabel}
-      loadingMessage={genState.currentStep || 'Processing...'}
+      loadingMessage={
+        inkWorkflow.action === "accept"
+          ? "Accepting tattoo preview…"
+          : inkWorkflow.action === "cancel"
+            ? "Removing private preview…"
+            : inkBusy
+              ? "Generating tattoo preview…"
+              : genState.currentStep || "Processing..."
+      }
       isFirstGeneration={!hasAssets}
       showToolbar={hasAssets}
       emptyState={<WarmEmptyState canGenerate={isFormReady} />}
       topOverlay={topOverlay}
-      floatingOverlay={floatingOverlay}
-      imageOverlay={imageOverlayNode}
+      floatingOverlay={inkWorkflow.panelOpen ? undefined : floatingOverlay}
+      imageOverlay={inkWorkflow.panelOpen || inkFeatureSelected ? undefined : imageOverlayNode}
       sideOverlay={sideOverlay}
       statusOverlay={statusOverlay}
       bottomDock={bottomDock}
       actionBar={
-        hasAssets && !genState.isGenerating ? (
+        hasAssets
+        && !genState.isGenerating
+        && !inkWorkflow.panelOpen
+        && !inkFeatureSelected ? (
           <ImageActionBar
             visible={imageAreaHovered}
             showHeart={false}

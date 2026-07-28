@@ -134,4 +134,30 @@ describe('R7-2E durable Studio operation projection', () => {
     expect(selectStudioOperation([operation()], 44)).toBeNull();
     expect(selectStudioOperation([operation({ kind: 'casting.add_views' })], 44)).toBeNull();
   });
+
+  it('restores durable tattoo candidate work across tabs without treating free setup as a viewer lock', () => {
+    for (const kind of [
+      'evidence_candidate_generate',
+      'evidence_candidate_retry',
+      'evidence_candidate_accept',
+      'evidence_candidate_cancel',
+    ] as const) {
+      expect(selectStudioOperation([operation({ kind, phase: 'validating' })], 44)?.kind)
+        .toBe(kind);
+    }
+    expect(operationPhaseLabel(operation({
+      kind: 'evidence_candidate_generate',
+      phase: 'validating',
+    }))).toBe('Checking request…');
+    expect(operationPhaseLabel(operation({
+      kind: 'evidence_candidate_cancel',
+      phase: 'cleaning',
+    }))).toBe('Removing private preview…');
+    expect(selectStudioOperation([
+      operation({ kind: 'evidence_intent_begin', phase: 'planning' }),
+    ], 44)).toBeNull();
+    expect(selectStudioOperation([
+      operation({ kind: 'evidence_intent_reference', phase: 'saving' }),
+    ], 44)).toBeNull();
+  });
 });

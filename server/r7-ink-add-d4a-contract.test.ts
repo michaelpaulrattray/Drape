@@ -78,16 +78,20 @@ describe("R7-7D D4A intent/reference contract", () => {
     expect(db).toContain("intent.packageSnapshotId = models.currentPackageSnapshotId");
   });
 
-  it("has no client reachability before the later D5 UI slice", async () => {
+  it("keeps the D5 client door query-owned and click-driven", async () => {
     const route = await source("./routes/evidence.ts");
     expect(route).toContain("inkCapability");
-    const clientFiles = await Promise.all([
-      source("../client/src/App.tsx"),
+    const [workspace, viewer, workflow, panel] = await Promise.all([
       source("../client/src/features/studio/components/CastingWorkspace.tsx"),
-      source("../client/src/features/studio/takeover/CastingTakeover.tsx"),
+      source("../client/src/features/casting/ImageViewerPanel.tsx"),
+      source("../client/src/features/casting/evidence/useInkAddWorkflow.ts"),
+      source("../client/src/features/casting/evidence/InkAddPanel.tsx"),
     ]);
-    expect(clientFiles.join("\n")).not.toMatch(
-      /inkCapability|beginInkAddIntent|attachInkIntentReference|generateInkAddCandidate|retryInkAddCandidate|cancelInkAddIntent/,
-    );
+    expect(workspace).toContain("onInkAccepted={handleInkAccepted}");
+    expect(viewer).toContain("useInkAddWorkflow");
+    expect(workflow).toContain("trpc.evidence.inkCapability.useQuery");
+    expect(workflow).toContain("subscribeCastProjectionChanged");
+    expect(panel).toContain("onClick={() => void workflow.generate()}");
+    expect(panel).toContain("onClick={() => void workflow.accept()}");
   });
 });

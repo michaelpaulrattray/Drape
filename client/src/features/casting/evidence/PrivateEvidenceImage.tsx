@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { loadPrivateEvidenceImage } from "./privateEvidenceImageLoader";
 
@@ -14,23 +14,25 @@ type ImageState =
   | { phase: "loaded"; objectUrl: string }
   | { phase: "unavailable"; objectUrl: null };
 
-/**
- * Owner-private image surface. The endpoint is never assigned directly to an
- * <img>, so retryable HTTP/stream failures cannot flash a broken-image icon.
- */
-export function PrivateEvidenceImage({
-  src,
-  alt,
-  className,
-  placeholder,
-}: PrivateEvidenceImageProps) {
+export interface PrivateEvidenceImageState {
+  phase: ImageState["phase"];
+  objectUrl: string | null;
+  retry: () => void;
+}
+
+export function usePrivateEvidenceImage(
+  src: string | null,
+): PrivateEvidenceImageState {
   const [retryKey, setRetryKey] = useState(0);
-  const [state, setState] = useState<ImageState>({
-    phase: "loading",
-    objectUrl: null,
-  });
+  const [state, setState] = useState<ImageState>(() => src
+    ? { phase: "loading", objectUrl: null }
+    : { phase: "unavailable", objectUrl: null });
 
   useEffect(() => {
+    if (!src) {
+      setState({ phase: "unavailable", objectUrl: null });
+      return;
+    }
     const controller = new AbortController();
     let objectUrl: string | null = null;
     setState({ phase: "loading", objectUrl: null });
@@ -55,16 +57,30 @@ export function PrivateEvidenceImage({
     };
   }, [retryKey, src]);
 
-  if (state.phase === "loaded") {
+  const retry = useCallback(() => setRetryKey((value) => value + 1), []);
+  return { ...state, retry };
+}
+
+/**
+ * Owner-private image surface. The endpoint is never assigned directly to an
+ * <img>, so retryable HTTP/stream failures cannot flash a broken-image icon.
+ */
+export function PrivateEvidenceImage({
+  src,
+  alt,
+  className,
+  placeholder,
+}: PrivateEvidenceImageProps) {
+  const state = usePrivateEvidenceImage(src);
+
+  const objectUrl = state.objectUrl;
+  if (state.phase === "loaded" && objectUrl) {
     return (
       <img
-        src={state.objectUrl}
+        src={objectUrl}
         alt={alt}
         className={className}
-        onError={() => {
-          URL.revokeObjectURL(state.objectUrl);
-          setState({ phase: "unavailable", objectUrl: null });
-        }}
+        onError={state.retry}
       />
     );
   }
@@ -87,7 +103,7 @@ export function PrivateEvidenceImage({
         <button
           type="button"
           className="text-canvas-xs text-canvas-ink-muted underline-offset-2 hover:underline"
-          onClick={() => setRetryKey((value) => value + 1)}
+          onClick={state.retry}
         >
           Try image again
         </button>

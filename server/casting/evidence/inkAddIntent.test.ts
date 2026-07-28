@@ -112,9 +112,62 @@ describe("R7-7D D4A ink intent service", () => {
       { enabledForUser: () => false },
     )).resolves.toEqual({
       inkAdd: false,
+      subjectStatus: "disabled",
       priceCredits: 350,
       targetView: "frontFull",
       placements: ["left", "centre", "right"],
+      activeIntent: null,
+    });
+  });
+
+  it("reports server-owned subject and active-candidate truth", async () => {
+    const active = {
+      id: "33333333-3333-4333-8333-333333333333",
+      userId: 7,
+      modelId: 14,
+      side: "centre" as const,
+      normalizedDescriptor: "fine-line orbit",
+      sourceAssetId: 28,
+      expectedStateVersion: 4,
+      identitySnapshotId: "44444444-4444-4444-8444-444444444444",
+      packageSnapshotId: "55555555-5555-4555-8555-555555555555",
+      referencePlateId: null,
+    };
+    await expect(readInkAddCapability(
+      { userId: 7, modelId: 14 },
+      {
+        enabledForUser: () => true,
+        findActiveIntent: async () => active,
+        inspectAvailability: async () => {
+          throw new Error("active intent must win");
+        },
+        readCandidate: async () => ({
+          candidateId: "66666666-6666-4666-8666-666666666666",
+          candidateStatus: "ready",
+          candidateDeliveryUrl: "/api/evidence/candidate/66666666-6666-4666-8666-666666666666",
+          expiresAt: "2026-08-27T00:00:00.000Z",
+        }),
+      },
+    )).resolves.toMatchObject({
+      inkAdd: true,
+      subjectStatus: "active",
+      activeIntent: {
+        description: "fine-line orbit",
+        side: "centre",
+        candidateStatus: "ready",
+      },
+    });
+
+    await expect(readInkAddCapability(
+      { userId: 7, modelId: 14 },
+      {
+        enabledForUser: () => true,
+        findActiveIntent: async () => null,
+        inspectAvailability: async () => "feature_selected",
+      },
+    )).resolves.toMatchObject({
+      inkAdd: true,
+      subjectStatus: "feature_selected",
       activeIntent: null,
     });
   });
