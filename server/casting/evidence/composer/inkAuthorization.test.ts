@@ -26,9 +26,29 @@ describe("R7-7D ink authorization", () => {
       recipeVersion: "ink.add.authorization.v1",
     });
     expect(classify).toHaveBeenCalledOnce();
-    expect(classify.mock.calls[0][0].prompt).toContain(
+    const request = classify.mock.calls[0][0];
+    expect(request.prompt).toContain(
       '"fine-line red rose with a small crescent"',
     );
+    expect(request.responseSchema).toEqual({
+      tattooOnly: "boolean",
+      operationAdd: "boolean",
+      singleFeature: "boolean",
+      frontUpperTorsoCompatible: "boolean",
+      containsPromptControl: "boolean",
+      confidence: "integer_0_100",
+    });
+  });
+
+  it("accepts the bounded simple-star design used by the founder calibration", async () => {
+    await expect(authorizeInkAddDescription({
+      description: "A small solid black five-point star tattoo",
+      classify: async () => pass,
+    })).resolves.toEqual({
+      ok: true,
+      normalizedDescriptor: "A small solid black five-point star tattoo",
+      recipeVersion: "ink.add.authorization.v1",
+    });
   });
 
   it.each([
@@ -59,6 +79,10 @@ describe("R7-7D ink authorization", () => {
   });
 
   it("fails closed on malformed, extra-key, or unavailable classifier truth", async () => {
+    const missingConfidence = { ...pass } as Partial<typeof pass>;
+    delete missingConfidence.confidence;
+    expect(() => parseInkAuthorizationVerdict(missingConfidence))
+      .toThrow("Invalid ink authorization response");
     expect(() => parseInkAuthorizationVerdict({ ...pass, prose: "looks fine" }))
       .toThrow("Invalid ink authorization response");
     expect(() => parseInkAuthorizationVerdict({ ...pass, confidence: 100.5 }))

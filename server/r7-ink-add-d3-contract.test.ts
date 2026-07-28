@@ -49,6 +49,22 @@ describe("R7-7D D3 pure composer contract", () => {
     expect(retry).toContain("EVIDENCE_CANDIDATE_MAX_ATTEMPTS");
   });
 
+  it("pins the provider schema for the fail-closed authorization gate", () => {
+    const authorization = read("inkAuthorization.ts");
+    const intent = fs.readFileSync(path.join(
+      root,
+      "server",
+      "casting",
+      "evidence",
+      "inkAddIntent.ts",
+    ), "utf8");
+    expect(authorization).toContain("responseSchema: {");
+    expect(authorization).toContain('confidence: "integer_0_100"');
+    expect(intent).toContain("Object.entries(request.responseSchema)");
+    expect(intent).toContain("required: Object.keys(properties)");
+    expect(intent).toContain("additionalProperties: false");
+  });
+
   it("keeps the calibration recorder local, allowlisted, and free of private payload fields", () => {
     const calibration = read("inkCalibration.ts");
     expect(calibration).toContain("createInkCalibrationRecorder");

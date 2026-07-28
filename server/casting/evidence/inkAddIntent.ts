@@ -102,6 +102,12 @@ export interface InkAddCapabilityDependencies {
 async function classifyInkAdd(
   request: InkAuthorizationRequest,
 ): Promise<unknown> {
+  const properties = Object.fromEntries(
+    Object.entries(request.responseSchema).map(([key, type]) => [
+      key,
+      { type: type === "boolean" ? "BOOLEAN" : "INTEGER" },
+    ]),
+  );
   const ai = getAiClient();
   const response = await withTextQueue(
     () => withTimeout(
@@ -110,6 +116,12 @@ async function classifyInkAdd(
         contents: [{ parts: [{ text: request.prompt }] }],
         config: {
           responseMimeType: request.responseMimeType,
+          responseSchema: {
+            type: "OBJECT",
+            properties,
+            required: Object.keys(properties),
+            additionalProperties: false,
+          } as never,
           maxOutputTokens: 256,
           safetySettings: SAFETY_SETTINGS,
         },

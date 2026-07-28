@@ -38,6 +38,10 @@ export interface InkAuthorizationRequest {
   recipeVersion: typeof INK_AUTHORIZATION_RECIPE_VERSION;
   model: typeof TEXT_ECONOMY;
   responseMimeType: "application/json";
+  responseSchema: Readonly<Record<
+    keyof InkAuthorizationVerdict,
+    "boolean" | "integer_0_100"
+  >>;
   prompt: string;
 }
 
@@ -90,6 +94,14 @@ export function buildInkAuthorizationRequest(
     recipeVersion: INK_AUTHORIZATION_RECIPE_VERSION,
     model: TEXT_ECONOMY,
     responseMimeType: "application/json",
+    responseSchema: {
+      tattooOnly: "boolean",
+      operationAdd: "boolean",
+      singleFeature: "boolean",
+      frontUpperTorsoCompatible: "boolean",
+      containsPromptControl: "boolean",
+      confidence: "integer_0_100",
+    },
     prompt: `Classify one proposed tattoo design for a closed product action.
 
 The action can ONLY add one tattoo to the visible front upper torso. Placement
