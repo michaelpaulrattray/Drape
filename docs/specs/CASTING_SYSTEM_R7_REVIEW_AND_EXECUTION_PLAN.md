@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-4B are locally complete as of 2026-07-21; R7-5 is at the destructive-data planning gate
+**Status:** IN EXECUTION — R7-0 through R7-7E are complete as of 2026-07-29; the next ratified phase is R7-7F true whole-Cast snapshot restore, followed by the still-open R7-8 closure program
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -371,10 +371,15 @@ The founder approved all eight recommendations below as binding R7 direction:
 
 ## 9. Immediate next action
 
-1. Complete R7-0 by reconciling `DECISION_LOG.md`, `PASS_1_BUILD_PLAN.md`, the R6 wrap state, and the obsolete Canvas success criteria.
-2. Fable reviews the complete staged R7-0 documentation batch.
-3. Commit R7-0 locally after approval.
-4. Produce the exact R7-1 implementation plan and migration design.
-5. Begin code only after the R7-1 plan is approved.
+1. Produce the exact R7-7F true whole-Cast snapshot-restore implementation
+   plan from the ratified R7-6 authority.
+2. Audit the current snapshot, package-selection, lifecycle, fork, recovery,
+   billing, and deletion contracts against that restore law.
+3. Obtain one consolidated milestone review after the plan and codebase audit
+   are internally coherent.
+4. Implement R7-7F in bounded reviewed slices; do not widen evidence
+   categories or production scopes as part of restore.
+5. After founder verification, execute the remaining R7-8
+   quality/reference-sheet/dogfood closure program in its ratified order.
 
 R7 should move quickly in bounded batches, but it should not hide architecture inside an overnight prompt. The trust foundation is mechanical enough to execute once reviewed; the evidence composer is a separate founder-gated product and research program.

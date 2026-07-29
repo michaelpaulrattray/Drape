@@ -894,6 +894,17 @@ snapshot slot; that repair changes no identity, feature, package selection,
 credits, storage or image bytes and still requires a separately authorized
 production apply.
 
+**R7-7E Walk compatibility closure (2026-07-29):** commit `17b7f3a` deployed
+successfully as Railway deployment
+`e49f630a-605d-454f-aaf4-67cccaff3930`. After a read-only exact-cohort plan
+found founder user `1`, model `35`, Walk asset `157` as the sole eligible row,
+the founder separately authorized the compatibility-only production apply.
+The transaction restored exactly one asset status and one current snapshot
+slot, changed no image bytes or selections, and invoked no generation,
+provider, credit, storage, identity or feature write. Its in-tool proof passed,
+and a separate read-only postflight found the same model/asset `repaired` with
+zero remaining repair rows.
+
 ### D-72 — Cast packages are progressive, not a six-view prerequisite *(founder-ratified 2026-07-29; amends R7-7E mint and post-mint package scope)*
 
 **Minimum useful Cast:** the normal product path presents a strong portrait

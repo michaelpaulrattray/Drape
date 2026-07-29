@@ -1,8 +1,9 @@
 # Casting System R7-7E — Evidence-aware package synchronization
 
-**Status:** implementation plan only. This document does not enable a route,
-generate an image, spend credits, write storage, change a Railway variable, or
-contact production by itself.
+**Status:** implemented, deployed, and closed for the founder pilot on
+2026-07-29 at commit `17b7f3a`. Evidence package authoring remains
+founder-scoped. This document does not authorize cohort widening or another
+paid calibration generation.
 
 **Authority:** D-15, D-39, D-43, D-56, D-62, D-65, D-68, D-70, D-71,
 `CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md`, the completed R7-7A/B/C/D
