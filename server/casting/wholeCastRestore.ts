@@ -144,6 +144,38 @@ function pairForIdentity(
   return matches.length === 1 ? matches[0] : null;
 }
 
+/**
+ * Restore snapshots are immutable audit events, not new user-authored Cast
+ * states. Follow their restore provenance back to the original semantic state
+ * so the public timeline can present each state once while the ledger keeps
+ * every append.
+ */
+function semanticStateIdentity(
+  rows: RestoreHistoryRows,
+  identity: ModelIdentitySnapshot,
+): ModelIdentitySnapshot {
+  if (identity.reason !== "restore") return identity;
+  const byId = new Map(rows.identities.map((row) => [row.id, row]));
+  const seen = new Set<string>();
+  let cursor = identity;
+  while (cursor.reason === "restore") {
+    if (seen.has(cursor.id) || !cursor.restoredFromSnapshotId) {
+      return identity;
+    }
+    seen.add(cursor.id);
+    const source = byId.get(cursor.restoredFromSnapshotId);
+    if (
+      !source
+      || source.modelId !== rows.model.id
+      || source.sequence >= cursor.sequence
+    ) {
+      return identity;
+    }
+    cursor = source;
+  }
+  return cursor;
+}
+
 function featureGraphCloses(
   input: {
     model: Model;
@@ -358,17 +390,43 @@ export function buildPublicCastStateHistory(
   const currentPackage = rows.packages.find(
     (snapshot) => snapshot.id === rows.model.currentPackageSnapshotId,
   ) ?? null;
-  const currentIdentityId = currentPackage?.identitySnapshotId ?? null;
+  const currentIdentity = currentPackage
+    ? rows.identities.find(
+        (identity) => identity.id === currentPackage.identitySnapshotId,
+      ) ?? null
+    : null;
+  const currentIdentityId = currentIdentity
+    ? semanticStateIdentity(rows, currentIdentity).id
+    : null;
   const draft = isModelDraftStatus(rows.model.status);
   const minted = isModelMintedStatus(rows.model.status);
   if (!draft && !minted) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   }
-  const restorePoints = [...rows.identities]
+  const seenStates = new Set<string>();
+  const stateIdentities = [...rows.identities]
     .sort((a, b) => b.sequence - a.sequence)
+    .flatMap((identity) => {
+      const state = semanticStateIdentity(rows, identity);
+      if (seenStates.has(state.id)) return [];
+      seenStates.add(state.id);
+      return [state];
+    })
+    .sort((a, b) => {
+      if (a.id === currentIdentityId) return -1;
+      if (b.id === currentIdentityId) return 1;
+      return 0;
+    });
+  const restorePoints = stateIdentities
     .map((identity): PublicCastStateRestorePoint => {
       const pair = pairForIdentity(identity, rows.packages);
-      const reason = unavailableReason(rows, identity, currentIdentityId);
+      // A restore row reaches this point only when its provenance chain did
+      // not close to an original state. Keep it visible for honest history,
+      // but never make the malformed audit hop executable.
+      const reason =
+        identity.reason === "restore" && identity.id !== currentIdentityId
+          ? "pair_unavailable"
+          : unavailableReason(rows, identity, currentIdentityId);
       const plan = resolveWholeCastRestorePoint(rows, identity);
       const anchor = rows.assets.find((asset) => asset.id === identity.anchorAssetId);
       const featureCount = rows.featureSelections.filter(

@@ -249,6 +249,146 @@ describe("R7-7F whole-Cast history authority", () => {
     expect(serialized).not.toContain("black star");
   });
 
+  it("collapses restore audit hops into unique semantic Cast states", () => {
+    const rows = fixture();
+    const restoredEvidence = {
+      ...rows.identities[0],
+      id: "identity-3",
+      sequence: 3,
+      parentSnapshotId: "identity-2",
+      restoredFromSnapshotId: "identity-2",
+      reason: "restore",
+      recipeVersion: "restore-v1",
+      createdByOperationId: "operation-3",
+      createdAt: new Date("2026-01-03T00:00:00Z"),
+    };
+    const restoredOriginal = {
+      ...rows.identities[1],
+      id: "identity-4",
+      sequence: 4,
+      parentSnapshotId: "identity-3",
+      restoredFromSnapshotId: "identity-1",
+      reason: "restore",
+      recipeVersion: "restore-v1",
+      createdByOperationId: "operation-4",
+      createdAt: new Date("2026-01-04T00:00:00Z"),
+    };
+    const restoredOriginalAgain = {
+      ...restoredOriginal,
+      id: "identity-5",
+      sequence: 5,
+      parentSnapshotId: "identity-4",
+      restoredFromSnapshotId: "identity-4",
+      createdByOperationId: "operation-5",
+      createdAt: new Date("2026-01-05T00:00:00Z"),
+    };
+    rows.identities = [
+      restoredOriginalAgain,
+      restoredOriginal,
+      restoredEvidence,
+      ...rows.identities,
+    ];
+    rows.packages = [
+      {
+        ...rows.packages[0],
+        id: "package-5",
+        identitySnapshotId: restoredOriginalAgain.id,
+        sequence: 5,
+        parentPackageSnapshotId: "package-4",
+        reason: "whole_restore",
+        createdByOperationId: "operation-5",
+        createdAt: new Date("2026-01-05T00:00:00Z"),
+      },
+      {
+        ...rows.packages[0],
+        id: "package-4",
+        identitySnapshotId: restoredOriginal.id,
+        sequence: 4,
+        parentPackageSnapshotId: "package-3",
+        reason: "whole_restore",
+        createdByOperationId: "operation-4",
+        createdAt: new Date("2026-01-04T00:00:00Z"),
+      },
+      {
+        ...rows.packages[0],
+        id: "package-3",
+        identitySnapshotId: restoredEvidence.id,
+        sequence: 3,
+        parentPackageSnapshotId: "package-2",
+        reason: "whole_restore",
+        createdByOperationId: "operation-3",
+        createdAt: new Date("2026-01-03T00:00:00Z"),
+      },
+      ...rows.packages,
+    ];
+    rows.model.currentPackageSnapshotId = "package-5";
+
+    const history = buildPublicCastStateHistory(rows, true);
+
+    expect(history.restorePoints.map((point) => ({
+      label: point.label,
+      current: point.current,
+      featureCount: point.featureCount,
+      restorePointId: point.restorePointId,
+    }))).toEqual([
+      {
+        label: "Original Cast",
+        current: true,
+        featureCount: 0,
+        restorePointId: "package-1",
+      },
+      {
+        label: "Evidence accepted",
+        current: false,
+        featureCount: 1,
+        restorePointId: "package-2",
+      },
+    ]);
+  });
+
+  it("keeps malformed restore provenance visible but fail-closed", () => {
+    const rows = fixture();
+    const brokenRestore = {
+      ...rows.identities[0],
+      id: "identity-broken",
+      sequence: 3,
+      parentSnapshotId: "identity-2",
+      restoredFromSnapshotId: "identity-missing",
+      reason: "restore",
+      recipeVersion: "restore-v1",
+      createdByOperationId: "operation-broken",
+      createdAt: new Date("2026-01-03T00:00:00Z"),
+    };
+    rows.identities = [brokenRestore, ...rows.identities];
+    rows.packages = [
+      {
+        ...rows.packages[0],
+        id: "package-broken",
+        identitySnapshotId: brokenRestore.id,
+        sequence: 3,
+        parentPackageSnapshotId: "package-2",
+        reason: "whole_restore",
+        createdByOperationId: "operation-broken",
+        createdAt: new Date("2026-01-03T00:00:00Z"),
+      },
+      ...rows.packages,
+    ];
+
+    const history = buildPublicCastStateHistory(rows, true);
+
+    expect(history.restorePoints[0]).toMatchObject({
+      label: "Evidence accepted",
+      current: true,
+    });
+    expect(history.restorePoints.find(
+      (point) => point.label === "Restored state",
+    )).toMatchObject({
+      current: false,
+      available: false,
+      unavailableReason: "pair_unavailable",
+    });
+  });
+
   it("fails feature-bearing closure when its accepted private plate is absent", () => {
     const rows = fixture();
     rows.plates = [];

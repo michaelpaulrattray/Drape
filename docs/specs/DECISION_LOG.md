@@ -932,6 +932,21 @@ and a secondary “Add coverage” path, with contextual recommendations when
 selected evidence makes a view valuable. Sophistication comes from Drape
 choosing the useful view, not from exposing more controls.
 
+### D-73 — Cast history presents states, not restore audit events *(founder-ratified 2026-07-29; R7-7F correction)*
+
+**Product surface:** repeated whole-Cast restores must not create a growing
+stack of indistinguishable `Restored state` rows. The public history presents
+each unique semantic Cast state once, puts the state containing the current
+identity head first, and labels it `Current`. A valid restore snapshot resolves
+transitively through its restore provenance to the original non-restore state,
+so restore-of-restore chains collapse as well.
+
+**Safety boundary:** this is projection-only. Every restore still appends its
+identity snapshot, package snapshot, selections, durable zero-credit receipt,
+parent link, and restore-source link. No ledger row is rewritten, deleted, or
+made reusable as mutable authority. Malformed or non-closing restore
+provenance remains fail-closed rather than being silently coalesced.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

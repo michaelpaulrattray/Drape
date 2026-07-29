@@ -82,9 +82,9 @@ export function CastStateHistory({ modelId, className }: CastStateHistoryProps) 
     <section className={cn('rounded-canvas-md border-hairline border-canvas-border bg-canvas-surface px-3 py-3', className)}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-canvas-md font-medium text-canvas-ink">Cast history</div>
+          <div className="text-canvas-md font-medium text-canvas-ink">Cast states</div>
           <div className="mt-0.5 text-canvas-xs leading-normal text-canvas-ink-soft">
-            Restore a complete earlier identity state. Every version stays in history.
+            Move between complete saved identity states.
           </div>
         </div>
         {history.forkRequired ? (
@@ -161,7 +161,7 @@ export function CastStateHistory({ modelId, className }: CastStateHistoryProps) 
       {selected?.available ? (
         <div className="mt-2 rounded-canvas-sm bg-canvas-surface-inset px-2.5 py-2.5 flex items-center justify-between gap-3">
           <div className="text-canvas-xs leading-normal text-canvas-ink-soft">
-            Free · creates a new current state and keeps this history.
+            Free · makes this current and keeps the other states.
           </div>
           <button
             type="button"

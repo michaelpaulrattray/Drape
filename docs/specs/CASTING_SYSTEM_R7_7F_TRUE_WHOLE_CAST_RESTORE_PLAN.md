@@ -28,9 +28,10 @@ One restore:
 7. advances the model head through the existing state-version CAS; and
 8. finalizes one zero-credit durable operation in the same transaction.
 
-The current state remains the newest chronological entry. Restore provenance
-forms an internal DAG through `parentSnapshotId` and
-`restoredFromSnapshotId`; the public UI stays a simple chronological timeline.
+The current snapshot remains the newest chronological ledger entry. Restore
+provenance forms an internal DAG through `parentSnapshotId` and
+`restoredFromSnapshotId`; the public UI presents unique semantic Cast states
+rather than exposing restore audit hops as additional user-facing versions.
 
 This is not the existing per-view “Use this version” action. That action
 remains package-only reuse inside the current identity. R7-7F is a true
@@ -64,8 +65,12 @@ No evidence ingestion/composer/package scope changes are part of R7-7F.
 
 ## 3. Historical state pairing
 
-The whole-Cast timeline has one entry per identity snapshot, ordered by
-identity sequence descending.
+The whole-Cast timeline has one entry per unique semantic identity state.
+Ordinary identity snapshots define states. A valid restore snapshot resolves
+transitively through `restoredFromSnapshotId` to its original non-restore
+identity and is coalesced into that state. The state containing the current
+identity head is presented first. Every restore snapshot remains in the
+immutable ledger; only the public projection is collapsed.
 
 The paired package is the package snapshot created atomically with that
 identity:
@@ -230,7 +235,7 @@ Output:
 
 - `enabled`;
 - lifecycle (`draft | minted`);
-- chronological restore points with opaque `restorePointId`, timestamp,
+- unique state restore points with opaque `restorePointId`, timestamp,
   reason label, preview URL when available, selected-view count,
   feature count, `current`, `available`, and a closed unavailable reason;
 - top-level `canRestore` and `forkRequired`.
@@ -252,22 +257,23 @@ fresh server truth; it does not re-run the transition.
 
 ## 9. Studio UI
 
-Add a restrained “Cast history” section above per-view details in
+Add a restrained “Cast states” section above per-view details in
 `CastingDetailsDialog`.
 
-- Show compact chronological rows with a headshot preview, date, state label,
-  view count, and feature count.
-- Mark the newest identity “Current”.
+- Show compact unique-state rows with a headshot preview, original state date,
+  state label, view count, and feature count.
+- Put the semantic state containing the newest identity head first and mark it
+  “Current”; never render `Restored state` audit hops as separate rows.
 - Selecting an available older draft row reveals one inline confirmation:
-  “Restore this Cast state”. Supporting copy says it is free, creates a new
-  current state, and keeps all history.
+  “Restore this Cast state”. Supporting copy says it is free, makes the
+  selected state current, and keeps the other states.
 - Unavailable rows remain visible and name only a safe closed reason.
 - A minted Cast shows the timeline read-only and one existing Fork door; it
   never presents Restore as permitted.
 - Pending state holds the selected row and prevents duplicate requests.
 - Success closes the confirmation, publishes
   `publishCastProjectionChanged(modelId)`, reloads `models.get`, package
-  state, refresh/mint plans, per-view history, and Cast history, and lets the
+  state, refresh/mint plans, per-view history, and Cast states, and lets the
   workspace’s durable-operation bridge rehydrate current assets/documents.
 - Failure leaves the current Cast unchanged and shows the server message.
 
@@ -298,6 +304,8 @@ styling, or automatic generation is introduced.
 - operation kind, feature authority, replay-family, stale recovery, landing,
   and public-result maps remain exhaustive;
 - client timeline states, confirmation, invalidation, and minted Fork door.
+- repeated and transitive restore hops collapse into unique semantic states
+  while execution still appends every restore snapshot.
 
 ### Disposable MySQL
 
@@ -345,6 +353,13 @@ state and an evidence-bearing historical state restore correctly, or after a
 reviewed explanation shows why one of those states is not yet present in the
 founder account and an equivalent disposable-DB proof is accepted. No paid
 generation is part of closure.
+
+Founder UX correction (2026-07-29): the first live drive proved that exposing
+each append-only restore snapshot as a separate `Restored state` row produces
+mechanical version clutter. The public history therefore coalesces valid
+restore chains into their original semantic states. This changes presentation
+only: provenance, receipts, parentage, rollback safety, and the append-only
+ledger remain intact.
 
 ## 12. Local implementation record — 2026-07-29
 
