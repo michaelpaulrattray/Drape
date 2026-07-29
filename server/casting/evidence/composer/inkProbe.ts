@@ -70,6 +70,13 @@ export interface InkProbeRequest {
 export interface InkVisibilityProbe {
   predictedVisibility: EvidenceProbeOutcome;
   confidence: number | null;
+  detail: Readonly<{
+    targetRegionVisible: boolean;
+    anatomicalSideReadable: boolean;
+    materiallyOccluded: boolean;
+    guideCoversRequestedRegion: boolean;
+    guideTouchesOppositeSide: boolean;
+  }> | null;
 }
 
 export interface InkPlacementProbeDetail {
@@ -624,9 +631,14 @@ export async function runInkVisibilityProbe(input: {
         result.upperTorsoVisible && !result.materiallyOccluded,
       ),
       confidence: result.confidence,
+      detail: null,
     };
   } catch {
-    return { predictedVisibility: "unknown", confidence: null };
+    return {
+      predictedVisibility: "unknown",
+      confidence: null,
+      detail: null,
+    };
   }
 }
 
@@ -709,9 +721,20 @@ export async function runInkAnywhereVisibilityProbe(input: {
         && result.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE,
       ),
       confidence: result.confidence,
+      detail: Object.freeze({
+        targetRegionVisible: result.targetRegionVisible,
+        anatomicalSideReadable: result.anatomicalSideReadable,
+        materiallyOccluded: result.materiallyOccluded,
+        guideCoversRequestedRegion: result.guideCoversRequestedRegion,
+        guideTouchesOppositeSide: result.guideTouchesOppositeSide,
+      }),
     };
   } catch {
-    return { predictedVisibility: "unknown", confidence: null };
+    return {
+      predictedVisibility: "unknown",
+      confidence: null,
+      detail: null,
+    };
   }
 }
 

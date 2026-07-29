@@ -183,6 +183,7 @@ describe("R7-7D fail-closed structured probes", () => {
     })).resolves.toEqual({
       predictedVisibility: "unknown",
       confidence: null,
+      detail: null,
     });
     await expect(runInkVisibilityProbe({
       target: image,
@@ -194,6 +195,7 @@ describe("R7-7D fail-closed structured probes", () => {
     })).resolves.toEqual({
       predictedVisibility: "pass",
       confidence: 92,
+      detail: null,
     });
   });
 
@@ -263,6 +265,13 @@ describe("R7-7D fail-closed structured probes", () => {
     })).resolves.toEqual({
       predictedVisibility: "pass",
       confidence: 91,
+      detail: {
+        targetRegionVisible: true,
+        anatomicalSideReadable: true,
+        materiallyOccluded: false,
+        guideCoversRequestedRegion: true,
+        guideTouchesOppositeSide: false,
+      },
     });
     await expect(runInkAnywhereVisibilityProbe({
       target: image,
@@ -279,6 +288,13 @@ describe("R7-7D fail-closed structured probes", () => {
     })).resolves.toEqual({
       predictedVisibility: "fail",
       confidence: 84,
+      detail: {
+        targetRegionVisible: true,
+        anatomicalSideReadable: true,
+        materiallyOccluded: false,
+        guideCoversRequestedRegion: true,
+        guideTouchesOppositeSide: false,
+      },
     });
     await expect(runInkAnywhereVisibilityProbe({
       target: image,
@@ -295,6 +311,13 @@ describe("R7-7D fail-closed structured probes", () => {
     })).resolves.toEqual({
       predictedVisibility: "fail",
       confidence: 96,
+      detail: {
+        targetRegionVisible: true,
+        anatomicalSideReadable: true,
+        materiallyOccluded: false,
+        guideCoversRequestedRegion: false,
+        guideTouchesOppositeSide: false,
+      },
     });
 
     const truth = await runInkAnywhereCandidateProbes({

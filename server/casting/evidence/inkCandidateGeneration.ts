@@ -744,6 +744,13 @@ async function executeCandidate(
           anatomy: prepared.authority.anatomy,
           probe: dependencies.probe ?? defaultProbe,
         });
+    log.info({
+      operationId: gate.operationId,
+      candidateId: prepared.candidateId,
+      sourceViewAngle: prepared.sourceViewAngle,
+      anatomy: prepared.authority.anatomy,
+      visibility,
+    }, "Ink candidate pre-charge visibility assessed");
     if (visibility.predictedVisibility !== "pass") {
       await (dependencies.invalidate ?? invalidateInkCandidate)({
         prepared,
