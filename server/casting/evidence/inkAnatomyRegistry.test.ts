@@ -4,6 +4,8 @@ import {
   ALL_SUPPORTED_INK_ANATOMY_TUPLES,
   INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
   INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS,
+  INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+  INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS,
   chooseCurrentInkAuthoringSource,
   inkAnatomicalSideAuthority,
   inkAnatomyLabel,
@@ -14,6 +16,15 @@ import {
 } from "./inkAnatomyRegistry";
 
 describe("all-body ink anatomy registry", () => {
+  it("keeps v1 projection evidence readable after clean-source composition", () => {
+    expect(INK_ANYWHERE_PROJECTION_RECIPE_VERSION)
+      .toBe("ink.add.anywhere.projection.v2");
+    expect(INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS).toEqual([
+      "ink.add.anywhere.projection.v1",
+      "ink.add.anywhere.projection.v2",
+    ]);
+  });
+
   it("keeps earlier coverage evidence readable after the certainty contract", () => {
     expect(INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION)
       .toBe("ink.add.anywhere.coverage-probe.v3");

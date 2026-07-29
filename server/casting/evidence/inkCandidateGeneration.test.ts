@@ -413,7 +413,7 @@ describe("ink candidate generation", () => {
         ontologyVersion: "body-zones.ink.v2",
         targetAngle: "backFull",
         sourceAngle: "backFull",
-        composerRecipeVersion: "ink.add.anywhere.projection.v1",
+        composerRecipeVersion: "ink.add.anywhere.projection.v2",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v1",
         visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v3",
         features: [{
@@ -483,8 +483,9 @@ describe("ink candidate generation", () => {
       expect.any(Function),
     );
     expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.projection.v1",
+      recipeVersion: "ink.add.anywhere.projection.v2",
       images: expect.arrayContaining([
+        expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "evidence_mosaic" }),
       ]),
     }));

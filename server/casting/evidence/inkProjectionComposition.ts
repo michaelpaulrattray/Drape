@@ -232,7 +232,11 @@ export async function buildInkEvidenceMosaic(
 }
 
 export interface InkProjectionComposerInlineImage {
-  role: "identity_anchor" | "guided_target" | "evidence_mosaic";
+  role:
+    | "original_target"
+    | "guided_target"
+    | "identity_anchor"
+    | "evidence_mosaic";
   inlineData: { mimeType: ComposerImageMime; data: string };
 }
 
@@ -301,6 +305,7 @@ export function buildInkProjectionComposerRequest(input: {
   targetAngle: CanonicalViewAngle;
   features: readonly InkProjectionFeatureReference[];
   attemptNumber: 1 | 2;
+  originalTarget: ComposerImage;
   identityAnchor: ComposerImage;
   guidedTarget: ComposerImage;
   evidenceMosaic: ComposerImage;
@@ -315,13 +320,14 @@ export function buildInkProjectionComposerRequest(input: {
     `F${index + 1} (${feature.isProjectionTarget ? "newly exposed continuation" : "already evidenced"}): ${feature.anatomyLabel}; ${feature.normalizedDescriptor}.`
   ).join("\n");
   const cameraInstruction = input.sourceAngle === input.targetAngle
-    ? "Keep the exact camera, crop, pose, framing, clothing, lighting, and background of image 2."
-    : `Render the same person as canonical ${input.targetAngle}; image 2 is a source appearance view (${input.sourceAngle}), not permission to alter identity, body, clothing, lighting, or background.`;
+    ? "Keep the exact camera, crop, pose, framing, clothing, lighting, and background pixels of image 1."
+    : `Render the same person as canonical ${input.targetAngle}; image 1 is the clean target/source appearance view (${input.sourceAngle}), not permission to alter identity, body, clothing, lighting, or background.`;
   const prompt = [
-    "Edit the saved Cast using the three ordered images.",
-    "Image 1 is immutable identity authority.",
-    "Image 2 is the guided target/source image; red boxes identify the target-image locations for the labelled evidence.",
-    "Image 3 is a private evidence mosaic. Each F-number is an immutable tattoo design witness.",
+    "Edit the saved Cast using the four ordered images.",
+    "Image 1 is the clean original target and immutable pixel canvas. Preserve its pixels everywhere except where listed tattoo evidence must be reproduced or extended.",
+    "Image 2 is a placement guide only. Its red boxes identify target-image locations; never reproduce the red boxes or use this annotated image as the output canvas.",
+    "Image 3 is immutable identity authority.",
+    "Image 4 is a private evidence mosaic. Each F-number is an immutable tattoo design witness.",
     cameraInstruction,
     "For MATCH features, reproduce only the visible portion exactly. For EXTEND features, continue the same physical tattoo coherently onto the newly exposed surface; do not redesign, mirror, recolour, duplicate, resize, or invent motifs.",
     "Do not add any unlisted ink. Do not remove or move any listed ink. Do not alter face, hair, skin, body proportions, expression, clothing, accessories, pose, lighting, or background except the camera change explicitly required above.",
@@ -336,8 +342,9 @@ export function buildInkProjectionComposerRequest(input: {
     responseModalities: ["IMAGE"],
     prompt,
     images: [
-      inline("identity_anchor", input.identityAnchor),
+      inline("original_target", input.originalTarget),
       inline("guided_target", input.guidedTarget),
+      inline("identity_anchor", input.identityAnchor),
       inline("evidence_mosaic", input.evidenceMosaic),
     ],
   };

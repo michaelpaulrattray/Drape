@@ -23,8 +23,8 @@ import {
 } from "./composer/inkAddRecipe";
 import {
   INK_ANYWHERE_ONTOLOGY_VERSION,
-  INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
   INK_ANYWHERE_READABLE_COMPOSER_RECIPE_VERSIONS,
+  INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS,
   inkAuthoringSourcePreferences,
   inkViewDirectiveV2,
   isSupportedInkAnatomyTuple,
@@ -263,7 +263,9 @@ export function assessClosedInkFeatureGraph(
         || evidence.userId !== graph.userId
         || evidence.modelId !== graph.modelId
         || evidence.featureId !== feature.id
-        || evidence.recipeVersion !== INK_ANYWHERE_PROJECTION_RECIPE_VERSION
+        || !INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS.some(
+          (recipeVersion) => recipeVersion === evidence.recipeVersion,
+        )
         || evidence.targetViewAngle === version.sourceViewAngle
         || inkViewDirectiveV2(anatomy, evidence.targetViewAngle).impact
           !== "affected"

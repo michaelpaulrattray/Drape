@@ -878,6 +878,7 @@ async function runV2CandidateAttempt(input: {
         targetAngle: slot.angle,
         features: references.features,
         attemptNumber: input.attemptNumber,
+        originalTarget: references.originalTarget,
         identityAnchor: references.anchor,
         guidedTarget: references.guidedTarget,
         evidenceMosaic: references.evidenceMosaic,

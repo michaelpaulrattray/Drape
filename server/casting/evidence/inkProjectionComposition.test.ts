@@ -54,7 +54,7 @@ async function features(): Promise<InkProjectionFeatureReference[]> {
 }
 
 describe("multi-feature projection composition", () => {
-  it("builds one bounded private mosaic and a three-image composer request", async () => {
+  it("builds one bounded private mosaic and edits the clean target", async () => {
     const selected = await features();
     const mosaic = await buildInkEvidenceMosaic(selected);
     expect(mosaic).toMatchObject({
@@ -70,15 +70,24 @@ describe("multi-feature projection composition", () => {
       targetAngle: "backFull",
       features: selected,
       attemptNumber: 1,
+      originalTarget: base,
       identityAnchor: base,
       guidedTarget: base,
       evidenceMosaic: mosaic,
     });
     expect(request.images.map((entry) => entry.role)).toEqual([
-      "identity_anchor",
+      "original_target",
       "guided_target",
+      "identity_anchor",
       "evidence_mosaic",
     ]);
+    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v2");
+    expect(request.prompt).toContain(
+      "Image 1 is the clean original target and immutable pixel canvas",
+    );
+    expect(request.prompt).toContain(
+      "never reproduce the red boxes or use this annotated image as the output canvas",
+    );
     expect(request.prompt).toContain("F1 (newly exposed continuation)");
     expect(request.prompt).toContain("F2 (already evidenced)");
     expect(request.prompt).toContain("canonical backFull");

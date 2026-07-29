@@ -484,6 +484,7 @@ async function runAttempt(input: {
         targetAngle: prepared.authority.targetAngle,
         features: images.projectionFeatures!,
         attemptNumber: prepared.attemptNumber,
+        originalTarget: images.target,
         identityAnchor: images.anchor,
         guidedTarget: images.guidedTarget,
         evidenceMosaic: images.evidenceMosaic!,

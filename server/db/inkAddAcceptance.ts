@@ -30,8 +30,8 @@ import { createStorageCleanupManifestIn } from "./storageCleanup";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import {
   INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
-  INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
   INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS,
+  INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS,
   assertSupportedInkAnatomyTuple,
   inkViewDirectiveV2,
 } from "../casting/evidence/inkAnatomyRegistry";
@@ -108,7 +108,7 @@ export interface PreparedInkProjectionCandidateAcceptance {
   sourceAssetId: number;
   sourceViewAngle: CanonicalViewAngle;
   targetViewAngle: CanonicalViewAngle;
-  composerRecipeVersion: typeof INK_ANYWHERE_PROJECTION_RECIPE_VERSION;
+  composerRecipeVersion: string;
   actualImageEngine: string;
   targets: readonly {
     featureId: string;
@@ -546,8 +546,10 @@ export async function prepareInkProjectionCandidateAcceptance(input: {
       || candidate.intentId !== null
       || candidate.purpose !== "feature_projection"
       || candidate.capabilityKey !== INK_ANYWHERE_CAPABILITY_KEY
-      || candidate.composerRecipeVersion
-        !== INK_ANYWHERE_PROJECTION_RECIPE_VERSION
+      || !INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS.some(
+        (recipeVersion) =>
+          recipeVersion === candidate.composerRecipeVersion,
+      )
       || candidate.probeRecipeVersion
         !== INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION
       || candidate.expectedStateVersion !== model.stateVersion
@@ -580,8 +582,11 @@ export async function prepareInkProjectionCandidateAcceptance(input: {
       || attempt.priorInkOutcome !== "pass"
       || attempt.poseFramingOutcome !== "pass"
       || attempt.unexpectedInkOutcome !== "pass"
-      || attempt.composerRecipeVersion
-        !== INK_ANYWHERE_PROJECTION_RECIPE_VERSION
+      || attempt.composerRecipeVersion !== candidate.composerRecipeVersion
+      || !INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS.some(
+        (recipeVersion) =>
+          recipeVersion === attempt.composerRecipeVersion,
+      )
       || attempt.probeRecipeVersion
         !== INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION
     ) {
@@ -773,7 +778,7 @@ export async function prepareInkProjectionCandidateAcceptance(input: {
       sourceAssetId: candidate.sourceAssetId,
       sourceViewAngle: sourceSlot.viewAngle,
       targetViewAngle: candidate.targetViewAngle,
-      composerRecipeVersion: INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+      composerRecipeVersion: candidate.composerRecipeVersion,
       actualImageEngine: attempt.actualImageEngine,
       targets: Object.freeze(targets.map((target) => Object.freeze({
         featureId: target.featureId,
