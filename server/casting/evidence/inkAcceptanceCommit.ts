@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, inArray } from "drizzle-orm";
 import {
   castingEvidenceCandidateAttempts,
   castingEvidenceCandidates,
@@ -10,14 +10,16 @@ import {
   modelIdentityFeatureVersions,
   modelReferencePlates,
   modelSnapshotFeatureSelections,
-  models,
 } from "../../../drizzle/schema";
 import { finalizeRunningGenerationOperationSuccessIn } from "../../db/generationOperations";
 import {
   InkAcceptanceStateError,
   type PreparedInkCandidateAcceptance,
 } from "../../db/inkAddAcceptance";
-import { identityStampFor, mintRevisionId } from "../identity/anchorSelector";
+import {
+  currentRevisionId,
+  identityStampFor,
+} from "../identity/anchorSelector";
 import { commitModelSnapshotTransition } from "../snapshotTransitions";
 import {
   INK_ADD_CAPABILITY_KEY,
@@ -173,20 +175,11 @@ export async function commitInkCandidateAcceptance(input: {
         throw new InkAcceptanceStateError("feature_already_selected");
       }
 
-      const revisionId = mintRevisionId();
-      const advancedRevision = await tx
-        .update(models)
-        .set({ identityRevisionId: revisionId })
-        .where(and(
-          eq(models.id, input.prepared.modelId),
-          eq(models.userId, input.prepared.userId),
-          eq(models.status, "draft"),
-          isNull(models.deletedAt),
-          sql`${models.identityRevisionId} <=> ${context.model.identityRevisionId}`,
-        ));
-      if (affectedRows(advancedRevision) !== 1) {
-        throw new InkAcceptanceStateError("snapshot_head_changed");
-      }
+      // Evidence changes the immutable feature graph, not the person's facial
+      // identity. Keep the legacy identity revision stable so the unchanged
+      // headshot remains a valid anchor while the new identity snapshot owns
+      // the accepted feature selection and selective package staleness.
+      const revisionId = currentRevisionId(context.model);
       const [insertedAsset] = await tx
         .insert(modelAssets)
         .values({

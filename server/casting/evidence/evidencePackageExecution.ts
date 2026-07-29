@@ -51,6 +51,7 @@ import {
 import {
   assessEvidencePackageProbe,
   buildEvidencePackageProbeRequest,
+  EVIDENCE_PACKAGE_PROBE_FAILURES,
   parseEvidencePackageProbeResponse,
   type EvidencePackageProbeFailure,
   type EvidencePackageProbeRequest,
@@ -69,6 +70,13 @@ import { extractInkProviderTelemetry } from "./composer/inkProviderTelemetry";
 
 const log = createModuleLogger("casting/evidence/evidencePackageExecution");
 const PACKAGE_FAILURE = "The view could not be updated from its saved evidence.";
+export const EVIDENCE_PACKAGE_EXECUTION_FAILURE_CODES = [
+  ...EVIDENCE_PACKAGE_PROBE_FAILURES,
+  "execution_error",
+  "settlement_refused",
+] as const;
+export type EvidencePackageExecutionFailureCode =
+  typeof EVIDENCE_PACKAGE_EXECUTION_FAILURE_CODES[number];
 
 export interface EvidencePackageSyncResult {
   refreshed: Array<{
@@ -80,6 +88,7 @@ export interface EvidencePackageSyncResult {
     angle: EvidencePackagePrivateSlotAuthority["angle"];
     label: string;
     reason: string;
+    failureCode: EvidencePackageExecutionFailureCode;
     refunded: number;
     refundReference: string;
     markerPersisted: boolean;
@@ -378,7 +387,7 @@ async function runCandidateAttempt(input: {
 }): Promise<
   | { type: "passed"; generated: GeneratedCandidate }
   | { type: "retry"; directives: NonNullable<ReturnType<typeof retryDirectives>> }
-  | { type: "failed" }
+  | { type: "failed"; failureCode: EvidencePackageProbeFailure }
 > {
   const { dependencies, authority, slot, references } = input;
   const publicStorageKey = [
@@ -395,6 +404,12 @@ async function runCandidateAttempt(input: {
     operationId: input.operationId,
     storageKey: publicStorageKey,
   });
+  const auditMetadata = {
+    source: "evidence_package_sync" as const,
+    viewType: slot.angle,
+    attemptNumber: input.attemptNumber,
+    publicStorageKey,
+  };
   const audit = await (dependencies.createAudit ?? createGeneration)({
     userId: authority.model.userId,
     modelId: authority.model.id,
@@ -407,12 +422,7 @@ async function runCandidateAttempt(input: {
     // An included first-attempt miss is later closed as non-failing; if the
     // second attempt fails, that terminal row owns the one view refund.
     pointsCost: slotCost(slot.angle),
-    metadata: {
-      source: "evidence_package_sync",
-      viewType: slot.angle,
-      attemptNumber: input.attemptNumber,
-      publicStorageKey,
-    },
+    metadata: auditMetadata,
   });
   if (!audit.success || !audit.generationId) {
     throw new Error("Evidence package audit could not start");
@@ -479,6 +489,12 @@ async function runCandidateAttempt(input: {
       },
     };
     if (assessment.outcome === "pass") return { type: "passed", generated };
+    log.info({
+      modelId: authority.model.id,
+      angle: slot.angle,
+      attemptNumber: input.attemptNumber,
+      failureCode: assessment.failure,
+    }, "Evidence package candidate rejected");
     await deleteCandidate(dependencies, generated, {
       userId: authority.model.userId,
       operationId: input.operationId,
@@ -490,9 +506,15 @@ async function runCandidateAttempt(input: {
     await (dependencies.updateAudit ?? updateGeneration)(audit.generationId, {
       status: retry ? "completed" : "failed",
       errorMessage: retry ? null : PACKAGE_FAILURE,
+      metadata: {
+        ...auditMetadata,
+        failureCode: assessment.failure,
+      },
       completedAt: new Date(),
     });
-    return retry ? { type: "retry", directives: retry } : { type: "failed" };
+    return retry
+      ? { type: "retry", directives: retry }
+      : { type: "failed", failureCode: assessment.failure };
   } catch (error) {
     if (generated) {
       await deleteCandidate(dependencies, generated, {
@@ -503,6 +525,10 @@ async function runCandidateAttempt(input: {
     await (dependencies.updateAudit ?? updateGeneration)(audit.generationId, {
       status: "failed",
       errorMessage: PACKAGE_FAILURE,
+      metadata: {
+        ...auditMetadata,
+        failureCode: "execution_error",
+      },
       completedAt: new Date(),
     }).catch(() => undefined);
     throw error;
@@ -553,6 +579,7 @@ async function createFailure(input: {
   authority: EvidencePackagePrivateAuthority;
   slot: EvidencePackagePrivateSlotAuthority;
   chargeReferenceId: string;
+  failureCode: EvidencePackageExecutionFailureCode;
 }): Promise<EvidencePackageSyncResult["failed"][number]> {
   const cost = slotCost(input.slot.angle);
   const refund: RefundOutcome = await (
@@ -582,6 +609,7 @@ async function createFailure(input: {
     provenance: {
       source: "evidence_package_sync",
       acceptedFeatureVersionId: input.authority.graph.version.id,
+      evidencePackageFailureCode: input.failureCode,
     },
   }).catch(() => ({ success: false as const }));
   return {
@@ -590,6 +618,7 @@ async function createFailure(input: {
       (slot) => slot.angle === input.slot.angle,
     )!.label,
     reason: PACKAGE_FAILURE,
+    failureCode: input.failureCode,
     refunded,
     refundReference: refund.reference,
     markerPersisted: marker.success,
@@ -637,6 +666,7 @@ export async function executeEvidencePackageSync(
   const passed: GeneratedCandidate[] = [];
   const failed: EvidencePackageSyncResult["failed"] = [];
   for (const slot of authority.slots) {
+    let failureCode: EvidencePackageExecutionFailureCode = "execution_error";
     try {
       const references = await loadSlotReferences(dependencies, authority, slot);
       let outcome = await runCandidateAttempt({
@@ -662,6 +692,10 @@ export async function executeEvidencePackageSync(
         passed.push(outcome.generated);
         continue;
       }
+      if (outcome.type === "retry") {
+        throw new Error("Evidence package retry remained unresolved");
+      }
+      failureCode = outcome.failureCode;
     } catch (error) {
       log.error({
         modelId: input.modelId,
@@ -674,6 +708,7 @@ export async function executeEvidencePackageSync(
       authority,
       slot,
       chargeReferenceId: input.chargeReferenceId,
+      failureCode,
     });
     if (failure.refunded > 0) input.onRefunded?.(failure.refunded);
     failed.push(failure);
@@ -720,6 +755,7 @@ export async function executeEvidencePackageSync(
           authority,
           slot,
           chargeReferenceId: input.chargeReferenceId,
+          failureCode: "settlement_refused",
         });
         if (failure.refunded > 0) input.onRefunded?.(failure.refunded);
         failed.push(failure);

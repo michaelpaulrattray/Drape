@@ -578,8 +578,24 @@ export async function commitModelSnapshotTransition<Result>(input: {
       throw new Error("A package-only transition cannot change the identity revision");
     }
     if (
+      transition.identity?.reason === "evidence_accept"
+      && (
+        !current
+        || !sameDocument(postModel, current.identitySnapshot)
+        || (postModel.identityRevisionId ?? null) !== (model.identityRevisionId ?? null)
+        || transition.identity.anchorAssetId !== current.identitySnapshot.anchorAssetId
+      )
+    ) {
+      throw new Error("Evidence acceptance cannot change the identity anchor, documents or revision");
+    }
+    if (
       transition.identity
-      && !["create", "fork_bootstrap", "document_compact"].includes(transition.identity.reason)
+      && ![
+        "create",
+        "fork_bootstrap",
+        "document_compact",
+        "evidence_accept",
+      ].includes(transition.identity.reason)
       && (
         !postModel.identityRevisionId
         || postModel.identityRevisionId === model.identityRevisionId

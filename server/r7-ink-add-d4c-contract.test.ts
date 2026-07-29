@@ -96,6 +96,9 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     expect(commit).toContain("intent.ontologyVersion !== input.prepared.ontologyVersion");
     expect(commit).toContain("staleViewAngles: affectedViewAngles");
     expect(commit).toContain("featureSelections");
+    expect(commit).toContain("currentRevisionId(context.model)");
+    expect(commit).not.toContain("mintRevisionId");
+    expect(commit).not.toMatch(/\.update\(models\)[\s\S]*identityRevisionId/);
     expect(commit).toContain("finalizeRunningGenerationOperationSuccessIn");
     expect(commit).toContain('status: "accepted"');
     expect(commit).toContain('status: "resolved"');
@@ -107,6 +110,9 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     expect(transitions).toContain('input.featureAuthority !== "evidence_aware"');
     expect(transitions).toContain("uniqueAngles.size === 0");
     expect(transitions).toContain("selectivelyStaleAngles");
+    expect(transitions).toContain(
+      "Evidence acceptance cannot change the identity anchor, documents or revision",
+    );
     expect(transitions).toContain("eq(modelIdentityFeatures.modelId, input.modelId)");
     expect(transitions).toContain(
       "eq(modelIdentityFeatureVersions.featureId, addition.featureId)",

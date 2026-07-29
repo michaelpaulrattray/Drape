@@ -105,6 +105,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/effectiveCastState.ts",
       "server/casting/evidence/evidenceComposerSchema.ts",
       "server/casting/evidence/evidenceAcceptedAssetBackfill.ts",
+      "server/casting/evidence/evidenceIdentityRevisionRepair.ts",
       "server/casting/evidence/evidenceFork.ts",
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/evidence/referencePlateIngestion.ts",

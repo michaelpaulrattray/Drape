@@ -285,12 +285,28 @@ describe("R7-7E2 evidence package executor", () => {
     expect(result.refreshed).toEqual([]);
     expect(result.failed).toEqual([expect.objectContaining({
       angle: "sideFull",
+      failureCode: "probe_unknown",
       refunded: 300,
       markerPersisted: true,
     })]);
     expect(deps.deduct).toHaveBeenCalledTimes(1);
     expect(deps.refund).toHaveBeenCalledTimes(1);
     expect(deps.commit).not.toHaveBeenCalled();
+    expect(deps.createFailureMarker).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provenance: expect.objectContaining({
+          evidencePackageFailureCode: "probe_unknown",
+        }),
+      }),
+    );
+    expect(deps.updateAudit).toHaveBeenCalledWith(
+      81,
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          failureCode: "probe_unknown",
+        }),
+      }),
+    );
   });
 
   it("cleans and refunds a probed candidate when atomic settlement refuses", async () => {
@@ -307,6 +323,7 @@ describe("R7-7E2 evidence package executor", () => {
 
     expect(result.refreshed).toEqual([]);
     expect(result.failed).toEqual([expect.objectContaining({
+      failureCode: "settlement_refused",
       refunded: 300,
     })]);
     expect(deps.deletePublic).toHaveBeenCalledTimes(1);

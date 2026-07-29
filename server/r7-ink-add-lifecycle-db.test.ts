@@ -89,6 +89,12 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./casting/evidence/evidenceAcceptedAssetBackfill").planEvidenceAcceptedAssetBackfill;
   let applyEvidenceAcceptedAssetBackfill:
     typeof import("./casting/evidence/evidenceAcceptedAssetBackfill").applyEvidenceAcceptedAssetBackfill;
+  let planEvidenceIdentityRevisionRepair:
+    typeof import("./casting/evidence/evidenceIdentityRevisionRepair").planEvidenceIdentityRevisionRepair;
+  let applyEvidenceIdentityRevisionRepair:
+    typeof import("./casting/evidence/evidenceIdentityRevisionRepair").applyEvidenceIdentityRevisionRepair;
+  let planEvidenceMint:
+    typeof import("./casting/evidence/evidenceMint").planEvidenceMint;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -157,6 +163,11 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       planEvidenceAcceptedAssetBackfill,
       applyEvidenceAcceptedAssetBackfill,
     } = await import("./casting/evidence/evidenceAcceptedAssetBackfill"));
+    ({
+      planEvidenceIdentityRevisionRepair,
+      applyEvidenceIdentityRevisionRepair,
+    } = await import("./casting/evidence/evidenceIdentityRevisionRepair"));
+    ({ planEvidenceMint } = await import("./casting/evidence/evidenceMint"));
   });
 
   beforeEach(async () => {
@@ -373,14 +384,19 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     source: Awaited<ReturnType<typeof fixture>>,
   ) {
     const operationId = randomUUID();
+    const [[model]] = await connection.query<RowDataPacket[]>(
+      "SELECT identityRevisionId FROM models WHERE id = ?",
+      [source.modelId],
+    );
     await connection.execute(
-      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, phase) VALUES (?, ?, ?, 'evidence_candidate_accept', ?, ?, 'running', NULL, 1, ?, ?, 0, 'saving')",
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, phase) VALUES (?, ?, ?, 'evidence_candidate_accept', ?, ?, 'running', ?, 1, ?, ?, 0, 'saving')",
       [
         operationId,
         source.userId,
         randomUUID(),
         source.modelId,
         "e".repeat(64),
+        model.identityRevisionId,
         source.identityId,
         source.packageId,
       ],
@@ -1332,6 +1348,15 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
 
   it("E5 accepted-asset link: accepts one ready candidate as one atomic feature, asset, snapshot pair, and receipt", async () => {
     const source = await fixture({ status: "draft" });
+    const identityRevisionId = "revision-before-evidence";
+    await connection.execute(
+      "UPDATE models SET identityRevisionId = ? WHERE id = ?",
+      [identityRevisionId, source.modelId],
+    );
+    await connection.execute(
+      "UPDATE model_assets SET provenance = JSON_SET(COALESCE(provenance, JSON_OBJECT()), '$.identityRevisionId', ?) WHERE id IN (?, ?)",
+      [identityRevisionId, source.headAssetId, source.fullAssetId],
+    );
     const siblingAssetIds = new Map<string, number>();
     for (const angle of ["threeQuarter", "sideClose", "sideFull", "backFull"] as const) {
       const [asset] = await connection.execute<ResultSetHeader>(
@@ -1427,7 +1452,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     expect(model).toMatchObject({
       stateVersion: 2,
       currentPackageSnapshotId: accepted.packageSnapshotId,
-      identityRevisionId: expect.any(String),
+      identityRevisionId,
       masterPrompt: "identity",
     });
     const [[head]] = await connection.query<RowDataPacket[]>(
@@ -1484,11 +1509,14 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       selectionReason: "carried",
     });
     const [assets] = await connection.query<RowDataPacket[]>(
-      "SELECT id, viewType, pointsCost, storageKey, JSON_UNQUOTE(JSON_EXTRACT(status, '$.state')) AS state FROM model_assets WHERE modelId = ? ORDER BY id",
+      "SELECT id, viewType, pointsCost, storageKey, JSON_UNQUOTE(JSON_EXTRACT(status, '$.state')) AS state, JSON_UNQUOTE(JSON_EXTRACT(provenance, '$.identityRevisionId')) AS identityRevisionId FROM model_assets WHERE modelId = ? ORDER BY id",
       [source.modelId],
     );
     const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
-    expect(assetsById.get(source.headAssetId)).toMatchObject({ state: null });
+    expect(assetsById.get(source.headAssetId)).toMatchObject({
+      state: null,
+      identityRevisionId,
+    });
     expect(assetsById.get(source.fullAssetId)).toMatchObject({ state: "stale" });
     expect(assetsById.get(siblingAssetIds.get("threeQuarter"))).toMatchObject({ state: "stale" });
     expect(assetsById.get(siblingAssetIds.get("sideClose"))).toMatchObject({ state: null });
@@ -1499,6 +1527,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       pointsCost: 350,
       storageKey: publicKey,
       state: "current",
+      identityRevisionId,
     });
     const [[graph]] = await connection.query<RowDataPacket[]>(
       "SELECT (SELECT COUNT(*) FROM model_identity_features WHERE modelId = ?) AS features, (SELECT COUNT(*) FROM model_identity_feature_versions WHERE modelId = ?) AS versions, (SELECT COUNT(*) FROM model_snapshot_feature_selections WHERE identitySnapshotId = ?) AS selections, (SELECT COUNT(*) FROM model_reference_plates WHERE id = ? AND kind = 'accepted_candidate') AS plates",
@@ -1558,6 +1587,87 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
           errorCode: null,
         }],
       });
+    const incorrectEvidenceRevision = "revision-incorrect-evidence";
+    await connection.execute(
+      "UPDATE models SET identityRevisionId = ? WHERE id = ?",
+      [incorrectEvidenceRevision, source.modelId],
+    );
+    await connection.execute(
+      "UPDATE model_assets SET provenance = JSON_SET(provenance, '$.identityRevisionId', ?) WHERE id = ?",
+      [incorrectEvidenceRevision, accepted.assetId],
+    );
+    const identityRepairSelector = {
+      userId: source.userId,
+      modelIds: [source.modelId],
+      expectedModelCount: 1,
+      expectedRepairCount: 1,
+    };
+    await expect(planEvidenceIdentityRevisionRepair({
+      ...identityRepairSelector,
+      userId: source.userId + 1,
+    })).rejects.toThrow(
+      "Evidence identity-revision repair cohort count mismatch",
+    );
+    const [[beforeIdentityRepair]] = await connection.query<RowDataPacket[]>(
+      "SELECT identityRevisionId FROM models WHERE id = ?",
+      [source.modelId],
+    );
+    expect(beforeIdentityRepair.identityRevisionId)
+      .toBe(incorrectEvidenceRevision);
+    await expect(planEvidenceIdentityRevisionRepair(identityRepairSelector))
+      .resolves.toMatchObject({
+        ready: true,
+        expectedModelCount: 1,
+        expectedRepairCount: 1,
+        models: [source.modelId],
+        rows: [{
+          modelId: source.modelId,
+          acceptedAssetId: accepted.assetId,
+          status: "ready",
+          errorCode: null,
+        }],
+      });
+    const [[afterPlan]] = await connection.query<RowDataPacket[]>(
+      "SELECT identityRevisionId FROM models WHERE id = ?",
+      [source.modelId],
+    );
+    expect(afterPlan.identityRevisionId).toBe(incorrectEvidenceRevision);
+    await expect(applyEvidenceIdentityRevisionRepair(identityRepairSelector))
+      .resolves.toMatchObject({
+        success: true,
+        updatedModels: 1,
+        updatedAssets: 1,
+        rows: [{
+          modelId: source.modelId,
+          acceptedAssetId: accepted.assetId,
+          status: "repaired",
+          errorCode: null,
+        }],
+      });
+    const [[identityRepairPostflight]] = await connection.query<RowDataPacket[]>(
+      "SELECT m.identityRevisionId, JSON_UNQUOTE(JSON_EXTRACT(a.provenance, '$.identityRevisionId')) AS acceptedRevision FROM models m JOIN model_assets a ON a.id = ? WHERE m.id = ?",
+      [accepted.assetId, source.modelId],
+    );
+    expect(identityRepairPostflight).toEqual({
+      identityRevisionId,
+      acceptedRevision: identityRevisionId,
+    });
+    await expect(planEvidenceMint({
+      userId: source.userId,
+      modelId: source.modelId,
+    })).resolves.toMatchObject({
+      supported: true,
+      zeroGeneration: true,
+      pendingEvidence: false,
+      tiers: {
+        draft: {
+          ready: true,
+          missingAngles: [],
+          staleAngles: [],
+          attentionAngles: [],
+        },
+      },
+    });
     const [[terminal]] = await connection.query<RowDataPacket[]>(
       "SELECT c.status AS candidateStatus, c.activeSlot, i.status AS intentStatus, i.activeCapabilityKey, a.status AS attemptStatus, o.status AS operationStatus, o.chargedCredits, o.refundedCredits, l.operationId AS lockOwner FROM casting_evidence_candidates c JOIN model_identity_feature_intents i ON i.id = c.intentId JOIN casting_evidence_candidate_attempts a ON a.id = c.readyAttemptId JOIN generation_operations o ON o.id = ? LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE c.id = ?",
       [acceptOperationId, candidate.candidateId],

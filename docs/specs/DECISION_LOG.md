@@ -819,6 +819,23 @@ canonical slot remains `sideFull` / Walk; its travel direction may vary to
 show selected evidence. Ordinary legacy generation may retain its existing
 prompt, but its requested direction is never treated as verified anatomy.
 
+**R7-7E identity-boundary correction (2026-07-29):** accepting a typed
+feature creates a new immutable identity snapshot because the selected feature
+graph changed, but it does **not** advance the legacy facial-identity revision
+when the identity documents and headshot anchor are unchanged. The accepted
+complete image is stamped into the existing revision; selective package
+compatibility carries the view-impact law. This keeps the unchanged headshot a
+valid mint anchor without duplicating or mutating headshot history. The one
+founder pilot row written before this correction uses a bounded, lock-fenced,
+two-row repair (model revision plus the mis-stamped accepted asset) with
+read-only planning, exact count fences and in-transaction postflight proof.
+
+**R7-7E diagnostic correction (2026-07-29):** a rejected evidence-package
+candidate records only a closed server-owned failure code in its generation
+audit and terminal failure-marker provenance. No prompt, model response,
+private evidence locator or free text is retained. This makes calibration
+failures diagnosable without turning blind retries into the workflow.
+
 ### D-72 — Cast packages are progressive, not a six-view prerequisite *(founder-ratified 2026-07-29; amends R7-7E mint and post-mint package scope)*
 
 **Minimum useful Cast:** the normal product path presents a strong portrait
