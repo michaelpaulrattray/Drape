@@ -531,7 +531,7 @@ export function buildInkCoverageProbeRequest(input: {
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
       `Inspect the single canonical ${input.targetAngle} Cast image.`,
-      "Return strict JSON only. For each server-labelled anatomical region, RegionVisible is true only when enough of the physical surface is exposed and resolved to reproduce a tattoo at 1K. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail means false. Confidence is 0-100.",
+      "Return strict JSON only. For each server-labelled anatomical region, RegionVisible is true only when enough of the physical surface is exposed and resolved to reproduce a tattoo at 1K. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail means false. Confidence is certainty in the true/false verdict, not a visibility score. A definitely hidden or absent region is false with high confidence; never use confidence 0 merely because RegionVisible is false.",
       ...input.features.map((feature, index) =>
         `F${index + 1}: ${feature.anatomyLabel}; normalized box ${JSON.stringify(feature.targetZone)}.`
       ),

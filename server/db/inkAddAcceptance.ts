@@ -29,9 +29,9 @@ import { modelOperationLockKey } from "../casting/operationContract";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import {
-  INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+  INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS,
   assertSupportedInkAnatomyTuple,
   inkViewDirectiveV2,
 } from "../casting/evidence/inkAnatomyRegistry";
@@ -719,8 +719,9 @@ export async function prepareInkProjectionCandidateAcceptance(input: {
           target.coverageBasis === "observed_visible"
           && (
             directive.impact !== "uncertain"
-            || target.coverageProbeRecipeVersion
-              !== INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION
+            || !INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS.some(
+              (version) => version === target.coverageProbeRecipeVersion,
+            )
           )
         )
       ) {

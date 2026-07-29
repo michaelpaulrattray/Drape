@@ -145,6 +145,10 @@ describe("multi-feature projection composition", () => {
       target: base,
     });
     expect(request.kind).toBe("coverage");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v2");
+    expect(request.prompt).toContain(
+      "definitely hidden or absent region is false with high confidence",
+    );
     const raw = {
       feature1RegionVisible: true,
       feature1Confidence: 91,

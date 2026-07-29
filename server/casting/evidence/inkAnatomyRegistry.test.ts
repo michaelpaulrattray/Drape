@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
 import {
   ALL_SUPPORTED_INK_ANATOMY_TUPLES,
+  INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS,
   chooseCurrentInkAuthoringSource,
   inkAnatomicalSideAuthority,
   inkAnatomyLabel,
@@ -12,6 +14,15 @@ import {
 } from "./inkAnatomyRegistry";
 
 describe("all-body ink anatomy registry", () => {
+  it("keeps v1 coverage evidence readable after the confidence clarification", () => {
+    expect(INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION)
+      .toBe("ink.add.anywhere.coverage-probe.v2");
+    expect(INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS).toEqual([
+      "ink.add.anywhere.coverage-probe.v1",
+      "ink.add.anywhere.coverage-probe.v2",
+    ]);
+  });
+
   it("closes every supported tuple across every canonical angle", () => {
     expect(ALL_SUPPORTED_INK_ANATOMY_TUPLES.length).toBeGreaterThan(100);
     for (const tuple of ALL_SUPPORTED_INK_ANATOMY_TUPLES) {
