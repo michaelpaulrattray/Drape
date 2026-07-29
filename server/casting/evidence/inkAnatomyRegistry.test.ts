@@ -6,6 +6,7 @@ import {
   inkAnatomicalSideAuthority,
   inkAnatomyLabel,
   inkAuthoringSourcePreferences,
+  inkInvalidatedAnglesV2,
   inkViewDirectiveV2,
   isSupportedInkAnatomyTuple,
 } from "./inkAnatomyRegistry";
@@ -60,6 +61,23 @@ describe("all-body ink anatomy registry", () => {
     expect(inkViewDirectiveV2(tuple, "frontFull").impact).toBe("affected");
     expect(inkViewDirectiveV2(tuple, "sideFull").impact).toBe("affected");
     expect(inkViewDirectiveV2(tuple, "backFull").impact).toBe("affected");
+    expect(inkViewDirectiveV2(tuple, "threeQuarter")).toMatchObject({
+      impact: "uncertain",
+      visibility: "conditional_probe",
+      requiresObservedCoverage: true,
+    });
+    expect(inkViewDirectiveV2(tuple, "sideClose")).toMatchObject({
+      impact: "uncertain",
+      visibility: "conditional_probe",
+      requiresObservedCoverage: true,
+    });
+    expect(inkInvalidatedAnglesV2(tuple)).toEqual([
+      "threeQuarter",
+      "frontFull",
+      "sideClose",
+      "sideFull",
+      "backFull",
+    ]);
     expect(inkAnatomicalSideAuthority(tuple, "frontFull")).toMatchObject({
       guideLabel: "SUBJECT RIGHT - FRAME LEFT",
     });

@@ -283,7 +283,7 @@ function targetZone(
       if (tuple.zone === "shoulder") {
         return sidedZone(CLOSE_SHOULDER, angle, tuple.side);
       }
-      if (tuple.zone === "upper_arm") {
+      if (tuple.zone === "upper_arm" || tuple.zone === "full_arm") {
         return sidedZone(CLOSE_UPPER_ARM, angle, tuple.side);
       }
       return null;
@@ -401,7 +401,11 @@ function closeVisibility(
 ): InkViewVisibility {
   if (!HEAD_ZONES.has(tuple.zone)) {
     if (
-      (tuple.zone === "shoulder" || tuple.zone === "upper_arm")
+      (
+        tuple.zone === "shoulder"
+        || tuple.zone === "upper_arm"
+        || tuple.zone === "full_arm"
+      )
       && angle !== "frontClose"
     ) {
       return "conditional_probe";
@@ -489,6 +493,23 @@ export function inkViewDirectiveV2(
         : null,
     requiresObservedCoverage: visibility === "conditional_probe",
   });
+}
+
+/**
+ * A selected image becomes stale whenever the accepted feature is known or
+ * plausibly able to appear in it. Conditional angles earn a free observed-
+ * coverage probe before any charged projection; leaving them current would
+ * silently present an unverified featureless image as package truth.
+ */
+export function inkInvalidatedAnglesV2(
+  tuple: InkAnatomyTuple,
+): readonly CanonicalViewAngle[] {
+  assertSupportedInkAnatomyTuple(tuple);
+  return Object.freeze(
+    CANONICAL_VIEW_ANGLES.filter(
+      (angle) => inkViewDirectiveV2(tuple, angle).impact !== "unaffected",
+    ),
+  );
 }
 
 function preferredAngles(tuple: InkAnatomyTuple): CanonicalViewAngle[] {

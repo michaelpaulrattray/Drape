@@ -34,10 +34,9 @@ import {
   INK_ACTIVE_FAMILY_KEY,
   INK_ANYWHERE_CAPABILITY_KEY,
   assertSupportedInkAnatomyTuple,
-  inkViewDirectiveV2,
+  inkInvalidatedAnglesV2,
 } from "./inkAnatomyRegistry";
 import {
-  CANONICAL_VIEW_ANGLES,
   type CanonicalViewAngle,
 } from "../../../shared/boardTypes";
 
@@ -70,9 +69,7 @@ function affectedViewsForAcceptance(
     side: prepared.side,
   };
   assertSupportedInkAnatomyTuple(anatomy);
-  return CANONICAL_VIEW_ANGLES.filter(
-    (angle) => inkViewDirectiveV2(anatomy, angle).impact === "affected",
-  );
+  return inkInvalidatedAnglesV2(anatomy);
 }
 
 export interface InkCandidateAcceptedResult {
