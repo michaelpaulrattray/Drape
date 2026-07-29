@@ -299,6 +299,7 @@ export function buildInkProbeProviderConfig(
   request: InkProbeRequest,
 ): GenerateContentConfig {
   return {
+    temperature: 0,
     responseMimeType: request.responseMimeType,
     responseSchema: responseSchema(request),
     thinkingConfig: {

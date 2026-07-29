@@ -220,12 +220,14 @@ describe("R7-7D fail-closed structured probes", () => {
       sourceAngle: "frontFull",
     });
     expect(visibility.recipeVersion)
-      .toBe("ink.add.anywhere.visibility.v1");
+      .toBe("ink.add.anywhere.visibility.v2");
     expect(visibility.prompt).toContain("anatomical side");
-    expect(feature.recipeVersion).toBe("ink.add.anywhere.probe.v1");
+    expect(visibility.prompt).toContain("integer from 0 to 100");
+    expect(feature.recipeVersion).toBe("ink.add.anywhere.probe.v2");
     expect(feature.responseSchema).toHaveProperty("priorVisibleInkPreserved");
+    expect(feature.prompt).toContain("integer from 0 to 100");
     expect(placementAudit.recipeVersion)
-      .toBe("ink.add.anywhere.placement-audit.v1");
+      .toBe("ink.add.anywhere.placement-audit.v2");
     expect(placementAudit.prompt).toContain("FRAME LEFT");
     expect(placementAudit.responseSchema).toMatchObject({
       anatomicalSideCorrect: "boolean",
@@ -246,6 +248,19 @@ describe("R7-7D fail-closed structured probes", () => {
       predictedVisibility: "pass",
       confidence: 91,
     });
+    await expect(runInkAnywhereVisibilityProbe({
+      target: image,
+      anatomy,
+      probe: async () => ({
+        targetRegionVisible: true,
+        anatomicalSideReadable: true,
+        materiallyOccluded: false,
+        confidence: 84,
+      }),
+    })).resolves.toEqual({
+      predictedVisibility: "fail",
+      confidence: 84,
+    });
 
     const truth = await runInkAnywhereCandidateProbes({
       identityAnchor: image,
@@ -259,7 +274,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v1"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v2"
         ) {
           return {
             anatomicalSideCorrect: true,
@@ -307,7 +322,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v1"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v2"
         ) {
           return {
             anatomicalSideCorrect: false,
@@ -333,6 +348,53 @@ describe("R7-7D fail-closed structured probes", () => {
       .toEqual({
         action: "included_retry",
         nextAttemptNumber: 2,
+        directives: ["placement"],
+      });
+  });
+
+  it("fails closed when an otherwise-positive placement audit is low confidence", async () => {
+    const anatomy = {
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    } as const;
+    const truth = await runInkAnywhereCandidateProbes({
+      identityAnchor: image,
+      originalTarget: image,
+      candidate: image,
+      placementAuditCandidate: image,
+      anatomy,
+      sourceAngle: "frontFull",
+      normalizedDescriptor: "blackwork full sleeve",
+      predictedVisibility: "pass",
+      probe: async (request) => {
+        if (request.kind === "identity_pose") return identityPass;
+        if (
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v2"
+        ) {
+          return {
+            anatomicalSideCorrect: true,
+            insideAuthorizedZone: true,
+            conflictingOutsideChange: false,
+            confidence: 84,
+          };
+        }
+        return {
+          correctPlacement: true,
+          requestedFeaturePresent: true,
+          priorVisibleInkPreserved: true,
+          noUnexpectedInk: true,
+          confidence: 95,
+        };
+      },
+    });
+    expect(truth).toMatchObject({
+      placementOutcome: "fail",
+      overallOutcome: "fail",
+    });
+    expect(decideInkCandidateAttempt({ attemptNumber: 1, probe: truth }))
+      .toMatchObject({
+        action: "included_retry",
         directives: ["placement"],
       });
   });

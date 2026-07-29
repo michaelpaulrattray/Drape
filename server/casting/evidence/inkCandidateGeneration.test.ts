@@ -82,8 +82,8 @@ const anywherePrepared: PreparedInkCandidateAttempt = {
     },
     normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
     composerRecipeVersion: "ink.add.anywhere.composer.v2",
-    probeRecipeVersion: "ink.add.anywhere.probe.v1",
-    visibilityRecipeVersion: "ink.add.anywhere.visibility.v1",
+    probeRecipeVersion: "ink.add.anywhere.probe.v2",
+    visibilityRecipeVersion: "ink.add.anywhere.visibility.v2",
   },
   normalizedDescriptor: "blackwork full sleeve on his right arm",
 };
@@ -120,7 +120,7 @@ function delivery(): PrivateEvidenceStorageAdapter {
 }
 
 function passProbe(request: InkProbeRequest): unknown {
-  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v1") {
+  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v2") {
     return {
       anatomicalSideCorrect: true,
       insideAuthorizedZone: true,
@@ -237,6 +237,7 @@ describe("ink candidate generation", () => {
       images: [],
     });
     expect(config).toMatchObject({
+      temperature: 0,
       responseMimeType: "application/json",
       thinkingConfig: {
         thinkingBudget: 0,
@@ -298,7 +299,7 @@ describe("ink candidate generation", () => {
       if (request.kind === "identity_pose") {
         return { samePerson: true, poseFramingPreserved: true, confidence: 97 };
       }
-      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v1") {
+      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v2") {
         return {
           anatomicalSideCorrect: true,
           insideAuthorizedZone: true,
@@ -333,16 +334,16 @@ describe("ink candidate generation", () => {
       prompt: expect.stringContaining("zone=full_arm"),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.visibility.v1",
+      recipeVersion: "ink.add.anywhere.visibility.v2",
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.probe.v1",
+      recipeVersion: "ink.add.anywhere.probe.v2",
       responseSchema: expect.objectContaining({
         priorVisibleInkPreserved: "boolean",
       }),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.placement-audit.v1",
+      recipeVersion: "ink.add.anywhere.placement-audit.v2",
       prompt: expect.stringContaining("subject faces toward frame-right"),
     }));
   });

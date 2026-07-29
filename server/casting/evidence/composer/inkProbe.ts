@@ -81,6 +81,8 @@ export interface InkCandidateProbeTruth {
   overallOutcome: EvidenceProbeOutcome;
 }
 
+const INK_ANYWHERE_MIN_PROBE_CONFIDENCE = 85;
+
 interface VisibilityResponse {
   upperTorsoVisible: boolean;
   materiallyOccluded: boolean;
@@ -354,7 +356,8 @@ surface can be identified without guessing or mirroring. Clothing, hair, hands,
 objects, crop, foreshortening, or pose materially covering the requested region
 count as occlusion. A circumferential request needs a useful visible portion,
 not proof of the hidden circumference. Do not infer hidden pixels. Return
-strict JSON only.`,
+strict JSON only. confidence must be an integer from 0 to 100, where 100 means
+completely certain.`,
     images: [inline("original_target", input.target)],
   };
 }
@@ -383,7 +386,8 @@ ${inkAnatomyLabel(input.anatomy)} only. Determine whether Image 3 is the exact
 same person and whether body proportions, pose, crop, camera, framing,
 clothing, lighting, and background remain materially the same as Image 2.
 The one authorized tattoo and exact preservation of prior ink must not count
-as identity drift. Return strict JSON only.`,
+as identity drift. Return strict JSON only. confidence must be an integer from
+0 to 100, where 100 means completely certain.`,
     images: [
       inline("identity_anchor", input.identityAnchor),
       inline("original_target", input.originalTarget),
@@ -446,7 +450,8 @@ requested design is visibly present and recognisable. Set
 priorVisibleInkPreserved only when every tattoo and permanent mark visible in
 Image 1 remains in Image 2 without moving, mirroring, resizing, recolouring,
 erasure, occlusion, or duplication. Set noUnexpectedInk only when no other new
-visible tattoo or mark appears anywhere. Return strict JSON only.`,
+visible tattoo or mark appears anywhere. Return strict JSON only. confidence
+must be an integer from 0 to 100, where 100 means completely certain.`,
     images,
   };
 }
@@ -490,7 +495,9 @@ Set insideAuthorizedZone true only when the requested new tattoo is visibly
 within the highlighted zone. Set conflictingOutsideChange true if the new
 tattoo, a duplicate, or another new mark appears primarily outside that zone
 or on the opposite side. When side or placement cannot be verified with high
-confidence, return false for the positive field. Return strict JSON only.`,
+confidence, return false for the positive field. Return strict JSON only.
+confidence must be an integer from 0 to 100, where 100 means completely
+certain.`,
     images: [
       inline("original_target", input.originalTarget),
       inline("candidate", input.placementAuditCandidate),
@@ -651,7 +658,8 @@ export async function runInkAnywhereVisibilityProbe(input: {
       predictedVisibility: outcome(
         result.targetRegionVisible
         && result.anatomicalSideReadable
-        && !result.materiallyOccluded,
+        && !result.materiallyOccluded
+        && result.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE,
       ),
       confidence: result.confidence,
     };
@@ -692,27 +700,39 @@ export async function runInkAnywhereCandidateProbes(input: {
   try {
     if (settled[0].status !== "fulfilled") throw settled[0].reason;
     const identity = parseInkIdentityPoseProbe(settled[0].value);
-    identityOutcome = outcome(identity.samePerson);
-    poseFramingOutcome = outcome(identity.poseFramingPreserved);
+    const confident =
+      identity.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE;
+    identityOutcome = outcome(identity.samePerson && confident);
+    poseFramingOutcome = outcome(identity.poseFramingPreserved && confident);
   } catch {
     // Unknown is deliberately sticky and fail-closed.
   }
   try {
     if (settled[1].status !== "fulfilled") throw settled[1].reason;
     const feature = parseInkAnywhereFeaturePlacementProbe(settled[1].value);
-    semanticPlacementOutcome = outcome(feature.correctPlacement);
-    featureMatchOutcome = outcome(feature.requestedFeaturePresent);
-    priorInkOutcome = outcome(feature.priorVisibleInkPreserved);
-    unexpectedInkOutcome = outcome(feature.noUnexpectedInk);
+    const confident =
+      feature.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE;
+    semanticPlacementOutcome = outcome(feature.correctPlacement && confident);
+    featureMatchOutcome = outcome(feature.requestedFeaturePresent && confident);
+    priorInkOutcome = outcome(feature.priorVisibleInkPreserved && confident);
+    unexpectedInkOutcome = outcome(feature.noUnexpectedInk && confident);
   } catch {
     // Unknown is deliberately sticky and fail-closed.
   }
   try {
     if (settled[2].status !== "fulfilled") throw settled[2].reason;
     const placement = parseInkAnywherePlacementAuditProbe(settled[2].value);
-    sidePlacementOutcome = outcome(placement.anatomicalSideCorrect);
-    zonePlacementOutcome = outcome(placement.insideAuthorizedZone);
-    outsidePlacementOutcome = outcome(!placement.conflictingOutsideChange);
+    const confident =
+      placement.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE;
+    sidePlacementOutcome = outcome(
+      placement.anatomicalSideCorrect && confident,
+    );
+    zonePlacementOutcome = outcome(
+      placement.insideAuthorizedZone && confident,
+    );
+    outsidePlacementOutcome = outcome(
+      !placement.conflictingOutsideChange && confident,
+    );
   } catch {
     // Unknown is deliberately sticky and fail-closed.
   }
