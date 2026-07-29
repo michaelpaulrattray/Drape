@@ -1,45 +1,42 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import {
-  parseEvidenceIdentityRevisionRepairArgs,
-} from "./evidenceIdentityRevisionRepair";
+  parseEvidenceWalkCompatibilityRepairArgs,
+} from "./evidenceWalkCompatibilityRepair";
 
 const DATABASE_URL =
   "mysql://operator:secret@hayabusa.proxy.rlwy.net:23768/railway";
 
-describe("bounded evidence identity-revision repair", () => {
+describe("bounded evidence Walk compatibility repair", () => {
   it("refuses unbounded, malformed and unconfirmed production invocations", () => {
-    expect(() => parseEvidenceIdentityRevisionRepairArgs([
+    expect(() => parseEvidenceWalkCompatibilityRepairArgs([
       "--database-url", DATABASE_URL,
       "--app-id", "drape-production",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
-      "--expected-restored-view-count", "4",
       "--allow-production-read-only",
     ])).toThrow("full-database repair is refused");
 
-    expect(() => parseEvidenceIdentityRevisionRepairArgs([
+    expect(() => parseEvidenceWalkCompatibilityRepairArgs([
       "--database-url", DATABASE_URL,
       "--app-id", "drape-production",
       "--user-id", "1",
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "01",
-      "--expected-restored-view-count", "4",
       "--allow-production-read-only",
     ])).toThrow("--expected-repair-count must be non-negative");
 
-    expect(() => parseEvidenceIdentityRevisionRepairArgs([
+    expect(() => parseEvidenceWalkCompatibilityRepairArgs([
       "--database-url", DATABASE_URL,
       "--app-id", "drape-production",
       "--user-id", "1",
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
-      "--expected-restored-view-count", "4",
       "--apply",
-      "--allow-evidence-identity-repair-write",
-      "--allow-production-evidence-identity-repair",
+      "--allow-evidence-walk-compatibility-repair-write",
+      "--allow-production-evidence-walk-compatibility-repair",
       "--confirm-app-id", "drape-production",
       "--confirm-host", "wrong.proxy.rlwy.net:23768",
       "--confirm-database", "railway",
@@ -47,14 +44,13 @@ describe("bounded evidence identity-revision repair", () => {
   });
 
   it("accepts a bounded read-only plan and the full exact apply ceremony", () => {
-    expect(parseEvidenceIdentityRevisionRepairArgs([
+    expect(parseEvidenceWalkCompatibilityRepairArgs([
       "--database-url", DATABASE_URL,
       "--app-id", "drape-production",
       "--user-id", "1",
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
-      "--expected-restored-view-count", "4",
       "--allow-production-read-only",
     ])).toMatchObject({
       apply: false,
@@ -62,20 +58,18 @@ describe("bounded evidence identity-revision repair", () => {
       modelIds: [35],
       expectedModelCount: 1,
       expectedRepairCount: 1,
-      expectedRestoredViewCount: 4,
     });
 
-    expect(parseEvidenceIdentityRevisionRepairArgs([
+    expect(parseEvidenceWalkCompatibilityRepairArgs([
       "--database-url", DATABASE_URL,
       "--app-id", "drape-production",
       "--user-id", "1",
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
-      "--expected-restored-view-count", "4",
       "--apply",
-      "--allow-evidence-identity-repair-write",
-      "--allow-production-evidence-identity-repair",
+      "--allow-evidence-walk-compatibility-repair-write",
+      "--allow-production-evidence-walk-compatibility-repair",
       "--confirm-app-id", "drape-production",
       "--confirm-host", "hayabusa.proxy.rlwy.net:23768",
       "--confirm-database", "railway",
@@ -87,44 +81,29 @@ describe("bounded evidence identity-revision repair", () => {
     });
   });
 
-  it("pins one atomic revision and false-staleness correction with lock and postflight fences", async () => {
+  it("pins one compatibility-only transaction with exact witnesses and postflight", async () => {
     const source = await readFile(
-      new URL("./evidenceIdentityRevisionRepair.ts", import.meta.url),
+      new URL("./evidenceWalkCompatibilityRepair.ts", import.meta.url),
       "utf8",
     );
     const script = await readFile(
-      new URL("../../../scripts/repair-evidence-identity-revisions.ts", import.meta.url),
+      new URL("../../../scripts/repair-evidence-walk-compatibility.ts", import.meta.url),
       "utf8",
     );
 
-    expect(source.match(/\.update\(models\)/g)).toHaveLength(1);
-    expect(source.match(/\.update\(modelAssets\)/g)).toHaveLength(2);
-    expect(source.match(/\.update\(modelPackageSnapshotSlots\)/g))
-      .toHaveLength(1);
-    expect(source).not.toMatch(/\.insert\(|\.delete\(/);
+    expect(source.match(/\.update\(modelAssets\)/g)).toHaveLength(1);
+    expect(source.match(/\.update\(modelPackageSnapshotSlots\)/g)).toHaveLength(1);
+    expect(source).not.toMatch(/\.update\(models\)|\.insert\(|\.delete\(/);
     expect(source).toContain("generationOperationLocks");
     expect(source).toContain('.for("update")');
-    expect(source).toContain("acceptedAssetId");
-    expect(source).toContain("identity.anchorAssetId");
-    expect(source).toContain("sameDocuments(identity, parents[0])");
-    expect(source).toContain("eq(models.userId, assessment.userId)");
+    expect(source).toContain('eq(modelPackageSnapshotSlots.viewAngle, "sideFull")');
+    expect(source).toContain('eq(modelPackageSnapshotSlots.compatibility, "stale")');
+    expect(source).toContain('eq(modelPackageSnapshotSlots.selectionReason, "carried")');
+    expect(source).toContain('parentSlot.compatibility !== "current"');
+    expect(source).toContain('directive.existingSelectionImpact !== "unaffected"');
+    expect(source).toContain('directive.visibility !== "hidden_omit"');
     expect(source).toContain("expectedRepairCount: 0");
-    expect(source).toContain("expectedRestoredViewCount: 0");
     expect(source).toContain('row.status !== "repaired"');
-    expect(source).toContain("JSON_SET");
-    expect(source).toContain("JSON_UNQUOTE(JSON_EXTRACT");
-    expect(source).toContain("identityRevisionRepairV1AffectedViews");
-    expect(source).not.toContain('from "./inkViewImpact"');
-    expect(source).toContain("parentPackageSnapshotId");
-    expect(source).toContain('set({ compatibility: "current" })');
-    expect(source).toContain(
-      'eq(modelPackageSnapshotSlots.compatibility, "stale")',
-    );
-    expect(source).toContain(
-      'eq(modelPackageSnapshotSlots.selectionReason, "carried")',
-    );
-    expect(source).toContain("updatedSlots");
-    expect(source).not.toContain('eq(modelPackageSnapshotSlots.viewAngle, "frontClose")');
     expect(script).not.toMatch(/--all|storagePut|deductPoints|generateContent/);
   });
 });

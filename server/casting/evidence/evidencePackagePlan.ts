@@ -41,6 +41,7 @@ export const EVIDENCE_PACKAGE_REFUSALS = [
   "authoring_truth",
   "pinned",
   "already_current",
+  "compatibility_repair_required",
   "compatibility_unverified",
   "angle_not_supported",
 ] as const;
@@ -243,6 +244,9 @@ function slotPlan(input: {
         cost: 0,
         refusal: "already_current",
       };
+    }
+    if (directive.existingSelectionImpact === "unaffected") {
+      return attentionSlot(slot.angle, "compatibility_repair_required");
     }
     return {
       angle: slot.angle,

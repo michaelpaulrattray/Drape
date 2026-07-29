@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["./repair-evidence-walk-compatibility.ts"],
+  "exclude": ["../node_modules", "../build", "../dist", "../**/*.test.ts"],
+  "compilerOptions": {
+    "incremental": false,
+    "noEmit": true
+  }
+}

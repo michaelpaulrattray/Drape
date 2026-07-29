@@ -9,8 +9,8 @@ import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
 import { affectedViewsForInkAdd } from "./inkViewImpact";
 
 describe("ink evidence view impact", () => {
-  it.each(["left", "right"] as const)(
-    "stales Full and Walk for a lateral %s upper-chest tattoo",
+  it.each(["left", "centre", "right"] as const)(
+    "stales only Full for an anterior-pec %s tattoo",
     (side) => {
       expect(affectedViewsForInkAdd({
         capabilityKey: INK_ADD_CAPABILITY_KEY,
@@ -18,21 +18,11 @@ describe("ink evidence view impact", () => {
         zone: INK_ADD_ZONE,
         surface: INK_ADD_SURFACE,
         side,
-      })).toEqual(["frontFull", "sideFull"]);
+      })).toEqual(["frontFull"]);
     },
   );
 
-  it("keeps Walk current for a centre-chest tattoo that a strict profile cannot show", () => {
-    expect(affectedViewsForInkAdd({
-      capabilityKey: INK_ADD_CAPABILITY_KEY,
-      ontologyVersion: INK_ADD_ONTOLOGY_VERSION,
-      zone: INK_ADD_ZONE,
-      surface: INK_ADD_SURFACE,
-      side: "centre",
-    })).toEqual(["frontFull"]);
-  });
-
-  it("keeps the headshot trio and rear view compatible", () => {
+  it("keeps the headshot trio, Walk, and rear view compatible", () => {
     const affected = new Set(affectedViewsForInkAdd({
       capabilityKey: INK_ADD_CAPABILITY_KEY,
       ontologyVersion: INK_ADD_ONTOLOGY_VERSION,
@@ -41,7 +31,7 @@ describe("ink evidence view impact", () => {
       side: "left",
     }));
     expect(
-      ["frontClose", "threeQuarter", "sideClose", "backFull"]
+      ["frontClose", "threeQuarter", "sideClose", "sideFull", "backFull"]
         .filter((angle) => affected.has(angle as never)),
     ).toEqual([]);
   });
@@ -94,7 +84,7 @@ describe("ink evidence view impact", () => {
       ontologyVersion: INK_ADD_ONTOLOGY_VERSION,
       zone: INK_ADD_ZONE,
       surface: INK_ADD_SURFACE,
-      side: "centre",
+      side: "left",
     }));
     expect(CANONICAL_VIEW_ANGLES.map((angle) => [
       angle,

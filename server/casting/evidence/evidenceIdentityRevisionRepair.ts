@@ -40,7 +40,6 @@ import { stableCanonicalJson } from "../operationContract";
 import { isProductionAppId } from "../deletionAudit";
 import { availableModelWhere } from "../modelAvailability";
 import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
-import { affectedViewsForInkAdd } from "./inkViewImpact";
 import { isSupportedInkPackageTuple } from "./evidencePackageRegistry";
 
 export const EVIDENCE_IDENTITY_REVISION_REPAIR_ERRORS = [
@@ -136,6 +135,21 @@ interface PackageSlotWitness {
   selectedAssetId: number;
   compatibility: "current" | "stale";
   selectionReason: string;
+}
+
+/**
+ * Freeze the visibility law under which this completed historical repair was
+ * designed and executed. Later recipe/visibility corrections must use their
+ * own compatibility-only repair rather than changing this tool's meaning.
+ */
+function identityRevisionRepairV1AffectedViews(
+  side: "left" | "centre" | "right",
+): ReadonlySet<CanonicalViewAngle> {
+  return new Set<CanonicalViewAngle>(
+    side === "centre"
+      ? ["frontFull"]
+      : ["frontFull", "sideFull"],
+  );
 }
 
 function positiveInteger(value: number): boolean {
@@ -488,13 +502,9 @@ async function assessSubjectIn(
     return blocked(subject, "feature_graph_invalid");
   }
   const acceptedAssetId = selectedFeatures[0].acceptedAssetId!;
-  const affectedViews = new Set(affectedViewsForInkAdd({
-    capabilityKey: INK_ADD_CAPABILITY_KEY,
-    ontologyVersion: selectedFeatures[0].ontologyVersion,
-    zone: selectedFeatures[0].zone,
-    surface: selectedFeatures[0].surface,
-    side: selectedFeatures[0].side,
-  }));
+  const affectedViews = identityRevisionRepairV1AffectedViews(
+    selectedFeatures[0].side as "left" | "centre" | "right",
+  );
   const restoredViews: CanonicalViewAngle[] = [];
   const restoredAssetIds: number[] = [];
   for (const angle of CANONICAL_VIEW_ANGLES) {

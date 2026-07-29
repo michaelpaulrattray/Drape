@@ -201,28 +201,46 @@ async function defaultGenerate(
   request: EvidencePackageComposerRequest,
 ): Promise<string> {
   return withImageQueue(async () => {
-    const response = await withTimeout(
-      getAiClient().models.generateContent({
-        model: request.model,
-        contents: {
-          parts: [
-            ...request.images.map((image) => ({ inlineData: image.inlineData })),
-            { text: request.prompt },
-          ],
-        },
-        config: {
-          responseModalities: [...request.responseModalities],
-          imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
-          safetySettings: SAFETY_SETTINGS,
-        },
-      }),
-      90_000,
-      "EvidencePackageSync",
-    );
+    let response;
+    try {
+      response = await withTimeout(
+        getAiClient().models.generateContent({
+          model: request.model,
+          contents: {
+            parts: [
+              ...request.images.map((image) => ({ inlineData: image.inlineData })),
+              { text: request.prompt },
+            ],
+          },
+          config: {
+            responseModalities: [...request.responseModalities],
+            imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
+            safetySettings: SAFETY_SETTINGS,
+          },
+        }),
+        90_000,
+        "EvidencePackageSync",
+      );
+    } catch (error) {
+      log.warn({
+        provider: extractInkProviderTelemetry({ error }),
+      }, "Evidence package image provider failed");
+      throw error;
+    }
     const diagnosis = diagnoseResponse(response);
-    if (diagnosis) throw new Error("Evidence package provider refused");
+    if (diagnosis) {
+      log.warn({
+        provider: extractInkProviderTelemetry({ response }),
+      }, "Evidence package image provider refused");
+      throw new Error("Evidence package provider refused");
+    }
     const image = extractImageFromResponse(response);
-    if (!image) throw new Error("Evidence package provider returned no image");
+    if (!image) {
+      log.warn({
+        provider: extractInkProviderTelemetry({ response }),
+      }, "Evidence package image provider returned no candidate");
+      throw new Error("Evidence package provider returned no image");
+    }
     return image;
   }, "evidencePackageSync");
 }
@@ -324,6 +342,19 @@ function retryDirectives(
       return ["unexpected_feature"];
   }
 }
+
+export const EVIDENCE_PACKAGE_EXECUTION_STAGES = [
+  "generation_provider",
+  "candidate_validation",
+  "candidate_storage",
+  "probe_provider",
+  "probe_parse",
+  "probe_assessment",
+  "candidate_cleanup",
+  "audit_close",
+] as const;
+export type EvidencePackageExecutionStage =
+  typeof EVIDENCE_PACKAGE_EXECUTION_STAGES[number];
 
 async function deleteCandidate(
   dependencies: EvidencePackageExecutionDependencies,
@@ -428,6 +459,7 @@ async function runCandidateAttempt(input: {
     throw new Error("Evidence package audit could not start");
   }
   let generated: GeneratedCandidate | null = null;
+  let failureStage: EvidencePackageExecutionStage = "generation_provider";
   try {
     const dataUrl = await (dependencies.generate ?? defaultGenerate)(
       buildEvidencePackageComposerRequest({
@@ -442,25 +474,29 @@ async function runCandidateAttempt(input: {
         retryDirectives: input.retry ?? undefined,
       }),
     );
+    failureStage = "candidate_validation";
     const canonical: CanonicalEvidenceImage = await (
       dependencies.canonicalize ?? canonicalizeEvidenceDataUrl
     )(dataUrl);
+    failureStage = "candidate_storage";
     const uploaded = await (dependencies.putPublic ?? storagePut)(
       publicStorageKey,
       canonical.bytes,
       canonical.mime,
     );
-    const response = parseEvidencePackageProbeResponse(
-      await (dependencies.probe ?? defaultProbe)(
-        buildEvidencePackageProbeRequest({
-          directive: slot.directive,
-          identityAnchor: references.anchor,
-          originalTarget: references.originalTarget,
-          acceptedEvidence: references.acceptedCrop,
-          candidate: composerImage(canonical),
-        }),
-      ),
+    failureStage = "probe_provider";
+    const rawProbe = await (dependencies.probe ?? defaultProbe)(
+      buildEvidencePackageProbeRequest({
+        directive: slot.directive,
+        identityAnchor: references.anchor,
+        originalTarget: references.originalTarget,
+        acceptedEvidence: references.acceptedCrop,
+        candidate: composerImage(canonical),
+      }),
     );
+    failureStage = "probe_parse";
+    const response = parseEvidencePackageProbeResponse(rawProbe);
+    failureStage = "probe_assessment";
     const assessment = assessEvidencePackageProbe({
       directive: slot.directive,
       response,
@@ -495,6 +531,7 @@ async function runCandidateAttempt(input: {
       attemptNumber: input.attemptNumber,
       failureCode: assessment.failure,
     }, "Evidence package candidate rejected");
+    failureStage = "candidate_cleanup";
     await deleteCandidate(dependencies, generated, {
       userId: authority.model.userId,
       operationId: input.operationId,
@@ -503,6 +540,7 @@ async function runCandidateAttempt(input: {
     const retry = input.attemptNumber === 1
       ? retryDirectives(assessment.failure)
       : null;
+    failureStage = "audit_close";
     await (dependencies.updateAudit ?? updateGeneration)(audit.generationId, {
       status: retry ? "completed" : "failed",
       errorMessage: retry ? null : PACKAGE_FAILURE,
@@ -516,6 +554,13 @@ async function runCandidateAttempt(input: {
       ? { type: "retry", directives: retry }
       : { type: "failed", failureCode: assessment.failure };
   } catch (error) {
+    log.warn({
+      modelId: authority.model.id,
+      angle: slot.angle,
+      attemptNumber: input.attemptNumber,
+      failureStage,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    }, "Evidence package attempt execution failed");
     if (generated) {
       await deleteCandidate(dependencies, generated, {
         userId: authority.model.userId,
@@ -528,6 +573,7 @@ async function runCandidateAttempt(input: {
       metadata: {
         ...auditMetadata,
         failureCode: "execution_error",
+        failureStage,
       },
       completedAt: new Date(),
     }).catch(() => undefined);

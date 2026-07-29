@@ -191,30 +191,37 @@ describe("evidence-aware package plan", () => {
     expect(assessSupportedInkFeatureGraph(forked, 31)).not.toBeNull();
   });
 
-  it("quotes only a stale lateral Walk at the server-owned 300-credit cost", () => {
+  it("refuses paid regeneration for a falsely stale anterior-pec Walk", () => {
     const result = plan({ side: "left", walk: "stale" });
     expect(result).toMatchObject({
       supported: true,
-      actionableAngles: ["sideFull"],
-      refreshableAngles: ["sideFull"],
-      missingAngles: [],
-      totalCost: 300,
-    });
-    expect(result.slots.find((slot) => slot.angle === "sideFull"))
-      .toMatchObject({ status: "stale", cost: 300, refusal: null });
-  });
-
-  it("keeps a current centre Walk free but can add a missing one deliberately", () => {
-    expect(plan({ side: "centre", walk: "current" })).toMatchObject({
       actionableAngles: [],
+      refreshableAngles: [],
+      missingAngles: [],
       totalCost: 0,
     });
-    expect(plan({ side: "centre", walk: "missing" })).toMatchObject({
-      actionableAngles: ["sideFull"],
-      missingAngles: ["sideFull"],
-      totalCost: 300,
-    });
+    expect(result.slots.find((slot) => slot.angle === "sideFull"))
+      .toMatchObject({
+        status: "attention",
+        cost: 0,
+        refusal: "compatibility_repair_required",
+      });
   });
+
+  it.each(["left", "centre", "right"] as const)(
+    "keeps a current %s anterior-pec Walk free but can add a missing one deliberately",
+    (side) => {
+      expect(plan({ side, walk: "current" })).toMatchObject({
+        actionableAngles: [],
+        totalCost: 0,
+      });
+      expect(plan({ side, walk: "missing" })).toMatchObject({
+        actionableAngles: ["sideFull"],
+        missingAngles: ["sideFull"],
+        totalCost: 300,
+      });
+    },
+  );
 
   it("refuses unverified compatibility instead of guessing", () => {
     const result = plan({ walk: "unverified" });
@@ -265,8 +272,8 @@ describe("evidence-aware package plan", () => {
     );
     expect(plan({ status: "active" })).toMatchObject({
       supported: true,
-      actionableAngles: ["sideFull"],
-      totalCost: 300,
+      actionableAngles: [],
+      totalCost: 0,
       zeroGenerationMintAvailable: false,
     });
   });

@@ -80,6 +80,7 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       "casting/evidence/evidencePackageFeatureRows.ts",
       "casting/evidence/evidencePackagePlan.ts",
       "casting/evidence/evidencePackageProbe.ts",
+      "casting/evidence/evidenceWalkCompatibilityRepair.ts",
       "casting/evidence/inkViewImpact.ts",
       "casting/mintPackage.ts",
       "casting/operationRecovery.ts",

@@ -13,7 +13,7 @@ import type {
 } from "./evidencePackageRegistry";
 
 export const EVIDENCE_PACKAGE_PROBE_RECIPE_VERSION =
-  "evidence.package.sync.probe.front-upper-torso.v2" as const;
+  "evidence.package.sync.probe.front-upper-torso.v3" as const;
 
 export const OBSERVED_ANATOMICAL_SIDES = [
   "left",

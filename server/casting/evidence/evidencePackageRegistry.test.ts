@@ -28,42 +28,34 @@ describe("evidence package directive registry", () => {
     }
   });
 
-  it("requires lateral Walk regeneration and verifies the requested anatomy", () => {
-    expect(inkPackageDirective({
-      ...tuple,
-      side: "left",
-      angle: "sideFull",
-    })).toMatchObject({
-      existingSelectionImpact: "affected",
-      missingViewAuthority: "compose",
-      visibility: "reproduce_visible",
-      requiredVisibleAnatomicalSide: "left",
-      facingDirective: "camera_sees_anatomical_left_walk_frame_left",
-    });
-    expect(inkPackageDirective({
-      ...tuple,
-      side: "right",
-      angle: "sideFull",
-    })).toMatchObject({
-      existingSelectionImpact: "affected",
-      requiredVisibleAnatomicalSide: "right",
-      facingDirective: "camera_sees_anatomical_right_walk_frame_right",
-    });
-  });
+  it.each(INK_ADD_SIDES)(
+    "keeps an existing %s anterior-pec Walk and omits the feature from a missing one",
+    (side) => {
+      expect(inkPackageDirective({
+        ...tuple,
+        side,
+        angle: "sideFull",
+      })).toEqual({
+        existingSelectionImpact: "unaffected",
+        missingViewAuthority: "compose",
+        visibility: "hidden_omit",
+        requiredVisibleAnatomicalSide: null,
+        facingDirective: "strict_profile_direction_flexible",
+        normalizedTargetZone: null,
+      });
+    },
+  );
 
-  it("keeps a current centre Walk but can compose a missing strict profile", () => {
-    expect(inkPackageDirective({
-      ...tuple,
-      side: "centre",
-      angle: "sideFull",
-    })).toEqual({
-      existingSelectionImpact: "unaffected",
-      missingViewAuthority: "compose",
-      visibility: "hidden_omit",
-      requiredVisibleAnatomicalSide: null,
-      facingDirective: "strict_profile_direction_flexible",
-      normalizedTargetZone: null,
-    });
+  it("does not infer lateral-surface visibility from anterior-zone laterality", () => {
+    for (const side of ["left", "right"] as const) {
+      expect(inkPackageDirective({
+        ...tuple,
+        side,
+        angle: "sideFull",
+      })).not.toMatchObject({
+        visibility: "reproduce_visible",
+      });
+    }
   });
 
   it("keeps cropped and posterior selections compatible while governing missing views", () => {

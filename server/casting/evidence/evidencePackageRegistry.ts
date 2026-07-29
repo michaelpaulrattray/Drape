@@ -13,7 +13,7 @@ import {
 import type { NormalizedInkZone } from "./composer/inkZoneGuide";
 
 export const EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION =
-  "evidence.package.guide.front-upper-torso.v2" as const;
+  "evidence.package.guide.front-upper-torso.v3" as const;
 
 export type ExistingSelectionImpact = "affected" | "unaffected";
 export type MissingViewAuthority = "compose" | "not_supported";
@@ -53,24 +53,6 @@ const FRONT_RIGHT_ZONE = Object.freeze({
   y: 0.2,
   width: 0.27,
   height: 0.25,
-}) satisfies NormalizedInkZone;
-
-/**
- * Full-body Walk framing keeps the torso near the horizontal centre. The
- * prompt chooses which anatomical side faces camera; the strict probe, not
- * this rectangle, proves the generated anatomy.
- */
-const WALK_LEFT_ZONE = Object.freeze({
-  x: 0.34,
-  y: 0.17,
-  width: 0.3,
-  height: 0.27,
-}) satisfies NormalizedInkZone;
-const WALK_RIGHT_ZONE = Object.freeze({
-  x: 0.36,
-  y: 0.17,
-  width: 0.3,
-  height: 0.27,
 }) satisfies NormalizedInkZone;
 
 function sameForSides(
@@ -144,31 +126,16 @@ export const INK_ADD_PACKAGE_DIRECTIVES: Readonly<
     facingDirective: null,
     normalizedTargetZone: null,
   }),
-  sideFull: Object.freeze({
-    left: Object.freeze({
-      existingSelectionImpact: "affected",
-      missingViewAuthority: "compose",
-      visibility: "reproduce_visible",
-      requiredVisibleAnatomicalSide: "left",
-      facingDirective: "camera_sees_anatomical_left_walk_frame_left",
-      normalizedTargetZone: WALK_LEFT_ZONE,
-    }),
-    centre: Object.freeze({
-      existingSelectionImpact: "unaffected",
-      missingViewAuthority: "compose",
-      visibility: "hidden_omit",
-      requiredVisibleAnatomicalSide: null,
-      facingDirective: "strict_profile_direction_flexible",
-      normalizedTargetZone: null,
-    }),
-    right: Object.freeze({
-      existingSelectionImpact: "affected",
-      missingViewAuthority: "compose",
-      visibility: "reproduce_visible",
-      requiredVisibleAnatomicalSide: "right",
-      facingDirective: "camera_sees_anatomical_right_walk_frame_right",
-      normalizedTargetZone: WALK_RIGHT_ZONE,
-    }),
+  sideFull: sameForSides({
+    // The pilot surface is anterior pec. Anatomical left/right identifies
+    // placement on the front of the torso; it does not make that surface
+    // reliably visible in a strict walking profile.
+    existingSelectionImpact: "unaffected",
+    missingViewAuthority: "compose",
+    visibility: "hidden_omit",
+    requiredVisibleAnatomicalSide: null,
+    facingDirective: "strict_profile_direction_flexible",
+    normalizedTargetZone: null,
   }),
   backFull: sameForSides({
     existingSelectionImpact: "unaffected",

@@ -9,11 +9,11 @@ import {
 
 /**
  * The close trio is framed as head-and-shoulders, so an upper-chest mark is
- * outside those images. The rear view cannot show an anterior mark. A walk
- * can expose a lateral chest mark, but a strict profile cannot reliably show
- * the centre chest. Left/right placement therefore invalidates Walk; centre
- * placement does not. The accepted Full view replaces its old selection and
- * is included here so the legacy source row is marked stale.
+ * outside those images. The rear view cannot show an anterior mark. A strict
+ * Walk profile does not reliably show the pilot's anterior pec surface:
+ * left/right locates the mark within that surface but does not turn it into a
+ * lateral-surface feature. The accepted Full view replaces its old selection
+ * and is included here so the legacy source row is marked stale.
  *
  * This is server-owned product authority. The public composer may infer the
  * structured placement from natural language, but the client never decides

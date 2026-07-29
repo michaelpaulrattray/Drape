@@ -785,13 +785,13 @@ fails closed by treating every view as possibly affected. No view refreshes or
 spends automatically.
 
 For `ink.add.front_upper_torso.v1`, the accepted `frontFull` replaces its
-source and remains current. A left- or right-chest mark makes the full-body
-profile `sideFull` stale because a regenerated Walk can deliberately expose
-that anatomical side. A centre-chest mark does not make a strict profile stale
-because that region is not reliably visible. `frontClose`, `threeQuarter`, and
-`sideClose` are head-and-shoulders crops, while `backFull` shows the posterior
-surface, so those views retain their prior compatibility. This server-owned
-mapping is authority; the client cannot supply or narrow it.
+source and remains current. The pilot surface is anterior pec:
+left/centre/right locates the mark within that front surface but does not make
+it reliably visible in the strict full-body profile `sideFull`. Walk therefore
+retains its prior compatibility for every side. `frontClose`, `threeQuarter`,
+and `sideClose` are head-and-shoulders crops, while `backFull` shows the
+posterior surface, so those views also retain their prior compatibility. This
+server-owned mapping is authority; the client cannot supply or narrow it.
 
 ### D-71 — Generated angle labels are intent, not anatomical proof *(founder-ratified 2026-07-28)*
 
@@ -800,14 +800,14 @@ but model output can drift or mirror the requested orientation. No
 evidence-aware operation may infer visible anatomical left/right from the
 canonical angle name or prompt alone.
 
-For a lateral tattoo, the server chooses the Walk direction that should expose
-the tattoo-bearing anatomical side, supplies an angle-and-side-specific visual
-placement guide, and then uses strict image probes to verify the actual
-visible anatomical side, placement, and framing. Unknown, contradictory, or
-unverified side truth refuses the canon commit and refunds under the normal
-operation law. The verified visible anatomical side is recorded in
-server-owned asset provenance. A centre-chest tattoo does not require a Walk
-refresh because a strict profile cannot reliably show it.
+For a future tattoo capability whose ontology positively identifies a
+Walk-visible lateral surface, the server chooses the direction that should
+expose that surface, supplies an angle-and-side-specific visual placement
+guide, and then uses strict image probes to verify the actual visible
+anatomical side, placement, and framing. Unknown, contradictory, or unverified
+side truth refuses the canon commit and refunds under the normal operation
+law. The current anterior-pec pilot is not such a capability: no Walk-visible
+surface may be inferred from its left/right placement label.
 
 **UX law:** the person simply describes the change in natural language. They
 never choose “face left,” “face right,” an anatomical side control, or a
@@ -815,9 +815,11 @@ technical visibility setting. Direction selection, visual guidance,
 verification, and provenance are server-owned implementation details.
 
 **Scope:** this amends D-39 only for evidence-aware package generation. The
-canonical slot remains `sideFull` / Walk; its travel direction may vary to
-show selected evidence. Ordinary legacy generation may retain its existing
-prompt, but its requested direction is never treated as verified anatomy.
+canonical slot remains `sideFull` / Walk. A future positively lateral recipe
+may vary its direction to show selected evidence; the current anterior-pec
+recipe uses flexible strict-profile direction and omission. Ordinary legacy
+generation may retain its existing prompt, but its requested direction is
+never treated as verified anatomy.
 
 **R7-7E identity-boundary correction (2026-07-29):** accepting a typed
 feature creates a new immutable identity snapshot because the selected feature
@@ -847,24 +849,50 @@ zero remaining repair rows and zero remaining restorable views.
 **R7-7E diagnostic correction (2026-07-29):** a rejected evidence-package
 candidate records only a closed server-owned failure code in its generation
 audit and terminal failure-marker provenance. No prompt, model response,
-private evidence locator or free text is retained. This makes calibration
-failures diagnosable without turning blind retries into the workflow.
+private evidence locator or free text is retained. Closed execution-stage and
+provider-outcome telemetry is also permitted; it contains no prompt, image,
+locator, model response text or free-form provider error. This makes
+calibration and infrastructure failures distinguishable without turning blind
+retries into the workflow.
 
-**R7-7E Walk-facing correction (2026-07-29):** the two founder Walk actions
-each completed image generation and the strict evidence probe twice, rejected
-both candidates, and refunded the full view charge. The shared server registry
-had inverted strict-profile anatomy: it paired an anatomical-left camera view
-with frame-right travel and anatomical-right with frame-left. In a strict side
-profile those pairings are physically contradictory, so a truthful candidate
-must fail either the observed-side or observed-direction check and the
-included retry repeats the same impossible instruction. The v2 registry now
-pairs anatomical left with frame-left travel and anatomical right with
-frame-right travel, makes the direction override explicit when the prior Walk
-faces the other way, and gives the probe the same image-derived anatomical
-relationship. No confidence, identity, framing, continuity, feature-match,
-placement, omission, or anti-invention gate is weakened. This local correction
-does not authorize another paid generation, deployment, scope change, or
-production write.
+**R7-7E Walk diagnosis correction (2026-07-29):** raw structured Railway logs
+showed three pre-correction founder Walk actions, not two. Each ran two image
+attempts and two strict probes; all six candidates stopped at the same closed
+`low_confidence` gate and all three parent charges were refunded. None reached
+the later observed-side or observed-direction checks. The earlier claim that
+those actions proved a laterality/direction mismatch was therefore
+overstated. The registry's anatomical-left/frame-right and
+anatomical-right/frame-left pairings were still physically contradictory and
+were corrected as a latent geometry defect, but they are not the evidenced
+cause of those six rejections. The first post-correction action then failed at
+`execution_error` before any probe was queued and was refunded, so it did not
+validate the facing change. Closed execution-stage telemetry was added for any
+future failure; no further paid attempt is authorized by this diagnosis.
+
+**R7-7E anterior-pec visibility ruling (founder-ratified 2026-07-29; amends the
+R7-7E application of D-71):** the pilot tuple is
+`front_upper_torso + anterior`. Its `left | centre | right` value locates the
+feature within the anterior pec surface; it is not proof that the feature is
+on a lateral surface visible in a strict Walk profile. The accepted founder
+tattoo is not fully visible in Walk, and forcing it into that image would be
+anatomically wrong.
+
+For this pilot tuple, an existing `sideFull` / Walk selection is therefore
+`unaffected` for every side and must never offer a paid preservation refresh.
+A genuinely missing Walk remains optional progressive coverage and may be
+composed only with `hidden_omit`, flexible strict-profile direction, no
+feature-placement target zone, and strict framing/omission/identity/
+continuity/anti-invention probes. A future truly lateral-chest capability
+requires a distinct ontology/surface and calibration; it may not be inferred
+from `side`.
+
+The v3 registry/composer/probe identity records that visibility correction.
+The completed identity-revision repair remains frozen to its historical v1
+impact law. Founder model `35` requires a separate, exact-cohort,
+compatibility-only restoration of its parent-current Walk asset and current
+snapshot slot; that repair changes no identity, feature, package selection,
+credits, storage or image bytes and still requires a separately authorized
+production apply.
 
 ### D-72 — Cast packages are progressive, not a six-view prerequisite *(founder-ratified 2026-07-29; amends R7-7E mint and post-mint package scope)*
 

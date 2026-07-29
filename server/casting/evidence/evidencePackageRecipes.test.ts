@@ -94,7 +94,7 @@ describe("evidence package pure recipes", () => {
     })).toThrow("Invalid evidence crop provenance");
   });
 
-  it("renders angle-and-side guidance without changing target dimensions", async () => {
+  it("renders hidden-view guidance without changing target dimensions", async () => {
     const guided = await buildEvidenceGuidedTarget({
       targetBytes: imageBytes,
       directive: directive("left"),
@@ -105,11 +105,11 @@ describe("evidence package pure recipes", () => {
       width: 800,
       height: 1200,
     });
-    expect(guided.normalizedTargetZone).not.toBeNull();
+    expect(guided.normalizedTargetZone).toBeNull();
     expect(Buffer.from(guided.bytes).equals(imageBytes)).toBe(false);
   });
 
-  it("builds exactly three composer references with server-owned anatomy", async () => {
+  it("builds exactly three composer references with server-owned omission authority", async () => {
     const guided = await buildEvidenceGuidedTarget({
       targetBytes: imageBytes,
       directive: directive("right"),
@@ -138,18 +138,15 @@ describe("evidence package pure recipes", () => {
       "guided_target",
       "accepted_evidence_crop",
     ]);
-    expect(request.prompt).toContain("anatomical right");
-    expect(request.prompt).toContain("travelling toward FRAME RIGHT");
-    expect(request.prompt).toContain("anatomical RIGHT side");
-    expect(request.prompt).toContain("direction override is authoritative");
+    expect(request.prompt).toContain("anterior pec surface");
+    expect(request.prompt).toContain("must be absent");
+    expect(request.prompt).toContain("strict walking side profile");
+    expect(request.prompt).not.toContain("Reproduce exactly");
   });
 
-  it.each([
-    ["left", "FRAME LEFT", "anatomical LEFT side", "FRAME RIGHT"],
-    ["right", "FRAME RIGHT", "anatomical RIGHT side", "FRAME LEFT"],
-  ] as const)(
-    "keeps the %s Walk-facing instruction physically coherent",
-    async (side, expectedFrame, expectedSide, oppositeFrame) => {
+  it.each(["left", "centre", "right"] as const)(
+    "keeps the %s anterior-pec feature hidden in a strict Walk",
+    async (side) => {
       const guided = await buildEvidenceGuidedTarget({
         targetBytes: imageBytes,
         directive: directive(side),
@@ -165,9 +162,9 @@ describe("evidence package pure recipes", () => {
         guidedTarget: guided,
         acceptedEvidenceCrop: image(),
       });
-      expect(request.prompt).toContain(`travelling toward ${expectedFrame}`);
-      expect(request.prompt).toContain(expectedSide);
-      expect(request.prompt).not.toContain(`travelling toward ${oppositeFrame}`);
+      expect(request.prompt).toContain("anterior-pec feature is hidden");
+      expect(request.prompt).toContain("must be absent");
+      expect(request.prompt).toContain("either direction is acceptable");
     },
   );
 
@@ -188,7 +185,7 @@ describe("evidence package pure recipes", () => {
       acceptedEvidenceCrop: image(),
     });
     expect(request.prompt).toContain("must be absent");
-    expect(request.prompt).toContain("strict profile");
+    expect(request.prompt).toContain("strict walking side profile");
   });
 
   it("uses candidate pixels—not requested direction—as probe authority", () => {
@@ -206,36 +203,24 @@ describe("evidence package pure recipes", () => {
     );
     expect(request.prompt).not.toContain("anatomical left front upper");
     expect(request.prompt).not.toContain("Required visible anatomical side");
+    const hidden = {
+      ...PASS,
+      featureRegionVisibility: "hidden" as const,
+      authorizedFeatureVisible: false,
+      acceptedFeatureMatches: false,
+      correctPlacement: false,
+    };
     expect(assessEvidencePackageProbe({
       directive: directive("left"),
-      response: PASS,
-    })).toMatchObject({
-      outcome: "pass",
-      observedVisibleAnatomicalSide: "left",
-    });
+      response: hidden,
+    })).toMatchObject({ outcome: "pass" });
     expect(assessEvidencePackageProbe({
       directive: directive("left"),
-      response: { ...PASS, observedVisibleAnatomicalSide: "right" },
-    })).toEqual({ outcome: "fail", failure: "visible_side_mismatch" });
-    expect(assessEvidencePackageProbe({
-      directive: directive("left"),
-      response: { ...PASS, observedTravelDirection: "frame_right" },
-    })).toEqual({ outcome: "fail", failure: "travel_direction_mismatch" });
-    expect(assessEvidencePackageProbe({
-      directive: directive("right"),
-      response: {
-        ...PASS,
-        observedVisibleAnatomicalSide: "right",
-        observedTravelDirection: "frame_right",
-      },
-    })).toMatchObject({
-      outcome: "pass",
-      observedVisibleAnatomicalSide: "right",
-      observedTravelDirection: "frame_right",
-    });
+      response: { ...hidden, authorizedFeatureVisible: true },
+    })).toEqual({ outcome: "fail", failure: "feature_visibility_mismatch" });
   });
 
-  it("proves omission for hidden centre views and keeps unknown sticky", () => {
+  it("proves omission for hidden Walk views and keeps unknown sticky", () => {
     const hidden: EvidencePackageProbeResponse = {
       ...PASS,
       observedVisibleAnatomicalSide: "right",
@@ -244,10 +229,12 @@ describe("evidence package pure recipes", () => {
       acceptedFeatureMatches: false,
       correctPlacement: false,
     };
-    expect(assessEvidencePackageProbe({
-      directive: directive("centre"),
-      response: hidden,
-    }).outcome).toBe("pass");
+    for (const side of ["left", "centre", "right"] as const) {
+      expect(assessEvidencePackageProbe({
+        directive: directive(side),
+        response: hidden,
+      }).outcome).toBe("pass");
+    }
     expect(assessEvidencePackageProbe({
       directive: directive("centre"),
       response: { ...hidden, authorizedFeatureVisible: true },
@@ -301,6 +288,10 @@ describe("evidence package pure recipes", () => {
   it("refuses a visible directive that lacks physical target geometry", async () => {
     const impossible = {
       ...directive("left"),
+      existingSelectionImpact: "affected" as const,
+      visibility: "reproduce_visible" as const,
+      requiredVisibleAnatomicalSide: "left" as const,
+      facingDirective: "camera_sees_anatomical_left_walk_frame_left" as const,
       normalizedTargetZone: null,
     };
     await expect(buildEvidenceGuidedTarget({

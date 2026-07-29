@@ -23,7 +23,7 @@ import {
 } from "./evidencePackageRegistry";
 
 export const EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION =
-  "evidence.package.sync.composer.front-upper-torso.v2" as const;
+  "evidence.package.sync.composer.front-upper-torso.v3" as const;
 export const EVIDENCE_PACKAGE_CROP_RECIPE_VERSION =
   "evidence.package.crop.front-upper-torso.v1" as const;
 
@@ -338,11 +338,15 @@ export function buildEvidencePackageComposerRequest(input: {
   const reproduce = input.directive.visibility === "reproduce_visible";
   const anatomy = input.directive.requiredVisibleAnatomicalSide
     ? `The camera must visibly show the subject's anatomical ${input.directive.requiredVisibleAnatomicalSide} side.`
-    : "Use a strict profile; do not claim that the centre chest is visible.";
+    : input.directive.visibility === "hidden_omit"
+      ? "The accepted feature is on the anterior pec surface, which is hidden in this target view."
+      : "The accepted feature region is outside this target framing.";
   const featureLaw = reproduce
     ? `Reproduce exactly the accepted ${JSON.stringify(input.normalizedDescriptor)}
-from Image 3 on the guided anatomical ${input.featureSide} upper chest.`
-    : "The accepted centre-chest feature is hidden in this framing and must be absent. Do not invent, move, mirror, or partially show it.";
+ from Image 3 on the guided anatomical ${input.featureSide} upper chest.`
+    : input.directive.visibility === "hidden_omit"
+      ? "The accepted anterior-pec feature is hidden in this framing and must be absent. Do not invent, move, mirror, or partially show it."
+      : "The accepted feature is outside this framing and must be absent. Do not invent, move, mirror, or partially show it.";
   const retry = input.attemptNumber === 2
     ? Array.from(new Set(input.retryDirectives ?? []))
     : [];

@@ -309,6 +309,45 @@ describe("R7-7E2 evidence package executor", () => {
     );
   });
 
+  it.each([
+    [
+      "generation_provider",
+      { generate: vi.fn(async () => { throw new Error("provider failed"); }) },
+    ],
+    [
+      "candidate_storage",
+      { putPublic: vi.fn(async () => { throw new Error("storage failed"); }) },
+    ],
+    [
+      "probe_provider",
+      { probe: vi.fn(async () => { throw new Error("probe failed"); }) },
+    ],
+  ] as const)(
+    "persists only the closed %s execution stage before refunding",
+    async (failureStage, overrides) => {
+      const deps = dependencies(overrides);
+      const result = await executeEvidencePackageSync(deps, INPUT);
+
+      expect(result.refreshed).toEqual([]);
+      expect(result.failed).toEqual([expect.objectContaining({
+        angle: "sideFull",
+        failureCode: "execution_error",
+        refunded: 300,
+      })]);
+      expect(deps.updateAudit).toHaveBeenCalledWith(
+        81,
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            failureCode: "execution_error",
+            failureStage,
+          }),
+        }),
+      );
+      expect(deps.refund).toHaveBeenCalledTimes(1);
+      expect(deps.commit).not.toHaveBeenCalled();
+    },
+  );
+
   it("cleans and refunds a probed candidate when atomic settlement refuses", async () => {
     const deps = dependencies({
       commit: vi.fn(async () => {
