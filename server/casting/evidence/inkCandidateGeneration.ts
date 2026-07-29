@@ -77,7 +77,10 @@ import {
   runInkVisibilityProbe,
   type InkProbeRequest,
 } from "./composer/inkProbe";
-import { inkAnatomyLabel } from "./inkAnatomyRegistry";
+import {
+  inkAnatomicalSideAuthority,
+  inkAnatomyLabel,
+} from "./inkAnatomyRegistry";
 import { decideInkCandidateAttempt } from "./composer/inkRetryDecision";
 import { INK_ADD_IMAGE_ENGINE } from "./composer/inkAddRecipe";
 import { captureEvidenceComposerEnabled } from "./evidenceComposerScope";
@@ -408,7 +411,13 @@ async function loadInputs(
     : await buildAnatomicalInkZoneGuide({
         targetBytes: target.bytes,
         normalizedZone: prepared.authority.normalizedTargetZone,
-        label: inkAnatomyLabel(prepared.authority.anatomy),
+        label:
+          `${inkAnatomyLabel(prepared.authority.anatomy)} - ${
+            inkAnatomicalSideAuthority(
+              prepared.authority.anatomy,
+              prepared.sourceViewAngle,
+            ).guideLabel
+          }`,
       });
   return {
     anchor,
@@ -459,6 +468,7 @@ async function runAttempt(input: {
         identityText: prepared.identityText,
         normalizedDescriptor: prepared.normalizedDescriptor,
         anatomy: prepared.authority.anatomy,
+        sourceAngle: prepared.sourceViewAngle,
         attemptNumber: prepared.attemptNumber,
         identityAnchor: images.anchor,
         guidedTarget: images.guidedTarget,
@@ -501,11 +511,26 @@ async function runAttempt(input: {
     prepared,
     image: candidate,
   });
+  const rawCandidate = composerImage(candidate);
+  const placementAuditCandidate =
+    prepared.authority.kind === "anywhere_v2"
+      ? composerImage(await buildAnatomicalInkZoneGuide({
+          targetBytes: candidate.bytes,
+          normalizedZone: prepared.authority.normalizedTargetZone,
+          label:
+            `${inkAnatomyLabel(prepared.authority.anatomy)} - ${
+              inkAnatomicalSideAuthority(
+                prepared.authority.anatomy,
+                prepared.sourceViewAngle,
+              ).guideLabel
+            }`,
+        }))
+      : null;
   const probe = prepared.authority.kind === "legacy_v1"
     ? await runInkCandidateProbes({
         identityAnchor: images.anchor,
         originalTarget: images.target,
-        candidate: composerImage(candidate),
+        candidate: rawCandidate,
         evidenceReference: images.reference ?? undefined,
         side: prepared.authority.anatomy.side,
         normalizedDescriptor: prepared.normalizedDescriptor,
@@ -516,9 +541,11 @@ async function runAttempt(input: {
     ? await runInkAnywhereCandidateProbes({
         identityAnchor: images.anchor,
         originalTarget: images.target,
-        candidate: composerImage(candidate),
+        candidate: rawCandidate,
+        placementAuditCandidate: placementAuditCandidate!,
         evidenceReference: images.reference ?? undefined,
         anatomy: prepared.authority.anatomy,
+        sourceAngle: prepared.sourceViewAngle,
         normalizedDescriptor: prepared.normalizedDescriptor,
         predictedVisibility: input.predictedVisibility,
         probe: dependencies.probe ?? defaultProbe,
@@ -532,7 +559,7 @@ async function runAttempt(input: {
             identityAnchor: images.anchor,
             originalTarget: images.target,
             evidenceMosaic: images.evidenceMosaic!,
-            candidate: composerImage(candidate),
+            candidate: rawCandidate,
           }),
         ),
         images.projectionFeatures!.length,

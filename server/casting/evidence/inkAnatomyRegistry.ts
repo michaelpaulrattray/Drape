@@ -10,9 +10,11 @@ export const INK_ANYWHERE_ONTOLOGY_VERSION = "body-zones.ink.v2" as const;
 export const INK_ANYWHERE_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.anywhere.authorization.v1" as const;
 export const INK_ANYWHERE_COMPOSER_RECIPE_VERSION =
-  "ink.add.anywhere.composer.v1" as const;
+  "ink.add.anywhere.composer.v2" as const;
 export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
   "ink.add.anywhere.probe.v1" as const;
+export const INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION =
+  "ink.add.anywhere.placement-audit.v1" as const;
 export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
   "ink.add.anywhere.visibility.v1" as const;
 export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
@@ -327,6 +329,60 @@ export function inkAnatomyLabel(tuple: InkAnatomyTuple): string {
     ? ""
     : `${tuple.side[0].toUpperCase()}${tuple.side.slice(1)} `;
   return `${side}${INK_ZONE_RULES[tuple.zone].label}`;
+}
+
+export interface InkAnatomicalSideAuthority {
+  guideLabel: string;
+  prompt: string;
+}
+
+/**
+ * Canonical views have a server-owned camera direction. Spell the subject's
+ * anatomical side out in frame-relative terms so neither the image composer
+ * nor the placement audit can reinterpret "right" as viewer-right.
+ */
+export function inkAnatomicalSideAuthority(
+  tuple: InkAnatomyTuple,
+  angle: CanonicalViewAngle,
+): InkAnatomicalSideAuthority {
+  assertSupportedInkAnatomyTuple(tuple);
+  if (!(CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)) {
+    throw new TypeError("Unknown canonical view");
+  }
+  const subjectSide = tuple.side.toUpperCase();
+  if (tuple.side === "centre") {
+    return Object.freeze({
+      guideLabel: "SUBJECT CENTRELINE",
+      prompt:
+        "The authorized placement is on the subject's anatomical centreline.",
+    });
+  }
+  if (angle === "frontClose" || angle === "frontFull") {
+    const frameSide = tuple.side === "right" ? "LEFT" : "RIGHT";
+    return Object.freeze({
+      guideLabel: `SUBJECT ${subjectSide} - FRAME ${frameSide}`,
+      prompt:
+        `This is a front-facing view. The subject's anatomical ${subjectSide}`
+        + ` appears on FRAME ${frameSide}. Never use viewer-${tuple.side} for`
+        + ` subject-${tuple.side}.`,
+    });
+  }
+  if (angle === "backFull") {
+    const frameSide = tuple.side === "right" ? "RIGHT" : "LEFT";
+    return Object.freeze({
+      guideLabel: `SUBJECT ${subjectSide} - FRAME ${frameSide}`,
+      prompt:
+        `This is a back-facing view. The subject's anatomical ${subjectSide}`
+        + ` appears on FRAME ${frameSide}.`,
+    });
+  }
+  return Object.freeze({
+    guideLabel: `SUBJECT ${subjectSide} - RIGHT-FACING VIEW`,
+    prompt:
+      `The subject faces toward frame-right in this canonical ${angle} view.`
+      + ` Judge ${tuple.side} only as the subject's own anatomical side; never`
+      + " substitute viewer-left or viewer-right.",
+  });
 }
 
 function closeVisibility(

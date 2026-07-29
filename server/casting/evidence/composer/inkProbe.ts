@@ -15,12 +15,15 @@ import { INK_TEXT_PROVIDER_CONFIG } from "./inkProviderTelemetry";
 import {
   INK_ANYWHERE_PROBE_RECIPE_VERSION,
   INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
   INK_ANYWHERE_VISIBILITY_RECIPE_VERSION,
   assertSupportedInkAnatomyTuple,
+  inkAnatomicalSideAuthority,
   inkAnatomyLabel,
   type InkAnatomyTuple,
 } from "../inkAnatomyRegistry";
+import type { CanonicalViewAngle } from "../../../../shared/boardTypes";
 
 export type InkProbeKind =
   | "visibility"
@@ -50,6 +53,7 @@ export interface InkProbeRequest {
     | typeof INK_ADD_VISIBILITY_RECIPE_VERSION
     | typeof INK_ANYWHERE_PROBE_RECIPE_VERSION
     | typeof INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION
+    | typeof INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION
     | typeof INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION
     | typeof INK_ANYWHERE_VISIBILITY_RECIPE_VERSION;
   responseMimeType: "application/json";
@@ -108,6 +112,13 @@ interface AnywhereFeaturePlacementResponse {
   requestedFeaturePresent: boolean;
   priorVisibleInkPreserved: boolean;
   noUnexpectedInk: boolean;
+  confidence: number;
+}
+
+interface AnywherePlacementAuditResponse {
+  anatomicalSideCorrect: boolean;
+  insideAuthorizedZone: boolean;
+  conflictingOutsideChange: boolean;
   confidence: number;
 }
 
@@ -241,6 +252,23 @@ export function parseInkAnywhereFeaturePlacementProbe(
     requestedFeaturePresent: bool(value.requestedFeaturePresent),
     priorVisibleInkPreserved: bool(value.priorVisibleInkPreserved),
     noUnexpectedInk: bool(value.noUnexpectedInk),
+    confidence: confidence(value.confidence),
+  };
+}
+
+export function parseInkAnywherePlacementAuditProbe(
+  raw: unknown,
+): AnywherePlacementAuditResponse {
+  const value = exactObject(raw, [
+    "anatomicalSideCorrect",
+    "insideAuthorizedZone",
+    "conflictingOutsideChange",
+    "confidence",
+  ]);
+  return {
+    anatomicalSideCorrect: bool(value.anatomicalSideCorrect),
+    insideAuthorizedZone: bool(value.insideAuthorizedZone),
+    conflictingOutsideChange: bool(value.conflictingOutsideChange),
     confidence: confidence(value.confidence),
   };
 }
@@ -423,6 +451,53 @@ visible tattoo or mark appears anywhere. Return strict JSON only.`,
   };
 }
 
+export function buildInkAnywherePlacementAuditProbeRequest(input: {
+  originalTarget: ComposerImage;
+  placementAuditCandidate: ComposerImage;
+  anatomy: InkAnatomyTuple;
+  sourceAngle: CanonicalViewAngle;
+}): InkProbeRequest {
+  assertSupportedInkAnatomyTuple(input.anatomy);
+  const sideAuthority = inkAnatomicalSideAuthority(
+    input.anatomy,
+    input.sourceAngle,
+  );
+  return {
+    kind: "feature_placement",
+    model: INK_ADD_PROBE_MODEL,
+    recipeVersion: INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION,
+    responseMimeType: "application/json",
+    responseSchema: {
+      anatomicalSideCorrect: "boolean",
+      insideAuthorizedZone: "boolean",
+      conflictingOutsideChange: "boolean",
+      confidence: "integer_0_100",
+    },
+    ...INK_TEXT_PROVIDER_CONFIG,
+    prompt: `This is a strict spatial placement audit, not an image-generation
+request. Image 1 is the original target. Image 2 is the candidate with a
+translucent red server-owned allowed-zone overlay and label. The overlay is
+audit annotation only.
+
+The only authorized new tattoo is at ${inkAnatomyLabel(input.anatomy)}.
+The exact tuple is zone=${input.anatomy.zone},
+surface=${input.anatomy.surface}, side=${input.anatomy.side}.
+${sideAuthority.prompt}
+
+Set anatomicalSideCorrect false if the tattoo is on the opposite anatomical
+side, even if that opposite side matches the viewer's idea of left or right.
+Set insideAuthorizedZone true only when the requested new tattoo is visibly
+within the highlighted zone. Set conflictingOutsideChange true if the new
+tattoo, a duplicate, or another new mark appears primarily outside that zone
+or on the opposite side. When side or placement cannot be verified with high
+confidence, return false for the positive field. Return strict JSON only.`,
+    images: [
+      inline("original_target", input.originalTarget),
+      inline("candidate", input.placementAuditCandidate),
+    ],
+  };
+}
+
 export function buildInkFeaturePlacementProbeRequest(input: {
   originalTarget: ComposerImage;
   candidate: ComposerImage;
@@ -589,8 +664,10 @@ export async function runInkAnywhereCandidateProbes(input: {
   identityAnchor: ComposerImage;
   originalTarget: ComposerImage;
   candidate: ComposerImage;
+  placementAuditCandidate: ComposerImage;
   evidenceReference?: ComposerImage;
   anatomy: InkAnatomyTuple;
+  sourceAngle: CanonicalViewAngle;
   normalizedDescriptor: string;
   predictedVisibility: EvidenceProbeOutcome;
   probe: (request: InkProbeRequest) => Promise<unknown>;
@@ -598,13 +675,17 @@ export async function runInkAnywhereCandidateProbes(input: {
   const requests = [
     buildInkAnywhereIdentityPoseProbeRequest(input),
     buildInkAnywhereFeaturePlacementProbeRequest(input),
+    buildInkAnywherePlacementAuditProbeRequest(input),
   ] as const;
   const settled = await Promise.allSettled(
     requests.map((request) => input.probe(request)),
   );
   let identityOutcome: EvidenceProbeOutcome = "unknown";
   let poseFramingOutcome: EvidenceProbeOutcome = "unknown";
-  let placementOutcome: EvidenceProbeOutcome = "unknown";
+  let semanticPlacementOutcome: EvidenceProbeOutcome = "unknown";
+  let sidePlacementOutcome: EvidenceProbeOutcome = "unknown";
+  let zonePlacementOutcome: EvidenceProbeOutcome = "unknown";
+  let outsidePlacementOutcome: EvidenceProbeOutcome = "unknown";
   let featureMatchOutcome: EvidenceProbeOutcome = "unknown";
   let priorInkOutcome: EvidenceProbeOutcome = "unknown";
   let unexpectedInkOutcome: EvidenceProbeOutcome = "unknown";
@@ -619,13 +700,28 @@ export async function runInkAnywhereCandidateProbes(input: {
   try {
     if (settled[1].status !== "fulfilled") throw settled[1].reason;
     const feature = parseInkAnywhereFeaturePlacementProbe(settled[1].value);
-    placementOutcome = outcome(feature.correctPlacement);
+    semanticPlacementOutcome = outcome(feature.correctPlacement);
     featureMatchOutcome = outcome(feature.requestedFeaturePresent);
     priorInkOutcome = outcome(feature.priorVisibleInkPreserved);
     unexpectedInkOutcome = outcome(feature.noUnexpectedInk);
   } catch {
     // Unknown is deliberately sticky and fail-closed.
   }
+  try {
+    if (settled[2].status !== "fulfilled") throw settled[2].reason;
+    const placement = parseInkAnywherePlacementAuditProbe(settled[2].value);
+    sidePlacementOutcome = outcome(placement.anatomicalSideCorrect);
+    zonePlacementOutcome = outcome(placement.insideAuthorizedZone);
+    outsidePlacementOutcome = outcome(!placement.conflictingOutsideChange);
+  } catch {
+    // Unknown is deliberately sticky and fail-closed.
+  }
+  const placementOutcome = overall([
+    semanticPlacementOutcome,
+    sidePlacementOutcome,
+    zonePlacementOutcome,
+    outsidePlacementOutcome,
+  ]);
   const checks = [
     input.predictedVisibility,
     identityOutcome,

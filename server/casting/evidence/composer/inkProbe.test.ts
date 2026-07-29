@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { ComposerImage } from "./inkComposer";
 import {
   buildInkAnywhereFeaturePlacementProbeRequest,
+  buildInkAnywherePlacementAuditProbeRequest,
   buildInkAnywhereVisibilityProbeRequest,
   buildInkFeaturePlacementProbeRequest,
   buildInkIdentityPoseProbeRequest,
@@ -212,11 +213,25 @@ describe("R7-7D fail-closed structured probes", () => {
       anatomy,
       normalizedDescriptor: "blackwork full sleeve",
     });
+    const placementAudit = buildInkAnywherePlacementAuditProbeRequest({
+      originalTarget: image,
+      placementAuditCandidate: image,
+      anatomy,
+      sourceAngle: "frontFull",
+    });
     expect(visibility.recipeVersion)
       .toBe("ink.add.anywhere.visibility.v1");
     expect(visibility.prompt).toContain("anatomical side");
     expect(feature.recipeVersion).toBe("ink.add.anywhere.probe.v1");
     expect(feature.responseSchema).toHaveProperty("priorVisibleInkPreserved");
+    expect(placementAudit.recipeVersion)
+      .toBe("ink.add.anywhere.placement-audit.v1");
+    expect(placementAudit.prompt).toContain("FRAME LEFT");
+    expect(placementAudit.responseSchema).toMatchObject({
+      anatomicalSideCorrect: "boolean",
+      insideAuthorizedZone: "boolean",
+      conflictingOutsideChange: "boolean",
+    });
 
     await expect(runInkAnywhereVisibilityProbe({
       target: image,
@@ -236,18 +251,31 @@ describe("R7-7D fail-closed structured probes", () => {
       identityAnchor: image,
       originalTarget: image,
       candidate: image,
+      placementAuditCandidate: image,
       anatomy,
+      sourceAngle: "frontFull",
       normalizedDescriptor: "blackwork full sleeve",
       predictedVisibility: "pass",
-      probe: async (request) => request.kind === "identity_pose"
-        ? identityPass
-        : {
+      probe: async (request) => {
+        if (request.kind === "identity_pose") return identityPass;
+        if (
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v1"
+        ) {
+          return {
+            anatomicalSideCorrect: true,
+            insideAuthorizedZone: true,
+            conflictingOutsideChange: false,
+            confidence: 97,
+          };
+        }
+        return {
             correctPlacement: true,
             requestedFeaturePresent: true,
             priorVisibleInkPreserved: false,
             noUnexpectedInk: true,
             confidence: 94,
-          },
+          };
+      },
     });
     expect(truth).toMatchObject({
       priorInkOutcome: "fail",
@@ -258,6 +286,54 @@ describe("R7-7D fail-closed structured probes", () => {
         action: "included_retry",
         nextAttemptNumber: 2,
         directives: ["prior_ink"],
+      });
+  });
+
+  it("fails closed when the independent audit sees the opposite side", async () => {
+    const anatomy = {
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    } as const;
+    const truth = await runInkAnywhereCandidateProbes({
+      identityAnchor: image,
+      originalTarget: image,
+      candidate: image,
+      placementAuditCandidate: image,
+      anatomy,
+      sourceAngle: "frontFull",
+      normalizedDescriptor: "blackwork full sleeve",
+      predictedVisibility: "pass",
+      probe: async (request) => {
+        if (request.kind === "identity_pose") return identityPass;
+        if (
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v1"
+        ) {
+          return {
+            anatomicalSideCorrect: false,
+            insideAuthorizedZone: false,
+            conflictingOutsideChange: true,
+            confidence: 99,
+          };
+        }
+        return {
+          correctPlacement: true,
+          requestedFeaturePresent: true,
+          priorVisibleInkPreserved: true,
+          noUnexpectedInk: true,
+          confidence: 95,
+        };
+      },
+    });
+    expect(truth).toMatchObject({
+      placementOutcome: "fail",
+      overallOutcome: "fail",
+    });
+    expect(decideInkCandidateAttempt({ attemptNumber: 1, probe: truth }))
+      .toEqual({
+        action: "included_retry",
+        nextAttemptNumber: 2,
+        directives: ["placement"],
       });
   });
 });

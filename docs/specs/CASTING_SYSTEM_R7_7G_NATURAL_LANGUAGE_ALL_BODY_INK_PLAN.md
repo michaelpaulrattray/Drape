@@ -1,8 +1,8 @@
 # Casting System R7-7G — Natural-Language All-Body Ink Execution Plan
 
-**Status:** IMPLEMENTED AND LOCALLY VERIFIED — G0 through G6 complete;
-production migrations, feature-off landing, founder enablement, and paid
-calibration remain pending
+**Status:** G0 through G7 complete; G8 founder calibration in progress. The
+first paid full-sleeve drive exposed mirrored anatomical laterality; the
+fail-closed repair is locally verified and awaits production retest.
 
 **Date:** 2026-07-29
 
@@ -36,8 +36,29 @@ passing across 246 files (239 environment-gated tests skipped); `pnpm build`;
 focused graph, package, billing, recovery, deletion, UI, and 1K contracts; and
 a headless Edge real-app smoke against a disposable fully migrated database.
 The smoke routed a right-forearm tattoo from the ordinary Refine field and
-proved feature-off refusal before any candidate-generation route. No paid
-generation or production mutation occurred.
+proved feature-off refusal before any candidate-generation route.
+
+**Production checkpoint (2026-07-29; not closure):** migrations `0015` and
+`0016` applied with unchanged evidence row counts. The new runtime landed
+feature-off and healthy, the natural-language tattoo route refused before
+generation with the founder balance unchanged at 69,200 credits, and the
+evidence scopes were then enabled for founder user 1 only. One 350-credit
+right-full-sleeve drive selected Full front and delivered a private candidate,
+leaving 68,850 credits. The provider placed the new ink on the subject's left
+arm. The semantic placement probe incorrectly admitted it, but founder visual
+inspection rejected it before acceptance; Cancel removed the preview and did
+not refund a successfully delivered candidate, as disclosed.
+
+The local repair changes the all-body composer recipe from v1 to v2, spells
+subject-side/frame-side authority into generation, and adds an independent
+placement-audit probe over the candidate with a server-owned anatomical-zone
+overlay. The audit must positively prove the requested anatomical side and
+zone and must find no conflicting outside change; unknown remains fail-closed.
+An opposite-side result now earns the one included retry, then fails and
+refunds exactly once. Production contains zero accepted all-body v1 feature
+versions, so the recipe fence strands no accepted feature. `pnpm check`, all
+3,158 tests, and `pnpm build` pass. The repair is not yet deployed or paid-
+retested, no tuple cohort is enabled, and R7-7G remains open.
 
 ## 1. Outcome
 

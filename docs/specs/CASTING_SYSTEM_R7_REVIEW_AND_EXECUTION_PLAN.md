@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7F are complete; R7-7G G0–G6 are implemented and locally verified as of 2026-07-29, with production migration, feature-off landing, founder calibration, and closure still pending; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure follows
+**Status:** IN EXECUTION — R7-0 through R7-7F are complete; R7-7G G0–G7 are complete and G8 founder calibration is in progress as of 2026-07-29; the first all-body paid drive exposed a mirrored-laterality safety defect and the fail-closed repair is locally verified pending production retest; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure follows
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -351,7 +351,7 @@ operations under the generative edit/erase boundary. Cybernetics, moles,
 scars, and every other identity-feature category remain refused until the
 all-body tattoo category passes its own matrix and founder gate.
 
-**Execution checkpoint, 2026-07-29:** G0–G6 are implemented and locally
+**Execution checkpoint, 2026-07-29:** G0–G7 are implemented and locally
 verified. The release has a closed all-body tuple registry, strict
 natural-language planning, server-selected source views, multi-tattoo
 positive closure, private first-surface and projection candidates, exact
@@ -359,11 +359,23 @@ positive closure, private first-surface and projection candidates, exact
 preservation probes, atomic feature/package settlement, lifecycle recovery,
 complete Fork/history/restore/deletion carry, natural-language-only UI, and
 1K-only Casting/export truth. Additive migrations `0015` and `0016` passed a
-guarded disposable MySQL drive and the final startup fence. The full local
-suite and production build pass, and a feature-off headless Edge drive proved
-the ordinary Refine route cannot reach generation. G7 production landing and
-G8 founder-paid calibration remain open; this checkpoint does not enable a
-cohort or close R7-7G.
+guarded disposable MySQL drive and the final startup fence. Production applied
+both migrations without row-count drift, landed the new runtime feature-off,
+passed the ordinary Refine refusal without charge, and then enabled the
+founder-only evidence scopes.
+
+The first 350-credit G8 drive resolved a right full sleeve from natural
+language and selected Full front, but the provider mirrored the ink onto the
+subject's left arm. The original semantic placement probe incorrectly returned
+pass; founder visual inspection caught the defect before acceptance and the
+candidate was cancelled. The repair bumps the all-body composer to v2, gives
+composer and probe explicit subject/frame laterality authority, and adds an
+independent probe over a server-annotated candidate zone. Opposite-side or
+out-of-zone ink now forces the included retry and then fails/refunds. Zero
+accepted all-body v1 feature versions exist in production. Typecheck, 3,158
+tests, build, and diff checks pass locally. The repair still requires
+production deployment and one controlled paid retest; no cohort is enabled
+and R7-7G is not closed.
 
 ### R7-8 — Quality choice, downstream reference sheets, and dogfood closure
 

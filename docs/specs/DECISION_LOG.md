@@ -1025,6 +1025,33 @@ before any candidate-generation route. No paid generation or production
 mutation occurred. Production migration, feature-off landing, founder-only
 enablement, paid cohort calibration, and R7-7G closure remain pending.
 
+**R7-7G production landing and first calibration checkpoint (2026-07-29; not
+closure):** production applied additive migrations `0015` and `0016` without
+changing existing evidence row counts. The all-body runtime landed feature-off
+and healthy; the ordinary Refine field resolved a right-forearm request but
+refused before provider or credit work, preserving the 69,200-credit balance.
+Evidence ingestion, composer, package, and candidate worker were then enabled
+for founder user 1 only.
+
+The first paid G8 drive resolved “right arm, full sleeve” and Full front,
+charged 350 credits, and delivered a private candidate. The provider mirrored
+the sleeve onto the subject's anatomical left arm. The original semantic
+feature-placement probe returned pass, so visual inspection—not the machine
+gate—prevented an incorrect acceptance. Cancel removed the preview and left
+the disclosed successful-delivery charge in place at a 68,850-credit balance.
+No second paid generation has run.
+
+**Laterality repair:** all-body composer v2 now receives server-owned
+subject/frame side authority, and an independent placement-audit recipe
+examines a server-annotated candidate. Readiness requires both semantic feature
+truth and positive proof that the ink is on the requested anatomical side,
+inside the authorized zone, with no conflicting new mark outside it. Unknown
+remains fail-closed; an opposite-side result takes the included retry, then
+fails/refunds. Production has zero accepted all-body composer-v1 feature
+versions. The repair passes typecheck, 3,158 tests, build, and diff checks
+locally, but remains pending production deployment and one controlled paid
+retest. No anatomical cohort is enabled and R7-7G remains open.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

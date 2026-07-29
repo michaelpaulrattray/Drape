@@ -15,9 +15,11 @@ import {
 import {
   INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
   assertSupportedInkAnatomyTuple,
+  inkAnatomicalSideAuthority,
   inkAnatomyLabel,
   type InkAnatomyTuple,
 } from "../inkAnatomyRegistry";
+import type { CanonicalViewAngle } from "../../../../shared/boardTypes";
 
 export type ComposerImageMime =
   | "image/jpeg"
@@ -102,7 +104,7 @@ function inlineImage(
 
 const RETRY_DIRECTIVES: Readonly<Record<InkRetryDirective, string>> = {
   identity: "Correct identity drift: reproduce the exact same person from the identity anchor.",
-  placement: "Correct placement: confine the tattoo to the highlighted chest region and selected side.",
+  placement: "Correct placement: confine the tattoo to the highlighted server-owned anatomical region and the subject's selected side; never mirror subject-left/right into viewer-left/right.",
   feature: "Correct design fidelity: make the requested tattoo clearly visible and recognisable.",
   prior_ink: "Restore every tattoo or permanent mark already visible in the original target exactly; do not move, mirror, resize, recolour, erase, or duplicate it.",
   pose_framing: "Restore the target's exact pose, crop, camera, and framing.",
@@ -239,6 +241,7 @@ export function buildInkAnywhereComposerRequest(input: {
   identityText: string;
   normalizedDescriptor: string;
   anatomy: InkAnatomyTuple;
+  sourceAngle: CanonicalViewAngle;
   attemptNumber: 1 | 2;
   identityAnchor: ComposerImage;
   guidedTarget: ComposerImage;
@@ -250,6 +253,10 @@ export function buildInkAnywhereComposerRequest(input: {
     validatedComposerAuthority(input);
   const images = composerImages(input);
   const location = inkAnatomyLabel(input.anatomy);
+  const sideAuthority = inkAnatomicalSideAuthority(
+    input.anatomy,
+    input.sourceAngle,
+  );
 
   const prompt = `Create one complete flattened fashion casting image.
 
@@ -273,6 +280,11 @@ ${location}, inside the highlighted server-owned anatomical zone. The resolved
 tuple is zone=${input.anatomy.zone}, surface=${input.anatomy.surface},
 side=${input.anatomy.side}. Preserve realistic skin pores, texture, lighting,
 and skin highlights over the ink.
+
+ANATOMICAL LATERALITY - SERVER AUTHORITY:
+${sideAuthority.prompt}
+The highlighted guide is authoritative. "Left" and "right" always mean the
+subject's own anatomy, never the viewer's side of the image.
 
 IMMUTABLE IDENTITY:
 ${identityText}

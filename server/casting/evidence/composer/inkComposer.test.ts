@@ -99,13 +99,15 @@ describe("R7-7D exact ink composer request", () => {
         surface: "circumferential",
         side: "right",
       },
+      sourceAngle: "frontFull",
       attemptNumber: 2,
       identityAnchor: image,
       guidedTarget: image,
       retryDirectives: ["prior_ink", "placement"],
     });
-    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v1");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v2");
     expect(request.prompt).toContain("Right arm");
+    expect(request.prompt).toContain("FRAME LEFT");
     expect(request.prompt).toContain("zone=full_arm");
     expect(request.prompt).toContain("surface=circumferential");
     expect(request.prompt).toContain("preserve every existing tattoo");

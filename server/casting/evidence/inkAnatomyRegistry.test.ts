@@ -3,6 +3,7 @@ import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
 import {
   ALL_SUPPORTED_INK_ANATOMY_TUPLES,
   chooseCurrentInkAuthoringSource,
+  inkAnatomicalSideAuthority,
   inkAnatomyLabel,
   inkAuthoringSourcePreferences,
   inkViewDirectiveV2,
@@ -59,6 +60,12 @@ describe("all-body ink anatomy registry", () => {
     expect(inkViewDirectiveV2(tuple, "frontFull").impact).toBe("affected");
     expect(inkViewDirectiveV2(tuple, "sideFull").impact).toBe("affected");
     expect(inkViewDirectiveV2(tuple, "backFull").impact).toBe("affected");
+    expect(inkAnatomicalSideAuthority(tuple, "frontFull")).toMatchObject({
+      guideLabel: "SUBJECT RIGHT - FRAME LEFT",
+    });
+    expect(inkAnatomicalSideAuthority(tuple, "backFull")).toMatchObject({
+      guideLabel: "SUBJECT RIGHT - FRAME RIGHT",
+    });
   });
 
   it("distinguishes below-resolution truth from hidden anatomy", () => {
