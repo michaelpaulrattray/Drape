@@ -27,6 +27,7 @@ import type { CanonicalViewAngle } from "../../../../shared/boardTypes";
 
 export type InkProbeKind =
   | "visibility"
+  | "guide_coverage"
   | "identity_pose"
   | "feature_placement"
   | "feature_projection"
@@ -76,6 +77,7 @@ export interface InkVisibilityProbe {
     materiallyOccluded: boolean;
     guideCoversRequestedRegion: boolean;
     guideTouchesOppositeSide: boolean;
+    guideIncludesConflictingAnatomy: boolean;
   }> | null;
 }
 
@@ -131,8 +133,13 @@ interface AnywhereVisibilityResponse {
   targetRegionVisible: boolean;
   anatomicalSideReadable: boolean;
   materiallyOccluded: boolean;
+  confidence: number;
+}
+
+interface AnywhereGuideCoverageResponse {
   guideCoversRequestedRegion: boolean;
   guideTouchesOppositeSide: boolean;
+  guideIncludesConflictingAnatomy: boolean;
   confidence: number;
 }
 
@@ -256,16 +263,30 @@ export function parseInkAnywhereVisibilityProbe(
     "targetRegionVisible",
     "anatomicalSideReadable",
     "materiallyOccluded",
-    "guideCoversRequestedRegion",
-    "guideTouchesOppositeSide",
     "confidence",
   ]);
   return {
     targetRegionVisible: bool(value.targetRegionVisible),
     anatomicalSideReadable: bool(value.anatomicalSideReadable),
     materiallyOccluded: bool(value.materiallyOccluded),
+    confidence: confidence(value.confidence),
+  };
+}
+
+export function parseInkAnywhereGuideCoverageProbe(
+  raw: unknown,
+): AnywhereGuideCoverageResponse {
+  const value = exactObject(raw, [
+    "guideCoversRequestedRegion",
+    "guideTouchesOppositeSide",
+    "guideIncludesConflictingAnatomy",
+    "confidence",
+  ]);
+  return {
     guideCoversRequestedRegion: bool(value.guideCoversRequestedRegion),
     guideTouchesOppositeSide: bool(value.guideTouchesOppositeSide),
+    guideIncludesConflictingAnatomy:
+      bool(value.guideIncludesConflictingAnatomy),
     confidence: confidence(value.confidence),
   };
 }
@@ -361,7 +382,6 @@ strict JSON only.`,
 
 export function buildInkAnywhereVisibilityProbeRequest(input: {
   target: ComposerImage;
-  guidedTarget: ComposerImage;
   anatomy: InkAnatomyTuple;
 }): InkProbeRequest {
   assertSupportedInkAnatomyTuple(input.anatomy);
@@ -375,15 +395,11 @@ export function buildInkAnywhereVisibilityProbeRequest(input: {
       targetRegionVisible: "boolean",
       anatomicalSideReadable: "boolean",
       materiallyOccluded: "boolean",
-      guideCoversRequestedRegion: "boolean",
-      guideTouchesOppositeSide: "boolean",
       confidence: "integer_0_100",
     },
     ...INK_TEXT_PROVIDER_CONFIG,
-    prompt: `Image 1 is the clean target. Image 2 is the same target with a
-translucent red server-owned placement guide. Assess only whether ${location}
-is sufficiently visible and whether that guide actually authorizes the
-requested anatomy before any paid image work. The resolved tuple is
+    prompt: `Assess only whether ${location} is sufficiently visible in this
+clean target before any paid image work. The resolved tuple is
 zone=${input.anatomy.zone}, surface=${input.anatomy.surface},
 side=${input.anatomy.side}. targetRegionVisible requires real observable skin
 or an already visible tattoo-bearing surface at useful scale.
@@ -391,17 +407,45 @@ anatomicalSideReadable requires that the person's anatomical side and requested
 surface can be identified without guessing or mirroring. Clothing, hair, hands,
 objects, crop, foreshortening, or pose materially covering the requested region
 count as occlusion. A circumferential request needs a useful visible portion,
-not proof of the hidden circumference.
-
-Set guideCoversRequestedRegion true only if the highlighted region contains
-useful visible skin on the exact requested body part. A guide that sits above,
-below, or beside the requested anatomy fails even when that anatomy is visible
-elsewhere in Image 1. Set guideTouchesOppositeSide true if the guide reaches the
-opposite anatomical side in a way that could authorize mirrored placement.
-The guide may include modest surrounding context on the requested side; it
-must not be treated as permission to tattoo adjacent anatomy. Do not infer
-hidden pixels. Return strict JSON only. confidence must be
+not proof of the hidden circumference. Do not infer hidden pixels. Return
+strict JSON only. confidence must be
 an integer from 0 to 100, where 100 means completely certain.`,
+    images: [inline("original_target", input.target)],
+  };
+}
+
+export function buildInkAnywhereGuideCoverageProbeRequest(input: {
+  target: ComposerImage;
+  guidedTarget: ComposerImage;
+  anatomy: InkAnatomyTuple;
+}): InkProbeRequest {
+  assertSupportedInkAnatomyTuple(input.anatomy);
+  const location = inkAnatomyLabel(input.anatomy);
+  return {
+    kind: "guide_coverage",
+    model: INK_ADD_PROBE_MODEL,
+    recipeVersion: INK_ANYWHERE_VISIBILITY_RECIPE_VERSION,
+    responseMimeType: "application/json",
+    responseSchema: {
+      guideCoversRequestedRegion: "boolean",
+      guideTouchesOppositeSide: "boolean",
+      guideIncludesConflictingAnatomy: "boolean",
+      confidence: "integer_0_100",
+    },
+    ...INK_TEXT_PROVIDER_CONFIG,
+    prompt: `Image 1 is a clean target. Image 2 is the same target with one
+translucent red server-owned guide. Audit only that guide's geometry for
+${location}. The exact tuple is zone=${input.anatomy.zone},
+surface=${input.anatomy.surface}, side=${input.anatomy.side}.
+
+Set guideCoversRequestedRegion true only if the guide contains useful visible
+skin on the exact requested body part. A guide above, below, beside, or solely
+on clothing fails. Set guideTouchesOppositeSide true if it reaches the
+opposite anatomical side enough to authorize mirrored placement. Set
+guideIncludesConflictingAnatomy true only if it contains useful exposed skin
+on a different body part where an additional tattoo could be placed. Modest
+background and clothing context do not conflict. Return strict JSON only.
+confidence must be an integer from 0 to 100.`,
     images: [
       inline("original_target", input.target),
       inline("guided_target", input.guidedTarget),
@@ -708,25 +752,32 @@ export async function runInkAnywhereVisibilityProbe(input: {
   probe: (request: InkProbeRequest) => Promise<unknown>;
 }): Promise<InkVisibilityProbe> {
   try {
-    const result = parseInkAnywhereVisibilityProbe(
-      await input.probe(buildInkAnywhereVisibilityProbeRequest(input)),
-    );
+    const [visibility, guide] = await Promise.all([
+      input.probe(buildInkAnywhereVisibilityProbeRequest(input))
+        .then(parseInkAnywhereVisibilityProbe),
+      input.probe(buildInkAnywhereGuideCoverageProbeRequest(input))
+        .then(parseInkAnywhereGuideCoverageProbe),
+    ]);
     return {
       predictedVisibility: outcome(
-        result.targetRegionVisible
-        && result.anatomicalSideReadable
-        && !result.materiallyOccluded
-        && result.guideCoversRequestedRegion
-        && !result.guideTouchesOppositeSide
-        && result.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE,
+        visibility.targetRegionVisible
+        && visibility.anatomicalSideReadable
+        && !visibility.materiallyOccluded
+        && guide.guideCoversRequestedRegion
+        && !guide.guideTouchesOppositeSide
+        && !guide.guideIncludesConflictingAnatomy
+        && visibility.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE
+        && guide.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE,
       ),
-      confidence: result.confidence,
+      confidence: Math.min(visibility.confidence, guide.confidence),
       detail: Object.freeze({
-        targetRegionVisible: result.targetRegionVisible,
-        anatomicalSideReadable: result.anatomicalSideReadable,
-        materiallyOccluded: result.materiallyOccluded,
-        guideCoversRequestedRegion: result.guideCoversRequestedRegion,
-        guideTouchesOppositeSide: result.guideTouchesOppositeSide,
+        targetRegionVisible: visibility.targetRegionVisible,
+        anatomicalSideReadable: visibility.anatomicalSideReadable,
+        materiallyOccluded: visibility.materiallyOccluded,
+        guideCoversRequestedRegion: guide.guideCoversRequestedRegion,
+        guideTouchesOppositeSide: guide.guideTouchesOppositeSide,
+        guideIncludesConflictingAnatomy:
+          guide.guideIncludesConflictingAnatomy,
       }),
     };
   } catch {

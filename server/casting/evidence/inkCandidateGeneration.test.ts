@@ -83,7 +83,7 @@ const anywherePrepared: PreparedInkCandidateAttempt = {
     normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
     composerRecipeVersion: "ink.add.anywhere.composer.v6",
     probeRecipeVersion: "ink.add.anywhere.probe.v2",
-    visibilityRecipeVersion: "ink.add.anywhere.visibility.v3",
+    visibilityRecipeVersion: "ink.add.anywhere.visibility.v4",
   },
   normalizedDescriptor: "blackwork full sleeve on his right arm",
 };
@@ -140,14 +140,20 @@ function passProbe(request: InkProbeRequest): unknown {
       key.endsWith("Confidence") ? 98 : true,
     ]));
   }
+  if (request.kind === "guide_coverage") {
+    return {
+      guideCoversRequestedRegion: true,
+      guideTouchesOppositeSide: false,
+      guideIncludesConflictingAnatomy: false,
+      confidence: 99,
+    };
+  }
   if (request.kind === "visibility") {
     if ("targetRegionVisible" in request.responseSchema) {
       return {
         targetRegionVisible: true,
         anatomicalSideReadable: true,
         materiallyOccluded: false,
-        guideCoversRequestedRegion: true,
-        guideTouchesOppositeSide: false,
         confidence: 99,
       };
     }
@@ -303,9 +309,15 @@ describe("ink candidate generation", () => {
           targetRegionVisible: true,
           anatomicalSideReadable: true,
           materiallyOccluded: false,
+          confidence: 96,
+        };
+      }
+      if (request.kind === "guide_coverage") {
+        return {
           guideCoversRequestedRegion: true,
           guideTouchesOppositeSide: false,
-          confidence: 96,
+          guideIncludesConflictingAnatomy: false,
+          confidence: 97,
         };
       }
       if (request.kind === "identity_pose") {
@@ -346,7 +358,7 @@ describe("ink candidate generation", () => {
       prompt: expect.stringContaining("zone=full_arm"),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.visibility.v3",
+      recipeVersion: "ink.add.anywhere.visibility.v4",
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
       recipeVersion: "ink.add.anywhere.probe.v2",
@@ -368,13 +380,11 @@ describe("ink candidate generation", () => {
     const deps = dependencies({
       prepare: vi.fn(async () => ({ ...anywherePrepared })),
       probe: vi.fn(async (request) => {
-        if (request.kind !== "visibility") return passProbe(request);
+        if (request.kind !== "guide_coverage") return passProbe(request);
         return {
-          targetRegionVisible: true,
-          anatomicalSideReadable: true,
-          materiallyOccluded: false,
           guideCoversRequestedRegion: false,
           guideTouchesOppositeSide: false,
+          guideIncludesConflictingAnatomy: false,
           confidence: 97,
         };
       }),

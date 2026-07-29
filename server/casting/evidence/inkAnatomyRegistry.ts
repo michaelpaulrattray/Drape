@@ -24,7 +24,7 @@ export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
 export const INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION =
   "ink.add.anywhere.placement-audit.v4" as const;
 export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
-  "ink.add.anywhere.visibility.v3" as const;
+  "ink.add.anywhere.visibility.v4" as const;
 export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
   "ink.add.anywhere.projection.v1" as const;
 export const INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION =

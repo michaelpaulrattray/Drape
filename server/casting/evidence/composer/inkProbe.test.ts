@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { ComposerImage } from "./inkComposer";
 import {
   buildInkAnywhereFeaturePlacementProbeRequest,
+  buildInkAnywhereGuideCoverageProbeRequest,
   buildInkAnywherePlacementAuditProbeRequest,
   buildInkAnywhereVisibilityProbeRequest,
   buildInkFeaturePlacementProbeRequest,
@@ -207,6 +208,10 @@ describe("R7-7D fail-closed structured probes", () => {
     } as const;
     const visibility = buildInkAnywhereVisibilityProbeRequest({
       target: image,
+      anatomy,
+    });
+    const guideCoverage = buildInkAnywhereGuideCoverageProbeRequest({
+      target: image,
       guidedTarget: image,
       anatomy,
     });
@@ -224,11 +229,16 @@ describe("R7-7D fail-closed structured probes", () => {
       sourceAngle: "frontFull",
     });
     expect(visibility.recipeVersion)
-      .toBe("ink.add.anywhere.visibility.v3");
+      .toBe("ink.add.anywhere.visibility.v4");
     expect(visibility.prompt).toContain("anatomical side");
-    expect(visibility.prompt).toContain("actually authorizes");
     expect(visibility.prompt).toContain("integer from 0 to 100");
-    expect(visibility.images.map(({ role }) => role)).toEqual([
+    expect(visibility.images.map(({ role }) => role)).toEqual(
+      ["original_target"],
+    );
+    expect(guideCoverage.recipeVersion)
+      .toBe("ink.add.anywhere.visibility.v4");
+    expect(guideCoverage.prompt).toContain("Audit only that guide");
+    expect(guideCoverage.images.map(({ role }) => role)).toEqual([
       "original_target",
       "guided_target",
     ]);
@@ -254,14 +264,19 @@ describe("R7-7D fail-closed structured probes", () => {
       target: image,
       guidedTarget: image,
       anatomy,
-      probe: async () => ({
-        targetRegionVisible: true,
-        anatomicalSideReadable: true,
-        materiallyOccluded: false,
-        guideCoversRequestedRegion: true,
-        guideTouchesOppositeSide: false,
-        confidence: 91,
-      }),
+      probe: async (request) => request.kind === "guide_coverage"
+        ? {
+            guideCoversRequestedRegion: true,
+            guideTouchesOppositeSide: false,
+            guideIncludesConflictingAnatomy: false,
+            confidence: 93,
+          }
+        : {
+            targetRegionVisible: true,
+            anatomicalSideReadable: true,
+            materiallyOccluded: false,
+            confidence: 91,
+          },
     })).resolves.toEqual({
       predictedVisibility: "pass",
       confidence: 91,
@@ -271,20 +286,26 @@ describe("R7-7D fail-closed structured probes", () => {
         materiallyOccluded: false,
         guideCoversRequestedRegion: true,
         guideTouchesOppositeSide: false,
+        guideIncludesConflictingAnatomy: false,
       },
     });
     await expect(runInkAnywhereVisibilityProbe({
       target: image,
       guidedTarget: image,
       anatomy,
-      probe: async () => ({
-        targetRegionVisible: true,
-        anatomicalSideReadable: true,
-        materiallyOccluded: false,
-        guideCoversRequestedRegion: true,
-        guideTouchesOppositeSide: false,
-        confidence: 84,
-      }),
+      probe: async (request) => request.kind === "guide_coverage"
+        ? {
+            guideCoversRequestedRegion: true,
+            guideTouchesOppositeSide: false,
+            guideIncludesConflictingAnatomy: false,
+            confidence: 93,
+          }
+        : {
+            targetRegionVisible: true,
+            anatomicalSideReadable: true,
+            materiallyOccluded: false,
+            confidence: 84,
+          },
     })).resolves.toEqual({
       predictedVisibility: "fail",
       confidence: 84,
@@ -294,20 +315,26 @@ describe("R7-7D fail-closed structured probes", () => {
         materiallyOccluded: false,
         guideCoversRequestedRegion: true,
         guideTouchesOppositeSide: false,
+        guideIncludesConflictingAnatomy: false,
       },
     });
     await expect(runInkAnywhereVisibilityProbe({
       target: image,
       guidedTarget: image,
       anatomy,
-      probe: async () => ({
-        targetRegionVisible: true,
-        anatomicalSideReadable: true,
-        materiallyOccluded: false,
-        guideCoversRequestedRegion: false,
-        guideTouchesOppositeSide: false,
-        confidence: 96,
-      }),
+      probe: async (request) => request.kind === "guide_coverage"
+        ? {
+            guideCoversRequestedRegion: false,
+            guideTouchesOppositeSide: false,
+            guideIncludesConflictingAnatomy: false,
+            confidence: 96,
+          }
+        : {
+            targetRegionVisible: true,
+            anatomicalSideReadable: true,
+            materiallyOccluded: false,
+            confidence: 98,
+          },
     })).resolves.toEqual({
       predictedVisibility: "fail",
       confidence: 96,
@@ -317,6 +344,7 @@ describe("R7-7D fail-closed structured probes", () => {
         materiallyOccluded: false,
         guideCoversRequestedRegion: false,
         guideTouchesOppositeSide: false,
+        guideIncludesConflictingAnatomy: false,
       },
     });
 
