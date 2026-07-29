@@ -47,6 +47,10 @@ export function CastStateHistory({ modelId, className }: CastStateHistoryProps) 
         utils.generation.refreshSlotsPlan.invalidate({ modelId: result.modelId }),
         utils.generation.mintPackagePlan.invalidate({ modelId: result.modelId }),
         utils.generation.slotVersions.invalidate(),
+        // This free direct operation does not register a local generation job,
+        // so the bridge's idle query would otherwise never observe its
+        // terminal receipt and rehydrate the workspace's Zustand projection.
+        utils.generation.activeOperations.invalidate(),
       ]);
     },
     onError: (error) => toast.error(error.message),
