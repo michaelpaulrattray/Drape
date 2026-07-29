@@ -63,6 +63,7 @@ function graph(side: "left" | "centre" | "right" = "left"): EvidencePackageFeatu
     recipeVersion: INK_ADD_COMPOSER_RECIPE_VERSION,
     createdByOperationId: "66666666-6666-4666-8666-666666666666",
     createdAt: NOW,
+    acceptedAssetId: 31,
   };
   const plate: ModelReferencePlate = {
     id: PLATE_ID,
@@ -101,7 +102,7 @@ function slots(input: {
     if (angle === "frontFull") {
       return {
         angle,
-        selectedAssetId: 30,
+        selectedAssetId: 31,
         compatibility: "current",
         pinned: false,
         failed: false,
@@ -150,23 +151,44 @@ function plan(input: {
 
 describe("evidence-aware package plan", () => {
   it("proves the exact positive feature graph", () => {
-    expect(assessSupportedInkFeatureGraph(graph(), 30)).not.toBeNull();
+    expect(assessSupportedInkFeatureGraph(graph(), 31)).not.toBeNull();
     const wrongPlate = graph();
     wrongPlate.plates = [{ ...wrongPlate.plates[0], userId: 2 }];
-    expect(assessSupportedInkFeatureGraph(wrongPlate, 30)).toBeNull();
+    expect(assessSupportedInkFeatureGraph(wrongPlate, 31)).toBeNull();
     const wrongKeyOwner = graph();
     wrongKeyOwner.plates = [{
       ...wrongKeyOwner.plates[0],
       storageKey:
         `users/2/models/${MODEL_ID}/evidence/candidates/${PLATE_ID}.webp`,
     }];
-    expect(assessSupportedInkFeatureGraph(wrongKeyOwner, 30)).toBeNull();
+    expect(assessSupportedInkFeatureGraph(wrongKeyOwner, 31)).toBeNull();
     const oversizedPlate = graph();
     oversizedPlate.plates = [{
       ...oversizedPlate.plates[0],
       byteSize: Number.MAX_SAFE_INTEGER,
     }];
-    expect(assessSupportedInkFeatureGraph(oversizedPlate, 30)).toBeNull();
+    expect(assessSupportedInkFeatureGraph(oversizedPlate, 31)).toBeNull();
+    const missingAccepted = graph();
+    missingAccepted.versions = [{
+      ...missingAccepted.versions[0],
+      acceptedAssetId: null,
+    }];
+    expect(assessSupportedInkFeatureGraph(missingAccepted, 31)).toBeNull();
+    const mismatchedAccepted = graph();
+    mismatchedAccepted.versions = [{
+      ...mismatchedAccepted.versions[0],
+      acceptedAssetId: 32,
+    }];
+    expect(assessSupportedInkFeatureGraph(mismatchedAccepted, 31)).toBeNull();
+    const sourceEqualsAccepted = graph();
+    sourceEqualsAccepted.versions = [{
+      ...sourceEqualsAccepted.versions[0],
+      sourceAssetId: 31,
+    }];
+    expect(assessSupportedInkFeatureGraph(sourceEqualsAccepted, 31)).toBeNull();
+    const forked = graph();
+    forked.versions = [{ ...forked.versions[0], sourceAssetId: null }];
+    expect(assessSupportedInkFeatureGraph(forked, 31)).not.toBeNull();
   });
 
   it("quotes only a stale lateral Walk at the server-owned 300-credit cost", () => {

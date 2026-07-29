@@ -999,7 +999,7 @@ export const modelIdentityFeatureVersions = mysqlTable(
     surface: varchar("surface", { length: 64 }).notNull(),
     side: varchar("side", { length: 32 }).notNull(),
     normalizedDescriptor: varchar("normalizedDescriptor", { length: 512 }).notNull(),
-    sourceAssetId: int("sourceAssetId").notNull(),
+    sourceAssetId: int("sourceAssetId"),
     sourceViewAngle: mysqlEnum("sourceViewAngle", ["frontFull"]).notNull(),
     sourceReferencePlateId: varchar("sourceReferencePlateId", { length: 36 }),
     acceptedCandidatePlateId: varchar("acceptedCandidatePlateId", { length: 36 }).notNull(),
@@ -1007,10 +1007,15 @@ export const modelIdentityFeatureVersions = mysqlTable(
     recipeVersion: varchar("recipeVersion", { length: 64 }).notNull(),
     createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
+    // Appended by 0014 so the startup schema contract matches physical order.
+    acceptedAssetId: int("acceptedAssetId"),
   },
   (table) => ([
     uniqueIndex("uq_identity_feature_versions_created_operation").on(
       table.createdByOperationId,
+    ),
+    uniqueIndex("uq_identity_feature_versions_accepted_asset").on(
+      table.acceptedAssetId,
     ),
     index("idx_identity_feature_versions_model_created").on(
       table.modelId,

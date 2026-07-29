@@ -78,7 +78,9 @@ function positiveId(value: number): boolean {
 /**
  * Positive closure proof for the pilot graph. Absence of a known bad row is
  * never enough: the exact selection, feature, version, accepted plate, source
- * asset, recipe and ontology must all agree.
+ * accepted asset, recipe and ontology must all agree. The pre-edit source is
+ * retained when the Cast owns it; forks honestly carry null because they do
+ * not copy stale, unselected source assets.
  */
 export function assessSupportedInkFeatureGraph(
   graph: EvidencePackageFeatureGraph,
@@ -120,7 +122,15 @@ export function assessSupportedInkFeatureGraph(
     || version.zone !== INK_ADD_ZONE
     || version.surface !== INK_ADD_SURFACE
     || version.sourceViewAngle !== INK_ADD_TARGET_VIEW
-    || version.sourceAssetId !== frontFullAssetId
+    || !positiveId(version.acceptedAssetId ?? 0)
+    || version.acceptedAssetId !== frontFullAssetId
+    || (
+      version.sourceAssetId !== null
+      && (
+        !positiveId(version.sourceAssetId)
+        || version.sourceAssetId === version.acceptedAssetId
+      )
+    )
     || version.recipeVersion !== INK_ADD_COMPOSER_RECIPE_VERSION
     || version.acceptedCandidatePlateId !== plate.id
     || plate.userId !== graph.userId

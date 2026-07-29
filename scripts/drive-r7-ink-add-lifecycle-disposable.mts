@@ -25,7 +25,7 @@ async function applyMigrations(connection: mysql.Connection) {
     .sort();
   for (const file of files) {
     const number = Number(file.slice(0, 4));
-    if (number > 13) throw new Error("R7-7D D2 driver refuses migrations after 0013");
+    if (number > 14) throw new Error("R7-7E driver refuses migrations after 0014");
     const sql = await readFile(`drizzle/${file}`, "utf8");
     for (const statement of sql.split("--> statement-breakpoint")) {
       if (statement.trim()) await connection.query(statement);
@@ -36,7 +36,11 @@ async function applyMigrations(connection: mysql.Connection) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const allowedFocused = new Set(["--focused-e2", "--focused-e3"]);
+  const allowedFocused = new Set([
+    "--focused-e2",
+    "--focused-e3",
+    "--focused-e5-link",
+  ]);
   if (args.some((arg) => !allowedFocused.has(arg))) {
     throw new Error(
       `Unknown argument: ${args.find((arg) => !allowedFocused.has(arg))}`,
@@ -44,7 +48,8 @@ async function main() {
   }
   const focusedE2 = args.includes("--focused-e2");
   const focusedE3 = args.includes("--focused-e3");
-  if (focusedE2 && focusedE3) {
+  const focusedE5Link = args.includes("--focused-e5-link");
+  if ([focusedE2, focusedE3, focusedE5Link].filter(Boolean).length > 1) {
     throw new Error("Choose only one focused lifecycle gate");
   }
   const configured = process.env.DATABASE_URL;
@@ -108,6 +113,14 @@ async function main() {
           "--testNamePattern=E3",
           "server/r7-ink-add-lifecycle-db.test.ts",
         ]
+      : focusedE5Link
+      ? [
+          "exec",
+          "vitest",
+          "run",
+          "--testNamePattern=E5.*accepted.asset",
+          "server/r7-ink-add-lifecycle-db.test.ts",
+        ]
       : [
           "exec",
           "vitest",
@@ -124,6 +137,8 @@ async function main() {
         ? "[disposable] R7-7E2 package settlement and rollback gates passed"
         : focusedE3
         ? "[disposable] R7-7E3 progressive mint and post-mint expansion gates passed"
+        : focusedE5Link
+        ? "[disposable] R7-7E5 accepted-asset and Fork-link gates passed"
         : "[disposable] cumulative R7-7D lifecycle gates passed",
     );
   } finally {

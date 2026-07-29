@@ -42,7 +42,7 @@ function mysqlDefault(value: unknown): string | null {
 
 async function snapshotRows() {
   const snapshot = JSON.parse(await readFile(
-    new URL("../../../drizzle/meta/0013_snapshot.json", import.meta.url),
+    new URL("../../../drizzle/meta/0014_snapshot.json", import.meta.url),
     "utf8",
   )) as Snapshot;
   const columns = Object.entries(snapshot.tables).flatMap(
@@ -97,8 +97,8 @@ function client(rows: Awaited<ReturnType<typeof snapshotRows>>) {
   };
 }
 
-describe("R7-7D composer startup schema fence", () => {
-  it("accepts the generated 0013 shape and rejects partial or stale shapes", async () => {
+describe("R7-7E composer startup schema fence", () => {
+  it("accepts the generated 0014 shape and rejects partial or stale shapes", async () => {
     const healthy = await snapshotRows();
     await expect(assertEvidenceComposerSchemaWithClient(client(healthy)))
       .resolves.toBeUndefined();

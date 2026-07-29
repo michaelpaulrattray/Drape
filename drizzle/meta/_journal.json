@@ -99,6 +99,13 @@
       "when": 1785137862058,
       "tag": "0013_r7_ink_add_candidates",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1785292614024,
+      "tag": "0014_r7_evidence_accepted_asset",
+      "breakpoints": true
     }
   ]
 }

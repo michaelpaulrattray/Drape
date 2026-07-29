@@ -551,9 +551,11 @@ async function commitEvidenceForkIn(
   for (const source of input.prepared.graph.featureVersions) {
     const id = input.generateId();
     const featureId = featureIdMap.get(source.featureId);
-    const sourceAssetId = assetIdMap.get(source.sourceAssetId);
+    const acceptedAssetId = source.acceptedAssetId
+      ? assetIdMap.get(source.acceptedAssetId)
+      : null;
     const acceptedCandidatePlateId = plateIdMap.get(source.acceptedCandidatePlateId);
-    if (!featureId || !sourceAssetId || !acceptedCandidatePlateId) {
+    if (!featureId || !acceptedAssetId || !acceptedCandidatePlateId) {
       throw new EvidenceForkError("snapshot_unavailable");
     }
     versionIdMap.set(source.id, id);
@@ -567,7 +569,8 @@ async function commitEvidenceForkIn(
       surface: source.surface,
       side: source.side,
       normalizedDescriptor: source.normalizedDescriptor,
-      sourceAssetId,
+      // Forks copy selected package truth, not stale pre-edit source assets.
+      sourceAssetId: null,
       sourceViewAngle: source.sourceViewAngle,
       sourceReferencePlateId: source.sourceReferencePlateId
         ? plateIdMap.get(source.sourceReferencePlateId) ?? null
@@ -578,6 +581,7 @@ async function commitEvidenceForkIn(
         : null,
       recipeVersion: source.recipeVersion,
       createdByOperationId: input.operationId,
+      acceptedAssetId,
     });
   }
 

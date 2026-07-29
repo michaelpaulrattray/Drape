@@ -85,6 +85,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./db/storageCleanup").releaseStorageCleanupReservation;
   let inkCandidatePublicStorageKey:
     typeof import("./casting/evidence/inkCandidatePublicStorage").inkCandidatePublicStorageKey;
+  let planEvidenceAcceptedAssetBackfill:
+    typeof import("./casting/evidence/evidenceAcceptedAssetBackfill").planEvidenceAcceptedAssetBackfill;
+  let applyEvidenceAcceptedAssetBackfill:
+    typeof import("./casting/evidence/evidenceAcceptedAssetBackfill").applyEvidenceAcceptedAssetBackfill;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -149,6 +153,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       releaseStorageCleanupReservation,
     } = await import("./db/storageCleanup"));
     ({ inkCandidatePublicStorageKey } = await import("./casting/evidence/inkCandidatePublicStorage"));
+    ({
+      planEvidenceAcceptedAssetBackfill,
+      applyEvidenceAcceptedAssetBackfill,
+    } = await import("./casting/evidence/evidenceAcceptedAssetBackfill"));
   });
 
   beforeEach(async () => {
@@ -219,7 +227,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     );
     const [full] = await connection.execute<ResultSetHeader>(
       "INSERT INTO model_assets (modelId, viewType, storageUrl, storageKey, pointsCost, pinned) VALUES (?, 'frontFull', ?, ?, 0, 0)",
-      [modelId, "https://public.example/source-full.webp", `users/${userId}/models/${modelId}/source-full.webp`],
+      [modelId, "https://public.example/source-accepted-full.webp", `users/${userId}/models/${modelId}/source-accepted-full.webp`],
     );
     await connection.execute(
       "INSERT INTO model_identity_snapshots (id, modelId, sequence, reason, masterPrompt, technicalSchema, preferences, identityText, identityTextHash, anchorAssetId, recipeVersion) VALUES (?, ?, 1, 'create', 'identity', JSON_OBJECT(), JSON_OBJECT(), 'identity', ?, ?, 'd2')",
@@ -239,11 +247,21 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [randomUUID(), packageId, head.insertId, randomUUID(), packageId, full.insertId],
     );
     let privateSourceKey: string | null = null;
+    let preEditFullAssetId: number | null = null;
     if (input.withFeature) {
       const operationId = randomUUID();
       const plateId = randomUUID();
       const featureId = randomUUID();
       const versionId = randomUUID();
+      const [preEditFull] = await connection.execute<ResultSetHeader>(
+        "INSERT INTO model_assets (modelId, viewType, storageUrl, storageKey, pointsCost, pinned) VALUES (?, 'frontFull', ?, ?, 0, 0)",
+        [
+          modelId,
+          "https://public.example/source-pre-edit-full.webp",
+          `users/${userId}/models/${modelId}/source-pre-edit-full.webp`,
+        ],
+      );
+      preEditFullAssetId = preEditFull.insertId;
       privateSourceKey =
         `users/${userId}/models/${modelId}/evidence/plates/${plateId}.webp`;
       await connection.execute(
@@ -255,8 +273,16 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         [featureId, modelId, operationId],
       );
       await connection.execute(
-        "INSERT INTO model_identity_feature_versions (id, modelId, featureId, operation, ontologyVersion, zone, surface, side, normalizedDescriptor, sourceAssetId, sourceViewAngle, acceptedCandidatePlateId, recipeVersion, createdByOperationId) VALUES (?, ?, ?, 'present', 'd2', 'upper_torso', 'front', 'center', 'fine-line rose', ?, 'frontFull', ?, 'd2', ?)",
-        [versionId, modelId, featureId, full.insertId, plateId, operationId],
+        "INSERT INTO model_identity_feature_versions (id, modelId, featureId, operation, ontologyVersion, zone, surface, side, normalizedDescriptor, sourceAssetId, sourceViewAngle, acceptedCandidatePlateId, recipeVersion, createdByOperationId, acceptedAssetId) VALUES (?, ?, ?, 'present', 'd2', 'upper_torso', 'front', 'center', 'fine-line rose', ?, 'frontFull', ?, 'd2', ?, ?)",
+        [
+          versionId,
+          modelId,
+          featureId,
+          preEditFullAssetId,
+          plateId,
+          operationId,
+          full.insertId,
+        ],
       );
       await connection.execute(
         "INSERT INTO model_snapshot_feature_selections (id, modelId, identitySnapshotId, featureId, featureVersionId, selectionReason) VALUES (?, ?, ?, ?, ?, 'accepted')",
@@ -270,6 +296,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       packageId,
       headAssetId: head.insertId,
       fullAssetId: full.insertId,
+      preEditFullAssetId,
       privateSourceKey,
     };
   }
@@ -614,7 +641,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     })).resolves.toBe("source_unavailable");
   }, 60_000);
 
-  it("publishes a free independent Fork only after every object and graph copy verifies", async () => {
+  it("E5 accepted-asset link: publishes a free independent Fork only after every object and graph copy verifies", async () => {
     const source = await fixture({ withFeature: true });
     const operationId = await claimedFork(source.userId, source.modelId);
     const privateObjects = new Map<string, Buffer>([
@@ -682,6 +709,21 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       versions: 1,
       selections: 1,
       plates: 1,
+    });
+    const [[targetFrontFull]] = await connection.query<RowDataPacket[]>(
+      `SELECT s.selectedAssetId
+         FROM model_package_snapshot_slots s
+        WHERE s.packageSnapshotId = ?
+          AND s.viewAngle = 'frontFull'`,
+      [target.currentPackageSnapshotId],
+    );
+    const [[targetVersion]] = await connection.query<RowDataPacket[]>(
+      "SELECT sourceAssetId, acceptedAssetId FROM model_identity_feature_versions WHERE modelId = ?",
+      [result.modelId],
+    );
+    expect(targetVersion).toEqual({
+      sourceAssetId: null,
+      acceptedAssetId: targetFrontFull.selectedAssetId,
     });
     const [[operation]] = await connection.query<RowDataPacket[]>(
       "SELECT status, chargedCredits, refundedCredits FROM generation_operations WHERE id = ?",
@@ -1288,7 +1330,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     })).resolves.toBeNull();
   }, 90_000);
 
-  it("accepts one ready candidate as one atomic feature, asset, snapshot pair, and receipt", async () => {
+  it("E5 accepted-asset link: accepts one ready candidate as one atomic feature, asset, snapshot pair, and receipt", async () => {
     const source = await fixture({ status: "draft" });
     const siblingAssetIds = new Map<string, number>();
     for (const angle of ["threeQuarter", "sideClose", "sideFull", "backFull"] as const) {
@@ -1473,6 +1515,49 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       selections: 1,
       plates: 1,
     });
+    const [[acceptedVersion]] = await connection.query<RowDataPacket[]>(
+      "SELECT sourceAssetId, acceptedAssetId FROM model_identity_feature_versions WHERE id = ?",
+      [accepted.featureVersionId],
+    );
+    expect(acceptedVersion).toEqual({
+      sourceAssetId: source.fullAssetId,
+      acceptedAssetId: accepted.assetId,
+    });
+    expect(acceptedVersion.acceptedAssetId)
+      .not.toBe(acceptedVersion.sourceAssetId);
+    await connection.execute(
+      "UPDATE model_identity_feature_versions SET acceptedAssetId = NULL WHERE id = ?",
+      [accepted.featureVersionId],
+    );
+    const repairSelector = {
+      userId: source.userId,
+      modelIds: [source.modelId],
+      expectedModelCount: 1,
+      expectedVersionCount: 1,
+      expectedBackfillCount: 1,
+    };
+    await expect(planEvidenceAcceptedAssetBackfill(repairSelector))
+      .resolves.toMatchObject({
+        ready: true,
+        rows: [{
+          modelId: source.modelId,
+          versionId: accepted.featureVersionId,
+          sourceAssetId: source.fullAssetId,
+          acceptedAssetId: null,
+          status: "ready",
+          errorCode: null,
+        }],
+      });
+    await expect(applyEvidenceAcceptedAssetBackfill(repairSelector))
+      .resolves.toMatchObject({
+        success: true,
+        updatedRows: 1,
+        rows: [{
+          acceptedAssetId: accepted.assetId,
+          status: "linked",
+          errorCode: null,
+        }],
+      });
     const [[terminal]] = await connection.query<RowDataPacket[]>(
       "SELECT c.status AS candidateStatus, c.activeSlot, i.status AS intentStatus, i.activeCapabilityKey, a.status AS attemptStatus, o.status AS operationStatus, o.chargedCredits, o.refundedCredits, l.operationId AS lockOwner FROM casting_evidence_candidates c JOIN model_identity_feature_intents i ON i.id = c.intentId JOIN casting_evidence_candidate_attempts a ON a.id = c.readyAttemptId JOIN generation_operations o ON o.id = ? LEFT JOIN generation_operation_locks l ON l.operationId = o.id WHERE c.id = ?",
       [acceptOperationId, candidate.candidateId],

@@ -266,6 +266,7 @@ export async function commitInkCandidateAcceptance(input: {
         evidenceCropId: null,
         recipeVersion: input.prepared.composerRecipeVersion,
         createdByOperationId: input.prepared.operationId,
+        acceptedAssetId: insertedAsset.id,
       });
       return {
         result: {

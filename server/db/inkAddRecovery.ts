@@ -457,6 +457,7 @@ export async function adjudicateStaleInkEvidenceOperation(input: {
           || !selection
           || !snapshot
           || !asset
+          || featureVersion.acceptedAssetId !== candidate.acceptedAssetId
           || model.currentPackageSnapshotId !== snapshot.id
         ) {
           return { type: "recovery_required" };

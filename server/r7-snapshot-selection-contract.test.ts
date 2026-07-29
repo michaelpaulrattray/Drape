@@ -84,7 +84,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(after).toEqual(expected);
   });
 
-  it("allows snapshot authority only inside the bounded A2/A3 services and the private A4 shadow reader", async () => {
+  it("allows snapshot authority only inside bounded services and private maintenance readers", async () => {
     const files = (await Promise.all([
       runtimeSources("server"),
       runtimeSources("client/src"),
@@ -104,6 +104,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     const allowedAuthority = new Set([
       "server/casting/effectiveCastState.ts",
       "server/casting/evidence/evidenceComposerSchema.ts",
+      "server/casting/evidence/evidenceAcceptedAssetBackfill.ts",
       "server/casting/evidence/evidenceFork.ts",
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/evidence/referencePlateIngestion.ts",

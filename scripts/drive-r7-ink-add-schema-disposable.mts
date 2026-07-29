@@ -36,8 +36,8 @@ async function applyMigrationRange(
     .sort();
   for (const file of files) {
     const migrationNumber = Number(file.slice(0, 4));
-    if (migrationNumber > 13) {
-      throw new Error("R7-7D D1 driver refuses migrations after 0013");
+    if (migrationNumber > 14) {
+      throw new Error("R7-7E schema driver refuses migrations after 0014");
     }
     const sql = await readFile(`drizzle/${file}`, "utf8");
     for (const statement of sql.split("--> statement-breakpoint")) {
@@ -131,6 +131,14 @@ async function main() {
           if (!(error instanceof EvidenceComposerSchemaMismatchError)) throw error;
         });
       await applyMigrationRange(connection, 13, 13);
+      await assertEvidenceComposerSchemaWithClient(connection)
+        .then(() => {
+          throw new Error("Composer schema fence accepted pre-0014 shape");
+        })
+        .catch((error) => {
+          if (!(error instanceof EvidenceComposerSchemaMismatchError)) throw error;
+        });
+      await applyMigrationRange(connection, 14, 14);
       await assertEvidenceComposerSchemaWithClient(connection);
     } finally {
       await connection.end();
@@ -152,7 +160,7 @@ async function main() {
       R7_7D_D1_LEGACY_CROP_ID: legacy.cropId,
       R7_7D_D1_LEGACY_CROP_OPERATION_ID: legacy.cropOperationId,
     });
-    console.log("[disposable] R7-7D D1 migration and mixed-version gates passed");
+    console.log("[disposable] R7-7E 0013-to-0014 migration and mixed-version gates passed");
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) {

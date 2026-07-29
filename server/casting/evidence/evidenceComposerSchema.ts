@@ -65,6 +65,7 @@ const NEW_TABLE_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     "surface", "side", "normalizedDescriptor", "sourceAssetId",
     "sourceViewAngle", "sourceReferencePlateId", "acceptedCandidatePlateId",
     "evidenceCropId", "recipeVersion", "createdByOperationId", "createdAt",
+    "acceptedAssetId",
   ],
   model_snapshot_feature_selections: [
     "id", "modelId", "identitySnapshotId", "featureId", "featureVersionId",
@@ -105,6 +106,8 @@ const EXISTING_COLUMN_TYPES: Readonly<Record<string, string>> = {
     "enum('pass','fail','unknown')",
   "model_identity_features.category": "enum('ink')",
   "model_identity_feature_versions.operation": "enum('present')",
+  "model_identity_feature_versions.sourceAssetId": "int",
+  "model_identity_feature_versions.acceptedAssetId": "int",
   "model_identity_feature_versions.sourceViewAngle": "enum('frontFull')",
   "model_snapshot_feature_selections.selectionReason":
     "enum('accepted','carried','restored')",
@@ -146,6 +149,14 @@ const COLUMN_DEFAULT_EXPECTATIONS: Readonly<Record<
     nullable: "NO",
     defaultValue: "planned",
   },
+  "model_identity_feature_versions.sourceAssetId": {
+    nullable: "YES",
+    defaultValue: null,
+  },
+  "model_identity_feature_versions.acceptedAssetId": {
+    nullable: "YES",
+    defaultValue: null,
+  },
 };
 
 const EXPECTED_INDEXES: Readonly<Record<string, readonly string[]>> = {
@@ -186,6 +197,9 @@ const EXPECTED_INDEXES: Readonly<Record<string, readonly string[]>> = {
   "model_identity_feature_versions.PRIMARY": ["id"],
   "model_identity_feature_versions.uq_identity_feature_versions_created_operation": [
     "createdByOperationId",
+  ],
+  "model_identity_feature_versions.uq_identity_feature_versions_accepted_asset": [
+    "acceptedAssetId",
   ],
   "model_snapshot_feature_selections.PRIMARY": ["id"],
   "model_snapshot_feature_selections.uq_snapshot_feature_selections_snapshot_feature": [
@@ -256,7 +270,7 @@ const RETIRED_INDEXES = new Set([
 export class EvidenceComposerSchemaMismatchError extends Error {
   constructor() {
     super(
-      "Evidence composer requires the complete R7-7D migration 0013 before it can be enabled.",
+      "Evidence composer requires the complete R7-7E migration 0014 before it can be enabled.",
     );
     this.name = "EvidenceComposerSchemaMismatchError";
   }
