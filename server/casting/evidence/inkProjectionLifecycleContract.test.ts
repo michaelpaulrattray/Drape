@@ -129,6 +129,40 @@ describe("R7-7G private tattoo projection lifecycle", () => {
     expect(capabilityDto).not.toContain("anatomy:");
   });
 
+  it("does not exhaust reference-upload capacity with ordinary tattoo decisions", async () => {
+    const route = await source("../../routes/evidence.ts");
+    expect(route).toContain('keyPrefix: "evidence_reference"');
+    expect(route).toContain('keyPrefix: "ink_workflow"');
+    expect(route).toContain('keyPrefix: "ink_resolution"');
+
+    const begin = between(
+      route,
+      "beginInkAddIntent: protectedProcedure",
+      "attachInkIntentReference: protectedProcedure",
+    );
+    const attach = between(
+      route,
+      "attachInkIntentReference: protectedProcedure",
+      "generateInkAddCandidate: protectedProcedure",
+    );
+    const accept = between(
+      route,
+      "acceptInkAddCandidate: protectedProcedure",
+      "cancelInkAddIntent: protectedProcedure",
+    );
+    const stageReference = between(
+      route,
+      "stageReferencePlate: protectedProcedure",
+      "discardReferencePlate: protectedProcedure",
+    );
+    expect(begin).toContain("enforceInkWorkflowRateLimit");
+    expect(attach).toContain("enforceReferenceRateLimit");
+    expect(accept).toContain("enforceInkResolutionRateLimit");
+    expect(stageReference).toContain("enforceReferenceRateLimit");
+    expect(begin).not.toContain("enforceReferenceRateLimit");
+    expect(accept).not.toContain("enforceReferenceRateLimit");
+  });
+
   it("admits only explicit current or stale exact projection sources", async () => {
     const candidateRows = await source("../../db/inkAddCandidates.ts");
     expect(candidateRows).toContain(

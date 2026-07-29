@@ -40,10 +40,20 @@ import {
 } from "../casting/evidence/inkIntentCancellation";
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 
-const EVIDENCE_INGEST_LIMIT = {
+const EVIDENCE_REFERENCE_LIMIT = {
   maxRequests: 10,
   windowMs: 60 * 60 * 1000,
-  keyPrefix: "evidence_ingest",
+  keyPrefix: "evidence_reference",
+};
+const INK_WORKFLOW_LIMIT = {
+  maxRequests: 120,
+  windowMs: 60 * 60 * 1000,
+  keyPrefix: "ink_workflow",
+};
+const INK_RESOLUTION_LIMIT = {
+  maxRequests: 240,
+  windowMs: 60 * 60 * 1000,
+  keyPrefix: "ink_resolution",
 };
 
 function captureCapability(userId: number): boolean {
@@ -68,12 +78,32 @@ function requireInkCapability(userId: number): void {
   }
 }
 
-function enforceRateLimit(userId: number): void {
-  const result = checkUserRateLimit(userId, EVIDENCE_INGEST_LIMIT);
+function enforceReferenceRateLimit(userId: number): void {
+  const result = checkUserRateLimit(userId, EVIDENCE_REFERENCE_LIMIT);
   if (!result.allowed) {
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
       message: "Too many reference-image requests. Try again later.",
+    });
+  }
+}
+
+function enforceInkWorkflowRateLimit(userId: number): void {
+  const result = checkUserRateLimit(userId, INK_WORKFLOW_LIMIT);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many tattoo requests. Try again later.",
+    });
+  }
+}
+
+function enforceInkResolutionRateLimit(userId: number): void {
+  const result = checkUserRateLimit(userId, INK_RESOLUTION_LIMIT);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many tattoo decisions. Try again later.",
     });
   }
 }
@@ -102,7 +132,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkWorkflowRateLimit(ctx.user.id);
       return beginInkAnywhereIntent({
         userId: ctx.user.id,
         ...input,
@@ -117,7 +147,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceReferenceRateLimit(ctx.user.id);
       const delivery = getEvidenceDeliveryAdapter();
       if (!delivery) {
         throw new TRPCError({
@@ -138,7 +168,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkWorkflowRateLimit(ctx.user.id);
       const delivery = getEvidenceDeliveryAdapter();
       if (!delivery) {
         throw new TRPCError({
@@ -159,7 +189,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkWorkflowRateLimit(ctx.user.id);
       const delivery = getEvidenceDeliveryAdapter();
       if (!delivery) {
         throw new TRPCError({
@@ -190,7 +220,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkWorkflowRateLimit(ctx.user.id);
       const delivery = getEvidenceDeliveryAdapter();
       if (!delivery) {
         throw new TRPCError({
@@ -212,7 +242,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkWorkflowRateLimit(ctx.user.id);
       const delivery = getEvidenceDeliveryAdapter();
       if (!delivery) {
         throw new TRPCError({
@@ -233,7 +263,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkResolutionRateLimit(ctx.user.id);
       const delivery = getEvidenceDeliveryAdapter();
       if (!delivery) {
         throw new TRPCError({
@@ -254,7 +284,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkResolutionRateLimit(ctx.user.id);
       return cancelInkAddIntent({}, {
         userId: ctx.user.id,
         ...input,
@@ -268,7 +298,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceInkResolutionRateLimit(ctx.user.id);
       return cancelInkProjectionCandidate({}, {
         userId: ctx.user.id,
         ...input,
@@ -283,7 +313,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceReferenceRateLimit(ctx.user.id);
       const delivery = getEvidenceDeliveryAdapter();
       if (!delivery) {
         throw new TRPCError({
@@ -304,7 +334,7 @@ export const evidenceRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireCapability(ctx.user.id);
-      enforceRateLimit(ctx.user.id);
+      enforceReferenceRateLimit(ctx.user.id);
       return discardOwnedReferencePlate({
         userId: ctx.user.id,
         ...input,
