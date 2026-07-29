@@ -1099,6 +1099,48 @@ coverage footer truthfully reports three unavailable views. Typecheck, 247
 files / 3,178 tests, build, diff checks, and the live drive pass. R7-7G is
 closed; execution returns to R7-8.
 
+### D-76 — R7 closes on current production truth, with no implicit R8 *(founder-directed 2026-07-29; production closure)*
+
+**Current acceptance authority:** the R7 production criteria are now the
+sixteen contracts in
+`CASTING_SYSTEM_R7_8_ACCEPTANCE_AND_DOGFOOD_CLOSURE.md`. They cover deliberate
+spend, durable operations, exact identity/snapshot authority, Profile,
+strip/package/history truth, final deletion, evidence privacy, calibrated
+natural-language tattoo addition, the Walk refusal/refund boundary, fixed 1K
+generation/export, navigation/account truth, Canvas scale, and deploy skew.
+The older R6-entry criteria remain historical evidence rather than the current
+release checklist.
+
+**R7-8 hardening ruling:** account Security must report the actual persisted
+sign-in provider. A connection action without a complete server contract and
+handler is false product affordance and must not ship. Stale unreferenced
+implementations are removed when their replacement is already authoritative;
+billing-sensitive dormant referral behavior is logged for a founder ruling
+rather than casually wired or deleted.
+
+**Production evidence:** a visible no-cost drive created a temporary 36-node
+Canvas, cold-loaded all nodes in 1,856 ms, selected a Cast in 563 ms, and
+persisted a keyboard nudge in 73 ms. The board was deleted after the drive and
+the founder balance remained 66,200 credits. Casting and Canvas back actions
+landed at `/app`; the account popout and real settings tabs opened. The
+Security correction and dead-code removal landed at `f96a6b0`.
+
+**Verification and environment boundary:** typecheck, 248 files / 3,182 tests,
+production build, focused hardening/deploy-skew/1K tests, migration-journal
+validation, and diff checks pass. The local development database is behind
+cleanup-backend migration `0012`; R7 does not contact production data or
+migrate a shared target merely to force the extended headless script green.
+That script now contains the provider-free 36-node leg for the next fully
+migrated disposable environment. The equivalent current production drive
+passed and the local preparation gap is explicitly logged.
+
+**Closure:** R7-0 through R7-8 are complete. Dogfooding may begin only inside
+the released scopes. Cybernetics, scars, moles, other permanent-feature
+families, tattoo erase/replace/move/resize, generated reference sheets, quality
+tiers, demo-video/CDN launch work, and automatic referral claiming are not
+silently promoted into R7. There is no ratified R8 plan; the founder chooses
+the next product and technical boundary before one is defined.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

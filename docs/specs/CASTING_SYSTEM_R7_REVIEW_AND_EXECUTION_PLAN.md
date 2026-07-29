@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7G are complete; exact tattoo-authoring tuples are released only inside the founder scope, every uncalibrated tuple refuses before paid work, and first-unseen projection is explicitly disabled for the current provider configuration after repeatable placement failures; production closure is verified at `8a2413d`; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure is in progress
+**Status:** COMPLETE - R7-0 through R7-8 are closed. Exact tattoo-authoring tuples are released only inside the founder scope, every uncalibrated tuple refuses before paid work, first-unseen projection is disabled for the current provider configuration, and the final acceptance/audit record is `CASTING_SYSTEM_R7_8_ACCEPTANCE_AND_DOGFOOD_CLOSURE.md`. There is no ratified R8 plan.
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -418,6 +418,19 @@ checks, and the no-cost live drive pass. R7-7G is closed; R7-8 follows.
 - Run full suites, build, migration checks, headless drives, and founder manual drives.
 - Begin dogfooding only after release blockers are closed or explicitly logged.
 
+**Closure, 2026-07-29:** the current acceptance criteria were rewritten and
+walked. Back navigation and the profile popout passed production drives; the
+Security panel now reports the actual sign-in provider and exposes no inert
+connection controls; stale local-only UI and WebGL paths were removed; fixed
+1K and deploy-skew contracts remain tested; and a temporary no-cost 36-node
+production Canvas passed cold-load, selection, and keyboard-nudge thresholds
+before cleanup. Typecheck, 248 files / 3,182 tests, build, migration-journal
+validation, and diff checks passed. The stale local development database that
+prevented the newly extended headless Canvas script from booting is explicitly
+logged as environment-preparation debt, not hidden or repaired against shared
+data. Full evidence and the remaining non-R7 founder choices are recorded in
+`CASTING_SYSTEM_R7_8_ACCEPTANCE_AND_DOGFOOD_CLOSURE.md`. R7 is complete.
+
 ## 7. Founder rulings — ratified 2026-07-19
 
 The following early direction is already clear and should be recorded, not re-asked:
@@ -454,13 +467,9 @@ The founder approved all eight recommendations below as binding R7 direction:
 
 ## 9. Immediate next action
 
-1. Define and execute R7-7G's natural-language all-body `ink.add` contract,
-   retaining strict evidence and visibility gates per anatomical zone.
-2. Keep Casting generation and identity-pack export fixed at 1K, and defer the
-   downstream reference-sheet derivative.
-3. Rewrite and walk production acceptance criteria, complete the named
-   navigation/wiring/dead-code/performance audits, run the full release
-   verification matrix, and begin dogfooding only after blockers close or are
-   explicitly logged.
+R7 has no remaining execution phase. Continue dogfooding only inside the
+released scope and preserve the fixed 1K contract and exact tattoo release
+policy. Before defining R8, the founder must choose among the remaining
+product and technical boundaries recorded in the R7-8 closure document.
 
 R7 should move quickly in bounded batches, but it should not hide architecture inside an overnight prompt. The trust foundation is mechanical enough to execute once reviewed; the evidence composer is a separate founder-gated product and research program.
