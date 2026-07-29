@@ -9,6 +9,7 @@ import { SlotVersionHistory } from '@/features/casting/components/SlotVersionHis
 import { CastStateHistory } from '@/features/casting/components/CastStateHistory';
 import {
   evidencePackageRefusalMessage,
+  evidencePackageSlotIsOutOfSync,
   evidencePackageSlotNeedsAction,
 } from '@/features/casting/evidence/evidencePackageDisplay';
 import { requestInkProjection } from '@/features/casting/evidence/inkProjectionEvents';
@@ -107,7 +108,10 @@ export function CastingDetailsDialog() {
   const issueAngles = new Set(
     slots.filter((slot) => {
       return evidenceAware
-        ? evidencePackageSlotNeedsAction(evidenceByAngle.get(slot.angle))
+        ? evidencePackageSlotIsOutOfSync({
+            packageStale: slot.stale,
+            evidenceSlot: evidenceByAngle.get(slot.angle),
+          })
         : slot.stale || !!slot.failed || blockers.has(slot.angle);
     }).map((slot) => slot.angle),
   );
@@ -171,11 +175,22 @@ export function CastingDetailsDialog() {
               plan && 'action' in plan && plan.action === 'projection',
             );
             const busy = refreshingSet.has(slot.angle);
+            const evidenceNeedsAction = evidencePackageSlotNeedsAction(
+              evidenceByAngle.get(slot.angle),
+            );
+            const outOfSync = evidenceAware
+              ? evidencePackageSlotIsOutOfSync({
+                  packageStale: slot.stale,
+                  evidenceSlot: evidenceByAngle.get(slot.angle),
+                })
+              : slot.stale || !!slot.failed || !!blocker;
             const needsAction = evidenceAware
-              ? evidencePackageSlotNeedsAction(evidenceByAngle.get(slot.angle))
+              ? outOfSync
                 || !!headshotBlock
               : slot.stale || !!slot.failed || !!blocker || !!headshotBlock;
-            const canRefresh = needsAction && plan?.refusal === null;
+            const canRefresh = (
+              evidenceAware ? evidenceNeedsAction : needsAction
+            ) && plan?.refusal === null;
             const canOpenVersions = slot.version > 1;
             const versionsOpen = versionAngle === slot.angle;
             return (
@@ -199,7 +214,7 @@ export function CastingDetailsDialog() {
                         : headshotBlock
                           ? `${headshotBlock} Use a compatible version below, or continue editing the headshot.`
                           : evidenceRefusal
-                            ? evidenceRefusal
+                            ? `${outOfSync ? 'Out of sync — ' : ''}${evidenceRefusal}`
                           : blocker?.message
                           ? blocker.message
                           : slot.failed

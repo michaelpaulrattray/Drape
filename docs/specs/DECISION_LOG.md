@@ -1141,6 +1141,27 @@ tiers, demo-video/CDN launch work, and automatic referral claiming are not
 silently promoted into R7. There is no ratified R8 plan; the founder chooses
 the next product and technical boundary before one is defined.
 
+**R7 post-closure package-truth correction (2026-07-30):** founder dogfooding
+found that accepted forehead and right full-sleeve evidence appeared only in
+their authoring views while 3/4 and Side still looked current. The immutable
+package transition was correct: centre anterior face invalidates Head, 3/4,
+and Side; the accepted Head replaces its stale source; and facial ink may be
+omitted from Full, Walk, and Back at 1K as below-resolution truth. A right
+circumferential full sleeve invalidates 3/4, Full, Side, Walk, and Back; the
+accepted Full replaces its source.
+
+The display defect was downstream. When first-unseen tattoo projection is
+safety-closed, the evidence plan deliberately exposes no paid action and
+projects an `attention` explanation. The strip and details dialog incorrectly
+used that actionability projection in place of the package slot's immutable
+stale compatibility, making incompatible images look current. Display truth
+and action authority are now separate: stale slots remain visibly out of sync
+and are counted as issues, while the existing no-price/no-generation refusal
+remains intact. No provider work, production data access, safety-check
+weakening, or projection enablement is part of this correction. Typecheck, 248
+files / 3,183 tests, production build, focused anatomy/package-display tests,
+and diff checks pass locally.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

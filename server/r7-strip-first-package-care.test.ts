@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { addTierForAngle } from '../client/src/features/casting/components/ImageViewer/ViewTabs';
-import { evidencePackageSlotNeedsAction } from '../client/src/features/casting/evidence/evidencePackageDisplay';
+import {
+  evidencePackageSlotIsOutOfSync,
+  evidencePackageSlotNeedsAction,
+} from '../client/src/features/casting/evidence/evidencePackageDisplay';
 
 const root = path.join(__dirname, '..');
 const read = (relative: string) => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -45,6 +48,26 @@ describe('R7-4A strip-first package care', () => {
     for (const status of ['stale', 'missing', 'failed'] as const) {
       expect(evidencePackageSlotNeedsAction({ status, refusal: null })).toBe(true);
     }
+  });
+
+  it('keeps safety-closed stale views visibly out of sync without making them actionable', () => {
+    const safetyClosed = {
+      status: 'attention' as const,
+      refusal: 'projection_not_calibrated',
+    };
+    expect(evidencePackageSlotNeedsAction(safetyClosed)).toBe(false);
+    expect(evidencePackageSlotIsOutOfSync({
+      packageStale: true,
+      evidenceSlot: safetyClosed,
+    })).toBe(true);
+    expect(evidencePackageSlotIsOutOfSync({
+      packageStale: false,
+      evidenceSlot: safetyClosed,
+    })).toBe(false);
+
+    const strip = read('client/src/features/casting/components/ImageViewer/ViewTabs.tsx');
+    expect(strip).toContain('tattoo coverage is unavailable in this release');
+    expect(strip).toContain('coverageUnavailable={coverageUnavailable}');
   });
 
   it('uses one shared refresh mutation and only invokes it from deliberate click handlers', () => {

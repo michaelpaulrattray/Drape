@@ -7,7 +7,11 @@ import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
-import { evidencePackageSlotNeedsAction } from '@/features/casting/evidence/evidencePackageDisplay';
+import {
+  evidencePackageRefusalMessage,
+  evidencePackageSlotIsOutOfSync,
+  evidencePackageSlotNeedsAction,
+} from '@/features/casting/evidence/evidencePackageDisplay';
 import { requestInkProjection } from '@/features/casting/evidence/inkProjectionEvents';
 import {
   MINT_TIER_SLOTS,
@@ -34,6 +38,7 @@ function ViewThumbnail({
   onSelect,
   isHovered,
   isStale,
+  coverageUnavailable = false,
   isRefreshing,
   refreshCost,
   refreshVerb = 'Refresh',
@@ -46,6 +51,7 @@ function ViewThumbnail({
   onSelect: () => void;
   isHovered: boolean;
   isStale: boolean;
+  coverageUnavailable?: boolean;
   isRefreshing: boolean;
   refreshCost?: number;
   refreshVerb?: 'Refresh' | 'Update' | 'Preview';
@@ -59,11 +65,13 @@ function ViewThumbnail({
         ? `${label} is updating from saved tattoo evidence`
         : `${label} is refreshing against the current identity`
     : isStale
-      ? refreshVerb === 'Preview'
-        ? `${label} needs a tattoo preview`
-        : evidenceAware
-          ? `${label} has a suggested tattoo update`
-          : `${label} is out of sync with the current identity`
+      ? coverageUnavailable
+        ? `${label} is out of sync; tattoo coverage is unavailable in this release`
+        : refreshVerb === 'Preview'
+          ? `${label} needs a tattoo preview`
+          : evidenceAware
+            ? `${label} has a suggested tattoo update`
+            : `${label} is out of sync with the current identity`
       : label;
   return (
     <div
@@ -354,6 +362,12 @@ export function ViewTabs() {
           );
           const refreshing = refreshingSet.has(vt);
           const evidenceNeedsAction = evidencePackageSlotNeedsAction(evidenceSlot);
+          const isOutOfSync = evidencePackageSlotIsOutOfSync({
+            packageStale: !!slot?.stale,
+            evidenceSlot,
+          });
+          const coverageUnavailable =
+            evidencePackageRefusalMessage(evidenceSlot?.refusal) !== null;
 
           if (refreshing && !asset) return <RefreshingSlot key={vt} label={label} />;
           if (asset) {
@@ -369,7 +383,8 @@ export function ViewTabs() {
                 isActive={activeView === vt}
                 onSelect={() => setActiveView(vt)}
                 isHovered={hovered}
-                isStale={evidenceAware ? evidenceNeedsAction : !!slot?.stale}
+                isStale={evidenceAware ? isOutOfSync : !!slot?.stale}
+                coverageUnavailable={coverageUnavailable}
                 isRefreshing={refreshing}
                 refreshCost={canRefresh ? plan.cost : undefined}
                 refreshVerb={requiresProjection

@@ -203,10 +203,15 @@ describe("all-body ink anatomy registry", () => {
     const face = {
       zone: "face",
       surface: "anterior",
-      side: "left",
+      side: "centre",
     } as const;
     expect(inkViewDirectiveV2(face, "frontClose").visibility)
       .toBe("reproduce_visible");
+    expect(inkInvalidatedAnglesV2(face)).toEqual([
+      "frontClose",
+      "threeQuarter",
+      "sideClose",
+    ]);
     expect(inkViewDirectiveV2(face, "frontFull")).toMatchObject({
       impact: "unaffected",
       visibility: "below_resolution_omit",

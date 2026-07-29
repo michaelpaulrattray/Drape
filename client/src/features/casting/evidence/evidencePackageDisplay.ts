@@ -23,6 +23,23 @@ export function evidencePackageSlotNeedsAction(
   );
 }
 
+/**
+ * Compatibility truth and action authority are deliberately separate.
+ * A safety-closed projection may not expose a paid action, but the selected
+ * pre-evidence image must still look out of sync when its snapshot slot is
+ * stale.
+ */
+export function evidencePackageSlotIsOutOfSync(input: {
+  packageStale: boolean;
+  evidenceSlot?: {
+    status: EvidencePackageDisplayStatus;
+    refusal: string | null;
+  };
+}): boolean {
+  return input.packageStale
+    || evidencePackageSlotNeedsAction(input.evidenceSlot);
+}
+
 export function evidencePackageRefusalMessage(
   refusal: string | null | undefined,
 ): string | null {
