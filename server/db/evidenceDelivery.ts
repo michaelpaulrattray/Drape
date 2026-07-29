@@ -1,4 +1,4 @@
-import { and, eq, gt, isNotNull } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 import {
   castingEvidenceCandidateAttempts,
   castingEvidenceCandidates,
@@ -38,11 +38,10 @@ export async function readOwnedEvidenceDelivery(input: {
         contentHash: castingEvidenceCandidateAttempts.contentHash,
       })
       .from(castingEvidenceCandidates)
-      .innerJoin(modelIdentityFeatureIntents, and(
+      .leftJoin(modelIdentityFeatureIntents, and(
         eq(modelIdentityFeatureIntents.id, castingEvidenceCandidates.intentId),
         eq(modelIdentityFeatureIntents.userId, input.userId),
         eq(modelIdentityFeatureIntents.modelId, castingEvidenceCandidates.modelId),
-        eq(modelIdentityFeatureIntents.status, "pending"),
       ))
       .innerJoin(castingEvidenceCandidateAttempts, and(
         eq(castingEvidenceCandidateAttempts.id, castingEvidenceCandidates.readyAttemptId),
@@ -63,6 +62,17 @@ export async function readOwnedEvidenceDelivery(input: {
         eq(castingEvidenceCandidates.status, "ready"),
         isNotNull(castingEvidenceCandidates.expiresAt),
         gt(castingEvidenceCandidates.expiresAt, new Date()),
+        or(
+          and(
+            eq(castingEvidenceCandidates.purpose, "feature_authoring"),
+            isNotNull(castingEvidenceCandidates.intentId),
+            eq(modelIdentityFeatureIntents.status, "pending"),
+          ),
+          and(
+            eq(castingEvidenceCandidates.purpose, "feature_projection"),
+            isNull(castingEvidenceCandidates.intentId),
+          ),
+        ),
       ))
       .limit(1);
     if (

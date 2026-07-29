@@ -155,4 +155,22 @@ describe("R7-7G private tattoo projection lifecycle", () => {
       "plannedCreditsForPrepared(input.prepared)",
     );
   });
+
+  it("privately delivers intentless projection previews through owner authority", async () => {
+    const delivery = await source("../../db/evidenceDelivery.ts");
+    expect(delivery).toContain(".leftJoin(modelIdentityFeatureIntents");
+    expect(delivery).toContain(
+      'eq(castingEvidenceCandidates.purpose, "feature_authoring")',
+    );
+    expect(delivery).toContain(
+      'eq(modelIdentityFeatureIntents.status, "pending")',
+    );
+    expect(delivery).toContain(
+      'eq(castingEvidenceCandidates.purpose, "feature_projection")',
+    );
+    expect(delivery).toContain(
+      "isNull(castingEvidenceCandidates.intentId)",
+    );
+    expect(delivery).toContain("eq(models.userId, input.userId)");
+  });
 });
