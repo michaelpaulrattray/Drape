@@ -78,6 +78,7 @@ import {
   type InkProbeRequest,
 } from "./composer/inkProbe";
 import {
+  assertSupportedInkAnatomyTuple,
   inkAnatomicalSideAuthority,
   inkAnatomyLabel,
 } from "./inkAnatomyRegistry";
@@ -89,13 +90,11 @@ import {
   extractInkProviderTelemetry,
 } from "./composer/inkProviderTelemetry";
 import {
-  assessInkProjectionProbe,
   buildInkCoverageProbeRequest,
   buildInkEvidenceMosaic,
   buildInkProjectionComposerRequest,
-  buildInkProjectionProbeRequest,
   parseInkCoverageProbeResponse,
-  parseInkProjectionProbeResponse,
+  runInkProjectionCandidateProbes,
   summarizeInkCoverageProbeResponse,
   type InkProjectionComposerRequest,
   type InkProjectionFeatureReference,
@@ -371,21 +370,29 @@ async function loadInputs(
   const anchor = composerImage(anchorFetched);
   const target = composerImage(targetFetched);
   if (prepared.authority.kind === "projection_v2") {
+    const projectionAuthority = prepared.authority;
     const projectionFeatures: InkProjectionFeatureReference[] =
-      await Promise.all(prepared.authority.features.map(async (feature) => ({
-        featureId: feature.featureId,
-        featureVersionId: feature.featureVersionId,
-        normalizedDescriptor: feature.normalizedDescriptor,
-        anatomyLabel: feature.anatomyLabel,
-        targetZone: feature.targetZone,
-        witnessZone: feature.witnessZone,
-        witness: await readPrivateExact(dependencies.delivery, {
-          key: feature.witness.storageKey,
-          byteSize: feature.witness.byteSize,
-          contentHash: feature.witness.contentHash,
-        }),
-        isProjectionTarget: feature.isProjectionTarget,
-      })));
+      await Promise.all(projectionAuthority.features.map(async (feature) => {
+        assertSupportedInkAnatomyTuple(feature.anatomy);
+        return {
+          featureId: feature.featureId,
+          featureVersionId: feature.featureVersionId,
+          normalizedDescriptor: feature.normalizedDescriptor,
+          anatomyLabel: feature.anatomyLabel,
+          sideAuthority: inkAnatomicalSideAuthority(
+            feature.anatomy,
+            projectionAuthority.targetAngle,
+          ).prompt,
+          targetZone: feature.targetZone,
+          witnessZone: feature.witnessZone,
+          witness: await readPrivateExact(dependencies.delivery, {
+            key: feature.witness.storageKey,
+            byteSize: feature.witness.byteSize,
+            contentHash: feature.witness.contentHash,
+          }),
+          isProjectionTarget: feature.isProjectionTarget,
+        };
+      }));
     const [guide, evidenceMosaic] = await Promise.all([
       buildMultiAnatomicalInkZoneGuide({
         targetBytes: target.bytes,
@@ -529,6 +536,14 @@ async function runAttempt(input: {
               ).guideLabel
             }`,
         }))
+      : prepared.authority.kind === "projection_v2"
+      ? composerImage(await buildMultiAnatomicalInkZoneGuide({
+          targetBytes: candidate.bytes,
+          zones: images.projectionFeatures!.map((feature) => ({
+            normalizedZone: feature.targetZone,
+            label: feature.anatomyLabel,
+          })),
+        }))
       : null;
   const probe = prepared.authority.kind === "legacy_v1"
     ? await runInkCandidateProbes({
@@ -554,20 +569,17 @@ async function runAttempt(input: {
         predictedVisibility: input.predictedVisibility,
         probe: dependencies.probe ?? defaultProbe,
       })
-    : assessInkProjectionProbe(parseInkProjectionProbeResponse(
-        await (dependencies.probe ?? defaultProbe)(
-          buildInkProjectionProbeRequest({
-            sourceAngle: prepared.authority.sourceAngle,
-            targetAngle: prepared.authority.targetAngle,
-            features: images.projectionFeatures!,
-            identityAnchor: images.anchor,
-            originalTarget: images.target,
-            evidenceMosaic: images.evidenceMosaic!,
-            candidate: rawCandidate,
-          }),
-        ),
-        images.projectionFeatures!.length,
-      ));
+    : await runInkProjectionCandidateProbes({
+        sourceAngle: prepared.authority.sourceAngle,
+        targetAngle: prepared.authority.targetAngle,
+        features: images.projectionFeatures!,
+        identityAnchor: images.anchor,
+        originalTarget: images.target,
+        evidenceMosaic: images.evidenceMosaic!,
+        candidate: rawCandidate,
+        placementAuditCandidate: placementAuditCandidate!,
+        probe: dependencies.probe ?? defaultProbe,
+      });
   log.info({
     operationId: prepared.operationId,
     candidateId: prepared.candidateId,

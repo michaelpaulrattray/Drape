@@ -134,6 +134,12 @@ function passProbe(request: InkProbeRequest): unknown {
       key === "confidence" ? 98 : true,
     ]));
   }
+  if (request.kind === "feature_projection_placement") {
+    return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
+      key,
+      key === "confidence" ? 98 : true,
+    ]));
+  }
   if (request.kind === "coverage") {
     return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
       key,
@@ -413,8 +419,8 @@ describe("ink candidate generation", () => {
         ontologyVersion: "body-zones.ink.v2",
         targetAngle: "backFull",
         sourceAngle: "backFull",
-        composerRecipeVersion: "ink.add.anywhere.projection.v2",
-        probeRecipeVersion: "ink.add.anywhere.projection.probe.v1",
+        composerRecipeVersion: "ink.add.anywhere.projection.v3",
+        probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
         visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v3",
         features: [{
           featureId: "feature-1",
@@ -483,7 +489,7 @@ describe("ink candidate generation", () => {
       expect.any(Function),
     );
     expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.projection.v2",
+      recipeVersion: "ink.add.anywhere.projection.v3",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "evidence_mosaic" }),
@@ -495,7 +501,12 @@ describe("ink candidate generation", () => {
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection",
-      recipeVersion: "ink.add.anywhere.projection.probe.v1",
+      recipeVersion: "ink.add.anywhere.projection.probe.v2",
+    }));
+    expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "feature_projection_placement",
+      recipeVersion:
+        "ink.add.anywhere.projection-placement-audit.v1",
     }));
 
     const refused = dependencies({

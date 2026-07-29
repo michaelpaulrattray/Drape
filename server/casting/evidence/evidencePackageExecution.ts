@@ -74,20 +74,22 @@ import type {
   ComposerImage,
   InkRetryDirective,
 } from "./composer/inkComposer";
-import type { InkProbeRequest } from "./composer/inkProbe";
+import type {
+  InkCandidateProbeTruth,
+  InkProbeRequest,
+} from "./composer/inkProbe";
 import { extractInkProviderTelemetry } from "./composer/inkProviderTelemetry";
 import {
-  assessInkProjectionProbe,
   buildInkEvidenceMosaic,
   buildInkProjectionComposerRequest,
-  buildInkProjectionProbeRequest,
-  parseInkProjectionProbeResponse,
+  runInkProjectionCandidateProbes,
   type InkProjectionComposerRequest,
   type InkProjectionFeatureReference,
 } from "./inkProjectionComposition";
 import { buildMultiAnatomicalInkZoneGuide } from "./composer/inkZoneGuide";
 import {
   assertSupportedInkAnatomyTuple,
+  inkAnatomicalSideAuthority,
   inkAnatomyLabel,
   inkViewDirectiveV2,
 } from "./inkAnatomyRegistry";
@@ -737,13 +739,13 @@ async function loadV2SlotReferences(
         ? entry.version.sourceViewAngle
         : acceptedProjection?.evidence.targetViewAngle
           ?? entry.version.sourceViewAngle;
+      const anatomy = {
+        zone: entry.version.zone,
+        surface: entry.version.surface,
+        side: entry.version.side,
+      };
       const anatomyLabel = entry.contract === "all_body_v2"
         ? (() => {
-            const anatomy = {
-              zone: entry.version.zone,
-              surface: entry.version.surface,
-              side: entry.version.side,
-            };
             assertSupportedInkAnatomyTuple(anatomy);
             return inkAnatomyLabel(anatomy);
           })()
@@ -753,6 +755,12 @@ async function loadV2SlotReferences(
         featureVersionId: entry.version.id,
         normalizedDescriptor: entry.version.normalizedDescriptor,
         anatomyLabel,
+        sideAuthority: entry.contract === "all_body_v2"
+          ? (() => {
+              assertSupportedInkAnatomyTuple(anatomy);
+              return inkAnatomicalSideAuthority(anatomy, slot.angle).prompt;
+            })()
+          : `Judge ${entry.version.side} only as the subject's anatomical side.`,
         targetZone: v2FeatureZone(feature, slot.angle),
         witnessZone: v2FeatureZone(feature, witnessAngle),
         witness: await readPrivateExact(dependencies.delivery, witnessPlate),
@@ -781,7 +789,7 @@ async function loadV2SlotReferences(
 }
 
 function projectionFailure(
-  probe: ReturnType<typeof assessInkProjectionProbe>,
+  probe: InkCandidateProbeTruth,
 ): EvidencePackageProbeFailure | null {
   if (probe.overallOutcome === "pass") return null;
   if (probe.identityOutcome !== "pass") return "identity_mismatch";
@@ -896,23 +904,28 @@ async function runV2CandidateAttempt(input: {
       canonical.mime,
     );
     failureStage = "probe_provider";
-    const rawProbe = await (dependencies.probe ?? defaultProbe)(
-      buildInkProjectionProbeRequest({
-        purpose: "refresh",
-        sourceAngle: slot.target.viewType,
-        targetAngle: slot.angle,
-        features: references.features,
-        identityAnchor: references.anchor,
-        originalTarget: references.originalTarget,
-        evidenceMosaic: references.evidenceMosaic,
-        candidate: composerImage(canonical),
+    const placementAuditCandidate = composerImage(
+      await buildMultiAnatomicalInkZoneGuide({
+        targetBytes: canonical.bytes,
+        zones: references.features.map((feature) => ({
+          normalizedZone: feature.targetZone,
+          label: feature.anatomyLabel,
+        })),
       }),
     );
+    const probe = await runInkProjectionCandidateProbes({
+      purpose: "refresh",
+      sourceAngle: slot.target.viewType,
+      targetAngle: slot.angle,
+      features: references.features,
+      identityAnchor: references.anchor,
+      originalTarget: references.originalTarget,
+      evidenceMosaic: references.evidenceMosaic,
+      candidate: composerImage(canonical),
+      placementAuditCandidate,
+      probe: dependencies.probe ?? defaultProbe,
+    });
     failureStage = "probe_parse";
-    const probe = assessInkProjectionProbe(parseInkProjectionProbeResponse(
-      rawProbe,
-      references.features.length,
-    ));
     failureStage = "probe_assessment";
     const failure = projectionFailure(probe);
     const featureVersionIds = references.features

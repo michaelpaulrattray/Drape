@@ -18,10 +18,11 @@ import {
 describe("all-body ink anatomy registry", () => {
   it("keeps v1 projection evidence readable after clean-source composition", () => {
     expect(INK_ANYWHERE_PROJECTION_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.projection.v2");
+      .toBe("ink.add.anywhere.projection.v3");
     expect(INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.projection.v1",
       "ink.add.anywhere.projection.v2",
+      "ink.add.anywhere.projection.v3",
     ]);
   });
 

@@ -10,13 +10,18 @@ import type {
   ComposerImageMime,
   InkRetryDirective,
 } from "./composer/inkComposer";
-import type { InkCandidateProbeTruth, InkProbeRequest } from "./composer/inkProbe";
+import type {
+  InkCandidateProbeTruth,
+  InkPlacementAuditTruth,
+  InkProbeRequest,
+} from "./composer/inkProbe";
 import type { InkProbeInlineImage } from "./composer/inkProbe";
 import { INK_TEXT_PROVIDER_CONFIG } from "./composer/inkProviderTelemetry";
 import type { NormalizedInkZone } from "./composer/inkZoneGuide";
 import {
   INK_ANYWHERE_EVIDENCE_MOSAIC_RECIPE_VERSION,
   INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
 } from "./inkAnatomyRegistry";
@@ -31,6 +36,7 @@ export interface InkProjectionFeatureReference {
   featureVersionId: string;
   normalizedDescriptor: string;
   anatomyLabel: string;
+  sideAuthority: string;
   targetZone: NormalizedInkZone;
   witnessZone: NormalizedInkZone;
   witness: ComposerImage;
@@ -83,6 +89,7 @@ function assertFeatures(
     assertZone(feature.witnessZone);
     const descriptor = feature.normalizedDescriptor.normalize("NFKC").trim();
     const label = feature.anatomyLabel.normalize("NFKC").trim();
+    const sideAuthority = feature.sideAuthority.normalize("NFKC").trim();
     if (
       !feature.featureId
       || !feature.featureVersionId
@@ -90,6 +97,8 @@ function assertFeatures(
       || descriptor.length > 512
       || label.length < 2
       || label.length > 100
+      || sideAuthority.length < 10
+      || sideAuthority.length > 500
     ) {
       throw new TypeError("Projection evidence set is not eligible");
     }
@@ -317,7 +326,7 @@ export function buildInkProjectionComposerRequest(input: {
     throw new TypeError("Invalid projection identity authority");
   }
   const featureLines = input.features.map((feature, index) =>
-    `F${index + 1} (${feature.isProjectionTarget ? "newly exposed continuation" : "already evidenced"}): ${feature.anatomyLabel}; ${feature.normalizedDescriptor}.`
+    `F${index + 1} (${feature.isProjectionTarget ? "newly exposed continuation" : "already evidenced"}): ${feature.anatomyLabel}; ${feature.normalizedDescriptor}. ${feature.sideAuthority}`
   ).join("\n");
   const cameraInstruction = input.sourceAngle === input.targetAngle
     ? "Keep the exact camera, crop, pose, framing, clothing, lighting, and background pixels of image 1."
@@ -359,6 +368,12 @@ interface ProjectionProbeResponse {
   featureMatch: boolean[];
 }
 
+interface ProjectionPlacementAuditResponse {
+  confidence: number;
+  anatomicalSideCorrect: boolean[];
+  insideAuthorizedZone: boolean[];
+}
+
 export function buildInkProjectionProbeRequest(input: {
   purpose?: "projection" | "refresh";
   sourceAngle: CanonicalViewAngle;
@@ -377,7 +392,7 @@ export function buildInkProjectionProbeRequest(input: {
     ],
   ));
   const featureLines = input.features.map((feature, index) =>
-    `F${index + 1}: ${feature.anatomyLabel}; ${feature.isProjectionTarget ? "coherent continuation on newly exposed surface" : "exact visible match"}; ${feature.normalizedDescriptor}.`
+    `F${index + 1}: ${feature.anatomyLabel}; ${feature.isProjectionTarget ? "coherent continuation on newly exposed surface" : "exact visible match"}; ${feature.normalizedDescriptor}. ${feature.sideAuthority}`
   ).join("\n");
   return {
     kind: "feature_projection",
@@ -411,6 +426,182 @@ export function buildInkProjectionProbeRequest(input: {
       probeInline("candidate", input.candidate),
     ],
   };
+}
+
+export function buildInkProjectionPlacementAuditProbeRequest(input: {
+  targetAngle: CanonicalViewAngle;
+  features: readonly InkProjectionFeatureReference[];
+  candidate: ComposerImage;
+  placementAuditCandidate: ComposerImage;
+}): InkProbeRequest {
+  assertFeatures(input.features, false);
+  const featureSchema = Object.fromEntries(input.features.flatMap(
+    (_feature, index) => [
+      [`feature${index + 1}AnatomicalSideCorrect`, "boolean" as const],
+      [`feature${index + 1}InsideAuthorizedZone`, "boolean" as const],
+    ],
+  ));
+  const featureLines = input.features.map((feature, index) =>
+    `F${index + 1}: ${feature.anatomyLabel}. ${feature.sideAuthority}`
+  ).join("\n");
+  return {
+    kind: "feature_projection_placement",
+    model: INK_ADD_PROBE_MODEL,
+    recipeVersion:
+      INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION,
+    responseMimeType: "application/json",
+    responseSchema: {
+      confidence: "integer_0_100",
+      ...featureSchema,
+    },
+    thinkingBudget: INK_TEXT_PROVIDER_CONFIG.thinkingBudget,
+    includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
+    maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
+    prompt: [
+      "Compare two ordered images: a clean tattoo candidate, then the same candidate with server-owned red anatomical boxes labelled F1, F2, and so on.",
+      `Judge placement in canonical ${input.targetAngle}. The red boxes and labels are audit overlays only.`,
+      "Return strict JSON only. confidence is 0-100.",
+      "For every F-feature, AnatomicalSideCorrect is true only when the tattoo is on the subject's requested anatomical side, never merely the similarly named viewer side.",
+      "For every F-feature, InsideAuthorizedZone is true only when its visible tattoo pixels occupy the corresponding labelled red box and do not appear in the opposite-side or another feature's box.",
+      "Use the clean first image to judge tattoo pixels. Use the annotated second image only to judge the server-owned locations.",
+      featureLines,
+    ].join("\n"),
+    images: [
+      probeInline("candidate", input.candidate),
+      probeInline("placement_audit_candidate", input.placementAuditCandidate),
+    ],
+  };
+}
+
+export function parseInkProjectionPlacementAuditResponse(
+  raw: unknown,
+  featureCount: number,
+): ProjectionPlacementAuditResponse {
+  if (
+    !Number.isSafeInteger(featureCount)
+    || featureCount < 1
+    || featureCount > MAX_FEATURES
+  ) {
+    throw new TypeError("Invalid projection placement feature count");
+  }
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new TypeError("Invalid projection placement response");
+  }
+  const value = parsed as Record<string, unknown>;
+  const expectedKeys = new Set([
+    "confidence",
+    ...Array.from({ length: featureCount }, (_unused, index) => [
+      `feature${index + 1}AnatomicalSideCorrect`,
+      `feature${index + 1}InsideAuthorizedZone`,
+    ]).flat(),
+  ]);
+  if (
+    Object.keys(value).length !== expectedKeys.size
+    || Object.keys(value).some((key) => !expectedKeys.has(key))
+    || !Number.isSafeInteger(value.confidence)
+    || (value.confidence as number) < 0
+    || (value.confidence as number) > 100
+  ) {
+    throw new TypeError("Invalid projection placement response");
+  }
+  for (const key of Array.from(expectedKeys)) {
+    if (key !== "confidence" && typeof value[key] !== "boolean") {
+      throw new TypeError("Invalid projection placement response");
+    }
+  }
+  return {
+    confidence: value.confidence as number,
+    anatomicalSideCorrect: Array.from(
+      { length: featureCount },
+      (_unused, index) =>
+        value[`feature${index + 1}AnatomicalSideCorrect`] as boolean,
+    ),
+    insideAuthorizedZone: Array.from(
+      { length: featureCount },
+      (_unused, index) =>
+        value[`feature${index + 1}InsideAuthorizedZone`] as boolean,
+    ),
+  };
+}
+
+export function applyInkProjectionPlacementAudit(
+  probe: InkCandidateProbeTruth,
+  audit: ProjectionPlacementAuditResponse,
+): InkCandidateProbeTruth {
+  const confident = audit.confidence >= 85;
+  const anatomicalSideCorrect =
+    confident && audit.anatomicalSideCorrect.every(Boolean);
+  const insideAuthorizedZone =
+    confident && audit.insideAuthorizedZone.every(Boolean);
+  const placementOutcome =
+    probe.placementOutcome === "pass"
+    && anatomicalSideCorrect
+    && insideAuthorizedZone
+      ? "pass" as const
+      : "fail" as const;
+  const priorInkOutcome =
+    probe.priorInkOutcome === "pass"
+    && anatomicalSideCorrect
+    && insideAuthorizedZone
+      ? "pass" as const
+      : "fail" as const;
+  const placementAudit: InkPlacementAuditTruth = {
+    anatomicalSideCorrect,
+    insideAuthorizedZone,
+    conflictingOutsideChange: probe.unexpectedInkOutcome !== "pass",
+    confidence: audit.confidence,
+  };
+  const result: InkCandidateProbeTruth = {
+    ...probe,
+    placementOutcome,
+    priorInkOutcome,
+    placementDetail: {
+      semanticPlacement: probe.placementOutcome,
+      anatomicalSide: anatomicalSideCorrect ? "pass" : "fail",
+      authorizedZone: insideAuthorizedZone ? "pass" : "fail",
+      noOutsideChange: probe.unexpectedInkOutcome,
+    },
+    placementAudit,
+    overallOutcome: "fail",
+  };
+  return {
+    ...result,
+    overallOutcome: [
+      result.identityOutcome,
+      result.placementOutcome,
+      result.featureMatchOutcome,
+      result.priorInkOutcome,
+      result.poseFramingOutcome,
+      result.unexpectedInkOutcome,
+    ].every((value) => value === "pass") ? "pass" : "fail",
+  };
+}
+
+export async function runInkProjectionCandidateProbes(input: {
+  purpose?: "projection" | "refresh";
+  sourceAngle: CanonicalViewAngle;
+  targetAngle: CanonicalViewAngle;
+  features: readonly InkProjectionFeatureReference[];
+  identityAnchor: ComposerImage;
+  originalTarget: ComposerImage;
+  evidenceMosaic: ComposerImage;
+  candidate: ComposerImage;
+  placementAuditCandidate: ComposerImage;
+  probe: (request: InkProbeRequest) => Promise<unknown>;
+}): Promise<InkCandidateProbeTruth> {
+  const [rawProjection, rawPlacement] = await Promise.all([
+    input.probe(buildInkProjectionProbeRequest(input)),
+    input.probe(buildInkProjectionPlacementAuditProbeRequest(input)),
+  ]);
+  const projection = assessInkProjectionProbe(
+    parseInkProjectionProbeResponse(rawProjection, input.features.length),
+  );
+  const placement = parseInkProjectionPlacementAuditResponse(
+    rawPlacement,
+    input.features.length,
+  );
+  return applyInkProjectionPlacementAudit(projection, placement);
 }
 
 export function parseInkProjectionProbeResponse(

@@ -3,11 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { ComposerImage } from "./composer/inkComposer";
 import {
   assessInkProjectionProbe,
+  applyInkProjectionPlacementAudit,
   buildInkEvidenceMosaic,
   buildInkCoverageProbeRequest,
   buildInkProjectionComposerRequest,
+  buildInkProjectionPlacementAuditProbeRequest,
   buildInkProjectionProbeRequest,
   parseInkCoverageProbeResponse,
+  parseInkProjectionPlacementAuditResponse,
   parseInkProjectionProbeResponse,
   summarizeInkCoverageProbeResponse,
   type InkProjectionFeatureReference,
@@ -35,6 +38,7 @@ async function features(): Promise<InkProjectionFeatureReference[]> {
       featureVersionId: "version-1",
       normalizedDescriptor: "black botanical full sleeve",
       anatomyLabel: "right arm - full sleeve",
+      sideAuthority: "The subject's right appears on frame left.",
       targetZone: { x: 0.08, y: 0.24, width: 0.25, height: 0.55 },
       witnessZone: { x: 0.08, y: 0.24, width: 0.25, height: 0.55 },
       witness,
@@ -45,6 +49,7 @@ async function features(): Promise<InkProjectionFeatureReference[]> {
       featureVersionId: "version-2",
       normalizedDescriptor: "fine-line swallow",
       anatomyLabel: "left upper torso",
+      sideAuthority: "The subject's left appears on frame right.",
       targetZone: { x: 0.55, y: 0.2, width: 0.24, height: 0.24 },
       witnessZone: { x: 0.55, y: 0.2, width: 0.24, height: 0.24 },
       witness,
@@ -81,7 +86,7 @@ describe("multi-feature projection composition", () => {
       "identity_anchor",
       "evidence_mosaic",
     ]);
-    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v2");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v3");
     expect(request.prompt).toContain(
       "Image 1 is the clean original target and immutable pixel canvas",
     );
@@ -91,6 +96,64 @@ describe("multi-feature projection composition", () => {
     expect(request.prompt).toContain("F1 (newly exposed continuation)");
     expect(request.prompt).toContain("F2 (already evidenced)");
     expect(request.prompt).toContain("canonical backFull");
+  });
+
+  it("independently refuses a mirrored or out-of-zone feature", async () => {
+    const selected = await features();
+    const base = await image("#999");
+    const request = buildInkProjectionPlacementAuditProbeRequest({
+      targetAngle: "threeQuarter",
+      features: selected,
+      candidate: base,
+      placementAuditCandidate: base,
+    });
+    expect(request.kind).toBe("feature_projection_placement");
+    expect(request.recipeVersion)
+      .toBe("ink.add.anywhere.projection-placement-audit.v1");
+    expect(request.images.map((entry) => entry.role)).toEqual([
+      "candidate",
+      "placement_audit_candidate",
+    ]);
+    expect(request.prompt).toContain(
+      "The subject's left appears on frame right.",
+    );
+    const placement = parseInkProjectionPlacementAuditResponse({
+      confidence: 96,
+      feature1AnatomicalSideCorrect: true,
+      feature1InsideAuthorizedZone: true,
+      feature2AnatomicalSideCorrect: false,
+      feature2InsideAuthorizedZone: false,
+    }, 2);
+    const baseTruth = assessInkProjectionProbe(
+      parseInkProjectionProbeResponse({
+        confidence: 96,
+        identityMatch: true,
+        cameraAndFramingMatch: true,
+        noUnexpectedInk: true,
+        feature1Present: true,
+        feature1MatchesEvidence: true,
+        feature2Present: true,
+        feature2MatchesEvidence: true,
+      }, 2),
+    );
+    expect(applyInkProjectionPlacementAudit(baseTruth, placement))
+      .toMatchObject({
+        placementOutcome: "fail",
+        priorInkOutcome: "fail",
+        overallOutcome: "fail",
+        placementDetail: {
+          semanticPlacement: "pass",
+          anatomicalSide: "fail",
+          authorizedZone: "fail",
+          noOutsideChange: "pass",
+        },
+        placementAudit: {
+          anatomicalSideCorrect: false,
+          insideAuthorizedZone: false,
+          conflictingOutsideChange: false,
+          confidence: 96,
+        },
+      });
   });
 
   it("requires an exact positive result for every listed feature", async () => {

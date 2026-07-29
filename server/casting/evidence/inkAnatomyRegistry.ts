@@ -26,14 +26,17 @@ export const INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION =
 export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
   "ink.add.anywhere.visibility.v5" as const;
 export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
-  "ink.add.anywhere.projection.v2" as const;
+  "ink.add.anywhere.projection.v3" as const;
 export const INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS =
   Object.freeze([
     "ink.add.anywhere.projection.v1",
+    "ink.add.anywhere.projection.v2",
     INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
   ] as const);
 export const INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION =
-  "ink.add.anywhere.projection.probe.v1" as const;
+  "ink.add.anywhere.projection.probe.v2" as const;
+export const INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION =
+  "ink.add.anywhere.projection-placement-audit.v1" as const;
 export const INK_ANYWHERE_EVIDENCE_MOSAIC_RECIPE_VERSION =
   "ink.add.anywhere.evidence-mosaic.v1" as const;
 export const INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION =
