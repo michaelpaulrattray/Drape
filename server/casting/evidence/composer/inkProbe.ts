@@ -18,6 +18,7 @@ import {
   INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_PROJECTION_TARGET_GUIDE_AUDIT_RECIPE_VERSION,
   INK_ANYWHERE_VISIBILITY_RECIPE_VERSION,
   assertSupportedInkAnatomyTuple,
   inkAnatomicalSideAuthority,
@@ -33,6 +34,7 @@ export type InkProbeKind =
   | "feature_placement"
   | "feature_projection"
   | "feature_projection_placement"
+  | "projection_target_guide"
   | "coverage";
 
 export interface InkProbeInlineImage {
@@ -61,6 +63,7 @@ export interface InkProbeRequest {
     | typeof INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION
     | typeof INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION
     | typeof INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION
+    | typeof INK_ANYWHERE_PROJECTION_TARGET_GUIDE_AUDIT_RECIPE_VERSION
     | typeof INK_ANYWHERE_VISIBILITY_RECIPE_VERSION;
   responseMimeType: "application/json";
   responseSchema: Readonly<Record<string, "boolean" | "integer_0_100">>;

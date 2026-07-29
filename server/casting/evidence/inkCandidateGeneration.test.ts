@@ -143,7 +143,21 @@ function passProbe(request: InkProbeRequest): unknown {
   if (request.kind === "coverage") {
     return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
       key,
-      key.endsWith("Confidence") ? 98 : true,
+      key.endsWith("ZoneX") ? 10
+        : key.endsWith("ZoneY") ? 20
+          : key.endsWith("ZoneWidth") ? 30
+            : key.endsWith("ZoneHeight") ? 40
+              : true,
+    ]));
+  }
+  if (request.kind === "projection_target_guide") {
+    return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
+      key,
+      key === "confidence" ? 98
+        : key.endsWith("GuideTouchesOppositeSide")
+          || key.endsWith("GuideIncludesConflictingAnatomy")
+          ? false
+          : true,
     ]));
   }
   if (request.kind === "guide_coverage") {
@@ -424,7 +438,7 @@ describe("ink candidate generation", () => {
         sourceAngle: "backFull",
         composerRecipeVersion: "ink.add.anywhere.projection.v4",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v3",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v4",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -500,7 +514,12 @@ describe("ink candidate generation", () => {
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v3",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v4",
+    }));
+    expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "projection_target_guide",
+      recipeVersion:
+        "ink.add.anywhere.projection-target-guide-audit.v1",
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection",

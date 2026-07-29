@@ -24,6 +24,7 @@ import {
   INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
   INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+  INK_ANYWHERE_PROJECTION_TARGET_GUIDE_AUDIT_RECIPE_VERSION,
 } from "./inkAnatomyRegistry";
 
 const MAX_FEATURES = 9;
@@ -756,6 +757,10 @@ export function buildInkCoverageProbeRequest(input: {
     (_feature, index) => [
       [`feature${index + 1}RegionVisible`, "boolean" as const],
       [`feature${index + 1}VerdictCertain`, "boolean" as const],
+      [`feature${index + 1}ZoneX`, "integer_0_100" as const],
+      [`feature${index + 1}ZoneY`, "integer_0_100" as const],
+      [`feature${index + 1}ZoneWidth`, "integer_0_100" as const],
+      [`feature${index + 1}ZoneHeight`, "integer_0_100" as const],
     ],
   ));
   return {
@@ -769,13 +774,19 @@ export function buildInkCoverageProbeRequest(input: {
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
       `Inspect the single canonical ${input.targetAngle} Cast image.`,
-      "Return strict JSON only. For each server-labelled anatomical region, RegionVisible is true only when enough of the physical surface is exposed and resolved to reproduce a tattoo at 1K. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail means false. VerdictCertain is true only when the RegionVisible true/false verdict can be made without guessing. A definitely hidden or absent region may be RegionVisible false with VerdictCertain true. If uncertain, set VerdictCertain false.",
+      "Return strict JSON only. Work from the actual pixels, not the stored angle name. For each F-feature, RegionVisible is true when any material contiguous portion of the requested anatomical surface is exposed and resolved enough to carry the visible portion of that tattoo at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility and anatomical side can be decided without guessing.",
+      "When RegionVisible is true, return ZoneX, ZoneY, ZoneWidth, and ZoneHeight as integer percentages from 0 to 100 for the tight bounding box of only the visible requested physical surface. Include small padding, exclude clothing, the opposite side/limb, and unrelated anatomy. X/Y are the top-left. Width/Height must be positive and X+Width and Y+Height must not exceed 100. When RegionVisible is false, all four zone values must be 0. If uncertain, set VerdictCertain false.",
       ...input.features.map((feature, index) =>
-        `F${index + 1}: ${feature.anatomyLabel}; ${feature.sideAuthority} Normalized box ${JSON.stringify(feature.targetZone)}.`
+        `F${index + 1}: ${feature.anatomyLabel}; ${feature.sideAuthority} The coarse server search region is ${JSON.stringify(feature.targetZone)}; localize the actual visible surface inside the image rather than copying this box.`
       ),
     ].join("\n"),
     images: [probeInline("original_target", input.target)],
   };
+}
+
+export interface InkObservedProjectionCoverage {
+  visible: boolean;
+  targetZone: NormalizedInkZone | null;
 }
 
 export interface InkCoverageProbeTelemetry {
@@ -783,7 +794,38 @@ export interface InkCoverageProbeTelemetry {
   features: readonly {
     regionVisible: boolean | null;
     verdictCertain: boolean | null;
+    targetZone: NormalizedInkZone | null;
   }[];
+}
+
+function coverageZone(
+  value: Record<string, unknown>,
+  index: number,
+): NormalizedInkZone | null {
+  const x = value[`feature${index + 1}ZoneX`];
+  const y = value[`feature${index + 1}ZoneY`];
+  const width = value[`feature${index + 1}ZoneWidth`];
+  const height = value[`feature${index + 1}ZoneHeight`];
+  if (
+    !Number.isSafeInteger(x)
+    || !Number.isSafeInteger(y)
+    || !Number.isSafeInteger(width)
+    || !Number.isSafeInteger(height)
+    || (x as number) < 0
+    || (y as number) < 0
+    || (width as number) < 1
+    || (height as number) < 1
+    || (x as number) + (width as number) > 100
+    || (y as number) + (height as number) > 100
+  ) {
+    return null;
+  }
+  return Object.freeze({
+    x: (x as number) / 100,
+    y: (y as number) / 100,
+    width: (width as number) / 100,
+    height: (height as number) / 100,
+  });
 }
 
 /**
@@ -824,6 +866,7 @@ export function summarizeInkCoverageProbeResponse(
       return Object.freeze({
         regionVisible: typeof visible === "boolean" ? visible : null,
         verdictCertain: typeof certain === "boolean" ? certain : null,
+        targetZone: visible === true ? coverageZone(value, index) : null,
       });
     })),
   });
@@ -832,7 +875,7 @@ export function summarizeInkCoverageProbeResponse(
 export function parseInkCoverageProbeResponse(
   raw: unknown,
   featureVersionIds: readonly string[],
-): Readonly<Record<string, boolean>> {
+): Readonly<Record<string, InkObservedProjectionCoverage>> {
   if (
     featureVersionIds.length < 1
     || featureVersionIds.length > MAX_FEATURES
@@ -848,6 +891,10 @@ export function parseInkCoverageProbeResponse(
   const expectedKeys = featureVersionIds.flatMap((_id, index) => [
     `feature${index + 1}RegionVisible`,
     `feature${index + 1}VerdictCertain`,
+    `feature${index + 1}ZoneX`,
+    `feature${index + 1}ZoneY`,
+    `feature${index + 1}ZoneWidth`,
+    `feature${index + 1}ZoneHeight`,
   ]);
   if (
     Object.keys(value).length !== expectedKeys.length
@@ -858,12 +905,148 @@ export function parseInkCoverageProbeResponse(
   return Object.freeze(Object.fromEntries(featureVersionIds.map((id, index) => {
     const visible = value[`feature${index + 1}RegionVisible`];
     const certain = value[`feature${index + 1}VerdictCertain`];
+    const zoneValues = [
+      value[`feature${index + 1}ZoneX`],
+      value[`feature${index + 1}ZoneY`],
+      value[`feature${index + 1}ZoneWidth`],
+      value[`feature${index + 1}ZoneHeight`],
+    ];
     if (
       typeof visible !== "boolean"
       || certain !== true
+      || zoneValues.some((coordinate) => !Number.isSafeInteger(coordinate))
     ) {
       throw new TypeError("Observed coverage is unknown");
     }
-    return [id, visible];
+    if (!visible) {
+      if (zoneValues.some((coordinate) => coordinate !== 0)) {
+        throw new TypeError("Invalid hidden observed-coverage zone");
+      }
+      return [id, Object.freeze({ visible: false, targetZone: null })];
+    }
+    const targetZone = coverageZone(value, index);
+    if (!targetZone) {
+      throw new TypeError("Invalid visible observed-coverage zone");
+    }
+    return [id, Object.freeze({ visible: true, targetZone })];
   })));
+}
+
+interface ProjectionTargetGuideAuditResponse {
+  confidence: number;
+  guideCoversVisibleSurface: boolean[];
+  guideTouchesOppositeSide: boolean[];
+  guideIncludesConflictingAnatomy: boolean[];
+}
+
+export function buildInkProjectionTargetGuideAuditProbeRequest(input: {
+  targetAngle: CanonicalViewAngle;
+  features: readonly InkProjectionFeatureReference[];
+  originalTarget: ComposerImage;
+  guidedTarget: ComposerImage;
+}): InkProbeRequest {
+  assertFeatures(input.features, false);
+  const featureSchema = Object.fromEntries(input.features.flatMap(
+    (_feature, index) => [
+      [`feature${index + 1}GuideCoversVisibleSurface`, "boolean" as const],
+      [`feature${index + 1}GuideTouchesOppositeSide`, "boolean" as const],
+      [`feature${index + 1}GuideIncludesConflictingAnatomy`, "boolean" as const],
+    ],
+  ));
+  return {
+    kind: "projection_target_guide",
+    model: INK_ADD_PROBE_MODEL,
+    recipeVersion:
+      INK_ANYWHERE_PROJECTION_TARGET_GUIDE_AUDIT_RECIPE_VERSION,
+    responseMimeType: "application/json",
+    responseSchema: {
+      confidence: "integer_0_100",
+      ...featureSchema,
+    },
+    thinkingBudget: INK_TEXT_PROVIDER_CONFIG.thinkingBudget,
+    includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
+    maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
+    prompt: [
+      "Compare two ordered images: the clean target Cast image, then the same image with server-localized red F-boxes.",
+      `Audit the boxes in canonical ${input.targetAngle} using the actual pixels; the stored angle name is not anatomical-side proof.`,
+      "Return strict JSON only. confidence is 0-100.",
+      "For each feature, GuideCoversVisibleSurface is true only when its F-box covers the visible, resolved portion of the requested physical surface where that tattoo may legitimately appear.",
+      "GuideTouchesOppositeSide is true if the F-box reaches the opposite anatomical side or limb. GuideIncludesConflictingAnatomy is true if it materially includes clothing, another body zone, background, or a different feature's authorized surface.",
+      "A partial visible upper arm or forearm is legitimate surface for a full sleeve. The box must not expand to the opposite limb merely because the rest of the sleeve is cropped or occluded.",
+      ...input.features.map((feature, index) =>
+        `F${index + 1}: ${feature.anatomyLabel}. ${feature.sideAuthority} Localized box ${JSON.stringify(feature.targetZone)}.`
+      ),
+    ].join("\n"),
+    images: [
+      probeInline("original_target", input.originalTarget),
+      probeInline("guided_target", input.guidedTarget),
+    ],
+  };
+}
+
+export function parseInkProjectionTargetGuideAuditResponse(
+  raw: unknown,
+  featureCount: number,
+): ProjectionTargetGuideAuditResponse {
+  if (
+    !Number.isSafeInteger(featureCount)
+    || featureCount < 1
+    || featureCount > MAX_FEATURES
+  ) {
+    throw new TypeError("Invalid projection target-guide feature count");
+  }
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new TypeError("Invalid projection target-guide response");
+  }
+  const value = parsed as Record<string, unknown>;
+  const expectedKeys = new Set([
+    "confidence",
+    ...Array.from({ length: featureCount }, (_unused, index) => [
+      `feature${index + 1}GuideCoversVisibleSurface`,
+      `feature${index + 1}GuideTouchesOppositeSide`,
+      `feature${index + 1}GuideIncludesConflictingAnatomy`,
+    ]).flat(),
+  ]);
+  if (
+    Object.keys(value).length !== expectedKeys.size
+    || Object.keys(value).some((key) => !expectedKeys.has(key))
+    || !Number.isSafeInteger(value.confidence)
+    || (value.confidence as number) < 0
+    || (value.confidence as number) > 100
+  ) {
+    throw new TypeError("Invalid projection target-guide response");
+  }
+  for (const key of Array.from(expectedKeys)) {
+    if (key !== "confidence" && typeof value[key] !== "boolean") {
+      throw new TypeError("Invalid projection target-guide response");
+    }
+  }
+  return {
+    confidence: value.confidence as number,
+    guideCoversVisibleSurface: Array.from(
+      { length: featureCount },
+      (_unused, index) =>
+        value[`feature${index + 1}GuideCoversVisibleSurface`] as boolean,
+    ),
+    guideTouchesOppositeSide: Array.from(
+      { length: featureCount },
+      (_unused, index) =>
+        value[`feature${index + 1}GuideTouchesOppositeSide`] as boolean,
+    ),
+    guideIncludesConflictingAnatomy: Array.from(
+      { length: featureCount },
+      (_unused, index) =>
+        value[`feature${index + 1}GuideIncludesConflictingAnatomy`] as boolean,
+    ),
+  };
+}
+
+export function projectionTargetGuideAuditPasses(
+  value: ProjectionTargetGuideAuditResponse,
+): boolean {
+  return value.confidence >= 85
+    && value.guideCoversVisibleSurface.every(Boolean)
+    && value.guideTouchesOppositeSide.every((flag) => !flag)
+    && value.guideIncludesConflictingAnatomy.every((flag) => !flag);
 }

@@ -34,6 +34,7 @@ import {
   prepareInkCandidateGeneration,
   prepareInkProjectionCandidateGeneration,
   type InkProjectionCandidatePreflight,
+  type ObservedInkProjectionCoverage,
   type PreparedInkCandidateAttempt,
 } from "../../db/inkAddCandidates";
 import {
@@ -93,7 +94,10 @@ import {
   buildInkCoverageProbeRequest,
   buildInkEvidenceMosaic,
   buildInkProjectionComposerRequest,
+  buildInkProjectionTargetGuideAuditProbeRequest,
   parseInkCoverageProbeResponse,
+  parseInkProjectionTargetGuideAuditResponse,
+  projectionTargetGuideAuditPasses,
   runInkProjectionCandidateProbes,
   summarizeInkCoverageProbeResponse,
   type InkProjectionComposerRequest,
@@ -991,6 +995,7 @@ async function executeProjectionCandidate(
     | "coverage"
     | "prepare"
     | "load_inputs"
+    | "target_guide"
     | "generation" = "preflight";
   try {
     await (dependencies.markRunning ?? markGenerationOperationRunning)({
@@ -1013,16 +1018,15 @@ async function executeProjectionCandidate(
       targetViewAngle: input.targetViewAngle,
     });
     failureStage = "coverage";
-    const uncertain = preflight.features.filter(
-      (feature) => feature.impact === "uncertain",
-    );
-    let observedCoverage: Readonly<Record<string, boolean>> = Object.freeze({});
-    if (uncertain.length > 0) {
+    let observedCoverage: Readonly<
+      Record<string, ObservedInkProjectionCoverage>
+    > = Object.freeze({});
+    if (preflight.features.length > 0) {
       if (preflight.sourceViewAngle !== preflight.targetViewAngle) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message:
-            "This view does not yet show enough of the requested tattoo surface to verify it safely. Nothing was charged.",
+            "This view does not yet provide an exact target image whose tattoo surfaces can be localized safely. Nothing was charged.",
         });
       }
       const target = composerImage(
@@ -1033,7 +1037,7 @@ async function executeProjectionCandidate(
       const rawCoverage = await (dependencies.probe ?? defaultProbe)(
         buildInkCoverageProbeRequest({
           targetAngle: preflight.targetViewAngle,
-          features: uncertain.map((feature) => ({
+          features: preflight.features.map((feature) => ({
             featureVersionId: feature.featureVersionId,
             anatomyLabel: feature.anatomyLabel,
             sideAuthority: feature.contract === "all_body_v2"
@@ -1052,24 +1056,26 @@ async function executeProjectionCandidate(
       );
       const coverageTelemetry = summarizeInkCoverageProbeResponse(
         rawCoverage,
-        uncertain.length,
+        preflight.features.length,
       );
       log.info({
         operationId: gate.operationId,
         targetViewAngle: input.targetViewAngle,
         responseShape: coverageTelemetry.responseShape,
-        coverage: uncertain.map((feature, index) => ({
+        coverage: preflight.features.map((feature, index) => ({
           anatomy: feature.anatomy,
           regionVisible:
             coverageTelemetry.features[index]?.regionVisible ?? null,
           verdictCertain:
             coverageTelemetry.features[index]?.verdictCertain ?? null,
+          targetZone:
+            coverageTelemetry.features[index]?.targetZone ?? null,
         })),
       }, "Ink projection pre-charge coverage assessed");
       try {
         observedCoverage = parseInkCoverageProbeResponse(
           rawCoverage,
-          uncertain.map((feature) => feature.featureVersionId),
+          preflight.features.map((feature) => feature.featureVersionId),
         );
       } catch (error) {
         throw new TRPCError({
@@ -1078,6 +1084,18 @@ async function executeProjectionCandidate(
             "This view does not show enough of the selected tattoo surfaces"
             + " to verify them safely. Nothing was charged.",
           cause: error,
+        });
+      }
+      if (preflight.features.some(
+        (feature) =>
+          feature.impact === "affected"
+          && observedCoverage[feature.featureVersionId]?.visible !== true,
+      )) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "This view contradicts the expected tattoo-surface visibility and"
+            + " cannot be updated safely. Nothing was charged.",
         });
       }
     }
@@ -1095,6 +1113,45 @@ async function executeProjectionCandidate(
     });
     failureStage = "load_inputs";
     const images = await loadInputs(dependencies, prepared);
+    if (
+      prepared.authority.kind === "projection_v2"
+      && images.projectionFeatures
+      && images.guidedTarget
+    ) {
+      failureStage = "target_guide";
+      const rawTargetGuideAudit = await (
+        dependencies.probe ?? defaultProbe
+      )(buildInkProjectionTargetGuideAuditProbeRequest({
+        targetAngle: prepared.authority.targetAngle,
+        features: images.projectionFeatures,
+        originalTarget: images.target,
+        guidedTarget: images.guidedTarget,
+      }));
+      const targetGuideAudit =
+        parseInkProjectionTargetGuideAuditResponse(
+          rawTargetGuideAudit,
+          images.projectionFeatures.length,
+        );
+      log.info({
+        operationId: gate.operationId,
+        targetViewAngle: input.targetViewAngle,
+        confidence: targetGuideAudit.confidence,
+        guideCoversVisibleSurface:
+          targetGuideAudit.guideCoversVisibleSurface,
+        guideTouchesOppositeSide:
+          targetGuideAudit.guideTouchesOppositeSide,
+        guideIncludesConflictingAnatomy:
+          targetGuideAudit.guideIncludesConflictingAnatomy,
+      }, "Ink projection target guide assessed");
+      if (!projectionTargetGuideAuditPasses(targetGuideAudit)) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "The visible tattoo surfaces could not be localized safely."
+            + " Nothing was charged.",
+        });
+      }
+    }
     failureStage = "generation";
     const ready = await (dependencies.charge ?? withAtomicCredits)({
       userId: input.userId,

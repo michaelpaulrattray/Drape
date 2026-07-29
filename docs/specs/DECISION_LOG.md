@@ -1212,6 +1212,34 @@ or R7 closure. Focused tests and typecheck pass locally; no provider work has
 run for this correction. The permitted Opus milestone review timed out without
 returning an opinion, so no external approval is claimed.
 
+**v4 production result and target-localization correction (2026-07-30):**
+`d3e6cf2` deployed successfully and exposed only the 3/4 projection preview to
+founder user 1. One authorized 300-credit calibration ran against the existing
+five-feature Cast. Both included attempts failed and the charge refunded
+exactly once; no candidate entered canon and no retry followed.
+
+Privacy-safe closed telemetry identified two distinct authority defects. The
+pre-charge coverage probe called the right full sleeve invisible even though a
+material partial arm surface is the exact continuation a close 3/4 crop must
+carry. On attempt two, identity, framing, feature design, and unexpected-ink
+checks passed and the semantic probe found every requested visible feature,
+while the independent static red-box audit rejected anatomical side and zone.
+Static intent-derived rectangles therefore remain unsuitable as final
+placement authority for a mirrored or pose-variable close view.
+
+Coverage/localization v4 now evaluates every relevant selected tattoo, counts
+a resolved partial limb surface as visible for a sleeve, and returns a tight
+normalized box for only the actually visible requested anatomy. A separate
+pre-charge target-guide audit compares the clean target with those localized
+boxes and refuses unless every box covers the requested visible surface while
+excluding the opposite side, clothing, background, and conflicting anatomy.
+Only an independently approved dynamic guide reaches paid generation, and the
+same guide remains the post-generation placement boundary. Unknown or
+contradictory visibility still refuses free. This strengthens the check rather
+than treating the failed static audit as a pass. Typecheck, 248 files / 3,184
+tests, the production build, focused localization/guide tests, and diff checks
+pass locally.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

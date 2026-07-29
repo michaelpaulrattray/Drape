@@ -184,6 +184,11 @@ export interface PreparedInkProjectionFeature {
   coverageBasis: "registry_affected" | "observed_visible" | null;
 }
 
+export interface ObservedInkProjectionCoverage {
+  visible: boolean;
+  targetZone: NormalizedInkZone | null;
+}
+
 function affectedRows(result: unknown): number {
   if (Array.isArray(result)) {
     return Number((result[0] as { affectedRows?: unknown })?.affectedRows ?? 0);
@@ -792,7 +797,9 @@ export async function prepareInkProjectionCandidateGeneration(input: {
   candidateId: string;
   attemptId: string;
   privatePlateId: string;
-  observedCoverage: Readonly<Record<string, boolean>>;
+  observedCoverage: Readonly<
+    Record<string, ObservedInkProjectionCoverage>
+  >;
 }): Promise<PreparedInkCandidateAttempt> {
   return withTransaction(async (tx) => {
     const current = await loadProjectionCandidatePreflightIn(
@@ -812,11 +819,8 @@ export async function prepareInkProjectionCandidateGeneration(input: {
     ) {
       throw new InkCandidateStateError("snapshot_head_changed");
     }
-    const uncertain = current.features.filter(
-      (feature) => feature.impact === "uncertain",
-    );
     const observedKeys = Object.keys(input.observedCoverage).sort();
-    const expectedObservedKeys = uncertain
+    const expectedObservedKeys = current.features
       .map((feature) => feature.featureVersionId)
       .sort();
     if (
@@ -832,15 +836,25 @@ export async function prepareInkProjectionCandidateGeneration(input: {
       });
     }
     const features = current.features.flatMap((feature) => {
+      const observed = input.observedCoverage[feature.featureVersionId];
+      if (!observed) {
+        throw new InkCandidateStateError("source_unavailable");
+      }
       if (
-        feature.impact === "uncertain"
-        && input.observedCoverage[feature.featureVersionId] !== true
+        observed.visible !== true
       ) {
+        if (feature.impact === "affected") {
+          throw new InkCandidateStateError("source_unavailable");
+        }
         return [];
+      }
+      if (!observed.targetZone) {
+        throw new InkCandidateStateError("source_unavailable");
       }
       const isProjectionTarget = !feature.hasAcceptedTargetEvidence;
       return [{
         ...feature,
+        targetZone: observed.targetZone,
         isProjectionTarget,
         coverageBasis: isProjectionTarget
           ? feature.impact === "affected"

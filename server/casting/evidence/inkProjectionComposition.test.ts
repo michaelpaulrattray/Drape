@@ -9,9 +9,12 @@ import {
   buildInkProjectionComposerRequest,
   buildInkProjectionPlacementAuditProbeRequest,
   buildInkProjectionProbeRequest,
+  buildInkProjectionTargetGuideAuditProbeRequest,
   parseInkCoverageProbeResponse,
   parseInkProjectionPlacementAuditResponse,
   parseInkProjectionProbeResponse,
+  parseInkProjectionTargetGuideAuditResponse,
+  projectionTargetGuideAuditPasses,
   summarizeInkCoverageProbeResponse,
   type InkProjectionFeatureReference,
 } from "./inkProjectionComposition";
@@ -239,21 +242,37 @@ describe("multi-feature projection composition", () => {
       target: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v3");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v4");
     expect(request.prompt).toContain(
-      "definitely hidden or absent region may be RegionVisible false",
+      "partial upper arm or forearm in a close crop",
     );
     const raw = {
       feature1RegionVisible: true,
       feature1VerdictCertain: true,
+      feature1ZoneX: 10,
+      feature1ZoneY: 20,
+      feature1ZoneWidth: 30,
+      feature1ZoneHeight: 40,
       feature2RegionVisible: false,
       feature2VerdictCertain: false,
+      feature2ZoneX: 0,
+      feature2ZoneY: 0,
+      feature2ZoneWidth: 0,
+      feature2ZoneHeight: 0,
     };
     expect(summarizeInkCoverageProbeResponse(raw, 2)).toEqual({
       responseShape: "valid_object",
       features: [
-        { regionVisible: true, verdictCertain: true },
-        { regionVisible: false, verdictCertain: false },
+        {
+          regionVisible: true,
+          verdictCertain: true,
+          targetZone: { x: 0.1, y: 0.2, width: 0.3, height: 0.4 },
+        },
+        {
+          regionVisible: false,
+          verdictCertain: false,
+          targetZone: null,
+        },
       ],
     });
     expect(() => parseInkCoverageProbeResponse(raw, [
@@ -262,7 +281,46 @@ describe("multi-feature projection composition", () => {
     ])).toThrow("Observed coverage is unknown");
     expect(summarizeInkCoverageProbeResponse("not-json", 1)).toEqual({
       responseShape: "invalid",
-      features: [{ regionVisible: null, verdictCertain: null }],
+      features: [{
+        regionVisible: null,
+        verdictCertain: null,
+        targetZone: null,
+      }],
     });
+  });
+
+  it("independently approves only anatomy-safe localized target guides", async () => {
+    const selected = await features();
+    const clean = await image("#999");
+    const guided = await image("#a00");
+    const request = buildInkProjectionTargetGuideAuditProbeRequest({
+      targetAngle: "threeQuarter",
+      features: selected,
+      originalTarget: clean,
+      guidedTarget: guided,
+    });
+    expect(request).toMatchObject({
+      kind: "projection_target_guide",
+      recipeVersion:
+        "ink.add.anywhere.projection-target-guide-audit.v1",
+    });
+    const raw = {
+      confidence: 94,
+      feature1GuideCoversVisibleSurface: true,
+      feature1GuideTouchesOppositeSide: false,
+      feature1GuideIncludesConflictingAnatomy: false,
+      feature2GuideCoversVisibleSurface: true,
+      feature2GuideTouchesOppositeSide: false,
+      feature2GuideIncludesConflictingAnatomy: false,
+    };
+    expect(projectionTargetGuideAuditPasses(
+      parseInkProjectionTargetGuideAuditResponse(raw, 2),
+    )).toBe(true);
+    expect(projectionTargetGuideAuditPasses(
+      parseInkProjectionTargetGuideAuditResponse({
+        ...raw,
+        feature2GuideTouchesOppositeSide: true,
+      }, 2),
+    )).toBe(false);
   });
 });
