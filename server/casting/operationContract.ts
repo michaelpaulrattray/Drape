@@ -20,6 +20,7 @@ export const GENERATION_OPERATION_KINDS = [
   "evidence_mint",
   "casting.refresh",
   "casting.restore",
+  "casting.restore_state",
   "casting.pin",
   "casting.compact",
   "model.delete",

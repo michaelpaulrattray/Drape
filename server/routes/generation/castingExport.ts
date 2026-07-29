@@ -3,6 +3,7 @@ import {
   getModelById, getUserGenerations, getUserById, getModelAssets,
   markGenerationOperationRunning, assertGenerationOperationSnapshotHead,
   getGenerationOperationKindByRequest,
+  getGenerationOperationOutcome,
   handoffGenerationOperationToRecovery,
   updateGenerationOperationProgress,
 } from "../../db";
@@ -71,6 +72,13 @@ import {
 import {
   resolveOperationKindForReplay,
 } from "../../casting/evidence/operationReplayFamily";
+import {
+  commitWholeCastRestore,
+  getOwnedCastStateHistory,
+  preflightWholeCastRestore,
+  type WholeCastRestoreResult,
+} from "../../casting/wholeCastRestore";
+import { captureSnapshotRestoreEnabled } from "../../casting/snapshotRestoreScope";
 const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
@@ -551,6 +559,111 @@ export const castingExportRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       return getSlotVersions({ userId: ctx.user.id, ...input });
+    }),
+
+  /** R7-7F: read the immutable whole-Cast timeline without exposing
+   *  identity documents, descriptors, evidence rows, or internal ids. */
+  castStateHistory: protectedProcedure
+    .input(z.object({ modelId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      const enabled =
+        readMode === "snapshot"
+        && captureSnapshotRestoreEnabled(ctx.user.id);
+      return getOwnedCastStateHistory({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+        enabled,
+      });
+    }),
+
+  /** R7-7F: restore one exact historical identity/package/feature state.
+   *  Draft-only, zero-cost, append-only, and settled atomically. */
+  restoreCastState: protectedProcedure
+    .input(z.object({
+      clientRequestId: z.string().uuid(),
+      modelId: z.number().int().positive(),
+      restorePointId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const readMode = captureSnapshotReadMode(ctx.user.id);
+      if (
+        readMode !== "snapshot"
+        || !captureSnapshotRestoreEnabled(ctx.user.id)
+      ) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Cast history restore is not available for this account.",
+        });
+      }
+      const model = await getModelById(input.modelId);
+      if (!model) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      }
+      if (model.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      assertNotArchived(model);
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind: "casting.restore_state",
+        modelId: input.modelId,
+        payload: {
+          modelId: input.modelId,
+          restorePointId: input.restorePointId,
+        },
+        lockKey,
+      });
+      if (gate.type === "replay") {
+        return gate.result as WholeCastRestoreResult;
+      }
+      try {
+        await preflightWholeCastRestore({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          restorePointId: input.restorePointId,
+        });
+      } catch (error) {
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error,
+        });
+      }
+      await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(model),
+        plannedCredits: 0,
+        requiredLockKey: lockKey,
+        phase: "finalizing",
+      });
+      try {
+        return (await commitWholeCastRestore({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          operationId: gate.operationId,
+          restorePointId: input.restorePointId,
+        })).result;
+      } catch (error) {
+        const outcome = await getGenerationOperationOutcome(
+          ctx.user.id,
+          gate.operationId,
+        ).catch(() => null);
+        if (outcome?.type === "replay_success") {
+          return outcome.result as WholeCastRestoreResult;
+        }
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error,
+          chargedCredits: 0,
+          refundedCredits: 0,
+        });
+      }
     }),
 
   /** D-53 "Use this version": copy-forward append on the ledger — zero

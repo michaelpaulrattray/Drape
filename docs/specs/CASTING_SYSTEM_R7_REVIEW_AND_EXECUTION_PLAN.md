@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7E are complete as of 2026-07-29; the next ratified phase is R7-7F true whole-Cast snapshot restore, followed by the still-open R7-8 closure program
+**Status:** IN EXECUTION — R7-0 through R7-7E are complete as of 2026-07-29; R7-7F true whole-Cast snapshot restore is a locally verified release candidate awaiting code-off deployment and founder drive, followed by the still-open R7-8 closure program
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -371,15 +371,17 @@ The founder approved all eight recommendations below as binding R7 direction:
 
 ## 9. Immediate next action
 
-1. Produce the exact R7-7F true whole-Cast snapshot-restore implementation
-   plan from the ratified R7-6 authority.
-2. Audit the current snapshot, package-selection, lifecycle, fork, recovery,
-   billing, and deletion contracts against that restore law.
-3. Obtain one consolidated milestone review after the plan and codebase audit
-   are internally coherent.
-4. Implement R7-7F in bounded reviewed slices; do not widen evidence
-   categories or production scopes as part of restore.
-5. After founder verification, execute the remaining R7-8
-   quality/reference-sheet/dogfood closure program in its ratified order.
+1. Deploy the locally verified R7-7F code with
+   `R7_SNAPSHOT_RESTORE_SCOPE=off`.
+2. Obtain separate authorization for privacy-safe, read-only founder timeline
+   and restore-preflight evidence.
+3. If that evidence closes, separately authorize founder-only
+   `users:1` restore scope.
+4. Founder-drive the available featureless and evidence-bearing historical
+   draft states without generation, provider work, credit changes, or storage
+   writes.
+5. Close R7-7F only after the recorded founder-drive gate, then execute the
+   remaining R7-8 quality/reference-sheet/dogfood closure program in its
+   ratified order.
 
 R7 should move quickly in bounded batches, but it should not hide architecture inside an overnight prompt. The trust foundation is mechanical enough to execute once reviewed; the evidence composer is a separate founder-gated product and research program.

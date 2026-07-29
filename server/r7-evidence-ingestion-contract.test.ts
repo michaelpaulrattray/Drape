@@ -144,6 +144,7 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       "server/casting/evidence/evidencePackageFeatureRows.ts",
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/finalCastDeletion.ts",
+      "server/casting/wholeCastRestore.ts",
       "server/db/accountDeletion.ts",
       "server/db/evidenceCandidates.ts",
       "server/db/evidenceDelivery.ts",

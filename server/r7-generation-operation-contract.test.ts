@@ -61,6 +61,7 @@ describe("R7-1C operation contract", () => {
   it("uses the closed operation-kind and resource-lock vocabularies", () => {
     expect(() => assertGenerationOperationKind("casting.iterate")).not.toThrow();
     expect(() => assertGenerationOperationKind("casting.restore")).not.toThrow();
+    expect(() => assertGenerationOperationKind("casting.restore_state")).not.toThrow();
     expect(() => assertGenerationOperationKind("model.delete")).not.toThrow();
     expect(() => assertGenerationOperationKind("casting.unknown")).toThrow("Unknown");
     expect(modelOperationLockKey(12)).toBe("model:12");

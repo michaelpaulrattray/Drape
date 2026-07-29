@@ -6,6 +6,7 @@ import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefr
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
 import { SlotVersionHistory } from '@/features/casting/components/SlotVersionHistory';
+import { CastStateHistory } from '@/features/casting/components/CastStateHistory';
 import { evidencePackageSlotNeedsAction } from '@/features/casting/evidence/evidencePackageDisplay';
 
 const OPEN_CASTING_DETAILS = 'casting-open-details';
@@ -131,6 +132,7 @@ export function CastingDetailsDialog() {
         </div>
 
         <div className="overflow-y-auto p-3 space-y-1.5">
+          {modelId ? <CastStateHistory modelId={modelId} className="mb-2" /> : null}
           {packageQuery.isLoading || planQuery.isLoading || mintPlanQuery.isLoading ? (
             <div className="py-10 flex items-center justify-center gap-2 text-canvas-md text-canvas-ink-soft">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking views…

@@ -35,6 +35,7 @@ export const OPERATION_REPLAY_FAMILY_BY_KIND: Readonly<
   evidence_mint: "mint",
   "casting.refresh": "refresh",
   "casting.restore": null,
+  "casting.restore_state": null,
   "casting.pin": null,
   "casting.compact": null,
   "model.delete": null,

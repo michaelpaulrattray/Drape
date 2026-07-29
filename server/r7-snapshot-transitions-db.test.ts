@@ -23,6 +23,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let commitCanvasRecastSnapshot: typeof import("./casting/snapshotTransitions").commitCanvasRecastSnapshot;
   let commitRefreshedSlotsSnapshot: typeof import("./casting/snapshotTransitions").commitRefreshedSlotsSnapshot;
   let commitGeneratedPackageSnapshot: typeof import("./casting/snapshotTransitions").commitGeneratedPackageSnapshot;
+  let commitWholeCastRestore: typeof import("./casting/wholeCastRestore").commitWholeCastRestore;
   let canvasBoardOps: typeof import("./lib/boardOps");
 
   beforeAll(async () => {
@@ -50,6 +51,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       commitRefreshedSlotsSnapshot,
       commitGeneratedPackageSnapshot,
     } = await import("./casting/snapshotTransitions"));
+    ({ commitWholeCastRestore } = await import("./casting/wholeCastRestore"));
     canvasBoardOps = await import("./lib/boardOps");
   });
 
@@ -64,6 +66,13 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     for (const table of [
       "generation_operation_locks",
       "generation_operations",
+      "casting_evidence_candidates",
+      "model_identity_feature_intents",
+      "model_snapshot_feature_selections",
+      "model_identity_feature_versions",
+      "model_identity_features",
+      "model_evidence_crops",
+      "model_reference_plates",
       "model_package_snapshot_slots",
       "model_package_snapshots",
       "model_identity_snapshots",
@@ -143,7 +152,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   async function startModelOperation(
     userId: number,
     modelId: number,
-    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.add_views" | "casting.restore" | "casting.headshot" | "casting.refresh" | "canvas.recast" = "casting.iterate",
+    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.add_views" | "casting.restore" | "casting.restore_state" | "casting.headshot" | "casting.refresh" | "canvas.recast" = "casting.iterate",
   ): Promise<string> {
     const claimed = await operations.claimGenerationOperation({
       userId,
@@ -2026,5 +2035,177 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     })).rejects.toThrow("running snapshot operation was not found");
     expect(invoked).toBe(false);
     expect(await count("model_package_snapshots", "modelId = ?", [base.modelId])).toBe(1);
+  }, 60_000);
+
+  it("R7-7F restores one historical identity/package atomically with a zero-credit receipt", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const compactOperationId = await startModelOperation(
+      userId,
+      base.modelId,
+      "casting.compact",
+    );
+    const compacted = await commitDocumentCompactionSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId: compactOperationId,
+      compactedMasterPrompt: "identity-v2 compacted",
+    });
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId: compactOperationId,
+      result: { modelId: base.modelId },
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+
+    const restoreOperationId = await startModelOperation(
+      userId,
+      base.modelId,
+      "casting.restore_state",
+    );
+    const restored = await commitWholeCastRestore({
+      userId,
+      modelId: base.modelId,
+      operationId: restoreOperationId,
+      restorePointId: base.packageSnapshotId,
+    });
+
+    expect(restored.result).toMatchObject({
+      modelId: base.modelId,
+      stateVersion: 3,
+      restored: true,
+      selectedViewCount: 2,
+      missingAngles: [],
+    });
+    const model = await one(
+      `SELECT masterPrompt, identityRevisionId, stateVersion,
+        currentPackageSnapshotId
+       FROM models WHERE id = ?`,
+      [base.modelId],
+    );
+    expect(model.masterPrompt).toBe("identity-v1");
+    expect(model.identityRevisionId).toBeTruthy();
+    expect(Number(model.stateVersion)).toBe(3);
+    expect(model.currentPackageSnapshotId).toBe(restored.packageSnapshotId);
+
+    const identity = await one(
+      `SELECT reason, parentSnapshotId, restoredFromSnapshotId,
+        anchorAssetId, masterPrompt
+       FROM model_identity_snapshots WHERE id = ?`,
+      [restored.identitySnapshotId],
+    );
+    expect(identity).toMatchObject({
+      reason: "restore",
+      parentSnapshotId: compacted.identitySnapshotId,
+      restoredFromSnapshotId: base.identitySnapshotId,
+      anchorAssetId: base.anchorAssetId,
+      masterPrompt: "identity-v1",
+    });
+    const packageRow = await one(
+      `SELECT reason, parentPackageSnapshotId, identitySnapshotId
+       FROM model_package_snapshots WHERE id = ?`,
+      [restored.packageSnapshotId],
+    );
+    expect(packageRow).toMatchObject({
+      reason: "whole_restore",
+      parentPackageSnapshotId: compacted.packageSnapshotId,
+      identitySnapshotId: restored.identitySnapshotId,
+    });
+    expect(await count(
+      "model_package_snapshot_slots",
+      "packageSnapshotId = ? AND selectionReason = 'restored' AND sourceSelectionId IS NOT NULL",
+      [restored.packageSnapshotId],
+    )).toBe(2);
+    expect(await count("model_snapshot_feature_selections", "identitySnapshotId = ?", [
+      restored.identitySnapshotId,
+    ])).toBe(0);
+    expect(await count("model_assets", "modelId = ?", [base.modelId])).toBe(4);
+    expect(await count(
+      "model_assets",
+      "modelId = ? AND pointsCost = 0 AND JSON_UNQUOTE(JSON_EXTRACT(provenance, '$.engine')) = 'restore'",
+      [base.modelId],
+    )).toBe(2);
+
+    const operation = await one(
+      `SELECT status, plannedCredits, chargedCredits, refundedCredits
+       FROM generation_operations WHERE id = ?`,
+      [restoreOperationId],
+    );
+    expect(operation).toMatchObject({
+      status: "succeeded",
+      plannedCredits: 0,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    expect(await count(
+      "generation_operation_locks",
+      "operationId = ?",
+      [restoreOperationId],
+    )).toBe(0);
+    expect(await count("point_transactions", "userId = ?", [userId])).toBe(0);
+  }, 60_000);
+
+  it("R7-7F rolls back every restore write when the historical anchor is unavailable", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const compactOperationId = await startModelOperation(
+      userId,
+      base.modelId,
+      "casting.compact",
+    );
+    await commitDocumentCompactionSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId: compactOperationId,
+      compactedMasterPrompt: "identity-v2 compacted",
+    });
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId: compactOperationId,
+      result: { modelId: base.modelId },
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    await connection.execute(
+      "UPDATE model_assets SET storageUrl = '' WHERE id = ?",
+      [base.anchorAssetId],
+    );
+    const restoreOperationId = await startModelOperation(
+      userId,
+      base.modelId,
+      "casting.restore_state",
+    );
+    const before = {
+      assets: await count("model_assets", "modelId = ?", [base.modelId]),
+      identities: await count("model_identity_snapshots", "modelId = ?", [base.modelId]),
+      packages: await count("model_package_snapshots", "modelId = ?", [base.modelId]),
+    };
+
+    await expect(commitWholeCastRestore({
+      userId,
+      modelId: base.modelId,
+      operationId: restoreOperationId,
+      restorePointId: base.packageSnapshotId,
+    })).rejects.toThrow("incomplete and cannot be restored");
+
+    expect(await count("model_assets", "modelId = ?", [base.modelId])).toBe(before.assets);
+    expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(before.identities);
+    expect(await count("model_package_snapshots", "modelId = ?", [base.modelId])).toBe(before.packages);
+    expect(await one(
+      "SELECT masterPrompt, stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    )).toEqual({
+      masterPrompt: "identity-v2 compacted",
+      stateVersion: 2,
+      currentPackageSnapshotId: (await one(
+        "SELECT id FROM model_package_snapshots WHERE modelId = ? AND sequence = 2",
+        [base.modelId],
+      )).id,
+    });
+    expect((await one(
+      "SELECT status FROM generation_operations WHERE id = ?",
+      [restoreOperationId],
+    )).status).toBe("running");
   }, 60_000);
 });

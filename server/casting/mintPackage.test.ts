@@ -157,6 +157,50 @@ describe("snapshot mint execution authority", () => {
       storageUrl: "https://r2/selected-three-quarter.png",
       status: { state: "stale" },
       pinned: false,
+      provenance: {
+        identityRole: "display",
+        identityRevisionId: "rev-current",
+      },
+    });
+  });
+
+  it("projects unverified restored selections as restrictive legacy integrity rows", () => {
+    const asset = {
+      id: 1,
+      modelId: 7,
+      viewType: "frontClose",
+      storageUrl: "https://r2/historical.png",
+      pinned: false,
+      status: null,
+      provenance: {
+        identityRole: "anchor",
+        identityRevisionId: "rev-historical",
+      },
+    };
+    const authority = snapshotMintExecutionAuthority({
+      authority: "snapshot",
+      status: "current",
+      model: { id: 7, status: "draft", identityRevisionId: "rev-restored" },
+      stateVersion: 3,
+      package: {},
+      identity: { identityText: "restored identity" },
+      anchor: asset,
+      displayedHeadshot: asset,
+      selectedViews: [{
+        angle: "frontClose",
+        compatibility: "unverified",
+        selection: {},
+        asset,
+      }],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [asset] },
+    } as never);
+    expect(authority.selection.displayedHeadshot).toMatchObject({
+      status: { state: "stale" },
+      provenance: {
+        identityRevisionId: "rev-restored",
+      },
     });
   });
 });

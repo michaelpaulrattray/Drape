@@ -48,6 +48,8 @@ import {
 import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import {
   assetRevisionMembership,
+  currentRevisionId,
+  identityStampFor,
   isRestoreCompatible,
   selectIdentityAnchor,
   type AnchorAssetRow,
@@ -142,11 +144,28 @@ export function snapshotMintExecutionAuthority(
   if (state.status === "current") {
     for (const view of state.selectedViews) {
       // R7-7B6: snapshot selection is the accepted version ceremony. Legacy
-      // row pins are dormant rollback data and cannot change mint validity.
+      // row pins/revision stamps are dormant rollback data and cannot change
+      // mint validity. A whole-Cast restore deliberately selects immutable
+      // historical rows under a new legacy rollback revision, so project the
+      // server-proven selection into that current revision in memory only.
       const selected = {
         ...view.asset,
         pinned: false,
-        ...(view.compatibility === "stale" ? { status: { state: "stale" } } : {}),
+        provenance: {
+          ...(
+            view.asset.provenance
+            && typeof view.asset.provenance === "object"
+            && !Array.isArray(view.asset.provenance)
+              ? view.asset.provenance
+              : {}
+          ),
+          ...identityStampFor({
+            role: view.angle === "frontClose" ? "anchor" : "display",
+            revisionId: currentRevisionId(state.model),
+            identityText: state.identity.identityText,
+          }),
+        },
+        ...(view.compatibility !== "current" ? { status: { state: "stale" } } : {}),
       };
       selectedByAngle.set(view.angle, selected);
       selectedById.set(selected.id, selected);

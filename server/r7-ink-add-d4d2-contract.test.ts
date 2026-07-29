@@ -37,6 +37,7 @@ describe("R7-7D D4D2 recovery, feature fences, and privacy contract", () => {
       ["evidence_mint", "evidence_aware"],
       ["casting.refresh", "evidence_blind"],
       ["casting.restore", "evidence_blind"],
+      ["casting.restore_state", "evidence_aware"],
       ["casting.pin", "not_applicable"],
       ["casting.compact", "document_only"],
       ["model.delete", "not_applicable"],

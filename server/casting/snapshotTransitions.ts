@@ -96,6 +96,7 @@ export interface SnapshotSlotChange {
   selectedAssetId: number;
   compatibility: PackageSlotCompatibility;
   selectionReason: Exclude<PackageSlotSelectionReason, "carried" | "bootstrap">;
+  sourceSelectionId?: string | null;
 }
 
 export interface SnapshotIdentityChange {
@@ -115,18 +116,27 @@ export interface SnapshotTransitionSpec {
   packageReason: Exclude<PackageSnapshotReason, "bootstrap">;
   identity?: SnapshotIdentityChange;
   slotChanges?: SnapshotSlotChange[];
+  slotMode?: "carryCurrent" | "replaceWithHistorical";
   /**
    * Selected identity features never disappear implicitly. Existing writers
    * must opt into carry-forward once a Cast owns feature selections.
    */
-  featureSelections?: {
-    carryCurrent: true;
-    additions?: Array<{
-      featureId: string;
-      featureVersionId: string;
-      selectionReason: "accepted";
-    }>;
-  };
+  featureSelections?:
+    | {
+        carryCurrent: true;
+        additions?: Array<{
+          featureId: string;
+          featureVersionId: string;
+          selectionReason: "accepted";
+        }>;
+      }
+    | {
+        replaceWithHistorical: Array<{
+          featureId: string;
+          featureVersionId: string;
+          sourceSelectionId: string;
+        }>;
+      };
   /** Mint adoption sets this only after its existing draft→active CAS has
    * succeeded inside the same callback transaction. */
   seal?: boolean;
@@ -199,6 +209,18 @@ function assertReasonPair(identity: SnapshotIdentityChange, packageReason: Snaps
   if (expected[identity.reason] !== packageReason) {
     throw new Error("Identity and package snapshot reasons disagree");
   }
+}
+
+function carriesCurrentFeatures(
+  spec: SnapshotTransitionSpec["featureSelections"],
+): spec is Extract<NonNullable<SnapshotTransitionSpec["featureSelections"]>, { carryCurrent: true }> {
+  return !!spec && "carryCurrent" in spec && spec.carryCurrent === true;
+}
+
+function replacesHistoricalFeatures(
+  spec: SnapshotTransitionSpec["featureSelections"],
+): spec is Extract<NonNullable<SnapshotTransitionSpec["featureSelections"]>, { replaceWithHistorical: unknown }> {
+  return !!spec && "replaceWithHistorical" in spec;
 }
 
 async function lockedOwnedModelIn(
@@ -478,7 +500,7 @@ export async function commitModelSnapshotTransition<Result>(input: {
       input.featureAuthority === "document_only"
       && (
         transition.identity?.reason !== "document_compact"
-        || !transition.featureSelections?.carryCurrent
+        || !carriesCurrentFeatures(transition.featureSelections)
         || (transition.slotChanges?.length ?? 0) > 0
       )
     ) {
@@ -489,6 +511,21 @@ export async function commitModelSnapshotTransition<Result>(input: {
       && transition.featureSelections
     ) {
       throw new Error("Evidence-blind transitions cannot claim feature-selection authority");
+    }
+    const replacesSlots = transition.slotMode === "replaceWithHistorical";
+    const replacesFeatures = replacesHistoricalFeatures(transition.featureSelections);
+    if (
+      (replacesSlots || replacesFeatures)
+      && !(
+        input.featureAuthority === "evidence_aware"
+        && transition.identity?.reason === "restore"
+        && transition.packageReason === "whole_restore"
+      )
+    ) {
+      throw new Error("Only an evidence-aware whole-Cast restore may replace snapshot selections");
+    }
+    if (replacesSlots !== replacesFeatures) {
+      throw new Error("Whole-Cast restore must replace package and feature selections together");
     }
     if (transition.seal && transition.packageReason !== "mint") {
       throw new Error("Only a mint package transition may seal a Cast");
@@ -615,20 +652,22 @@ export async function commitModelSnapshotTransition<Result>(input: {
       selectionReason: PackageSlotSelectionReason;
       sourceSelectionId: string | null;
     }>();
-    for (const slot of current?.slots ?? []) {
-      finalByAngle.set(slot.viewAngle as CanonicalViewAngle, {
-        viewAngle: slot.viewAngle as CanonicalViewAngle,
-        selectedAssetId: slot.selectedAssetId,
-        compatibility: staleCarried
-          && (
-            selectivelyStaleAngles === null
-            || selectivelyStaleAngles.has(slot.viewAngle as CanonicalViewAngle)
-          )
-          ? "stale"
-          : slot.compatibility,
-        selectionReason: "carried",
-        sourceSelectionId: slot.id,
-      });
+    if (!replacesSlots) {
+      for (const slot of current?.slots ?? []) {
+        finalByAngle.set(slot.viewAngle as CanonicalViewAngle, {
+          viewAngle: slot.viewAngle as CanonicalViewAngle,
+          selectedAssetId: slot.selectedAssetId,
+          compatibility: staleCarried
+            && (
+              selectivelyStaleAngles === null
+              || selectivelyStaleAngles.has(slot.viewAngle as CanonicalViewAngle)
+            )
+            ? "stale"
+            : slot.compatibility,
+          selectionReason: "carried",
+          sourceSelectionId: slot.id,
+        });
+      }
     }
     const changedAngles = new Set<CanonicalViewAngle>();
     for (const change of transition.slotChanges ?? []) {
@@ -644,9 +683,41 @@ export async function commitModelSnapshotTransition<Result>(input: {
         throw new Error("A snapshot transition contains duplicate or unknown view changes");
       }
       changedAngles.add(change.viewAngle);
+      let sourceSelectionId = current?.slots.find(
+        (slot) => slot.viewAngle === change.viewAngle,
+      )?.id ?? null;
+      if (replacesSlots) {
+        if (!change.sourceSelectionId?.trim()) {
+          throw new Error("Historical package replacement requires source selection provenance");
+        }
+        const [sourceSelection] = await tx
+          .select({
+            id: modelPackageSnapshotSlots.id,
+            selectedAssetId: modelPackageSnapshotSlots.selectedAssetId,
+            viewAngle: modelPackageSnapshotSlots.viewAngle,
+          })
+          .from(modelPackageSnapshotSlots)
+          .innerJoin(
+            modelPackageSnapshots,
+            and(
+              eq(modelPackageSnapshots.id, modelPackageSnapshotSlots.packageSnapshotId),
+              eq(modelPackageSnapshots.modelId, input.modelId),
+            ),
+          )
+          .where(and(
+            eq(modelPackageSnapshotSlots.id, change.sourceSelectionId),
+            eq(modelPackageSnapshotSlots.selectedAssetId, change.selectedAssetId),
+            eq(modelPackageSnapshotSlots.viewAngle, change.viewAngle),
+          ))
+          .limit(1);
+        if (!sourceSelection) {
+          throw new Error("Historical package source selection is invalid");
+        }
+        sourceSelectionId = sourceSelection.id;
+      }
       finalByAngle.set(change.viewAngle, {
         ...change,
-        sourceSelectionId: current?.slots.find((slot) => slot.viewAngle === change.viewAngle)?.id ?? null,
+        sourceSelectionId,
       });
     }
     const finalSlots = CANONICAL_VIEW_ANGLES
@@ -659,7 +730,8 @@ export async function commitModelSnapshotTransition<Result>(input: {
     if (
       transition.identity
       && currentFeatureSelections.length > 0
-      && !transition.featureSelections?.carryCurrent
+      && !carriesCurrentFeatures(transition.featureSelections)
+      && !replacesHistoricalFeatures(transition.featureSelections)
     ) {
       throw new Error("Identity transition is not feature-selection aware");
     }
@@ -722,31 +794,40 @@ export async function commitModelSnapshotTransition<Result>(input: {
         recipeVersion: transition.identity.recipeVersion,
         createdByOperationId: input.operationId,
       });
-      const additions = transition.featureSelections?.additions ?? [];
+      const additions = carriesCurrentFeatures(transition.featureSelections)
+        ? transition.featureSelections.additions ?? []
+        : [];
+      const historical = replacesHistoricalFeatures(transition.featureSelections)
+        ? transition.featureSelections.replaceWithHistorical
+        : [];
       const selectedFeatureIds = new Set(
-        currentFeatureSelections.map((selection) => selection.featureId),
+        replacesHistoricalFeatures(transition.featureSelections)
+          ? []
+          : currentFeatureSelections.map((selection) => selection.featureId),
       );
       const selectedVersionIds = new Set(
-        currentFeatureSelections.map((selection) => selection.featureVersionId),
+        replacesHistoricalFeatures(transition.featureSelections)
+          ? []
+          : currentFeatureSelections.map((selection) => selection.featureVersionId),
       );
-      for (const addition of additions) {
+      for (const selection of [...additions, ...historical]) {
         if (
-          !addition.featureId.trim()
-          || !addition.featureVersionId.trim()
-          || selectedFeatureIds.has(addition.featureId)
-          || selectedVersionIds.has(addition.featureVersionId)
+          !selection.featureId.trim()
+          || !selection.featureVersionId.trim()
+          || selectedFeatureIds.has(selection.featureId)
+          || selectedVersionIds.has(selection.featureVersionId)
         ) {
           throw new Error("Identity feature selection addition is invalid");
         }
-        selectedFeatureIds.add(addition.featureId);
-        selectedVersionIds.add(addition.featureVersionId);
+        selectedFeatureIds.add(selection.featureId);
+        selectedVersionIds.add(selection.featureVersionId);
       }
-      for (const addition of additions) {
+      for (const selection of [...additions, ...historical]) {
         const [ownedFeature] = await tx
           .select({ id: modelIdentityFeatures.id })
           .from(modelIdentityFeatures)
           .where(and(
-            eq(modelIdentityFeatures.id, addition.featureId),
+            eq(modelIdentityFeatures.id, selection.featureId),
             eq(modelIdentityFeatures.modelId, input.modelId),
           ))
           .limit(1);
@@ -754,17 +835,37 @@ export async function commitModelSnapshotTransition<Result>(input: {
           .select({ id: modelIdentityFeatureVersions.id })
           .from(modelIdentityFeatureVersions)
           .where(and(
-            eq(modelIdentityFeatureVersions.id, addition.featureVersionId),
+            eq(modelIdentityFeatureVersions.id, selection.featureVersionId),
             eq(modelIdentityFeatureVersions.modelId, input.modelId),
-            eq(modelIdentityFeatureVersions.featureId, addition.featureId),
+            eq(modelIdentityFeatureVersions.featureId, selection.featureId),
           ))
           .limit(1);
         if (!ownedFeature || !ownedVersion) {
           throw new Error("Identity feature selection addition is invalid");
         }
       }
+      for (const selection of historical) {
+        if (!selection.sourceSelectionId.trim()) {
+          throw new Error("Historical feature replacement requires source selection provenance");
+        }
+        const [sourceSelection] = await tx
+          .select({ id: modelSnapshotFeatureSelections.id })
+          .from(modelSnapshotFeatureSelections)
+          .where(and(
+            eq(modelSnapshotFeatureSelections.id, selection.sourceSelectionId),
+            eq(modelSnapshotFeatureSelections.modelId, input.modelId),
+            eq(modelSnapshotFeatureSelections.featureId, selection.featureId),
+            eq(modelSnapshotFeatureSelections.featureVersionId, selection.featureVersionId),
+          ))
+          .limit(1);
+        if (!sourceSelection) {
+          throw new Error("Historical feature source selection is invalid");
+        }
+      }
       const nextSelections = [
-        ...currentFeatureSelections.map((selection) => ({
+        ...(carriesCurrentFeatures(transition.featureSelections)
+          ? currentFeatureSelections
+          : []).map((selection) => ({
           id: randomUUID(),
           modelId: input.modelId,
           identitySnapshotId: identitySnapshotId!,
@@ -781,6 +882,15 @@ export async function commitModelSnapshotTransition<Result>(input: {
           featureVersionId: addition.featureVersionId,
           selectionReason: addition.selectionReason,
           sourceSelectionId: null,
+        })),
+        ...historical.map((selection) => ({
+          id: randomUUID(),
+          modelId: input.modelId,
+          identitySnapshotId: identitySnapshotId!,
+          featureId: selection.featureId,
+          featureVersionId: selection.featureVersionId,
+          selectionReason: "restored" as const,
+          sourceSelectionId: selection.sourceSelectionId,
         })),
       ];
       if (nextSelections.length > 0) {

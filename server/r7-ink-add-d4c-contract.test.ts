@@ -115,7 +115,7 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     );
     expect(transitions).toContain("eq(modelIdentityFeatures.modelId, input.modelId)");
     expect(transitions).toContain(
-      "eq(modelIdentityFeatureVersions.featureId, addition.featureId)",
+      "eq(modelIdentityFeatureVersions.featureId, selection.featureId)",
     );
     expect(transitions).toContain("if (input.finalize) await input.finalize(tx, committed)");
   });
