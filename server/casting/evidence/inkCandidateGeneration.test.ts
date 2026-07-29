@@ -120,7 +120,7 @@ function delivery(): PrivateEvidenceStorageAdapter {
 }
 
 function passProbe(request: InkProbeRequest): unknown {
-  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v3") {
+  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v4") {
     return {
       anatomicalSideCorrect: true,
       insideAuthorizedZone: true,
@@ -299,7 +299,7 @@ describe("ink candidate generation", () => {
       if (request.kind === "identity_pose") {
         return { samePerson: true, poseFramingPreserved: true, confidence: 97 };
       }
-      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v3") {
+      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v4") {
         return {
           anatomicalSideCorrect: true,
           insideAuthorizedZone: true,
@@ -343,8 +343,12 @@ describe("ink candidate generation", () => {
       }),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.placement-audit.v3",
+      recipeVersion: "ink.add.anywhere.placement-audit.v4",
       prompt: expect.stringContaining("subject faces toward frame-right"),
+      images: expect.arrayContaining([
+        expect.objectContaining({ role: "candidate" }),
+        expect.objectContaining({ role: "placement_audit_candidate" }),
+      ]),
     }));
   });
 

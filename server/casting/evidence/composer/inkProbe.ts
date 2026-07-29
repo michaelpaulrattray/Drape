@@ -37,6 +37,7 @@ export interface InkProbeInlineImage {
     | "identity_anchor"
     | "original_target"
     | "candidate"
+    | "placement_audit_candidate"
     | "evidence_reference"
     | "evidence_mosaic";
   inlineData: {
@@ -77,6 +78,13 @@ export interface InkPlacementProbeDetail {
   noOutsideChange: EvidenceProbeOutcome;
 }
 
+export interface InkPlacementAuditTruth {
+  anatomicalSideCorrect: boolean;
+  insideAuthorizedZone: boolean;
+  conflictingOutsideChange: boolean;
+  confidence: number;
+}
+
 export interface InkCandidateProbeTruth {
   predictedVisibility: EvidenceProbeOutcome;
   identityOutcome: EvidenceProbeOutcome;
@@ -87,6 +95,7 @@ export interface InkCandidateProbeTruth {
   unexpectedInkOutcome: EvidenceProbeOutcome;
   overallOutcome: EvidenceProbeOutcome;
   placementDetail?: InkPlacementProbeDetail;
+  placementAudit?: InkPlacementAuditTruth;
 }
 
 const INK_ANYWHERE_MIN_PROBE_CONFIDENCE = 85;
@@ -466,6 +475,7 @@ must be an integer from 0 to 100, where 100 means completely certain.`,
 
 export function buildInkAnywherePlacementAuditProbeRequest(input: {
   originalTarget: ComposerImage;
+  candidate: ComposerImage;
   placementAuditCandidate: ComposerImage;
   anatomy: InkAnatomyTuple;
   sourceAngle: CanonicalViewAngle;
@@ -488,9 +498,11 @@ export function buildInkAnywherePlacementAuditProbeRequest(input: {
     },
     ...INK_TEXT_PROVIDER_CONFIG,
     prompt: `This is a strict spatial placement audit, not an image-generation
-request. Image 1 is the original target. Image 2 is the candidate with a
-translucent red server-owned allowed-zone overlay and label. The overlay is
-audit annotation only.
+request. Image 1 is the original target. Image 2 is the clean, unannotated
+candidate. Image 3 is that same candidate with a translucent red server-owned
+allowed-zone overlay and label. Use Image 2 to inspect the actual tattoo and
+pixel changes. Use Image 3 only to judge its spatial relationship to the
+authorized zone. The overlay is audit annotation only.
 
 The only authorized new tattoo is at ${inkAnatomyLabel(input.anatomy)}.
 The exact tuple is zone=${input.anatomy.zone},
@@ -508,7 +520,8 @@ confidence must be an integer from 0 to 100, where 100 means completely
 certain.`,
     images: [
       inline("original_target", input.originalTarget),
-      inline("candidate", input.placementAuditCandidate),
+      inline("candidate", input.candidate),
+      inline("placement_audit_candidate", input.placementAuditCandidate),
     ],
   };
 }
@@ -705,6 +718,7 @@ export async function runInkAnywhereCandidateProbes(input: {
   let featureMatchOutcome: EvidenceProbeOutcome = "unknown";
   let priorInkOutcome: EvidenceProbeOutcome = "unknown";
   let unexpectedInkOutcome: EvidenceProbeOutcome = "unknown";
+  let placementAudit: InkPlacementAuditTruth | undefined;
   try {
     if (settled[0].status !== "fulfilled") throw settled[0].reason;
     const identity = parseInkIdentityPoseProbe(settled[0].value);
@@ -730,6 +744,7 @@ export async function runInkAnywhereCandidateProbes(input: {
   try {
     if (settled[2].status !== "fulfilled") throw settled[2].reason;
     const placement = parseInkAnywherePlacementAuditProbe(settled[2].value);
+    placementAudit = placement;
     const confident =
       placement.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE;
     sidePlacementOutcome = outcome(
@@ -774,5 +789,6 @@ export async function runInkAnywhereCandidateProbes(input: {
       authorizedZone: zonePlacementOutcome,
       noOutsideChange: outsidePlacementOutcome,
     },
+    placementAudit,
   };
 }

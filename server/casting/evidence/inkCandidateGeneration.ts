@@ -579,6 +579,7 @@ async function runAttempt(input: {
       unexpectedInk: probe.unexpectedInkOutcome,
       overall: probe.overallOutcome,
       placementDetail: probe.placementDetail ?? null,
+      placementAudit: probe.placementAudit ?? null,
     },
   }, "Ink candidate evidence assessed");
   const decision = decideInkCandidateAttempt({
