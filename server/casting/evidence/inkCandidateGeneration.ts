@@ -940,6 +940,12 @@ async function executeProjectionCandidate(
   let chargedCredits = 0;
   let refundedCredits = 0;
   let readyBoundary = false;
+  let failureStage:
+    | "preflight"
+    | "coverage"
+    | "prepare"
+    | "load_inputs"
+    | "generation" = "preflight";
   try {
     await (dependencies.markRunning ?? markGenerationOperationRunning)({
       userId: input.userId,
@@ -960,6 +966,7 @@ async function executeProjectionCandidate(
       operationKind: input.operationKind,
       targetViewAngle: input.targetViewAngle,
     });
+    failureStage = "coverage";
     const uncertain = preflight.features.filter(
       (feature) => feature.impact === "uncertain",
     );
@@ -993,6 +1000,7 @@ async function executeProjectionCandidate(
         uncertain.map((feature) => feature.featureVersionId),
       );
     }
+    failureStage = "prepare";
     const generateId = dependencies.generateId ?? randomUUID;
     prepared = await (
       dependencies.prepareProjection
@@ -1004,7 +1012,9 @@ async function executeProjectionCandidate(
       privatePlateId: generateId(),
       observedCoverage,
     });
+    failureStage = "load_inputs";
     const images = await loadInputs(dependencies, prepared);
+    failureStage = "generation";
     const ready = await (dependencies.charge ?? withAtomicCredits)({
       userId: input.userId,
       amount: projectionPrice,
@@ -1061,6 +1071,8 @@ async function executeProjectionCandidate(
     if (readyBoundary) throw error;
     log.error({
       errorName: error instanceof Error ? error.name : "UnknownError",
+      stateCode: error instanceof InkCandidateStateError ? error.code : null,
+      failureStage,
       operationId: gate.operationId,
       candidateId: prepared?.candidateId,
       targetViewAngle: input.targetViewAngle,
