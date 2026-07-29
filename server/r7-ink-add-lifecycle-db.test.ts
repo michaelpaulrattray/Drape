@@ -77,6 +77,8 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
   let commitEvidencePackageSyncSnapshot:
     typeof import("./casting/snapshotTransitions").commitEvidencePackageSyncSnapshot;
+  let commitEvidenceMintSnapshot:
+    typeof import("./casting/snapshotTransitions").commitEvidenceMintSnapshot;
   let reserveStorageCleanupItemForOperation:
     typeof import("./db/storageCleanup").reserveStorageCleanupItemForOperation;
   let releaseStorageCleanupReservation:
@@ -140,6 +142,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
     ({
       commitModelSnapshotTransition,
       commitEvidencePackageSyncSnapshot,
+      commitEvidenceMintSnapshot,
     } = await import("./casting/snapshotTransitions"));
     ({
       reserveStorageCleanupItemForOperation,
@@ -364,22 +367,58 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
 
   async function runningEvidencePackageOperation(
     source: Awaited<ReturnType<typeof fixture>>,
+    expected: { stateVersion?: number; packageId?: string } = {},
   ) {
     const operationId = randomUUID();
     await connection.execute(
-      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, phase) VALUES (?, ?, ?, 'evidence_package_sync', ?, ?, 'running', NULL, 1, ?, ?, 300, 'refreshing')",
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, phase) VALUES (?, ?, ?, 'evidence_package_sync', ?, ?, 'running', NULL, ?, ?, ?, 300, 'refreshing')",
       [
         operationId,
         source.userId,
         randomUUID(),
         source.modelId,
         "f".repeat(64),
+        expected.stateVersion ?? 1,
         source.identityId,
-        source.packageId,
+        expected.packageId ?? source.packageId,
       ],
     );
     await connection.execute(
       "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_package_sync', DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
+      [`model:${source.modelId}`, operationId],
+    );
+    return operationId;
+  }
+
+  async function runningEvidenceMintOperation(
+    source: Awaited<ReturnType<typeof fixture>>,
+    tier: "draft" | "core" | "production" = "core",
+  ) {
+    const operationId = randomUUID();
+    await connection.execute(
+      "INSERT INTO generation_operations (id, userId, clientRequestId, kind, modelId, payloadHash, status, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, plannedCredits, chargedCredits, refundedCredits, phase, progress, leaseExpiresAt, heartbeatAt) VALUES (?, ?, ?, 'evidence_mint', ?, ?, 'running', NULL, 1, ?, ?, 0, 0, 0, 'minting', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())",
+      [
+        operationId,
+        source.userId,
+        randomUUID(),
+        source.modelId,
+        "9".repeat(64),
+        source.identityId,
+        source.packageId,
+        JSON.stringify({
+          total: 1,
+          completed: 0,
+          failed: 0,
+          steps: [{
+            stepKey: `mint:${tier}`,
+            viewAngle: null,
+            status: "pending",
+          }],
+        }),
+      ],
+    );
+    await connection.execute(
+      "INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt) VALUES (?, ?, 'evidence_mint', DATE_ADD(NOW(), INTERVAL 10 MINUTE))",
       [`model:${source.modelId}`, operationId],
     );
     return operationId;
@@ -418,6 +457,30 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       walkAssetId: walk.insertId,
       featureVersionId: String(version.id),
     };
+  }
+
+  async function evidenceMintFixture() {
+    const source = await evidencePackageFixture();
+    await connection.execute(
+      "UPDATE model_assets SET provenance = JSON_OBJECT('identityText', 'identity') WHERE id = ? AND modelId = ?",
+      [source.fullAssetId, source.modelId],
+    );
+    for (const viewAngle of ["threeQuarter", "sideClose"] as const) {
+      const [inserted] = await connection.execute<ResultSetHeader>(
+        "INSERT INTO model_assets (modelId, viewType, storageUrl, storageKey, pointsCost, pinned, provenance) VALUES (?, ?, ?, ?, 0, 0, JSON_OBJECT('identityText', 'identity'))",
+        [
+          source.modelId,
+          viewAngle,
+          `https://public.example/source-${viewAngle}.webp`,
+          `users/${source.userId}/models/${source.modelId}/source-${viewAngle}.webp`,
+        ],
+      );
+      await connection.execute(
+        "INSERT INTO model_package_snapshot_slots (id, packageSnapshotId, viewAngle, selectedAssetId, compatibility, selectionReason) VALUES (?, ?, ?, ?, 'current', 'generated')",
+        [randomUUID(), source.packageId, viewAngle, inserted.insertId],
+      );
+    }
+    return source;
   }
 
   function passCandidateProbe() {
@@ -2309,6 +2372,195 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [attacker.modelId],
     );
     expect(Number(featureBlockedCount.count)).toBe(0);
+  }, 90_000);
+
+  it("E3 seals only the ready Core package, recovers it, then expands optional coverage post-mint", async () => {
+    const source = await evidenceMintFixture();
+    const mintOperationId = await runningEvidenceMintOperation(source);
+    const [[before]] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM model_assets WHERE modelId = ?) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = ?) AS snapshots, (SELECT COUNT(*) FROM model_snapshot_feature_selections WHERE modelId = ?) AS selections",
+      [source.modelId, source.modelId, source.modelId],
+    );
+
+    const minted = await commitEvidenceMintSnapshot({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: mintOperationId,
+      tier: "core",
+      agencyId: "KI-2345-6789-ABCD-EFGH",
+      name: "Progressive Cast",
+    });
+
+    expect(minted.result).toEqual({
+      agencyId: "KI-2345-6789-ABCD-EFGH",
+      minted: true,
+      tier: "core",
+      generated: [],
+      failedAngles: [],
+    });
+    const [[mintTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT name, status, agencyId, stateVersion, currentPackageSnapshotId, sealedIdentitySnapshotId, sealedPackageSnapshotId, (SELECT COUNT(*) FROM model_assets WHERE modelId = m.id) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = m.id) AS snapshots, (SELECT COUNT(*) FROM model_snapshot_feature_selections WHERE modelId = m.id) AS selections FROM models m WHERE id = ?",
+      [source.modelId],
+    );
+    expect({
+      ...mintTruth,
+      assets: Number(mintTruth.assets),
+      snapshots: Number(mintTruth.snapshots),
+      selections: Number(mintTruth.selections),
+    }).toEqual({
+      name: "Progressive Cast",
+      status: "active",
+      agencyId: "KI-2345-6789-ABCD-EFGH",
+      stateVersion: 2,
+      currentPackageSnapshotId: minted.packageSnapshotId,
+      sealedIdentitySnapshotId: source.identityId,
+      sealedPackageSnapshotId: minted.packageSnapshotId,
+      assets: Number(before.assets),
+      snapshots: Number(before.snapshots) + 1,
+      selections: Number(before.selections),
+    });
+    const [mintSlots] = await connection.query<RowDataPacket[]>(
+      "SELECT viewAngle, compatibility, selectionReason, sourceSelectionId IS NOT NULL AS hasSource FROM model_package_snapshot_slots WHERE packageSnapshotId = ? ORDER BY viewAngle",
+      [minted.packageSnapshotId],
+    );
+    expect(mintSlots).toEqual(expect.arrayContaining([
+      {
+        viewAngle: "sideFull",
+        compatibility: "stale",
+        selectionReason: "carried",
+        hasSource: 1,
+      },
+      {
+        viewAngle: "sideClose",
+        compatibility: "current",
+        selectionReason: "carried",
+        hasSource: 1,
+      },
+    ]));
+
+    await connection.execute(
+      "UPDATE generation_operations SET leaseExpiresAt = DATE_SUB(NOW(), INTERVAL 1 MINUTE), heartbeatAt = DATE_SUB(NOW(), INTERVAL 2 MINUTE) WHERE id = ?",
+      [mintOperationId],
+    );
+    await connection.execute(
+      "UPDATE generation_operation_locks SET expiresAt = DATE_SUB(NOW(), INTERVAL 1 MINUTE) WHERE operationId = ?",
+      [mintOperationId],
+    );
+    await expect(sweepStaleGenerationOperations({
+      now: new Date(),
+      limit: 1,
+    })).resolves.toEqual({
+      inspected: 1,
+      resolved: 1,
+      recoveryRequired: 0,
+      skipped: 0,
+    });
+    const [[recovered]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, chargedCredits, refundedCredits, JSON_UNQUOTE(JSON_EXTRACT(result, '$.agencyId')) AS agencyId, JSON_LENGTH(JSON_EXTRACT(result, '$.generated')) AS generatedCount FROM generation_operations WHERE id = ?",
+      [mintOperationId],
+    );
+    expect({
+      ...recovered,
+      chargedCredits: Number(recovered.chargedCredits),
+      refundedCredits: Number(recovered.refundedCredits),
+      generatedCount: Number(recovered.generatedCount),
+    }).toEqual({
+      status: "succeeded",
+      chargedCredits: 0,
+      refundedCredits: 0,
+      agencyId: "KI-2345-6789-ABCD-EFGH",
+      generatedCount: 0,
+    });
+
+    const packageOperationId = await runningEvidencePackageOperation(source, {
+      stateVersion: 2,
+      packageId: minted.packageSnapshotId,
+    });
+    const candidateKey =
+      `users/${source.userId}/models/${source.modelId}/evidence-package/${randomUUID()}.webp`;
+    const cleanupBatchId = await reserveStorageCleanupItemForOperation({
+      userId: source.userId,
+      operationId: packageOperationId,
+      kind: "candidate_cleanup",
+      storageKey: candidateKey,
+      storageBackend: "public_r2",
+    });
+    const expanded = await commitEvidencePackageSyncSnapshot({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId: packageOperationId,
+      candidates: [{
+        angle: "sideFull",
+        storageUrl: `https://public.example/${randomUUID()}.webp`,
+        storageKey: candidateKey,
+        engine: "test",
+        pointsCost: 300,
+        sourceAssetId: source.walkAssetId,
+        featureVersionId: source.featureVersionId,
+        requiredVisibleAnatomicalSide: "left",
+        observedVisibleAnatomicalSide: "left",
+        observedTravelDirection: "frame_right",
+        cleanupBatchId,
+      }],
+    });
+    const [[expandedTruth]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, stateVersion, currentPackageSnapshotId, sealedIdentitySnapshotId, sealedPackageSnapshotId, (SELECT COUNT(*) FROM model_snapshot_feature_selections WHERE modelId = m.id) AS selections FROM models m WHERE id = ?",
+      [source.modelId],
+    );
+    expect({
+      ...expandedTruth,
+      selections: Number(expandedTruth.selections),
+    }).toEqual({
+      status: "active",
+      stateVersion: 3,
+      currentPackageSnapshotId: expanded.packageSnapshotId,
+      sealedIdentitySnapshotId: source.identityId,
+      sealedPackageSnapshotId: minted.packageSnapshotId,
+      selections: Number(before.selections),
+    });
+  }, 90_000);
+
+  it("E3 rolls back when a required chosen-tier view becomes stale", async () => {
+    const source = await evidenceMintFixture();
+    const operationId = await runningEvidenceMintOperation(source);
+    await connection.execute(
+      "UPDATE model_package_snapshot_slots SET compatibility = 'stale' WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'",
+      [source.packageId],
+    );
+    const [[before]] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM model_assets WHERE modelId = ?) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = ?) AS snapshots",
+      [source.modelId, source.modelId],
+    );
+
+    await expect(commitEvidenceMintSnapshot({
+      userId: source.userId,
+      modelId: source.modelId,
+      operationId,
+      tier: "core",
+      agencyId: "KI-2345-6789-ABCD-EFGH",
+      name: "Must Not Mint",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    const [[after]] = await connection.query<RowDataPacket[]>(
+      "SELECT name, status, agencyId, mintedAt, stateVersion, currentPackageSnapshotId, sealedIdentitySnapshotId, sealedPackageSnapshotId, (SELECT COUNT(*) FROM model_assets WHERE modelId = m.id) AS assets, (SELECT COUNT(*) FROM model_package_snapshots WHERE modelId = m.id) AS snapshots FROM models m WHERE id = ?",
+      [source.modelId],
+    );
+    expect({
+      ...after,
+      assets: Number(after.assets),
+      snapshots: Number(after.snapshots),
+    }).toEqual({
+      name: "Source",
+      status: "draft",
+      agencyId: null,
+      mintedAt: null,
+      stateVersion: 1,
+      currentPackageSnapshotId: source.packageId,
+      sealedIdentitySnapshotId: null,
+      sealedPackageSnapshotId: null,
+      assets: Number(before.assets),
+      snapshots: Number(before.snapshots),
+    });
   }, 90_000);
 
   it("E2 atomically settles a stale Walk and consumes its exact cleanup reservation", async () => {

@@ -169,6 +169,20 @@ vi.mock("./casting/evidence/evidencePackageExecution", () => {
     executeEvidencePackageSync: vi.fn(),
   };
 });
+vi.mock("./casting/evidence/evidenceMint", () => {
+  class EvidenceMintSettlementUncertainError extends Error {
+    constructor(readonly cause: unknown) {
+      super("Evidence mint settlement outcome is uncertain");
+      this.name = "EvidenceMintSettlementUncertainError";
+    }
+  }
+  return {
+    EvidenceMintSettlementUncertainError,
+    classifyEvidenceMintRouteAuthority: vi.fn()
+      .mockResolvedValue({ type: "featureless" }),
+    executeEvidenceMint: vi.fn(),
+  };
+});
 vi.mock("./casting/evidence/evidenceDeliveryRuntime", async (importOriginal) => {
   const actual = await importOriginal<
     typeof import("./casting/evidence/evidenceDeliveryRuntime")
@@ -292,6 +306,11 @@ import {
   EvidencePackageSettlementUncertainError,
   executeEvidencePackageSync,
 } from "./casting/evidence/evidencePackageExecution";
+import {
+  classifyEvidenceMintRouteAuthority,
+  EvidenceMintSettlementUncertainError,
+  executeEvidenceMint,
+} from "./casting/evidence/evidenceMint";
 import { getEvidenceDeliveryAdapter } from "./casting/evidence/evidenceDeliveryRuntime";
 import {
   commitDocumentCompactionSnapshot,
@@ -304,6 +323,7 @@ import { storageDelete } from "./storage";
 import {
   beginDirectOperation,
   completeDirectOperationFailure,
+  completeDirectOperationSuccess,
 } from "./casting/directOperation";
 import { appRouter as productionRouter } from "./routers";
 
@@ -374,6 +394,7 @@ beforeEach(() => {
   vi.mocked(assertGenerationOperationSnapshotHead).mockClear().mockResolvedValue(undefined);
   vi.mocked(beginDirectOperation).mockReset().mockResolvedValue({ type: "execute", operationId: REQUEST_ID });
   vi.mocked(completeDirectOperationFailure).mockClear();
+  vi.mocked(completeDirectOperationSuccess).mockClear();
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
@@ -393,6 +414,9 @@ beforeEach(() => {
   vi.mocked(captureEvidenceComposerEnabled).mockReset().mockReturnValue(false);
   vi.mocked(classifyEvidencePackageRouteAuthority).mockReset();
   vi.mocked(executeEvidencePackageSync).mockReset();
+  vi.mocked(classifyEvidenceMintRouteAuthority).mockReset()
+    .mockResolvedValue({ type: "featureless" });
+  vi.mocked(executeEvidenceMint).mockReset();
   vi.mocked(getEvidenceDeliveryAdapter).mockReset().mockReturnValue(null);
   vi.mocked(commitGeneratedPackageSnapshot).mockClear();
   vi.mocked(commitHeadshotSnapshot).mockClear();
@@ -1106,6 +1130,157 @@ describe("mint/add-views snapshot ordering", () => {
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(generateFullBody).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("mints a supported evidence package without generation or credits", async () => {
+    const effective = {
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+    } as never;
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(captureEvidenceComposerEnabled).mockReturnValue(true);
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(classifyEvidenceMintRouteAuthority).mockResolvedValue({
+      type: "supported",
+      plan: {
+        modelId: 7,
+        supported: true,
+        zeroGeneration: true,
+        tiers: {
+          draft: { ready: true, requiredAngles: ["frontClose"], missingAngles: [], staleAngles: [], attentionAngles: [] },
+          core: { ready: true, requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull"], missingAngles: [], staleAngles: [], attentionAngles: [] },
+          production: { ready: false, requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull", "sideFull", "backFull"], missingAngles: [], staleAngles: ["sideFull"], attentionAngles: [] },
+        },
+      },
+    });
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue(effective);
+    vi.mocked(executeEvidenceMint).mockResolvedValue({
+      agencyId: "KI-2345-6789-ABCD-EFGH",
+      minted: true,
+      tier: "core",
+      generated: [],
+      failed: [],
+    });
+
+    const result = await appRouter.createCaller(authCtx()).generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    });
+
+    expect(result).toMatchObject({
+      agencyId: "KI-2345-6789-ABCD-EFGH",
+      minted: true,
+      generated: [],
+      failed: [],
+    });
+    expect(beginDirectOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "evidence_mint",
+    }));
+    expect(markGenerationOperationRunning).toHaveBeenCalledWith(
+      expect.objectContaining({ plannedCredits: 0 }),
+    );
+    expect(updateGenerationOperationProgress).toHaveBeenCalledWith(
+      expect.objectContaining({
+        progress: expect.objectContaining({
+          steps: [expect.objectContaining({ stepKey: "mint:core" })],
+        }),
+      }),
+    );
+    expect(executeEvidenceMint).toHaveBeenCalledWith({}, expect.objectContaining({
+      userId: 1,
+      modelId: 7,
+      operationId: REQUEST_ID,
+      tier: "core",
+      name: "Vera",
+    }));
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+    expect(generateFullBody).not.toHaveBeenCalled();
+    expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
+    expect(completeDirectOperationSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chargedCredits: 0,
+        refundedCredits: 0,
+      }),
+    );
+  });
+
+  it("refuses an incomplete selected evidence tier before running or spending", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(captureEvidenceComposerEnabled).mockReturnValue(true);
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(classifyEvidenceMintRouteAuthority).mockResolvedValue({
+      type: "supported",
+      plan: {
+        modelId: 7,
+        supported: true,
+        zeroGeneration: true,
+        tiers: {
+          draft: { ready: true, requiredAngles: ["frontClose"], missingAngles: [], staleAngles: [], attentionAngles: [] },
+          core: { ready: false, requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull"], missingAngles: [], staleAngles: ["sideClose"], attentionAngles: [] },
+          production: { ready: false, requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull", "sideFull", "backFull"], missingAngles: [], staleAngles: ["sideClose"], attentionAngles: [] },
+        },
+      },
+    });
+
+    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(executeEvidenceMint).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateRemainingViews).not.toHaveBeenCalled();
+  });
+
+  it("hands an uncertain evidence mint to recovery without terminalizing it", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(captureEvidenceComposerEnabled).mockReturnValue(true);
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(classifyEvidenceMintRouteAuthority).mockResolvedValue({
+      type: "supported",
+      plan: {
+        modelId: 7,
+        supported: true,
+        zeroGeneration: true,
+        tiers: {
+          draft: { ready: true, requiredAngles: ["frontClose"], missingAngles: [], staleAngles: [], attentionAngles: [] },
+          core: { ready: true, requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull"], missingAngles: [], staleAngles: [], attentionAngles: [] },
+          production: { ready: true, requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull", "sideFull", "backFull"], missingAngles: [], staleAngles: [], attentionAngles: [] },
+        },
+      },
+    });
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue({
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+    } as never);
+    vi.mocked(executeEvidenceMint).mockRejectedValue(
+      new EvidenceMintSettlementUncertainError(new Error("private database detail")),
+    );
+
+    await expect(appRouter.createCaller(authCtx()).generation.mintPackage({
+      modelId: 7,
+      tier: "core",
+      characterName: "Vera",
+    })).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: expect.stringContaining(REQUEST_ID),
+    });
+
+    expect(handoffGenerationOperationToRecovery).toHaveBeenCalledWith({
+      userId: 1,
+      operationId: REQUEST_ID,
+    });
+    expect(completeDirectOperationFailure).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
   });
 });
 

@@ -9,7 +9,10 @@ import {
   VIEW_ANGLE_LABELS,
   type CanonicalViewAngle,
 } from "../../../shared/boardTypes";
-import { isModelDraftStatus } from "../../../shared/modelLifecycle";
+import {
+  isModelAvailableStatus,
+  isModelDraftStatus,
+} from "../../../shared/modelLifecycle";
 import { slotCost } from "../packagePricing";
 import {
   INK_ADD_COMPOSER_RECIPE_VERSION,
@@ -33,7 +36,7 @@ import {
 
 export const EVIDENCE_PACKAGE_REFUSALS = [
   "feature_graph_unsupported",
-  "model_not_draft",
+  "model_unavailable",
   "identity_anchor",
   "authoring_truth",
   "pinned",
@@ -270,6 +273,7 @@ export function computeEvidencePackageSyncPlan(input: {
     ? assessSupportedInkFeatureGraph(input.graph, frontFullAssetId)
     : null;
   const modelDraft = isModelDraftStatus(input.modelStatus);
+  const modelAvailable = isModelAvailableStatus(input.modelStatus);
   const requested = input.requestedAngles
     ? new Set(input.requestedAngles)
     : null;
@@ -313,11 +317,11 @@ export function computeEvidencePackageSyncPlan(input: {
       angle,
     }),
   }));
-  if (!modelDraft) {
+  if (!modelAvailable) {
     return {
       modelId: input.modelId,
       supported: true,
-      slots: slots.map((slot) => attentionSlot(slot.angle, "model_not_draft")),
+      slots: slots.map((slot) => attentionSlot(slot.angle, "model_unavailable")),
       actionableAngles: [],
       refreshableAngles: [],
       missingAngles: [],
@@ -336,6 +340,8 @@ export function computeEvidencePackageSyncPlan(input: {
       (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)
     );
   const zeroGenerationMintAvailable =
+    modelDraft
+    &&
     requiredMintAnglesValid
     && !input.hasUnresolvedIntentOrReadyCandidate
     && input.requiredMintAngles.every(

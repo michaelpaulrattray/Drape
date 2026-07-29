@@ -12,7 +12,7 @@ import {
   type ModelAsset,
 } from "../../drizzle/schema";
 import { addCredits, normalizeCreditReferenceId } from "../db/credits";
-import { getDb } from "../db/connection";
+import { getDb, withTransaction } from "../db/connection";
 import {
   finalizeClaimedGenerationOperationFailure,
   finalizeGenerationOperationFailure,
@@ -31,7 +31,17 @@ import {
   type PublicOperationResult,
 } from "./operationContract";
 import { isCanonicalViewType } from "../../shared/exportViews";
-import type { CanonicalViewAngle } from "../../shared/boardTypes";
+import {
+  MINT_TIER_SLOTS,
+  type CanonicalViewAngle,
+  type MintTier,
+} from "../../shared/boardTypes";
+import {
+  assessSupportedInkFeatureGraph,
+} from "./evidence/evidencePackagePlan";
+import {
+  readEvidencePackageFeatureRowsIn,
+} from "./evidence/evidencePackageFeatureRows";
 
 const log = createModuleLogger("casting/operationRecovery");
 const STALE_CLAIM_MS = 15 * 60 * 1000;
@@ -42,6 +52,7 @@ type PublicResultRecoveryStrategy =
   | "iterate"
   | "refresh"
   | "mint"
+  | "evidence_mint"
   | "canvas_cast"
   | "canvas_fork"
   | "not_reconstructable";
@@ -64,7 +75,7 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   evidence_candidate_cancel: "not_reconstructable",
   evidence_fork_copy: "not_reconstructable",
   evidence_package_sync: "refresh",
-  evidence_mint: "not_reconstructable",
+  evidence_mint: "evidence_mint",
   "casting.refresh": "refresh",
   "casting.restore": "not_reconstructable",
   "casting.pin": "not_reconstructable",
@@ -80,7 +91,7 @@ type StaleRecoveryStrategy =
   | "standard"
   | "ink_evidence"
   | "evidence_fork"
-  | "pending_evidence_mint";
+  | "evidence_mint";
 
 const STALE_RECOVERY_BY_KIND: Readonly<
   Record<GenerationOperationKind, StaleRecoveryStrategy>
@@ -99,10 +110,8 @@ const STALE_RECOVERY_BY_KIND: Readonly<
   evidence_candidate_accept: "ink_evidence",
   evidence_candidate_cancel: "ink_evidence",
   evidence_fork_copy: "evidence_fork",
-  // E2 owns package-sync recovery below. Evidence mint remains deliberately
-  // sealed until E3 installs its separate zero-generation adjudicator.
   evidence_package_sync: "standard",
-  evidence_mint: "pending_evidence_mint",
+  evidence_mint: "evidence_mint",
   "casting.refresh": "standard",
   "casting.restore": "standard",
   "casting.pin": "standard",
@@ -222,6 +231,26 @@ function childRefundReference(operation: GenerationOperation, child: Generation)
   return refundReferenceFor(charge);
 }
 
+function evidenceMintTier(
+  operation: GenerationOperation,
+): MintTier | null {
+  try {
+    assertGenerationOperationProgress(operation.progress);
+  } catch {
+    return null;
+  }
+  if (
+    operation.progress.total !== 1
+    || operation.progress.steps.length !== 1
+  ) {
+    return null;
+  }
+  const match = /^mint:(draft|core|production)$/.exec(
+    operation.progress.steps[0].stepKey,
+  );
+  return match ? match[1] as MintTier : null;
+}
+
 async function reconstructPublicResult(
   operation: GenerationOperation,
   children: Generation[],
@@ -270,6 +299,24 @@ async function reconstructPublicResult(
         tier,
         generated: completed.map((child) => ({ angle: child.viewAngle, assetId: assetFor(child)!.id })),
         failedAngles,
+      };
+    }
+    case "evidence_mint": {
+      const db = await getDb();
+      if (!db || !operation.modelId) return null;
+      const [model] = await db
+        .select()
+        .from(models)
+        .where(eq(models.id, operation.modelId))
+        .limit(1);
+      const tier = evidenceMintTier(operation);
+      if (!model || !tier) return null;
+      return {
+        agencyId: model.agencyId,
+        minted: model.status === "active" || model.status === "locked",
+        tier,
+        generated: [],
+        failedAngles: [],
       };
     }
     case "canvas_cast": {
@@ -569,6 +616,186 @@ export async function recoverEvidencePackageSyncOperation(
   return { type: "durable_success" };
 }
 
+type EvidenceMintRecovery =
+  | { type: "not_committed" }
+  | { type: "durable_success" }
+  | { type: "free_failure" }
+  | { type: "recovery_required" };
+
+export async function recoverEvidenceMintOperation(
+  operation: GenerationOperation,
+): Promise<EvidenceMintRecovery> {
+  if (operation.kind !== "evidence_mint" || !operation.modelId) {
+    return { type: "not_committed" };
+  }
+  const tier = evidenceMintTier(operation);
+  if (
+    !tier
+    || operation.plannedCredits !== 0
+    || operation.chargedCredits !== 0
+    || operation.refundedCredits !== 0
+  ) {
+    return { type: "recovery_required" };
+  }
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const accountingRows = operation.chargeReferenceId
+    ? await db
+      .select({ id: creditTransactions.id })
+      .from(creditTransactions)
+      .where(and(
+        eq(creditTransactions.userId, operation.userId),
+        or(
+          eq(
+            creditTransactions.referenceId,
+            operation.chargeReferenceId,
+          ),
+          eq(
+            creditTransactions.referenceId,
+            refundReferenceFor(operation.chargeReferenceId),
+          ),
+        ),
+      ))
+    : [];
+  if (accountingRows.length > 0) {
+    return { type: "recovery_required" };
+  }
+  const snapshots = await db
+    .select()
+    .from(modelPackageSnapshots)
+    .where(and(
+      eq(modelPackageSnapshots.modelId, operation.modelId),
+      eq(modelPackageSnapshots.createdByOperationId, operation.id),
+    ));
+  const [model] = await db
+    .select()
+    .from(models)
+    .where(and(
+      eq(models.id, operation.modelId),
+      eq(models.userId, operation.userId),
+    ))
+    .limit(1);
+  if (!model || snapshots.length > 1) {
+    return { type: "recovery_required" };
+  }
+  if (snapshots.length === 0) {
+    const unchangedDraft =
+      model.status === "draft"
+      && !model.agencyId
+      && !model.mintedAt
+      && !model.sealedIdentitySnapshotId
+      && !model.sealedPackageSnapshotId
+      && model.stateVersion === operation.expectedStateVersion
+      && (model.currentPackageSnapshotId ?? null)
+        === (operation.expectedPackageSnapshotId ?? null);
+    if (!unchangedDraft) return { type: "recovery_required" };
+    await finalizeGenerationOperationFailure({
+      userId: operation.userId,
+      operationId: operation.id,
+      errorCode: "INTERNAL_SERVER_ERROR",
+      publicMessage:
+        "Minting stopped before the Cast was sealed. Nothing was charged.",
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    return { type: "free_failure" };
+  }
+
+  const snapshot = snapshots[0];
+  if (
+    snapshot.reason !== "mint"
+    || snapshot.parentPackageSnapshotId
+      !== operation.expectedPackageSnapshotId
+    || snapshot.identitySnapshotId
+      !== operation.expectedIdentitySnapshotId
+    || model.currentPackageSnapshotId !== snapshot.id
+    || model.sealedPackageSnapshotId !== snapshot.id
+    || model.sealedIdentitySnapshotId !== snapshot.identitySnapshotId
+    || model.status !== "active"
+    || !model.agencyId?.trim()
+    || !model.mintedAt
+    || model.stateVersion !== (operation.expectedStateVersion ?? -1) + 1
+  ) {
+    return { type: "recovery_required" };
+  }
+  const slots = await db
+    .select()
+    .from(modelPackageSnapshotSlots)
+    .where(eq(modelPackageSnapshotSlots.packageSnapshotId, snapshot.id));
+  if (
+    slots.length === 0
+    || slots.some((slot) =>
+      slot.selectionReason !== "carried"
+      || !slot.sourceSelectionId
+    )
+  ) {
+    return { type: "recovery_required" };
+  }
+  const requiredAngles = MINT_TIER_SLOTS[tier];
+  const requiredSlots = requiredAngles.map((angle) =>
+    slots.find((slot) => slot.viewAngle === angle)
+  );
+  if (requiredSlots.some((slot) => !slot || slot.compatibility !== "current")) {
+    return { type: "recovery_required" };
+  }
+  const selectedIds = Array.from(new Set(
+    slots.map((slot) => slot.selectedAssetId),
+  ));
+  const assets = await db
+    .select()
+    .from(modelAssets)
+    .where(and(
+      eq(modelAssets.modelId, operation.modelId),
+      inArray(modelAssets.id, selectedIds),
+    ));
+  if (
+    assets.length !== selectedIds.length
+    || slots.some((slot) => {
+      const asset = assets.find(
+        (candidate) => candidate.id === slot.selectedAssetId,
+      );
+      return (
+        !asset?.storageUrl?.trim()
+        || asset.viewType !== slot.viewAngle
+      );
+    })
+  ) {
+    return { type: "recovery_required" };
+  }
+  const frontFull = slots.find((slot) => slot.viewAngle === "frontFull");
+  const featureClosure = await withTransaction(async (tx) => {
+    const rows = await readEvidencePackageFeatureRowsIn(tx, {
+      userId: operation.userId,
+      modelId: operation.modelId!,
+      identitySnapshotId: snapshot.identitySnapshotId,
+    });
+    return {
+      graph: assessSupportedInkFeatureGraph(
+        rows.graph,
+        frontFull?.selectedAssetId ?? null,
+      ),
+      pending: rows.hasUnresolvedIntentOrReadyCandidate,
+    };
+  });
+  if (!featureClosure.graph || featureClosure.pending) {
+    return { type: "recovery_required" };
+  }
+  await finalizeGenerationOperationSuccess({
+    userId: operation.userId,
+    operationId: operation.id,
+    result: {
+      agencyId: model.agencyId,
+      minted: true,
+      tier,
+      generated: [],
+      failedAngles: [],
+    },
+    chargedCredits: 0,
+    refundedCredits: 0,
+  });
+  return { type: "durable_success" };
+}
+
 export async function adjudicateStaleGenerationOperation(
   operation: GenerationOperation,
   now = new Date(),
@@ -595,16 +822,21 @@ export async function adjudicateStaleGenerationOperation(
       return "recovery_required";
     }
   }
-  if (recoveryStrategy === "pending_evidence_mint") {
-    await markGenerationOperationRecoveryRequired({
-      userId: operation.userId,
-      operationId: operation.id,
-      publicMessage:
-        `This operation needs support review before it can be retried. Operation ${operation.id}.`,
-      chargedCredits: operation.chargedCredits,
-      refundedCredits: operation.refundedCredits,
-    });
-    return "recovery_required";
+  if (operation.kind === "evidence_mint") {
+    const recovered = await recoverEvidenceMintOperation(operation);
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage:
+          `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+        chargedCredits: 0,
+        refundedCredits: 0,
+      });
+      return "recovery_required";
+    }
   }
   if (
     operation.status === "running"

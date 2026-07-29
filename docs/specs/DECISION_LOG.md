@@ -819,6 +819,33 @@ canonical slot remains `sideFull` / Walk; its travel direction may vary to
 show selected evidence. Ordinary legacy generation may retain its existing
 prompt, but its requested direction is never treated as verified anatomy.
 
+### D-72 — Cast packages are progressive, not a six-view prerequisite *(founder-ratified 2026-07-29; amends R7-7E mint and post-mint package scope)*
+
+**Minimum useful Cast:** the normal product path presents a strong portrait
+and front full-body reference as the essential Cast, then offers additional
+coverage only when it is useful. Canonical angle names, tier machinery, and
+technical package management stay behind the product surface. Drape may
+recommend one contextual action such as “Add a side view to preserve the
+right-arm tattoo”; it must not make the user configure a reference sheet.
+
+**Mint law:** evidence-aware mint requires the identity anchor and every view
+in the deliberately chosen tier to exist, be current, and pass the ordinary
+mint integrity law. Missing, stale, failed, or unverified views outside that
+tier do not block mint. Mint remains zero-generation and zero-credit: it
+never fills or refreshes a view implicitly.
+
+**Progressive expansion:** mint seals the exact identity and package truth at
+that moment, but does not permanently close the reference package. After
+mint, the identity remains immutable while deliberate evidence-aware
+add/update actions may append package snapshots and make optional views
+current. Every paid addition remains explicit and plan-priced; nothing spends
+or generates automatically.
+
+**UX direction:** the primary interface should communicate “Ready to use”
+and a secondary “Add coverage” path, with contextual recommendations when
+selected evidence makes a view valuable. Sophistication comes from Drape
+choosing the useful view, not from exposing more controls.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

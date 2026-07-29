@@ -32,9 +32,14 @@ import {
 } from "../../drizzle/schema";
 import {
   CANONICAL_VIEW_ANGLES,
+  MINT_TIER_SLOTS,
   type CanonicalViewAngle,
   type MintTier,
 } from "../../shared/boardTypes";
+import {
+  isModelAvailableStatus,
+  isModelDraftStatus,
+} from "../../shared/modelLifecycle";
 import { withTransaction, type TransactionHandle } from "../db/connection";
 import { consumeStorageCleanupReservationsIn } from "../db/storageCleanup";
 import { availableModelWhere } from "./modelAvailability";
@@ -51,6 +56,10 @@ import {
   computeIdentityCommit,
   type IdentityCommitResult,
 } from "./identity/identityCommit";
+import {
+  computeMintIntegrityForSelection,
+  type MintIntegritySelection,
+} from "./identity/mintIntegrity";
 import {
   FEATURE_BLIND_OPERATION_MESSAGE,
   type FeatureTransitionAuthority,
@@ -1267,7 +1276,7 @@ export async function commitEvidencePackageSyncSnapshot(input: {
       if (!context.current) {
         throw new Error("Evidence package synchronization requires a snapshot head");
       }
-      if (context.model.status !== "draft") {
+      if (!isModelAvailableStatus(context.model.status)) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "Minted identity is immutable — fork it.",
@@ -1417,6 +1426,171 @@ export async function commitEvidencePackageSyncSnapshot(input: {
         transition: {
           packageReason: "slot_refresh",
           slotChanges,
+        },
+      };
+    },
+  });
+}
+
+/**
+ * Zero-generation evidence-aware mint. The existing selected package is
+ * copied into a mint snapshot as the operation's durable fingerprint, while
+ * identity documents, feature selections, assets and slot choices remain
+ * byte-for-byte unchanged.
+ */
+export async function commitEvidenceMintSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  tier: MintTier;
+  agencyId: string;
+  name: string;
+}): Promise<SnapshotTransitionResult<{
+  agencyId: string;
+  minted: true;
+  tier: MintTier;
+  generated: [];
+  failedAngles: [];
+}>> {
+  if (!input.agencyId.trim() || !input.name.trim()) {
+    throw new Error("Evidence mint settlement requires a name and agency id");
+  }
+  const requiredAngles = MINT_TIER_SLOTS[input.tier];
+  if (!requiredAngles) throw new Error("Unknown evidence mint tier");
+
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "evidence_mint",
+    featureAuthority: "evidence_aware",
+    mutate: async (tx, context) => {
+      if (!context.current) {
+        throw new Error("Evidence mint requires a snapshot head");
+      }
+      if (
+        !isModelDraftStatus(context.model.status)
+        || context.model.agencyId
+        || context.model.mintedAt
+      ) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This Cast cannot be minted from its current state.",
+        });
+      }
+
+      const featureRows = await readEvidencePackageFeatureRowsIn(tx, {
+        userId: input.userId,
+        modelId: input.modelId,
+        identitySnapshotId: context.current.identitySnapshot.id,
+      });
+      const frontFullSlot = context.current.slots.find(
+        (slot) => slot.viewAngle === "frontFull",
+      );
+      const graph = assessSupportedInkFeatureGraph(
+        featureRows.graph,
+        frontFullSlot?.selectedAssetId ?? null,
+      );
+      if (!graph || featureRows.hasUnresolvedIntentOrReadyCandidate) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "This Cast's saved feature evidence needs attention before minting.",
+        });
+      }
+
+      const assets = await tx
+        .select()
+        .from(modelAssets)
+        .where(eq(modelAssets.modelId, input.modelId))
+        .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+      const assetById = new Map(assets.map((asset) => [asset.id, asset]));
+      const selectedByAngle =
+        new Map<CanonicalViewAngle, ModelAsset | null>();
+      for (const slot of context.current.slots) {
+        const asset = assetById.get(slot.selectedAssetId) ?? null;
+        selectedByAngle.set(
+          slot.viewAngle as CanonicalViewAngle,
+          asset
+            ? {
+                ...asset,
+                pinned: false,
+                ...(slot.compatibility === "stale"
+                  ? { status: { state: "stale" } }
+                  : {}),
+              }
+            : null,
+        );
+      }
+      const anchor =
+        assetById.get(context.current.identitySnapshot.anchorAssetId) ?? null;
+      const displayHeadshot = selectedByAngle.get("frontClose") ?? null;
+      const selection: MintIntegritySelection = {
+        anchor: anchor ? { ...anchor, pinned: false } : null,
+        displayedHeadshot: displayHeadshot,
+        hasDisplayedHeadshotSelection: selectedByAngle.has("frontClose"),
+        selectedByAngle,
+      };
+      const integrity = computeMintIntegrityForSelection(
+        context.model,
+        assets,
+        requiredAngles,
+        context.current.identitySnapshot.identityText,
+        selection,
+      );
+      const requiredSlotsCurrent = requiredAngles.every((angle) => {
+        const slot = context.current!.slots.find(
+          (candidate) => candidate.viewAngle === angle,
+        );
+        return (
+          !!slot
+          && slot.compatibility === "current"
+          && !!assetById.get(slot.selectedAssetId)?.storageUrl?.trim()
+        );
+      });
+      if (!integrity.ok || !requiredSlotsCurrent) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "Finish the selected Cast package before minting. Nothing was generated.",
+        });
+      }
+
+      const minted = await tx
+        .update(models)
+        .set({
+          name: input.name.trim(),
+          agencyId: input.agencyId,
+          status: "active",
+          mintedAt: new Date(),
+        })
+        .where(and(
+          eq(models.id, input.modelId),
+          eq(models.userId, input.userId),
+          eq(models.status, "draft"),
+          isNull(models.deletedAt),
+          isNull(models.agencyId),
+          isNull(models.mintedAt),
+          sql`${models.identityRevisionId} <=> ${context.expectedIdentityRevisionId}`,
+        ));
+      if (affectedRows(minted) !== 1) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "The Cast changed before minting could finish. Review it and try again.",
+        });
+      }
+      return {
+        result: {
+          agencyId: input.agencyId,
+          minted: true,
+          tier: input.tier,
+          generated: [],
+          failedAngles: [],
+        },
+        transition: {
+          packageReason: "mint",
+          seal: true,
         },
       };
     },

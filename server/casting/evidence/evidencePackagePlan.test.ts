@@ -223,7 +223,7 @@ describe("evidence-aware package plan", () => {
       .toBe(false);
   });
 
-  it("returns a closed public refusal for unsupported or non-draft state", () => {
+  it("returns a closed public refusal for unsupported state and permits post-mint expansion", () => {
     const invalid = graph();
     invalid.versions = [{
       ...invalid.versions[0],
@@ -243,8 +243,8 @@ describe("evidence-aware package plan", () => {
     );
     expect(plan({ status: "active" })).toMatchObject({
       supported: true,
-      actionableAngles: [],
-      totalCost: 0,
+      actionableAngles: ["sideFull"],
+      totalCost: 300,
       zeroGenerationMintAvailable: false,
     });
   });

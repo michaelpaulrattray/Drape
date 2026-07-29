@@ -228,7 +228,7 @@ delivery locators, probe truth, snapshot IDs, or recipe internals.
 For each requested angle the plan requires:
 
 1. owner-scoped live model and current snapshot pair;
-2. draft status for package synchronization;
+2. available draft or minted status for progressive package synchronization;
 3. exactly one selected feature for the pilot;
 4. selected version belongs to that feature/model and matches the closed
    registry;
@@ -393,10 +393,16 @@ E never lets the old evidence-blind mint executor cross feature truth.
 
 - the current identity has exactly the supported selected feature graph;
 - every requested tier slot already exists and is `current`;
-- no failure marker, stale selection, missing selection, unresolved intent, or
-  ready candidate remains;
+- no failure marker, stale selection, missing selection, or unverified
+  compatibility remains inside the requested tier;
+- no unresolved intent or ready candidate remains;
 - the model is a named draft;
 - ordinary mint integrity and seal checks pass.
+
+Missing, stale, or failed optional views outside the chosen tier do not block
+mint. They remain eligible for a later deliberate evidence-aware package
+action after mint; the identity stays immutable and no view is generated
+implicitly.
 
 The action costs zero when no view generation is needed. It creates operation
 kind `evidence_mint`, then one evidence-aware snapshot transaction:
@@ -505,6 +511,7 @@ review. A slice does not authorize the next production operation.
 - zero-generation plan and executor;
 - no missing/stale implicit generation;
 - unchanged KI/seal/lifecycle laws;
+- progressive evidence-aware package expansion remains available after mint;
 - recovery and replay.
 
 ### E4 — inline UX

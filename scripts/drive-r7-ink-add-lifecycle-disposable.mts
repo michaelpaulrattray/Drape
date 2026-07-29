@@ -36,12 +36,17 @@ async function applyMigrations(connection: mysql.Connection) {
 
 async function main() {
   const args = process.argv.slice(2);
-  if (args.some((arg) => arg !== "--focused-e2")) {
+  const allowedFocused = new Set(["--focused-e2", "--focused-e3"]);
+  if (args.some((arg) => !allowedFocused.has(arg))) {
     throw new Error(
-      `Unknown argument: ${args.find((arg) => arg !== "--focused-e2")}`,
+      `Unknown argument: ${args.find((arg) => !allowedFocused.has(arg))}`,
     );
   }
   const focusedE2 = args.includes("--focused-e2");
+  const focusedE3 = args.includes("--focused-e3");
+  if (focusedE2 && focusedE3) {
+    throw new Error("Choose only one focused lifecycle gate");
+  }
   const configured = process.env.DATABASE_URL;
   if (!configured) throw new Error("DATABASE_URL is required (development DB only)");
   if (process.env.VITE_APP_ID !== "drape-local") {
@@ -95,6 +100,14 @@ async function main() {
           "--testNamePattern=E2",
           "server/r7-ink-add-lifecycle-db.test.ts",
         ]
+      : focusedE3
+      ? [
+          "exec",
+          "vitest",
+          "run",
+          "--testNamePattern=E3",
+          "server/r7-ink-add-lifecycle-db.test.ts",
+        ]
       : [
           "exec",
           "vitest",
@@ -109,6 +122,8 @@ async function main() {
     console.log(
       focusedE2
         ? "[disposable] R7-7E2 package settlement and rollback gates passed"
+        : focusedE3
+        ? "[disposable] R7-7E3 progressive mint and post-mint expansion gates passed"
         : "[disposable] cumulative R7-7D lifecycle gates passed",
     );
   } finally {

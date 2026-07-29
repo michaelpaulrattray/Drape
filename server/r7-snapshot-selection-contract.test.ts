@@ -169,6 +169,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     }
     expect(effectiveCallers).toEqual([
       "server/casting/effectiveCastRead.ts",
+      "server/casting/evidence/evidenceMint.ts",
       "server/casting/evidence/evidencePackageAuthority.ts",
       "server/casting/mintPackage.ts",
       "server/casting/modelReadProjections.ts",
@@ -310,6 +311,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       if ((await readFile(file, "utf8")).includes("snapshotShadow")) serverCallers.push(normalized);
     }
     expect(serverCallers).toEqual([
+      "server/casting/evidence/evidenceMint.ts",
       "server/casting/evidence/evidencePackageAuthority.ts",
       "server/casting/snapshotConsumerShadow.ts",
       "server/casting/snapshotConvergence.ts",
@@ -631,7 +633,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     );
   });
 
-  it("allows only the reviewed compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {
+  it("allows only the reviewed evidence mint, compact, restore, refresh, Add Views/mint, iterate, headshot and Canvas-recast runtime adopters", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));
     const callers: string[] = [];
@@ -640,6 +642,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       if (content.includes("snapshotTransitions")) callers.push(file.replaceAll("\\", "/"));
     }
     expect(callers).toEqual([
+      "server/casting/evidence/evidenceMint.ts",
       "server/casting/evidence/evidencePackageExecution.ts",
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/mintPackage.ts",

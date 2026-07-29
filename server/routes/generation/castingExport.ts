@@ -50,6 +50,11 @@ import {
   executeEvidencePackageSync,
 } from "../../casting/evidence/evidencePackageExecution";
 import {
+  classifyEvidenceMintRouteAuthority,
+  EvidenceMintSettlementUncertainError,
+  executeEvidenceMint,
+} from "../../casting/evidence/evidenceMint";
+import {
   captureEvidenceComposerEnabled,
 } from "../../casting/evidence/evidenceComposerScope";
 import {
@@ -213,7 +218,25 @@ export const castingExportRouter = router({
     .input(z.object({ modelId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
-      return planMintPackage({ userId: ctx.user.id, modelId: input.modelId, readMode });
+      const ordinary = await planMintPackage({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+        readMode,
+      });
+      if (
+        readMode !== "snapshot"
+        || !captureEvidenceComposerEnabled(ctx.user.id)
+        || !captureEvidencePackageEnabled(ctx.user.id)
+      ) {
+        return ordinary;
+      }
+      const evidence = await classifyEvidenceMintRouteAuthority({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+      });
+      return evidence.type === "featureless"
+        ? ordinary
+        : { ...ordinary, evidenceMint: evidence.plan };
     }),
 
   /** D-39 tiered mint execute: generates the tier's missing views (back
@@ -235,12 +258,58 @@ export const castingExportRouter = router({
       if (initialModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       assertNotArchived(initialModel);
 
-      const kind = input.mint === false ? "casting.add_views" : "casting.mint";
       const lockKey = modelOperationLockKey(input.modelId);
+      const evidencePackageEnabled =
+        captureEvidencePackageEnabled(ctx.user.id);
+      const storedKind = await getGenerationOperationKindByRequest({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+      });
+      let evidenceMintRoute:
+        | Awaited<ReturnType<typeof classifyEvidenceMintRouteAuthority>>
+        | null = null;
+      let derivedKind:
+        | "casting.add_views"
+        | "casting.mint"
+        | "evidence_mint" =
+          input.mint === false ? "casting.add_views" : "casting.mint";
+      if (!storedKind && readMode === "snapshot") {
+        evidenceMintRoute = await classifyEvidenceMintRouteAuthority({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+        });
+        if (evidenceMintRoute.type !== "featureless") {
+          if (
+            input.mint === false
+            || evidenceMintRoute.type !== "supported"
+            || !evidencePackageEnabled
+            || !captureEvidenceComposerEnabled(ctx.user.id)
+          ) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: FEATURE_BLIND_OPERATION_MESSAGE,
+            });
+          }
+          derivedKind = "evidence_mint";
+        }
+      }
+      const kindResolution = resolveOperationKindForReplay({
+        family: "mint",
+        derivedKind,
+        storedKind,
+      });
+      if (kindResolution.type === "family_conflict") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "That request id was already used for a different action. Nothing was run.",
+        });
+      }
+      const operationKind = kindResolution.kind;
       const gate = await beginDirectOperation({
         userId: ctx.user.id,
         clientRequestId: input.clientRequestId,
-        kind,
+        kind: operationKind,
         modelId: input.modelId,
         payload: {
           modelId: input.modelId,
@@ -289,7 +358,7 @@ export const castingExportRouter = router({
       }
 
       let lockedModel;
-      let plan;
+      let plannedCredits = 0;
       try {
         if (input.mint !== false && !input.characterName) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "A name is required to mint" });
@@ -303,11 +372,41 @@ export const castingExportRouter = router({
         if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
         if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         assertNotArchived(lockedModel);
-        plan = await planMintPackage({
-          userId: ctx.user.id,
-          modelId: input.modelId,
-          readMode,
-        });
+        if (operationKind === "evidence_mint") {
+          if (
+            input.mint === false
+            || readMode !== "snapshot"
+            || !captureEvidenceComposerEnabled(ctx.user.id)
+            || !evidencePackageEnabled
+          ) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: FEATURE_BLIND_OPERATION_MESSAGE,
+            });
+          }
+          const classified = evidenceMintRoute
+            ?? await classifyEvidenceMintRouteAuthority({
+              userId: ctx.user.id,
+              modelId: input.modelId,
+            });
+          if (
+            classified.type !== "supported"
+            || !classified.plan.tiers[input.tier].ready
+          ) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message:
+                "Finish the selected Cast package before minting. Nothing was generated.",
+            });
+          }
+        } else {
+          const plan = await planMintPackage({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+            readMode,
+          });
+          plannedCredits = plan.tiers[input.tier].cost;
+        }
         const snapshotHead = readMode === "snapshot"
           ? await resolveEffectiveCastStateForRead({ userId: ctx.user.id, modelId: input.modelId })
           : await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
@@ -320,7 +419,6 @@ export const castingExportRouter = router({
       } catch (error) {
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
-      const plannedCredits = plan.tiers[input.tier].cost;
       const started = await markGenerationOperationRunning({
         userId: ctx.user.id,
         operationId: gate.operationId,
@@ -331,6 +429,23 @@ export const castingExportRouter = router({
         phase: "minting",
         heartbeat: true,
       });
+      if (operationKind === "evidence_mint") {
+        await updateGenerationOperationProgress({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          phase: "minting",
+          progress: {
+            total: 1,
+            completed: 0,
+            failed: 0,
+            steps: [{
+              stepKey: `mint:${input.tier}`,
+              viewAngle: null,
+              status: "pending",
+            }],
+          },
+        });
+      }
       try {
         await assertGenerationOperationSnapshotHead({
           userId: ctx.user.id,
@@ -350,18 +465,26 @@ export const castingExportRouter = router({
       let refundedCredits = 0;
       let durableResult = false;
       try {
-        const result = await executeMintPackage({
-          userId: ctx.user.id,
-          modelId: input.modelId,
-          tier: input.tier,
-          characterName: input.characterName ?? "",
-          mint: input.mint,
-          readMode,
-          chargeReferenceId: started.chargeReferenceId,
-          onCharged: (amount) => { chargedCredits = amount; },
-          onRefunded: (amount) => { refundedCredits += amount; },
-          operationId: gate.operationId,
-        });
+        const result = operationKind === "evidence_mint"
+          ? await executeEvidenceMint({}, {
+              userId: ctx.user.id,
+              modelId: input.modelId,
+              operationId: gate.operationId,
+              tier: input.tier,
+              name: input.characterName ?? "",
+            })
+          : await executeMintPackage({
+              userId: ctx.user.id,
+              modelId: input.modelId,
+              tier: input.tier,
+              characterName: input.characterName ?? "",
+              mint: input.mint,
+              readMode,
+              chargeReferenceId: started.chargeReferenceId,
+              onCharged: (amount) => { chargedCredits = amount; },
+              onRefunded: (amount) => { refundedCredits += amount; },
+              operationId: gate.operationId,
+            });
         durableResult = true;
         await completeDirectOperationSuccess({
           userId: ctx.user.id,
@@ -380,6 +503,26 @@ export const castingExportRouter = router({
         return result;
       } catch (error) {
         if (durableResult) throw error;
+        if (error instanceof EvidenceMintSettlementUncertainError) {
+          await handoffGenerationOperationToRecovery({
+            userId: ctx.user.id,
+            operationId: gate.operationId,
+          }).catch((handoffError) => {
+            log.fatal({
+              operationId: gate.operationId,
+              errorName:
+                handoffError instanceof Error
+                  ? handoffError.name
+                  : "UnknownError",
+            }, "Evidence mint recovery handoff failed");
+          });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              `This mint is still being reconciled. Operation ${gate.operationId}.`,
+            cause: error,
+          });
+        }
         return completeDirectOperationFailure({
           userId: ctx.user.id,
           operationId: gate.operationId,
