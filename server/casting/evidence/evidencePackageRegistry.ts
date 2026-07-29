@@ -13,7 +13,7 @@ import {
 import type { NormalizedInkZone } from "./composer/inkZoneGuide";
 
 export const EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION =
-  "evidence.package.guide.front-upper-torso.v1" as const;
+  "evidence.package.guide.front-upper-torso.v2" as const;
 
 export type ExistingSelectionImpact = "affected" | "unaffected";
 export type MissingViewAuthority = "compose" | "not_supported";
@@ -23,8 +23,8 @@ export type EvidenceVisibilityDirective =
   | "hidden_omit"
   | "reproduce_visible";
 export type EvidenceFacingDirective =
-  | "camera_sees_anatomical_left_walk_frame_right"
-  | "camera_sees_anatomical_right_walk_frame_left"
+  | "camera_sees_anatomical_left_walk_frame_left"
+  | "camera_sees_anatomical_right_walk_frame_right"
   | "strict_profile_direction_flexible";
 
 export interface EvidencePackageDirective {
@@ -150,7 +150,7 @@ export const INK_ADD_PACKAGE_DIRECTIVES: Readonly<
       missingViewAuthority: "compose",
       visibility: "reproduce_visible",
       requiredVisibleAnatomicalSide: "left",
-      facingDirective: "camera_sees_anatomical_left_walk_frame_right",
+      facingDirective: "camera_sees_anatomical_left_walk_frame_left",
       normalizedTargetZone: WALK_LEFT_ZONE,
     }),
     centre: Object.freeze({
@@ -166,7 +166,7 @@ export const INK_ADD_PACKAGE_DIRECTIVES: Readonly<
       missingViewAuthority: "compose",
       visibility: "reproduce_visible",
       requiredVisibleAnatomicalSide: "right",
-      facingDirective: "camera_sees_anatomical_right_walk_frame_left",
+      facingDirective: "camera_sees_anatomical_right_walk_frame_right",
       normalizedTargetZone: WALK_RIGHT_ZONE,
     }),
   }),

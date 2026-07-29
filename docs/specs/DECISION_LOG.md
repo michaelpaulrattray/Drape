@@ -833,13 +833,38 @@ all-or-nothing repair: the model revision and mis-stamped accepted asset are
  compatibility and asset status. Parent-stale and genuinely affected views
  remain stale. Read-only planning exposes the exact closed view/asset set;
  separate model and restored-view count fences plus an in-transaction
- postflight proof prevent a broader repair.
+postflight proof prevent a broader repair.
+
+**Production repair completed 2026-07-29:** deployment
+`6a9eae64-37b2-4105-9759-62dd3318d69b` at commit `853fffb` repaired only
+founder model `35`: one model revision, one accepted-asset provenance stamp,
+and the four parent-current/unaffected views `frontClose`, `threeQuarter`,
+`sideClose`, and `backFull` (asset ids `152`, `154`, `155`, `156`). The
+feature-affected `sideFull` remained stale. The in-transaction proof and a
+separate read-only postflight both passed; the latter reported `repaired` with
+zero remaining repair rows and zero remaining restorable views.
 
 **R7-7E diagnostic correction (2026-07-29):** a rejected evidence-package
 candidate records only a closed server-owned failure code in its generation
 audit and terminal failure-marker provenance. No prompt, model response,
 private evidence locator or free text is retained. This makes calibration
 failures diagnosable without turning blind retries into the workflow.
+
+**R7-7E Walk-facing correction (2026-07-29):** the two founder Walk actions
+each completed image generation and the strict evidence probe twice, rejected
+both candidates, and refunded the full view charge. The shared server registry
+had inverted strict-profile anatomy: it paired an anatomical-left camera view
+with frame-right travel and anatomical-right with frame-left. In a strict side
+profile those pairings are physically contradictory, so a truthful candidate
+must fail either the observed-side or observed-direction check and the
+included retry repeats the same impossible instruction. The v2 registry now
+pairs anatomical left with frame-left travel and anatomical right with
+frame-right travel, makes the direction override explicit when the prior Walk
+faces the other way, and gives the probe the same image-derived anatomical
+relationship. No confidence, identity, framing, continuity, feature-match,
+placement, omission, or anti-invention gate is weakened. This local correction
+does not authorize another paid generation, deployment, scope change, or
+production write.
 
 ### D-72 — Cast packages are progressive, not a six-view prerequisite *(founder-ratified 2026-07-29; amends R7-7E mint and post-mint package scope)*
 

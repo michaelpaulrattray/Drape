@@ -38,7 +38,7 @@ describe("evidence package directive registry", () => {
       missingViewAuthority: "compose",
       visibility: "reproduce_visible",
       requiredVisibleAnatomicalSide: "left",
-      facingDirective: "camera_sees_anatomical_left_walk_frame_right",
+      facingDirective: "camera_sees_anatomical_left_walk_frame_left",
     });
     expect(inkPackageDirective({
       ...tuple,
@@ -47,7 +47,7 @@ describe("evidence package directive registry", () => {
     })).toMatchObject({
       existingSelectionImpact: "affected",
       requiredVisibleAnatomicalSide: "right",
-      facingDirective: "camera_sees_anatomical_right_walk_frame_left",
+      facingDirective: "camera_sees_anatomical_right_walk_frame_right",
     });
   });
 

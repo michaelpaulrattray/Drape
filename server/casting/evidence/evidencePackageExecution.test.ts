@@ -110,7 +110,7 @@ function authority(): EvidencePackagePrivateAuthority {
         missingViewAuthority: "compose",
         visibility: "reproduce_visible",
         requiredVisibleAnatomicalSide: "left",
-        facingDirective: "camera_sees_anatomical_left_walk_frame_right",
+        facingDirective: "camera_sees_anatomical_left_walk_frame_left",
         normalizedTargetZone: {
           x: 0.34,
           y: 0.17,
@@ -128,7 +128,7 @@ function passProbe() {
     canonicalFraming: true,
     continuityPreserved: true,
     observedVisibleAnatomicalSide: "left",
-    observedTravelDirection: "frame_right",
+    observedTravelDirection: "frame_left",
     featureRegionVisibility: "visible",
     authorizedFeatureVisible: true,
     acceptedFeatureMatches: true,
@@ -234,7 +234,7 @@ describe("R7-7E2 evidence package executor", () => {
         cleanupBatchId: "cleanup-1",
         requiredVisibleAnatomicalSide: "left",
         observedVisibleAnatomicalSide: "left",
-        observedTravelDirection: "frame_right",
+        observedTravelDirection: "frame_left",
       })],
     }));
   });

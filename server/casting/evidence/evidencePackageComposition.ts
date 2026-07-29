@@ -18,11 +18,12 @@ import type {
 } from "./composer/inkComposer";
 import {
   EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION,
+  type EvidenceFacingDirective,
   type EvidencePackageDirective,
 } from "./evidencePackageRegistry";
 
 export const EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION =
-  "evidence.package.sync.composer.front-upper-torso.v1" as const;
+  "evidence.package.sync.composer.front-upper-torso.v2" as const;
 export const EVIDENCE_PACKAGE_CROP_RECIPE_VERSION =
   "evidence.package.crop.front-upper-torso.v1" as const;
 
@@ -265,6 +266,21 @@ function inline(
   };
 }
 
+function facingInstruction(
+  directive: EvidenceFacingDirective | null,
+): string {
+  switch (directive) {
+    case "camera_sees_anatomical_left_walk_frame_left":
+      return "Show a strict walking side profile travelling toward FRAME LEFT (nose and toes toward the left edge). This exposes the subject's anatomical LEFT side to the camera.";
+    case "camera_sees_anatomical_right_walk_frame_right":
+      return "Show a strict walking side profile travelling toward FRAME RIGHT (nose and toes toward the right edge). This exposes the subject's anatomical RIGHT side to the camera.";
+    case "strict_profile_direction_flexible":
+      return "Use a strict walking side profile. Preserve the target's travel direction because either direction is acceptable.";
+    case null:
+      return "Preserve the target's canonical framing and direction.";
+  }
+}
+
 export function buildEvidencePackageComposerRequest(input: {
   identityText: string;
   normalizedDescriptor: string;
@@ -337,13 +353,16 @@ from Image 3 on the guided anatomical ${input.featureSide} upper chest.`
     responseModalities: ["IMAGE"],
     prompt: `Create one complete flattened fashion casting image.
 
-Image 1 is immutable identity. Image 2 is the guided target and owns pose,
-crop, clothing, lighting, and background. Image 3 is accepted feature evidence
-only; never copy its person, pose, clothing, or background.
+Image 1 is immutable identity. Image 2 is the guided target and owns crop,
+clothing, lighting, background, and the character of the walking pose. Preserve
+its framing except when the facing instruction below requires the Walk to
+travel in the opposite direction; that direction override is authoritative.
+Image 3 is accepted feature evidence only; never copy its person, pose,
+clothing, or background.
 
 ${anatomy}
 ${featureLaw}
-Facing directive: ${input.directive.facingDirective ?? "preserve canonical framing"}.
+Facing instruction: ${facingInstruction(input.directive.facingDirective)}
 The visual guide is instruction-only and must not appear in the output.
 Preserve identity and every unauthorized pixel-level attribute. Add no other
 tattoo, scar, mark, text, jewellery, object, or body change. Output one final

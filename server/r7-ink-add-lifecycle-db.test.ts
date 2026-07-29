@@ -2724,7 +2724,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         featureVersionId: source.featureVersionId,
         requiredVisibleAnatomicalSide: "left",
         observedVisibleAnatomicalSide: "left",
-        observedTravelDirection: "frame_right",
+        observedTravelDirection: "frame_left",
         cleanupBatchId,
       }],
     });
@@ -2840,7 +2840,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         featureVersionId: source.featureVersionId,
         requiredVisibleAnatomicalSide: "left",
         observedVisibleAnatomicalSide: "left",
-        observedTravelDirection: "frame_right",
+        observedTravelDirection: "frame_left",
         cleanupBatchId,
       }],
     });
@@ -2949,7 +2949,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         featureVersionId: source.featureVersionId,
         requiredVisibleAnatomicalSide: "left",
         observedVisibleAnatomicalSide: "left",
-        observedTravelDirection: "frame_right",
+        observedTravelDirection: "frame_left",
         cleanupBatchId,
       }],
     })).rejects.toThrow(/cleanup reservation.*invalid/i);
@@ -3008,7 +3008,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         featureVersionId: source.featureVersionId,
         requiredVisibleAnatomicalSide: "left",
         observedVisibleAnatomicalSide: "left",
-        observedTravelDirection: "frame_right",
+        observedTravelDirection: "frame_left",
         cleanupBatchId,
       }],
     })).rejects.toMatchObject({ code: "CONFLICT" });

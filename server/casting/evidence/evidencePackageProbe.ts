@@ -13,7 +13,7 @@ import type {
 } from "./evidencePackageRegistry";
 
 export const EVIDENCE_PACKAGE_PROBE_RECIPE_VERSION =
-  "evidence.package.sync.probe.front-upper-torso.v1" as const;
+  "evidence.package.sync.probe.front-upper-torso.v2" as const;
 
 export const OBSERVED_ANATOMICAL_SIDES = [
   "left",
@@ -33,8 +33,8 @@ export type ObservedTravelDirection =
   typeof OBSERVED_TRAVEL_DIRECTIONS[number];
 
 const EXPECTED_TRAVEL_BY_FACING = {
-  camera_sees_anatomical_left_walk_frame_right: "frame_right",
-  camera_sees_anatomical_right_walk_frame_left: "frame_left",
+  camera_sees_anatomical_left_walk_frame_left: "frame_left",
+  camera_sees_anatomical_right_walk_frame_right: "frame_right",
 } as const satisfies Readonly<Record<
   Exclude<EvidenceFacingDirective, "strict_profile_direction_flexible">,
   ObservedTravelDirection
@@ -138,6 +138,12 @@ framing, and preserves body, hair, skin, clothing, lighting, and background.
 Inspect the candidate pixels themselves to report which ANATOMICAL side faces
 the camera and its frame-relative travel direction. Never infer those fields
 from the prompt, slot name, filename, or expected direction.
+
+For a strict walking side profile, visible candidate geometry has one objective
+relationship: nose and toes toward frame-left expose the subject's anatomical
+left side to the camera; nose and toes toward frame-right expose the anatomical
+right side. Apply this only when the candidate pixels clearly prove a strict
+profile and travel direction. Otherwise report unknown.
 
 Report what the candidate pixels prove without being told which anatomical side
 is expected. Visibility directive: ${input.directive.visibility}. When visible,

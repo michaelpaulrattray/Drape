@@ -72,6 +72,7 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
     }
     expect(importers.sort()).toEqual([
       "casting/aiService.ts",
+      "casting/evidence/evidenceIdentityRevisionRepair.ts",
       "casting/evidence/evidenceMint.ts",
       "casting/evidence/evidencePackageAuthority.ts",
       "casting/evidence/evidencePackageComposition.ts",
