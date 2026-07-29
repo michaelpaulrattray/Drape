@@ -437,10 +437,10 @@ describe("ink candidate generation", () => {
             byteSize: webp.length,
             contentHash: createHash("sha256").update(webp).digest("hex"),
           },
-          impact: "affected",
+          impact: "uncertain",
           hasAcceptedTargetEvidence: false,
           isProjectionTarget: true,
-          coverageBasis: "registry_affected",
+          coverageBasis: "observed_visible",
         }],
       },
       normalizedDescriptor: "selected tattoo projection",
@@ -489,9 +489,36 @@ describe("ink candidate generation", () => {
       ]),
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "coverage",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v1",
+    }));
+    expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection",
       recipeVersion: "ink.add.anywhere.projection.probe.v1",
     }));
+
+    const refused = dependencies({
+      loadProjectionPreflight: vi.fn(async () => preflight),
+      prepareProjection: vi.fn(async () => projectionPrepared),
+      probe: vi.fn(async (request) => request.kind === "coverage"
+        ? {
+            feature1RegionVisible: true,
+            feature1Confidence: 72,
+          }
+        : passProbe(request)),
+    });
+    await expect(generateInkProjectionCandidate(refused, {
+      userId: projectionPrepared.userId,
+      modelId: projectionPrepared.modelId,
+      targetViewAngle: "backFull",
+      clientRequestId: "91919191-9191-4191-8191-919191919191",
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("Nothing was charged"),
+    });
+    expect(refused.prepareProjection).not.toHaveBeenCalled();
+    expect(refused.charge).not.toHaveBeenCalled();
+    expect(refused.generate).not.toHaveBeenCalled();
   });
 
   it("uses one included retry without a second charge", async () => {

@@ -96,6 +96,7 @@ import {
   buildInkProjectionProbeRequest,
   parseInkCoverageProbeResponse,
   parseInkProjectionProbeResponse,
+  summarizeInkCoverageProbeResponse,
   type InkProjectionComposerRequest,
   type InkProjectionFeatureReference,
 } from "./inkProjectionComposition";
@@ -1004,10 +1005,35 @@ async function executeProjectionCandidate(
           target,
         }),
       );
-      observedCoverage = parseInkCoverageProbeResponse(
+      const coverageTelemetry = summarizeInkCoverageProbeResponse(
         rawCoverage,
-        uncertain.map((feature) => feature.featureVersionId),
+        uncertain.length,
       );
+      log.info({
+        operationId: gate.operationId,
+        targetViewAngle: input.targetViewAngle,
+        responseShape: coverageTelemetry.responseShape,
+        coverage: uncertain.map((feature, index) => ({
+          anatomy: feature.anatomy,
+          regionVisible:
+            coverageTelemetry.features[index]?.regionVisible ?? null,
+          confidence: coverageTelemetry.features[index]?.confidence ?? null,
+        })),
+      }, "Ink projection pre-charge coverage assessed");
+      try {
+        observedCoverage = parseInkCoverageProbeResponse(
+          rawCoverage,
+          uncertain.map((feature) => feature.featureVersionId),
+        );
+      } catch (error) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "This view does not show enough of the selected tattoo surfaces"
+            + " to verify them safely. Nothing was charged.",
+          cause: error,
+        });
+      }
     }
     failureStage = "prepare";
     const generateId = dependencies.generateId ?? randomUUID;

@@ -540,6 +540,62 @@ export function buildInkCoverageProbeRequest(input: {
   };
 }
 
+export interface InkCoverageProbeTelemetry {
+  responseShape: "valid_object" | "invalid";
+  features: readonly {
+    regionVisible: boolean | null;
+    confidence: number | null;
+  }[];
+}
+
+/**
+ * Keep coverage diagnostics closed to the declared boolean/confidence schema.
+ * Provider prose and image-derived content must never enter production logs.
+ */
+export function summarizeInkCoverageProbeResponse(
+  raw: unknown,
+  featureCount: number,
+): InkCoverageProbeTelemetry {
+  if (
+    featureCount < 1
+    || featureCount > MAX_FEATURES
+    || !Number.isSafeInteger(featureCount)
+  ) {
+    throw new TypeError("Invalid observed-coverage feature set");
+  }
+  let parsed: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+  }
+  const validObject =
+    parsed !== null
+    && typeof parsed === "object"
+    && !Array.isArray(parsed);
+  const value = validObject
+    ? parsed as Record<string, unknown>
+    : Object.freeze({}) as Record<string, unknown>;
+  return Object.freeze({
+    responseShape: validObject ? "valid_object" : "invalid",
+    features: Object.freeze(Array.from({ length: featureCount }, (_, index) => {
+      const visible = value[`feature${index + 1}RegionVisible`];
+      const confidence = value[`feature${index + 1}Confidence`];
+      return Object.freeze({
+        regionVisible: typeof visible === "boolean" ? visible : null,
+        confidence:
+          Number.isSafeInteger(confidence)
+            && (confidence as number) >= 0
+            && (confidence as number) <= 100
+            ? confidence as number
+            : null,
+      });
+    })),
+  });
+}
+
 export function parseInkCoverageProbeResponse(
   raw: unknown,
   featureVersionIds: readonly string[],

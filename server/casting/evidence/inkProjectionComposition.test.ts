@@ -4,9 +4,12 @@ import type { ComposerImage } from "./composer/inkComposer";
 import {
   assessInkProjectionProbe,
   buildInkEvidenceMosaic,
+  buildInkCoverageProbeRequest,
   buildInkProjectionComposerRequest,
   buildInkProjectionProbeRequest,
+  parseInkCoverageProbeResponse,
   parseInkProjectionProbeResponse,
+  summarizeInkCoverageProbeResponse,
   type InkProjectionFeatureReference,
 } from "./inkProjectionComposition";
 
@@ -131,5 +134,37 @@ describe("multi-feature projection composition", () => {
       feature1MatchesEvidence: true,
       extra: true,
     }, 1)).toThrow("Invalid projection probe response");
+  });
+
+  it("keeps observed-coverage telemetry closed and fails low confidence", async () => {
+    const selected = await features();
+    const base = await image("#999");
+    const request = buildInkCoverageProbeRequest({
+      targetAngle: "threeQuarter",
+      features: selected,
+      target: base,
+    });
+    expect(request.kind).toBe("coverage");
+    const raw = {
+      feature1RegionVisible: true,
+      feature1Confidence: 91,
+      feature2RegionVisible: false,
+      feature2Confidence: 72,
+    };
+    expect(summarizeInkCoverageProbeResponse(raw, 2)).toEqual({
+      responseShape: "valid_object",
+      features: [
+        { regionVisible: true, confidence: 91 },
+        { regionVisible: false, confidence: 72 },
+      ],
+    });
+    expect(() => parseInkCoverageProbeResponse(raw, [
+      "version-1",
+      "version-2",
+    ])).toThrow("Observed coverage is unknown");
+    expect(summarizeInkCoverageProbeResponse("not-json", 1)).toEqual({
+      responseShape: "invalid",
+      features: [{ regionVisible: null, confidence: null }],
+    });
   });
 });
