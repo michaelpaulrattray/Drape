@@ -81,7 +81,7 @@ const anywherePrepared: PreparedInkCandidateAttempt = {
       side: "right",
     },
     normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
-    composerRecipeVersion: "ink.add.anywhere.composer.v5",
+    composerRecipeVersion: "ink.add.anywhere.composer.v6",
     probeRecipeVersion: "ink.add.anywhere.probe.v2",
     visibilityRecipeVersion: "ink.add.anywhere.visibility.v3",
   },
@@ -342,7 +342,7 @@ describe("ink candidate generation", () => {
       chargedCredits: 350,
     });
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.composer.v5",
+      recipeVersion: "ink.add.anywhere.composer.v6",
       prompt: expect.stringContaining("zone=full_arm"),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({

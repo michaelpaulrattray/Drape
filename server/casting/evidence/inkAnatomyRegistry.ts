@@ -10,12 +10,13 @@ export const INK_ANYWHERE_ONTOLOGY_VERSION = "body-zones.ink.v2" as const;
 export const INK_ANYWHERE_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.anywhere.authorization.v1" as const;
 export const INK_ANYWHERE_COMPOSER_RECIPE_VERSION =
-  "ink.add.anywhere.composer.v5" as const;
+  "ink.add.anywhere.composer.v6" as const;
 export const INK_ANYWHERE_READABLE_COMPOSER_RECIPE_VERSIONS =
   Object.freeze([
     "ink.add.anywhere.composer.v2",
     "ink.add.anywhere.composer.v3",
     "ink.add.anywhere.composer.v4",
+    "ink.add.anywhere.composer.v5",
     INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
   ] as const);
 export const INK_ANYWHERE_PROBE_RECIPE_VERSION =

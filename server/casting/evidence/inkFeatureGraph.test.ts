@@ -253,22 +253,22 @@ describe("multi-feature tattoo graph closure", () => {
       .toBe("legacy_front_upper_torso_v1");
   });
 
-  it("keeps composer-v3/v4 history readable while accepting new v5 rows", () => {
+  it("keeps composer-v4/v5 history readable while accepting new v6 rows", () => {
     const mixed = graph();
     mixed.versions[0] = {
       ...mixed.versions[0],
-      recipeVersion: "ink.add.anywhere.composer.v5",
+      recipeVersion: "ink.add.anywhere.composer.v6",
     };
     mixed.versions[1] = {
       ...mixed.versions[1],
-      recipeVersion: "ink.add.anywhere.composer.v4",
+      recipeVersion: "ink.add.anywhere.composer.v5",
     };
     const closed = assessClosedInkFeatureGraph(mixed);
     expect(closed?.entries).toHaveLength(2);
     expect(closed?.entries.map(({ version }) => version.recipeVersion))
       .toEqual([
+        "ink.add.anywhere.composer.v6",
         "ink.add.anywhere.composer.v5",
-        "ink.add.anywhere.composer.v4",
       ]);
   });
 });

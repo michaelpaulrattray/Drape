@@ -471,6 +471,7 @@ async function runAttempt(input: {
         anatomy: prepared.authority.anatomy,
         sourceAngle: prepared.sourceViewAngle,
         attemptNumber: prepared.attemptNumber,
+        originalTarget: images.target,
         identityAnchor: images.anchor,
         guidedTarget: images.guidedTarget,
         evidenceReference: images.reference ?? undefined,

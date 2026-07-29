@@ -32,7 +32,11 @@ export interface ComposerImage {
 }
 
 export interface InkComposerInlineImage {
-  role: "identity_anchor" | "guided_target" | "evidence_reference";
+  role:
+    | "original_target"
+    | "identity_anchor"
+    | "guided_target"
+    | "evidence_reference";
   inlineData: {
     mimeType: ComposerImageMime;
     data: string;
@@ -180,6 +184,33 @@ function composerImages(input: {
   return images;
 }
 
+function anywhereComposerImages(input: {
+  originalTarget: ComposerImage;
+  identityAnchor: ComposerImage;
+  guidedTarget: ComposerImage;
+  evidenceReference?: ComposerImage;
+}): InkComposerInlineImage[] {
+  const images = [
+    inlineImage("original_target", input.originalTarget),
+    inlineImage("guided_target", input.guidedTarget),
+    inlineImage("identity_anchor", input.identityAnchor),
+  ];
+  if (input.evidenceReference) {
+    images.push(inlineImage("evidence_reference", input.evidenceReference));
+  }
+  if (images.length > 4) {
+    throw new TypeError("Composer reference budget exceeded");
+  }
+  const totalBytes = images.reduce(
+    (sum, image) => sum + Buffer.byteLength(image.inlineData.data, "base64"),
+    0,
+  );
+  if (totalBytes > MAX_COMPOSER_TOTAL_IMAGE_BYTES) {
+    throw new TypeError("Composer byte budget exceeded");
+  }
+  return images;
+}
+
 export function buildInkComposerRequest(input: {
   identityText: string;
   normalizedDescriptor: string;
@@ -244,6 +275,7 @@ export function buildInkAnywhereComposerRequest(input: {
   anatomy: InkAnatomyTuple;
   sourceAngle: CanonicalViewAngle;
   attemptNumber: 1 | 2;
+  originalTarget: ComposerImage;
   identityAnchor: ComposerImage;
   guidedTarget: ComposerImage;
   evidenceReference?: ComposerImage;
@@ -252,7 +284,7 @@ export function buildInkAnywhereComposerRequest(input: {
   assertSupportedInkAnatomyTuple(input.anatomy);
   const { identityText, descriptor, retry } =
     validatedComposerAuthority(input);
-  const images = composerImages(input, true);
+  const images = anywhereComposerImages(input);
   const location = inkAnatomyLabel(input.anatomy);
   const sideAuthority = inkAnatomicalSideAuthority(
     input.anatomy,
@@ -261,16 +293,22 @@ export function buildInkAnywhereComposerRequest(input: {
 
   const prompt = `Create one complete flattened fashion casting image.
 
-ROLE OF IMAGE 1 - GUIDED TARGET AND EDIT CANVAS:
-It defines the exact pose, crop, framing, lighting, clothing, current pixels,
-and every tattoo or permanent mark already visible. The translucent guide is
-the only authorized edit region and must not appear in the output.
+ROLE OF IMAGE 1 - CLEAN ORIGINAL TARGET AND IMMUTABLE PIXEL CANVAS:
+Use this exact image as the output canvas. It defines the exact pose, crop,
+framing, lighting, clothing, background, current pixels, and every tattoo or
+permanent mark already visible. Copy it exactly outside the one requested
+tattoo; do not reinterpret or regenerate unrelated pixels.
 
-ROLE OF IMAGE 2 - IDENTITY ANCHOR:
+ROLE OF IMAGE 2 - PLACEMENT GUIDE ONLY:
+This is Image 1 with a translucent server-owned anatomical overlay. Use it
+only to locate the requested tattoo. The overlay itself must not appear in the
+output and does not authorize any other edit.
+
+ROLE OF IMAGE 3 - IDENTITY ANCHOR:
 It defines the exact person. Preserve identity, face, skin tone, hair, and body.
 
 ${input.evidenceReference
-  ? `ROLE OF IMAGE 3 - DESIGN REFERENCE:
+  ? `ROLE OF IMAGE 4 - DESIGN REFERENCE:
 Use it only for the requested tattoo's visual design. Do not copy its person,
 body, pose, background, clothing, or any unrelated mark.`
   : "There is no design-reference image."}

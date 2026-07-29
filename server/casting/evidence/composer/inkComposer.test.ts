@@ -101,17 +101,21 @@ describe("R7-7D exact ink composer request", () => {
       },
       sourceAngle: "frontFull",
       attemptNumber: 2,
+      originalTarget: image,
       identityAnchor: image,
       guidedTarget: image,
       retryDirectives: ["prior_ink", "placement"],
     });
-    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v5");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v6");
+    expect(request.prompt).toContain("CLEAN ORIGINAL TARGET");
+    expect(request.prompt).toContain("Copy it exactly");
     expect(request.images.map((item) => item.role)).toEqual([
+      "original_target",
       "guided_target",
       "identity_anchor",
     ]);
     expect(request.prompt).toContain(
-      "ROLE OF IMAGE 1 - GUIDED TARGET AND EDIT CANVAS",
+      "ROLE OF IMAGE 2 - PLACEMENT GUIDE ONLY",
     );
     expect(request.prompt).toContain("Right arm");
     expect(request.prompt).toContain("FRAME LEFT");
