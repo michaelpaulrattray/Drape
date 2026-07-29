@@ -51,6 +51,7 @@ export const EVIDENCE_PACKAGE_REFUSALS = [
   "compatibility_repair_required",
   "compatibility_unverified",
   "angle_not_supported",
+  "projection_not_calibrated",
 ] as const;
 export type EvidencePackageRefusal = typeof EVIDENCE_PACKAGE_REFUSALS[number];
 
@@ -285,6 +286,7 @@ function slotPlan(input: {
 function closedGraphSlotPlan(input: {
   slot: EvidencePackageSlotState;
   authority: InkPackageAngleAuthority;
+  projectionReleased: boolean;
 }): EvidencePackagePlanSlot {
   const { slot, authority } = input;
   if (slot.selectedAssetId !== null) {
@@ -321,6 +323,13 @@ function closedGraphSlotPlan(input: {
       };
     }
   }
+  if (authority.requiresProjectionCandidate && !input.projectionReleased) {
+    return {
+      ...attentionSlot(slot.angle, "projection_not_calibrated"),
+      action: null,
+      requiresCoverageProbe: false,
+    };
+  }
   const action = authority.requiresProjectionCandidate
     ? "projection"
     : "refresh";
@@ -351,6 +360,7 @@ export function computeEvidencePackageSyncPlan(input: {
   requestedAngles?: readonly CanonicalViewAngle[];
   requiredMintAngles: readonly CanonicalViewAngle[];
   hasUnresolvedIntentOrReadyCandidate: boolean;
+  releasedProjectionAngles: readonly CanonicalViewAngle[];
 }): EvidencePackageSyncPlan {
   const byAngle = normalizeSlots(input.slots);
   const frontFullAssetId = byAngle?.get("frontFull")?.selectedAssetId ?? null;
@@ -378,6 +388,9 @@ export function computeEvidencePackageSyncPlan(input: {
         (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)
       )
     );
+  const releasedProjections = new Set(
+    input.releasedProjectionAngles,
+  );
 
   if (
     !positiveId(input.modelId)
@@ -404,6 +417,7 @@ export function computeEvidencePackageSyncPlan(input: {
     ? CANONICAL_VIEW_ANGLES.map((angle) => closedGraphSlotPlan({
         slot: byAngle.get(angle)!,
         authority: inkPackageAngleAuthority(closedGraph, angle),
+        projectionReleased: releasedProjections.has(angle),
       }))
     : CANONICAL_VIEW_ANGLES.map((angle) => slotPlan({
         slot: byAngle.get(angle)!,

@@ -189,6 +189,7 @@ function dependencies(
   return {
     delivery: delivery(),
     enabledForUser: () => true,
+    projectionAngleReleased: () => true,
     findClaimSubject: vi.fn(async () => ({
       id: prepared.intentId,
       modelId: prepared.modelId,
@@ -531,6 +532,25 @@ describe("ink candidate generation", () => {
     expect(refused.prepareProjection).not.toHaveBeenCalled();
     expect(refused.charge).not.toHaveBeenCalled();
     expect(refused.generate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a disabled projection angle before quota, operation, or charge", async () => {
+    const deps = dependencies({
+      projectionAngleReleased: () => false,
+    });
+    await expect(generateInkProjectionCandidate(deps, {
+      userId: prepared.userId,
+      modelId: prepared.modelId,
+      targetViewAngle: "sideFull",
+      clientRequestId: "92929292-9292-4292-8292-929292929292",
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("not yet safely supported"),
+    });
+    expect(deps.enforceQuota).not.toHaveBeenCalled();
+    expect(deps.begin).not.toHaveBeenCalled();
+    expect(deps.charge).not.toHaveBeenCalled();
+    expect(deps.generate).not.toHaveBeenCalled();
   });
 
   it("uses one included retry without a second charge", async () => {

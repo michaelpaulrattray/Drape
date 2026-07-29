@@ -153,6 +153,7 @@ describe("R7-7G multi-feature package plan", () => {
       slots: slots(false),
       requiredMintAngles: ["frontClose", "threeQuarter", "frontFull"],
       hasUnresolvedIntentOrReadyCandidate: false,
+      releasedProjectionAngles: CANONICAL_VIEW_ANGLES,
     });
     expect(result.supported).toBe(true);
     expect(result.slots.find((slot) => slot.angle === "backFull"))
@@ -175,6 +176,7 @@ describe("R7-7G multi-feature package plan", () => {
       slots: slots(true),
       requiredMintAngles: ["frontClose", "threeQuarter", "frontFull"],
       hasUnresolvedIntentOrReadyCandidate: false,
+      releasedProjectionAngles: CANONICAL_VIEW_ANGLES,
     });
     expect(result.slots.find((slot) => slot.angle === "backFull"))
       .toMatchObject({
@@ -184,5 +186,27 @@ describe("R7-7G multi-feature package plan", () => {
       });
     expect(result.slots.find((slot) => slot.angle === "sideFull"))
       .toMatchObject({ action: "projection" });
+  });
+
+  it("removes price and action when first-unseen projection is not released", () => {
+    const result = computeEvidencePackageSyncPlan({
+      modelId: 35,
+      modelStatus: "draft",
+      graph: graph(false),
+      slots: slots(false),
+      requiredMintAngles: ["frontClose", "threeQuarter", "frontFull"],
+      hasUnresolvedIntentOrReadyCandidate: false,
+      releasedProjectionAngles: [],
+    });
+    const projectionSlots = result.slots.filter(
+      (slot) => slot.refusal === "projection_not_calibrated",
+    );
+    expect(projectionSlots.length).toBeGreaterThan(0);
+    expect(projectionSlots.every(
+      (slot) => slot.action === null && slot.cost === 0,
+    )).toBe(true);
+    expect(result.actionableAngles).not.toEqual(expect.arrayContaining(
+      projectionSlots.map((slot) => slot.angle),
+    ));
   });
 });

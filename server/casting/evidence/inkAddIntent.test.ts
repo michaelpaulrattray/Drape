@@ -303,6 +303,34 @@ describe("R7-7D D4A ink intent service", () => {
     expect(begin).not.toHaveBeenCalled();
   });
 
+  it("refuses an uncalibrated tuple before claiming durable or paid work", async () => {
+    const begin = vi.fn();
+    await expect(beginInkAnywhereIntent({
+      userId: 7,
+      modelId: 14,
+      instruction: "Add a black band tattoo to his left forearm",
+      clientRequestId: request.clientRequestId,
+    }, {
+      enabledForUser: () => true,
+      plan: async () => ({
+        ok: true,
+        normalizedDescriptor: "black band tattoo",
+        anatomy: {
+          zone: "forearm",
+          surface: "circumferential",
+          side: "left",
+        },
+        locationLabel: "Left forearm",
+        recipeVersion: "ink.add.anywhere.authorization.v1",
+      }),
+      begin,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("not yet safely supported"),
+    });
+    expect(begin).not.toHaveBeenCalled();
+  });
+
   it("returns a closed capability projection while D4 is not product-ready", async () => {
     await expect(readInkAddCapability(
       { userId: 7, modelId: 14 },

@@ -7,7 +7,10 @@ import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
 import { SlotVersionHistory } from '@/features/casting/components/SlotVersionHistory';
 import { CastStateHistory } from '@/features/casting/components/CastStateHistory';
-import { evidencePackageSlotNeedsAction } from '@/features/casting/evidence/evidencePackageDisplay';
+import {
+  evidencePackageRefusalMessage,
+  evidencePackageSlotNeedsAction,
+} from '@/features/casting/evidence/evidencePackageDisplay';
 import { requestInkProjection } from '@/features/casting/evidence/inkProjectionEvents';
 
 const OPEN_CASTING_DETAILS = 'casting-open-details';
@@ -158,6 +161,9 @@ export function CastingDetailsDialog() {
             const blocker = blockers.get(slot.angle);
             const headshotBlock = slot.angle === 'frontClose' ? headshotIssue : null;
             const evidenceStatus = evidenceByAngle.get(slot.angle)?.status;
+            const evidenceRefusal = evidencePackageRefusalMessage(
+              evidenceByAngle.get(slot.angle)?.refusal,
+            );
             const requiresProjection = Boolean(
               plan && 'action' in plan && plan.action === 'projection',
             );
@@ -189,6 +195,8 @@ export function CastingDetailsDialog() {
                             : 'Refreshing against the current identity…'
                         : headshotBlock
                           ? `${headshotBlock} Use a compatible version below, or continue editing the headshot.`
+                          : evidenceRefusal
+                            ? evidenceRefusal
                           : blocker?.message
                           ? blocker.message
                           : slot.failed

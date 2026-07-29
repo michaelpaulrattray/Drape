@@ -40,6 +40,7 @@ import {
 } from "./evidencePackageRegistry";
 import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
 import { readEvidencePackageFeatureRowsIn } from "./evidencePackageFeatureRows";
+import { releasedInkProjectionAngles } from "./inkReleasePolicy";
 
 const PACKAGE_UNAVAILABLE =
   "This Cast's saved feature evidence is unavailable. No credits were used.";
@@ -156,6 +157,7 @@ async function loadAuthorityRowsIn(
     requiredMintAngles: CANONICAL_VIEW_ANGLES,
     hasUnresolvedIntentOrReadyCandidate:
       featureRows.hasUnresolvedIntentOrReadyCandidate,
+    releasedProjectionAngles: releasedInkProjectionAngles(),
   });
   const frontFull = state.selectedViews.find((view) => view.angle === "frontFull");
   const closedGraphCandidate = assessClosedInkFeatureGraph(featureRows.graph);
@@ -309,6 +311,7 @@ async function inspectEvidencePackageRoutePlanIn(
     requiredMintAngles: CANONICAL_VIEW_ANGLES,
     hasUnresolvedIntentOrReadyCandidate:
       featureRows.hasUnresolvedIntentOrReadyCandidate,
+    releasedProjectionAngles: releasedInkProjectionAngles(),
   });
   return plan.supported
     ? { type: "supported", plan }

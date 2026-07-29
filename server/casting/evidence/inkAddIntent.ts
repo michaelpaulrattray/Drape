@@ -58,6 +58,10 @@ import {
   type InkAnatomyTuple,
 } from "./inkAnatomyRegistry";
 import {
+  INK_AUTHORING_LOCATION_UNAVAILABLE,
+  isInkAuthoringTupleReleased,
+} from "./inkReleasePolicy";
+import {
   CANONICAL_VIEW_ANGLES,
   VIEW_ANGLE_LABELS,
   type CanonicalViewAngle,
@@ -120,6 +124,7 @@ export interface InkAddIntentDependencies {
 export interface InkAnywhereIntentDependencies {
   enabledForUser?: (userId: number) => boolean;
   plan?: typeof planInkAddInstruction;
+  authoringTupleReleased?: typeof isInkAuthoringTupleReleased;
   classify?: (request: InkInstructionPlanningRequest) => Promise<unknown>;
   warnAuthorizationUnknown?: InkAddIntentDependencies["warnAuthorizationUnknown"];
   begin?: BeginOperation;
@@ -496,6 +501,14 @@ export async function beginInkAnywhereIntent(
         : ambiguous
           ? INK_ANYWHERE_INTENT_AMBIGUOUS
           : INK_ANYWHERE_INTENT_UNSUPPORTED,
+    });
+  }
+  const authoringTupleReleased =
+    dependencies.authoringTupleReleased ?? isInkAuthoringTupleReleased;
+  if (!authoringTupleReleased(plan.anatomy)) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: INK_AUTHORING_LOCATION_UNAVAILABLE,
     });
   }
 

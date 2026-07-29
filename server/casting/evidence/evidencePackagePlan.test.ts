@@ -146,6 +146,7 @@ function plan(input: {
     }),
     requiredMintAngles: ["frontClose", "threeQuarter", "frontFull"],
     hasUnresolvedIntentOrReadyCandidate: input.unresolved ?? false,
+    releasedProjectionAngles: CANONICAL_VIEW_ANGLES,
   });
 }
 
@@ -265,6 +266,7 @@ describe("evidence-aware package plan", () => {
       slots: slots(),
       requiredMintAngles: ["frontClose"],
       hasUnresolvedIntentOrReadyCandidate: false,
+      releasedProjectionAngles: CANONICAL_VIEW_ANGLES,
     });
     expect(unsupported.supported).toBe(false);
     expect(JSON.stringify(unsupported)).not.toMatch(

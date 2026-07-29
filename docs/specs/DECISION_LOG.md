@@ -1052,6 +1052,39 @@ versions. The repair passes typecheck, 3,158 tests, build, and diff checks
 locally, but remains pending production deployment and one controlled paid
 retest. No anatomical cohort is enabled and R7-7G remains open.
 
+**R7-7G founder calibration and release-policy closure checkpoint (2026-07-29;
+pending deployment):** the production calibration Cast accepted five
+independent tattoos across centre anterior face, centre posterior upper torso,
+left anterior shoulder, right circumferential full arm, and left anterior
+thigh. Multi-feature accumulation/preservation, cancellation, exact refunds,
+whole-Cast history/restore, and affected-view planning passed. The accepted
+authoring graph remains available only to founder user 1.
+
+First-unseen projection did not earn release under the current Gemini image
+configuration. Side failed both included attempts at the combined
+identity/placement/preservation gate and refunded 300 credits (operation
+`3421a924-4666-4439-a044-ff0ab86e58d9`). A delivered 3/4 candidate visibly
+mirrored the left-shoulder triangle despite the then-current semantic probe;
+founder inspection rejected it and Cancel removed the private candidate
+(operation `a394dc93-2eb5-4c52-8106-b649200fc913`, 300-credit successful
+delivery). The added independent per-feature placement audit then rejected
+both Walk attempts with 90% confidence for wrong anatomical side and
+authorized zone while identity/framing passed; the 300 credits refunded
+exactly once (operation `637c1649-c8ce-4186-8313-6f25250d051d`). No unsafe
+projection entered canon.
+
+Release policy `ink.add.release-policy.2026-07-29.v1` admits only the exact
+founder-confirmed v2 tuples—centre anterior face, centre posterior upper torso,
+left anterior shoulder, right circumferential full arm, and left anterior
+thigh—plus all three sides of the previously calibrated anterior upper-torso
+pilot. Every other tuple refuses before durable or paid work. First-unseen
+projection is disabled for every canonical angle under the current
+provider/recipe configuration: package plans expose no price or retry and
+direct mutation calls refuse before quota, operation, provider, or credits.
+This is an explicit cohort disablement, not a weakened evidence check. The
+candidate acceptance machinery stays in place for future recalibration.
+Typecheck, 247 files / 3,177 tests, build, and diff checks pass locally.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

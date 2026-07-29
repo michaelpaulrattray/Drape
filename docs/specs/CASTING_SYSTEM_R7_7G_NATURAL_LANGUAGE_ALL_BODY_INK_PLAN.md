@@ -1,8 +1,11 @@
 # Casting System R7-7G — Natural-Language All-Body Ink Execution Plan
 
-**Status:** G0 through G7 complete; G8 founder calibration in progress. The
-first paid full-sleeve drive exposed mirrored anatomical laterality; the
-fail-closed repair is locally verified and awaits production retest.
+**Status:** G0 through G8 complete locally. Exact founder-confirmed authoring
+tuples remain available only inside the founder scope; uncalibrated tuples
+refuse before durable or paid work. First-unseen projection is disabled for the
+current provider configuration after repeatable anatomical-placement failures.
+The release-policy closure awaits production deployment and no-cost
+confirmation.
 
 **Date:** 2026-07-29
 
@@ -49,16 +52,36 @@ arm. The semantic placement probe incorrectly admitted it, but founder visual
 inspection rejected it before acceptance; Cancel removed the preview and did
 not refund a successfully delivered candidate, as disclosed.
 
-The local repair changes the all-body composer recipe from v1 to v2, spells
-subject-side/frame-side authority into generation, and adds an independent
-placement-audit probe over the candidate with a server-owned anatomical-zone
-overlay. The audit must positively prove the requested anatomical side and
-zone and must find no conflicting outside change; unknown remains fail-closed.
-An opposite-side result now earns the one included retry, then fails and
-refunds exactly once. Production contains zero accepted all-body v1 feature
-versions, so the recipe fence strands no accepted feature. `pnpm check`, all
-3,158 tests, and `pnpm build` pass. The repair is not yet deployed or paid-
-retested, no tuple cohort is enabled, and R7-7G remains open.
+The calibration graph now contains five accepted tattoos: a right
+circumferential full sleeve, centre anterior forehead star, centre posterior
+upper-back sun, left anterior shoulder triangle, and left anterior thigh
+crescent. This proves accumulation across five zones plus prior-feature
+preservation. Whole-Cast history and restore were founder-confirmed without
+generation or credit changes.
+
+Projection calibration remained unsafe. Side operation
+`3421a924-4666-4439-a044-ff0ab86e58d9` failed both attempts and refunded 300
+credits. 3/4 operation `a394dc93-2eb5-4c52-8106-b649200fc913` delivered a
+private candidate, but founder inspection found the left-shoulder triangle on
+the wrong anatomical side; Cancel removed it and the disclosed 300-credit
+delivery charge remained. The independent per-feature projection placement
+audit was then deployed. Walk operation
+`637c1649-c8ce-4186-8313-6f25250d051d` passed free observed coverage, but both
+generated attempts failed anatomical side and authorized zone at 90%
+confidence while identity, framing, semantic feature match, and unexpected-ink
+checks passed. Its 300 credits were refunded exactly once and the balance
+returned to 66,200.
+
+The final release policy is tied to the current composer/provider recipes. It
+admits only exact founder-confirmed authoring tuples, plus the calibrated
+anterior upper-torso pilot, within founder user 1's existing scope. Every other
+tuple refuses before an operation is claimed. All first-unseen projection
+angles are disabled: public package plans expose zero price/action and say the
+coverage is unavailable in this release; direct mutation calls refuse before
+quota, operation, provider, or credit work. The acceptance lifecycle remains
+implemented and tested for future recalibration. `pnpm check`, 3,177 tests, and
+`pnpm build` pass locally. Production deployment and one no-cost copy/authority
+drive remain before the final R7-7G closure record.
 
 ## 1. Outcome
 

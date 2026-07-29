@@ -100,6 +100,10 @@ import {
   type InkProjectionFeatureReference,
 } from "./inkProjectionComposition";
 import type { CanonicalViewAngle } from "../../../shared/boardTypes";
+import {
+  INK_PROJECTION_LOCATION_UNAVAILABLE,
+  isInkProjectionAngleReleased,
+} from "./inkReleasePolicy";
 
 const log = createModuleLogger("casting/evidence/inkCandidateGeneration");
 const CANDIDATE_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
@@ -121,6 +125,7 @@ type BeginOperation = (input: Parameters<typeof beginDirectOperation>[0]) =>
 export interface InkCandidateGenerationDependencies {
   delivery: PrivateEvidenceStorageAdapter;
   enabledForUser?: (userId: number) => boolean;
+  projectionAngleReleased?: typeof isInkProjectionAngleReleased;
   begin?: BeginOperation;
   findClaimSubject?: typeof findOwnedInkIntentClaimSubject;
   getOutcomeByClaim?: typeof getGenerationOperationOutcomeByClaim;
@@ -901,6 +906,14 @@ async function executeProjectionCandidate(
 ): Promise<InkCandidateReadyResult> {
   const enabled = dependencies.enabledForUser ?? captureEvidenceComposerEnabled;
   requireEnabled(input.userId, enabled);
+  const projectionAngleReleased =
+    dependencies.projectionAngleReleased ?? isInkProjectionAngleReleased;
+  if (!projectionAngleReleased(input.targetViewAngle)) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: INK_PROJECTION_LOCATION_UNAVAILABLE,
+    });
+  }
   const projectionPrice = slotCost(input.targetViewAngle);
   const payload = {
     modelId: input.modelId,

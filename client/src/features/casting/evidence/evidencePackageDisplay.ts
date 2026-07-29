@@ -22,3 +22,12 @@ export function evidencePackageSlotNeedsAction(
     ),
   );
 }
+
+export function evidencePackageRefusalMessage(
+  refusal: string | null | undefined,
+): string | null {
+  if (refusal === "projection_not_calibrated") {
+    return "Tattoo coverage is unavailable for this view in this release.";
+  }
+  return null;
+}

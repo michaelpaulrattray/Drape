@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7F are complete; R7-7G G0–G7 are complete and G8 founder calibration is in progress as of 2026-07-29; the first all-body paid drive exposed a mirrored-laterality safety defect and the fail-closed repair is locally verified pending production retest; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure follows
+**Status:** IN EXECUTION — R7-0 through R7-7F are complete; R7-7G G0–G8 founder calibration is complete with exact authoring tuples released only inside the founder scope and first-unseen projection disabled for the current provider configuration after repeatable placement failures; the release-policy closure is locally verified and awaits production deployment/confirmation; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure follows
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -364,18 +364,32 @@ both migrations without row-count drift, landed the new runtime feature-off,
 passed the ordinary Refine refusal without charge, and then enabled the
 founder-only evidence scopes.
 
-The first 350-credit G8 drive resolved a right full sleeve from natural
-language and selected Full front, but the provider mirrored the ink onto the
-subject's left arm. The original semantic placement probe incorrectly returned
-pass; founder visual inspection caught the defect before acceptance and the
-candidate was cancelled. The repair bumps the all-body composer to v2, gives
-composer and probe explicit subject/frame laterality authority, and adds an
-independent probe over a server-annotated candidate zone. Opposite-side or
-out-of-zone ink now forces the included retry and then fails/refunds. Zero
-accepted all-body v1 feature versions exist in production. Typecheck, 3,158
-tests, build, and diff checks pass locally. The repair still requires
-production deployment and one controlled paid retest; no cohort is enabled
-and R7-7G is not closed.
+Founder calibration accepted a five-feature graph spanning centre anterior
+face, centre posterior upper torso, left anterior shoulder, right
+circumferential full arm, and left anterior thigh. Multiple additions,
+preservation, whole-Cast history/restore, cancellation, refunds, and
+affected-view planning passed. The original full-sleeve authoring drive exposed
+mirrored laterality; subsequent composer/probe revisions made anatomical side
+and authorized-zone placement independent fail-closed requirements.
+
+First-unseen package projection did not earn release. Side failed both attempts
+at the combined identity/placement/preservation gate and refunded. A 3/4
+candidate was coherent but visibly mirrored the left-shoulder triangle; it was
+cancelled, and the missing independent placement audit was added. The final
+Walk retest then failed both attempts at that independent audit with 90%
+confidence for wrong anatomical side and authorized zone, while identity and
+framing passed; it refunded in full. No unsafe projection was accepted.
+
+The final release policy therefore admits only the exact founder-confirmed
+authoring tuples (plus the previously calibrated anterior upper-torso pilot)
+inside the existing founder-only scope. Every uncalibrated tuple refuses before
+durable or paid work. First-unseen projection is disabled for every angle under
+the current provider/recipe configuration; package plans expose no price or
+retry and say that tattoo coverage is unavailable for that view in this
+release. The candidate acceptance architecture remains closed and tested for a
+future recalibration. Typecheck, 3,177 tests, build, and diff checks pass
+locally. R7-7G awaits deployment and one no-cost production confirmation of the
+release-policy copy before R7-8 begins.
 
 ### R7-8 — Quality choice, downstream reference sheets, and dogfood closure
 
