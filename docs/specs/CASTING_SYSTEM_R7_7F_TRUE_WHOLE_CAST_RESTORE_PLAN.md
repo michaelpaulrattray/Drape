@@ -1,6 +1,6 @@
 # Casting System R7-7F — True Whole-Cast Restore Plan
 
-**Status:** locally verified release candidate; code-off deployment and founder drive pending
+**Status:** code deployed with no restore-scope mutation; separately authorized founder evidence/drive gate pending
 **Authority:** `CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md` §6.5,
 §6.6, §14, §18, and §20; `CASTING_SYSTEM_R7_REVIEW_AND_EXECUTION_PLAN.md`
 §7–§9
@@ -381,6 +381,14 @@ Verification evidence:
 
 The repository verification recipe cannot safely exercise this interaction
 with its empty `verify-bot-local` account, and the local environment has no
-disposable snapshot model/database. The next permitted step is therefore F7:
-deploy the code with restore scope off. Privacy-safe founder-account evidence
-and F8 scope enablement remain separate gates.
+disposable snapshot model/database.
+
+F7 deployed at commit `d70a489` as Railway deployment
+`52d8fb8d-0de1-4734-aba3-d12d05d2cdb5`. Railway reported terminal `SUCCESS`,
+the instance was running, bounded startup logs showed the server listening,
+and `/api/health` reported healthy with the database up. No production
+variable was changed. A targeted restore-scope readback was not performed
+because the available CLI path would retrieve the complete secret-bearing
+variable set before filtering and that broader read was not authorized.
+Exact scope confirmation, privacy-safe founder history/preflight evidence,
+and F8 enablement remain separate gates.

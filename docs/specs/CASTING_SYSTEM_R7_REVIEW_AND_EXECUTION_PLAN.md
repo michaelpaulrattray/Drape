@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7E are complete as of 2026-07-29; R7-7F true whole-Cast snapshot restore is a locally verified release candidate awaiting code-off deployment and founder drive, followed by the still-open R7-8 closure program
+**Status:** IN EXECUTION — R7-0 through R7-7E are complete as of 2026-07-29; R7-7F true whole-Cast snapshot restore code is deployed with no restore-scope mutation and awaits the separately authorized founder evidence/drive gate, followed by the still-open R7-8 closure program
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -371,16 +371,15 @@ The founder approved all eight recommendations below as binding R7 direction:
 
 ## 9. Immediate next action
 
-1. Deploy the locally verified R7-7F code with
-   `R7_SNAPSHOT_RESTORE_SCOPE=off`.
-2. Obtain separate authorization for privacy-safe, read-only founder timeline
-   and restore-preflight evidence.
-3. If that evidence closes, separately authorize founder-only
+1. Obtain separate authorization for a targeted production restore-scope
+   readback and privacy-safe, read-only founder timeline/restore-preflight
+   evidence.
+2. If that evidence closes, separately authorize founder-only
    `users:1` restore scope.
-4. Founder-drive the available featureless and evidence-bearing historical
+3. Founder-drive the available featureless and evidence-bearing historical
    draft states without generation, provider work, credit changes, or storage
    writes.
-5. Close R7-7F only after the recorded founder-drive gate, then execute the
+4. Close R7-7F only after the recorded founder-drive gate, then execute the
    remaining R7-8 quality/reference-sheet/dogfood closure program in its
    ratified order.
 
