@@ -229,14 +229,14 @@ describe("R7-7D fail-closed structured probes", () => {
       sourceAngle: "frontFull",
     });
     expect(visibility.recipeVersion)
-      .toBe("ink.add.anywhere.visibility.v4");
+      .toBe("ink.add.anywhere.visibility.v5");
     expect(visibility.prompt).toContain("anatomical side");
     expect(visibility.prompt).toContain("integer from 0 to 100");
     expect(visibility.images.map(({ role }) => role)).toEqual(
       ["original_target"],
     );
     expect(guideCoverage.recipeVersion)
-      .toBe("ink.add.anywhere.visibility.v4");
+      .toBe("ink.add.anywhere.visibility.v5");
     expect(guideCoverage.prompt).toContain("Audit only that guide");
     expect(guideCoverage.images.map(({ role }) => role)).toEqual([
       "original_target",

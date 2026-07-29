@@ -144,10 +144,13 @@ describe("all-body ink anatomy registry", () => {
     expect(front).toMatchObject({ y: 0.65, height: 0.27 });
     expect(back).toMatchObject({ y: 0.65, height: 0.27 });
     expect(walk).toMatchObject({ y: 0.58, height: 0.17 });
-    expect(frontThigh).toMatchObject({ y: 0.76, height: 0.24 });
+    expect(frontThigh).toMatchObject({ y: 0.79, height: 0.205 });
+    expect(frontThigh.x).toBeCloseTo(0.53);
+    expect(frontThigh.width).toBeCloseTo(0.11);
     expect(walkThigh).toMatchObject({ y: 0.55, height: 0.25 });
     expect(front.x).toBeGreaterThan(0.5);
     expect(back.x + back.width).toBeLessThan(0.5);
+    expect(frontThigh.x + frontThigh.width).toBeLessThanOrEqual(0.64);
   });
 
   it("routes anatomy below the knees away from knee-framed slots", () => {

@@ -83,7 +83,7 @@ const anywherePrepared: PreparedInkCandidateAttempt = {
     normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
     composerRecipeVersion: "ink.add.anywhere.composer.v6",
     probeRecipeVersion: "ink.add.anywhere.probe.v2",
-    visibilityRecipeVersion: "ink.add.anywhere.visibility.v4",
+    visibilityRecipeVersion: "ink.add.anywhere.visibility.v5",
   },
   normalizedDescriptor: "blackwork full sleeve on his right arm",
 };
@@ -358,7 +358,7 @@ describe("ink candidate generation", () => {
       prompt: expect.stringContaining("zone=full_arm"),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.visibility.v4",
+      recipeVersion: "ink.add.anywhere.visibility.v5",
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
       recipeVersion: "ink.add.anywhere.probe.v2",

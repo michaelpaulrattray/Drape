@@ -24,7 +24,7 @@ export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
 export const INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION =
   "ink.add.anywhere.placement-audit.v4" as const;
 export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
-  "ink.add.anywhere.visibility.v4" as const;
+  "ink.add.anywhere.visibility.v5" as const;
 export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
   "ink.add.anywhere.projection.v1" as const;
 export const INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION =
@@ -266,11 +266,11 @@ const FULL_ANGLE_ZONE_OVERRIDES: Readonly<
 > = Object.freeze({
   frontFull: Object.freeze({
     hand: rect(0.04, 0.65, 0.92, 0.27),
-    thigh: rect(0.25, 0.76, 0.5, 0.24),
+    thigh: rect(0.36, 0.79, 0.28, 0.205),
   }),
   backFull: Object.freeze({
     hand: rect(0.04, 0.65, 0.92, 0.27),
-    thigh: rect(0.25, 0.76, 0.5, 0.24),
+    thigh: rect(0.36, 0.79, 0.28, 0.205),
   }),
 });
 
