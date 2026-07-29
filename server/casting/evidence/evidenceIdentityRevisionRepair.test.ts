@@ -14,6 +14,7 @@ describe("bounded evidence identity-revision repair", () => {
       "--app-id", "drape-production",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
+      "--expected-restored-view-count", "4",
       "--allow-production-read-only",
     ])).toThrow("full-database repair is refused");
 
@@ -24,6 +25,7 @@ describe("bounded evidence identity-revision repair", () => {
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "01",
+      "--expected-restored-view-count", "4",
       "--allow-production-read-only",
     ])).toThrow("--expected-repair-count must be non-negative");
 
@@ -34,6 +36,7 @@ describe("bounded evidence identity-revision repair", () => {
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
+      "--expected-restored-view-count", "4",
       "--apply",
       "--allow-evidence-identity-repair-write",
       "--allow-production-evidence-identity-repair",
@@ -51,6 +54,7 @@ describe("bounded evidence identity-revision repair", () => {
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
+      "--expected-restored-view-count", "4",
       "--allow-production-read-only",
     ])).toMatchObject({
       apply: false,
@@ -58,6 +62,7 @@ describe("bounded evidence identity-revision repair", () => {
       modelIds: [35],
       expectedModelCount: 1,
       expectedRepairCount: 1,
+      expectedRestoredViewCount: 4,
     });
 
     expect(parseEvidenceIdentityRevisionRepairArgs([
@@ -67,6 +72,7 @@ describe("bounded evidence identity-revision repair", () => {
       "--model-id", "35",
       "--expected-model-count", "1",
       "--expected-repair-count", "1",
+      "--expected-restored-view-count", "4",
       "--apply",
       "--allow-evidence-identity-repair-write",
       "--allow-production-evidence-identity-repair",
@@ -81,7 +87,7 @@ describe("bounded evidence identity-revision repair", () => {
     });
   });
 
-  it("pins one atomic three-row correction with lock and postflight fences", async () => {
+  it("pins one atomic revision and false-staleness correction with lock and postflight fences", async () => {
     const source = await readFile(
       new URL("./evidenceIdentityRevisionRepair.ts", import.meta.url),
       "utf8",
@@ -92,7 +98,7 @@ describe("bounded evidence identity-revision repair", () => {
     );
 
     expect(source.match(/\.update\(models\)/g)).toHaveLength(1);
-    expect(source.match(/\.update\(modelAssets\)/g)).toHaveLength(1);
+    expect(source.match(/\.update\(modelAssets\)/g)).toHaveLength(2);
     expect(source.match(/\.update\(modelPackageSnapshotSlots\)/g))
       .toHaveLength(1);
     expect(source).not.toMatch(/\.insert\(|\.delete\(/);
@@ -103,9 +109,12 @@ describe("bounded evidence identity-revision repair", () => {
     expect(source).toContain("sameDocuments(identity, parents[0])");
     expect(source).toContain("eq(models.userId, assessment.userId)");
     expect(source).toContain("expectedRepairCount: 0");
+    expect(source).toContain("expectedRestoredViewCount: 0");
     expect(source).toContain('row.status !== "repaired"');
     expect(source).toContain("JSON_SET");
     expect(source).toContain("JSON_UNQUOTE(JSON_EXTRACT");
+    expect(source).toContain("affectedViewsForInkAdd");
+    expect(source).toContain("parentPackageSnapshotId");
     expect(source).toContain('set({ compatibility: "current" })');
     expect(source).toContain(
       'eq(modelPackageSnapshotSlots.compatibility, "stale")',
@@ -114,6 +123,7 @@ describe("bounded evidence identity-revision repair", () => {
       'eq(modelPackageSnapshotSlots.selectionReason, "carried")',
     );
     expect(source).toContain("updatedSlots");
+    expect(source).not.toContain('eq(modelPackageSnapshotSlots.viewAngle, "frontClose")');
     expect(script).not.toMatch(/--all|storagePut|deductPoints|generateContent/);
   });
 });

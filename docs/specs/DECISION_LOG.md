@@ -827,9 +827,13 @@ complete image is stamped into the existing revision; selective package
 compatibility carries the view-impact law. This keeps the unchanged headshot a
 valid mint anchor without duplicating or mutating headshot history. The one
 founder pilot row written before this correction uses a bounded, lock-fenced,
-three-row repair (model revision, the mis-stamped accepted asset, and the
-carried headshot slot incorrectly marked stale) with
-read-only planning, exact count fences and in-transaction postflight proof.
+all-or-nothing repair: the model revision and mis-stamped accepted asset are
+ corrected, while only carried views proven `current` in the immutable parent
+ package and `unaffected` by the accepted feature are restored in both slot
+ compatibility and asset status. Parent-stale and genuinely affected views
+ remain stale. Read-only planning exposes the exact closed view/asset set;
+ separate model and restored-view count fences plus an in-transaction
+ postflight proof prevent a broader repair.
 
 **R7-7E diagnostic correction (2026-07-29):** a rejected evidence-package
 candidate records only a closed server-owned failure code in its generation

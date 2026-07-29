@@ -5,7 +5,7 @@
  * Planning is SELECT-only. Apply is one all-or-nothing transaction:
  *
  *   owned model lock -> absent operation-lock fence -> immutable snapshot and
- *   feature witnesses -> exact model/asset/headshot-slot correction ->
+ *   feature witnesses -> exact revision + false-staleness correction ->
  *   postflight proof.
  *
  * The tool has no route, worker, scheduler or startup caller.
@@ -16,6 +16,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  or,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -30,10 +31,17 @@ import {
   models,
   modelSnapshotFeatureSelections,
 } from "../../../drizzle/schema";
+import {
+  CANONICAL_VIEW_ANGLES,
+  type CanonicalViewAngle,
+} from "../../../shared/boardTypes";
 import { withTransaction, type TransactionHandle } from "../../db/connection";
 import { stableCanonicalJson } from "../operationContract";
 import { isProductionAppId } from "../deletionAudit";
 import { availableModelWhere } from "../modelAvailability";
+import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
+import { affectedViewsForInkAdd } from "./inkViewImpact";
+import { isSupportedInkPackageTuple } from "./evidencePackageRegistry";
 
 export const EVIDENCE_IDENTITY_REVISION_REPAIR_ERRORS = [
   "active_operation",
@@ -42,8 +50,9 @@ export const EVIDENCE_IDENTITY_REVISION_REPAIR_ERRORS = [
   "anchor_invalid",
   "anchor_revision_missing",
   "feature_graph_invalid",
-  "headshot_slot_mismatch",
   "identity_snapshot_invalid",
+  "package_lineage_invalid",
+  "package_slot_graph_invalid",
   "revision_shape_invalid",
 ] as const;
 
@@ -55,6 +64,7 @@ export interface EvidenceIdentityRevisionRepairSelector {
   modelIds: number[];
   expectedModelCount: number;
   expectedRepairCount: number;
+  expectedRestoredViewCount: number;
 }
 
 export interface EvidenceIdentityRevisionRepairRow {
@@ -62,6 +72,8 @@ export interface EvidenceIdentityRevisionRepairRow {
   acceptedAssetId: number | null;
   fromRevisionHash: string | null;
   toRevisionHash: string | null;
+  restoredViews: CanonicalViewAngle[];
+  restoredAssetIds: number[];
   status: "ready" | "repaired" | "blocked";
   errorCode: EvidenceIdentityRevisionRepairError | null;
 }
@@ -70,6 +82,7 @@ export interface EvidenceIdentityRevisionRepairPlan {
   ready: boolean;
   expectedModelCount: number;
   expectedRepairCount: number;
+  expectedRestoredViewCount: number;
   models: number[];
   rows: EvidenceIdentityRevisionRepairRow[];
 }
@@ -78,8 +91,10 @@ export interface EvidenceIdentityRevisionRepairResult {
   success: boolean;
   expectedModelCount: number;
   expectedRepairCount: number;
+  expectedRestoredViewCount: number;
   updatedModels: number;
-  updatedAssets: number;
+  updatedAcceptedAssets: number;
+  restoredAssets: number;
   updatedSlots: number;
   rows: EvidenceIdentityRevisionRepairRow[];
 }
@@ -109,8 +124,18 @@ interface Assessment {
   userId: number;
   packageSnapshotId: string;
   anchorAssetId: number | null;
+  restoredViews: CanonicalViewAngle[];
+  restoredAssetIds: number[];
+  needsRevisionRepair: boolean;
   fromRevision: string | null;
   toRevision: string | null;
+}
+
+interface PackageSlotWitness {
+  viewAngle: CanonicalViewAngle;
+  selectedAssetId: number;
+  compatibility: "current" | "stale";
+  selectionReason: string;
 }
 
 function positiveInteger(value: number): boolean {
@@ -196,6 +221,14 @@ function normalizeSelector(
       "Evidence identity-revision repair expected row count must be non-negative",
     );
   }
+  if (
+    !Number.isSafeInteger(input.expectedRestoredViewCount)
+    || input.expectedRestoredViewCount < 0
+  ) {
+    throw new Error(
+      "Evidence identity-revision repair expected restored-view count must be non-negative",
+    );
+  }
   return { ...input, modelIds };
 }
 
@@ -248,12 +281,17 @@ function blocked(
       acceptedAssetId: input.acceptedAssetId ?? null,
       fromRevisionHash: revisionHash(fromRevision),
       toRevisionHash: revisionHash(toRevision),
+      restoredViews: [],
+      restoredAssetIds: [],
       status: "blocked",
       errorCode,
     },
     userId: subject.userId,
     packageSnapshotId: subject.currentPackageSnapshotId,
     anchorAssetId: null,
+    restoredViews: [],
+    restoredAssetIds: [],
+    needsRevisionRepair: false,
     fromRevision,
     toRevision,
   };
@@ -277,14 +315,33 @@ async function assessSubjectIn(
   const packages = await tx
     .select({
       identitySnapshotId: modelPackageSnapshots.identitySnapshotId,
+      parentPackageSnapshotId: modelPackageSnapshots.parentPackageSnapshotId,
+      reason: modelPackageSnapshots.reason,
     })
     .from(modelPackageSnapshots)
     .where(and(
       eq(modelPackageSnapshots.id, subject.currentPackageSnapshotId),
       eq(modelPackageSnapshots.modelId, subject.modelId),
     ));
-  if (packages.length !== 1) {
+  if (
+    packages.length !== 1
+    || packages[0].reason !== "evidence_accept"
+    || !packages[0].parentPackageSnapshotId
+  ) {
     return blocked(subject, "identity_snapshot_invalid");
+  }
+  const parentPackages = await tx
+    .select({ id: modelPackageSnapshots.id })
+    .from(modelPackageSnapshots)
+    .where(and(
+      eq(
+        modelPackageSnapshots.id,
+        packages[0].parentPackageSnapshotId!,
+      ),
+      eq(modelPackageSnapshots.modelId, subject.modelId),
+    ));
+  if (parentPackages.length !== 1) {
+    return blocked(subject, "package_lineage_invalid");
   }
   const identities = await tx
     .select()
@@ -316,7 +373,7 @@ async function assessSubjectIn(
     return blocked(subject, "identity_snapshot_invalid");
   }
 
-  const slotsQuery = tx
+  const currentSlotsQuery = tx
     .select({
       viewAngle: modelPackageSnapshotSlots.viewAngle,
       selectedAssetId: modelPackageSnapshotSlots.selectedAssetId,
@@ -329,25 +386,55 @@ async function assessSubjectIn(
         modelPackageSnapshotSlots.packageSnapshotId,
         subject.currentPackageSnapshotId,
       ),
-      inArray(modelPackageSnapshotSlots.viewAngle, ["frontClose", "frontFull"]),
     ));
-  const slots = lock ? await slotsQuery.for("update") : await slotsQuery;
-  const frontClose = slots.filter((slot) => slot.viewAngle === "frontClose");
-  const frontFull = slots.filter((slot) => slot.viewAngle === "frontFull");
+  const parentSlotsQuery = tx
+    .select({
+      viewAngle: modelPackageSnapshotSlots.viewAngle,
+      selectedAssetId: modelPackageSnapshotSlots.selectedAssetId,
+      compatibility: modelPackageSnapshotSlots.compatibility,
+      selectionReason: modelPackageSnapshotSlots.selectionReason,
+    })
+    .from(modelPackageSnapshotSlots)
+    .where(eq(
+      modelPackageSnapshotSlots.packageSnapshotId,
+      parentPackages[0].id,
+    ));
+  const currentSlots = (lock
+    ? await currentSlotsQuery.for("update")
+    : await currentSlotsQuery) as PackageSlotWitness[];
+  const parentSlots = (lock
+    ? await parentSlotsQuery.for("update")
+    : await parentSlotsQuery) as PackageSlotWitness[];
+  const currentByAngle = new Map(
+    currentSlots.map((slot) => [slot.viewAngle, slot]),
+  );
+  const parentByAngle = new Map(
+    parentSlots.map((slot) => [slot.viewAngle, slot]),
+  );
+  const frontClose = currentByAngle.get("frontClose");
+  const frontFull = currentByAngle.get("frontFull");
   if (
-    frontClose.length !== 1
-    || frontFull.length !== 1
-    || frontClose[0].selectedAssetId !== identity.anchorAssetId
-    || frontClose[0].selectionReason !== "carried"
-    || frontFull[0].compatibility !== "current"
+    currentByAngle.size !== currentSlots.length
+    || parentByAngle.size !== parentSlots.length
+    || currentSlots.length !== parentSlots.length
+    || !frontClose
+    || !frontFull
+    || frontClose.selectedAssetId !== identity.anchorAssetId
+    || frontClose.selectionReason !== "carried"
+    || frontFull.compatibility !== "current"
+    || frontFull.selectionReason !== "evidence_accept"
   ) {
-    return blocked(subject, "identity_snapshot_invalid");
+    return blocked(subject, "package_slot_graph_invalid");
   }
 
   const selectedFeatures = await tx
     .select({
       acceptedAssetId: modelIdentityFeatureVersions.acceptedAssetId,
       sourceAssetId: modelIdentityFeatureVersions.sourceAssetId,
+      ontologyVersion: modelIdentityFeatureVersions.ontologyVersion,
+      zone: modelIdentityFeatureVersions.zone,
+      surface: modelIdentityFeatureVersions.surface,
+      side: modelIdentityFeatureVersions.side,
       category: modelIdentityFeatures.category,
     })
     .from(modelSnapshotFeatureSelections)
@@ -387,26 +474,113 @@ async function assessSubjectIn(
   if (
     selectedFeatures.length !== 1
     || selectedFeatures[0].category !== "ink"
+    || !isSupportedInkPackageTuple({
+      capabilityKey: INK_ADD_CAPABILITY_KEY,
+      ontologyVersion: selectedFeatures[0].ontologyVersion,
+      zone: selectedFeatures[0].zone,
+      surface: selectedFeatures[0].surface,
+      side: selectedFeatures[0].side,
+    })
     || !positiveInteger(selectedFeatures[0].acceptedAssetId ?? 0)
-    || selectedFeatures[0].acceptedAssetId !== frontFull[0].selectedAssetId
+    || selectedFeatures[0].acceptedAssetId !== frontFull.selectedAssetId
     || selectedFeatures[0].sourceAssetId === selectedFeatures[0].acceptedAssetId
   ) {
     return blocked(subject, "feature_graph_invalid");
   }
   const acceptedAssetId = selectedFeatures[0].acceptedAssetId!;
+  const affectedViews = new Set(affectedViewsForInkAdd({
+    capabilityKey: INK_ADD_CAPABILITY_KEY,
+    ontologyVersion: selectedFeatures[0].ontologyVersion,
+    zone: selectedFeatures[0].zone,
+    surface: selectedFeatures[0].surface,
+    side: selectedFeatures[0].side,
+  }));
+  const restoredViews: CanonicalViewAngle[] = [];
+  const restoredAssetIds: number[] = [];
+  for (const angle of CANONICAL_VIEW_ANGLES) {
+    const currentSlot = currentByAngle.get(angle);
+    const parentSlot = parentByAngle.get(angle);
+    if (!currentSlot && !parentSlot) continue;
+    if (!currentSlot || !parentSlot) {
+      return blocked(subject, "package_slot_graph_invalid", {
+        acceptedAssetId,
+      });
+    }
+    if (angle === "frontFull") {
+      if (
+        currentSlot.selectedAssetId !== acceptedAssetId
+        || currentSlot.compatibility !== "current"
+        || currentSlot.selectionReason !== "evidence_accept"
+      ) {
+        return blocked(subject, "package_slot_graph_invalid", {
+          acceptedAssetId,
+        });
+      }
+      continue;
+    }
+    if (
+      currentSlot.selectedAssetId !== parentSlot.selectedAssetId
+      || currentSlot.selectionReason !== "carried"
+      || !["current", "stale"].includes(parentSlot.compatibility)
+    ) {
+      return blocked(subject, "package_slot_graph_invalid", {
+        acceptedAssetId,
+      });
+    }
+    if (affectedViews.has(angle)) {
+      if (currentSlot.compatibility !== "stale") {
+        return blocked(subject, "package_slot_graph_invalid", {
+          acceptedAssetId,
+        });
+      }
+      continue;
+    }
+    if (parentSlot.compatibility === "stale") {
+      if (currentSlot.compatibility !== "stale") {
+        return blocked(subject, "package_slot_graph_invalid", {
+          acceptedAssetId,
+        });
+      }
+      continue;
+    }
+    if (currentSlot.compatibility === "stale") {
+      restoredViews.push(angle);
+      restoredAssetIds.push(currentSlot.selectedAssetId);
+    } else if (currentSlot.compatibility !== "current") {
+      return blocked(subject, "package_slot_graph_invalid", {
+        acceptedAssetId,
+      });
+    }
+  }
+  if (new Set(restoredAssetIds).size !== restoredAssetIds.length) {
+    return blocked(subject, "package_slot_graph_invalid", {
+      acceptedAssetId,
+    });
+  }
+
+  const requiredAssetIds = Array.from(new Set([
+    identity.anchorAssetId,
+    acceptedAssetId,
+    ...currentSlots.map((slot) => slot.selectedAssetId),
+  ])).sort((left, right) => left - right);
   const assetsQuery = tx
     .select({
       id: modelAssets.id,
       viewType: modelAssets.viewType,
       storageUrl: modelAssets.storageUrl,
+      status: modelAssets.status,
       provenance: modelAssets.provenance,
     })
     .from(modelAssets)
     .where(and(
       eq(modelAssets.modelId, subject.modelId),
-      inArray(modelAssets.id, [identity.anchorAssetId, acceptedAssetId]),
+      inArray(modelAssets.id, requiredAssetIds),
     ));
   const assets = lock ? await assetsQuery.for("update") : await assetsQuery;
+  if (assets.length !== requiredAssetIds.length) {
+    return blocked(subject, "package_slot_graph_invalid", { acceptedAssetId });
+  }
+  const assetById = new Map(assets.map((asset) => [asset.id, asset]));
   const anchor = assets.find((asset) => asset.id === identity.anchorAssetId);
   const accepted = assets.find((asset) => asset.id === acceptedAssetId);
   const targetRevision = revisionFrom(anchor?.provenance);
@@ -433,6 +607,28 @@ async function assessSubjectIn(
       toRevision: targetRevision,
     });
   }
+  for (const angle of restoredViews) {
+    const slot = currentByAngle.get(angle)!;
+    const asset = assetById.get(slot.selectedAssetId);
+    const state = (
+      asset?.status
+      && typeof asset.status === "object"
+      && !Array.isArray(asset.status)
+    )
+      ? (asset.status as { state?: unknown }).state
+      : null;
+    if (
+      !asset
+      || asset.viewType !== angle
+      || !asset.storageUrl.trim()
+      || state !== "stale"
+    ) {
+      return blocked(subject, "package_slot_graph_invalid", {
+        acceptedAssetId,
+        toRevision: targetRevision,
+      });
+    }
+  }
   if (!subject.identityRevisionId || !acceptedRevision) {
     return blocked(subject, "revision_shape_invalid", {
       acceptedAssetId,
@@ -443,8 +639,8 @@ async function assessSubjectIn(
     subject.identityRevisionId === targetRevision
     && acceptedRevision === targetRevision
   ) {
-    if (frontClose[0].compatibility !== "current") {
-      return blocked(subject, "headshot_slot_mismatch", {
+    if (restoredViews.length > 0) {
+      return blocked(subject, "accepted_revision_mismatch", {
         acceptedAssetId,
         fromRevision: subject.identityRevisionId,
         toRevision: targetRevision,
@@ -456,12 +652,17 @@ async function assessSubjectIn(
         acceptedAssetId,
         fromRevisionHash: revisionHash(subject.identityRevisionId),
         toRevisionHash: revisionHash(targetRevision),
+        restoredViews: [],
+        restoredAssetIds: [],
         status: "repaired",
         errorCode: null,
       },
       userId: subject.userId,
       packageSnapshotId: subject.currentPackageSnapshotId,
       anchorAssetId: identity.anchorAssetId,
+      restoredViews: [],
+      restoredAssetIds: [],
+      needsRevisionRepair: false,
       fromRevision: subject.identityRevisionId,
       toRevision: targetRevision,
     };
@@ -476,8 +677,8 @@ async function assessSubjectIn(
       toRevision: targetRevision,
     });
   }
-  if (frontClose[0].compatibility !== "stale") {
-    return blocked(subject, "headshot_slot_mismatch", {
+  if (restoredViews.length === 0) {
+    return blocked(subject, "package_slot_graph_invalid", {
       acceptedAssetId,
       fromRevision: subject.identityRevisionId,
       toRevision: targetRevision,
@@ -489,12 +690,17 @@ async function assessSubjectIn(
       acceptedAssetId,
       fromRevisionHash: revisionHash(subject.identityRevisionId),
       toRevisionHash: revisionHash(targetRevision),
+      restoredViews,
+      restoredAssetIds,
       status: "ready",
       errorCode: null,
     },
     userId: subject.userId,
     packageSnapshotId: subject.currentPackageSnapshotId,
     anchorAssetId: identity.anchorAssetId,
+    restoredViews,
+    restoredAssetIds,
+    needsRevisionRepair: true,
     fromRevision: subject.identityRevisionId,
     toRevision: targetRevision,
   };
@@ -524,6 +730,15 @@ async function inspectIn(
       `Evidence identity-revision repair row count mismatch: expected ${normalized.expectedRepairCount}, found ${readyRows}`,
     );
   }
+  const restoredViews = assessments.reduce(
+    (total, assessment) => total + assessment.restoredViews.length,
+    0,
+  );
+  if (restoredViews !== normalized.expectedRestoredViewCount) {
+    throw new Error(
+      `Evidence identity-revision repair restored-view count mismatch: expected ${normalized.expectedRestoredViewCount}, found ${restoredViews}`,
+    );
+  }
   return { subjects, assessments };
 }
 
@@ -538,6 +753,7 @@ export async function planEvidenceIdentityRevisionRepair(
       ready: rows.every((row) => row.status !== "blocked"),
       expectedModelCount: normalized.expectedModelCount,
       expectedRepairCount: normalized.expectedRepairCount,
+      expectedRestoredViewCount: normalized.expectedRestoredViewCount,
       models: inspected.subjects.map(({ modelId }) => modelId),
       rows,
     };
@@ -555,18 +771,23 @@ export async function applyEvidenceIdentityRevisionRepair(
         success: false,
         expectedModelCount: normalized.expectedModelCount,
         expectedRepairCount: normalized.expectedRepairCount,
+        expectedRestoredViewCount: normalized.expectedRestoredViewCount,
         updatedModels: 0,
-        updatedAssets: 0,
+        updatedAcceptedAssets: 0,
+        restoredAssets: 0,
         updatedSlots: 0,
         rows: inspected.assessments.map(({ row }) => row),
       };
     }
     let updatedModels = 0;
-    let updatedAssets = 0;
+    let updatedAcceptedAssets = 0;
+    let restoredAssets = 0;
     let updatedSlots = 0;
+    const repairedAt = new Date().toISOString();
     for (const assessment of inspected.assessments) {
       if (
         assessment.row.status !== "ready"
+        || !assessment.needsRevisionRepair
         || !assessment.fromRevision
         || !assessment.toRevision
         || !assessment.row.acceptedAssetId
@@ -600,7 +821,34 @@ export async function applyEvidenceIdentityRevisionRepair(
       if (affectedRows(assetResult) !== 1) {
         throw new Error("Evidence identity-revision repair asset write count mismatch");
       }
-      updatedAssets += 1;
+      updatedAcceptedAssets += 1;
+      const restoredAssetResult = await tx
+        .update(modelAssets)
+        .set({ status: { state: "current", at: repairedAt } })
+        .where(and(
+          eq(modelAssets.modelId, assessment.row.modelId),
+          inArray(modelAssets.id, assessment.restoredAssetIds),
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${modelAssets.status}, '$.state')) = 'stale'`,
+        ));
+      if (affectedRows(restoredAssetResult) !== assessment.restoredAssetIds.length) {
+        throw new Error(
+          "Evidence identity-revision repair restored-asset write count mismatch",
+        );
+      }
+      restoredAssets += assessment.restoredAssetIds.length;
+      const slotPairs = assessment.restoredViews.map((viewAngle, index) =>
+        and(
+          eq(modelPackageSnapshotSlots.viewAngle, viewAngle),
+          eq(
+            modelPackageSnapshotSlots.selectedAssetId,
+            assessment.restoredAssetIds[index],
+          ),
+        )
+      );
+      const slotPairWhere = or(...slotPairs);
+      if (!slotPairWhere) {
+        throw new Error("Evidence identity-revision repair slot set is empty");
+      }
       const slotResult = await tx
         .update(modelPackageSnapshotSlots)
         .set({ compatibility: "current" })
@@ -609,40 +857,43 @@ export async function applyEvidenceIdentityRevisionRepair(
             modelPackageSnapshotSlots.packageSnapshotId,
             assessment.packageSnapshotId,
           ),
-          eq(modelPackageSnapshotSlots.viewAngle, "frontClose"),
-          eq(
-            modelPackageSnapshotSlots.selectedAssetId,
-            assessment.anchorAssetId,
-          ),
+          slotPairWhere,
           eq(modelPackageSnapshotSlots.compatibility, "stale"),
           eq(modelPackageSnapshotSlots.selectionReason, "carried"),
         ));
-      if (affectedRows(slotResult) !== 1) {
+      if (affectedRows(slotResult) !== assessment.restoredViews.length) {
         throw new Error("Evidence identity-revision repair slot write count mismatch");
       }
-      updatedSlots += 1;
+      updatedSlots += assessment.restoredViews.length;
     }
     if (
       updatedModels !== normalized.expectedRepairCount
-      || updatedAssets !== normalized.expectedRepairCount
-      || updatedSlots !== normalized.expectedRepairCount
+      || updatedAcceptedAssets !== normalized.expectedRepairCount
+      || restoredAssets !== normalized.expectedRestoredViewCount
+      || updatedSlots !== normalized.expectedRestoredViewCount
     ) {
       throw new Error("Evidence identity-revision repair write total mismatch");
     }
     const postflight = await inspectIn(tx, {
       ...normalized,
       expectedRepairCount: 0,
+      expectedRestoredViewCount: 0,
     }, true);
-    const rows = postflight.assessments.map(({ row }) => row);
-    if (rows.some((row) => row.status !== "repaired")) {
+    const postflightRows = postflight.assessments.map(({ row }) => row);
+    if (postflightRows.some((row) => row.status !== "repaired")) {
       throw new Error("Evidence identity-revision repair postflight failed");
     }
+    const rows = inspected.assessments.map(({ row }) => row.status === "ready"
+      ? { ...row, status: "repaired" as const }
+      : row);
     return {
       success: true,
       expectedModelCount: normalized.expectedModelCount,
       expectedRepairCount: normalized.expectedRepairCount,
+      expectedRestoredViewCount: normalized.expectedRestoredViewCount,
       updatedModels,
-      updatedAssets,
+      updatedAcceptedAssets,
+      restoredAssets,
       updatedSlots,
       rows,
     };
@@ -673,6 +924,7 @@ export function parseEvidenceIdentityRevisionRepairArgs(
   let userId: number | undefined;
   let expectedModelCount = 0;
   let expectedRepairCount: number | undefined;
+  let expectedRestoredViewCount: number | undefined;
   let apply = false;
   let allowWrite = false;
   let allowProductionReadOnly = false;
@@ -713,6 +965,8 @@ export function parseEvidenceIdentityRevisionRepairArgs(
       expectedModelCount = parsePositiveInteger(value, flag);
     } else if (flag === "--expected-repair-count") {
       expectedRepairCount = parseNonNegativeInteger(value, flag);
+    } else if (flag === "--expected-restored-view-count") {
+      expectedRestoredViewCount = parseNonNegativeInteger(value, flag);
     } else if (flag === "--confirm-app-id") confirmAppId = value;
     else if (flag === "--confirm-host") confirmHost = value;
     else if (flag === "--confirm-database") confirmDatabase = value;
@@ -744,6 +998,9 @@ export function parseEvidenceIdentityRevisionRepairArgs(
   }
   if (expectedRepairCount === undefined) {
     throw new Error("--expected-repair-count is required");
+  }
+  if (expectedRestoredViewCount === undefined) {
+    throw new Error("--expected-restored-view-count is required");
   }
   const production = isProductionAppId(appId);
   if (production && !apply && !allowProductionReadOnly) {
@@ -784,6 +1041,7 @@ export function parseEvidenceIdentityRevisionRepairArgs(
     modelIds: normalizedIds,
     expectedModelCount,
     expectedRepairCount,
+    expectedRestoredViewCount,
     apply,
     allowWrite,
     allowProductionReadOnly,

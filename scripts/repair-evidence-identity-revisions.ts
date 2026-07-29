@@ -23,7 +23,7 @@ async function main(): Promise<number> {
   const target = new URL(args.databaseUrl);
   process.env.DATABASE_URL = args.databaseUrl;
   console.log(
-    `[evidence-identity-revision-repair] mode=${args.apply ? "APPLY" : "READ ONLY"} app=${args.appId} host=${target.host} database=${target.pathname.slice(1)} expectedModels=${args.expectedModelCount} expectedRows=${args.expectedRepairCount}`,
+    `[evidence-identity-revision-repair] mode=${args.apply ? "APPLY" : "READ ONLY"} app=${args.appId} host=${target.host} database=${target.pathname.slice(1)} expectedModels=${args.expectedModelCount} expectedRows=${args.expectedRepairCount} expectedRestoredViews=${args.expectedRestoredViewCount}`,
   );
   try {
     if (!args.apply) {

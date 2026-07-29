@@ -1597,14 +1597,24 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       [incorrectEvidenceRevision, accepted.assetId],
     );
     await connection.execute(
-      "UPDATE model_package_snapshot_slots SET compatibility = 'stale' WHERE packageSnapshotId = ? AND viewAngle = 'frontClose' AND selectedAssetId = ? AND compatibility = 'current' AND selectionReason = 'carried'",
-      [accepted.packageSnapshotId, source.headAssetId],
+      "UPDATE model_package_snapshot_slots SET compatibility = 'stale' WHERE packageSnapshotId = ? AND viewAngle IN ('frontClose', 'sideClose', 'backFull') AND compatibility = 'current' AND selectionReason = 'carried'",
+      [accepted.packageSnapshotId],
+    );
+    await connection.execute(
+      "UPDATE model_assets SET status = JSON_OBJECT('state', 'stale', 'at', '2026-07-28T00:00:01.000Z') WHERE modelId = ? AND id IN (?, ?, ?)",
+      [
+        source.modelId,
+        source.headAssetId,
+        siblingAssetIds.get("sideClose"),
+        siblingAssetIds.get("backFull"),
+      ],
     );
     const identityRepairSelector = {
       userId: source.userId,
       modelIds: [source.modelId],
       expectedModelCount: 1,
       expectedRepairCount: 1,
+      expectedRestoredViewCount: 3,
     };
     await expect(planEvidenceIdentityRevisionRepair({
       ...identityRepairSelector,
@@ -1627,6 +1637,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         rows: [{
           modelId: source.modelId,
           acceptedAssetId: accepted.assetId,
+          restoredViews: ["frontClose", "sideClose", "backFull"],
           status: "ready",
           errorCode: null,
         }],
@@ -1640,24 +1651,37 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       .resolves.toMatchObject({
         success: true,
         updatedModels: 1,
-        updatedAssets: 1,
-        updatedSlots: 1,
+        updatedAcceptedAssets: 1,
+        restoredAssets: 3,
+        updatedSlots: 3,
         rows: [{
           modelId: source.modelId,
           acceptedAssetId: accepted.assetId,
+          restoredViews: ["frontClose", "sideClose", "backFull"],
           status: "repaired",
           errorCode: null,
         }],
       });
     const [[identityRepairPostflight]] = await connection.query<RowDataPacket[]>(
-      "SELECT m.identityRevisionId, JSON_UNQUOTE(JSON_EXTRACT(a.provenance, '$.identityRevisionId')) AS acceptedRevision, s.compatibility AS headshotCompatibility FROM models m JOIN model_assets a ON a.id = ? JOIN model_package_snapshot_slots s ON s.packageSnapshotId = m.currentPackageSnapshotId AND s.viewAngle = 'frontClose' WHERE m.id = ?",
+      "SELECT m.identityRevisionId, JSON_UNQUOTE(JSON_EXTRACT(a.provenance, '$.identityRevisionId')) AS acceptedRevision FROM models m JOIN model_assets a ON a.id = ? WHERE m.id = ?",
       [accepted.assetId, source.modelId],
     );
     expect(identityRepairPostflight).toEqual({
       identityRevisionId,
       acceptedRevision: identityRevisionId,
-      headshotCompatibility: "current",
     });
+    const [slotPostflight] = await connection.query<RowDataPacket[]>(
+      "SELECT s.viewAngle, s.compatibility, JSON_UNQUOTE(JSON_EXTRACT(a.status, '$.state')) AS assetState FROM model_package_snapshot_slots s JOIN model_assets a ON a.id = s.selectedAssetId WHERE s.packageSnapshotId = ? ORDER BY FIELD(s.viewAngle, 'frontClose', 'threeQuarter', 'frontFull', 'sideClose', 'sideFull', 'backFull')",
+      [accepted.packageSnapshotId],
+    );
+    expect(slotPostflight).toEqual([
+      { viewAngle: "frontClose", compatibility: "current", assetState: "current" },
+      { viewAngle: "threeQuarter", compatibility: "stale", assetState: "stale" },
+      { viewAngle: "frontFull", compatibility: "current", assetState: "current" },
+      { viewAngle: "sideClose", compatibility: "current", assetState: "current" },
+      { viewAngle: "sideFull", compatibility: "stale", assetState: "stale" },
+      { viewAngle: "backFull", compatibility: "current", assetState: "current" },
+    ]);
     await expect(planEvidenceMint({
       userId: source.userId,
       modelId: source.modelId,
