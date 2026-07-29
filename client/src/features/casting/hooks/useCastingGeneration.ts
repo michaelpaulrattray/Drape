@@ -57,7 +57,6 @@ export function useCastingGeneration({
     setCurrentAssets,
     currentMasterPrompt,
     setCurrentMasterPrompt,
-    currentTechnicalSchema,
     setCurrentTechnicalSchema,
     history,
     setHistory,
@@ -109,7 +108,6 @@ export function useCastingGeneration({
   // (The reconcile mutation is gone — Batch C/R7: no client may auto-rewrite
   // the identity document from a generated image.)
   const suggestionsMutation = trpc.generation.suggestions.useMutation();
-  const compactPromptMutation = trpc.generation.compactPrompt.useMutation();
   const clearSessionMutation = trpc.generation.clearSession.useMutation();
   const analyzeReferenceMutation = trpc.generation.analyzeReference.useMutation();
   const utils = trpc.useUtils();
@@ -165,25 +163,6 @@ export function useCastingGeneration({
       if (session.isCurrent()) setIsLoadingSuggestions(false);
     }
   }, [activeView, profileSummary, getSessionToken]);
-
-  // Compact prompt — MANUAL only (Batch C: iterations never auto-compact;
-  // the server keeps raw text whenever compaction would touch mark language)
-  const handleCompactPrompt = useCallback(async () => {
-    if (!currentModelId || !currentMasterPrompt) return;
-    const session = captureCastingSession(getSessionToken);
-    try {
-      const result = await compactPromptMutation.mutateAsync({
-        clientRequestId: createClientRequestId(),
-        modelId: currentModelId,
-      });
-      if (session.isCurrent() && result.masterPrompt) {
-        setCurrentMasterPrompt(result.masterPrompt);
-        toast.success('Prompt compacted');
-      }
-    } catch (err) {
-      console.warn('[Compaction] Failed:', err);
-    }
-  }, [currentModelId, currentMasterPrompt, currentTechnicalSchema]);
 
   // Clear Gemini chat session
   const handleClearSession = useCallback(async () => {
@@ -630,7 +609,6 @@ export function useCastingGeneration({
     handleRetry,
     // Phase 2 additions
     fetchSuggestions,
-    handleCompactPrompt,
     handleClearSession,
     handleAnalyzeReference,
   };

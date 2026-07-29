@@ -14,7 +14,6 @@ import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
 import { CanvasImageViewer } from './canvas/CanvasImageViewer';
 import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
-import { type CanvasToolId } from './components/CanvasToolbar';
 import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
 import { CastPickerModal } from './canvas/CastPickerModal';
 import { DottedGridBackground } from './canvas/DottedGridBackground';
@@ -79,8 +78,8 @@ function BoardPageImpl() {
   const [, navigate] = useLocation();
   const boardId = params?.id ? parseInt(params.id, 10) : NaN;
 
-  // 'hand' joins the legacy tool ids per VC-R4 ruling R1 (Select/Hand split)
-  const [activeTool, setActiveTool] = useState<CanvasToolId | 'hand'>('select');
+  // VC-R4 ruling R1: Select/Hand split, with Cast and Note as direct verbs.
+  const [activeTool, setActiveTool] = useState<PillTool>('select');
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   // Double-click viewer — VIEW-ONLY by ruling (VC-R5 R3): zoom/pan/download
   const [imageViewer, setImageViewer] = useState<{ url: string; label: string | null } | null>(null);
@@ -1734,7 +1733,7 @@ function BoardPageImpl() {
   );
 
   const handleToolSelect = useCallback(
-    (tool: CanvasToolId | 'hand') => {
+    (tool: PillTool) => {
       setActiveTool(tool);
       // Clear placement mode when switching to a non-placement tool
       if (tool !== 'note') {

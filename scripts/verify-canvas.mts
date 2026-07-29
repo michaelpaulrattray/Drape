@@ -3312,6 +3312,94 @@ if (process.env.RUN_GATE_FAIL === "1") {
   }
 }
 
+// R7-8: 30+ node responsiveness
+// A real 6x6 board catches render and interaction regressions that tiny
+// invariant fixtures cannot. Notes keep this leg provider-free and free of
+// identity/storage dependencies.
+{
+  await conn.execute(`DELETE FROM board_edges WHERE boardId = ?`, [boardId]);
+  await conn.execute(`DELETE FROM board_items WHERE boardId = ?`, [boardId]);
+  const rows = Array.from({ length: 36 }, (_, index) => {
+    const column = index % 6;
+    const row = Math.floor(index / 6);
+    return [
+      boardId,
+      `R7-8 note ${index + 1}`,
+      column * 300,
+      row * 190,
+    ];
+  });
+  const placeholders = rows.map(() => "(?, 'note', 'note', ?, ?, ?, 260, 150, 0)").join(",");
+  await conn.execute(
+    `INSERT INTO board_items
+       (boardId, type, kind, label, positionX, positionY, width, height, zIndex)
+     VALUES ${placeholders}`,
+    rows.flat(),
+  );
+  await conn.execute(
+    `UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`,
+    [boardId],
+  );
+
+  const loadStartedAt = Date.now();
+  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.waitForFunction(
+    () => document.querySelectorAll(".react-flow__node").length >= 36,
+    { timeout: 30000, polling: 100 },
+  );
+  const loadMs = Date.now() - loadStartedAt;
+  const rendered = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll<HTMLElement>(".react-flow__node")];
+    return {
+      count: nodes.length,
+      legible: nodes.every((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.width >= 80 && rect.height >= 45;
+      }),
+    };
+  });
+  check("PERF1 36-node board renders completely", rendered.count === 36, JSON.stringify({ ...rendered, loadMs }));
+  check("PERF2 36-node board stays geometrically legible", rendered.legible);
+  check("PERF3 36-node cold load settles within 30s", loadMs < 30000, `${loadMs}ms`);
+
+  const firstNode = await page.$(".react-flow__node");
+  const firstBox = await firstNode?.boundingBox();
+  const selectStartedAt = Date.now();
+  if (firstBox) {
+    await page.mouse.click(firstBox.x + firstBox.width / 2, firstBox.y + firstBox.height / 2);
+    await page.waitForFunction(
+      () => !!document.querySelector(".react-flow__node.selected"),
+      { timeout: 1500, polling: 25 },
+    );
+  }
+  const selectMs = Date.now() - selectStartedAt;
+  check("PERF4 node selection responds within 1.5s", !!firstBox && selectMs < 1500, `${selectMs}ms`);
+
+  const beforeNudge = firstBox
+    ? await page.evaluate(() => document.querySelector<HTMLElement>(".react-flow__node.selected")?.style.transform ?? "")
+    : "";
+  const nudgeStartedAt = Date.now();
+  await page.keyboard.press("ArrowRight");
+  await page.waitForFunction(
+    (before: string) =>
+      (document.querySelector<HTMLElement>(".react-flow__node.selected")?.style.transform ?? "") !== before,
+    { timeout: 1500, polling: 25 },
+    beforeNudge,
+  );
+  const nudgeMs = Date.now() - nudgeStartedAt;
+  check("PERF5 keyboard nudge responds within 1.5s", nudgeMs < 1500, `${nudgeMs}ms`);
+
+  const metrics = await page.metrics();
+  check(
+    "PERF6 36-node board stays below 256MB JS heap",
+    metrics.JSHeapUsedSize < 256 * 1024 * 1024,
+    `${Math.round(metrics.JSHeapUsedSize / 1024 / 1024)}MB`,
+  );
+
+  await conn.execute(`DELETE FROM board_edges WHERE boardId = ?`, [boardId]);
+  await conn.execute(`DELETE FROM board_items WHERE boardId = ?`, [boardId]);
+}
+
 await browser.close();
 await conn.end();
 

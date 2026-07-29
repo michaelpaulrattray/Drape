@@ -15,6 +15,7 @@ export const authRouter = router({
       name: ctx.user.name,
       email: ctx.user.email,
       avatarUrl: ctx.user.avatarUrl,
+      authProvider: ctx.user.authProvider,
       role: ctx.user.role,
       approved: ctx.user.approved,
       canvasIntroSeen: ctx.user.canvasIntroSeen,

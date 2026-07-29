@@ -12,7 +12,6 @@ import {
   CreditCard,
   Bell,
   Shield,
-  Check,
   BarChart3,
 } from "lucide-react";
 import { ProfileTab, BillingTab, UsageTab, NotificationsTab, SecurityTab } from "@/features/profile";
@@ -24,6 +23,7 @@ interface ProfileSettingsModalProps {
   user: {
     name?: string | null;
     email?: string | null;
+    authProvider?: string | null;
   } | null;
   profileImage: string | null;
   bannerImage: string | null;
@@ -50,7 +50,6 @@ export default function ProfileSettingsModal({
   onOpenTopup,
 }: ProfileSettingsModalProps) {
   const [activeTab, setActiveTab] = useState<"profile" | "usage" | "billing" | "notifications" | "security">("profile");
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -96,7 +95,12 @@ export default function ProfileSettingsModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-settings-title"
+    >
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -108,24 +112,17 @@ export default function ProfileSettingsModal({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 md:px-6 md:py-5 border-b border-[#0A0A0A]/10 shrink-0">
           <div>
-            <h2 className="text-lg md:text-xl font-semibold text-[#0A0A0A] tracking-tight">Settings</h2>
+            <h2 id="profile-settings-title" className="text-lg md:text-xl font-semibold text-[#0A0A0A] tracking-tight">Settings</h2>
             <p className="text-xs md:text-sm text-[#757575] mt-0.5">Manage your account preferences</p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close settings"
             className="p-2 rounded-full text-[#757575] hover:text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Success Messages */}
-        {successMessage && (
-          <div className="mx-4 md:mx-6 mt-3 md:mt-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2 shrink-0">
-            <Check className="w-4 h-4 text-green-400" />
-            <p className="text-sm text-green-400">{successMessage}</p>
-          </div>
-        )}
 
         {/* Mobile: horizontal tab bar + scrollable content */}
         <div className="flex flex-col md:hidden flex-1 overflow-hidden">
