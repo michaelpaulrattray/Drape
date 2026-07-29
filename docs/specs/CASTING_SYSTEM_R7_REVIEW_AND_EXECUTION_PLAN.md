@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7F are complete as of 2026-07-29; the still-open R7-8 quality/reference-sheet/dogfood closure program is next
+**Status:** IN EXECUTION — R7-0 through R7-7F are complete as of 2026-07-29; R7-8 is narrowed to production acceptance, audit, performance, and dogfood closure after the founder deferred generation-time quality choice and downstream reference-sheet derivatives
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -328,8 +328,13 @@ Every capability stays behind a server-owned feature flag with old R6 refusals a
 
 ### R7-8 — Quality choice, downstream reference sheets, and dogfood closure
 
-- Add a server-planned 1K/2K generation choice only after persistence, pricing, duration, retry, and derivative reuse are defined.
-- Define a generated **reference-sheet derivative** for future image/video nodes: a pure layout of selected canonical views, not six independent attachments. Support engine-specific presets (for example, a one-visible-face preset) without changing identity canon.
+- **Founder correction, 2026-07-29:** Casting generation remains 1K-only
+  for the current release. Do not add a generation-time 1K/2K selector or
+  package-quality default in R7. Existing separately disclosed export behavior
+  is unchanged by this generation-quality ruling.
+- **Deferred by founder, 2026-07-29:** do not build the downstream generated
+  reference-sheet derivative in R7. Preserve the existing identity canon and
+  downstream payload contracts until this capability is deliberately resumed.
 - Rewrite and walk the current acceptance criteria on production.
 - Audit back navigation, profile-popout wiring, dead code, TODOs, deploy-version skew, 30+ node performance, and stale local-only components.
 - Run full suites, build, migration checks, headless drives, and founder manual drives.
@@ -371,11 +376,9 @@ The founder approved all eight recommendations below as binding R7 direction:
 
 ## 9. Immediate next action
 
-1. Define R7-8's server-planned 1K/2K generation-quality contract, including
-   persistence, pricing, duration, retry, and derivative reuse.
-2. Define the downstream generated reference-sheet derivative and its
-   engine-specific presets without changing identity canon.
-3. Rewrite and walk production acceptance criteria, complete the named
+1. Keep Casting generation fixed at the existing 1K contract and defer the
+   downstream reference-sheet derivative.
+2. Rewrite and walk production acceptance criteria, complete the named
    navigation/wiring/dead-code/performance audits, run the full release
    verification matrix, and begin dogfooding only after blockers close or are
    explicitly logged.

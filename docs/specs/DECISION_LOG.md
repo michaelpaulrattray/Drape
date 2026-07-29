@@ -955,6 +955,25 @@ state-not-events projection was corrected at `d09ca4c` and founder-confirmed
 on production. Append-only restore authority remains intact. R7-7F is closed;
 R7-8 quality/reference-sheet/dogfood closure is next.
 
+### D-74 — Current Casting generation stays 1K; downstream reference sheets are deferred *(founder-ratified 2026-07-29; narrows R7-8)*
+
+**Generation quality:** do not build a generation-time quality selector or
+1K/2K package default in the current release. Casting image generation remains
+on its existing 1K path. This ruling does not silently remove or redesign the
+separate, already-disclosed export behavior; that requires its own decision if
+the founder wants it changed.
+
+**Reference-sheet derivative:** the proposed generated downstream
+reference-sheet derivative and engine-specific presets are deferred beyond
+R7. Existing identity canon, package selections, and downstream payload
+contracts remain unchanged.
+
+**R7-8 closure scope:** R7-8 now consists of rewritten production acceptance
+criteria, the named navigation/profile/dead-code/deploy-skew/performance
+audits, the full release verification matrix, founder manual drives, and
+dogfood closure. Deferred quality and reference-sheet work do not block R7
+closure.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
