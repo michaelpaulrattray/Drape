@@ -33,6 +33,36 @@ async function image(colour: string): Promise<ComposerImage> {
   };
 }
 
+function coverageFields(
+  featureIndex: number,
+  input: {
+    visible: boolean;
+    certain: boolean;
+    segments: readonly {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }[];
+  },
+): Record<string, boolean | number> {
+  const prefix = `feature${featureIndex}`;
+  const result: Record<string, boolean | number> = {
+    [`${prefix}RegionVisible`]: input.visible,
+    [`${prefix}VerdictCertain`]: input.certain,
+    [`${prefix}SegmentCount`]: input.segments.length,
+  };
+  for (let segmentIndex = 0; segmentIndex < 4; segmentIndex += 1) {
+    const segment = input.segments[segmentIndex];
+    const segmentPrefix = `${prefix}Segment${segmentIndex + 1}`;
+    result[`${segmentPrefix}X`] = segment?.x ?? 0;
+    result[`${segmentPrefix}Y`] = segment?.y ?? 0;
+    result[`${segmentPrefix}Width`] = segment?.width ?? 0;
+    result[`${segmentPrefix}Height`] = segment?.height ?? 0;
+  }
+  return result;
+}
+
 async function features(): Promise<InkProjectionFeatureReference[]> {
   const witness = await image("#c7a68b");
   return [
@@ -47,6 +77,10 @@ async function features(): Promise<InkProjectionFeatureReference[]> {
         "The subject's right appears on frame left in the witness.",
       witnessGuideLabel: "SUBJECT RIGHT - FRAME LEFT",
       targetZone: { x: 0.08, y: 0.24, width: 0.25, height: 0.55 },
+      targetZones: [
+        { x: 0.08, y: 0.24, width: 0.2, height: 0.28 },
+        { x: 0.1, y: 0.48, width: 0.18, height: 0.31 },
+      ],
       witnessZone: { x: 0.08, y: 0.24, width: 0.25, height: 0.55 },
       witness,
       isProjectionTarget: true,
@@ -62,6 +96,7 @@ async function features(): Promise<InkProjectionFeatureReference[]> {
         "The subject's left appears on frame right in the witness.",
       witnessGuideLabel: "SUBJECT LEFT - FRAME RIGHT",
       targetZone: { x: 0.55, y: 0.2, width: 0.24, height: 0.24 },
+      targetZones: [{ x: 0.55, y: 0.2, width: 0.24, height: 0.24 }],
       witnessZone: { x: 0.55, y: 0.2, width: 0.24, height: 0.24 },
       witness,
       isProjectionTarget: false,
@@ -102,7 +137,7 @@ describe("multi-feature projection composition", () => {
       "Image 1 is the clean original target and immutable pixel canvas",
     );
     expect(request.prompt).toContain(
-      "never reproduce the red boxes or use this annotated image as the output canvas",
+      "never reproduce the red regions or use this annotated image as the output canvas",
     );
     expect(request.prompt).toContain("F1 (newly exposed continuation)");
     expect(request.prompt).toContain("F2 (already evidenced)");
@@ -244,7 +279,7 @@ describe("multi-feature projection composition", () => {
       target: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v6");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v7");
     expect(request.prompt).toContain(
       "partial upper arm or forearm in a close crop",
     );
@@ -260,18 +295,19 @@ describe("multi-feature projection composition", () => {
       target: base,
     })).toThrow("Coverage localization requires one feature");
     const raw = {
-      feature1RegionVisible: true,
-      feature1VerdictCertain: true,
-      feature1ZoneX: 10,
-      feature1ZoneY: 20,
-      feature1ZoneWidth: 30,
-      feature1ZoneHeight: 40,
-      feature2RegionVisible: false,
-      feature2VerdictCertain: false,
-      feature2ZoneX: 0,
-      feature2ZoneY: 0,
-      feature2ZoneWidth: 0,
-      feature2ZoneHeight: 0,
+      ...coverageFields(1, {
+        visible: true,
+        certain: true,
+        segments: [
+          { x: 10, y: 20, width: 15, height: 40 },
+          { x: 22, y: 45, width: 18, height: 35 },
+        ],
+      }),
+      ...coverageFields(2, {
+        visible: false,
+        certain: false,
+        segments: [],
+      }),
     };
     expect(summarizeInkCoverageProbeResponse(raw, 2)).toEqual({
       responseShape: "valid_object",
@@ -279,12 +315,15 @@ describe("multi-feature projection composition", () => {
         {
           regionVisible: true,
           verdictCertain: true,
-          targetZone: { x: 0.1, y: 0.2, width: 0.3, height: 0.4 },
+          targetZones: [
+            { x: 0.1, y: 0.2, width: 0.15, height: 0.4 },
+            { x: 0.22, y: 0.45, width: 0.18, height: 0.35 },
+          ],
         },
         {
           regionVisible: false,
           verdictCertain: false,
-          targetZone: null,
+          targetZones: null,
         },
       ],
     });
@@ -292,12 +331,31 @@ describe("multi-feature projection composition", () => {
       "version-1",
       "version-2",
     ])).toThrow("Observed coverage is unknown");
+    const oneVisibleSegment = {
+      ...coverageFields(1, {
+        visible: true,
+        certain: true,
+        segments: [{ x: 10, y: 20, width: 15, height: 40 }],
+      }),
+    };
+    expect(() => parseInkCoverageProbeResponse({
+      ...oneVisibleSegment,
+      feature1SegmentCount: 5,
+    }, ["version-1"])).toThrow("Invalid observed-coverage segments");
+    expect(() => parseInkCoverageProbeResponse({
+      ...oneVisibleSegment,
+      feature1RegionVisible: false,
+    }, ["version-1"])).toThrow("Invalid hidden observed-coverage segments");
+    expect(() => parseInkCoverageProbeResponse({
+      ...oneVisibleSegment,
+      feature1Segment2X: 1,
+    }, ["version-1"])).toThrow("Invalid observed-coverage segments");
     expect(summarizeInkCoverageProbeResponse("not-json", 1)).toEqual({
       responseShape: "invalid",
       features: [{
         regionVisible: null,
         verdictCertain: null,
-        targetZone: null,
+        targetZones: null,
       }],
     });
   });
@@ -319,6 +377,10 @@ describe("multi-feature projection composition", () => {
     });
     expect(request.prompt).toContain("accepted tattoo witnesses");
     expect(request.prompt).toContain("black botanical full sleeve");
+    expect(request.prompt).toContain(
+      "Localized segments [{\"x\":0.08,\"y\":0.24,\"width\":0.2,\"height\":0.28},{\"x\":0.1,\"y\":0.48,\"width\":0.18,\"height\":0.31}]",
+    );
+    expect(request.prompt).toContain("union of its F-segments");
     expect(request.images.map(({ role }) => role)).toEqual([
       "original_target",
       "guided_target",

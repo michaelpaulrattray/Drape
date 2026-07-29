@@ -69,7 +69,7 @@ import {
 import {
   buildAnatomicalInkZoneGuide,
   buildInkZoneGuide,
-  buildMultiAnatomicalInkZoneGuide,
+  buildSegmentedAnatomicalInkZoneGuide,
 } from "./composer/inkZoneGuide";
 import {
   runInkAnywhereCandidateProbes,
@@ -401,6 +401,7 @@ async function loadInputs(
           witnessSideAuthority: witnessSideAuthority.prompt,
           witnessGuideLabel: witnessSideAuthority.guideLabel,
           targetZone: feature.targetZone,
+          targetZones: feature.targetZones,
           witnessZone: feature.witnessZone,
           witness: await readPrivateExact(dependencies.delivery, {
             key: feature.witness.storageKey,
@@ -411,10 +412,10 @@ async function loadInputs(
         };
       }));
     const [guide, evidenceMosaic] = await Promise.all([
-      buildMultiAnatomicalInkZoneGuide({
+      buildSegmentedAnatomicalInkZoneGuide({
         targetBytes: target.bytes,
-        zones: projectionFeatures.map((feature) => ({
-          normalizedZone: feature.targetZone,
+        features: projectionFeatures.map((feature) => ({
+          normalizedZones: feature.targetZones,
           label:
             `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
         })),
@@ -555,10 +556,10 @@ async function runAttempt(input: {
             }`,
         }))
       : prepared.authority.kind === "projection_v2"
-      ? composerImage(await buildMultiAnatomicalInkZoneGuide({
+      ? composerImage(await buildSegmentedAnatomicalInkZoneGuide({
           targetBytes: candidate.bytes,
-          zones: images.projectionFeatures!.map((feature) => ({
-            normalizedZone: feature.targetZone,
+          features: images.projectionFeatures!.map((feature) => ({
+            normalizedZones: feature.targetZones,
             label:
               `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
           })),
@@ -1087,8 +1088,8 @@ async function executeProjectionCandidate(
           verdictCertain:
             coverageEpisodes[index]?.telemetry.features[0]?.verdictCertain
               ?? null,
-          targetZone:
-            coverageEpisodes[index]?.telemetry.features[0]?.targetZone ?? null,
+          targetZones:
+            coverageEpisodes[index]?.telemetry.features[0]?.targetZones ?? null,
         })),
       }, "Ink projection pre-charge coverage assessed");
       try {

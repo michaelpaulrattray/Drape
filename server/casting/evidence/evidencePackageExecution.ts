@@ -86,7 +86,7 @@ import {
   type InkProjectionComposerRequest,
   type InkProjectionFeatureReference,
 } from "./inkProjectionComposition";
-import { buildMultiAnatomicalInkZoneGuide } from "./composer/inkZoneGuide";
+import { buildSegmentedAnatomicalInkZoneGuide } from "./composer/inkZoneGuide";
 import {
   assertSupportedInkAnatomyTuple,
   inkAnatomicalSideAuthority,
@@ -780,6 +780,7 @@ async function loadV2SlotReferences(
         witnessSideAuthority: witnessSideAuthority.prompt,
         witnessGuideLabel: witnessSideAuthority.guideLabel,
         targetZone: v2FeatureZone(feature, slot.angle),
+        targetZones: Object.freeze([v2FeatureZone(feature, slot.angle)]),
         witnessZone: v2FeatureZone(feature, witnessAngle),
         witness: await readPrivateExact(dependencies.delivery, witnessPlate),
         isProjectionTarget: false,
@@ -788,10 +789,10 @@ async function loadV2SlotReferences(
   );
   const target = composerImage(targetFetched);
   const [guide, mosaic] = await Promise.all([
-    buildMultiAnatomicalInkZoneGuide({
+    buildSegmentedAnatomicalInkZoneGuide({
       targetBytes: target.bytes,
-      zones: features.map((feature) => ({
-        normalizedZone: feature.targetZone,
+      features: features.map((feature) => ({
+        normalizedZones: feature.targetZones,
         label: `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
       })),
     }),
@@ -923,10 +924,10 @@ async function runV2CandidateAttempt(input: {
     );
     failureStage = "probe_provider";
     const placementAuditCandidate = composerImage(
-      await buildMultiAnatomicalInkZoneGuide({
+      await buildSegmentedAnatomicalInkZoneGuide({
         targetBytes: canonical.bytes,
-        zones: references.features.map((feature) => ({
-          normalizedZone: feature.targetZone,
+        features: references.features.map((feature) => ({
+          normalizedZones: feature.targetZones,
           label: `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
         })),
       }),

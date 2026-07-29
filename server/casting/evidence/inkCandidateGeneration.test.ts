@@ -143,11 +143,13 @@ function passProbe(request: InkProbeRequest): unknown {
   if (request.kind === "coverage") {
     return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
       key,
-      key.endsWith("ZoneX") ? 10
-        : key.endsWith("ZoneY") ? 20
-          : key.endsWith("ZoneWidth") ? 30
-            : key.endsWith("ZoneHeight") ? 40
-              : true,
+      key.endsWith("SegmentCount") ? 1
+        : key.includes("Segment1") && key.endsWith("X") ? 10
+          : key.includes("Segment1") && key.endsWith("Y") ? 20
+            : key.includes("Segment1") && key.endsWith("Width") ? 30
+              : key.includes("Segment1") && key.endsWith("Height") ? 40
+                : key.includes("Segment") ? 0
+                  : true,
     ]));
   }
   if (request.kind === "projection_target_guide") {
@@ -438,7 +440,7 @@ describe("ink candidate generation", () => {
         sourceAngle: "backFull",
         composerRecipeVersion: "ink.add.anywhere.projection.v4",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v6",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v7",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -451,6 +453,10 @@ describe("ink candidate generation", () => {
             side: "right",
           },
           targetZone: { x: 0.08, y: 0.2, width: 0.28, height: 0.62 },
+          targetZones: [
+            { x: 0.08, y: 0.2, width: 0.2, height: 0.32 },
+            { x: 0.1, y: 0.5, width: 0.18, height: 0.32 },
+          ],
           witnessZone: { x: 0.08, y: 0.2, width: 0.28, height: 0.62 },
           witnessViewAngle: "frontFull",
           witness: {
@@ -476,6 +482,9 @@ describe("ink candidate generation", () => {
             side: "left",
           },
           targetZone: { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
+          targetZones: [
+            { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
+          ],
           witnessZone: { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
           witnessViewAngle: "frontFull",
           witness: {
@@ -511,9 +520,30 @@ describe("ink candidate generation", () => {
         ? projectionPrepared.authority.features
         : [],
     };
+    let coverageCall = 0;
     const deps = dependencies({
       loadProjectionPreflight: vi.fn(async () => preflight),
       prepareProjection: vi.fn(async () => projectionPrepared),
+      probe: vi.fn(async (request) => {
+        if (request.kind !== "coverage") return passProbe(request);
+        coverageCall += 1;
+        const response = passProbe(request) as Record<string, unknown>;
+        if (coverageCall === 1) {
+          return {
+            ...response,
+            feature1SegmentCount: 2,
+            feature1Segment1X: 8,
+            feature1Segment1Y: 20,
+            feature1Segment1Width: 20,
+            feature1Segment1Height: 32,
+            feature1Segment2X: 10,
+            feature1Segment2Y: 50,
+            feature1Segment2Width: 18,
+            feature1Segment2Height: 32,
+          };
+        }
+        return response;
+      }),
     });
     const result = await generateInkProjectionCandidate(deps, {
       userId: projectionPrepared.userId,
@@ -530,6 +560,23 @@ describe("ink candidate generation", () => {
       expect.objectContaining({ amount: 300 }),
       expect.any(Function),
     );
+    expect(deps.prepareProjection).toHaveBeenCalledWith(expect.objectContaining({
+      observedCoverage: {
+        "version-1": {
+          visible: true,
+          targetZones: [
+            { x: 0.08, y: 0.2, width: 0.2, height: 0.32 },
+            { x: 0.1, y: 0.5, width: 0.18, height: 0.32 },
+          ],
+        },
+        "version-2": {
+          visible: true,
+          targetZones: [
+            { x: 0.1, y: 0.2, width: 0.3, height: 0.4 },
+          ],
+        },
+      },
+    }));
     expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
       recipeVersion: "ink.add.anywhere.projection.v4",
       images: expect.arrayContaining([
@@ -561,7 +608,7 @@ describe("ink candidate generation", () => {
     );
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v6",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v7",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "evidence_reference" }),

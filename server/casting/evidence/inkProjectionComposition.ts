@@ -28,6 +28,7 @@ import {
 } from "./inkAnatomyRegistry";
 
 const MAX_FEATURES = 9;
+const MAX_COVERAGE_SEGMENTS = 4;
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const MAX_PIXELS = 40_000_000;
 const MOSAIC_SIZE = 1024;
@@ -42,6 +43,7 @@ export interface InkProjectionFeatureReference {
   witnessSideAuthority: string;
   witnessGuideLabel: string;
   targetZone: NormalizedInkZone;
+  targetZones: readonly NormalizedInkZone[];
   witnessZone: NormalizedInkZone;
   witness: ComposerImage;
   isProjectionTarget: boolean;
@@ -90,6 +92,13 @@ function assertFeatures(
   }
   for (const feature of features) {
     assertZone(feature.targetZone);
+    if (
+      feature.targetZones.length < 1
+      || feature.targetZones.length > MAX_COVERAGE_SEGMENTS
+    ) {
+      throw new TypeError("Projection evidence set is not eligible");
+    }
+    feature.targetZones.forEach(assertZone);
     assertZone(feature.witnessZone);
     const descriptor = feature.normalizedDescriptor.normalize("NFKC").trim();
     const label = feature.anatomyLabel.normalize("NFKC").trim();
@@ -372,13 +381,13 @@ export function buildInkProjectionComposerRequest(input: {
   const prompt = [
     "Edit the saved Cast using the four ordered images.",
     "Image 1 is the clean original target and immutable pixel canvas. Preserve its pixels everywhere except where listed tattoo evidence must be reproduced or extended.",
-    "Image 2 is a placement guide only. Its red boxes identify target-image locations; never reproduce the red boxes or use this annotated image as the output canvas.",
+    "Image 2 is a placement guide only. Its red segmented F-regions identify target-image locations; never reproduce the red regions or use this annotated image as the output canvas.",
     "Image 3 is immutable identity authority.",
     "Image 4 is a private evidence mosaic. Each F-number is an immutable tattoo design witness.",
     cameraInstruction,
     "Anatomical laterality is semantic, not a matching frame coordinate. Map each tattoo from its WITNESS camera authority to its TARGET camera authority. A tattoo seen on frame-left in its witness may belong elsewhere in the target camera; never mirror or copy by viewer side.",
     "For MATCH features, reproduce only the visible portion exactly. For EXTEND features, continue the same physical tattoo coherently onto the newly exposed surface; do not redesign, mirror, recolour, duplicate, resize, or invent motifs.",
-    "If an authorized body part is partly occluded, reproduce ink only on its visible pixels inside its F-box. Never relocate a tattoo to the opposite or more visible limb to make it easier to see.",
+    "If an authorized body part is partly occluded, reproduce ink only on its visible pixels inside the union of its F-segments. Never bridge gaps between segments, fill background between them, or relocate a tattoo to the opposite or more visible limb to make it easier to see.",
     "Do not add any unlisted ink. Do not remove or move any listed ink. Do not alter face, hair, skin, body proportions, expression, clothing, accessories, pose, lighting, or background except the camera change explicitly required above.",
     `Identity authority:\n${identityText}`,
     `Feature authority:\n${featureLines}`,
@@ -498,11 +507,11 @@ export function buildInkProjectionPlacementAuditProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      "Compare two ordered images: a clean tattoo candidate, then the same candidate with server-owned red anatomical boxes labelled F1, F2, and so on.",
-      `Judge placement in canonical ${input.targetAngle}. The red boxes and labels are audit overlays only.`,
+      "Compare two ordered images: a clean tattoo candidate, then the same candidate with server-owned red anatomical segments labelled F1.1, F1.2, F2.1, and so on.",
+      `Judge placement in canonical ${input.targetAngle}. Each feature's numbered segments form one authorized region; the red regions and labels are audit overlays only.`,
       "Return strict JSON only. confidence is 0-100.",
       "For every F-feature, AnatomicalSideCorrect is true only when the tattoo is on the subject's requested anatomical side, never merely the similarly named viewer side.",
-      "For every F-feature, InsideAuthorizedZone is true only when its visible tattoo pixels occupy the corresponding labelled red box and do not appear in the opposite-side or another feature's box.",
+      "For every F-feature, InsideAuthorizedZone is true only when its visible tattoo pixels stay inside the union of that feature's labelled segments and do not bridge excluded gaps, enter the opposite side, or enter another feature's region.",
       "For three-quarter or profile images, infer anatomical side from the candidate pixels, never the stored angle name: nose/toes toward frame-right expose anatomical RIGHT; nose/toes toward frame-left expose anatomical LEFT. If pixels do not prove the mapping, return false rather than guessing.",
       "Use the clean first image to judge tattoo pixels. Use the annotated second image only to judge the server-owned locations.",
       featureLines,
@@ -759,10 +768,13 @@ export function buildInkCoverageProbeRequest(input: {
     (_feature, index) => [
       [`feature${index + 1}RegionVisible`, "boolean" as const],
       [`feature${index + 1}VerdictCertain`, "boolean" as const],
-      [`feature${index + 1}ZoneX`, "integer_0_100" as const],
-      [`feature${index + 1}ZoneY`, "integer_0_100" as const],
-      [`feature${index + 1}ZoneWidth`, "integer_0_100" as const],
-      [`feature${index + 1}ZoneHeight`, "integer_0_100" as const],
+      [`feature${index + 1}SegmentCount`, "integer_0_100" as const],
+      ...Array.from({ length: MAX_COVERAGE_SEGMENTS }, (_unused, segmentIndex) => [
+        [`feature${index + 1}Segment${segmentIndex + 1}X`, "integer_0_100" as const],
+        [`feature${index + 1}Segment${segmentIndex + 1}Y`, "integer_0_100" as const],
+        [`feature${index + 1}Segment${segmentIndex + 1}Width`, "integer_0_100" as const],
+        [`feature${index + 1}Segment${segmentIndex + 1}Height`, "integer_0_100" as const],
+      ]).flat(),
     ],
   ));
   return {
@@ -777,7 +789,7 @@ export function buildInkCoverageProbeRequest(input: {
     prompt: [
       `Inspect exactly two ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Image 2 is the accepted witness for the one requested tattoo feature.`,
       "Return strict JSON only. Work from the actual pixels, not the stored angle name. Map the exact physical tattoo sublocation shown in Image 2 onto Image 1. RegionVisible is true when any material contiguous portion of that same tattoo-bearing surface is exposed and resolved enough to carry the visible portion at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility, anatomical side, and the corresponding physical sublocation can be decided without guessing.",
-      "When RegionVisible is true, return ZoneX, ZoneY, ZoneWidth, and ZoneHeight as integer percentages from 0 to 100 for the tight bounding box of only the visible requested tattoo-bearing surface. Follow the accepted witness placement: a forehead tattoo authorizes forehead skin, not the whole face; a shoulder tattoo authorizes that shoulder surface, not the torso; a sleeve authorizes only the visible selected arm surface. Include small padding, exclude clothing, the opposite side/limb, background, and unrelated anatomy. X/Y are the top-left. Width/Height must be positive and X+Width and Y+Height must not exceed 100. When RegionVisible is false, all four zone values must be 0. If uncertain, set VerdictCertain false.",
+      "When RegionVisible is true, represent only the visible requested tattoo-bearing surface with 1-4 tight axis-aligned segments. Return SegmentCount and all four segment coordinate sets as integer percentages from 0 to 100. A small compact placement normally uses one segment. A long or angled arm, leg, sleeve, or torso must use 2-4 tighter segments that follow the physical surface instead of one broad box containing background or unrelated anatomy. Segments may overlap slightly but must not reach clothing, the opposite side/limb, background, or unrelated anatomy. A forehead tattoo authorizes forehead skin, not the whole face; a shoulder tattoo authorizes that shoulder surface, not the torso. X/Y are top-left; used Width/Height values are positive and remain in bounds. Unused segment coordinates are all 0. When RegionVisible is false, SegmentCount and all segment coordinates are 0. If uncertain, set VerdictCertain false.",
       `F1: ${input.features[0].anatomyLabel}; accepted description: ${input.features[0].normalizedDescriptor}; ${input.features[0].sideAuthority} The coarse server search region is ${JSON.stringify(input.features[0].targetZone)}; use it only to search Image 1, then localize the exact physical sublocation evidenced by Image 2 rather than copying the coarse box.`,
     ].join("\n"),
     images: [
@@ -791,7 +803,7 @@ export function buildInkCoverageProbeRequest(input: {
 
 export interface InkObservedProjectionCoverage {
   visible: boolean;
-  targetZone: NormalizedInkZone | null;
+  targetZones: readonly NormalizedInkZone[] | null;
 }
 
 export interface InkCoverageProbeTelemetry {
@@ -799,18 +811,20 @@ export interface InkCoverageProbeTelemetry {
   features: readonly {
     regionVisible: boolean | null;
     verdictCertain: boolean | null;
-    targetZone: NormalizedInkZone | null;
+    targetZones: readonly NormalizedInkZone[] | null;
   }[];
 }
 
 function coverageZone(
   value: Record<string, unknown>,
   index: number,
+  segmentIndex: number,
 ): NormalizedInkZone | null {
-  const x = value[`feature${index + 1}ZoneX`];
-  const y = value[`feature${index + 1}ZoneY`];
-  const width = value[`feature${index + 1}ZoneWidth`];
-  const height = value[`feature${index + 1}ZoneHeight`];
+  const prefix = `feature${index + 1}Segment${segmentIndex + 1}`;
+  const x = value[`${prefix}X`];
+  const y = value[`${prefix}Y`];
+  const width = value[`${prefix}Width`];
+  const height = value[`${prefix}Height`];
   if (
     !Number.isSafeInteger(x)
     || !Number.isSafeInteger(y)
@@ -831,6 +845,42 @@ function coverageZone(
     width: (width as number) / 100,
     height: (height as number) / 100,
   });
+}
+
+function coverageZones(
+  value: Record<string, unknown>,
+  index: number,
+): readonly NormalizedInkZone[] | null {
+  const count = value[`feature${index + 1}SegmentCount`];
+  if (
+    !Number.isSafeInteger(count)
+    || (count as number) < 0
+    || (count as number) > MAX_COVERAGE_SEGMENTS
+  ) {
+    return null;
+  }
+  const zones: NormalizedInkZone[] = [];
+  for (
+    let segmentIndex = 0;
+    segmentIndex < MAX_COVERAGE_SEGMENTS;
+    segmentIndex += 1
+  ) {
+    const prefix = `feature${index + 1}Segment${segmentIndex + 1}`;
+    const coordinates = [
+      value[`${prefix}X`],
+      value[`${prefix}Y`],
+      value[`${prefix}Width`],
+      value[`${prefix}Height`],
+    ];
+    if (segmentIndex >= (count as number)) {
+      if (coordinates.some((coordinate) => coordinate !== 0)) return null;
+      continue;
+    }
+    const zone = coverageZone(value, index, segmentIndex);
+    if (!zone) return null;
+    zones.push(zone);
+  }
+  return Object.freeze(zones);
 }
 
 /**
@@ -871,7 +921,7 @@ export function summarizeInkCoverageProbeResponse(
       return Object.freeze({
         regionVisible: typeof visible === "boolean" ? visible : null,
         verdictCertain: typeof certain === "boolean" ? certain : null,
-        targetZone: visible === true ? coverageZone(value, index) : null,
+        targetZones: visible === true ? coverageZones(value, index) : null,
       });
     })),
   });
@@ -896,10 +946,13 @@ export function parseInkCoverageProbeResponse(
   const expectedKeys = featureVersionIds.flatMap((_id, index) => [
     `feature${index + 1}RegionVisible`,
     `feature${index + 1}VerdictCertain`,
-    `feature${index + 1}ZoneX`,
-    `feature${index + 1}ZoneY`,
-    `feature${index + 1}ZoneWidth`,
-    `feature${index + 1}ZoneHeight`,
+    `feature${index + 1}SegmentCount`,
+    ...Array.from({ length: MAX_COVERAGE_SEGMENTS }, (_unused, segmentIndex) => [
+      `feature${index + 1}Segment${segmentIndex + 1}X`,
+      `feature${index + 1}Segment${segmentIndex + 1}Y`,
+      `feature${index + 1}Segment${segmentIndex + 1}Width`,
+      `feature${index + 1}Segment${segmentIndex + 1}Height`,
+    ]).flat(),
   ]);
   if (
     Object.keys(value).length !== expectedKeys.length
@@ -910,30 +963,26 @@ export function parseInkCoverageProbeResponse(
   return Object.freeze(Object.fromEntries(featureVersionIds.map((id, index) => {
     const visible = value[`feature${index + 1}RegionVisible`];
     const certain = value[`feature${index + 1}VerdictCertain`];
-    const zoneValues = [
-      value[`feature${index + 1}ZoneX`],
-      value[`feature${index + 1}ZoneY`],
-      value[`feature${index + 1}ZoneWidth`],
-      value[`feature${index + 1}ZoneHeight`],
-    ];
     if (
       typeof visible !== "boolean"
       || certain !== true
-      || zoneValues.some((coordinate) => !Number.isSafeInteger(coordinate))
     ) {
       throw new TypeError("Observed coverage is unknown");
     }
+    const targetZones = coverageZones(value, index);
+    if (!targetZones) {
+      throw new TypeError("Invalid observed-coverage segments");
+    }
     if (!visible) {
-      if (zoneValues.some((coordinate) => coordinate !== 0)) {
-        throw new TypeError("Invalid hidden observed-coverage zone");
+      if (targetZones.length !== 0) {
+        throw new TypeError("Invalid hidden observed-coverage segments");
       }
-      return [id, Object.freeze({ visible: false, targetZone: null })];
+      return [id, Object.freeze({ visible: false, targetZones: null })];
     }
-    const targetZone = coverageZone(value, index);
-    if (!targetZone) {
-      throw new TypeError("Invalid visible observed-coverage zone");
+    if (targetZones.length < 1) {
+      throw new TypeError("Invalid visible observed-coverage segments");
     }
-    return [id, Object.freeze({ visible: true, targetZone })];
+    return [id, Object.freeze({ visible: true, targetZones })];
   })));
 }
 
@@ -972,14 +1021,14 @@ export function buildInkProjectionTargetGuideAuditProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      "Compare ordered images: Image 1 is the clean target Cast image, Image 2 is the same image with server-localized red F-boxes, and Images 3 onward are the accepted tattoo witnesses for F1 onward in the same order.",
-      `Audit the boxes in canonical ${input.targetAngle} using the actual pixels; the stored angle name is not anatomical-side proof.`,
+      "Compare ordered images: Image 1 is the clean target Cast image, Image 2 is the same image with server-localized red segmented F-regions, and Images 3 onward are the accepted tattoo witnesses for F1 onward in the same order.",
+      `Audit each feature's segment union in canonical ${input.targetAngle} using the actual pixels; the stored angle name is not anatomical-side proof.`,
       "Return strict JSON only. confidence is 0-100.",
-      "For each feature, GuideCoversVisibleSurface is true only when its F-box covers the visible, resolved portion of the same physical tattoo sublocation shown in that feature's accepted witness. A box around an entire broader anatomy zone fails when the witness establishes a smaller placement such as forehead, shoulder, wrist, or ankle.",
-      "GuideTouchesOppositeSide is true if the F-box reaches the opposite anatomical side or limb. GuideIncludesConflictingAnatomy is true if it materially includes clothing, another body zone, background, or a different feature's authorized surface.",
-      "A partial visible upper arm or forearm is legitimate surface for a full sleeve. The box must not expand to the opposite limb merely because the rest of the sleeve is cropped or occluded.",
+      "For each feature, GuideCoversVisibleSurface is true only when the union of its F-segments covers the visible, resolved portion of the same physical tattoo sublocation shown in that feature's accepted witness. A region around an entire broader anatomy zone fails when the witness establishes a smaller placement such as forehead, shoulder, wrist, or ankle.",
+      "GuideTouchesOppositeSide is true if any segment reaches the opposite anatomical side or limb. GuideIncludesConflictingAnatomy is true if any segment materially includes clothing, another body zone, background, or a different feature's authorized surface, or if gaps between segments are implicitly treated as authorized.",
+      "A partial visible upper arm or forearm is legitimate surface for a full sleeve. Use the segment union as drawn; it must follow the limb rather than expanding into background, torso, or the opposite limb because another sleeve portion is cropped or occluded.",
       ...input.features.map((feature, index) =>
-        `F${index + 1}: ${feature.anatomyLabel}; accepted description: ${feature.normalizedDescriptor}. ${feature.sideAuthority} Localized box ${JSON.stringify(feature.targetZone)}. Compare its physical placement with witness Image ${index + 3}.`
+        `F${index + 1}: ${feature.anatomyLabel}; accepted description: ${feature.normalizedDescriptor}. ${feature.sideAuthority} Localized segments ${JSON.stringify(feature.targetZones)}. Compare their union with witness Image ${index + 3}.`
       ),
     ].join("\n"),
     images: [

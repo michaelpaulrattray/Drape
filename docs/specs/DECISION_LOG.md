@@ -1280,6 +1280,33 @@ the combined localized guide through the independent multi-feature audit
 before any paid generation. Older coverage recipes remain readable. Focused
 projection tests and typecheck pass locally.
 
+**Segmented coverage v7 correction (2026-07-30):** `28eaeea` deployed
+successfully and a third controlled 3/4 calibration also stopped before
+charge. The isolated probes made internally consistent decisions for all three
+selected features: left anterior shoulder hidden/certain, right full sleeve
+visible/certain, and centre forehead visible/certain. The combined independent
+guide audit accepted the forehead region but rejected the sleeve region for
+including conflicting anatomy. Direct browser inspection confirmed the audit
+was correct: one axis-aligned rectangle cannot tightly follow the long angled
+arm without also authorizing background or torso. No image generation ran and
+the balance remained 66,200 credits.
+
+Coverage/localization v7 therefore represents each feature with one to four
+tight axis-aligned segments. Compact placements normally use one segment;
+long or angled limbs, sleeves, legs, and torso surfaces use a small segment
+union that follows only the visible tattoo-bearing surface. Unused segment
+coordinates must be zero, hidden surfaces must return zero segments, and every
+used segment must be in bounds. The server-owned overlay labels segments by
+feature, while the unchanged independent multi-feature audit evaluates their
+union and rejects any segment touching the opposite side, clothing,
+background, conflicting anatomy, or implicitly authorized gaps. The same
+segment authority reaches the composer and post-generation placement audit;
+the legacy enclosing box remains only a coarse compatibility field. No
+confidence threshold, refund rule, or pre-charge gate is weakened. Older
+coverage recipes remain readable. Typecheck, 248 files / 3,185 tests, the
+production build, focused segmented-authority tests, and diff checks pass
+locally. No external model approval is claimed.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

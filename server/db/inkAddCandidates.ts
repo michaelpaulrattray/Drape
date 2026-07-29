@@ -170,6 +170,7 @@ export interface PreparedInkProjectionFeature {
   anatomyLabel: string;
   anatomy: { zone: string; surface: string; side: string };
   targetZone: NormalizedInkZone;
+  targetZones: readonly NormalizedInkZone[];
   witnessZone: NormalizedInkZone;
   witnessViewAngle: CanonicalViewAngle;
   witness: {
@@ -186,7 +187,36 @@ export interface PreparedInkProjectionFeature {
 
 export interface ObservedInkProjectionCoverage {
   visible: boolean;
-  targetZone: NormalizedInkZone | null;
+  targetZones: readonly NormalizedInkZone[] | null;
+}
+
+function boundingInkZone(
+  zones: readonly NormalizedInkZone[],
+): NormalizedInkZone {
+  if (zones.length < 1 || zones.length > 4) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  const x = Math.min(...zones.map((zone) => zone.x));
+  const y = Math.min(...zones.map((zone) => zone.y));
+  const right = Math.max(...zones.map((zone) => zone.x + zone.width));
+  const bottom = Math.max(...zones.map((zone) => zone.y + zone.height));
+  if (
+    ![x, y, right, bottom].every(Number.isFinite)
+    || x < 0
+    || y < 0
+    || right > 1
+    || bottom > 1
+    || right <= x
+    || bottom <= y
+  ) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  return Object.freeze({
+    x,
+    y,
+    width: right - x,
+    height: bottom - y,
+  });
 }
 
 function affectedRows(result: unknown): number {
@@ -530,6 +560,7 @@ function projectionFeatureForEntry(
       : `${entry.version.side} chest`,
     anatomy,
     targetZone: targetDirective.normalizedTargetZone,
+    targetZones: Object.freeze([targetDirective.normalizedTargetZone]),
     witnessZone: witnessDirective.normalizedTargetZone,
     witnessViewAngle,
     witness: {
@@ -848,13 +879,14 @@ export async function prepareInkProjectionCandidateGeneration(input: {
         }
         return [];
       }
-      if (!observed.targetZone) {
+      if (!observed.targetZones || observed.targetZones.length < 1) {
         throw new InkCandidateStateError("source_unavailable");
       }
       const isProjectionTarget = !feature.hasAcceptedTargetEvidence;
       return [{
         ...feature,
-        targetZone: observed.targetZone,
+        targetZone: boundingInkZone(observed.targetZones),
+        targetZones: observed.targetZones,
         isProjectionTarget,
         coverageBasis: isProjectionTarget
           ? feature.impact === "affected"

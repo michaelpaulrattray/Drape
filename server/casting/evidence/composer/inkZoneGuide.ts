@@ -49,6 +49,14 @@ export interface MultiAnatomicalInkZoneGuide {
   normalizedZones: readonly NormalizedInkZone[];
 }
 
+export interface SegmentedAnatomicalInkZoneGuide {
+  bytes: Buffer;
+  mime: "image/png";
+  width: number;
+  height: number;
+  normalizedZoneGroups: readonly (readonly NormalizedInkZone[])[];
+}
+
 function boundedDimension(value: number | undefined): value is number {
   return value !== undefined
     && Number.isSafeInteger(value)
@@ -231,6 +239,100 @@ export async function buildMultiAnatomicalInkZoneGuide(input: {
     normalizedZones: Object.freeze(
       zones.map(({ normalizedZone }) => normalizedZone),
     ),
+  };
+}
+
+export async function buildSegmentedAnatomicalInkZoneGuide(input: {
+  targetBytes: Uint8Array;
+  features: readonly {
+    normalizedZones: readonly NormalizedInkZone[];
+    label: string;
+  }[];
+}): Promise<SegmentedAnatomicalInkZoneGuide> {
+  if (input.features.length < 1 || input.features.length > 9) {
+    throw new TypeError("Invalid server segmented ink feature set");
+  }
+  const features = input.features.map(({ normalizedZones, label }) => {
+    const normalizedLabel = label.normalize("NFKC").replace(/\s+/g, " ").trim();
+    if (
+      !normalizedLabel
+      || normalizedLabel.length > 80
+      || normalizedZones.length < 1
+      || normalizedZones.length > 4
+    ) {
+      throw new TypeError("Invalid server segmented ink feature");
+    }
+    return {
+      normalizedZones: normalizedZones.map(assertNormalizedInkZone),
+      label: normalizedLabel.toUpperCase(),
+    };
+  });
+  const normalized = await sharp(Buffer.from(input.targetBytes), {
+    failOn: "error",
+    limitInputPixels: MAX_GUIDE_PIXELS,
+  })
+    .rotate()
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height } = normalized.info;
+  if (
+    !boundedDimension(width)
+    || !boundedDimension(height)
+    || width * height > MAX_GUIDE_PIXELS
+  ) {
+    throw new TypeError("Target view is not eligible for this ink recipe");
+  }
+  const strokeWidth = Math.max(
+    2,
+    Math.round(Math.min(width, height) * 0.004),
+  );
+  const fontSize = Math.max(
+    12,
+    Math.round(Math.min(width, height) * 0.014),
+  );
+  const rendered = features.flatMap((feature, featureIndex) =>
+    feature.normalizedZones.map((zone, segmentIndex) => {
+      const x = Math.round(zone.x * width);
+      const y = Math.round(zone.y * height);
+      const boxWidth = Math.max(1, Math.round(zone.width * width));
+      const boxHeight = Math.max(1, Math.round(zone.height * height));
+      const insideLabelY = y + fontSize + strokeWidth * 2;
+      const labelY = insideLabelY <= y + boxHeight - strokeWidth
+        ? insideLabelY
+        : Math.max(fontSize + strokeWidth, y - fontSize * 0.4);
+      const clipId = `ink-segment-label-${featureIndex}-${segmentIndex}`;
+      const segmentLabel =
+        `F${featureIndex + 1}.${segmentIndex + 1} ${feature.label}`;
+      return {
+        clip: `<clipPath id="${clipId}"><rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}"/></clipPath>`,
+        element: `<rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}" rx="${strokeWidth * 2}"
+      fill="rgba(190,45,45,0.10)" stroke="rgba(190,45,45,0.92)" stroke-width="${strokeWidth}"/>
+    <text x="${x + strokeWidth * 2}" y="${labelY}" font-family="Arial, sans-serif" font-size="${fontSize}"
+      font-weight="700" fill="rgba(125,20,20,0.96)" clip-path="url(#${clipId})">${escapeXml(segmentLabel)}</text>`,
+      };
+    })
+  );
+  const overlay = Buffer.from(
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>${rendered.map(({ clip }) => clip).join("\n")}</defs>
+      ${rendered.map(({ element }) => element).join("\n")}
+    </svg>`,
+  );
+  const guided = await sharp(normalized.data)
+    .composite([{ input: overlay, top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+  if (guided.length > MAX_GUIDE_BYTES) {
+    throw new TypeError("Target view is not eligible for this ink recipe");
+  }
+  return {
+    bytes: guided,
+    mime: "image/png",
+    width,
+    height,
+    normalizedZoneGroups: Object.freeze(features.map((feature) =>
+      Object.freeze([...feature.normalizedZones])
+    )),
   };
 }
 
