@@ -84,7 +84,7 @@ function graph(): ClosedInkFeatureGraph {
     sourceReferencePlateId: null,
     acceptedCandidatePlateId: plateId,
     evidenceCropId: null,
-    recipeVersion: "ink.add.anywhere.composer.v2",
+    recipeVersion: "ink.add.anywhere.composer.v3",
     createdByOperationId: "version-operation",
     createdByOperationStepKey: "primary",
     createdAt: new Date(),

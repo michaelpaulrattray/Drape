@@ -227,7 +227,7 @@ describe("R7-7D fail-closed structured probes", () => {
     expect(feature.responseSchema).toHaveProperty("priorVisibleInkPreserved");
     expect(feature.prompt).toContain("integer from 0 to 100");
     expect(placementAudit.recipeVersion)
-      .toBe("ink.add.anywhere.placement-audit.v2");
+      .toBe("ink.add.anywhere.placement-audit.v3");
     expect(placementAudit.prompt).toContain("FRAME LEFT");
     expect(placementAudit.responseSchema).toMatchObject({
       anatomicalSideCorrect: "boolean",
@@ -274,7 +274,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v2"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v3"
         ) {
           return {
             anatomicalSideCorrect: true,
@@ -322,7 +322,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v2"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v3"
         ) {
           return {
             anatomicalSideCorrect: false,
@@ -343,6 +343,12 @@ describe("R7-7D fail-closed structured probes", () => {
     expect(truth).toMatchObject({
       placementOutcome: "fail",
       overallOutcome: "fail",
+      placementDetail: {
+        semanticPlacement: "pass",
+        anatomicalSide: "fail",
+        authorizedZone: "fail",
+        noOutsideChange: "fail",
+      },
     });
     expect(decideInkCandidateAttempt({ attemptNumber: 1, probe: truth }))
       .toEqual({
@@ -370,7 +376,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v2"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v3"
         ) {
           return {
             anatomicalSideCorrect: true,

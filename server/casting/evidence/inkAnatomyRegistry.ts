@@ -10,11 +10,11 @@ export const INK_ANYWHERE_ONTOLOGY_VERSION = "body-zones.ink.v2" as const;
 export const INK_ANYWHERE_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.anywhere.authorization.v1" as const;
 export const INK_ANYWHERE_COMPOSER_RECIPE_VERSION =
-  "ink.add.anywhere.composer.v2" as const;
+  "ink.add.anywhere.composer.v3" as const;
 export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
   "ink.add.anywhere.probe.v2" as const;
 export const INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION =
-  "ink.add.anywhere.placement-audit.v2" as const;
+  "ink.add.anywhere.placement-audit.v3" as const;
 export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
   "ink.add.anywhere.visibility.v2" as const;
 export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
@@ -245,6 +245,8 @@ const CLOSE_CENTRE: Readonly<Record<"face" | "scalp" | "neck", NormalizedInkZone
   });
 const CLOSE_SHOULDER = rect(0.08, 0.76, 0.84, 0.235);
 const CLOSE_UPPER_ARM = rect(0.02, 0.78, 0.96, 0.215);
+const SIDED_ZONE_WIDTH_FRACTION = 0.42;
+const FRAME_MIDLINE_MARGIN = 0.03;
 
 function sidedZone(
   base: NormalizedInkZone,
@@ -255,12 +257,20 @@ function sidedZone(
     return base;
   }
   const leftAppearsFrameRight = angle !== "backFull";
-  const anatomicalLeftUsesRightHalf =
+  const usesFrameRight =
     side === "left" ? leftAppearsFrameRight : !leftAppearsFrameRight;
-  const width = Math.max(0.12, base.width * 0.58);
-  const x = anatomicalLeftUsesRightHalf
-    ? Math.min(1 - width, base.x + base.width - width)
+  const desiredWidth = Math.max(
+    0.12,
+    base.width * SIDED_ZONE_WIDTH_FRACTION,
+  );
+  const baseRight = base.x + base.width;
+  const x = usesFrameRight
+    ? Math.max(0.5 + FRAME_MIDLINE_MARGIN, baseRight - desiredWidth)
     : base.x;
+  const width = usesFrameRight
+    ? baseRight - x
+    : Math.min(desiredWidth, 0.5 - FRAME_MIDLINE_MARGIN - x);
+  if (width <= 0) throw new TypeError("Invalid sided tattoo geometry");
   return rect(x, base.y, width, base.height);
 }
 

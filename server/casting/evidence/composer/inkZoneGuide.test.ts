@@ -5,6 +5,7 @@ import {
   buildAnatomicalInkZoneGuide,
   buildInkZoneGuide,
 } from "./inkZoneGuide";
+import { inkViewDirectiveV2 } from "../inkAnatomyRegistry";
 
 async function target(): Promise<Buffer> {
   return sharp({
@@ -70,5 +71,42 @@ describe("R7-7D server-owned ink zone guide", () => {
       normalizedZone: { x: 0.9, y: 0.2, width: 0.2, height: 0.3 },
       label: "invalid",
     })).rejects.toThrow("Invalid server ink zone");
+  });
+
+  it("keeps a right full-arm guide entirely on frame-left", async () => {
+    const source = await target();
+    const normalizedZone = inkViewDirectiveV2({
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    }, "frontFull").normalizedTargetZone!;
+    const guide = await buildAnatomicalInkZoneGuide({
+      targetBytes: source,
+      normalizedZone,
+      label: "subject right - frame left",
+    });
+    const [sourceRaw, guideRaw] = await Promise.all([
+      sharp(source).rotate().ensureAlpha().raw()
+        .toBuffer({ resolveWithObject: true }),
+      sharp(guide.bytes).ensureAlpha().raw()
+        .toBuffer({ resolveWithObject: true }),
+    ]);
+    const channels = guideRaw.info.channels;
+    let changedFrameRightBytes = 0;
+    for (let y = 0; y < guideRaw.info.height; y += 1) {
+      for (
+        let x = Math.floor(guideRaw.info.width / 2);
+        x < guideRaw.info.width;
+        x += 1
+      ) {
+        const offset = (y * guideRaw.info.width + x) * channels;
+        for (let channel = 0; channel < channels; channel += 1) {
+          if (guideRaw.data[offset + channel] !== sourceRaw.data[offset + channel]) {
+            changedFrameRightBytes += 1;
+          }
+        }
+      }
+    }
+    expect(changedFrameRightBytes).toBe(0);
   });
 });

@@ -565,6 +565,22 @@ async function runAttempt(input: {
         ),
         images.projectionFeatures!.length,
       ));
+  log.info({
+    operationId: prepared.operationId,
+    candidateId: prepared.candidateId,
+    attemptNumber: prepared.attemptNumber,
+    probe: {
+      predictedVisibility: probe.predictedVisibility,
+      identity: probe.identityOutcome,
+      placement: probe.placementOutcome,
+      featureMatch: probe.featureMatchOutcome,
+      priorInk: probe.priorInkOutcome,
+      poseFraming: probe.poseFramingOutcome,
+      unexpectedInk: probe.unexpectedInkOutcome,
+      overall: probe.overallOutcome,
+      placementDetail: probe.placementDetail ?? null,
+    },
+  }, "Ink candidate evidence assessed");
   const decision = decideInkCandidateAttempt({
     attemptNumber: prepared.attemptNumber,
     probe,

@@ -105,12 +105,20 @@ describe("R7-7D exact ink composer request", () => {
       guidedTarget: image,
       retryDirectives: ["prior_ink", "placement"],
     });
-    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v2");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v3");
+    expect(request.images.map((item) => item.role)).toEqual([
+      "guided_target",
+      "identity_anchor",
+    ]);
+    expect(request.prompt).toContain(
+      "ROLE OF IMAGE 1 - GUIDED TARGET AND EDIT CANVAS",
+    );
     expect(request.prompt).toContain("Right arm");
     expect(request.prompt).toContain("FRAME LEFT");
     expect(request.prompt).toContain("zone=full_arm");
     expect(request.prompt).toContain("surface=circumferential");
     expect(request.prompt).toContain("preserve every existing tattoo");
     expect(request.prompt).toContain("Restore every tattoo");
+    expect(request.prompt.match(/FRAME LEFT/g)?.length).toBeGreaterThan(1);
   });
 });

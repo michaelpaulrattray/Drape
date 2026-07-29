@@ -56,7 +56,7 @@ function version(index: number): ModelIdentityFeatureVersion {
     acceptedCandidatePlateId:
       index === 1 ? AUTHORING_PLATE_1 : AUTHORING_PLATE_2,
     evidenceCropId: null,
-    recipeVersion: "ink.add.anywhere.composer.v2",
+    recipeVersion: "ink.add.anywhere.composer.v3",
     createdByOperationId: `version-operation-${index}`,
     createdAt: new Date(),
     acceptedAssetId: 200 + index,

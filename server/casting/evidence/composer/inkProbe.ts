@@ -70,6 +70,13 @@ export interface InkVisibilityProbe {
   confidence: number | null;
 }
 
+export interface InkPlacementProbeDetail {
+  semanticPlacement: EvidenceProbeOutcome;
+  anatomicalSide: EvidenceProbeOutcome;
+  authorizedZone: EvidenceProbeOutcome;
+  noOutsideChange: EvidenceProbeOutcome;
+}
+
 export interface InkCandidateProbeTruth {
   predictedVisibility: EvidenceProbeOutcome;
   identityOutcome: EvidenceProbeOutcome;
@@ -79,6 +86,7 @@ export interface InkCandidateProbeTruth {
   poseFramingOutcome: EvidenceProbeOutcome;
   unexpectedInkOutcome: EvidenceProbeOutcome;
   overallOutcome: EvidenceProbeOutcome;
+  placementDetail?: InkPlacementProbeDetail;
 }
 
 const INK_ANYWHERE_MIN_PROBE_CONFIDENCE = 85;
@@ -760,5 +768,11 @@ export async function runInkAnywhereCandidateProbes(input: {
     poseFramingOutcome,
     unexpectedInkOutcome,
     overallOutcome: overall(checks),
+    placementDetail: {
+      semanticPlacement: semanticPlacementOutcome,
+      anatomicalSide: sidePlacementOutcome,
+      authorizedZone: zonePlacementOutcome,
+      noOutsideChange: outsidePlacementOutcome,
+    },
   };
 }

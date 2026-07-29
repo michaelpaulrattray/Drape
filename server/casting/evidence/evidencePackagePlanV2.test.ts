@@ -87,7 +87,7 @@ function graph(withBackProjection: boolean): EvidencePackageFeatureGraph {
     sourceReferencePlateId: null,
     acceptedCandidatePlateId: AUTHORING_PLATE,
     evidenceCropId: null,
-    recipeVersion: "ink.add.anywhere.composer.v2",
+    recipeVersion: "ink.add.anywhere.composer.v3",
     createdByOperationId: "version-op",
     createdByOperationStepKey: "primary",
     acceptedAssetId: 201,

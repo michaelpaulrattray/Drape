@@ -66,6 +66,40 @@ describe("all-body ink anatomy registry", () => {
     expect(inkAnatomicalSideAuthority(tuple, "backFull")).toMatchObject({
       guideLabel: "SUBJECT RIGHT - FRAME RIGHT",
     });
+    const frontRight = inkViewDirectiveV2(tuple, "frontFull")
+      .normalizedTargetZone!;
+    const frontLeft = inkViewDirectiveV2(
+      { ...tuple, side: "left" },
+      "frontFull",
+    ).normalizedTargetZone!;
+    expect(frontRight.x + frontRight.width).toBeLessThan(0.5);
+    expect(frontLeft.x).toBeGreaterThan(0.5);
+    expect(frontRight.x + frontRight.width).toBeLessThan(frontLeft.x);
+    expect(frontRight.width).toBeLessThanOrEqual(0.36);
+  });
+
+  it("keeps every front/back sided guide disjoint from the frame midline", () => {
+    for (const tuple of ALL_SUPPORTED_INK_ANATOMY_TUPLES) {
+      if (tuple.side !== "right") continue;
+      const left = { ...tuple, side: "left" as const };
+      if (!isSupportedInkAnatomyTuple(left)) continue;
+      for (const angle of ["frontClose", "frontFull", "backFull"] as const) {
+        const rightZone = inkViewDirectiveV2(tuple, angle)
+          .normalizedTargetZone;
+        const leftZone = inkViewDirectiveV2(left, angle)
+          .normalizedTargetZone;
+        if (!rightZone || !leftZone) continue;
+        const rightAuthority = inkAnatomicalSideAuthority(tuple, angle);
+        const rightUsesFrameLeft =
+          rightAuthority.guideLabel.includes("FRAME LEFT");
+        const frameLeftZone = rightUsesFrameLeft ? rightZone : leftZone;
+        const frameRightZone = rightUsesFrameLeft ? leftZone : rightZone;
+        expect(frameLeftZone.x + frameLeftZone.width).toBeLessThan(0.5);
+        expect(frameRightZone.x).toBeGreaterThan(0.5);
+        expect(frameLeftZone.x + frameLeftZone.width)
+          .toBeLessThan(frameRightZone.x);
+      }
+    }
   });
 
   it("distinguishes below-resolution truth from hidden anatomy", () => {

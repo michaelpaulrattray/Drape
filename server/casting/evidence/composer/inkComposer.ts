@@ -160,11 +160,12 @@ function composerImages(input: {
   identityAnchor: ComposerImage;
   guidedTarget: ComposerImage;
   evidenceReference?: ComposerImage;
-}): InkComposerInlineImage[] {
-  const images: InkComposerInlineImage[] = [
-    inlineImage("identity_anchor", input.identityAnchor),
-    inlineImage("guided_target", input.guidedTarget),
-  ];
+}, guidedTargetFirst = false): InkComposerInlineImage[] {
+  const identityAnchor = inlineImage("identity_anchor", input.identityAnchor);
+  const guidedTarget = inlineImage("guided_target", input.guidedTarget);
+  const images: InkComposerInlineImage[] = guidedTargetFirst
+    ? [guidedTarget, identityAnchor]
+    : [identityAnchor, guidedTarget];
   if (input.evidenceReference) {
     images.push(inlineImage("evidence_reference", input.evidenceReference));
   }
@@ -251,7 +252,7 @@ export function buildInkAnywhereComposerRequest(input: {
   assertSupportedInkAnatomyTuple(input.anatomy);
   const { identityText, descriptor, retry } =
     validatedComposerAuthority(input);
-  const images = composerImages(input);
+  const images = composerImages(input, true);
   const location = inkAnatomyLabel(input.anatomy);
   const sideAuthority = inkAnatomicalSideAuthority(
     input.anatomy,
@@ -260,13 +261,13 @@ export function buildInkAnywhereComposerRequest(input: {
 
   const prompt = `Create one complete flattened fashion casting image.
 
-ROLE OF IMAGE 1 - IDENTITY ANCHOR:
-It defines the exact person. Preserve identity, face, skin tone, hair, and body.
-
-ROLE OF IMAGE 2 - GUIDED TARGET:
+ROLE OF IMAGE 1 - GUIDED TARGET AND EDIT CANVAS:
 It defines the exact pose, crop, framing, lighting, clothing, current pixels,
 and every tattoo or permanent mark already visible. The translucent guide is
-instruction-only and must not appear in the output.
+the only authorized edit region and must not appear in the output.
+
+ROLE OF IMAGE 2 - IDENTITY ANCHOR:
+It defines the exact person. Preserve identity, face, skin tone, hair, and body.
 
 ${input.evidenceReference
   ? `ROLE OF IMAGE 3 - DESIGN REFERENCE:
@@ -280,6 +281,11 @@ ${location}, inside the highlighted server-owned anatomical zone. The resolved
 tuple is zone=${input.anatomy.zone}, surface=${input.anatomy.surface},
 side=${input.anatomy.side}. Preserve realistic skin pores, texture, lighting,
 and skin highlights over the ink.
+${input.anatomy.surface === "circumferential"
+  ? `Author only the portion of this circumferential tattoo visible in this
+${input.sourceAngle} source image. Never transfer or mirror it onto the
+opposite limb or body side.`
+  : ""}
 
 ANATOMICAL LATERALITY - SERVER AUTHORITY:
 ${sideAuthority.prompt}
@@ -297,7 +303,11 @@ HARD RULES:
 - output only the final photorealistic image, with no guide, mask, border,
   caption, diagram, or before/after layout.
 ${retry.length
-  ? `\nINCLUDED RETRY CORRECTIONS:\n${retry.map((key) => `- ${RETRY_DIRECTIVES[key]}`).join("\n")}`
+  ? `\nINCLUDED RETRY CORRECTIONS:\n${retry.map((key) =>
+      key === "placement"
+        ? `- ${RETRY_DIRECTIVES[key]} ${sideAuthority.prompt}`
+        : `- ${RETRY_DIRECTIVES[key]}`
+    ).join("\n")}`
   : ""}`;
 
   return {

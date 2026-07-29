@@ -117,12 +117,20 @@ export async function buildAnatomicalInkZoneGuide(input: {
   const strokeWidth = Math.max(2, Math.round(Math.min(width, height) * 0.004));
   const label = escapeXml(`${guideLabel.toUpperCase()} - INK ONLY HERE`);
   const fontSize = Math.max(12, Math.round(Math.min(width, height) * 0.018));
-  const labelY = Math.max(fontSize + strokeWidth, y - fontSize * 0.45);
+  const insideLabelY = y + fontSize + strokeWidth * 2;
+  const labelY = insideLabelY <= y + boxHeight - strokeWidth
+    ? insideLabelY
+    : Math.max(fontSize + strokeWidth, y - fontSize * 0.45);
   const overlay = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="ink-zone-label">
+      <rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}"/>
+    </clipPath>
+  </defs>
   <rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}" rx="${strokeWidth * 2}"
     fill="rgba(190,45,45,0.13)" stroke="rgba(190,45,45,0.92)" stroke-width="${strokeWidth}"/>
-  <text x="${x}" y="${labelY}" font-family="Arial, sans-serif" font-size="${fontSize}"
-    font-weight="700" fill="rgba(125,20,20,0.96)">${label}</text>
+  <text x="${x + strokeWidth * 2}" y="${labelY}" font-family="Arial, sans-serif" font-size="${fontSize}"
+    font-weight="700" fill="rgba(125,20,20,0.96)" clip-path="url(#ink-zone-label)">${label}</text>
 </svg>`);
 
   const guided = await sharp(normalized.data)
@@ -184,19 +192,29 @@ export async function buildMultiAnatomicalInkZoneGuide(input: {
     12,
     Math.round(Math.min(width, height) * 0.016),
   );
-  const elements = zones.map(({ normalizedZone: zone, label }) => {
+  const rendered = zones.map(({ normalizedZone: zone, label }, index) => {
     const x = Math.round(zone.x * width);
     const y = Math.round(zone.y * height);
     const boxWidth = Math.max(1, Math.round(zone.width * width));
     const boxHeight = Math.max(1, Math.round(zone.height * height));
-    const labelY = Math.max(fontSize + strokeWidth, y - fontSize * 0.4);
-    return `<rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}" rx="${strokeWidth * 2}"
+    const insideLabelY = y + fontSize + strokeWidth * 2;
+    const labelY = insideLabelY <= y + boxHeight - strokeWidth
+      ? insideLabelY
+      : Math.max(fontSize + strokeWidth, y - fontSize * 0.4);
+    const clipId = `ink-zone-label-${index}`;
+    return {
+      clip: `<clipPath id="${clipId}"><rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}"/></clipPath>`,
+      element: `<rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}" rx="${strokeWidth * 2}"
       fill="rgba(190,45,45,0.10)" stroke="rgba(190,45,45,0.92)" stroke-width="${strokeWidth}"/>
-    <text x="${x}" y="${labelY}" font-family="Arial, sans-serif" font-size="${fontSize}"
-      font-weight="700" fill="rgba(125,20,20,0.96)">${escapeXml(label)}</text>`;
-  }).join("\n");
+    <text x="${x + strokeWidth * 2}" y="${labelY}" font-family="Arial, sans-serif" font-size="${fontSize}"
+      font-weight="700" fill="rgba(125,20,20,0.96)" clip-path="url(#${clipId})">${escapeXml(label)}</text>`,
+    };
+  });
   const overlay = Buffer.from(
-    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${elements}</svg>`,
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>${rendered.map(({ clip }) => clip).join("\n")}</defs>
+      ${rendered.map(({ element }) => element).join("\n")}
+    </svg>`,
   );
   const guided = await sharp(normalized.data)
     .composite([{ input: overlay, top: 0, left: 0 }])
