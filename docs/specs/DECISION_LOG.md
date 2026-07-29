@@ -1332,6 +1332,56 @@ placement audits remain mandatory and unchanged; no failed proposal can reach
 paid image generation. Typecheck, 248 files / 3,186 tests, the production
 build, focused coordinate-authority tests, and diff checks pass locally.
 
+**v8 production result and text-coordinate strategy retirement
+(2026-07-30):** `85cbfed` deployed successfully and one controlled 3/4
+calibration stopped before image generation or charge. The isolated probes
+returned structurally valid full-canvas coordinates for the accepted left
+shoulder, right sleeve, and forehead evidence. The independent target-guide
+audit rejected every proposed union at 100% confidence for missing the
+requested visible surface and including conflicting anatomy; it did not find
+opposite-side coverage. The displayed balance remained 66,200 credits.
+
+The repeated closed result establishes that a multimodal text response is not
+reliable pixel-localization authority for cross-view tattoo projection, even
+when each feature is isolated, supplied its accepted witness, and measured
+against a server-rendered full-image coordinate grid. The v4-v8 prompt/box
+strategy is therefore retired as a route to release. No additional live
+calibration may be run on that strategy. The next projection authority must be
+locally proven deterministic body geometry (landmarks/person masks and
+accepted-evidence localization), or a separately ratified provider capable of
+receiving an explicit pixel mask. Existing target-guide and post-generation
+audits remain fail-closed; this conclusion does not weaken either check.
+
+This result also confirms the reopened D-77 status: R7-7G has a completed
+bounded foundation, not an all-body product. R7-8 remains open until common
+all-body placement, removal, coherent affected-view refresh, consumer parity,
+ordinary-user rollout, and renewed founder acceptance all pass.
+
+**Deterministic pose-geometry foundation (2026-07-30):** the replacement path
+has been proven locally without production data or provider generation.
+MediaPipe Tasks' JavaScript package was rejected for server use after a direct
+Node proof showed that its pose graph still requires a real browser WebGL
+canvas even with the CPU delegate. TensorFlow.js BlazePose instead ran under
+the Node WASM backend and returned 33 named anatomical landmarks, 33
+world-space landmarks, and a full-resolution person mask from raw image bytes.
+
+The exact Apache-2.0 detector v1 and full-landmark v2 graph artifacts are now
+vendored with byte lengths and SHA-256 digests pinned in code. Production
+builds copy them beside the server bundle; cold inference reads local
+IOHandlers and has no image or model-network dependency. Initialization,
+integrity, and inference are serialized and fail closed.
+
+Pose-geometry v1 maps every one of the 110 registry tuples to named anatomical
+landmarks, rasterizes one to four tight limb/torso/head primitives, intersects
+them with the detected person mask, follows named subject-left/subject-right
+landmarks across mirrored frames, and refuses missing, uncertain, implausible,
+or empty geometry. This is maximum anatomical surface authority, not yet exact
+accepted-tattoo projection: accepted-candidate/source difference localization
+and body-coordinate transfer remain required before any angle can be reopened.
+Typecheck, eight focused integrity/geometry tests (including all 110 tuples and
+mirrored laterality), the production build, and the full 250-file / 3,194-test
+unit suite pass locally. No live calibration or paid generation ran.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
