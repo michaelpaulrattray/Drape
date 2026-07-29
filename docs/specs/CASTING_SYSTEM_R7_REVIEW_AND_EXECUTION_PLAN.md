@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7E are complete as of 2026-07-29; R7-7F true whole-Cast snapshot restore code is deployed with no restore-scope mutation and awaits the separately authorized founder evidence/drive gate, followed by the still-open R7-8 closure program
+**Status:** IN EXECUTION — R7-0 through R7-7F are complete as of 2026-07-29; the still-open R7-8 quality/reference-sheet/dogfood closure program is next
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -371,16 +371,13 @@ The founder approved all eight recommendations below as binding R7 direction:
 
 ## 9. Immediate next action
 
-1. Obtain separate authorization for a targeted production restore-scope
-   readback and privacy-safe, read-only founder timeline/restore-preflight
-   evidence.
-2. If that evidence closes, separately authorize founder-only
-   `users:1` restore scope.
-3. Founder-drive the available featureless and evidence-bearing historical
-   draft states without generation, provider work, credit changes, or storage
-   writes.
-4. Close R7-7F only after the recorded founder-drive gate, then execute the
-   remaining R7-8 quality/reference-sheet/dogfood closure program in its
-   ratified order.
+1. Define R7-8's server-planned 1K/2K generation-quality contract, including
+   persistence, pricing, duration, retry, and derivative reuse.
+2. Define the downstream generated reference-sheet derivative and its
+   engine-specific presets without changing identity canon.
+3. Rewrite and walk production acceptance criteria, complete the named
+   navigation/wiring/dead-code/performance audits, run the full release
+   verification matrix, and begin dogfooding only after blockers close or are
+   explicitly logged.
 
 R7 should move quickly in bounded batches, but it should not hide architecture inside an overnight prompt. The trust foundation is mechanical enough to execute once reviewed; the evidence composer is a separate founder-gated product and research program.

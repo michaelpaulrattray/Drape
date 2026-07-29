@@ -947,6 +947,14 @@ parent link, and restore-source link. No ledger row is rewritten, deleted, or
 made reusable as mutable authority. Malformed or non-closing restore
 provenance remains fail-closed rather than being silently coalesced.
 
+**R7-7F production closure (founder-confirmed 2026-07-29):** founder-only
+whole-Cast restore proved both the featureless Original Cast state and the
+evidence-bearing accepted-tattoo state without generation or credit changes.
+The live-drive client rehydration defect was corrected at `9fe64cd`; the
+state-not-events projection was corrected at `d09ca4c` and founder-confirmed
+on production. Append-only restore authority remains intact. R7-7F is closed;
+R7-8 quality/reference-sheet/dogfood closure is next.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

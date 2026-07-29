@@ -407,3 +407,25 @@ because the available CLI path would retrieve the complete secret-bearing
 variable set before filtering and that broader read was not authorized.
 Exact scope confirmation, privacy-safe founder history/preflight evidence,
 and F8 enablement remain separate gates.
+
+## 13. Production closure record — 2026-07-29
+
+F8 is complete. Founder-only restore scope was enabled for user 1, and the
+founder exercised both the featureless Original Cast state and the
+evidence-bearing accepted-tattoo state without generation or credit changes.
+The durable restore itself succeeded, but the first live pass exposed a client
+rehydration gap: the open viewer retained its pre-restore image until reload.
+Commit `9fe64cd` invalidated the active-operation projection after restore so
+the durable-operation bridge rehydrates the Casting stores immediately.
+
+The repeated drive also exposed a presentation problem rather than a ledger
+problem: every append-only restore snapshot appeared as another
+indistinguishable `Restored state` row. Commit `d09ca4c` changed the public
+projection to one row per semantic Cast state while retaining every restore
+snapshot, selection, receipt, parent link, and restore-source link internally.
+The founder confirmed the cleaned-up `Cast states` surface on production.
+
+Railway deployed `d09ca4c` as deployment
+`01c5271a-4437-49f9-a6c2-209ead98a5fe` with terminal `SUCCESS`; bounded startup
+logs showed the server listening and the health monitor running. R7-7F is
+closed. R7-8 is next.
