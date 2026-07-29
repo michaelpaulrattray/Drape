@@ -438,7 +438,7 @@ describe("ink candidate generation", () => {
         sourceAngle: "backFull",
         composerRecipeVersion: "ink.add.anywhere.projection.v4",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v4",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v5",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -514,12 +514,20 @@ describe("ink candidate generation", () => {
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v4",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v5",
+      images: expect.arrayContaining([
+        expect.objectContaining({ role: "original_target" }),
+        expect.objectContaining({ role: "evidence_reference" }),
+      ]),
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "projection_target_guide",
       recipeVersion:
-        "ink.add.anywhere.projection-target-guide-audit.v1",
+        "ink.add.anywhere.projection-target-guide-audit.v2",
+      images: expect.arrayContaining([
+        expect.objectContaining({ role: "guided_target" }),
+        expect.objectContaining({ role: "evidence_reference" }),
+      ]),
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection",

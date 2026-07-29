@@ -740,7 +740,12 @@ export function buildInkCoverageProbeRequest(input: {
   targetAngle: CanonicalViewAngle;
   features: readonly Pick<
     InkProjectionFeatureReference,
-    "featureVersionId" | "anatomyLabel" | "sideAuthority" | "targetZone"
+    | "featureVersionId"
+    | "normalizedDescriptor"
+    | "anatomyLabel"
+    | "sideAuthority"
+    | "targetZone"
+    | "witness"
   >[];
   target: ComposerImage;
 }): InkProbeRequest {
@@ -773,14 +778,19 @@ export function buildInkCoverageProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      `Inspect the single canonical ${input.targetAngle} Cast image.`,
-      "Return strict JSON only. Work from the actual pixels, not the stored angle name. For each F-feature, RegionVisible is true when any material contiguous portion of the requested anatomical surface is exposed and resolved enough to carry the visible portion of that tattoo at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility and anatomical side can be decided without guessing.",
-      "When RegionVisible is true, return ZoneX, ZoneY, ZoneWidth, and ZoneHeight as integer percentages from 0 to 100 for the tight bounding box of only the visible requested physical surface. Include small padding, exclude clothing, the opposite side/limb, and unrelated anatomy. X/Y are the top-left. Width/Height must be positive and X+Width and Y+Height must not exceed 100. When RegionVisible is false, all four zone values must be 0. If uncertain, set VerdictCertain false.",
+      `Inspect ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Images 2 onward are the accepted tattoo witnesses for F1 onward, one witness per feature in the same order.`,
+      "Return strict JSON only. Work from the actual pixels, not the stored angle name. For each F-feature, map the exact physical tattoo sublocation shown in its accepted witness onto Image 1. RegionVisible is true when any material contiguous portion of that same tattoo-bearing surface is exposed and resolved enough to carry the visible portion at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility, anatomical side, and the corresponding physical sublocation can be decided without guessing.",
+      "When RegionVisible is true, return ZoneX, ZoneY, ZoneWidth, and ZoneHeight as integer percentages from 0 to 100 for the tight bounding box of only the visible requested tattoo-bearing surface. Follow the accepted witness placement: a forehead tattoo authorizes forehead skin, not the whole face; a shoulder tattoo authorizes that shoulder surface, not the torso; a sleeve authorizes only the visible selected arm surface. Include small padding, exclude clothing, the opposite side/limb, background, and unrelated anatomy. X/Y are the top-left. Width/Height must be positive and X+Width and Y+Height must not exceed 100. When RegionVisible is false, all four zone values must be 0. If uncertain, set VerdictCertain false.",
       ...input.features.map((feature, index) =>
-        `F${index + 1}: ${feature.anatomyLabel}; ${feature.sideAuthority} The coarse server search region is ${JSON.stringify(feature.targetZone)}; localize the actual visible surface inside the image rather than copying this box.`
+        `F${index + 1}: ${feature.anatomyLabel}; accepted description: ${feature.normalizedDescriptor}; ${feature.sideAuthority} The coarse server search region is ${JSON.stringify(feature.targetZone)}; use it only to search Image 1, then localize the exact physical sublocation evidenced by Image ${index + 2} rather than copying the coarse box.`
       ),
     ].join("\n"),
-    images: [probeInline("original_target", input.target)],
+    images: [
+      probeInline("original_target", input.target),
+      ...input.features.map((feature) =>
+        probeInline("evidence_reference", feature.witness)
+      ),
+    ],
   };
 }
 
@@ -967,19 +977,22 @@ export function buildInkProjectionTargetGuideAuditProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      "Compare two ordered images: the clean target Cast image, then the same image with server-localized red F-boxes.",
+      "Compare ordered images: Image 1 is the clean target Cast image, Image 2 is the same image with server-localized red F-boxes, and Images 3 onward are the accepted tattoo witnesses for F1 onward in the same order.",
       `Audit the boxes in canonical ${input.targetAngle} using the actual pixels; the stored angle name is not anatomical-side proof.`,
       "Return strict JSON only. confidence is 0-100.",
-      "For each feature, GuideCoversVisibleSurface is true only when its F-box covers the visible, resolved portion of the requested physical surface where that tattoo may legitimately appear.",
+      "For each feature, GuideCoversVisibleSurface is true only when its F-box covers the visible, resolved portion of the same physical tattoo sublocation shown in that feature's accepted witness. A box around an entire broader anatomy zone fails when the witness establishes a smaller placement such as forehead, shoulder, wrist, or ankle.",
       "GuideTouchesOppositeSide is true if the F-box reaches the opposite anatomical side or limb. GuideIncludesConflictingAnatomy is true if it materially includes clothing, another body zone, background, or a different feature's authorized surface.",
       "A partial visible upper arm or forearm is legitimate surface for a full sleeve. The box must not expand to the opposite limb merely because the rest of the sleeve is cropped or occluded.",
       ...input.features.map((feature, index) =>
-        `F${index + 1}: ${feature.anatomyLabel}. ${feature.sideAuthority} Localized box ${JSON.stringify(feature.targetZone)}.`
+        `F${index + 1}: ${feature.anatomyLabel}; accepted description: ${feature.normalizedDescriptor}. ${feature.sideAuthority} Localized box ${JSON.stringify(feature.targetZone)}. Compare its physical placement with witness Image ${index + 3}.`
       ),
     ].join("\n"),
     images: [
       probeInline("original_target", input.originalTarget),
       probeInline("guided_target", input.guidedTarget),
+      ...input.features.map((feature) =>
+        probeInline("evidence_reference", feature.witness)
+      ),
     ],
   };
 }

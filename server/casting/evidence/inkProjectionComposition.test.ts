@@ -235,17 +235,26 @@ describe("multi-feature projection composition", () => {
       targetAngle: "threeQuarter",
       features: selected.map((feature) => ({
         featureVersionId: feature.featureVersionId,
+        normalizedDescriptor: feature.normalizedDescriptor,
         anatomyLabel: feature.anatomyLabel,
         sideAuthority: feature.sideAuthority,
         targetZone: feature.targetZone,
+        witness: feature.witness,
       })),
       target: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v4");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v5");
     expect(request.prompt).toContain(
       "partial upper arm or forearm in a close crop",
     );
+    expect(request.prompt).toContain("accepted tattoo witnesses");
+    expect(request.prompt).toContain("black botanical full sleeve");
+    expect(request.images.map(({ role }) => role)).toEqual([
+      "original_target",
+      "evidence_reference",
+      "evidence_reference",
+    ]);
     const raw = {
       feature1RegionVisible: true,
       feature1VerdictCertain: true,
@@ -302,8 +311,16 @@ describe("multi-feature projection composition", () => {
     expect(request).toMatchObject({
       kind: "projection_target_guide",
       recipeVersion:
-        "ink.add.anywhere.projection-target-guide-audit.v1",
+        "ink.add.anywhere.projection-target-guide-audit.v2",
     });
+    expect(request.prompt).toContain("accepted tattoo witnesses");
+    expect(request.prompt).toContain("black botanical full sleeve");
+    expect(request.images.map(({ role }) => role)).toEqual([
+      "original_target",
+      "guided_target",
+      "evidence_reference",
+      "evidence_reference",
+    ]);
     const raw = {
       confidence: 94,
       feature1GuideCoversVisibleSurface: true,

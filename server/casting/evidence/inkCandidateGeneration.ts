@@ -1034,23 +1034,34 @@ async function executeProjectionCandidate(
           preflight.sourceUrl,
         ),
       );
+      const coverageFeatures = await Promise.all(
+        preflight.features.map(async (feature) => ({
+          featureVersionId: feature.featureVersionId,
+          normalizedDescriptor: feature.normalizedDescriptor,
+          anatomyLabel: feature.anatomyLabel,
+          sideAuthority: feature.contract === "all_body_v2"
+            ? (() => {
+                assertSupportedInkAnatomyTuple(feature.anatomy);
+                return inkAnatomicalSideAuthority(
+                  feature.anatomy,
+                  preflight.targetViewAngle,
+                ).prompt;
+              })()
+            : `Judge ${feature.anatomy.side} only as the subject's anatomical side.`,
+          targetZone: feature.targetZone,
+          witness: composerImage(
+            await readPrivateExact(dependencies.delivery, {
+              key: feature.witness.storageKey,
+              byteSize: feature.witness.byteSize,
+              contentHash: feature.witness.contentHash,
+            }),
+          ),
+        })),
+      );
       const rawCoverage = await (dependencies.probe ?? defaultProbe)(
         buildInkCoverageProbeRequest({
           targetAngle: preflight.targetViewAngle,
-          features: preflight.features.map((feature) => ({
-            featureVersionId: feature.featureVersionId,
-            anatomyLabel: feature.anatomyLabel,
-            sideAuthority: feature.contract === "all_body_v2"
-              ? (() => {
-                  assertSupportedInkAnatomyTuple(feature.anatomy);
-                  return inkAnatomicalSideAuthority(
-                    feature.anatomy,
-                    preflight.targetViewAngle,
-                  ).prompt;
-                })()
-              : `Judge ${feature.anatomy.side} only as the subject's anatomical side.`,
-            targetZone: feature.targetZone,
-          })),
+          features: coverageFeatures,
           target,
         }),
       );

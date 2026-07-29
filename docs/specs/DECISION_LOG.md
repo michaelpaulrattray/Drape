@@ -1240,6 +1240,27 @@ than treating the failed static audit as a pass. Typecheck, 248 files / 3,184
 tests, the production build, focused localization/guide tests, and diff checks
 pass locally.
 
+**Witness-localized v5 correction (2026-07-30):** `81b78e6` deployed
+successfully and one controlled 3/4 calibration stopped before charge. The
+coverage probe correctly localized the visible right sleeve and judged the
+left anterior shoulder hidden, but represented the accepted centre-face
+forehead feature with a broad face rectangle. The independent target-guide
+audit rejected that box for missing the requested surface and including
+conflicting anatomy. No provider image was generated and the displayed balance
+remained 66,200 credits.
+
+The remaining defect was loss of exact accepted placement authority between a
+broad registry tuple and a new angle. Coverage/localization v5 now receives
+the accepted private witness for each selected tattoo and maps the exact
+physical tattoo sublocation shown there onto the clean target; the normalized
+descriptor participates as supporting authority. The independent target-guide
+audit v2 receives the same ordered witnesses and rejects a broad anatomy box
+when accepted evidence establishes a narrower placement such as forehead,
+shoulder, wrist, or ankle. This does not lower any confidence threshold or
+bypass the guide audit. Older coverage recipes remain readable. Focused
+projection tests and typecheck pass locally; another live calibration requires
+the usual tested commit and exact production deployment first.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
