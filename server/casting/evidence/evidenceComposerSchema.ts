@@ -46,6 +46,12 @@ const NEW_TABLE_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     "acceptedIdentitySnapshotId", "acceptedPackageSnapshotId",
     "cleanupBatchId", "composerRecipeVersion", "probeRecipeVersion",
     "createdAt", "expiresAt", "resolvedAt", "resolvedByOperationId",
+    "purpose",
+  ],
+  casting_evidence_candidate_feature_targets: [
+    "id", "candidateId", "userId", "modelId", "identitySnapshotId",
+    "featureId", "featureVersionId", "coverageBasis",
+    "coverageProbeRecipeVersion", "createdAt",
   ],
   casting_evidence_candidate_attempts: [
     "id", "candidateId", "attemptNumber", "generationId", "status",
@@ -56,16 +62,24 @@ const NEW_TABLE_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     "placementOutcome", "featureMatchOutcome", "poseFramingOutcome",
     "unexpectedInkOutcome", "overallOutcome", "createdAt", "storedAt",
     "probedAt", "promotedAt",
+    "priorInkOutcome",
   ],
   model_identity_features: [
     "id", "modelId", "category", "createdByOperationId", "createdAt",
+    "createdByOperationStepKey",
   ],
   model_identity_feature_versions: [
     "id", "modelId", "featureId", "operation", "ontologyVersion", "zone",
     "surface", "side", "normalizedDescriptor", "sourceAssetId",
     "sourceViewAngle", "sourceReferencePlateId", "acceptedCandidatePlateId",
     "evidenceCropId", "recipeVersion", "createdByOperationId", "createdAt",
-    "acceptedAssetId",
+    "acceptedAssetId", "createdByOperationStepKey",
+  ],
+  model_identity_feature_projection_evidence: [
+    "id", "userId", "modelId", "featureId", "featureVersionId",
+    "targetViewAngle", "sourceAssetId", "acceptedAssetId",
+    "acceptedCandidatePlateId", "recipeVersion", "createdByOperationId",
+    "createdByOperationStepKey", "createdAt",
   ],
   model_snapshot_feature_selections: [
     "id", "modelId", "identitySnapshotId", "featureId", "featureVersionId",
@@ -97,18 +111,36 @@ const EXISTING_COLUMN_TYPES: Readonly<Record<string, string>> = {
   "model_identity_feature_intents.category": "enum('ink')",
   "model_identity_feature_intents.operation": "enum('add')",
   "casting_evidence_candidates.activeSlot": "enum('active')",
-  "casting_evidence_candidates.targetViewAngle": "enum('frontFull')",
+  "casting_evidence_candidates.intentId": "varchar(36)",
+  "casting_evidence_candidates.targetViewAngle":
+    "enum('frontClose','threeQuarter','frontFull','sideClose','sideFull','backFull')",
+  "casting_evidence_candidates.purpose":
+    "enum('feature_authoring','feature_projection')",
+  "casting_evidence_candidate_feature_targets.coverageBasis":
+    "enum('registry_affected','observed_visible')",
+  "casting_evidence_candidate_feature_targets.coverageProbeRecipeVersion":
+    "varchar(64)",
   "casting_evidence_candidates.status":
     "enum('processing','ready','accepted','rejected','cancelled','expired','invalid')",
   "casting_evidence_candidate_attempts.status":
     "enum('planned','generating','stored','probe_passed','probe_failed','probe_unknown','promoted','cleanup_pending','cleaned')",
   "casting_evidence_candidate_attempts.overallOutcome":
     "enum('pass','fail','unknown')",
+  "casting_evidence_candidate_attempts.priorInkOutcome":
+    "enum('pass','fail','unknown')",
   "model_identity_features.category": "enum('ink')",
+  "model_identity_features.createdByOperationStepKey": "varchar(64)",
   "model_identity_feature_versions.operation": "enum('present')",
+  "model_identity_feature_versions.createdByOperationStepKey": "varchar(64)",
   "model_identity_feature_versions.sourceAssetId": "int",
   "model_identity_feature_versions.acceptedAssetId": "int",
-  "model_identity_feature_versions.sourceViewAngle": "enum('frontFull')",
+  "model_identity_feature_versions.sourceViewAngle":
+    "enum('frontClose','threeQuarter','frontFull','sideClose','sideFull','backFull')",
+  "model_identity_feature_projection_evidence.targetViewAngle":
+    "enum('frontClose','threeQuarter','frontFull','sideClose','sideFull','backFull')",
+  "model_identity_feature_projection_evidence.sourceAssetId": "int",
+  "model_identity_feature_projection_evidence.createdByOperationStepKey":
+    "varchar(64)",
   "model_snapshot_feature_selections.selectionReason":
     "enum('accepted','carried','restored')",
 };
@@ -141,6 +173,10 @@ const COLUMN_DEFAULT_EXPECTATIONS: Readonly<Record<
     nullable: "YES",
     defaultValue: null,
   },
+  "casting_evidence_candidates.intentId": {
+    nullable: "YES",
+    defaultValue: null,
+  },
   "casting_evidence_candidates.status": {
     nullable: "NO",
     defaultValue: "processing",
@@ -149,12 +185,40 @@ const COLUMN_DEFAULT_EXPECTATIONS: Readonly<Record<
     nullable: "NO",
     defaultValue: "planned",
   },
+  "casting_evidence_candidate_attempts.priorInkOutcome": {
+    nullable: "YES",
+    defaultValue: null,
+  },
+  "casting_evidence_candidates.purpose": {
+    nullable: "NO",
+    defaultValue: "feature_authoring",
+  },
+  "casting_evidence_candidate_feature_targets.coverageProbeRecipeVersion": {
+    nullable: "YES",
+    defaultValue: null,
+  },
   "model_identity_feature_versions.sourceAssetId": {
     nullable: "YES",
     defaultValue: null,
   },
   "model_identity_feature_versions.acceptedAssetId": {
     nullable: "YES",
+    defaultValue: null,
+  },
+  "model_identity_features.createdByOperationStepKey": {
+    nullable: "NO",
+    defaultValue: "primary",
+  },
+  "model_identity_feature_versions.createdByOperationStepKey": {
+    nullable: "NO",
+    defaultValue: "primary",
+  },
+  "model_identity_feature_projection_evidence.sourceAssetId": {
+    nullable: "YES",
+    defaultValue: null,
+  },
+  "model_identity_feature_projection_evidence.createdByOperationStepKey": {
+    nullable: "NO",
     defaultValue: null,
   },
 };
@@ -174,6 +238,16 @@ const EXPECTED_INDEXES: Readonly<Record<string, readonly string[]>> = {
   "casting_evidence_candidates.uq_evidence_candidates_intent_active": [
     "intentId", "activeSlot",
   ],
+  "casting_evidence_candidates.uq_evidence_candidates_model_active": [
+    "modelId", "activeSlot",
+  ],
+  "casting_evidence_candidate_feature_targets.PRIMARY": ["id"],
+  "casting_evidence_candidate_feature_targets.uq_candidate_feature_targets_candidate_feature": [
+    "candidateId", "featureId",
+  ],
+  "casting_evidence_candidate_feature_targets.uq_candidate_feature_targets_candidate_version": [
+    "candidateId", "featureVersionId",
+  ],
   "casting_evidence_candidate_attempts.PRIMARY": ["id"],
   "casting_evidence_candidate_attempts.uq_evidence_candidate_attempt_number": [
     "candidateId", "attemptNumber",
@@ -191,12 +265,12 @@ const EXPECTED_INDEXES: Readonly<Record<string, readonly string[]>> = {
     "promotedPublicStorageKey",
   ],
   "model_identity_features.PRIMARY": ["id"],
-  "model_identity_features.uq_identity_features_created_operation": [
-    "createdByOperationId",
+  "model_identity_features.uq_identity_features_operation_step": [
+    "createdByOperationId", "createdByOperationStepKey",
   ],
   "model_identity_feature_versions.PRIMARY": ["id"],
-  "model_identity_feature_versions.uq_identity_feature_versions_created_operation": [
-    "createdByOperationId",
+  "model_identity_feature_versions.uq_identity_feature_versions_operation_step": [
+    "createdByOperationId", "createdByOperationStepKey",
   ],
   "model_identity_feature_versions.uq_identity_feature_versions_accepted_asset": [
     "acceptedAssetId",
@@ -215,6 +289,13 @@ const EXPECTED_INDEXES: Readonly<Record<string, readonly string[]>> = {
     "createdByOperationId", "createdByOperationStepKey",
   ],
   "model_evidence_crops.uq_model_evidence_crops_operation_step": [
+    "createdByOperationId", "createdByOperationStepKey",
+  ],
+  "model_identity_feature_projection_evidence.PRIMARY": ["id"],
+  "model_identity_feature_projection_evidence.uq_feature_projection_version_angle": [
+    "featureVersionId", "targetViewAngle",
+  ],
+  "model_identity_feature_projection_evidence.uq_feature_projection_operation_step": [
     "createdByOperationId", "createdByOperationStepKey",
   ],
   "casting_evidence_ingestions.uq_casting_evidence_ingestions_operation_step": [
@@ -241,6 +322,12 @@ const EXPECTED_NONUNIQUE_INDEXES: Readonly<Record<string, readonly string[]>> = 
   "casting_evidence_candidate_attempts.idx_evidence_candidate_attempt_status": [
     "candidateId", "status",
   ],
+  "casting_evidence_candidate_feature_targets.idx_candidate_feature_targets_owner_model": [
+    "userId", "modelId",
+  ],
+  "casting_evidence_candidate_feature_targets.idx_candidate_feature_targets_version": [
+    "featureVersionId",
+  ],
   "model_identity_features.idx_identity_features_model_created": [
     "modelId", "createdAt",
   ],
@@ -259,18 +346,35 @@ const EXPECTED_NONUNIQUE_INDEXES: Readonly<Record<string, readonly string[]>> = 
   "model_snapshot_feature_selections.idx_snapshot_feature_selections_version": [
     "featureVersionId",
   ],
+  "model_identity_feature_projection_evidence.idx_feature_projection_owner_model": [
+    "userId", "modelId",
+  ],
+  "model_identity_feature_projection_evidence.idx_feature_projection_feature": [
+    "featureId",
+  ],
+  "model_identity_feature_projection_evidence.idx_feature_projection_version": [
+    "featureVersionId",
+  ],
+  "model_identity_feature_projection_evidence.idx_feature_projection_plate": [
+    "acceptedCandidatePlateId",
+  ],
+  "model_identity_feature_projection_evidence.idx_feature_projection_accepted_asset": [
+    "acceptedAssetId",
+  ],
 };
 
 const RETIRED_INDEXES = new Set([
   "uq_model_reference_plates_operation",
   "uq_model_evidence_crops_operation",
   "uq_casting_evidence_ingestions_operation",
+  "uq_identity_features_created_operation",
+  "uq_identity_feature_versions_created_operation",
 ]);
 
 export class EvidenceComposerSchemaMismatchError extends Error {
   constructor() {
     super(
-      "Evidence composer requires the complete R7-7E migration 0014 before it can be enabled.",
+      "Evidence composer requires the complete R7-7G migrations 0015 and 0016 before it can be enabled.",
     );
     this.name = "EvidenceComposerSchemaMismatchError";
   }

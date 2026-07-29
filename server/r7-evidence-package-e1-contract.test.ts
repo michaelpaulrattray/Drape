@@ -81,11 +81,16 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       "casting/evidence/evidencePackagePlan.ts",
       "casting/evidence/evidencePackageProbe.ts",
       "casting/evidence/evidenceWalkCompatibilityRepair.ts",
+      "casting/evidence/inkAcceptanceCommit.ts",
+      "casting/evidence/inkCandidateGeneration.ts",
+      "casting/evidence/inkFeatureGraph.ts",
+      "casting/evidence/inkPackageImpactV2.ts",
       "casting/evidence/inkViewImpact.ts",
       "casting/mintPackage.ts",
       "casting/operationRecovery.ts",
       "casting/packagePricing.ts",
       "casting/snapshotTransitions.ts",
+      "db/inkAddCandidates.ts",
       "routes/generation/castingExport.ts",
     ]);
 

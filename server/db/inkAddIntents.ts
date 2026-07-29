@@ -1,7 +1,9 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import type { CanonicalViewAngle } from "../../shared/boardTypes";
 import {
   generationOperationLocks,
   generationOperations,
+  modelAssets,
   modelIdentityFeatureIntents,
   modelReferencePlates,
   modelSnapshotFeatureSelections,
@@ -19,6 +21,16 @@ import {
 import {
   normalizeInkDescriptor,
 } from "../casting/evidence/composer/inkAuthorization";
+import {
+  INK_ACTIVE_FAMILY_KEY,
+  INK_ANYWHERE_CAPABILITY_KEY,
+  INK_ANYWHERE_ONTOLOGY_VERSION,
+  assertSupportedInkAnatomyTuple,
+  chooseCurrentInkAuthoringSource,
+  type InkAnatomySide,
+  type InkAnatomyTuple,
+} from "../casting/evidence/inkAnatomyRegistry";
+import { normalizeInkInstruction } from "../casting/evidence/inkInstructionPlanner";
 import {
   buildEffectiveCastState,
   type EffectiveCastState,
@@ -108,6 +120,12 @@ export interface BeginInkAddIntentResult {
   intentId: string;
 }
 
+export interface BeginInkAnywhereIntentResult {
+  intentId: string;
+  sourceViewAngle: string;
+  sourceAssetId: number;
+}
+
 /**
  * The claimed operation, intent, and immutable expected head become visible
  * atomically. The model row is locked first and every client child id is
@@ -173,10 +191,7 @@ export async function commitBeginInkAddIntent(input: {
       .from(modelIdentityFeatureIntents)
       .where(and(
         eq(modelIdentityFeatureIntents.modelId, input.modelId),
-        eq(
-          modelIdentityFeatureIntents.activeCapabilityKey,
-          INK_ADD_CAPABILITY_KEY,
-        ),
+        eq(modelIdentityFeatureIntents.category, "ink"),
         eq(modelIdentityFeatureIntents.status, "pending"),
       ))
       .limit(1)
@@ -235,13 +250,137 @@ export async function commitBeginInkAddIntent(input: {
   });
 }
 
+/**
+ * V2 resolves its authoring source only from the locked current snapshot.
+ * The client supplies natural language, never geometry, side, view, or asset.
+ */
+export async function commitBeginInkAnywhereIntent(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  intentId: string;
+  anatomy: InkAnatomyTuple;
+  normalizedDescriptor: string;
+}): Promise<BeginInkAnywhereIntentResult> {
+  assertSupportedInkAnatomyTuple(input.anatomy);
+  if (normalizeInkInstruction(input.normalizedDescriptor)
+    !== input.normalizedDescriptor) {
+    throw new InkAddIntentStateError("source_unavailable");
+  }
+  return withTransaction(async (tx) => {
+    const model = await lockOwnedDraftModelIn(tx, input);
+    await lockClaimedIntentOperationIn(tx, input);
+
+    let state: EffectiveCastState;
+    try {
+      state = buildEffectiveCastState({
+        ...(await readSnapshotShadowStateIn(tx, input)),
+        model,
+      });
+    } catch {
+      throw new InkAddIntentStateError("snapshot_unavailable");
+    }
+    if (state.status !== "current" || !state.package || !state.identity) {
+      throw new InkAddIntentStateError("snapshot_unavailable");
+    }
+    const source = chooseCurrentInkAuthoringSource(
+      input.anatomy,
+      state.selectedViews.map((view) => ({
+        angle: view.angle,
+        assetId: view.asset.id,
+        compatibility: view.compatibility,
+        pinned: Boolean(view.asset.pinned),
+      })),
+    );
+    if (!source) {
+      throw new InkAddIntentStateError("source_unavailable");
+    }
+
+    const [activeIntent] = await tx
+      .select({ id: modelIdentityFeatureIntents.id })
+      .from(modelIdentityFeatureIntents)
+      .where(and(
+        eq(modelIdentityFeatureIntents.modelId, input.modelId),
+        eq(modelIdentityFeatureIntents.category, "ink"),
+        eq(modelIdentityFeatureIntents.status, "pending"),
+      ))
+      .limit(1)
+      .for("update");
+    if (activeIntent) {
+      throw new InkAddIntentStateError("intent_already_active");
+    }
+
+    const quoted = await tx
+      .update(generationOperations)
+      .set({
+        expectedStateVersion: model.stateVersion,
+        expectedPackageSnapshotId: state.package.id,
+        expectedIdentityRevisionId: model.identityRevisionId,
+      })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.modelId, input.modelId),
+        eq(generationOperations.kind, "evidence_intent_begin"),
+        eq(generationOperations.status, "claimed"),
+        isNull(generationOperations.expectedStateVersion),
+      ));
+    if (affectedRows(quoted) !== 1) {
+      throw new InkAddIntentStateError("operation_unavailable");
+    }
+
+    await tx.insert(modelIdentityFeatureIntents).values({
+      id: input.intentId,
+      userId: input.userId,
+      modelId: input.modelId,
+      capabilityKey: INK_ANYWHERE_CAPABILITY_KEY,
+      activeCapabilityKey: INK_ACTIVE_FAMILY_KEY,
+      status: "pending",
+      category: "ink",
+      operation: "add",
+      ontologyVersion: INK_ANYWHERE_ONTOLOGY_VERSION,
+      zone: input.anatomy.zone,
+      surface: input.anatomy.surface,
+      side: input.anatomy.side,
+      normalizedDescriptor: input.normalizedDescriptor,
+      sourceAssetId: source.assetId,
+      expectedStateVersion: model.stateVersion,
+      identitySnapshotId: state.identity.id,
+      packageSnapshotId: state.package.id,
+      createdByOperationId: input.operationId,
+    });
+
+    const result = {
+      intentId: input.intentId,
+      sourceViewAngle: source.angle,
+      sourceAssetId: source.assetId,
+    };
+    await finalizeClaimedGenerationOperationSuccessIn(tx, {
+      userId: input.userId,
+      operationId: input.operationId,
+      result,
+    });
+    return result;
+  });
+}
+
 export interface OwnedPendingInkIntent {
   id: string;
   userId: number;
   modelId: number;
-  side: InkAddSide;
+  capabilityKey:
+    | typeof INK_ADD_CAPABILITY_KEY
+    | typeof INK_ANYWHERE_CAPABILITY_KEY;
+  activeCapabilityKey:
+    | typeof INK_ADD_CAPABILITY_KEY
+    | typeof INK_ACTIVE_FAMILY_KEY;
+  ontologyVersion: string;
+  zone: string;
+  surface: string;
+  side: InkAnatomySide;
   normalizedDescriptor: string;
   sourceAssetId: number;
+  sourceViewAngle: CanonicalViewAngle;
   expectedStateVersion: number;
   identitySnapshotId: string;
   packageSnapshotId: string;
@@ -308,6 +447,44 @@ export async function inspectOwnedInkAddAvailability(input: {
   });
 }
 
+export async function inspectOwnedInkAnywhereAvailability(input: {
+  userId: number;
+  modelId: number;
+}): Promise<OwnedInkAddAvailability> {
+  return withTransaction(async (tx) => {
+    const [model] = await tx
+      .select()
+      .from(models)
+      .where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        eq(models.status, "draft"),
+        isNull(models.deletedAt),
+      ))
+      .limit(1);
+    if (!model) return "model_unavailable";
+    try {
+      const state = buildEffectiveCastState({
+        ...(await readSnapshotShadowStateIn(tx, input)),
+        model,
+      });
+      if (
+        state.status !== "current"
+        || !state.selectedViews.some((view) =>
+          view.compatibility === "current"
+          && !view.asset.pinned
+          && Boolean(view.asset.storageUrl)
+        )
+      ) {
+        return "source_unavailable";
+      }
+      return "eligible";
+    } catch {
+      return "source_unavailable";
+    }
+  });
+}
+
 export async function findOwnedInkIntentClaimSubject(input: {
   userId: number;
   intentId: string;
@@ -329,7 +506,10 @@ export async function findOwnedInkIntentClaimSubject(input: {
     .where(and(
       eq(modelIdentityFeatureIntents.id, input.intentId),
       eq(modelIdentityFeatureIntents.userId, input.userId),
-      eq(modelIdentityFeatureIntents.capabilityKey, INK_ADD_CAPABILITY_KEY),
+      inArray(modelIdentityFeatureIntents.capabilityKey, [
+        INK_ADD_CAPABILITY_KEY,
+        INK_ANYWHERE_CAPABILITY_KEY,
+      ]),
     ))
     .limit(1);
   return intent ?? null;
@@ -345,9 +525,15 @@ export async function findOwnedPendingInkIntent(input: {
         id: modelIdentityFeatureIntents.id,
         userId: modelIdentityFeatureIntents.userId,
         modelId: modelIdentityFeatureIntents.modelId,
+        capabilityKey: modelIdentityFeatureIntents.capabilityKey,
+        activeCapabilityKey: modelIdentityFeatureIntents.activeCapabilityKey,
+        ontologyVersion: modelIdentityFeatureIntents.ontologyVersion,
+        zone: modelIdentityFeatureIntents.zone,
+        surface: modelIdentityFeatureIntents.surface,
         side: modelIdentityFeatureIntents.side,
         normalizedDescriptor: modelIdentityFeatureIntents.normalizedDescriptor,
         sourceAssetId: modelIdentityFeatureIntents.sourceAssetId,
+        sourceViewAngle: modelAssets.viewType,
         expectedStateVersion: modelIdentityFeatureIntents.expectedStateVersion,
         identitySnapshotId: modelIdentityFeatureIntents.identitySnapshotId,
         packageSnapshotId: modelIdentityFeatureIntents.packageSnapshotId,
@@ -359,6 +545,10 @@ export async function findOwnedPendingInkIntent(input: {
         eq(models.userId, input.userId),
         eq(models.status, "draft"),
         isNull(models.deletedAt),
+      ))
+      .innerJoin(modelAssets, and(
+        eq(modelAssets.id, modelIdentityFeatureIntents.sourceAssetId),
+        eq(modelAssets.modelId, modelIdentityFeatureIntents.modelId),
       ))
       .leftJoin(modelReferencePlates, and(
         eq(
@@ -372,22 +562,31 @@ export async function findOwnedPendingInkIntent(input: {
         ),
       ))
       .where(and(
-        eq(modelIdentityFeatureIntents.id, input.intentId),
-        eq(modelIdentityFeatureIntents.userId, input.userId),
-        eq(modelIdentityFeatureIntents.capabilityKey, INK_ADD_CAPABILITY_KEY),
-        eq(modelIdentityFeatureIntents.status, "pending"),
-        eq(
-          modelIdentityFeatureIntents.activeCapabilityKey,
-          INK_ADD_CAPABILITY_KEY,
-        ),
-      ))
+      eq(modelIdentityFeatureIntents.id, input.intentId),
+      eq(modelIdentityFeatureIntents.userId, input.userId),
+      inArray(modelIdentityFeatureIntents.capabilityKey, [
+        INK_ADD_CAPABILITY_KEY,
+        INK_ANYWHERE_CAPABILITY_KEY,
+      ]),
+      eq(modelIdentityFeatureIntents.status, "pending"),
+    ))
       .limit(1);
     if (!intent || !intent.normalizedDescriptor) return null;
-    if (
-      !(INK_ADD_SIDES as readonly string[]).includes(intent.side)
-      || normalizeInkDescriptor(intent.normalizedDescriptor)
-        !== intent.normalizedDescriptor
-    ) {
+    const legacyValid = intent.capabilityKey === INK_ADD_CAPABILITY_KEY
+      && intent.activeCapabilityKey === INK_ADD_CAPABILITY_KEY
+      && intent.ontologyVersion === INK_ADD_ONTOLOGY_VERSION
+      && intent.zone === INK_ADD_ZONE
+      && intent.surface === INK_ADD_SURFACE
+      && (INK_ADD_SIDES as readonly string[]).includes(intent.side)
+      && normalizeInkDescriptor(intent.normalizedDescriptor)
+        === intent.normalizedDescriptor;
+    const anywhereValid = intent.capabilityKey === INK_ANYWHERE_CAPABILITY_KEY
+      && intent.activeCapabilityKey === INK_ACTIVE_FAMILY_KEY
+      && intent.ontologyVersion === INK_ANYWHERE_ONTOLOGY_VERSION
+      && isValidAnywhereIntent(intent)
+      && normalizeInkInstruction(intent.normalizedDescriptor)
+        === intent.normalizedDescriptor;
+    if (!legacyValid && !anywhereValid) {
       throw new InkAddIntentStateError("snapshot_unavailable");
     }
     return intent as OwnedPendingInkIntent;
@@ -407,13 +606,23 @@ export async function findActiveOwnedInkIntent(input: {
       eq(modelIdentityFeatureIntents.userId, input.userId),
       eq(modelIdentityFeatureIntents.modelId, input.modelId),
       eq(modelIdentityFeatureIntents.status, "pending"),
-      eq(
-        modelIdentityFeatureIntents.activeCapabilityKey,
-        INK_ADD_CAPABILITY_KEY,
-      ),
+      eq(modelIdentityFeatureIntents.category, "ink"),
     ))
     .limit(1);
   return intent
     ? findOwnedPendingInkIntent({ userId: input.userId, intentId: intent.id })
     : null;
+}
+
+function isValidAnywhereIntent(value: {
+  zone: string;
+  surface: string;
+  side: string;
+}): boolean {
+  try {
+    assertSupportedInkAnatomyTuple(value);
+    return true;
+  } catch {
+    return false;
+  }
 }

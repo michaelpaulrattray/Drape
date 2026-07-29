@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   castingEvidenceCandidateAttempts,
+  castingEvidenceCandidateFeatureTargets,
   castingEvidenceCandidates,
   generationOperationLocks,
   generationOperations,
@@ -10,6 +11,7 @@ import {
   modelIdentityFeatureIntents,
   modelIdentityFeatures,
   modelIdentityFeatureVersions,
+  modelIdentityFeatureProjectionEvidence,
   modelPackageSnapshots,
   modelReferencePlates,
   modelSnapshotFeatureSelections,
@@ -183,16 +185,44 @@ export async function adjudicateStaleInkEvidenceOperation(input: {
             }
           : { type: "recovery_required" };
       }
-      const [intent] = await tx
-        .select()
-        .from(modelIdentityFeatureIntents)
-        .where(and(
-          eq(modelIdentityFeatureIntents.id, candidate.intentId),
-          eq(modelIdentityFeatureIntents.userId, operation.userId),
-          eq(modelIdentityFeatureIntents.modelId, modelId),
-        ))
-        .limit(1)
-        .for("update");
+      const isAuthoring = candidate.purpose === "feature_authoring";
+      const isProjection = candidate.purpose === "feature_projection";
+      if (
+        (!isAuthoring && !isProjection)
+        || (isAuthoring && !candidate.intentId)
+        || (isProjection && candidate.intentId !== null)
+      ) {
+        return { type: "recovery_required" };
+      }
+      const [intent] = isAuthoring
+        ? await tx
+          .select()
+          .from(modelIdentityFeatureIntents)
+          .where(and(
+            eq(modelIdentityFeatureIntents.id, candidate.intentId!),
+            eq(modelIdentityFeatureIntents.userId, operation.userId),
+            eq(modelIdentityFeatureIntents.modelId, modelId),
+          ))
+          .limit(1)
+          .for("update")
+        : [];
+      const projectionTargets = isProjection
+        ? await tx
+          .select()
+          .from(castingEvidenceCandidateFeatureTargets)
+          .where(and(
+            eq(
+              castingEvidenceCandidateFeatureTargets.candidateId,
+              candidate.id,
+            ),
+            eq(
+              castingEvidenceCandidateFeatureTargets.userId,
+              operation.userId,
+            ),
+            eq(castingEvidenceCandidateFeatureTargets.modelId, modelId),
+          ))
+          .for("update")
+        : [];
       const attempts = await tx
         .select()
         .from(castingEvidenceCandidateAttempts)
@@ -212,7 +242,12 @@ export async function adjudicateStaleInkEvidenceOperation(input: {
           ))
           .for("update")
         : [];
-      if (!intent || attempts.length === 0 || children.length !== generationIds.length) {
+      if (
+        (isAuthoring && !intent)
+        || (isProjection && projectionTargets.length === 0)
+        || attempts.length === 0
+        || children.length !== generationIds.length
+      ) {
         return { type: "recovery_required" };
       }
       for (const attempt of attempts) {
@@ -260,6 +295,8 @@ export async function adjudicateStaleInkEvidenceOperation(input: {
           result: {
             candidateId: candidate.id,
             status: "ready",
+            purpose: candidate.purpose,
+            targetViewAngle: candidate.targetViewAngle,
             expiresAt: candidate.expiresAt!.toISOString(),
             chargedCredits: INK_ADD_PRICE_CREDITS,
           },
@@ -272,7 +309,7 @@ export async function adjudicateStaleInkEvidenceOperation(input: {
         || candidate.acceptedAssetId
         || candidate.acceptedIdentitySnapshotId
         || candidate.acceptedPackageSnapshotId
-        || intent.status !== "pending"
+        || (intent && intent.status !== "pending")
       ) {
         return { type: "recovery_required" };
       }
@@ -386,6 +423,117 @@ export async function adjudicateStaleInkEvidenceOperation(input: {
         .limit(1)
         .for("update");
       if (candidate?.status === "accepted") {
+        if (
+          candidate.purpose === "feature_projection"
+          && candidate.intentId === null
+          && candidate.targetViewAngle
+        ) {
+          const targets = await tx
+            .select()
+            .from(castingEvidenceCandidateFeatureTargets)
+            .where(and(
+              eq(
+                castingEvidenceCandidateFeatureTargets.candidateId,
+                candidate.id,
+              ),
+              eq(
+                castingEvidenceCandidateFeatureTargets.userId,
+                operation.userId,
+              ),
+              eq(castingEvidenceCandidateFeatureTargets.modelId, modelId),
+              eq(
+                castingEvidenceCandidateFeatureTargets.identitySnapshotId,
+                candidate.acceptedIdentitySnapshotId ?? "",
+              ),
+            ));
+          const projections = await tx
+            .select()
+            .from(modelIdentityFeatureProjectionEvidence)
+            .where(and(
+              eq(
+                modelIdentityFeatureProjectionEvidence.userId,
+                operation.userId,
+              ),
+              eq(modelIdentityFeatureProjectionEvidence.modelId, modelId),
+              eq(
+                modelIdentityFeatureProjectionEvidence.targetViewAngle,
+                candidate.targetViewAngle,
+              ),
+              eq(
+                modelIdentityFeatureProjectionEvidence.acceptedAssetId,
+                candidate.acceptedAssetId ?? -1,
+              ),
+              eq(
+                modelIdentityFeatureProjectionEvidence.createdByOperationId,
+                operation.id,
+              ),
+            ));
+          const [snapshot] = await tx
+            .select()
+            .from(modelPackageSnapshots)
+            .where(and(
+              eq(
+                modelPackageSnapshots.id,
+                candidate.acceptedPackageSnapshotId ?? "",
+              ),
+              eq(modelPackageSnapshots.modelId, modelId),
+              eq(
+                modelPackageSnapshots.identitySnapshotId,
+                candidate.acceptedIdentitySnapshotId ?? "",
+              ),
+            ))
+            .limit(1);
+          const [asset] = await tx
+            .select()
+            .from(modelAssets)
+            .where(and(
+              eq(modelAssets.id, candidate.acceptedAssetId ?? -1),
+              eq(modelAssets.modelId, modelId),
+              eq(modelAssets.viewType, candidate.targetViewAngle),
+            ))
+            .limit(1);
+          const targetKeys = targets
+            .map((target) => `${target.featureId}:${target.featureVersionId}`)
+            .sort();
+          const projectionKeys = projections
+            .map((projection) =>
+              `${projection.featureId}:${projection.featureVersionId}`
+            )
+            .sort();
+          if (
+            !snapshot
+            || !asset
+            || targetKeys.length === 0
+            || targetKeys.length !== projectionKeys.length
+            || targetKeys.some((key, index) => key !== projectionKeys[index])
+            || model.currentPackageSnapshotId !== snapshot.id
+          ) {
+            return { type: "recovery_required" };
+          }
+          return {
+            type: "durable_success",
+            result: {
+              candidateId: candidate.id,
+              status: "accepted",
+              purpose: "feature_projection",
+              modelId,
+              assetId: asset.id,
+              targetViewAngle: candidate.targetViewAngle,
+              projectedFeatureVersionIds: targets
+                .map((target) => target.featureVersionId)
+                .sort(),
+              identitySnapshotId: snapshot.identitySnapshotId,
+              packageSnapshotId: snapshot.id,
+              stateVersion: model.stateVersion,
+              chargedCredits: 0,
+            },
+            chargedCredits: 0,
+            refundedCredits: 0,
+          };
+        }
+        if (!candidate.intentId || candidate.purpose !== "feature_authoring") {
+          return { type: "recovery_required" };
+        }
         const [intent] = await tx
           .select()
           .from(modelIdentityFeatureIntents)
@@ -584,6 +732,45 @@ export async function adjudicateStaleInkEvidenceOperation(input: {
           candidateId: candidate?.id ?? null,
           status: "cancelled",
           cleanupObjects: cleanup?.expectedCount ?? 0,
+          chargedCredits: 0,
+        },
+        chargedCredits: 0,
+        refundedCredits: 0,
+      };
+    }
+    const [projectionCandidate] = await tx
+      .select()
+      .from(castingEvidenceCandidates)
+      .where(and(
+        eq(castingEvidenceCandidates.userId, operation.userId),
+        eq(castingEvidenceCandidates.modelId, modelId),
+        eq(castingEvidenceCandidates.purpose, "feature_projection"),
+        isNull(castingEvidenceCandidates.intentId),
+        eq(castingEvidenceCandidates.status, "cancelled"),
+        eq(castingEvidenceCandidates.resolvedByOperationId, operation.id),
+      ))
+      .limit(1)
+      .for("update");
+    if (projectionCandidate) {
+      const [cleanup] = await tx
+        .select()
+        .from(storageCleanupBatches)
+        .where(and(
+          eq(storageCleanupBatches.operationId, operation.id),
+          eq(storageCleanupBatches.userId, operation.userId),
+          eq(storageCleanupBatches.kind, "candidate_cleanup"),
+        ))
+        .limit(1);
+      if (!projectionCandidate.cleanupBatchId || !cleanup) {
+        return { type: "recovery_required" };
+      }
+      return {
+        type: "durable_success",
+        result: {
+          candidateId: projectionCandidate.id,
+          status: "cancelled",
+          purpose: "feature_projection",
+          cleanupObjects: cleanup.expectedCount,
           chargedCredits: 0,
         },
         chargedCredits: 0,

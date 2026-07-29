@@ -1004,6 +1004,27 @@ movement, or resizing. Those remain distinct generative edit/erase operations.
 Cybernetics, moles, scars, and other permanent-feature categories follow only
 after all-body `ink.add` passes its founder gate.
 
+**R7-7G local implementation checkpoint (2026-07-29; not a production
+closure):** G0–G6 are implemented. New v2 writes use a closed all-body
+registry and natural-language planner; the server owns anatomy, source view,
+visibility, feature graph, price, and affected-view authority. Multiple
+tattoos close positively, initial authoring costs 350 credits, and
+first-unseen-region projections use private Accept / Retry / Cancel candidates
+at the existing canonical slot price (300 credits for the current body
+slots). Prior visible ink is an explicit fail-closed probe outcome. Public
+DTOs omit ontology keys, source asset IDs, storage locators, and other
+features' private text. Casting generation and identity-pack export are
+1K-only, with no customer-callable upscale path.
+
+Additive migrations `0015` and `0016` passed the guarded disposable-MySQL
+mixed-version/default/final-fence drive and the scratch database was dropped.
+`pnpm check`, the full 3,157-test local suite, and `pnpm build` pass. A
+feature-off headless Edge drive against a disposable fully migrated database
+routed a right-forearm tattoo from the ordinary Refine field and refused
+before any candidate-generation route. No paid generation or production
+mutation occurred. Production migration, feature-off landing, founder-only
+enablement, paid cohort calibration, and R7-7G closure remain pending.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

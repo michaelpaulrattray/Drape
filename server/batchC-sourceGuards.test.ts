@@ -434,11 +434,12 @@ describe("masked editing stays closed (M3)", () => {
   });
 });
 
-describe("refused presentation/mark suggestions are not advertised (M16/M18/F5)", () => {
-  it("the refine bar's rotating examples advertise no marks, makeup, or accessories", () => {
+describe("unsupported presentation/mark suggestions are not advertised (M16/M18/F5)", () => {
+  it("the refine bar advertises tattoos but no still-closed marks, makeup, or accessories", () => {
     const src = clientFile("features/casting/components/ImageViewer/RefinePanel.tsx");
     const examples = src.slice(src.indexOf("ROTATING_EXAMPLES"), src.indexOf("EXAMPLE_INTERVAL_MS"));
-    expect(examples).not.toMatch(/tattoo|freckle|scar|piercing|makeup|earring|necklace|mascara|lash/i);
+    expect(examples).toMatch(/tattoo/i);
+    expect(examples).not.toMatch(/freckle|scar|piercing|makeup|earring|necklace|mascara|lash/i);
   });
   it("loading tips no longer promise mark carry-through or masked tools", () => {
     const src = clientFile("features/casting/components/ImageViewer/LoadingOverlay.tsx");

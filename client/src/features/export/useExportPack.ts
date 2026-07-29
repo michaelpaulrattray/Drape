@@ -180,7 +180,6 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
         async (_exportId, mutations) => {
           const prepared = await prepareExportViews({
             assets,
-            resolution: "1K",
             mutations: {
               proxyImage: (input) => mutations.proxyImage(input),
             },

@@ -67,6 +67,13 @@ import {
 import {
   assessSupportedInkFeatureGraph,
 } from "./evidence/evidencePackagePlan";
+import { assessClosedInkFeatureGraph } from "./evidence/inkFeatureGraph";
+import { inkPackageAngleAuthority } from "./evidence/inkPackageImpactV2";
+import {
+  INK_ANYWHERE_EVIDENCE_MOSAIC_RECIPE_VERSION,
+  INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+} from "./evidence/inkAnatomyRegistry";
 import {
   readEvidencePackageFeatureRowsIn,
 } from "./evidence/evidencePackageFeatureRows";
@@ -110,6 +117,12 @@ export interface SnapshotIdentityChange {
    * historical law: every carried slot becomes stale.
    */
   staleViewAngles?: readonly CanonicalViewAngle[];
+  /**
+   * A front-close accepted face/scalp/neck candidate may become the new
+   * identity anchor. This is valid only for evidence-aware acceptance and
+   * must replace the selected front-close slot with that exact asset.
+   */
+  acceptsAnchorBearingEvidence?: true;
 }
 
 export interface SnapshotTransitionSpec {
@@ -620,10 +633,33 @@ export async function commitModelSnapshotTransition<Result>(input: {
         !current
         || !sameDocument(postModel, current.identitySnapshot)
         || (postModel.identityRevisionId ?? null) !== (model.identityRevisionId ?? null)
-        || transition.identity.anchorAssetId !== current.identitySnapshot.anchorAssetId
       )
     ) {
-      throw new Error("Evidence acceptance cannot change the identity anchor, documents or revision");
+      throw new Error("Evidence acceptance cannot change identity documents or revision");
+    }
+    if (transition.identity?.reason === "evidence_accept" && current) {
+      const anchorChanged =
+        transition.identity.anchorAssetId !== current.identitySnapshot.anchorAssetId;
+      const frontCloseChange = transition.slotChanges?.find(
+        (change) => change.viewAngle === "frontClose",
+      );
+      if (
+        anchorChanged !== Boolean(
+          transition.identity.acceptsAnchorBearingEvidence,
+        )
+        || (
+          anchorChanged
+          && (
+            input.featureAuthority !== "evidence_aware"
+            || frontCloseChange?.selectedAssetId
+              !== transition.identity.anchorAssetId
+          )
+        )
+      ) {
+        throw new Error(
+          "Evidence acceptance anchor authority is invalid",
+        );
+      }
     }
     if (
       transition.identity
@@ -1117,6 +1153,8 @@ export interface EvidencePackageSyncCandidate extends GeneratedImageCandidate {
   storageKey: string;
   sourceAssetId: number;
   featureVersionId: string;
+  evidenceContract?: "legacy_v1" | "all_body_v2";
+  featureVersionIds?: string[];
   requiredVisibleAnatomicalSide: "left" | "right" | null;
   observedVisibleAnatomicalSide: ObservedAnatomicalSide;
   observedTravelDirection: ObservedTravelDirection;
@@ -1383,11 +1421,23 @@ export async function commitEvidencePackageSyncSnapshot(input: {
     assertGeneratedImageCandidate(candidate, "evidence package view");
     if (
       candidate.angle === "frontClose"
-      || candidate.angle === "frontFull"
       || !candidate.storageKey.trim()
       || !candidate.featureVersionId.trim()
       || angles.has(candidate.angle)
     ) {
+      throw new Error("Evidence package candidate is invalid");
+    }
+    if (candidate.evidenceContract === "all_body_v2") {
+      if (
+        !candidate.featureVersionIds?.length
+        || new Set(candidate.featureVersionIds).size
+          !== candidate.featureVersionIds.length
+        || candidate.featureVersionIds.some((id) => !id.trim())
+        || candidate.featureVersionId !== candidate.featureVersionIds[0]
+      ) {
+        throw new Error("Evidence package candidate is invalid");
+      }
+    } else if (candidate.angle === "frontFull") {
       throw new Error("Evidence package candidate is invalid");
     }
     angles.add(candidate.angle);
@@ -1416,11 +1466,24 @@ export async function commitEvidencePackageSyncSnapshot(input: {
         modelId: input.modelId,
         identitySnapshotId: context.current.identitySnapshot.id,
       });
-      const graph = assessSupportedInkFeatureGraph(
+      const closedGraphCandidate = assessClosedInkFeatureGraph(
         featureRows.graph,
-        frontFullSlot?.selectedAssetId ?? null,
       );
-      if (!graph || featureRows.hasUnresolvedIntentOrReadyCandidate) {
+      const closedGraph = closedGraphCandidate?.entries.some(
+        (entry) => entry.contract === "all_body_v2",
+      )
+        ? closedGraphCandidate
+        : null;
+      const legacyGraph = !closedGraph
+        ? assessSupportedInkFeatureGraph(
+            featureRows.graph,
+            frontFullSlot?.selectedAssetId ?? null,
+          )
+        : null;
+      if (
+        (!closedGraph && !legacyGraph)
+        || featureRows.hasUnresolvedIntentOrReadyCandidate
+      ) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "This Cast's saved feature evidence changed. Nothing was saved.",
@@ -1454,28 +1517,77 @@ export async function commitEvidencePackageSyncSnapshot(input: {
             message: "This view is already current. Nothing was saved.",
           });
         }
-        const expectedSourceId =
-          existing?.selectedAssetId ?? frontFullSlot?.selectedAssetId;
+        const v2 = candidate.evidenceContract === "all_body_v2";
+        const expectedSourceId = existing?.selectedAssetId
+          ?? (v2 ? candidate.sourceAssetId : frontFullSlot?.selectedAssetId);
         const source = sourceById.get(candidate.sourceAssetId);
-        const directive = inkPackageDirective({
-          capabilityKey: INK_ADD_CAPABILITY_KEY,
-          ontologyVersion: graph.version.ontologyVersion,
-          zone: graph.version.zone,
-          surface: graph.version.surface,
-          side: graph.version.side,
-          angle: candidate.angle,
-        });
+        const directive = legacyGraph
+          ? inkPackageDirective({
+              capabilityKey: INK_ADD_CAPABILITY_KEY,
+              ontologyVersion: legacyGraph.version.ontologyVersion,
+              zone: legacyGraph.version.zone,
+              surface: legacyGraph.version.surface,
+              side: legacyGraph.version.side,
+              angle: candidate.angle,
+            })
+          : null;
+        const angleAuthority = closedGraph
+          ? inkPackageAngleAuthority(closedGraph, candidate.angle)
+          : null;
+        const requiredFeatureVersionIds = angleAuthority
+          ? angleAuthority.features
+            .filter((feature) =>
+              feature.impact === "affected"
+              || (
+                feature.impact === "uncertain"
+                && feature.acceptedEvidenceAssetId !== null
+              )
+            )
+            .map((feature) => feature.entry.version.id)
+            .sort()
+          : [];
+        const candidateFeatureVersionIds = candidate.featureVersionIds
+          ? [...candidate.featureVersionIds].sort()
+          : [];
+        const acceptedEvidenceSourceIds = new Set(
+          angleAuthority?.features.flatMap((feature) =>
+            feature.acceptedEvidenceAssetId === null
+              ? []
+              : [feature.acceptedEvidenceAssetId]
+          ) ?? [],
+        );
         if (
           !source
           || source.id !== expectedSourceId
-          || source.viewType !== (existing ? candidate.angle : "frontFull")
+          || (
+            existing
+              ? source.viewType !== candidate.angle
+              : v2
+                ? !acceptedEvidenceSourceIds.has(source.id)
+                : source.viewType !== "frontFull"
+          )
           || !source.storageUrl?.trim()
           || (existing !== undefined && source.pinned)
-          || !directive
-          || directive.visibility === "authoring_truth"
-          || candidate.featureVersionId !== graph.version.id
-          || candidate.requiredVisibleAnatomicalSide
-            !== directive.requiredVisibleAnatomicalSide
+          || (
+            v2
+              ? (
+                  !angleAuthority
+                  || angleAuthority.requiresProjectionCandidate
+                  || requiredFeatureVersionIds.length === 0
+                  || candidateFeatureVersionIds.length
+                    !== requiredFeatureVersionIds.length
+                  || candidateFeatureVersionIds.some(
+                    (id, index) => id !== requiredFeatureVersionIds[index],
+                  )
+                )
+              : (
+                  !directive
+                  || directive.visibility === "authoring_truth"
+                  || candidate.featureVersionId !== legacyGraph!.version.id
+                  || candidate.requiredVisibleAnatomicalSide
+                    !== directive.requiredVisibleAnatomicalSide
+                )
+          )
         ) {
           throw new TRPCError({
             code: "CONFLICT",
@@ -1493,12 +1605,20 @@ export async function commitEvidencePackageSyncSnapshot(input: {
           provenance: {
             source: "evidence_package_sync",
             ...(candidate.engine ? { engine: candidate.engine } : {}),
-            composerRecipeVersion: EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION,
-            probeRecipeVersion: EVIDENCE_PACKAGE_PROBE_RECIPE_VERSION,
-            guideRecipeVersion: EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION,
+            composerRecipeVersion: v2
+              ? INK_ANYWHERE_PROJECTION_RECIPE_VERSION
+              : EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION,
+            probeRecipeVersion: v2
+              ? INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION
+              : EVIDENCE_PACKAGE_PROBE_RECIPE_VERSION,
+            guideRecipeVersion: v2
+              ? INK_ANYWHERE_EVIDENCE_MOSAIC_RECIPE_VERSION
+              : EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION,
             sourceAngle: source.viewType,
             sourceAssetId: source.id,
-            acceptedFeatureVersionId: graph.version.id,
+            ...(v2
+              ? { acceptedFeatureVersionIds: candidate.featureVersionIds }
+              : { acceptedFeatureVersionId: legacyGraph!.version.id }),
             requiredVisibleAnatomicalSide:
               candidate.requiredVisibleAnatomicalSide,
             observedVisibleAnatomicalSide:

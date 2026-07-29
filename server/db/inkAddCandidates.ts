@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
+  castingEvidenceCandidateFeatureTargets,
   castingEvidenceCandidateAttempts,
   castingEvidenceCandidates,
   generationOperationLocks,
@@ -20,11 +21,17 @@ import {
 import {
   INK_ADD_COMPOSER_RECIPE_VERSION,
   INK_ADD_IMAGE_ENGINE,
+  INK_ADD_ONTOLOGY_VERSION,
   INK_ADD_PROBE_MODEL,
   INK_ADD_PROBE_RECIPE_VERSION,
+  INK_ADD_SURFACE,
   INK_ADD_TARGET_VIEW,
+  INK_ADD_VISIBILITY_RECIPE_VERSION,
+  INK_ADD_ZONE,
+  assertInkAddSide,
   type InkAddSide,
 } from "../casting/evidence/composer/inkAddRecipe";
+import type { NormalizedInkZone } from "../casting/evidence/composer/inkZoneGuide";
 import type { InkCandidateProbeTruth } from "../casting/evidence/composer/inkProbe";
 import {
   buildEvidenceCandidateStorageKey,
@@ -34,7 +41,34 @@ import { parseInkCandidatePublicStorageKey } from "../casting/evidence/inkCandid
 import { availableModelWhere } from "../casting/modelAvailability";
 import { modelOperationLockKey } from "../casting/operationContract";
 import { buildEffectiveCastState } from "../casting/effectiveCastState";
+import {
+  INK_ACTIVE_FAMILY_KEY,
+  INK_ANYWHERE_CAPABILITY_KEY,
+  INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
+  INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_ONTOLOGY_VERSION,
+  INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+  INK_ANYWHERE_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_VISIBILITY_RECIPE_VERSION,
+  assertSupportedInkAnatomyTuple,
+  chooseCurrentInkAuthoringSource,
+  inkViewDirectiveV2,
+  inkAnatomyLabel,
+  type InkAnatomyTuple,
+} from "../casting/evidence/inkAnatomyRegistry";
+import {
+  FRONT_UPPER_TORSO_ZONES,
+} from "../casting/evidence/composer/inkZoneGuide";
+import type { CanonicalViewAngle } from "../../shared/boardTypes";
 import { readSnapshotShadowStateIn } from "../casting/snapshotShadow";
+import {
+  assessClosedInkFeatureGraph,
+  type ClosedInkFeatureEntry,
+} from "../casting/evidence/inkFeatureGraph";
+import { readEvidencePackageFeatureRowsIn } from "../casting/evidence/evidencePackageFeatureRows";
+import { inkPackageAngleAuthority } from "../casting/evidence/inkPackageImpactV2";
+import { inkPackageDirective } from "../casting/evidence/evidencePackageRegistry";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
 import { withTransaction, type TransactionHandle } from "./connection";
 
@@ -66,7 +100,7 @@ export interface PreparedInkCandidateAttempt {
   operationId: string;
   operationKind: "evidence_candidate_generate" | "evidence_candidate_retry";
   candidateId: string;
-  intentId: string;
+  intentId: string | null;
   attemptId: string;
   attemptNumber: 1 | 2;
   generationId: number;
@@ -77,9 +111,47 @@ export interface PreparedInkCandidateAttempt {
   expectedStateVersion: number;
   sourceAssetId: number;
   sourceUrl: string;
+  sourceViewAngle: CanonicalViewAngle;
   anchorUrl: string;
   identityText: string;
-  side: InkAddSide;
+  authority:
+    | {
+        kind: "legacy_v1";
+        capabilityKey: typeof INK_ADD_CAPABILITY_KEY;
+        ontologyVersion: typeof INK_ADD_ONTOLOGY_VERSION;
+        anatomy: {
+          zone: typeof INK_ADD_ZONE;
+          surface: typeof INK_ADD_SURFACE;
+          side: InkAddSide;
+        };
+        normalizedTargetZone: NormalizedInkZone;
+        composerRecipeVersion: typeof INK_ADD_COMPOSER_RECIPE_VERSION;
+        probeRecipeVersion: typeof INK_ADD_PROBE_RECIPE_VERSION;
+        visibilityRecipeVersion: typeof INK_ADD_VISIBILITY_RECIPE_VERSION;
+      }
+    | {
+        kind: "anywhere_v2";
+        capabilityKey: typeof INK_ANYWHERE_CAPABILITY_KEY;
+        ontologyVersion: typeof INK_ANYWHERE_ONTOLOGY_VERSION;
+        anatomy: InkAnatomyTuple;
+        normalizedTargetZone: NormalizedInkZone;
+        composerRecipeVersion: typeof INK_ANYWHERE_COMPOSER_RECIPE_VERSION;
+        probeRecipeVersion: typeof INK_ANYWHERE_PROBE_RECIPE_VERSION;
+        visibilityRecipeVersion: typeof INK_ANYWHERE_VISIBILITY_RECIPE_VERSION;
+      }
+    | {
+        kind: "projection_v2";
+        capabilityKey: typeof INK_ANYWHERE_CAPABILITY_KEY;
+        ontologyVersion: typeof INK_ANYWHERE_ONTOLOGY_VERSION;
+        targetAngle: CanonicalViewAngle;
+        sourceAngle: CanonicalViewAngle;
+        composerRecipeVersion: typeof INK_ANYWHERE_PROJECTION_RECIPE_VERSION;
+        probeRecipeVersion:
+          typeof INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION;
+        visibilityRecipeVersion:
+          typeof INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION;
+        features: readonly PreparedInkProjectionFeature[];
+      };
   normalizedDescriptor: string;
   reference: null | {
     plateId: string;
@@ -87,6 +159,28 @@ export interface PreparedInkCandidateAttempt {
     byteSize: number;
     contentHash: string;
   };
+}
+
+export interface PreparedInkProjectionFeature {
+  featureId: string;
+  featureVersionId: string;
+  contract: "legacy_front_upper_torso_v1" | "all_body_v2";
+  normalizedDescriptor: string;
+  anatomyLabel: string;
+  anatomy: { zone: string; surface: string; side: string };
+  targetZone: NormalizedInkZone;
+  witnessZone: NormalizedInkZone;
+  witnessViewAngle: CanonicalViewAngle;
+  witness: {
+    plateId: string;
+    storageKey: string;
+    byteSize: number;
+    contentHash: string;
+  };
+  impact: "affected" | "uncertain";
+  hasAcceptedTargetEvidence: boolean;
+  isProjectionTarget: boolean;
+  coverageBasis: "registry_affected" | "observed_visible" | null;
 }
 
 function affectedRows(result: unknown): number {
@@ -183,6 +277,9 @@ async function createAttemptIn(
     attemptId: string;
     attemptNumber: 1 | 2;
     privatePlateId: string;
+    sourceViewAngle: CanonicalViewAngle;
+    composerRecipeVersion: string;
+    probeRecipeVersion: string;
   },
 ): Promise<{ generationId: number; privateStorageKey: string }> {
   const privateStorageKey = buildEvidenceCandidateStorageKey({
@@ -197,7 +294,7 @@ async function createAttemptIn(
       modelId: input.modelId,
       operationId: input.operationId,
       stepKey: `attempt:${input.attemptNumber}`,
-      viewAngle: INK_ADD_TARGET_VIEW,
+      viewAngle: input.sourceViewAngle,
       type: "evidenceCandidate",
       status: "pending",
       pointsCost: input.attemptNumber === 1 ? INK_ADD_PRICE_CREDITS : 0,
@@ -209,7 +306,7 @@ async function createAttemptIn(
           ? "charged_attempt"
           : "included_retry",
         engine: INK_ADD_IMAGE_ENGINE,
-        recipeVersion: INK_ADD_COMPOSER_RECIPE_VERSION,
+        recipeVersion: input.composerRecipeVersion,
       },
     })
     .$returningId();
@@ -222,9 +319,9 @@ async function createAttemptIn(
     privatePlateId: input.privatePlateId,
     privateStorageKey,
     actualImageEngine: INK_ADD_IMAGE_ENGINE,
-    composerRecipeVersion: INK_ADD_COMPOSER_RECIPE_VERSION,
+    composerRecipeVersion: input.composerRecipeVersion,
     probeModel: INK_ADD_PROBE_MODEL,
-    probeRecipeVersion: INK_ADD_PROBE_RECIPE_VERSION,
+    probeRecipeVersion: input.probeRecipeVersion,
   });
   return { generationId: inserted.id, privateStorageKey };
 }
@@ -326,6 +423,508 @@ async function rejectReadyCandidateForRetryIn(
   }
 }
 
+export interface InkProjectionCandidatePreflight {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  operationKind: PreparedInkCandidateAttempt["operationKind"];
+  identitySnapshotId: string;
+  packageSnapshotId: string;
+  expectedStateVersion: number;
+  sourceAssetId: number;
+  sourceUrl: string;
+  sourceViewAngle: CanonicalViewAngle;
+  targetViewAngle: CanonicalViewAngle;
+  anchorUrl: string;
+  identityText: string;
+  features: readonly PreparedInkProjectionFeature[];
+}
+
+function projectionDirectiveForEntry(
+  entry: ClosedInkFeatureEntry,
+  angle: CanonicalViewAngle,
+): {
+  impact: "affected" | "unaffected" | "uncertain";
+  normalizedTargetZone: NormalizedInkZone | null;
+} {
+  if (entry.contract === "legacy_front_upper_torso_v1") {
+    const directive = inkPackageDirective({
+      capabilityKey: INK_ADD_CAPABILITY_KEY,
+      ontologyVersion: entry.version.ontologyVersion,
+      zone: entry.version.zone,
+      surface: entry.version.surface,
+      side: entry.version.side,
+      angle,
+    });
+    if (!directive) throw new InkCandidateStateError("source_unavailable");
+    return {
+      impact: directive.existingSelectionImpact,
+      normalizedTargetZone: directive.normalizedTargetZone,
+    };
+  }
+  const anatomy = {
+    zone: entry.version.zone,
+    surface: entry.version.surface,
+    side: entry.version.side,
+  };
+  assertSupportedInkAnatomyTuple(anatomy);
+  const directive = inkViewDirectiveV2(anatomy, angle);
+  return {
+    impact: directive.impact,
+    normalizedTargetZone: directive.normalizedTargetZone,
+  };
+}
+
+function projectionFeatureForEntry(
+  entry: ClosedInkFeatureEntry,
+  angle: CanonicalViewAngle,
+): PreparedInkProjectionFeature | null {
+  const targetDirective = projectionDirectiveForEntry(entry, angle);
+  if (targetDirective.impact === "unaffected") return null;
+  if (!targetDirective.normalizedTargetZone) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  const acceptedTargetProjection = entry.projections.find(
+    (projection) => projection.evidence.targetViewAngle === angle,
+  );
+  const hasAcceptedTargetEvidence =
+    entry.version.sourceViewAngle === angle || Boolean(acceptedTargetProjection);
+  const witnessPlate = acceptedTargetProjection?.plate ?? entry.authoringPlate;
+  const witnessViewAngle = acceptedTargetProjection?.evidence.targetViewAngle
+    ?? entry.version.sourceViewAngle;
+  const witnessDirective = projectionDirectiveForEntry(
+    entry,
+    witnessViewAngle,
+  );
+  if (!witnessDirective.normalizedTargetZone) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  const anatomy = {
+    zone: entry.version.zone,
+    surface: entry.version.surface,
+    side: entry.version.side,
+  };
+  return {
+    featureId: entry.feature.id,
+    featureVersionId: entry.version.id,
+    contract: entry.contract,
+    normalizedDescriptor: entry.version.normalizedDescriptor,
+    anatomyLabel: entry.contract === "all_body_v2"
+      ? inkAnatomyLabel(anatomy as InkAnatomyTuple)
+      : `${entry.version.side} chest`,
+    anatomy,
+    targetZone: targetDirective.normalizedTargetZone,
+    witnessZone: witnessDirective.normalizedTargetZone,
+    witnessViewAngle,
+    witness: {
+      plateId: witnessPlate.id,
+      storageKey: witnessPlate.storageKey,
+      byteSize: witnessPlate.byteSize,
+      contentHash: witnessPlate.contentHash,
+    },
+    impact: targetDirective.impact,
+    hasAcceptedTargetEvidence,
+    isProjectionTarget: !hasAcceptedTargetEvidence,
+    coverageBasis: targetDirective.impact === "affected"
+      && !hasAcceptedTargetEvidence
+      ? "registry_affected"
+      : null,
+  };
+}
+
+function projectionSource(
+  state: ReturnType<typeof buildEffectiveCastState> & { status: "current" },
+  angle: CanonicalViewAngle,
+) {
+  const exact = state.selectedViews.find((view) => view.angle === angle);
+  if (exact) {
+    if (
+      (exact.compatibility !== "current" && exact.compatibility !== "stale")
+      || exact.asset.pinned
+      || !exact.asset.storageUrl
+    ) {
+      throw new InkCandidateStateError("source_unavailable");
+    }
+    return exact;
+  }
+  const fallbackOrder: readonly CanonicalViewAngle[] = [
+    "frontFull",
+    "threeQuarter",
+    "sideFull",
+    "backFull",
+    "frontClose",
+    "sideClose",
+  ];
+  const fallback = fallbackOrder.flatMap((candidate) =>
+    state.selectedViews.filter((view) =>
+      view.angle === candidate
+      && view.compatibility === "current"
+      && !view.asset.pinned
+      && Boolean(view.asset.storageUrl)
+    )
+  )[0];
+  if (!fallback) throw new InkCandidateStateError("source_unavailable");
+  return fallback;
+}
+
+async function loadProjectionCandidatePreflightIn(
+  tx: TransactionHandle,
+  input: {
+    userId: number;
+    modelId: number;
+    operationId: string;
+    operationKind: PreparedInkCandidateAttempt["operationKind"];
+    targetViewAngle: CanonicalViewAngle;
+  },
+): Promise<InkProjectionCandidatePreflight> {
+  const model = await lockOwnedDraftModelIn(tx, input);
+  const operation = await lockRunningOperationIn(tx, input);
+  let state;
+  try {
+    state = buildEffectiveCastState({
+      ...(await readSnapshotShadowStateIn(tx, input)),
+      model,
+    });
+  } catch {
+    throw new InkCandidateStateError("snapshot_head_changed");
+  }
+  if (state.status !== "current" || !state.identity || !state.package) {
+    throw new InkCandidateStateError("snapshot_head_changed");
+  }
+  assertOperationHead(operation, {
+    stateVersion: model.stateVersion,
+    identitySnapshotId: state.identity.id,
+    packageSnapshotId: state.package.id,
+  });
+  const [activeCandidate] = await tx
+    .select()
+    .from(castingEvidenceCandidates)
+    .where(and(
+      eq(castingEvidenceCandidates.modelId, input.modelId),
+      eq(castingEvidenceCandidates.activeSlot, "active"),
+    ))
+    .limit(1)
+    .for("update");
+  if (input.operationKind === "evidence_candidate_generate") {
+    if (activeCandidate) {
+      throw new InkCandidateStateError("candidate_already_active");
+    }
+  } else if (
+    !activeCandidate
+    || activeCandidate.purpose !== "feature_projection"
+    || activeCandidate.status !== "ready"
+    || activeCandidate.targetViewAngle !== input.targetViewAngle
+  ) {
+    throw new InkCandidateStateError("candidate_unavailable");
+  }
+  const featureRows = await readEvidencePackageFeatureRowsIn(tx, {
+    userId: input.userId,
+    modelId: input.modelId,
+    identitySnapshotId: state.identity.id,
+  });
+  const graph = assessClosedInkFeatureGraph(featureRows.graph);
+  if (!graph) throw new InkCandidateStateError("source_unavailable");
+  const angleAuthority = inkPackageAngleAuthority(
+    graph,
+    input.targetViewAngle,
+  );
+  if (!angleAuthority.requiresProjectionCandidate) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  const features = graph.entries.flatMap((entry) => {
+    const feature = projectionFeatureForEntry(entry, input.targetViewAngle);
+    return feature ? [feature] : [];
+  });
+  if (
+    features.length < 1
+    || features.length > 9
+    || !features.some((feature) => feature.isProjectionTarget)
+  ) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  const source = projectionSource(
+    state as ReturnType<typeof buildEffectiveCastState> & { status: "current" },
+    input.targetViewAngle,
+  );
+  if (!state.anchor.storageUrl) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  return {
+    ...input,
+    identitySnapshotId: state.identity.id,
+    packageSnapshotId: state.package.id,
+    expectedStateVersion: model.stateVersion,
+    sourceAssetId: source.asset.id,
+    sourceUrl: source.asset.storageUrl,
+    sourceViewAngle: source.angle,
+    anchorUrl: state.anchor.storageUrl,
+    identityText: state.identity.identityText,
+    features: Object.freeze(features.map((feature) => Object.freeze(feature))),
+  };
+}
+
+export async function loadInkProjectionCandidatePreflight(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  operationKind: PreparedInkCandidateAttempt["operationKind"];
+  targetViewAngle: CanonicalViewAngle;
+}): Promise<InkProjectionCandidatePreflight> {
+  return withTransaction((tx) => loadProjectionCandidatePreflightIn(tx, input));
+}
+
+async function rejectReadyProjectionCandidateForRetryIn(
+  tx: TransactionHandle,
+  input: {
+    userId: number;
+    modelId: number;
+    targetViewAngle: CanonicalViewAngle;
+    operationId: string;
+  },
+): Promise<void> {
+  const [candidate] = await tx
+    .select()
+    .from(castingEvidenceCandidates)
+    .where(and(
+      eq(castingEvidenceCandidates.userId, input.userId),
+      eq(castingEvidenceCandidates.modelId, input.modelId),
+      eq(castingEvidenceCandidates.targetViewAngle, input.targetViewAngle),
+      eq(castingEvidenceCandidates.purpose, "feature_projection"),
+      eq(castingEvidenceCandidates.status, "ready"),
+      eq(castingEvidenceCandidates.activeSlot, "active"),
+    ))
+    .limit(1)
+    .for("update");
+  if (!candidate) throw new InkCandidateStateError("candidate_unavailable");
+  const attempts = await tx
+    .select()
+    .from(castingEvidenceCandidateAttempts)
+    .where(eq(castingEvidenceCandidateAttempts.candidateId, candidate.id))
+    .orderBy(asc(castingEvidenceCandidateAttempts.attemptNumber))
+    .for("update");
+  const storageItems = attempts.flatMap((attempt) => {
+    const items: Array<{
+      storageKey: string;
+      storageBackend: "private_evidence_r2" | "public_r2";
+    }> = [];
+    if (attempt.privateStorageKey) {
+      const parsed = parseEvidenceStorageKey(attempt.privateStorageKey);
+      if (
+        parsed.userId !== input.userId
+        || parsed.modelId !== input.modelId
+        || parsed.kind !== "candidate"
+        || parsed.entityId !== attempt.privatePlateId
+      ) {
+        throw new InkCandidateStateError("attempt_unavailable");
+      }
+      items.push({
+        storageKey: attempt.privateStorageKey,
+        storageBackend: "private_evidence_r2",
+      });
+    }
+    if (attempt.promotedPublicStorageKey) {
+      const parsed = parseInkCandidatePublicStorageKey(
+        attempt.promotedPublicStorageKey,
+      );
+      if (
+        parsed.userId !== input.userId
+        || parsed.modelId !== input.modelId
+        || parsed.candidateId !== candidate.id
+      ) {
+        throw new InkCandidateStateError("attempt_unavailable");
+      }
+      items.push({
+        storageKey: attempt.promotedPublicStorageKey,
+        storageBackend: "public_r2",
+      });
+    }
+    return items;
+  });
+  const manifest = await createStorageCleanupManifestIn(tx, {
+    id: randomUUID(),
+    userId: input.userId,
+    operationId: randomUUID(),
+    kind: "candidate_cleanup",
+    storageItems,
+  });
+  if (attempts.length > 0) {
+    await tx
+      .update(castingEvidenceCandidateAttempts)
+      .set({ status: "cleanup_pending", cleanupBatchId: manifest.id })
+      .where(eq(castingEvidenceCandidateAttempts.candidateId, candidate.id));
+  }
+  const updated = await tx
+    .update(castingEvidenceCandidates)
+    .set({
+      status: "rejected",
+      activeSlot: null,
+      cleanupBatchId: manifest.id,
+      resolvedAt: new Date(),
+      resolvedByOperationId: input.operationId,
+    })
+    .where(and(
+      eq(castingEvidenceCandidates.id, candidate.id),
+      eq(castingEvidenceCandidates.status, "ready"),
+      eq(castingEvidenceCandidates.activeSlot, "active"),
+    ));
+  if (affectedRows(updated) !== 1) {
+    throw new InkCandidateStateError("candidate_unavailable");
+  }
+}
+
+export async function prepareInkProjectionCandidateGeneration(input: {
+  preflight: InkProjectionCandidatePreflight;
+  candidateId: string;
+  attemptId: string;
+  privatePlateId: string;
+  observedCoverage: Readonly<Record<string, boolean>>;
+}): Promise<PreparedInkCandidateAttempt> {
+  return withTransaction(async (tx) => {
+    const current = await loadProjectionCandidatePreflightIn(
+      tx,
+      input.preflight,
+    );
+    if (
+      current.identitySnapshotId !== input.preflight.identitySnapshotId
+      || current.packageSnapshotId !== input.preflight.packageSnapshotId
+      || current.expectedStateVersion !== input.preflight.expectedStateVersion
+      || current.sourceAssetId !== input.preflight.sourceAssetId
+      || current.sourceViewAngle !== input.preflight.sourceViewAngle
+      || current.features.map((feature) => feature.featureVersionId).join(",")
+        !== input.preflight.features
+          .map((feature) => feature.featureVersionId)
+          .join(",")
+    ) {
+      throw new InkCandidateStateError("snapshot_head_changed");
+    }
+    const uncertain = current.features.filter(
+      (feature) => feature.impact === "uncertain",
+    );
+    const observedKeys = Object.keys(input.observedCoverage).sort();
+    const expectedObservedKeys = uncertain
+      .map((feature) => feature.featureVersionId)
+      .sort();
+    if (
+      observedKeys.length !== expectedObservedKeys.length
+      || observedKeys.some((key, index) => key !== expectedObservedKeys[index])
+    ) {
+      throw new InkCandidateStateError("source_unavailable");
+    }
+    if (current.operationKind === "evidence_candidate_retry") {
+      await rejectReadyProjectionCandidateForRetryIn(tx, {
+        ...current,
+        operationId: current.operationId,
+      });
+    }
+    const features = current.features.flatMap((feature) => {
+      if (
+        feature.impact === "uncertain"
+        && input.observedCoverage[feature.featureVersionId] !== true
+      ) {
+        return [];
+      }
+      const isProjectionTarget = !feature.hasAcceptedTargetEvidence;
+      return [{
+        ...feature,
+        isProjectionTarget,
+        coverageBasis: isProjectionTarget
+          ? feature.impact === "affected"
+            ? "registry_affected" as const
+            : "observed_visible" as const
+          : null,
+      }];
+    });
+    const targets = features.filter(
+      (feature) => feature.isProjectionTarget && feature.coverageBasis,
+    );
+    if (targets.length < 1) {
+      throw new InkCandidateStateError("source_unavailable");
+    }
+    await tx.insert(castingEvidenceCandidates).values({
+      id: input.candidateId,
+      userId: current.userId,
+      modelId: current.modelId,
+      intentId: null,
+      originatingOperationId: current.operationId,
+      capabilityKey: INK_ANYWHERE_CAPABILITY_KEY,
+      activeSlot: "active",
+      expectedStateVersion: current.expectedStateVersion,
+      identitySnapshotId: current.identitySnapshotId,
+      packageSnapshotId: current.packageSnapshotId,
+      targetViewAngle: current.targetViewAngle,
+      sourceAssetId: current.sourceAssetId,
+      status: "processing",
+      composerRecipeVersion: INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+      probeRecipeVersion: INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+      purpose: "feature_projection",
+    });
+    await tx.insert(castingEvidenceCandidateFeatureTargets).values(
+      targets.map((target) => ({
+        id: randomUUID(),
+        candidateId: input.candidateId,
+        userId: current.userId,
+        modelId: current.modelId,
+        identitySnapshotId: current.identitySnapshotId,
+        featureId: target.featureId,
+        featureVersionId: target.featureVersionId,
+        coverageBasis: target.coverageBasis!,
+        coverageProbeRecipeVersion:
+          target.coverageBasis === "observed_visible"
+            ? INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION
+            : null,
+      })),
+    );
+    const attempt = await createAttemptIn(tx, {
+      userId: current.userId,
+      modelId: current.modelId,
+      operationId: current.operationId,
+      candidateId: input.candidateId,
+      attemptId: input.attemptId,
+      attemptNumber: 1,
+      privatePlateId: input.privatePlateId,
+      sourceViewAngle: current.targetViewAngle,
+      composerRecipeVersion: INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+      probeRecipeVersion: INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+    });
+    return {
+      userId: current.userId,
+      modelId: current.modelId,
+      operationId: current.operationId,
+      operationKind: current.operationKind,
+      candidateId: input.candidateId,
+      intentId: null,
+      attemptId: input.attemptId,
+      attemptNumber: 1,
+      generationId: attempt.generationId,
+      privatePlateId: input.privatePlateId,
+      privateStorageKey: attempt.privateStorageKey,
+      identitySnapshotId: current.identitySnapshotId,
+      packageSnapshotId: current.packageSnapshotId,
+      expectedStateVersion: current.expectedStateVersion,
+      sourceAssetId: current.sourceAssetId,
+      sourceUrl: current.sourceUrl,
+      sourceViewAngle: current.sourceViewAngle,
+      anchorUrl: current.anchorUrl,
+      identityText: current.identityText,
+      authority: {
+        kind: "projection_v2",
+        capabilityKey: INK_ANYWHERE_CAPABILITY_KEY,
+        ontologyVersion: INK_ANYWHERE_ONTOLOGY_VERSION,
+        targetAngle: current.targetViewAngle,
+        sourceAngle: current.sourceViewAngle,
+        composerRecipeVersion: INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+        probeRecipeVersion: INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+        visibilityRecipeVersion: INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
+        features: Object.freeze(features.map((feature) =>
+          Object.freeze(feature)
+        )),
+      },
+      normalizedDescriptor: "selected tattoo projection",
+      reference: null,
+    };
+  });
+}
+
 /**
  * Reserve the complete paid episode and its first exact-key attempt while the
  * model/operation lock is held. No provider, storage, or credit work happens
@@ -388,8 +987,6 @@ export async function prepareInkCandidateGeneration(input: {
         eq(modelIdentityFeatureIntents.id, input.intentId),
         eq(modelIdentityFeatureIntents.userId, input.userId),
         eq(modelIdentityFeatureIntents.modelId, input.modelId),
-        eq(modelIdentityFeatureIntents.capabilityKey, INK_ADD_CAPABILITY_KEY),
-        eq(modelIdentityFeatureIntents.activeCapabilityKey, INK_ADD_CAPABILITY_KEY),
         eq(modelIdentityFeatureIntents.status, "pending"),
       ))
       .limit(1)
@@ -397,17 +994,95 @@ export async function prepareInkCandidateGeneration(input: {
     if (!intent || !intent.normalizedDescriptor) {
       throw new InkCandidateStateError("intent_unavailable");
     }
-    if (
-      intent.identitySnapshotId !== state.identity.id
-      || intent.sourceAssetId !== state.selectedViews.find(
-        (view) => view.angle === INK_ADD_TARGET_VIEW,
-      )?.asset.id
-    ) {
+    if (intent.identitySnapshotId !== state.identity.id) {
       throw new InkCandidateStateError("source_unavailable");
     }
-    const source = state.selectedViews.find(
-      (view) => view.angle === INK_ADD_TARGET_VIEW,
-    );
+    let source: typeof state.selectedViews[number] | undefined;
+    let authority: PreparedInkCandidateAttempt["authority"];
+    if (intent.capabilityKey === INK_ADD_CAPABILITY_KEY) {
+      if (
+        intent.activeCapabilityKey !== INK_ADD_CAPABILITY_KEY
+        || intent.ontologyVersion !== INK_ADD_ONTOLOGY_VERSION
+        || intent.zone !== INK_ADD_ZONE
+        || intent.surface !== INK_ADD_SURFACE
+      ) {
+        throw new InkCandidateStateError("intent_unavailable");
+      }
+      try {
+        assertInkAddSide(intent.side);
+      } catch {
+        throw new InkCandidateStateError("intent_unavailable");
+      }
+      source = state.selectedViews.find(
+        (view) => view.angle === INK_ADD_TARGET_VIEW,
+      );
+      if (intent.sourceAssetId !== source?.asset.id) {
+        throw new InkCandidateStateError("source_unavailable");
+      }
+      authority = {
+        kind: "legacy_v1",
+        capabilityKey: INK_ADD_CAPABILITY_KEY,
+        ontologyVersion: INK_ADD_ONTOLOGY_VERSION,
+        anatomy: {
+          zone: INK_ADD_ZONE,
+          surface: INK_ADD_SURFACE,
+          side: intent.side,
+        },
+        normalizedTargetZone: FRONT_UPPER_TORSO_ZONES[intent.side],
+        composerRecipeVersion: INK_ADD_COMPOSER_RECIPE_VERSION,
+        probeRecipeVersion: INK_ADD_PROBE_RECIPE_VERSION,
+        visibilityRecipeVersion: INK_ADD_VISIBILITY_RECIPE_VERSION,
+      };
+    } else if (intent.capabilityKey === INK_ANYWHERE_CAPABILITY_KEY) {
+      if (
+        intent.activeCapabilityKey !== INK_ACTIVE_FAMILY_KEY
+        || intent.ontologyVersion !== INK_ANYWHERE_ONTOLOGY_VERSION
+      ) {
+        throw new InkCandidateStateError("intent_unavailable");
+      }
+      const anatomy = {
+        zone: intent.zone,
+        surface: intent.surface,
+        side: intent.side,
+      };
+      try {
+        assertSupportedInkAnatomyTuple(anatomy);
+      } catch {
+        throw new InkCandidateStateError("intent_unavailable");
+      }
+      const choice = chooseCurrentInkAuthoringSource(
+        anatomy,
+        state.selectedViews.map((view) => ({
+          angle: view.angle,
+          assetId: view.asset.id,
+          compatibility: view.compatibility,
+          pinned: Boolean(view.asset.pinned),
+        })),
+      );
+      if (!choice) {
+        throw new InkCandidateStateError("source_unavailable");
+      }
+      source = state.selectedViews.find(
+        (view) => view.angle === choice.angle
+          && view.asset.id === choice.assetId,
+      );
+      const directive = inkViewDirectiveV2(anatomy, choice.angle);
+      if (!directive.normalizedTargetZone) {
+        throw new InkCandidateStateError("source_unavailable");
+      }
+      authority = {
+        kind: "anywhere_v2",
+        capabilityKey: INK_ANYWHERE_CAPABILITY_KEY,
+        ontologyVersion: INK_ANYWHERE_ONTOLOGY_VERSION,
+        anatomy,
+        normalizedTargetZone: directive.normalizedTargetZone,
+        composerRecipeVersion: INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
+        probeRecipeVersion: INK_ANYWHERE_PROBE_RECIPE_VERSION,
+        visibilityRecipeVersion: INK_ANYWHERE_VISIBILITY_RECIPE_VERSION,
+      };
+    } else {
+      throw new InkCandidateStateError("intent_unavailable");
+    }
     if (
       !source
       || source.compatibility !== "current"
@@ -416,33 +1091,36 @@ export async function prepareInkCandidateGeneration(input: {
     ) {
       throw new InkCandidateStateError("source_unavailable");
     }
-    const [selectedFeature] = await tx
-      .select({ id: modelSnapshotFeatureSelections.id })
-      .from(modelSnapshotFeatureSelections)
-      .where(and(
-        eq(modelSnapshotFeatureSelections.modelId, input.modelId),
-        eq(modelSnapshotFeatureSelections.identitySnapshotId, state.identity.id),
-      ))
-      .limit(1)
-      .for("update");
-    if (selectedFeature) {
-      throw new InkCandidateStateError("feature_already_selected");
+    if (authority.kind === "legacy_v1") {
+      const [selectedFeature] = await tx
+        .select({ id: modelSnapshotFeatureSelections.id })
+        .from(modelSnapshotFeatureSelections)
+        .where(and(
+          eq(modelSnapshotFeatureSelections.modelId, input.modelId),
+          eq(modelSnapshotFeatureSelections.identitySnapshotId, state.identity.id),
+        ))
+        .limit(1)
+        .for("update");
+      if (selectedFeature) {
+        throw new InkCandidateStateError("feature_already_selected");
+      }
     }
     if (
       intent.expectedStateVersion !== model.stateVersion
       || intent.packageSnapshotId !== state.package.id
+      || intent.sourceAssetId !== source.asset.id
     ) {
       const rebased = await tx
         .update(modelIdentityFeatureIntents)
         .set({
           expectedStateVersion: model.stateVersion,
           packageSnapshotId: state.package.id,
+          sourceAssetId: source.asset.id,
         })
         .where(and(
           eq(modelIdentityFeatureIntents.id, intent.id),
           eq(modelIdentityFeatureIntents.status, "pending"),
           eq(modelIdentityFeatureIntents.identitySnapshotId, state.identity.id),
-          eq(modelIdentityFeatureIntents.sourceAssetId, source.asset.id),
         ));
       if (affectedRows(rebased) !== 1) {
         throw new InkCandidateStateError("snapshot_head_changed");
@@ -465,20 +1143,24 @@ export async function prepareInkCandidateGeneration(input: {
       modelId: input.modelId,
       intentId: intent.id,
       originatingOperationId: input.operationId,
-      capabilityKey: INK_ADD_CAPABILITY_KEY,
+      capabilityKey: authority.capabilityKey,
       activeSlot: "active",
       expectedStateVersion: model.stateVersion,
       identitySnapshotId: state.identity.id,
       packageSnapshotId: state.package.id,
-      targetViewAngle: INK_ADD_TARGET_VIEW,
+      targetViewAngle: source.angle,
       sourceAssetId: source.asset.id,
       status: "processing",
-      composerRecipeVersion: INK_ADD_COMPOSER_RECIPE_VERSION,
-      probeRecipeVersion: INK_ADD_PROBE_RECIPE_VERSION,
+      composerRecipeVersion: authority.composerRecipeVersion,
+      probeRecipeVersion: authority.probeRecipeVersion,
+      purpose: "feature_authoring",
     });
     const attempt = await createAttemptIn(tx, {
       ...input,
       attemptNumber: 1,
+      sourceViewAngle: source.angle,
+      composerRecipeVersion: authority.composerRecipeVersion,
+      probeRecipeVersion: authority.probeRecipeVersion,
     });
     return {
       ...input,
@@ -490,9 +1172,10 @@ export async function prepareInkCandidateGeneration(input: {
       expectedStateVersion: model.stateVersion,
       sourceAssetId: source.asset.id,
       sourceUrl: source.asset.storageUrl,
+      sourceViewAngle: source.angle,
       anchorUrl: state.anchor.storageUrl,
       identityText: state.identity.identityText,
-      side: intent.side as InkAddSide,
+      authority,
       normalizedDescriptor: intent.normalizedDescriptor,
       reference: reference
         ? {
@@ -584,6 +1267,7 @@ function probeFields(probe: InkCandidateProbeTruth) {
     identityOutcome: probe.identityOutcome,
     placementOutcome: probe.placementOutcome,
     featureMatchOutcome: probe.featureMatchOutcome,
+    priorInkOutcome: probe.priorInkOutcome,
     poseFramingOutcome: probe.poseFramingOutcome,
     unexpectedInkOutcome: probe.unexpectedInkOutcome,
     overallOutcome: probe.overallOutcome,
@@ -646,6 +1330,10 @@ export async function prepareIncludedInkCandidateRetry(input: {
       attemptId: input.attemptId,
       attemptNumber: 2,
       privatePlateId: input.privatePlateId,
+      sourceViewAngle: input.prepared.sourceViewAngle,
+      composerRecipeVersion:
+        input.prepared.authority.composerRecipeVersion,
+      probeRecipeVersion: input.prepared.authority.probeRecipeVersion,
     });
     return {
       ...input.prepared,
@@ -694,7 +1382,6 @@ export async function completeInkCandidateReady(input: {
         eq(castingEvidenceCandidates.id, input.prepared.candidateId),
         eq(castingEvidenceCandidates.userId, input.prepared.userId),
         eq(castingEvidenceCandidates.modelId, input.prepared.modelId),
-        eq(castingEvidenceCandidates.intentId, input.prepared.intentId),
         eq(castingEvidenceCandidates.status, "processing"),
         eq(castingEvidenceCandidates.activeSlot, "active"),
         eq(
@@ -845,6 +1532,50 @@ export async function findActiveOwnedInkCandidate(input: {
       id: string;
       status: "processing" | "ready";
       expiresAt: Date | null;
+    };
+  });
+}
+
+
+export async function findActiveOwnedInkProjectionCandidate(input: {
+  userId: number;
+  modelId: number;
+}): Promise<{
+  id: string;
+  status: "processing" | "ready";
+  targetViewAngle: CanonicalViewAngle;
+  expiresAt: Date | null;
+} | null> {
+  return withTransaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        id: castingEvidenceCandidates.id,
+        status: castingEvidenceCandidates.status,
+        targetViewAngle: castingEvidenceCandidates.targetViewAngle,
+        expiresAt: castingEvidenceCandidates.expiresAt,
+      })
+      .from(castingEvidenceCandidates)
+      .innerJoin(models, and(
+        eq(models.id, castingEvidenceCandidates.modelId),
+        eq(models.userId, input.userId),
+        availableModelWhere(),
+      ))
+      .where(and(
+        eq(castingEvidenceCandidates.userId, input.userId),
+        eq(castingEvidenceCandidates.modelId, input.modelId),
+        eq(castingEvidenceCandidates.purpose, "feature_projection"),
+        isNull(castingEvidenceCandidates.intentId),
+        eq(castingEvidenceCandidates.activeSlot, "active"),
+      ))
+      .limit(1);
+    if (!row || (row.status !== "processing" && row.status !== "ready")) {
+      return null;
+    }
+    return {
+      id: row.id,
+      status: row.status,
+      targetViewAngle: row.targetViewAngle,
+      expiresAt: row.expiresAt,
     };
   });
 }

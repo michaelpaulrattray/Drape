@@ -9,7 +9,7 @@
  *    never a draft to route to the mint door, and never a reason to print a
  *    fake ID.
  *
- * Every export action must resolve this BEFORE any proxy, upscale, PDF, ZIP,
+ * Every export action must resolve this BEFORE any proxy, PDF, ZIP,
  * or credit-affecting call (ordering pinned by modelLifecycleGuard.test.ts).
  */
 import { isModelMintedStatus } from "./modelLifecycle";

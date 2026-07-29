@@ -29,20 +29,22 @@ describe("R7-7E4 progressive evidence package UX contract", () => {
     expect(authority).toContain("computeEvidencePackageSyncPlan");
   });
 
-  it("keeps accepted-feature coverage behind an explicit priced click", () => {
-    const panel = source(
-      "client/src/features/casting/evidence/InkAddPanel.tsx",
+  it("keeps every package update or projection behind an explicit priced click", () => {
+    const tabs = source(
+      "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
     );
-    const start = panel.indexOf("export function InkFeatureAcceptedPanel");
-    const end = panel.indexOf("export function InkAddComposer", start);
-    const accepted = panel.slice(start, end);
+    const details = source(
+      "client/src/features/casting/components/PackageHealthDialog.tsx",
+    );
 
-    expect(accepted).toContain('{ modelId }');
-    expect(accepted).toContain('onClick={() => refreshAngles(["sideFull"])}');
-    expect(accepted).toContain("Update Walk");
-    expect(accepted).toContain("credits");
-    expect(accepted).not.toContain("useEffect(");
-    expect(accepted).not.toContain(".mutate(");
+    expect(tabs).toContain("requestInkProjection(vt)");
+    expect(tabs).toContain("refreshAngles([vt])");
+    expect(tabs).toContain("credits");
+    expect(details).toContain("requestInkProjection(slot.angle)");
+    expect(details).toContain("refreshAngles([slot.angle])");
+    expect(details).toContain("credits");
+    expect(tabs).not.toMatch(/\.mutate(?:Async)?\(/);
+    expect(details).not.toMatch(/\.mutate(?:Async)?\(/);
   });
 
   it("uses one evidence plan across Walk, details, and mint without exposing tiers", () => {
@@ -57,7 +59,9 @@ describe("R7-7E4 progressive evidence package UX contract", () => {
     );
 
     expect(tabs).toContain("'evidencePackage' in refreshPlanQuery.data");
-    expect(tabs).toContain("refreshVerb={evidenceAware ? 'Update' : 'Refresh'}");
+    expect(tabs).toContain("refreshVerb={requiresProjection");
+    expect(tabs).toContain("? 'Preview'");
+    expect(tabs).toContain("? 'Update'");
     expect(tabs).toContain("Update coverage");
     expect(details).toContain("'evidencePackage' in planQuery.data");
     expect(details).toContain("Coverage & versions");

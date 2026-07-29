@@ -38,8 +38,12 @@ describe("R7-7D D5 inline Studio contract", () => {
       source("../client/src/features/casting/evidence/useInkAddWorkflow.ts"),
       source("../client/src/features/casting/evidence/InkAddPanel.tsx"),
     ]);
-    expect(workflow.match(/\.mutateAsync\(/g)).toHaveLength(6);
+    expect(workflow.match(/\.mutateAsync\(/g)).toHaveLength(9);
+    expect(workflow).toContain("const planInstruction = useCallback(async (");
     expect(workflow).toContain("const generate = useCallback(async () =>");
+    expect(workflow).toContain(
+      "const generateProjectionCandidate = useCallback(async (",
+    );
     expect(workflow).toContain("const accept = useCallback(async () =>");
     expect(workflow).toContain("const retry = useCallback(async () =>");
     expect(workflow).toContain("const cancel = useCallback(async () =>");
@@ -60,8 +64,14 @@ describe("R7-7D D5 inline Studio contract", () => {
     expect(workflow).toContain('candidateStatus === "processing" ? 2_500 : false');
     expect(workflow).toContain("subscribeCastProjectionChanged");
     expect(workflow).toContain("utils.evidence.inkCapability.invalidate");
+    expect(workflow).toContain(
+      "utils.evidence.inkProjectionCandidate.invalidate",
+    );
     expect(workflow).toContain("publishCastProjectionChanged(changedModelId)");
     expect(bridge).toContain("utils.evidence.inkCapability.invalidate({ modelId })");
+    expect(bridge).toContain(
+      "utils.evidence.inkProjectionCandidate.invalidate({ modelId })",
+    );
     expect(sync).toContain("receivers merely");
     expect(sync).not.toContain("listener(value);\n    publishCastProjectionChanged");
   });
@@ -94,7 +104,8 @@ describe("R7-7D D5 inline Studio contract", () => {
     expect(panel).toContain("Retry ·");
     expect(panel).toContain("Cancel preview");
     expect(panel).toContain("does not refund its completed generation");
-    expect(panel).toContain("Accepting saves this tattoo to the Cast");
+    expect(panel).toContain("Your Cast changes only after");
+    expect(panel).toContain("you accept it");
     expect(workspace).toContain("utils.models.get.fetch({ modelId })");
     expect(workspace).toContain('setActiveView("frontFull")');
     expect(workspace).not.toContain("candidateDeliveryUrl");
@@ -108,16 +119,13 @@ describe("R7-7D D5 inline Studio contract", () => {
       source("../client/src/features/casting/evidence/InkAddPanel.tsx"),
     ]);
     expect(service).toContain("subjectStatus:");
-    expect(service).toContain("inspectOwnedInkAddAvailability");
+    expect(service).toContain("inspectOwnedInkAnywhereAvailability");
     expect(db).toContain('eq(models.status, "draft")');
     expect(db).toContain("readSnapshotShadowStateIn(tx, input)");
-    expect(db).toContain('view.angle === INK_ADD_TARGET_VIEW');
-    expect(db).toContain(".from(modelSnapshotFeatureSelections)");
-    expect(viewer).toContain('subjectStatus === "feature_selected"');
-    expect(viewer).toContain("<InkFeatureAcceptedPanel modelId={currentModelId} />");
-    expect(panel).toContain('refreshAngles(["sideFull"])');
-    expect(panel).toContain("Update Walk");
-    expect(panel).toContain("Views that can show it are current.");
+    expect(db).toContain('view.compatibility === "current"');
+    expect(viewer).toContain("looksLikeTattooInstruction(instruction)");
+    expect(viewer).toContain("inkWorkflow.planInstruction(instruction)");
+    expect(panel).not.toMatch(/Placement|Left chest|Centre chest|Right chest/);
   });
 
   it("projects durable evidence work into Studio and disables cross-tab actions", async () => {
@@ -155,7 +163,10 @@ describe("R7-7D D5 inline Studio contract", () => {
     expect(panel).toContain("target?.focus()");
     expect(panel).not.toContain("confirmationTriggerRef");
     expect(panel).toContain("disabled={expired || controlsBusy}");
-    expect(panel).toContain("`${workflow.capability.priceCredits} credits`");
+    expect(panel).toContain(
+      "workflow.activeSubject?.priceCredits ?? workflow.capability?.priceCredits",
+    );
+    expect(panel).toContain("`${priceCredits} credits`");
     expect(panel).toContain('"Loading quote…"');
     expect(panel).not.toMatch(/priceCredits\s*\?\?\s*350/);
   });

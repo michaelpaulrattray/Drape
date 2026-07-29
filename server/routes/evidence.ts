@@ -14,7 +14,7 @@ import {
   stageOwnedReferencePlate,
 } from "../casting/evidence/evidenceOperations";
 import {
-  beginInkAddIntent,
+  beginInkAnywhereIntent,
   readInkAddCapability,
 } from "../casting/evidence/inkAddIntent";
 import {
@@ -23,16 +23,22 @@ import {
 import {
   INK_ADD_MAX_DESCRIPTOR_LENGTH,
   INK_ADD_MIN_DESCRIPTOR_LENGTH,
-  INK_ADD_SIDES,
 } from "../casting/evidence/composer/inkAddRecipe";
 import { MAX_EVIDENCE_DATA_URL_LENGTH } from "../casting/evidence/imageValidation";
 import { checkUserRateLimit } from "../security/rateLimit";
 import {
   generateInkAddCandidate,
+  generateInkProjectionCandidate,
+  readActiveInkProjectionCandidate,
   retryInkAddCandidate,
+  retryInkProjectionCandidate,
 } from "../casting/evidence/inkCandidateGeneration";
 import { acceptInkAddCandidate } from "../casting/evidence/inkCandidateAcceptance";
-import { cancelInkAddIntent } from "../casting/evidence/inkIntentCancellation";
+import {
+  cancelInkAddIntent,
+  cancelInkProjectionCandidate,
+} from "../casting/evidence/inkIntentCancellation";
+import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 
 const EVIDENCE_INGEST_LIMIT = {
   maxRequests: 10,
@@ -89,9 +95,7 @@ export const evidenceRouter = router({
   beginInkAddIntent: protectedProcedure
     .input(z.object({
       modelId: z.number().int().positive(),
-      sourceAssetId: z.number().int().positive(),
-      side: z.enum(INK_ADD_SIDES),
-      description: z.string()
+      instruction: z.string()
         .min(INK_ADD_MIN_DESCRIPTOR_LENGTH)
         .max(INK_ADD_MAX_DESCRIPTOR_LENGTH),
       clientRequestId: z.string().uuid(),
@@ -99,7 +103,7 @@ export const evidenceRouter = router({
     .mutation(async ({ ctx, input }) => {
       requireInkCapability(ctx.user.id);
       enforceRateLimit(ctx.user.id);
-      return beginInkAddIntent({
+      return beginInkAnywhereIntent({
         userId: ctx.user.id,
         ...input,
       });
@@ -169,6 +173,59 @@ export const evidenceRouter = router({
       });
     }),
 
+  inkProjectionCandidate: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+    }).strict())
+    .query(({ ctx, input }) => readActiveInkProjectionCandidate({
+      userId: ctx.user.id,
+      modelId: input.modelId,
+    })),
+
+  generateInkProjectionCandidate: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      targetViewAngle: z.enum(CANONICAL_VIEW_ANGLES),
+      clientRequestId: z.string().uuid(),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireInkCapability(ctx.user.id);
+      enforceRateLimit(ctx.user.id);
+      const delivery = getEvidenceDeliveryAdapter();
+      if (!delivery) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Tattoo previews are not available for this account.",
+        });
+      }
+      return generateInkProjectionCandidate({ delivery }, {
+        userId: ctx.user.id,
+        ...input,
+      });
+    }),
+
+  retryInkProjectionCandidate: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      targetViewAngle: z.enum(CANONICAL_VIEW_ANGLES),
+      clientRequestId: z.string().uuid(),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireInkCapability(ctx.user.id);
+      enforceRateLimit(ctx.user.id);
+      const delivery = getEvidenceDeliveryAdapter();
+      if (!delivery) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Tattoo previews are not available for this account.",
+        });
+      }
+      return retryInkProjectionCandidate({ delivery }, {
+        userId: ctx.user.id,
+        ...input,
+      });
+    }),
+
   acceptInkAddCandidate: protectedProcedure
     .input(z.object({
       candidateId: z.string().uuid(),
@@ -199,6 +256,20 @@ export const evidenceRouter = router({
       requireInkCapability(ctx.user.id);
       enforceRateLimit(ctx.user.id);
       return cancelInkAddIntent({}, {
+        userId: ctx.user.id,
+        ...input,
+      });
+    }),
+
+  cancelInkProjectionCandidate: protectedProcedure
+    .input(z.object({
+      candidateId: z.string().uuid(),
+      clientRequestId: z.string().uuid(),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireInkCapability(ctx.user.id);
+      enforceRateLimit(ctx.user.id);
+      return cancelInkProjectionCandidate({}, {
         userId: ctx.user.id,
         ...input,
       });

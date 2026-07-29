@@ -13,8 +13,10 @@ import {
   findOwnedInkCandidateClaimSubject,
   InkAcceptanceStateError,
   prepareInkCandidateAcceptance,
+  prepareInkProjectionCandidateAcceptance,
   queueUnacceptedPublicCopyCleanup,
   type PreparedInkCandidateAcceptance,
+  type PreparedInkProjectionCandidateAcceptance,
 } from "../../db/inkAddAcceptance";
 import { modelOperationLockKey } from "../operationContract";
 import { storagePut } from "../../storage";
@@ -24,7 +26,9 @@ import {
 } from "./evidenceDelivery";
 import {
   commitInkCandidateAcceptance,
+  commitInkProjectionCandidateAcceptance,
   type InkCandidateAcceptedResult,
+  type InkProjectionCandidateAcceptedResult,
 } from "./inkAcceptanceCommit";
 import { captureEvidenceComposerEnabled } from "./evidenceComposerScope";
 import { inkCandidatePublicStorageKey } from "./inkCandidatePublicStorage";
@@ -43,33 +47,51 @@ export interface InkCandidateAcceptanceDependencies {
   begin?: BeginOperation;
   markRunning?: typeof markGenerationOperationRunning;
   prepare?: typeof prepareInkCandidateAcceptance;
+  prepareProjection?: typeof prepareInkProjectionCandidateAcceptance;
   putPublic?: typeof storagePut;
   commit?: typeof commitInkCandidateAcceptance;
+  commitProjection?: typeof commitInkProjectionCandidateAcceptance;
   queueCleanup?: typeof queueUnacceptedPublicCopyCleanup;
   completeFailure?: typeof completeDirectOperationFailure;
   requireRecovery?: typeof requireDirectOperationRecovery;
 }
 
-function closedAcceptedResult(value: unknown): InkCandidateAcceptedResult {
+export type EvidenceCandidateAcceptedResult =
+  | InkCandidateAcceptedResult
+  | InkProjectionCandidateAcceptedResult;
+
+function closedAcceptedResult(value: unknown): EvidenceCandidateAcceptedResult {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: ACCEPT_FAILURE });
   }
   const row = value as Record<string, unknown>;
-  if (
+  const commonInvalid =
     typeof row.candidateId !== "string"
     || row.status !== "accepted"
     || !Number.isSafeInteger(row.modelId)
     || !Number.isSafeInteger(row.assetId)
-    || typeof row.featureId !== "string"
-    || typeof row.featureVersionId !== "string"
     || typeof row.identitySnapshotId !== "string"
     || typeof row.packageSnapshotId !== "string"
     || !Number.isSafeInteger(row.stateVersion)
-    || row.chargedCredits !== 0
-  ) {
+    || row.chargedCredits !== 0;
+  const projection = row.purpose === "feature_projection";
+  const purposeInvalid = projection
+    ? (
+        typeof row.targetViewAngle !== "string"
+        || !Array.isArray(row.projectedFeatureVersionIds)
+        || row.projectedFeatureVersionIds.length < 1
+        || row.projectedFeatureVersionIds.some(
+          (id) => typeof id !== "string" || !id,
+        )
+      )
+    : (
+        typeof row.featureId !== "string"
+        || typeof row.featureVersionId !== "string"
+      );
+  if (commonInvalid || purposeInvalid) {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: ACCEPT_FAILURE });
   }
-  return row as unknown as InkCandidateAcceptedResult;
+  return row as unknown as EvidenceCandidateAcceptedResult;
 }
 
 function publicFailure(error: unknown): TRPCError {
@@ -96,7 +118,7 @@ export async function acceptInkAddCandidate(
     candidateId: string;
     clientRequestId: string;
   },
-): Promise<InkCandidateAcceptedResult> {
+): Promise<EvidenceCandidateAcceptedResult> {
   const enabled = dependencies.enabledForUser ?? captureEvidenceComposerEnabled;
   if (!enabled(input.userId)) {
     throw new TRPCError({
@@ -154,7 +176,10 @@ export async function acceptInkAddCandidate(
   });
   if (gate.type === "replay") return closedAcceptedResult(gate.result);
 
-  let prepared: PreparedInkCandidateAcceptance | null = null;
+  let prepared:
+    | PreparedInkCandidateAcceptance
+    | PreparedInkProjectionCandidateAcceptance
+    | null = null;
   try {
     await (dependencies.markRunning ?? markGenerationOperationRunning)({
       userId: input.userId,
@@ -172,13 +197,24 @@ export async function acceptInkAddCandidate(
       candidateId: input.candidateId,
       operationId: gate.operationId,
     });
-    prepared = await (dependencies.prepare ?? prepareInkCandidateAcceptance)({
-      userId: input.userId,
-      modelId: subject.modelId,
-      operationId: gate.operationId,
-      candidateId: input.candidateId,
-      publicStorageKey: destination,
-    });
+    prepared = subject.purpose === "feature_projection"
+      ? await (
+          dependencies.prepareProjection
+          ?? prepareInkProjectionCandidateAcceptance
+        )({
+          userId: input.userId,
+          modelId: subject.modelId,
+          operationId: gate.operationId,
+          candidateId: input.candidateId,
+          publicStorageKey: destination,
+        })
+      : await (dependencies.prepare ?? prepareInkCandidateAcceptance)({
+          userId: input.userId,
+          modelId: subject.modelId,
+          operationId: gate.operationId,
+          candidateId: input.candidateId,
+          publicStorageKey: destination,
+        });
     const bytes = await readCanonicalEvidenceBytesExact(dependencies.delivery, {
       key: prepared.privateStorageKey,
       byteSize: prepared.byteSize,
@@ -196,10 +232,18 @@ export async function acceptInkAddCandidate(
     ) {
       throw new Error("Public candidate copy was not verified");
     }
-    return await (dependencies.commit ?? commitInkCandidateAcceptance)({
-      prepared,
-      publicStorageUrl: stored.url,
-    });
+    return prepared.kind === "feature_projection"
+      ? await (
+          dependencies.commitProjection
+          ?? commitInkProjectionCandidateAcceptance
+        )({
+          prepared,
+          publicStorageUrl: stored.url,
+        })
+      : await (dependencies.commit ?? commitInkCandidateAcceptance)({
+          prepared,
+          publicStorageUrl: stored.url,
+        });
   } catch (error) {
     const terminal = await getOutcome({
       userId: input.userId,

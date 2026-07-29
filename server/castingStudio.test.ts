@@ -72,7 +72,6 @@ describe("AI Service - Credit Costs", () => {
     expect(CREDIT_COSTS.fullBody).toBe(300);
     expect(CREDIT_COSTS.multiView).toBe(300);
     expect(CREDIT_COSTS.iterate).toBe(350);
-    expect(CREDIT_COSTS.upscale).toBe(300);
   });
 
   it("should have total initial generation cost of 350 credits", () => {

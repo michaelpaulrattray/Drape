@@ -7,18 +7,16 @@ import {
   VIEW_TO_PDF_KEY,
   type PdfImageKey,
 } from "@shared/exportViews";
-import type { ExportResolution, ExportViewOutcome } from "@shared/exportPlan";
+import type { ExportViewOutcome } from "@shared/exportPlan";
 
 export interface PreparedExportView extends ExportViewOutcome {
   sourceUrl: string;
-  paidUpscaleSucceeded: boolean;
   deliveredUrl: string | null;
   dataUrl: string | null;
   filename: string | null;
 }
 
 interface ExportMutations {
-  upscale?: (input: { imageUrl: string; resolution: "2K" }) => Promise<{ success: boolean; imageUrl?: string }>;
   proxyImage: (input: { imageUrl: string }) => Promise<{ success: boolean; base64?: string }>;
 }
 
@@ -69,19 +67,15 @@ async function proxyDataUrl(
   return result.base64;
 }
 
-/** Prepare each casting view once. The returned data URL is the single byte
- *  source used by both ZIP and PDF, so a paid 2K export cannot accidentally
- *  put the original into the PDF. Upscale/refund errors remain in `issues`
- *  and are never converted into an unqualified success. */
+/** Prepare each current 1K casting view once. The returned data URL is the
+ * single byte source used by both ZIP and PDF. */
 export async function prepareExportViews({
   assets,
-  resolution,
   mutations,
   onViewPrepared,
   onIssue,
 }: {
   assets: GeneratedAsset[];
-  resolution: ExportResolution;
   mutations: ExportMutations;
   onViewPrepared?: (completed: number, total: number, viewType: CanonicalViewAngle) => void;
   onIssue?: (issue: string, viewType: CanonicalViewAngle) => void;
@@ -97,42 +91,14 @@ export async function prepareExportViews({
     };
     let deliveredUrl: string | null = source.storageUrl;
     let deliveredResolution: PreparedExportView["deliveredResolution"] = "1K";
-    let paidUpscaleSucceeded = false;
-
-    if (resolution === "2K") {
-      try {
-        if (!mutations.upscale) throw new Error("Paid upscale is unavailable for this export.");
-        const result = await mutations.upscale({ imageUrl: source.storageUrl, resolution: "2K" });
-        if (!result.success || !result.imageUrl) throw new Error("The upscale returned no 2K image.");
-        paidUpscaleSucceeded = true;
-        deliveredUrl = result.imageUrl;
-        deliveredResolution = "2K";
-      } catch (error) {
-        // Includes withAtomicCredits' exact refund outcome/support reference.
-        recordIssue(`${VIEW_ANGLE_LABELS[source.viewType]}: ${exportFailureMessage(error)}`);
-        deliveredUrl = source.storageUrl;
-        deliveredResolution = "1K";
-      }
-    }
 
     let dataUrl: string | null = null;
     try {
       dataUrl = await proxyDataUrl(mutations.proxyImage, deliveredUrl);
     } catch (error) {
-      if (deliveredResolution === "2K") {
-        recordIssue(
-          `${VIEW_ANGLE_LABELS[source.viewType]}: the paid 2K image was generated but could not be added to the export (${exportFailureMessage(error)}); the original was used instead.`,
-        );
-        deliveredUrl = source.storageUrl;
-        deliveredResolution = "1K";
-        try {
-          dataUrl = await proxyDataUrl(mutations.proxyImage, source.storageUrl);
-        } catch (fallbackError) {
-          recordIssue(`${VIEW_ANGLE_LABELS[source.viewType]} original: ${exportFailureMessage(fallbackError)}`);
-        }
-      } else {
-        recordIssue(`${VIEW_ANGLE_LABELS[source.viewType]}: ${exportFailureMessage(error)}`);
-      }
+      recordIssue(
+        `${VIEW_ANGLE_LABELS[source.viewType]}: ${exportFailureMessage(error)}`,
+      );
     }
 
     if (!dataUrl) {
@@ -143,7 +109,6 @@ export async function prepareExportViews({
     outcomes.push({
       viewType: source.viewType,
       sourceUrl: source.storageUrl,
-      paidUpscaleSucceeded,
       deliveredUrl,
       deliveredResolution,
       dataUrl,
@@ -190,16 +155,6 @@ export async function deliverAtomicIdentityPack<T>(options: {
   const archive = await options.buildArchive(pdf);
   await options.deliver(archive);
   return archive;
-}
-
-export function standingPaidUpscaleCopy(
-  resolution: ExportResolution,
-  outcomes: PreparedExportView[],
-): string | undefined {
-  if (resolution !== "2K") return undefined;
-  const completed = outcomes.filter((outcome) => outcome.paidUpscaleSucceeded).length;
-  if (completed === 0) return undefined;
-  return `${completed} paid 2K upscale${completed === 1 ? "" : "s"} completed successfully, so ${completed === 1 ? "that charge remains" : "those charges remain"}.`;
 }
 
 export function preparedPdfImages(outcomes: PreparedExportView[]): Partial<Record<PdfImageKey, string>> {

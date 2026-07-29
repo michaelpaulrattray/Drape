@@ -28,6 +28,7 @@ import {
   models,
   modelAssets,
   castingEvidenceCandidateAttempts,
+  castingEvidenceCandidateFeatureTargets,
   castingEvidenceCandidates,
   castingEvidenceIngestions,
   modelEvidenceCrops,
@@ -36,6 +37,7 @@ import {
   modelIdentityFeatureIntents,
   modelIdentityFeatures,
   modelIdentityFeatureVersions,
+  modelIdentityFeatureProjectionEvidence,
   modelSnapshotFeatureSelections,
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
@@ -82,9 +84,11 @@ export interface DeletionResult {
     evidenceIngestions: number;
     evidenceCandidates: number;
     evidenceCandidateAttempts: number;
+    evidenceCandidateFeatureTargets: number;
     featureIntents: number;
     identityFeatures: number;
     identityFeatureVersions: number;
+    identityFeatureProjectionEvidence: number;
     snapshotFeatureSelections: number;
     referencePlates: number;
     evidenceCrops: number;
@@ -329,7 +333,9 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         boardEdges: 0, boardItemVersions: 0, boardItems: 0, boards: 0,
         wardrobeLooks: 0, wardrobeSessions: 0, wardrobeOutfits: 0, wardrobeGarments: 0,
         evidenceIngestions: 0, evidenceCandidates: 0, evidenceCandidateAttempts: 0,
+        evidenceCandidateFeatureTargets: 0,
         featureIntents: 0, identityFeatures: 0, identityFeatureVersions: 0,
+        identityFeatureProjectionEvidence: 0,
         snapshotFeatureSelections: 0, referencePlates: 0, evidenceCrops: 0,
         modelPackageSnapshotSlots: 0, modelPackageSnapshots: 0, modelIdentitySnapshots: 0,
         modelAssets: 0, models: 0, generations: 0,
@@ -354,9 +360,11 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
     evidenceIngestions: 0,
     evidenceCandidates: 0,
     evidenceCandidateAttempts: 0,
+    evidenceCandidateFeatureTargets: 0,
     featureIntents: 0,
     identityFeatures: 0,
     identityFeatureVersions: 0,
+    identityFeatureProjectionEvidence: 0,
     snapshotFeatureSelections: 0,
     referencePlates: 0,
     evidenceCrops: 0,
@@ -484,6 +492,14 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         const selectionResult = await tx.delete(modelSnapshotFeatureSelections)
           .where(inArray(modelSnapshotFeatureSelections.modelId, modelIds));
         counts.snapshotFeatureSelections = (selectionResult as any)[0]?.affectedRows ?? 0;
+        const projectionResult = await tx
+          .delete(modelIdentityFeatureProjectionEvidence)
+          .where(inArray(
+            modelIdentityFeatureProjectionEvidence.modelId,
+            modelIds,
+          ));
+        counts.identityFeatureProjectionEvidence =
+          (projectionResult as any)[0]?.affectedRows ?? 0;
         const versionResult = await tx.delete(modelIdentityFeatureVersions)
           .where(inArray(modelIdentityFeatureVersions.modelId, modelIds));
         counts.identityFeatureVersions = (versionResult as any)[0]?.affectedRows ?? 0;
@@ -492,6 +508,14 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         counts.identityFeatures = (featureResult as any)[0]?.affectedRows ?? 0;
       }
       if (candidateIds.length > 0) {
+        const targetResult = await tx
+          .delete(castingEvidenceCandidateFeatureTargets)
+          .where(inArray(
+            castingEvidenceCandidateFeatureTargets.candidateId,
+            candidateIds,
+          ));
+        counts.evidenceCandidateFeatureTargets =
+          (targetResult as any)[0]?.affectedRows ?? 0;
         const attemptResult = await tx.delete(castingEvidenceCandidateAttempts)
           .where(inArray(castingEvidenceCandidateAttempts.candidateId, candidateIds));
         counts.evidenceCandidateAttempts = (attemptResult as any)[0]?.affectedRows ?? 0;

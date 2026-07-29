@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type EditTool, ImageResolution } from '../constants';
+import { type EditTool } from '../constants';
 
 // (Stage-lock modal + auto-generation state removed with the D-46/A4
 // belt-slimming — the ladder died at the unification; this was its last
@@ -15,10 +15,6 @@ interface CastingUIState {
   // Tool state
   activeTool: EditTool;
   setActiveTool: (tool: EditTool) => void;
-  
-  // Resolution state
-  resolution: ImageResolution;
-  setResolution: (res: ImageResolution) => void;
   
   // Panel visibility
   showMobilePanel: boolean;
@@ -53,10 +49,6 @@ export const useCastingUIStore = create<CastingUIState>()(
       activeTool: 'none',
       setActiveTool: (tool) => set({ activeTool: tool }, false, 'setActiveTool'),
       
-      // Resolution state
-      resolution: ImageResolution.HIGH,
-      setResolution: (res) => set({ resolution: res }, false, 'setResolution'),
-      
       // Panel visibility
       showMobilePanel: false,
       setShowMobilePanel: (show) => set({ showMobilePanel: show }, false, 'setShowMobilePanel'),
@@ -78,7 +70,6 @@ export const useCastingUIStore = create<CastingUIState>()(
       resetUI: () => set({
         activeView: 'frontClose',
         activeTool: 'none',
-        resolution: ImageResolution.HIGH,
         showMobilePanel: false,
         identityChangeOpen: false,
         refineInput: '',

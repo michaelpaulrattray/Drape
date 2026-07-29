@@ -585,7 +585,7 @@ function createCertificatePage(doc: jsPDF, data: PdfModelData, pageNum: number, 
     ['Created', data.createdAt],
     ['Minted', data.mintedAt],
     ['Engine', 'Gemini 3 Pro Image Preview'],
-    ['Resolution', '2K (2048\u00D72048)'],
+    ['Resolution', '1K (1024\u00D71024)'],
   ];
 
   let certY = 128;

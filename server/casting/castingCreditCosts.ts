@@ -11,8 +11,6 @@ export const CREDIT_COSTS = {
   allViews: 900,
   iterate: 350,
   eraser: 350,
-  upscale: 300,
-  exportPack: 1500,
   flashMultiplier: 0.5,
 } as const;
 

@@ -24,12 +24,16 @@ import {
 import {
   completeInkCandidateReady,
   findActiveOwnedInkCandidate,
+  findActiveOwnedInkProjectionCandidate,
   InkCandidateStateError,
   invalidateInkCandidate,
   markInkCandidateAttemptGenerating,
   markInkCandidateAttemptStored,
+  loadInkProjectionCandidatePreflight,
   prepareIncludedInkCandidateRetry,
   prepareInkCandidateGeneration,
+  prepareInkProjectionCandidateGeneration,
+  type InkProjectionCandidatePreflight,
   type PreparedInkCandidateAttempt,
 } from "../../db/inkAddCandidates";
 import {
@@ -39,6 +43,7 @@ import {
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { withAtomicCredits, type RefundOutcome } from "../atomicCredits";
 import { modelOperationLockKey } from "../operationContract";
+import { slotCost } from "../packagePricing";
 import { fetchTrustedImage } from "../../security/trustedImageFetch";
 import {
   canonicalizeEvidenceDataUrl,
@@ -53,19 +58,26 @@ import {
   INK_ADD_PRICE_CREDITS,
 } from "./evidenceCandidateContract";
 import {
+  buildInkAnywhereComposerRequest,
   buildInkComposerRequest,
   type ComposerImage,
+  type InkAnywhereComposerRequest,
   type InkComposerRequest,
   type InkRetryDirective,
 } from "./composer/inkComposer";
 import {
+  buildAnatomicalInkZoneGuide,
   buildInkZoneGuide,
+  buildMultiAnatomicalInkZoneGuide,
 } from "./composer/inkZoneGuide";
 import {
+  runInkAnywhereCandidateProbes,
+  runInkAnywhereVisibilityProbe,
   runInkCandidateProbes,
   runInkVisibilityProbe,
   type InkProbeRequest,
 } from "./composer/inkProbe";
+import { inkAnatomyLabel } from "./inkAnatomyRegistry";
 import { decideInkCandidateAttempt } from "./composer/inkRetryDecision";
 import { INK_ADD_IMAGE_ENGINE } from "./composer/inkAddRecipe";
 import { captureEvidenceComposerEnabled } from "./evidenceComposerScope";
@@ -73,19 +85,31 @@ import { createModuleLogger } from "../../logging/logger";
 import {
   extractInkProviderTelemetry,
 } from "./composer/inkProviderTelemetry";
+import {
+  assessInkProjectionProbe,
+  buildInkCoverageProbeRequest,
+  buildInkEvidenceMosaic,
+  buildInkProjectionComposerRequest,
+  buildInkProjectionProbeRequest,
+  parseInkCoverageProbeResponse,
+  parseInkProjectionProbeResponse,
+  type InkProjectionComposerRequest,
+  type InkProjectionFeatureReference,
+} from "./inkProjectionComposition";
+import type { CanonicalViewAngle } from "../../../shared/boardTypes";
 
 const log = createModuleLogger("casting/evidence/inkCandidateGeneration");
 const CANDIDATE_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
 const CANDIDATE_FAILURE =
   "The tattoo preview could not be created.";
 const VISIBILITY_FAILURE =
-  "The selected Full view does not show enough of the upper torso for this tattoo preview. Nothing was charged.";
+  "The current Cast does not show the requested tattoo location clearly enough. Nothing was charged.";
 
 export interface InkCandidateReadyResult {
   candidateId: string;
   status: "ready";
   expiresAt: string;
-  chargedCredits: typeof INK_ADD_PRICE_CREDITS;
+  chargedCredits: number;
 }
 
 type BeginOperation = (input: Parameters<typeof beginDirectOperation>[0]) =>
@@ -100,6 +124,8 @@ export interface InkCandidateGenerationDependencies {
   findIntent?: typeof findOwnedPendingInkIntent;
   markRunning?: typeof markGenerationOperationRunning;
   prepare?: typeof prepareInkCandidateGeneration;
+  loadProjectionPreflight?: typeof loadInkProjectionCandidatePreflight;
+  prepareProjection?: typeof prepareInkProjectionCandidateGeneration;
   prepareIncludedRetry?: typeof prepareIncludedInkCandidateRetry;
   markGenerating?: typeof markInkCandidateAttemptGenerating;
   markStored?: typeof markInkCandidateAttemptStored;
@@ -107,7 +133,12 @@ export interface InkCandidateGenerationDependencies {
   invalidate?: typeof invalidateInkCandidate;
   enforceQuota?: typeof enforceDailyQuota;
   fetchImage?: typeof fetchTrustedImage;
-  generate?: (request: InkComposerRequest) => Promise<string>;
+  generate?: (
+    request:
+      | InkComposerRequest
+      | InkAnywhereComposerRequest
+      | InkProjectionComposerRequest,
+  ) => Promise<string>;
   probe?: (request: InkProbeRequest) => Promise<unknown>;
   charge?: typeof withAtomicCredits;
   completeSuccess?: typeof completeDirectOperationSuccess;
@@ -129,7 +160,10 @@ function requireEnabled(
   }
 }
 
-function closedReadyResult(value: unknown): InkCandidateReadyResult {
+function closedReadyResult(
+  value: unknown,
+  expectedCredits: number,
+): InkCandidateReadyResult {
   if (
     !value
     || typeof value !== "object"
@@ -143,7 +177,7 @@ function closedReadyResult(value: unknown): InkCandidateReadyResult {
     || result.status !== "ready"
     || typeof result.expiresAt !== "string"
     || !Number.isFinite(Date.parse(result.expiresAt))
-    || result.chargedCredits !== INK_ADD_PRICE_CREDITS
+    || result.chargedCredits !== expectedCredits
   ) {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: CANDIDATE_FAILURE });
   }
@@ -208,7 +242,12 @@ async function readPrivateExact(
   return { bytes, mime: "image/webp" };
 }
 
-async function defaultGenerate(request: InkComposerRequest): Promise<string> {
+async function defaultGenerate(
+  request:
+    | InkComposerRequest
+    | InkAnywhereComposerRequest
+    | InkProjectionComposerRequest,
+): Promise<string> {
   return withImageQueue(async () => {
     const response = await withTimeout(
       getAiClient().models.generateContent({
@@ -326,15 +365,58 @@ async function loadInputs(
   ]);
   const anchor = composerImage(anchorFetched);
   const target = composerImage(targetFetched);
-  const guide = await buildInkZoneGuide({
-    targetBytes: target.bytes,
-    side: prepared.side,
-  });
+  if (prepared.authority.kind === "projection_v2") {
+    const projectionFeatures: InkProjectionFeatureReference[] =
+      await Promise.all(prepared.authority.features.map(async (feature) => ({
+        featureId: feature.featureId,
+        featureVersionId: feature.featureVersionId,
+        normalizedDescriptor: feature.normalizedDescriptor,
+        anatomyLabel: feature.anatomyLabel,
+        targetZone: feature.targetZone,
+        witnessZone: feature.witnessZone,
+        witness: await readPrivateExact(dependencies.delivery, {
+          key: feature.witness.storageKey,
+          byteSize: feature.witness.byteSize,
+          contentHash: feature.witness.contentHash,
+        }),
+        isProjectionTarget: feature.isProjectionTarget,
+      })));
+    const [guide, evidenceMosaic] = await Promise.all([
+      buildMultiAnatomicalInkZoneGuide({
+        targetBytes: target.bytes,
+        zones: projectionFeatures.map((feature) => ({
+          normalizedZone: feature.targetZone,
+          label: feature.anatomyLabel,
+        })),
+      }),
+      buildInkEvidenceMosaic(projectionFeatures),
+    ]);
+    return {
+      anchor,
+      target,
+      guidedTarget: composerImage(guide),
+      reference: null,
+      projectionFeatures: Object.freeze(projectionFeatures),
+      evidenceMosaic: composerImage(evidenceMosaic),
+    };
+  }
+  const guide = prepared.authority.kind === "legacy_v1"
+    ? await buildInkZoneGuide({
+        targetBytes: target.bytes,
+        side: prepared.authority.anatomy.side,
+      })
+    : await buildAnatomicalInkZoneGuide({
+        targetBytes: target.bytes,
+        normalizedZone: prepared.authority.normalizedTargetZone,
+        label: inkAnatomyLabel(prepared.authority.anatomy),
+      });
   return {
     anchor,
     target,
     guidedTarget: composerImage(guide),
     reference,
+    projectionFeatures: null,
+    evidenceMosaic: null,
   };
 }
 
@@ -361,17 +443,41 @@ async function runAttempt(input: {
   await (dependencies.markGenerating ?? markInkCandidateAttemptGenerating)(
     prepared,
   );
+  const composerRequest = prepared.authority.kind === "legacy_v1"
+    ? buildInkComposerRequest({
+        identityText: prepared.identityText,
+        normalizedDescriptor: prepared.normalizedDescriptor,
+        side: prepared.authority.anatomy.side,
+        attemptNumber: prepared.attemptNumber,
+        identityAnchor: images.anchor,
+        guidedTarget: images.guidedTarget,
+        evidenceReference: images.reference ?? undefined,
+        retryDirectives: input.retryDirectives,
+      })
+    : prepared.authority.kind === "anywhere_v2"
+    ? buildInkAnywhereComposerRequest({
+        identityText: prepared.identityText,
+        normalizedDescriptor: prepared.normalizedDescriptor,
+        anatomy: prepared.authority.anatomy,
+        attemptNumber: prepared.attemptNumber,
+        identityAnchor: images.anchor,
+        guidedTarget: images.guidedTarget,
+        evidenceReference: images.reference ?? undefined,
+        retryDirectives: input.retryDirectives,
+      })
+    : buildInkProjectionComposerRequest({
+        identityText: prepared.identityText,
+        sourceAngle: prepared.authority.sourceAngle,
+        targetAngle: prepared.authority.targetAngle,
+        features: images.projectionFeatures!,
+        attemptNumber: prepared.attemptNumber,
+        identityAnchor: images.anchor,
+        guidedTarget: images.guidedTarget,
+        evidenceMosaic: images.evidenceMosaic!,
+        retryDirectives: input.retryDirectives,
+      });
   const imageDataUrl = await (dependencies.generate ?? defaultGenerate)(
-    buildInkComposerRequest({
-      identityText: prepared.identityText,
-      normalizedDescriptor: prepared.normalizedDescriptor,
-      side: prepared.side,
-      attemptNumber: prepared.attemptNumber,
-      identityAnchor: images.anchor,
-      guidedTarget: images.guidedTarget,
-      evidenceReference: images.reference ?? undefined,
-      retryDirectives: input.retryDirectives,
-    }),
+    composerRequest,
   );
   const candidate = await (
     dependencies.canonicalize ?? canonicalizeEvidenceDataUrl
@@ -395,16 +501,42 @@ async function runAttempt(input: {
     prepared,
     image: candidate,
   });
-  const probe = await runInkCandidateProbes({
-    identityAnchor: images.anchor,
-    originalTarget: images.target,
-    candidate: composerImage(candidate),
-    evidenceReference: images.reference ?? undefined,
-    side: prepared.side,
-    normalizedDescriptor: prepared.normalizedDescriptor,
-    predictedVisibility: input.predictedVisibility,
-    probe: dependencies.probe ?? defaultProbe,
-  });
+  const probe = prepared.authority.kind === "legacy_v1"
+    ? await runInkCandidateProbes({
+        identityAnchor: images.anchor,
+        originalTarget: images.target,
+        candidate: composerImage(candidate),
+        evidenceReference: images.reference ?? undefined,
+        side: prepared.authority.anatomy.side,
+        normalizedDescriptor: prepared.normalizedDescriptor,
+        predictedVisibility: input.predictedVisibility,
+        probe: dependencies.probe ?? defaultProbe,
+      })
+    : prepared.authority.kind === "anywhere_v2"
+    ? await runInkAnywhereCandidateProbes({
+        identityAnchor: images.anchor,
+        originalTarget: images.target,
+        candidate: composerImage(candidate),
+        evidenceReference: images.reference ?? undefined,
+        anatomy: prepared.authority.anatomy,
+        normalizedDescriptor: prepared.normalizedDescriptor,
+        predictedVisibility: input.predictedVisibility,
+        probe: dependencies.probe ?? defaultProbe,
+      })
+    : assessInkProjectionProbe(parseInkProjectionProbeResponse(
+        await (dependencies.probe ?? defaultProbe)(
+          buildInkProjectionProbeRequest({
+            sourceAngle: prepared.authority.sourceAngle,
+            targetAngle: prepared.authority.targetAngle,
+            features: images.projectionFeatures!,
+            identityAnchor: images.anchor,
+            originalTarget: images.target,
+            evidenceMosaic: images.evidenceMosaic!,
+            candidate: composerImage(candidate),
+          }),
+        ),
+        images.projectionFeatures!.length,
+      ));
   const decision = decideInkCandidateAttempt({
     attemptNumber: prepared.attemptNumber,
     probe,
@@ -473,7 +605,7 @@ async function executeCandidate(
     payload: { intentId: input.intentId },
   });
   if (existing?.type === "replay_success") {
-    return closedReadyResult(existing.result);
+    return closedReadyResult(existing.result, INK_ADD_PRICE_CREDITS);
   }
   if (existing?.type === "replay_failure") {
     throw new TRPCError({
@@ -523,7 +655,9 @@ async function executeCandidate(
     payload: { intentId: input.intentId },
     lockKey: modelOperationLockKey(intent.modelId),
   });
-  if (gate.type === "replay") return closedReadyResult(gate.result);
+  if (gate.type === "replay") {
+    return closedReadyResult(gate.result, INK_ADD_PRICE_CREDITS);
+  }
 
   let prepared: PreparedInkCandidateAttempt | null = null;
   let chargedCredits = 0;
@@ -551,10 +685,19 @@ async function executeCandidate(
       privatePlateId: generateId(),
     });
     const images = await loadInputs(dependencies, prepared);
-    const visibility = await runInkVisibilityProbe({
-      target: images.target,
-      probe: dependencies.probe ?? defaultProbe,
-    });
+    if (prepared.authority.kind === "projection_v2") {
+      throw new InkCandidateStateError("candidate_unavailable");
+    }
+    const visibility = prepared.authority.kind === "legacy_v1"
+      ? await runInkVisibilityProbe({
+          target: images.target,
+          probe: dependencies.probe ?? defaultProbe,
+        })
+      : await runInkAnywhereVisibilityProbe({
+          target: images.target,
+          anatomy: prepared.authority.anatomy,
+          probe: dependencies.probe ?? defaultProbe,
+        });
     if (visibility.predictedVisibility !== "pass") {
       await (dependencies.invalidate ?? invalidateInkCandidate)({
         prepared,
@@ -678,6 +821,251 @@ export function retryInkAddCandidate(
   });
 }
 
+async function executeProjectionCandidate(
+  dependencies: InkCandidateGenerationDependencies,
+  input: {
+    userId: number;
+    modelId: number;
+    targetViewAngle: CanonicalViewAngle;
+    clientRequestId: string;
+    operationKind: PreparedInkCandidateAttempt["operationKind"];
+  },
+): Promise<InkCandidateReadyResult> {
+  const enabled = dependencies.enabledForUser ?? captureEvidenceComposerEnabled;
+  requireEnabled(input.userId, enabled);
+  const projectionPrice = slotCost(input.targetViewAngle);
+  const payload = {
+    modelId: input.modelId,
+    targetViewAngle: input.targetViewAngle,
+    purpose: "feature_projection",
+  };
+  const existing = await (
+    dependencies.getOutcomeByClaim ?? getGenerationOperationOutcomeByClaim
+  )({
+    userId: input.userId,
+    clientRequestId: input.clientRequestId,
+    kind: input.operationKind,
+    modelId: input.modelId,
+    payload,
+  });
+  if (existing?.type === "replay_success") {
+    return closedReadyResult(existing.result, projectionPrice);
+  }
+  if (existing?.type === "replay_failure") {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: existing.publicMessage,
+    });
+  }
+  if (existing?.type === "deleted_subject") {
+    throw new TRPCError({ code: "NOT_FOUND", message: CANDIDATE_FAILURE });
+  }
+  if (existing?.type === "recovery_required") {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: existing.publicMessage,
+    });
+  }
+  if (existing?.type === "in_progress") {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "This tattoo projection is already in progress.",
+    });
+  }
+  if (existing?.type === "payload_conflict") {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "That request id was already used for a different action.",
+    });
+  }
+  await (dependencies.enforceQuota ?? enforceDailyQuota)(input.userId);
+  const gate = await (dependencies.begin ?? beginDirectOperation)({
+    userId: input.userId,
+    clientRequestId: input.clientRequestId,
+    kind: input.operationKind,
+    modelId: input.modelId,
+    payload,
+    lockKey: modelOperationLockKey(input.modelId),
+  });
+  if (gate.type === "replay") {
+    return closedReadyResult(gate.result, projectionPrice);
+  }
+
+  let prepared: PreparedInkCandidateAttempt | null = null;
+  let chargedCredits = 0;
+  let refundedCredits = 0;
+  let readyBoundary = false;
+  try {
+    await (dependencies.markRunning ?? markGenerationOperationRunning)({
+      userId: input.userId,
+      operationId: gate.operationId,
+      modelId: input.modelId,
+      plannedCredits: projectionPrice,
+      requiredLockKey: modelOperationLockKey(input.modelId),
+      phase: "validating",
+      heartbeat: true,
+    });
+    const preflight: InkProjectionCandidatePreflight = await (
+      dependencies.loadProjectionPreflight
+      ?? loadInkProjectionCandidatePreflight
+    )({
+      userId: input.userId,
+      modelId: input.modelId,
+      operationId: gate.operationId,
+      operationKind: input.operationKind,
+      targetViewAngle: input.targetViewAngle,
+    });
+    const uncertain = preflight.features.filter(
+      (feature) => feature.impact === "uncertain",
+    );
+    let observedCoverage: Readonly<Record<string, boolean>> = Object.freeze({});
+    if (uncertain.length > 0) {
+      if (preflight.sourceViewAngle !== preflight.targetViewAngle) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "This view does not yet show enough of the requested tattoo surface to verify it safely. Nothing was charged.",
+        });
+      }
+      const target = composerImage(
+        await (dependencies.fetchImage ?? fetchTrustedImage)(
+          preflight.sourceUrl,
+        ),
+      );
+      const rawCoverage = await (dependencies.probe ?? defaultProbe)(
+        buildInkCoverageProbeRequest({
+          targetAngle: preflight.targetViewAngle,
+          features: uncertain.map((feature) => ({
+            featureVersionId: feature.featureVersionId,
+            anatomyLabel: feature.anatomyLabel,
+            targetZone: feature.targetZone,
+          })),
+          target,
+        }),
+      );
+      observedCoverage = parseInkCoverageProbeResponse(
+        rawCoverage,
+        uncertain.map((feature) => feature.featureVersionId),
+      );
+    }
+    const generateId = dependencies.generateId ?? randomUUID;
+    prepared = await (
+      dependencies.prepareProjection
+      ?? prepareInkProjectionCandidateGeneration
+    )({
+      preflight,
+      candidateId: generateId(),
+      attemptId: generateId(),
+      privatePlateId: generateId(),
+      observedCoverage,
+    });
+    const images = await loadInputs(dependencies, prepared);
+    const ready = await (dependencies.charge ?? withAtomicCredits)({
+      userId: input.userId,
+      amount: projectionPrice,
+      description: `Tattoo projection preview: ${input.targetViewAngle}`,
+      referenceId: `op:${gate.operationId}:charge`,
+      engineUsed: INK_ADD_IMAGE_ENGINE,
+      onCharged: (amount) => {
+        chargedCredits = amount;
+      },
+      onRefunded: (outcome: RefundOutcome) => {
+        if (outcome.recorded) refundedCredits = outcome.amount;
+      },
+    }, async () => {
+      let outcome = await runAttempt({
+        dependencies,
+        prepared: prepared!,
+        images,
+        predictedVisibility: "pass",
+      });
+      if (outcome.type === "included_retry") {
+        prepared = outcome.prepared;
+        outcome = await runAttempt({
+          dependencies,
+          prepared,
+          images,
+          predictedVisibility: "pass",
+          retryDirectives: outcome.directives,
+        });
+      }
+      if (outcome.type !== "ready") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: CANDIDATE_FAILURE,
+        });
+      }
+      return outcome;
+    });
+    const result: InkCandidateReadyResult = {
+      candidateId: ready.prepared.candidateId,
+      status: "ready",
+      expiresAt: ready.expiresAt.toISOString(),
+      chargedCredits: projectionPrice,
+    };
+    readyBoundary = true;
+    await (dependencies.completeSuccess ?? completeDirectOperationSuccess)({
+      userId: input.userId,
+      operationId: gate.operationId,
+      result: { ...result },
+      chargedCredits,
+      refundedCredits,
+    });
+    return result;
+  } catch (error) {
+    if (readyBoundary) throw error;
+    log.error({
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      operationId: gate.operationId,
+      candidateId: prepared?.candidateId,
+      targetViewAngle: input.targetViewAngle,
+    }, "Ink projection candidate generation failed");
+    if (prepared) {
+      await (dependencies.invalidate ?? invalidateInkCandidate)({
+        prepared,
+        publicError: CANDIDATE_FAILURE,
+      }).catch(() => undefined);
+    }
+    return (dependencies.completeFailure ?? completeDirectOperationFailure)({
+      userId: input.userId,
+      operationId: gate.operationId,
+      error: publicFailure(error),
+      chargedCredits,
+      refundedCredits,
+    });
+  }
+}
+
+export function generateInkProjectionCandidate(
+  dependencies: InkCandidateGenerationDependencies,
+  input: {
+    userId: number;
+    modelId: number;
+    targetViewAngle: CanonicalViewAngle;
+    clientRequestId: string;
+  },
+): Promise<InkCandidateReadyResult> {
+  return executeProjectionCandidate(dependencies, {
+    ...input,
+    operationKind: "evidence_candidate_generate",
+  });
+}
+
+export function retryInkProjectionCandidate(
+  dependencies: InkCandidateGenerationDependencies,
+  input: {
+    userId: number;
+    modelId: number;
+    targetViewAngle: CanonicalViewAngle;
+    clientRequestId: string;
+  },
+): Promise<InkCandidateReadyResult> {
+  return executeProjectionCandidate(dependencies, {
+    ...input,
+    operationKind: "evidence_candidate_retry",
+  });
+}
+
 export async function readActiveInkCandidate(input: {
   userId: number;
   intentId: string;
@@ -692,6 +1080,31 @@ export async function readActiveInkCandidate(input: {
   return {
     candidateId: candidate.id,
     candidateStatus: candidate.status,
+    candidateDeliveryUrl: candidate.status === "ready"
+      ? `/api/evidence/candidate/${candidate.id}`
+      : null,
+    expiresAt: candidate.expiresAt?.toISOString() ?? null,
+  };
+}
+
+export async function readActiveInkProjectionCandidate(input: {
+  userId: number;
+  modelId: number;
+}): Promise<{
+  candidateId: string;
+  candidateStatus: "processing" | "ready";
+  targetViewAngle: CanonicalViewAngle;
+  priceCredits: number;
+  candidateDeliveryUrl: string | null;
+  expiresAt: string | null;
+} | null> {
+  const candidate = await findActiveOwnedInkProjectionCandidate(input);
+  if (!candidate) return null;
+  return {
+    candidateId: candidate.id,
+    candidateStatus: candidate.status,
+    targetViewAngle: candidate.targetViewAngle,
+    priceCredits: slotCost(candidate.targetViewAngle),
     candidateDeliveryUrl: candidate.status === "ready"
       ? `/api/evidence/candidate/${candidate.id}`
       : null,

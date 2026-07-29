@@ -91,11 +91,19 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     expect(commit).toContain('reason: "evidence_accept"');
     expect(commit).toContain('selectionReason: "evidence_accept"');
     expect(commit).toContain("affectedViewsForInkAdd");
-    expect(commit).toContain("intent.capabilityKey !== INK_ADD_CAPABILITY_KEY");
-    expect(commit).toContain("modelIdentityFeatureIntents.activeCapabilityKey");
+    expect(commit).toContain(
+      "intent.capabilityKey !== input.prepared.capabilityKey",
+    );
+    expect(commit).toContain(
+      "intent.activeCapabilityKey === INK_ACTIVE_FAMILY_KEY",
+    );
     expect(commit).toContain("intent.ontologyVersion !== input.prepared.ontologyVersion");
+    expect(commit).toContain('attempt.priorInkOutcome !== "pass"');
     expect(commit).toContain("staleViewAngles: affectedViewAngles");
     expect(commit).toContain("featureSelections");
+    expect(commit).toContain("carryCurrent: true");
+    expect(commit).toContain("sourceViewAngle: input.prepared.sourceViewAngle");
+    expect(commit).toContain("acceptsAnchorBearingEvidence");
     expect(commit).toContain("currentRevisionId(context.model)");
     expect(commit).not.toContain("mintRevisionId");
     expect(commit).not.toMatch(/\.update\(models\)[\s\S]*identityRevisionId/);
@@ -111,7 +119,7 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     expect(transitions).toContain("uniqueAngles.size === 0");
     expect(transitions).toContain("selectivelyStaleAngles");
     expect(transitions).toContain(
-      "Evidence acceptance cannot change the identity anchor, documents or revision",
+      "Evidence acceptance anchor authority is invalid",
     );
     expect(transitions).toContain("eq(modelIdentityFeatures.modelId, input.modelId)");
     expect(transitions).toContain(

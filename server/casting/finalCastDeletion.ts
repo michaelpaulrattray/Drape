@@ -12,6 +12,7 @@ import {
   generationOperations,
   generations,
   castingEvidenceCandidateAttempts,
+  castingEvidenceCandidateFeatureTargets,
   castingEvidenceCandidates,
   castingEvidenceIngestions,
   modelAssets,
@@ -20,6 +21,7 @@ import {
   modelIdentityFeatureIntents,
   modelIdentityFeatures,
   modelIdentityFeatureVersions,
+  modelIdentityFeatureProjectionEvidence,
   modelSnapshotFeatureSelections,
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
@@ -46,9 +48,11 @@ const log = createModuleLogger("casting/finalCastDeletion");
 export interface FinalCastDeletionCounts {
   evidenceCandidates: number;
   evidenceCandidateAttempts: number;
+  evidenceCandidateFeatureTargets: number;
   featureIntents: number;
   identityFeatures: number;
   identityFeatureVersions: number;
+  identityFeatureProjectionEvidence: number;
   snapshotFeatureSelections: number;
   evidenceIngestions: number;
   referencePlates: number;
@@ -636,6 +640,16 @@ export async function executeFinalCastDeletion(input: {
         .where(inArray(castingEvidenceCandidateAttempts.candidateId, candidateIds))
         .for("update")
       : [];
+    const evidenceCandidateFeatureTargets = candidateIds.length > 0
+      ? await tx
+        .select()
+        .from(castingEvidenceCandidateFeatureTargets)
+        .where(inArray(
+          castingEvidenceCandidateFeatureTargets.candidateId,
+          candidateIds,
+        ))
+        .for("update")
+      : [];
     const featureIntents = await tx
       .select()
       .from(modelIdentityFeatureIntents)
@@ -650,6 +664,14 @@ export async function executeFinalCastDeletion(input: {
       .select()
       .from(modelIdentityFeatureVersions)
       .where(eq(modelIdentityFeatureVersions.modelId, input.modelId))
+      .for("update");
+    const identityFeatureProjectionEvidence = await tx
+      .select()
+      .from(modelIdentityFeatureProjectionEvidence)
+      .where(eq(
+        modelIdentityFeatureProjectionEvidence.modelId,
+        input.modelId,
+      ))
       .for("update");
     const snapshotFeatureSelections = await tx
       .select()
@@ -824,11 +846,18 @@ export async function executeFinalCastDeletion(input: {
     await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, input.modelId));
     await tx.delete(modelSnapshotFeatureSelections)
       .where(eq(modelSnapshotFeatureSelections.modelId, input.modelId));
+    await tx.delete(modelIdentityFeatureProjectionEvidence)
+      .where(eq(modelIdentityFeatureProjectionEvidence.modelId, input.modelId));
     await tx.delete(modelIdentityFeatureVersions)
       .where(eq(modelIdentityFeatureVersions.modelId, input.modelId));
     await tx.delete(modelIdentityFeatures)
       .where(eq(modelIdentityFeatures.modelId, input.modelId));
     if (candidateIds.length > 0) {
+      await tx.delete(castingEvidenceCandidateFeatureTargets)
+        .where(inArray(
+          castingEvidenceCandidateFeatureTargets.candidateId,
+          candidateIds,
+        ));
       await tx.delete(castingEvidenceCandidateAttempts)
         .where(inArray(castingEvidenceCandidateAttempts.candidateId, candidateIds));
     }
@@ -925,9 +954,12 @@ export async function executeFinalCastDeletion(input: {
     const counts: FinalCastDeletionCounts = {
       evidenceCandidates: evidenceCandidates.length,
       evidenceCandidateAttempts: evidenceCandidateAttempts.length,
+      evidenceCandidateFeatureTargets: evidenceCandidateFeatureTargets.length,
       featureIntents: featureIntents.length,
       identityFeatures: identityFeatures.length,
       identityFeatureVersions: identityFeatureVersions.length,
+      identityFeatureProjectionEvidence:
+        identityFeatureProjectionEvidence.length,
       snapshotFeatureSelections: snapshotFeatureSelections.length,
       evidenceIngestions: evidenceIngestions.length,
       referencePlates: referencePlates.length,

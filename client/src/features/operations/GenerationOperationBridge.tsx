@@ -78,6 +78,7 @@ export function GenerationOperationBridge() {
       utils.generation.mintPackagePlan.invalidate({ modelId }),
       utils.generation.exportPlan.invalidate({ modelId }),
       utils.evidence.inkCapability.invalidate({ modelId }),
+      utils.evidence.inkProjectionCandidate.invalidate({ modelId }),
     ]);
   };
   const invalidateCastProjectionRef = useRef(invalidateCastProjection);

@@ -1,7 +1,9 @@
 import { and, eq, inArray } from "drizzle-orm";
 import {
   castingEvidenceCandidates,
+  modelAssets,
   modelIdentityFeatureIntents,
+  modelIdentityFeatureProjectionEvidence,
   modelIdentityFeatures,
   modelIdentityFeatureVersions,
   modelReferencePlates,
@@ -9,7 +11,6 @@ import {
 } from "../../../drizzle/schema";
 import type { TransactionHandle } from "../../db/connection";
 import type { EvidencePackageFeatureGraph } from "./evidencePackagePlan";
-import { INK_ADD_CAPABILITY_KEY } from "./evidenceCandidateContract";
 
 /**
  * Low-level feature-graph read shared by locked execution and atomic
@@ -57,7 +58,23 @@ export async function readEvidencePackageFeatureRowsIn(
         inArray(modelIdentityFeatureVersions.id, versionIds),
       ))
     : [];
-  const plateIds = versions.map((version) => version.acceptedCandidatePlateId);
+  const projections = versionIds.length
+    ? await tx
+      .select()
+      .from(modelIdentityFeatureProjectionEvidence)
+      .where(and(
+        eq(modelIdentityFeatureProjectionEvidence.userId, input.userId),
+        eq(modelIdentityFeatureProjectionEvidence.modelId, input.modelId),
+        inArray(
+          modelIdentityFeatureProjectionEvidence.featureVersionId,
+          versionIds,
+        ),
+      ))
+    : [];
+  const plateIds = Array.from(new Set([
+    ...versions.map((version) => version.acceptedCandidatePlateId),
+    ...projections.map((projection) => projection.acceptedCandidatePlateId),
+  ]));
   const plates = plateIds.length
     ? await tx
       .select()
@@ -68,13 +85,28 @@ export async function readEvidencePackageFeatureRowsIn(
         inArray(modelReferencePlates.id, plateIds),
       ))
     : [];
+  const assetIds = Array.from(new Set([
+    ...versions
+      .map((version) => version.acceptedAssetId)
+      .filter((id): id is number => id !== null),
+    ...projections.map((projection) => projection.acceptedAssetId),
+  ]));
+  const assets = assetIds.length
+    ? await tx
+      .select()
+      .from(modelAssets)
+      .where(and(
+        eq(modelAssets.modelId, input.modelId),
+        inArray(modelAssets.id, assetIds),
+      ))
+    : [];
   const [pendingIntent] = await tx
     .select({ id: modelIdentityFeatureIntents.id })
     .from(modelIdentityFeatureIntents)
     .where(and(
       eq(modelIdentityFeatureIntents.userId, input.userId),
       eq(modelIdentityFeatureIntents.modelId, input.modelId),
-      eq(modelIdentityFeatureIntents.capabilityKey, INK_ADD_CAPABILITY_KEY),
+      eq(modelIdentityFeatureIntents.category, "ink"),
       eq(modelIdentityFeatureIntents.status, "pending"),
     ))
     .limit(1);
@@ -96,6 +128,8 @@ export async function readEvidencePackageFeatureRowsIn(
       features,
       versions,
       plates,
+      projections,
+      assets,
     },
     hasUnresolvedIntentOrReadyCandidate: !!pendingIntent || !!activeCandidate,
   };

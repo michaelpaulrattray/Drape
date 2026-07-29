@@ -1,5 +1,7 @@
 import type {
+  ModelAsset,
   ModelIdentityFeature,
+  ModelIdentityFeatureProjectionEvidence,
   ModelIdentityFeatureVersion,
   ModelReferencePlate,
   ModelSnapshotFeatureSelection,
@@ -33,6 +35,11 @@ import {
   MAX_EVIDENCE_PIXELS,
   MIN_EVIDENCE_DIMENSION,
 } from "./imageValidation";
+import { assessClosedInkFeatureGraph } from "./inkFeatureGraph";
+import {
+  inkPackageAngleAuthority,
+  type InkPackageAngleAuthority,
+} from "./inkPackageImpactV2";
 
 export const EVIDENCE_PACKAGE_REFUSALS = [
   "feature_graph_unsupported",
@@ -63,6 +70,9 @@ export interface EvidencePackageFeatureGraph {
   features: readonly ModelIdentityFeature[];
   versions: readonly ModelIdentityFeatureVersion[];
   plates: readonly ModelReferencePlate[];
+  /** R7-7G positive-closure inputs. Optional only for historical unit fixtures. */
+  projections?: readonly ModelIdentityFeatureProjectionEvidence[];
+  assets?: readonly ModelAsset[];
 }
 
 export interface SupportedInkFeatureGraph {
@@ -180,6 +190,10 @@ export interface EvidencePackagePlanSlot {
   status: EvidencePackageSlotStatus;
   cost: number;
   refusal: EvidencePackageRefusal | null;
+  /** Present for the R7-7G closed multi-feature planner. */
+  action?: "refresh" | "projection" | null;
+  /** A free observed-coverage check must pass before any charged action. */
+  requiresCoverageProbe?: boolean;
 }
 
 export interface EvidencePackageSyncPlan {
@@ -268,6 +282,63 @@ function slotPlan(input: {
   };
 }
 
+function closedGraphSlotPlan(input: {
+  slot: EvidencePackageSlotState;
+  authority: InkPackageAngleAuthority;
+}): EvidencePackagePlanSlot {
+  const { slot, authority } = input;
+  if (slot.selectedAssetId !== null) {
+    if (slot.pinned) {
+      return {
+        ...attentionSlot(slot.angle, "pinned"),
+        action: null,
+        requiresCoverageProbe: authority.requiresCoverageProbe,
+      };
+    }
+    if (slot.compatibility === "unverified" || slot.compatibility === null) {
+      return {
+        ...attentionSlot(slot.angle, "compatibility_unverified"),
+        action: null,
+        requiresCoverageProbe: authority.requiresCoverageProbe,
+      };
+    }
+    if (slot.compatibility === "current") {
+      return {
+        angle: slot.angle,
+        label: VIEW_ANGLE_LABELS[slot.angle],
+        status: "current",
+        cost: 0,
+        refusal: "already_current",
+        action: null,
+        requiresCoverageProbe: false,
+      };
+    }
+    if (authority.impact === "unaffected") {
+      return {
+        ...attentionSlot(slot.angle, "compatibility_repair_required"),
+        action: null,
+        requiresCoverageProbe: false,
+      };
+    }
+  }
+  const action = authority.requiresProjectionCandidate
+    ? "projection"
+    : "refresh";
+  return {
+    angle: slot.angle,
+    label: VIEW_ANGLE_LABELS[slot.angle],
+    status: slot.selectedAssetId !== null
+      ? "stale"
+      : slot.failed
+        ? "failed"
+        : "missing",
+    cost: slotCost(slot.angle),
+    refusal: null,
+    action,
+    requiresCoverageProbe: authority.requiresCoverageProbe,
+  };
+}
+
 /**
  * Pure public plan. Private feature text, row IDs, plate locators and recipe
  * internals never enter the returned shape.
@@ -283,9 +354,18 @@ export function computeEvidencePackageSyncPlan(input: {
 }): EvidencePackageSyncPlan {
   const byAngle = normalizeSlots(input.slots);
   const frontFullAssetId = byAngle?.get("frontFull")?.selectedAssetId ?? null;
-  const supportedGraph = byAngle
+  const closedGraphCandidate = byAngle
+    ? assessClosedInkFeatureGraph(input.graph)
+    : null;
+  const closedGraph = closedGraphCandidate?.entries.some(
+    (entry) => entry.contract === "all_body_v2",
+  )
+    ? closedGraphCandidate
+    : null;
+  const legacyGraph = byAngle && !closedGraph
     ? assessSupportedInkFeatureGraph(input.graph, frontFullAssetId)
     : null;
+  const supportedGraph = closedGraph ?? legacyGraph;
   const modelDraft = isModelDraftStatus(input.modelStatus);
   const modelAvailable = isModelAvailableStatus(input.modelStatus);
   const requested = input.requestedAngles
@@ -320,17 +400,22 @@ export function computeEvidencePackageSyncPlan(input: {
     };
   }
 
-  const slots = CANONICAL_VIEW_ANGLES.map((angle) => slotPlan({
-    slot: byAngle.get(angle)!,
-    directive: inkPackageDirective({
-      capabilityKey: INK_ADD_CAPABILITY_KEY,
-      ontologyVersion: supportedGraph.version.ontologyVersion,
-      zone: supportedGraph.version.zone,
-      surface: supportedGraph.version.surface,
-      side: supportedGraph.version.side,
-      angle,
-    }),
-  }));
+  const slots = closedGraph
+    ? CANONICAL_VIEW_ANGLES.map((angle) => closedGraphSlotPlan({
+        slot: byAngle.get(angle)!,
+        authority: inkPackageAngleAuthority(closedGraph, angle),
+      }))
+    : CANONICAL_VIEW_ANGLES.map((angle) => slotPlan({
+        slot: byAngle.get(angle)!,
+        directive: inkPackageDirective({
+          capabilityKey: INK_ADD_CAPABILITY_KEY,
+          ontologyVersion: legacyGraph!.version.ontologyVersion,
+          zone: legacyGraph!.version.zone,
+          surface: legacyGraph!.version.surface,
+          side: legacyGraph!.version.side,
+          angle,
+        }),
+      }));
   if (!modelAvailable) {
     return {
       modelId: input.modelId,

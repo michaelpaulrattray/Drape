@@ -1,7 +1,10 @@
 import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { ComposerImage } from "./inkComposer";
-import { buildInkComposerRequest } from "./inkComposer";
+import {
+  buildInkAnywhereComposerRequest,
+  buildInkComposerRequest,
+} from "./inkComposer";
 
 let image: ComposerImage;
 
@@ -85,5 +88,27 @@ describe("R7-7D exact ink composer request", () => {
       identityAnchor: image,
       guidedTarget: image,
     })).toThrow("Invalid ink description");
+  });
+
+  it("authors a closed all-body tuple and makes prior ink immutable", () => {
+    const request = buildInkAnywhereComposerRequest({
+      identityText: "Immutable identity text",
+      normalizedDescriptor: "Japanese blackwork full sleeve",
+      anatomy: {
+        zone: "full_arm",
+        surface: "circumferential",
+        side: "right",
+      },
+      attemptNumber: 2,
+      identityAnchor: image,
+      guidedTarget: image,
+      retryDirectives: ["prior_ink", "placement"],
+    });
+    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v1");
+    expect(request.prompt).toContain("Right arm");
+    expect(request.prompt).toContain("zone=full_arm");
+    expect(request.prompt).toContain("surface=circumferential");
+    expect(request.prompt).toContain("preserve every existing tattoo");
+    expect(request.prompt).toContain("Restore every tattoo");
   });
 });

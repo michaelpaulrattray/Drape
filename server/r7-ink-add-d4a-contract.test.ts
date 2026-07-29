@@ -29,7 +29,10 @@ describe("R7-7D D4A intent/reference contract", () => {
     expect(route).toContain("generateInkAddCandidate: protectedProcedure");
     expect(route).toContain("retryInkAddCandidate: protectedProcedure");
     expect(route).toContain("inkCapability: protectedProcedure");
-    expect(route.match(/\.strict\(\)/g)).toHaveLength(9);
+    expect(route.match(/\.input\(z\.object\(\{/g)?.length).toBe(
+      route.match(/\.strict\(\)/g)?.length,
+    );
+    expect(route).not.toContain(".passthrough()");
     expect(route).not.toMatch(
       /userId:\s*z\.|ownerId:\s*z\.|packageSnapshotId:\s*z\.|identitySnapshotId:\s*z\.|storageKey:\s*z\.|contentHash:\s*z\./,
     );

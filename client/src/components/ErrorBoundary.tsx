@@ -122,7 +122,7 @@ export default ErrorBoundary;
 interface GenerationErrorBoundaryProps {
   children: ReactNode;
   onRetry?: () => void;
-  context?: 'headshot' | 'fullBody' | 'multiView' | 'iteration' | 'upscale' | 'eraser';
+  context?: 'headshot' | 'fullBody' | 'multiView' | 'iteration' | 'eraser';
 }
 
 interface GenerationErrorBoundaryState {
@@ -147,10 +147,6 @@ const CONTEXT_MESSAGES: Record<string, { title: string; description: string }> =
   iteration: {
     title: 'Image Refinement Failed',
     description: 'We couldn\'t apply your refinements. Please try again with a different prompt.',
-  },
-  upscale: {
-    title: 'Upscale Failed',
-    description: 'We couldn\'t upscale your image. Please try again.',
   },
   eraser: {
     title: 'Magic Eraser Failed',

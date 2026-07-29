@@ -102,7 +102,6 @@ describe("Credit Cost Calculations", () => {
     expect(CREDIT_COSTS.fullBody).toBe(300);
     expect(CREDIT_COSTS.multiView).toBe(300);
     expect(CREDIT_COSTS.iterate).toBe(350);
-    expect(CREDIT_COSTS.upscale).toBe(300);
   });
 
   it("should calculate total cost for full model generation", () => {

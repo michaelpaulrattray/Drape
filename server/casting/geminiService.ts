@@ -6,7 +6,7 @@
  *   - geminiClient.ts    → API client factory & utilities
  *   - geminiPrompts.ts   → Prompt constants & brand/skin helpers
  *   - geminiGeneration.ts → Master prompt, enhance prompt, casting image generation
- *   - geminiViews.ts     → Full body, multi-view, single view, upscale
+ *   - geminiViews.ts     → Full body, multi-view, single view
  * 
  * This barrel preserves backward compatibility for aiService.ts
  * which does `import * as gemini from "./geminiService"`.
@@ -36,7 +36,6 @@ export {
 export {
   BRAND_NAME,
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
-  UPSCALE_PROMPT,
   BRAND_PROFILES,
   DEFAULT_BRAND_DESCRIPTOR,
   getSkinDescription,
@@ -58,5 +57,5 @@ export { generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGE
 // Prompt compaction
 export { compactMasterPrompt } from "./geminiPromptCompactor";
 
-// View & upscale functions
-export { generateFullBody, generateRemainingViews, generateSingleView, upscaleExistingImage } from "./geminiViews";
+// View generation functions
+export { generateFullBody, generateRemainingViews, generateSingleView } from "./geminiViews";

@@ -9,6 +9,20 @@ export const INK_ACTIVE_FAMILY_KEY = "ink.add" as const;
 export const INK_ANYWHERE_ONTOLOGY_VERSION = "body-zones.ink.v2" as const;
 export const INK_ANYWHERE_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.anywhere.authorization.v1" as const;
+export const INK_ANYWHERE_COMPOSER_RECIPE_VERSION =
+  "ink.add.anywhere.composer.v1" as const;
+export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
+  "ink.add.anywhere.probe.v1" as const;
+export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
+  "ink.add.anywhere.visibility.v1" as const;
+export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
+  "ink.add.anywhere.projection.v1" as const;
+export const INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION =
+  "ink.add.anywhere.projection.probe.v1" as const;
+export const INK_ANYWHERE_EVIDENCE_MOSAIC_RECIPE_VERSION =
+  "ink.add.anywhere.evidence-mosaic.v1" as const;
+export const INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION =
+  "ink.add.anywhere.coverage-probe.v1" as const;
 
 export const INK_ANATOMY_ZONES = [
   "face",

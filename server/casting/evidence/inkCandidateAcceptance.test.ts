@@ -1,12 +1,18 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { PrivateEvidenceStorageAdapter } from "./evidenceDelivery";
-import type { PreparedInkCandidateAcceptance } from "../../db/inkAddAcceptance";
+import type {
+  PreparedInkCandidateAcceptance,
+  PreparedInkProjectionCandidateAcceptance,
+} from "../../db/inkAddAcceptance";
 import {
   acceptInkAddCandidate,
   type InkCandidateAcceptanceDependencies,
 } from "./inkCandidateAcceptance";
-import type { InkCandidateAcceptedResult } from "./inkAcceptanceCommit";
+import type {
+  InkCandidateAcceptedResult,
+  InkProjectionCandidateAcceptedResult,
+} from "./inkAcceptanceCommit";
 
 const bytes = Buffer.from("private-canonical-webp");
 const prepared: PreparedInkCandidateAcceptance = {
@@ -46,6 +52,56 @@ const accepted: InkCandidateAcceptedResult = {
   assetId: 99,
   featureId: "88888888-8888-4888-8888-888888888888",
   featureVersionId: "99999999-9999-4999-8999-999999999999",
+  identitySnapshotId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  packageSnapshotId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  stateVersion: 5,
+  chargedCredits: 0,
+};
+
+const projectionPrepared: PreparedInkProjectionCandidateAcceptance = {
+  kind: "feature_projection",
+  userId: prepared.userId,
+  modelId: prepared.modelId,
+  operationId: prepared.operationId,
+  candidateId: prepared.candidateId,
+  attemptId: prepared.attemptId,
+  privatePlateId: prepared.privatePlateId,
+  privateStorageKey: prepared.privateStorageKey,
+  byteSize: prepared.byteSize,
+  contentHash: prepared.contentHash,
+  width: prepared.width,
+  height: prepared.height,
+  publicStorageKey: prepared.publicStorageKey,
+  expectedStateVersion: prepared.expectedStateVersion,
+  identitySnapshotId: prepared.identitySnapshotId,
+  packageSnapshotId: prepared.packageSnapshotId,
+  sourceAssetId: prepared.sourceAssetId,
+  sourceViewAngle: "frontFull",
+  targetViewAngle: "backFull",
+  composerRecipeVersion: "ink.add.anywhere.projection.v1",
+  actualImageEngine: prepared.actualImageEngine,
+  targets: [
+    {
+      featureId: "feature-1",
+      featureVersionId: "version-1",
+      coverageBasis: "registry_affected",
+    },
+    {
+      featureId: "feature-2",
+      featureVersionId: "version-2",
+      coverageBasis: "observed_visible",
+    },
+  ],
+};
+
+const projectionAccepted: InkProjectionCandidateAcceptedResult = {
+  candidateId: projectionPrepared.candidateId,
+  status: "accepted",
+  purpose: "feature_projection",
+  modelId: projectionPrepared.modelId,
+  assetId: 100,
+  targetViewAngle: projectionPrepared.targetViewAngle,
+  projectedFeatureVersionIds: ["version-1", "version-2"],
   identitySnapshotId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   packageSnapshotId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
   stateVersion: 5,
@@ -154,6 +210,38 @@ describe("ink candidate acceptance", () => {
     expect(deps.begin).not.toHaveBeenCalled();
     expect(deps.delivery.readCanonical).not.toHaveBeenCalled();
     expect(deps.putPublic).not.toHaveBeenCalled();
+    expect(deps.commit).not.toHaveBeenCalled();
+  });
+
+  it("copies one exact private object and commits all projection targets together", async () => {
+    const deps = dependencies({
+      findClaimSubject: vi.fn(async () => ({
+        modelId: projectionPrepared.modelId,
+        identityRevisionId: "revision-4",
+        purpose: "feature_projection" as const,
+      })),
+      prepareProjection: vi.fn(async (input) => ({
+        ...projectionPrepared,
+        publicStorageKey: input.publicStorageKey,
+      })),
+      commitProjection: vi.fn(async () => projectionAccepted),
+    });
+    await expect(acceptInkAddCandidate(deps, {
+      userId: projectionPrepared.userId,
+      candidateId: projectionPrepared.candidateId,
+      clientRequestId: "abababab-abab-4bab-8bab-abababababab",
+    })).resolves.toEqual(projectionAccepted);
+    expect(deps.prepareProjection).toHaveBeenCalledTimes(1);
+    expect(deps.prepare).not.toHaveBeenCalled();
+    expect(deps.delivery.readCanonical).toHaveBeenCalledTimes(1);
+    expect(deps.putPublic).toHaveBeenCalledTimes(1);
+    expect(deps.commitProjection).toHaveBeenCalledWith({
+      prepared: expect.objectContaining({
+        kind: "feature_projection",
+        targets: projectionPrepared.targets,
+      }),
+      publicStorageUrl: expect.stringMatching(/^https:\/\/public\.invalid\//),
+    });
     expect(deps.commit).not.toHaveBeenCalled();
   });
 

@@ -24,8 +24,6 @@ describe("R7-7D D4A closed route boundary", () => {
       inkAdd: false,
       subjectStatus: "disabled",
       priceCredits: 350,
-      targetView: "frontFull",
-      placements: ["left", "centre", "right"],
       activeIntent: null,
     });
   });
@@ -34,9 +32,7 @@ describe("R7-7D D4A closed route boundary", () => {
     const caller = appRouter.createCaller(context());
     await expect(caller.evidence.beginInkAddIntent({
       modelId: 4,
-      sourceAssetId: 9,
-      side: "left",
-      description: "small fine-line star",
+      instruction: "add a small fine-line star tattoo to the left chest",
       clientRequestId: "11111111-1111-4111-8111-111111111111",
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     await expect(caller.evidence.attachInkIntentReference({
@@ -60,23 +56,29 @@ describe("R7-7D D4A closed route boundary", () => {
       intentId: "22222222-2222-4222-8222-222222222222",
       clientRequestId: "88888888-8888-4888-8888-888888888888",
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(caller.evidence.generateInkProjectionCandidate({
+      modelId: 4,
+      targetViewAngle: "sideFull",
+      clientRequestId: "99999999-9999-4999-8999-999999999999",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(caller.evidence.cancelInkProjectionCandidate({
+      candidateId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      clientRequestId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
-  it("rejects forged authority and unknown placement at the strict wire", async () => {
+  it("rejects forged authority and malformed natural-language requests at the strict wire", async () => {
     const caller = appRouter.createCaller(context());
     await expect(caller.evidence.beginInkAddIntent({
       modelId: 4,
       sourceAssetId: 9,
-      side: "left",
-      description: "small fine-line star",
+      instruction: "add a small fine-line star tattoo to the left chest",
       clientRequestId: "11111111-1111-4111-8111-111111111111",
       userId: 999,
     } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller.evidence.beginInkAddIntent({
       modelId: 4,
-      sourceAssetId: 9,
-      side: "shoulder",
-      description: "small fine-line star",
+      instruction: "",
       clientRequestId: "11111111-1111-4111-8111-111111111111",
     } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller.evidence.generateInkAddCandidate({

@@ -148,9 +148,9 @@ describe('PDF Service', () => {
   it('should contain correct resolution in certificate', async () => {
     const result = await generatePremiumIdentityPdf(mockPdfData);
     const text = new TextDecoder('latin1').decode(result);
-    // Should contain the corrected resolution
-    expect(text).toContain('2048');
-    // Should NOT contain old fake resolution
+    // D-74: the current customer identity document is fixed at 1K.
+    expect(text).toContain('1024');
+    expect(text).not.toContain('2048');
     expect(text).not.toContain('3840x5120');
   });
 

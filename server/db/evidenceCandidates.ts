@@ -75,7 +75,8 @@ export async function expireNextReadyEvidenceCandidate(input: {
   now?: Date;
 } = {}): Promise<{
   candidateId: string;
-  intentId: string;
+  intentId: string | null;
+  purpose: "feature_authoring" | "feature_projection";
   cleanupBatchId: string;
   cleanupObjects: number;
 } | null> {
@@ -115,35 +116,50 @@ export async function expireNextReadyEvidenceCandidate(input: {
       .limit(1)
       .for("update");
     if (!candidate) return null;
-    const [intent] = await tx
-      .select()
-      .from(modelIdentityFeatureIntents)
-      .where(and(
-        eq(modelIdentityFeatureIntents.id, candidate.intentId),
-        eq(modelIdentityFeatureIntents.userId, candidate.userId),
-        eq(modelIdentityFeatureIntents.modelId, candidate.modelId),
-        eq(modelIdentityFeatureIntents.status, "pending"),
-        isNotNull(modelIdentityFeatureIntents.activeCapabilityKey),
-      ))
-      .limit(1)
-      .for("update");
-    if (!intent) throw new Error("Candidate intent is unavailable");
+    const isAuthoring = candidate.purpose === "feature_authoring";
+    const isProjection = candidate.purpose === "feature_projection";
+    if (
+      (!isAuthoring && !isProjection)
+      || (isAuthoring && !candidate.intentId)
+      || (isProjection && candidate.intentId !== null)
+    ) {
+      throw new Error("Candidate purpose authority is invalid");
+    }
+    const [intent] = isAuthoring
+      ? await tx
+        .select()
+        .from(modelIdentityFeatureIntents)
+        .where(and(
+          eq(modelIdentityFeatureIntents.id, candidate.intentId!),
+          eq(modelIdentityFeatureIntents.userId, candidate.userId),
+          eq(modelIdentityFeatureIntents.modelId, candidate.modelId),
+          eq(modelIdentityFeatureIntents.status, "pending"),
+          isNotNull(modelIdentityFeatureIntents.activeCapabilityKey),
+        ))
+        .limit(1)
+        .for("update")
+      : [];
+    if (isAuthoring && !intent) {
+      throw new Error("Candidate intent is unavailable");
+    }
     const attempts = await tx
       .select()
       .from(castingEvidenceCandidateAttempts)
       .where(eq(castingEvidenceCandidateAttempts.candidateId, candidate.id))
       .orderBy(asc(castingEvidenceCandidateAttempts.attemptNumber))
       .for("update");
-    const [reference] = await tx
-      .select()
-      .from(modelReferencePlates)
-      .where(and(
-        eq(modelReferencePlates.featureIntentId, intent.id),
-        eq(modelReferencePlates.userId, candidate.userId),
-        eq(modelReferencePlates.modelId, candidate.modelId),
-      ))
-      .limit(1)
-      .for("update");
+    const [reference] = intent
+      ? await tx
+        .select()
+        .from(modelReferencePlates)
+        .where(and(
+          eq(modelReferencePlates.featureIntentId, intent.id),
+          eq(modelReferencePlates.userId, candidate.userId),
+          eq(modelReferencePlates.modelId, candidate.modelId),
+        ))
+        .limit(1)
+        .for("update")
+      : [];
 
     const storageItems: Array<{
       storageKey: string;
@@ -225,22 +241,24 @@ export async function expireNextReadyEvidenceCandidate(input: {
     if (affectedRows(candidateUpdated) !== 1) {
       throw new Error("Candidate expiry lost its state race");
     }
-    const intentUpdated = await tx
-      .update(modelIdentityFeatureIntents)
-      .set({
-        status: "cancelled",
-        activeCapabilityKey: null,
-        resolvedCandidateId: candidate.id,
-        resolvedByOperationId: operationId,
-        resolvedAt: now,
-      })
-      .where(and(
-        eq(modelIdentityFeatureIntents.id, intent.id),
-        eq(modelIdentityFeatureIntents.status, "pending"),
-        isNotNull(modelIdentityFeatureIntents.activeCapabilityKey),
-      ));
-    if (affectedRows(intentUpdated) !== 1) {
-      throw new Error("Candidate intent expiry lost its state race");
+    if (intent) {
+      const intentUpdated = await tx
+        .update(modelIdentityFeatureIntents)
+        .set({
+          status: "cancelled",
+          activeCapabilityKey: null,
+          resolvedCandidateId: candidate.id,
+          resolvedByOperationId: operationId,
+          resolvedAt: now,
+        })
+        .where(and(
+          eq(modelIdentityFeatureIntents.id, intent.id),
+          eq(modelIdentityFeatureIntents.status, "pending"),
+          isNotNull(modelIdentityFeatureIntents.activeCapabilityKey),
+        ));
+      if (affectedRows(intentUpdated) !== 1) {
+        throw new Error("Candidate intent expiry lost its state race");
+      }
     }
     if (reference) {
       await tx.delete(castingEvidenceIngestions).where(and(
@@ -262,7 +280,8 @@ export async function expireNextReadyEvidenceCandidate(input: {
     }
     return {
       candidateId: candidate.id,
-      intentId: intent.id,
+      intentId: intent?.id ?? null,
+      purpose: candidate.purpose,
       cleanupBatchId: manifest.id,
       cleanupObjects: manifest.expectedCount,
     };
@@ -411,21 +430,35 @@ export async function settleNextCompletedCandidateCleanup(): Promise<{
       .limit(1)
       .for("update");
     if (!row) return null;
-    const [intent] = await tx
-      .select({
-        id: modelIdentityFeatureIntents.id,
-        status: modelIdentityFeatureIntents.status,
-        normalizedDescriptor: modelIdentityFeatureIntents.normalizedDescriptor,
-      })
-      .from(modelIdentityFeatureIntents)
-      .where(and(
-        eq(modelIdentityFeatureIntents.id, row.candidate.intentId),
-        eq(modelIdentityFeatureIntents.userId, row.candidate.userId),
-        eq(modelIdentityFeatureIntents.modelId, row.candidate.modelId),
-      ))
-      .limit(1)
-      .for("update");
-    if (!intent) throw new Error("Candidate cleanup intent is unavailable");
+    const isAuthoring = row.candidate.purpose === "feature_authoring";
+    const isProjection = row.candidate.purpose === "feature_projection";
+    if (
+      (!isAuthoring && !isProjection)
+      || (isAuthoring && !row.candidate.intentId)
+      || (isProjection && row.candidate.intentId !== null)
+    ) {
+      throw new Error("Candidate cleanup purpose authority is invalid");
+    }
+    const [intent] = isAuthoring
+      ? await tx
+        .select({
+          id: modelIdentityFeatureIntents.id,
+          status: modelIdentityFeatureIntents.status,
+          normalizedDescriptor:
+            modelIdentityFeatureIntents.normalizedDescriptor,
+        })
+        .from(modelIdentityFeatureIntents)
+        .where(and(
+          eq(modelIdentityFeatureIntents.id, row.candidate.intentId!),
+          eq(modelIdentityFeatureIntents.userId, row.candidate.userId),
+          eq(modelIdentityFeatureIntents.modelId, row.candidate.modelId),
+        ))
+        .limit(1)
+        .for("update")
+      : [];
+    if (isAuthoring && !intent) {
+      throw new Error("Candidate cleanup intent is unavailable");
+    }
     await tx
       .update(castingEvidenceCandidateAttempts)
       .set({
@@ -444,7 +477,8 @@ export async function settleNextCompletedCandidateCleanup(): Promise<{
         eq(castingEvidenceCandidateAttempts.cleanupBatchId, row.batchId),
       ));
     if (
-      intent.status !== "pending"
+      intent
+      && intent.status !== "pending"
       && intent.normalizedDescriptor !== null
     ) {
       const scrubbed = await tx

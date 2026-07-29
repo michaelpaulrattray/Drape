@@ -100,7 +100,6 @@ export const CREDIT_COSTS = {
   multiView: 300,       // Single view: side/walk/back
   iteration: 350,       // Surgical edit / iteration
   eraser: 350,          // Magic eraser
-  upscale: 300,         // Upscale existing image
 };
 
 // ============ Types ============
@@ -187,12 +186,6 @@ export interface GenerationState {
 }
 
 export type EditTool = 'none' | 'surgical' | 'eraser';
-
-export enum ImageResolution {
-  STD = '1K',
-  HIGH = '2K',
-  ULTRA = '4K',
-}
 
 type EyePreset = typeof EYE_PRESETS[number];
 type SkinTone = typeof SKIN_TONES[number];

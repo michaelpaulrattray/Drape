@@ -60,7 +60,7 @@ let textQueueCounter = 0;
 /**
  * Run a Gemini image generation call through the concurrency limiter.
  * Use for: generateCastingImage, generateFullBody, generateSingleView,
- *          upscaleExistingImage, generateRemainingViews
+ *          generateRemainingViews
  *
  * Returns the result and provides queue position via onPosition callback.
  */

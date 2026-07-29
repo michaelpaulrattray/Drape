@@ -3,10 +3,12 @@ import type { GenerateContentConfig } from "@google/genai";
 import { TRPCError } from "@trpc/server";
 import {
   commitBeginInkAddIntent,
+  commitBeginInkAnywhereIntent,
   findActiveOwnedInkIntent,
-  inspectOwnedInkAddAvailability,
+  inspectOwnedInkAnywhereAvailability,
   InkAddIntentStateError,
   type BeginInkAddIntentResult,
+  type BeginInkAnywhereIntentResult,
   type OwnedInkAddAvailability,
   type OwnedPendingInkIntent,
 } from "../../db/inkAddIntents";
@@ -37,8 +39,6 @@ import {
 } from "./composer/inkAuthorization";
 import {
   assertInkAddSide,
-  INK_ADD_SIDES,
-  INK_ADD_TARGET_VIEW,
   type InkAddSide,
 } from "./composer/inkAddRecipe";
 import { readActiveInkCandidate } from "./inkCandidateGeneration";
@@ -47,12 +47,31 @@ import {
   extractInkProviderTelemetry,
   type InkProviderTelemetry,
 } from "./composer/inkProviderTelemetry";
+import {
+  planInkAddInstruction,
+  type InkInstructionPlan,
+  type InkInstructionPlanningRequest,
+} from "./inkInstructionPlanner";
+import {
+  INK_ANYWHERE_CAPABILITY_KEY,
+  inkAnatomyLabel,
+  type InkAnatomyTuple,
+} from "./inkAnatomyRegistry";
+import {
+  CANONICAL_VIEW_ANGLES,
+  VIEW_ANGLE_LABELS,
+  type CanonicalViewAngle,
+} from "../../../shared/boardTypes";
 
 const log = createModuleLogger("casting/evidence/inkAddIntent");
 const INK_INTENT_TEMPORARILY_UNAVAILABLE =
   "Tattoo previews are temporarily unavailable. Nothing was charged.";
 const INK_INTENT_UNSUPPORTED =
   "That request is outside this tattoo preview. Describe one tattoo design for the visible upper torso.";
+const INK_ANYWHERE_INTENT_UNSUPPORTED =
+  "Describe one new tattoo and one exact body location. Existing tattoos cannot be changed in this release.";
+const INK_ANYWHERE_INTENT_AMBIGUOUS =
+  "Tell Drape the exact body location and side, such as right full sleeve or left upper back. Nothing was charged.";
 
 export interface InkAddCapabilityDto {
   inkAdd: boolean;
@@ -64,12 +83,12 @@ export interface InkAddCapabilityDto {
     | "source_unavailable"
     | "feature_selected";
   priceCredits: typeof INK_ADD_PRICE_CREDITS;
-  targetView: typeof INK_ADD_TARGET_VIEW;
-  placements: readonly InkAddSide[];
   activeIntent: null | {
     intentId: string;
     description: string;
-    side: InkAddSide;
+    locationLabel: string;
+    sourceViewAngle: CanonicalViewAngle;
+    sourceViewLabel: string;
     referenceDeliveryUrl: string | null;
     candidateId: string | null;
     candidateStatus: "processing" | "ready" | null;
@@ -96,6 +115,24 @@ export interface InkAddIntentDependencies {
   begin?: BeginOperation;
   commit?: typeof commitBeginInkAddIntent;
   generateId?: () => string;
+}
+
+export interface InkAnywhereIntentDependencies {
+  enabledForUser?: (userId: number) => boolean;
+  plan?: typeof planInkAddInstruction;
+  classify?: (request: InkInstructionPlanningRequest) => Promise<unknown>;
+  warnAuthorizationUnknown?: InkAddIntentDependencies["warnAuthorizationUnknown"];
+  begin?: BeginOperation;
+  commit?: typeof commitBeginInkAnywhereIntent;
+  generateId?: () => string;
+}
+
+export interface PlannedInkAnywhereIntent {
+  intentId: string;
+  instruction: string;
+  locationLabel: string;
+  priceCredits: typeof INK_ADD_PRICE_CREDITS;
+  sourceViewLabel: string;
 }
 
 export interface InkAddCapabilityDependencies {
@@ -136,6 +173,50 @@ export function buildInkAuthorizationProviderConfig(
   };
 }
 
+export function buildInkInstructionProviderConfig(
+  request: InkInstructionPlanningRequest,
+): GenerateContentConfig {
+  return {
+    responseMimeType: request.responseMimeType,
+    responseSchema: {
+      type: "OBJECT",
+      properties: {
+        tattooOnly: { type: "BOOLEAN" },
+        operationAdd: { type: "BOOLEAN" },
+        singleFeature: { type: "BOOLEAN" },
+        zone: {
+          type: "STRING",
+          enum: [...request.responseSchema.enumKeys.zone],
+        },
+        surface: {
+          type: "STRING",
+          enum: [...request.responseSchema.enumKeys.surface],
+        },
+        side: {
+          type: "STRING",
+          enum: [...request.responseSchema.enumKeys.side],
+        },
+        ambiguousAnatomy: { type: "BOOLEAN" },
+        containsPromptControl: { type: "BOOLEAN" },
+        confidence: { type: "INTEGER" },
+      },
+      required: [
+        ...request.responseSchema.booleanKeys,
+        "zone",
+        "surface",
+        "side",
+        ...request.responseSchema.integerKeys,
+      ],
+    },
+    thinkingConfig: {
+      thinkingBudget: request.thinkingBudget,
+      includeThoughts: request.includeThoughts,
+    },
+    maxOutputTokens: request.maxOutputTokens,
+    safetySettings: SAFETY_SETTINGS,
+  };
+}
+
 async function classifyInkAdd(
   request: InkAuthorizationRequest,
   observe: (provider: InkProviderTelemetry) => void,
@@ -166,6 +247,36 @@ async function classifyInkAdd(
   }
 }
 
+async function classifyInkInstruction(
+  request: InkInstructionPlanningRequest,
+  observe: (provider: InkProviderTelemetry) => void,
+): Promise<unknown> {
+  const ai = getAiClient();
+  try {
+    const response = await withTextQueue(
+      () => withTimeout(
+        ai.models.generateContent({
+          model: request.model,
+          contents: [{ parts: [{ text: request.prompt }] }],
+          config: buildInkInstructionProviderConfig(request),
+        }),
+        15_000,
+        "InkInstructionPlanning",
+      ),
+      "inkInstructionPlanning",
+    );
+    const text = safeResponseText(response);
+    observe(extractInkProviderTelemetry({
+      response,
+      textLength: text.length,
+    }));
+    return text;
+  } catch (error) {
+    observe(extractInkProviderTelemetry({ error }));
+    throw error;
+  }
+}
+
 function closedIntentResult(value: unknown): BeginInkAddIntentResult {
   if (
     !value
@@ -179,6 +290,40 @@ function closedIntentResult(value: unknown): BeginInkAddIntentResult {
     });
   }
   return { intentId: (value as Record<string, string>).intentId };
+}
+
+function closedAnywhereIntentResult(
+  value: unknown,
+  plan: Extract<InkInstructionPlan, { ok: true }>,
+): PlannedInkAnywhereIntent {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: INK_INTENT_TEMPORARILY_UNAVAILABLE,
+    });
+  }
+  const result = value as Record<string, unknown>;
+  if (
+    typeof result.intentId !== "string"
+    || typeof result.sourceViewAngle !== "string"
+    || !(CANONICAL_VIEW_ANGLES as readonly string[]).includes(
+      result.sourceViewAngle,
+    )
+    || !Number.isSafeInteger(result.sourceAssetId)
+  ) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: INK_INTENT_TEMPORARILY_UNAVAILABLE,
+    });
+  }
+  return {
+    intentId: result.intentId,
+    instruction: plan.normalizedDescriptor,
+    locationLabel: plan.locationLabel,
+    priceCredits: INK_ADD_PRICE_CREDITS,
+    sourceViewLabel:
+      VIEW_ANGLE_LABELS[result.sourceViewAngle as CanonicalViewAngle],
+  };
 }
 
 function stateError(error: unknown): TRPCError {
@@ -307,6 +452,92 @@ export async function beginInkAddIntent(
   }
 }
 
+export async function beginInkAnywhereIntent(
+  input: {
+    userId: number;
+    modelId: number;
+    instruction: string;
+    clientRequestId: string;
+  },
+  dependencies: InkAnywhereIntentDependencies = {},
+): Promise<PlannedInkAnywhereIntent> {
+  const enabledForUser =
+    dependencies.enabledForUser ?? captureEvidenceComposerEnabled;
+  requireEnabled(input.userId, enabledForUser);
+
+  let providerTelemetry: InkProviderTelemetry | null = null;
+  const plan = await (dependencies.plan ?? planInkAddInstruction)({
+    instruction: input.instruction,
+    classify: dependencies.classify ?? ((request) =>
+      classifyInkInstruction(request, (provider) => {
+        providerTelemetry = provider;
+      })),
+  });
+  if (!plan.ok) {
+    if (plan.code === "authorization_unknown") {
+      const diagnostic = {
+        userId: input.userId,
+        modelId: input.modelId,
+        provider: providerTelemetry,
+      };
+      if (dependencies.warnAuthorizationUnknown) {
+        dependencies.warnAuthorizationUnknown(diagnostic);
+      } else {
+        log.warn(diagnostic, "Ink instruction planning returned unavailable");
+      }
+    }
+    const ambiguous = plan.code === "ambiguous_anatomy";
+    throw new TRPCError({
+      code: plan.code === "authorization_unknown"
+        ? "PRECONDITION_FAILED"
+        : "BAD_REQUEST",
+      message: plan.code === "authorization_unknown"
+        ? INK_INTENT_TEMPORARILY_UNAVAILABLE
+        : ambiguous
+          ? INK_ANYWHERE_INTENT_AMBIGUOUS
+          : INK_ANYWHERE_INTENT_UNSUPPORTED,
+    });
+  }
+
+  const begin = dependencies.begin ?? beginDirectOperation;
+  const gate = await begin({
+    userId: input.userId,
+    clientRequestId: input.clientRequestId,
+    kind: "evidence_intent_begin",
+    modelId: input.modelId,
+    payload: {
+      modelId: input.modelId,
+      normalizedDescriptor: plan.normalizedDescriptor,
+      anatomy: plan.anatomy,
+      recipeVersion: plan.recipeVersion,
+    },
+    lockKey: modelOperationLockKey(input.modelId),
+  });
+  if (gate.type === "replay") {
+    return closedAnywhereIntentResult(gate.result, plan);
+  }
+
+  try {
+    const result: BeginInkAnywhereIntentResult = await (
+      dependencies.commit ?? commitBeginInkAnywhereIntent
+    )({
+      userId: input.userId,
+      modelId: input.modelId,
+      operationId: gate.operationId,
+      intentId: (dependencies.generateId ?? randomUUID)(),
+      anatomy: plan.anatomy,
+      normalizedDescriptor: plan.normalizedDescriptor,
+    });
+    return closedAnywhereIntentResult(result, plan);
+  } catch (error) {
+    return failClaimedDirectOperation({
+      userId: input.userId,
+      operationId: gate.operationId,
+      error: stateError(error),
+    });
+  }
+}
+
 export async function readInkAddCapability(
   input: { userId: number; modelId?: number },
   dependencies: InkAddCapabilityDependencies = {},
@@ -328,7 +559,8 @@ export async function readInkAddCapability(
     : null;
   const availability = enabled && input.modelId && !active
     ? await (
-        dependencies.inspectAvailability ?? inspectOwnedInkAddAvailability
+        dependencies.inspectAvailability
+        ?? inspectOwnedInkAnywhereAvailability
       )({
         userId: input.userId,
         modelId: input.modelId,
@@ -342,13 +574,19 @@ export async function readInkAddCapability(
         ? "active"
         : availability ?? "model_unavailable",
     priceCredits: INK_ADD_PRICE_CREDITS,
-    targetView: INK_ADD_TARGET_VIEW,
-    placements: INK_ADD_SIDES,
     activeIntent: active
       ? {
           intentId: active.id,
           description: active.normalizedDescriptor,
-          side: active.side,
+          locationLabel: active.capabilityKey === INK_ANYWHERE_CAPABILITY_KEY
+            ? inkAnatomyLabel({
+                zone: active.zone,
+                surface: active.surface,
+                side: active.side,
+              } as InkAnatomyTuple)
+            : `${active.side === "centre" ? "Centre" : active.side} chest`,
+          sourceViewAngle: active.sourceViewAngle,
+          sourceViewLabel: VIEW_ANGLE_LABELS[active.sourceViewAngle],
           referenceDeliveryUrl: active.referencePlateId
             ? `/api/evidence/plate/${active.referencePlateId}`
             : null,

@@ -12,6 +12,12 @@ import {
   assertInkAddSide,
   type InkAddSide,
 } from "./inkAddRecipe";
+import {
+  INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
+  assertSupportedInkAnatomyTuple,
+  inkAnatomyLabel,
+  type InkAnatomyTuple,
+} from "../inkAnatomyRegistry";
 
 export type ComposerImageMime =
   | "image/jpeg"
@@ -35,12 +41,22 @@ export type InkRetryDirective =
   | "identity"
   | "placement"
   | "feature"
+  | "prior_ink"
   | "pose_framing"
   | "unexpected_ink";
 
 export interface InkComposerRequest {
   model: typeof INK_ADD_IMAGE_ENGINE;
   recipeVersion: typeof INK_ADD_COMPOSER_RECIPE_VERSION;
+  attemptNumber: 1 | 2;
+  responseModalities: readonly ["IMAGE"];
+  prompt: string;
+  images: readonly InkComposerInlineImage[];
+}
+
+export interface InkAnywhereComposerRequest {
+  model: typeof INK_ADD_IMAGE_ENGINE;
+  recipeVersion: typeof INK_ANYWHERE_COMPOSER_RECIPE_VERSION;
   attemptNumber: 1 | 2;
   responseModalities: readonly ["IMAGE"];
   prompt: string;
@@ -54,6 +70,7 @@ const RETRY_DIRECTIVE_VALUES: readonly InkRetryDirective[] = [
   "identity",
   "placement",
   "feature",
+  "prior_ink",
   "pose_framing",
   "unexpected_ink",
 ];
@@ -87,21 +104,21 @@ const RETRY_DIRECTIVES: Readonly<Record<InkRetryDirective, string>> = {
   identity: "Correct identity drift: reproduce the exact same person from the identity anchor.",
   placement: "Correct placement: confine the tattoo to the highlighted chest region and selected side.",
   feature: "Correct design fidelity: make the requested tattoo clearly visible and recognisable.",
+  prior_ink: "Restore every tattoo or permanent mark already visible in the original target exactly; do not move, mirror, resize, recolour, erase, or duplicate it.",
   pose_framing: "Restore the target's exact pose, crop, camera, and framing.",
   unexpected_ink: "Remove every newly invented mark outside the highlighted region.",
 };
 
-export function buildInkComposerRequest(input: {
+function validatedComposerAuthority(input: {
   identityText: string;
   normalizedDescriptor: string;
-  side: InkAddSide;
   attemptNumber: 1 | 2;
-  identityAnchor: ComposerImage;
-  guidedTarget: ComposerImage;
-  evidenceReference?: ComposerImage;
   retryDirectives?: readonly InkRetryDirective[];
-}): InkComposerRequest {
-  assertInkAddSide(input.side);
+}): {
+  identityText: string;
+  descriptor: string;
+  retry: InkRetryDirective[];
+} {
   if (
     input.attemptNumber < 1
     || input.attemptNumber > EVIDENCE_CANDIDATE_MAX_ATTEMPTS
@@ -134,7 +151,14 @@ export function buildInkComposerRequest(input: {
   if (input.attemptNumber === 1 && (input.retryDirectives?.length ?? 0) > 0) {
     throw new TypeError("Retry directives are not valid on attempt one");
   }
+  return { identityText, descriptor, retry };
+}
 
+function composerImages(input: {
+  identityAnchor: ComposerImage;
+  guidedTarget: ComposerImage;
+  evidenceReference?: ComposerImage;
+}): InkComposerInlineImage[] {
   const images: InkComposerInlineImage[] = [
     inlineImage("identity_anchor", input.identityAnchor),
     inlineImage("guided_target", input.guidedTarget),
@@ -150,6 +174,23 @@ export function buildInkComposerRequest(input: {
   if (totalBytes > MAX_COMPOSER_TOTAL_IMAGE_BYTES) {
     throw new TypeError("Composer byte budget exceeded");
   }
+  return images;
+}
+
+export function buildInkComposerRequest(input: {
+  identityText: string;
+  normalizedDescriptor: string;
+  side: InkAddSide;
+  attemptNumber: 1 | 2;
+  identityAnchor: ComposerImage;
+  guidedTarget: ComposerImage;
+  evidenceReference?: ComposerImage;
+  retryDirectives?: readonly InkRetryDirective[];
+}): InkComposerRequest {
+  assertInkAddSide(input.side);
+  const { identityText, descriptor, retry } =
+    validatedComposerAuthority(input);
+  const images = composerImages(input);
 
   const prompt = `Create one complete flattened fashion casting image.
 
@@ -187,6 +228,69 @@ ${retry.length
   return {
     model: INK_ADD_IMAGE_ENGINE,
     recipeVersion: INK_ADD_COMPOSER_RECIPE_VERSION,
+    attemptNumber: input.attemptNumber,
+    responseModalities: ["IMAGE"],
+    prompt,
+    images,
+  };
+}
+
+export function buildInkAnywhereComposerRequest(input: {
+  identityText: string;
+  normalizedDescriptor: string;
+  anatomy: InkAnatomyTuple;
+  attemptNumber: 1 | 2;
+  identityAnchor: ComposerImage;
+  guidedTarget: ComposerImage;
+  evidenceReference?: ComposerImage;
+  retryDirectives?: readonly InkRetryDirective[];
+}): InkAnywhereComposerRequest {
+  assertSupportedInkAnatomyTuple(input.anatomy);
+  const { identityText, descriptor, retry } =
+    validatedComposerAuthority(input);
+  const images = composerImages(input);
+  const location = inkAnatomyLabel(input.anatomy);
+
+  const prompt = `Create one complete flattened fashion casting image.
+
+ROLE OF IMAGE 1 - IDENTITY ANCHOR:
+It defines the exact person. Preserve identity, face, skin tone, hair, and body.
+
+ROLE OF IMAGE 2 - GUIDED TARGET:
+It defines the exact pose, crop, framing, lighting, clothing, current pixels,
+and every tattoo or permanent mark already visible. The translucent guide is
+instruction-only and must not appear in the output.
+
+${input.evidenceReference
+  ? `ROLE OF IMAGE 3 - DESIGN REFERENCE:
+Use it only for the requested tattoo's visual design. Do not copy its person,
+body, pose, background, clothing, or any unrelated mark.`
+  : "There is no design-reference image."}
+
+AUTHORIZED CHANGE:
+Add exactly one healed tattoo described as ${JSON.stringify(descriptor)} at
+${location}, inside the highlighted server-owned anatomical zone. The resolved
+tuple is zone=${input.anatomy.zone}, surface=${input.anatomy.surface},
+side=${input.anatomy.side}. Preserve realistic skin pores, texture, lighting,
+and skin highlights over the ink.
+
+IMMUTABLE IDENTITY:
+${identityText}
+
+HARD RULES:
+- preserve the exact person, body, pose, crop, framing, clothing, and background;
+- preserve every existing tattoo and permanent mark exactly: do not move,
+  mirror, resize, recolour, erase, obscure, or duplicate any of them;
+- add no other tattoo, scar, mark, jewellery, text, object, or body change;
+- output only the final photorealistic image, with no guide, mask, border,
+  caption, diagram, or before/after layout.
+${retry.length
+  ? `\nINCLUDED RETRY CORRECTIONS:\n${retry.map((key) => `- ${RETRY_DIRECTIVES[key]}`).join("\n")}`
+  : ""}`;
+
+  return {
+    model: INK_ADD_IMAGE_ENGINE,
+    recipeVersion: INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
     attemptNumber: input.attemptNumber,
     responseModalities: ["IMAGE"],
     prompt,

@@ -8,6 +8,7 @@ import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
 import { evidencePackageSlotNeedsAction } from '@/features/casting/evidence/evidencePackageDisplay';
+import { requestInkProjection } from '@/features/casting/evidence/inkProjectionEvents';
 import {
   MINT_TIER_SLOTS,
   type CanonicalViewAngle,
@@ -36,6 +37,7 @@ function ViewThumbnail({
   isRefreshing,
   refreshCost,
   refreshVerb = 'Refresh',
+  evidenceAware = false,
   onRefresh,
 }: {
   src: string;
@@ -46,13 +48,22 @@ function ViewThumbnail({
   isStale: boolean;
   isRefreshing: boolean;
   refreshCost?: number;
-  refreshVerb?: 'Refresh' | 'Update';
+  refreshVerb?: 'Refresh' | 'Update' | 'Preview';
+  evidenceAware?: boolean;
   onRefresh?: () => void;
 }) {
   const stateLabel = isRefreshing
-    ? `${label} is refreshing against the current identity`
+    ? refreshVerb === 'Preview'
+      ? `${label} tattoo preview is generating`
+      : evidenceAware
+        ? `${label} is updating from saved tattoo evidence`
+        : `${label} is refreshing against the current identity`
     : isStale
-      ? `${label} is out of sync with the current identity`
+      ? refreshVerb === 'Preview'
+        ? `${label} needs a tattoo preview`
+        : evidenceAware
+          ? `${label} has a suggested tattoo update`
+          : `${label} is out of sync with the current identity`
       : label;
   return (
     <div
@@ -139,7 +150,7 @@ function GhostSlot({
 }: {
   label: string;
   cost?: number;
-  action?: 'Add' | 'Add views';
+  action?: 'Add' | 'Add views' | 'Preview';
   onClick: () => void;
 }) {
   return (
@@ -158,7 +169,7 @@ function GhostSlot({
       <Plus className="h-3 w-3" />
       <span className="text-canvas-xs font-medium">{label}</span>
       <span className="text-[9px] leading-none text-canvas-ink-faint">
-        {cost === undefined ? action : `Add · ${cost.toLocaleString()}`}
+        {cost === undefined ? action : `${action} · ${cost.toLocaleString()}`}
       </span>
     </button>
   );
@@ -175,16 +186,20 @@ function FailedSlot({
   label,
   failure,
   cost,
+  action = 'Retry',
   onRetry,
 }: {
   label: string;
   failure: { reason: string; refunded: number; refundReference?: string };
   cost?: number;
+  action?: 'Retry' | 'Preview';
   onRetry?: () => void;
 }) {
   const retryable = Boolean(onRetry);
   const retryLabel = `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}${
-    retryable && cost !== undefined ? ` Retry for ${cost.toLocaleString()} credits.` : ''
+    retryable && cost !== undefined
+      ? ` ${action} for ${cost.toLocaleString()} credits.`
+      : ''
   }`;
   return (
     <button
@@ -203,7 +218,11 @@ function FailedSlot({
       <RefreshCw className="h-3 w-3" />
       <span className="text-canvas-xs font-medium">{label}</span>
       <span className="text-[9px] leading-none text-canvas-ink-faint">
-        {!retryable ? 'Needs attention' : cost === undefined ? 'Retry' : `Retry · ${cost.toLocaleString()}`}
+        {!retryable
+          ? 'Needs attention'
+          : cost === undefined
+            ? action
+            : `${action} · ${cost.toLocaleString()}`}
       </span>
     </button>
   );
@@ -305,6 +324,11 @@ export function ViewTabs() {
     ),
     0,
   );
+  const bulkRefreshable = actionable.filter((slot) => {
+    const plan = evidenceByAngle.get(slot.angle)
+      ?? planByAngle.get(slot.angle);
+    return !plan || !('action' in plan) || plan.action !== 'projection';
+  });
   const hasDetails = packageSlots.some((slot) => slot.version > 1);
   const [hovered, setHovered] = useState(false);
 
@@ -325,6 +349,9 @@ export function ViewTabs() {
           const slot = packageByAngle.get(vt);
           const evidenceSlot = evidenceByAngle.get(vt);
           const plan = evidenceSlot ?? planByAngle.get(vt);
+          const requiresProjection = Boolean(
+            plan && 'action' in plan && plan.action === 'projection',
+          );
           const refreshing = refreshingSet.has(vt);
           const evidenceNeedsAction = evidencePackageSlotNeedsAction(evidenceSlot);
 
@@ -345,8 +372,17 @@ export function ViewTabs() {
                 isStale={evidenceAware ? evidenceNeedsAction : !!slot?.stale}
                 isRefreshing={refreshing}
                 refreshCost={canRefresh ? plan.cost : undefined}
-                refreshVerb={evidenceAware ? 'Update' : 'Refresh'}
-                onRefresh={canRefresh ? () => refreshAngles([vt]) : undefined}
+                refreshVerb={requiresProjection
+                  ? 'Preview'
+                  : evidenceAware
+                    ? 'Update'
+                    : 'Refresh'}
+                evidenceAware={evidenceAware}
+                onRefresh={canRefresh
+                  ? () => requiresProjection
+                    ? requestInkProjection(vt)
+                    : refreshAngles([vt])
+                  : undefined}
               />
             );
           }
@@ -357,7 +393,12 @@ export function ViewTabs() {
                 label={label}
                 failure={slot.failed}
                 cost={plan?.refusal === null ? plan.cost : undefined}
-                onRetry={plan?.refusal === null ? () => refreshAngles([vt]) : undefined}
+                action={requiresProjection ? 'Preview' : 'Retry'}
+                onRetry={plan?.refusal === null
+                  ? () => requiresProjection
+                    ? requestInkProjection(vt)
+                    : refreshAngles([vt])
+                  : undefined}
               />
             );
           }
@@ -369,29 +410,38 @@ export function ViewTabs() {
                 key={vt}
                 label={label}
                 cost={evidenceSlot.cost}
-                action="Add"
-                onClick={() => refreshAngles([vt])}
+                action={requiresProjection ? "Preview" : "Add"}
+                onClick={() => requiresProjection
+                  ? requestInkProjection(vt)
+                  : refreshAngles([vt])}
               />
             );
           }
           const cost = mintPlanQuery.data?.tiers[tier].cost;
           return <GhostSlot key={vt} label={label} cost={cost} onClick={() => openPackage(tier)} />;
         })}
-        {(actionable.length > 1 || hasDetails) && (
+        {(
+          (
+            bulkRefreshable.length > 1
+            && bulkRefreshable.length === actionable.length
+          )
+          || hasDetails
+        ) && (
           <div className="flex w-[72px] flex-col gap-1">
-            {actionable.length > 1 && (
+            {bulkRefreshable.length > 1
+              && bulkRefreshable.length === actionable.length && (
               <button
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  refreshAngles(actionable.map((slot) => slot.angle));
+                  refreshAngles(bulkRefreshable.map((slot) => slot.angle));
                 }}
                 disabled={isPending}
                 className="rounded-canvas-md bg-canvas-ink px-1.5 py-1.5 text-center text-[9px] font-medium leading-tight disabled:opacity-40"
                 style={{ color: 'var(--color-canvas-surface)' }}
                 aria-label={evidenceAware
                   ? `Update coverage for ${actionableCost.toLocaleString()} credits`
-                  : `Refresh all ${actionable.length} views for ${actionableCost.toLocaleString()} credits`}
+                  : `Refresh all ${bulkRefreshable.length} views for ${actionableCost.toLocaleString()} credits`}
               >
                 {evidenceAware ? 'Update coverage' : 'Refresh all'}<br />{actionableCost.toLocaleString()} credits
               </button>

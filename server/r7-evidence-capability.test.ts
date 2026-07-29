@@ -126,7 +126,10 @@ describe("R7-7C4 evidence capability", () => {
       "utf8",
     );
     expect(route).toContain("protectedProcedure");
-    expect(route.match(/\.strict\(\)/g)).toHaveLength(9);
+    expect(route.match(/\.input\(z\.object\(\{/g)?.length).toBe(
+      route.match(/\.strict\(\)/g)?.length,
+    );
+    expect(route).not.toContain(".passthrough()");
     expect(route).not.toMatch(/publicProcedure|userId:\s*z\.|storageKey:\s*z\.|contentHash:\s*z\./);
     expect(route).toContain("evidenceDeliveryConfigured()");
     expect(route).toContain("checkUserRateLimit");

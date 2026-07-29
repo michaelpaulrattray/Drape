@@ -772,6 +772,14 @@ export const EVIDENCE_CANDIDATE_ATTEMPT_STATUSES = [
 ] as const;
 
 export const EVIDENCE_PROBE_OUTCOMES = ["pass", "fail", "unknown"] as const;
+export const EVIDENCE_CANDIDATE_PURPOSES = [
+  "feature_authoring",
+  "feature_projection",
+] as const;
+export const EVIDENCE_CANDIDATE_TARGET_COVERAGE_BASES = [
+  "registry_affected",
+  "observed_visible",
+] as const;
 export const IDENTITY_FEATURE_SELECTION_REASONS = [
   "accepted",
   "carried",
@@ -848,14 +856,23 @@ export const castingEvidenceCandidates = mysqlTable(
     id: varchar("id", { length: 36 }).primaryKey(),
     userId: int("userId").notNull(),
     modelId: int("modelId").notNull(),
-    intentId: varchar("intentId", { length: 36 }).notNull(),
+    // Authoring candidates own an intent. Projection candidates are package
+    // work and therefore have no feature-authoring intent.
+    intentId: varchar("intentId", { length: 36 }),
     originatingOperationId: varchar("originatingOperationId", { length: 36 }).notNull(),
     capabilityKey: varchar("capabilityKey", { length: 96 }).notNull(),
     activeSlot: mysqlEnum("activeSlot", ["active"]),
     expectedStateVersion: int("expectedStateVersion").notNull(),
     identitySnapshotId: varchar("identitySnapshotId", { length: 36 }).notNull(),
     packageSnapshotId: varchar("packageSnapshotId", { length: 36 }).notNull(),
-    targetViewAngle: mysqlEnum("targetViewAngle", ["frontFull"]).notNull(),
+    targetViewAngle: mysqlEnum("targetViewAngle", [
+      "frontClose",
+      "threeQuarter",
+      "frontFull",
+      "sideClose",
+      "sideFull",
+      "backFull",
+    ]).notNull(),
     sourceAssetId: int("sourceAssetId").notNull(),
     status: mysqlEnum("status", EVIDENCE_CANDIDATE_STATUSES)
       .default("processing")
@@ -871,6 +888,10 @@ export const castingEvidenceCandidates = mysqlTable(
     expiresAt: timestamp("expiresAt"),
     resolvedAt: timestamp("resolvedAt"),
     resolvedByOperationId: varchar("resolvedByOperationId", { length: 36 }),
+    // Appended by R7-7G migration 0015 so old rows close as authoring.
+    purpose: mysqlEnum("purpose", EVIDENCE_CANDIDATE_PURPOSES)
+      .default("feature_authoring")
+      .notNull(),
   },
   (table) => ([
     uniqueIndex("uq_evidence_candidates_origin_operation").on(
@@ -878,6 +899,10 @@ export const castingEvidenceCandidates = mysqlTable(
     ),
     uniqueIndex("uq_evidence_candidates_intent_active").on(
       table.intentId,
+      table.activeSlot,
+    ),
+    uniqueIndex("uq_evidence_candidates_model_active").on(
+      table.modelId,
       table.activeSlot,
     ),
     index("idx_evidence_candidates_owner_model_status").on(
@@ -900,6 +925,53 @@ export type CastingEvidenceCandidate =
   typeof castingEvidenceCandidates.$inferSelect;
 export type InsertCastingEvidenceCandidate =
   typeof castingEvidenceCandidates.$inferInsert;
+
+/**
+ * Immutable target set for one private feature-projection candidate. A single
+ * accepted target image may prove several selected feature versions at the
+ * same angle, so the candidate owns one row per version instead of a nullable
+ * feature pointer on the candidate itself.
+ */
+export const castingEvidenceCandidateFeatureTargets = mysqlTable(
+  "casting_evidence_candidate_feature_targets",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    candidateId: varchar("candidateId", { length: 36 }).notNull(),
+    userId: int("userId").notNull(),
+    modelId: int("modelId").notNull(),
+    identitySnapshotId: varchar("identitySnapshotId", { length: 36 }).notNull(),
+    featureId: varchar("featureId", { length: 36 }).notNull(),
+    featureVersionId: varchar("featureVersionId", { length: 36 }).notNull(),
+    coverageBasis: mysqlEnum(
+      "coverageBasis",
+      EVIDENCE_CANDIDATE_TARGET_COVERAGE_BASES,
+    ).notNull(),
+    coverageProbeRecipeVersion: varchar("coverageProbeRecipeVersion", {
+      length: 64,
+    }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ([
+    uniqueIndex("uq_candidate_feature_targets_candidate_feature").on(
+      table.candidateId,
+      table.featureId,
+    ),
+    uniqueIndex("uq_candidate_feature_targets_candidate_version").on(
+      table.candidateId,
+      table.featureVersionId,
+    ),
+    index("idx_candidate_feature_targets_owner_model").on(
+      table.userId,
+      table.modelId,
+    ),
+    index("idx_candidate_feature_targets_version").on(table.featureVersionId),
+  ]),
+);
+
+export type CastingEvidenceCandidateFeatureTarget =
+  typeof castingEvidenceCandidateFeatureTargets.$inferSelect;
+export type InsertCastingEvidenceCandidateFeatureTarget =
+  typeof castingEvidenceCandidateFeatureTargets.$inferInsert;
 
 /**
  * Crash-recovery receipt and exact-key owner for one internal attempt.
@@ -932,6 +1004,7 @@ export const castingEvidenceCandidateAttempts = mysqlTable(
     identityOutcome: mysqlEnum("identityOutcome", EVIDENCE_PROBE_OUTCOMES),
     placementOutcome: mysqlEnum("placementOutcome", EVIDENCE_PROBE_OUTCOMES),
     featureMatchOutcome: mysqlEnum("featureMatchOutcome", EVIDENCE_PROBE_OUTCOMES),
+    priorInkOutcome: mysqlEnum("priorInkOutcome", EVIDENCE_PROBE_OUTCOMES),
     poseFramingOutcome: mysqlEnum("poseFramingOutcome", EVIDENCE_PROBE_OUTCOMES),
     unexpectedInkOutcome: mysqlEnum("unexpectedInkOutcome", EVIDENCE_PROBE_OUTCOMES),
     overallOutcome: mysqlEnum("overallOutcome", EVIDENCE_PROBE_OUTCOMES),
@@ -975,10 +1048,14 @@ export const modelIdentityFeatures = mysqlTable(
     category: mysqlEnum("category", ["ink"]).notNull(),
     createdByOperationId: varchar("createdByOperationId", { length: 36 }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
+    createdByOperationStepKey: varchar("createdByOperationStepKey", {
+      length: 64,
+    }).default("primary").notNull(),
   },
   (table) => ([
-    uniqueIndex("uq_identity_features_created_operation").on(
+    uniqueIndex("uq_identity_features_operation_step").on(
       table.createdByOperationId,
+      table.createdByOperationStepKey,
     ),
     index("idx_identity_features_model_created").on(table.modelId, table.createdAt),
   ]),
@@ -1000,7 +1077,14 @@ export const modelIdentityFeatureVersions = mysqlTable(
     side: varchar("side", { length: 32 }).notNull(),
     normalizedDescriptor: varchar("normalizedDescriptor", { length: 512 }).notNull(),
     sourceAssetId: int("sourceAssetId"),
-    sourceViewAngle: mysqlEnum("sourceViewAngle", ["frontFull"]).notNull(),
+    sourceViewAngle: mysqlEnum("sourceViewAngle", [
+      "frontClose",
+      "threeQuarter",
+      "frontFull",
+      "sideClose",
+      "sideFull",
+      "backFull",
+    ]).notNull(),
     sourceReferencePlateId: varchar("sourceReferencePlateId", { length: 36 }),
     acceptedCandidatePlateId: varchar("acceptedCandidatePlateId", { length: 36 }).notNull(),
     evidenceCropId: varchar("evidenceCropId", { length: 36 }),
@@ -1009,10 +1093,14 @@ export const modelIdentityFeatureVersions = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     // Appended by 0014 so the startup schema contract matches physical order.
     acceptedAssetId: int("acceptedAssetId"),
+    createdByOperationStepKey: varchar("createdByOperationStepKey", {
+      length: 64,
+    }).default("primary").notNull(),
   },
   (table) => ([
-    uniqueIndex("uq_identity_feature_versions_created_operation").on(
+    uniqueIndex("uq_identity_feature_versions_operation_step").on(
       table.createdByOperationId,
+      table.createdByOperationStepKey,
     ),
     uniqueIndex("uq_identity_feature_versions_accepted_asset").on(
       table.acceptedAssetId,
@@ -1029,6 +1117,68 @@ export type ModelIdentityFeatureVersion =
   typeof modelIdentityFeatureVersions.$inferSelect;
 export type InsertModelIdentityFeatureVersion =
   typeof modelIdentityFeatureVersions.$inferInsert;
+
+/**
+ * Accepted evidence for a newly exposed view/surface of one immutable feature
+ * version. The authoring plate remains on the version row; these append-only
+ * rows prove later projections without creating a second logical tattoo.
+ */
+export const modelIdentityFeatureProjectionEvidence = mysqlTable(
+  "model_identity_feature_projection_evidence",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("userId").notNull(),
+    modelId: int("modelId").notNull(),
+    featureId: varchar("featureId", { length: 36 }).notNull(),
+    featureVersionId: varchar("featureVersionId", { length: 36 }).notNull(),
+    targetViewAngle: mysqlEnum("targetViewAngle", [
+      "frontClose",
+      "threeQuarter",
+      "frontFull",
+      "sideClose",
+      "sideFull",
+      "backFull",
+    ]).notNull(),
+    sourceAssetId: int("sourceAssetId"),
+    acceptedAssetId: int("acceptedAssetId").notNull(),
+    acceptedCandidatePlateId: varchar("acceptedCandidatePlateId", {
+      length: 36,
+    }).notNull(),
+    recipeVersion: varchar("recipeVersion", { length: 64 }).notNull(),
+    createdByOperationId: varchar("createdByOperationId", {
+      length: 36,
+    }).notNull(),
+    createdByOperationStepKey: varchar("createdByOperationStepKey", {
+      length: 64,
+    }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ([
+    uniqueIndex("uq_feature_projection_version_angle").on(
+      table.featureVersionId,
+      table.targetViewAngle,
+    ),
+    index("idx_feature_projection_accepted_asset").on(
+      table.acceptedAssetId,
+    ),
+    uniqueIndex("uq_feature_projection_operation_step").on(
+      table.createdByOperationId,
+      table.createdByOperationStepKey,
+    ),
+    index("idx_feature_projection_owner_model").on(
+      table.userId,
+      table.modelId,
+    ),
+    index("idx_feature_projection_feature").on(table.featureId),
+    index("idx_feature_projection_version").on(table.featureVersionId),
+    index("idx_feature_projection_plate").on(table.acceptedCandidatePlateId),
+  ]),
+);
+
+export type ModelIdentityFeatureProjectionEvidence =
+  typeof modelIdentityFeatureProjectionEvidence.$inferSelect;
+export type InsertModelIdentityFeatureProjectionEvidence =
+  typeof modelIdentityFeatureProjectionEvidence.$inferInsert;
 
 export const modelSnapshotFeatureSelections = mysqlTable(
   "model_snapshot_feature_selections",

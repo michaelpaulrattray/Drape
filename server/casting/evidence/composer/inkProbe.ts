@@ -12,18 +12,30 @@ import type { ComposerImage, ComposerImageMime } from "./inkComposer";
 import { normalizeInkDescriptor } from "./inkAuthorization";
 import { supportedImageMime } from "../../../security/trustedImageFetch";
 import { INK_TEXT_PROVIDER_CONFIG } from "./inkProviderTelemetry";
+import {
+  INK_ANYWHERE_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+  INK_ANYWHERE_VISIBILITY_RECIPE_VERSION,
+  assertSupportedInkAnatomyTuple,
+  inkAnatomyLabel,
+  type InkAnatomyTuple,
+} from "../inkAnatomyRegistry";
 
 export type InkProbeKind =
   | "visibility"
   | "identity_pose"
-  | "feature_placement";
+  | "feature_placement"
+  | "feature_projection"
+  | "coverage";
 
 export interface InkProbeInlineImage {
   role:
     | "identity_anchor"
     | "original_target"
     | "candidate"
-    | "evidence_reference";
+    | "evidence_reference"
+    | "evidence_mosaic";
   inlineData: {
     mimeType: ComposerImageMime;
     data: string;
@@ -35,7 +47,11 @@ export interface InkProbeRequest {
   model: typeof INK_ADD_PROBE_MODEL;
   recipeVersion:
     | typeof INK_ADD_PROBE_RECIPE_VERSION
-    | typeof INK_ADD_VISIBILITY_RECIPE_VERSION;
+    | typeof INK_ADD_VISIBILITY_RECIPE_VERSION
+    | typeof INK_ANYWHERE_PROBE_RECIPE_VERSION
+    | typeof INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION
+    | typeof INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION
+    | typeof INK_ANYWHERE_VISIBILITY_RECIPE_VERSION;
   responseMimeType: "application/json";
   responseSchema: Readonly<Record<string, "boolean" | "integer_0_100">>;
   thinkingBudget: typeof INK_TEXT_PROVIDER_CONFIG.thinkingBudget;
@@ -55,6 +71,7 @@ export interface InkCandidateProbeTruth {
   identityOutcome: EvidenceProbeOutcome;
   placementOutcome: EvidenceProbeOutcome;
   featureMatchOutcome: EvidenceProbeOutcome;
+  priorInkOutcome: EvidenceProbeOutcome;
   poseFramingOutcome: EvidenceProbeOutcome;
   unexpectedInkOutcome: EvidenceProbeOutcome;
   overallOutcome: EvidenceProbeOutcome;
@@ -75,6 +92,21 @@ interface IdentityPoseResponse {
 interface FeaturePlacementResponse {
   correctPlacement: boolean;
   requestedFeaturePresent: boolean;
+  noUnexpectedInk: boolean;
+  confidence: number;
+}
+
+interface AnywhereVisibilityResponse {
+  targetRegionVisible: boolean;
+  anatomicalSideReadable: boolean;
+  materiallyOccluded: boolean;
+  confidence: number;
+}
+
+interface AnywhereFeaturePlacementResponse {
+  correctPlacement: boolean;
+  requestedFeaturePresent: boolean;
+  priorVisibleInkPreserved: boolean;
   noUnexpectedInk: boolean;
   confidence: number;
 }
@@ -177,6 +209,42 @@ export function parseInkFeaturePlacementProbe(
   };
 }
 
+export function parseInkAnywhereVisibilityProbe(
+  raw: unknown,
+): AnywhereVisibilityResponse {
+  const value = exactObject(raw, [
+    "targetRegionVisible",
+    "anatomicalSideReadable",
+    "materiallyOccluded",
+    "confidence",
+  ]);
+  return {
+    targetRegionVisible: bool(value.targetRegionVisible),
+    anatomicalSideReadable: bool(value.anatomicalSideReadable),
+    materiallyOccluded: bool(value.materiallyOccluded),
+    confidence: confidence(value.confidence),
+  };
+}
+
+export function parseInkAnywhereFeaturePlacementProbe(
+  raw: unknown,
+): AnywhereFeaturePlacementResponse {
+  const value = exactObject(raw, [
+    "correctPlacement",
+    "requestedFeaturePresent",
+    "priorVisibleInkPreserved",
+    "noUnexpectedInk",
+    "confidence",
+  ]);
+  return {
+    correctPlacement: bool(value.correctPlacement),
+    requestedFeaturePresent: bool(value.requestedFeaturePresent),
+    priorVisibleInkPreserved: bool(value.priorVisibleInkPreserved),
+    noUnexpectedInk: bool(value.noUnexpectedInk),
+    confidence: confidence(value.confidence),
+  };
+}
+
 export function buildInkVisibilityProbeRequest(input: {
   target: ComposerImage;
 }): InkProbeRequest {
@@ -227,6 +295,131 @@ strict JSON only.`,
       inline("original_target", input.originalTarget),
       inline("candidate", input.candidate),
     ],
+  };
+}
+
+export function buildInkAnywhereVisibilityProbeRequest(input: {
+  target: ComposerImage;
+  anatomy: InkAnatomyTuple;
+}): InkProbeRequest {
+  assertSupportedInkAnatomyTuple(input.anatomy);
+  const location = inkAnatomyLabel(input.anatomy);
+  return {
+    kind: "visibility",
+    model: INK_ADD_PROBE_MODEL,
+    recipeVersion: INK_ANYWHERE_VISIBILITY_RECIPE_VERSION,
+    responseMimeType: "application/json",
+    responseSchema: {
+      targetRegionVisible: "boolean",
+      anatomicalSideReadable: "boolean",
+      materiallyOccluded: "boolean",
+      confidence: "integer_0_100",
+    },
+    ...INK_TEXT_PROVIDER_CONFIG,
+    prompt: `Assess only whether ${location} is sufficiently visible in this
+image to author one tattoo at useful 1K detail. The resolved tuple is
+zone=${input.anatomy.zone}, surface=${input.anatomy.surface},
+side=${input.anatomy.side}. targetRegionVisible requires real observable skin
+or an already visible tattoo-bearing surface at useful scale.
+anatomicalSideReadable requires that the person's anatomical side and requested
+surface can be identified without guessing or mirroring. Clothing, hair, hands,
+objects, crop, foreshortening, or pose materially covering the requested region
+count as occlusion. A circumferential request needs a useful visible portion,
+not proof of the hidden circumference. Do not infer hidden pixels. Return
+strict JSON only.`,
+    images: [inline("original_target", input.target)],
+  };
+}
+
+export function buildInkAnywhereIdentityPoseProbeRequest(input: {
+  identityAnchor: ComposerImage;
+  originalTarget: ComposerImage;
+  candidate: ComposerImage;
+  anatomy: InkAnatomyTuple;
+}): InkProbeRequest {
+  assertSupportedInkAnatomyTuple(input.anatomy);
+  return {
+    kind: "identity_pose",
+    model: INK_ADD_PROBE_MODEL,
+    recipeVersion: INK_ANYWHERE_PROBE_RECIPE_VERSION,
+    responseMimeType: "application/json",
+    responseSchema: {
+      samePerson: "boolean",
+      poseFramingPreserved: "boolean",
+      confidence: "integer_0_100",
+    },
+    ...INK_TEXT_PROVIDER_CONFIG,
+    prompt: `Image 1 is the immutable identity anchor. Image 2 is the original
+target. Image 3 is a candidate allowed to add one tattoo at
+${inkAnatomyLabel(input.anatomy)} only. Determine whether Image 3 is the exact
+same person and whether body proportions, pose, crop, camera, framing,
+clothing, lighting, and background remain materially the same as Image 2.
+The one authorized tattoo and exact preservation of prior ink must not count
+as identity drift. Return strict JSON only.`,
+    images: [
+      inline("identity_anchor", input.identityAnchor),
+      inline("original_target", input.originalTarget),
+      inline("candidate", input.candidate),
+    ],
+  };
+}
+
+export function buildInkAnywhereFeaturePlacementProbeRequest(input: {
+  originalTarget: ComposerImage;
+  candidate: ComposerImage;
+  evidenceReference?: ComposerImage;
+  anatomy: InkAnatomyTuple;
+  normalizedDescriptor: string;
+}): InkProbeRequest {
+  assertSupportedInkAnatomyTuple(input.anatomy);
+  if (
+    normalizeInkDescriptor(input.normalizedDescriptor)
+      !== input.normalizedDescriptor
+    || input.normalizedDescriptor.length < INK_ADD_MIN_DESCRIPTOR_LENGTH
+    || input.normalizedDescriptor.length > INK_ADD_MAX_DESCRIPTOR_LENGTH
+  ) {
+    throw new TypeError("Invalid ink descriptor");
+  }
+  const images = [
+    inline("original_target", input.originalTarget),
+    inline("candidate", input.candidate),
+  ];
+  if (input.evidenceReference) {
+    images.push(inline("evidence_reference", input.evidenceReference));
+  }
+  if (images.length > 3) throw new TypeError("Probe reference budget exceeded");
+  return {
+    kind: "feature_placement",
+    model: INK_ADD_PROBE_MODEL,
+    recipeVersion: INK_ANYWHERE_PROBE_RECIPE_VERSION,
+    responseMimeType: "application/json",
+    responseSchema: {
+      correctPlacement: "boolean",
+      requestedFeaturePresent: "boolean",
+      priorVisibleInkPreserved: "boolean",
+      noUnexpectedInk: "boolean",
+      confidence: "integer_0_100",
+    },
+    ...INK_TEXT_PROVIDER_CONFIG,
+    prompt: `Image 1 is the original target. Image 2 is the candidate. ${
+      input.evidenceReference
+        ? "Image 3 is design evidence only."
+        : "There is no design-reference image."
+    }
+
+The sole authorized change is one ${JSON.stringify(input.normalizedDescriptor)}
+tattoo at ${inkAnatomyLabel(input.anatomy)}. The exact resolved tuple is
+zone=${input.anatomy.zone}, surface=${input.anatomy.surface},
+side=${input.anatomy.side}.
+
+Set correctPlacement only when the new tattoo lies on that exact anatomical
+tuple without mirroring or spill. Set requestedFeaturePresent only when the
+requested design is visibly present and recognisable. Set
+priorVisibleInkPreserved only when every tattoo and permanent mark visible in
+Image 1 remains in Image 2 without moving, mirroring, resizing, recolouring,
+erasure, occlusion, or duplication. Set noUnexpectedInk only when no other new
+visible tattoo or mark appears anywhere. Return strict JSON only.`,
+    images,
   };
 }
 
@@ -325,7 +518,9 @@ export async function runInkCandidateProbes(input: {
     buildInkIdentityPoseProbeRequest(input),
     buildInkFeaturePlacementProbeRequest(input),
   ] as const;
-  const settled = await Promise.allSettled(requests.map(input.probe));
+  const settled = await Promise.allSettled(
+    requests.map((request) => input.probe(request)),
+  );
   let identityOutcome: EvidenceProbeOutcome = "unknown";
   let poseFramingOutcome: EvidenceProbeOutcome = "unknown";
   let placementOutcome: EvidenceProbeOutcome = "unknown";
@@ -361,6 +556,91 @@ export async function runInkCandidateProbes(input: {
     identityOutcome,
     placementOutcome,
     featureMatchOutcome,
+    priorInkOutcome: "pass",
+    poseFramingOutcome,
+    unexpectedInkOutcome,
+    overallOutcome: overall(checks),
+  };
+}
+
+export async function runInkAnywhereVisibilityProbe(input: {
+  target: ComposerImage;
+  anatomy: InkAnatomyTuple;
+  probe: (request: InkProbeRequest) => Promise<unknown>;
+}): Promise<InkVisibilityProbe> {
+  try {
+    const result = parseInkAnywhereVisibilityProbe(
+      await input.probe(buildInkAnywhereVisibilityProbeRequest(input)),
+    );
+    return {
+      predictedVisibility: outcome(
+        result.targetRegionVisible
+        && result.anatomicalSideReadable
+        && !result.materiallyOccluded,
+      ),
+      confidence: result.confidence,
+    };
+  } catch {
+    return { predictedVisibility: "unknown", confidence: null };
+  }
+}
+
+export async function runInkAnywhereCandidateProbes(input: {
+  identityAnchor: ComposerImage;
+  originalTarget: ComposerImage;
+  candidate: ComposerImage;
+  evidenceReference?: ComposerImage;
+  anatomy: InkAnatomyTuple;
+  normalizedDescriptor: string;
+  predictedVisibility: EvidenceProbeOutcome;
+  probe: (request: InkProbeRequest) => Promise<unknown>;
+}): Promise<InkCandidateProbeTruth> {
+  const requests = [
+    buildInkAnywhereIdentityPoseProbeRequest(input),
+    buildInkAnywhereFeaturePlacementProbeRequest(input),
+  ] as const;
+  const settled = await Promise.allSettled(
+    requests.map((request) => input.probe(request)),
+  );
+  let identityOutcome: EvidenceProbeOutcome = "unknown";
+  let poseFramingOutcome: EvidenceProbeOutcome = "unknown";
+  let placementOutcome: EvidenceProbeOutcome = "unknown";
+  let featureMatchOutcome: EvidenceProbeOutcome = "unknown";
+  let priorInkOutcome: EvidenceProbeOutcome = "unknown";
+  let unexpectedInkOutcome: EvidenceProbeOutcome = "unknown";
+  try {
+    if (settled[0].status !== "fulfilled") throw settled[0].reason;
+    const identity = parseInkIdentityPoseProbe(settled[0].value);
+    identityOutcome = outcome(identity.samePerson);
+    poseFramingOutcome = outcome(identity.poseFramingPreserved);
+  } catch {
+    // Unknown is deliberately sticky and fail-closed.
+  }
+  try {
+    if (settled[1].status !== "fulfilled") throw settled[1].reason;
+    const feature = parseInkAnywhereFeaturePlacementProbe(settled[1].value);
+    placementOutcome = outcome(feature.correctPlacement);
+    featureMatchOutcome = outcome(feature.requestedFeaturePresent);
+    priorInkOutcome = outcome(feature.priorVisibleInkPreserved);
+    unexpectedInkOutcome = outcome(feature.noUnexpectedInk);
+  } catch {
+    // Unknown is deliberately sticky and fail-closed.
+  }
+  const checks = [
+    input.predictedVisibility,
+    identityOutcome,
+    placementOutcome,
+    featureMatchOutcome,
+    priorInkOutcome,
+    poseFramingOutcome,
+    unexpectedInkOutcome,
+  ] as const;
+  return {
+    predictedVisibility: input.predictedVisibility,
+    identityOutcome,
+    placementOutcome,
+    featureMatchOutcome,
+    priorInkOutcome,
     poseFramingOutcome,
     unexpectedInkOutcome,
     overallOutcome: overall(checks),

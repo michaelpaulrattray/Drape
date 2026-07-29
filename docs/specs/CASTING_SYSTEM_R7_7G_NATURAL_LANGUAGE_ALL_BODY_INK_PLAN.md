@@ -1,7 +1,8 @@
 # Casting System R7-7G — Natural-Language All-Body Ink Execution Plan
 
-**Status:** RATIFIED SCOPE / EXECUTION PLAN — founder direction D-75 applies;
-implementation and calibration remain pending
+**Status:** IMPLEMENTED AND LOCALLY VERIFIED — G0 through G6 complete;
+production migrations, feature-off landing, founder enablement, and paid
+calibration remain pending
 
 **Date:** 2026-07-29
 
@@ -11,6 +12,32 @@ D-75. The earlier R7-7D and R7-7E plans remain historical contracts for
 privacy, evidence, billing, candidate lifecycle, package transitions, probes,
 recovery, and deployment discipline. Their chest-specific anatomy is not
 current product authority.
+
+**Local implementation checkpoint (2026-07-29):** the all-body v2 registry,
+strict natural-language planner, server-owned source selection, multi-feature
+closure, private authoring/projection candidates, first-unseen-region
+acceptance, package execution, recovery, deletion, Fork/history/restore carry,
+natural-language-only UI, and 1K-only generation/export cleanup are
+implemented. Projection generation uses the existing canonical slot price
+(300 credits for current body slots), while initial tattoo authoring remains
+350 credits. Public DTOs expose product labels and current view routing only;
+ontology, storage, source asset IDs, and private feature graphs stay
+server-side.
+
+Migrations `0015` and `0016` split the additive rollout: `0015` widens the
+authoring schema and adds projection evidence, while `0016` adds explicit
+candidate feature targets, prior-ink probe truth, nullable projection intent
+ownership, and the per-model active-candidate fence. A guarded disposable
+MySQL drive applied migrations `0000` through `0016`, proved the mixed-version
+defaults and final startup fence, and dropped the scratch database.
+
+Verification at this checkpoint: `pnpm check`; 3,157 unit/contract tests
+passing across 246 files (239 environment-gated tests skipped); `pnpm build`;
+focused graph, package, billing, recovery, deletion, UI, and 1K contracts; and
+a headless Edge real-app smoke against a disposable fully migrated database.
+The smoke routed a right-forearm tattoo from the ordinary Refine field and
+proved feature-off refusal before any candidate-generation route. No paid
+generation or production mutation occurred.
 
 ## 1. Outcome
 
@@ -284,6 +311,9 @@ input, composition refuses free rather than dropping a feature.
 ## 7. Schema and compatibility batch
 
 Generate migration `0015` only after the pure registry and tests close.
+Migration `0016` may follow as a second additive fence when the projection
+candidate relation requires a stronger active-candidate uniqueness contract
+that cannot safely coexist in the initial mixed-version step.
 
 Required additive/widening changes:
 

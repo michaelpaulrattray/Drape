@@ -7,6 +7,7 @@ import {
   modelAssets,
   modelEvidenceCrops,
   modelIdentityFeatures,
+  modelIdentityFeatureProjectionEvidence,
   modelIdentityFeatureVersions,
   modelIdentitySnapshots,
   modelPackageSnapshots,
@@ -20,6 +21,7 @@ import {
   type ModelAsset,
   type ModelEvidenceCrop,
   type ModelIdentityFeature,
+  type ModelIdentityFeatureProjectionEvidence,
   type ModelIdentityFeatureVersion,
   type ModelIdentitySnapshot,
   type ModelPackageSnapshot,
@@ -125,6 +127,7 @@ interface ForkGraph {
   featureSelections: ModelSnapshotFeatureSelection[];
   features: ModelIdentityFeature[];
   featureVersions: ModelIdentityFeatureVersion[];
+  featureProjectionEvidence: ModelIdentityFeatureProjectionEvidence[];
   plates: ModelReferencePlate[];
   crops: ModelEvidenceCrop[];
 }
@@ -270,6 +273,19 @@ async function loadCurrentForkGraphIn(
       inArray(modelIdentityFeatureVersions.id, featureVersionIds),
     ))
     : [];
+  const featureProjectionEvidence = featureVersionIds.length > 0
+    ? await tx
+      .select()
+      .from(modelIdentityFeatureProjectionEvidence)
+      .where(and(
+        eq(modelIdentityFeatureProjectionEvidence.userId, sourceModel.userId),
+        eq(modelIdentityFeatureProjectionEvidence.modelId, sourceModel.id),
+        inArray(
+          modelIdentityFeatureProjectionEvidence.featureVersionId,
+          featureVersionIds,
+        ),
+      ))
+    : [];
   if (
     features.length !== new Set(featureIds).size
     || featureVersions.length !== new Set(featureVersionIds).size
@@ -279,7 +295,11 @@ async function loadCurrentForkGraphIn(
   const plateIds = Array.from(new Set(featureVersions.flatMap((version) => [
     version.sourceReferencePlateId,
     version.acceptedCandidatePlateId,
-  ].filter((id): id is string => Boolean(id)))));
+  ].filter((id): id is string => Boolean(id))).concat(
+    featureProjectionEvidence.map(
+      (evidence) => evidence.acceptedCandidatePlateId,
+    ),
+  )));
   const cropIds = Array.from(new Set(featureVersions
     .map((version) => version.evidenceCropId)
     .filter((id): id is string => Boolean(id))));
@@ -309,6 +329,7 @@ async function loadCurrentForkGraphIn(
     featureSelections,
     features,
     featureVersions,
+    featureProjectionEvidence,
     plates,
     crops,
   };
@@ -537,7 +558,12 @@ async function commitEvidenceForkIn(
   }
 
   const featureIdMap = new Map<string, string>();
-  for (const source of input.prepared.graph.features) {
+  for (
+    let index = 0;
+    index < input.prepared.graph.features.length;
+    index += 1
+  ) {
+    const source = input.prepared.graph.features[index];
     const id = input.generateId();
     featureIdMap.set(source.id, id);
     await tx.insert(modelIdentityFeatures).values({
@@ -545,14 +571,32 @@ async function commitEvidenceForkIn(
       modelId: target.id,
       category: source.category,
       createdByOperationId: input.operationId,
+      createdByOperationStepKey: `feature:${index}`,
     });
   }
   const versionIdMap = new Map<string, string>();
-  for (const source of input.prepared.graph.featureVersions) {
+  const selectedAssetByAngle = new Map(
+    input.prepared.graph.slots.map((slot) => [
+      slot.viewAngle,
+      slot.selectedAssetId,
+    ]),
+  );
+  for (
+    let index = 0;
+    index < input.prepared.graph.featureVersions.length;
+    index += 1
+  ) {
+    const source = input.prepared.graph.featureVersions[index];
     const id = input.generateId();
     const featureId = featureIdMap.get(source.featureId);
-    const acceptedAssetId = source.acceptedAssetId
-      ? assetIdMap.get(source.acceptedAssetId)
+    // Forks re-witness each selected feature against the copied current asset
+    // for its authoring angle. Earlier authoring assets may no longer be
+    // selected after later tattoos and are deliberately not copied.
+    const selectedSourceAssetId = selectedAssetByAngle.get(
+      source.sourceViewAngle,
+    );
+    const acceptedAssetId = selectedSourceAssetId
+      ? assetIdMap.get(selectedSourceAssetId)
       : null;
     const acceptedCandidatePlateId = plateIdMap.get(source.acceptedCandidatePlateId);
     if (!featureId || !acceptedAssetId || !acceptedCandidatePlateId) {
@@ -582,6 +626,49 @@ async function commitEvidenceForkIn(
       recipeVersion: source.recipeVersion,
       createdByOperationId: input.operationId,
       acceptedAssetId,
+      createdByOperationStepKey: `version:${index}`,
+    });
+  }
+  for (
+    let index = 0;
+    index < input.prepared.graph.featureProjectionEvidence.length;
+    index += 1
+  ) {
+    const source = input.prepared.graph.featureProjectionEvidence[index];
+    const id = input.generateId();
+    const featureId = featureIdMap.get(source.featureId);
+    const featureVersionId = versionIdMap.get(source.featureVersionId);
+    const acceptedCandidatePlateId = plateIdMap.get(
+      source.acceptedCandidatePlateId,
+    );
+    const selectedTargetAssetId = selectedAssetByAngle.get(
+      source.targetViewAngle,
+    );
+    const acceptedAssetId = selectedTargetAssetId
+      ? assetIdMap.get(selectedTargetAssetId)
+      : null;
+    if (
+      !featureId
+      || !featureVersionId
+      || !acceptedCandidatePlateId
+      || !acceptedAssetId
+    ) {
+      throw new EvidenceForkError("snapshot_unavailable");
+    }
+    await tx.insert(modelIdentityFeatureProjectionEvidence).values({
+      id,
+      userId: input.userId,
+      modelId: target.id,
+      featureId,
+      featureVersionId,
+      targetViewAngle: source.targetViewAngle,
+      // Forks have no copied pre-projection source asset.
+      sourceAssetId: null,
+      acceptedAssetId,
+      acceptedCandidatePlateId,
+      recipeVersion: source.recipeVersion,
+      createdByOperationId: input.operationId,
+      createdByOperationStepKey: `projection:${index}`,
     });
   }
 

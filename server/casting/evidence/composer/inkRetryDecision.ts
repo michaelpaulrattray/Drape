@@ -27,6 +27,7 @@ const OUTCOME_TO_DIRECTIVE: readonly [
     | "identityOutcome"
     | "placementOutcome"
     | "featureMatchOutcome"
+    | "priorInkOutcome"
     | "poseFramingOutcome"
     | "unexpectedInkOutcome"
   >,
@@ -35,6 +36,7 @@ const OUTCOME_TO_DIRECTIVE: readonly [
   ["identityOutcome", "identity"],
   ["placementOutcome", "placement"],
   ["featureMatchOutcome", "feature"],
+  ["priorInkOutcome", "prior_ink"],
   ["poseFramingOutcome", "pose_framing"],
   ["unexpectedInkOutcome", "unexpected_ink"],
 ];

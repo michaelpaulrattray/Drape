@@ -8,6 +8,7 @@ import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPac
 import { SlotVersionHistory } from '@/features/casting/components/SlotVersionHistory';
 import { CastStateHistory } from '@/features/casting/components/CastStateHistory';
 import { evidencePackageSlotNeedsAction } from '@/features/casting/evidence/evidencePackageDisplay';
+import { requestInkProjection } from '@/features/casting/evidence/inkProjectionEvents';
 
 const OPEN_CASTING_DETAILS = 'casting-open-details';
 
@@ -157,6 +158,9 @@ export function CastingDetailsDialog() {
             const blocker = blockers.get(slot.angle);
             const headshotBlock = slot.angle === 'frontClose' ? headshotIssue : null;
             const evidenceStatus = evidenceByAngle.get(slot.angle)?.status;
+            const requiresProjection = Boolean(
+              plan && 'action' in plan && plan.action === 'projection',
+            );
             const busy = refreshingSet.has(slot.angle);
             const needsAction = evidenceAware
               ? evidencePackageSlotNeedsAction(evidenceByAngle.get(slot.angle))
@@ -178,27 +182,52 @@ export function CastingDetailsDialog() {
                     </div>
                     <div className="text-canvas-sm text-canvas-ink-soft leading-normal">
                       {busy
-                        ? 'Refreshing against the current identity…'
+                        ? requiresProjection
+                          ? 'Generating a private tattoo preview…'
+                          : evidenceAware
+                            ? 'Updating from saved tattoo evidence…'
+                            : 'Refreshing against the current identity…'
                         : headshotBlock
                           ? `${headshotBlock} Use a compatible version below, or continue editing the headshot.`
                           : blocker?.message
                           ? blocker.message
                           : slot.failed
                           ? `Retry needed — ${slot.failed.reason}`
-                          : slot.stale
-                            ? 'Out of sync with the current identity'
+                          : requiresProjection && needsAction
+                            ? 'Tattoo preview needed for this view'
+                            : evidenceAware && needsAction
+                              ? 'Tattoo update suggested for this view'
+                              : slot.stale
+                                ? 'Out of sync with the current identity'
                             : slot.filled
-                              ? 'Current identity version'
+                              ? evidenceAware
+                                ? 'Current Cast view'
+                                : 'Current identity version'
                               : 'Not added yet'}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {canRefresh ? (
-                      <button type="button" onClick={() => refreshAngles([slot.angle])} disabled={busy || refreshPending} className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (requiresProjection) {
+                            setOpen(false);
+                            requestInkProjection(slot.angle);
+                          } else {
+                            refreshAngles([slot.angle]);
+                          }
+                        }}
+                        disabled={busy || refreshPending}
+                        className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40"
+                        style={{ color: 'var(--color-canvas-surface)' }}
+                      >
                         {busy
                           ? (evidenceAware ? 'Updating…' : 'Refreshing…')
-                          : `${slot.failed
+                          : requiresProjection
+                            ? `Preview · ${(plan?.cost ?? 0).toLocaleString()} credits`
+                            : `${slot.failed
                             ? (evidenceAware ? 'Try again' : 'Retry')
                             : evidenceStatus === 'missing'
                               ? 'Add'
@@ -245,7 +274,16 @@ export function CastingDetailsDialog() {
           </div>
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setOpen(false)} className="text-canvas-md font-medium text-canvas-ink-soft hover:text-canvas-ink">Done</button>
-            {!loadError && actionable.length > 1 && (
+            {!loadError
+              && actionable.length > 1
+              && actionable.every(
+                (slot) => {
+                  const plan = planRows.get(slot.angle);
+                  return !plan
+                    || !('action' in plan)
+                    || plan.action !== 'projection';
+                },
+              ) && (
               <button type="button" onClick={() => refreshAngles(actionable.map((slot) => slot.angle))} disabled={refreshPending} className="px-4 py-2 rounded-canvas-md bg-canvas-ink text-canvas-md font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
                 {evidenceAware ? 'Update coverage' : 'Refresh all'} · {actionableCost.toLocaleString()} credits
               </button>

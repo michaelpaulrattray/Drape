@@ -1,16 +1,18 @@
-import { RefObject, useRef, useState, useEffect, type ReactNode } from 'react';
+import { RefObject, useRef, useState, useEffect } from 'react';
 import { Sparkles, SendHorizontal } from 'lucide-react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
+import { looksLikeTattooInstruction } from '@shared/inkInstructionRoute';
 
 // F5 as amended by the ratified interim identity policy (Batch C, D-56):
 // rotating placeholder EXAMPLES teach the field's range — and advertise ONLY
-// what the shared server guard supports today. Mark edits (tattoos, freckles),
-// makeup, and accessories refuse during R6, so they never appear here;
-// identity leaves (draft headshot) and image-only changes do.
+// what the shared server guard supports today. Tattoo additions enter through
+// this same natural-language surface and are routed into their evidence-aware
+// preview flow; other mark families remain closed.
 const ROTATING_EXAMPLES = [
   'brighten the lighting',
   'a sharper jawline',
   'shorter hair',
+  'add a fine-line tattoo to the right forearm',
   'make the expression warmer',
   'deep hazel eyes',
   'soften the background',
@@ -33,7 +35,6 @@ interface RefinePanelProps {
   handleRefineSubmit: () => void;
   referenceImage?: string;
   onInputChanged?: () => void;
-  asideAction?: ReactNode;
 }
 
 // The floating bar shell — flat surface, hairline border, no shadow (D-40 language)
@@ -63,7 +64,6 @@ export function RefinePanel({
   handleRefineSubmit,
   referenceImage,
   onInputChanged,
-  asideAction,
 }: RefinePanelProps) {
   const {
     activeTool,
@@ -151,7 +151,19 @@ export function RefinePanel({
     if (referenceImage) return "e.g. 'use the hairstyle from the reference'";
     return `Describe a change — "${ROTATING_EXAMPLES[exampleIndex]}"`;
   };
-  const refineAction = refineActionState(refineInput, isGenerating, iterationCost);
+  const ordinaryRefineAction = refineActionState(
+    refineInput,
+    isGenerating,
+    iterationCost,
+  );
+  const tattooRoute = looksLikeTattooInstruction(refineInput);
+  const refineAction = tattooRoute && !isGenerating
+    ? {
+        ...ordinaryRefineAction,
+        ariaLabel: "Review tattoo request",
+        label: "Review tattoo",
+      }
+    : ordinaryRefineAction;
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -160,7 +172,6 @@ export function RefinePanel({
           <p className="text-canvas-md font-medium text-canvas-ink">Refine this person</p>
           <p className="text-canvas-sm text-canvas-ink-faint">Keeps their identity</p>
         </div>
-        {asideAction}
       </div>
 
       <div className={`flex items-end gap-2 p-1.5 ${barShellClass}`}>

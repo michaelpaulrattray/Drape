@@ -33,6 +33,22 @@ export interface InkZoneGuide {
   normalizedZone: NormalizedInkZone;
 }
 
+export interface AnatomicalInkZoneGuide {
+  bytes: Buffer;
+  mime: "image/png";
+  width: number;
+  height: number;
+  normalizedZone: NormalizedInkZone;
+}
+
+export interface MultiAnatomicalInkZoneGuide {
+  bytes: Buffer;
+  mime: "image/png";
+  width: number;
+  height: number;
+  normalizedZones: readonly NormalizedInkZone[];
+}
+
 function boundedDimension(value: number | undefined): value is number {
   return value !== undefined
     && Number.isSafeInteger(value)
@@ -50,11 +66,34 @@ function escapeXml(value: string): string {
   })[character]!);
 }
 
-export async function buildInkZoneGuide(input: {
+function assertNormalizedInkZone(
+  value: NormalizedInkZone,
+): NormalizedInkZone {
+  const coordinates = [value.x, value.y, value.width, value.height];
+  if (
+    coordinates.some((coordinate) => !Number.isFinite(coordinate))
+    || value.x < 0
+    || value.y < 0
+    || value.width <= 0
+    || value.height <= 0
+    || value.x + value.width > 1
+    || value.y + value.height > 1
+  ) {
+    throw new TypeError("Invalid server ink zone");
+  }
+  return value;
+}
+
+export async function buildAnatomicalInkZoneGuide(input: {
   targetBytes: Uint8Array;
-  side: InkAddSide;
-}): Promise<InkZoneGuide> {
-  assertInkAddSide(input.side);
+  normalizedZone: NormalizedInkZone;
+  label: string;
+}): Promise<AnatomicalInkZoneGuide> {
+  const zone = assertNormalizedInkZone(input.normalizedZone);
+  const guideLabel = input.label.normalize("NFKC").replace(/\s+/g, " ").trim();
+  if (!guideLabel || guideLabel.length > 80) {
+    throw new TypeError("Invalid server ink zone label");
+  }
   const normalized = await sharp(Buffer.from(input.targetBytes), {
     failOn: "error",
     limitInputPixels: MAX_GUIDE_PIXELS,
@@ -71,13 +110,12 @@ export async function buildInkZoneGuide(input: {
     throw new TypeError("Target view is not eligible for this ink recipe");
   }
 
-  const zone = FRONT_UPPER_TORSO_ZONES[input.side];
   const x = Math.round(zone.x * width);
   const y = Math.round(zone.y * height);
   const boxWidth = Math.max(1, Math.round(zone.width * width));
   const boxHeight = Math.max(1, Math.round(zone.height * height));
   const strokeWidth = Math.max(2, Math.round(Math.min(width, height) * 0.004));
-  const label = escapeXml(`${input.side.toUpperCase()} CHEST - INK ONLY HERE`);
+  const label = escapeXml(`${guideLabel.toUpperCase()} - INK ONLY HERE`);
   const fontSize = Math.max(12, Math.round(Math.min(width, height) * 0.018));
   const labelY = Math.max(fontSize + strokeWidth, y - fontSize * 0.45);
   const overlay = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
@@ -99,7 +137,97 @@ export async function buildInkZoneGuide(input: {
     mime: "image/png",
     width,
     height,
-    side: input.side,
     normalizedZone: zone,
+  };
+}
+
+export async function buildMultiAnatomicalInkZoneGuide(input: {
+  targetBytes: Uint8Array;
+  zones: readonly {
+    normalizedZone: NormalizedInkZone;
+    label: string;
+  }[];
+}): Promise<MultiAnatomicalInkZoneGuide> {
+  if (input.zones.length < 1 || input.zones.length > 9) {
+    throw new TypeError("Invalid server ink zone set");
+  }
+  const zones = input.zones.map(({ normalizedZone, label }, index) => {
+    const normalizedLabel = label.normalize("NFKC").replace(/\s+/g, " ").trim();
+    if (!normalizedLabel || normalizedLabel.length > 80) {
+      throw new TypeError("Invalid server ink zone label");
+    }
+    return {
+      normalizedZone: assertNormalizedInkZone(normalizedZone),
+      label: `F${index + 1} ${normalizedLabel}`.toUpperCase(),
+    };
+  });
+  const normalized = await sharp(Buffer.from(input.targetBytes), {
+    failOn: "error",
+    limitInputPixels: MAX_GUIDE_PIXELS,
+  })
+    .rotate()
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height } = normalized.info;
+  if (
+    !boundedDimension(width)
+    || !boundedDimension(height)
+    || width * height > MAX_GUIDE_PIXELS
+  ) {
+    throw new TypeError("Target view is not eligible for this ink recipe");
+  }
+  const strokeWidth = Math.max(
+    2,
+    Math.round(Math.min(width, height) * 0.004),
+  );
+  const fontSize = Math.max(
+    12,
+    Math.round(Math.min(width, height) * 0.016),
+  );
+  const elements = zones.map(({ normalizedZone: zone, label }) => {
+    const x = Math.round(zone.x * width);
+    const y = Math.round(zone.y * height);
+    const boxWidth = Math.max(1, Math.round(zone.width * width));
+    const boxHeight = Math.max(1, Math.round(zone.height * height));
+    const labelY = Math.max(fontSize + strokeWidth, y - fontSize * 0.4);
+    return `<rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}" rx="${strokeWidth * 2}"
+      fill="rgba(190,45,45,0.10)" stroke="rgba(190,45,45,0.92)" stroke-width="${strokeWidth}"/>
+    <text x="${x}" y="${labelY}" font-family="Arial, sans-serif" font-size="${fontSize}"
+      font-weight="700" fill="rgba(125,20,20,0.96)">${escapeXml(label)}</text>`;
+  }).join("\n");
+  const overlay = Buffer.from(
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">${elements}</svg>`,
+  );
+  const guided = await sharp(normalized.data)
+    .composite([{ input: overlay, top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+  if (guided.length > MAX_GUIDE_BYTES) {
+    throw new TypeError("Target view is not eligible for this ink recipe");
+  }
+  return {
+    bytes: guided,
+    mime: "image/png",
+    width,
+    height,
+    normalizedZones: Object.freeze(
+      zones.map(({ normalizedZone }) => normalizedZone),
+    ),
+  };
+}
+
+export async function buildInkZoneGuide(input: {
+  targetBytes: Uint8Array;
+  side: InkAddSide;
+}): Promise<InkZoneGuide> {
+  assertInkAddSide(input.side);
+  const guide = await buildAnatomicalInkZoneGuide({
+    targetBytes: input.targetBytes,
+    normalizedZone: FRONT_UPPER_TORSO_ZONES[input.side],
+    label: `${input.side} chest`,
+  });
+  return {
+    ...guide,
+    side: input.side,
   };
 }

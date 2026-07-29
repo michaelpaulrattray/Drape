@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../../server/routers";
 import { createClientRequestId } from "@shared/clientRequestId";
+import {
+  VIEW_ANGLE_LABELS,
+  type CanonicalViewAngle,
+} from "@shared/boardTypes";
 import { trpc } from "@/lib/trpc";
 import {
   publishCastProjectionChanged,
@@ -9,14 +13,32 @@ import {
 } from "@/features/operations/castProjectionSync";
 import { usePrivateEvidenceImage } from "./PrivateEvidenceImage";
 import {
-  inkDescriptionReady,
   inkReferenceFileError,
 } from "./inkAddUxPolicy";
 
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type InkCapability = RouterOutputs["evidence"]["inkCapability"];
-type InkSide = InkCapability["placements"][number];
-type InkAction = "generate" | "accept" | "retry" | "cancel" | null;
+type InkAction = "plan" | "generate" | "accept" | "retry" | "cancel" | null;
+
+type ActiveInkSubject =
+  | (NonNullable<InkCapability["activeIntent"]> & {
+      kind: "authoring";
+      targetViewAngle: CanonicalViewAngle | null;
+      priceCredits: number;
+    })
+  | {
+      kind: "projection";
+      intentId: null;
+      description: string;
+      locationLabel: string;
+      referenceDeliveryUrl: null;
+      candidateId: string;
+      candidateStatus: "processing" | "ready";
+      candidateDeliveryUrl: string | null;
+      expiresAt: string | null;
+      targetViewAngle: CanonicalViewAngle;
+      priceCredits: number;
+    };
 
 function readReferenceFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -40,19 +62,15 @@ function publicMessage(error: unknown): string {
 
 export interface UseInkAddWorkflowOptions {
   modelId: number | null;
-  sourceAssetId: number | null;
   onAccepted: (modelId: number) => Promise<void>;
 }
 
 export function useInkAddWorkflow({
   modelId,
-  sourceAssetId,
   onAccepted,
 }: UseInkAddWorkflowOptions) {
   const utils = trpc.useUtils();
   const [panelOpen, setPanelOpen] = useState(false);
-  const [description, setDescription] = useState("");
-  const [side, setSide] = useState<InkSide>("centre");
   const [referenceFile, setReferenceFileState] = useState<File | null>(null);
   const [localReferenceUrl, setLocalReferenceUrl] = useState<string | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
@@ -70,18 +88,54 @@ export function useInkAddWorkflow({
       },
     },
   );
+  const projectionQuery = trpc.evidence.inkProjectionCandidate.useQuery(
+    { modelId: modelId ?? 0 },
+    {
+      enabled: modelId !== null,
+      refetchOnWindowFocus: "always",
+      refetchInterval: (query) => {
+        const data = query.state.data;
+        return data?.candidateStatus === "processing" ? 2_500 : false;
+      },
+    },
+  );
   const beginIntent = trpc.evidence.beginInkAddIntent.useMutation();
   const attachReference = trpc.evidence.attachInkIntentReference.useMutation();
   const generateCandidate = trpc.evidence.generateInkAddCandidate.useMutation();
   const retryCandidate = trpc.evidence.retryInkAddCandidate.useMutation();
+  const generateProjection =
+    trpc.evidence.generateInkProjectionCandidate.useMutation();
+  const retryProjection =
+    trpc.evidence.retryInkProjectionCandidate.useMutation();
   const acceptCandidate = trpc.evidence.acceptInkAddCandidate.useMutation();
   const cancelIntent = trpc.evidence.cancelInkAddIntent.useMutation();
+  const cancelProjection =
+    trpc.evidence.cancelInkProjectionCandidate.useMutation();
 
   const capability = capabilityQuery.data ?? null;
   const activeIntent = capability?.activeIntent ?? null;
+  const activeProjection = projectionQuery.data ?? null;
+  const activeSubject: ActiveInkSubject | null = activeIntent
+    ? {
+        ...activeIntent,
+        kind: "authoring",
+        targetViewAngle: null,
+        priceCredits: capability!.priceCredits,
+      }
+    : activeProjection
+      ? {
+          ...activeProjection,
+          kind: "projection",
+          intentId: null,
+          description:
+            `Update ${VIEW_ANGLE_LABELS[activeProjection.targetViewAngle]} with accepted tattoos`,
+          locationLabel: "Tattoo coverage",
+          referenceDeliveryUrl: null,
+        }
+      : null;
   const candidateImage = usePrivateEvidenceImage(
-    activeIntent?.candidateStatus === "ready"
-      ? activeIntent.candidateDeliveryUrl
+    activeSubject?.candidateStatus === "ready"
+      ? activeSubject.candidateDeliveryUrl
       : null,
   );
   const attachedReferenceImage = usePrivateEvidenceImage(
@@ -99,8 +153,6 @@ export function useInkAddWorkflow({
 
   useEffect(() => {
     setPanelOpen(false);
-    setDescription("");
-    setSide("centre");
     setReferenceFileState(null);
     setReferenceError(null);
     setAction(null);
@@ -108,20 +160,26 @@ export function useInkAddWorkflow({
   }, [modelId]);
 
   useEffect(() => {
-    if (!activeIntent) return;
+    if (!activeSubject) return;
     setPanelOpen(true);
-    setDescription(activeIntent.description);
-    setSide(activeIntent.side);
-  }, [activeIntent?.description, activeIntent?.intentId, activeIntent?.side]);
+  }, [activeSubject?.candidateId, activeSubject?.intentId]);
 
   useEffect(() => subscribeCastProjectionChanged(({ modelId: changedId }) => {
     if (modelId !== changedId) return;
     void utils.evidence.inkCapability.invalidate({ modelId: changedId });
+    void utils.evidence.inkProjectionCandidate.invalidate({
+      modelId: changedId,
+    });
   }), [modelId, utils]);
 
   const refreshTruth = useCallback(async (changedModelId: number) => {
     await Promise.allSettled([
       utils.evidence.inkCapability.invalidate({ modelId: changedModelId }),
+      utils.evidence.inkProjectionCandidate.invalidate({
+        modelId: changedModelId,
+      }),
+      utils.generation.packageState.invalidate({ modelId: changedModelId }),
+      utils.generation.refreshSlotsPlan.invalidate({ modelId: changedModelId }),
       utils.generation.activeOperations.invalidate(),
       utils.credits.getBalance.invalidate(),
     ]);
@@ -139,13 +197,32 @@ export function useInkAddWorkflow({
     setReferenceFileState(error ? null : file);
   }, []);
 
-  const generate = useCallback(async () => {
-    if (modelId === null || sourceAssetId === null || action !== null) return;
-    const normalized = description.trim();
-    if (!activeIntent && !inkDescriptionReady(normalized)) {
-      setActionError("Describe one tattoo design in a short sentence.");
-      return;
+  const planInstruction = useCallback(async (
+    instruction: string,
+  ): Promise<boolean> => {
+    if (modelId === null || action !== null || activeSubject) return false;
+    setPanelOpen(true);
+    setAction("plan");
+    setActionError(null);
+    try {
+      await beginIntent.mutateAsync({
+        modelId,
+        instruction: instruction.trim(),
+        clientRequestId: createClientRequestId(),
+      });
+      await refreshTruth(modelId);
+      return true;
+    } catch (error) {
+      setActionError(publicMessage(error));
+      await refreshTruth(modelId);
+      return false;
+    } finally {
+      setAction(null);
     }
+  }, [action, activeSubject, beginIntent, modelId, refreshTruth]);
+
+  const generate = useCallback(async () => {
+    if (modelId === null || action !== null || !activeIntent) return;
     if (referenceError) {
       setActionError(referenceError);
       return;
@@ -157,18 +234,7 @@ export function useInkAddWorkflow({
       const imageDataUrl = referenceFile
         ? await readReferenceFile(referenceFile)
         : null;
-      let intentId = activeIntent?.intentId ?? null;
-      if (!intentId) {
-        const begun = await beginIntent.mutateAsync({
-          modelId,
-          sourceAssetId,
-          side,
-          description: normalized,
-          clientRequestId: createClientRequestId(),
-        });
-        intentId = begun.intentId;
-        await refreshTruth(modelId);
-      }
+      const intentId = activeIntent.intentId;
       if (imageDataUrl && !activeIntent?.referenceDeliveryUrl) {
         await attachReference.mutateAsync({
           intentId,
@@ -193,29 +259,55 @@ export function useInkAddWorkflow({
     action,
     activeIntent,
     attachReference,
-    beginIntent,
-    description,
     generateCandidate,
     modelId,
     referenceError,
     referenceFile,
     refreshTruth,
-    side,
-    sourceAssetId,
+  ]);
+
+  const generateProjectionCandidate = useCallback(async (
+    targetViewAngle: CanonicalViewAngle,
+  ): Promise<boolean> => {
+    if (modelId === null || action !== null || activeSubject) return false;
+    setPanelOpen(true);
+    setAction("generate");
+    setActionError(null);
+    try {
+      await generateProjection.mutateAsync({
+        modelId,
+        targetViewAngle,
+        clientRequestId: createClientRequestId(),
+      });
+      await refreshTruth(modelId);
+      return true;
+    } catch (error) {
+      setActionError(publicMessage(error));
+      await refreshTruth(modelId);
+      return false;
+    } finally {
+      setAction(null);
+    }
+  }, [
+    action,
+    activeSubject,
+    generateProjection,
+    modelId,
+    refreshTruth,
   ]);
 
   const accept = useCallback(async () => {
     if (
       modelId === null
       || action !== null
-      || !activeIntent?.candidateId
+      || !activeSubject?.candidateId
       || candidateImage.phase !== "loaded"
     ) return;
     setAction("accept");
     setActionError(null);
     try {
       const result = await acceptCandidate.mutateAsync({
-        candidateId: activeIntent.candidateId,
+        candidateId: activeSubject.candidateId,
         clientRequestId: createClientRequestId(),
       });
       await refreshTruth(modelId);
@@ -230,7 +322,7 @@ export function useInkAddWorkflow({
   }, [
     acceptCandidate,
     action,
-    activeIntent?.candidateId,
+    activeSubject?.candidateId,
     candidateImage.phase,
     modelId,
     onAccepted,
@@ -238,14 +330,22 @@ export function useInkAddWorkflow({
   ]);
 
   const retry = useCallback(async () => {
-    if (modelId === null || action !== null || !activeIntent) return;
+    if (modelId === null || action !== null || !activeSubject) return;
     setAction("retry");
     setActionError(null);
     try {
-      await retryCandidate.mutateAsync({
-        intentId: activeIntent.intentId,
-        clientRequestId: createClientRequestId(),
-      });
+      if (activeSubject.kind === "authoring") {
+        await retryCandidate.mutateAsync({
+          intentId: activeSubject.intentId,
+          clientRequestId: createClientRequestId(),
+        });
+      } else {
+        await retryProjection.mutateAsync({
+          modelId,
+          targetViewAngle: activeSubject.targetViewAngle,
+          clientRequestId: createClientRequestId(),
+        });
+      }
       await refreshTruth(modelId);
     } catch (error) {
       setActionError(publicMessage(error));
@@ -253,17 +353,31 @@ export function useInkAddWorkflow({
     } finally {
       setAction(null);
     }
-  }, [action, activeIntent, modelId, refreshTruth, retryCandidate]);
+  }, [
+    action,
+    activeSubject,
+    modelId,
+    refreshTruth,
+    retryCandidate,
+    retryProjection,
+  ]);
 
   const cancel = useCallback(async () => {
-    if (modelId === null || action !== null || !activeIntent) return;
+    if (modelId === null || action !== null || !activeSubject) return;
     setAction("cancel");
     setActionError(null);
     try {
-      await cancelIntent.mutateAsync({
-        intentId: activeIntent.intentId,
-        clientRequestId: createClientRequestId(),
-      });
+      if (activeSubject.kind === "authoring") {
+        await cancelIntent.mutateAsync({
+          intentId: activeSubject.intentId,
+          clientRequestId: createClientRequestId(),
+        });
+      } else {
+        await cancelProjection.mutateAsync({
+          candidateId: activeSubject.candidateId,
+          clientRequestId: createClientRequestId(),
+        });
+      }
       setReferenceFileState(null);
       setPanelOpen(false);
       await refreshTruth(modelId);
@@ -273,26 +387,31 @@ export function useInkAddWorkflow({
     } finally {
       setAction(null);
     }
-  }, [action, activeIntent, cancelIntent, modelId, refreshTruth]);
+  }, [
+    action,
+    activeSubject,
+    cancelIntent,
+    cancelProjection,
+    modelId,
+    refreshTruth,
+  ]);
 
   return {
     capability,
     capabilityLoading: capabilityQuery.isLoading,
     activeIntent,
+    activeProjection,
+    activeSubject,
     panelOpen,
     openPanel: () => {
       setActionError(null);
       setPanelOpen(true);
     },
     closePanel: () => {
-      if (activeIntent) return;
+      if (activeSubject) return;
       setPanelOpen(false);
       setActionError(null);
     },
-    description,
-    setDescription,
-    side,
-    setSide,
     referenceFile,
     referenceUrl: activeIntent?.referenceDeliveryUrl
       ? attachedReferenceImage.objectUrl
@@ -308,7 +427,9 @@ export function useInkAddWorkflow({
     actionError,
     clearActionError: () => setActionError(null),
     candidateImage,
+    planInstruction,
     generate,
+    generateProjectionCandidate,
     accept,
     retry,
     cancel,

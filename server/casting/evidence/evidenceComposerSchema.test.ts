@@ -42,7 +42,7 @@ function mysqlDefault(value: unknown): string | null {
 
 async function snapshotRows() {
   const snapshot = JSON.parse(await readFile(
-    new URL("../../../drizzle/meta/0014_snapshot.json", import.meta.url),
+    new URL("../../../drizzle/meta/0016_snapshot.json", import.meta.url),
     "utf8",
   )) as Snapshot;
   const columns = Object.entries(snapshot.tables).flatMap(
@@ -54,6 +54,19 @@ async function snapshotRows() {
       COLUMN_DEFAULT: mysqlDefault(column.default),
     })),
   );
+  // Drizzle snapshots follow declaration order. MySQL appends a column added
+  // by ALTER TABLE, so model the physical 0016 order verified at startup.
+  const priorInkIndex = columns.findIndex(
+    (row) =>
+      row.TABLE_NAME === "casting_evidence_candidate_attempts"
+      && row.COLUMN_NAME === "priorInkOutcome",
+  );
+  if (priorInkIndex < 0) throw new Error("prior ink outcome fixture missing");
+  const [priorInkColumn] = columns.splice(priorInkIndex, 1);
+  const lastAttemptIndex = columns.findLastIndex(
+    (row) => row.TABLE_NAME === "casting_evidence_candidate_attempts",
+  );
+  columns.splice(lastAttemptIndex + 1, 0, priorInkColumn);
   const indexes = Object.entries(snapshot.tables).flatMap(
     ([TABLE_NAME, table]) => {
       const ordinary = Object.values(table.indexes).flatMap((index) =>
@@ -97,8 +110,8 @@ function client(rows: Awaited<ReturnType<typeof snapshotRows>>) {
   };
 }
 
-describe("R7-7E composer startup schema fence", () => {
-  it("accepts the generated 0014 shape and rejects partial or stale shapes", async () => {
+describe("R7-7G composer startup schema fence", () => {
+  it("accepts the generated 0016 shape and rejects partial or stale shapes", async () => {
     const healthy = await snapshotRows();
     await expect(assertEvidenceComposerSchemaWithClient(client(healthy)))
       .resolves.toBeUndefined();
@@ -126,6 +139,39 @@ describe("R7-7E composer startup schema fence", () => {
     if (!modelStatus) throw new Error("models.status fixture missing");
     modelStatus.COLUMN_TYPE = "enum('draft','active','locked','archived')";
     await expect(assertEvidenceComposerSchemaWithClient(client(staleEnum)))
+      .rejects.toBeInstanceOf(EvidenceComposerSchemaMismatchError);
+
+    const stalePurpose = structuredClone(healthy);
+    const candidatePurpose = stalePurpose.columns.find(
+      (row) =>
+        row.TABLE_NAME === "casting_evidence_candidates"
+        && row.COLUMN_NAME === "purpose",
+    );
+    if (!candidatePurpose) throw new Error("candidate purpose fixture missing");
+    candidatePurpose.COLUMN_TYPE = "enum('feature_authoring')";
+    await expect(assertEvidenceComposerSchemaWithClient(client(stalePurpose)))
+      .rejects.toBeInstanceOf(EvidenceComposerSchemaMismatchError);
+
+    const staleProjectionShape = structuredClone(healthy);
+    staleProjectionShape.columns = staleProjectionShape.columns.filter(
+      (row) => !(
+        row.TABLE_NAME === "casting_evidence_candidate_feature_targets"
+        && row.COLUMN_NAME === "coverageBasis"
+      ),
+    );
+    await expect(assertEvidenceComposerSchemaWithClient(
+      client(staleProjectionShape),
+    )).rejects.toBeInstanceOf(EvidenceComposerSchemaMismatchError);
+
+    const stalePriorInk = structuredClone(healthy);
+    const priorInk = stalePriorInk.columns.find(
+      (row) =>
+        row.TABLE_NAME === "casting_evidence_candidate_attempts"
+        && row.COLUMN_NAME === "priorInkOutcome",
+    );
+    if (!priorInk) throw new Error("prior ink outcome fixture missing");
+    priorInk.COLUMN_TYPE = "varchar(16)";
+    await expect(assertEvidenceComposerSchemaWithClient(client(stalePriorInk)))
       .rejects.toBeInstanceOf(EvidenceComposerSchemaMismatchError);
 
     const staleIndex = structuredClone(healthy);
@@ -172,7 +218,7 @@ describe("R7-7E composer startup schema fence", () => {
       .not.toContain("0013");
   });
 
-  it("runs the conditional 0013 proof before Express can accept traffic", async () => {
+  it("runs the conditional composer proof before Express can accept traffic", async () => {
     const source = await readFile(
       new URL("../../_core/index.ts", import.meta.url),
       "utf8",

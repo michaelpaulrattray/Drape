@@ -165,12 +165,6 @@ You must output a SINGLE JSON object containing exactly two keys: "natural_descr
    percentages, or control signal language. Physical features only.
 `;
 
-export const UPSCALE_PROMPT = `
-Enhance extreme photorealism across all visible elements, especially skin, tattoos, hair, and eyes, sharpening micro detail, pores and texture, cleaning specular highlights, reflections and shadow falloff, and upgrading overall clarity to a high-resolution output while strictly preserving the original design, framing, pose, lighting style, color grade, mood and composition.
-
-No creative changes are permitted during upscaling.
-`;
-
 // ============================================================================
 // BRAND PROFILES
 // ============================================================================

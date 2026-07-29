@@ -7,7 +7,7 @@ import {
   handoffGenerationOperationToRecovery,
   updateGenerationOperationProgress,
 } from "../../db";
-import { CREDIT_COSTS, POINT_COSTS } from "../../casting/aiService";
+import { POINT_COSTS } from "../../casting/aiService";
 import {
   planMintPackage,
   executeMintPackage,
@@ -93,8 +93,8 @@ export const castingExportRouter = router({
   // Get point costs for all generation types
   costs: publicProcedure.query(() => POINT_COSTS),
 
-  /** D-15 export price authority. The server counts the current filled
-   *  canonical package slots and derives the paid tier from CREDIT_COSTS. */
+  /** The server counts the current filled canonical package slots and returns
+   * the fixed 1K, zero-credit customer export contract. */
   exportPlan: protectedProcedure
     .input(z.object({ modelId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
@@ -105,7 +105,7 @@ export const castingExportRouter = router({
         readMode,
       });
       const viewCount = state.slots.filter((slot) => slot.filled && slot.url).length;
-      return buildExportPlan(viewCount, CREDIT_COSTS.upscale);
+      return buildExportPlan(viewCount);
     }),
 
   // Generate premium identity PDF document

@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   beginInkAddIntent,
+  beginInkAnywhereIntent,
   buildInkAuthorizationProviderConfig,
+  buildInkInstructionProviderConfig,
   readInkAddCapability,
 } from "./inkAddIntent";
 import {
   buildInkAuthorizationRequest,
 } from "./composer/inkAuthorization";
+import { buildInkInstructionPlanningRequest } from "./inkInstructionPlanner";
 
 const request = {
   userId: 7,
@@ -48,6 +51,40 @@ describe("R7-7D D4A ink intent service", () => {
       maxOutputTokens: 4096,
     });
     expect(config.responseSchema).not.toHaveProperty("additionalProperties");
+  });
+
+  it("pins the v2 closed anatomy classifier schema", () => {
+    const config = buildInkInstructionProviderConfig(
+      buildInkInstructionPlanningRequest(
+        "Add a blackwork full sleeve to his right arm",
+      ),
+    );
+    expect(config).toMatchObject({
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          zone: { type: "STRING" },
+          surface: { type: "STRING" },
+          side: { type: "STRING" },
+        },
+        required: [
+          "tattooOnly",
+          "operationAdd",
+          "singleFeature",
+          "ambiguousAnatomy",
+          "containsPromptControl",
+          "zone",
+          "surface",
+          "side",
+          "confidence",
+        ],
+      },
+      thinkingConfig: {
+        thinkingBudget: 0,
+        includeThoughts: false,
+      },
+    });
   });
 
   it("keeps the product door closed before any classifier or operation work", async () => {
@@ -174,6 +211,98 @@ describe("R7-7D D4A ink intent service", () => {
     expect(warnAuthorizationUnknown).not.toHaveBeenCalled();
   });
 
+  it("plans a natural-language tuple before committing server-owned source authority", async () => {
+    const plan = vi.fn(async () => ({
+      ok: true as const,
+      normalizedDescriptor: "Add a blackwork full sleeve to his right arm",
+      anatomy: {
+        zone: "full_arm" as const,
+        surface: "circumferential" as const,
+        side: "right" as const,
+      },
+      locationLabel: "Right arm · full sleeve",
+      recipeVersion: "ink.add.anywhere.authorization.v1" as const,
+    }));
+    const begin = vi.fn(async () => ({
+      type: "execute" as const,
+      operationId: "22222222-2222-4222-8222-222222222222",
+    }));
+    const commit = vi.fn(async () => ({
+      intentId: "33333333-3333-4333-8333-333333333333",
+      sourceViewAngle: "frontFull",
+      sourceAssetId: 28,
+    }));
+    await expect(beginInkAnywhereIntent({
+      userId: 7,
+      modelId: 14,
+      instruction: "Add a blackwork full sleeve to his right arm",
+      clientRequestId: request.clientRequestId,
+    }, {
+      enabledForUser: () => true,
+      plan,
+      begin,
+      commit,
+      generateId: () => "33333333-3333-4333-8333-333333333333",
+    })).resolves.toEqual({
+      intentId: "33333333-3333-4333-8333-333333333333",
+      instruction: "Add a blackwork full sleeve to his right arm",
+      locationLabel: "Right arm · full sleeve",
+      priceCredits: 350,
+      sourceViewLabel: "Full front",
+    });
+    expect(begin).toHaveBeenCalledWith({
+      userId: 7,
+      clientRequestId: request.clientRequestId,
+      kind: "evidence_intent_begin",
+      modelId: 14,
+      payload: {
+        modelId: 14,
+        normalizedDescriptor: "Add a blackwork full sleeve to his right arm",
+        anatomy: {
+          zone: "full_arm",
+          surface: "circumferential",
+          side: "right",
+        },
+        recipeVersion: "ink.add.anywhere.authorization.v1",
+      },
+      lockKey: "model:14",
+    });
+    expect(commit).toHaveBeenCalledWith({
+      userId: 7,
+      modelId: 14,
+      operationId: "22222222-2222-4222-8222-222222222222",
+      intentId: "33333333-3333-4333-8333-333333333333",
+      anatomy: {
+        zone: "full_arm",
+        surface: "circumferential",
+        side: "right",
+      },
+      normalizedDescriptor: "Add a blackwork full sleeve to his right arm",
+    });
+  });
+
+  it("refuses ambiguous all-body anatomy before claiming work", async () => {
+    const begin = vi.fn();
+    await expect(beginInkAnywhereIntent({
+      userId: 7,
+      modelId: 14,
+      instruction: "Add a rose tattoo",
+      clientRequestId: request.clientRequestId,
+    }, {
+      enabledForUser: () => true,
+      plan: async () => ({
+        ok: false,
+        code: "ambiguous_anatomy",
+        recipeVersion: "ink.add.anywhere.authorization.v1",
+      }),
+      begin,
+    })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("exact body location"),
+    });
+    expect(begin).not.toHaveBeenCalled();
+  });
+
   it("returns a closed capability projection while D4 is not product-ready", async () => {
     await expect(readInkAddCapability(
       { userId: 7, modelId: 14 },
@@ -182,8 +311,6 @@ describe("R7-7D D4A ink intent service", () => {
       inkAdd: false,
       subjectStatus: "disabled",
       priceCredits: 350,
-      targetView: "frontFull",
-      placements: ["left", "centre", "right"],
       activeIntent: null,
     });
   });
@@ -193,9 +320,15 @@ describe("R7-7D D4A ink intent service", () => {
       id: "33333333-3333-4333-8333-333333333333",
       userId: 7,
       modelId: 14,
+      capabilityKey: "ink.add.front_upper_torso.v1" as const,
+      activeCapabilityKey: "ink.add.front_upper_torso.v1" as const,
+      ontologyVersion: "body-zones.front-upper-torso.v1",
+      zone: "front_upper_torso",
+      surface: "anterior",
       side: "centre" as const,
       normalizedDescriptor: "fine-line orbit",
       sourceAssetId: 28,
+      sourceViewAngle: "frontFull" as const,
       expectedStateVersion: 4,
       identitySnapshotId: "44444444-4444-4444-8444-444444444444",
       packageSnapshotId: "55555555-5555-4555-8555-555555555555",
@@ -221,7 +354,7 @@ describe("R7-7D D4A ink intent service", () => {
       subjectStatus: "active",
       activeIntent: {
         description: "fine-line orbit",
-        side: "centre",
+        sourceViewAngle: "frontFull",
         candidateStatus: "ready",
       },
     });

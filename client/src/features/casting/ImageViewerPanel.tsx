@@ -16,10 +16,12 @@ import { StudioCanvas } from "@/features/studio/components/StudioCanvas";
 import { ImageActionBar } from "@/features/studio/components/ImageActionBar";
 import {
   InkAddComposer,
-  InkAddDoor,
-  InkFeatureAcceptedPanel,
 } from "./evidence/InkAddPanel";
 import { useInkAddWorkflow } from "./evidence/useInkAddWorkflow";
+import { looksLikeTattooInstruction } from "@shared/inkInstructionRoute";
+import {
+  subscribeInkProjectionRequests,
+} from "./evidence/inkProjectionEvents";
 
 // ============ View Labels ============
 
@@ -104,28 +106,35 @@ export function ImageViewerPanel({
     activeView,
     activeTool,
     setActiveView,
+    refineInput,
     setRefineInput,
   } = useCastingUIStore();
-  const frontFullAsset = currentAssets.find(
-    (asset) => asset.viewType === "frontFull",
-  ) ?? null;
   const inkWorkflow = useInkAddWorkflow({
     modelId: currentModelId,
-    sourceAssetId: frontFullAsset?.id ?? null,
     onAccepted: onInkAccepted,
   });
+  useEffect(
+    () => subscribeInkProjectionRequests((angle) => {
+      void inkWorkflow.generateProjectionCandidate(angle);
+    }),
+    [inkWorkflow.generateProjectionCandidate],
+  );
+  const inkPreviewView = inkWorkflow.activeSubject?.kind === "projection"
+    ? inkWorkflow.activeSubject.targetViewAngle
+    : inkWorkflow.activeSubject?.sourceViewAngle ?? null;
 
   useEffect(() => {
     if (
-      (inkWorkflow.panelOpen || inkWorkflow.activeIntent)
-      && activeView !== "frontFull"
+      inkWorkflow.activeSubject
+      && inkPreviewView
+      && activeView !== inkPreviewView
     ) {
-      setActiveView("frontFull");
+      setActiveView(inkPreviewView);
     }
   }, [
     activeView,
-    inkWorkflow.activeIntent,
-    inkWorkflow.panelOpen,
+    inkWorkflow.activeSubject,
+    inkPreviewView,
     setActiveView,
   ]);
 
@@ -176,22 +185,39 @@ export function ImageViewerPanel({
   const hasAssets = currentAssets.length > 0;
   const hasResult = hasAssets;
   const inkCandidateReady =
-    inkWorkflow.activeIntent?.candidateStatus === "ready";
+    inkWorkflow.activeSubject?.candidateStatus === "ready";
   const inkBusy =
     inkWorkflow.action !== null
-    || inkWorkflow.activeIntent?.candidateStatus === "processing";
-  const inkFeatureSelected =
-    inkWorkflow.capability?.subjectStatus === "feature_selected";
-  const inkDoorAvailable =
-    activeView === "frontFull"
-    && inkWorkflow.capability?.subjectStatus === "eligible"
-    && !genState.isGenerating
-    && !isReadOnly
-    && !profileLocked;
+    || inkWorkflow.activeSubject?.candidateStatus === "processing";
   const inkDisplayUrl = inkCandidateReady
     && inkWorkflow.candidateImage.phase === "loaded"
     ? inkWorkflow.candidateImage.objectUrl
     : null;
+  const handleUnifiedRefineSubmit = useCallback(async () => {
+    const instruction = refineInput.trim();
+    if (!looksLikeTattooInstruction(instruction)) {
+      handleRefineSubmit();
+      return;
+    }
+    if (
+      !inkWorkflow.capability?.inkAdd
+      || inkWorkflow.capability.subjectStatus !== "eligible"
+    ) {
+      setGenState((previous) => ({
+        ...previous,
+        error: "Tattoo previews are not available for this Cast.",
+      }));
+      return;
+    }
+    const planned = await inkWorkflow.planInstruction(instruction);
+    if (planned) setRefineInput("");
+  }, [
+    handleRefineSubmit,
+    inkWorkflow,
+    refineInput,
+    setGenState,
+    setRefineInput,
+  ]);
 
   // Casting-specific keyboard handler
   const castingKeyHandler = useCallback((e: KeyboardEvent) => {
@@ -406,8 +432,6 @@ export function ImageViewerPanel({
         </button>
       )}
     </div>
-  ) : hasAssets && inkFeatureSelected && currentModelId ? (
-    <InkFeatureAcceptedPanel modelId={currentModelId} />
   ) : hasAssets && inkWorkflow.panelOpen ? (
     <InkAddComposer
       workflow={inkWorkflow}
@@ -472,13 +496,10 @@ export function ImageViewerPanel({
           isGenerating={genState.isGenerating}
           textAreaRef={textAreaRef}
           handleEnhance={handleEnhance}
-          handleRefineSubmit={handleRefineSubmit}
+          handleRefineSubmit={handleUnifiedRefineSubmit}
           referenceImage={prefs.referenceImage}
           onInputChanged={genState.clarification
             ? () => setGenState((previous) => ({ ...previous, clarification: null }))
-            : undefined}
-          asideAction={inkDoorAvailable
-            ? <InkAddDoor onOpen={inkWorkflow.openPanel} />
             : undefined}
         />
     </div>
@@ -515,7 +536,7 @@ export function ImageViewerPanel({
       ) : undefined}
       onClearError={() => setGenState((p) => ({ ...p, error: null }))}
       onRetry={isReadOnly ? () => {} : handleRetry}
-      compareUrl={inkWorkflow.panelOpen || inkFeatureSelected ? null : compareUrl}
+      compareUrl={inkWorkflow.panelOpen ? null : compareUrl}
       compareLabel={compareLabel}
       loadingMessage={
         inkWorkflow.action === "accept"
@@ -531,7 +552,7 @@ export function ImageViewerPanel({
       emptyState={<WarmEmptyState canGenerate={isFormReady} />}
       topOverlay={topOverlay}
       floatingOverlay={inkWorkflow.panelOpen ? undefined : floatingOverlay}
-      imageOverlay={inkWorkflow.panelOpen || inkFeatureSelected ? undefined : imageOverlayNode}
+      imageOverlay={inkWorkflow.panelOpen ? undefined : imageOverlayNode}
       sideOverlay={sideOverlay}
       statusOverlay={statusOverlay}
       bottomDock={bottomDock}
@@ -539,7 +560,7 @@ export function ImageViewerPanel({
         hasAssets
         && !genState.isGenerating
         && !inkWorkflow.panelOpen
-        && !inkFeatureSelected ? (
+        ? (
           <ImageActionBar
             visible={imageAreaHovered}
             showHeart={false}

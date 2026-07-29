@@ -8,6 +8,7 @@ import type { PreparedInkCandidateAttempt } from "../../db/inkAddCandidates";
 import {
   buildInkProbeProviderConfig,
   generateInkAddCandidate,
+  generateInkProjectionCandidate,
   retryInkAddCandidate,
   type InkCandidateGenerationDependencies,
 } from "./inkCandidateGeneration";
@@ -46,11 +47,45 @@ const prepared: PreparedInkCandidateAttempt = {
   expectedStateVersion: 4,
   sourceAssetId: 31,
   sourceUrl: "https://example.r2.dev/target.webp",
+  sourceViewAngle: "frontFull",
   anchorUrl: "https://example.r2.dev/anchor.webp",
   identityText: "The immutable same person.",
-  side: "left",
+  authority: {
+    kind: "legacy_v1",
+    capabilityKey: "ink.add.front_upper_torso.v1",
+    ontologyVersion: "body-zones.front-upper-torso.v1",
+    anatomy: {
+      zone: "front_upper_torso",
+      surface: "anterior",
+      side: "left",
+    },
+    normalizedTargetZone: { x: 0.54, y: 0.2, width: 0.27, height: 0.25 },
+    composerRecipeVersion: "ink.add.front_upper_torso.composer.v1",
+    probeRecipeVersion: "ink.add.front_upper_torso.probe.v1",
+    visibilityRecipeVersion: "ink.add.front_upper_torso.visibility.v1",
+  },
   normalizedDescriptor: "small black geometric sun",
   reference: null,
+};
+
+const anywherePrepared: PreparedInkCandidateAttempt = {
+  ...prepared,
+  sourceViewAngle: "sideFull",
+  authority: {
+    kind: "anywhere_v2",
+    capabilityKey: "ink.add.anywhere.v2",
+    ontologyVersion: "body-zones.ink.v2",
+    anatomy: {
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    },
+    normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
+    composerRecipeVersion: "ink.add.anywhere.composer.v1",
+    probeRecipeVersion: "ink.add.anywhere.probe.v1",
+    visibilityRecipeVersion: "ink.add.anywhere.visibility.v1",
+  },
+  normalizedDescriptor: "blackwork full sleeve on his right arm",
 };
 
 function canonical(): CanonicalEvidenceImage {
@@ -85,6 +120,18 @@ function delivery(): PrivateEvidenceStorageAdapter {
 }
 
 function passProbe(request: InkProbeRequest): unknown {
+  if (request.kind === "feature_projection") {
+    return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
+      key,
+      key === "confidence" ? 98 : true,
+    ]));
+  }
+  if (request.kind === "coverage") {
+    return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
+      key,
+      key.endsWith("Confidence") ? 98 : true,
+    ]));
+  }
   if (request.kind === "visibility") {
     return {
       upperTorsoVisible: true,
@@ -121,7 +168,12 @@ function dependencies(
       id: prepared.intentId,
       userId: prepared.userId,
       modelId: prepared.modelId,
-      side: prepared.side,
+      capabilityKey: prepared.authority.capabilityKey,
+      activeCapabilityKey: prepared.authority.capabilityKey,
+      ontologyVersion: prepared.authority.ontologyVersion,
+      zone: prepared.authority.anatomy.zone,
+      surface: prepared.authority.anatomy.surface,
+      side: prepared.authority.anatomy.side,
       normalizedDescriptor: prepared.normalizedDescriptor,
       sourceAssetId: prepared.sourceAssetId,
       expectedStateVersion: prepared.expectedStateVersion,
@@ -221,6 +273,149 @@ describe("ink candidate generation", () => {
         delivery: expect.anything(),
         storageKey: expect.anything(),
       }),
+    }));
+  });
+
+  it("runs the v2 anatomy guide, composer, visibility, and prior-ink probes", async () => {
+    const generate = vi.fn(async () => "generated");
+    const probe = vi.fn(async (request: InkProbeRequest) => {
+      if (request.kind === "visibility") {
+        return {
+          targetRegionVisible: true,
+          anatomicalSideReadable: true,
+          materiallyOccluded: false,
+          confidence: 96,
+        };
+      }
+      if (request.kind === "identity_pose") {
+        return { samePerson: true, poseFramingPreserved: true, confidence: 97 };
+      }
+      return {
+        correctPlacement: true,
+        requestedFeaturePresent: true,
+        priorVisibleInkPreserved: true,
+        noUnexpectedInk: true,
+        confidence: 95,
+      };
+    });
+    const deps = dependencies({
+      prepare: vi.fn(async () => ({ ...anywherePrepared })),
+      generate,
+      probe,
+    });
+    await expect(generateInkAddCandidate(deps, {
+      userId: anywherePrepared.userId,
+      intentId: anywherePrepared.intentId,
+      clientRequestId: "14141414-1414-4414-8414-141414141414",
+    })).resolves.toMatchObject({
+      candidateId: anywherePrepared.candidateId,
+      status: "ready",
+      chargedCredits: 350,
+    });
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+      recipeVersion: "ink.add.anywhere.composer.v1",
+      prompt: expect.stringContaining("zone=full_arm"),
+    }));
+    expect(probe).toHaveBeenCalledWith(expect.objectContaining({
+      recipeVersion: "ink.add.anywhere.visibility.v1",
+    }));
+    expect(probe).toHaveBeenCalledWith(expect.objectContaining({
+      recipeVersion: "ink.add.anywhere.probe.v1",
+      responseSchema: expect.objectContaining({
+        priorVisibleInkPreserved: "boolean",
+      }),
+    }));
+  });
+
+  it("runs a private multi-feature projection episode without accepting it", async () => {
+    const projectionPrepared: PreparedInkCandidateAttempt = {
+      ...prepared,
+      intentId: null,
+      sourceViewAngle: "backFull",
+      authority: {
+        kind: "projection_v2",
+        capabilityKey: "ink.add.anywhere.v2",
+        ontologyVersion: "body-zones.ink.v2",
+        targetAngle: "backFull",
+        sourceAngle: "backFull",
+        composerRecipeVersion: "ink.add.anywhere.projection.v1",
+        probeRecipeVersion: "ink.add.anywhere.projection.probe.v1",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v1",
+        features: [{
+          featureId: "feature-1",
+          featureVersionId: "version-1",
+          contract: "all_body_v2",
+          normalizedDescriptor: "black botanical full sleeve",
+          anatomyLabel: "right arm - full sleeve",
+          anatomy: {
+            zone: "full_arm",
+            surface: "circumferential",
+            side: "right",
+          },
+          targetZone: { x: 0.08, y: 0.2, width: 0.28, height: 0.62 },
+          witnessZone: { x: 0.08, y: 0.2, width: 0.28, height: 0.62 },
+          witnessViewAngle: "frontFull",
+          witness: {
+            plateId: "89898989-8989-4989-8989-898989898989",
+            storageKey:
+              "users/7/models/11/evidence/candidates/89898989-8989-4989-8989-898989898989.webp",
+            byteSize: webp.length,
+            contentHash: createHash("sha256").update(webp).digest("hex"),
+          },
+          impact: "affected",
+          hasAcceptedTargetEvidence: false,
+          isProjectionTarget: true,
+          coverageBasis: "registry_affected",
+        }],
+      },
+      normalizedDescriptor: "selected tattoo projection",
+    };
+    const preflight = {
+      userId: projectionPrepared.userId,
+      modelId: projectionPrepared.modelId,
+      operationId: projectionPrepared.operationId,
+      operationKind: projectionPrepared.operationKind,
+      identitySnapshotId: projectionPrepared.identitySnapshotId,
+      packageSnapshotId: projectionPrepared.packageSnapshotId,
+      expectedStateVersion: projectionPrepared.expectedStateVersion,
+      sourceAssetId: projectionPrepared.sourceAssetId,
+      sourceUrl: projectionPrepared.sourceUrl,
+      sourceViewAngle: projectionPrepared.sourceViewAngle,
+      targetViewAngle: "backFull" as const,
+      anchorUrl: projectionPrepared.anchorUrl,
+      identityText: projectionPrepared.identityText,
+      features: projectionPrepared.authority.kind === "projection_v2"
+        ? projectionPrepared.authority.features
+        : [],
+    };
+    const deps = dependencies({
+      loadProjectionPreflight: vi.fn(async () => preflight),
+      prepareProjection: vi.fn(async () => projectionPrepared),
+    });
+    const result = await generateInkProjectionCandidate(deps, {
+      userId: projectionPrepared.userId,
+      modelId: projectionPrepared.modelId,
+      targetViewAngle: "backFull",
+      clientRequestId: "90909090-9090-4090-8090-909090909090",
+    });
+    expect(result).toMatchObject({
+      candidateId: projectionPrepared.candidateId,
+      status: "ready",
+      chargedCredits: 300,
+    });
+    expect(deps.charge).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 300 }),
+      expect.any(Function),
+    );
+    expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
+      recipeVersion: "ink.add.anywhere.projection.v1",
+      images: expect.arrayContaining([
+        expect.objectContaining({ role: "evidence_mosaic" }),
+      ]),
+    }));
+    expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "feature_projection",
+      recipeVersion: "ink.add.anywhere.projection.probe.v1",
     }));
   });
 

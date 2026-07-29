@@ -27,6 +27,14 @@ import {
   type SupportedInkFeatureGraph,
 } from "./evidencePackagePlan";
 import {
+  assessClosedInkFeatureGraph,
+  type ClosedInkFeatureGraph,
+} from "./inkFeatureGraph";
+import {
+  inkPackageAngleAuthority,
+  type InkPackageAngleAuthority,
+} from "./inkPackageImpactV2";
+import {
   inkPackageDirective,
   type EvidencePackageDirective,
 } from "./evidencePackageRegistry";
@@ -54,7 +62,14 @@ export interface EvidencePackagePrivateSlotAuthority {
   directive: EvidencePackageDirective;
 }
 
-export interface EvidencePackagePrivateAuthority {
+export interface EvidencePackagePrivateV2SlotAuthority {
+  angle: CanonicalViewAngle;
+  target: ModelAsset;
+  angleAuthority: InkPackageAngleAuthority;
+}
+
+export interface EvidencePackagePrivateLegacyAuthority {
+  contract: "legacy_v1";
   model: Model;
   identity: ModelIdentitySnapshot;
   identityAnchor: ModelAsset;
@@ -64,6 +79,20 @@ export interface EvidencePackagePrivateAuthority {
   plan: EvidencePackageSyncPlan;
   slots: EvidencePackagePrivateSlotAuthority[];
 }
+
+export interface EvidencePackagePrivateV2Authority {
+  contract: "all_body_v2";
+  model: Model;
+  identity: ModelIdentitySnapshot;
+  identityAnchor: ModelAsset;
+  graph: ClosedInkFeatureGraph;
+  plan: EvidencePackageSyncPlan;
+  slots: EvidencePackagePrivateV2SlotAuthority[];
+}
+
+export type EvidencePackagePrivateAuthority =
+  | EvidencePackagePrivateLegacyAuthority
+  | EvidencePackagePrivateV2Authority;
 
 function fail(
   code: EvidencePackageAuthorityError["code"],
@@ -129,11 +158,19 @@ async function loadAuthorityRowsIn(
       featureRows.hasUnresolvedIntentOrReadyCandidate,
   });
   const frontFull = state.selectedViews.find((view) => view.angle === "frontFull");
-  const graph = assessSupportedInkFeatureGraph(
-    featureRows.graph,
-    frontFull?.asset.id ?? null,
-  );
-  if (!plan.supported || !graph || !frontFull) {
+  const closedGraphCandidate = assessClosedInkFeatureGraph(featureRows.graph);
+  const closedGraph = closedGraphCandidate?.entries.some(
+    (entry) => entry.contract === "all_body_v2",
+  )
+    ? closedGraphCandidate
+    : null;
+  const legacyGraph = !closedGraph
+    ? assessSupportedInkFeatureGraph(
+        featureRows.graph,
+        frontFull?.asset.id ?? null,
+      )
+    : null;
+  if (!plan.supported || (!closedGraph && !legacyGraph)) {
     fail("feature_graph_unsupported");
   }
   const requested = new Set(input.angles);
@@ -143,16 +180,58 @@ async function loadAuthorityRowsIn(
   ) {
     fail("slot_unavailable");
   }
+  const planByAngle = new Map(plan.slots.map((slot) => [slot.angle, slot]));
+  if (
+    closedGraph
+    && input.angles.some(
+      (angle) => planByAngle.get(angle)?.action !== "refresh",
+    )
+  ) {
+    fail("slot_unavailable");
+  }
   const selectedByAngle = new Map(
     state.selectedViews.map((view) => [view.angle, view.asset]),
   );
+  if (closedGraph) {
+    const graphAssetById = new Map(featureRows.graph.assets!.map(
+      (asset) => [asset.id, asset],
+    ));
+    const slots = input.angles.map((angle) => {
+      const angleAuthority = inkPackageAngleAuthority(closedGraph, angle);
+      const evidenceTarget = angleAuthority.features
+        .map((feature) => feature.acceptedEvidenceAssetId)
+        .filter((id): id is number => id !== null)
+        .map((id) => graphAssetById.get(id))
+        .find((asset): asset is ModelAsset => Boolean(asset));
+      const target = selectedByAngle.get(angle) ?? evidenceTarget;
+      if (
+        !target?.storageUrl?.trim()
+        || angleAuthority.requiresProjectionCandidate
+      ) {
+        fail("slot_unavailable");
+      }
+      return { angle, target, angleAuthority };
+    });
+    return {
+      contract: "all_body_v2",
+      model: state.model,
+      identity: state.identity,
+      identityAnchor: state.anchor,
+      graph: closedGraph,
+      plan,
+      slots,
+    };
+  }
+  if (!frontFull || !legacyGraph) {
+    fail("feature_graph_unsupported");
+  }
   const slots = input.angles.map((angle) => {
     const directive = inkPackageDirective({
       capabilityKey: INK_ADD_CAPABILITY_KEY,
-      ontologyVersion: graph.version.ontologyVersion,
-      zone: graph.version.zone,
-      surface: graph.version.surface,
-      side: graph.version.side,
+      ontologyVersion: legacyGraph.version.ontologyVersion,
+      zone: legacyGraph.version.zone,
+      surface: legacyGraph.version.surface,
+      side: legacyGraph.version.side,
       angle,
     });
     const target = selectedByAngle.get(angle) ?? frontFull.asset;
@@ -166,12 +245,13 @@ async function loadAuthorityRowsIn(
     return { angle, target, directive };
   });
   return {
+    contract: "legacy_v1",
     model: state.model,
     identity: state.identity,
     identityAnchor: state.anchor,
     authoringTruth: frontFull.asset,
-    graph,
-    acceptedPlate: graph.plate,
+    graph: legacyGraph,
+    acceptedPlate: legacyGraph.plate,
     plan,
     slots,
   };
@@ -266,8 +346,10 @@ export async function classifyEvidencePackageRouteAuthority(input: {
     }
     const { plan } = authority;
     const requested = new Set(input.angles);
+    const requestedPlans = plan.slots.filter((slot) => requested.has(slot.angle));
     return plan.actionableAngles.length === requested.size
       && plan.actionableAngles.every((angle) => requested.has(angle))
+      && requestedPlans.every((slot) => slot.action !== "projection")
       ? { type: "supported", plan }
       : { type: "unsupported" };
   });

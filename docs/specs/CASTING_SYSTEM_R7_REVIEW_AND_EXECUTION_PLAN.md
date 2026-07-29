@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7F are complete as of 2026-07-29; R7-7G natural-language all-body ink-add completion is next, followed by the narrowed R7-8 production acceptance, audit, performance, and dogfood closure
+**Status:** IN EXECUTION — R7-0 through R7-7F are complete; R7-7G G0–G6 are implemented and locally verified as of 2026-07-29, with production migration, feature-off landing, founder calibration, and closure still pending; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure follows
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -350,6 +350,20 @@ replace, cover-up, move, or resize. Those remain separately calibrated
 operations under the generative edit/erase boundary. Cybernetics, moles,
 scars, and every other identity-feature category remain refused until the
 all-body tattoo category passes its own matrix and founder gate.
+
+**Execution checkpoint, 2026-07-29:** G0–G6 are implemented and locally
+verified. The release has a closed all-body tuple registry, strict
+natural-language planning, server-selected source views, multi-tattoo
+positive closure, private first-surface and projection candidates, exact
+350-credit authoring / canonical-slot projection billing, prior-ink
+preservation probes, atomic feature/package settlement, lifecycle recovery,
+complete Fork/history/restore/deletion carry, natural-language-only UI, and
+1K-only Casting/export truth. Additive migrations `0015` and `0016` passed a
+guarded disposable MySQL drive and the final startup fence. The full local
+suite and production build pass, and a feature-off headless Edge drive proved
+the ordinary Refine route cannot reach generation. G7 production landing and
+G8 founder-paid calibration remain open; this checkpoint does not enable a
+cohort or close R7-7G.
 
 ### R7-8 — Quality choice, downstream reference sheets, and dogfood closure
 

@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import {
   FRONT_UPPER_TORSO_ZONES,
+  buildAnatomicalInkZoneGuide,
   buildInkZoneGuide,
 } from "./inkZoneGuide";
 
@@ -50,5 +51,24 @@ describe("R7-7D server-owned ink zone guide", () => {
     }).png().toBuffer();
     await expect(buildInkZoneGuide({ targetBytes: tiny, side: "centre" }))
       .rejects.toThrow("not eligible");
+  });
+
+  it("renders arbitrary server-owned anatomy without accepting client geometry", async () => {
+    const zone = { x: 0.64, y: 0.24, width: 0.18, height: 0.4 };
+    const guide = await buildAnatomicalInkZoneGuide({
+      targetBytes: await target(),
+      normalizedZone: zone,
+      label: "left full arm",
+    });
+    expect(guide).toMatchObject({
+      width: 600,
+      height: 900,
+      normalizedZone: zone,
+    });
+    await expect(buildAnatomicalInkZoneGuide({
+      targetBytes: await target(),
+      normalizedZone: { x: 0.9, y: 0.2, width: 0.2, height: 0.3 },
+      label: "invalid",
+    })).rejects.toThrow("Invalid server ink zone");
   });
 });

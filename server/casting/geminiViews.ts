@@ -11,7 +11,7 @@
 import { IMAGE_PRO, IMAGE_FALLBACK } from "@shared/modelRegistry";
 import type { CanonicalViewAngle } from "../../shared/boardTypes";
 import type { ModelViews, GeminiPart } from "./geminiTypes";
-import { ImageResolution, AspectRatio } from "./geminiTypes";
+import { AspectRatio } from "./geminiTypes";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -28,7 +28,7 @@ import {
 import { PublicError } from "../lib/publicError";
 import { withImageQueue } from "./geminiQueue";
 import { validateNotPlaceholder } from "./placeholderDetection";
-import { UPSCALE_PROMPT, getStudioSettings } from "./geminiPrompts";
+import { getStudioSettings } from "./geminiPrompts";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("casting/geminiViews");
 
@@ -324,61 +324,4 @@ export const generateSingleView = async (
 
   throw new Error(`Single view (${viewType}) generation failed across all models.`);
   }, `generateSingleView(${viewType})`);
-};
-
-// ============================================================================
-// UPSCALE EXISTING IMAGE
-// ============================================================================
-
-/**
- * Upscale existing image to higher resolution
- */
-export const upscaleExistingImage = async (
-  currentImageUrl: string,
-  targetResolution: ImageResolution
-): Promise<{ imageUrl: string; engineUsed: string }> => {
-  return withImageQueue(async () => {
-  const ai = getAiClient();
-  const mimeType = extractMimeType(currentImageUrl);
-  const base64Data = extractBase64Data(currentImageUrl);
-
-  const parts: GeminiPart[] = [
-    { inlineData: { data: base64Data, mimeType } },
-    { text: UPSCALE_PROMPT },
-  ];
-
-  const modelName = IMAGE_PRO;
-
-  try {
-    const response = await withTimeout(
-      ai.models.generateContent({
-        model: modelName,
-        contents: { parts },
-        config: {
-          responseModalities: ['IMAGE'],
-          imageConfig: {
-            imageSize: targetResolution,
-            aspectRatio: AspectRatio.PORTRAIT,
-          },
-          safetySettings: SAFETY_SETTINGS,
-        }
-      }),
-      90000,
-      `Upscale (${modelName})`
-    );
-
-    const diagnosis = diagnoseResponse(response);
-    if (diagnosis) throw new Error(diagnosis);
-
-    const imageUrl = extractImageFromResponse(response);
-    if (!imageUrl) throw new Error("Upscale failed: No image returned.");
-    validateNotPlaceholder(imageUrl);
-
-    return { imageUrl, engineUsed: modelName };
-  } catch (error) {
-    // Complete internal error server-side; only sanitized wording travels
-    log.warn({ err: error }, "[Upscale] failed");
-    throw new PublicError(formatGeminiError(error), { cause: error });
-  }
-  }, 'upscaleExistingImage');
 };

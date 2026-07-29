@@ -15,7 +15,10 @@ describe("R7-7D D4B candidate generation contract", () => {
     expect(scope).toContain("INK_ADD_PRODUCT_READY = true");
     expect(route).toContain("generateInkAddCandidate: protectedProcedure");
     expect(route).toContain("retryInkAddCandidate: protectedProcedure");
-    expect(route.match(/\.strict\(\)/g)).toHaveLength(9);
+    expect(route.match(/\.input\(z\.object\(\{/g)?.length).toBe(
+      route.match(/\.strict\(\)/g)?.length,
+    );
+    expect(route).not.toContain(".passthrough()");
     expect(route).toContain("userId: ctx.user.id");
     expect(route).not.toMatch(
       /userId:\s*z\.|ownerId:\s*z\.|operationId:\s*z\.|storageKey:\s*z\.|engine:\s*z\./,
@@ -79,13 +82,18 @@ describe("R7-7D D4B candidate generation contract", () => {
     );
     const attemptStart = service.indexOf("async function runAttempt");
     const executeStart = service.indexOf("async function executeCandidate");
+    const projectionStart = service.indexOf(
+      "async function executeProjectionCandidate",
+    );
     const attempt = service.slice(attemptStart, executeStart);
-    const execute = service.slice(executeStart);
+    const execute = service.slice(executeStart, projectionStart);
     const quota = execute.indexOf(
       "dependencies.enforceQuota ?? enforceDailyQuota",
     );
     const begin = execute.indexOf("const begin = dependencies.begin");
-    const visibility = execute.indexOf("const visibility = await runInkVisibilityProbe");
+    const visibility = execute.indexOf(
+      'const visibility = prepared.authority.kind === "legacy_v1"',
+    );
     const charge = execute.indexOf("const charge = dependencies.charge");
     const firstAttempt = execute.indexOf("let outcome = await runAttempt({");
     const receiptSuccess = execute.indexOf(
@@ -116,18 +124,22 @@ describe("R7-7D D4B candidate generation contract", () => {
       source("./casting/evidence/evidenceDelivery.ts"),
       source("./db/inkAddCandidates.ts"),
     ]);
-    const generating = service.indexOf(
+    const attemptStart = service.indexOf("async function runAttempt");
+    const executeStart = service.indexOf("async function executeCandidate");
+    const attempt = service.slice(attemptStart, executeStart);
+    const generating = attempt.indexOf(
       "dependencies.markGenerating ?? markInkCandidateAttemptGenerating",
     );
-    const put = service.indexOf("await putCanonicalEvidence");
-    const verify = service.indexOf("await readPrivateExact");
-    const stored = service.indexOf(
+    const put = attempt.indexOf("await putCanonicalEvidence");
+    const verify = attempt.indexOf("await readPrivateExact");
+    const stored = attempt.indexOf(
       "dependencies.markStored ?? markInkCandidateAttemptStored",
     );
     expect(generating).toBeGreaterThan(-1);
     expect(put).toBeGreaterThan(generating);
     expect(verify).toBeGreaterThan(put);
     expect(stored).toBeGreaterThan(verify);
+    expect(attempt).toContain("readPrivateExact(dependencies.delivery");
     expect(service).toContain("adapter.readCanonical");
     expect(service).not.toContain("err: error");
     expect(delivery).toContain('kind: "candidate"');

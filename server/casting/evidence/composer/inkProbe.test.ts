@@ -2,10 +2,14 @@ import sharp from "sharp";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { ComposerImage } from "./inkComposer";
 import {
+  buildInkAnywhereFeaturePlacementProbeRequest,
+  buildInkAnywhereVisibilityProbeRequest,
   buildInkFeaturePlacementProbeRequest,
   buildInkIdentityPoseProbeRequest,
   buildInkVisibilityProbeRequest,
   parseInkIdentityPoseProbe,
+  runInkAnywhereCandidateProbes,
+  runInkAnywhereVisibilityProbe,
   runInkCandidateProbes,
   runInkVisibilityProbe,
 } from "./inkProbe";
@@ -118,6 +122,7 @@ describe("R7-7D fail-closed structured probes", () => {
       identityOutcome: "pass",
       placementOutcome: "pass",
       featureMatchOutcome: "pass",
+      priorInkOutcome: "pass",
       poseFramingOutcome: "pass",
       unexpectedInkOutcome: "pass",
       overallOutcome: "pass",
@@ -189,5 +194,70 @@ describe("R7-7D fail-closed structured probes", () => {
       predictedVisibility: "pass",
       confidence: 92,
     });
+  });
+
+  it("requires readable anatomy and exact prior-ink preservation for v2", async () => {
+    const anatomy = {
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    } as const;
+    const visibility = buildInkAnywhereVisibilityProbeRequest({
+      target: image,
+      anatomy,
+    });
+    const feature = buildInkAnywhereFeaturePlacementProbeRequest({
+      originalTarget: image,
+      candidate: image,
+      anatomy,
+      normalizedDescriptor: "blackwork full sleeve",
+    });
+    expect(visibility.recipeVersion)
+      .toBe("ink.add.anywhere.visibility.v1");
+    expect(visibility.prompt).toContain("anatomical side");
+    expect(feature.recipeVersion).toBe("ink.add.anywhere.probe.v1");
+    expect(feature.responseSchema).toHaveProperty("priorVisibleInkPreserved");
+
+    await expect(runInkAnywhereVisibilityProbe({
+      target: image,
+      anatomy,
+      probe: async () => ({
+        targetRegionVisible: true,
+        anatomicalSideReadable: true,
+        materiallyOccluded: false,
+        confidence: 91,
+      }),
+    })).resolves.toEqual({
+      predictedVisibility: "pass",
+      confidence: 91,
+    });
+
+    const truth = await runInkAnywhereCandidateProbes({
+      identityAnchor: image,
+      originalTarget: image,
+      candidate: image,
+      anatomy,
+      normalizedDescriptor: "blackwork full sleeve",
+      predictedVisibility: "pass",
+      probe: async (request) => request.kind === "identity_pose"
+        ? identityPass
+        : {
+            correctPlacement: true,
+            requestedFeaturePresent: true,
+            priorVisibleInkPreserved: false,
+            noUnexpectedInk: true,
+            confidence: 94,
+          },
+    });
+    expect(truth).toMatchObject({
+      priorInkOutcome: "fail",
+      overallOutcome: "fail",
+    });
+    expect(decideInkCandidateAttempt({ attemptNumber: 1, probe: truth }))
+      .toEqual({
+        action: "included_retry",
+        nextAttemptNumber: 2,
+        directives: ["prior_ink"],
+      });
   });
 });

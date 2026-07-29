@@ -12,7 +12,6 @@ describe("AI Service - Credit Costs", () => {
     expect(CREDIT_COSTS.fullBody).toBe(300);
     expect(CREDIT_COSTS.multiView).toBe(300);
     expect(CREDIT_COSTS.iterate).toBe(350);
-    expect(CREDIT_COSTS.upscale).toBe(300);
   });
 
   it("should have all generation types with positive costs", () => {
@@ -21,7 +20,6 @@ describe("AI Service - Credit Costs", () => {
       fullBody: CREDIT_COSTS.fullBody,
       multiView: CREDIT_COSTS.multiView,
       iterate: CREDIT_COSTS.iterate,
-      upscale: CREDIT_COSTS.upscale,
     };
     Object.entries(actionCosts).forEach(([type, cost]) => {
       expect(cost).toBeGreaterThan(0);
