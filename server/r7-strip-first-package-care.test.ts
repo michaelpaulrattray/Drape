@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { addTierForAngle } from '../client/src/features/casting/components/ImageViewer/ViewTabs';
+import { evidencePackageSlotNeedsAction } from '../client/src/features/casting/evidence/evidencePackageDisplay';
 
 const root = path.join(__dirname, '..');
 const read = (relative: string) => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -18,13 +19,32 @@ describe('R7-4A strip-first package care', () => {
 
   it('shows direct priced repair actions while healthy views stay quiet', () => {
     const strip = read('client/src/features/casting/components/ImageViewer/ViewTabs.tsx');
-    expect(strip).toContain('Refresh ${label} for ${refreshCost.toLocaleString()} credits');
+    expect(strip).toContain("refreshVerb = 'Refresh'");
+    expect(strip).toContain('${refreshVerb} ${label} for ${refreshCost.toLocaleString()} credits');
     expect(strip).toContain("cost={plan?.refusal === null ? plan.cost : undefined}");
-    expect(strip).toContain('Refresh all<br />{actionableCost.toLocaleString()} credits');
+    expect(strip).toContain("evidenceAware ? 'Update coverage' : 'Refresh all'");
     expect(strip).not.toContain("pinningAvailable");
     expect(strip).not.toContain("slot.pinned");
     expect(strip).not.toContain('Stale dot');
     expect(strip).not.toContain("'Package health'");
+  });
+
+  it('keeps closed attention rows quiet while actionable evidence rows stay obvious', () => {
+    expect(evidencePackageSlotNeedsAction({
+      status: 'attention',
+      refusal: 'identity_anchor',
+    })).toBe(false);
+    expect(evidencePackageSlotNeedsAction({
+      status: 'attention',
+      refusal: 'authoring_truth',
+    })).toBe(false);
+    expect(evidencePackageSlotNeedsAction({
+      status: 'attention',
+      refusal: 'feature_graph_unsupported',
+    })).toBe(false);
+    for (const status of ['stale', 'missing', 'failed'] as const) {
+      expect(evidencePackageSlotNeedsAction({ status, refusal: null })).toBe(true);
+    }
   });
 
   it('uses one shared refresh mutation and only invokes it from deliberate click handlers', () => {

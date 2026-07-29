@@ -156,6 +156,8 @@ vi.mock("./casting/evidence/evidenceComposerScope", async (importOriginal) => {
 });
 vi.mock("./casting/evidence/evidencePackageAuthority", () => ({
   classifyEvidencePackageRouteAuthority: vi.fn(),
+  inspectEvidencePackageRoutePlan: vi.fn()
+    .mockResolvedValue({ type: "featureless" }),
 }));
 vi.mock("./casting/evidence/evidencePackageExecution", () => {
   class EvidencePackageSettlementUncertainError extends Error {
@@ -301,7 +303,10 @@ import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "./casting/effectiveCastRead";
 import { captureEvidencePackageEnabled } from "./casting/evidence/evidencePackageScope";
 import { captureEvidenceComposerEnabled } from "./casting/evidence/evidenceComposerScope";
-import { classifyEvidencePackageRouteAuthority } from "./casting/evidence/evidencePackageAuthority";
+import {
+  classifyEvidencePackageRouteAuthority,
+  inspectEvidencePackageRoutePlan,
+} from "./casting/evidence/evidencePackageAuthority";
 import {
   EvidencePackageSettlementUncertainError,
   executeEvidencePackageSync,
@@ -413,6 +418,8 @@ beforeEach(() => {
   vi.mocked(captureEvidencePackageEnabled).mockReset().mockReturnValue(false);
   vi.mocked(captureEvidenceComposerEnabled).mockReset().mockReturnValue(false);
   vi.mocked(classifyEvidencePackageRouteAuthority).mockReset();
+  vi.mocked(inspectEvidencePackageRoutePlan).mockReset()
+    .mockResolvedValue({ type: "featureless" });
   vi.mocked(executeEvidencePackageSync).mockReset();
   vi.mocked(classifyEvidenceMintRouteAuthority).mockReset()
     .mockResolvedValue({ type: "featureless" });
@@ -1130,6 +1137,122 @@ describe("mint/add-views snapshot ordering", () => {
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(generateFullBody).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("adds the read-only evidence package plan only when all scopes are enabled", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(captureEvidenceComposerEnabled).mockReturnValue(true);
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue({
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: {},
+        preferences: {},
+        identityText: CANON,
+      },
+      anchor: null,
+      displayedHeadshot: null,
+      selectedViews: [],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [] },
+    } as never);
+    vi.mocked(inspectEvidencePackageRoutePlan).mockResolvedValue({
+      type: "supported",
+      plan: {
+        modelId: 7,
+        supported: true,
+        slots: [{
+          angle: "sideFull",
+          label: "Walk",
+          status: "stale",
+          cost: 300,
+          refusal: null,
+        }],
+        actionableAngles: ["sideFull"],
+        refreshableAngles: ["sideFull"],
+        missingAngles: [],
+        totalCost: 300,
+        zeroGenerationMintAvailable: true,
+      },
+    } as never);
+
+    const result = await productionRouter.createCaller(authCtx())
+      .generation.refreshSlotsPlan({ modelId: 7, angles: ["sideFull"] });
+
+    expect(result).toMatchObject({
+      evidencePackage: {
+        supported: true,
+        actionableAngles: ["sideFull"],
+        totalCost: 300,
+      },
+    });
+    expect(inspectEvidencePackageRoutePlan).toHaveBeenCalledWith({
+      userId: 1,
+      modelId: 7,
+      angles: ["sideFull"],
+    });
+  });
+
+  it("keeps ordinary refresh planning unchanged while evidence scope is off", async () => {
+    await productionRouter.createCaller(authCtx())
+      .generation.refreshSlotsPlan({ modelId: 7 });
+
+    expect(inspectEvidencePackageRoutePlan).not.toHaveBeenCalled();
+  });
+
+  it("publishes a closed unsupported evidence plan without falling back to ordinary authority", async () => {
+    vi.mocked(captureSnapshotReadMode).mockReturnValue("snapshot");
+    vi.mocked(captureEvidenceComposerEnabled).mockReturnValue(true);
+    vi.mocked(captureEvidencePackageEnabled).mockReturnValue(true);
+    vi.mocked(resolveEffectiveCastStateForRead).mockResolvedValue({
+      authority: "snapshot",
+      status: "current",
+      model: model({ identityRevisionId: "rev-snapshot" }),
+      stateVersion: 3,
+      package: {},
+      identity: {
+        masterPrompt: "immutable snapshot prompt",
+        technicalSchema: {},
+        preferences: {},
+        identityText: CANON,
+      },
+      anchor: null,
+      displayedHeadshot: null,
+      selectedViews: [],
+      sealedPackage: null,
+      sealedIdentity: null,
+      ledger: { assets: [] },
+    } as never);
+    vi.mocked(inspectEvidencePackageRoutePlan).mockResolvedValue({
+      type: "unsupported",
+      plan: {
+        modelId: 7,
+        supported: false,
+        slots: [],
+        actionableAngles: [],
+        refreshableAngles: [],
+        missingAngles: [],
+        totalCost: 0,
+        zeroGenerationMintAvailable: false,
+      },
+    } as never);
+
+    const result = await productionRouter.createCaller(authCtx())
+      .generation.refreshSlotsPlan({ modelId: 7 });
+
+    expect(result).toMatchObject({
+      evidencePackage: {
+        supported: false,
+        actionableAngles: [],
+        totalCost: 0,
+      },
+    });
   });
 
   it("mints a supported evidence package without generation or credits", async () => {

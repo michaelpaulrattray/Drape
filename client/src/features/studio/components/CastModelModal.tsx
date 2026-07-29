@@ -12,6 +12,21 @@ import { honestModelName } from '@/features/casting/modelDisplayTruth';
 
 export type TierPlan = Record<MintTier, { missing: string[]; cost: number }>;
 
+export interface EvidenceMintTierPlan {
+  ready: boolean;
+  requiredAngles: string[];
+  missingAngles: string[];
+  staleAngles: string[];
+  attentionAngles: string[];
+}
+
+export interface EvidenceMintPlan {
+  supported: boolean;
+  zeroGeneration: true;
+  pendingEvidence: boolean;
+  tiers: Record<MintTier, EvidenceMintTierPlan>;
+}
+
 /** §14 (R8, Batch C): the server's per-tier mint-integrity prediction — the
  *  dialog surfaces each failing check's OWN copy and holds the mint door
  *  shut, so a refusal is never a surprise after money was about to move. */
@@ -44,6 +59,18 @@ export function hasCompleteMintPackage(tiers?: TierPlan): boolean {
  * is zero-work in that state, but production is the honest final intent. */
 export function mintTierForPlan(tiers: TierPlan | undefined, selected: MintTier): MintTier {
   return hasCompleteMintPackage(tiers) ? 'production' : selected;
+}
+
+/** D-72: Drape chooses the strongest complete package silently. Customers
+ * decide whether to mint or add coverage; they do not configure tiers. */
+export function recommendedEvidenceMintTier(
+  plan?: EvidenceMintPlan,
+): MintTier | null {
+  if (!plan?.supported || plan.pendingEvidence) return null;
+  for (const tier of ['production', 'core', 'draft'] as const) {
+    if (plan.tiers[tier].ready) return tier;
+  }
+  return null;
 }
 
 /** The arguments each door sends — pure, exported for tests. W6-C makes the
@@ -83,6 +110,9 @@ export interface CastModelModalProps {
   /** Per-tier §14 mint-integrity prediction (server truth); undefined while
    *  the plan loads. Only gates the MINT door — adding views stays open. */
   integrity?: TierIntegrity;
+  /** Progressive evidence mint plan. When present, Drape selects the
+   * strongest ready package and hides technical tier controls. */
+  evidenceMint?: EvidenceMintPlan;
   /** Whether the casting process is in progress */
   isCasting: boolean;
   /** Progress message during casting */
@@ -117,6 +147,7 @@ export function CastModelModal({
   onConfirm,
   tiers,
   integrity,
+  evidenceMint,
   isCasting,
   castingMessage,
   viewsGenerating = false,
@@ -132,12 +163,16 @@ export function CastModelModal({
   const nameEditedRef = useRef(false);
   const [tier, setTier] = useState<MintTier>(initialTier);
   const upgrade = mode === 'upgrade';
+  const evidenceMode = evidenceMint !== undefined;
+  const evidenceTier = recommendedEvidenceMintTier(evidenceMint);
   // Defect 4: an existing draft's dialog leads with ADDING VIEWS; mint is the
   // distinct deliberate step. A fresh cast leads with mint (name commits).
   const addFirst = existingDraft && !upgrade;
-  const packageComplete = !upgrade && hasCompleteMintPackage(tiers);
-  const actionTier = mintTierForPlan(tiers, tier);
-  const selectedGenerates = (tiers?.[tier]?.cost ?? 0) > 0;
+  const packageComplete = !evidenceMode && !upgrade && hasCompleteMintPackage(tiers);
+  const actionTier = evidenceMode
+    ? evidenceTier ?? initialTier
+    : mintTierForPlan(tiers, tier);
+  const selectedGenerates = !evidenceMode && (tiers?.[tier]?.cost ?? 0) > 0;
 
   useEffect(() => {
     if (!isOpen) {
@@ -181,11 +216,45 @@ export function CastModelModal({
       ]
     : [];
   const integrityOk = tierIntegrity ? tierIntegrity.ok : true;
+  const evidenceTierPlan = evidenceMint?.tiers[actionTier];
+  const evidenceNeedsCoverage = Boolean(
+    evidenceTierPlan
+    && (
+      evidenceTierPlan.missingAngles.length > 0
+      || evidenceTierPlan.staleAngles.length > 0
+      || evidenceTierPlan.attentionAngles.length > 0
+    ),
+  );
+  const evidenceBlockerMessages = evidenceMode
+    ? [
+        ...(!evidenceMint?.supported
+          ? ['This Cast\u2019s tattoo evidence needs review before minting.']
+          : []),
+        ...(evidenceMint?.pendingEvidence
+          ? ['Finish or discard the current generated tattoo preview before minting.']
+          : []),
+        ...integrityMessages,
+      ]
+    : [];
+  const evidenceFallbackMessage =
+    'Update the affected view before minting. Nothing will generate automatically.';
+  const evidenceCanReviewCoverage = Boolean(
+    onResolvePackage
+    && evidenceMint?.supported
+    && !evidenceMint.pendingEvidence
+    && (evidenceNeedsCoverage || integrityMessages.length > 0),
+  );
+  const evidenceMintBlocked =
+    evidenceMode && !upgrade && (evidenceTier === null || !integrityOk);
 
   // Defect 4 — two clearly-labeled doors (mint mode). "Add views" stays a
   // draft (photographs, no commitment); "Name & mint" commits identity
   // (D-43) and requires a name. Which is primary depends on where you stand.
-  const canMint = !!name.trim() && !isCasting && integrityOk;
+  const canMint =
+    !!name.trim() &&
+    !isCasting &&
+    integrityOk &&
+    (!evidenceMode || evidenceTier !== null);
   const canAddViews = selectedGenerates && !isCasting;
   const doMint = useCallback(() => {
     const args = confirmArgsForDoor('mint', { addFirst, name, tier: actionTier });
@@ -198,6 +267,10 @@ export function CastModelModal({
   }, [addFirst, name, onConfirm, tier, selectedGenerates]);
 
   const requestClose = useCallback(() => onClose(name), [name, onClose]);
+  const reviewCoverage = useCallback(() => {
+    requestClose();
+    onResolvePackage?.();
+  }, [onResolvePackage, requestClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -239,11 +312,26 @@ export function CastModelModal({
           <div className="flex items-center gap-2 mb-3">
             <Camera className="w-4 h-4 text-canvas-ink-soft" />
             <span className="text-canvas-lg font-medium text-canvas-ink">
-              {upgrade ? 'Complete the card' : packageComplete ? 'Ready to mint' : addFirst ? 'Add views' : 'Cast this model'}
+              {evidenceMode
+                ? !upgrade && evidenceTier
+                  ? 'Ready to use'
+                  : 'Update coverage'
+                : upgrade
+                  ? 'Complete the card'
+                  : packageComplete
+                    ? 'Ready to mint'
+                    : addFirst
+                      ? 'Add views'
+                      : 'Cast this model'}
             </span>
           </div>
 
-          {upgrade ? (
+          {evidenceMode && upgrade ? (
+            <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-3.5">
+              Add only the views that make this Cast more useful. Nothing will
+              generate until you choose an update.
+            </p>
+          ) : upgrade ? (
             <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-3.5">
               {fixedName ? `Add the views ${fixedName} is missing.` : 'Add the missing views.'} Upgrading
               later always costs the same — you only pay for what's new.
@@ -254,7 +342,12 @@ export function CastModelModal({
                draft's "Name & mint" door was permanently disabled with a
                tooltip pointing at a field that didn't exist. */
             <div className="mb-3.5">
-              {addFirst && !packageComplete && (
+              {evidenceMode ? (
+                <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-2.5">
+                  Drape will use the strongest complete coverage already available.
+                  No views will be generated and no credits will be used.
+                </p>
+              ) : addFirst && !packageComplete ? (
                 /* Existing draft: views are photographs, not a commitment
                    (D-55). Honest doors: "Add views" keeps the model a draft — a
                    typed name then rides along as an OPTIONAL draft label
@@ -265,9 +358,11 @@ export function CastModelModal({
                   Name &amp; mint locks its identity; until then, a typed
                   name is just its draft label.
                 </p>
-              )}
+              ) : null}
               <label className="block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">
-                Name — saved as this model&apos;s draft label until you mint
+                {evidenceMode
+                  ? 'Name this Cast'
+                  : <>Name — saved as this model&apos;s draft label until you mint</>}
               </label>
               <input
                 autoFocus={!addFirst || packageComplete}
@@ -282,7 +377,9 @@ export function CastModelModal({
                   if (e.key === 'Enter') (addFirst ? doMint : handleConfirm)();
                 }}
                 placeholder={
-                  packageComplete
+                  evidenceMode
+                    ? 'Enter a name for this Cast'
+                    : packageComplete
                     ? 'Enter a name to mint this model'
                     : addFirst
                       ? 'Name this model — locked in only when you mint'
@@ -302,7 +399,7 @@ export function CastModelModal({
           )}
 
           {/* Tier picker (D-39). A complete package has no tier choice left. */}
-          {!packageComplete && <div className="mb-3.5">
+          {!evidenceMode && !packageComplete && <div className="mb-3.5">
             {(upgrade ? TIER_ORDER.filter((t) => t !== 'draft') : TIER_ORDER).map((t) => {
               const selected = tier === t;
               const plan = tiers?.[t];
@@ -358,7 +455,7 @@ export function CastModelModal({
 
           {/* §14 mint-integrity prediction — each failing check speaks its
               own copy; the mint door below is held shut until resolved */}
-          {!upgrade && integrityMessages.length > 0 && (
+          {!evidenceMode && !upgrade && integrityMessages.length > 0 && (
             <div className="mb-3.5 px-3 py-2 rounded-canvas-md bg-canvas-surface-inset">
               {integrityMessages.map((m, i) => (
                 <div key={i} className="text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.45 }}>
@@ -372,6 +469,32 @@ export function CastModelModal({
                   className="mt-2 text-canvas-sm font-medium text-canvas-ink hover:text-canvas-ink-soft transition-colors"
                 >
                   Review and refresh views
+                </button>
+              )}
+            </div>
+          )}
+
+          {evidenceMintBlocked && (
+            <div className="mb-3.5 px-3 py-2 rounded-canvas-md bg-canvas-surface-inset">
+              {(evidenceBlockerMessages.length > 0
+                ? evidenceBlockerMessages
+                : [evidenceFallbackMessage]
+              ).map((message) => (
+                <div
+                  key={message}
+                  className="text-canvas-md text-canvas-ink-soft"
+                  style={{ lineHeight: 1.45 }}
+                >
+                  {message}
+                </div>
+              ))}
+              {evidenceCanReviewCoverage && (
+                <button
+                  type="button"
+                  onClick={reviewCoverage}
+                  className="mt-2 text-canvas-sm font-medium text-canvas-ink hover:text-canvas-ink-soft transition-colors"
+                >
+                  Add coverage
                 </button>
               )}
             </div>
@@ -393,7 +516,48 @@ export function CastModelModal({
           )}
 
           {/* Actions — every door says where it leads (defect 4) */}
-          {upgrade ? (
+          {evidenceMode ? (
+            <div className="flex justify-end items-center gap-2.5">
+              <button
+                onClick={requestClose}
+                className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1"
+              >
+                Keep editing
+              </button>
+              {onResolvePackage && (upgrade || evidenceTier !== null) && (
+                <button
+                  type="button"
+                  onClick={reviewCoverage}
+                  className="text-canvas-ink-soft border-hairline border-canvas-border-strong hover:text-canvas-ink hover:border-canvas-ink flex items-center gap-1.5 px-4 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium"
+                >
+                  Add coverage
+                </button>
+              )}
+              {!upgrade && (
+                <button
+                  type="button"
+                  onClick={doMint}
+                  disabled={!canMint}
+                  title={
+                  evidenceMintBlocked
+                    ? evidenceBlockerMessages[0] ?? evidenceFallbackMessage
+                      : !name.trim()
+                        ? 'Enter a name to mint this Cast'
+                        : undefined
+                  }
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium ${
+                    canMint
+                      ? 'bg-canvas-ink text-canvas-surface cursor-pointer'
+                      : 'bg-canvas-border text-canvas-ink-faint cursor-not-allowed'
+                  }`}
+                >
+                  {isCasting
+                    ? <><Loader2 className="w-3 h-3 animate-spin" />Minting…</>
+                    : <>Mint Cast<ChevronRight className="w-3 h-3" /></>}
+                </button>
+              )}
+            </div>
+          ) : upgrade ? (
             <div className="flex justify-end gap-3">
               <button onClick={requestClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors">
                 Keep editing

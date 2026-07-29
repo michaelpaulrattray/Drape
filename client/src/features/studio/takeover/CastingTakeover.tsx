@@ -300,6 +300,7 @@ export function CastingTakeover({
     castingMessage,
     tierPlan,
     mintIntegrity,
+    evidenceMint,
     handleCastAndContinue,
   } = useCastGate({
     currentModelId,
@@ -731,6 +732,7 @@ export function CastingTakeover({
         onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, upgradeMode, stayDraft)}
         tiers={tierPlan}
         integrity={mintIntegrity}
+        evidenceMint={evidenceMint}
         isCasting={isCasting}
         viewsGenerating={viewsGenerating}
         castingMessage={castingMessage}

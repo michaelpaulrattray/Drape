@@ -94,17 +94,18 @@ describe("R7-7D D5 inline Studio contract", () => {
     expect(panel).toContain("Retry ·");
     expect(panel).toContain("Cancel preview");
     expect(panel).toContain("does not refund its completed generation");
-    expect(panel).toContain("Founder pilot:");
+    expect(panel).toContain("Accepting saves this tattoo to the Cast");
     expect(workspace).toContain("utils.models.get.fetch({ modelId })");
     expect(workspace).toContain('setActiveView("frontFull")');
     expect(workspace).not.toContain("candidateDeliveryUrl");
   });
 
   it("makes the model-specific capability and accepted-feature lock server-owned", async () => {
-    const [service, db, viewer] = await Promise.all([
+    const [service, db, viewer, panel] = await Promise.all([
       source("./casting/evidence/inkAddIntent.ts"),
       source("./db/inkAddIntents.ts"),
       source("../client/src/features/casting/ImageViewerPanel.tsx"),
+      source("../client/src/features/casting/evidence/InkAddPanel.tsx"),
     ]);
     expect(service).toContain("subjectStatus:");
     expect(service).toContain("inspectOwnedInkAddAvailability");
@@ -113,7 +114,10 @@ describe("R7-7D D5 inline Studio contract", () => {
     expect(db).toContain('view.angle === INK_ADD_TARGET_VIEW');
     expect(db).toContain(".from(modelSnapshotFeatureSelections)");
     expect(viewer).toContain('subjectStatus === "feature_selected"');
-    expect(viewer).toContain("<InkFeaturePilotLock />");
+    expect(viewer).toContain("<InkFeatureAcceptedPanel modelId={currentModelId} />");
+    expect(panel).toContain('refreshAngles(["sideFull"])');
+    expect(panel).toContain("Update Walk");
+    expect(panel).toContain("Views that can show it are current.");
   });
 
   it("projects durable evidence work into Studio and disables cross-tab actions", async () => {

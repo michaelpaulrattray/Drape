@@ -17,7 +17,7 @@ import { ImageActionBar } from "@/features/studio/components/ImageActionBar";
 import {
   InkAddComposer,
   InkAddDoor,
-  InkFeaturePilotLock,
+  InkFeatureAcceptedPanel,
 } from "./evidence/InkAddPanel";
 import { useInkAddWorkflow } from "./evidence/useInkAddWorkflow";
 
@@ -406,8 +406,8 @@ export function ImageViewerPanel({
         </button>
       )}
     </div>
-  ) : hasAssets && inkFeatureSelected ? (
-    <InkFeaturePilotLock />
+  ) : hasAssets && inkFeatureSelected && currentModelId ? (
+    <InkFeatureAcceptedPanel modelId={currentModelId} />
   ) : hasAssets && inkWorkflow.panelOpen ? (
     <InkAddComposer
       workflow={inkWorkflow}

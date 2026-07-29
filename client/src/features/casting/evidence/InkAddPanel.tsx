@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { ImagePlus, Loader2, Plus, RotateCcw, X } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useCastingPackageRefresh } from "../hooks/useCastingPackageRefresh";
 import type { useInkAddWorkflow } from "./useInkAddWorkflow";
 import {
   inkCandidateIsExpired,
@@ -57,13 +59,55 @@ export function InkAddDoor({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-export function InkFeaturePilotLock() {
+export function InkFeatureAcceptedPanel({ modelId }: { modelId: number }) {
+  const planQuery = trpc.generation.refreshSlotsPlan.useQuery(
+    { modelId },
+    { staleTime: 0 },
+  );
+  const { refreshAngles, refreshingSet } = useCastingPackageRefresh(modelId);
+  const evidencePlan = planQuery.data && "evidencePackage" in planQuery.data
+    ? planQuery.data.evidencePackage
+    : undefined;
+  const walkPlan = evidencePlan?.slots.find((slot) => slot.angle === "sideFull");
+  const canUpdate = Boolean(
+    evidencePlan?.supported
+    && walkPlan
+    && walkPlan.refusal === null
+    && walkPlan.status !== "current",
+  );
+  const updating = refreshingSet.has("sideFull");
+
   return (
     <div className="mx-auto w-full max-w-2xl rounded-canvas-lg border-hairline border-canvas-border bg-canvas-surface px-4 py-3">
-      <p className="text-canvas-md font-medium text-canvas-ink">Tattoo saved to this Cast</p>
-      <p className="mt-0.5 text-canvas-sm leading-normal text-canvas-ink-soft">
-        During the founder pilot, other edits, refreshes and minting stay unavailable so the accepted tattoo cannot be lost.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-canvas-md font-medium text-canvas-ink">Tattoo saved</p>
+          <p className="mt-0.5 text-canvas-sm leading-normal text-canvas-ink-soft">
+            Update the views that can show it. Recast, Iterate, Variations and Restore
+            are not available for this Cast yet.
+          </p>
+        </div>
+        {canUpdate && walkPlan ? (
+          <button
+            type="button"
+            onClick={() => refreshAngles(["sideFull"])}
+            disabled={updating}
+            className="flex-shrink-0 rounded-canvas-pill bg-canvas-ink px-4 py-2 text-canvas-sm font-medium text-canvas-surface disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {updating
+              ? "Updating Walk…"
+              : `Update Walk · ${walkPlan.cost.toLocaleString()} credits`}
+          </button>
+        ) : evidencePlan?.supported ? (
+          <span className="text-canvas-sm text-canvas-ink-soft">
+            Views that can show it are current.
+          </span>
+        ) : planQuery.isError ? (
+          <span className="text-canvas-sm text-canvas-ink-soft">
+            View status is temporarily unavailable.
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -420,7 +464,8 @@ export function InkAddComposer({
 
       <div className="mt-3 border-t-hairline border-canvas-border pt-3">
         <p className="mb-3 text-canvas-xs leading-normal text-canvas-ink-soft">
-          Founder pilot: accepting a tattoo pauses other edits, refreshes and minting until evidence-aware view refresh is enabled.
+          Accepting saves this tattoo to the Cast. Drape will show any affected
+          views that need updating before you spend.
         </p>
         <div className="flex items-center justify-between gap-3">
           {active ? (

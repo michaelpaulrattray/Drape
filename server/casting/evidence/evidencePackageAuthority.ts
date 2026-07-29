@@ -192,6 +192,63 @@ export type EvidencePackageRouteAuthority =
   | { type: "supported"; plan: EvidencePackageSyncPlan }
   | { type: "unsupported" };
 
+export type EvidencePackagePlanRouteAuthority =
+  | { type: "featureless" }
+  | { type: "supported"; plan: EvidencePackageSyncPlan }
+  | { type: "unsupported"; plan: EvidencePackageSyncPlan };
+
+async function inspectEvidencePackageRoutePlanIn(
+  tx: TransactionHandle,
+  input: {
+    userId: number;
+    modelId: number;
+    angles?: readonly CanonicalViewAngle[];
+  },
+): Promise<EvidencePackagePlanRouteAuthority> {
+  const state = buildEffectiveCastState(
+    await readSnapshotShadowStateIn(tx, input),
+  );
+  if (state.status !== "current") return { type: "featureless" };
+  const featureRows = await readEvidencePackageFeatureRowsIn(tx, {
+    userId: input.userId,
+    modelId: input.modelId,
+    identitySnapshotId: state.identity.id,
+  });
+  if (featureRows.graph.selections.length === 0) {
+    return { type: "featureless" };
+  }
+  const plan = computeEvidencePackageSyncPlan({
+    modelId: input.modelId,
+    modelStatus: state.model.status,
+    graph: featureRows.graph,
+    slots: selectedSlotStates({
+      selected: state.selectedViews,
+      assets: state.ledger.assets,
+    }),
+    requestedAngles: input.angles,
+    requiredMintAngles: CANONICAL_VIEW_ANGLES,
+    hasUnresolvedIntentOrReadyCandidate:
+      featureRows.hasUnresolvedIntentOrReadyCandidate,
+  });
+  return plan.supported
+    ? { type: "supported", plan }
+    : { type: "unsupported", plan };
+}
+
+/**
+ * Read-only planning authority for product surfaces. Unlike execute
+ * classification, this returns the complete public plan even when only some
+ * views are actionable. Private evidence rows and recipe details never cross
+ * the route boundary.
+ */
+export async function inspectEvidencePackageRoutePlan(input: {
+  userId: number;
+  modelId: number;
+  angles?: readonly CanonicalViewAngle[];
+}): Promise<EvidencePackagePlanRouteAuthority> {
+  return withTransaction((tx) => inspectEvidencePackageRoutePlanIn(tx, input));
+}
+
 /**
  * Read-only route discriminator. It reveals no feature detail: the only
  * outward decision is whether the request remains in the ordinary family,
@@ -203,34 +260,13 @@ export async function classifyEvidencePackageRouteAuthority(input: {
   angles: readonly CanonicalViewAngle[];
 }): Promise<EvidencePackageRouteAuthority> {
   return withTransaction(async (tx) => {
-    const state = buildEffectiveCastState(
-      await readSnapshotShadowStateIn(tx, input),
-    );
-    if (state.status !== "current") return { type: "featureless" };
-    const featureRows = await readEvidencePackageFeatureRowsIn(tx, {
-      userId: input.userId,
-      modelId: input.modelId,
-      identitySnapshotId: state.identity.id,
-    });
-    if (featureRows.graph.selections.length === 0) {
-      return { type: "featureless" };
+    const authority = await inspectEvidencePackageRoutePlanIn(tx, input);
+    if (authority.type !== "supported") {
+      return { type: authority.type };
     }
-    const plan = computeEvidencePackageSyncPlan({
-      modelId: input.modelId,
-      modelStatus: state.model.status,
-      graph: featureRows.graph,
-      slots: selectedSlotStates({
-        selected: state.selectedViews,
-        assets: state.ledger.assets,
-      }),
-      requestedAngles: input.angles,
-      requiredMintAngles: CANONICAL_VIEW_ANGLES,
-      hasUnresolvedIntentOrReadyCandidate:
-        featureRows.hasUnresolvedIntentOrReadyCandidate,
-    });
+    const { plan } = authority;
     const requested = new Set(input.angles);
-    return plan.supported
-      && plan.actionableAngles.length === requested.size
+    return plan.actionableAngles.length === requested.size
       && plan.actionableAngles.every((angle) => requested.has(angle))
       ? { type: "supported", plan }
       : { type: "unsupported" };

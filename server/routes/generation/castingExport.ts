@@ -44,6 +44,7 @@ import {
 } from "../../casting/snapshotPdfImages";
 import {
   classifyEvidencePackageRouteAuthority,
+  inspectEvidencePackageRoutePlan,
 } from "../../casting/evidence/evidencePackageAuthority";
 import {
   EvidencePackageSettlementUncertainError,
@@ -64,7 +65,8 @@ import {
   getEvidenceDeliveryAdapter,
 } from "../../casting/evidence/evidenceDeliveryRuntime";
 import {
-  FEATURE_BLIND_OPERATION_MESSAGE,
+  FEATURE_MINT_OPERATION_MESSAGE,
+  FEATURE_PACKAGE_OPERATION_MESSAGE,
 } from "../../casting/evidence/featureTransitionAuthority";
 import {
   resolveOperationKindForReplay,
@@ -287,7 +289,7 @@ export const castingExportRouter = router({
           ) {
             throw new TRPCError({
               code: "PRECONDITION_FAILED",
-              message: FEATURE_BLIND_OPERATION_MESSAGE,
+              message: FEATURE_MINT_OPERATION_MESSAGE,
             });
           }
           derivedKind = "evidence_mint";
@@ -381,7 +383,7 @@ export const castingExportRouter = router({
           ) {
             throw new TRPCError({
               code: "PRECONDITION_FAILED",
-              message: FEATURE_BLIND_OPERATION_MESSAGE,
+              message: FEATURE_MINT_OPERATION_MESSAGE,
             });
           }
           const classified = evidenceMintRoute
@@ -680,12 +682,27 @@ export const castingExportRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
-      return planRefreshSlots({
+      const ordinary = await planRefreshSlots({
         userId: ctx.user.id,
         modelId: input.modelId,
         angles: input.angles,
         readMode,
       });
+      if (
+        readMode !== "snapshot"
+        || !captureEvidenceComposerEnabled(ctx.user.id)
+        || !captureEvidencePackageEnabled(ctx.user.id)
+      ) {
+        return ordinary;
+      }
+      const evidence = await inspectEvidencePackageRoutePlan({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+        angles: input.angles,
+      });
+      return evidence.type === "featureless"
+        ? ordinary
+        : { ...ordinary, evidencePackage: evidence.plan };
     }),
 
   /** R5 refresh execute: regenerates the slots against the CURRENT headshot,
@@ -733,7 +750,7 @@ export const castingExportRouter = router({
           ) {
             throw new TRPCError({
               code: "PRECONDITION_FAILED",
-              message: FEATURE_BLIND_OPERATION_MESSAGE,
+              message: FEATURE_PACKAGE_OPERATION_MESSAGE,
             });
           }
           derivedKind = "evidence_package_sync";
@@ -803,7 +820,7 @@ export const castingExportRouter = router({
           ) {
             throw new TRPCError({
               code: "PRECONDITION_FAILED",
-              message: FEATURE_BLIND_OPERATION_MESSAGE,
+              message: FEATURE_PACKAGE_OPERATION_MESSAGE,
             });
           }
           const classified = evidenceRoute
@@ -815,7 +832,7 @@ export const castingExportRouter = router({
           if (classified.type !== "supported") {
             throw new TRPCError({
               code: "PRECONDITION_FAILED",
-              message: FEATURE_BLIND_OPERATION_MESSAGE,
+              message: FEATURE_PACKAGE_OPERATION_MESSAGE,
             });
           }
           plan = classified.plan;
@@ -891,7 +908,7 @@ export const castingExportRouter = router({
               if (!delivery) {
                 throw new TRPCError({
                   code: "PRECONDITION_FAILED",
-                  message: FEATURE_BLIND_OPERATION_MESSAGE,
+                  message: FEATURE_PACKAGE_OPERATION_MESSAGE,
                 });
               }
               return executeEvidencePackageSync({ delivery }, {

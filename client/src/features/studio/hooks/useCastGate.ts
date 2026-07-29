@@ -159,6 +159,7 @@ export function useCastGate({
         if (session.isCurrent()) setShowCastModal(false);
         utils.models.get.invalidate({ modelId: currentModelId });
         utils.generation.packageState.invalidate({ modelId: currentModelId });
+        utils.generation.refreshSlotsPlan.invalidate({ modelId: currentModelId });
         utils.generation.mintPackagePlan.invalidate({ modelId: currentModelId });
 
         if (!session.isCurrent()) {
@@ -245,6 +246,9 @@ export function useCastGate({
     isMinted,
     castingMessage,
     tierPlan: planQuery.data?.tiers,
+    evidenceMint: planQuery.data && 'evidenceMint' in planQuery.data
+      ? planQuery.data.evidenceMint
+      : undefined,
     /** §14 (R8, Batch C): per-tier mint-integrity prediction — the dialog
      *  renders each failing check's own copy before anyone spends. */
     mintIntegrity: planQuery.data?.integrity,

@@ -41,7 +41,13 @@ export const FEATURE_TRANSITION_AUTHORITY:
   };
 
 export const FEATURE_BLIND_OPERATION_MESSAGE =
-  "This Cast includes accepted tattoo evidence. Other edits, refreshes, restores, variations, and minting stay unavailable during the pilot.";
+  "This Cast includes accepted tattoo evidence. Recast, Iterate, Variations, and Restore remain unavailable in this release.";
+
+export const FEATURE_PACKAGE_OPERATION_MESSAGE =
+  "Evidence-aware view updates are temporarily unavailable. Nothing was generated or charged.";
+
+export const FEATURE_MINT_OPERATION_MESSAGE =
+  "Evidence-aware minting is temporarily unavailable. Nothing was generated or charged.";
 
 export function featureTransitionAuthorityFor(
   kind: GenerationOperationKind,

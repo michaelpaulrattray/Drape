@@ -35,6 +35,9 @@ export interface EvidenceMintPlan {
   modelId: number;
   supported: boolean;
   zeroGeneration: true;
+  /** Public workflow state only: the customer must accept or discard the
+   * current preview before immutable mint can proceed. */
+  pendingEvidence: boolean;
   tiers: Record<MintTier, EvidenceMintTierPlan>;
 }
 
@@ -53,6 +56,7 @@ function unsupportedPlan(modelId: number): EvidenceMintPlan {
     modelId,
     supported: false,
     zeroGeneration: true,
+    pendingEvidence: false,
     tiers: {
       draft: unavailableTier("draft"),
       core: unavailableTier("core"),
@@ -112,6 +116,7 @@ export function computeEvidenceMintPlan(input: {
     modelId: input.state.model.id,
     supported: true,
     zeroGeneration: true,
+    pendingEvidence: input.pendingEvidence,
     tiers,
   };
 }

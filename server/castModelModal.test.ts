@@ -25,6 +25,8 @@ import {
   hasCompleteMintPackage,
   initialMintName,
   mintTierForPlan,
+  recommendedEvidenceMintTier,
+  type EvidenceMintPlan,
   type TierPlan,
 } from "../client/src/features/studio/components/CastModelModal";
 
@@ -38,6 +40,35 @@ const completeTiers: TierPlan = {
   draft: { missing: [], cost: 700 },
   core: { missing: [], cost: 900 },
   production: { missing: [], cost: 1_500 },
+};
+
+const evidenceMint: EvidenceMintPlan = {
+  supported: true,
+  zeroGeneration: true,
+  pendingEvidence: false,
+  tiers: {
+    draft: {
+      ready: true,
+      requiredAngles: ["frontClose"],
+      missingAngles: [],
+      staleAngles: [],
+      attentionAngles: [],
+    },
+    core: {
+      ready: true,
+      requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull"],
+      missingAngles: [],
+      staleAngles: [],
+      attentionAngles: [],
+    },
+    production: {
+      ready: false,
+      requiredAngles: ["frontClose", "threeQuarter", "sideClose", "frontFull", "sideFull", "backFull"],
+      missingAngles: [],
+      staleAngles: ["sideFull"],
+      attentionAngles: [],
+    },
+  },
 };
 
 const modalSource = readFileSync(
@@ -170,6 +201,110 @@ describe("W6-B complete package collapses to one honest mint door", () => {
   });
 });
 
+describe("R7-7E4 evidence mint uses progressive coverage UX", () => {
+  it("chooses the strongest complete package without exposing tiers", () => {
+    expect(recommendedEvidenceMintTier(evidenceMint)).toBe("core");
+    expect(recommendedEvidenceMintTier({
+      ...evidenceMint,
+      tiers: {
+        ...evidenceMint.tiers,
+        production: { ...evidenceMint.tiers.production, ready: true, staleAngles: [] },
+      },
+    })).toBe("production");
+  });
+
+  it("offers ready-to-use minting and optional coverage with no generation claim", () => {
+    const html = render({
+      evidenceMint,
+      initialName: "Haniel",
+      onResolvePackage: () => {},
+    });
+    expect(html).toContain("Ready to use");
+    expect(html).toContain("No views will be generated and no credits will be used.");
+    expect(html).toContain("Add coverage");
+    expect(html).toContain("Mint Cast");
+    expect(html).not.toContain("Core identity");
+    expect(html).not.toContain("Full comp card");
+    expect(html).not.toContain("Just the headshot");
+  });
+
+  it("holds mint closed when even the minimal package is incomplete", () => {
+    const blocked: EvidenceMintPlan = {
+      ...evidenceMint,
+      tiers: {
+        draft: { ...evidenceMint.tiers.draft, ready: false, missingAngles: ["frontClose"] },
+        core: { ...evidenceMint.tiers.core, ready: false, missingAngles: ["frontClose"] },
+        production: { ...evidenceMint.tiers.production, ready: false, missingAngles: ["frontClose"] },
+      },
+    };
+    const html = render({
+      evidenceMint: blocked,
+      initialName: "Haniel",
+      onResolvePackage: () => {},
+    });
+    expect(html).toContain("Update coverage");
+    expect(html).toContain("Nothing will generate automatically.");
+    expect(html).toContain('disabled=""');
+  });
+
+  it("names a pending tattoo preview instead of sending the user to coverage", () => {
+    const html = render({
+      evidenceMint: { ...evidenceMint, pendingEvidence: true },
+      initialName: "Haniel",
+      onResolvePackage: () => {},
+    });
+    expect(html).toContain("Finish or discard the current generated tattoo preview before minting.");
+    expect(html).not.toContain(">Add coverage<");
+    expect(html).toContain('disabled=""');
+  });
+
+  it("keeps the exact headshot-integrity reason visible in evidence mode", () => {
+    const ok = {
+      anchor: { ok: true },
+      displayHeadshot: { ok: true },
+      tierViews: [],
+      ok: true,
+    };
+    const html = render({
+      evidenceMint,
+      initialName: "Haniel",
+      onResolvePackage: () => {},
+      integrity: {
+        draft: ok,
+        core: {
+          ...ok,
+          anchor: { ok: false, message: "Headshot anchor needs review" },
+          ok: false,
+        },
+        production: ok,
+      },
+    });
+    expect(html).toContain("Headshot anchor needs review");
+    expect(html).not.toContain("Update the affected view before minting.");
+    expect(html).toContain('title="Headshot anchor needs review"');
+  });
+
+  it("keeps evidence upgrade focused on coverage with a working door and no mint blocker", () => {
+    const notMintable: EvidenceMintPlan = {
+      ...evidenceMint,
+      tiers: {
+        draft: { ...evidenceMint.tiers.draft, ready: false },
+        core: { ...evidenceMint.tiers.core, ready: false },
+        production: { ...evidenceMint.tiers.production, ready: false },
+      },
+    };
+    const html = render({
+      mode: "upgrade",
+      evidenceMint: notMintable,
+      onResolvePackage: () => {},
+    });
+    expect(html).toContain("Update coverage");
+    expect(html).toContain(">Add coverage<");
+    expect(html).not.toContain("before minting");
+    expect(html).not.toContain("Mint Cast");
+  });
+});
+
 describe("W3 mint blockers route into Package health", () => {
   it("adds a working review-and-refresh door when integrity blocks minting", () => {
     const failedIntegrity = {
@@ -234,7 +369,7 @@ describe("W6-C draft-name persistence", () => {
 
   it("carries the typed label through Keep editing, scrim, and Escape dismissals", () => {
     expect(modalSource).toContain("onClose: (typedName: string) => void");
-    expect(modalSource.match(/onClick=\{requestClose\}/g)).toHaveLength(3);
+    expect(modalSource.match(/onClick=\{requestClose\}/g)).toHaveLength(4);
     expect(modalSource).toContain("if (event.target === event.currentTarget) requestClose()");
     expect(modalSource).toContain("window.addEventListener('keydown', handleEscape, true)");
   });

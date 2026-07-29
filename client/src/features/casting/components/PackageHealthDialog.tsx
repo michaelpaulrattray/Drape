@@ -6,6 +6,7 @@ import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefr
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
 import { SlotVersionHistory } from '@/features/casting/components/SlotVersionHistory';
+import { evidencePackageSlotNeedsAction } from '@/features/casting/evidence/evidencePackageDisplay';
 
 const OPEN_CASTING_DETAILS = 'casting-open-details';
 
@@ -67,21 +68,43 @@ export function CastingDetailsDialog() {
   if (!open) return null;
 
   const slots = packageQuery.data?.slots ?? [];
-  const planRows = new Map((planQuery.data?.slots ?? []).map((row) => [row.angle, row]));
+  const evidencePackage = planQuery.data && 'evidencePackage' in planQuery.data
+    ? planQuery.data.evidencePackage
+    : undefined;
+  const evidenceAware = Boolean(evidencePackage);
+  const evidenceByAngle = new Map(
+    (evidencePackage?.slots ?? []).map((row) => [row.angle, row]),
+  );
+  const planRows = new Map(
+    (evidencePackage?.slots ?? planQuery.data?.slots ?? []).map((row) => [row.angle, row]),
+  );
   const integrity = mintPlanQuery.data?.integrity.production;
   const blockers = new Map(
-    (integrity?.tierViews ?? []).filter((view) => !view.ok).map((view) => [view.angle, view]),
+    (evidenceAware ? [] : integrity?.tierViews ?? [])
+      .filter((view) => !view.ok)
+      .map((view) => [view.angle, view]),
   );
   const headshotIssue = integrity && (!integrity.anchor.ok || !integrity.displayHeadshot.ok)
     ? integrity.anchor.message ?? integrity.displayHeadshot.message ?? 'The headshot needs attention before minting.'
     : null;
   const actionable = slots.filter((slot) => {
     const plan = planRows.get(slot.angle);
+    const evidenceNeedsAction = evidencePackageSlotNeedsAction(
+      evidenceByAngle.get(slot.angle),
+    );
     return !!plan && plan.refusal === null && !refreshingSet.has(slot.angle)
-      && (slot.stale || !!slot.failed || blockers.has(slot.angle));
+      && (
+        evidenceAware
+          ? evidenceNeedsAction
+          : slot.stale || !!slot.failed || blockers.has(slot.angle)
+      );
   });
   const issueAngles = new Set(
-    slots.filter((slot) => slot.stale || !!slot.failed || blockers.has(slot.angle)).map((slot) => slot.angle),
+    slots.filter((slot) => {
+      return evidenceAware
+        ? evidencePackageSlotNeedsAction(evidenceByAngle.get(slot.angle))
+        : slot.stale || !!slot.failed || blockers.has(slot.angle);
+    }).map((slot) => slot.angle),
   );
   if (headshotIssue) issueAngles.add('frontClose');
   const issueCount = issueAngles.size;
@@ -93,9 +116,13 @@ export function CastingDetailsDialog() {
       <div className="w-full max-w-[520px] max-h-[82vh] overflow-hidden rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong flex flex-col">
         <div className="px-5 py-4 border-b-hairline border-canvas-border flex items-start justify-between gap-4">
           <div>
-            <div className="text-canvas-lg font-medium text-canvas-ink">Versions &amp; details</div>
+            <div className="text-canvas-lg font-medium text-canvas-ink">
+              {evidenceAware ? 'Coverage & versions' : 'Versions & details'}
+            </div>
             <div className="text-canvas-md text-canvas-ink-soft mt-0.5">
-              Review the card, or reuse a compatible earlier version.
+              {evidenceAware
+                ? 'Add only the views that make this Cast more useful.'
+                : 'Review the card, or reuse a compatible earlier version.'}
             </div>
           </div>
           <button type="button" onClick={() => setOpen(false)} className="p-1 text-canvas-ink-faint hover:text-canvas-ink" aria-label="Close versions and details">
@@ -127,8 +154,12 @@ export function CastingDetailsDialog() {
             const plan = planRows.get(slot.angle);
             const blocker = blockers.get(slot.angle);
             const headshotBlock = slot.angle === 'frontClose' ? headshotIssue : null;
+            const evidenceStatus = evidenceByAngle.get(slot.angle)?.status;
             const busy = refreshingSet.has(slot.angle);
-            const needsAction = slot.stale || !!slot.failed || !!blocker || !!headshotBlock;
+            const needsAction = evidenceAware
+              ? evidencePackageSlotNeedsAction(evidenceByAngle.get(slot.angle))
+                || !!headshotBlock
+              : slot.stale || !!slot.failed || !!blocker || !!headshotBlock;
             const canRefresh = needsAction && plan?.refusal === null;
             const canOpenVersions = slot.version > 1;
             const versionsOpen = versionAngle === slot.angle;
@@ -163,7 +194,15 @@ export function CastingDetailsDialog() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {canRefresh ? (
                       <button type="button" onClick={() => refreshAngles([slot.angle])} disabled={busy || refreshPending} className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
-                        {busy ? 'Refreshing…' : `${slot.failed ? 'Retry' : 'Refresh'} · ${(plan?.cost ?? 0).toLocaleString()} credits`}
+                        {busy
+                          ? (evidenceAware ? 'Updating…' : 'Refreshing…')
+                          : `${slot.failed
+                            ? (evidenceAware ? 'Try again' : 'Retry')
+                            : evidenceStatus === 'missing'
+                              ? 'Add'
+                              : evidenceAware
+                                ? 'Update'
+                                : 'Refresh'} · ${(plan?.cost ?? 0).toLocaleString()} credits`}
                       </button>
                     ) : null}
                     {canOpenVersions && (
@@ -195,7 +234,9 @@ export function CastingDetailsDialog() {
             {loadError
               ? 'View status unavailable'
               : actionable.length > 0
-              ? `${actionable.length} view${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
+              ? evidenceAware
+                ? `${actionable.length} suggested update${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
+                : `${actionable.length} view${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
               : issueCount > 0
                 ? `${issueCount} item${issueCount === 1 ? '' : 's'} need attention`
                 : 'Everything shown is in sync'}
@@ -204,7 +245,7 @@ export function CastingDetailsDialog() {
             <button type="button" onClick={() => setOpen(false)} className="text-canvas-md font-medium text-canvas-ink-soft hover:text-canvas-ink">Done</button>
             {!loadError && actionable.length > 1 && (
               <button type="button" onClick={() => refreshAngles(actionable.map((slot) => slot.angle))} disabled={refreshPending} className="px-4 py-2 rounded-canvas-md bg-canvas-ink text-canvas-md font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
-                Refresh all · {actionableCost.toLocaleString()} credits
+                {evidenceAware ? 'Update coverage' : 'Refresh all'} · {actionableCost.toLocaleString()} credits
               </button>
             )}
           </div>

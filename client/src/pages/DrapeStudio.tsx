@@ -159,6 +159,7 @@ export default function DrapeStudio() {
     castingMessage,
     tierPlan,
     mintIntegrity,
+    evidenceMint,
     handleCastAndContinue,
   } = useCastGate({
     currentModelId,
@@ -373,6 +374,7 @@ export default function DrapeStudio() {
         onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, upgradeMode, stayDraft)}
         tiers={tierPlan}
         integrity={mintIntegrity}
+        evidenceMint={evidenceMint}
         isCasting={isCasting}
         viewsGenerating={viewsGenerating}
         castingMessage={castingMessage}
