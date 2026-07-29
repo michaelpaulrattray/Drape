@@ -1052,8 +1052,8 @@ versions. The repair passes typecheck, 3,158 tests, build, and diff checks
 locally, but remains pending production deployment and one controlled paid
 retest. No anatomical cohort is enabled and R7-7G remains open.
 
-**R7-7G founder calibration and release-policy closure checkpoint (2026-07-29;
-pending deployment):** the production calibration Cast accepted five
+**R7-7G founder calibration and release-policy closure (2026-07-29;
+production-confirmed):** the production calibration Cast accepted five
 independent tattoos across centre anterior face, centre posterior upper torso,
 left anterior shoulder, right circumferential full arm, and left anterior
 thigh. Multi-feature accumulation/preservation, cancellation, exact refunds,
@@ -1083,7 +1083,21 @@ provider/recipe configuration: package plans expose no price or retry and
 direct mutation calls refuse before quota, operation, provider, or credits.
 This is an explicit cohort disablement, not a weakened evidence check. The
 candidate acceptance machinery stays in place for future recalibration.
-Typecheck, 247 files / 3,177 tests, build, and diff checks pass locally.
+The release policy deployed at `4e11c6c`. A no-cost production drive confirmed
+that 3/4, Side, and Walk expose neither price nor generation controls, each is
+named unavailable in Coverage & versions, and a right-lower-leg request
+refuses before durable or paid work with the balance unchanged at 66,200.
+
+That drive found one history-reader defect: the reader required every earlier
+tattoo's original accepted asset to remain selected even after a later
+preservation-probed candidate validly replaced the same view. `8a2413d`
+retains accepted asset/plate closure and requires every selected feature's
+source angle to remain represented, while allowing the later immutable
+snapshot selection at that angle. Production now shows the current
+five-feature state and all earlier accumulated states with six views, and the
+coverage footer truthfully reports three unavailable views. Typecheck, 247
+files / 3,178 tests, build, diff checks, and the live drive pass. R7-7G is
+closed; execution returns to R7-8.
 
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 

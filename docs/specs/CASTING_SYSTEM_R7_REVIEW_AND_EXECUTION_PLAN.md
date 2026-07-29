@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7F are complete; R7-7G G0–G8 founder calibration is complete with exact authoring tuples released only inside the founder scope and first-unseen projection disabled for the current provider configuration after repeatable placement failures; the release-policy closure is locally verified and awaits production deployment/confirmation; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure follows
+**Status:** IN EXECUTION — R7-0 through R7-7G are complete; exact tattoo-authoring tuples are released only inside the founder scope, every uncalibrated tuple refuses before paid work, and first-unseen projection is explicitly disabled for the current provider configuration after repeatable placement failures; production closure is verified at `8a2413d`; the narrowed R7-8 production acceptance, audit, performance, and dogfood closure is in progress
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -387,9 +387,21 @@ durable or paid work. First-unseen projection is disabled for every angle under
 the current provider/recipe configuration; package plans expose no price or
 retry and say that tattoo coverage is unavailable for that view in this
 release. The candidate acceptance architecture remains closed and tested for a
-future recalibration. Typecheck, 3,177 tests, build, and diff checks pass
-locally. R7-7G awaits deployment and one no-cost production confirmation of the
-release-policy copy before R7-8 begins.
+future recalibration.
+
+The release policy deployed at `4e11c6c`. Production confirmed that 3/4, Side,
+and Walk expose no price or generation control; Coverage & versions names each
+as unavailable; and a natural-language right-lower-leg request refuses before
+durable or paid work with the 66,200-credit balance unchanged. That drive also
+exposed an overly strict history projection which labelled accumulated
+same-view tattoo states as zero-view/unavailable. `8a2413d` corrected the
+validator without weakening feature evidence: every accepted asset and plate
+must still close, and every feature's source angle must remain represented,
+while a later preservation-probed accepted asset may replace an earlier asset
+at the same angle. Production now shows 6 views / 5 features current and every
+earlier accumulated state as restorable, with an honest “3 tattoo coverage
+views unavailable” summary. Typecheck, 247 files / 3,178 tests, build, diff
+checks, and the no-cost live drive pass. R7-7G is closed; R7-8 follows.
 
 ### R7-8 — Quality choice, downstream reference sheets, and dogfood closure
 
