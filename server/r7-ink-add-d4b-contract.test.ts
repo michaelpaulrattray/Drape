@@ -32,7 +32,7 @@ describe("R7-7D D4B candidate generation contract", () => {
     const db = await source("./db/inkAddCandidates.ts");
     const prepare = db.indexOf("export async function prepareInkCandidateGeneration");
     const modelLock = db.indexOf("lockOwnedDraftModelIn(tx, input)", prepare);
-    const operationLock = db.indexOf("lockRunningOperationIn(tx, input)", prepare);
+    const operationLock = db.indexOf("lockRunningOperationIn(", prepare);
     const snapshotRead = db.indexOf("readSnapshotShadowStateIn(tx, input)", prepare);
     const candidateInsert = db.indexOf(
       "await tx.insert(castingEvidenceCandidates)",
@@ -51,7 +51,7 @@ describe("R7-7D D4B candidate generation contract", () => {
     expect(db).toContain("feature_already_selected");
     expect(db).toContain('activeSlot: "active"');
     expect(db).toContain(
-      "pointsCost: input.attemptNumber === 1 ? INK_ADD_PRICE_CREDITS : 0",
+      "pointsCost: input.attemptNumber === 1 ? input.priceCredits : 0",
     );
     expect(db).toContain("resultUrl: null");
     expect(db).not.toMatch(/deductPoints|refundPoints|generateContent|storagePut/);

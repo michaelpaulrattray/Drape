@@ -40,6 +40,7 @@ import {
 import { parseInkCandidatePublicStorageKey } from "../casting/evidence/inkCandidatePublicStorage";
 import { availableModelWhere } from "../casting/modelAvailability";
 import { modelOperationLockKey } from "../casting/operationContract";
+import { slotCost } from "../casting/packagePricing";
 import { buildEffectiveCastState } from "../casting/effectiveCastState";
 import {
   INK_ACTIVE_FAMILY_KEY,
@@ -217,6 +218,7 @@ async function lockRunningOperationIn(
     operationId: string;
     operationKind: PreparedInkCandidateAttempt["operationKind"];
   },
+  plannedCredits: number,
 ) {
   const [operation] = await tx
     .select()
@@ -227,7 +229,7 @@ async function lockRunningOperationIn(
       eq(generationOperations.modelId, input.modelId),
       eq(generationOperations.kind, input.operationKind),
       eq(generationOperations.status, "running"),
-      eq(generationOperations.plannedCredits, INK_ADD_PRICE_CREDITS),
+      eq(generationOperations.plannedCredits, plannedCredits),
     ))
     .limit(1)
     .for("update");
@@ -244,6 +246,14 @@ async function lockRunningOperationIn(
     .for("update");
   if (!lock) throw new InkCandidateStateError("operation_unavailable");
   return operation;
+}
+
+function plannedCreditsForPrepared(
+  prepared: PreparedInkCandidateAttempt,
+): number {
+  return prepared.authority.kind === "projection_v2"
+    ? slotCost(prepared.authority.targetAngle)
+    : INK_ADD_PRICE_CREDITS;
 }
 
 function assertOperationHead(
@@ -280,6 +290,7 @@ async function createAttemptIn(
     sourceViewAngle: CanonicalViewAngle;
     composerRecipeVersion: string;
     probeRecipeVersion: string;
+    priceCredits: number;
   },
 ): Promise<{ generationId: number; privateStorageKey: string }> {
   const privateStorageKey = buildEvidenceCandidateStorageKey({
@@ -297,7 +308,7 @@ async function createAttemptIn(
       viewAngle: input.sourceViewAngle,
       type: "evidenceCandidate",
       status: "pending",
-      pointsCost: input.attemptNumber === 1 ? INK_ADD_PRICE_CREDITS : 0,
+      pointsCost: input.attemptNumber === 1 ? input.priceCredits : 0,
       resultUrl: null,
       metadata: {
         candidateId: input.candidateId,
@@ -578,7 +589,11 @@ async function loadProjectionCandidatePreflightIn(
   },
 ): Promise<InkProjectionCandidatePreflight> {
   const model = await lockOwnedDraftModelIn(tx, input);
-  const operation = await lockRunningOperationIn(tx, input);
+  const operation = await lockRunningOperationIn(
+    tx,
+    input,
+    slotCost(input.targetViewAngle),
+  );
   let state;
   try {
     state = buildEffectiveCastState({
@@ -885,6 +900,7 @@ export async function prepareInkProjectionCandidateGeneration(input: {
       sourceViewAngle: current.targetViewAngle,
       composerRecipeVersion: INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
       probeRecipeVersion: INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION,
+      priceCredits: slotCost(current.targetViewAngle),
     });
     return {
       userId: current.userId,
@@ -942,7 +958,11 @@ export async function prepareInkCandidateGeneration(input: {
 }): Promise<PreparedInkCandidateAttempt> {
   return withTransaction(async (tx) => {
     const model = await lockOwnedDraftModelIn(tx, input);
-    const operation = await lockRunningOperationIn(tx, input);
+    const operation = await lockRunningOperationIn(
+      tx,
+      input,
+      INK_ADD_PRICE_CREDITS,
+    );
 
     let state;
     try {
@@ -1161,6 +1181,7 @@ export async function prepareInkCandidateGeneration(input: {
       sourceViewAngle: source.angle,
       composerRecipeVersion: authority.composerRecipeVersion,
       probeRecipeVersion: authority.probeRecipeVersion,
+      priceCredits: INK_ADD_PRICE_CREDITS,
     });
     return {
       ...input,
@@ -1283,7 +1304,11 @@ export async function prepareIncludedInkCandidateRetry(input: {
 }): Promise<PreparedInkCandidateAttempt> {
   return withTransaction(async (tx) => {
     const model = await lockOwnedDraftModelIn(tx, input.prepared);
-    const operation = await lockRunningOperationIn(tx, input.prepared);
+    const operation = await lockRunningOperationIn(
+      tx,
+      input.prepared,
+      plannedCreditsForPrepared(input.prepared),
+    );
     assertOperationHead(operation, {
       stateVersion: model.stateVersion,
       identitySnapshotId: input.prepared.identitySnapshotId,
@@ -1334,6 +1359,7 @@ export async function prepareIncludedInkCandidateRetry(input: {
       composerRecipeVersion:
         input.prepared.authority.composerRecipeVersion,
       probeRecipeVersion: input.prepared.authority.probeRecipeVersion,
+      priceCredits: plannedCreditsForPrepared(input.prepared),
     });
     return {
       ...input.prepared,
@@ -1353,7 +1379,11 @@ export async function completeInkCandidateReady(input: {
 }): Promise<void> {
   await withTransaction(async (tx) => {
     const model = await lockOwnedDraftModelIn(tx, input.prepared);
-    const operation = await lockRunningOperationIn(tx, input.prepared);
+    const operation = await lockRunningOperationIn(
+      tx,
+      input.prepared,
+      plannedCreditsForPrepared(input.prepared),
+    );
     assertOperationHead(operation, {
       stateVersion: model.stateVersion,
       identitySnapshotId: input.prepared.identitySnapshotId,

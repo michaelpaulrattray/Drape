@@ -138,4 +138,21 @@ describe("R7-7G private tattoo projection lifecycle", () => {
       'exact.compatibility === "unverified"',
     );
   });
+
+  it("uses each projection slot price for operation locks and reconciliation", async () => {
+    const candidateRows = await source("../../db/inkAddCandidates.ts");
+    expect(candidateRows).toContain(
+      "eq(generationOperations.plannedCredits, plannedCredits)",
+    );
+    expect(candidateRows).toContain("slotCost(input.targetViewAngle)");
+    expect(candidateRows).toContain(
+      "priceCredits: slotCost(current.targetViewAngle)",
+    );
+    expect(candidateRows).toContain(
+      "pointsCost: input.attemptNumber === 1 ? input.priceCredits : 0",
+    );
+    expect(candidateRows).toContain(
+      "plannedCreditsForPrepared(input.prepared)",
+    );
+  });
 });
