@@ -959,9 +959,9 @@ R7-8 quality/reference-sheet/dogfood closure is next.
 
 **Generation quality:** do not build a generation-time quality selector or
 1K/2K package default in the current release. Casting image generation remains
-on its existing 1K path. This ruling does not silently remove or redesign the
-separate, already-disclosed export behavior; that requires its own decision if
-the founder wants it changed.
+on its existing 1K path. Identity-pack export is also 1K-only. Residual 2K
+planning, execution, pricing, or identity-document claims are not part of the
+customer contract and must be removed rather than left as a latent paid path.
 
 **Reference-sheet derivative:** the proposed generated downstream
 reference-sheet derivative and engine-specific presets are deferred beyond
@@ -973,6 +973,36 @@ criteria, the named navigation/profile/dead-code/deploy-skew/performance
 audits, the full release verification matrix, founder manual drives, and
 dogfood closure. Deferred quality and reference-sheet work do not block R7
 closure.
+
+### D-75 — The chest recipe is a pilot; tattoo completion means natural-language all-body ink add *(founder-ratified 2026-07-29; adds R7-7G)*
+
+**End-state correction:** the shipped `front_upper_torso + anterior` recipe
+proved the evidence, preview, billing, acceptance, package, history, and
+restore architecture. It is not the intended final tattoo product. R7 cannot
+close while a chest-placement harness is presented as tattoo editing.
+
+**Public interaction:** a person describes the tattoo and its location
+naturally. Drape resolves anatomical zone, surface, laterality, useful source
+view, placement guidance, strict verification, affected views, and refresh
+planning internally. Manual chest-side buttons are calibration tooling, not
+the public interface. An optional direct point on the person may assist
+location, but users never operate an anatomical-zone configuration form.
+
+**Tattoo-category completion:** `ink.add` expands across body locations
+represented by the Cast, including head/neck, front and back torso,
+shoulders/arms and full sleeves, hands, hips, legs, and feet. Multiple accepted
+tattoos accumulate as typed feature evidence and complete selected images;
+later additions preserve every earlier accepted tattoo predicted visible.
+Each zone/surface/laterality tuple earns release through its own visibility,
+guidance, probe, occlusion, mirroring, and cohort calibration. Unknown or
+contradictory truth refuses free, and nothing refreshes or spends
+automatically.
+
+**Operation and category boundary:** this completes tattoo addition anywhere;
+it does not implicitly authorize tattoo removal, replacement, cover-up,
+movement, or resizing. Those remain distinct generative edit/erase operations.
+Cybernetics, moles, scars, and other permanent-feature categories follow only
+after all-body `ink.add` passes its founder gate.
 
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 

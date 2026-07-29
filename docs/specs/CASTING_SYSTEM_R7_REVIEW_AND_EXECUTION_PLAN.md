@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** IN EXECUTION — R7-0 through R7-7F are complete as of 2026-07-29; R7-8 is narrowed to production acceptance, audit, performance, and dogfood closure after the founder deferred generation-time quality choice and downstream reference-sheet derivatives
+**Status:** IN EXECUTION — R7-0 through R7-7F are complete as of 2026-07-29; R7-7G natural-language all-body ink-add completion is next, followed by the narrowed R7-8 production acceptance, audit, performance, and dogfood closure
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -326,12 +326,35 @@ Suggested order:
 
 Every capability stays behind a server-owned feature flag with old R6 refusals as the fallback.
 
+### R7-7G — Natural-language all-body tattoo completion
+
+The front-upper-torso implementation is a deliberately bounded safety pilot,
+not the completed tattoo product. Before R7 closes, the `ink.add` category must
+graduate to one natural-language-first public interaction that supports
+describing a tattoo at any body location represented by the Cast. Drape owns
+the anatomical zone, surface, laterality, visibility, source-view choice,
+placement guidance, strict probes, affected-view set, and refresh plan.
+
+Manual chest-placement controls remain calibration tooling and must not be the
+public interaction. Pointing at the person may be offered as an optional
+spatial aid, but never as a required technical zone form. Multiple accepted
+tattoos must accumulate without erasing or moving earlier accepted ink.
+Unknown, occluded, contradictory, or unsupported anatomical truth remains
+fail-closed and free. No refresh or credit spend is automatic.
+
+This phase completes `ink.add`; it does not silently add tattoo remove,
+replace, cover-up, move, or resize. Those remain separately calibrated
+operations under the generative edit/erase boundary. Cybernetics, moles,
+scars, and every other identity-feature category remain refused until the
+all-body tattoo category passes its own matrix and founder gate.
+
 ### R7-8 — Quality choice, downstream reference sheets, and dogfood closure
 
 - **Founder correction, 2026-07-29:** Casting generation remains 1K-only
   for the current release. Do not add a generation-time 1K/2K selector or
-  package-quality default in R7. Existing separately disclosed export behavior
-  is unchanged by this generation-quality ruling.
+  package-quality default in R7. Identity-pack export is also 1K-only; remove
+  residual 2K planning, execution, pricing, and document claims from the
+  customer export contract.
 - **Deferred by founder, 2026-07-29:** do not build the downstream generated
   reference-sheet derivative in R7. Preserve the existing identity canon and
   downstream payload contracts until this capability is deliberately resumed.
@@ -376,9 +399,11 @@ The founder approved all eight recommendations below as binding R7 direction:
 
 ## 9. Immediate next action
 
-1. Keep Casting generation fixed at the existing 1K contract and defer the
+1. Define and execute R7-7G's natural-language all-body `ink.add` contract,
+   retaining strict evidence and visibility gates per anatomical zone.
+2. Keep Casting generation and identity-pack export fixed at 1K, and defer the
    downstream reference-sheet derivative.
-2. Rewrite and walk production acceptance criteria, complete the named
+3. Rewrite and walk production acceptance criteria, complete the named
    navigation/wiring/dead-code/performance audits, run the full release
    verification matrix, and begin dogfooding only after blockers close or are
    explicitly logged.
