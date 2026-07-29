@@ -42,13 +42,14 @@ export const INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION =
 export const INK_ANYWHERE_EVIDENCE_MOSAIC_RECIPE_VERSION =
   "ink.add.anywhere.evidence-mosaic.v2" as const;
 export const INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION =
-  "ink.add.anywhere.coverage-probe.v5" as const;
+  "ink.add.anywhere.coverage-probe.v6" as const;
 export const INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS =
   Object.freeze([
     "ink.add.anywhere.coverage-probe.v1",
     "ink.add.anywhere.coverage-probe.v2",
     "ink.add.anywhere.coverage-probe.v3",
     "ink.add.anywhere.coverage-probe.v4",
+    "ink.add.anywhere.coverage-probe.v5",
     INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION,
   ] as const);
 export const INK_ANYWHERE_PROJECTION_TARGET_GUIDE_AUDIT_RECIPE_VERSION =

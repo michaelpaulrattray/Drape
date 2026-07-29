@@ -1261,6 +1261,25 @@ bypass the guide audit. Older coverage recipes remain readable. Focused
 projection tests and typecheck pass locally; another live calibration requires
 the usual tested commit and exact production deployment first.
 
+**Per-feature coverage isolation (2026-07-30):** `c103b78` deployed
+successfully and a second controlled 3/4 calibration also stopped before
+charge. Witness-aware localization produced a correct tight forehead box and
+a plausible left-shoulder box, but called the visibly exposed right full arm
+false/uncertain. Direct browser inspection of the clean 3/4 target and accepted
+Full witness confirms that the subject-right arm is the large unobstructed arm
+in both views. The request had asked one text episode to associate three
+features with three accumulated-state witness images; the conflicting answer
+is feature-to-witness association bleed, not evidence that the arm is hidden.
+
+Coverage/localization v6 therefore permits exactly one feature per probe:
+clean target plus only that feature's accepted witness. Selected features run
+as independent fail-closed episodes and are combined only after every strict
+response parses. This preserves per-feature uncertainty, prevents one
+tattoo/witness from supplying another's placement authority, and still sends
+the combined localized guide through the independent multi-feature audit
+before any paid generation. Older coverage recipes remain readable. Focused
+projection tests and typecheck pass locally.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

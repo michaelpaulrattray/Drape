@@ -1058,36 +1058,48 @@ async function executeProjectionCandidate(
           ),
         })),
       );
-      const rawCoverage = await (dependencies.probe ?? defaultProbe)(
-        buildInkCoverageProbeRequest({
-          targetAngle: preflight.targetViewAngle,
-          features: coverageFeatures,
-          target,
-        }),
-      );
-      const coverageTelemetry = summarizeInkCoverageProbeResponse(
-        rawCoverage,
-        preflight.features.length,
-      );
+      const coverageEpisodes = await Promise.all(coverageFeatures.map(
+        async (feature) => {
+          const raw = await (dependencies.probe ?? defaultProbe)(
+            buildInkCoverageProbeRequest({
+              targetAngle: preflight.targetViewAngle,
+              features: [feature],
+              target,
+            }),
+          );
+          return {
+            feature,
+            raw,
+            telemetry: summarizeInkCoverageProbeResponse(raw, 1),
+          };
+        },
+      ));
       log.info({
         operationId: gate.operationId,
         targetViewAngle: input.targetViewAngle,
-        responseShape: coverageTelemetry.responseShape,
+        responseShapes:
+          coverageEpisodes.map(({ telemetry }) => telemetry.responseShape),
         coverage: preflight.features.map((feature, index) => ({
           anatomy: feature.anatomy,
           regionVisible:
-            coverageTelemetry.features[index]?.regionVisible ?? null,
+            coverageEpisodes[index]?.telemetry.features[0]?.regionVisible
+              ?? null,
           verdictCertain:
-            coverageTelemetry.features[index]?.verdictCertain ?? null,
+            coverageEpisodes[index]?.telemetry.features[0]?.verdictCertain
+              ?? null,
           targetZone:
-            coverageTelemetry.features[index]?.targetZone ?? null,
+            coverageEpisodes[index]?.telemetry.features[0]?.targetZone ?? null,
         })),
       }, "Ink projection pre-charge coverage assessed");
       try {
-        observedCoverage = parseInkCoverageProbeResponse(
-          rawCoverage,
-          preflight.features.map((feature) => feature.featureVersionId),
-        );
+        observedCoverage = Object.freeze(Object.fromEntries(
+          coverageEpisodes.flatMap(({ feature, raw }) =>
+            Object.entries(parseInkCoverageProbeResponse(
+              raw,
+              [feature.featureVersionId],
+            ))
+          ),
+        ));
       } catch (error) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",

@@ -750,12 +750,9 @@ export function buildInkCoverageProbeRequest(input: {
   target: ComposerImage;
 }): InkProbeRequest {
   if (
-    input.features.length < 1
-    || input.features.length > MAX_FEATURES
-    || new Set(input.features.map((feature) => feature.featureVersionId)).size
-      !== input.features.length
+    input.features.length !== 1
   ) {
-    throw new TypeError("Invalid observed-coverage feature set");
+    throw new TypeError("Coverage localization requires one feature");
   }
   input.features.forEach((feature) => assertZone(feature.targetZone));
   const featureSchema = Object.fromEntries(input.features.flatMap(
@@ -778,12 +775,10 @@ export function buildInkCoverageProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      `Inspect ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Images 2 onward are the accepted tattoo witnesses for F1 onward, one witness per feature in the same order.`,
-      "Return strict JSON only. Work from the actual pixels, not the stored angle name. For each F-feature, map the exact physical tattoo sublocation shown in its accepted witness onto Image 1. RegionVisible is true when any material contiguous portion of that same tattoo-bearing surface is exposed and resolved enough to carry the visible portion at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility, anatomical side, and the corresponding physical sublocation can be decided without guessing.",
+      `Inspect exactly two ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Image 2 is the accepted witness for the one requested tattoo feature.`,
+      "Return strict JSON only. Work from the actual pixels, not the stored angle name. Map the exact physical tattoo sublocation shown in Image 2 onto Image 1. RegionVisible is true when any material contiguous portion of that same tattoo-bearing surface is exposed and resolved enough to carry the visible portion at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility, anatomical side, and the corresponding physical sublocation can be decided without guessing.",
       "When RegionVisible is true, return ZoneX, ZoneY, ZoneWidth, and ZoneHeight as integer percentages from 0 to 100 for the tight bounding box of only the visible requested tattoo-bearing surface. Follow the accepted witness placement: a forehead tattoo authorizes forehead skin, not the whole face; a shoulder tattoo authorizes that shoulder surface, not the torso; a sleeve authorizes only the visible selected arm surface. Include small padding, exclude clothing, the opposite side/limb, background, and unrelated anatomy. X/Y are the top-left. Width/Height must be positive and X+Width and Y+Height must not exceed 100. When RegionVisible is false, all four zone values must be 0. If uncertain, set VerdictCertain false.",
-      ...input.features.map((feature, index) =>
-        `F${index + 1}: ${feature.anatomyLabel}; accepted description: ${feature.normalizedDescriptor}; ${feature.sideAuthority} The coarse server search region is ${JSON.stringify(feature.targetZone)}; use it only to search Image 1, then localize the exact physical sublocation evidenced by Image ${index + 2} rather than copying the coarse box.`
-      ),
+      `F1: ${input.features[0].anatomyLabel}; accepted description: ${input.features[0].normalizedDescriptor}; ${input.features[0].sideAuthority} The coarse server search region is ${JSON.stringify(input.features[0].targetZone)}; use it only to search Image 1, then localize the exact physical sublocation evidenced by Image 2 rather than copying the coarse box.`,
     ].join("\n"),
     images: [
       probeInline("original_target", input.target),

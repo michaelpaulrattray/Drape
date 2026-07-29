@@ -438,7 +438,7 @@ describe("ink candidate generation", () => {
         sourceAngle: "backFull",
         composerRecipeVersion: "ink.add.anywhere.projection.v4",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v5",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v6",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -457,6 +457,31 @@ describe("ink candidate generation", () => {
             plateId: "89898989-8989-4989-8989-898989898989",
             storageKey:
               "users/7/models/11/evidence/candidates/89898989-8989-4989-8989-898989898989.webp",
+            byteSize: webp.length,
+            contentHash: createHash("sha256").update(webp).digest("hex"),
+          },
+          impact: "uncertain",
+          hasAcceptedTargetEvidence: false,
+          isProjectionTarget: true,
+          coverageBasis: "observed_visible",
+        }, {
+          featureId: "feature-2",
+          featureVersionId: "version-2",
+          contract: "all_body_v2",
+          normalizedDescriptor: "fine-line triangle on his left shoulder",
+          anatomyLabel: "left anterior shoulder",
+          anatomy: {
+            zone: "shoulder",
+            surface: "anterior",
+            side: "left",
+          },
+          targetZone: { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
+          witnessZone: { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
+          witnessViewAngle: "frontFull",
+          witness: {
+            plateId: "79797979-7979-4979-8979-797979797979",
+            storageKey:
+              "users/7/models/11/evidence/candidates/79797979-7979-4979-8979-797979797979.webp",
             byteSize: webp.length,
             contentHash: createHash("sha256").update(webp).digest("hex"),
           },
@@ -512,9 +537,31 @@ describe("ink candidate generation", () => {
         expect.objectContaining({ role: "evidence_mosaic" }),
       ]),
     }));
+    const coverageRequests = vi.mocked(deps.probe!).mock.calls
+      .map(([request]) => request)
+      .filter((request) => request.kind === "coverage");
+    expect(coverageRequests).toHaveLength(2);
+    expect(coverageRequests.map((request) =>
+      request.images.map(({ role }) => role)
+    )).toEqual([
+      ["original_target", "evidence_reference"],
+      ["original_target", "evidence_reference"],
+    ]);
+    expect(coverageRequests[0]?.prompt).toContain(
+      "black botanical full sleeve",
+    );
+    expect(coverageRequests[0]?.prompt).not.toContain(
+      "fine-line triangle on his left shoulder",
+    );
+    expect(coverageRequests[1]?.prompt).toContain(
+      "fine-line triangle on his left shoulder",
+    );
+    expect(coverageRequests[1]?.prompt).not.toContain(
+      "black botanical full sleeve",
+    );
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v5",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v6",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "evidence_reference" }),

@@ -29,13 +29,14 @@ describe("all-body ink anatomy registry", () => {
 
   it("keeps earlier coverage evidence readable after witness localization", () => {
     expect(INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.coverage-probe.v5");
+      .toBe("ink.add.anywhere.coverage-probe.v6");
     expect(INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.coverage-probe.v1",
       "ink.add.anywhere.coverage-probe.v2",
       "ink.add.anywhere.coverage-probe.v3",
       "ink.add.anywhere.coverage-probe.v4",
       "ink.add.anywhere.coverage-probe.v5",
+      "ink.add.anywhere.coverage-probe.v6",
     ]);
   });
 

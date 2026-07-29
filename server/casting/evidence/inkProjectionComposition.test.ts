@@ -233,7 +233,7 @@ describe("multi-feature projection composition", () => {
     const base = await image("#999");
     const request = buildInkCoverageProbeRequest({
       targetAngle: "threeQuarter",
-      features: selected.map((feature) => ({
+      features: selected.slice(0, 1).map((feature) => ({
         featureVersionId: feature.featureVersionId,
         normalizedDescriptor: feature.normalizedDescriptor,
         anatomyLabel: feature.anatomyLabel,
@@ -244,17 +244,21 @@ describe("multi-feature projection composition", () => {
       target: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v5");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v6");
     expect(request.prompt).toContain(
       "partial upper arm or forearm in a close crop",
     );
-    expect(request.prompt).toContain("accepted tattoo witnesses");
+    expect(request.prompt).toContain("exactly two ordered images");
     expect(request.prompt).toContain("black botanical full sleeve");
     expect(request.images.map(({ role }) => role)).toEqual([
       "original_target",
       "evidence_reference",
-      "evidence_reference",
     ]);
+    expect(() => buildInkCoverageProbeRequest({
+      targetAngle: "threeQuarter",
+      features: selected,
+      target: base,
+    })).toThrow("Coverage localization requires one feature");
     const raw = {
       feature1RegionVisible: true,
       feature1VerdictCertain: true,
