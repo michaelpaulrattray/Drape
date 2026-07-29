@@ -5,7 +5,8 @@
  * Planning is SELECT-only. Apply is one all-or-nothing transaction:
  *
  *   owned model lock -> absent operation-lock fence -> immutable snapshot and
- *   feature witnesses -> exact model/asset correction -> postflight proof.
+ *   feature witnesses -> exact model/asset/headshot-slot correction ->
+ *   postflight proof.
  *
  * The tool has no route, worker, scheduler or startup caller.
  */
@@ -41,6 +42,7 @@ export const EVIDENCE_IDENTITY_REVISION_REPAIR_ERRORS = [
   "anchor_invalid",
   "anchor_revision_missing",
   "feature_graph_invalid",
+  "headshot_slot_mismatch",
   "identity_snapshot_invalid",
   "revision_shape_invalid",
 ] as const;
@@ -78,6 +80,7 @@ export interface EvidenceIdentityRevisionRepairResult {
   expectedRepairCount: number;
   updatedModels: number;
   updatedAssets: number;
+  updatedSlots: number;
   rows: EvidenceIdentityRevisionRepairRow[];
 }
 
@@ -104,6 +107,8 @@ interface Subject {
 interface Assessment {
   row: EvidenceIdentityRevisionRepairRow;
   userId: number;
+  packageSnapshotId: string;
+  anchorAssetId: number | null;
   fromRevision: string | null;
   toRevision: string | null;
 }
@@ -247,6 +252,8 @@ function blocked(
       errorCode,
     },
     userId: subject.userId,
+    packageSnapshotId: subject.currentPackageSnapshotId,
+    anchorAssetId: null,
     fromRevision,
     toRevision,
   };
@@ -309,11 +316,12 @@ async function assessSubjectIn(
     return blocked(subject, "identity_snapshot_invalid");
   }
 
-  const slots = await tx
+  const slotsQuery = tx
     .select({
       viewAngle: modelPackageSnapshotSlots.viewAngle,
       selectedAssetId: modelPackageSnapshotSlots.selectedAssetId,
       compatibility: modelPackageSnapshotSlots.compatibility,
+      selectionReason: modelPackageSnapshotSlots.selectionReason,
     })
     .from(modelPackageSnapshotSlots)
     .where(and(
@@ -323,13 +331,14 @@ async function assessSubjectIn(
       ),
       inArray(modelPackageSnapshotSlots.viewAngle, ["frontClose", "frontFull"]),
     ));
+  const slots = lock ? await slotsQuery.for("update") : await slotsQuery;
   const frontClose = slots.filter((slot) => slot.viewAngle === "frontClose");
   const frontFull = slots.filter((slot) => slot.viewAngle === "frontFull");
   if (
     frontClose.length !== 1
     || frontFull.length !== 1
     || frontClose[0].selectedAssetId !== identity.anchorAssetId
-    || frontClose[0].compatibility !== "current"
+    || frontClose[0].selectionReason !== "carried"
     || frontFull[0].compatibility !== "current"
   ) {
     return blocked(subject, "identity_snapshot_invalid");
@@ -434,6 +443,13 @@ async function assessSubjectIn(
     subject.identityRevisionId === targetRevision
     && acceptedRevision === targetRevision
   ) {
+    if (frontClose[0].compatibility !== "current") {
+      return blocked(subject, "headshot_slot_mismatch", {
+        acceptedAssetId,
+        fromRevision: subject.identityRevisionId,
+        toRevision: targetRevision,
+      });
+    }
     return {
       row: {
         modelId: subject.modelId,
@@ -444,6 +460,8 @@ async function assessSubjectIn(
         errorCode: null,
       },
       userId: subject.userId,
+      packageSnapshotId: subject.currentPackageSnapshotId,
+      anchorAssetId: identity.anchorAssetId,
       fromRevision: subject.identityRevisionId,
       toRevision: targetRevision,
     };
@@ -453,6 +471,13 @@ async function assessSubjectIn(
     || acceptedRevision !== subject.identityRevisionId
   ) {
     return blocked(subject, "accepted_revision_mismatch", {
+      acceptedAssetId,
+      fromRevision: subject.identityRevisionId,
+      toRevision: targetRevision,
+    });
+  }
+  if (frontClose[0].compatibility !== "stale") {
+    return blocked(subject, "headshot_slot_mismatch", {
       acceptedAssetId,
       fromRevision: subject.identityRevisionId,
       toRevision: targetRevision,
@@ -468,6 +493,8 @@ async function assessSubjectIn(
       errorCode: null,
     },
     userId: subject.userId,
+    packageSnapshotId: subject.currentPackageSnapshotId,
+    anchorAssetId: identity.anchorAssetId,
     fromRevision: subject.identityRevisionId,
     toRevision: targetRevision,
   };
@@ -530,17 +557,20 @@ export async function applyEvidenceIdentityRevisionRepair(
         expectedRepairCount: normalized.expectedRepairCount,
         updatedModels: 0,
         updatedAssets: 0,
+        updatedSlots: 0,
         rows: inspected.assessments.map(({ row }) => row),
       };
     }
     let updatedModels = 0;
     let updatedAssets = 0;
+    let updatedSlots = 0;
     for (const assessment of inspected.assessments) {
       if (
         assessment.row.status !== "ready"
         || !assessment.fromRevision
         || !assessment.toRevision
         || !assessment.row.acceptedAssetId
+        || !assessment.anchorAssetId
       ) {
         continue;
       }
@@ -571,10 +601,31 @@ export async function applyEvidenceIdentityRevisionRepair(
         throw new Error("Evidence identity-revision repair asset write count mismatch");
       }
       updatedAssets += 1;
+      const slotResult = await tx
+        .update(modelPackageSnapshotSlots)
+        .set({ compatibility: "current" })
+        .where(and(
+          eq(
+            modelPackageSnapshotSlots.packageSnapshotId,
+            assessment.packageSnapshotId,
+          ),
+          eq(modelPackageSnapshotSlots.viewAngle, "frontClose"),
+          eq(
+            modelPackageSnapshotSlots.selectedAssetId,
+            assessment.anchorAssetId,
+          ),
+          eq(modelPackageSnapshotSlots.compatibility, "stale"),
+          eq(modelPackageSnapshotSlots.selectionReason, "carried"),
+        ));
+      if (affectedRows(slotResult) !== 1) {
+        throw new Error("Evidence identity-revision repair slot write count mismatch");
+      }
+      updatedSlots += 1;
     }
     if (
       updatedModels !== normalized.expectedRepairCount
       || updatedAssets !== normalized.expectedRepairCount
+      || updatedSlots !== normalized.expectedRepairCount
     ) {
       throw new Error("Evidence identity-revision repair write total mismatch");
     }
@@ -592,6 +643,7 @@ export async function applyEvidenceIdentityRevisionRepair(
       expectedRepairCount: normalized.expectedRepairCount,
       updatedModels,
       updatedAssets,
+      updatedSlots,
       rows,
     };
   });

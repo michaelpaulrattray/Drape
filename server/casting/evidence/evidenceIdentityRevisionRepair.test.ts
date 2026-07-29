@@ -81,7 +81,7 @@ describe("bounded evidence identity-revision repair", () => {
     });
   });
 
-  it("pins one atomic two-row correction with lock and postflight fences", async () => {
+  it("pins one atomic three-row correction with lock and postflight fences", async () => {
     const source = await readFile(
       new URL("./evidenceIdentityRevisionRepair.ts", import.meta.url),
       "utf8",
@@ -93,6 +93,8 @@ describe("bounded evidence identity-revision repair", () => {
 
     expect(source.match(/\.update\(models\)/g)).toHaveLength(1);
     expect(source.match(/\.update\(modelAssets\)/g)).toHaveLength(1);
+    expect(source.match(/\.update\(modelPackageSnapshotSlots\)/g))
+      .toHaveLength(1);
     expect(source).not.toMatch(/\.insert\(|\.delete\(/);
     expect(source).toContain("generationOperationLocks");
     expect(source).toContain('.for("update")');
@@ -104,6 +106,14 @@ describe("bounded evidence identity-revision repair", () => {
     expect(source).toContain('row.status !== "repaired"');
     expect(source).toContain("JSON_SET");
     expect(source).toContain("JSON_UNQUOTE(JSON_EXTRACT");
+    expect(source).toContain('set({ compatibility: "current" })');
+    expect(source).toContain(
+      'eq(modelPackageSnapshotSlots.compatibility, "stale")',
+    );
+    expect(source).toContain(
+      'eq(modelPackageSnapshotSlots.selectionReason, "carried")',
+    );
+    expect(source).toContain("updatedSlots");
     expect(script).not.toMatch(/--all|storagePut|deductPoints|generateContent/);
   });
 });

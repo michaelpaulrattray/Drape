@@ -1596,6 +1596,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       "UPDATE model_assets SET provenance = JSON_SET(provenance, '$.identityRevisionId', ?) WHERE id = ?",
       [incorrectEvidenceRevision, accepted.assetId],
     );
+    await connection.execute(
+      "UPDATE model_package_snapshot_slots SET compatibility = 'stale' WHERE packageSnapshotId = ? AND viewAngle = 'frontClose' AND selectedAssetId = ? AND compatibility = 'current' AND selectionReason = 'carried'",
+      [accepted.packageSnapshotId, source.headAssetId],
+    );
     const identityRepairSelector = {
       userId: source.userId,
       modelIds: [source.modelId],
@@ -1637,6 +1641,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         success: true,
         updatedModels: 1,
         updatedAssets: 1,
+        updatedSlots: 1,
         rows: [{
           modelId: source.modelId,
           acceptedAssetId: accepted.assetId,
@@ -1645,12 +1650,13 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
         }],
       });
     const [[identityRepairPostflight]] = await connection.query<RowDataPacket[]>(
-      "SELECT m.identityRevisionId, JSON_UNQUOTE(JSON_EXTRACT(a.provenance, '$.identityRevisionId')) AS acceptedRevision FROM models m JOIN model_assets a ON a.id = ? WHERE m.id = ?",
+      "SELECT m.identityRevisionId, JSON_UNQUOTE(JSON_EXTRACT(a.provenance, '$.identityRevisionId')) AS acceptedRevision, s.compatibility AS headshotCompatibility FROM models m JOIN model_assets a ON a.id = ? JOIN model_package_snapshot_slots s ON s.packageSnapshotId = m.currentPackageSnapshotId AND s.viewAngle = 'frontClose' WHERE m.id = ?",
       [accepted.assetId, source.modelId],
     );
     expect(identityRepairPostflight).toEqual({
       identityRevisionId,
       acceptedRevision: identityRevisionId,
+      headshotCompatibility: "current",
     });
     await expect(planEvidenceMint({
       userId: source.userId,

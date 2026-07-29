@@ -827,7 +827,8 @@ complete image is stamped into the existing revision; selective package
 compatibility carries the view-impact law. This keeps the unchanged headshot a
 valid mint anchor without duplicating or mutating headshot history. The one
 founder pilot row written before this correction uses a bounded, lock-fenced,
-two-row repair (model revision plus the mis-stamped accepted asset) with
+three-row repair (model revision, the mis-stamped accepted asset, and the
+carried headshot slot incorrectly marked stale) with
 read-only planning, exact count fences and in-transaction postflight proof.
 
 **R7-7E diagnostic correction (2026-07-29):** a rejected evidence-package
