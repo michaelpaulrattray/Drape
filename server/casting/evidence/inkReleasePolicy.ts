@@ -5,7 +5,7 @@ import {
 } from "./inkAnatomyRegistry";
 
 export const INK_RELEASE_POLICY_VERSION =
-  "ink.add.release-policy.2026-07-29.v1" as const;
+  "ink.add.release-policy.2026-07-30.v2" as const;
 
 export const INK_AUTHORING_LOCATION_UNAVAILABLE =
   "Tattoo placement is not yet safely supported for that exact location in this release. Nothing was generated or charged.";
@@ -42,17 +42,19 @@ export function isInkAuthoringTupleReleased(
 }
 
 /**
- * Side, Walk, and 3/4 first-unseen projection drives all violated placement
- * authority under the current provider configuration. Keep every angle
- * closed until a later recipe/provider cohort earns release.
+ * Projection v4 corrects the prior target/witness laterality ambiguity by
+ * treating generated angle labels as intent rather than anatomical proof.
+ * Three-quarter is opened only inside the separately configured evidence
+ * composer user scope for one controlled recalibration. Side and Walk remain
+ * closed until that smaller cohort earns positive production evidence.
  */
 export function isInkProjectionAngleReleased(
-  _angle: CanonicalViewAngle,
+  angle: CanonicalViewAngle,
 ): boolean {
-  return false;
+  return angle === "threeQuarter";
 }
 
 export function releasedInkProjectionAngles():
   readonly CanonicalViewAngle[] {
-  return Object.freeze([]);
+  return Object.freeze(["threeQuarter"]);
 }

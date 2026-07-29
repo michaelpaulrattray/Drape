@@ -379,15 +379,23 @@ async function loadInputs(
     const projectionFeatures: InkProjectionFeatureReference[] =
       await Promise.all(projectionAuthority.features.map(async (feature) => {
         assertSupportedInkAnatomyTuple(feature.anatomy);
+        const targetSideAuthority = inkAnatomicalSideAuthority(
+          feature.anatomy,
+          projectionAuthority.targetAngle,
+        );
+        const witnessSideAuthority = inkAnatomicalSideAuthority(
+          feature.anatomy,
+          feature.witnessViewAngle,
+        );
         return {
           featureId: feature.featureId,
           featureVersionId: feature.featureVersionId,
           normalizedDescriptor: feature.normalizedDescriptor,
           anatomyLabel: feature.anatomyLabel,
-          sideAuthority: inkAnatomicalSideAuthority(
-            feature.anatomy,
-            projectionAuthority.targetAngle,
-          ).prompt,
+          sideAuthority: targetSideAuthority.prompt,
+          targetGuideLabel: targetSideAuthority.guideLabel,
+          witnessSideAuthority: witnessSideAuthority.prompt,
+          witnessGuideLabel: witnessSideAuthority.guideLabel,
           targetZone: feature.targetZone,
           witnessZone: feature.witnessZone,
           witness: await readPrivateExact(dependencies.delivery, {
@@ -403,7 +411,8 @@ async function loadInputs(
         targetBytes: target.bytes,
         zones: projectionFeatures.map((feature) => ({
           normalizedZone: feature.targetZone,
-          label: feature.anatomyLabel,
+          label:
+            `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
         })),
       }),
       buildInkEvidenceMosaic(projectionFeatures),
@@ -546,7 +555,8 @@ async function runAttempt(input: {
           targetBytes: candidate.bytes,
           zones: images.projectionFeatures!.map((feature) => ({
             normalizedZone: feature.targetZone,
-            label: feature.anatomyLabel,
+            label:
+              `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
           })),
         }))
       : null;
@@ -1026,6 +1036,15 @@ async function executeProjectionCandidate(
           features: uncertain.map((feature) => ({
             featureVersionId: feature.featureVersionId,
             anatomyLabel: feature.anatomyLabel,
+            sideAuthority: feature.contract === "all_body_v2"
+              ? (() => {
+                  assertSupportedInkAnatomyTuple(feature.anatomy);
+                  return inkAnatomicalSideAuthority(
+                    feature.anatomy,
+                    preflight.targetViewAngle,
+                  ).prompt;
+                })()
+              : `Judge ${feature.anatomy.side} only as the subject's anatomical side.`,
             targetZone: feature.targetZone,
           })),
           target,

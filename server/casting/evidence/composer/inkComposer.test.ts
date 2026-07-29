@@ -106,7 +106,7 @@ describe("R7-7D exact ink composer request", () => {
       guidedTarget: image,
       retryDirectives: ["prior_ink", "placement"],
     });
-    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v6");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.composer.v7");
     expect(request.prompt).toContain("CLEAN ORIGINAL TARGET");
     expect(request.prompt).toContain("Copy it exactly");
     expect(request.images.map((item) => item.role)).toEqual([

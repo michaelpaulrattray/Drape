@@ -750,17 +750,35 @@ async function loadV2SlotReferences(
             return inkAnatomyLabel(anatomy);
           })()
         : `${entry.version.side} chest`;
+      const targetSideAuthority = entry.contract === "all_body_v2"
+        ? (() => {
+            assertSupportedInkAnatomyTuple(anatomy);
+            return inkAnatomicalSideAuthority(anatomy, slot.angle);
+          })()
+        : {
+            guideLabel: `SUBJECT ${entry.version.side.toUpperCase()}`,
+            prompt:
+              `Judge ${entry.version.side} only as the subject's anatomical side.`,
+          };
+      const witnessSideAuthority = entry.contract === "all_body_v2"
+        ? (() => {
+            assertSupportedInkAnatomyTuple(anatomy);
+            return inkAnatomicalSideAuthority(anatomy, witnessAngle);
+          })()
+        : {
+            guideLabel: `SUBJECT ${entry.version.side.toUpperCase()}`,
+            prompt:
+              `Judge ${entry.version.side} only as the subject's anatomical side.`,
+          };
       return {
         featureId: entry.feature.id,
         featureVersionId: entry.version.id,
         normalizedDescriptor: entry.version.normalizedDescriptor,
         anatomyLabel,
-        sideAuthority: entry.contract === "all_body_v2"
-          ? (() => {
-              assertSupportedInkAnatomyTuple(anatomy);
-              return inkAnatomicalSideAuthority(anatomy, slot.angle).prompt;
-            })()
-          : `Judge ${entry.version.side} only as the subject's anatomical side.`,
+        sideAuthority: targetSideAuthority.prompt,
+        targetGuideLabel: targetSideAuthority.guideLabel,
+        witnessSideAuthority: witnessSideAuthority.prompt,
+        witnessGuideLabel: witnessSideAuthority.guideLabel,
         targetZone: v2FeatureZone(feature, slot.angle),
         witnessZone: v2FeatureZone(feature, witnessAngle),
         witness: await readPrivateExact(dependencies.delivery, witnessPlate),
@@ -774,7 +792,7 @@ async function loadV2SlotReferences(
       targetBytes: target.bytes,
       zones: features.map((feature) => ({
         normalizedZone: feature.targetZone,
-        label: feature.anatomyLabel,
+        label: `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
       })),
     }),
     buildInkEvidenceMosaic(features, { requireProjectionTarget: false }),
@@ -909,7 +927,7 @@ async function runV2CandidateAttempt(input: {
         targetBytes: canonical.bytes,
         zones: references.features.map((feature) => ({
           normalizedZone: feature.targetZone,
-          label: feature.anatomyLabel,
+          label: `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
         })),
       }),
     );

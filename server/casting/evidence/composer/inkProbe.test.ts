@@ -246,7 +246,7 @@ describe("R7-7D fail-closed structured probes", () => {
     expect(feature.responseSchema).toHaveProperty("priorVisibleInkPreserved");
     expect(feature.prompt).toContain("integer from 0 to 100");
     expect(placementAudit.recipeVersion)
-      .toBe("ink.add.anywhere.placement-audit.v4");
+      .toBe("ink.add.anywhere.placement-audit.v5");
     expect(placementAudit.prompt).toContain("FRAME LEFT");
     expect(placementAudit.prompt).toContain("clean, unannotated");
     expect(placementAudit.images.map(({ role }) => role)).toEqual([
@@ -360,7 +360,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v4"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v5"
         ) {
           return {
             anatomicalSideCorrect: true,
@@ -408,7 +408,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v4"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v5"
         ) {
           return {
             anatomicalSideCorrect: false,
@@ -468,7 +468,7 @@ describe("R7-7D fail-closed structured probes", () => {
       probe: async (request) => {
         if (request.kind === "identity_pose") return identityPass;
         if (
-          request.recipeVersion === "ink.add.anywhere.placement-audit.v4"
+          request.recipeVersion === "ink.add.anywhere.placement-audit.v5"
         ) {
           return {
             anatomicalSideCorrect: true,

@@ -1162,6 +1162,56 @@ weakening, or projection enablement is part of this correction. Typecheck, 248
 files / 3,183 tests, production build, focused anatomy/package-display tests,
 and diff checks pass locally.
 
+### D-77 — R7 remains open until tattoos are a complete live operation family *(founder-directed 2026-07-30; amends D-75/D-76)*
+
+**Completion correction:** an explicitly disabled tattoo cohort is honest
+safety behavior, but it is not the founder's definition of a completed tattoo
+product. R7 is reopened. It cannot close merely because unsupported
+projections refuse safely.
+
+The live completion gate is now:
+
+1. natural-language tattoo addition at every represented registry location;
+2. optional uploaded design references through owned private evidence;
+3. deliberate tattoo removal through its own preview, evidence, billing, and
+   acceptance operation;
+4. exact affected/unaffected staleness across all six canonical views;
+5. correct design, anatomical side, placement, preservation, and omission in
+   every deliberately refreshed view;
+6. history, restore, Fork, mint, Profile, Canvas, package details, and export
+   all project the same selected tattoo truth; and
+7. the evidence/composer/package capability graduates from founder calibration
+   scope to the ordinary live product only after those cohorts pass.
+
+Replace, cover-up, move, and resize remain separate product choices unless the
+founder explicitly promotes them. Scars, cybernetics, marks, moles, and other
+feature families follow the completed tattoo operation family; they do not
+substitute for unfinished tattoo coverage.
+
+**Side/3/4 diagnosis and v4 calibration boundary:** the post-closure display
+fix made stale package truth visible but did not reproduce missing pixels.
+Review of the failed projection path found that the compositor's static
+profile zones could cover both anatomical sides, while its side authority
+treated the intended canonical direction as observed truth. D-71 forbids that:
+generated Side, 3/4, and Walk images may be mirrored.
+
+Projection composer v4, all-body authoring composer v7, placement-audit v5/v2,
+and evidence-mosaic v2 now keep target and witness camera authority distinct.
+For Side/3/4, the prompt and independent audit derive anatomical side from the
+actual clean/candidate pixels: nose or toes toward frame-right expose the
+subject's anatomical right; toward frame-left expose anatomical left; unclear
+geometry refuses rather than guessing. Front/back retain disjoint deterministic
+frame zones after canonical framing is proved. The included retry now names
+laterality/authorized-zone remapping explicitly. Prior readable recipe versions
+remain accepted; probes stay fail-closed.
+
+Only `threeQuarter` is opened for a controlled calibration inside the existing
+server-owned evidence-composer user scope. Side and Walk remain closed. This
+does not authorize a public rollout, production-data query, automatic spend,
+or R7 closure. Focused tests and typecheck pass locally; no provider work has
+run for this correction. The permitted Opus milestone review timed out without
+returning an opinion, so no external approval is claimed.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

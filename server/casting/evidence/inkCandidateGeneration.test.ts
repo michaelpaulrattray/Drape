@@ -81,7 +81,7 @@ const anywherePrepared: PreparedInkCandidateAttempt = {
       side: "right",
     },
     normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
-    composerRecipeVersion: "ink.add.anywhere.composer.v6",
+    composerRecipeVersion: "ink.add.anywhere.composer.v7",
     probeRecipeVersion: "ink.add.anywhere.probe.v2",
     visibilityRecipeVersion: "ink.add.anywhere.visibility.v5",
   },
@@ -120,7 +120,7 @@ function delivery(): PrivateEvidenceStorageAdapter {
 }
 
 function passProbe(request: InkProbeRequest): unknown {
-  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v4") {
+  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v5") {
     return {
       anatomicalSideCorrect: true,
       insideAuthorizedZone: true,
@@ -330,7 +330,7 @@ describe("ink candidate generation", () => {
       if (request.kind === "identity_pose") {
         return { samePerson: true, poseFramingPreserved: true, confidence: 97 };
       }
-      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v4") {
+      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v5") {
         return {
           anatomicalSideCorrect: true,
           insideAuthorizedZone: true,
@@ -361,7 +361,7 @@ describe("ink candidate generation", () => {
       chargedCredits: 350,
     });
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.composer.v6",
+      recipeVersion: "ink.add.anywhere.composer.v7",
       prompt: expect.stringContaining("zone=full_arm"),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
@@ -374,8 +374,10 @@ describe("ink candidate generation", () => {
       }),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.placement-audit.v4",
-      prompt: expect.stringContaining("subject faces toward frame-right"),
+      recipeVersion: "ink.add.anywhere.placement-audit.v5",
+      prompt: expect.stringContaining(
+        "nose/toes toward frame-right expose",
+      ),
       images: expect.arrayContaining([
         expect.objectContaining({ role: "candidate" }),
         expect.objectContaining({ role: "placement_audit_candidate" }),
@@ -420,7 +422,7 @@ describe("ink candidate generation", () => {
         ontologyVersion: "body-zones.ink.v2",
         targetAngle: "backFull",
         sourceAngle: "backFull",
-        composerRecipeVersion: "ink.add.anywhere.projection.v3",
+        composerRecipeVersion: "ink.add.anywhere.projection.v4",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
         visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v3",
         features: [{
@@ -490,7 +492,7 @@ describe("ink candidate generation", () => {
       expect.any(Function),
     );
     expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.projection.v3",
+      recipeVersion: "ink.add.anywhere.projection.v4",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "evidence_mosaic" }),
@@ -507,7 +509,7 @@ describe("ink candidate generation", () => {
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection_placement",
       recipeVersion:
-        "ink.add.anywhere.projection-placement-audit.v1",
+        "ink.add.anywhere.projection-placement-audit.v2",
     }));
 
     const refused = dependencies({

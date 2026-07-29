@@ -257,7 +257,7 @@ describe("multi-feature tattoo graph closure", () => {
     const mixed = graph();
     mixed.versions[0] = {
       ...mixed.versions[0],
-      recipeVersion: "ink.add.anywhere.composer.v6",
+      recipeVersion: "ink.add.anywhere.composer.v7",
     };
     mixed.versions[1] = {
       ...mixed.versions[1],
@@ -267,7 +267,7 @@ describe("multi-feature tattoo graph closure", () => {
     expect(closed?.entries).toHaveLength(2);
     expect(closed?.entries.map(({ version }) => version.recipeVersion))
       .toEqual([
-        "ink.add.anywhere.composer.v6",
+        "ink.add.anywhere.composer.v7",
         "ink.add.anywhere.composer.v5",
       ]);
   });

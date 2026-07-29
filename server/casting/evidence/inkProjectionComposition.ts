@@ -37,6 +37,9 @@ export interface InkProjectionFeatureReference {
   normalizedDescriptor: string;
   anatomyLabel: string;
   sideAuthority: string;
+  targetGuideLabel: string;
+  witnessSideAuthority: string;
+  witnessGuideLabel: string;
   targetZone: NormalizedInkZone;
   witnessZone: NormalizedInkZone;
   witness: ComposerImage;
@@ -90,6 +93,12 @@ function assertFeatures(
     const descriptor = feature.normalizedDescriptor.normalize("NFKC").trim();
     const label = feature.anatomyLabel.normalize("NFKC").trim();
     const sideAuthority = feature.sideAuthority.normalize("NFKC").trim();
+    const targetGuideLabel =
+      feature.targetGuideLabel.normalize("NFKC").trim();
+    const witnessSideAuthority =
+      feature.witnessSideAuthority.normalize("NFKC").trim();
+    const witnessGuideLabel =
+      feature.witnessGuideLabel.normalize("NFKC").trim();
     if (
       !feature.featureId
       || !feature.featureVersionId
@@ -99,6 +108,12 @@ function assertFeatures(
       || label.length > 100
       || sideAuthority.length < 10
       || sideAuthority.length > 500
+      || targetGuideLabel.length < 5
+      || targetGuideLabel.length > 120
+      || witnessSideAuthority.length < 10
+      || witnessSideAuthority.length > 500
+      || witnessGuideLabel.length < 5
+      || witnessGuideLabel.length > 120
     ) {
       throw new TypeError("Projection evidence set is not eligible");
     }
@@ -189,7 +204,7 @@ export async function buildInkEvidenceMosaic(
         Math.ceil((bottom - top) * normalized.height),
       ),
     );
-    const labelHeight = 42;
+    const labelHeight = 64;
     const imageHeight = cellHeight - labelHeight;
     const crop = await sharp(normalized.bytes)
       .extract({
@@ -207,11 +222,16 @@ export async function buildInkEvidenceMosaic(
     const label = escapeXml(
       `F${index + 1} ${feature.isProjectionTarget ? "EXTEND" : "MATCH"} - ${feature.anatomyLabel}`,
     );
+    const witnessLabel = escapeXml(
+      `WITNESS: ${feature.witnessGuideLabel}`,
+    );
     const footer = Buffer.from(
       `<svg width="${cellWidth}" height="${labelHeight}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${cellWidth}" height="${labelHeight}" fill="#111"/>
-        <text x="12" y="27" font-family="Arial, sans-serif" font-size="16"
+        <text x="12" y="24" font-family="Arial, sans-serif" font-size="15"
           font-weight="700" fill="#fff">${label}</text>
+        <text x="12" y="49" font-family="Arial, sans-serif" font-size="13"
+          font-weight="600" fill="#ddd">${witnessLabel}</text>
       </svg>`,
     );
     const x = (index % columns) * cellWidth;
@@ -304,7 +324,24 @@ function retryText(
   directives: readonly InkRetryDirective[] | undefined,
 ): string {
   if (!directives?.length) return "";
-  return `\nRETRY CORRECTIONS: ${directives.join(", ")}. Correct only these failures while preserving every other invariant.`;
+  const unique = Array.from(new Set(directives));
+  const corrections = unique.map((directive) => {
+    switch (directive) {
+      case "placement":
+        return "The prior attempt failed anatomical-side or authorized-zone placement. Re-map every F-feature from its WITNESS authority to its TARGET authority; never retain frame coordinates by mirroring and never move ink to a more visible opposite limb.";
+      case "feature":
+        return "The prior attempt failed exact feature continuity. Preserve the witnessed design, orientation, scale, colour, and motif identity on the newly exposed physical surface.";
+      case "prior_ink":
+        return "The prior attempt dropped or moved accepted ink. Preserve every listed F-feature at its own target anatomy.";
+      case "unexpected_ink":
+        return "The prior attempt added unlisted ink. Remove every tattoo pixel that is not an authorized F-feature.";
+      case "identity":
+        return "The prior attempt changed identity. Restore the exact person and immutable non-tattoo pixels from images 1 and 3.";
+      case "pose_framing":
+        return "The prior attempt changed the canonical camera, crop, pose, lighting, or background. Restore image 1 outside authorized tattoo pixels.";
+    }
+  });
+  return `\nINCLUDED RETRY CORRECTIONS:\n${corrections.map((line) => `- ${line}`).join("\n")}`;
 }
 
 export function buildInkProjectionComposerRequest(input: {
@@ -326,7 +363,7 @@ export function buildInkProjectionComposerRequest(input: {
     throw new TypeError("Invalid projection identity authority");
   }
   const featureLines = input.features.map((feature, index) =>
-    `F${index + 1} (${feature.isProjectionTarget ? "newly exposed continuation" : "already evidenced"}): ${feature.anatomyLabel}; ${feature.normalizedDescriptor}. ${feature.sideAuthority}`
+    `F${index + 1} (${feature.isProjectionTarget ? "newly exposed continuation" : "already evidenced"}): ${feature.anatomyLabel}; ${feature.normalizedDescriptor}. TARGET: ${feature.sideAuthority} WITNESS: ${feature.witnessSideAuthority}`
   ).join("\n");
   const cameraInstruction = input.sourceAngle === input.targetAngle
     ? "Keep the exact camera, crop, pose, framing, clothing, lighting, and background pixels of image 1."
@@ -338,7 +375,9 @@ export function buildInkProjectionComposerRequest(input: {
     "Image 3 is immutable identity authority.",
     "Image 4 is a private evidence mosaic. Each F-number is an immutable tattoo design witness.",
     cameraInstruction,
+    "Anatomical laterality is semantic, not a matching frame coordinate. Map each tattoo from its WITNESS camera authority to its TARGET camera authority. A tattoo seen on frame-left in its witness may belong elsewhere in the target camera; never mirror or copy by viewer side.",
     "For MATCH features, reproduce only the visible portion exactly. For EXTEND features, continue the same physical tattoo coherently onto the newly exposed surface; do not redesign, mirror, recolour, duplicate, resize, or invent motifs.",
+    "If an authorized body part is partly occluded, reproduce ink only on its visible pixels inside its F-box. Never relocate a tattoo to the opposite or more visible limb to make it easier to see.",
     "Do not add any unlisted ink. Do not remove or move any listed ink. Do not alter face, hair, skin, body proportions, expression, clothing, accessories, pose, lighting, or background except the camera change explicitly required above.",
     `Identity authority:\n${identityText}`,
     `Feature authority:\n${featureLines}`,
@@ -392,7 +431,7 @@ export function buildInkProjectionProbeRequest(input: {
     ],
   ));
   const featureLines = input.features.map((feature, index) =>
-    `F${index + 1}: ${feature.anatomyLabel}; ${feature.isProjectionTarget ? "coherent continuation on newly exposed surface" : "exact visible match"}; ${feature.normalizedDescriptor}. ${feature.sideAuthority}`
+    `F${index + 1}: ${feature.anatomyLabel}; ${feature.isProjectionTarget ? "coherent continuation on newly exposed surface" : "exact visible match"}; ${feature.normalizedDescriptor}. TARGET: ${feature.sideAuthority} WITNESS: ${feature.witnessSideAuthority}`
   ).join("\n");
   return {
     kind: "feature_projection",
@@ -442,7 +481,7 @@ export function buildInkProjectionPlacementAuditProbeRequest(input: {
     ],
   ));
   const featureLines = input.features.map((feature, index) =>
-    `F${index + 1}: ${feature.anatomyLabel}. ${feature.sideAuthority}`
+    `F${index + 1}: ${feature.anatomyLabel}. TARGET: ${feature.sideAuthority}`
   ).join("\n");
   return {
     kind: "feature_projection_placement",
@@ -463,6 +502,7 @@ export function buildInkProjectionPlacementAuditProbeRequest(input: {
       "Return strict JSON only. confidence is 0-100.",
       "For every F-feature, AnatomicalSideCorrect is true only when the tattoo is on the subject's requested anatomical side, never merely the similarly named viewer side.",
       "For every F-feature, InsideAuthorizedZone is true only when its visible tattoo pixels occupy the corresponding labelled red box and do not appear in the opposite-side or another feature's box.",
+      "For three-quarter or profile images, infer anatomical side from the candidate pixels, never the stored angle name: nose/toes toward frame-right expose anatomical RIGHT; nose/toes toward frame-left expose anatomical LEFT. If pixels do not prove the mapping, return false rather than guessing.",
       "Use the clean first image to judge tattoo pixels. Use the annotated second image only to judge the server-owned locations.",
       featureLines,
     ].join("\n"),
@@ -699,7 +739,7 @@ export function buildInkCoverageProbeRequest(input: {
   targetAngle: CanonicalViewAngle;
   features: readonly Pick<
     InkProjectionFeatureReference,
-    "featureVersionId" | "anatomyLabel" | "targetZone"
+    "featureVersionId" | "anatomyLabel" | "sideAuthority" | "targetZone"
   >[];
   target: ComposerImage;
 }): InkProbeRequest {
@@ -731,7 +771,7 @@ export function buildInkCoverageProbeRequest(input: {
       `Inspect the single canonical ${input.targetAngle} Cast image.`,
       "Return strict JSON only. For each server-labelled anatomical region, RegionVisible is true only when enough of the physical surface is exposed and resolved to reproduce a tattoo at 1K. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail means false. VerdictCertain is true only when the RegionVisible true/false verdict can be made without guessing. A definitely hidden or absent region may be RegionVisible false with VerdictCertain true. If uncertain, set VerdictCertain false.",
       ...input.features.map((feature, index) =>
-        `F${index + 1}: ${feature.anatomyLabel}; normalized box ${JSON.stringify(feature.targetZone)}.`
+        `F${index + 1}: ${feature.anatomyLabel}; ${feature.sideAuthority} Normalized box ${JSON.stringify(feature.targetZone)}.`
       ),
     ].join("\n"),
     images: [probeInline("original_target", input.target)],

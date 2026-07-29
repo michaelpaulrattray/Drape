@@ -39,6 +39,10 @@ async function features(): Promise<InkProjectionFeatureReference[]> {
       normalizedDescriptor: "black botanical full sleeve",
       anatomyLabel: "right arm - full sleeve",
       sideAuthority: "The subject's right appears on frame left.",
+      targetGuideLabel: "SUBJECT RIGHT - FRAME LEFT",
+      witnessSideAuthority:
+        "The subject's right appears on frame left in the witness.",
+      witnessGuideLabel: "SUBJECT RIGHT - FRAME LEFT",
       targetZone: { x: 0.08, y: 0.24, width: 0.25, height: 0.55 },
       witnessZone: { x: 0.08, y: 0.24, width: 0.25, height: 0.55 },
       witness,
@@ -50,6 +54,10 @@ async function features(): Promise<InkProjectionFeatureReference[]> {
       normalizedDescriptor: "fine-line swallow",
       anatomyLabel: "left upper torso",
       sideAuthority: "The subject's left appears on frame right.",
+      targetGuideLabel: "SUBJECT LEFT - FRAME RIGHT",
+      witnessSideAuthority:
+        "The subject's left appears on frame right in the witness.",
+      witnessGuideLabel: "SUBJECT LEFT - FRAME RIGHT",
       targetZone: { x: 0.55, y: 0.2, width: 0.24, height: 0.24 },
       witnessZone: { x: 0.55, y: 0.2, width: 0.24, height: 0.24 },
       witness,
@@ -86,7 +94,7 @@ describe("multi-feature projection composition", () => {
       "identity_anchor",
       "evidence_mosaic",
     ]);
-    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v3");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v4");
     expect(request.prompt).toContain(
       "Image 1 is the clean original target and immutable pixel canvas",
     );
@@ -96,6 +104,12 @@ describe("multi-feature projection composition", () => {
     expect(request.prompt).toContain("F1 (newly exposed continuation)");
     expect(request.prompt).toContain("F2 (already evidenced)");
     expect(request.prompt).toContain("canonical backFull");
+    expect(request.prompt).toContain(
+      "Anatomical laterality is semantic, not a matching frame coordinate",
+    );
+    expect(request.prompt).toContain(
+      "WITNESS: The subject's right appears on frame left in the witness.",
+    );
   });
 
   it("independently refuses a mirrored or out-of-zone feature", async () => {
@@ -109,13 +123,16 @@ describe("multi-feature projection composition", () => {
     });
     expect(request.kind).toBe("feature_projection_placement");
     expect(request.recipeVersion)
-      .toBe("ink.add.anywhere.projection-placement-audit.v1");
+      .toBe("ink.add.anywhere.projection-placement-audit.v2");
     expect(request.images.map((entry) => entry.role)).toEqual([
       "candidate",
       "placement_audit_candidate",
     ]);
     expect(request.prompt).toContain(
       "The subject's left appears on frame right.",
+    );
+    expect(request.prompt).toContain(
+      "nose/toes toward frame-right expose anatomical RIGHT",
     );
     const placement = parseInkProjectionPlacementAuditResponse({
       confidence: 96,
@@ -213,7 +230,12 @@ describe("multi-feature projection composition", () => {
     const base = await image("#999");
     const request = buildInkCoverageProbeRequest({
       targetAngle: "threeQuarter",
-      features: selected,
+      features: selected.map((feature) => ({
+        featureVersionId: feature.featureVersionId,
+        anatomyLabel: feature.anatomyLabel,
+        sideAuthority: feature.sideAuthority,
+        targetZone: feature.targetZone,
+      })),
       target: base,
     });
     expect(request.kind).toBe("coverage");

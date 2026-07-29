@@ -10,35 +10,37 @@ export const INK_ANYWHERE_ONTOLOGY_VERSION = "body-zones.ink.v2" as const;
 export const INK_ANYWHERE_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.anywhere.authorization.v1" as const;
 export const INK_ANYWHERE_COMPOSER_RECIPE_VERSION =
-  "ink.add.anywhere.composer.v6" as const;
+  "ink.add.anywhere.composer.v7" as const;
 export const INK_ANYWHERE_READABLE_COMPOSER_RECIPE_VERSIONS =
   Object.freeze([
     "ink.add.anywhere.composer.v2",
     "ink.add.anywhere.composer.v3",
     "ink.add.anywhere.composer.v4",
     "ink.add.anywhere.composer.v5",
+    "ink.add.anywhere.composer.v6",
     INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
   ] as const);
 export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
   "ink.add.anywhere.probe.v2" as const;
 export const INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION =
-  "ink.add.anywhere.placement-audit.v4" as const;
+  "ink.add.anywhere.placement-audit.v5" as const;
 export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
   "ink.add.anywhere.visibility.v5" as const;
 export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
-  "ink.add.anywhere.projection.v3" as const;
+  "ink.add.anywhere.projection.v4" as const;
 export const INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS =
   Object.freeze([
     "ink.add.anywhere.projection.v1",
     "ink.add.anywhere.projection.v2",
+    "ink.add.anywhere.projection.v3",
     INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
   ] as const);
 export const INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION =
   "ink.add.anywhere.projection.probe.v2" as const;
 export const INK_ANYWHERE_PROJECTION_PLACEMENT_AUDIT_RECIPE_VERSION =
-  "ink.add.anywhere.projection-placement-audit.v1" as const;
+  "ink.add.anywhere.projection-placement-audit.v2" as const;
 export const INK_ANYWHERE_EVIDENCE_MOSAIC_RECIPE_VERSION =
-  "ink.add.anywhere.evidence-mosaic.v1" as const;
+  "ink.add.anywhere.evidence-mosaic.v2" as const;
 export const INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION =
   "ink.add.anywhere.coverage-probe.v3" as const;
 export const INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS =
@@ -304,7 +306,12 @@ function sidedZone(
   angle: CanonicalViewAngle,
   side: InkAnatomySide,
 ): NormalizedInkZone {
-  if (side === "centre" || angle === "sideFull" || angle === "sideClose") {
+  if (
+    side === "centre"
+    || angle === "threeQuarter"
+    || angle === "sideFull"
+    || angle === "sideClose"
+  ) {
     return base;
   }
   const leftAppearsFrameRight = angle !== "backFull";
@@ -400,9 +407,10 @@ export interface InkAnatomicalSideAuthority {
 }
 
 /**
- * Canonical views have a server-owned camera direction. Spell the subject's
- * anatomical side out in frame-relative terms so neither the image composer
- * nor the placement audit can reinterpret "right" as viewer-right.
+ * Front/back views provide deterministic frame-relative laterality once their
+ * canonical framing is proved. Generated three-quarter/profile images can
+ * still be mirrored, so those angles must derive visible anatomical side from
+ * their pixels rather than treating the stored angle name as proof.
  */
 export function inkAnatomicalSideAuthority(
   tuple: InkAnatomyTuple,
@@ -439,11 +447,36 @@ export function inkAnatomicalSideAuthority(
         + ` appears on FRAME ${frameSide}.`,
     });
   }
+  if (angle === "threeQuarter") {
+    return Object.freeze({
+      guideLabel: `SUBJECT ${subjectSide} - USE TARGET PIXELS`,
+      prompt:
+        "The stored threeQuarter angle requests right-facing, but a generated"
+        + " image may be mirrored; the label is not anatomical proof. Read the"
+        + " clean target pixels: nose toward frame-right means anatomical"
+        + " RIGHT is camera-near; nose toward frame-left means LEFT is"
+        + ` camera-near. Place subject-${tuple.side} ink only on that actual`
+        + " anatomy when visible. If pixels do not prove the mapping, do not"
+        + " guess or use the opposite side.",
+    });
+  }
+  if (angle === "sideClose" || angle === "sideFull") {
+    return Object.freeze({
+      guideLabel: `SUBJECT ${subjectSide} - USE TARGET PIXELS`,
+      prompt:
+        `The stored ${angle} requests right-facing, but a generated image may`
+        + " be mirrored; the label is not anatomical proof. Read the clean"
+        + " target pixels: nose/toes toward frame-right expose anatomical"
+        + " RIGHT; toward frame-left expose LEFT. Reproduce"
+        + ` subject-${tuple.side} ink only on that actual anatomy when visible.`
+        + " If pixels do not prove the mapping, do not guess, use viewer side,"
+        + " or move ink to the opposite limb.",
+    });
+  }
   return Object.freeze({
-    guideLabel: `SUBJECT ${subjectSide} - RIGHT-FACING VIEW`,
+    guideLabel: `SUBJECT ${subjectSide}`,
     prompt:
-      `The subject faces toward frame-right in this canonical ${angle} view.`
-      + ` Judge ${tuple.side} only as the subject's own anatomical side; never`
+      `Judge ${tuple.side} only as the subject's own anatomical side; never`
       + " substitute viewer-left or viewer-right.",
   });
 }
