@@ -183,7 +183,7 @@ function featureGraphCloses(
     features: readonly ModelIdentityFeature[];
     versions: readonly ModelIdentityFeatureVersion[];
     assets: readonly ModelAsset[];
-    selectedAssetIds: ReadonlySet<number>;
+    selectedViewAngles: ReadonlySet<string>;
     plates: readonly ModelReferencePlate[];
     crops: readonly ModelEvidenceCrop[];
   },
@@ -221,7 +221,7 @@ function featureGraphCloses(
       !acceptedAsset
       || acceptedAsset.modelId !== input.model.id
       || isFailureMarker(acceptedAsset)
-      || !input.selectedAssetIds.has(acceptedAsset.id)
+      || !input.selectedViewAngles.has(version.sourceViewAngle)
     ) {
       return false;
     }
@@ -340,8 +340,8 @@ export function resolveWholeCastRestorePoint(
     features: rows.features,
     versions: rows.featureVersions,
     assets: rows.assets,
-    selectedAssetIds: new Set(
-      availableSlots.map(({ asset }) => asset.id),
+    selectedViewAngles: new Set(
+      availableSlots.map(({ selection }) => selection.viewAngle),
     ),
     plates: rows.plates,
     crops: rows.crops,

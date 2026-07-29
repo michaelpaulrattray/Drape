@@ -113,6 +113,9 @@ export function CastingDetailsDialog() {
   );
   if (headshotIssue) issueAngles.add('frontClose');
   const issueCount = issueAngles.size;
+  const unavailableCoverageCount = (evidencePackage?.slots ?? []).filter(
+    (slot) => evidencePackageRefusalMessage(slot.refusal) !== null,
+  ).length;
   const actionableCost = actionable.reduce((total, slot) => total + (planRows.get(slot.angle)?.cost ?? 0), 0);
   const loadError = packageQuery.error ?? planQuery.error ?? mintPlanQuery.error;
 
@@ -276,6 +279,8 @@ export function CastingDetailsDialog() {
               ? evidenceAware
                 ? `${actionable.length} suggested update${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
                 : `${actionable.length} view${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
+              : unavailableCoverageCount > 0
+                ? `${unavailableCoverageCount} tattoo coverage view${unavailableCoverageCount === 1 ? '' : 's'} unavailable`
               : issueCount > 0
                 ? `${issueCount} item${issueCount === 1 ? '' : 's'} need attention`
                 : 'Everything shown is in sync'}

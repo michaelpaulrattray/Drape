@@ -218,6 +218,60 @@ describe("R7-7F whole-Cast history authority", () => {
     expect(target?.featureSelections).toHaveLength(1);
   });
 
+  it("restores accumulated features after a later candidate replaces an earlier accepted slot asset", () => {
+    const rows = fixture();
+    const latestBody = {
+      ...rows.assets[0],
+      id: 13,
+      storageUrl: "https://r2/body-with-two-features.png",
+      storageKey: "models/7/body-with-two-features.png",
+    };
+    rows.assets.push(latestBody);
+    const bodySlot = rows.slots.find(
+      (slot) =>
+        slot.packageSnapshotId === "package-2"
+        && slot.viewAngle === "frontFull",
+    );
+    bodySlot.selectedAssetId = latestBody.id;
+    rows.features.push({
+      ...rows.features[0],
+      id: "feature-2",
+      createdByOperationId: "operation-3",
+    });
+    rows.featureVersions.push({
+      ...rows.featureVersions[0],
+      id: "version-2",
+      featureId: "feature-2",
+      acceptedCandidatePlateId: "plate-2",
+      acceptedAssetId: latestBody.id,
+      createdByOperationId: "operation-3",
+    });
+    rows.featureSelections.push({
+      ...rows.featureSelections[0],
+      id: "selection-2",
+      featureId: "feature-2",
+      featureVersionId: "version-2",
+    });
+    rows.plates.push({
+      ...rows.plates[0],
+      id: "plate-2",
+      storageKey: "users/1/models/7/plate-2.webp",
+      createdByOperationId: "operation-3",
+    });
+
+    const target = resolveWholeCastRestorePoint(rows, rows.identities[0]);
+    expect(target?.availableSlots.map((row) => row.asset.id))
+      .toEqual([11, 13]);
+    expect(target?.featureSelections).toHaveLength(2);
+    const current = buildPublicCastStateHistory(rows, true).restorePoints[0];
+    expect(current).toMatchObject({
+      selectedViewCount: 2,
+      featureCount: 2,
+      current: true,
+      unavailableReason: "current",
+    });
+  });
+
   it("keeps an unavailable non-anchor slot missing without substituting", () => {
     const rows = fixture();
     const target = resolveWholeCastRestorePoint(rows, rows.identities[1]);
