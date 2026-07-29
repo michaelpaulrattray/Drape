@@ -81,9 +81,9 @@ const anywherePrepared: PreparedInkCandidateAttempt = {
       side: "right",
     },
     normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
-    composerRecipeVersion: "ink.add.anywhere.composer.v3",
+    composerRecipeVersion: "ink.add.anywhere.composer.v4",
     probeRecipeVersion: "ink.add.anywhere.probe.v2",
-    visibilityRecipeVersion: "ink.add.anywhere.visibility.v2",
+    visibilityRecipeVersion: "ink.add.anywhere.visibility.v3",
   },
   normalizedDescriptor: "blackwork full sleeve on his right arm",
 };
@@ -141,6 +141,16 @@ function passProbe(request: InkProbeRequest): unknown {
     ]));
   }
   if (request.kind === "visibility") {
+    if ("targetRegionVisible" in request.responseSchema) {
+      return {
+        targetRegionVisible: true,
+        anatomicalSideReadable: true,
+        materiallyOccluded: false,
+        guideCoversRequestedRegion: true,
+        guideTouchesOppositeSide: false,
+        confidence: 99,
+      };
+    }
     return {
       upperTorsoVisible: true,
       materiallyOccluded: false,
@@ -293,6 +303,8 @@ describe("ink candidate generation", () => {
           targetRegionVisible: true,
           anatomicalSideReadable: true,
           materiallyOccluded: false,
+          guideCoversRequestedRegion: true,
+          guideTouchesOppositeSide: false,
           confidence: 96,
         };
       }
@@ -330,11 +342,11 @@ describe("ink candidate generation", () => {
       chargedCredits: 350,
     });
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.composer.v3",
+      recipeVersion: "ink.add.anywhere.composer.v4",
       prompt: expect.stringContaining("zone=full_arm"),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.visibility.v2",
+      recipeVersion: "ink.add.anywhere.visibility.v3",
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
       recipeVersion: "ink.add.anywhere.probe.v2",
@@ -350,6 +362,34 @@ describe("ink candidate generation", () => {
         expect.objectContaining({ role: "placement_audit_candidate" }),
       ]),
     }));
+  });
+
+  it("refuses a mismatched v2 placement guide before charge or image work", async () => {
+    const deps = dependencies({
+      prepare: vi.fn(async () => ({ ...anywherePrepared })),
+      probe: vi.fn(async (request) => {
+        if (request.kind !== "visibility") return passProbe(request);
+        return {
+          targetRegionVisible: true,
+          anatomicalSideReadable: true,
+          materiallyOccluded: false,
+          guideCoversRequestedRegion: false,
+          guideTouchesOppositeSide: false,
+          confidence: 97,
+        };
+      }),
+    });
+    await expect(generateInkAddCandidate(deps, {
+      userId: anywherePrepared.userId,
+      intentId: anywherePrepared.intentId,
+      clientRequestId: "15151515-1515-4515-8515-151515151515",
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("Nothing was charged"),
+    });
+    expect(deps.charge).not.toHaveBeenCalled();
+    expect(deps.generate).not.toHaveBeenCalled();
+    expect(deps.invalidate).toHaveBeenCalledTimes(1);
   });
 
   it("runs a private multi-feature projection episode without accepting it", async () => {

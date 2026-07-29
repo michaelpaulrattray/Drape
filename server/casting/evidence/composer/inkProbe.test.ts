@@ -205,6 +205,7 @@ describe("R7-7D fail-closed structured probes", () => {
     } as const;
     const visibility = buildInkAnywhereVisibilityProbeRequest({
       target: image,
+      guidedTarget: image,
       anatomy,
     });
     const feature = buildInkAnywhereFeaturePlacementProbeRequest({
@@ -221,9 +222,14 @@ describe("R7-7D fail-closed structured probes", () => {
       sourceAngle: "frontFull",
     });
     expect(visibility.recipeVersion)
-      .toBe("ink.add.anywhere.visibility.v2");
+      .toBe("ink.add.anywhere.visibility.v3");
     expect(visibility.prompt).toContain("anatomical side");
+    expect(visibility.prompt).toContain("actually authorizes");
     expect(visibility.prompt).toContain("integer from 0 to 100");
+    expect(visibility.images.map(({ role }) => role)).toEqual([
+      "original_target",
+      "guided_target",
+    ]);
     expect(feature.recipeVersion).toBe("ink.add.anywhere.probe.v2");
     expect(feature.responseSchema).toHaveProperty("priorVisibleInkPreserved");
     expect(feature.prompt).toContain("integer from 0 to 100");
@@ -244,11 +250,14 @@ describe("R7-7D fail-closed structured probes", () => {
 
     await expect(runInkAnywhereVisibilityProbe({
       target: image,
+      guidedTarget: image,
       anatomy,
       probe: async () => ({
         targetRegionVisible: true,
         anatomicalSideReadable: true,
         materiallyOccluded: false,
+        guideCoversRequestedRegion: true,
+        guideTouchesOppositeSide: false,
         confidence: 91,
       }),
     })).resolves.toEqual({
@@ -257,16 +266,35 @@ describe("R7-7D fail-closed structured probes", () => {
     });
     await expect(runInkAnywhereVisibilityProbe({
       target: image,
+      guidedTarget: image,
       anatomy,
       probe: async () => ({
         targetRegionVisible: true,
         anatomicalSideReadable: true,
         materiallyOccluded: false,
+        guideCoversRequestedRegion: true,
+        guideTouchesOppositeSide: false,
         confidence: 84,
       }),
     })).resolves.toEqual({
       predictedVisibility: "fail",
       confidence: 84,
+    });
+    await expect(runInkAnywhereVisibilityProbe({
+      target: image,
+      guidedTarget: image,
+      anatomy,
+      probe: async () => ({
+        targetRegionVisible: true,
+        anatomicalSideReadable: true,
+        materiallyOccluded: false,
+        guideCoversRequestedRegion: false,
+        guideTouchesOppositeSide: false,
+        confidence: 96,
+      }),
+    })).resolves.toEqual({
+      predictedVisibility: "fail",
+      confidence: 96,
     });
 
     const truth = await runInkAnywhereCandidateProbes({

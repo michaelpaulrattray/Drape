@@ -10,13 +10,19 @@ export const INK_ANYWHERE_ONTOLOGY_VERSION = "body-zones.ink.v2" as const;
 export const INK_ANYWHERE_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.anywhere.authorization.v1" as const;
 export const INK_ANYWHERE_COMPOSER_RECIPE_VERSION =
-  "ink.add.anywhere.composer.v3" as const;
+  "ink.add.anywhere.composer.v4" as const;
+export const INK_ANYWHERE_READABLE_COMPOSER_RECIPE_VERSIONS =
+  Object.freeze([
+    "ink.add.anywhere.composer.v2",
+    "ink.add.anywhere.composer.v3",
+    INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
+  ] as const);
 export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
   "ink.add.anywhere.probe.v2" as const;
 export const INK_ANYWHERE_PLACEMENT_AUDIT_RECIPE_VERSION =
   "ink.add.anywhere.placement-audit.v4" as const;
 export const INK_ANYWHERE_VISIBILITY_RECIPE_VERSION =
-  "ink.add.anywhere.visibility.v2" as const;
+  "ink.add.anywhere.visibility.v3" as const;
 export const INK_ANYWHERE_PROJECTION_RECIPE_VERSION =
   "ink.add.anywhere.projection.v1" as const;
 export const INK_ANYWHERE_PROJECTION_PROBE_RECIPE_VERSION =
@@ -237,6 +243,28 @@ const FULL_FRONT_CENTRE: Readonly<Record<InkAnatomyZone, NormalizedInkZone>> =
     foot: rect(0.25, 0.91, 0.5, 0.085),
   });
 
+/**
+ * The canonical 3:4 front/back slots are allowed to frame at the knees. Their
+ * hands therefore sit materially lower than they do in a true head-to-foot
+ * full-body view. Keep this override angle-specific: Walk retains the
+ * full-body hand band used by its motion framing.
+ */
+const FULL_ANGLE_ZONE_OVERRIDES: Readonly<
+  Partial<
+    Record<
+      CanonicalViewAngle,
+      Readonly<Partial<Record<InkAnatomyZone, NormalizedInkZone>>>
+    >
+  >
+> = Object.freeze({
+  frontFull: Object.freeze({
+    hand: rect(0.04, 0.65, 0.92, 0.27),
+  }),
+  backFull: Object.freeze({
+    hand: rect(0.04, 0.65, 0.92, 0.27),
+  }),
+});
+
 const CLOSE_CENTRE: Readonly<Record<"face" | "scalp" | "neck", NormalizedInkZone>> =
   Object.freeze({
     face: rect(0.27, 0.2, 0.46, 0.48),
@@ -294,7 +322,9 @@ function targetZone(
       tuple.side,
     );
   }
-  const base = FULL_FRONT_CENTRE[tuple.zone];
+  const base =
+    FULL_ANGLE_ZONE_OVERRIDES[angle]?.[tuple.zone]
+    ?? FULL_FRONT_CENTRE[tuple.zone];
   if (angle === "sideFull") {
     return rect(
       Math.max(0.08, base.x - 0.08),

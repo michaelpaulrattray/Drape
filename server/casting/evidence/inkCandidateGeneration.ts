@@ -740,6 +740,7 @@ async function executeCandidate(
         })
       : await runInkAnywhereVisibilityProbe({
           target: images.target,
+          guidedTarget: images.guidedTarget,
           anatomy: prepared.authority.anatomy,
           probe: dependencies.probe ?? defaultProbe,
         });

@@ -36,6 +36,7 @@ export interface InkProbeInlineImage {
   role:
     | "identity_anchor"
     | "original_target"
+    | "guided_target"
     | "candidate"
     | "placement_audit_candidate"
     | "evidence_reference"
@@ -123,6 +124,8 @@ interface AnywhereVisibilityResponse {
   targetRegionVisible: boolean;
   anatomicalSideReadable: boolean;
   materiallyOccluded: boolean;
+  guideCoversRequestedRegion: boolean;
+  guideTouchesOppositeSide: boolean;
   confidence: number;
 }
 
@@ -246,12 +249,16 @@ export function parseInkAnywhereVisibilityProbe(
     "targetRegionVisible",
     "anatomicalSideReadable",
     "materiallyOccluded",
+    "guideCoversRequestedRegion",
+    "guideTouchesOppositeSide",
     "confidence",
   ]);
   return {
     targetRegionVisible: bool(value.targetRegionVisible),
     anatomicalSideReadable: bool(value.anatomicalSideReadable),
     materiallyOccluded: bool(value.materiallyOccluded),
+    guideCoversRequestedRegion: bool(value.guideCoversRequestedRegion),
+    guideTouchesOppositeSide: bool(value.guideTouchesOppositeSide),
     confidence: confidence(value.confidence),
   };
 }
@@ -347,6 +354,7 @@ strict JSON only.`,
 
 export function buildInkAnywhereVisibilityProbeRequest(input: {
   target: ComposerImage;
+  guidedTarget: ComposerImage;
   anatomy: InkAnatomyTuple;
 }): InkProbeRequest {
   assertSupportedInkAnatomyTuple(input.anatomy);
@@ -360,11 +368,15 @@ export function buildInkAnywhereVisibilityProbeRequest(input: {
       targetRegionVisible: "boolean",
       anatomicalSideReadable: "boolean",
       materiallyOccluded: "boolean",
+      guideCoversRequestedRegion: "boolean",
+      guideTouchesOppositeSide: "boolean",
       confidence: "integer_0_100",
     },
     ...INK_TEXT_PROVIDER_CONFIG,
-    prompt: `Assess only whether ${location} is sufficiently visible in this
-image to author one tattoo at useful 1K detail. The resolved tuple is
+    prompt: `Image 1 is the clean target. Image 2 is the same target with a
+translucent red server-owned placement guide. Assess only whether ${location}
+is sufficiently visible and whether that guide actually authorizes the
+requested anatomy before any paid image work. The resolved tuple is
 zone=${input.anatomy.zone}, surface=${input.anatomy.surface},
 side=${input.anatomy.side}. targetRegionVisible requires real observable skin
 or an already visible tattoo-bearing surface at useful scale.
@@ -372,10 +384,21 @@ anatomicalSideReadable requires that the person's anatomical side and requested
 surface can be identified without guessing or mirroring. Clothing, hair, hands,
 objects, crop, foreshortening, or pose materially covering the requested region
 count as occlusion. A circumferential request needs a useful visible portion,
-not proof of the hidden circumference. Do not infer hidden pixels. Return
-strict JSON only. confidence must be an integer from 0 to 100, where 100 means
-completely certain.`,
-    images: [inline("original_target", input.target)],
+not proof of the hidden circumference.
+
+Set guideCoversRequestedRegion true only if the highlighted region contains
+useful visible skin on the exact requested body part. A guide that sits above,
+below, or beside the requested anatomy fails even when that anatomy is visible
+elsewhere in Image 1. Set guideTouchesOppositeSide true if the guide reaches the
+opposite anatomical side in a way that could authorize mirrored placement.
+The guide may include modest surrounding context on the requested side; it
+must not be treated as permission to tattoo adjacent anatomy. Do not infer
+hidden pixels. Return strict JSON only. confidence must be
+an integer from 0 to 100, where 100 means completely certain.`,
+    images: [
+      inline("original_target", input.target),
+      inline("guided_target", input.guidedTarget),
+    ],
   };
 }
 
@@ -668,6 +691,7 @@ export async function runInkCandidateProbes(input: {
 
 export async function runInkAnywhereVisibilityProbe(input: {
   target: ComposerImage;
+  guidedTarget: ComposerImage;
   anatomy: InkAnatomyTuple;
   probe: (request: InkProbeRequest) => Promise<unknown>;
 }): Promise<InkVisibilityProbe> {
@@ -680,6 +704,8 @@ export async function runInkAnywhereVisibilityProbe(input: {
         result.targetRegionVisible
         && result.anatomicalSideReadable
         && !result.materiallyOccluded
+        && result.guideCoversRequestedRegion
+        && !result.guideTouchesOppositeSide
         && result.confidence >= INK_ANYWHERE_MIN_PROBE_CONFIDENCE,
       ),
       confidence: result.confidence,

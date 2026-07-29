@@ -22,9 +22,9 @@ import {
   INK_ADD_SIDES,
 } from "./composer/inkAddRecipe";
 import {
-  INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
   INK_ANYWHERE_ONTOLOGY_VERSION,
   INK_ANYWHERE_PROJECTION_RECIPE_VERSION,
+  INK_ANYWHERE_READABLE_COMPOSER_RECIPE_VERSIONS,
   inkAuthoringSourcePreferences,
   inkViewDirectiveV2,
   isSupportedInkAnatomyTuple,
@@ -120,7 +120,8 @@ function contractForVersion(
   };
   if (
     version.ontologyVersion !== INK_ANYWHERE_ONTOLOGY_VERSION
-    || version.recipeVersion !== INK_ANYWHERE_COMPOSER_RECIPE_VERSION
+    || !(INK_ANYWHERE_READABLE_COMPOSER_RECIPE_VERSIONS as readonly string[])
+      .includes(version.recipeVersion)
     || !isSupportedInkAnatomyTuple(anatomy)
   ) {
     return null;

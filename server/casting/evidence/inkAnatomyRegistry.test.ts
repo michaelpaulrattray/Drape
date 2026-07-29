@@ -120,6 +120,25 @@ describe("all-body ink anatomy registry", () => {
     }
   });
 
+  it("uses a lower hand band for knee-framed front/back slots only", () => {
+    const leftHand = {
+      zone: "hand",
+      surface: "dorsal",
+      side: "left",
+    } as const;
+    const front = inkViewDirectiveV2(leftHand, "frontFull")
+      .normalizedTargetZone!;
+    const back = inkViewDirectiveV2(leftHand, "backFull")
+      .normalizedTargetZone!;
+    const walk = inkViewDirectiveV2(leftHand, "sideFull")
+      .normalizedTargetZone!;
+    expect(front).toMatchObject({ y: 0.65, height: 0.27 });
+    expect(back).toMatchObject({ y: 0.65, height: 0.27 });
+    expect(walk).toMatchObject({ y: 0.58, height: 0.17 });
+    expect(front.x).toBeGreaterThan(0.5);
+    expect(back.x + back.width).toBeLessThan(0.5);
+  });
+
   it("distinguishes below-resolution truth from hidden anatomy", () => {
     const face = {
       zone: "face",

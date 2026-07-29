@@ -252,4 +252,19 @@ describe("multi-feature tattoo graph closure", () => {
     expect(assessClosedInkFeatureGraph(value)?.entries[0].contract)
       .toBe("legacy_front_upper_torso_v1");
   });
+
+  it("keeps composer-v3 history readable while accepting new v4 feature rows", () => {
+    const mixed = graph();
+    mixed.versions[0] = {
+      ...mixed.versions[0],
+      recipeVersion: "ink.add.anywhere.composer.v4",
+    };
+    const closed = assessClosedInkFeatureGraph(mixed);
+    expect(closed?.entries).toHaveLength(2);
+    expect(closed?.entries.map(({ version }) => version.recipeVersion))
+      .toEqual([
+        "ink.add.anywhere.composer.v4",
+        "ink.add.anywhere.composer.v3",
+      ]);
+  });
 });
