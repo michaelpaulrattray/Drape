@@ -328,6 +328,9 @@ Every capability stays behind a server-owned feature flag with old R6 refusals a
 
 ### R7-7G — Natural-language all-body tattoo completion
 
+**Detailed execution contract:**
+`CASTING_SYSTEM_R7_7G_NATURAL_LANGUAGE_ALL_BODY_INK_PLAN.md`
+
 The front-upper-torso implementation is a deliberately bounded safety pilot,
 not the completed tattoo product. Before R7 closes, the `ink.add` category must
 graduate to one natural-language-first public interaction that supports
