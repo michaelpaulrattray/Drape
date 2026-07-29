@@ -145,21 +145,21 @@ describe("multi-feature projection composition", () => {
       target: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v2");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v3");
     expect(request.prompt).toContain(
-      "definitely hidden or absent region is false with high confidence",
+      "definitely hidden or absent region may be RegionVisible false",
     );
     const raw = {
       feature1RegionVisible: true,
-      feature1Confidence: 91,
+      feature1VerdictCertain: true,
       feature2RegionVisible: false,
-      feature2Confidence: 72,
+      feature2VerdictCertain: false,
     };
     expect(summarizeInkCoverageProbeResponse(raw, 2)).toEqual({
       responseShape: "valid_object",
       features: [
-        { regionVisible: true, confidence: 91 },
-        { regionVisible: false, confidence: 72 },
+        { regionVisible: true, verdictCertain: true },
+        { regionVisible: false, verdictCertain: false },
       ],
     });
     expect(() => parseInkCoverageProbeResponse(raw, [
@@ -168,7 +168,7 @@ describe("multi-feature projection composition", () => {
     ])).toThrow("Observed coverage is unknown");
     expect(summarizeInkCoverageProbeResponse("not-json", 1)).toEqual({
       responseShape: "invalid",
-      features: [{ regionVisible: null, confidence: null }],
+      features: [{ regionVisible: null, verdictCertain: null }],
     });
   });
 });

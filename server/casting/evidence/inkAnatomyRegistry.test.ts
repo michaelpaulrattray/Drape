@@ -14,12 +14,13 @@ import {
 } from "./inkAnatomyRegistry";
 
 describe("all-body ink anatomy registry", () => {
-  it("keeps v1 coverage evidence readable after the confidence clarification", () => {
+  it("keeps earlier coverage evidence readable after the certainty contract", () => {
     expect(INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.coverage-probe.v2");
+      .toBe("ink.add.anywhere.coverage-probe.v3");
     expect(INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.coverage-probe.v1",
       "ink.add.anywhere.coverage-probe.v2",
+      "ink.add.anywhere.coverage-probe.v3",
     ]);
   });
 

@@ -415,7 +415,7 @@ describe("ink candidate generation", () => {
         sourceAngle: "backFull",
         composerRecipeVersion: "ink.add.anywhere.projection.v1",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v1",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v2",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v3",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -490,7 +490,7 @@ describe("ink candidate generation", () => {
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v2",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v3",
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection",
@@ -503,7 +503,7 @@ describe("ink candidate generation", () => {
       probe: vi.fn(async (request) => request.kind === "coverage"
         ? {
             feature1RegionVisible: true,
-            feature1Confidence: 72,
+            feature1VerdictCertain: false,
           }
         : passProbe(request)),
     });

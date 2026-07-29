@@ -1017,7 +1017,8 @@ async function executeProjectionCandidate(
           anatomy: feature.anatomy,
           regionVisible:
             coverageTelemetry.features[index]?.regionVisible ?? null,
-          confidence: coverageTelemetry.features[index]?.confidence ?? null,
+          verdictCertain:
+            coverageTelemetry.features[index]?.verdictCertain ?? null,
         })),
       }, "Ink projection pre-charge coverage assessed");
       try {

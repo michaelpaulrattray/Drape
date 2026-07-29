@@ -517,7 +517,7 @@ export function buildInkCoverageProbeRequest(input: {
   const featureSchema = Object.fromEntries(input.features.flatMap(
     (_feature, index) => [
       [`feature${index + 1}RegionVisible`, "boolean" as const],
-      [`feature${index + 1}Confidence`, "integer_0_100" as const],
+      [`feature${index + 1}VerdictCertain`, "boolean" as const],
     ],
   ));
   return {
@@ -531,7 +531,7 @@ export function buildInkCoverageProbeRequest(input: {
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
       `Inspect the single canonical ${input.targetAngle} Cast image.`,
-      "Return strict JSON only. For each server-labelled anatomical region, RegionVisible is true only when enough of the physical surface is exposed and resolved to reproduce a tattoo at 1K. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail means false. Confidence is certainty in the true/false verdict, not a visibility score. A definitely hidden or absent region is false with high confidence; never use confidence 0 merely because RegionVisible is false.",
+      "Return strict JSON only. For each server-labelled anatomical region, RegionVisible is true only when enough of the physical surface is exposed and resolved to reproduce a tattoo at 1K. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail means false. VerdictCertain is true only when the RegionVisible true/false verdict can be made without guessing. A definitely hidden or absent region may be RegionVisible false with VerdictCertain true. If uncertain, set VerdictCertain false.",
       ...input.features.map((feature, index) =>
         `F${index + 1}: ${feature.anatomyLabel}; normalized box ${JSON.stringify(feature.targetZone)}.`
       ),
@@ -544,7 +544,7 @@ export interface InkCoverageProbeTelemetry {
   responseShape: "valid_object" | "invalid";
   features: readonly {
     regionVisible: boolean | null;
-    confidence: number | null;
+    verdictCertain: boolean | null;
   }[];
 }
 
@@ -582,15 +582,10 @@ export function summarizeInkCoverageProbeResponse(
     responseShape: validObject ? "valid_object" : "invalid",
     features: Object.freeze(Array.from({ length: featureCount }, (_, index) => {
       const visible = value[`feature${index + 1}RegionVisible`];
-      const confidence = value[`feature${index + 1}Confidence`];
+      const certain = value[`feature${index + 1}VerdictCertain`];
       return Object.freeze({
         regionVisible: typeof visible === "boolean" ? visible : null,
-        confidence:
-          Number.isSafeInteger(confidence)
-            && (confidence as number) >= 0
-            && (confidence as number) <= 100
-            ? confidence as number
-            : null,
+        verdictCertain: typeof certain === "boolean" ? certain : null,
       });
     })),
   });
@@ -614,7 +609,7 @@ export function parseInkCoverageProbeResponse(
   const value = parsed as Record<string, unknown>;
   const expectedKeys = featureVersionIds.flatMap((_id, index) => [
     `feature${index + 1}RegionVisible`,
-    `feature${index + 1}Confidence`,
+    `feature${index + 1}VerdictCertain`,
   ]);
   if (
     Object.keys(value).length !== expectedKeys.length
@@ -624,13 +619,10 @@ export function parseInkCoverageProbeResponse(
   }
   return Object.freeze(Object.fromEntries(featureVersionIds.map((id, index) => {
     const visible = value[`feature${index + 1}RegionVisible`];
-    const confidence = value[`feature${index + 1}Confidence`];
+    const certain = value[`feature${index + 1}VerdictCertain`];
     if (
       typeof visible !== "boolean"
-      || !Number.isSafeInteger(confidence)
-      || (confidence as number) < 0
-      || (confidence as number) > 100
-      || (confidence as number) < 85
+      || certain !== true
     ) {
       throw new TypeError("Observed coverage is unknown");
     }
