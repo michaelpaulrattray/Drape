@@ -277,22 +277,34 @@ describe("multi-feature projection composition", () => {
         witness: feature.witness,
       })),
       target: base,
+      coordinateGuide: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v7");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v8");
     expect(request.prompt).toContain(
       "partial upper arm or forearm in a close crop",
     );
-    expect(request.prompt).toContain("exactly two ordered images");
+    expect(request.prompt).toContain("exactly three ordered images");
+    expect(request.prompt).toContain(
+      "relative to the entire rectangular Image 1/Image 2 canvas",
+    );
+    expect(request.prompt).toContain(
+      "No registry rectangle or person bounding box is coordinate authority",
+    );
+    expect(request.prompt).not.toContain(
+      JSON.stringify(selected[0]!.targetZone),
+    );
     expect(request.prompt).toContain("black botanical full sleeve");
     expect(request.images.map(({ role }) => role)).toEqual([
       "original_target",
+      "coordinate_guide",
       "evidence_reference",
     ]);
     expect(() => buildInkCoverageProbeRequest({
       targetAngle: "threeQuarter",
       features: selected,
       target: base,
+      coordinateGuide: base,
     })).toThrow("Coverage localization requires one feature");
     const raw = {
       ...coverageFields(1, {

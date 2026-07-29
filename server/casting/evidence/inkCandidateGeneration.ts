@@ -68,6 +68,7 @@ import {
 } from "./composer/inkComposer";
 import {
   buildAnatomicalInkZoneGuide,
+  buildInkCoordinateGridGuide,
   buildInkZoneGuide,
   buildSegmentedAnatomicalInkZoneGuide,
 } from "./composer/inkZoneGuide";
@@ -1035,6 +1036,9 @@ async function executeProjectionCandidate(
           preflight.sourceUrl,
         ),
       );
+      const coordinateGuide = composerImage(
+        await buildInkCoordinateGridGuide({ targetBytes: target.bytes }),
+      );
       const coverageFeatures = await Promise.all(
         preflight.features.map(async (feature) => ({
           featureVersionId: feature.featureVersionId,
@@ -1066,6 +1070,7 @@ async function executeProjectionCandidate(
               targetAngle: preflight.targetViewAngle,
               features: [feature],
               target,
+              coordinateGuide,
             }),
           );
           return {

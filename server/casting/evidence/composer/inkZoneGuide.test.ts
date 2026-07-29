@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   FRONT_UPPER_TORSO_ZONES,
   buildAnatomicalInkZoneGuide,
+  buildInkCoordinateGridGuide,
   buildInkZoneGuide,
   buildSegmentedAnatomicalInkZoneGuide,
 } from "./inkZoneGuide";
@@ -140,5 +141,22 @@ describe("R7-7D server-owned ink zone guide", () => {
         label: "too many",
       }],
     })).rejects.toThrow("Invalid server segmented ink feature");
+  });
+
+  it("renders a full-canvas percentage ruler without changing dimensions", async () => {
+    const source = await target();
+    const guide = await buildInkCoordinateGridGuide({
+      targetBytes: source,
+    });
+    expect(guide).toMatchObject({
+      mime: "image/png",
+      width: 600,
+      height: 900,
+    });
+    const [sourceRaw, guideRaw] = await Promise.all([
+      sharp(source).rotate().ensureAlpha().raw().toBuffer(),
+      sharp(guide.bytes).ensureAlpha().raw().toBuffer(),
+    ]);
+    expect(guideRaw.equals(sourceRaw)).toBe(false);
   });
 });

@@ -440,7 +440,7 @@ describe("ink candidate generation", () => {
         sourceAngle: "backFull",
         composerRecipeVersion: "ink.add.anywhere.projection.v4",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v7",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v8",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -591,8 +591,8 @@ describe("ink candidate generation", () => {
     expect(coverageRequests.map((request) =>
       request.images.map(({ role }) => role)
     )).toEqual([
-      ["original_target", "evidence_reference"],
-      ["original_target", "evidence_reference"],
+      ["original_target", "coordinate_guide", "evidence_reference"],
+      ["original_target", "coordinate_guide", "evidence_reference"],
     ]);
     expect(coverageRequests[0]?.prompt).toContain(
       "black botanical full sleeve",
@@ -608,9 +608,10 @@ describe("ink candidate generation", () => {
     );
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v7",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v8",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
+        expect.objectContaining({ role: "coordinate_guide" }),
         expect.objectContaining({ role: "evidence_reference" }),
       ]),
     }));

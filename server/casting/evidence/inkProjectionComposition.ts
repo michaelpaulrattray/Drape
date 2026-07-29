@@ -753,17 +753,16 @@ export function buildInkCoverageProbeRequest(input: {
     | "normalizedDescriptor"
     | "anatomyLabel"
     | "sideAuthority"
-    | "targetZone"
     | "witness"
   >[];
   target: ComposerImage;
+  coordinateGuide: ComposerImage;
 }): InkProbeRequest {
   if (
     input.features.length !== 1
   ) {
     throw new TypeError("Coverage localization requires one feature");
   }
-  input.features.forEach((feature) => assertZone(feature.targetZone));
   const featureSchema = Object.fromEntries(input.features.flatMap(
     (_feature, index) => [
       [`feature${index + 1}RegionVisible`, "boolean" as const],
@@ -787,13 +786,15 @@ export function buildInkCoverageProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      `Inspect exactly two ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Image 2 is the accepted witness for the one requested tattoo feature.`,
-      "Return strict JSON only. Work from the actual pixels, not the stored angle name. Map the exact physical tattoo sublocation shown in Image 2 onto Image 1. RegionVisible is true when any material contiguous portion of that same tattoo-bearing surface is exposed and resolved enough to carry the visible portion at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility, anatomical side, and the corresponding physical sublocation can be decided without guessing.",
-      "When RegionVisible is true, represent only the visible requested tattoo-bearing surface with 1-4 tight axis-aligned segments. Return SegmentCount and all four segment coordinate sets as integer percentages from 0 to 100. A small compact placement normally uses one segment. A long or angled arm, leg, sleeve, or torso must use 2-4 tighter segments that follow the physical surface instead of one broad box containing background or unrelated anatomy. Segments may overlap slightly but must not reach clothing, the opposite side/limb, background, or unrelated anatomy. A forehead tattoo authorizes forehead skin, not the whole face; a shoulder tattoo authorizes that shoulder surface, not the torso. X/Y are top-left; used Width/Height values are positive and remain in bounds. Unused segment coordinates are all 0. When RegionVisible is false, SegmentCount and all segment coordinates are 0. If uncertain, set VerdictCertain false.",
-      `F1: ${input.features[0].anatomyLabel}; accepted description: ${input.features[0].normalizedDescriptor}; ${input.features[0].sideAuthority} The coarse server search region is ${JSON.stringify(input.features[0].targetZone)}; use it only to search Image 1, then localize the exact physical sublocation evidenced by Image 2 rather than copying the coarse box.`,
+      `Inspect exactly three ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Image 2 is the same target with a server-owned full-canvas percentage grid. Image 3 is the accepted witness for the one requested tattoo feature.`,
+      "Return strict JSON only. Work from the actual pixels, not the stored angle name. Map the exact physical tattoo sublocation shown in Image 3 onto Image 1. RegionVisible is true when any material contiguous portion of that same tattoo-bearing surface is exposed and resolved enough to carry the visible portion at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility, anatomical side, and the corresponding physical sublocation can be decided without guessing.",
+      "Image 2 is coordinate authority only; do not treat its grid as tattoo or anatomy evidence. Every returned coordinate is relative to the entire rectangular Image 1/Image 2 canvas, including its background—not a detected person, face, body, crop, or silhouette bounding box. The outer image top-left is X0/Y0 and the outer bottom-right is X100/Y100. Read the printed grid values before returning coordinates.",
+      "When RegionVisible is true, represent only the visible requested tattoo-bearing surface with 1-4 tight axis-aligned segments. Return SegmentCount and all four segment coordinate sets as integer percentages from 0 to 100. A small compact placement normally uses one segment. A long or angled arm, leg, sleeve, or torso must use 2-4 tighter segments that follow the physical surface instead of one broad box containing background or unrelated anatomy. Segments may overlap slightly but must not reach clothing, the opposite side/limb, background, or unrelated anatomy. A forehead tattoo authorizes forehead skin, not the whole face; a shoulder tattoo authorizes that shoulder surface, not the torso. X/Y are the segment's top-left against the full image grid; used Width/Height values are positive and remain in bounds. Unused segment coordinates are all 0. When RegionVisible is false, SegmentCount and all segment coordinates are 0. If uncertain, set VerdictCertain false.",
+      `F1: ${input.features[0].anatomyLabel}; accepted description: ${input.features[0].normalizedDescriptor}; ${input.features[0].sideAuthority} Localize from the actual target silhouette and the exact physical sublocation evidenced by Image 3. No registry rectangle or person bounding box is coordinate authority.`,
     ].join("\n"),
     images: [
       probeInline("original_target", input.target),
+      probeInline("coordinate_guide", input.coordinateGuide),
       ...input.features.map((feature) =>
         probeInline("evidence_reference", feature.witness)
       ),

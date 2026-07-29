@@ -1307,6 +1307,31 @@ coverage recipes remain readable. Typecheck, 248 files / 3,185 tests, the
 production build, focused segmented-authority tests, and diff checks pass
 locally. No external model approval is claimed.
 
+**Full-canvas coordinate authority v8 (2026-07-30):** `03c1cf8` deployed
+successfully and one controlled 3/4 calibration again stopped before image
+generation or charge. The three isolated coverage episodes all returned
+certain, structurally valid segments. The independent guide audit accepted
+the forehead but rejected both the left-shoulder and right-sleeve unions at
+100% confidence for missing the authorized visible surface and including
+conflicting anatomy. Direct inspection of the clean target confirmed the
+rejection: the sleeve segments tracked the arm vertically but were displaced
+into frame-left background. Segmentation solved broad-union geometry; it did
+not prove the coordinate frame used by the locator.
+
+Coverage/localization v8 adds a server-rendered percentage ruler as a separate
+copy of the clean target. The probe must measure every segment against the
+entire rectangular image canvas, including background, with X0/Y0 at the
+outer top-left and X100/Y100 at the outer bottom-right. It may not normalize
+coordinates against a detected person, face, body, crop, or silhouette. The
+old registry rectangle is removed from the localization prompt because it is
+only broad static planning geometry and was anchoring the result away from the
+actual pose. The accepted witness remains the sole feature-placement authority
+and the clean target remains anatomy authority. The coordinate grid is neither
+tattoo nor anatomy evidence. Independent target-guide and post-generation
+placement audits remain mandatory and unchanged; no failed proposal can reach
+paid image generation. Typecheck, 248 files / 3,186 tests, the production
+build, focused coordinate-authority tests, and diff checks pass locally.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

@@ -57,6 +57,13 @@ export interface SegmentedAnatomicalInkZoneGuide {
   normalizedZoneGroups: readonly (readonly NormalizedInkZone[])[];
 }
 
+export interface InkCoordinateGridGuide {
+  bytes: Buffer;
+  mime: "image/png";
+  width: number;
+  height: number;
+}
+
 function boundedDimension(value: number | undefined): value is number {
   return value !== undefined
     && Number.isSafeInteger(value)
@@ -333,6 +340,91 @@ export async function buildSegmentedAnatomicalInkZoneGuide(input: {
     normalizedZoneGroups: Object.freeze(features.map((feature) =>
       Object.freeze([...feature.normalizedZones])
     )),
+  };
+}
+
+/**
+ * A server-owned ruler for model-returned geometry. Coordinates are measured
+ * against the complete image canvas, never a detected person/body bounding
+ * box. The clean target remains separate composition authority.
+ */
+export async function buildInkCoordinateGridGuide(input: {
+  targetBytes: Uint8Array;
+}): Promise<InkCoordinateGridGuide> {
+  const normalized = await sharp(Buffer.from(input.targetBytes), {
+    failOn: "error",
+    limitInputPixels: MAX_GUIDE_PIXELS,
+  })
+    .rotate()
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height } = normalized.info;
+  if (
+    !boundedDimension(width)
+    || !boundedDimension(height)
+    || width * height > MAX_GUIDE_PIXELS
+  ) {
+    throw new TypeError("Target view is not eligible for this ink recipe");
+  }
+  const strokeWidth = Math.max(
+    1,
+    Math.round(Math.min(width, height) * 0.0015),
+  );
+  const fontSize = Math.max(
+    10,
+    Math.round(Math.min(width, height) * 0.014),
+  );
+  const vertical = Array.from({ length: 11 }, (_unused, index) => {
+    const value = index * 10;
+    const x = Math.round((index / 10) * (width - 1));
+    const labelX = Math.min(
+      width - fontSize * 2.4,
+      Math.max(strokeWidth * 2, x + strokeWidth * 2),
+    );
+    return {
+      line: `<line x1="${x}" y1="0" x2="${x}" y2="${height - 1}"/>`,
+      label:
+        `<text x="${labelX}" y="${fontSize + strokeWidth * 2}">X${value}</text>`,
+    };
+  });
+  const horizontal = Array.from({ length: 11 }, (_unused, index) => {
+    const value = index * 10;
+    const y = Math.round((index / 10) * (height - 1));
+    const labelY = Math.min(
+      height - strokeWidth * 2,
+      Math.max(fontSize + strokeWidth * 2, y + fontSize),
+    );
+    return {
+      line: `<line x1="0" y1="${y}" x2="${width - 1}" y2="${y}"/>`,
+      label: `<text x="${strokeWidth * 3}" y="${labelY}">Y${value}</text>`,
+    };
+  });
+  const overlay = Buffer.from(
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="rgba(22,96,180,0.62)" stroke-width="${strokeWidth}">
+        ${vertical.map(({ line }) => line).join("\n")}
+        ${horizontal.map(({ line }) => line).join("\n")}
+      </g>
+      <g font-family="Arial, sans-serif" font-size="${fontSize}"
+        font-weight="700" fill="rgb(8,65,140)" stroke="rgba(255,255,255,0.92)"
+        stroke-width="${Math.max(2, strokeWidth * 2)}" paint-order="stroke">
+        ${vertical.map(({ label }) => label).join("\n")}
+        ${horizontal.map(({ label }) => label).join("\n")}
+      </g>
+    </svg>`,
+  );
+  const guided = await sharp(normalized.data)
+    .composite([{ input: overlay, top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+  if (guided.length > MAX_GUIDE_BYTES) {
+    throw new TypeError("Target view is not eligible for this ink recipe");
+  }
+  return {
+    bytes: guided,
+    mime: "image/png",
+    width,
+    height,
   };
 }
 

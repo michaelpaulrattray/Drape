@@ -44,6 +44,7 @@ export interface InkProbeInlineImage {
     | "guided_target"
     | "candidate"
     | "placement_audit_candidate"
+    | "coordinate_guide"
     | "evidence_reference"
     | "evidence_mosaic";
   inlineData: {
