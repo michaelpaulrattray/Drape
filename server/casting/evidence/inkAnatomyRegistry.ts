@@ -10,11 +10,12 @@ export const INK_ANYWHERE_ONTOLOGY_VERSION = "body-zones.ink.v2" as const;
 export const INK_ANYWHERE_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.anywhere.authorization.v1" as const;
 export const INK_ANYWHERE_COMPOSER_RECIPE_VERSION =
-  "ink.add.anywhere.composer.v4" as const;
+  "ink.add.anywhere.composer.v5" as const;
 export const INK_ANYWHERE_READABLE_COMPOSER_RECIPE_VERSIONS =
   Object.freeze([
     "ink.add.anywhere.composer.v2",
     "ink.add.anywhere.composer.v3",
+    "ink.add.anywhere.composer.v4",
     INK_ANYWHERE_COMPOSER_RECIPE_VERSION,
   ] as const);
 export const INK_ANYWHERE_PROBE_RECIPE_VERSION =
@@ -213,6 +214,11 @@ const LIMB_ZONES = new Set<InkAnatomyZone>([
   "full_leg",
   "foot",
 ]);
+const KNEE_FRAMED_OUTSIDE_ZONES = new Set<InkAnatomyZone>([
+  "lower_leg",
+  "full_leg",
+  "foot",
+]);
 
 function rect(
   x: number,
@@ -245,9 +251,9 @@ const FULL_FRONT_CENTRE: Readonly<Record<InkAnatomyZone, NormalizedInkZone>> =
 
 /**
  * The canonical 3:4 front/back slots are allowed to frame at the knees. Their
- * hands therefore sit materially lower than they do in a true head-to-foot
- * full-body view. Keep this override angle-specific: Walk retains the
- * full-body hand band used by its motion framing.
+ * hands and thighs therefore sit materially lower than they do in a true
+ * head-to-foot full-body view. Keep these overrides angle-specific: Walk
+ * retains the full-body bands used by its motion framing.
  */
 const FULL_ANGLE_ZONE_OVERRIDES: Readonly<
   Partial<
@@ -259,9 +265,11 @@ const FULL_ANGLE_ZONE_OVERRIDES: Readonly<
 > = Object.freeze({
   frontFull: Object.freeze({
     hand: rect(0.04, 0.65, 0.92, 0.27),
+    thigh: rect(0.25, 0.76, 0.5, 0.24),
   }),
   backFull: Object.freeze({
     hand: rect(0.04, 0.65, 0.92, 0.27),
+    thigh: rect(0.25, 0.76, 0.5, 0.24),
   }),
 });
 
@@ -465,6 +473,12 @@ function fullVisibility(
 ): InkViewVisibility {
   if (tuple.zone === "face" || tuple.zone === "scalp") {
     return "below_resolution_omit";
+  }
+  if (
+    (angle === "frontFull" || angle === "backFull")
+    && KNEE_FRAMED_OUTSIDE_ZONES.has(tuple.zone)
+  ) {
+    return "outside_frame_omit";
   }
   if (tuple.surface === "circumferential") return "reproduce_visible";
   if (angle === "frontFull") {

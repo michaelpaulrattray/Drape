@@ -120,10 +120,15 @@ describe("all-body ink anatomy registry", () => {
     }
   });
 
-  it("uses a lower hand band for knee-framed front/back slots only", () => {
+  it("uses lower hand/thigh bands for knee-framed front/back slots only", () => {
     const leftHand = {
       zone: "hand",
       surface: "dorsal",
+      side: "left",
+    } as const;
+    const leftThigh = {
+      zone: "thigh",
+      surface: "anterior",
       side: "left",
     } as const;
     const front = inkViewDirectiveV2(leftHand, "frontFull")
@@ -132,11 +137,39 @@ describe("all-body ink anatomy registry", () => {
       .normalizedTargetZone!;
     const walk = inkViewDirectiveV2(leftHand, "sideFull")
       .normalizedTargetZone!;
+    const frontThigh = inkViewDirectiveV2(leftThigh, "frontFull")
+      .normalizedTargetZone!;
+    const walkThigh = inkViewDirectiveV2(leftThigh, "sideFull")
+      .normalizedTargetZone!;
     expect(front).toMatchObject({ y: 0.65, height: 0.27 });
     expect(back).toMatchObject({ y: 0.65, height: 0.27 });
     expect(walk).toMatchObject({ y: 0.58, height: 0.17 });
+    expect(frontThigh).toMatchObject({ y: 0.76, height: 0.24 });
+    expect(walkThigh).toMatchObject({ y: 0.55, height: 0.25 });
     expect(front.x).toBeGreaterThan(0.5);
     expect(back.x + back.width).toBeLessThan(0.5);
+  });
+
+  it("routes anatomy below the knees away from knee-framed slots", () => {
+    for (const zone of ["lower_leg", "full_leg", "foot"] as const) {
+      const tuple = {
+        zone,
+        surface: zone === "foot" ? "dorsal" : "circumferential",
+        side: "left",
+      } as const;
+      expect(inkViewDirectiveV2(tuple, "frontFull")).toMatchObject({
+        impact: "unaffected",
+        visibility: "outside_frame_omit",
+        normalizedTargetZone: null,
+      });
+      expect(inkViewDirectiveV2(tuple, "backFull")).toMatchObject({
+        impact: "unaffected",
+        visibility: "outside_frame_omit",
+        normalizedTargetZone: null,
+      });
+      expect(inkAuthoringSourcePreferences(tuple)[0]?.angle)
+        .toBe("sideFull");
+    }
   });
 
   it("distinguishes below-resolution truth from hidden anatomy", () => {
