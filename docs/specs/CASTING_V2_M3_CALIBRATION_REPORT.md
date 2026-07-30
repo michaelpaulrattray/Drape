@@ -189,3 +189,52 @@ The asymmetry matters: a genuine refusal retried twice wastes pennies; a transie
 ## 12. For the reviewer
 
 Fable: the claims most worth attacking are §3's "the gate passes" (one subject, one cohort), §4.1's diversity conclusion (a pixel metric that cannot see faces, plus the §4.2 confound), and §6's cost figures (balance-delta accounting was contaminated for the largest leg). §10 is where I have tried to be honest about the limits; tell me what belongs there that I have left out.
+
+---
+
+# Addendum — the A/B's remaining pre-registered conditions
+
+**Added 2026-07-30 after Fable review (condition 1).** §E.1's decision rule has four parts; the main report closed only the first. These three are answered from the artifacts already on disk, before Path B becomes M5's default.
+
+## Condition 2 — lock fidelity: **FAILS on one brief, and the failure is instructive**
+
+Do Kimi's treatments violate facts the brief stated? Checked literally, against only what each brief actually pinned.
+
+| brief | treatments | violations |
+|---|---|---|
+| tight-1, tight-2, tight-4, nonhuman-1…4 | 8 each | **0** |
+| **tight-3** ("a wiry cyclist in **her** 20s, freckled, mid-laugh") | 8 | **7** |
+
+Seven of eight treatments silently changed the subject's sex — *"laughter detonating out of **him**"*, *"**he** nearly clips"*, *"**his** own"*. Overall 7 / 64 = **10.9%**, entirely concentrated in one brief where it is 87.5%.
+
+**This is the exact failure §E.1 anticipated, and its fail-safe handles it**: treatments are validated against the CastingIntent's locked facts, violators dropped, and a roll falls back to Path A entirely if fewer than eight survive. For tight-3 one treatment survives, so that roll would fall back — correctly.
+
+**But that validator does not exist yet.** It is M5 work. Until it ships, Path B would put a male cyclist on a sheet for a brief that said "her" — a lock violation reaching the customer. **Path B must not become the default before its validator lands**, and the validator needs a test using this exact brief.
+
+## Condition 3 — quality parity: **not established; the metric is confounded**
+
+| | sharpness (edge energy) | contrast |
+|---|---|---|
+| Path A | 13.31 | 43.46 |
+| Path B | 10.69 | 47.19 |
+| change | **−19.7%** | +8.6% |
+
+Read naively this says Path B is blurrier. It probably does not. Path A's candidates were full of high-edge content — cluttered garages, workbenches, plaid, mug lettering — while Path B's were plainer studio portraits. Edge energy cannot separate *"softer rendering"* from *"less background clutter"*, and here the two are confounded by exactly the difference the A/B created.
+
+**Conclusion: this metric cannot answer the quality question.** It is reported so the number is not later mistaken for evidence either way. Quality parity needs the founder's side-by-side grade — which the cohort quality law now makes the standard anyway.
+
+*(Correcting a defect in my own analysis: the first version of this measurement reported sharpness and contrast as identical figures. `sharp.stats()` computes on the input image, not the result of the pipeline it is chained to, so the convolution was silently ignored. The convolution is now materialised before measurement. Had I not noticed the two columns matching, this table would have been nonsense presented as evidence.)*
+
+## Condition 4 — latency delta: **not measured**
+
+The manifest records latency for image calls only, so the treatment stage's contribution is unknown. What is known: both text stages are single completions issued once per roll before any image dispatch, and 24 text calls sat inside a run whose wall clock was dominated by 187 image calls at p50 54s. §E.1's "+5s median" budget can be neither confirmed nor refuted. Recording per-call text latency is a one-line harness change for the next run.
+
+## Revised recommendation on Path B
+
+The main report recommended adopting Path B. That stands **with a sequencing condition**:
+
+1. **Path B ships together with §E.1's lock validator, not before it.** The validator is required by the plan regardless; this makes it a blocker rather than a companion. Its test suite should include tight-3, where 7 of 8 treatments break a stated lock.
+2. **Quality is graded by eye, not by this metric** — consistent with the cohort quality law.
+3. **Record text-stage latency** in the next run so the +5s condition can actually be evaluated.
+
+Diversity — the one condition that is unambiguously met — remains a strong result: +34.2% spread, biggest gains on exactly the non-human briefs M9 depends on.

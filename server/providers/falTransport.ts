@@ -111,12 +111,28 @@ export type FalJobResult = {
 export async function runFalImageJob(input: {
   apiKey: string;
   endpoint: string;
-  body: unknown;
+  body: Record<string, unknown>;
   timeoutMs: number;
   pollIntervalMs: number;
   signal?: AbortSignal;
+  /**
+   * Return the image inline instead of leaving an object on fal's CDN.
+   *
+   * Default ON, by founder/Fable ruling. Without it, every generated image also
+   * exists at an unauthenticated `v3b.fal.media` URL with no documented expiry
+   * — a customer's cast sitting on a third party's CDN outside our control,
+   * which sits badly beside the ruling that a customer's cast is their work.
+   *
+   * Verified 2026-07-30 on both image endpoints (`openai/gpt-image-2` and
+   * `fal-ai/nano-banana-pro/edit`): with `sync_mode: true` the result's `url`
+   * is a `data:` URI and no CDN object is created. Note it does NOT bypass the
+   * queue — `queue.fal.run` still queues; only the payload changes.
+   */
+  inlineResult?: boolean;
 }): Promise<FalJobResult> {
-  const { apiKey, endpoint, body, timeoutMs, pollIntervalMs, signal } = input;
+  const { apiKey, endpoint, timeoutMs, pollIntervalMs, signal } = input;
+  const inlineResult = input.inlineResult ?? true;
+  const body = { ...input.body, sync_mode: inlineResult };
   const headers = falHeaders(apiKey);
   const startedAt = Date.now();
 
@@ -212,17 +228,43 @@ export async function runFalImageJob(input: {
       });
     }
 
-    // Fetched once, then discarded. Provider URLs are never persisted and never
-    // exposed — outputs land through our own storage authority (§E).
-    const download = await fetch(image.url);
-    if (!download.ok) {
-      throw new ProviderError("transport", "could not download fal.ai result", {
-        providerRef: requestId,
-      });
+    /*
+      With `sync_mode` the url IS the image — decode it here and no request
+      ever leaves for a CDN, because there is no CDN object. Without it we fall
+      back to downloading once and discarding the URL; either way a provider
+      URL is never persisted or exposed, and outputs land through our own
+      storage authority (§E).
+    */
+    let bytes: Buffer;
+    if (image.url.startsWith("data:")) {
+      const comma = image.url.indexOf(",");
+      if (comma < 0) {
+        throw new ProviderError("unknown", "fal.ai returned a malformed data URI", {
+          providerRef: requestId,
+        });
+      }
+      bytes = Buffer.from(image.url.slice(comma + 1), "base64");
+    } else {
+      if (inlineResult) {
+        // Asked for inline, got a CDN object anyway: the endpoint does not
+        // honour sync_mode. Worth knowing — it means an object exists that the
+        // retention question has to cover.
+        log.warn(
+          { endpoint, requestId },
+          "[fal] sync_mode requested but a CDN url was returned — this endpoint leaves an object behind",
+        );
+      }
+      const download = await fetch(image.url);
+      if (!download.ok) {
+        throw new ProviderError("transport", "could not download fal.ai result", {
+          providerRef: requestId,
+        });
+      }
+      bytes = Buffer.from(await download.arrayBuffer());
     }
 
     return {
-      bytes: Buffer.from(await download.arrayBuffer()),
+      bytes,
       contentType: image.content_type ?? "image/png",
       width: image.width,
       height: image.height,

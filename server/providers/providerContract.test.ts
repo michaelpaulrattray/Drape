@@ -214,6 +214,41 @@ describe("Fal identity engine", () => {
     ).toBe(false);
   });
 
+  it("asks for inline results and decodes them without touching a CDN", async () => {
+    /*
+      Founder/Fable ruling: no fal CDN object should ever be created for a
+      customer's image. Verified live on both image endpoints — with
+      `sync_mode` the result url is a data: URI. This pins that we send the
+      flag and decode the payload without a second request.
+    */
+    let submittedBody: Record<string, unknown> = {};
+    const fetched: string[] = [];
+    const inline = `data:image/png;base64,${PNG_BYTES.toString("base64")}`;
+
+    stubFetch((url, init) => {
+      fetched.push(url);
+      if (url.endsWith("/status")) {
+        return new Response(JSON.stringify({ status: "COMPLETED" }), { status: 200 });
+      }
+      if (url.includes("/requests/")) {
+        return new Response(JSON.stringify({ images: [{ url: inline, content_type: "image/png" }] }), {
+          status: 200,
+        });
+      }
+      submittedBody = JSON.parse(String(init?.body ?? "{}"));
+      return new Response(JSON.stringify({ request_id: "req-inline" }), { status: 200 });
+    });
+
+    const result = await engine().editWithReferences(request);
+
+    expect(submittedBody.sync_mode, "sync_mode must be requested by default").toBe(true);
+    expect(result.bytes.toString()).toBe("fake-png-bytes");
+    expect(
+      fetched.some((url) => url.startsWith("https://v3b.fal.media")),
+      "an inline result must not trigger a CDN fetch",
+    ).toBe(false);
+  });
+
   it("cancels the request when its deadline expires, so a timeout is not silent spend", async () => {
     const cancelled: string[] = [];
     stubFetch((url) => {
