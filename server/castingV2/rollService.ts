@@ -66,7 +66,7 @@ import {
   setRollStatus,
   touchCastingSession,
 } from "../db/castingV2";
-import { storagePut } from "../storage";
+import { storageDelete, storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
@@ -512,7 +512,21 @@ async function dispatchCandidate(input: {
       );
       return { outcome: "expired", refundedCredits: 0 };
     }
-    if (landing === "lost") return { outcome: "skipped", refundedCredits: 0 };
+    if (landing === "lost") {
+      /*
+        Nobody will ever reference this object: the landing CAS lost, so no row
+        points at the key, and the cleanup worker only ever deletes keys a row
+        handed it. Best-effort delete now, or it is an orphan in the bucket
+        forever — invisible, unbilled to anyone, and impossible to find later.
+      */
+      await storageDelete(stored.key).catch((error) => {
+        log.warn(
+          { operationId, candidate: candidate.publicId, err: error },
+          "[rollService] could not delete an orphaned candidate object",
+        );
+      });
+      return { outcome: "skipped", refundedCredits: 0 };
+    }
     return { outcome: "ready", refundedCredits: 0 };
   } catch (error) {
     const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";

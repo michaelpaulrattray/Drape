@@ -837,6 +837,16 @@ export async function adjudicateStaleGenerationOperation(
     }
   }
   if (operation.kind === "castingV2.roll") {
+    /*
+      No provider probe is passed, deliberately. §H.6's probe distinguishes
+      "the provider never did the work" from "it did and we lost it" — an
+      accounting distinction about COGS, not a billing one: the refund happens
+      either way because the user has no image either way. Wiring a live fal
+      call into the sweep would let a provider outage slow or stall recovery
+      for everyone, so recovery stays offline until that telemetry is worth
+      the coupling. Every dispatched candidate therefore adjudicates as
+      `unrecovered`, which is honest — we genuinely do not know.
+    */
     const recovered = await recoverCastingV2RollOperation({
       ...operation,
       // Narrowed above; the row's column type is a bare string.

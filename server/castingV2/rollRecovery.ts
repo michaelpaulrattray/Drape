@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { castingCandidates, castingRolls, creditTransactions } from "../../drizzle/schema";
 import { getDb } from "../db/connection";
@@ -9,9 +9,15 @@ import {
   finalizeGenerationOperationFailure,
   finalizeGenerationOperationSuccess,
 } from "../db/generationOperations";
+import { claimCandidateForRecovery } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/rollRecovery");
+
+function affectedRows(result: unknown): number {
+  if (Array.isArray(result)) return Number((result[0] as { affectedRows?: unknown })?.affectedRows ?? 0);
+  return Number((result as { affectedRows?: unknown })?.affectedRows ?? 0);
+}
 
 /**
  * Bespoke recovery adjudicator for `castingV2.roll` (plan §E, §F, §H.6).
@@ -30,7 +36,13 @@ const log = createModuleLogger("castingV2/rollRecovery");
  *
  * 2. Landed is durable truth. `imageKey` is written to our own storage before
  *    a candidate becomes `ready`, so a `ready` row means the user has the
- *    image and keeps it. Anything else owes them their credits back.
+ *    image and keeps it.
+ *
+ *    But "not landed" is NOT the same as "owed a refund", and conflating them
+ *    was a real defect here: a discarded candidate was delivered and thrown
+ *    away, an expired one was delivered after a cancel, a signed one became a
+ *    Cast. Only genuinely unfinished work — and the torn `ready`-without-bytes
+ *    write — can be settled by this sweep, and only after its CAS wins the row.
  *
  * WHY THE PROVIDER QUERY EXISTS AT ALL. §H.6 says ambiguous dispatched
  * outcomes are verified against the provider "where queryable". Verified
@@ -68,6 +80,46 @@ function hasLanded(candidate: CandidateRow): boolean {
 }
 
 /**
+ * Did the user *get* this candidate, in the sense that owing them a refund
+ * would be wrong?
+ *
+ * Wider than `hasLanded`, and the difference is the whole point. A discarded
+ * candidate was delivered and then thrown away by its owner. An expired one
+ * arrived after a cancel: delivered, unshown, and never refunded by law
+ * (§F, §H.6). A signed one became a Cast. None of them is owed anything, and
+ * an adjudicator that reasoned "not landed ⇒ refund" would hand money back for
+ * every one of them the moment a lease lapsed.
+ */
+function wasDelivered(candidate: CandidateRow): boolean {
+  return (
+    hasLanded(candidate)
+    || candidate.status === "discarded"
+    || candidate.status === "signed"
+    || candidate.status === "expired"
+  );
+}
+
+/**
+ * Candidates this sweep may still settle.
+ *
+ * Deliberately status-based rather than "everything that did not land". Only
+ * work that never reached a terminal user-visible state can be owed a refund:
+ *
+ *   - `queued` / `dispatched` — genuinely unfinished;
+ *   - `ready` with no `imageKey` — a torn write. `ready` is written after the
+ *     bytes are in our storage, so a `ready` row without a key means the user
+ *     cannot see the image, and keeping their money for it would be theft by
+ *     bookkeeping (founder-ratified 2026-07-31).
+ *
+ * Everything else — `failed`, `cancelled`, `discarded`, `expired`, `signed` —
+ * has already been settled by whoever put it in that state.
+ */
+function isSettleable(candidate: CandidateRow): boolean {
+  if (candidate.status === "queued" || candidate.status === "dispatched") return true;
+  return candidate.status === "ready" && !candidate.imageKey;
+}
+
+/**
  * The per-candidate refund reference.
  *
  * Derived through the shared helper from a deterministic per-slice charge key,
@@ -100,25 +152,61 @@ type ChargeTruth =
   | { kind: "not_charged" }
   | { kind: "ambiguous"; reason: string };
 
-async function readChargeTruth(
+type OperationLedger = {
+  charge: ChargeTruth;
+  /** Credits already returned under this operation, by whoever returned them. */
+  alreadyRefunded: number;
+};
+
+/**
+ * Reads the charge and every per-candidate refund this operation has already
+ * recorded, in one statement.
+ *
+ * Prior refunds are read rather than re-recorded. An earlier version leaned on
+ * `recordRefund` being idempotent to *recover* the totals — re-issuing a
+ * refund for an already-refunded candidate and letting the ledger's uniqueness
+ * absorb it. That works only while every re-issue is genuinely a duplicate;
+ * the moment one is not, it is a second refund. Reading is exact and cannot
+ * pay anyone twice.
+ */
+async function readOperationLedger(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   operation: { id: string; userId: number },
-): Promise<ChargeTruth> {
-  const reference = operationChargeReference(operation.id);
+  candidates: readonly CandidateRow[],
+): Promise<OperationLedger> {
+  const chargeReference = operationChargeReference(operation.id);
+  const refundReferences = candidates.map((candidate) =>
+    candidateRefundReference(operation.id, candidate.publicId),
+  );
+
   const rows = await db
     .select()
     .from(creditTransactions)
     .where(and(
       eq(creditTransactions.userId, operation.userId),
-      eq(creditTransactions.referenceId, reference),
+      inArray(creditTransactions.referenceId, [chargeReference, ...refundReferences]),
     ));
-  if (rows.length === 0) return { kind: "not_charged" };
-  if (rows.length > 1) return { kind: "ambiguous", reason: "duplicate charge rows for one operation" };
-  const [charge] = rows;
-  if (charge.type !== "generation" || charge.amount >= 0) {
-    return { kind: "ambiguous", reason: "charge reference holds a non-charge ledger row" };
+
+  const chargeRows = rows.filter((row) => row.referenceId === chargeReference);
+  const alreadyRefunded = rows
+    .filter((row) => row.referenceId !== chargeReference && row.type === "refund" && row.amount > 0)
+    .reduce((sum, row) => sum + row.amount, 0);
+
+  if (chargeRows.length === 0) return { charge: { kind: "not_charged" }, alreadyRefunded };
+  if (chargeRows.length > 1) {
+    return {
+      charge: { kind: "ambiguous", reason: "duplicate charge rows for one operation" },
+      alreadyRefunded,
+    };
   }
-  return { kind: "charged", credits: Math.abs(charge.amount) };
+  const [charge] = chargeRows;
+  if (charge.type !== "generation" || charge.amount >= 0) {
+    return {
+      charge: { kind: "ambiguous", reason: "charge reference holds a non-charge ledger row" },
+      alreadyRefunded,
+    };
+  }
+  return { charge: { kind: "charged", credits: Math.abs(charge.amount) }, alreadyRefunded };
 }
 
 /** Fails every unfinished candidate without paying anything back. */
@@ -134,7 +222,10 @@ async function failUnpaidCandidates(
       .where(and(
         eq(castingCandidates.id, candidate.id),
         eq(castingCandidates.userId, operation.userId),
-        inArray(castingCandidates.status, ["queued", "dispatched"]),
+        or(
+          inArray(castingCandidates.status, ["queued", "dispatched"]),
+          and(eq(castingCandidates.status, "ready"), isNull(castingCandidates.imageKey)),
+        ),
       ));
   }
 }
@@ -152,6 +243,8 @@ export type ProviderProbe = (input: {
 
 export type RollRecoveryDependencies = {
   probe?: ProviderProbe;
+  /** The candidate CAS. Injected so a test can make this sweep *lose* it. */
+  claimCandidate?: typeof claimCandidateForRecovery;
   finalizeSuccess?: typeof finalizeGenerationOperationSuccess;
   finalizeFailure?: typeof finalizeGenerationOperationFailure;
   finalizeClaimedFailure?: typeof finalizeClaimedGenerationOperationFailure;
@@ -297,14 +390,15 @@ async function adjudicateRollOperation(
     .where(and(eq(castingCandidates.rollId, roll.id), eq(castingCandidates.userId, operation.userId)));
 
   const landed = candidates.filter(hasLanded);
-  const owed = candidates.filter((candidate) => !hasLanded(candidate));
+  const delivered = candidates.filter(wasDelivered);
+  const owed = candidates.filter(isSettleable);
 
   /*
     THE CHARGE GATE. Rows are durable before money moves, so their existence
     proves work was *planned*, never that it was paid for. Everything below
     this point may only give back what the ledger shows was taken.
   */
-  const charge = await readChargeTruth(db, operation);
+  const { charge, alreadyRefunded } = await readOperationLedger(db, operation, candidates);
   if (charge.kind === "ambiguous") {
     return {
       type: "recovery_required",
@@ -333,6 +427,29 @@ async function adjudicateRollOperation(
       .update(castingRolls)
       .set({ status: "failed" })
       .where(and(eq(castingRolls.id, roll.id), inArray(castingRolls.status, ["pending", "generating"])));
+
+    /*
+      One more look at the ledger before we tell the user they were not
+      charged. The gap between "no charge yet" and this line is a live
+      process's deduct landing late — a stalled request whose lease lapsed. We
+      have just failed its rows, so it can no longer dispatch, but if its money
+      moved, "you were not charged" would be a lie sealed into a terminal
+      receipt that nothing revisits. Cheap read, unbounded consequence.
+    */
+    const recheck = await readOperationLedger(db, operation, candidates);
+    if (recheck.charge.kind !== "not_charged") {
+      log.error(
+        { operationId: operation.id, rollId: roll.publicId },
+        "[rollRecovery] a charge appeared while adjudicating an unpaid roll — escalating",
+      );
+      return {
+        type: "recovery_required",
+        reason: "a charge landed after the roll was adjudicated unpaid",
+        chargedCredits: recheck.charge.kind === "charged" ? recheck.charge.credits : 0,
+        refundedCredits: recheck.alreadyRefunded,
+      };
+    }
+
     log.warn(
       { operationId: operation.id, rollId: roll.publicId, candidates: owed.length },
       "[rollRecovery] crash before the charge — rows failed, nothing refunded",
@@ -349,20 +466,53 @@ async function adjudicateRollOperation(
     return { type: "durable_success", ready: landed.length, chargedCredits: charge.credits };
   }
 
-  let refundedCredits = 0;
+  // Credits already returned by the live process or by a cancel, read from the
+  // ledger rather than re-issued. They count toward both the receipt total and
+  // the conservation ceiling.
+  let refundedCredits = alreadyRefunded;
   let refundedCount = 0;
   let unrecorded = 0;
 
   for (const candidate of owed) {
     // Ask the provider only for work we actually dispatched. A `queued`
     // candidate never reached them, so there is nothing to ask about.
-    let delivered: "delivered" | "not_delivered" | "unknown" = "not_delivered";
+    let providerOutcome: "delivered" | "not_delivered" | "unknown" = "not_delivered";
     if (candidate.status === "dispatched") {
-      delivered = options.probe
+      providerOutcome = options.probe
         ? await options
             .probe({ provider: candidate.provider, providerRef: candidate.providerRef })
             .catch(() => "unknown" as const)
         : "unknown";
+    }
+
+    /*
+      CLAIM THE ROW BEFORE PAYING FOR IT.
+
+      This CAS is what makes the refund safe, so it must come first. A live
+      process can outlive its lease — one heartbeat failure stops the
+      heartbeat permanently while dispatch keeps running — so between this
+      sweep's SELECT and this moment, that process may have landed the
+      candidate. Refunding first and CASing afterwards meant the refund was
+      already committed by the time we discovered we had lost: delivered AND
+      refunded, the one outcome the whole design exists to prevent.
+
+      Losing here is not an error. It means someone else settled this
+      candidate, and their settlement stands.
+    */
+    // The predicate re-proves the settleable states at CAS time, including the
+    // torn write — still `ready`, still without bytes in our storage.
+    const claimed = await (options.claimCandidate ?? claimCandidateForRecovery)({
+      userId: operation.userId,
+      candidateId: candidate.id,
+      failureClass:
+        providerOutcome === "delivered" ? "provider_delivered_unlanded" : "unrecovered",
+    });
+    if (!claimed) {
+      log.info(
+        { operationId: operation.id, candidate: candidate.publicId },
+        "[rollRecovery] candidate settled by a live process first — not refunding",
+      );
+      continue;
     }
 
     const slice = candidate.pointsCost;
@@ -409,22 +559,7 @@ async function adjudicateRollOperation(
     }
     refundedCount += 1;
 
-    await db
-      .update(castingCandidates)
-      .set({
-        status: "failed",
-        failureClass: delivered === "delivered" ? "provider_delivered_unlanded" : "unrecovered",
-      })
-      .where(
-        and(
-          eq(castingCandidates.id, candidate.id),
-          eq(castingCandidates.userId, operation.userId),
-          // CAS: never overwrite a status a live process reached first.
-          inArray(castingCandidates.status, ["queued", "dispatched"]),
-        ),
-      );
-
-    if (delivered === "delivered") {
+    if (providerOutcome === "delivered") {
       log.warn(
         { operationId: operation.id, candidate: candidate.publicId },
         "[rollRecovery] provider delivered work we never landed — refunded anyway, COGS absorbed",
@@ -434,7 +569,7 @@ async function adjudicateRollOperation(
 
   await db
     .update(castingRolls)
-    .set({ status: landed.length > 0 ? "partial" : "failed" })
+    .set({ status: delivered.length > 0 ? "partial" : "failed" })
     .where(and(eq(castingRolls.id, roll.id), inArray(castingRolls.status, ["pending", "generating"])));
 
   if (unrecorded > 0) {
@@ -449,7 +584,10 @@ async function adjudicateRollOperation(
     };
   }
 
-  return landed.length > 0
+  // `delivered`, not `landed`: a roll whose only survivor was discarded by its
+  // owner still delivered something, and calling that a total failure would
+  // misreport both the roll and the receipt.
+  return delivered.length > 0
     ? {
         type: "partial",
         ready: landed.length,

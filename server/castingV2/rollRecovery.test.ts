@@ -39,13 +39,21 @@ const rows = {
 const refunds: Array<{ userId: number; amount: number; reference: string }> = [];
 let refundRecords = true;
 
+/**
+ * Successive ledger states, when a test needs the ledger to CHANGE between two
+ * reads — the stalled-deduct race, where a charge commits after the gate has
+ * already decided there was none. Each entry is consumed by one read; when it
+ * runs out, `rows.ledger` answers as usual.
+ */
+let ledgerSequence: Array<Array<Record<string, unknown>>> = [];
+
 function tableRows(table: unknown): Array<Record<string, unknown>> {
   const name = getTableName(table as never);
   if (name === "casting_rolls") return rows.rolls;
   if (name === "casting_candidates") return rows.candidates;
   // The ledger table is still named `point_transactions` from the credits
   // rename; `creditTransactions` is the drizzle handle onto it.
-  if (name === "point_transactions") return rows.ledger;
+  if (name === "point_transactions") return ledgerSequence.shift() ?? rows.ledger;
   throw new Error(`Unexpected table in roll recovery: ${name}`);
 }
 
@@ -107,6 +115,20 @@ const OPERATION = {
  * seals leaves the sweep re-examining the same operation forever and the
  * user's sheet spinning — so "which finalizer ran" is part of the contract.
  */
+let casWins = true;
+const claimCandidate = vi.fn(async ({ candidateId, failureClass }: { candidateId: number; failureClass: string }) => {
+  if (!casWins) return false;
+  const row = rows.candidates.find((candidate) => candidate.id === candidateId);
+  if (!row) return false;
+  const settleable =
+    row.status === "queued" || row.status === "dispatched"
+    || (row.status === "ready" && !row.imageKey);
+  if (!settleable) return false;
+  row.status = "failed";
+  row.failureClass = failureClass;
+  return true;
+});
+
 const finalizers = {
   finalizeSuccess: vi.fn(async () => ({}) as never),
   finalizeFailure: vi.fn(async () => ({}) as never),
@@ -117,7 +139,7 @@ function recover(
   operation: typeof OPERATION = OPERATION,
   options: Parameters<typeof recoverCastingV2RollOperation>[1] = {},
 ) {
-  return recoverCastingV2RollOperation(operation, { ...finalizers, ...options });
+  return recoverCastingV2RollOperation(operation, { ...finalizers, claimCandidate, ...options });
 }
 
 /** The charge the pinned deduct would have written. */
@@ -153,6 +175,8 @@ beforeEach(() => {
   rows.ledger = [chargeRow()];
   refunds.length = 0;
   refundRecords = true;
+  casWins = true;
+  ledgerSequence = [];
   vi.clearAllMocks();
 });
 
@@ -396,5 +420,119 @@ describe("crash: the refund itself fails to record", () => {
     // with the ledger insisting otherwise.
     expect(outcome.type).toBe("recovery_required");
     expect(outcome).toMatchObject({ refundedCredits: 0 });
+  });
+});
+
+describe("delivered work is never refunded, however the crash arrives", () => {
+  /*
+    The defect this describes existed: the refund set was "everything that did
+    not land", which swept in candidates the user had *already received*. The
+    same candidate then got refunded or not depending purely on whether a
+    process happened to crash — the cancellation law applied by coin toss.
+  */
+  it("never refunds a candidate the user discarded", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "discarded", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "queued" }),
+    ];
+    const outcome = await recover();
+
+    // It was delivered, looked at, and thrown away. Refunding it would pay a
+    // user for a candidate they consumed.
+    expect(refunds.map((refund) => refund.reference)).toEqual([
+      operationChargeReference(OPERATION_ID) + ":candidate:c-2",
+    ]);
+    expect(outcome).toMatchObject({ type: "partial", refundedCredits: 20 });
+  });
+
+  it("never refunds a candidate that landed after a cancel", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "expired", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled" }),
+    ];
+    await recover();
+    // `expired` is delivered-but-unshown (§F, §H.6): the provider was paid and
+    // the user cancelled. `cancelled` was already refunded by the cancel path.
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("never refunds a signed candidate", async () => {
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "signed", imageKey: "k1" })];
+    await recover();
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("counts a discarded candidate as delivered when classifying the roll", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "discarded", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "queued" }),
+    ];
+    const outcome = await recover();
+    // Not a total failure: something was delivered, the user simply binned it.
+    expect(outcome.type).toBe("partial");
+    expect(rows.rolls[0].status).toBe("partial");
+  });
+});
+
+describe("the CAS is claimed before the money moves", () => {
+  it("refunds nothing when a live process settled the candidate first", async () => {
+    /*
+      The race that made this ordering necessary: a process can outlive its
+      lease (one heartbeat failure stops the heartbeat permanently while
+      dispatch keeps running), land the candidate, and only then have this
+      sweep reach it. Refunding first and CASing afterwards meant the money was
+      already gone when we discovered we had lost — delivered AND refunded.
+    */
+    casWins = false;
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "dispatched" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "paid_failure", refunded: 0 });
+  });
+
+  it("reads prior refunds from the ledger instead of re-issuing them", async () => {
+    // A cancel already refunded c-1 under its own reference. The receipt must
+    // include those credits, but this sweep must not record them again.
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "cancelled" }),
+      candidate({ id: 2, publicId: "c-2", status: "queued" }),
+    ];
+    rows.ledger = [
+      chargeRow(),
+      {
+        userId: OPERATION.userId,
+        referenceId: candidateRefundReference(OPERATION_ID, "c-1"),
+        type: "refund",
+        amount: 20,
+      },
+    ];
+
+    const outcome = await recover();
+
+    // One new refund (c-2), and a total that accounts for both.
+    expect(refunds).toHaveLength(1);
+    expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 40 });
+  });
+});
+
+describe("a charge that lands while we adjudicate an unpaid roll", () => {
+  it("escalates rather than sealing 'you were not charged' over a real charge", async () => {
+    // The stalled-deduct TOCTOU: the sweep sees no charge, fails the rows, and
+    // the live process's deduct commits a moment later. A terminal receipt
+    // saying "not charged" is never revisited, so the user would be out the
+    // money permanently.
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "queued" })];
+    // Empty when the charge gate looks; charged by the time the recheck does.
+    ledgerSequence = [[], [chargeRow()]];
+
+    const outcome = await recover();
+
+    expect(outcome).toMatchObject({ type: "recovery_required" });
+    expect(refunds).toHaveLength(0);
   });
 });

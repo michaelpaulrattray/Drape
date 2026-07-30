@@ -304,6 +304,37 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
       expect(landing).toBe("expired");
     });
 
+    it("lets recovery claim only unfinished work, and never a delivered candidate", async () => {
+      const session = await newSession(owner);
+      const { roll, candidates } = await newRoll(owner, session.publicId);
+      await connection.execute(
+        "UPDATE casting_candidates SET status = 'ready', imageKey = 'k' WHERE id IN (?, ?)",
+        [candidates[0].id, candidates[1].id],
+      );
+      // The torn write: `ready` is only written after bytes land, so a ready
+      // row without a key means the user cannot see the image.
+      await connection.execute(
+        "UPDATE casting_candidates SET status = 'ready', imageKey = NULL WHERE id = ?",
+        [candidates[1].id],
+      );
+      await connection.execute("UPDATE casting_candidates SET status = 'discarded' WHERE id = ?", [
+        candidates[2].id,
+      ]);
+
+      const claim = (id: number) =>
+        db.claimCandidateForRecovery({ userId: owner, candidateId: id, failureClass: "unrecovered" });
+
+      // Delivered, and delivered-then-discarded: both refuse. This is the CAS
+      // that stops the sweep refunding work the user actually received.
+      expect(await claim(candidates[0].id)).toBe(false);
+      expect(await claim(candidates[2].id)).toBe(false);
+      // Genuinely unfinished, and the torn write: both claimable.
+      expect(await claim(candidates[3].id)).toBe(true);
+      expect(await claim(candidates[1].id)).toBe(true);
+      // And a second sweep cannot claim what the first already settled.
+      expect(await claim(candidates[3].id)).toBe(false);
+    });
+
     it("refuses a stranger's keep, discard and undo without touching the row", async () => {
       const { candidate } = await readyCandidate();
       await db.setCandidateKept({ userId: owner, candidatePublicId: candidate.publicId, kept: true });
@@ -333,18 +364,30 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
       const { roll, candidates } = await newRoll(owner, session.publicId);
       await connection.execute("UPDATE casting_candidates SET status = 'ready', imageKey = 'k' WHERE rollId = ?", [roll.id]);
       await db.setCandidateKept({ userId: owner, candidatePublicId: candidates[0].publicId, kept: true });
-      await connection.execute("UPDATE casting_candidates SET status = 'cancelled' WHERE id IN (?, ?)", [
+      await connection.execute("UPDATE casting_candidates SET status = 'expired' WHERE id IN (?, ?)", [
         candidates[1].id,
         candidates[2].id,
       ]);
-      // A kept candidate that was somehow also cancelled must still be safe.
-      await connection.execute("UPDATE casting_candidates SET status = 'cancelled' WHERE id = ?", [candidates[0].id]);
+      // A kept candidate that was somehow also expired must still be safe.
+      await connection.execute("UPDATE casting_candidates SET status = 'expired' WHERE id = ?", [candidates[0].id]);
 
       const purgeable = await db.listPurgeableCandidates({});
       const ids = purgeable.map((row) => row.id);
       expect(ids).toContain(candidates[1].id);
       expect(ids).toContain(candidates[2].id);
       expect(ids).not.toContain(candidates[0].id);
+    });
+
+    it("keeps cancelled candidates until their session goes", async () => {
+      const session = await newSession(owner);
+      const { candidates } = await newRoll(owner, session.publicId);
+      await connection.execute("UPDATE casting_candidates SET status = 'cancelled' WHERE id = ?", [
+        candidates[0].id,
+      ]);
+      // They hold no storage object, so purging frees nothing — and they carry
+      // the refund story a cancelled roll shows. Deleting them within the hour
+      // would let that history quietly rewrite itself.
+      expect((await db.listPurgeableCandidates({})).map((row) => row.id)).not.toContain(candidates[0].id);
     });
 
     it("keeps a discard purgeable only once it is past retention and no longer undoable", async () => {

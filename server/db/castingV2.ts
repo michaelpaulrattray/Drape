@@ -17,7 +17,7 @@
  * both believe they won.
  */
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, or, sql } from "drizzle-orm";
 
 import {
   boardItems,
@@ -576,6 +576,42 @@ export async function cancelQueuedCandidate(input: {
   return affectedRows(result) === 1;
 }
 
+/**
+ * The recovery sweep's claim on a candidate.
+ *
+ * Recovery must win this row *before* it refunds the slice, never after. A
+ * live process can outlive its lease — a single heartbeat failure stops the
+ * heartbeat permanently while dispatch keeps running — so between the sweep
+ * reading the candidates and settling one, that process may have landed it.
+ * Claiming first means a lost race costs nothing; refunding first meant the
+ * money was already gone when we discovered the candidate had been delivered.
+ *
+ * The `ready`-without-`imageKey` arm is the torn write: `ready` is only
+ * written after bytes are in our storage, so such a row means the user cannot
+ * see the image and is still owed its slice.
+ */
+export async function claimCandidateForRecovery(input: {
+  userId: number;
+  candidateId: number;
+  failureClass: string;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.candidateId, "candidateId");
+  const db = await requireDb();
+  const result = await db
+    .update(castingCandidates)
+    .set({ status: "failed", failureClass: input.failureClass.slice(0, 24) })
+    .where(and(
+      eq(castingCandidates.id, input.candidateId),
+      eq(castingCandidates.userId, input.userId),
+      or(
+        inArray(castingCandidates.status, ["queued", "dispatched"]),
+        and(eq(castingCandidates.status, "ready"), isNull(castingCandidates.imageKey)),
+      ),
+    ));
+  return affectedRows(result) === 1;
+}
+
 /* ------------------------------------------------- user-facing candidate ops */
 
 /**
@@ -705,7 +741,13 @@ export type PurgeableCandidate = {
  * Two independent sources, both conservative:
  *  - a discard that is past its 24h floor **and** no longer the active roll's,
  *    so it can no longer be undone;
- *  - anything already terminal-and-invisible (`cancelled`, `expired`).
+ *  - `expired` — delivered after a cancel, never shown, never refunded.
+ *
+ * `cancelled` is deliberately absent. Those rows hold no storage object (they
+ * never reached the provider), so purging them frees nothing — and they carry
+ * the refund story the sheet shows as "didn't run — refunded". Deleting them
+ * an hour later would make a cancelled roll's history quietly rewrite itself.
+ * They go with their session at expiry, like everything else.
  *
  * Signed candidates and kept candidates are never selected here. Kept siblings
  * of a signed cast are retained by the same rule that retains kept candidates
@@ -735,7 +777,7 @@ export async function listPurgeableCandidates(input: {
           AND ${castingCandidates.rollId} <> COALESCE((
             SELECT s.activeRollId FROM casting_sessions s WHERE s.id = ${castingCandidates.sessionId}
           ), 0))
-        OR ${castingCandidates.status} IN ('cancelled', 'expired')
+        OR ${castingCandidates.status} = 'expired'
       )`,
     ))
     .limit(input.limit ?? 200);

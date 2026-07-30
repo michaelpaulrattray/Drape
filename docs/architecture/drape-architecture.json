@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "aaa7a562b2a96039"
+    "sourceFingerprint": "5b59403792897ce0"
   },
   "domains": [
     {
@@ -15480,6 +15480,11 @@
     {
       "from": "module:server/castingV2/rollRecovery.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollRecovery.ts",
+      "to": "module:server/db/castingV2.ts",
       "kind": "imports"
     },
     {
