@@ -40,14 +40,13 @@ export function otherTheme(theme: Theme): Theme {
 /**
  * Apply a theme to the document.
  *
- * `data-theme` is the foundation switch. The `dark` class is kept in sync
- * because ~46 `dark:` Tailwind utilities on legacy surfaces still read it —
- * dropping it here would leave the lobby half-themed. M2 redefines the `dark`
- * custom variant as `[data-theme="dark"]` and this second write goes away.
+ * `data-theme` on <html> is the whole mechanism. M1 also wrote a `dark` class
+ * because the shadcn `dark:` utilities keyed off it; M2 redefined that custom
+ * variant as `[data-theme="dark"]`, so the second write is gone and there is
+ * exactly one switch.
  */
 export function applyTheme(root: HTMLElement, theme: Theme): void {
   root.setAttribute("data-theme", theme);
-  root.classList.toggle("dark", theme === "dark");
 }
 
 /** Never throws: storage can be unavailable (private mode, blocked cookies). */

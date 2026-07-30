@@ -140,11 +140,14 @@ try {
 
         const applied = await page.evaluate(() => {
           const root = document.documentElement;
+          const rootStyles = getComputedStyle(root);
           const shell = document.querySelector(".dp-root");
           const styles = shell ? getComputedStyle(shell) : null;
           return {
             attribute: root.getAttribute("data-theme"),
-            darkClass: root.classList.contains("dark"),
+            // Tokens must resolve at :root, not just inside the shell —
+            // that is what portaled content (dialogs, menus) reads.
+            rootSurface: rootStyles.getPropertyValue("--surface").trim(),
             surface: styles?.getPropertyValue("--surface").trim() ?? "",
             ink: styles?.getPropertyValue("--ink").trim() ?? "",
             fontFamily: styles?.fontFamily ?? "",
@@ -155,8 +158,8 @@ try {
         if (applied.attribute !== theme) {
           failures.push(`${where}: data-theme is "${applied.attribute}", expected "${theme}"`);
         }
-        if (applied.darkClass !== (theme === "dark")) {
-          failures.push(`${where}: .dark class out of sync with data-theme`);
+        if (!applied.rootSurface) {
+          failures.push(`${where}: foundation tokens are not resolving at :root`);
         }
         if (!applied.surface || !applied.ink) {
           failures.push(`${where}: foundation tokens did not reach .dp-root`);

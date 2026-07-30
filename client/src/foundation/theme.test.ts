@@ -76,9 +76,28 @@ describe("first-paint theme script", () => {
     expect(script).toContain('"dark"');
     // The literal fallback in the script must be the module's default theme.
     expect(script).toContain(`t="${DEFAULT_THEME}"`);
-    // It must write both switches: data-theme (foundation) and .dark (legacy).
     expect(script).toContain("data-theme");
-    expect(script).toContain("dark");
+  });
+
+  it("writes only the data-theme switch", () => {
+    // M2 redefined the `dark` custom variant as [data-theme="dark"], so the
+    // class is gone. A second switch here would be a second source of truth.
+    const [script] = scripts;
+    expect(script).not.toContain("classList");
+    const themeModule = fs.readFileSync(path.join(__dirname, "theme.ts"), "utf8");
+    expect(themeModule).not.toContain("classList");
+  });
+
+  it("keys the Tailwind dark variant off the same attribute", () => {
+    const indexCss = fs.readFileSync(
+      path.join(repoRoot, "client", "src", "index.css"),
+      "utf8",
+    );
+    const variant = indexCss.match(/@custom-variant dark \(([^)]*\))\);?/)?.[1] ?? "";
+    expect(variant, "the dark variant must read data-theme, not a class").toContain(
+      '[data-theme="dark"]',
+    );
+    expect(variant).not.toContain(".dark");
   });
 
   it("is allowed by the production CSP", () => {

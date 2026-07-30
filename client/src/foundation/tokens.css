@@ -5,38 +5,28 @@
    Values verbatim from
    docs/specs/Casting-ui-ux-design/drape-foundation/tokens.css
 
-   SCOPE — read this before changing a selector.
+   SCOPE (promoted at M2 — see DECISION_LOG D-77, D-78).
 
-   The plan (CASTING_V2_ARCHITECTURE_PLAN.md §D.1) puts these
-   tokens on :root. They cannot go there until M2 remaps the
-   shadcn semantic layer, because four names collide with CSS
-   that legacy surfaces still consume:
+   M1 scoped this block to `.dp-root` because four token names
+   collided with CSS legacy surfaces still read. M2's semantic
+   remap resolves those collisions, so the tokens now live where
+   the plan always wanted them:
 
-       --border --muted --secondary   (index.css shadcn :root,
-                                       read via @theme inline)
-       --font-sans                    (styles/tokens.css:79,
-                                       read by marketing classes)
+       :root                     light values
+       [data-theme="dark"]       dark values
 
-   Defining them at :root now would either repaint every legacy
-   surface or resolve the foundation to the wrong values —
-   both break M1's "no visible product effect" law. So M1
-   scopes the block to the shell root element instead:
+   `data-theme` on <html> is the only switch; no component ever
+   branches on theme. Tokens now reach Radix portals (they mount
+   on <body>, outside any shell subtree), which is what unblocks
+   portaled primitives — dialog, menu, tooltip.
 
-       .dp-root                       light values
-       [data-theme="dark"] .dp-root   dark values
-
-   A value set directly on .dp-root beats an inherited :root
-   value regardless of stylesheet order, so this is robust.
-   data-theme still lives on <html> and remains the only
-   switch — nothing branches on theme in a component.
-
-   At M2 this becomes :root / [data-theme="dark"] — a selector
-   change, not a rewrite. Until then, foundation CSS must not
-   rely on tokens reaching Radix portals (they mount on <body>,
-   outside .dp-root); M1 therefore ships no portaled primitive.
+   The RESET below stays scoped to `.dp-root` on purpose. It is
+   app-shell typography, not a global reset: §D.7 requires the
+   marketing pages to keep Inter, so the shell owns Archivo and
+   `body` type is left to the remapped shadcn base layer.
    ============================================================ */
 
-.dp-root {
+:root {
   /* ---- SURFACES (light → dark in elevation order) ---------- */
   --surface:      #FFFFFF;  /* app background, cards on page   */
   --raised:       #FAFAFB;  /* card sitting on surface         */
@@ -136,7 +126,7 @@
   --t-enter:   340ms;  /* content arriving                   */
 }
 
-[data-theme="dark"] .dp-root {
+[data-theme="dark"] {
   --surface:      #1C1C1F;
   --raised:       #1A1A1D;
   --page:         #141416;
@@ -185,10 +175,14 @@
   --shadowPop:    0 8px 22px rgba(0,0,0,.44);
 }
 
-/* ---- RESET — scoped to the foundation subtree ----------------
-   The handoff applies this to `body`. At M1 that would restyle
-   every legacy surface, so it is scoped. It moves to the global
-   selectors at M2 with the token block.
+/* ---- RESET — deliberately still scoped to the shell ----------
+   The handoff applies this to `body`. It stays on `.dp-root`
+   because §D.7 keeps the marketing pages on Inter: a global
+   `body { font-family: var(--font-sans) }` would put Archivo on
+   the brochure. Body background and colour are not set here
+   either — the remapped shadcn base layer already resolves them
+   to `--surface` / `--ink`, so duplicating them would be two
+   sources of truth for one value.
    ------------------------------------------------------------ */
 .dp-root,
 .dp-root *,

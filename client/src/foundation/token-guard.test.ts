@@ -109,8 +109,8 @@ describe("foundation tokens define every token in both themes", () => {
     return new Set([...body.matchAll(/(--[a-zA-Z0-9-]+)\s*:/g)].map((match) => match[1]));
   }
 
-  const light = declaredIn(".dp-root {");
-  const dark = declaredIn('[data-theme="dark"] .dp-root {');
+  const light = declaredIn(":root {");
+  const dark = declaredIn('[data-theme="dark"] {');
 
   /**
    * Structure, not colour: geometry, radii, spacing, type and motion are the
@@ -134,13 +134,18 @@ describe("foundation tokens define every token in both themes", () => {
     expect(orphans).toEqual([]);
   });
 
-  it("scopes the token block so M1 cannot repaint legacy surfaces", () => {
-    // Promoting these to :root is M2's job, together with the shadcn remap —
-    // see the tokens.css header for why doing it earlier breaks either the
-    // legacy surfaces or the foundation.
-    expect(tokens).toContain(".dp-root {");
-    expect(tokens).toContain('[data-theme="dark"] .dp-root {');
-    expect(tokens).not.toMatch(/^:root\s*\{/m);
+  it("declares the tokens at :root so they reach portaled content", () => {
+    // M2 promoted these out of the shell subtree. Radix portals mount on
+    // <body>; a scoped block would leave every dialog and menu untokenised.
+    expect(tokens).toMatch(/^:root\s*\{/m);
+    expect(tokens).toMatch(/^\[data-theme="dark"\]\s*\{/m);
+    expect(tokens).not.toContain('[data-theme="dark"] .dp-root');
+  });
+
+  it("keeps the shell reset off `body` so marketing keeps its own type", () => {
+    // §D.7: the brochure stays on Inter. A global body font-family here would
+    // put Archivo on it — the reset belongs to the shell, not the document.
     expect(tokens).not.toMatch(/^body\s*\{/m);
+    expect(tokens).toContain(".dp-root {\n  background: var(--surface);");
   });
 });

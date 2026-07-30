@@ -8,7 +8,14 @@
 /* Canvas boards design system (docs/specs/DESIGN_SYSTEM.md) */
 @import "./styles/canvas-tokens.css";
 
-@custom-variant dark (&:is(.dark *));
+/*
+  One theme switch, app-wide (plan §D.8, M2). The `dark:` utilities in the
+  shadcn primitives now key off the same `data-theme` attribute the foundation
+  uses, so the `.dark` class is gone and there is no second convention to keep
+  in sync. `:where()` keeps the variant's specificity at zero, matching the
+  class-based variant it replaces.
+*/
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 html {
   scroll-behavior: smooth;
