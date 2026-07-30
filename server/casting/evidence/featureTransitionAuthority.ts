@@ -39,6 +39,9 @@ export const FEATURE_TRANSITION_AUTHORITY:
     "canvas.recast": "evidence_blind",
     "canvas.fork": "evidence_blind",
     "canvas.variations": "evidence_blind",
+    // Pre-Sign: a roll has no model, so there is no feature state to be
+    // aware of or blind to.
+    "castingV2.roll": "not_applicable",
   };
 
 export const FEATURE_BLIND_OPERATION_MESSAGE =

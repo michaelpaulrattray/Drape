@@ -45,6 +45,9 @@ describe("R7-7D D4D2 recovery, feature fences, and privacy contract", () => {
       ["canvas.recast", "evidence_blind"],
       ["canvas.fork", "evidence_blind"],
       ["canvas.variations", "evidence_blind"],
+      // Pre-Sign: a roll has no model, so there is no feature state to be
+      // aware of or blind to.
+      ["castingV2.roll", "not_applicable"],
     ]);
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("tattoo evidence");
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("unavailable");

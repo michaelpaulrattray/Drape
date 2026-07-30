@@ -43,6 +43,9 @@ export const OPERATION_REPLAY_FAMILY_BY_KIND: Readonly<
   "canvas.recast": null,
   "canvas.fork": null,
   "canvas.variations": null,
+  // Replay is by operation key returning the existing roll, not by a
+  // state-derived route.
+  "castingV2.roll": null,
 };
 
 export type ReplayKindResolution =

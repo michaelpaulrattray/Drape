@@ -20,7 +20,10 @@ import {
  * readers actually consult it.
  */
 describe("unknown operation kinds", () => {
-  const FUTURE_KIND = "castingV2.roll";
+  // Was castingV2.roll until M4 landed it — as this test predicted it would.
+  // castingV2.sign arrives at M7, so the scenario stays a real simulation of
+  // an older image meeting a newer row rather than a tautology.
+  const FUTURE_KIND = "castingV2.sign";
 
   it("is a realistic scenario — the V2 kinds do not exist yet", () => {
     // If this ever fails, M4 has landed and this test needs a kind from a

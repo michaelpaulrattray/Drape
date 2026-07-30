@@ -28,6 +28,12 @@ export const GENERATION_OPERATION_KINDS = [
   "canvas.recast",
   "canvas.fork",
   "canvas.variations",
+  // Casting V2 (M4). Dot-namespaced per the convention above; `kind` is
+  // varchar(48), so a new value needs no migration. Every kind must also be
+  // given an entry in each exhaustive Record in operationRecovery.ts and a
+  // replay family — the type system enforces that, which is why adding one
+  // here fails the build until the adjudicator knows about it.
+  "castingV2.roll",
 ] as const;
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];

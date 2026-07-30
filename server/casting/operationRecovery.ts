@@ -1,3 +1,4 @@
+import { recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
 import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import {
   creditTransactions,
@@ -86,10 +87,14 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   "canvas.recast": "not_reconstructable",
   "canvas.fork": "canvas_fork",
   "canvas.variations": "not_reconstructable",
+  // The bespoke adjudicator reads the roll's own candidate rows, so there is
+  // no generic public result to reconstruct here.
+  "castingV2.roll": "not_reconstructable",
 };
 
 type StaleRecoveryStrategy =
   | "standard"
+  | "castingv2_roll"
   | "ink_evidence"
   | "evidence_fork"
   | "evidence_mint";
@@ -123,6 +128,9 @@ const STALE_RECOVERY_BY_KIND: Readonly<
   "canvas.recast": "standard",
   "canvas.fork": "standard",
   "canvas.variations": "standard",
+  // Bespoke: the standard path assumes one output per operation, whereas a
+  // roll has eight independently-refundable slices.
+  "castingV2.roll": "castingv2_roll",
 };
 
 const LANDING_RECOVERY_BY_KIND: Readonly<
@@ -154,6 +162,9 @@ const LANDING_RECOVERY_BY_KIND: Readonly<
   "canvas.recast": null,
   "canvas.fork": "relink_required",
   "canvas.variations": null,
+  // A roll lands nothing into a board item; the canvas origin is filled at
+  // Sign (M10), not by the roll itself.
+  "castingV2.roll": null,
 };
 
 function assertNever(value: never): never {
@@ -813,6 +824,25 @@ export async function adjudicateStaleGenerationOperation(
     const recovered = await recoverEvidencePackageSyncOperation(operation);
     if (recovered.type === "durable_success") return "durable_success";
     if (recovered.type === "terminal_failure") return "paid_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage:
+          `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+        chargedCredits: recovered.chargedCredits,
+        refundedCredits: recovered.refundedCredits,
+      });
+      return "recovery_required";
+    }
+  }
+  if (operation.kind === "castingV2.roll") {
+    const recovered = await recoverCastingV2RollOperation(operation);
+    if (recovered.type === "durable_success") return "durable_success";
+    // Partial and total failure both end the same way for the sweep: the work
+    // is terminal and the owed slices have been refunded. The distinction is
+    // recorded on the roll, which is what the client reads.
+    if (recovered.type === "partial" || recovered.type === "paid_failure") return "paid_failure";
     if (recovered.type === "recovery_required") {
       await markGenerationOperationRecoveryRequired({
         userId: operation.userId,

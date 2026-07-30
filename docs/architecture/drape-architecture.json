@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "83489c5c2a08c9b6"
+    "sourceFingerprint": "afc11a252ac268bb"
   },
   "domains": [
     {
@@ -34,6 +34,11 @@
       "id": "domain:casting",
       "name": "casting",
       "moduleCount": 120
+    },
+    {
+      "id": "domain:casting-v2",
+      "name": "casting-v2",
+      "moduleCount": 1
     },
     {
       "id": "domain:client-shared",
@@ -2984,6 +2989,12 @@
       "id": "module:server/casting/wholeCastRestore.ts",
       "path": "server/casting/wholeCastRestore.ts",
       "domain": "casting",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/rollRecovery.ts",
+      "path": "server/castingV2/rollRecovery.ts",
+      "domain": "casting-v2",
       "lifecycle": "active"
     },
     {
@@ -7219,6 +7230,10 @@
     {
       "id": "test:server/castingStudio.test.ts",
       "path": "server/castingStudio.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/rollRecovery.test.ts",
+      "path": "server/castingV2/rollRecovery.test.ts"
     },
     {
       "id": "test:server/changeRequests.test.ts",
@@ -14532,6 +14547,11 @@
     },
     {
       "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:server/castingV2/rollRecovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationRecovery.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -15163,6 +15183,31 @@
     {
       "from": "module:server/casting/wholeCastRestore.ts",
       "to": "module:shared/modelLifecycle.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollRecovery.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollRecovery.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollRecovery.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollRecovery.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollRecovery.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
