@@ -1,8 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Drape™ Design System */
-@import "./styles/tokens.css";
+/*
+  styles/tokens.css was deleted: it was entirely dead — all 102 variables and
+  ~200 utility classes had zero consumers anywhere — but being unlayered at
+  :root it silently shadowed Tailwind theme families app-wide: the grey and
+  black palette, the leading scale and the shadow scale. Deleting it releases
+  Tailwind's own defaults. The marketing pages never referenced it.
+*/
 @import "./styles/animations.css";
 
 /* Canvas boards design system (docs/specs/DESIGN_SYSTEM.md) */

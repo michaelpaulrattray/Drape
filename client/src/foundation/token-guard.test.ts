@@ -122,7 +122,11 @@ describe("no stylesheet shadows a Tailwind utility name", () => {
     "border-input",
   ];
 
-  const stylesheets = ["styles/tokens.css", "styles/animations.css", "styles/canvas-tokens.css"]
+  // Every global stylesheet still in the tree. styles/tokens.css was deleted —
+  // it was wholly dead, yet its unlayered :root block shadowed Tailwind's grey,
+  // leading and shadow scales app-wide.
+  const stylesheets = ["styles/animations.css", "styles/canvas-tokens.css"]
+    .filter((relative) => fs.existsSync(path.join(clientSrc, relative)))
     .map((relative) => ({
       relative,
       source: fs.readFileSync(path.join(clientSrc, relative), "utf8"),

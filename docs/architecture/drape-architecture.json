@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e267fa52ae7005ae"
+    "sourceFingerprint": "a25d8f081deec912"
   },
   "domains": [
     {
@@ -118,7 +118,7 @@
     {
       "id": "domain:styles",
       "name": "styles",
-      "moduleCount": 3
+      "moduleCount": 2
     },
     {
       "id": "domain:ui-primitives",
@@ -2170,12 +2170,6 @@
       "path": "client/src/styles/canvas-tokens.css",
       "domain": "styles",
       "lifecycle": "retire"
-    },
-    {
-      "id": "module:client/src/styles/tokens.css",
-      "path": "client/src/styles/tokens.css",
-      "domain": "styles",
-      "lifecycle": "active"
     },
     {
       "id": "module:drizzle/schema.ts",
