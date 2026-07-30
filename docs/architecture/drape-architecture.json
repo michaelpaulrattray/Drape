@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "84ecd4e016c97b05"
+    "sourceFingerprint": "d615f70e3624dfa2"
   },
   "domains": [
     {
@@ -7548,6 +7548,10 @@
     {
       "id": "test:server/r7-operation-recovery.test.ts",
       "path": "server/r7-operation-recovery.test.ts"
+    },
+    {
+      "id": "test:server/r7-operation-rollback-skew.test.ts",
+      "path": "server/r7-operation-rollback-skew.test.ts"
     },
     {
       "id": "test:server/r7-private-evidence-ceremony.test.ts",

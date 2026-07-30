@@ -24,6 +24,7 @@ import {
   assertGenerationOperationProgress,
   assertGenerationOperationStatus,
   assertOperationLockKey,
+  isGenerationOperationKind,
   assertPublicOperationResult,
   boardItemOperationLockKey,
   type GenerationOperationChildStatus,
@@ -254,6 +255,31 @@ async function loadOperationChildren(
   return grouped;
 }
 
+/**
+ * Rollback-skew hardening (plan §G, M4a).
+ *
+ * A rollback leaves rows written by a newer image in a database an older image
+ * still reads. `toPublicGenerationOperation` asserts the kind and throws on
+ * anything it does not recognise, so a single in-flight receipt from a newer
+ * kind would 500 the operation bridge for that user until the row settled.
+ *
+ * Read paths therefore skip what they cannot project and say so in the log.
+ * This is permanent hardening, not a compatibility shim: it stays after the
+ * legacy system retires (§L.R item 4). Write paths still assert — an unknown
+ * kind there is a bug and must be loud.
+ *
+ * The rollback floor for every Casting V2 milestone is the image containing
+ * this change: never roll back past it while a V2 operation row exists.
+ */
+function isProjectableOperation(operation: { id: string; kind: unknown }, context: string): boolean {
+  if (isGenerationOperationKind(operation.kind)) return true;
+  log.warn(
+    { operationId: operation.id, kind: String(operation.kind), context },
+    "[generationOperations] skipping operation of an unknown kind — newer image wrote it, this one cannot project it",
+  );
+  return false;
+}
+
 export async function getPublicGenerationOperation(
   userId: number,
   operationId: string,
@@ -262,6 +288,7 @@ export async function getPublicGenerationOperation(
   assertOperationIdentity(operationId);
   const operation = await getOperationForUser(userId, operationId);
   if (!operation || operation.subjectDeletedAt) return null;
+  if (!isProjectableOperation(operation, "getPublicGenerationOperation")) return null;
   const children = await loadOperationChildren([operation.id]);
   return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
 }
@@ -283,6 +310,9 @@ export async function getRecentPublicGenerationOperation(input: {
     ))
     .limit(1);
   if (!operation || operation.subjectDeletedAt) return null;
+  // Read-only client query — the write path's claim is what enforces
+  // idempotency, so reporting "nothing recent" here cannot cause a re-charge.
+  if (!isProjectableOperation(operation, "getRecentPublicGenerationOperation")) return null;
   const children = await loadOperationChildren([operation.id]);
   return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
 }
@@ -315,7 +345,7 @@ export async function listActivePublicGenerationOperations(input: {
   ];
   if (input.boardId !== undefined) filters.push(eq(generationOperations.originBoardId, input.boardId));
   if (input.modelId !== undefined) filters.push(eq(generationOperations.modelId, input.modelId));
-  const operations = await db
+  const rows = await db
     .select()
     .from(generationOperations)
     .where(and(...filters))
@@ -324,6 +354,10 @@ export async function listActivePublicGenerationOperations(input: {
       desc(generationOperations.createdAt),
     )
     .limit(limit);
+  // One unrecognised row must not take out the whole list for this user.
+  const operations = rows.filter((operation) =>
+    isProjectableOperation(operation, "listActivePublicGenerationOperations"),
+  );
   const children = await loadOperationChildren(operations.map((operation) => operation.id));
   return operations.map((operation) =>
     toPublicGenerationOperation(operation, children.get(operation.id) ?? [])

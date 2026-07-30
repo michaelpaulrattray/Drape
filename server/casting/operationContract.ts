@@ -131,9 +131,22 @@ export interface PublicGenerationOperation {
 }
 
 export function assertGenerationOperationKind(value: unknown): asserts value is GenerationOperationKind {
-  if (!GENERATION_OPERATION_KINDS.includes(value as GenerationOperationKind)) {
+  if (!isGenerationOperationKind(value)) {
     throw new TypeError("Unknown generation operation kind");
   }
+}
+
+/**
+ * The non-throwing sibling of the assert above.
+ *
+ * Write paths should keep asserting — an unknown kind there is a bug and must
+ * be loud. But *read* paths that project a list of rows need to survive one
+ * unrecognised row, because a rollback leaves rows written by a newer image in
+ * a database an older image still reads. Throwing there takes out the whole
+ * response for that user until the row settles.
+ */
+export function isGenerationOperationKind(value: unknown): value is GenerationOperationKind {
+  return GENERATION_OPERATION_KINDS.includes(value as GenerationOperationKind);
 }
 
 export type PublicOperationResult = Record<string, unknown> | unknown[] | string | number | boolean | null;
