@@ -118,3 +118,6 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# M3 calibration output (real spend artifacts, founder-reviewed then disposed)
+.calibration/

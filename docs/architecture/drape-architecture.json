@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a25d8f081deec912"
+    "sourceFingerprint": "419b0f9a607e2e79"
   },
   "domains": [
     {
@@ -94,6 +94,11 @@
       "id": "domain:profile",
       "name": "profile",
       "moduleCount": 7
+    },
+    {
+      "id": "domain:providers",
+      "name": "providers",
+      "moduleCount": 4
     },
     {
       "id": "domain:referral",
@@ -3303,6 +3308,30 @@
       "id": "module:server/monitoring/healthMonitor.ts",
       "path": "server/monitoring/healthMonitor.ts",
       "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/falQueue.ts",
+      "path": "server/providers/falQueue.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/openrouterImages.ts",
+      "path": "server/providers/openrouterImages.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/providerQueue.ts",
+      "path": "server/providers/providerQueue.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/types.ts",
+      "path": "server/providers/types.ts",
+      "domain": "providers",
       "lifecycle": "active"
     },
     {
@@ -7314,6 +7343,10 @@
     {
       "id": "test:server/profileVisualDefaults.test.ts",
       "path": "server/profileVisualDefaults.test.ts"
+    },
+    {
+      "id": "test:server/providers/providerContract.test.ts",
+      "path": "server/providers/providerContract.test.ts"
     },
     {
       "id": "test:server/r7-7f-live-rehydration.test.ts",
@@ -16353,6 +16386,46 @@
     {
       "from": "module:server/monitoring/healthMonitor.ts",
       "to": "module:server/slack/slackDispatcher.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falQueue.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falQueue.ts",
+      "to": "module:server/providers/providerQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falQueue.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/openrouterImages.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/openrouterImages.ts",
+      "to": "module:server/providers/providerQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/openrouterImages.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/providerQueue.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/providerQueue.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {
