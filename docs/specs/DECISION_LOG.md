@@ -1497,6 +1497,41 @@ refund behavior changed. Typecheck, the production build, and the full
 254-file / 3,209-test unit suite pass locally. No additional controlled
 production attempt has run on the fix yet.
 
+**Clipped-limb projection authority (2026-07-30):** Railway deployed
+`efbbbff5d3e8c969535b7de022374ee897126978` successfully. Controlled
+three-quarter operation `e369a37f-215e-4351-a94c-ce3d30792db6` proved the
+cold-start repair by reaching deterministic anatomy geometry, then stopped
+before charge or image-provider generation with closed code
+`InkPoseGeometryError / landmark_uncertain`. The displayed balance remained
+66,200 credits.
+
+Local analysis of the exact browser-loaded three-quarter target, without
+logging or retaining its storage URL or image, showed that forehead and left
+shoulder geometry pass. The right sleeve is the only blocker. Its shoulder and
+elbow are confidently visible, while its high-confidence wrist and hand
+landmarks fall just beyond the bottom crop. Requiring the invisible hand
+segment made an otherwise visible upper-arm/forearm sleeve impossible to
+project.
+
+Pose geometry v2 and pose projection v2 add an explicit clipped-visibility
+mode used only for target views. A high-confidence limb may continue at most
+15% beyond the image edge; its geometry is still intersected with both the
+image bounds and the detected person mask. Fully off-frame primitives are
+omitted, and the guide records the exact source-primitive indexes that remain
+visible. Projection maps accepted feature pixels only through those matching
+indexes, so it cannot shift an omitted hand tattoo onto an upper arm or
+fabricate invisible pixels. Strict authoring/source geometry is unchanged.
+Malformed, reordered, empty, or mismatched primitive-index authority fails
+closed, and the independent target guide plus post-generation placement
+audits remain mandatory.
+
+On the exact target, this produces one forehead segment, one left-shoulder
+segment, and two visible right-sleeve segments (upper arm and forearm), while
+omitting the off-frame hand. Typecheck, the production build, 34 focused
+geometry, projection, mask, candidate-generation, and execution tests, and the
+full 254-file / 3,212-test unit suite pass locally. No provider generation or
+additional controlled production attempt has run on this change yet.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

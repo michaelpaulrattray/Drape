@@ -436,7 +436,11 @@ async function localizeProjectionFeatures(
     );
     const targetGuide = await localizationStage(
       "target_geometry_failed",
-      () => buildInkPoseAnatomyGuide(anatomy, targetAnalysis),
+      () => buildInkPoseAnatomyGuide(
+        anatomy,
+        targetAnalysis,
+        { allowClippedVisibility: true },
+      ),
     );
     const projection = await localizationStage(
       "feature_projection_failed",

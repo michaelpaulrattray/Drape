@@ -56,12 +56,16 @@ const BASE_POINTS: Readonly<
 function analysis(options?: {
   mirrored?: boolean;
   scoreOverrides?: Partial<Record<InkPoseKeypointName, number>>;
+  coordinateOverrides?: Partial<
+    Record<InkPoseKeypointName, readonly [number, number]>
+  >;
   personMask?: Uint8Array;
 }): InkPoseAnalysis {
   const width = 240;
   const height = 320;
   const landmarks = INK_POSE_KEYPOINTS.map((name) => {
-    const [baseX, y] = BASE_POINTS[name]!;
+    const [baseX, y] =
+      options?.coordinateOverrides?.[name] ?? BASE_POINTS[name]!;
     return Object.freeze({
       name,
       x: options?.mirrored ? 1 - baseX : baseX,
@@ -227,6 +231,37 @@ describe("deterministic tattoo pose geometry", () => {
       if (!guide.mask[index]) continue;
       expect(index % guide.width).toBeLessThan(guide.width / 2);
     }
+  });
+
+  it("clips a confidently tracked sleeve when its hand exits the frame", () => {
+    const tuple: InkAnatomyTuple = {
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    };
+    const cropped = analysis({
+      coordinateOverrides: {
+        right_wrist: [0.44, 1.064],
+        right_index: [0.51, 1.125],
+        right_pinky: [0.45, 1.137],
+      },
+    });
+
+    expect(() => buildInkPoseAnatomyGuide(tuple, cropped)).toThrowError(
+      expect.objectContaining<Partial<InkPoseGeometryError>>({
+        code: "landmark_uncertain",
+      }),
+    );
+
+    const clipped = buildInkPoseAnatomyGuide(
+      tuple,
+      cropped,
+      { allowClippedVisibility: true },
+    );
+
+    expect(clipped.visiblePrimitiveIndexes).toEqual([0, 1]);
+    expect(clipped.normalizedSegments).toHaveLength(2);
+    expect(clipped.mask.some(Boolean)).toBe(true);
   });
 
   it("fails closed when the selected surface is absent from the person mask", () => {

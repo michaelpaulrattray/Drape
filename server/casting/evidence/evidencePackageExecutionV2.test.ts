@@ -262,7 +262,7 @@ describe("v2 evidence package execution", () => {
           }
         }
         const projection = {
-          recipeVersion: "ink.pose-projection.v1" as const,
+          recipeVersion: "ink.pose-projection.v2" as const,
           tuple: {
             zone: "full_arm",
             surface: "circumferential",

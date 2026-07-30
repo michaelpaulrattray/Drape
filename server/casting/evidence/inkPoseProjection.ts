@@ -12,7 +12,7 @@ import type { InkAnatomyTuple } from "./inkAnatomyRegistry";
 import type { InkPoseAnalysis } from "./inkPoseRuntime";
 
 export const INK_POSE_PROJECTION_RECIPE_VERSION =
-  "ink.pose-projection.v1" as const;
+  "ink.pose-projection.v2" as const;
 
 export type InkPoseProjectionFailureCode =
   | "dimension_mismatch"
@@ -358,6 +358,7 @@ export function projectAcceptedInkFeatureMask(input: {
   const targetPrimitives = buildInkPoseGeometryPrimitives(
     input.tuple,
     input.targetAnalysis,
+    { allowClippedVisibility: true },
   );
   if (
     sourcePrimitives.length !== targetPrimitives.length
@@ -369,10 +370,45 @@ export function projectAcceptedInkFeatureMask(input: {
       "Tattoo source and target anatomy segment counts do not match",
     );
   }
+  if (
+    input.sourceGuide.visiblePrimitiveIndexes.length
+      !== sourcePrimitives.length
+    || input.sourceGuide.visiblePrimitiveIndexes.some(
+      (index, position) => index !== position,
+    )
+    || targetGuide.normalizedSegments.length
+      !== targetGuide.visiblePrimitiveIndexes.length
+  ) {
+    throw new InkPoseProjectionError(
+      "authority_mismatch",
+      "Tattoo pose guide segment authority is inconsistent",
+    );
+  }
 
   const targetMask = new Uint8Array(
     input.targetAnalysis.width * input.targetAnalysis.height,
   );
+  const visibleTargetPrimitiveIndexes = new Set(
+    targetGuide.visiblePrimitiveIndexes,
+  );
+  if (
+    targetGuide.visiblePrimitiveIndexes.length < 1
+    || targetGuide.visiblePrimitiveIndexes.some(
+      (index, position) =>
+        !Number.isInteger(index)
+        || index < 0
+        || index >= targetPrimitives.length
+        || (
+          position > 0
+          && index <= targetGuide.visiblePrimitiveIndexes[position - 1]!
+        ),
+    )
+  ) {
+    throw new InkPoseProjectionError(
+      "authority_mismatch",
+      "Tattoo target guide segment authority is inconsistent",
+    );
+  }
   const segmentIndexes: number[][] =
     sourcePrimitives.map(() => []);
   let sourceOutside = 0;
@@ -395,6 +431,7 @@ export function projectAcceptedInkFeatureMask(input: {
       sourceOutside += 1;
       continue;
     }
+    if (!visibleTargetPrimitiveIndexes.has(primitiveIndex)) continue;
     const targetPoint = mapPoint(
       sourcePoint,
       sourcePrimitives[primitiveIndex]!,

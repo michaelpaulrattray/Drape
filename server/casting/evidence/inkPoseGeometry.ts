@@ -14,7 +14,7 @@ import type {
 } from "./inkPoseRuntime";
 
 export const INK_POSE_GEOMETRY_RECIPE_VERSION =
-  "ink.pose-geometry.v1" as const;
+  "ink.pose-geometry.v2" as const;
 
 export type InkPoseGeometryFailureCode =
   | "landmark_missing"
@@ -39,6 +39,7 @@ export interface InkPoseAnatomyGuide {
   height: number;
   mask: Uint8Array;
   normalizedSegments: readonly NormalizedInkZone[];
+  visiblePrimitiveIndexes: readonly number[];
   minimumLandmarkScore: number;
 }
 
@@ -52,6 +53,12 @@ type Primitive = InkPoseGeometryPrimitive;
 
 const MIN_LANDMARK_SCORE = 0.65;
 const MIN_PERSON_ALPHA = 128;
+const STRICT_FRAME_MARGIN = 0.05;
+const CLIPPED_FRAME_MARGIN = 0.15;
+
+export interface InkPoseGeometryBuildOptions {
+  allowClippedVisibility?: boolean;
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -85,6 +92,7 @@ function pointMap(
 function requiredPoint(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
   name: InkPoseKeypointName,
+  options?: InkPoseGeometryBuildOptions,
 ): InkPosePoint {
   const value = points.get(name);
   if (!value) {
@@ -95,10 +103,18 @@ function requiredPoint(
   }
   if (
     value.score < MIN_LANDMARK_SCORE
-    || value.x < -0.05
-    || value.x > 1.05
-    || value.y < -0.05
-    || value.y > 1.05
+    || value.x < -(options?.allowClippedVisibility
+      ? CLIPPED_FRAME_MARGIN
+      : STRICT_FRAME_MARGIN)
+    || value.x > 1 + (options?.allowClippedVisibility
+      ? CLIPPED_FRAME_MARGIN
+      : STRICT_FRAME_MARGIN)
+    || value.y < -(options?.allowClippedVisibility
+      ? CLIPPED_FRAME_MARGIN
+      : STRICT_FRAME_MARGIN)
+    || value.y > 1 + (options?.allowClippedVisibility
+      ? CLIPPED_FRAME_MARGIN
+      : STRICT_FRAME_MARGIN)
   ) {
     throw new InkPoseGeometryError(
       "landmark_uncertain",
@@ -122,10 +138,11 @@ function bilateralScale(
   minimum: number,
   maximum: number,
   label: string,
+  options?: InkPoseGeometryBuildOptions,
 ): number {
   const value = distance(
-    point(requiredPoint(points, left)),
-    point(requiredPoint(points, right)),
+    point(requiredPoint(points, left, options)),
+    point(requiredPoint(points, right, options)),
   );
   if (value < minimum || value > maximum) {
     throw new InkPoseGeometryError(
@@ -138,6 +155,7 @@ function bilateralScale(
 
 function shoulderScale(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
+  options?: InkPoseGeometryBuildOptions,
 ): number {
   return bilateralScale(
     points,
@@ -146,11 +164,13 @@ function shoulderScale(
     0.025,
     0.85,
     "shoulder",
+    options,
   );
 }
 
 function hipScale(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
+  options?: InkPoseGeometryBuildOptions,
 ): number {
   return bilateralScale(
     points,
@@ -159,6 +179,7 @@ function hipScale(
     0.02,
     0.75,
     "hip",
+    options,
   );
 }
 
@@ -300,12 +321,15 @@ function sidedLimbPrimitives(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
   zone: InkAnatomyZone,
   side: Exclude<InkAnatomySide, "centre">,
+  options?: InkPoseGeometryBuildOptions,
 ): readonly Primitive[] {
+  const required = (name: InkPoseKeypointName) =>
+    requiredPoint(points, name, options);
   switch (zone) {
     case "shoulder": {
-      const scale = shoulderScale(points);
+      const scale = shoulderScale(points, options);
       const shoulder = point(
-        requiredPoint(points, sideName(side, "shoulder")),
+        required(sideName(side, "shoulder")),
       );
       return Object.freeze([{
         kind: "ellipse",
@@ -315,32 +339,32 @@ function sidedLimbPrimitives(
       }]);
     }
     case "upper_arm": {
-      const scale = shoulderScale(points);
+      const scale = shoulderScale(points, options);
       return Object.freeze([{
         kind: "capsule",
-        a: point(requiredPoint(points, sideName(side, "shoulder"))),
-        b: point(requiredPoint(points, sideName(side, "elbow"))),
+        a: point(required(sideName(side, "shoulder"))),
+        b: point(required(sideName(side, "elbow"))),
         radius: scale * 0.17,
       }]);
     }
     case "forearm": {
-      const scale = shoulderScale(points);
+      const scale = shoulderScale(points, options);
       return Object.freeze([{
         kind: "capsule",
-        a: point(requiredPoint(points, sideName(side, "elbow"))),
-        b: point(requiredPoint(points, sideName(side, "wrist"))),
+        a: point(required(sideName(side, "elbow"))),
+        b: point(required(sideName(side, "wrist"))),
         radius: scale * 0.13,
       }]);
     }
     case "full_arm": {
-      const scale = shoulderScale(points);
+      const scale = shoulderScale(points, options);
       const shoulder = point(
-        requiredPoint(points, sideName(side, "shoulder")),
+        required(sideName(side, "shoulder")),
       );
-      const elbow = point(requiredPoint(points, sideName(side, "elbow")));
-      const wrist = point(requiredPoint(points, sideName(side, "wrist")));
-      const index = point(requiredPoint(points, sideName(side, "index")));
-      const pinky = point(requiredPoint(points, sideName(side, "pinky")));
+      const elbow = point(required(sideName(side, "elbow")));
+      const wrist = point(required(sideName(side, "wrist")));
+      const index = point(required(sideName(side, "index")));
+      const pinky = point(required(sideName(side, "pinky")));
       return Object.freeze([
         {
           kind: "capsule",
@@ -363,20 +387,20 @@ function sidedLimbPrimitives(
       ]);
     }
     case "hand": {
-      const scale = shoulderScale(points);
+      const scale = shoulderScale(points, options);
       return Object.freeze([{
         kind: "capsule",
-        a: point(requiredPoint(points, sideName(side, "wrist"))),
+        a: point(required(sideName(side, "wrist"))),
         b: midpoint(
-          point(requiredPoint(points, sideName(side, "index"))),
-          point(requiredPoint(points, sideName(side, "pinky"))),
+          point(required(sideName(side, "index"))),
+          point(required(sideName(side, "pinky"))),
         ),
         radius: scale * 0.12,
       }]);
     }
     case "hip": {
-      const scale = hipScale(points);
-      const hip = point(requiredPoint(points, sideName(side, "hip")));
+      const scale = hipScale(points, options);
+      const hip = point(required(sideName(side, "hip")));
       return Object.freeze([{
         kind: "ellipse",
         centre: hip,
@@ -385,31 +409,31 @@ function sidedLimbPrimitives(
       }]);
     }
     case "thigh": {
-      const scale = hipScale(points);
+      const scale = hipScale(points, options);
       return Object.freeze([{
         kind: "capsule",
-        a: point(requiredPoint(points, sideName(side, "hip"))),
-        b: point(requiredPoint(points, sideName(side, "knee"))),
+        a: point(required(sideName(side, "hip"))),
+        b: point(required(sideName(side, "knee"))),
         radius: scale * 0.24,
       }]);
     }
     case "lower_leg": {
-      const scale = hipScale(points);
+      const scale = hipScale(points, options);
       return Object.freeze([{
         kind: "capsule",
-        a: point(requiredPoint(points, sideName(side, "knee"))),
-        b: point(requiredPoint(points, sideName(side, "ankle"))),
+        a: point(required(sideName(side, "knee"))),
+        b: point(required(sideName(side, "ankle"))),
         radius: scale * 0.18,
       }]);
     }
     case "full_leg": {
-      const scale = hipScale(points);
-      const hip = point(requiredPoint(points, sideName(side, "hip")));
-      const knee = point(requiredPoint(points, sideName(side, "knee")));
-      const ankle = point(requiredPoint(points, sideName(side, "ankle")));
-      const heel = point(requiredPoint(points, sideName(side, "heel")));
+      const scale = hipScale(points, options);
+      const hip = point(required(sideName(side, "hip")));
+      const knee = point(required(sideName(side, "knee")));
+      const ankle = point(required(sideName(side, "ankle")));
+      const heel = point(required(sideName(side, "heel")));
       const footIndex = point(
-        requiredPoint(points, sideName(side, "foot_index")),
+        required(sideName(side, "foot_index")),
       );
       return Object.freeze([
         {
@@ -433,13 +457,13 @@ function sidedLimbPrimitives(
       ]);
     }
     case "foot": {
-      const scale = hipScale(points);
-      const ankle = point(requiredPoint(points, sideName(side, "ankle")));
-      const heel = point(requiredPoint(points, sideName(side, "heel")));
+      const scale = hipScale(points, options);
+      const ankle = point(required(sideName(side, "ankle")));
+      const heel = point(required(sideName(side, "heel")));
       return Object.freeze([{
         kind: "capsule",
         a: midpoint(ankle, heel),
-        b: point(requiredPoint(points, sideName(side, "foot_index"))),
+        b: point(required(sideName(side, "foot_index"))),
         radius: scale * 0.17,
       }]);
     }
@@ -454,6 +478,7 @@ function sidedLimbPrimitives(
 export function buildInkPoseGeometryPrimitives(
   tuple: InkAnatomyTuple,
   analysis: InkPoseAnalysis,
+  options?: InkPoseGeometryBuildOptions,
 ): readonly InkPoseGeometryPrimitive[] {
   assertSupportedInkAnatomyTuple(tuple);
   const points = pointMap(analysis);
@@ -484,7 +509,7 @@ export function buildInkPoseGeometryPrimitives(
       "A bilateral tattoo zone requires an anatomical side",
     );
   }
-  return sidedLimbPrimitives(points, tuple.zone, tuple.side);
+  return sidedLimbPrimitives(points, tuple.zone, tuple.side, options);
 }
 
 function pointSegmentDistance(
@@ -622,6 +647,7 @@ function paintPrimitive(
 export function buildInkPoseAnatomyGuide(
   tuple: InkAnatomyTuple,
   analysis: InkPoseAnalysis,
+  options?: InkPoseGeometryBuildOptions,
 ): InkPoseAnatomyGuide {
   assertSupportedInkAnatomyTuple(tuple);
   if (
@@ -635,7 +661,7 @@ export function buildInkPoseAnatomyGuide(
     );
   }
   const points = pointMap(analysis);
-  const primitives = buildInkPoseGeometryPrimitives(tuple, analysis);
+  const primitives = buildInkPoseGeometryPrimitives(tuple, analysis, options);
   if (primitives.length < 1 || primitives.length > 4) {
     throw new InkPoseGeometryError(
       "geometry_invalid",
@@ -643,10 +669,24 @@ export function buildInkPoseAnatomyGuide(
     );
   }
   const mask = new Uint8Array(analysis.width * analysis.height);
-  const segments = primitives
-    .map((primitive) => paintPrimitive(mask, primitive, analysis))
-    .filter((value): value is NormalizedInkZone => value !== null);
-  if (segments.length !== primitives.length || !mask.some(Boolean)) {
+  const visible = primitives
+    .map((primitive, index) => ({
+      index,
+      segment: paintPrimitive(mask, primitive, analysis),
+    }))
+    .filter((
+      value,
+    ): value is { index: number; segment: NormalizedInkZone } =>
+      value.segment !== null
+    );
+  if (
+    (
+      !options?.allowClippedVisibility
+      && visible.length !== primitives.length
+    )
+    || visible.length < 1
+    || !mask.some(Boolean)
+  ) {
     throw new InkPoseGeometryError(
       "surface_empty",
       "Tattoo anatomy is not materially visible in the person mask",
@@ -665,7 +705,12 @@ export function buildInkPoseAnatomyGuide(
     width: analysis.width,
     height: analysis.height,
     mask,
-    normalizedSegments: Object.freeze(segments),
+    normalizedSegments: Object.freeze(
+      visible.map(({ segment }) => segment),
+    ),
+    visiblePrimitiveIndexes: Object.freeze(
+      visible.map(({ index }) => index),
+    ),
     minimumLandmarkScore,
   });
 }

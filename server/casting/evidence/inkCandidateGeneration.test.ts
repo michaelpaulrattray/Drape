@@ -282,7 +282,7 @@ function dependencies(
           }
         }
         return [reference.featureVersionId, {
-          recipeVersion: "ink.pose-projection.v1" as const,
+          recipeVersion: "ink.pose-projection.v2" as const,
           tuple: input.features[index]!.anatomy as never,
           width: 256,
           height: 256,
@@ -301,7 +301,7 @@ function dependencies(
     localizeAuthoring: vi.fn(async (_dependencies, input) => ({
       guidedTarget: input.target,
       anatomyGuide: {
-        recipeVersion: "ink.pose-geometry.v1" as const,
+        recipeVersion: "ink.pose-geometry.v2" as const,
         tuple: input.anatomy,
         width: 256,
         height: 256,
@@ -312,6 +312,7 @@ function dependencies(
           width: 0.9,
           height: 0.9,
         }],
+        visiblePrimitiveIndexes: [0],
         minimumLandmarkScore: 0.99,
       },
     })),

@@ -58,11 +58,15 @@ const BASE_POINTS: Readonly<
 function analysis(options?: {
   mirrored?: boolean;
   rightArmRaised?: boolean;
+  coordinateOverrides?: Partial<
+    Record<InkPoseKeypointName, readonly [number, number]>
+  >;
 }): InkPoseAnalysis {
   const width = 240;
   const height = 320;
   const landmarks = INK_POSE_KEYPOINTS.map((name) => {
-    let [baseX, y] = BASE_POINTS[name]!;
+    let [baseX, y] =
+      options?.coordinateOverrides?.[name] ?? BASE_POINTS[name]!;
     if (options?.rightArmRaised && name === "right_elbow") {
       [baseX, y] = [0.31, 0.2];
     }
@@ -206,6 +210,44 @@ describe("deterministic tattoo pose projection", () => {
     expect(result.normalizedSegments).toHaveLength(1);
   });
 
+  it("projects only the visible sleeve segments when the hand is cropped", () => {
+    const tuple = {
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const targetAnalysis = analysis({
+      coordinateOverrides: {
+        right_wrist: [0.44, 1.064],
+        right_index: [0.51, 1.125],
+        right_pinky: [0.45, 1.137],
+      },
+    });
+    const targetGuide = buildInkPoseAnatomyGuide(
+      tuple,
+      targetAnalysis,
+      { allowClippedVisibility: true },
+    );
+
+    const result = projectAcceptedInkFeatureMask({
+      tuple,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask: featureMask(sourceGuide, () => true),
+      targetAnalysis,
+      targetGuide,
+    });
+
+    expect(targetGuide.visiblePrimitiveIndexes).toEqual([0, 1]);
+    expect(result.normalizedSegments).toHaveLength(2);
+    expect(result.projectedPixelCount).toBeGreaterThan(20);
+    expect(result.normalizedSegments.every(
+      (segment) => segment.y + segment.height <= 1,
+    )).toBe(true);
+  });
+
   it("rejects a feature mask outside its source anatomy authority", () => {
     const tuple = {
       zone: "upper_arm",
@@ -256,6 +298,36 @@ describe("deterministic tattoo pose projection", () => {
         featureMask: featureMask(sourceGuide, (_x, y) => y < 0.37),
         targetAnalysis: analysis(),
         targetGuide: wrongTargetGuide,
+      })
+    ).toThrowError(
+      expect.objectContaining<Partial<InkPoseProjectionError>>({
+        code: "authority_mismatch",
+      }),
+    );
+  });
+
+  it("rejects reordered clipped-segment authority", () => {
+    const tuple = {
+      zone: "full_arm",
+      surface: "circumferential",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const targetAnalysis = analysis();
+    const targetGuide = buildInkPoseAnatomyGuide(tuple, targetAnalysis);
+
+    expect(() =>
+      projectAcceptedInkFeatureMask({
+        tuple,
+        sourceAnalysis,
+        sourceGuide,
+        featureMask: featureMask(sourceGuide, () => true),
+        targetAnalysis,
+        targetGuide: {
+          ...targetGuide,
+          visiblePrimitiveIndexes: [1, 0, 2],
+        },
       })
     ).toThrowError(
       expect.objectContaining<Partial<InkPoseProjectionError>>({

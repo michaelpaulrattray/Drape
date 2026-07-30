@@ -47,6 +47,7 @@ function guide(maskBounds: {
       width: maskBounds.width / WIDTH,
       height: maskBounds.height / HEIGHT,
     }],
+    visiblePrimitiveIndexes: [0],
     minimumLandmarkScore: 0.99,
   };
 }
