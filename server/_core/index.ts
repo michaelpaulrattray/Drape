@@ -310,6 +310,14 @@ async function startServer() {
     }).catch(err => {
       log.error({ err }, "Scheduler: failed to start storage-cleanup worker");
     });
+
+    // Casting V2 retention: expires idle sessions and hands unreachable
+    // candidate objects to the cleanup worker. No-ops while the scope is off.
+    import("../castingV2/candidateRetention").then(({ startCandidateRetentionSweep }) => {
+      startCandidateRetentionSweep();
+    }).catch(err => {
+      log.error({ err }, "Scheduler: failed to start casting candidate retention sweep");
+    });
   });
 
   // Register shutdown handlers after server is listening

@@ -366,18 +366,40 @@ function collectEnvVars(): Entity[] {
     .map((name) => ({ id: `env:${name}`, name, valueRecorded: false }));
 }
 
+const FLAG_NAME = /^[A-Z0-9_]*(SCOPE|ENABLE|STAGE)[A-Z0-9_]*$/;
+
+/**
+ * The flag inventory.
+ *
+ * Three access forms, because this repo uses all three and an inventory that
+ * saw only one under-reported exactly the flags that matter most. Rollout
+ * scopes are read as `process.env[SOME_SCOPE_ENV]` through an exported
+ * constant — the dot form alone missed every one of them, which meant the
+ * Atlas showed four flags while the server validated eight.
+ */
 function collectFlags(): Entity[] {
   const flags = new Set<string>();
   for (const file of sourceFiles.filter((f) => f.startsWith("server/"))) {
     const source = read(file);
-    for (const hit of source.matchAll(/process\.env\.([A-Z0-9_]*(SCOPE|ENABLE|STAGE)[A-Z0-9_]*)/g)) {
-      flags.add(hit[1]);
+    // process.env.NAME
+    for (const hit of source.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
+      if (FLAG_NAME.test(hit[1])) flags.add(hit[1]);
+    }
+    // process.env["NAME"]
+    for (const hit of source.matchAll(/process\.env\[\s*["']([A-Z0-9_]+)["']\s*\]/g)) {
+      if (FLAG_NAME.test(hit[1])) flags.add(hit[1]);
+    }
+    // const SOMETHING_ENV = "NAME" — the constant that the bracket form reads.
+    for (const hit of source.matchAll(/const\s+[A-Z0-9_]+_ENV\s*=\s*["']([A-Z0-9_]+)["']/g)) {
+      if (FLAG_NAME.test(hit[1])) flags.add(hit[1]);
     }
   }
   return [...flags].sort().map((name) => ({
     id: `flag:${name}`,
     name,
-    grammar: "off|all|users:<ids>",
+    // Stated per flag rather than assumed: an ENABLE_ switch is a boolean and
+    // describing it with the scope grammar was simply untrue.
+    grammar: name.startsWith("ENABLE_") ? "true|false" : "off|all|users:<ids>",
   }));
 }
 

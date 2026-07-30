@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "afc11a252ac268bb"
+    "sourceFingerprint": "aaa7a562b2a96039"
   },
   "domains": [
     {
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 36
+      "moduleCount": 37
     },
     {
       "id": "domain:billing",
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 1
+      "moduleCount": 8
     },
     {
       "id": "domain:client-shared",
@@ -48,7 +48,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 41
+      "moduleCount": 42
     },
     {
       "id": "domain:evidence",
@@ -2992,8 +2992,50 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/briefCompiler.ts",
+      "path": "server/castingV2/briefCompiler.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/candidateRetention.ts",
+      "path": "server/castingV2/candidateRetention.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/candidateService.ts",
+      "path": "server/castingV2/candidateService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castingV2Scope.ts",
+      "path": "server/castingV2/castingV2Scope.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/rollEngine.ts",
+      "path": "server/castingV2/rollEngine.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/rollProjection.ts",
+      "path": "server/castingV2/rollProjection.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/rollRecovery.ts",
       "path": "server/castingV2/rollRecovery.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/rollService.ts",
+      "path": "server/castingV2/rollService.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -3048,6 +3090,12 @@
     {
       "id": "module:server/db/bugReports.ts",
       "path": "server/db/bugReports.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2.ts",
+      "path": "server/db/castingV2.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -3468,6 +3516,12 @@
     {
       "id": "module:server/routes/bugReports.ts",
       "path": "server/routes/bugReports.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/castingV2.ts",
+      "path": "server/routes/castingV2.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -4900,6 +4954,106 @@
       "strictInput": false,
       "rateLimited": true,
       "file": "server/routes/bugReports.ts"
+    },
+    {
+      "id": "route:castingV2.cancel",
+      "namespace": "castingV2",
+      "name": "cancel",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.config",
+      "namespace": "castingV2",
+      "name": "config",
+      "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": false,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.createRoll",
+      "namespace": "castingV2",
+      "name": "createRoll",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.createSession",
+      "namespace": "castingV2",
+      "name": "createSession",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.discard",
+      "namespace": "castingV2",
+      "name": "discard",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.follow",
+      "namespace": "castingV2",
+      "name": "follow",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.getRoll",
+      "namespace": "castingV2",
+      "name": "getRoll",
+      "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.getSession",
+      "namespace": "castingV2",
+      "name": "getSession",
+      "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.keep",
+      "namespace": "castingV2",
+      "name": "keep",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.undo",
+      "namespace": "castingV2",
+      "name": "undo",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
     },
     {
       "id": "route:credits.checkBalance",
@@ -6416,6 +6570,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:FAL_KEY",
+      "name": "FAL_KEY",
+      "valueRecorded": false
+    },
+    {
       "id": "env:GEMINI_API_KEY",
       "name": "GEMINI_API_KEY",
       "valueRecorded": false
@@ -6593,27 +6752,57 @@
   ],
   "flags": [
     {
+      "id": "flag:CASTING_V2_SCOPE",
+      "name": "CASTING_V2_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:ENABLE_EVIDENCE_CANDIDATE_WORKER",
       "name": "ENABLE_EVIDENCE_CANDIDATE_WORKER",
-      "grammar": "off|all|users:<ids>"
+      "grammar": "true|false"
     },
     {
       "id": "flag:ENABLE_FINAL_MODEL_DELETE",
       "name": "ENABLE_FINAL_MODEL_DELETE",
-      "grammar": "off|all|users:<ids>"
+      "grammar": "true|false"
     },
     {
       "id": "flag:ENABLE_STORAGE_CLEANUP_WORKER",
       "name": "ENABLE_STORAGE_CLEANUP_WORKER",
+      "grammar": "true|false"
+    },
+    {
+      "id": "flag:R7_EVIDENCE_COMPOSER_SCOPE",
+      "name": "R7_EVIDENCE_COMPOSER_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:R7_EVIDENCE_INGEST_SCOPE",
+      "name": "R7_EVIDENCE_INGEST_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:R7_EVIDENCE_PACKAGE_SCOPE",
+      "name": "R7_EVIDENCE_PACKAGE_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
       "id": "flag:R7_SNAPSHOT_READ_SCOPE",
       "name": "R7_SNAPSHOT_READ_SCOPE",
       "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:R7_SNAPSHOT_RESTORE_SCOPE",
+      "name": "R7_SNAPSHOT_RESTORE_SCOPE",
+      "grammar": "off|all|users:<ids>"
     }
   ],
   "workers": [
+    {
+      "id": "worker:startCandidateRetentionSweep",
+      "name": "startCandidateRetentionSweep",
+      "startedFrom": "server/_core/index.ts"
+    },
     {
       "id": "worker:startGenerationOperationRecoverySweep",
       "name": "startGenerationOperationRecoverySweep",
@@ -6747,6 +6936,18 @@
       "id": "cost:multiView",
       "name": "multiView",
       "credits": 300,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:rollCandidate",
+      "name": "rollCandidate",
+      "credits": 20,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:rollCandidateCount",
+      "name": "rollCandidateCount",
+      "credits": 8,
       "file": "server/casting/castingCreditCosts.ts"
     }
   ],
@@ -7232,8 +7433,24 @@
       "path": "server/castingStudio.test.ts"
     },
     {
+      "id": "test:server/castingV2-roll-domain-db.test.ts",
+      "path": "server/castingV2-roll-domain-db.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castingV2Scope.test.ts",
+      "path": "server/castingV2/castingV2Scope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/rollProjection.test.ts",
+      "path": "server/castingV2/rollProjection.test.ts"
+    },
+    {
       "id": "test:server/castingV2/rollRecovery.test.ts",
       "path": "server/castingV2/rollRecovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/rollService.test.ts",
+      "path": "server/castingV2/rollService.test.ts"
     },
     {
       "id": "test:server/changeRequests.test.ts",
@@ -12221,6 +12438,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/env.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/index.ts",
       "to": "module:server/_core/context.ts",
       "kind": "imports"
@@ -15186,6 +15408,66 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateService.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollEngine.ts",
+      "to": "module:server/providers/falImages.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollEngine.ts",
+      "to": "module:server/providers/providerQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollEngine.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:server/castingV2/briefCompiler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/rollRecovery.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -15207,7 +15489,92 @@
     },
     {
       "from": "module:server/castingV2/rollRecovery.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollRecovery.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/casting/directOperation.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/castingV2/briefCompiler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/castingV2/rollEngine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/castingV2/rollRecovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/db/generations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
@@ -15368,6 +15735,26 @@
     {
       "from": "module:server/db/bugReports.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2.ts",
+      "to": "module:server/casting/modelAvailability.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2.ts",
+      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {
@@ -16567,6 +16954,11 @@
     },
     {
       "from": "module:server/routers.ts",
+      "to": "module:server/routes/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routers.ts",
       "to": "module:server/routes/credits.ts",
       "kind": "imports"
     },
@@ -17118,6 +17510,51 @@
     {
       "from": "module:server/routes/bugReports.ts",
       "to": "module:server/slack/slackCore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/candidateService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/rollProjection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/rollService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/clientRequestId.ts",
       "kind": "imports"
     },
     {

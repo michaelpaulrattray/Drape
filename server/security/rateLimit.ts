@@ -130,6 +130,20 @@ export const RATE_LIMITS = {
     maxRequests: 3,           // 3 checkout attempts per minute
     keyPrefix: 'billing',
   },
+  // Casting V2 sheet mutations (keep/discard/undo). Generous, because these
+  // are one-tap card actions a real user fires in bursts — the limit exists so
+  // a loop cannot hammer the database, not to pace human hands (plan §J).
+  castingSheet: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 120,
+    keyPrefix: 'casting_sheet',
+  },
+  // Roll polling at the 2.5s cadence, with headroom for a second tab.
+  castingPoll: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 60,
+    keyPrefix: 'casting_poll',
+  },
 } as const;
 
 /**

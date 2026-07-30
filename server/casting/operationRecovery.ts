@@ -837,12 +837,20 @@ export async function adjudicateStaleGenerationOperation(
     }
   }
   if (operation.kind === "castingV2.roll") {
-    const recovered = await recoverCastingV2RollOperation(operation);
+    const recovered = await recoverCastingV2RollOperation({
+      ...operation,
+      // Narrowed above; the row's column type is a bare string.
+      status: operation.status === "claimed" ? "claimed" : "running",
+    });
     if (recovered.type === "durable_success") return "durable_success";
     // Partial and total failure both end the same way for the sweep: the work
     // is terminal and the owed slices have been refunded. The distinction is
     // recorded on the roll, which is what the client reads.
     if (recovered.type === "partial" || recovered.type === "paid_failure") return "paid_failure";
+    // The crash landed before the charge. Terminal, and nothing was taken —
+    // the sweep must not report this as a paid failure, because "paid" is what
+    // downstream accounting reads to decide money moved.
+    if (recovered.type === "free_failure") return "free_failure";
     if (recovered.type === "recovery_required") {
       await markGenerationOperationRecoveryRequired({
         userId: operation.userId,

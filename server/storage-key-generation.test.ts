@@ -32,6 +32,11 @@ describe("storage object keys use cryptographic randomness", () => {
 
     expect(writers.map(({ relative }) => relative).sort()).toEqual([
       "casting/aiService.ts",
+      // Casting V2 candidate landing (M4). Candidate images sit at public
+      // bucket URLs, so a guessable key is the only thing between a
+      // customer's sheet and anyone who guesses it — this writer is exactly
+      // the kind this pin exists for.
+      "castingV2/rollService.ts",
       "routes/moderatorAttachments.ts",
       "routes/profile.ts",
       "routes/wardrobe.ts",

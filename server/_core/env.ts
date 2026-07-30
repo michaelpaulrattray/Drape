@@ -22,6 +22,10 @@ import {
   SNAPSHOT_RESTORE_SCOPE_ENV,
   validateSnapshotRestoreEnvironment,
 } from "../casting/snapshotRestoreScope";
+import {
+  CASTING_V2_SCOPE_ENV,
+  validateCastingV2Environment,
+} from "../castingV2/castingV2Scope";
 
 /**
  * Vars the server cannot run without. Each entry explains what breaks when
@@ -97,6 +101,15 @@ export function validateEnv(): void {
   validateEvidencePackageEnvironment({
     scope: process.env[EVIDENCE_PACKAGE_SCOPE_ENV],
     composerScope: process.env[EVIDENCE_COMPOSER_SCOPE_ENV],
+  });
+  // Casting V2 is off by default and cannot be switched on without the two
+  // things it silently depends on: a configured image transport (or every
+  // paid roll fails at dispatch) and the cleanup worker (or candidate objects
+  // outlive the sheets that promised to purge them).
+  validateCastingV2Environment({
+    scope: process.env[CASTING_V2_SCOPE_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+    transportConfigured: Boolean(process.env.FAL_KEY),
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

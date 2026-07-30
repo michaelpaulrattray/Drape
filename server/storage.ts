@@ -69,6 +69,19 @@ function buildPublicUrl(publicUrl: string, key: string): string {
   return `${publicUrl}/${encodedKey}`;
 }
 
+/**
+ * The public URL for a key we already hold.
+ *
+ * Casting V2 persists candidate *keys* rather than URLs, because a candidate's
+ * object and its row are deleted together and no durable record may outlive
+ * either (§J). Projections therefore build the URL at read time instead of
+ * storing one — this is the single place that reconstruction happens.
+ */
+export function storagePublicUrl(key: string): string {
+  const config = getStorageConfig();
+  return buildPublicUrl(config.publicUrl, normalizeKey(key));
+}
+
 const MAX_FORK_COPY_BYTES = 20 * 1024 * 1024;
 
 function destroyStorageBody(body: unknown): void {

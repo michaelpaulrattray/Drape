@@ -201,6 +201,9 @@ export async function completeDirectOperationSuccess(input: {
   result: PublicOperationResult;
   chargedCredits: number;
   refundedCredits: number;
+  /** A roll that delivered some of its eight is a `partial`, not a success
+   *  with a footnote — the receipt says which, and refunds prove it. */
+  terminalStatus?: "partial" | "succeeded";
   landing?: {
     status: GenerationOperationLandingStatus;
     landedItemId?: number | null;

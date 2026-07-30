@@ -171,6 +171,9 @@ Most of these followed the same path: helper or rule written, docs written, todo
 - `R7_EVIDENCE_INGEST_SCOPE` — `off`/absent, `all`, or `users:<ids>`; any non-off value fails startup unless the cleanup worker and private evidence adapter are fully configured
 - `ENABLE_STORAGE_CLEANUP_WORKER=true` — required before evidence ingest can be enabled
 - `R2_EVIDENCE_BUCKET`, `R2_EVIDENCE_ACCESS_KEY_ID`, `R2_EVIDENCE_SECRET_ACCESS_KEY` — dedicated private evidence bucket and least-privilege credential; uses `R2_ENDPOINT` but never `R2_PUBLIC_URL`
+- `CASTING_V2_SCOPE` — `off`/absent, `all`, or `users:<ids>`; gates the whole `castingV2.*` namespace, which is **spendable surface** (a roll charges credits). Any non-off value fails startup unless `ENABLE_STORAGE_CLEANUP_WORKER=true` and `FAL_KEY` is set — without the worker, candidate objects outlive the sheets §G.6 promises to purge; without the transport, every paid roll fails at dispatch
+- `FAL_KEY` — fal.ai credential; the casting image transport (GPT Image 2 for rolls, Nano Banana Pro for identity work). `OPENROUTER_API_KEY` — text transport (brief interpreter, treatment stage) and image fallback
+- `ROLL_IMAGE_CONCURRENCY` (default 8), `ROLL_IMAGE_MAX_QUEUE_DEPTH` (default 64) — casting provider budget; roll creation refuses with a real `TOO_MANY_REQUESTS` when a whole roll would not fit
 - `RESEND_API_KEY` — verification emails (signup breaks without it unless dev-mode skip applies)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth login
 - `VITE_STRIPE_PUBLISHABLE_KEY` — client-side Stripe

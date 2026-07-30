@@ -90,7 +90,14 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       "casting/operationRecovery.ts",
       "casting/packagePricing.ts",
       "casting/snapshotTransitions.ts",
+      // Casting V2 (M4) imports the declaration-only price module. The purity
+      // rule this test enforces is about what `castingCreditCosts.ts` may
+      // depend on, not about who may read a price — and a new consumer of the
+      // prices is exactly the kind of change this inventory should surface.
+      "castingV2/rollService.ts",
+      "db/castingV2.ts",
       "db/inkAddCandidates.ts",
+      "routes/castingV2.ts",
       "routes/generation/castingExport.ts",
     ]);
 

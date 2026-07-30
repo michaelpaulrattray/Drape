@@ -31,6 +31,7 @@ import { boardsRouter } from "./routes/boards";
 import { boardOpsRouter } from "./routes/boardOps";
 import { lobbyRouter } from "./routes/lobby";
 import { evidenceRouter } from "./routes/evidence";
+import { castingV2Router } from "./routes/castingV2";
 
 export const appRouter = router({
   system: systemRouter,
@@ -59,6 +60,9 @@ export const appRouter = router({
   boardOps: boardOpsRouter,
   lobby: lobbyRouter,
   evidence: evidenceRouter,
+  // Casting V2. Additive namespace; every procedure refuses unless
+  // CASTING_V2_SCOPE admits the caller. Legacy routers are untouched.
+  castingV2: castingV2Router,
 });
 
 export type AppRouter = typeof appRouter;

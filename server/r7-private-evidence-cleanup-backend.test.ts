@@ -88,6 +88,11 @@ describe("R7-7C5A private evidence cleanup backend", () => {
     expect(callers).toEqual([
       "server/casting/evidence/evidenceFork.ts",
       "server/casting/finalCastDeletion.ts",
+      // Casting V2 candidate retention (M4). It names `public_r2` explicitly
+      // for every item, which is what this pin is here to require: candidate
+      // images live in the public bucket, evidence does not, and a manifest
+      // that left the backend implicit could delete from the wrong one.
+      "server/castingV2/candidateRetention.ts",
       "server/db/accountDeletion.ts",
       "server/db/evidenceCandidates.ts",
       "server/db/evidenceOperations.ts",

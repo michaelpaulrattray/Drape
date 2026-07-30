@@ -1,0 +1,609 @@
+/**
+ * The roll service — the only writer of roll state (plan §E).
+ *
+ * THE SEQUENCE, which is the whole design:
+ *
+ *   compile → admit → claim → locked transaction → rows → running →
+ *   pinned deduct → dispatch → per-slice settlement → receipt
+ *
+ * Each arrow is load-bearing:
+ *
+ * - **compile and admit first**, because both can refuse, and a refusal before
+ *   the claim costs the user nothing and leaves no operation to explain.
+ * - **claim before rows**, so a replayed `clientRequestId` returns the roll
+ *   that already exists instead of creating a second one for the same money
+ *   (§H.7). Rolls take no exclusive lock — the lock grammar is model-scoped
+ *   and a roll has no model; concurrent rolls in one session are legal
+ *   immutable versions (§E).
+ * - **rows before the charge**, so the recovery adjudicator's rule holds: rows
+ *   without a ledger charge mean a crash before the money moved, and nothing
+ *   is owed back. Reversing these two would make every crash in the window
+ *   either a silent overcharge or an invented refund.
+ * - **dispatch after the charge**, so nothing can be delivered unpaid.
+ * - **per-slice settlement**, because a roll is eight independently refundable
+ *   units. The whole-charge refund that `withAtomicCredits` performs on throw
+ *   is wrong here — it would refund a candidate the user actually received —
+ *   so this path charges directly with the pinned reference and compensates
+ *   slice by slice, exactly as `mintPackage` does for view slots.
+ *
+ * Dispatch is awaited in-request under a heartbeated lease, matching every
+ * other long operation in this repo — the mint package executor and the
+ * evidence package sync executor both run this way. (Named by description
+ * rather than by symbol: those symbols carry caller-inventory pins, and a
+ * comment must not make this file look like a call site.) The client does not
+ * wait on dispatch: rows commit
+ * before dispatch, so the 2.5s roll poll shows eight skeletons within one tick
+ * and each tile swaps on its own candidate's terminal event.
+ */
+import { randomUUID } from "node:crypto";
+import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
+
+import { users } from "../../drizzle/schema";
+import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
+import { recordRefund, refundTruth } from "../casting/atomicCredits";
+import {
+  beginDirectOperation,
+  completeDirectOperationFailure,
+  completeDirectOperationSuccess,
+  failClaimedDirectOperation,
+} from "../casting/directOperation";
+import { operationChargeReference } from "../casting/operationContract";
+import { deductCredits } from "../db/credits";
+import { getDb } from "../db/connection";
+import { createGeneration, updateGeneration } from "../db/generations";
+import { markGenerationOperationRunning } from "../db/generationOperations";
+import {
+  CastingV2OwnershipError,
+  cancelQueuedCandidate,
+  createRollWithCandidates,
+  failCandidate,
+  getOwnedRoll,
+  getRollByOperation,
+  landCandidate,
+  listRollCandidates,
+  markCandidateDispatched,
+  setRollStatus,
+  touchCastingSession,
+} from "../db/castingV2";
+import { storagePut } from "../storage";
+import { createModuleLogger } from "../logging/logger";
+import { ProviderError } from "../providers/types";
+import type { CreativeEngine } from "../providers/types";
+import {
+  BriefRefusal,
+  deterministicBriefCompiler,
+  type BriefCompiler,
+  type CompiledRollBrief,
+} from "./briefCompiler";
+import { admitRoll, castingCreativeEngine, type AdmissionDecision } from "./rollEngine";
+import { candidateChargeReference } from "./rollRecovery";
+
+const log = createModuleLogger("castingV2/rollService");
+
+/** Objects live under one namespace so cleanup and audit can find them. */
+const CANDIDATE_KEY_PREFIX = "casting-v2/candidates";
+
+export type RollServiceDependencies = {
+  compileBrief?: BriefCompiler;
+  engine?: () => CreativeEngine;
+  admit?: (candidateCount: number) => AdmissionDecision;
+  begin?: typeof beginDirectOperation;
+  markRunning?: typeof markGenerationOperationRunning;
+  deduct?: typeof deductCredits;
+  storeImage?: (input: { bytes: Buffer; contentType: string }) => Promise<{ key: string }>;
+};
+
+export type CreateRollInput = {
+  userId: number;
+  clientRequestId: string;
+  sessionPublicId: string;
+  briefText: string;
+  /** Follow lineage: a `ready` candidate of this user, in this session. */
+  followCandidatePublicId?: string | null;
+};
+
+export type RollResult = {
+  rollId: number;
+  rollPublicId: string;
+  chargedCredits: number;
+  refundedCredits: number;
+  ready: number;
+  failed: number;
+};
+
+async function defaultStoreImage(input: { bytes: Buffer; contentType: string }) {
+  const extension = input.contentType === "image/jpeg" ? "jpg" : "png";
+  // Cryptographic UUID keys, never a pseudo-random source: a guessable key is
+  // the only thing standing between a public-bucket candidate image and
+  // anyone who guesses it. (The repo-wide guard rejects the weak API by name
+  // in any storage writer, so this comment names it by description.)
+  const { key } = await storagePut(
+    `${CANDIDATE_KEY_PREFIX}/${randomUUID()}.${extension}`,
+    input.bytes,
+    input.contentType,
+  );
+  return { key };
+}
+
+/**
+ * Frozen accounts cannot spend. Checked before the claim so the refusal is
+ * free — the same check `withAtomicCredits` performs, hoisted to where it can
+ * refuse without leaving an operation behind.
+ */
+async function assertNotFrozen(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const [user] = await db
+    .select({ frozenAt: users.frozenAt })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (user?.frozenAt) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "Your account is currently under review. Generations are temporarily paused while we verify your billing records.",
+    });
+  }
+}
+
+export async function createRoll(
+  dependencies: RollServiceDependencies,
+  input: CreateRollInput,
+): Promise<RollResult> {
+  const compile = dependencies.compileBrief ?? deterministicBriefCompiler;
+  const admit = dependencies.admit ?? admitRoll;
+  const candidateCount = CASTING_V2_COSTS.rollCandidateCount;
+  const price = CASTING_V2_COSTS.rollCandidate * candidateCount;
+
+  await assertNotFrozen(input.userId);
+
+  // §H.8: an honest refusal at the door, with nothing claimed and nothing
+  // charged. Never a silent queue of paid work.
+  const admission = admit(candidateCount);
+  if (!admission.admitted) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message:
+        admission.reason === "busy"
+          ? "The studio is busy right now. Try that roll again in a moment — you were not charged."
+          : "Casting is temporarily unavailable. Nothing was charged.",
+    });
+  }
+
+  let compiled: CompiledRollBrief;
+  try {
+    compiled = await compile({
+      briefText: input.briefText,
+      candidateCount,
+      followPersonaLine: null,
+    });
+  } catch (error) {
+    if (error instanceof BriefRefusal) {
+      // A free refusal: no claim, no charge, no operation to reconcile.
+      throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+    }
+    throw error;
+  }
+
+  const begin = dependencies.begin ?? beginDirectOperation;
+  const gate = await begin({
+    userId: input.userId,
+    clientRequestId: input.clientRequestId,
+    kind: "castingV2.roll",
+    payload: {
+      sessionPublicId: input.sessionPublicId,
+      briefText: input.briefText,
+      followCandidatePublicId: input.followCandidatePublicId ?? null,
+    },
+  });
+
+  if (gate.type === "replay") {
+    // Idempotency, not an error (§F): the same request id returns the roll it
+    // already created rather than rolling — and charging — a second time.
+    const existing = await getRollByOperation(input.userId, gate.operationId);
+    if (!existing) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "That roll has already been used for a different request.",
+      });
+    }
+    const candidates = await listRollCandidates(input.userId, existing.id);
+    return {
+      rollId: existing.id,
+      rollPublicId: existing.publicId,
+      chargedCredits: existing.priceCredits,
+      refundedCredits: 0,
+      ready: candidates.filter((candidate) => candidate.status === "ready").length,
+      failed: candidates.filter((candidate) => candidate.status === "failed").length,
+    };
+  }
+
+  // ---- the locked transaction. Nothing here spends money. ----
+  let created;
+  try {
+    created = await createRollWithCandidates({
+      userId: input.userId,
+      sessionPublicId: input.sessionPublicId,
+      operationId: gate.operationId,
+      briefText: input.briefText,
+      compiledBrief: compiled.compiledBrief,
+      lockContract: compiled.lockContract,
+      cohortKey: compiled.cohortKey,
+      styleKey: compiled.styleKey,
+      styleProfile: compiled.styleProfile,
+      parentCandidatePublicId: input.followCandidatePublicId ?? null,
+      candidates: compiled.candidates.map((spec) => ({
+        publicId: randomUUID(),
+        position: spec.position,
+        personaLine: spec.personaLine,
+        internalPrompt: { prompt: spec.prompt },
+      })),
+    });
+  } catch (error) {
+    // The claim is still `claimed` and no credits moved, so this closes as a
+    // free failure — the claimed finalizer, not the running one.
+    return failClaimedDirectOperation({
+      userId: input.userId,
+      operationId: gate.operationId,
+      error: error instanceof CastingV2OwnershipError
+        ? new TRPCError({ code: "NOT_FOUND", message: error.message })
+        : error,
+    });
+  }
+
+  const { roll, candidates } = created;
+  let chargedCredits = 0;
+  let refundedCredits = 0;
+
+  try {
+    await (dependencies.markRunning ?? markGenerationOperationRunning)({
+      userId: input.userId,
+      operationId: gate.operationId,
+      plannedCredits: price,
+      phase: "generating",
+      heartbeat: true,
+    });
+  } catch (error) {
+    await setRollStatus({ userId: input.userId, rollId: roll.id, status: "failed" });
+    return completeDirectOperationFailure({
+      userId: input.userId,
+      operationId: gate.operationId,
+      error,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+  }
+
+  // ---- the pinned deduct ----
+  // The reference is pinned to the operation, never generated per invocation:
+  // the bare fallback would mint a fresh reference on a crash-retry and charge
+  // twice (§H.2). This is the mechanism, not a convention.
+  const deduct = dependencies.deduct ?? deductCredits;
+  const chargeResult = await deduct(
+    input.userId,
+    price,
+    "generation",
+    "Casting roll (pending)",
+    operationChargeReference(gate.operationId),
+    "castingV2",
+  );
+  if (!chargeResult.success) {
+    // Nothing was dispatched, so nothing is owed back. The rows are driven
+    // terminal here rather than left for the sweep — the user is looking at
+    // this sheet right now.
+    for (const candidate of candidates) {
+      await failCandidate({
+        userId: input.userId,
+        candidateId: candidate.id,
+        failureClass: "unpaid",
+      });
+    }
+    await setRollStatus({ userId: input.userId, rollId: roll.id, status: "failed" });
+    return completeDirectOperationFailure({
+      userId: input.userId,
+      operationId: gate.operationId,
+      error: new TRPCError({
+        code: "BAD_REQUEST",
+        message: chargeResult.error || `Not enough credits. A roll costs ${price} credits.`,
+      }),
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+  }
+  chargedCredits = price;
+  await setRollStatus({ userId: input.userId, rollId: roll.id, status: "generating", from: ["pending"] });
+
+  // ---- dispatch: eight independent jobs, one operation ----
+  const engine = (dependencies.engine ?? castingCreativeEngine)();
+  const promptByPosition = new Map(compiled.candidates.map((spec) => [spec.position, spec.prompt]));
+
+  const settlements = await Promise.all(
+    candidates.map((candidate) =>
+      dispatchCandidate({
+        dependencies,
+        engine,
+        userId: input.userId,
+        operationId: gate.operationId,
+        candidate,
+        prompt: promptByPosition.get(candidate.position) ?? "",
+        size: compiled.size,
+        quality: compiled.quality,
+      }),
+    ),
+  );
+
+  const ready = settlements.filter((settlement) => settlement.outcome === "ready").length;
+  const failed = settlements.filter((settlement) => settlement.outcome === "failed").length;
+  const unrecordedRefunds = settlements.filter((settlement) => settlement.refundUnrecorded);
+
+  /*
+    Slices this call refunded, plus slices a concurrent cancel refunded under
+    the same charge. Both belong on this operation's receipt: the receipt is
+    the operation's account of one charge, and a reader comparing charged
+    against refunded must not see a cancel's compensation go missing simply
+    because a different request performed it.
+  */
+  const settled = await listRollCandidates(input.userId, roll.id);
+  const cancelledCredits = settled
+    .filter((candidate) => candidate.status === "cancelled")
+    .reduce((sum, candidate) => sum + candidate.pointsCost, 0);
+  refundedCredits =
+    settlements.reduce((sum, settlement) => sum + settlement.refundedCredits, 0) + cancelledCredits;
+
+  await touchCastingSession(input.userId, roll.sessionId).catch(() => undefined);
+
+  if (unrecordedRefunds.length > 0) {
+    // A refund that did not record is never reported as "you weren't charged".
+    log.error(
+      { operationId: gate.operationId, slices: unrecordedRefunds.length },
+      "[rollService] refund slices failed to record — sealing for support",
+    );
+  }
+
+  /*
+    Was this roll cancelled while it ran? A candidate whose dispatch CAS was
+    lost, or which landed into a cancelled roll, both say yes. It matters for
+    the receipt's honesty: "none of the sheet arrived" is a confession of
+    failure, and saying it to a user who cancelled two seconds ago blames us
+    for their own decision.
+  */
+  const cancelled = settlements.filter(
+    (settlement) => settlement.outcome === "skipped" || settlement.outcome === "expired",
+  ).length;
+
+  if (ready === 0) {
+    // The CAS refuses if cancel already moved the roll to its terminal state.
+    await setRollStatus({ userId: input.userId, rollId: roll.id, status: "failed" });
+    const refundSentence = unrecordedRefunds.length === 0
+      ? `${refundedCredits} credits were refunded.`
+      // Never "you weren't charged" when the ledger says otherwise: quote the
+      // operation so support can reconcile it by hand.
+      : `Part of the refund could not be recorded — quote operation ${gate.operationId} and support will restore the balance.`;
+    return completeDirectOperationFailure({
+      userId: input.userId,
+      operationId: gate.operationId,
+      error: new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: cancelled > 0
+          ? `That roll was cancelled. ${refundSentence}`
+          : `None of the sheet arrived. ${refundSentence}`,
+      }),
+      chargedCredits,
+      refundedCredits,
+    });
+  }
+
+  await setRollStatus({
+    userId: input.userId,
+    rollId: roll.id,
+    status: failed > 0 || cancelled > 0 ? "partial" : "complete",
+  });
+
+  await completeDirectOperationSuccess({
+    userId: input.userId,
+    operationId: gate.operationId,
+    result: { ready, failed, cancelled },
+    chargedCredits,
+    refundedCredits,
+    terminalStatus: failed > 0 || cancelled > 0 ? "partial" : "succeeded",
+  });
+
+  return {
+    rollId: roll.id,
+    rollPublicId: roll.publicId,
+    chargedCredits,
+    refundedCredits,
+    ready,
+    failed,
+  };
+}
+
+type Settlement = {
+  outcome: "ready" | "expired" | "failed" | "skipped";
+  refundedCredits: number;
+  refundUnrecorded?: boolean;
+};
+
+/**
+ * One candidate, start to finish.
+ *
+ * Every exit is either delivered or refunded, never both and never neither —
+ * which is the property the whole billing design rests on.
+ */
+async function dispatchCandidate(input: {
+  dependencies: RollServiceDependencies;
+  engine: CreativeEngine;
+  userId: number;
+  operationId: string;
+  candidate: { id: number; publicId: string; position: number; pointsCost: number };
+  prompt: string;
+  size: `${number}x${number}`;
+  quality: "low" | "medium" | "high";
+}): Promise<Settlement> {
+  const { candidate, userId, operationId } = input;
+  const engineId = input.engine.id;
+
+  const claimed = await markCandidateDispatched({
+    userId,
+    candidateId: candidate.id,
+    provider: "fal",
+    providerModel: engineId,
+  });
+  if (!claimed) {
+    /*
+      Someone cancelled this roll between the charge and this statement. The
+      cancel path already refunded exactly the slices its CAS won, including
+      this one — refunding again here is how a "never both refunded and
+      delivered" system quietly becomes a "sometimes refunded twice" one.
+    */
+    return { outcome: "skipped", refundedCredits: 0 };
+  }
+
+  const audit = await createGeneration({
+    userId,
+    operationId,
+    stepKey: `variation:${candidate.position}`,
+    type: "castingImage",
+    status: "processing",
+    pointsCost: candidate.pointsCost,
+  });
+  const auditId = audit.generationId;
+
+  try {
+    const image = await input.engine.generateCandidate({
+      prompt: input.prompt,
+      size: input.size,
+      quality: input.quality,
+    });
+
+    // Bytes land in OUR storage before anything references them. A provider
+    // URL is never persisted and never projected (§E, §J).
+    const store = input.dependencies.storeImage ?? defaultStoreImage;
+    const stored = await store({ bytes: image.bytes, contentType: image.contentType });
+
+    const landing = await landCandidate({
+      userId,
+      candidateId: candidate.id,
+      imageKey: stored.key,
+      provider: image.provenance.provider,
+      providerModel: image.provenance.model,
+      providerRef: image.provenance.providerRef ?? null,
+    });
+
+    if (auditId) {
+      await updateGeneration(auditId, {
+        status: "completed",
+        completedAt: new Date(),
+      });
+    }
+
+    if (landing === "expired") {
+      /*
+        The roll was cancelled while this was in flight. §F and §H.6 are
+        explicit: work that was delivered is never refunded, and an in-flight
+        candidate runs to completion and is marked expired on landing. The
+        user cancelled after we had already paid the provider for this one.
+      */
+      log.info(
+        { operationId, candidate: candidate.publicId },
+        "[rollService] candidate landed after cancel — kept as expired, not refunded",
+      );
+      return { outcome: "expired", refundedCredits: 0 };
+    }
+    if (landing === "lost") return { outcome: "skipped", refundedCredits: 0 };
+    return { outcome: "ready", refundedCredits: 0 };
+  } catch (error) {
+    const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+    log.warn(
+      { operationId, candidate: candidate.publicId, failureClass },
+      "[rollService] candidate failed — refunding its slice",
+    );
+
+    await failCandidate({ userId, candidateId: candidate.id, failureClass });
+    if (auditId) {
+      await updateGeneration(auditId, {
+        status: "failed",
+        errorMessage: failureClass,
+        completedAt: new Date(),
+      });
+    }
+
+    if (candidate.pointsCost <= 0) return { outcome: "failed", refundedCredits: 0 };
+    const refund = await recordRefund(
+      userId,
+      candidate.pointsCost,
+      "Casting candidate did not arrive",
+      // The same derivation the recovery adjudicator uses. Two call sites, one
+      // helper — byte-identical references are what make a retry idempotent
+      // rather than a second refund.
+      candidateChargeReference(operationId, candidate.publicId),
+    );
+    return {
+      outcome: "failed",
+      refundedCredits: refund.recorded ? refund.amount : 0,
+      refundUnrecorded: !refund.recorded,
+    };
+  }
+}
+
+export type CancelRollResult = {
+  cancelled: number;
+  refundedCredits: number;
+  refundUnrecorded: boolean;
+};
+
+/**
+ * Cancel (§F cancellation).
+ *
+ * Refunds **only** the candidates whose `queued → cancelled` CAS this call
+ * won. Anything already dispatched is left alone: it runs to completion
+ * server-side and lands as `expired`, delivered but unshown. That is the law
+ * (§H.6 "never refund delivered work"), and it is also what makes double
+ * settlement structurally impossible — a candidate is either won by this CAS
+ * or by dispatch, never by both.
+ */
+export async function cancelRoll(input: {
+  userId: number;
+  rollPublicId: string;
+}): Promise<CancelRollResult> {
+  const roll = await getOwnedRoll(input.userId, input.rollPublicId);
+  if (!roll) throw new TRPCError({ code: "NOT_FOUND", message: "Roll not found" });
+  if (!["pending", "generating"].includes(roll.status)) {
+    // Terminal rolls are immutable versions. Cancelling one is not an error
+    // worth a refusal banner — there is simply nothing left to cancel.
+    return { cancelled: 0, refundedCredits: 0, refundUnrecorded: false };
+  }
+
+  const candidates = await listRollCandidates(input.userId, roll.id);
+  let cancelled = 0;
+  let refundedCredits = 0;
+  let refundUnrecorded = false;
+
+  for (const candidate of candidates) {
+    if (candidate.status !== "queued") continue;
+    const won = await cancelQueuedCandidate({ userId: input.userId, candidateId: candidate.id });
+    if (!won) continue;
+    cancelled += 1;
+    if (candidate.pointsCost <= 0) continue;
+    const refund = await recordRefund(
+      input.userId,
+      candidate.pointsCost,
+      "Casting roll cancelled before this candidate started",
+      candidateChargeReference(roll.operationId, candidate.publicId),
+    );
+    if (refund.recorded) refundedCredits += refund.amount;
+    else refundUnrecorded = true;
+  }
+
+  await setRollStatus({ userId: input.userId, rollId: roll.id, status: "cancelled" });
+
+  if (refundUnrecorded) {
+    log.error(
+      { rollId: roll.publicId, userId: input.userId },
+      "[rollService] cancel refund did not record — user remains charged",
+    );
+  }
+  return { cancelled, refundedCredits, refundUnrecorded };
+}
