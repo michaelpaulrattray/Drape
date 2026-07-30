@@ -1433,6 +1433,25 @@ stronger authority does not itself count as per-cohort product release. No
 production data, provider image generation, credits, deployment, or Railway
 configuration were used or changed in this milestone.
 
+**First deterministic production calibration (2026-07-30):** Railway deployed
+`4f234895523f0e77ad95d01c00c98f4c0a942754` successfully with the release
+policy unchanged. Founder model 35 exposed only the existing three-quarter
+action; Side and Walk remained unavailable. Controlled three-quarter operation
+`42d7d624-bd77-429b-9026-70dd4599d33c` failed in the deterministic coverage
+stage before charge or image-provider generation. The public balance remained
+66,200 credits and the UI reported that nothing was generated or charged.
+
+The first live failure exposed insufficient privacy-safe diagnostics and a
+code defect in crop handling. Pose geometry had eagerly required unrelated
+hips, knees, ankles, hands, and feet even for face or shoulder features, so a
+legitimately cropped close view could fail before feature-mask extraction.
+Geometry now loads only the landmarks required by the selected tuple. Face and
+shoulder crop tests prove unrelated low-confidence landmarks do not invalidate
+their masks, while required landmarks still fail closed. Projection failures
+now log only the known error class and closed code, never image bytes,
+descriptors, storage locations, or provider content. Typecheck, production
+build, and 3,208 tests pass locally. No second live attempt has run yet.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

@@ -104,11 +104,21 @@ import {
   INK_PROJECTION_LOCATION_UNAVAILABLE,
   isInkProjectionAngleReleased,
 } from "./inkReleasePolicy";
-import { analyzeInkPoseImage } from "./inkPoseRuntime";
-import { buildInkPoseAnatomyGuide } from "./inkPoseGeometry";
-import type { InkPoseAnatomyGuide } from "./inkPoseGeometry";
-import { extractAcceptedInkFeatureMask } from "./inkFeatureMask";
 import {
+  analyzeInkPoseImage,
+  InkPoseAnalysisError,
+} from "./inkPoseRuntime";
+import {
+  buildInkPoseAnatomyGuide,
+  InkPoseGeometryError,
+} from "./inkPoseGeometry";
+import type { InkPoseAnatomyGuide } from "./inkPoseGeometry";
+import {
+  extractAcceptedInkFeatureMask,
+  InkFeatureMaskError,
+} from "./inkFeatureMask";
+import {
+  InkPoseProjectionError,
   projectAcceptedInkFeatureMask,
   type InkPoseProjection,
 } from "./inkPoseProjection";
@@ -214,6 +224,20 @@ function publicFailure(error: unknown): TRPCError {
     return new TRPCError({ code, message: CANDIDATE_FAILURE });
   }
   return new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: CANDIDATE_FAILURE });
+}
+
+function privacySafeLocalizationFailure(
+  error: unknown,
+): Readonly<{ kind: string; code: string }> | null {
+  if (
+    error instanceof InkPoseAnalysisError
+    || error instanceof InkPoseGeometryError
+    || error instanceof InkFeatureMaskError
+    || error instanceof InkPoseProjectionError
+  ) {
+    return Object.freeze({ kind: error.name, code: error.code });
+  }
+  return null;
 }
 
 function composerImage(image: {
@@ -1001,6 +1025,7 @@ async function executeCandidate(
     if (readyBoundary) throw error;
     log.error({
       errorName: error instanceof Error ? error.name : "UnknownError",
+      localizationFailure: privacySafeLocalizationFailure(error),
       operationId: gate.operationId,
       candidateId: prepared?.candidateId,
     }, "Ink candidate generation failed");
@@ -1398,6 +1423,7 @@ async function executeProjectionCandidate(
     log.error({
       errorName: error instanceof Error ? error.name : "UnknownError",
       stateCode: error instanceof InkCandidateStateError ? error.code : null,
+      localizationFailure: privacySafeLocalizationFailure(error),
       failureStage,
       operationId: gate.operationId,
       candidateId: prepared?.candidateId,

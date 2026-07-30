@@ -160,6 +160,52 @@ describe("deterministic tattoo pose geometry", () => {
     );
   });
 
+  it("does not require cropped lower-body landmarks for a face tattoo", () => {
+    const scoreOverrides = Object.fromEntries(
+      INK_POSE_KEYPOINTS
+        .filter((name) =>
+          name.includes("hip")
+          || name.includes("knee")
+          || name.includes("ankle")
+          || name.includes("heel")
+          || name.includes("foot")
+        )
+        .map((name) => [name, 0.1]),
+    ) as Partial<Record<InkPoseKeypointName, number>>;
+
+    const guide = buildInkPoseAnatomyGuide(
+      { zone: "face", surface: "anterior", side: "centre" },
+      analysis({ scoreOverrides }),
+    );
+
+    expect(guide.mask.some(Boolean)).toBe(true);
+  });
+
+  it("does not require cropped arm or leg landmarks for a shoulder tattoo", () => {
+    const scoreOverrides = Object.fromEntries(
+      INK_POSE_KEYPOINTS
+        .filter((name) =>
+          name.includes("elbow")
+          || name.includes("wrist")
+          || name.includes("index")
+          || name.includes("pinky")
+          || name.includes("hip")
+          || name.includes("knee")
+          || name.includes("ankle")
+          || name.includes("heel")
+          || name.includes("foot")
+        )
+        .map((name) => [name, 0.1]),
+    ) as Partial<Record<InkPoseKeypointName, number>>;
+
+    const guide = buildInkPoseAnatomyGuide(
+      { zone: "shoulder", surface: "anterior", side: "left" },
+      analysis({ scoreOverrides }),
+    );
+
+    expect(guide.mask.some(Boolean)).toBe(true);
+  });
+
   it("intersects anatomical geometry with the detected person mask", () => {
     const source = analysis();
     const personMask = new Uint8Array(source.width * source.height);

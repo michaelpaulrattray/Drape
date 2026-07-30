@@ -115,29 +115,51 @@ function sideName(
   return `${side}_${suffix}` as InkPoseKeypointName;
 }
 
-function bodyScale(
+function bilateralScale(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
-): Readonly<{ shoulders: number; hips: number }> {
-  const shoulders = distance(
-    point(requiredPoint(points, "left_shoulder")),
-    point(requiredPoint(points, "right_shoulder")),
+  left: InkPoseKeypointName,
+  right: InkPoseKeypointName,
+  minimum: number,
+  maximum: number,
+  label: string,
+): number {
+  const value = distance(
+    point(requiredPoint(points, left)),
+    point(requiredPoint(points, right)),
   );
-  const hips = distance(
-    point(requiredPoint(points, "left_hip")),
-    point(requiredPoint(points, "right_hip")),
-  );
-  if (
-    shoulders < 0.025
-    || shoulders > 0.85
-    || hips < 0.02
-    || hips > 0.75
-  ) {
+  if (value < minimum || value > maximum) {
     throw new InkPoseGeometryError(
       "geometry_invalid",
-      "Tattoo body scale is not geometrically plausible",
+      `Tattoo ${label} scale is not geometrically plausible`,
     );
   }
-  return Object.freeze({ shoulders, hips });
+  return value;
+}
+
+function shoulderScale(
+  points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
+): number {
+  return bilateralScale(
+    points,
+    "left_shoulder",
+    "right_shoulder",
+    0.025,
+    0.85,
+    "shoulder",
+  );
+}
+
+function hipScale(
+  points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
+): number {
+  return bilateralScale(
+    points,
+    "left_hip",
+    "right_hip",
+    0.02,
+    0.75,
+    "hip",
+  );
 }
 
 function torsoPolygon(
@@ -278,87 +300,149 @@ function sidedLimbPrimitives(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
   zone: InkAnatomyZone,
   side: Exclude<InkAnatomySide, "centre">,
-  scale: Readonly<{ shoulders: number; hips: number }>,
 ): readonly Primitive[] {
-  const shoulder = point(requiredPoint(points, sideName(side, "shoulder")));
-  const elbow = point(requiredPoint(points, sideName(side, "elbow")));
-  const wrist = point(requiredPoint(points, sideName(side, "wrist")));
-  const index = point(requiredPoint(points, sideName(side, "index")));
-  const pinky = point(requiredPoint(points, sideName(side, "pinky")));
-  const hip = point(requiredPoint(points, sideName(side, "hip")));
-  const knee = point(requiredPoint(points, sideName(side, "knee")));
-  const ankle = point(requiredPoint(points, sideName(side, "ankle")));
-  const heel = point(requiredPoint(points, sideName(side, "heel")));
-  const footIndex = point(requiredPoint(points, sideName(side, "foot_index")));
-
-  const upperArm: Primitive = Object.freeze({
-    kind: "capsule",
-    a: shoulder,
-    b: elbow,
-    radius: scale.shoulders * 0.17,
-  });
-  const forearm: Primitive = Object.freeze({
-    kind: "capsule",
-    a: elbow,
-    b: wrist,
-    radius: scale.shoulders * 0.13,
-  });
-  const hand: Primitive = Object.freeze({
-    kind: "capsule",
-    a: wrist,
-    b: midpoint(index, pinky),
-    radius: scale.shoulders * 0.12,
-  });
-  const thigh: Primitive = Object.freeze({
-    kind: "capsule",
-    a: hip,
-    b: knee,
-    radius: scale.hips * 0.24,
-  });
-  const lowerLeg: Primitive = Object.freeze({
-    kind: "capsule",
-    a: knee,
-    b: ankle,
-    radius: scale.hips * 0.18,
-  });
-  const foot: Primitive = Object.freeze({
-    kind: "capsule",
-    a: midpoint(ankle, heel),
-    b: footIndex,
-    radius: scale.hips * 0.17,
-  });
-
   switch (zone) {
-    case "shoulder":
+    case "shoulder": {
+      const scale = shoulderScale(points);
+      const shoulder = point(
+        requiredPoint(points, sideName(side, "shoulder")),
+      );
       return Object.freeze([{
         kind: "ellipse",
         centre: shoulder,
-        rx: scale.shoulders * 0.2,
-        ry: scale.shoulders * 0.2,
+        rx: scale * 0.2,
+        ry: scale * 0.2,
       }]);
-    case "upper_arm":
-      return Object.freeze([upperArm]);
-    case "forearm":
-      return Object.freeze([forearm]);
-    case "full_arm":
-      return Object.freeze([upperArm, forearm, hand]);
-    case "hand":
-      return Object.freeze([hand]);
-    case "hip":
+    }
+    case "upper_arm": {
+      const scale = shoulderScale(points);
+      return Object.freeze([{
+        kind: "capsule",
+        a: point(requiredPoint(points, sideName(side, "shoulder"))),
+        b: point(requiredPoint(points, sideName(side, "elbow"))),
+        radius: scale * 0.17,
+      }]);
+    }
+    case "forearm": {
+      const scale = shoulderScale(points);
+      return Object.freeze([{
+        kind: "capsule",
+        a: point(requiredPoint(points, sideName(side, "elbow"))),
+        b: point(requiredPoint(points, sideName(side, "wrist"))),
+        radius: scale * 0.13,
+      }]);
+    }
+    case "full_arm": {
+      const scale = shoulderScale(points);
+      const shoulder = point(
+        requiredPoint(points, sideName(side, "shoulder")),
+      );
+      const elbow = point(requiredPoint(points, sideName(side, "elbow")));
+      const wrist = point(requiredPoint(points, sideName(side, "wrist")));
+      const index = point(requiredPoint(points, sideName(side, "index")));
+      const pinky = point(requiredPoint(points, sideName(side, "pinky")));
+      return Object.freeze([
+        {
+          kind: "capsule",
+          a: shoulder,
+          b: elbow,
+          radius: scale * 0.17,
+        },
+        {
+          kind: "capsule",
+          a: elbow,
+          b: wrist,
+          radius: scale * 0.13,
+        },
+        {
+          kind: "capsule",
+          a: wrist,
+          b: midpoint(index, pinky),
+          radius: scale * 0.12,
+        },
+      ]);
+    }
+    case "hand": {
+      const scale = shoulderScale(points);
+      return Object.freeze([{
+        kind: "capsule",
+        a: point(requiredPoint(points, sideName(side, "wrist"))),
+        b: midpoint(
+          point(requiredPoint(points, sideName(side, "index"))),
+          point(requiredPoint(points, sideName(side, "pinky"))),
+        ),
+        radius: scale * 0.12,
+      }]);
+    }
+    case "hip": {
+      const scale = hipScale(points);
+      const hip = point(requiredPoint(points, sideName(side, "hip")));
       return Object.freeze([{
         kind: "ellipse",
         centre: hip,
-        rx: scale.hips * 0.3,
-        ry: scale.hips * 0.3,
+        rx: scale * 0.3,
+        ry: scale * 0.3,
       }]);
-    case "thigh":
-      return Object.freeze([thigh]);
-    case "lower_leg":
-      return Object.freeze([lowerLeg]);
-    case "full_leg":
-      return Object.freeze([thigh, lowerLeg, foot]);
-    case "foot":
-      return Object.freeze([foot]);
+    }
+    case "thigh": {
+      const scale = hipScale(points);
+      return Object.freeze([{
+        kind: "capsule",
+        a: point(requiredPoint(points, sideName(side, "hip"))),
+        b: point(requiredPoint(points, sideName(side, "knee"))),
+        radius: scale * 0.24,
+      }]);
+    }
+    case "lower_leg": {
+      const scale = hipScale(points);
+      return Object.freeze([{
+        kind: "capsule",
+        a: point(requiredPoint(points, sideName(side, "knee"))),
+        b: point(requiredPoint(points, sideName(side, "ankle"))),
+        radius: scale * 0.18,
+      }]);
+    }
+    case "full_leg": {
+      const scale = hipScale(points);
+      const hip = point(requiredPoint(points, sideName(side, "hip")));
+      const knee = point(requiredPoint(points, sideName(side, "knee")));
+      const ankle = point(requiredPoint(points, sideName(side, "ankle")));
+      const heel = point(requiredPoint(points, sideName(side, "heel")));
+      const footIndex = point(
+        requiredPoint(points, sideName(side, "foot_index")),
+      );
+      return Object.freeze([
+        {
+          kind: "capsule",
+          a: hip,
+          b: knee,
+          radius: scale * 0.24,
+        },
+        {
+          kind: "capsule",
+          a: knee,
+          b: ankle,
+          radius: scale * 0.18,
+        },
+        {
+          kind: "capsule",
+          a: midpoint(ankle, heel),
+          b: footIndex,
+          radius: scale * 0.17,
+        },
+      ]);
+    }
+    case "foot": {
+      const scale = hipScale(points);
+      const ankle = point(requiredPoint(points, sideName(side, "ankle")));
+      const heel = point(requiredPoint(points, sideName(side, "heel")));
+      return Object.freeze([{
+        kind: "capsule",
+        a: midpoint(ankle, heel),
+        b: point(requiredPoint(points, sideName(side, "foot_index"))),
+        radius: scale * 0.17,
+      }]);
+    }
     default:
       throw new InkPoseGeometryError(
         "geometry_invalid",
@@ -373,17 +457,22 @@ export function buildInkPoseGeometryPrimitives(
 ): readonly InkPoseGeometryPrimitive[] {
   assertSupportedInkAnatomyTuple(tuple);
   const points = pointMap(analysis);
-  const scale = bodyScale(points);
   if (tuple.zone === "face" || tuple.zone === "scalp") {
     return Object.freeze([facePrimitive(points, tuple.zone, tuple.side)]);
   }
   if (tuple.zone === "neck") {
-    return Object.freeze([neckPrimitive(points, scale.shoulders, tuple.side)]);
+    return Object.freeze([
+      neckPrimitive(points, shoulderScale(points), tuple.side),
+    ]);
   }
   if (tuple.zone === "upper_torso" || tuple.zone === "lower_torso") {
+    shoulderScale(points);
+    hipScale(points);
     return Object.freeze([torsoPolygon(points, tuple.zone, tuple.side)]);
   }
   if (tuple.zone === "full_torso") {
+    shoulderScale(points);
+    hipScale(points);
     return Object.freeze([
       torsoPolygon(points, "upper_torso", "centre"),
       torsoPolygon(points, "lower_torso", "centre"),
@@ -395,7 +484,7 @@ export function buildInkPoseGeometryPrimitives(
       "A bilateral tattoo zone requires an anatomical side",
     );
   }
-  return sidedLimbPrimitives(points, tuple.zone, tuple.side, scale);
+  return sidedLimbPrimitives(points, tuple.zone, tuple.side);
 }
 
 function pointSegmentDistance(
