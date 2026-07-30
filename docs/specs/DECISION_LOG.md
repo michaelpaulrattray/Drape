@@ -1382,6 +1382,57 @@ Typecheck, eight focused integrity/geometry tests (including all 110 tuples and
 mirrored laterality), the production build, and the full 250-file / 3,194-test
 unit suite pass locally. No live calibration or paid generation ran.
 
+**Deterministic accepted-feature projection milestone (2026-07-30):**
+projection recipe v5 retires text-returned coordinates as placement authority.
+For each immutable tattoo feature, the server now loads the exact clean
+pre-edit asset and exact accepted private candidate from its durable evidence
+row. A blurred colour-difference mask is intersected with the pose-derived
+anatomy/person mask; absent, oversized, fragmented, opposite-anatomy, dimension
+mismatch, and excessive outside-anatomy drift all fail closed. Previously
+accepted tattoos already present in both images are excluded by construction.
+
+The retained feature pixels are transferred to the target through named
+pose-relative geometry: capsules preserve longitudinal/perpendicular limb
+coordinates, ellipses preserve head/neck/joint coordinates, and paired
+quadrilaterals preserve torso coordinates. Subject-left/subject-right follows
+the named landmarks when a profile or three-quarter frame is mirrored. The
+resulting exact target pixel mask—not a registry rectangle or model-returned
+box—is rendered into the composer guide, independent target-guide audit, and
+post-generation placement audit. The text visibility probe remains only for
+conditional visible/hidden adjudication and its v9 schema no longer accepts or
+returns coordinates.
+
+Feature-graph reads now include the clean source assets associated with
+authoring and accepted projections. Fork copies and remaps those non-selected
+evidence assets as well as accepted assets and private plates, preserving each
+exact clean/accepted pair instead of nulling it or re-witnessing an older
+tattoo against an accumulated current image. A missing half of an evidence
+pair makes projection unavailable rather than falling back to a mismatched
+witness.
+
+The milestone review found and corrected one guide-authority defect before
+deployment: feature labels had shared the red mask colour and could therefore
+be mistaken for authorized ink outside the body. Labels are now blue metadata,
+the prompts explicitly exclude them from authority, and a raster test proves
+that no red authority is painted outside the deterministic mask. Projection
+also rejects mismatched tuple/recipe guides, malformed mask dimensions, and
+feature-count inconsistencies.
+
+This remains 2D pose-relative projection, not evidence that every anatomical
+surface survives every camera rotation. BlazePose names subject-left/right and
+the exact source pixels preserve their position across each mapped limb or
+torso primitive, but anterior/posterior/lateral wrap in profile,
+three-quarter, and Walk must still pass cohort-specific pixel evidence before
+that angle/location is released. Disabled cohorts do not count as complete.
+
+Initial all-body authoring also renders its existing closed-registry tuple
+through the deterministic person/pose mask before visibility, composition, and
+placement audit. The eight-tuple authoring release list and three-quarter-only
+projection release gate remain unchanged at this milestone: implementing the
+stronger authority does not itself count as per-cohort product release. No
+production data, provider image generation, credits, deployment, or Railway
+configuration were used or changed in this milestone.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

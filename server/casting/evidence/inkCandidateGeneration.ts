@@ -36,6 +36,7 @@ import {
   type InkProjectionCandidatePreflight,
   type ObservedInkProjectionCoverage,
   type PreparedInkCandidateAttempt,
+  type PreparedInkProjectionFeature,
 } from "../../db/inkAddCandidates";
 import {
   findOwnedInkIntentClaimSubject,
@@ -66,12 +67,7 @@ import {
   type InkComposerRequest,
   type InkRetryDirective,
 } from "./composer/inkComposer";
-import {
-  buildAnatomicalInkZoneGuide,
-  buildInkCoordinateGridGuide,
-  buildInkZoneGuide,
-  buildSegmentedAnatomicalInkZoneGuide,
-} from "./composer/inkZoneGuide";
+import { buildInkZoneGuide } from "./composer/inkZoneGuide";
 import {
   runInkAnywhereCandidateProbes,
   runInkAnywhereVisibilityProbe,
@@ -96,7 +92,6 @@ import {
   buildInkEvidenceMosaic,
   buildInkProjectionComposerRequest,
   buildInkProjectionTargetGuideAuditProbeRequest,
-  parseInkCoverageProbeResponse,
   parseInkProjectionTargetGuideAuditResponse,
   projectionTargetGuideAuditPasses,
   runInkProjectionCandidateProbes,
@@ -109,6 +104,15 @@ import {
   INK_PROJECTION_LOCATION_UNAVAILABLE,
   isInkProjectionAngleReleased,
 } from "./inkReleasePolicy";
+import { analyzeInkPoseImage } from "./inkPoseRuntime";
+import { buildInkPoseAnatomyGuide } from "./inkPoseGeometry";
+import type { InkPoseAnatomyGuide } from "./inkPoseGeometry";
+import { extractAcceptedInkFeatureMask } from "./inkFeatureMask";
+import {
+  projectAcceptedInkFeatureMask,
+  type InkPoseProjection,
+} from "./inkPoseProjection";
+import { buildPoseInkProjectionGuide } from "./inkPoseGuide";
 
 const log = createModuleLogger("casting/evidence/inkCandidateGeneration");
 const CANDIDATE_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
@@ -159,6 +163,8 @@ export interface InkCandidateGenerationDependencies {
   canonicalize?: typeof canonicalizeEvidenceDataUrl;
   generateId?: () => string;
   now?: () => Date;
+  localizeProjection?: typeof localizeProjectionFeatures;
+  localizeAuthoring?: typeof localizeAuthoringTarget;
 }
 
 function requireEnabled(
@@ -253,6 +259,147 @@ async function readPrivateExact(
     throw new Error("private evidence hash mismatch");
   }
   return { bytes, mime: "image/webp" };
+}
+
+interface LocalizedProjectionSet {
+  features: readonly InkProjectionFeatureReference[];
+  projections: ReadonlyMap<string, InkPoseProjection>;
+  guidedTarget: ComposerImage;
+}
+
+interface LocalizedAuthoringTarget {
+  guidedTarget: ComposerImage;
+  anatomyGuide: InkPoseAnatomyGuide;
+}
+
+async function localizeAuthoringTarget(
+  _dependencies: InkCandidateGenerationDependencies,
+  input: {
+    target: ComposerImage;
+    anatomy: Extract<
+      PreparedInkCandidateAttempt["authority"],
+      { kind: "anywhere_v2" }
+    >["anatomy"];
+    label: string;
+  },
+): Promise<LocalizedAuthoringTarget> {
+  const analysis = await analyzeInkPoseImage(input.target.bytes);
+  const anatomyGuide = buildInkPoseAnatomyGuide(input.anatomy, analysis);
+  const guidedTarget = await buildPoseInkProjectionGuide({
+    targetBytes: input.target.bytes,
+    features: [{
+      width: anatomyGuide.width,
+      height: anatomyGuide.height,
+      mask: anatomyGuide.mask,
+      normalizedSegments: anatomyGuide.normalizedSegments,
+      label: input.label,
+    }],
+  });
+  return Object.freeze({
+    guidedTarget: composerImage(guidedTarget),
+    anatomyGuide,
+  });
+}
+
+function boundingZone(
+  zones: readonly { x: number; y: number; width: number; height: number }[],
+) {
+  const x = Math.min(...zones.map((zone) => zone.x));
+  const y = Math.min(...zones.map((zone) => zone.y));
+  const right = Math.max(...zones.map((zone) => zone.x + zone.width));
+  const bottom = Math.max(...zones.map((zone) => zone.y + zone.height));
+  return Object.freeze({ x, y, width: right - x, height: bottom - y });
+}
+
+async function localizeProjectionFeatures(
+  dependencies: InkCandidateGenerationDependencies,
+  input: {
+    target: ComposerImage;
+    targetAngle: CanonicalViewAngle;
+    features: readonly PreparedInkProjectionFeature[];
+  },
+): Promise<LocalizedProjectionSet> {
+  const fetchImage = dependencies.fetchImage ?? fetchTrustedImage;
+  const targetAnalysis = await analyzeInkPoseImage(input.target.bytes);
+  const localized = await Promise.all(input.features.map(async (feature) => {
+    assertSupportedInkAnatomyTuple(feature.anatomy);
+    if (!feature.witnessSource?.storageUrl) {
+      throw new InkCandidateStateError("source_unavailable");
+    }
+    const [cleanFetched, witness] = await Promise.all([
+      fetchImage(feature.witnessSource.storageUrl),
+      readPrivateExact(dependencies.delivery, {
+        key: feature.witness.storageKey,
+        byteSize: feature.witness.byteSize,
+        contentHash: feature.witness.contentHash,
+      }),
+    ]);
+    const cleanSource = composerImage(cleanFetched);
+    const sourceAnalysis = await analyzeInkPoseImage(cleanSource.bytes);
+    const sourceGuide = buildInkPoseAnatomyGuide(
+      feature.anatomy,
+      sourceAnalysis,
+    );
+    const featureMask = await extractAcceptedInkFeatureMask({
+      cleanSource: cleanSource.bytes,
+      acceptedCandidate: witness.bytes,
+      anatomyGuide: sourceGuide,
+    });
+    const targetGuide = buildInkPoseAnatomyGuide(
+      feature.anatomy,
+      targetAnalysis,
+    );
+    const projection = projectAcceptedInkFeatureMask({
+      tuple: feature.anatomy,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask,
+      targetAnalysis,
+      targetGuide,
+    });
+    const targetSideAuthority = inkAnatomicalSideAuthority(
+      feature.anatomy,
+      input.targetAngle,
+    );
+    const witnessSideAuthority = inkAnatomicalSideAuthority(
+      feature.anatomy,
+      feature.witnessViewAngle,
+    );
+    const reference: InkProjectionFeatureReference = {
+      featureId: feature.featureId,
+      featureVersionId: feature.featureVersionId,
+      normalizedDescriptor: feature.normalizedDescriptor,
+      anatomyLabel: feature.anatomyLabel,
+      sideAuthority: targetSideAuthority.prompt,
+      targetGuideLabel: targetSideAuthority.guideLabel,
+      witnessSideAuthority: witnessSideAuthority.prompt,
+      witnessGuideLabel: witnessSideAuthority.guideLabel,
+      targetZone: boundingZone(projection.normalizedSegments),
+      targetZones: projection.normalizedSegments,
+      witnessZone: featureMask.normalizedBounds,
+      witness,
+      isProjectionTarget: feature.isProjectionTarget,
+    };
+    return { reference: Object.freeze(reference), projection };
+  }));
+  const guide = await buildPoseInkProjectionGuide({
+    targetBytes: input.target.bytes,
+    features: localized.map(({ reference, projection }) => ({
+      width: projection.width,
+      height: projection.height,
+      mask: projection.mask,
+      normalizedSegments: projection.normalizedSegments,
+      label: `${reference.anatomyLabel} - ${reference.targetGuideLabel}`,
+    })),
+  });
+  return Object.freeze({
+    features: Object.freeze(localized.map(({ reference }) => reference)),
+    projections: new Map(localized.map(({ reference, projection }) => [
+      reference.featureVersionId,
+      projection,
+    ])),
+    guidedTarget: composerImage(guide),
+  });
 }
 
 async function defaultGenerate(
@@ -381,72 +528,49 @@ async function loadInputs(
   const target = composerImage(targetFetched);
   if (prepared.authority.kind === "projection_v2") {
     const projectionAuthority = prepared.authority;
-    const projectionFeatures: InkProjectionFeatureReference[] =
-      await Promise.all(projectionAuthority.features.map(async (feature) => {
-        assertSupportedInkAnatomyTuple(feature.anatomy);
-        const targetSideAuthority = inkAnatomicalSideAuthority(
-          feature.anatomy,
-          projectionAuthority.targetAngle,
-        );
-        const witnessSideAuthority = inkAnatomicalSideAuthority(
-          feature.anatomy,
-          feature.witnessViewAngle,
-        );
-        return {
-          featureId: feature.featureId,
-          featureVersionId: feature.featureVersionId,
-          normalizedDescriptor: feature.normalizedDescriptor,
-          anatomyLabel: feature.anatomyLabel,
-          sideAuthority: targetSideAuthority.prompt,
-          targetGuideLabel: targetSideAuthority.guideLabel,
-          witnessSideAuthority: witnessSideAuthority.prompt,
-          witnessGuideLabel: witnessSideAuthority.guideLabel,
-          targetZone: feature.targetZone,
-          targetZones: feature.targetZones,
-          witnessZone: feature.witnessZone,
-          witness: await readPrivateExact(dependencies.delivery, {
-            key: feature.witness.storageKey,
-            byteSize: feature.witness.byteSize,
-            contentHash: feature.witness.contentHash,
-          }),
-          isProjectionTarget: feature.isProjectionTarget,
-        };
-      }));
-    const [guide, evidenceMosaic] = await Promise.all([
-      buildSegmentedAnatomicalInkZoneGuide({
-        targetBytes: target.bytes,
-        features: projectionFeatures.map((feature) => ({
-          normalizedZones: feature.targetZones,
-          label:
-            `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
-        })),
-      }),
-      buildInkEvidenceMosaic(projectionFeatures),
-    ]);
+    const localized = await (
+      dependencies.localizeProjection ?? localizeProjectionFeatures
+    )(dependencies, {
+      target,
+      targetAngle: projectionAuthority.targetAngle,
+      features: projectionAuthority.features,
+    });
+    const evidenceMosaic = await buildInkEvidenceMosaic(localized.features);
     return {
       anchor,
       target,
-      guidedTarget: composerImage(guide),
+      guidedTarget: localized.guidedTarget,
       reference: null,
-      projectionFeatures: Object.freeze(projectionFeatures),
+      projectionFeatures: localized.features,
+      projectionMasks: localized.projections,
       evidenceMosaic: composerImage(evidenceMosaic),
     };
   }
-  const guide = prepared.authority.kind === "legacy_v1"
-    ? await buildInkZoneGuide({
+  if (prepared.authority.kind === "anywhere_v2") {
+    const side = inkAnatomicalSideAuthority(
+      prepared.authority.anatomy,
+      prepared.sourceViewAngle,
+    );
+    const localized = await (
+      dependencies.localizeAuthoring ?? localizeAuthoringTarget
+    )(dependencies, {
+      target,
+      anatomy: prepared.authority.anatomy,
+      label: `${inkAnatomyLabel(prepared.authority.anatomy)} - ${side.guideLabel}`,
+    });
+    return {
+      anchor,
+      target,
+      guidedTarget: localized.guidedTarget,
+      reference,
+      projectionFeatures: null,
+      projectionMasks: null,
+      evidenceMosaic: null,
+    };
+  }
+  const guide = await buildInkZoneGuide({
         targetBytes: target.bytes,
         side: prepared.authority.anatomy.side,
-      })
-    : await buildAnatomicalInkZoneGuide({
-        targetBytes: target.bytes,
-        normalizedZone: prepared.authority.normalizedTargetZone,
-        label:
-          `${inkAnatomyLabel(prepared.authority.anatomy)} - ${
-            inkAnatomicalSideAuthority(
-              prepared.authority.anatomy,
-              prepared.sourceViewAngle,
-            ).guideLabel
-          }`,
       });
   return {
     anchor,
@@ -454,6 +578,7 @@ async function loadInputs(
     guidedTarget: composerImage(guide),
     reference,
     projectionFeatures: null,
+    projectionMasks: null,
     evidenceMosaic: null,
   };
 }
@@ -545,9 +670,11 @@ async function runAttempt(input: {
   const rawCandidate = composerImage(candidate);
   const placementAuditCandidate =
     prepared.authority.kind === "anywhere_v2"
-      ? composerImage(await buildAnatomicalInkZoneGuide({
-          targetBytes: candidate.bytes,
-          normalizedZone: prepared.authority.normalizedTargetZone,
+      ? (await (
+          dependencies.localizeAuthoring ?? localizeAuthoringTarget
+        )(dependencies, {
+          target: rawCandidate,
+          anatomy: prepared.authority.anatomy,
           label:
             `${inkAnatomyLabel(prepared.authority.anatomy)} - ${
               inkAnatomicalSideAuthority(
@@ -555,15 +682,26 @@ async function runAttempt(input: {
                 prepared.sourceViewAngle,
               ).guideLabel
             }`,
-        }))
+        })).guidedTarget
       : prepared.authority.kind === "projection_v2"
-      ? composerImage(await buildSegmentedAnatomicalInkZoneGuide({
+      ? composerImage(await buildPoseInkProjectionGuide({
           targetBytes: candidate.bytes,
-          features: images.projectionFeatures!.map((feature) => ({
-            normalizedZones: feature.targetZones,
-            label:
-              `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
-          })),
+          features: images.projectionFeatures!.map((feature) => {
+            const projection = images.projectionMasks?.get(
+              feature.featureVersionId,
+            );
+            if (!projection) {
+              throw new InkCandidateStateError("source_unavailable");
+            }
+            return {
+              width: projection.width,
+              height: projection.height,
+              mask: projection.mask,
+              normalizedSegments: projection.normalizedSegments,
+              label:
+                `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
+            };
+          }),
         }))
       : null;
   const probe = prepared.authority.kind === "legacy_v1"
@@ -1036,45 +1174,42 @@ async function executeProjectionCandidate(
           preflight.sourceUrl,
         ),
       );
-      const coordinateGuide = composerImage(
-        await buildInkCoordinateGridGuide({ targetBytes: target.bytes }),
+      const localized = await (
+        dependencies.localizeProjection ?? localizeProjectionFeatures
+      )(dependencies, {
+        target,
+        targetAngle: preflight.targetViewAngle,
+        features: preflight.features,
+      });
+      const referenceByVersion = new Map(
+        localized.features.map((feature) => [
+          feature.featureVersionId,
+          feature,
+        ]),
       );
-      const coverageFeatures = await Promise.all(
-        preflight.features.map(async (feature) => ({
-          featureVersionId: feature.featureVersionId,
-          normalizedDescriptor: feature.normalizedDescriptor,
-          anatomyLabel: feature.anatomyLabel,
-          sideAuthority: feature.contract === "all_body_v2"
-            ? (() => {
-                assertSupportedInkAnatomyTuple(feature.anatomy);
-                return inkAnatomicalSideAuthority(
-                  feature.anatomy,
-                  preflight.targetViewAngle,
-                ).prompt;
-              })()
-            : `Judge ${feature.anatomy.side} only as the subject's anatomical side.`,
-          targetZone: feature.targetZone,
-          witness: composerImage(
-            await readPrivateExact(dependencies.delivery, {
-              key: feature.witness.storageKey,
-              byteSize: feature.witness.byteSize,
-              contentHash: feature.witness.contentHash,
-            }),
-          ),
-        })),
+      const uncertainFeatures = preflight.features.filter(
+        (feature) => feature.impact === "uncertain",
       );
-      const coverageEpisodes = await Promise.all(coverageFeatures.map(
-        async (feature) => {
+      const coverageEpisodes = await Promise.all(uncertainFeatures.map(
+        async (preparedFeature) => {
+          const feature = referenceByVersion.get(
+            preparedFeature.featureVersionId,
+          );
+          if (!feature) {
+            throw new InkCandidateStateError("source_unavailable");
+          }
           const raw = await (dependencies.probe ?? defaultProbe)(
             buildInkCoverageProbeRequest({
               targetAngle: preflight.targetViewAngle,
               features: [feature],
               target,
-              coordinateGuide,
+              // The probe may judge visible/hidden, but deterministic pose
+              // geometry—not returned text coordinates—owns placement.
+              coordinateGuide: localized.guidedTarget,
             }),
           );
           return {
-            feature,
+            preparedFeature,
             raw,
             telemetry: summarizeInkCoverageProbeResponse(raw, 1),
           };
@@ -1087,34 +1222,58 @@ async function executeProjectionCandidate(
           coverageEpisodes.map(({ telemetry }) => telemetry.responseShape),
         coverage: preflight.features.map((feature, index) => ({
           anatomy: feature.anatomy,
-          regionVisible:
-            coverageEpisodes[index]?.telemetry.features[0]?.regionVisible
+          regionVisible: feature.impact === "affected"
+            ? true
+            : coverageEpisodes.find(
+              (episode) =>
+                episode.preparedFeature.featureVersionId
+                  === feature.featureVersionId,
+            )?.telemetry.features[0]?.regionVisible ?? null,
+          verdictCertain: feature.impact === "affected"
+            ? true
+            : coverageEpisodes.find(
+              (episode) =>
+                episode.preparedFeature.featureVersionId
+                  === feature.featureVersionId,
+            )?.telemetry.features[0]?.verdictCertain ?? null,
+          deterministicTargetZones:
+            referenceByVersion.get(feature.featureVersionId)?.targetZones
               ?? null,
-          verdictCertain:
-            coverageEpisodes[index]?.telemetry.features[0]?.verdictCertain
-              ?? null,
-          targetZones:
-            coverageEpisodes[index]?.telemetry.features[0]?.targetZones ?? null,
         })),
       }, "Ink projection pre-charge coverage assessed");
-      try {
-        observedCoverage = Object.freeze(Object.fromEntries(
-          coverageEpisodes.flatMap(({ feature, raw }) =>
-            Object.entries(parseInkCoverageProbeResponse(
-              raw,
-              [feature.featureVersionId],
-            ))
-          ),
-        ));
-      } catch (error) {
+      if (coverageEpisodes.some(({ telemetry }) =>
+        telemetry.responseShape !== "valid_object"
+        || telemetry.features[0]?.verdictCertain !== true
+      )) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message:
             "This view does not show enough of the selected tattoo surfaces"
             + " to verify them safely. Nothing was charged.",
-          cause: error,
         });
       }
+      const visibilityByVersion = new Map(coverageEpisodes.map((episode) => [
+        episode.preparedFeature.featureVersionId,
+        episode.telemetry.features[0]!.regionVisible === true,
+      ]));
+      observedCoverage = Object.freeze(Object.fromEntries(
+        preflight.features.map((feature) => {
+          const reference = referenceByVersion.get(feature.featureVersionId);
+          if (!reference) {
+            throw new InkCandidateStateError("source_unavailable");
+          }
+          const visible = feature.impact === "affected"
+            ? true
+            : visibilityByVersion.get(feature.featureVersionId) === true;
+          return [
+            feature.featureVersionId,
+            {
+              visible,
+              targetZones: visible ? reference.targetZones : null,
+            },
+          ];
+        }),
+      ));
       if (preflight.features.some(
         (feature) =>
           feature.impact === "affected"

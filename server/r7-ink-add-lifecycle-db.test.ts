@@ -710,7 +710,7 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       "SELECT storageKey, pointsCost, pinned FROM model_assets WHERE modelId = ? ORDER BY id",
       [result.modelId],
     );
-    expect(targetAssets).toHaveLength(2);
+    expect(targetAssets).toHaveLength(3);
     expect(targetAssets.every((asset) =>
       asset.pointsCost === 0
       && asset.pinned === 0
@@ -737,10 +737,10 @@ describeWithDatabase("R7-7D D2 storage, lifecycle and Fork durability (disposabl
       "SELECT sourceAssetId, acceptedAssetId FROM model_identity_feature_versions WHERE modelId = ?",
       [result.modelId],
     );
-    expect(targetVersion).toEqual({
-      sourceAssetId: null,
-      acceptedAssetId: targetFrontFull.selectedAssetId,
-    });
+    expect(targetVersion.sourceAssetId).toBeTruthy();
+    expect(targetVersion.sourceAssetId)
+      .not.toBe(targetFrontFull.selectedAssetId);
+    expect(targetVersion.acceptedAssetId).toBe(targetFrontFull.selectedAssetId);
     const [[operation]] = await connection.query<RowDataPacket[]>(
       "SELECT status, chargedCredits, refundedCredits FROM generation_operations WHERE id = ?",
       [operationId],

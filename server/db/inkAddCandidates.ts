@@ -179,6 +179,10 @@ export interface PreparedInkProjectionFeature {
     byteSize: number;
     contentHash: string;
   };
+  witnessSource?: {
+    assetId: number;
+    storageUrl: string;
+  };
   impact: "affected" | "uncertain";
   hasAcceptedTargetEvidence: boolean;
   isProjectionTarget: boolean;
@@ -536,6 +540,9 @@ function projectionFeatureForEntry(
   const hasAcceptedTargetEvidence =
     entry.version.sourceViewAngle === angle || Boolean(acceptedTargetProjection);
   const witnessPlate = acceptedTargetProjection?.plate ?? entry.authoringPlate;
+  const witnessSourceAsset = acceptedTargetProjection
+    ? acceptedTargetProjection.sourceAsset
+    : entry.authoringSourceAsset;
   const witnessViewAngle = acceptedTargetProjection?.evidence.targetViewAngle
     ?? entry.version.sourceViewAngle;
   const witnessDirective = projectionDirectiveForEntry(
@@ -543,6 +550,9 @@ function projectionFeatureForEntry(
     witnessViewAngle,
   );
   if (!witnessDirective.normalizedTargetZone) {
+    throw new InkCandidateStateError("source_unavailable");
+  }
+  if (!witnessSourceAsset?.storageUrl) {
     throw new InkCandidateStateError("source_unavailable");
   }
   const anatomy = {
@@ -568,6 +578,10 @@ function projectionFeatureForEntry(
       storageKey: witnessPlate.storageKey,
       byteSize: witnessPlate.byteSize,
       contentHash: witnessPlate.contentHash,
+    },
+    witnessSource: {
+      assetId: witnessSourceAsset.id,
+      storageUrl: witnessSourceAsset.storageUrl,
     },
     impact: targetDirective.impact,
     hasAcceptedTargetEvidence,

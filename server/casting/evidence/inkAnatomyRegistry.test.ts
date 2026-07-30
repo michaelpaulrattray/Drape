@@ -16,20 +16,21 @@ import {
 } from "./inkAnatomyRegistry";
 
 describe("all-body ink anatomy registry", () => {
-  it("keeps v1 projection evidence readable after clean-source composition", () => {
+  it("keeps earlier projection evidence readable after pose projection", () => {
     expect(INK_ANYWHERE_PROJECTION_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.projection.v4");
+      .toBe("ink.add.anywhere.projection.v5");
     expect(INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.projection.v1",
       "ink.add.anywhere.projection.v2",
       "ink.add.anywhere.projection.v3",
       "ink.add.anywhere.projection.v4",
+      "ink.add.anywhere.projection.v5",
     ]);
   });
 
-  it("keeps earlier coverage evidence readable after witness localization", () => {
+  it("keeps earlier coverage evidence readable after boolean-only visibility", () => {
     expect(INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.coverage-probe.v8");
+      .toBe("ink.add.anywhere.coverage-probe.v9");
     expect(INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.coverage-probe.v1",
       "ink.add.anywhere.coverage-probe.v2",
@@ -39,6 +40,7 @@ describe("all-body ink anatomy registry", () => {
       "ink.add.anywhere.coverage-probe.v6",
       "ink.add.anywhere.coverage-probe.v7",
       "ink.add.anywhere.coverage-probe.v8",
+      "ink.add.anywhere.coverage-probe.v9",
     ]);
   });
 

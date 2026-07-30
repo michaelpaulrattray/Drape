@@ -381,13 +381,13 @@ export function buildInkProjectionComposerRequest(input: {
   const prompt = [
     "Edit the saved Cast using the four ordered images.",
     "Image 1 is the clean original target and immutable pixel canvas. Preserve its pixels everywhere except where listed tattoo evidence must be reproduced or extended.",
-    "Image 2 is a placement guide only. Its red segmented F-regions identify target-image locations; never reproduce the red regions or use this annotated image as the output canvas.",
+    "Image 2 is a placement guide only. Its translucent red pose-projected pixels identify the exact target-image locations. Blue F-label text is metadata and never authorizes ink. Never reproduce either overlay or use this annotated image as the output canvas.",
     "Image 3 is immutable identity authority.",
     "Image 4 is a private evidence mosaic. Each F-number is an immutable tattoo design witness.",
     cameraInstruction,
     "Anatomical laterality is semantic, not a matching frame coordinate. Map each tattoo from its WITNESS camera authority to its TARGET camera authority. A tattoo seen on frame-left in its witness may belong elsewhere in the target camera; never mirror or copy by viewer side.",
     "For MATCH features, reproduce only the visible portion exactly. For EXTEND features, continue the same physical tattoo coherently onto the newly exposed surface; do not redesign, mirror, recolour, duplicate, resize, or invent motifs.",
-    "If an authorized body part is partly occluded, reproduce ink only on its visible pixels inside the union of its F-segments. Never bridge gaps between segments, fill background between them, or relocate a tattoo to the opposite or more visible limb to make it easier to see.",
+    "If an authorized body part is partly occluded, reproduce ink only on its visible red-authorized pixels. Never bridge gaps, fill background, or relocate a tattoo to the opposite or more visible limb to make it easier to see.",
     "Do not add any unlisted ink. Do not remove or move any listed ink. Do not alter face, hair, skin, body proportions, expression, clothing, accessories, pose, lighting, or background except the camera change explicitly required above.",
     `Identity authority:\n${identityText}`,
     `Feature authority:\n${featureLines}`,
@@ -507,11 +507,11 @@ export function buildInkProjectionPlacementAuditProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      "Compare two ordered images: a clean tattoo candidate, then the same candidate with server-owned red anatomical segments labelled F1.1, F1.2, F2.1, and so on.",
-      `Judge placement in canonical ${input.targetAngle}. Each feature's numbered segments form one authorized region; the red regions and labels are audit overlays only.`,
+      "Compare two ordered images: a clean tattoo candidate, then the same candidate with server-owned red pose-projected tattoo pixels and blue feature labels.",
+      `Judge placement in canonical ${input.targetAngle}. Each feature's translucent red pixel mask is its only authorized region. Blue labels are metadata and never authorize tattoo pixels.`,
       "Return strict JSON only. confidence is 0-100.",
       "For every F-feature, AnatomicalSideCorrect is true only when the tattoo is on the subject's requested anatomical side, never merely the similarly named viewer side.",
-      "For every F-feature, InsideAuthorizedZone is true only when its visible tattoo pixels stay inside the union of that feature's labelled segments and do not bridge excluded gaps, enter the opposite side, or enter another feature's region.",
+      "For every F-feature, InsideAuthorizedZone is true only when its visible tattoo pixels stay inside that feature's red pixel mask and do not bridge excluded gaps, enter the opposite side, or enter another feature's region.",
       "For three-quarter or profile images, infer anatomical side from the candidate pixels, never the stored angle name: nose/toes toward frame-right expose anatomical RIGHT; nose/toes toward frame-left expose anatomical LEFT. If pixels do not prove the mapping, return false rather than guessing.",
       "Use the clean first image to judge tattoo pixels. Use the annotated second image only to judge the server-owned locations.",
       featureLines,
@@ -767,13 +767,6 @@ export function buildInkCoverageProbeRequest(input: {
     (_feature, index) => [
       [`feature${index + 1}RegionVisible`, "boolean" as const],
       [`feature${index + 1}VerdictCertain`, "boolean" as const],
-      [`feature${index + 1}SegmentCount`, "integer_0_100" as const],
-      ...Array.from({ length: MAX_COVERAGE_SEGMENTS }, (_unused, segmentIndex) => [
-        [`feature${index + 1}Segment${segmentIndex + 1}X`, "integer_0_100" as const],
-        [`feature${index + 1}Segment${segmentIndex + 1}Y`, "integer_0_100" as const],
-        [`feature${index + 1}Segment${segmentIndex + 1}Width`, "integer_0_100" as const],
-        [`feature${index + 1}Segment${segmentIndex + 1}Height`, "integer_0_100" as const],
-      ]).flat(),
     ],
   ));
   return {
@@ -786,11 +779,10 @@ export function buildInkCoverageProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      `Inspect exactly three ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Image 2 is the same target with a server-owned full-canvas percentage grid. Image 3 is the accepted witness for the one requested tattoo feature.`,
-      "Return strict JSON only. Work from the actual pixels, not the stored angle name. Map the exact physical tattoo sublocation shown in Image 3 onto Image 1. RegionVisible is true when any material contiguous portion of that same tattoo-bearing surface is exposed and resolved enough to carry the visible portion at 1K. A partial upper arm or forearm in a close crop therefore counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, rear/hidden surface, blur, or too-small detail may make a surface false. VerdictCertain is true only when visibility, anatomical side, and the corresponding physical sublocation can be decided without guessing.",
-      "Image 2 is coordinate authority only; do not treat its grid as tattoo or anatomy evidence. Every returned coordinate is relative to the entire rectangular Image 1/Image 2 canvas, including its background—not a detected person, face, body, crop, or silhouette bounding box. The outer image top-left is X0/Y0 and the outer bottom-right is X100/Y100. Read the printed grid values before returning coordinates.",
-      "When RegionVisible is true, represent only the visible requested tattoo-bearing surface with 1-4 tight axis-aligned segments. Return SegmentCount and all four segment coordinate sets as integer percentages from 0 to 100. A small compact placement normally uses one segment. A long or angled arm, leg, sleeve, or torso must use 2-4 tighter segments that follow the physical surface instead of one broad box containing background or unrelated anatomy. Segments may overlap slightly but must not reach clothing, the opposite side/limb, background, or unrelated anatomy. A forehead tattoo authorizes forehead skin, not the whole face; a shoulder tattoo authorizes that shoulder surface, not the torso. X/Y are the segment's top-left against the full image grid; used Width/Height values are positive and remain in bounds. Unused segment coordinates are all 0. When RegionVisible is false, SegmentCount and all segment coordinates are 0. If uncertain, set VerdictCertain false.",
-      `F1: ${input.features[0].anatomyLabel}; accepted description: ${input.features[0].normalizedDescriptor}; ${input.features[0].sideAuthority} Localize from the actual target silhouette and the exact physical sublocation evidenced by Image 3. No registry rectangle or person bounding box is coordinate authority.`,
+      `Inspect exactly three ordered images: Image 1 is the clean canonical ${input.targetAngle} target. Image 2 is the same target with a deterministic server-owned red pose-projected mask and blue metadata label. Image 3 is the accepted witness for the one requested tattoo feature.`,
+      "Return strict JSON only. RegionVisible is true when any material portion of the physical tattoo surface identified by the red mask and witness is actually exposed and resolved at 1K. A partial upper arm or forearm counts as visible for a full sleeve; the whole limb need not be in frame. Clothing, hair, overlap, crop, a rear/hidden surface, blur, or too-small detail may make it false. VerdictCertain is true only when visibility and anatomical side can be decided without guessing.",
+      "Do not return or infer coordinates. Image 2 placement was computed deterministically and is not delegated to this probe. Judge only whether that exact red-authorized physical surface is visible in Image 1.",
+      `F1: ${input.features[0].anatomyLabel}; accepted description: ${input.features[0].normalizedDescriptor}; ${input.features[0].sideAuthority}`,
     ].join("\n"),
     images: [
       probeInline("original_target", input.target),
@@ -1022,14 +1014,14 @@ export function buildInkProjectionTargetGuideAuditProbeRequest(input: {
     includeThoughts: INK_TEXT_PROVIDER_CONFIG.includeThoughts,
     maxOutputTokens: INK_TEXT_PROVIDER_CONFIG.maxOutputTokens,
     prompt: [
-      "Compare ordered images: Image 1 is the clean target Cast image, Image 2 is the same image with server-localized red segmented F-regions, and Images 3 onward are the accepted tattoo witnesses for F1 onward in the same order.",
-      `Audit each feature's segment union in canonical ${input.targetAngle} using the actual pixels; the stored angle name is not anatomical-side proof.`,
+      "Compare ordered images: Image 1 is the clean target Cast image, Image 2 is the same image with deterministic red pose-projected pixels and blue F-label metadata, and Images 3 onward are the accepted tattoo witnesses for F1 onward in the same order. Blue labels never authorize tattoo pixels.",
+      `Audit each feature's red pixel mask in canonical ${input.targetAngle} using the actual pixels; the stored angle name is not anatomical-side proof.`,
       "Return strict JSON only. confidence is 0-100.",
-      "For each feature, GuideCoversVisibleSurface is true only when the union of its F-segments covers the visible, resolved portion of the same physical tattoo sublocation shown in that feature's accepted witness. A region around an entire broader anatomy zone fails when the witness establishes a smaller placement such as forehead, shoulder, wrist, or ankle.",
-      "GuideTouchesOppositeSide is true if any segment reaches the opposite anatomical side or limb. GuideIncludesConflictingAnatomy is true if any segment materially includes clothing, another body zone, background, or a different feature's authorized surface, or if gaps between segments are implicitly treated as authorized.",
-      "A partial visible upper arm or forearm is legitimate surface for a full sleeve. Use the segment union as drawn; it must follow the limb rather than expanding into background, torso, or the opposite limb because another sleeve portion is cropped or occluded.",
+      "For each feature, GuideCoversVisibleSurface is true only when its red mask covers the visible, resolved portion of the same physical tattoo sublocation shown in that feature's accepted witness. A mask around an entire broader anatomy zone fails when the witness establishes a smaller placement such as forehead, shoulder, wrist, or ankle.",
+      "GuideTouchesOppositeSide is true if any red pixel reaches the opposite anatomical side or limb. GuideIncludesConflictingAnatomy is true if any red pixel materially includes clothing, another body zone, background, or a different feature's authorized surface, or if excluded gaps are treated as authorized.",
+      "A partial visible upper arm or forearm is legitimate surface for a full sleeve. The mask must follow the limb rather than expanding into background, torso, or the opposite limb because another sleeve portion is cropped or occluded.",
       ...input.features.map((feature, index) =>
-        `F${index + 1}: ${feature.anatomyLabel}; accepted description: ${feature.normalizedDescriptor}. ${feature.sideAuthority} Localized segments ${JSON.stringify(feature.targetZones)}. Compare their union with witness Image ${index + 3}.`
+        `F${index + 1}: ${feature.anatomyLabel}; accepted description: ${feature.normalizedDescriptor}. ${feature.sideAuthority} Compare its red pixel mask with witness Image ${index + 3}.`
       ),
     ].join("\n"),
     images: [

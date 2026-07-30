@@ -1,0 +1,266 @@
+import { describe, expect, it } from "vitest";
+
+import type { InkFeatureMask } from "./inkFeatureMask";
+import { INK_FEATURE_MASK_RECIPE_VERSION } from "./inkFeatureMask";
+import {
+  buildInkPoseAnatomyGuide,
+  INK_POSE_GEOMETRY_RECIPE_VERSION,
+} from "./inkPoseGeometry";
+import {
+  InkPoseProjectionError,
+  projectAcceptedInkFeatureMask,
+} from "./inkPoseProjection";
+import {
+  INK_POSE_KEYPOINTS,
+  type InkPoseAnalysis,
+  type InkPoseKeypointName,
+} from "./inkPoseRuntime";
+import { INK_POSE_MODEL_VERSION } from "./poseModelArtifacts";
+
+const BASE_POINTS: Readonly<
+  Partial<Record<InkPoseKeypointName, readonly [number, number]>>
+> = Object.freeze({
+  nose: [0.5, 0.13],
+  left_eye_inner: [0.515, 0.12],
+  left_eye: [0.53, 0.12],
+  left_eye_outer: [0.545, 0.12],
+  right_eye_inner: [0.485, 0.12],
+  right_eye: [0.47, 0.12],
+  right_eye_outer: [0.455, 0.12],
+  left_ear: [0.57, 0.135],
+  right_ear: [0.43, 0.135],
+  mouth_left: [0.525, 0.17],
+  mouth_right: [0.475, 0.17],
+  left_shoulder: [0.62, 0.28],
+  right_shoulder: [0.38, 0.28],
+  left_elbow: [0.72, 0.42],
+  right_elbow: [0.28, 0.42],
+  left_wrist: [0.76, 0.57],
+  right_wrist: [0.24, 0.57],
+  left_pinky: [0.79, 0.62],
+  right_pinky: [0.21, 0.62],
+  left_index: [0.78, 0.61],
+  right_index: [0.22, 0.61],
+  left_thumb: [0.75, 0.61],
+  right_thumb: [0.25, 0.61],
+  left_hip: [0.57, 0.55],
+  right_hip: [0.43, 0.55],
+  left_knee: [0.59, 0.75],
+  right_knee: [0.41, 0.75],
+  left_ankle: [0.6, 0.93],
+  right_ankle: [0.4, 0.93],
+  left_heel: [0.57, 0.96],
+  right_heel: [0.43, 0.96],
+  left_foot_index: [0.64, 0.98],
+  right_foot_index: [0.36, 0.98],
+});
+
+function analysis(options?: {
+  mirrored?: boolean;
+  rightArmRaised?: boolean;
+}): InkPoseAnalysis {
+  const width = 240;
+  const height = 320;
+  const landmarks = INK_POSE_KEYPOINTS.map((name) => {
+    let [baseX, y] = BASE_POINTS[name]!;
+    if (options?.rightArmRaised && name === "right_elbow") {
+      [baseX, y] = [0.31, 0.2];
+    }
+    if (options?.rightArmRaised && name === "right_wrist") {
+      [baseX, y] = [0.24, 0.1];
+    }
+    return Object.freeze({
+      name,
+      x: options?.mirrored ? 1 - baseX : baseX,
+      y,
+      z: 0,
+      score: 0.99,
+    });
+  });
+  return Object.freeze({
+    recipeVersion: INK_POSE_MODEL_VERSION,
+    width,
+    height,
+    poseScore: 0.99,
+    landmarks: Object.freeze(landmarks),
+    worldLandmarks: Object.freeze(landmarks),
+    personMask: new Uint8Array(width * height).fill(255),
+  });
+}
+
+function featureMask(
+  guide: ReturnType<typeof buildInkPoseAnatomyGuide>,
+  predicate: (x: number, y: number) => boolean,
+): InkFeatureMask {
+  const mask = new Uint8Array(guide.mask.length);
+  let featurePixelCount = 0;
+  let anatomyPixelCount = 0;
+  for (let index = 0; index < mask.length; index += 1) {
+    if (!guide.mask[index]) continue;
+    anatomyPixelCount += 1;
+    const x = (index % guide.width) / guide.width;
+    const y = Math.floor(index / guide.width) / guide.height;
+    if (predicate(x, y)) {
+      mask[index] = 255;
+      featurePixelCount += 1;
+    }
+  }
+  return {
+    recipeVersion: INK_FEATURE_MASK_RECIPE_VERSION,
+    width: guide.width,
+    height: guide.height,
+    mask,
+    normalizedBounds: { x: 0.2, y: 0.2, width: 0.2, height: 0.2 },
+    featurePixelCount,
+    anatomyPixelCount,
+    outsideAnatomyChangedPixelCount: 0,
+    retainedComponentCount: 1,
+  };
+}
+
+function centroid(mask: Uint8Array, width: number): { x: number; y: number } {
+  let sumX = 0;
+  let sumY = 0;
+  let count = 0;
+  for (let index = 0; index < mask.length; index += 1) {
+    if (!mask[index]) continue;
+    sumX += index % width;
+    sumY += Math.floor(index / width);
+    count += 1;
+  }
+  return { x: sumX / count / width, y: sumY / count / (mask.length / width) };
+}
+
+describe("deterministic tattoo pose projection", () => {
+  it("preserves anatomical right when the target frame is mirrored", () => {
+    const tuple = {
+      zone: "upper_arm",
+      surface: "anterior",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const result = projectAcceptedInkFeatureMask({
+      tuple,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask: featureMask(sourceGuide, (_x, y) => y < 0.37),
+      targetAnalysis: analysis({ mirrored: true }),
+    });
+
+    expect(centroid(result.mask, result.width).x).toBeGreaterThan(0.5);
+    expect(result.projectedPixelCount).toBeGreaterThan(20);
+  });
+
+  it("moves a right forearm tattoo with a raised target arm", () => {
+    const tuple = {
+      zone: "forearm",
+      surface: "lateral",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const sourceFeature = featureMask(
+      sourceGuide,
+      (x, y) => x < 0.27 && y > 0.45,
+    );
+    const baseline = projectAcceptedInkFeatureMask({
+      tuple,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask: sourceFeature,
+      targetAnalysis: analysis(),
+    });
+    const raised = projectAcceptedInkFeatureMask({
+      tuple,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask: sourceFeature,
+      targetAnalysis: analysis({ rightArmRaised: true }),
+    });
+
+    expect(centroid(raised.mask, raised.width).y)
+      .toBeLessThan(centroid(baseline.mask, baseline.width).y - 0.2);
+  });
+
+  it("keeps upper-torso placement on the same relative torso region", () => {
+    const tuple = {
+      zone: "upper_torso",
+      surface: "anterior",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const result = projectAcceptedInkFeatureMask({
+      tuple,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask: featureMask(
+        sourceGuide,
+        (x, y) => x > 0.37 && x < 0.43 && y > 0.31 && y < 0.39,
+      ),
+      targetAnalysis: analysis({ mirrored: true }),
+    });
+
+    expect(centroid(result.mask, result.width).x).toBeGreaterThan(0.5);
+    expect(result.normalizedSegments).toHaveLength(1);
+  });
+
+  it("rejects a feature mask outside its source anatomy authority", () => {
+    const tuple = {
+      zone: "upper_arm",
+      surface: "anterior",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const sourceFeature = featureMask(sourceGuide, () => false);
+    for (let y = 30; y < 50; y += 1) {
+      for (let x = 170; x < 190; x += 1) {
+        sourceFeature.mask[y * sourceFeature.width + x] = 255;
+        sourceFeature.featurePixelCount += 1;
+      }
+    }
+
+    expect(() =>
+      projectAcceptedInkFeatureMask({
+        tuple,
+        sourceAnalysis,
+        sourceGuide,
+        featureMask: sourceFeature,
+        targetAnalysis: analysis(),
+      })
+    ).toThrowError(
+      expect.objectContaining({ code: "source_outside_anatomy" }),
+    );
+  });
+
+  it("rejects a pose guide for a different anatomical authority", () => {
+    const tuple = {
+      zone: "upper_arm",
+      surface: "anterior",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const wrongTargetGuide = buildInkPoseAnatomyGuide({
+      ...tuple,
+      side: "left",
+    }, analysis());
+
+    expect(() =>
+      projectAcceptedInkFeatureMask({
+        tuple,
+        sourceAnalysis,
+        sourceGuide,
+        featureMask: featureMask(sourceGuide, (_x, y) => y < 0.37),
+        targetAnalysis: analysis(),
+        targetGuide: wrongTargetGuide,
+      })
+    ).toThrowError(
+      expect.objectContaining<Partial<InkPoseProjectionError>>({
+        code: "authority_mismatch",
+      }),
+    );
+  });
+});

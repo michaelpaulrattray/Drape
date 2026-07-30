@@ -253,6 +253,68 @@ function dependencies(
     completeSuccess: vi.fn(async () => undefined),
     completeFailure: completeFailure as never,
     now: () => new Date("2026-07-28T00:00:00.000Z"),
+    localizeProjection: vi.fn(async (_dependencies, input) => {
+      const references = input.features.map((feature) => ({
+        featureId: feature.featureId,
+        featureVersionId: feature.featureVersionId,
+        normalizedDescriptor: feature.normalizedDescriptor,
+        anatomyLabel: feature.anatomyLabel,
+        sideAuthority: "Use the subject's exact anatomical side.",
+        targetGuideLabel: "SUBJECT ANATOMICAL SIDE",
+        witnessSideAuthority: "Use the subject's exact anatomical side.",
+        witnessGuideLabel: "SUBJECT ANATOMICAL SIDE",
+        targetZone: feature.targetZone,
+        targetZones: feature.targetZones,
+        witnessZone: feature.witnessZone,
+        witness: { bytes: webp, mime: "image/webp" as const },
+        isProjectionTarget: feature.isProjectionTarget,
+      }));
+      const projections = new Map(references.map((reference, index) => {
+        const mask = new Uint8Array(256 * 256);
+        const zone = reference.targetZones[0]!;
+        const left = Math.floor(zone.x * 256);
+        const top = Math.floor(zone.y * 256);
+        const right = Math.ceil((zone.x + zone.width) * 256);
+        const bottom = Math.ceil((zone.y + zone.height) * 256);
+        for (let y = top; y < bottom; y += 1) {
+          for (let x = left; x < right; x += 1) {
+            mask[y * 256 + x] = 255;
+          }
+        }
+        return [reference.featureVersionId, {
+          recipeVersion: "ink.pose-projection.v1" as const,
+          tuple: input.features[index]!.anatomy as never,
+          width: 256,
+          height: 256,
+          mask,
+          normalizedSegments: reference.targetZones,
+          projectedPixelCount: mask.filter(Boolean).length,
+          expectedPixelCount: 100,
+        }] as const;
+      }));
+      return {
+        features: references,
+        projections,
+        guidedTarget: input.target,
+      };
+    }),
+    localizeAuthoring: vi.fn(async (_dependencies, input) => ({
+      guidedTarget: input.target,
+      anatomyGuide: {
+        recipeVersion: "ink.pose-geometry.v1" as const,
+        tuple: input.anatomy,
+        width: 256,
+        height: 256,
+        mask: new Uint8Array(256 * 256).fill(255),
+        normalizedSegments: [{
+          x: 0.05,
+          y: 0.05,
+          width: 0.9,
+          height: 0.9,
+        }],
+        minimumLandmarkScore: 0.99,
+      },
+    })),
     ...overrides,
   };
 }
@@ -438,9 +500,9 @@ describe("ink candidate generation", () => {
         ontologyVersion: "body-zones.ink.v2",
         targetAngle: "backFull",
         sourceAngle: "backFull",
-        composerRecipeVersion: "ink.add.anywhere.projection.v4",
+        composerRecipeVersion: "ink.add.anywhere.projection.v5",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v8",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v9",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -572,13 +634,13 @@ describe("ink candidate generation", () => {
         "version-2": {
           visible: true,
           targetZones: [
-            { x: 0.1, y: 0.2, width: 0.3, height: 0.4 },
+            { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
           ],
         },
       },
     }));
     expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.projection.v4",
+      recipeVersion: "ink.add.anywhere.projection.v5",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "evidence_mosaic" }),
@@ -608,7 +670,7 @@ describe("ink candidate generation", () => {
     );
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v8",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v9",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "coordinate_guide" }),

@@ -139,10 +139,12 @@ function graph(): ClosedInkFeatureGraph {
       version,
       authoringPlate,
       authoringAsset: asset(201, "frontFull"),
+      authoringSourceAsset: asset(101, "frontFull"),
       projections: [{
         evidence: projectionEvidence,
         plate: projectionPlate,
         asset: asset(301, "sideFull"),
+        sourceAsset: asset(401, "sideFull"),
       }],
       contract: "all_body_v2",
     }],
@@ -251,6 +253,56 @@ describe("v2 evidence package execution", () => {
             }],
           },
         } as never;
+      }),
+      localizeV2SlotReferences: vi.fn(async () => {
+        const mask = new Uint8Array(512 * 768);
+        for (let y = 180; y < 520; y += 1) {
+          for (let x = 70; x < 180; x += 1) {
+            mask[y * 512 + x] = 255;
+          }
+        }
+        const projection = {
+          recipeVersion: "ink.pose-projection.v1" as const,
+          tuple: {
+            zone: "full_arm",
+            surface: "circumferential",
+            side: "right",
+          } as const,
+          width: 512,
+          height: 768,
+          mask,
+          normalizedSegments: [{
+            x: 70 / 512,
+            y: 180 / 768,
+            width: 110 / 512,
+            height: 340 / 768,
+          }],
+          projectedPixelCount: 37_400,
+          expectedPixelCount: 37_400,
+        };
+        return {
+          anchor: { bytes: png, mime: "image/png" as const },
+          originalTarget: { bytes: png, mime: "image/png" as const },
+          guidedTarget: { bytes: png, mime: "image/png" as const },
+          evidenceMosaic: { bytes: png, mime: "image/png" as const },
+          features: [{
+            featureId: "feature-1",
+            featureVersionId: "version-1",
+            normalizedDescriptor: "black botanical full sleeve",
+            anatomyLabel: "right arm - full sleeve",
+            sideAuthority: "Use the subject's exact anatomical right side.",
+            targetGuideLabel: "SUBJECT RIGHT",
+            witnessSideAuthority:
+              "Use the subject's exact anatomical right side.",
+            witnessGuideLabel: "SUBJECT RIGHT",
+            targetZone: projection.normalizedSegments[0],
+            targetZones: projection.normalizedSegments,
+            witnessZone: projection.normalizedSegments[0],
+            witness: { bytes: webp, mime: "image/webp" as const },
+            isProjectionTarget: false,
+          }],
+          projectionMasks: new Map([["version-1", projection]]),
+        };
       }),
     };
     await expect(executeEvidencePackageSync(dependencies, {

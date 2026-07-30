@@ -132,12 +132,12 @@ describe("multi-feature projection composition", () => {
       "identity_anchor",
       "evidence_mosaic",
     ]);
-    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v4");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v5");
     expect(request.prompt).toContain(
       "Image 1 is the clean original target and immutable pixel canvas",
     );
     expect(request.prompt).toContain(
-      "never reproduce the red regions or use this annotated image as the output canvas",
+      "Blue F-label text is metadata and never authorizes ink",
     );
     expect(request.prompt).toContain("F1 (newly exposed continuation)");
     expect(request.prompt).toContain("F2 (already evidenced)");
@@ -280,17 +280,15 @@ describe("multi-feature projection composition", () => {
       coordinateGuide: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v8");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v9");
     expect(request.prompt).toContain(
-      "partial upper arm or forearm in a close crop",
+      "partial upper arm or forearm counts as visible",
     );
     expect(request.prompt).toContain("exactly three ordered images");
     expect(request.prompt).toContain(
-      "relative to the entire rectangular Image 1/Image 2 canvas",
+      "placement was computed deterministically",
     );
-    expect(request.prompt).toContain(
-      "No registry rectangle or person bounding box is coordinate authority",
-    );
+    expect(request.prompt).toContain("Do not return or infer coordinates");
     expect(request.prompt).not.toContain(
       JSON.stringify(selected[0]!.targetZone),
     );
@@ -390,9 +388,9 @@ describe("multi-feature projection composition", () => {
     expect(request.prompt).toContain("accepted tattoo witnesses");
     expect(request.prompt).toContain("black botanical full sleeve");
     expect(request.prompt).toContain(
-      "Localized segments [{\"x\":0.08,\"y\":0.24,\"width\":0.2,\"height\":0.28},{\"x\":0.1,\"y\":0.48,\"width\":0.18,\"height\":0.31}]",
+      "Compare its red pixel mask with witness Image 3",
     );
-    expect(request.prompt).toContain("union of its F-segments");
+    expect(request.prompt).toContain("red pixel mask");
     expect(request.images.map(({ role }) => role)).toEqual([
       "original_target",
       "guided_target",

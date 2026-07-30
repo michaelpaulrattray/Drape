@@ -235,13 +235,13 @@ async function loadCurrentForkGraphIn(
     .where(eq(modelPackageSnapshotSlots.packageSnapshotId, packageSnapshot.id))
     .orderBy(asc(modelPackageSnapshotSlots.viewAngle));
   if (slots.length === 0) throw new EvidenceForkError("snapshot_unavailable");
-  const assets = await tx
+  const selectedAssets = await tx
     .select()
     .from(modelAssets)
     .where(inArray(modelAssets.id, slots.map((slot) => slot.selectedAssetId)));
-  const byAsset = new Map(assets.map((asset) => [asset.id, asset]));
+  const byAsset = new Map(selectedAssets.map((asset) => [asset.id, asset]));
   if (
-    assets.length !== slots.length
+    selectedAssets.length !== slots.length
     || !slots.every((slot) => {
       const asset = byAsset.get(slot.selectedAssetId);
       return asset?.modelId === sourceModel.id
@@ -292,6 +292,35 @@ async function loadCurrentForkGraphIn(
   ) {
     throw new EvidenceForkError("snapshot_unavailable");
   }
+  const evidenceAssetIds = Array.from(new Set([
+    ...featureVersions.flatMap((version) => [
+      version.sourceAssetId,
+      version.acceptedAssetId,
+    ]),
+    ...featureProjectionEvidence.flatMap((evidence) => [
+      evidence.sourceAssetId,
+      evidence.acceptedAssetId,
+    ]),
+  ].filter((id): id is number => id !== null)));
+  const additionalEvidenceAssetIds = evidenceAssetIds.filter(
+    (id) => !byAsset.has(id),
+  );
+  const evidenceAssets = additionalEvidenceAssetIds.length > 0
+    ? await tx
+      .select()
+      .from(modelAssets)
+      .where(and(
+        eq(modelAssets.modelId, sourceModel.id),
+        inArray(modelAssets.id, additionalEvidenceAssetIds),
+      ))
+    : [];
+  if (
+    evidenceAssets.length !== additionalEvidenceAssetIds.length
+    || evidenceAssets.some((asset) => !asset.storageKey)
+  ) {
+    throw new EvidenceForkError("snapshot_unavailable");
+  }
+  const assets = [...selectedAssets, ...evidenceAssets];
   const plateIds = Array.from(new Set(featureVersions.flatMap((version) => [
     version.sourceReferencePlateId,
     version.acceptedCandidatePlateId,
@@ -575,12 +604,6 @@ async function commitEvidenceForkIn(
     });
   }
   const versionIdMap = new Map<string, string>();
-  const selectedAssetByAngle = new Map(
-    input.prepared.graph.slots.map((slot) => [
-      slot.viewAngle,
-      slot.selectedAssetId,
-    ]),
-  );
   for (
     let index = 0;
     index < input.prepared.graph.featureVersions.length;
@@ -589,17 +612,19 @@ async function commitEvidenceForkIn(
     const source = input.prepared.graph.featureVersions[index];
     const id = input.generateId();
     const featureId = featureIdMap.get(source.featureId);
-    // Forks re-witness each selected feature against the copied current asset
-    // for its authoring angle. Earlier authoring assets may no longer be
-    // selected after later tattoos and are deliberately not copied.
-    const selectedSourceAssetId = selectedAssetByAngle.get(
-      source.sourceViewAngle,
-    );
-    const acceptedAssetId = selectedSourceAssetId
-      ? assetIdMap.get(selectedSourceAssetId)
+    const acceptedAssetId = source.acceptedAssetId
+      ? assetIdMap.get(source.acceptedAssetId)
+      : null;
+    const sourceAssetId = source.sourceAssetId
+      ? assetIdMap.get(source.sourceAssetId)
       : null;
     const acceptedCandidatePlateId = plateIdMap.get(source.acceptedCandidatePlateId);
-    if (!featureId || !acceptedAssetId || !acceptedCandidatePlateId) {
+    if (
+      !featureId
+      || !acceptedAssetId
+      || !acceptedCandidatePlateId
+      || (source.sourceAssetId !== null && !sourceAssetId)
+    ) {
       throw new EvidenceForkError("snapshot_unavailable");
     }
     versionIdMap.set(source.id, id);
@@ -613,8 +638,9 @@ async function commitEvidenceForkIn(
       surface: source.surface,
       side: source.side,
       normalizedDescriptor: source.normalizedDescriptor,
-      // Forks copy selected package truth, not stale pre-edit source assets.
-      sourceAssetId: null,
+      // Preserve the exact clean/accepted image pair that localizes this
+      // immutable feature. These are evidence assets, not package selections.
+      sourceAssetId,
       sourceViewAngle: source.sourceViewAngle,
       sourceReferencePlateId: source.sourceReferencePlateId
         ? plateIdMap.get(source.sourceReferencePlateId) ?? null
@@ -641,17 +667,16 @@ async function commitEvidenceForkIn(
     const acceptedCandidatePlateId = plateIdMap.get(
       source.acceptedCandidatePlateId,
     );
-    const selectedTargetAssetId = selectedAssetByAngle.get(
-      source.targetViewAngle,
-    );
-    const acceptedAssetId = selectedTargetAssetId
-      ? assetIdMap.get(selectedTargetAssetId)
+    const acceptedAssetId = assetIdMap.get(source.acceptedAssetId);
+    const sourceAssetId = source.sourceAssetId
+      ? assetIdMap.get(source.sourceAssetId)
       : null;
     if (
       !featureId
       || !featureVersionId
       || !acceptedCandidatePlateId
       || !acceptedAssetId
+      || (source.sourceAssetId !== null && !sourceAssetId)
     ) {
       throw new EvidenceForkError("snapshot_unavailable");
     }
@@ -662,8 +687,7 @@ async function commitEvidenceForkIn(
       featureId,
       featureVersionId,
       targetViewAngle: source.targetViewAngle,
-      // Forks have no copied pre-projection source asset.
-      sourceAssetId: null,
+      sourceAssetId,
       acceptedAssetId,
       acceptedCandidatePlateId,
       recipeVersion: source.recipeVersion,

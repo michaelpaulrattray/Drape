@@ -86,14 +86,19 @@ import {
   type InkProjectionComposerRequest,
   type InkProjectionFeatureReference,
 } from "./inkProjectionComposition";
-import { buildSegmentedAnatomicalInkZoneGuide } from "./composer/inkZoneGuide";
 import {
   assertSupportedInkAnatomyTuple,
   inkAnatomicalSideAuthority,
   inkAnatomyLabel,
-  inkViewDirectiveV2,
 } from "./inkAnatomyRegistry";
-import { inkPackageDirective } from "./evidencePackageRegistry";
+import { analyzeInkPoseImage } from "./inkPoseRuntime";
+import { buildInkPoseAnatomyGuide } from "./inkPoseGeometry";
+import { extractAcceptedInkFeatureMask } from "./inkFeatureMask";
+import {
+  projectAcceptedInkFeatureMask,
+  type InkPoseProjection,
+} from "./inkPoseProjection";
+import { buildPoseInkProjectionGuide } from "./inkPoseGuide";
 
 const log = createModuleLogger("casting/evidence/evidencePackageExecution");
 const PACKAGE_FAILURE = "The view could not be updated from its saved evidence.";
@@ -174,6 +179,7 @@ export interface EvidencePackageExecutionDependencies {
     storageKey: string;
   }) => Promise<void>;
   generateId?: () => string;
+  localizeV2SlotReferences?: typeof loadV2SlotReferences;
 }
 
 function composerImage(image: {
@@ -659,38 +665,6 @@ async function loadSlotReferences(
   };
 }
 
-function v2FeatureZone(
-  feature: EvidencePackagePrivateV2SlotAuthority["angleAuthority"]["features"][number],
-  angle: EvidencePackagePrivateV2SlotAuthority["angle"],
-) {
-  const entry = feature.entry;
-  if (entry.contract === "legacy_front_upper_torso_v1") {
-    const directive = inkPackageDirective({
-      capabilityKey: "ink.add.front_upper_torso.v1",
-      ontologyVersion: entry.version.ontologyVersion,
-      zone: entry.version.zone,
-      surface: entry.version.surface,
-      side: entry.version.side,
-      angle,
-    });
-    if (!directive?.normalizedTargetZone) {
-      throw new TypeError("Saved tattoo evidence has no target geometry");
-    }
-    return directive.normalizedTargetZone;
-  }
-  const anatomy = {
-    zone: entry.version.zone,
-    surface: entry.version.surface,
-    side: entry.version.side,
-  };
-  assertSupportedInkAnatomyTuple(anatomy);
-  const directive = inkViewDirectiveV2(anatomy, angle);
-  if (!directive.normalizedTargetZone) {
-    throw new TypeError("Saved tattoo evidence has no target geometry");
-  }
-  return directive.normalizedTargetZone;
-}
-
 async function loadV2SlotReferences(
   dependencies: EvidencePackageExecutionDependencies,
   authority: EvidencePackagePrivateV2Authority,
@@ -701,6 +675,7 @@ async function loadV2SlotReferences(
   guidedTarget: ComposerImage;
   evidenceMosaic: ComposerImage;
   features: readonly InkProjectionFeatureReference[];
+  projectionMasks: ReadonlyMap<string, InkPoseProjection>;
 }> {
   if (slot.angleAuthority.requiresCoverageProbe) {
     throw new EvidencePackageAuthorityError("slot_unavailable");
@@ -724,7 +699,9 @@ async function loadV2SlotReferences(
     fetchImage(authority.identityAnchor.storageUrl),
     fetchImage(slot.target.storageUrl),
   ]);
-  const features: InkProjectionFeatureReference[] = await Promise.all(
+  const target = composerImage(targetFetched);
+  const targetAnalysis = await analyzeInkPoseImage(target.bytes);
+  const localized = await Promise.all(
     relevant.map(async (feature) => {
       const entry = feature.entry;
       const acceptedProjection = entry.projections.find(
@@ -735,6 +712,11 @@ async function loadV2SlotReferences(
       const witnessPlate = acceptedAtTarget
         ? entry.authoringPlate
         : acceptedProjection?.plate ?? entry.authoringPlate;
+      const witnessSourceAsset = acceptedAtTarget
+        ? entry.authoringSourceAsset
+        : acceptedProjection
+          ? acceptedProjection.sourceAsset
+          : entry.authoringSourceAsset;
       const witnessAngle = acceptedAtTarget
         ? entry.version.sourceViewAngle
         : acceptedProjection?.evidence.targetViewAngle
@@ -770,7 +752,52 @@ async function loadV2SlotReferences(
             prompt:
               `Judge ${entry.version.side} only as the subject's anatomical side.`,
           };
-      return {
+      if (!witnessSourceAsset?.storageUrl) {
+        throw new EvidencePackageAuthorityError("slot_unavailable");
+      }
+      const tuple = entry.contract === "all_body_v2"
+        ? (() => {
+            assertSupportedInkAnatomyTuple(anatomy);
+            return anatomy;
+          })()
+        : {
+            zone: "upper_torso" as const,
+            surface: "anterior" as const,
+            side: entry.version.side as "left" | "centre" | "right",
+          };
+      const [cleanFetched, witness] = await Promise.all([
+        fetchImage(witnessSourceAsset.storageUrl),
+        readPrivateExact(dependencies.delivery, witnessPlate),
+      ]);
+      const cleanSource = composerImage(cleanFetched);
+      const sourceAnalysis = await analyzeInkPoseImage(cleanSource.bytes);
+      const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+      const featureMask = await extractAcceptedInkFeatureMask({
+        cleanSource: cleanSource.bytes,
+        acceptedCandidate: witness.bytes,
+        anatomyGuide: sourceGuide,
+      });
+      const targetGuide = buildInkPoseAnatomyGuide(tuple, targetAnalysis);
+      const projection = projectAcceptedInkFeatureMask({
+        tuple,
+        sourceAnalysis,
+        sourceGuide,
+        featureMask,
+        targetAnalysis,
+        targetGuide,
+      });
+      const targetZones = projection.normalizedSegments;
+      const targetZone = {
+        x: Math.min(...targetZones.map((zone) => zone.x)),
+        y: Math.min(...targetZones.map((zone) => zone.y)),
+        width:
+          Math.max(...targetZones.map((zone) => zone.x + zone.width))
+          - Math.min(...targetZones.map((zone) => zone.x)),
+        height:
+          Math.max(...targetZones.map((zone) => zone.y + zone.height))
+          - Math.min(...targetZones.map((zone) => zone.y)),
+      };
+      const reference: InkProjectionFeatureReference = {
         featureId: entry.feature.id,
         featureVersionId: entry.version.id,
         normalizedDescriptor: entry.version.normalizedDescriptor,
@@ -779,31 +806,41 @@ async function loadV2SlotReferences(
         targetGuideLabel: targetSideAuthority.guideLabel,
         witnessSideAuthority: witnessSideAuthority.prompt,
         witnessGuideLabel: witnessSideAuthority.guideLabel,
-        targetZone: v2FeatureZone(feature, slot.angle),
-        targetZones: Object.freeze([v2FeatureZone(feature, slot.angle)]),
-        witnessZone: v2FeatureZone(feature, witnessAngle),
-        witness: await readPrivateExact(dependencies.delivery, witnessPlate),
+        targetZone: Object.freeze(targetZone),
+        targetZones,
+        witnessZone: featureMask.normalizedBounds,
+        witness,
         isProjectionTarget: false,
       };
+      return { reference: Object.freeze(reference), projection };
     }),
   );
-  const target = composerImage(targetFetched);
   const [guide, mosaic] = await Promise.all([
-    buildSegmentedAnatomicalInkZoneGuide({
+    buildPoseInkProjectionGuide({
       targetBytes: target.bytes,
-      features: features.map((feature) => ({
-        normalizedZones: feature.targetZones,
-        label: `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
+      features: localized.map(({ reference, projection }) => ({
+        width: projection.width,
+        height: projection.height,
+        mask: projection.mask,
+        normalizedSegments: projection.normalizedSegments,
+        label: `${reference.anatomyLabel} - ${reference.targetGuideLabel}`,
       })),
     }),
-    buildInkEvidenceMosaic(features, { requireProjectionTarget: false }),
+    buildInkEvidenceMosaic(
+      localized.map(({ reference }) => reference),
+      { requireProjectionTarget: false },
+    ),
   ]);
   return {
     anchor: composerImage(anchorFetched),
     originalTarget: target,
     guidedTarget: composerImage(guide),
     evidenceMosaic: composerImage(mosaic),
-    features: Object.freeze(features),
+    features: Object.freeze(localized.map(({ reference }) => reference)),
+    projectionMasks: new Map(localized.map(({ reference, projection }) => [
+      reference.featureVersionId,
+      projection,
+    ])),
   };
 }
 
@@ -924,12 +961,23 @@ async function runV2CandidateAttempt(input: {
     );
     failureStage = "probe_provider";
     const placementAuditCandidate = composerImage(
-      await buildSegmentedAnatomicalInkZoneGuide({
+      await buildPoseInkProjectionGuide({
         targetBytes: canonical.bytes,
-        features: references.features.map((feature) => ({
-          normalizedZones: feature.targetZones,
-          label: `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
-        })),
+        features: references.features.map((feature) => {
+          const projection = references.projectionMasks.get(
+            feature.featureVersionId,
+          );
+          if (!projection) {
+            throw new EvidencePackageAuthorityError("slot_unavailable");
+          }
+          return {
+            width: projection.width,
+            height: projection.height,
+            mask: projection.mask,
+            normalizedSegments: projection.normalizedSegments,
+            label: `${feature.anatomyLabel} - ${feature.targetGuideLabel}`,
+          };
+        }),
       }),
     );
     const probe = await runInkProjectionCandidateProbes({
@@ -1156,7 +1204,9 @@ export async function executeEvidencePackageSync(
         }
       } else {
         const v2Slot = authority.slots[slotIndex];
-        const references = await loadV2SlotReferences(
+        const references = await (
+          dependencies.localizeV2SlotReferences ?? loadV2SlotReferences
+        )(
           dependencies,
           authority,
           v2Slot,

@@ -42,11 +42,13 @@ export interface InkPoseAnatomyGuide {
   minimumLandmarkScore: number;
 }
 
-type Point = Readonly<{ x: number; y: number }>;
-type Primitive =
+export type InkPoseGeometryPoint = Readonly<{ x: number; y: number }>;
+export type InkPoseGeometryPrimitive =
   | Readonly<{ kind: "capsule"; a: Point; b: Point; radius: number }>
   | Readonly<{ kind: "ellipse"; centre: Point; rx: number; ry: number }>
   | Readonly<{ kind: "polygon"; points: readonly Point[] }>;
+type Point = InkPoseGeometryPoint;
+type Primitive = InkPoseGeometryPrimitive;
 
 const MIN_LANDMARK_SCORE = 0.65;
 const MIN_PERSON_ALPHA = 128;
@@ -186,6 +188,7 @@ function torsoPolygon(
 function facePrimitive(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
   zone: "face" | "scalp",
+  side: InkAnatomySide,
 ): Primitive {
   const leftEar = point(requiredPoint(points, "left_ear"));
   const rightEar = point(requiredPoint(points, "right_ear"));
@@ -202,6 +205,26 @@ function facePrimitive(
       "geometry_invalid",
       "Tattoo face geometry is not plausible",
     );
+  }
+  if (side !== "centre") {
+    const sideEye = side === "left" ? leftEye : rightEye;
+    const sideEar = side === "left" ? leftEar : rightEar;
+    const sideMouth = side === "left" ? mouthLeft : mouthRight;
+    const sideCentre = midpoint(sideEye, sideEar);
+    if (zone === "scalp") {
+      return Object.freeze({
+        kind: "ellipse",
+        centre: interpolate(sideCentre, sideMouth, -0.82),
+        rx: Math.max(faceWidth * 0.27, distance(sideEye, sideEar) * 0.82),
+        ry: Math.max(faceWidth * 0.46, eyeMouth * 1.8),
+      });
+    }
+    return Object.freeze({
+      kind: "ellipse",
+      centre: interpolate(sideCentre, sideMouth, 0.52),
+      rx: Math.max(faceWidth * 0.25, distance(sideEye, sideEar) * 0.78),
+      ry: Math.max(faceWidth * 0.5, eyeMouth * 1.55),
+    });
   }
   if (zone === "scalp") {
     return Object.freeze({
@@ -222,6 +245,7 @@ function facePrimitive(
 function neckPrimitive(
   points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
   shoulderScale: number,
+  side: InkAnatomySide,
 ): Primitive {
   const shoulders = midpoint(
     point(requiredPoint(points, "left_shoulder")),
@@ -231,10 +255,21 @@ function neckPrimitive(
     point(requiredPoint(points, "mouth_left")),
     point(requiredPoint(points, "mouth_right")),
   );
+  const top = interpolate(mouth, shoulders, 0.48);
+  const bottom = interpolate(mouth, shoulders, 0.88);
+  if (side !== "centre") {
+    const shoulder = point(requiredPoint(points, sideName(side, "shoulder")));
+    return Object.freeze({
+      kind: "capsule",
+      a: interpolate(top, shoulder, 0.24),
+      b: interpolate(bottom, shoulder, 0.22),
+      radius: shoulderScale * 0.09,
+    });
+  }
   return Object.freeze({
     kind: "capsule",
-    a: interpolate(mouth, shoulders, 0.48),
-    b: interpolate(mouth, shoulders, 0.88),
+    a: top,
+    b: bottom,
     radius: shoulderScale * 0.16,
   });
 }
@@ -332,16 +367,18 @@ function sidedLimbPrimitives(
   }
 }
 
-function primitivesForTuple(
+export function buildInkPoseGeometryPrimitives(
   tuple: InkAnatomyTuple,
-  points: ReadonlyMap<InkPoseKeypointName, InkPosePoint>,
-): readonly Primitive[] {
+  analysis: InkPoseAnalysis,
+): readonly InkPoseGeometryPrimitive[] {
+  assertSupportedInkAnatomyTuple(tuple);
+  const points = pointMap(analysis);
   const scale = bodyScale(points);
   if (tuple.zone === "face" || tuple.zone === "scalp") {
-    return Object.freeze([facePrimitive(points, tuple.zone)]);
+    return Object.freeze([facePrimitive(points, tuple.zone, tuple.side)]);
   }
   if (tuple.zone === "neck") {
-    return Object.freeze([neckPrimitive(points, scale.shoulders)]);
+    return Object.freeze([neckPrimitive(points, scale.shoulders, tuple.side)]);
   }
   if (tuple.zone === "upper_torso" || tuple.zone === "lower_torso") {
     return Object.freeze([torsoPolygon(points, tuple.zone, tuple.side)]);
@@ -509,7 +546,7 @@ export function buildInkPoseAnatomyGuide(
     );
   }
   const points = pointMap(analysis);
-  const primitives = primitivesForTuple(tuple, points);
+  const primitives = buildInkPoseGeometryPrimitives(tuple, analysis);
   if (primitives.length < 1 || primitives.length > 4) {
     throw new InkPoseGeometryError(
       "geometry_invalid",
