@@ -11,6 +11,9 @@ dist/
 build/
 *.dist
 
+# Theme-parity screenshot output (scripts/drive-foundation-theme-parity.mts)
+.theme-shots/
+
 # Environment variables
 .env
 .env.local

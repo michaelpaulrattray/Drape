@@ -1162,6 +1162,61 @@ weakening, or projection enablement is part of this correction. Typecheck, 248
 files / 3,183 tests, production build, focused anatomy/package-display tests,
 and diff checks pass locally.
 
+### D-77 — Casting V2 M1: the foundation token scope is deliberately narrow until M2 *(executor decision 2026-07-30; advisor-reviewed; converges on the plan, does not amend it)*
+
+**What shipped.** `CASTING_V2_ARCHITECTURE_PLAN.md` M1: `client/src/foundation/`
+(tokens, scoped reset, AppShell/rail/topbar, primitives), the theme rewrite, a
+no-hex source guard, a theme-boot test, and the reusable light/dark screenshot
+drive. Mounted on an unlinked `/casting` route: no product surface changed.
+
+**Token scope — the one deviation.** Plan §D.1 puts the foundation tokens on
+`:root`, loaded first in `index.css`, with the shadcn semantic remap following
+at M2. Four custom-property names collide with CSS that legacy surfaces still
+read: `--border`, `--muted`, `--secondary` (defined in `index.css`'s shadcn
+`:root`, consumed through `@theme inline`) and `--font-sans` (defined at
+`:root` in the marketing `styles/tokens.css` and read by its utility classes).
+Landing the block at `:root` before the remap either repaints every legacy
+surface or resolves the foundation to shadcn's values — both break M1's law
+that the milestone has no visible product effect. M1 therefore scopes the
+block to the shell root element (`.dp-root`, and `[data-theme="dark"]
+.dp-root`), which wins for the whole foundation subtree regardless of
+stylesheet order. `data-theme` on `<html>` remains the only switch, so no
+component branches on theme. **M2 promotes the block to `:root` as part of the
+remap — a selector change, not a rewrite.** Consequence carried forward: while
+the scope is narrow, tokens do not reach Radix portals (they mount on
+`<body>`), so M1 deliberately ships no dialog, menu or tooltip primitive;
+those arrive with the M2 promotion.
+
+**Theme mechanics.** `ThemeProvider`'s `switchable` prop is gone — it defaulted
+to false, so persistence never ran and the stored value was never read. The
+theme now persists under `drape_theme` (the dead `theme` key is never read),
+applies as `data-theme` on `<html>`, and defaults to dark for continuity. The
+`.dark` class is still written in step with the attribute because ~46 `dark:`
+utilities on legacy surfaces read it; that second write dies at M2 when the
+`dark` custom variant is redefined as `[data-theme="dark"]`.
+
+**Production CSP.** The first-paint script is inline and classic on purpose (a
+module script is deferred and would flash), and production `script-src` carries
+no `unsafe-inline`. Its sha256 is now an exported constant in
+`server/security/securityHeaders.ts`, and a test recomputes the hash from
+`client/index.html` and fails on drift. Verified that `pnpm build` emits the
+script byte-identically, so the hash is valid against the served HTML and not
+just the source.
+
+**Test surface.** `vitest.config.ts` now includes `client/src/**/*.test.ts` for
+pure-logic and source-guard tests only (node environment, no DOM, no component
+rendering). The no-hex guard covers `client/src/foundation/**`, the future
+`features/casting-v2/**`, and the M1 surface, with exactly two named
+carve-outs: `tokens.css` (the token source) and `brand-orb.css` (brand artwork,
+identical in both themes). A companion test proves every themeable token is
+defined in both themes, so a missing token cannot force a theme conditional.
+
+**Not pulled forward.** The Tailwind token mapping (§D.2), the shadcn semantic
+remap and lobby shell adoption (M2), the `Navigation.tsx`/`ui/sidebar.tsx`
+delete-now hygiene (§L), and the D-22/D-74 supersessions (recorded at the
+Canvas and Sign milestones) all remain outside M1 so its rollback stays a
+single revert.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

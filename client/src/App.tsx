@@ -17,6 +17,7 @@ import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AppLobby from "./pages/AppLobby";
+import CastingFoundation from "./pages/CastingFoundation";
 import { BoardPage } from "./features/boards/BoardPage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { GenerationOperationBridge } from "./features/operations/GenerationOperationBridge";
@@ -49,6 +50,14 @@ function Router() {
 
           {/* Classic Drape Studio (fallback) */}
           <Route path="/studio" component={DrapeStudio} />
+
+          {/*
+            Casting V2 foundation shell (M1). Deliberately unlinked: nothing in
+            the product navigates here, so M1 has no visible product effect.
+            M5 replaces this component with the real roster brief screen behind
+            the CASTING_V2_SCOPE flag.
+          */}
+          <Route path="/casting" component={CastingFoundation} />
 
           {/* Admin */}
           <Route path="/admin/overview" component={AdminOverview} />

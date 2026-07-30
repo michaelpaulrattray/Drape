@@ -11,6 +11,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <!-- Theme before first paint (plan §D.8). Classic + inline on purpose:
+         a module script is deferred and would flash. Keep byte-identical to
+         the THEME_BOOT_SCRIPT constant in server/security/securityHeaders.ts —
+         its CSP sha256 hash is what allows this to run in production, and
+         client/src/foundation/theme.test.ts fails if the two drift. -->
+    <script>(function(){try{var t=localStorage.getItem("drape_theme");if(t!=="light"&&t!=="dark")t="dark";var r=document.documentElement;r.setAttribute("data-theme",t);r.classList.toggle("dark",t==="dark")}catch(e){}})();</script>
   </head>
 
   <body>

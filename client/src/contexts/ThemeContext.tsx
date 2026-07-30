@@ -1,55 +1,54 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+import {
+  applyTheme,
+  otherTheme,
+  readStoredTheme,
+  writeStoredTheme,
+  type Theme,
+} from "@/foundation/theme";
 
-interface ThemeContextType {
+/**
+ * Theme provider (CASTING_V2_ARCHITECTURE_PLAN.md §D.8).
+ *
+ * Rewritten at M1: the theme is persisted under `drape_theme`, applied as
+ * `data-theme` on <html>, and always switchable. The old `switchable` prop is
+ * gone — it defaulted to false, which meant persistence never ran and the
+ * stored value was never read. The inline script in client/index.html applies
+ * the stored theme before first paint; this provider is the runtime owner of
+ * the same state.
+ *
+ * The toggle belongs to the app shell (foundation Topbar), never to a feature.
+ */
+
+type ThemeContextType = {
   theme: Theme;
-  toggleTheme?: () => void;
-  switchable: boolean;
-}
+  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
+};
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 interface ThemeProviderProps {
   children: React.ReactNode;
+  /** Only used when storage holds nothing usable. */
   defaultTheme?: Theme;
-  switchable?: boolean;
 }
 
-export function ThemeProvider({
-  children,
-  defaultTheme = "light",
-  switchable = false,
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
-    }
-    return defaultTheme;
-  });
+export function ThemeProvider({ children, defaultTheme }: ThemeProviderProps) {
+  // A stored preference always wins; defaultTheme is only the cold-start fallback.
+  const [theme, setThemeState] = useState<Theme>(() => readStoredTheme(defaultTheme));
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    applyTheme(document.documentElement, theme);
+    writeStoredTheme(theme);
+  }, [theme]);
 
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme, switchable]);
-
-  const toggleTheme = switchable
-    ? () => {
-        setTheme(prev => (prev === "light" ? "dark" : "light"));
-      }
-    : undefined;
+  const setTheme = useCallback((next: Theme) => setThemeState(next), []);
+  const toggleTheme = useCallback(() => setThemeState((prev) => otherTheme(prev)), []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

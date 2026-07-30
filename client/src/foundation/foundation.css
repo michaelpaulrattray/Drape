@@ -1,0 +1,796 @@
+/* ============================================================
+   DRAPE FOUNDATION — chrome + primitives
+   Every value here comes from
+   docs/specs/Casting-ui-ux-design/drape-foundation/README.md
+   and its living reference (Drape Foundation.dc.html).
+
+   Plain CSS on purpose: hover, :focus-visible and media queries
+   cannot live in inline styles, and the Tailwind token mapping
+   (plan §D.2) is M2's work — foundation components must not
+   depend on it. No hex literals: tokens only.
+   ============================================================ */
+
+/* ============================================================
+   TYPE ROLES (README §2) — Archivo for humans, mono for facts
+   ============================================================ */
+
+.dp-headline {
+  margin: 0;
+  font: 500 31px/1.08 var(--font-sans);
+  letter-spacing: -0.038em;
+  color: var(--ink);
+}
+
+.dp-entity {
+  margin: 0;
+  font: 500 27px var(--font-sans);
+  letter-spacing: -0.032em;
+  color: var(--ink);
+}
+
+.dp-section {
+  font: 500 13.5px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-body {
+  font: 400 13px/1.65 var(--font-sans);
+  color: var(--metaStrong);
+  max-width: 520px;
+}
+
+/* Card title / control label. */
+.dp-label {
+  font: 500 12.5px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-secondary {
+  font: 400 11.5px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-small {
+  font: 400 11.5px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-eyebrow {
+  font: 500 10.5px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+
+.dp-chrome {
+  font: 500 10px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.dp-metadata {
+  font: 400 10.5px var(--font-mono);
+  color: var(--faint);
+}
+
+/* ============================================================
+   SHELL (README §4, §7 — 76px rail, 56px topbar, both sticky)
+   ============================================================ */
+
+.dp-root {
+  min-height: 100vh;
+  display: flex;
+}
+
+.dp-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dp-content {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 34px var(--s-11) 80px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-12);
+}
+
+/* Working surfaces (candidate sheet, canvas) get the wider column. */
+.dp-content--working {
+  --content-max: 1240px;
+}
+
+/* ---- Rail ---- */
+
+.dp-rail {
+  width: var(--rail-w);
+  flex: none;
+  border-right: 1px solid var(--border);
+  background: var(--raised);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 22px 0 var(--s-6);
+  z-index: 30;
+}
+
+.dp-rail__item {
+  width: 60px;
+  padding: 9px 0 7px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  flex: none;
+  font: 400 9.5px var(--font-sans);
+  color: var(--metaStrong);
+  transition: background var(--t-fast) var(--ease);
+}
+
+.dp-rail__item svg { color: var(--meta); }
+
+.dp-rail__item:hover { background: var(--fillStrong); }
+
+.dp-rail__item[aria-current="page"] {
+  background: var(--fillStrong);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.dp-rail__item[aria-current="page"] svg { color: var(--ink); }
+
+.dp-rail__foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-5);
+  flex: none;
+  padding-top: var(--s-6);
+}
+
+.dp-rail__divider {
+  width: 34px;
+  height: 1px;
+  background: var(--borderSoft);
+}
+
+.dp-account {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--media), var(--dashed));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 500 10.5px var(--font-sans);
+  color: var(--linkHover);
+  box-shadow: 0 0 0 1px var(--borderCard);
+  cursor: pointer;
+  transition: box-shadow var(--t-fast) var(--ease);
+}
+
+.dp-account:hover { box-shadow: 0 0 0 1px var(--ink); }
+
+/* Below ~720px the rail is icon-only (README §7). */
+@media (max-width: 720px) {
+  .dp-rail { width: 56px; }
+  .dp-rail__item { width: 44px; }
+  .dp-rail__label { display: none; }
+  .dp-content { padding: 24px var(--s-8) 80px; }
+}
+
+/* ---- Topbar ---- */
+
+.dp-topbar {
+  height: var(--topbar-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-6);
+  padding: 0 18px 0 var(--s-9);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--barGlass);
+  backdrop-filter: blur(var(--blur-bar));
+  -webkit-backdrop-filter: blur(var(--blur-bar));
+  z-index: 25;
+}
+
+.dp-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: none;
+}
+
+/* The brand block is not a switcher until workspaces exist (plan §B-8). */
+.dp-brandblock {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font: 500 12.5px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-brandblock__tile {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: linear-gradient(150deg, var(--accentSolid), var(--accentLine));
+  flex: none;
+}
+
+.dp-topbar__divider {
+  width: 1px;
+  height: 18px;
+  background: var(--borderSoft);
+}
+
+.dp-breadcrumb {
+  font: 400 12.5px var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dp-topbar__spacer { flex: 1; }
+
+/* ============================================================
+   BUTTONS (README §5) — one primary per view
+   ============================================================ */
+
+.dp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  /* Outlined variants add their own 1px and drop a pixel of padding to match,
+     which is why secondary is 13px where primary is 14px (README §5). */
+  border: 0;
+  border-radius: var(--r-btn);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    opacity var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+/* Primary: ink fill, hover by opacity so it survives theme flip. */
+.dp-btn--primary {
+  padding: 9px var(--s-6);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dp-btn--primary:hover { opacity: 0.86; }
+
+.dp-btn--secondary {
+  padding: 9px 13px;
+  background: var(--surface);
+  border: 1px solid var(--borderInput);
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.dp-btn--secondary:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* Destructive is a hover state on a secondary button, never a resting red. */
+.dp-btn--secondary.dp-btn--destructive:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.dp-btn--quiet {
+  padding: 0;
+  background: transparent;
+  color: var(--metaStrong);
+  font-size: 12px;
+  font-weight: 400;
+  gap: 5px;
+}
+
+.dp-btn--quiet:hover { color: var(--ink); }
+
+.dp-btn--small {
+  padding: 7px 13px;
+  font-size: 11.5px;
+}
+
+/* Icon-only in chrome: 30px, pad on hover. */
+.dp-iconbtn {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: none;
+  border-radius: var(--r-btn);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--secondary);
+  transition: background var(--t-fast) var(--ease);
+}
+
+.dp-iconbtn:hover { background: var(--fillStrong); }
+
+/* Over media: dark glass only — translucent white measured 2.5:1 (README §6). */
+.dp-btn--onmedia {
+  padding: 6px var(--s-4);
+  border-radius: var(--r-chip);
+  background: var(--scrimChip);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--onScrim);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.dp-btn--onmedia:hover { background: var(--scrimChipHov); }
+
+/* The one deliberate high-contrast exception: a near-solid white pill. */
+.dp-btn--onmediaPrimary {
+  padding: 6px var(--s-4);
+  border-radius: var(--r-chip);
+  background: var(--onScrim);
+  color: var(--inkDeep);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.dp-btn--onmediaPrimary:hover { opacity: 0.9; }
+
+/* An instruction where a disabled primary would go (README §5). */
+.dp-instruction {
+  font: 400 11.5px/1.55 var(--font-sans);
+  color: var(--meta);
+}
+
+/* ============================================================
+   INPUTS (README §5) — placeholders are examples
+   ============================================================ */
+
+.dp-field {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-5) var(--s-6);
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+.dp-field:hover { border-color: var(--lineStrong); }
+
+.dp-field--compact {
+  padding: var(--s-3) 11px;
+  border-radius: var(--r-btn);
+  gap: var(--s-3);
+}
+
+.dp-field--invalid {
+  border-width: 1.5px;
+  border-color: var(--error);
+}
+
+.dp-field--invalid:hover { border-color: var(--error); }
+
+.dp-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: 400 13px var(--font-sans);
+  color: var(--ink);
+}
+
+.dp-field--compact .dp-input { font-size: 12.5px; }
+
+.dp-required {
+  font: 400 11px var(--font-mono);
+  color: var(--error);
+  flex: none;
+}
+
+/* ============================================================
+   CHIPS & PILLS (README §5)
+   ============================================================ */
+
+/* Action chip: hover previews the accent — "this will apply". */
+.dp-chip {
+  padding: 5px var(--s-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font: 400 11.5px var(--font-sans);
+  color: var(--secondary);
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.dp-chip:hover {
+  border-color: var(--accentLine);
+  background: var(--accentWash);
+  color: var(--accentInk);
+}
+
+/* Derived chip: resting accent wash + ×. No setting is applied invisibly. */
+.dp-chip--derived {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 5px var(--s-3) 5px var(--s-4);
+  border-color: var(--accentLine);
+  background: var(--accentWash);
+  color: var(--accentInk);
+  font-weight: 500;
+}
+
+.dp-chip--derived:hover { background: var(--accentWashHover); }
+
+.dp-scopepill {
+  padding: 7px var(--s-5);
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-chip);
+  background: transparent;
+  font: 400 11.5px var(--font-sans);
+  color: var(--secondary);
+  cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.dp-scopepill:hover { border-color: var(--ink); color: var(--ink); }
+
+.dp-scopepill[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+  font-weight: 500;
+}
+
+.dp-scopepill[aria-pressed="true"]:hover { color: var(--surface); }
+
+/* Status pills: mono, uppercase, never competing with names. */
+.dp-statuspill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: var(--s-1) 9px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--fillStrong);
+  font: 500 9.5px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--metaStrong);
+}
+
+.dp-statuspill--accent {
+  background: var(--accentWash);
+  border-color: var(--accentLine);
+  color: var(--accentInk);
+  letter-spacing: 0.06em;
+}
+
+.dp-statuspill--onmedia {
+  background: var(--scrimPill);
+  color: var(--onScrim);
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   CARDS, ROWS & MEDIA (README §5, §6)
+   ============================================================ */
+
+.dp-card {
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  background: var(--surface);
+  padding: var(--s-7) 18px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.dp-card--raised { background: var(--raised); }
+
+.dp-card--interactive {
+  border-radius: var(--r-xl);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.dp-card--interactive:hover {
+  border-color: var(--lineStrong);
+  background: var(--raised);
+}
+
+/* Panel header divider is a --rule, not a heavier border. */
+.dp-card__head {
+  padding-bottom: var(--s-5);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-7);
+}
+
+.dp-sectionhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-7);
+  padding-bottom: var(--s-5);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Real drop-slot: ≥64px, --media behind all imagery. */
+.dp-media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--media);
+  border: 1px solid var(--borderMedia);
+}
+
+.dp-media > img,
+.dp-media > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Text over media always sits on a scrim, with a soft fade. */
+.dp-media__scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 22px var(--s-4) 9px;
+  background: linear-gradient(to top, var(--scrim), transparent);
+  color: var(--onScrim);
+  font: 400 10.5px var(--font-sans);
+}
+
+.dp-media__pill {
+  position: absolute;
+  left: var(--s-3);
+  top: var(--s-3);
+}
+
+/* Below ~64px, prose clips mid-word — use a gradient tile instead. */
+.dp-tile {
+  border-radius: var(--r-chip);
+  background: linear-gradient(160deg, var(--fill), var(--dots));
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 5px;
+  font: 500 9px var(--font-mono);
+  color: var(--faint);
+}
+
+/* Dashed means "you can put something here". Never decoration. */
+.dp-dropzone {
+  border: 1px dashed var(--dashed);
+  border-radius: var(--r-md);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.dp-dropzone:hover {
+  border-color: var(--ink);
+  background: var(--wellSoft);
+}
+
+/* Selected state: 2px accent inset ring + filled check. Accent's only job. */
+.dp-selected-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--accentSolid);
+  pointer-events: none;
+}
+
+.dp-selected-check {
+  position: absolute;
+  right: var(--s-2);
+  top: var(--s-2);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accentSolid);
+  color: var(--onWash);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Grids are intrinsic — never a fixed column count (README §7). */
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--dp-grid-min, 212px), 1fr));
+  gap: var(--s-7);
+}
+
+.dp-grid--dense { gap: var(--s-5); }
+
+/* Columns wrap, they don't collapse. */
+.dp-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-8);
+}
+
+.dp-split__main { flex: 1 1 560px; min-width: 0; }
+.dp-split__side { flex: 1 1 300px; min-width: 0; }
+
+/* ============================================================
+   DOCK (README §5) — sticky bottom, glass, on a page fade
+   ============================================================ */
+
+.dp-dock {
+  position: sticky;
+  bottom: var(--s-8);
+  z-index: 20;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  background: var(--dockGlass);
+  backdrop-filter: blur(var(--blur-bar));
+  -webkit-backdrop-filter: blur(var(--blur-bar));
+  box-shadow: var(--shadowCard);
+  padding: var(--s-5) var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+/* The scroll container needs room so the last row is never trapped under it. */
+.dp-dock-scroll { padding-bottom: calc(var(--s-9) + 92px); }
+
+/*
+  The dock's soft fade into the surface below it. Opt-in, because the fade has
+  to match the surface the dock floats over: working surfaces are `--page`
+  (README §5), and a `--page` fade over a `--surface` block would show as a
+  band. Apply on the dock's wrapper on a `--page` surface.
+*/
+.dp-dock-fade {
+  background: linear-gradient(to top, var(--page) 42%, transparent);
+  padding-top: var(--s-9);
+}
+
+/* ============================================================
+   STATES (README §8) — stream, don't batch
+   ============================================================ */
+
+.dp-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-ctl);
+  background: var(--fill);
+  border: 1px solid var(--border);
+}
+
+.dp-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent, var(--surface), transparent);
+  opacity: 0.75;
+  animation: dp-sweep 1.5s ease-in-out infinite;
+}
+
+.dp-skeleton__label {
+  position: absolute;
+  left: 7px;
+  bottom: 7px;
+  z-index: 1;
+  font: 500 9px var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  animation: dp-pulse 1.6s ease-in-out infinite;
+}
+
+/* Results replace their own tile as each lands. */
+.dp-arrive { animation: dp-rise var(--t-enter) var(--ease) both; }
+
+.dp-empty {
+  border: 1px dashed var(--dashed);
+  border-radius: var(--r-md);
+  padding: var(--s-8) var(--s-7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+  text-align: center;
+}
+
+/* Determinate progress uses accent; indeterminate uses the shimmer. */
+.dp-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.dp-progress__bar {
+  display: block;
+  height: 100%;
+  background: var(--accentSolid);
+}
+
+/* ============================================================
+   SHARED LAYOUT HELPERS — gap for sibling spacing, never margin
+   ============================================================ */
+
+.dp-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.dp-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+/* Visually hidden but read aloud — for glyph-only controls. */
+.dp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,69 @@
+/* ============================================================
+   BRAND ORB — the documented hex carve-out.
+   Values verbatim from the foundation living reference
+   (drape-foundation/Drape Foundation.dc.html, rail block).
+   Identical in both themes: it is artwork, not a semantic colour.
+   Carved out by name in token-guard.test.ts.
+   ============================================================ */
+
+@keyframes dp-orb-breathe { 0%,100% { transform: scale(1) } 50% { transform: scale(1.018) } }
+@keyframes dp-orb-halo    { 0%,100% { transform: scale(1); opacity:.5 } 50% { transform: scale(1.06); opacity:.66 } }
+@keyframes dp-orb-driftA  { 0% { transform: translate(0%,0%) scale(1) }    33% { transform: translate(14%,10%) scale(1.14) }  66% { transform: translate(-8%,16%) scale(.94) }   100% { transform: translate(0%,0%) scale(1) } }
+@keyframes dp-orb-driftB  { 0% { transform: translate(0%,0%) scale(1.04) } 30% { transform: translate(-16%,8%) scale(.9) }    62% { transform: translate(10%,-12%) scale(1.16) } 100% { transform: translate(0%,0%) scale(1.04) } }
+@keyframes dp-orb-driftC  { 0% { transform: translate(0%,0%) scale(.96) }  40% { transform: translate(12%,-14%) scale(1.2) }  75% { transform: translate(-14%,-6%) scale(1) }   100% { transform: translate(0%,0%) scale(.96) } }
+@keyframes dp-orb-driftD  { 0% { transform: translate(0%,0%) scale(1.1) }  45% { transform: translate(-10%,-16%) scale(.92) } 80% { transform: translate(6%,12%) scale(1.14) }   100% { transform: translate(0%,0%) scale(1.1) } }
+
+.dp-orb {
+  position: relative;
+  flex: none;
+  animation: dp-orb-breathe 9s ease-in-out infinite;
+}
+
+.dp-orb__halo {
+  position: absolute;
+  inset: -8%;
+  border-radius: 34%;
+  filter: blur(3px);
+  animation: dp-orb-halo 13s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 38% 32%, #FFC6AC, transparent 58%),
+    radial-gradient(circle at 72% 74%, #8E9EDC, transparent 58%);
+}
+
+.dp-orb__body {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #FFF1EC;
+}
+
+.dp-orb__drift {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(5px);
+}
+
+.dp-orb__drift--a {
+  left: -6%; top: -14%; width: 78%; height: 74%;
+  background: radial-gradient(circle, #FFFFFF 0 46%, transparent 72%);
+  animation: dp-orb-driftA 15s ease-in-out infinite;
+}
+
+.dp-orb__drift--b {
+  left: 34%; top: -4%; width: 74%; height: 70%;
+  background: radial-gradient(circle, #FFBFA4 0 46%, transparent 72%);
+  animation: dp-orb-driftB 19s ease-in-out infinite;
+}
+
+.dp-orb__drift--c {
+  left: 6%; top: 42%; width: 84%; height: 80%;
+  background: radial-gradient(circle, #E2685A 0 46%, transparent 74%);
+  animation: dp-orb-driftC 17s ease-in-out infinite;
+}
+
+.dp-orb__drift--d {
+  left: 52%; top: 52%; width: 66%; height: 64%;
+  background: radial-gradient(circle, #7E8FD4 0 44%, transparent 72%);
+  animation: dp-orb-driftD 23s ease-in-out infinite;
+}

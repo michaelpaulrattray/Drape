@@ -1,0 +1,232 @@
+/* ============================================================
+   DRAPE FOUNDATION — design tokens
+   Single source of truth. Never hard-code a hex outside this
+   file (guarded by client/src/foundation/token-guard.test.ts).
+   Values verbatim from
+   docs/specs/Casting-ui-ux-design/drape-foundation/tokens.css
+
+   SCOPE — read this before changing a selector.
+
+   The plan (CASTING_V2_ARCHITECTURE_PLAN.md §D.1) puts these
+   tokens on :root. They cannot go there until M2 remaps the
+   shadcn semantic layer, because four names collide with CSS
+   that legacy surfaces still consume:
+
+       --border --muted --secondary   (index.css shadcn :root,
+                                       read via @theme inline)
+       --font-sans                    (styles/tokens.css:79,
+                                       read by marketing classes)
+
+   Defining them at :root now would either repaint every legacy
+   surface or resolve the foundation to the wrong values —
+   both break M1's "no visible product effect" law. So M1
+   scopes the block to the shell root element instead:
+
+       .dp-root                       light values
+       [data-theme="dark"] .dp-root   dark values
+
+   A value set directly on .dp-root beats an inherited :root
+   value regardless of stylesheet order, so this is robust.
+   data-theme still lives on <html> and remains the only
+   switch — nothing branches on theme in a component.
+
+   At M2 this becomes :root / [data-theme="dark"] — a selector
+   change, not a rewrite. Until then, foundation CSS must not
+   rely on tokens reaching Radix portals (they mount on <body>,
+   outside .dp-root); M1 therefore ships no portaled primitive.
+   ============================================================ */
+
+.dp-root {
+  /* ---- SURFACES (light → dark in elevation order) ---------- */
+  --surface:      #FFFFFF;  /* app background, cards on page   */
+  --raised:       #FAFAFB;  /* card sitting on surface         */
+  --page:         #FCFCFD;  /* working surface (sheet, canvas) */
+  --wellSoft:     #F7F7F9;  /* hover on dashed/empty targets   */
+  --well:         #F6F6F8;  /* hover on list rows              */
+  --fill:         #F4F4F6;  /* inert fill, gradient tile start */
+  --fillStrong:   #F2F2F4;  /* rail item active, icon btn hover*/
+  --media:        #F1F1F3;  /* behind any image or video       */
+
+  /* ---- LINES (hairlines → structural) --------------------- */
+  --rule:         #F0F0F2;  /* divider inside a card           */
+  --ruleSoft:     #EFEFF1;  /* divider between list rows       */
+  --border:       #ECECEE;  /* default border, gap-as-line     */
+  --borderSoft:   #EAEAED;  /* vertical separators in bars     */
+  --borderMedia:  #E8E8EB;  /* border on media containers      */
+  --borderInput:  #E6E6E9;  /* input + secondary button border */
+  --borderCard:   #E4E4E7;  /* border on a real card/panel     */
+  --dots:         #DEDEE2;  /* canvas dot grid, tile gradient  */
+  --dotsStrong:   #DADADE;  /* inactive waveform bars          */
+  --dashed:       #D6D6DA;  /* dashed "add" affordances        */
+  --sink:         #D2D2D6;  /* pressed / recessed              */
+  --lineStrong:   #C8C8CC;  /* input hover border, wires       */
+  --lineSoft:     #BFBFC5;  /* secondary wires                 */
+
+  /* ---- TEXT (lightest → darkest) -------------------------- */
+  --muted:        #B4B4BA;  /* icon glyph on quiet affordance  */
+  --faint:        #A0A0A6;  /* mono metadata, counts           */
+  --meta:         #8E8E94;  /* placeholder, tertiary label     */
+  --metaStrong:   #6B6B70;  /* secondary body copy             */
+  --linkHover:    #5C5C61;  /* link + quiet-text hover         */
+  --secondary:    #3E3E42;  /* label on secondary button       */
+  --ink:          #111112;  /* primary text, primary button bg */
+  --inkDeep:      #0A0A0B;  /* reserved: max-contrast headline */
+
+  /* ---- GLASS (bars that sit over scrolling content) ------- */
+  --barGlass:     rgba(255,255,255,.92);  /* topbar           */
+  --dockGlass:    rgba(255,255,255,.94);  /* sticky bottom dock*/
+
+  /* ---- ACCENT (single hue; four roles) -------------------- */
+  --accentSolid:      #E2685A;  /* the brand colour itself     */
+  --accentInk:        #A23E33;  /* accent TEXT on accentWash   */
+  --accentWash:       #FEF2F0;  /* accent background           */
+  --accentWashHover:  #FCE6EC;  /* accent background, hovered  */
+  --accentLine:       #F1CDC6;  /* accent border               */
+  --onWash:           #FFFFFF;  /* text on accentSolid         */
+
+  /* ---- SCRIM (over media; identical in both themes) ------- */
+  --scrim:        rgba(0,0,0,.66);      /* bottom gradient end */
+  --scrimChip:    rgba(17,17,18,.62);   /* button over media   */
+  --scrimChipHov: rgba(17,17,18,.86);
+  --scrimPill:    rgba(17,17,18,.72);   /* status pill on media*/
+  --onScrim:      #FFFFFF;              /* text/glyph on scrim */
+
+  /* ---- ERROR ----------------------------------------------
+     Identical in both themes and outside the accent group on
+     purpose: the handoff's third carve-out is that error red is
+     never retintable by brand. It lives here rather than as a
+     literal in components so the no-hex guard stays absolute.
+     --------------------------------------------------------- */
+  --error:        #C0473A;  /* input error border + REQUIRED   */
+
+  /* ---- ELEVATION ------------------------------------------ */
+  --shadowCard:   0 12px 34px rgba(17,17,18,.14);  /* dock, dialog */
+  --shadowPop:    0 8px 22px rgba(17,17,18,.11);   /* menu, tooltip*/
+
+  /* ---- RADII (do not invent new values) ------------------- */
+  --r-pill:  999px;  /* chips, status pills                    */
+  --r-chip:  7px;    /* icon button sitting over media         */
+  --r-btn:   8px;    /* buttons, icon buttons in chrome        */
+  --r-ctl:   9px;    /* dock buttons, small media              */
+  --r-sm:    10px;   /* inputs inside a panel                  */
+  --r-md:    11px;   /* primary input, grid card               */
+  --r-lg:    12px;   /* candidate card                         */
+  --r-xl:    13px;   /* route card                             */
+  --r-2xl:   14px;   /* hero, panel, dock, dialog              */
+
+  /* ---- SPACING (4px base; use these, not arbitrary px) ---- */
+  --s-1: 4px;  --s-2: 6px;  --s-3: 8px;  --s-4: 10px;
+  --s-5: 12px; --s-6: 14px; --s-7: 16px; --s-8: 20px;
+  --s-9: 24px; --s-10: 28px; --s-11: 32px; --s-12: 44px;
+
+  /* ---- CHROME GEOMETRY (fixed; app-wide) ----------------- */
+  --rail-w:      76px;
+  --topbar-h:    56px;
+  --content-max: 1180px;  /* 1240px on working surfaces       */
+  --blur-bar:    14px;
+
+  /* ---- TYPE ---------------------------------------------- */
+  --font-sans: Archivo, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ---- MOTION (nothing in a task flow exceeds 340ms) ----- */
+  --ease:      cubic-bezier(.22,.61,.36,1);
+  --t-fast:    120ms;  /* hover, colour change               */
+  --t-mid:     200ms;  /* open/close, expand                 */
+  --t-enter:   340ms;  /* content arriving                   */
+}
+
+[data-theme="dark"] .dp-root {
+  --surface:      #1C1C1F;
+  --raised:       #1A1A1D;
+  --page:         #141416;
+  --wellSoft:     #1F1F23;
+  --well:         #202024;
+  --fill:         #232326;
+  --fillStrong:   #26262A;
+  --media:        #232326;
+
+  --rule:         #2A2A2E;
+  --ruleSoft:     #2A2A2E;
+  --border:       #2C2C30;
+  --borderSoft:   #2C2C30;
+  --borderMedia:  #303036;
+  --borderInput:  #33333A;
+  --borderCard:   #33333A;
+  --dots:         #3A3A42;
+  --dotsStrong:   #3E3E46;
+  --dashed:       #44444C;
+  --sink:         #494951;
+  --lineStrong:   #55555E;
+  --lineSoft:     #5E5E66;
+
+  --muted:        #6E6E77;
+  --faint:        #8A8A92;
+  --meta:         #9A9AA2;
+  --metaStrong:   #9A9AA2;   /* intentionally == meta in dark */
+  --linkHover:    #B4B4BA;
+  --secondary:    #B4B4BA;
+  --ink:          #EDEDEF;
+  --inkDeep:      #F5F5F7;
+
+  --barGlass:     rgba(28,28,31,.92);
+  --dockGlass:    rgba(28,28,31,.94);
+
+  --accentSolid:      #E2685A;
+  --accentInk:        #E88778;
+  --accentWash:       rgba(226,104,90,.14);
+  --accentWashHover:  rgba(226,104,90,.22);
+  --accentLine:       rgba(226,104,90,.32);
+  --onWash:           #FFFFFF;
+
+  /* --error is deliberately NOT overridden here — see above. */
+
+  --shadowCard:   0 12px 34px rgba(0,0,0,.5);
+  --shadowPop:    0 8px 22px rgba(0,0,0,.44);
+}
+
+/* ---- RESET — scoped to the foundation subtree ----------------
+   The handoff applies this to `body`. At M1 that would restyle
+   every legacy surface, so it is scoped. It moves to the global
+   selectors at M2 with the token block.
+   ------------------------------------------------------------ */
+.dp-root,
+.dp-root *,
+.dp-root *::before,
+.dp-root *::after { box-sizing: border-box; }
+
+.dp-root {
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.dp-root ::placeholder { color: var(--meta); }
+
+.dp-root a { color: var(--ink); text-decoration: none; }
+.dp-root a:hover { color: var(--linkHover); }
+
+.dp-root :focus-visible {
+  outline: 2px solid var(--accentSolid);
+  outline-offset: 2px;
+}
+
+/* ---- MOTION ---- */
+@keyframes dp-rise   { from { opacity:0; transform:translateY(7px) } to { opacity:1; transform:none } }
+@keyframes dp-fade   { from { opacity:0 } to { opacity:1 } }
+@keyframes dp-sweep  { from { transform:translateX(-120%) } to { transform:translateX(220%) } }
+@keyframes dp-pulse  { 0%,100% { opacity:.5 } 50% { opacity:1 } }
+@keyframes dp-wave   { 0%,100% { transform:scaleY(.36) } 50% { transform:scaleY(1) } }
+@keyframes dp-spin   { to { transform:rotate(360deg) } }
+@keyframes dp-scaleIn{ from { opacity:0; transform:scale(.97) } to { opacity:1; transform:none } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-root,
+  .dp-root *,
+  .dp-root *::before,
+  .dp-root *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+}

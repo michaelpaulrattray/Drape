@@ -18,7 +18,10 @@ export default defineConfig({
   test: {
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    // Client entries are the foundation's pure-logic and source-guard tests
+    // (theme boot, no-hex token guard) — node environment, no DOM, no app
+    // imports beyond plain modules. Component rendering stays out of `pnpm test`.
+    include: ["server/**/*.test.ts", "server/**/*.spec.ts", "client/src/**/*.test.ts"],
     // *.integration.test.ts files need a running dev server — run them
     // with `pnpm test:integration` (vitest.integration.config.ts)
     exclude: ["**/node_modules/**", "server/**/*.integration.test.ts"],

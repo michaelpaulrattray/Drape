@@ -30,10 +30,19 @@ const r2PublicOrigin = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
  * - Data URIs for images (used by some components)
  * - Blob URLs for media playback
  */
+/**
+ * The one inline script the app ships: the theme first-paint script in
+ * `client/index.html` (plan §D.8). Production CSP has no 'unsafe-inline', so
+ * without this hash the script is blocked and every cold load flashes the
+ * wrong theme. `client/src/foundation/theme.test.ts` recomputes the hash from
+ * `client/index.html` and fails if the script and this constant drift apart.
+ */
+export const THEME_BOOT_SCRIPT_HASH = "sha256-PyCVCieCR3N6JRQZSXXuPBNmp7w/XaB6Wd0B+9zGijs=";
+
 // In dev: allow unsafe-inline/eval for Vite HMR + React Fast Refresh preamble
 const scriptSrc = isDev
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com"
-  : "script-src 'self' https://js.stripe.com";
+  : `script-src 'self' '${THEME_BOOT_SCRIPT_HASH}' https://js.stripe.com`;
 
 // In dev: allow WebSocket connections for Vite HMR
 const connectSrc = isDev
