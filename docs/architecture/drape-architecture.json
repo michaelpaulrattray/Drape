@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "419b0f9a607e2e79"
+    "sourceFingerprint": "b2289838ca95517f"
   },
   "domains": [
     {
@@ -98,7 +98,7 @@
     {
       "id": "domain:providers",
       "name": "providers",
-      "moduleCount": 4
+      "moduleCount": 6
     },
     {
       "id": "domain:referral",
@@ -3311,8 +3311,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/providers/falImages.ts",
+      "path": "server/providers/falImages.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/providers/falQueue.ts",
       "path": "server/providers/falQueue.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/falTransport.ts",
+      "path": "server/providers/falTransport.ts",
       "domain": "providers",
       "lifecycle": "active"
     },
@@ -16389,8 +16401,23 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/providers/falImages.ts",
+      "to": "module:server/providers/falTransport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falImages.ts",
+      "to": "module:server/providers/providerQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falImages.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/providers/falQueue.ts",
-      "to": "module:server/logging/logger.ts",
+      "to": "module:server/providers/falTransport.ts",
       "kind": "imports"
     },
     {
@@ -16400,6 +16427,16 @@
     },
     {
       "from": "module:server/providers/falQueue.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falTransport.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/falTransport.ts",
       "to": "module:server/providers/types.ts",
       "kind": "imports"
     },

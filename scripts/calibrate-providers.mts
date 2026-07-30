@@ -53,6 +53,14 @@ const EXECUTE = args.has("--execute");
 const PHASE = flag("phase") ?? "all";
 const CEILING_USD = Number(flag("ceiling") ?? 20);
 const OUT_DIR = path.resolve(flag("out") ?? ".calibration");
+/**
+ * Founder decision 2026-07-30: images run through fal, which is the billing we
+ * can top up. §H.9 already sanctioned this as the single-transport variant.
+ * OpenRouter remains the text transport and the image fallback.
+ */
+const IMAGES_VIA = (flag("images") ?? "fal") as "fal" | "openrouter";
+/** Measured, not assumed — this is how §H.8's default budget gets its number. */
+const CONCURRENCY = Number(flag("concurrency") ?? 8);
 
 /**
  * The §E.1 matrix: tight, loose and non-human briefs. The non-human ones are
@@ -213,11 +221,6 @@ function refuseIfProduction(): void {
   }
 }
 
-function loadManifest(file: string): Record<string, unknown> {
-  if (!fs.existsSync(file)) return {};
-  return JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, unknown>;
-}
-
 async function main() {
   refuseIfProduction();
 
@@ -256,26 +259,24 @@ async function main() {
     return;
   }
 
-  const missing = ["OPENROUTER_API_KEY", "FAL_KEY"].filter((key) => !process.env[key]);
-  if (missing.length > 0) {
-    throw new Error(`Missing credentials: ${missing.join(", ")}`);
-  }
+  const needed = IMAGES_VIA === "fal" ? ["FAL_KEY"] : ["FAL_KEY", "OPENROUTER_API_KEY"];
+  const missing = needed.filter((key) => !process.env[key]);
+  if (missing.length > 0) throw new Error(`Missing credentials: ${missing.join(", ")}`);
 
-  fs.mkdirSync(OUT_DIR, { recursive: true });
-  const manifestFile = path.join(OUT_DIR, "manifest.json");
-  const manifest = loadManifest(manifestFile);
-  const alreadyDone = Object.keys(manifest).length;
-  if (alreadyDone > 0) {
-    console.log(`[calibration] resuming — ${alreadyDone} call(s) already recorded, they will not re-run.\n`);
-  }
-
-  console.error(
-    "[calibration] --execute is wired but the paid run is intentionally not\n" +
-      "  implemented yet: the ratified §E.1 matrix costs more than §O-8's\n" +
-      "  authorization, so the founder rules on budget before any spend.\n" +
-      "  See the plan section printed above.",
-  );
-  process.exit(2);
+  const { execute } = await import("./calibration/execute.mts");
+  await execute({
+    plan,
+    outDir: OUT_DIR,
+    ceilingUsd: CEILING_USD,
+    imagesVia: IMAGES_VIA,
+    concurrency: CONCURRENCY,
+    briefs: BRIEFS,
+    canonicalViews: CANONICAL_VIEWS,
+    revisions: REVISIONS,
+    sheetSize: SHEET_SIZE,
+    sheetQuality: SHEET_QUALITY,
+    candidatesPerRoll: CANDIDATES_PER_ROLL,
+  });
 }
 
 main().catch((error) => {

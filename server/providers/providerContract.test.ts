@@ -170,6 +170,49 @@ describe("Fal identity engine", () => {
     expect(JSON.stringify(result)).not.toContain("fal.example");
   });
 
+  it("polls the URLs fal returns rather than constructing them", async () => {
+    /*
+      Regression. For sub-path endpoints the queue URLs drop the trailing
+      segment — an `/edit` submit is polled at the base path. Constructing the
+      poll URL from the submit endpoint returns 405 forever, which is how the
+      first real calibration run lost its entire identity phase and reported a
+      capability failure that was actually our bug.
+    */
+    const polled: string[] = [];
+    stubFetch((url) => {
+      if (url.endsWith("/status")) {
+        polled.push(url);
+        return new Response(JSON.stringify({ status: "COMPLETED" }), { status: 200 });
+      }
+      if (url === "https://queue.fal.run/fal-ai/nano-banana-pro/requests/req-7") {
+        return new Response(
+          JSON.stringify({ images: [{ url: "https://fal.example/o.png", content_type: "image/png" }] }),
+          { status: 200 },
+        );
+      }
+      if (url.startsWith("https://fal.example")) return new Response(PNG_BYTES, { status: 200 });
+      // The submit response is the contract: it names where to poll.
+      return new Response(
+        JSON.stringify({
+          request_id: "req-7",
+          status_url: "https://queue.fal.run/fal-ai/nano-banana-pro/requests/req-7/status",
+          response_url: "https://queue.fal.run/fal-ai/nano-banana-pro/requests/req-7",
+          cancel_url: "https://queue.fal.run/fal-ai/nano-banana-pro/requests/req-7/cancel",
+        }),
+        { status: 200 },
+      );
+    });
+
+    const result = await engine().editWithReferences(request);
+
+    expect(result.bytes.toString()).toBe("fake-png-bytes");
+    expect(polled).toEqual(["https://queue.fal.run/fal-ai/nano-banana-pro/requests/req-7/status"]);
+    expect(
+      polled.some((url) => url.includes("/edit/requests")),
+      "must not rebuild the poll URL from the submit endpoint",
+    ).toBe(false);
+  });
+
   it("cancels the request when its deadline expires, so a timeout is not silent spend", async () => {
     const cancelled: string[] = [];
     stubFetch((url) => {
