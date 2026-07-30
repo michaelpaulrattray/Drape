@@ -10,7 +10,7 @@ import {
 describe("R7-7G release policy", () => {
   it("releases only exact founder-confirmed authoring tuples", () => {
     expect(INK_RELEASE_POLICY_VERSION)
-      .toBe("ink.add.release-policy.2026-07-30.v2");
+      .toBe("ink.add.release-policy.2026-07-29.v1");
     expect(isInkAuthoringTupleReleased({
       zone: "full_arm",
       surface: "circumferential",
@@ -33,11 +33,10 @@ describe("R7-7G release policy", () => {
     })).toBe(false);
   });
 
-  it("opens only three-quarter for the scoped v4 calibration", () => {
-    expect(releasedInkProjectionAngles()).toEqual(["threeQuarter"]);
+  it("keeps every first-unseen projection angle closed", () => {
+    expect(releasedInkProjectionAngles()).toEqual([]);
     for (const angle of CANONICAL_VIEW_ANGLES) {
-      expect(isInkProjectionAngleReleased(angle))
-        .toBe(angle === "threeQuarter");
+      expect(isInkProjectionAngleReleased(angle)).toBe(false);
     }
   });
 });

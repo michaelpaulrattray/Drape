@@ -38,12 +38,10 @@ export interface ClosedInkFeatureEntry {
   version: ModelIdentityFeatureVersion;
   authoringPlate: ModelReferencePlate;
   authoringAsset: ModelAsset;
-  authoringSourceAsset: ModelAsset | null;
   projections: readonly {
     evidence: ModelIdentityFeatureProjectionEvidence;
     plate: ModelReferencePlate;
     asset: ModelAsset;
-    sourceAsset: ModelAsset | null;
   }[];
   contract: "legacy_front_upper_torso_v1" | "all_body_v2";
 }
@@ -234,27 +232,17 @@ export function assessClosedInkFeatureGraph(
     const contract = contractForVersion(version);
     const authoringPlate = plates.get(version.acceptedCandidatePlateId);
     const authoringAsset = assets.get(version.acceptedAssetId);
-    const authoringSourceAsset = version.sourceAssetId === null
-      ? null
-      : assets.get(version.sourceAssetId) ?? null;
     if (
       !contract
       || !authoringPlate
       || !authoringAsset
       || !validPlate(graph, authoringPlate)
       || !validAsset(graph, authoringAsset, version.sourceViewAngle)
-      || (
-        authoringSourceAsset !== null
-        && !validAsset(graph, authoringSourceAsset, version.sourceViewAngle)
-      )
     ) {
       return null;
     }
     referencedPlateIds.add(authoringPlate.id);
     referencedAssetIds.add(authoringAsset.id);
-    if (authoringSourceAsset) {
-      referencedAssetIds.add(authoringSourceAsset.id);
-    }
 
     const projections = graph.projections
       .filter((row) => row.featureVersionId === version.id);
@@ -265,9 +253,6 @@ export function assessClosedInkFeatureGraph(
     for (const evidence of projections) {
       const plate = plates.get(evidence.acceptedCandidatePlateId);
       const asset = assets.get(evidence.acceptedAssetId);
-      const sourceAsset = evidence.sourceAssetId === null
-        ? null
-        : assets.get(evidence.sourceAssetId) ?? null;
       const anatomy = {
         zone: version.zone,
         surface: version.surface,
@@ -296,10 +281,6 @@ export function assessClosedInkFeatureGraph(
         || !asset
         || !validPlate(graph, plate)
         || !validAsset(graph, asset, evidence.targetViewAngle)
-        || (
-          sourceAsset !== null
-          && !validAsset(graph, sourceAsset, evidence.targetViewAngle)
-        )
         || authoringPlateIdSet.has(plate.id)
         || authoringAssetIdSet.has(asset.id)
       ) {
@@ -325,13 +306,7 @@ export function assessClosedInkFeatureGraph(
       projectionWitnessByAsset.set(asset.id, witnessKey);
       referencedPlateIds.add(plate.id);
       referencedAssetIds.add(asset.id);
-      if (sourceAsset) referencedAssetIds.add(sourceAsset.id);
-      closedProjections.push(Object.freeze({
-        evidence,
-        plate,
-        asset,
-        sourceAsset,
-      }));
+      closedProjections.push(Object.freeze({ evidence, plate, asset }));
     }
     entries.push(Object.freeze({
       selection,
@@ -339,7 +314,6 @@ export function assessClosedInkFeatureGraph(
       version,
       authoringPlate,
       authoringAsset,
-      authoringSourceAsset,
       projections: Object.freeze(closedProjections),
       contract,
     }));

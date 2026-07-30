@@ -89,13 +89,7 @@ export async function readEvidencePackageFeatureRowsIn(
     ...versions
       .map((version) => version.acceptedAssetId)
       .filter((id): id is number => id !== null),
-    ...versions
-      .map((version) => version.sourceAssetId)
-      .filter((id): id is number => id !== null),
     ...projections.map((projection) => projection.acceptedAssetId),
-    ...projections
-      .map((projection) => projection.sourceAssetId)
-      .filter((id): id is number => id !== null),
   ]));
   const assets = assetIds.length
     ? await tx

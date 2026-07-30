@@ -4,14 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** REOPENED — R7-0 through R7-7F and the bounded R7-7G founder
-pilot are complete, but the all-body tattoo product is not. D-77 supersedes
-the former closure: a globally disabled anatomy or projection cohort is safe
-refusal behavior, not completion. R7-7G and R7-8 remain open until ordinary
-natural-language tattoo addition and removal, every represented registry
-location, coherent affected-view synchronization, downstream consumer parity,
-ordinary-user rollout, and renewed founder acceptance pass. There is no
-ratified R8 plan.
+**Status:** COMPLETE - R7-0 through R7-8 are closed. Exact tattoo-authoring tuples are released only inside the founder scope, every uncalibrated tuple refuses before paid work, first-unseen projection is disabled for the current provider configuration, and the final acceptance/audit record is `CASTING_SYSTEM_R7_8_ACCEPTANCE_AND_DOGFOOD_CLOSURE.md`. There is no ratified R8 plan.
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -358,7 +351,7 @@ operations under the generative edit/erase boundary. Cybernetics, moles,
 scars, and every other identity-feature category remain refused until the
 all-body tattoo category passes its own matrix and founder gate.
 
-**Historical founder-pilot checkpoint, 2026-07-29:** G0–G7 were implemented and locally
+**Execution checkpoint, 2026-07-29:** G0–G7 are implemented and locally
 verified. The release has a closed all-body tuple registry, strict
 natural-language planning, server-selected source views, multi-tattoo
 positive closure, private first-surface and projection candidates, exact
@@ -408,9 +401,7 @@ while a later preservation-probed accepted asset may replace an earlier asset
 at the same angle. Production now shows 6 views / 5 features current and every
 earlier accumulated state as restorable, with an honest “3 tattoo coverage
 views unavailable” summary. Typecheck, 247 files / 3,178 tests, build, diff
-checks, and the no-cost live drive pass. This was initially recorded as
-R7-7G closure; D-77 supersedes that conclusion. The bounded founder pilot is
-complete, while R7-7G product completion and R7-8 acceptance remain open.
+checks, and the no-cost live drive pass. R7-7G is closed; R7-8 follows.
 
 ### R7-8 — Quality choice, downstream reference sheets, and dogfood closure
 

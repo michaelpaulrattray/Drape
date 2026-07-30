@@ -1,13 +1,10 @@
 # Casting System R7-7G — Natural-Language All-Body Ink Execution Plan
 
-**Status:** REOPENED — the bounded founder pilot and technical foundation
-shipped, but the all-body tattoo product did not. The former completion gate
-incorrectly allowed globally disabled registry cohorts to count as complete.
-R7-7G and downstream R7-8 closure are reopened until ordinary natural-language
-addition and removal, common all-body authoring, coherent affected-view
-projection/omission, and consumer rollout pass. The historical pilot closure
-at `8a2413d` is retained below as an operational record, not current product
-status.
+**Status:** COMPLETE — G0 through G8 are production-verified. Exact
+founder-confirmed authoring tuples remain available only inside the founder
+scope; uncalibrated tuples refuse before durable or paid work. First-unseen
+projection is explicitly disabled for the current provider configuration after
+repeatable anatomical-placement failures. R7-7G closed at `8a2413d`.
 
 **Date:** 2026-07-29
 
@@ -119,12 +116,10 @@ technical package controls. Optional pointing may help Drape resolve a
 location, but natural language is sufficient and the server remains the
 authority.
 
-The original bounded plan implemented **tattoo addition** only. Founder
-acceptance subsequently made natural-language removal part of R7-7G product
-completion as well. Replacement, cover-up, movement, resizing, and recolouring
-remain separate operations unless later ratified. Cybernetics, moles, scars,
-freckles, and other permanent-feature families remain outside R7 until the
-tattoo product closes.
+R7-7G completes **tattoo addition**. It does not add removal, replacement,
+cover-up, movement, resizing, or recolouring of accepted tattoos. It does not
+enable cybernetics, moles, scars, freckles, or other permanent-feature
+families.
 
 ## 2. Founder contracts preserved
 
@@ -523,8 +518,7 @@ Release cohorts:
 
 A cohort remains disabled if its pass rate, occlusion behavior, laterality, or
 probe confidence is not founder-approved. Passing one zone never enables an
-uncalibrated zone. A disabled cohort is safe rollout state, not completion:
-R7-7G stays open while any registry cohort is globally disabled.
+uncalibrated zone.
 
 ## 9. Required negative proofs
 
@@ -556,21 +550,16 @@ R7-7G closes only when:
 
 1. the ordinary natural-language prompt is the sole public tattoo authoring
    entry;
-2. every registry cohort has passed representative authoring evidence across
-   its supported surfaces and laterality; no registry tuple is globally
-   disabled merely to satisfy closure (an individual Cast may still refuse
-   free when its clothing, pose, crop, occlusion, or resolution lacks evidence);
-3. multiple tattoo addition and natural-language removal, preservation,
-   history, restore, fork, mint, and package expansion pass;
-4. every affected canonical view either reproduces accepted visible ink,
-   proves a safe hidden/out-of-frame/below-resolution omission, or uses
-   first-unseen-region candidate acceptance;
+2. every registry cohort has passed or remains explicitly disabled with
+   honest copy;
+3. multiple tattoo addition, preservation, history, restore, fork, mint, and
+   package expansion pass;
+4. first-unseen-region projection uses candidate acceptance;
 5. 1K-only generation/export truth is consistent in code, receipts, and PDF;
 6. production is feature-off safe, then founder-only calibrated;
 7. the founder confirms the enabled cohort behavior in production; and
 8. the decision log records exact deployment, migration, calibration, and
-   any per-Cast evidence refusals without representing a disabled product
-   cohort as complete.
+   remaining disabled tuples.
 
 Only then does execution return to R7-8 production acceptance, named audits,
 performance, manual drives, and dogfood closure. No R8 plan is inferred.

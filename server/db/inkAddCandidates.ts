@@ -170,7 +170,6 @@ export interface PreparedInkProjectionFeature {
   anatomyLabel: string;
   anatomy: { zone: string; surface: string; side: string };
   targetZone: NormalizedInkZone;
-  targetZones: readonly NormalizedInkZone[];
   witnessZone: NormalizedInkZone;
   witnessViewAngle: CanonicalViewAngle;
   witness: {
@@ -179,48 +178,10 @@ export interface PreparedInkProjectionFeature {
     byteSize: number;
     contentHash: string;
   };
-  witnessSource?: {
-    assetId: number;
-    storageUrl: string;
-  };
   impact: "affected" | "uncertain";
   hasAcceptedTargetEvidence: boolean;
   isProjectionTarget: boolean;
   coverageBasis: "registry_affected" | "observed_visible" | null;
-}
-
-export interface ObservedInkProjectionCoverage {
-  visible: boolean;
-  targetZones: readonly NormalizedInkZone[] | null;
-}
-
-function boundingInkZone(
-  zones: readonly NormalizedInkZone[],
-): NormalizedInkZone {
-  if (zones.length < 1 || zones.length > 4) {
-    throw new InkCandidateStateError("source_unavailable");
-  }
-  const x = Math.min(...zones.map((zone) => zone.x));
-  const y = Math.min(...zones.map((zone) => zone.y));
-  const right = Math.max(...zones.map((zone) => zone.x + zone.width));
-  const bottom = Math.max(...zones.map((zone) => zone.y + zone.height));
-  if (
-    ![x, y, right, bottom].every(Number.isFinite)
-    || x < 0
-    || y < 0
-    || right > 1
-    || bottom > 1
-    || right <= x
-    || bottom <= y
-  ) {
-    throw new InkCandidateStateError("source_unavailable");
-  }
-  return Object.freeze({
-    x,
-    y,
-    width: right - x,
-    height: bottom - y,
-  });
 }
 
 function affectedRows(result: unknown): number {
@@ -540,9 +501,6 @@ function projectionFeatureForEntry(
   const hasAcceptedTargetEvidence =
     entry.version.sourceViewAngle === angle || Boolean(acceptedTargetProjection);
   const witnessPlate = acceptedTargetProjection?.plate ?? entry.authoringPlate;
-  const witnessSourceAsset = acceptedTargetProjection
-    ? acceptedTargetProjection.sourceAsset
-    : entry.authoringSourceAsset;
   const witnessViewAngle = acceptedTargetProjection?.evidence.targetViewAngle
     ?? entry.version.sourceViewAngle;
   const witnessDirective = projectionDirectiveForEntry(
@@ -550,9 +508,6 @@ function projectionFeatureForEntry(
     witnessViewAngle,
   );
   if (!witnessDirective.normalizedTargetZone) {
-    throw new InkCandidateStateError("source_unavailable");
-  }
-  if (!witnessSourceAsset?.storageUrl) {
     throw new InkCandidateStateError("source_unavailable");
   }
   const anatomy = {
@@ -570,7 +525,6 @@ function projectionFeatureForEntry(
       : `${entry.version.side} chest`,
     anatomy,
     targetZone: targetDirective.normalizedTargetZone,
-    targetZones: Object.freeze([targetDirective.normalizedTargetZone]),
     witnessZone: witnessDirective.normalizedTargetZone,
     witnessViewAngle,
     witness: {
@@ -578,10 +532,6 @@ function projectionFeatureForEntry(
       storageKey: witnessPlate.storageKey,
       byteSize: witnessPlate.byteSize,
       contentHash: witnessPlate.contentHash,
-    },
-    witnessSource: {
-      assetId: witnessSourceAsset.id,
-      storageUrl: witnessSourceAsset.storageUrl,
     },
     impact: targetDirective.impact,
     hasAcceptedTargetEvidence,
@@ -842,9 +792,7 @@ export async function prepareInkProjectionCandidateGeneration(input: {
   candidateId: string;
   attemptId: string;
   privatePlateId: string;
-  observedCoverage: Readonly<
-    Record<string, ObservedInkProjectionCoverage>
-  >;
+  observedCoverage: Readonly<Record<string, boolean>>;
 }): Promise<PreparedInkCandidateAttempt> {
   return withTransaction(async (tx) => {
     const current = await loadProjectionCandidatePreflightIn(
@@ -864,8 +812,11 @@ export async function prepareInkProjectionCandidateGeneration(input: {
     ) {
       throw new InkCandidateStateError("snapshot_head_changed");
     }
+    const uncertain = current.features.filter(
+      (feature) => feature.impact === "uncertain",
+    );
     const observedKeys = Object.keys(input.observedCoverage).sort();
-    const expectedObservedKeys = current.features
+    const expectedObservedKeys = uncertain
       .map((feature) => feature.featureVersionId)
       .sort();
     if (
@@ -881,26 +832,15 @@ export async function prepareInkProjectionCandidateGeneration(input: {
       });
     }
     const features = current.features.flatMap((feature) => {
-      const observed = input.observedCoverage[feature.featureVersionId];
-      if (!observed) {
-        throw new InkCandidateStateError("source_unavailable");
-      }
       if (
-        observed.visible !== true
+        feature.impact === "uncertain"
+        && input.observedCoverage[feature.featureVersionId] !== true
       ) {
-        if (feature.impact === "affected") {
-          throw new InkCandidateStateError("source_unavailable");
-        }
         return [];
-      }
-      if (!observed.targetZones || observed.targetZones.length < 1) {
-        throw new InkCandidateStateError("source_unavailable");
       }
       const isProjectionTarget = !feature.hasAcceptedTargetEvidence;
       return [{
         ...feature,
-        targetZone: boundingInkZone(observed.targetZones),
-        targetZones: observed.targetZones,
         isProjectionTarget,
         coverageBasis: isProjectionTarget
           ? feature.impact === "affected"

@@ -3,14 +3,7 @@
 **Date:** 2026-07-29
 **Authority:** `CASTING_SYSTEM_R7_REVIEW_AND_EXECUTION_PLAN.md`, D-74
 **Release:** `f96a6b0` plus the documentation closure commit
-**Status:** SUPERSEDED / REOPENED — this document records the former bounded
-founder-pilot acceptance. D-77 reopened R7-7G and R7-8 because globally
-disabled tattoo locations and first-unseen projections cannot count as the
-completed all-body product.
-
-> Historical record only. Do not use the calibrated-tuple refusal policy below
-> as a current R7 completion gate. Current closure authority is D-77 and
-> `CASTING_SYSTEM_R7_7G_NATURAL_LANGUAGE_ALL_BODY_INK_PLAN.md`.
+**Status:** COMPLETE
 
 ## 1. Current production acceptance criteria
 

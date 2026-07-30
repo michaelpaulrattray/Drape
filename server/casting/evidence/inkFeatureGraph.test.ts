@@ -133,11 +133,8 @@ function graph(): EvidencePackageFeatureGraph {
       plate(PROJECTION_PLATE_1),
     ],
     assets: [
-      asset(101, "frontFull"),
-      asset(102, "frontFull"),
       asset(201, "frontFull"),
       asset(202, "frontFull"),
-      asset(88, "backFull"),
       asset(301, "backFull"),
     ],
   };
@@ -155,9 +152,7 @@ describe("multi-feature tattoo graph closure", () => {
           targetViewAngle: "backFull",
           acceptedAssetId: 301,
         },
-        sourceAsset: { id: 88 },
       }],
-      authoringSourceAsset: { id: 101 },
     });
     expect(closed?.entries[1].projections).toEqual([]);
   });
@@ -215,10 +210,6 @@ describe("multi-feature tattoo graph closure", () => {
       value.assets = value.assets?.map((row) =>
         row.id === 201 ? { ...row, viewType: "backFull" } : row);
     }],
-    ["wrong clean-source view", (value: EvidencePackageFeatureGraph) => {
-      value.assets = value.assets?.map((row) =>
-        row.id === 101 ? { ...row, viewType: "backFull" } : row);
-    }],
     ["unknown tuple", (value: EvidencePackageFeatureGraph) => {
       value.versions = value.versions.map((row, index) =>
         index === 0 ? { ...row, surface: "anterior" } : row);
@@ -257,7 +248,7 @@ describe("multi-feature tattoo graph closure", () => {
     value.versions = [legacyVersion];
     value.projections = [];
     value.plates = [value.plates[0]];
-    value.assets = [value.assets!.find((row) => row.id === 201)!];
+    value.assets = [value.assets![0]];
     expect(assessClosedInkFeatureGraph(value)?.entries[0].contract)
       .toBe("legacy_front_upper_torso_v1");
   });
@@ -266,7 +257,7 @@ describe("multi-feature tattoo graph closure", () => {
     const mixed = graph();
     mixed.versions[0] = {
       ...mixed.versions[0],
-      recipeVersion: "ink.add.anywhere.composer.v7",
+      recipeVersion: "ink.add.anywhere.composer.v6",
     };
     mixed.versions[1] = {
       ...mixed.versions[1],
@@ -276,7 +267,7 @@ describe("multi-feature tattoo graph closure", () => {
     expect(closed?.entries).toHaveLength(2);
     expect(closed?.entries.map(({ version }) => version.recipeVersion))
       .toEqual([
-        "ink.add.anywhere.composer.v7",
+        "ink.add.anywhere.composer.v6",
         "ink.add.anywhere.composer.v5",
       ]);
   });

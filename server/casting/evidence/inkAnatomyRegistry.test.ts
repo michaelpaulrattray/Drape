@@ -16,34 +16,23 @@ import {
 } from "./inkAnatomyRegistry";
 
 describe("all-body ink anatomy registry", () => {
-  it("keeps earlier projection evidence readable after pose projection", () => {
+  it("keeps v1 projection evidence readable after clean-source composition", () => {
     expect(INK_ANYWHERE_PROJECTION_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.projection.v7");
+      .toBe("ink.add.anywhere.projection.v3");
     expect(INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.projection.v1",
       "ink.add.anywhere.projection.v2",
       "ink.add.anywhere.projection.v3",
-      "ink.add.anywhere.projection.v4",
-      "ink.add.anywhere.projection.v5",
-      "ink.add.anywhere.projection.v6",
-      "ink.add.anywhere.projection.v7",
     ]);
   });
 
-  it("keeps earlier coverage evidence readable after boolean-only visibility", () => {
+  it("keeps earlier coverage evidence readable after the certainty contract", () => {
     expect(INK_ANYWHERE_COVERAGE_PROBE_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.coverage-probe.v10");
+      .toBe("ink.add.anywhere.coverage-probe.v3");
     expect(INK_ANYWHERE_READABLE_COVERAGE_PROBE_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.coverage-probe.v1",
       "ink.add.anywhere.coverage-probe.v2",
       "ink.add.anywhere.coverage-probe.v3",
-      "ink.add.anywhere.coverage-probe.v4",
-      "ink.add.anywhere.coverage-probe.v5",
-      "ink.add.anywhere.coverage-probe.v6",
-      "ink.add.anywhere.coverage-probe.v7",
-      "ink.add.anywhere.coverage-probe.v8",
-      "ink.add.anywhere.coverage-probe.v9",
-      "ink.add.anywhere.coverage-probe.v10",
     ]);
   });
 
@@ -54,11 +43,6 @@ describe("all-body ink anatomy registry", () => {
       expect(inkAnatomyLabel(tuple).length).toBeGreaterThan(0);
       expect(inkAuthoringSourcePreferences(tuple).length).toBeGreaterThan(0);
       for (const angle of CANONICAL_VIEW_ANGLES) {
-        const sideAuthority = inkAnatomicalSideAuthority(tuple, angle);
-        expect(sideAuthority.prompt.length).toBeGreaterThanOrEqual(10);
-        expect(sideAuthority.prompt.length).toBeLessThanOrEqual(500);
-        expect(sideAuthority.guideLabel.length).toBeGreaterThanOrEqual(5);
-        expect(sideAuthority.guideLabel.length).toBeLessThanOrEqual(120);
         const directive = inkViewDirectiveV2(tuple, angle);
         expect([
           "affected",
@@ -124,25 +108,6 @@ describe("all-body ink anatomy registry", () => {
     expect(inkAnatomicalSideAuthority(tuple, "backFull")).toMatchObject({
       guideLabel: "SUBJECT RIGHT - FRAME RIGHT",
     });
-    expect(inkAnatomicalSideAuthority(tuple, "threeQuarter")).toMatchObject({
-      guideLabel: "SUBJECT RIGHT - USE TARGET PIXELS",
-      prompt: expect.stringContaining(
-        "the label is not anatomical proof",
-      ),
-    });
-    expect(inkAnatomicalSideAuthority(tuple, "sideClose")).toMatchObject({
-      guideLabel: "SUBJECT RIGHT - USE TARGET PIXELS",
-      prompt: expect.stringContaining(
-        "nose/toes toward frame-right expose",
-      ),
-    });
-    const threeQuarterRight = inkViewDirectiveV2(tuple, "threeQuarter")
-      .normalizedTargetZone;
-    const threeQuarterLeft = inkViewDirectiveV2(
-      { ...tuple, side: "left" },
-      "threeQuarter",
-    ).normalizedTargetZone;
-    expect(threeQuarterRight).toEqual(threeQuarterLeft);
     const frontRight = inkViewDirectiveV2(tuple, "frontFull")
       .normalizedTargetZone!;
     const frontLeft = inkViewDirectiveV2(

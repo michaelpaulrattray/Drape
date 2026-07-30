@@ -3,9 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   FRONT_UPPER_TORSO_ZONES,
   buildAnatomicalInkZoneGuide,
-  buildInkCoordinateGridGuide,
   buildInkZoneGuide,
-  buildSegmentedAnatomicalInkZoneGuide,
 } from "./inkZoneGuide";
 import { inkViewDirectiveV2 } from "../inkAnatomyRegistry";
 
@@ -110,53 +108,5 @@ describe("R7-7D server-owned ink zone guide", () => {
       }
     }
     expect(changedFrameRightBytes).toBe(0);
-  });
-
-  it("renders up to four server-owned segments as one feature authority", async () => {
-    const segments = [
-      { x: 0.08, y: 0.24, width: 0.18, height: 0.25 },
-      { x: 0.1, y: 0.45, width: 0.16, height: 0.24 },
-      { x: 0.12, y: 0.65, width: 0.14, height: 0.18 },
-    ] as const;
-    const guide = await buildSegmentedAnatomicalInkZoneGuide({
-      targetBytes: await target(),
-      features: [{
-        normalizedZones: segments,
-        label: "right full arm",
-      }],
-    });
-    expect(guide).toMatchObject({
-      width: 600,
-      height: 900,
-      normalizedZoneGroups: [segments],
-    });
-    await expect(buildSegmentedAnatomicalInkZoneGuide({
-      targetBytes: await target(),
-      features: [{
-        normalizedZones: [
-          ...segments,
-          { x: 0.14, y: 0.8, width: 0.1, height: 0.1 },
-          { x: 0.15, y: 0.9, width: 0.08, height: 0.08 },
-        ],
-        label: "too many",
-      }],
-    })).rejects.toThrow("Invalid server segmented ink feature");
-  });
-
-  it("renders a full-canvas percentage ruler without changing dimensions", async () => {
-    const source = await target();
-    const guide = await buildInkCoordinateGridGuide({
-      targetBytes: source,
-    });
-    expect(guide).toMatchObject({
-      mime: "image/png",
-      width: 600,
-      height: 900,
-    });
-    const [sourceRaw, guideRaw] = await Promise.all([
-      sharp(source).rotate().ensureAlpha().raw().toBuffer(),
-      sharp(guide.bytes).ensureAlpha().raw().toBuffer(),
-    ]);
-    expect(guideRaw.equals(sourceRaw)).toBe(false);
   });
 });

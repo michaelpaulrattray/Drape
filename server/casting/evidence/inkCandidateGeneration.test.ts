@@ -6,7 +6,6 @@ import type { PrivateEvidenceStorageAdapter } from "./evidenceDelivery";
 import type { CanonicalEvidenceImage } from "./imageValidation";
 import type { PreparedInkCandidateAttempt } from "../../db/inkAddCandidates";
 import {
-  buildInkCandidateProviderConfig,
   buildInkProbeProviderConfig,
   generateInkAddCandidate,
   generateInkProjectionCandidate,
@@ -14,10 +13,6 @@ import {
   type InkCandidateGenerationDependencies,
 } from "./inkCandidateGeneration";
 import type { InkProbeRequest } from "./composer/inkProbe";
-import {
-  buildInkProjectionProviderParts,
-} from "./composer/inkProjectionProvider";
-import { buildInkProbeProviderParts } from "./composer/inkProbeProvider";
 
 let png: Buffer;
 let webp: Buffer;
@@ -86,7 +81,7 @@ const anywherePrepared: PreparedInkCandidateAttempt = {
       side: "right",
     },
     normalizedTargetZone: { x: 0.1, y: 0.2, width: 0.8, height: 0.48 },
-    composerRecipeVersion: "ink.add.anywhere.composer.v7",
+    composerRecipeVersion: "ink.add.anywhere.composer.v6",
     probeRecipeVersion: "ink.add.anywhere.probe.v2",
     visibilityRecipeVersion: "ink.add.anywhere.visibility.v5",
   },
@@ -125,7 +120,7 @@ function delivery(): PrivateEvidenceStorageAdapter {
 }
 
 function passProbe(request: InkProbeRequest): unknown {
-  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v5") {
+  if (request.recipeVersion === "ink.add.anywhere.placement-audit.v4") {
     return {
       anatomicalSideCorrect: true,
       insideAuthorizedZone: true,
@@ -148,23 +143,7 @@ function passProbe(request: InkProbeRequest): unknown {
   if (request.kind === "coverage") {
     return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
       key,
-      key.endsWith("SegmentCount") ? 1
-        : key.includes("Segment1") && key.endsWith("X") ? 10
-          : key.includes("Segment1") && key.endsWith("Y") ? 20
-            : key.includes("Segment1") && key.endsWith("Width") ? 30
-              : key.includes("Segment1") && key.endsWith("Height") ? 40
-                : key.includes("Segment") ? 0
-                  : true,
-    ]));
-  }
-  if (request.kind === "projection_target_guide") {
-    return Object.fromEntries(Object.keys(request.responseSchema).map((key) => [
-      key,
-      key === "confidence" ? 98
-        : key.endsWith("GuideTouchesOppositeSide")
-          || key.endsWith("GuideIncludesConflictingAnatomy")
-          ? false
-          : true,
+      key.endsWith("Confidence") ? 98 : true,
     ]));
   }
   if (request.kind === "guide_coverage") {
@@ -258,183 +237,11 @@ function dependencies(
     completeSuccess: vi.fn(async () => undefined),
     completeFailure: completeFailure as never,
     now: () => new Date("2026-07-28T00:00:00.000Z"),
-    localizeProjection: vi.fn(async (_dependencies, input) => {
-      const references = input.features.map((feature) => ({
-        featureId: feature.featureId,
-        featureVersionId: feature.featureVersionId,
-        normalizedDescriptor: feature.normalizedDescriptor,
-        anatomyLabel: feature.anatomyLabel,
-        sideAuthority: "Use the subject's exact anatomical side.",
-        targetGuideLabel: "SUBJECT ANATOMICAL SIDE",
-        witnessSideAuthority: "Use the subject's exact anatomical side.",
-        witnessGuideLabel: "SUBJECT ANATOMICAL SIDE",
-        targetZone: feature.targetZone,
-        targetZones: feature.targetZones,
-        witnessZone: feature.witnessZone,
-        witness: { bytes: webp, mime: "image/webp" as const },
-        isProjectionTarget: feature.isProjectionTarget,
-      }));
-      const projections = new Map(references.map((reference, index) => {
-        const mask = new Uint8Array(256 * 256);
-        const zone = reference.targetZones[0]!;
-        const left = Math.floor(zone.x * 256);
-        const top = Math.floor(zone.y * 256);
-        const right = Math.ceil((zone.x + zone.width) * 256);
-        const bottom = Math.ceil((zone.y + zone.height) * 256);
-        for (let y = top; y < bottom; y += 1) {
-          for (let x = left; x < right; x += 1) {
-            mask[y * 256 + x] = 255;
-          }
-        }
-        return [reference.featureVersionId, {
-          recipeVersion: "ink.pose-projection.v2" as const,
-          tuple: input.features[index]!.anatomy as never,
-          width: 256,
-          height: 256,
-          mask,
-          normalizedSegments: reference.targetZones,
-          projectedPixelCount: mask.filter(Boolean).length,
-          expectedPixelCount: 100,
-        }] as const;
-      }));
-      return {
-        features: references,
-        projections,
-        guidedTarget: input.target,
-        deterministicCandidate: input.target,
-        deterministicComposition: {
-          changedPixelCount: 120,
-          authorizedPixelCount: 180,
-          outsideAuthorizedChangeCount: 0,
-          featureChangedPixelCounts: references.map(() => 60),
-        },
-      };
-    }),
-    localizeAuthoring: vi.fn(async (_dependencies, input) => ({
-      guidedTarget: input.target,
-      anatomyGuide: {
-        recipeVersion: "ink.pose-geometry.v2" as const,
-        tuple: input.anatomy,
-        width: 256,
-        height: 256,
-        mask: new Uint8Array(256 * 256).fill(255),
-        normalizedSegments: [{
-          x: 0.05,
-          y: 0.05,
-          width: 0.9,
-          height: 0.9,
-        }],
-        visiblePrimitiveIndexes: [0],
-        minimumLandmarkScore: 0.99,
-      },
-    })),
     ...overrides,
   };
 }
 
 describe("ink candidate generation", () => {
-  it("binds projection image roles in provider-visible parts and pins 1K", () => {
-    const projectionRequest = {
-      model: "gemini-3-pro-image-preview" as const,
-      recipeVersion: "ink.add.anywhere.projection.v7" as const,
-      attemptNumber: 1 as const,
-      responseModalities: ["IMAGE"] as const,
-      prompt: "Edit only the authorized tattoo pixels.",
-      images: [
-        "original_target",
-        "guided_target",
-        "identity_anchor",
-        "evidence_mosaic",
-      ].map((role) => ({
-        role,
-        inlineData: {
-          mimeType: "image/png" as const,
-          data: "AA==",
-        },
-      })) as [
-        {
-          role: "original_target";
-          inlineData: { mimeType: "image/png"; data: string };
-        },
-        {
-          role: "guided_target";
-          inlineData: { mimeType: "image/png"; data: string };
-        },
-        {
-          role: "identity_anchor";
-          inlineData: { mimeType: "image/png"; data: string };
-        },
-        {
-          role: "evidence_mosaic";
-          inlineData: { mimeType: "image/png"; data: string };
-        },
-      ],
-    };
-    const parts = buildInkProjectionProviderParts(projectionRequest);
-    expect(parts).toHaveLength(10);
-    expect(parts[0]).toEqual({
-      text:
-        "MULTI-IMAGE EDIT INPUTS. Each constant role label applies only to the image immediately following it.",
-    });
-    expect(parts[1]).toMatchObject({
-      text: expect.stringContaining("CLEAN ORIGINAL TARGET"),
-    });
-    expect(parts[2]).toEqual({
-      inlineData: projectionRequest.images[0].inlineData,
-    });
-    expect(parts[7]).toMatchObject({
-      text: expect.stringContaining("PRIVATE TATTOO EVIDENCE"),
-    });
-    expect(parts[8]).toEqual({
-      inlineData: projectionRequest.images[3].inlineData,
-    });
-    expect(parts[9]).toEqual({
-      text: expect.stringContaining("EDIT INSTRUCTIONS"),
-    });
-    expect(buildInkCandidateProviderConfig(projectionRequest)).toMatchObject({
-      imageConfig: {
-        aspectRatio: "3:4",
-        imageSize: "1K",
-      },
-    });
-    const probeParts = buildInkProbeProviderParts({
-      kind: "feature_projection",
-      model: "gemini-2.5-flash",
-      recipeVersion: "ink.add.anywhere.projection.probe.v3",
-      responseMimeType: "application/json",
-      responseSchema: { confidence: "integer_0_100" },
-      thinkingBudget: 0,
-      includeThoughts: false,
-      maxOutputTokens: 4096,
-      prompt: "Audit the exact target and candidate.",
-      images: [
-        "identity_anchor",
-        "original_target",
-        "evidence_mosaic",
-        "candidate",
-      ].map((role) => ({
-        role,
-        inlineData: {
-          mimeType: "image/png" as const,
-          data: "AA==",
-        },
-      })) as InkProbeRequest["images"],
-    });
-    expect(probeParts).toHaveLength(10);
-    expect(probeParts[1]).toEqual({
-      text: "IMAGE ROLE - IDENTITY ANCHOR",
-    });
-    expect(probeParts[3]).toEqual({
-      text: "IMAGE ROLE - IMMUTABLE ORIGINAL TARGET",
-    });
-    expect(probeParts[7]).toEqual({
-      text: "IMAGE ROLE - CLEAN CANDIDATE TO AUDIT",
-    });
-    expect(probeParts[9]).toEqual({
-      text: expect.stringContaining("AUDIT INSTRUCTIONS"),
-    });
-  });
-
   it("forwards the closed non-thinking probe configuration to the provider", () => {
     const config = buildInkProbeProviderConfig({
       kind: "visibility",
@@ -523,7 +330,7 @@ describe("ink candidate generation", () => {
       if (request.kind === "identity_pose") {
         return { samePerson: true, poseFramingPreserved: true, confidence: 97 };
       }
-      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v5") {
+      if (request.recipeVersion === "ink.add.anywhere.placement-audit.v4") {
         return {
           anatomicalSideCorrect: true,
           insideAuthorizedZone: true,
@@ -554,7 +361,7 @@ describe("ink candidate generation", () => {
       chargedCredits: 350,
     });
     expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.composer.v7",
+      recipeVersion: "ink.add.anywhere.composer.v6",
       prompt: expect.stringContaining("zone=full_arm"),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
@@ -567,10 +374,8 @@ describe("ink candidate generation", () => {
       }),
     }));
     expect(probe).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.placement-audit.v5",
-      prompt: expect.stringContaining(
-        "nose/toes toward frame-right expose",
-      ),
+      recipeVersion: "ink.add.anywhere.placement-audit.v4",
+      prompt: expect.stringContaining("subject faces toward frame-right"),
       images: expect.arrayContaining([
         expect.objectContaining({ role: "candidate" }),
         expect.objectContaining({ role: "placement_audit_candidate" }),
@@ -615,9 +420,9 @@ describe("ink candidate generation", () => {
         ontologyVersion: "body-zones.ink.v2",
         targetAngle: "backFull",
         sourceAngle: "backFull",
-        composerRecipeVersion: "ink.add.anywhere.projection.v7",
-        probeRecipeVersion: "ink.add.anywhere.projection.probe.v3",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v10",
+        composerRecipeVersion: "ink.add.anywhere.projection.v3",
+        probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v3",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -630,44 +435,12 @@ describe("ink candidate generation", () => {
             side: "right",
           },
           targetZone: { x: 0.08, y: 0.2, width: 0.28, height: 0.62 },
-          targetZones: [
-            { x: 0.08, y: 0.2, width: 0.2, height: 0.32 },
-            { x: 0.1, y: 0.5, width: 0.18, height: 0.32 },
-          ],
           witnessZone: { x: 0.08, y: 0.2, width: 0.28, height: 0.62 },
           witnessViewAngle: "frontFull",
           witness: {
             plateId: "89898989-8989-4989-8989-898989898989",
             storageKey:
               "users/7/models/11/evidence/candidates/89898989-8989-4989-8989-898989898989.webp",
-            byteSize: webp.length,
-            contentHash: createHash("sha256").update(webp).digest("hex"),
-          },
-          impact: "uncertain",
-          hasAcceptedTargetEvidence: false,
-          isProjectionTarget: true,
-          coverageBasis: "observed_visible",
-        }, {
-          featureId: "feature-2",
-          featureVersionId: "version-2",
-          contract: "all_body_v2",
-          normalizedDescriptor: "fine-line triangle on his left shoulder",
-          anatomyLabel: "left anterior shoulder",
-          anatomy: {
-            zone: "shoulder",
-            surface: "anterior",
-            side: "left",
-          },
-          targetZone: { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
-          targetZones: [
-            { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
-          ],
-          witnessZone: { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
-          witnessViewAngle: "frontFull",
-          witness: {
-            plateId: "79797979-7979-4979-8979-797979797979",
-            storageKey:
-              "users/7/models/11/evidence/candidates/79797979-7979-4979-8979-797979797979.webp",
             byteSize: webp.length,
             contentHash: createHash("sha256").update(webp).digest("hex"),
           },
@@ -697,30 +470,9 @@ describe("ink candidate generation", () => {
         ? projectionPrepared.authority.features
         : [],
     };
-    let coverageCall = 0;
     const deps = dependencies({
       loadProjectionPreflight: vi.fn(async () => preflight),
       prepareProjection: vi.fn(async () => projectionPrepared),
-      probe: vi.fn(async (request) => {
-        if (request.kind !== "coverage") return passProbe(request);
-        coverageCall += 1;
-        const response = passProbe(request) as Record<string, unknown>;
-        if (coverageCall === 1) {
-          return {
-            ...response,
-            feature1SegmentCount: 2,
-            feature1Segment1X: 8,
-            feature1Segment1Y: 20,
-            feature1Segment1Width: 20,
-            feature1Segment1Height: 32,
-            feature1Segment2X: 10,
-            feature1Segment2Y: 50,
-            feature1Segment2Width: 18,
-            feature1Segment2Height: 32,
-          };
-        }
-        return response;
-      }),
     });
     const result = await generateInkProjectionCandidate(deps, {
       userId: projectionPrepared.userId,
@@ -737,102 +489,26 @@ describe("ink candidate generation", () => {
       expect.objectContaining({ amount: 300 }),
       expect.any(Function),
     );
-    expect(deps.prepareProjection).toHaveBeenCalledWith(expect.objectContaining({
-      observedCoverage: {
-        "version-1": {
-          visible: true,
-          targetZones: [
-            { x: 0.08, y: 0.2, width: 0.2, height: 0.32 },
-            { x: 0.1, y: 0.5, width: 0.18, height: 0.32 },
-          ],
-        },
-        "version-2": {
-          visible: true,
-          targetZones: [
-            { x: 0.65, y: 0.2, width: 0.15, height: 0.18 },
-          ],
-        },
-      },
-    }));
-    expect(deps.generate).not.toHaveBeenCalled();
-    expect(deps.canonicalize).toHaveBeenCalledWith(
-      expect.stringMatching(/^data:image\/png;base64,/),
-    );
-    const coverageRequests = vi.mocked(deps.probe!).mock.calls
-      .map(([request]) => request)
-      .filter((request) => request.kind === "coverage");
-    expect(coverageRequests).toHaveLength(2);
-    expect(coverageRequests.map((request) =>
-      request.images.map(({ role }) => role)
-    )).toEqual([
-      ["original_target", "coordinate_guide", "evidence_reference"],
-      ["original_target", "coordinate_guide", "evidence_reference"],
-    ]);
-    expect(coverageRequests[0]?.prompt).toContain(
-      "black botanical full sleeve",
-    );
-    expect(coverageRequests[0]?.prompt).not.toContain(
-      "fine-line triangle on his left shoulder",
-    );
-    expect(coverageRequests[1]?.prompt).toContain(
-      "fine-line triangle on his left shoulder",
-    );
-    expect(coverageRequests[1]?.prompt).not.toContain(
-      "black botanical full sleeve",
-    );
-    expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
-      kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v10",
+    expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
+      recipeVersion: "ink.add.anywhere.projection.v3",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
-        expect.objectContaining({ role: "coordinate_guide" }),
-        expect.objectContaining({ role: "evidence_reference" }),
+        expect.objectContaining({ role: "evidence_mosaic" }),
       ]),
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
-      kind: "projection_target_guide",
-      recipeVersion:
-        "ink.add.anywhere.projection-target-guide-audit.v3",
-      images: expect.arrayContaining([
-        expect.objectContaining({ role: "guided_target" }),
-        expect.objectContaining({ role: "evidence_reference" }),
-      ]),
+      kind: "coverage",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v3",
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection",
-      recipeVersion: "ink.add.anywhere.projection.probe.v3",
+      recipeVersion: "ink.add.anywhere.projection.probe.v2",
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection_placement",
       recipeVersion:
-        "ink.add.anywhere.projection-placement-audit.v3",
+        "ink.add.anywhere.projection-placement-audit.v1",
     }));
-
-    const failedProjection = dependencies({
-      loadProjectionPreflight: vi.fn(async () => preflight),
-      prepareProjection: vi.fn(async () => projectionPrepared),
-      prepareIncludedRetry: vi.fn(async () => {
-        throw new Error("deterministic projection must not retry");
-      }),
-      probe: vi.fn(async (request) => {
-        const response = passProbe(request) as Record<string, unknown>;
-        return request.kind === "feature_projection"
-          ? { ...response, identityMatch: false }
-          : response;
-      }),
-    });
-    await expect(generateInkProjectionCandidate(failedProjection, {
-      userId: projectionPrepared.userId,
-      modelId: projectionPrepared.modelId,
-      targetViewAngle: "backFull",
-      clientRequestId: "93939393-9393-4393-8393-939393939393",
-    })).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-      message: expect.stringContaining("could not be created"),
-    });
-    expect(failedProjection.prepareIncludedRetry).not.toHaveBeenCalled();
-    expect(failedProjection.generate).not.toHaveBeenCalled();
-    expect(failedProjection.invalidate).toHaveBeenCalledTimes(1);
 
     const refused = dependencies({
       loadProjectionPreflight: vi.fn(async () => preflight),

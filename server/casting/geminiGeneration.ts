@@ -763,7 +763,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
         model: PRIMARY_MODEL,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
-          imageConfig: { aspectRatio, imageSize: resolution },
+          imageConfig: { aspectRatio },
           safetySettings: SAFETY_SETTINGS,
         }
       });
@@ -789,7 +789,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
   const executeGen = async (modelName: string) => {
     const config: any = {
       responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio, imageSize: resolution },
+      imageConfig: { aspectRatio },
       safetySettings: SAFETY_SETTINGS,
     };
 
