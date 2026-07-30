@@ -14,6 +14,12 @@ build/
 # Theme-parity screenshot output (scripts/drive-foundation-theme-parity.mts)
 .theme-shots/
 
+# Drape Atlas explorer — a pure derivation of drape-architecture.json, which IS
+# committed. Keeping the 500KB HTML out of git avoids doubling the churn on
+# every source change for a diff nobody can usefully read; `pnpm
+# architecture:generate` recreates it in seconds.
+docs/architecture/index.html
+
 # Environment variables
 .env
 .env.local

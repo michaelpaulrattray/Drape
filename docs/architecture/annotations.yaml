@@ -1,0 +1,26 @@
+# Drape Atlas annotations (plan §P.4)
+#
+# This file carries ONLY what code cannot say. Everything else in the Atlas is
+# mechanically derived, and the generator warns if an annotation restates
+# something derivable.
+#
+# Three kinds of entry:
+#   domain            override the path-inferred domain of a module
+#   purpose           one line of semantics, where the name is not enough
+#   acceptedFindings  a deliberate exception, with the reason it is deliberate
+#
+# An annotation naming a path or route that does not exist is a hard failure,
+# so annotations cannot rot silently.
+#
+# v1 ships this file empty of overrides on purpose. The 169 non-strict-input
+# warnings and the 12 public endpoints are real, currently-true statements
+# about the codebase — accepting them wholesale here would silence exactly the
+# class of finding the Atlas exists to surface. They are worked down by M4's
+# `.strict()` sweep and reviewed against the enumerated allowlist, not annotated
+# away.
+
+modules: {}
+
+routes: {}
+
+acceptedFindings: []

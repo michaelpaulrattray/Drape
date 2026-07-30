@@ -31,7 +31,15 @@ For coding under an eligible Opus primary: milestone plans and DECISION_LOG ruli
 - `pnpm test:integration` — HTTP tests against a live server (`server/**/*.integration.test.ts`); start `pnpm dev` first
 - `pnpm build` — vite build (client → `dist/public`) + esbuild (server → `dist`)
 - `pnpm db:push` — drizzle-kit generate + migrate (needs `DATABASE_URL`)
+- `pnpm architecture:generate` — regenerate the Drape Atlas (`docs/architecture/`)
+- `pnpm architecture:check` — verify the Atlas is fresh, schema-valid and deterministic (also runs inside `pnpm test`)
 - `npx tsx seed.ts` — dev helper: marks every user approved + emailVerified + admin
+
+## Architecture Atlas
+
+After changing routes, schemas, database access, ownership rules, billing, workers, queues, providers, storage, feature flags, product-domain boundaries or legacy-module status, run `pnpm architecture:generate` and review the diff as part of the change. Before completing work, run `pnpm architecture:check`. Generated architecture files are reviewed with the code change and never edited manually; annotations live in `docs/architecture/annotations.yaml`.
+
+The Atlas (`docs/architecture/drape-architecture.json`, with a filterable `index.html` derived from it) is mechanically extracted from source — it never runs app code, opens a database, reads an env *value*, or touches R2. It is the deletion authority for the legacy-retirement program: nothing is removed while its retirement view still shows live callers.
 
 ## Architecture
 
