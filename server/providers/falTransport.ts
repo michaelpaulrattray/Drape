@@ -16,15 +16,36 @@ const log = createModuleLogger("providers/falTransport");
 export const QUEUE_BASE = "https://queue.fal.run";
 const BALANCE_URL = "https://rest.alpha.fal.ai/billing/user_balance";
 
+/**
+ * Whether a provider body is genuinely a content refusal.
+ *
+ * This started as a loose word-list that included the bare token `content`,
+ * and the M3 calibration run caught what that costs: five candidates failed at
+ * the result-fetch step, every one was classified `content_policy` — which is
+ * NON-retryable — and re-running one of the same prompts afterwards succeeded
+ * immediately. They were transient errors that the retry policy would have
+ * absorbed, permanently failed and refunded instead, because a body containing
+ * the substring "content" (as in `content_type`) matched.
+ *
+ * Misclassifying in this direction is the expensive one: a real refusal
+ * retried three times wastes a little money, but a transient error marked
+ * terminal loses a candidate the user paid for. So the phrases here are
+ * deliberately specific, and anything unrecognised falls through to a
+ * retryable class rather than being called a refusal.
+ */
+export function isContentRefusal(body: string): boolean {
+  return /\bnsfw\b|safety[\s_-]?system|content[\s_-]?polic|policy[\s_-]?violation|moderation[\s_-]?(block|refus|reject)|blocked[\s_-]?by[\s_-]?(safety|moderation)|prohibited[\s_-]?content|violates/i.test(
+    body,
+  );
+}
+
 export function classifyFalHttp(status: number, body: string): ProviderFailureClass {
   if (status === 429) return "rate_limit";
   if (status >= 500) return "transport";
   if (status === 408 || status === 504) return "timeout";
   if (status === 401 || status === 403) return "capability";
   if (status === 400 || status === 422) {
-    return /nsfw|safety|policy|content|moderation|blocked|rejected/i.test(body)
-      ? "content_policy"
-      : "capability";
+    return isContentRefusal(body) ? "content_policy" : "capability";
   }
   return "unknown";
 }
@@ -171,10 +192,14 @@ export async function runFalImageJob(input: {
     const result = await fetch(resultUrl, { headers });
     if (!result.ok) {
       const text = await result.text().catch(() => "");
-      throw new ProviderError(classifyFalHttp(result.status, text), "fal.ai result fetch failed", {
-        status: result.status,
-        providerRef: requestId,
-      });
+      // Carry the status and a body excerpt into the message. The calibration
+      // run failed five calls here and the log said only "result fetch
+      // failed", which cost a live re-probe to diagnose.
+      throw new ProviderError(
+        classifyFalHttp(result.status, text),
+        `fal.ai result fetch failed (${result.status}): ${text.slice(0, 200)}`,
+        { status: result.status, providerRef: requestId },
+      );
     }
 
     const payload = (await result.json()) as {

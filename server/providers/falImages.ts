@@ -24,6 +24,14 @@ import { ProviderError, type CandidateRequest, type CreativeEngine, type ImageRe
 export const FAL_GPT_IMAGE_2 = "openai/gpt-image-2";
 export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
 
+/**
+ * MEASURED, not listed: $0.8912 across 9 medium-quality 1024×1536 images on
+ * 2026-07-30, read from the account balance before and after. List-price
+ * arithmetic put it at $0.084, so the real rate is ~18% higher — which is
+ * enough to blow a spend ceiling that trusts the list. Cost planning uses this.
+ */
+export const FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE = 0.099;
+
 export type FalCreativeConfig = {
   apiKey: string;
   model?: string;

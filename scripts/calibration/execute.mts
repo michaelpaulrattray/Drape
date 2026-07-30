@@ -46,9 +46,17 @@ type Options = {
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
-/** Pinned per §E: the interpreter id is recorded per roll, so it is pinned here. */
+/**
+ * Pinned per §E — the interpreter id is recorded per roll, so it is pinned here.
+ *
+ * §E.1 names Kimi K3 for the treatment stage and lists "is K3 actually servable
+ * on OpenRouter?" as an M3 verification item, with permission to substitute an
+ * inexpensive alternative if not. Verified 2026-07-30: `moonshotai/kimi-k3` is
+ * listed and served, so the A/B runs the model the plan specifies rather than a
+ * stand-in.
+ */
 const INTERPRETER_MODEL = "anthropic/claude-sonnet-5";
-const TREATMENT_MODEL = "moonshotai/kimi-k2";
+const TREATMENT_MODEL = "moonshotai/kimi-k3";
 
 /**
  * The normalized framing block. §E.1 is explicit that the deterministic adapter

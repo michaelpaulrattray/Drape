@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createOpenRouterCreativeEngine, estimateCandidateCostUsd } from "./openrouterImages";
 import { createFalIdentityEngine } from "./falQueue";
+import { classifyFalHttp, isContentRefusal } from "./falTransport";
 import { ProviderQueue, withRetry } from "./providerQueue";
 import { ProviderError, isRetryable, RETRYABLE_FAILURES, type ProviderFailureClass } from "./types";
 
@@ -241,6 +242,39 @@ describe("Fal identity engine", () => {
     // without a result. Worth noting for the calibration report: a slow
     // provider costs up to 3× in COGS even though the *user* is charged once.
     expect(cancelled.length, "every attempt must cancel its own request").toBe(3);
+  });
+});
+
+describe("content-refusal classification", () => {
+  /*
+    Regression from the M3 calibration run. The original matcher included the
+    bare token "content", so any 400 whose body mentioned `content_type` was
+    classified `content_policy` — non-retryable — and five candidates were
+    permanently failed. Re-running one of the same prompts succeeded straight
+    away, proving they were transient.
+
+    The asymmetry matters: a real refusal retried wastes pennies; a transient
+    error marked terminal loses a candidate the user paid for.
+  */
+  it("does not treat an incidental mention of content as a refusal", () => {
+    expect(isContentRefusal('{"detail":"bad content_type header"}')).toBe(false);
+    expect(isContentRefusal('{"error":"upstream returned no content"}')).toBe(false);
+    expect(isContentRefusal('{"detail":"request rejected"}')).toBe(false);
+  });
+
+  it("still recognises a real refusal", () => {
+    expect(isContentRefusal("blocked by safety system")).toBe(true);
+    expect(isContentRefusal("This request violates our usage policies")).toBe(true);
+    expect(isContentRefusal('{"detail":"content_policy_violation"}')).toBe(true);
+    expect(isContentRefusal("NSFW content detected")).toBe(true);
+    expect(isContentRefusal("prohibited content")).toBe(true);
+  });
+
+  it("classifies an ambiguous 400 as capability, which is at least not silent", () => {
+    expect(classifyFalHttp(400, '{"detail":"bad content_type"}')).toBe("capability");
+    expect(classifyFalHttp(400, "blocked by safety system")).toBe("content_policy");
+    expect(classifyFalHttp(500, "boom")).toBe("transport");
+    expect(classifyFalHttp(429, "slow down")).toBe("rate_limit");
   });
 });
 

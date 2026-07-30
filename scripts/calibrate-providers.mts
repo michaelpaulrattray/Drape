@@ -41,6 +41,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { estimateCandidateCostUsd } from "../server/providers/openrouterImages";
+import { FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "../server/providers/falImages";
 import { NANO_BANANA_PRO_USD_PER_IMAGE } from "../server/providers/falQueue";
 
 /* ------------------------------------------------------------------ config */
@@ -106,11 +107,12 @@ type PlannedCall = {
 };
 
 function planCandidateCost(): number {
-  return estimateCandidateCostUsd({
-    prompt: "",
-    size: SHEET_SIZE,
-    quality: SHEET_QUALITY,
-  });
+  // Use the rate we measured on the transport we actually run. Planning a
+  // ceiling from list prices under-counts fal by ~18%, which is the difference
+  // between a guard that stops a run and one that watches it overspend.
+  return IMAGES_VIA === "fal"
+    ? FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE
+    : estimateCandidateCostUsd({ prompt: "", size: SHEET_SIZE, quality: SHEET_QUALITY });
 }
 
 function buildPlan(phase: string): PlannedCall[] {
