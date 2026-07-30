@@ -298,7 +298,7 @@
 /* Destructive is a hover state on a secondary button, never a resting red. */
 .dp-btn--secondary.dp-btn--destructive:hover {
   border-color: var(--error);
-  color: var(--error);
+  color: var(--errorInk);
 }
 
 .dp-btn--quiet {
@@ -411,7 +411,7 @@
 
 .dp-required {
   font: 400 11px var(--font-mono);
-  color: var(--error);
+  color: var(--errorInk);
   flex: none;
 }
 

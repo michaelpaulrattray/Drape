@@ -9,6 +9,15 @@
 @import "./styles/canvas-tokens.css";
 
 /*
+  Foundation tokens — the app's palette (plan §D.1). Imported here rather than
+  only through the feature barrel so load order is explicit and reviewable:
+  it must come after the marketing tokens above, which declare a competing
+  `--font-sans` at :root. The semantic remap below points every shadcn slot at
+  these, so this import is what the whole app's colour resolves through.
+*/
+@import "./foundation/tokens.css";
+
+/*
   One theme switch, app-wide (plan §D.8, M2). The `dark:` utilities in the
   shadcn primitives now key off the same `data-theme` attribute the foundation
   uses, so the `.dark` class is gone and there is no second convention to keep
@@ -29,38 +38,85 @@ html {
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 16px);
   --radius-4xl: 2rem;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+
+  /* ============================================================
+     SHADCN SEMANTIC REMAP (plan §D.3, M2-B)
+
+     Every shadcn slot now resolves to a foundation token, so the
+     ~40 semantic utilities in use across admin, billing, boards
+     and the ui/ primitives inherit the dual-theme palette without
+     a single component edit. This block is the rollback unit: put
+     the old `var(--background)`-style mappings back and the app
+     returns to the shadcn palette.
+
+     NAME CORRESPONDENCE IS DELIBERATELY BROKEN in three places.
+     shadcn's `--muted`, `--secondary` and `--accent` are BACKGROUND
+     colours; the foundation's same-named tokens are TEXT colours.
+     Mapping them by name would make `bg-muted` a mid-grey slab and
+     `bg-accent` a brand-orange slab — the latter also violating
+     non-negotiable 5 (accent means kept/selected/active, never
+     decoration). Each is mapped to the surface it actually is, and
+     its `-foreground` partner takes the foundation's text token.
+     ============================================================ */
+
+  /* Page and text */
+  --color-background: var(--surface);
+  --color-foreground: var(--ink);
+
+  /* Elevated containers — `--raised`, not `--surface`, or dark loses
+     the card/popover elevation step entirely. */
+  --color-card: var(--raised);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--raised);
+  --color-popover-foreground: var(--ink);
+
+  /* Primary action: ink fill, surface label. Inverts correctly in dark. */
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--surface);
+
+  /* shadcn secondary = a quiet filled button. Background, not text. */
+  --color-secondary: var(--fill);
+  --color-secondary-foreground: var(--secondary);
+
+  /* shadcn muted = a quiet filled surface. Its foreground is the text. */
+  --color-muted: var(--fill);
+  --color-muted-foreground: var(--meta);
+
+  /* shadcn accent = hover/active chrome on menus and list rows. It is NOT
+     the brand accent — that stays reserved for selection. */
+  --color-accent: var(--fillStrong);
+  --color-accent-foreground: var(--ink);
+
+  /* Error is deliberately outside the accent family and not brand-tintable.
+     `--errorInk` is the text role: plain `--error` measures 3.4:1 on the dark
+     surface, below the 4.5:1 floor for body-size text. */
+  --color-destructive: var(--error);
+  --color-destructive-foreground: var(--onScrim);
+
   --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-input: var(--borderInput);
+  /* Matches the foundation's own :focus-visible ring, so focus looks like one
+     system whether a control is shadcn or foundation. */
+  --color-ring: var(--accentSolid);
+
+  /* Neutral ramp. Charts have no consumers yet; when they arrive they inherit
+     the monochrome palette rather than inventing a colour scheme. */
+  --color-chart-1: var(--ink);
+  --color-chart-2: var(--metaStrong);
+  --color-chart-3: var(--meta);
+  --color-chart-4: var(--muted);
+  --color-chart-5: var(--dots);
+
+  /* ui/sidebar.tsx only — no importers (§C marks it delete-now). Mapped so it
+     cannot render un-themed if something ever does import it. */
+  --color-sidebar: var(--raised);
+  --color-sidebar-foreground: var(--ink);
+  --color-sidebar-primary: var(--ink);
+  --color-sidebar-primary-foreground: var(--surface);
+  --color-sidebar-accent: var(--fillStrong);
+  --color-sidebar-accent-foreground: var(--ink);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--accentSolid);
   --font-sans: Inter, "Inter Placeholder", sans-serif;
   --font-geist: "Geist", sans-serif;
   --font-inter: "Inter", sans-serif;
@@ -69,67 +125,32 @@ html {
   --font-body: "Barlow", sans-serif;
 }
 
-/* DRAPE Light Theme - Inspired by Oravia/Technical Design */
+/*
+  The shadcn oklch palette that used to live here is gone: every slot above
+  now resolves to a foundation token, so these variables had no readers left.
+  Only --radius survives — three ui/ primitives compute radii from it.
+*/
 :root {
   --radius: 0.5rem;
-  /* Canvas-based light theme - #FAFAFA base */
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.145 0 0);
-  /* Card - Pure white with subtle depth */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  /* Popover */
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Primary - Obsidian black */
-  --primary: oklch(0.145 0 0);
-  --primary-foreground: oklch(0.98 0 0);
-  /* Secondary - Subtle gray */
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.35 0 0);
-  /* Muted - For subtle text */
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  /* Accent - Obsidian with subtle warmth */
-  --accent: oklch(0.25 0.01 60);
-  --accent-foreground: oklch(0.98 0 0);
-  /* Destructive */
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0 0);
-  /* Borders and inputs - Very subtle */
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.92 0 0);
-  --ring: oklch(0.145 0 0 / 30%);
-  /* Chart colors - Monochrome palette */
-  --chart-1: oklch(0.3 0 0);
-  --chart-2: oklch(0.45 0 0);
-  --chart-3: oklch(0.6 0 0);
-  --chart-4: oklch(0.75 0 0);
-  --chart-5: oklch(0.85 0 0);
-  /* Sidebar - Clean white */
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.145 0 0);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0.9 0 0);
-  --sidebar-ring: oklch(0.145 0 0 / 20%);
 }
 
-/* Custom scrollbar - Light mode style */
+/*
+  Scrollbar. Tokenised at M2: these were hardcoded light greys, which left a
+  pale track down the side of every dark surface. Document chrome follows the
+  theme like everything else.
+*/
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #fafafa;
+  background: var(--page);
 }
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d4;
+  background: var(--dots);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a3a3a3;
+  background: var(--lineStrong);
 }
 
 /* Premium Card - Oravia inspired */

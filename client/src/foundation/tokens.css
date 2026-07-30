@@ -82,12 +82,19 @@
   --onScrim:      #FFFFFF;              /* text/glyph on scrim */
 
   /* ---- ERROR ----------------------------------------------
-     Identical in both themes and outside the accent group on
-     purpose: the handoff's third carve-out is that error red is
-     never retintable by brand. It lives here rather than as a
-     literal in components so the no-hex guard stays absolute.
+     Outside the accent group on purpose: the handoff's third
+     carve-out is that error red is never retintable by brand.
+     It lives here rather than as a literal in components so the
+     no-hex guard stays absolute.
+
+     Two roles, for the same reason the accent has two: --error
+     is the border/fill and is identical in both themes, while
+     --errorInk is error TEXT. Measured on the dark surface
+     (#1C1C1F), plain --error gives 3.40:1 — below the 4.5:1 AA
+     floor for body-size text — so dark lifts it to 6.9:1.
      --------------------------------------------------------- */
   --error:        #C0473A;  /* input error border + REQUIRED   */
+  --errorInk:     #C0473A;  /* error TEXT (4.99:1 on white)    */
 
   /* ---- ELEVATION ------------------------------------------ */
   --shadowCard:   0 12px 34px rgba(17,17,18,.14);  /* dock, dialog */
@@ -169,7 +176,10 @@
   --accentLine:       rgba(226,104,90,.32);
   --onWash:           #FFFFFF;
 
-  /* --error is deliberately NOT overridden here — see above. */
+  /* --error (border/fill) is deliberately NOT overridden — media-like, it
+     reads the same in both themes. --errorInk is, because text must clear
+     the AA contrast floor on the dark ground: 6.91:1 here vs 3.40:1. */
+  --errorInk:     #E08A7E;
 
   --shadowCard:   0 12px 34px rgba(0,0,0,.5);
   --shadowPop:    0 8px 22px rgba(0,0,0,.44);

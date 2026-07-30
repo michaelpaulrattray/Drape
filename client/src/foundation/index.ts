@@ -14,7 +14,9 @@ import "@fontsource/archivo/500.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 
-import "./tokens.css";
+// tokens.css is imported from client/src/index.css instead, so its position
+// relative to the marketing stylesheet is explicit rather than dependent on
+// which component happens to pull this barrel in first.
 import "./foundation.css";
 
 export { AppShell } from "./AppShell";
