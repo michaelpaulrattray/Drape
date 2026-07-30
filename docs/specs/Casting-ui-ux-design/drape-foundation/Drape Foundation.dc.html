@@ -89,7 +89,7 @@
     <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">01 · SURFACES &amp; LINES</span>
     <span style="font:400 11.5px var(--font-sans);color:var(--faint)">tokens.css</span>
   </div>
-  <span style="font:400 12.5px/1.6 var(--font-sans);color:var(--metaStrong);max-width:620px">Elevation is expressed by value, never by shadow. A card on <code style="font:400 11.5px var(--font-mono);color:var(--accentInk)">--surface</code> uses <code style="font:400 11.5px var(--font-mono);color:var(--accentInk)">--raised</code>; a working surface behind cards uses <code style="font:400 11.5px var(--font-mono);color:var(--accentInk)">--page</code>. Shadow is reserved for things that float over content — dock, dialog, menu.</span>
+  <span style="font:400 12.5px/1.6 var(--font-sans);color:var(--metaStrong);max-width:620px">Elevation is expressed by value, never by shadow. A card on <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--surface</code> uses <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--raised</code>; a working surface behind cards uses <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--page</code>. Shadow is reserved for things that float over content — dock, dialog, menu.</span>
   <sc-for list="{{ ramps }}" as="r" hint-placeholder-count="3">
     <div style="display:flex;flex-direction:column;gap:8px">
       <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted)">{{ r.title }}</span>
@@ -127,9 +127,9 @@
         <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted)">ACCENT — ONE HUE, FOUR ROLES</span>
         <div style="display:flex;gap:8px">
           <span style="flex:1;height:44px;border-radius:9px;background:var(--accentSolid);display:flex;align-items:center;justify-content:center;font:500 10px var(--font-mono);color:var(--onWash)">SOLID</span>
-          <span style="flex:1;height:44px;border-radius:9px;background:var(--accentWash);border:1px solid var(--accentLine);display:flex;align-items:center;justify-content:center;font:500 10px var(--font-mono);color:var(--accentInk)">WASH</span>
+          <span style="flex:1;height:44px;border-radius:9px;background:var(--accentWash);border:1px solid var(--accentLine);display:flex;align-items:center;justify-content:center;font:500 10px var(--font-mono);color:var(--secondary)">WASH</span>
         </div>
-        <span style="font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">Accent means <b style="font-weight:500;color:var(--ink)">kept, selected, or active choice</b> — never decoration and never a whole background. Text on wash is always <code style="font:400 11px var(--font-mono);color:var(--accentInk)">--accentInk</code>, never <code style="font:400 11px var(--font-mono);color:var(--accentInk)">--accentSolid</code> (that fails contrast at body sizes).</span>
+        <span style="font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">Accent means <b style="font-weight:500;color:var(--ink)">kept, selected, or active choice</b> — never decoration and never a whole background. Text on wash is always <code style="font:400 11px var(--font-mono);color:var(--secondary)">--accentInk</code>, never <code style="font:400 11px var(--font-mono);color:var(--secondary)">--accentSolid</code> (that fails contrast at body sizes).</span>
       </div>
       <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--raised);padding:16px 18px;display:flex;flex-direction:column;gap:10px">
         <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted)">TYPE SCALE</span>
@@ -162,7 +162,7 @@
         </span>
         <span style="padding:7px 13px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 11.5px var(--font-sans);cursor:pointer" style-hover="opacity:.86">Small</span>
       </div>
-      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Hover is <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">opacity:.86</code>, not a colour change — survives theme flip and accent retint.</span>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Hover is <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">opacity:.86</code>, not a colour change — survives theme flip and accent retint.</span>
     </div>
 
     <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
@@ -175,7 +175,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--secondary)" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="5.5" r="1.4"></circle><circle cx="12" cy="18.5" r="1.4"></circle></svg>
         </span>
       </div>
-      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Border darkens to <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--ink</code> on hover and the label follows. Icon-only buttons in chrome get a <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--fillStrong</code> pad instead.</span>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Border darkens to <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">--ink</code> on hover and the label follows. Icon-only buttons in chrome get a <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">--fillStrong</code> pad instead.</span>
     </div>
 
     <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
@@ -190,7 +190,7 @@
           </span>
         </span>
       </div>
-      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">⚠ Never translucent <i>white</i> chips over media — measured 2.5:1 against white glyphs on light imagery. Use <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--scrimChip</code>.</span>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">⚠ Never translucent <i>white</i> chips over media — measured 2.5:1 against white glyphs on light imagery. Use <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">--scrimChip</code>.</span>
     </div>
 
     <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
@@ -202,7 +202,7 @@
         <span style="padding:8px 12px;border:1px solid var(--borderInput);border-radius:8px;font:400 11.5px var(--font-sans);color:var(--secondary);cursor:pointer" style-hover="border-color:#C0473A;color:#C0473A">Delete</span>
         <span style="padding:8px 12px;border-radius:8px;background:var(--fill);font:500 11.5px var(--font-sans);color:var(--muted);cursor:not-allowed">Unavailable</span>
       </div>
-      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Prefer replacing a disabled primary with an instruction in <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--meta</code>. Destructive is a hover state, never a resting red button.</span>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Prefer replacing a disabled primary with an instruction in <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">--meta</code>. Destructive is a hover state, never a resting red button.</span>
     </div>
   </div>
 </div>
@@ -306,7 +306,23 @@
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11V8a6 6 0 0 1 12 0v3M5 11h14v9H5z"></path></svg>IDENTITY LOCKED
         </span>
       </div>
-      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Status is always mono + uppercase so it never competes with names. On media it uses <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--scrimPill</code>, not a token surface.</span>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Status is always mono + uppercase so it never competes with names. On media it uses <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">--scrimPill</code>, not a token surface.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Presence &amp; badges</span>
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center">
+          <span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(160deg,var(--fill),var(--dots));box-shadow:0 0 0 1.5px var(--surface);margin-right:-8px"></span>
+          <span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(160deg,var(--media),var(--dashed));box-shadow:0 0 0 1.5px var(--surface);margin-right:-8px"></span>
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--fillStrong);box-shadow:0 0 0 1.5px var(--surface);display:flex;align-items:center;justify-content:center;font:500 8.5px var(--font-sans);color:var(--metaStrong)">+3</span>
+        </span>
+        <span style="position:relative;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--metaStrong)" style-hover="background:var(--fillStrong)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.5h15v10.5h-8L7 19.5v-3.5H4.5z"></path></svg>
+          <span style="position:absolute;right:4px;top:4px;width:5px;height:5px;border-radius:50%;background:var(--accentSolid)"></span>
+        </span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Overlap stack: circles with a <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">0 0 0 1.5px --surface</code> ring, <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">margin-right:-8px</code>, overflow as +N. Unread dot: 5px accent, top-right of the icon — never a count bubble.</span>
     </div>
   </div>
 </div>
@@ -389,7 +405,7 @@
         </div>
         <span style="font:500 10px var(--font-mono);color:var(--faint)">&lt; 64px — GRADIENT TILE</span>
       </div>
-      <span style="flex:1 1 240px;min-width:220px;font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">Below ~64px, placeholder prose clips mid-word and reads as broken text. Small thumbs use <code style="font:400 11px var(--font-mono);color:var(--accentInk)">linear-gradient(160deg,var(--fill),var(--dots))</code> + 1px border, with an optional short mono label and the description on <code style="font:400 11px var(--font-mono);color:var(--accentInk)">title</code>.</span>
+      <span style="flex:1 1 240px;min-width:220px;font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">Below ~64px, placeholder prose clips mid-word and reads as broken text. Small thumbs use <code style="font:400 11px var(--font-mono);color:var(--secondary)">linear-gradient(160deg,var(--fill),var(--dots))</code> + 1px border, with an optional short mono label and the description on <code style="font:400 11px var(--font-mono);color:var(--secondary)">title</code>.</span>
     </div>
   </div>
 </div>
@@ -406,6 +422,23 @@
   </div>
 
   <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
+    <div style="width:236px;flex:none;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:1px;padding:3px 4px;background:var(--surface);border:1px solid var(--borderCard);border-radius:10px;box-shadow:var(--shadowPop);width:fit-content">
+        <span style="width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font:400 14px var(--font-sans);color:var(--secondary)" style-hover="background:var(--fillStrong)">−</span>
+        <span style="padding:0 8px;font:400 11px var(--font-sans);color:var(--secondary)">100%</span>
+        <span style="width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font:400 14px var(--font-sans);color:var(--secondary)" style-hover="background:var(--fillStrong)">+</span>
+        <span style="width:1px;height:12px;background:var(--borderSoft);margin:0 3px"></span>
+        <span style="width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--metaStrong)" style-hover="background:var(--fillStrong)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15"></path></svg>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;padding:6px 11px;background:var(--accentWash);border-radius:999px;box-shadow:var(--shadowPop);width:fit-content">
+        <span style="width:11px;height:11px;flex:none;border-radius:50%;border:1.6px solid var(--accentLine);border-top-color:var(--accentSolid);animation:dp-spin 1s linear infinite"></span>
+        <span style="font:500 11px var(--font-sans);color:var(--accentInk)">Rendering 2</span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Floating bars sit over working surfaces: <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">--surface</code> + <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">--shadowPop</code>, 26px icon cells, 1px dividers. The queue pill is the one place a spinner is allowed — 11px, inside a status pill, never blocking content.</span>
+    </div>
+
     <div style="width:212px;border:1px solid var(--borderCard);border-radius:11px;background:var(--surface);box-shadow:var(--shadowPop);padding:5px;display:flex;flex-direction:column;gap:1px">
       <sc-for list="{{ menu }}" as="m" hint-placeholder-count="4">
         <sc-if value="{{ m.plain }}" hint-placeholder-val="{{ true }}">
@@ -466,7 +499,19 @@
           </div>
         </sc-for>
       </div>
-      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Results replace their own tile with <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">dp-rise 340ms</code> as each finishes. Never hold a batch behind the slowest item.</span>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Results replace their own tile with <code style="font:400 10.5px var(--font-mono);color:var(--secondary)">dp-rise 340ms</code> as each finishes. Never hold a batch behind the slowest item.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Long-running generation — in place</span>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="height:96px;background:var(--media);display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center">
+          <span style="width:26px;height:26px;border-radius:50%;background:conic-gradient(#FFFFFF,#FFC6AC,#E2685A,#8E9EDC,#FFFFFF);mask:radial-gradient(circle,transparent 7px,#000 7.5px);-webkit-mask:radial-gradient(circle,transparent 7px,#000 7.5px);animation:dp-spin 2.4s linear infinite"></span>
+          <span style="font:400 10.5px var(--font-sans);color:var(--metaStrong)">Generating · 14s</span>
+        </div>
+        <div style="height:3px;background:var(--fill)"><div style="height:100%;background:linear-gradient(90deg,#FFC6AC,var(--accentSolid) 55%,#8E9EDC);animation:dp-prog 7s ease-out infinite alternate"></div></div>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">For a single expensive job (video render): brand-gradient ring + time estimate + gradient bar, inside the element's own frame. The shimmer is for batches; this is for one thing you're waiting on. Ring/bar gradients share the orb's brand hexes — a sanctioned exception.</span>
     </div>
 
     <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
@@ -513,6 +558,86 @@
   </div>
 </div>
 
+<!-- ══ 08b CANVAS LAYER ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">08b · CANVAS LAYER</span>
+    <span style="font:400 11.5px var(--font-sans);color:var(--faint)">--cv* · node graph only</span>
+  </div>
+  <span style="font:400 12.5px/1.6 var(--font-sans);color:var(--metaStrong);max-width:640px">The canvas reuses the base set wherever it can — node body is <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--surface</code>, node border <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--borderCard</code>, a filled port <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--ink</code>, the dot grid <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--dots</code>. The <code style="font:400 11.5px var(--font-mono);color:var(--secondary)">--cv*</code> tokens exist only where nothing in the base set carries the meaning. No other surface should ever reference them.</span>
+
+  <div style="border:1px solid var(--borderCard);border-radius:14px;overflow:hidden;background:var(--cvGround);background-image:radial-gradient(circle,var(--dots) .75px,transparent .75px);background-size:24px 24px;padding:54px 24px 26px;display:flex;align-items:flex-start;gap:30px;flex-wrap:wrap;position:relative">
+    <div style="position:absolute;left:18px;top:14px;padding:3px 9px;border-radius:7px;background:var(--cvGroupBar);border:1px solid var(--borderCard);font:500 10px var(--font-mono);letter-spacing:.08em;color:var(--metaStrong)">GROUP · 2</div>
+
+    <div style="position:relative;width:384px;flex:none;display:flex;gap:40px">
+    <span style="position:absolute;left:172px;top:74px;width:40px;height:1.5px;border-radius:1px;background:var(--cvWire)"></span>
+    <div style="position:relative;width:172px;flex:none">
+      <div style="display:flex;align-items:center;gap:5px;padding:0 2px 6px">
+        <span style="font:500 11px var(--font-sans);color:var(--secondary)">Avatar</span>
+        <span style="margin-left:auto;font:400 11px var(--font-sans);color:var(--metaStrong)">Maya R.</span>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--borderCard);border-radius:10px;overflow:hidden">
+        <div style="height:104px;background:linear-gradient(160deg,var(--cvTileA),var(--cvTileB));display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px">
+          <span style="font:400 9.5px var(--font-mono);color:var(--metaStrong)">PORTRAIT 4:5</span>
+        </div>
+      </div>
+      <span style="position:absolute;right:-11px;top:64px;width:22px;height:22px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--surface)" stroke-width="2.6" stroke-linecap="round"><path d="M6 12h12"></path></svg>
+      </span>
+    </div>
+
+    <div style="position:relative;width:172px;flex:none">
+      <div style="display:flex;align-items:center;gap:5px;padding:0 2px 6px">
+        <span style="font:500 11px var(--font-sans);color:var(--secondary)">Video</span>
+        <span style="margin-left:auto;font:400 11px var(--font-sans);color:var(--metaStrong)">running</span>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--borderCard);border-radius:10px;overflow:hidden">
+        <div style="height:104px;background:linear-gradient(160deg,var(--cvTileA),var(--cvTileB));display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px">
+          <span style="font:400 9.5px var(--font-mono);color:var(--metaStrong)">GENERATING</span>
+        </div>
+        <div style="height:3px;background:var(--fill)"><div style="height:100%;width:62%;background:linear-gradient(90deg,var(--cvProgA),var(--cvProgB))"></div></div>
+      </div>
+      <span style="position:absolute;left:-11px;top:64px;width:22px;height:22px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--surface)" stroke-width="2.6" stroke-linecap="round"><path d="M6 12h12"></path></svg>
+      </span>
+      <span style="position:absolute;right:-11px;top:64px;width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--cvPortRim);display:flex;align-items:center;justify-content:center">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.6" stroke-linecap="round"><path d="M6 12h12"></path></svg>
+      </span>
+    </div>
+    </div>
+
+    <div style="flex:1 1 200px;min-width:180px;display:flex;flex-direction:column;gap:8px">
+      <div style="background:var(--cvAgentRow);border:1px solid var(--borderCard);border-radius:9px;padding:9px 11px;display:flex;align-items:center;gap:7px">
+        <span style="position:relative;width:13px;height:13px;flex:none;border-radius:50%;overflow:hidden;background:var(--cvAgentHalo)">
+          <span style="position:absolute;inset:2px;border-radius:50%;background:var(--cvAgentCore)"></span>
+        </span>
+        <span style="font:400 9.5px var(--font-mono);letter-spacing:.08em;color:var(--faint)">FROM WHAT IS WIRED IN</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <span style="font:400 11.5px var(--font-sans);color:var(--accentInk)">Run branch</span>
+        <span style="display:flex;gap:1px;background:var(--cvKeyLine);border:1px solid var(--cvKeyLine);border-radius:5px;overflow:hidden">
+          <span style="padding:1px 4px;background:var(--surface);font:500 9.5px var(--font-mono);color:var(--secondary)">⌘</span>
+          <span style="padding:1px 4px;background:var(--surface);font:500 9.5px var(--font-mono);color:var(--secondary)">↵</span>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <sc-for list="{{ pips }}" as="p" hint-placeholder-count="6">
+          <span style="width:4px;height:4px;border-radius:50%;background:{{ p.bg }}"></span>
+        </sc-for>
+        <span style="font:400 10px var(--font-mono);color:var(--cvPlaceholder);padding-left:5px">3 of 6</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+    <div style="width:150px;flex:none;display:flex;flex-direction:column;gap:7px">
+      <div style="height:56px;border-radius:9px;border:1px solid var(--border);background:linear-gradient(160deg,var(--cvTileA),var(--cvTileB))"></div>
+      <span style="font:500 10px var(--font-mono);color:var(--faint)">--cvTileA → --cvTileB</span>
+    </div>
+    <span style="flex:1 1 300px;min-width:260px;font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">One tile for every node type — avatar, product, image, video, untyped. <b style="font-weight:500;color:var(--ink)">Node type is signalled by its icon and label, never by colour.</b> Tinting tiles per type turns an unloaded graph into a colour-coded diagram nobody asked to read, and it collides with the accent as soon as a node is selected. Gradient is 160°.</span>
+  </div>
+</div>
+
 <!-- ══ 09 LAYOUT ══ -->
 <div style="display:flex;flex-direction:column;gap:16px">
   <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
@@ -521,7 +646,7 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:12px">
     <sc-for list="{{ layoutRules }}" as="l" hint-placeholder-count="6">
       <div style="border:1px solid var(--borderCard);border-radius:13px;background:var(--surface);padding:15px 17px;display:flex;flex-direction:column;gap:7px">
-        <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--accentInk)">{{ l.tag }}</span>
+        <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--metaStrong)">{{ l.tag }}</span>
         <span style="font:500 12.5px var(--font-sans)">{{ l.title }}</span>
         <span style="font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">{{ l.body }}</span>
       </div>
@@ -537,7 +662,7 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px">
     <sc-for list="{{ rules }}" as="ru" hint-placeholder-count="8">
       <div style="display:flex;gap:10px;align-items:flex-start;padding:13px 15px;border:1px solid var(--border);border-radius:11px;background:var(--raised)">
-        <span style="flex:none;width:18px;height:18px;border-radius:5px;background:var(--accentWash);border:1px solid var(--accentLine);display:flex;align-items:center;justify-content:center;font:500 9.5px var(--font-mono);color:var(--accentInk);margin-top:1px">{{ ru.n }}</span>
+        <span style="flex:none;width:18px;height:18px;border-radius:5px;background:var(--fillStrong);display:flex;align-items:center;justify-content:center;font:500 9.5px var(--font-mono);color:var(--metaStrong);margin-top:1px">{{ ru.n }}</span>
         <span style="font:400 12px/1.6 var(--font-sans);color:var(--secondary);min-width:0">{{ ru.text }}</span>
       </div>
     </sc-for>
@@ -700,6 +825,7 @@ class Component extends DCLogic {
         anim: s.playing ? `dp-wave ${700 + (i % 5) * 130}ms ease-in-out ${(i % 7) * 60}ms infinite` : "none",
       })),
 
+      pips: [1, 1, 1, 0, 0, 0].map((on) => ({ bg: on ? "var(--accentSolid)" : "var(--cvPipOff)" })),
       layoutRules: LAYOUT.map(([tag, title, body]) => ({ tag, title, body })),
       rules: RULES.map((text, i) => ({ n: String(i + 1).padStart(2, "0"), text })),
     };

@@ -100,6 +100,40 @@
   --t-fast:    120ms;  /* hover, colour change               */
   --t-mid:     200ms;  /* open/close, expand                 */
   --t-enter:   340ms;  /* content arriving                   */
+
+  /* ============================================================
+     CANVAS LAYER
+     Only for the node graph. Every other surface ignores these.
+     The canvas reuses the base set wherever it can — node body
+     is --surface, node border --borderCard, filled port --ink,
+     dot grid --dots, node label --secondary. The tokens below
+     exist because nothing in the base set carries their meaning.
+     ============================================================ */
+
+  /* ground */
+  --cvGround:      #F6F6F8;  /* the floor behind all nodes    */
+  --cvGroupLine:   #C8C8CC;  /* group bounding box            */
+  --cvGroupBar:    #FFFFFF;  /* group / multi-select toolbar  */
+
+  /* ports & wires */
+  --cvPortRim:     #C8C8CC;  /* rim of an EMPTY port          */
+  --cvWire:        #C8C8CC;  /* connected wire                */
+  --cvWireSoft:    #BFBFC5;  /* unselected / background wire  */
+  --cvWireLive:    #E2685A;  /* wire on a running branch      */
+  --cvPipOff:      #E2E2E6;  /* unfilled pip in a meter row   */
+  --cvPlaceholder: #9A9A9E;  /* placeholder text in overlays  */
+
+  /* agent surfaces (accent-tinted, canvas-only) */
+  --cvAgentHalo:   #FFE9E2;  /* orb outer                     */
+  --cvAgentCore:   #FFF6F2;  /* orb inner                     */
+  --cvAgentRow:    #FCFBFB;  /* agent-suggested row in a menu */
+  --cvKeyLine:     #EFD3CE;  /* keycap border on accent text  */
+  --cvProgA:       #E2685A;  /* progress bar, start           */
+  --cvProgB:       #7E8FD4;  /* progress bar, end             */
+
+  /* node media placeholder — one tile for every node type, A→B at 160deg.
+     Node type is signalled by its icon and label, never by colour. */
+  --cvTileA: #F1F1F3;  --cvTileB: #D6D6DA;
 }
 
 body[data-theme="dark"] {
@@ -147,6 +181,27 @@ body[data-theme="dark"] {
 
   --shadowCard:   0 12px 34px rgba(0,0,0,.5);
   --shadowPop:    0 8px 22px rgba(0,0,0,.44);
+
+  /* ---- CANVAS LAYER ---- */
+  --cvGround:      #141416;
+  --cvGroupLine:   #3C3C42;
+  --cvGroupBar:    #1C1C1F;
+
+  --cvPortRim:     #3C3C42;
+  --cvWire:        #55555E;
+  --cvWireSoft:    #44444C;
+  --cvWireLive:    #E2685A;
+  --cvPipOff:      #3C3C42;
+  --cvPlaceholder: #77777E;
+
+  --cvAgentHalo:   #2E2A29;
+  --cvAgentCore:   #3A2F2C;
+  --cvAgentRow:    #211F20;
+  --cvKeyLine:     #4A3330;
+  --cvProgA:       #E8AF97;
+  --cvProgB:       #C75B4E;
+
+  --cvTileA: #3A3A40;  --cvTileB: #26262A;
 }
 
 /* ---- GLOBAL RESET (the whole global stylesheet; keep it this small) ---- */
@@ -177,6 +232,7 @@ a:hover { color: var(--linkHover); }
 @keyframes dp-pulse  { 0%,100% { opacity:.5 } 50% { opacity:1 } }
 @keyframes dp-wave   { 0%,100% { transform:scaleY(.36) } 50% { transform:scaleY(1) } }
 @keyframes dp-spin   { to { transform:rotate(360deg) } }
+@keyframes dp-prog   { from { width:12% } to { width:84% } }
 @keyframes dp-scaleIn{ from { opacity:0; transform:scale(.97) } to { opacity:1; transform:none } }
 
 @media (prefers-reduced-motion: reduce) {

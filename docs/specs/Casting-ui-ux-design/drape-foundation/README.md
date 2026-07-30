@@ -24,6 +24,12 @@ drape-foundation/
 
 `reference/` holds the three surfaces this system was extracted from. Every value in `tokens.css` already ships in at least two of them. Nothing here is theoretical.
 
+### Coverage
+
+**Lobby, casting and canvas are all covered.** Verified: every token the lobby and casting reference files use is defined in `tokens.css` at an identical value in both themes — zero missing, zero conflicts. Their only hardcoded hexes are the brand orb gradient and the lobby's decorative card art, both sanctioned exceptions.
+
+**Canvas ships as a `--cv*` layer** (§1, "Canvas layer"). `reference/Klieg Canvas.dc.html` itself is still hardcoded — it predates the token system and is left as a visual artifact, not a code model. **Build canvas from the tokens, not by copying hexes out of that file.** Section 08b of the living reference renders the canvas primitives from the real tokens; that is the code model.
+
 ---
 
 ## 1. Tokens
@@ -56,6 +62,21 @@ drape-foundation/
 **Scrim** (`--scrim --scrimChip --scrimChipHov --scrimPill --onScrim`) — identical in both themes, because media is media. See §6.
 
 **Structure** — radii (`--r-*`), spacing (`--s-*`), chrome geometry (`--rail-w --topbar-h --content-max`), fonts, motion (`--t-* --ease`).
+
+### Canvas layer (`--cv*`)
+
+The node graph is the one surface with its own token group, because it has primitives nothing else has: a ground, wires, ports, and typed media tiles. **Only the canvas may reference `--cv*`.** If another surface reaches for one, the base set is missing something instead.
+
+The canvas reuses base tokens wherever it can — node body `--surface`, node border `--borderCard`, filled port `--ink`, dot grid `--dots`, node label `--secondary`, menus and toolbars exactly as elsewhere. `--cv*` covers only what's left:
+
+- **Ground** — `--cvGround` (floor), `--cvGroupLine` (group bounding box), `--cvGroupBar` (group / multi-select toolbar).
+- **Ports & wires** — `--cvPortRim` (rim of an *empty* port; a filled one is `--ink`), `--cvWire`, `--cvWireSoft` (background/unselected), `--cvWireLive` (running branch), `--cvPipOff`, `--cvPlaceholder`.
+- **Agent surfaces** — `--cvAgentHalo` / `--cvAgentCore` (orb), `--cvAgentRow` (agent-suggested row in a menu), `--cvKeyLine` (keycap border on accent text), `--cvProgA` / `--cvProgB` (progress gradient).
+- **Node media tile** — `--cvTileA` → `--cvTileB`, one gradient at 160° for **every** node type.
+
+**All nodes use the same tile colour.** Node type is signalled by its icon and label, never by colour — tinting per type turns an unloaded graph into a colour-coded diagram nobody asked to read, and it collides with the accent the moment a node is selected.
+
+Section 08b of the living reference renders all of it from the real tokens in both themes.
 
 ### Retinting the accent
 
@@ -105,6 +126,8 @@ Accent means **kept, selected, or active choice.** It is never decoration, never
 
 **Hover-preview pattern:** an action chip's hover state is the accent wash. That reads as "this will apply", where a resting accent would read "this is already selected". Used on nudge chips, try chips, refine chips.
 
+**How much accent is right:** almost none. Across the lobby, casting and canvas, accent appears only where something is kept, selected, running or locked — typically two or three elements on a full screen, often zero. If a screen has accent in its headings, its labels, its code, its icons or its dividers, the accent has stopped meaning anything. When in doubt the answer is `--metaStrong`, not accent.
+
 ---
 
 ## 4. Chrome
@@ -148,6 +171,14 @@ All of these are in the living reference with their exact values. The notes belo
 **Menus.** `--shadowPop`, radius 11, 5px padding, 7px-radius items, hover `--well`. Destructive item is `--metaStrong` at rest, red on hover only.
 
 **Docks.** Sticky bottom, `--dockGlass` + blur, radius 14, `--shadowCard`, sitting on a `linear-gradient(to top, var(--page) 42%, transparent)` fade. The scroll container needs bottom padding ≥ dock height + 24px so the last row is never trapped underneath.
+
+**Floating bars** (zoom control, add-node dock, canvas toolbars). Solid `--surface` + `1px --borderCard` + `--shadowPop`, radius 10–16, 3–6px padding, 26px icon cells, 1px `--borderSoft` dividers. Solid, not glass — glass is for full-width chrome bars; floating bars are small enough that blur reads as smudge.
+
+**Live status / queue pill.** Accent wash pill + an 11px spinner (`1.6px --accentLine` ring, `--accentSolid` top, `dp-spin 1s`) + a 500 11px accent label ("Rendering 2"). This is the one sanctioned spinner: tiny, inside a status pill, announcing background work. A spinner over or instead of content is still banned — that's what skeletons are for.
+
+**Long-running single jobs** (a video render, a likeness lock) show progress *inside the element's own frame*: 26px brand-gradient conic ring + "Generating · 14s" time estimate + a 3px gradient bar (`dp-prog`). The shimmer skeleton is for batches; this is for one thing the user is waiting on. The ring/bar gradients use the orb's brand hexes — a sanctioned exception.
+
+**Presence & badges.** Collaborator/kept stacks are overlapping circles with a `0 0 0 1.5px var(--surface)` ring and `margin-right:-8px`, overflow collapsing to a +N circle. Unread indicators are a 5px `--accentSolid` dot at the icon's top-right — never a count bubble.
 
 ---
 
@@ -242,6 +273,7 @@ dp-wave    0.7–1.2s  audio bars, only while playing
 5. **Dialog, menu, dock** with the glass/shadow rules.
 6. **Skeleton + empty + selected states** as shared components, so streaming is the default everywhere.
 7. Then the first real surface. Recommended: **Casting** (`casting-brief/README.md`) — it's the densest, so it proves the system hardest. Anything that survives casting makes the lobby trivial.
+8. **Canvas** last, on the `--cv*` layer. Build it from the tokens and §08b of the living reference — not by copying hexes out of `reference/Klieg Canvas.dc.html`, which predates the token system.
 
 Check work against `Drape Foundation.dc.html` — if a component doesn't match it, one of the two is wrong and it's worth knowing which.
 
