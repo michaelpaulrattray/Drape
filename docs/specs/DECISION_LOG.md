@@ -1450,7 +1450,30 @@ shoulder crop tests prove unrelated low-confidence landmarks do not invalidate
 their masks, while required landmarks still fail closed. Projection failures
 now log only the known error class and closed code, never image bytes,
 descriptors, storage locations, or provider content. Typecheck, production
-build, and 3,208 tests pass locally. No second live attempt has run yet.
+build, and 3,208 tests pass locally. No second live attempt had run at that
+point.
+
+**Second deterministic production calibration and diagnostic boundary
+(2026-07-30):** Railway deployed
+`d9ace037712c1575be46586faa5248a5625fee4e` successfully. Controlled
+three-quarter operation `2f9cc8a0-88e1-4779-a83d-9a683b5f1d0c` again failed
+before charge or image-provider generation. The displayed balance remained
+66,200 credits. Production emitted neither the pre-charge coverage assessment
+nor a known pose, geometry, feature-mask, or projection failure code, which
+places the failure before the coverage probe at a generic evidence-I/O or
+localization boundary.
+
+The projection pipeline now distinguishes target-image loading, deterministic
+localization, and the visibility probe. Within localization it reports only a
+closed stage code for target pose, clean-source fetch/contract, private-witness
+read and integrity verification, source pose/geometry, accepted-feature mask,
+target geometry, pixel projection, or target-guide rendering. It does not log
+image contents, URLs, storage keys, hashes, descriptors, or provider payloads.
+Known fail-closed pose, geometry, mask, projection, and state errors retain
+their existing closed codes. Typecheck, the focused candidate-generation test,
+the production build, and the full 253-file / 3,208-test unit suite pass
+locally. No third controlled attempt may run until this diagnostic-only patch
+is deployed.
 
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 

@@ -131,6 +131,28 @@ const CANDIDATE_FAILURE =
 const VISIBILITY_FAILURE =
   "The current Cast does not show the requested tattoo location clearly enough. Nothing was charged.";
 
+type InkProjectionLocalizationFailureCode =
+  | "target_pose_failed"
+  | "source_asset_fetch_failed"
+  | "witness_read_failed"
+  | "source_image_contract_failed"
+  | "source_pose_failed"
+  | "source_geometry_failed"
+  | "feature_mask_failed"
+  | "target_geometry_failed"
+  | "feature_projection_failed"
+  | "target_guide_render_failed";
+
+class InkProjectionLocalizationError extends Error {
+  constructor(
+    readonly code: InkProjectionLocalizationFailureCode,
+    options?: ErrorOptions,
+  ) {
+    super("Tattoo projection localization failed", options);
+    this.name = "InkProjectionLocalizationError";
+  }
+}
+
 export interface InkCandidateReadyResult {
   candidateId: string;
   status: "ready";
@@ -229,6 +251,9 @@ function publicFailure(error: unknown): TRPCError {
 function privacySafeLocalizationFailure(
   error: unknown,
 ): Readonly<{ kind: string; code: string }> | null {
+  if (error instanceof InkProjectionLocalizationError) {
+    return Object.freeze({ kind: error.name, code: error.code });
+  }
   if (
     error instanceof InkPoseAnalysisError
     || error instanceof InkPoseGeometryError
@@ -238,6 +263,27 @@ function privacySafeLocalizationFailure(
     return Object.freeze({ kind: error.name, code: error.code });
   }
   return null;
+}
+
+async function localizationStage<T>(
+  code: InkProjectionLocalizationFailureCode,
+  run: () => Promise<T> | T,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (
+      error instanceof InkProjectionLocalizationError
+      || error instanceof InkPoseAnalysisError
+      || error instanceof InkPoseGeometryError
+      || error instanceof InkFeatureMaskError
+      || error instanceof InkPoseProjectionError
+      || error instanceof InkCandidateStateError
+    ) {
+      throw error;
+    }
+    throw new InkProjectionLocalizationError(code, { cause: error });
+  }
 }
 
 function composerImage(image: {
@@ -344,49 +390,71 @@ async function localizeProjectionFeatures(
   },
 ): Promise<LocalizedProjectionSet> {
   const fetchImage = dependencies.fetchImage ?? fetchTrustedImage;
-  const targetAnalysis = await analyzeInkPoseImage(input.target.bytes);
+  const targetAnalysis = await localizationStage(
+    "target_pose_failed",
+    () => analyzeInkPoseImage(input.target.bytes),
+  );
   const localized = await Promise.all(input.features.map(async (feature) => {
-    assertSupportedInkAnatomyTuple(feature.anatomy);
+    const anatomy = feature.anatomy;
+    assertSupportedInkAnatomyTuple(anatomy);
     if (!feature.witnessSource?.storageUrl) {
       throw new InkCandidateStateError("source_unavailable");
     }
     const [cleanFetched, witness] = await Promise.all([
-      fetchImage(feature.witnessSource.storageUrl),
-      readPrivateExact(dependencies.delivery, {
-        key: feature.witness.storageKey,
-        byteSize: feature.witness.byteSize,
-        contentHash: feature.witness.contentHash,
-      }),
+      localizationStage(
+        "source_asset_fetch_failed",
+        () => fetchImage(feature.witnessSource!.storageUrl),
+      ),
+      localizationStage(
+        "witness_read_failed",
+        () => readPrivateExact(dependencies.delivery, {
+          key: feature.witness.storageKey,
+          byteSize: feature.witness.byteSize,
+          contentHash: feature.witness.contentHash,
+        }),
+      ),
     ]);
-    const cleanSource = composerImage(cleanFetched);
-    const sourceAnalysis = await analyzeInkPoseImage(cleanSource.bytes);
-    const sourceGuide = buildInkPoseAnatomyGuide(
-      feature.anatomy,
-      sourceAnalysis,
+    const cleanSource = await localizationStage(
+      "source_image_contract_failed",
+      () => composerImage(cleanFetched),
     );
-    const featureMask = await extractAcceptedInkFeatureMask({
-      cleanSource: cleanSource.bytes,
-      acceptedCandidate: witness.bytes,
-      anatomyGuide: sourceGuide,
-    });
-    const targetGuide = buildInkPoseAnatomyGuide(
-      feature.anatomy,
-      targetAnalysis,
+    const sourceAnalysis = await localizationStage(
+      "source_pose_failed",
+      () => analyzeInkPoseImage(cleanSource.bytes),
     );
-    const projection = projectAcceptedInkFeatureMask({
-      tuple: feature.anatomy,
-      sourceAnalysis,
-      sourceGuide,
-      featureMask,
-      targetAnalysis,
-      targetGuide,
-    });
+    const sourceGuide = await localizationStage(
+      "source_geometry_failed",
+      () => buildInkPoseAnatomyGuide(anatomy, sourceAnalysis),
+    );
+    const featureMask = await localizationStage(
+      "feature_mask_failed",
+      () => extractAcceptedInkFeatureMask({
+        cleanSource: cleanSource.bytes,
+        acceptedCandidate: witness.bytes,
+        anatomyGuide: sourceGuide,
+      }),
+    );
+    const targetGuide = await localizationStage(
+      "target_geometry_failed",
+      () => buildInkPoseAnatomyGuide(anatomy, targetAnalysis),
+    );
+    const projection = await localizationStage(
+      "feature_projection_failed",
+      () => projectAcceptedInkFeatureMask({
+        tuple: anatomy,
+        sourceAnalysis,
+        sourceGuide,
+        featureMask,
+        targetAnalysis,
+        targetGuide,
+      }),
+    );
     const targetSideAuthority = inkAnatomicalSideAuthority(
-      feature.anatomy,
+      anatomy,
       input.targetAngle,
     );
     const witnessSideAuthority = inkAnatomicalSideAuthority(
-      feature.anatomy,
+      anatomy,
       feature.witnessViewAngle,
     );
     const reference: InkProjectionFeatureReference = {
@@ -406,16 +474,19 @@ async function localizeProjectionFeatures(
     };
     return { reference: Object.freeze(reference), projection };
   }));
-  const guide = await buildPoseInkProjectionGuide({
-    targetBytes: input.target.bytes,
-    features: localized.map(({ reference, projection }) => ({
-      width: projection.width,
-      height: projection.height,
-      mask: projection.mask,
-      normalizedSegments: projection.normalizedSegments,
-      label: `${reference.anatomyLabel} - ${reference.targetGuideLabel}`,
-    })),
-  });
+  const guide = await localizationStage(
+    "target_guide_render_failed",
+    () => buildPoseInkProjectionGuide({
+      targetBytes: input.target.bytes,
+      features: localized.map(({ reference, projection }) => ({
+        width: projection.width,
+        height: projection.height,
+        mask: projection.mask,
+        normalizedSegments: projection.normalizedSegments,
+        label: `${reference.anatomyLabel} - ${reference.targetGuideLabel}`,
+      })),
+    }),
+  );
   return Object.freeze({
     features: Object.freeze(localized.map(({ reference }) => reference)),
     projections: new Map(localized.map(({ reference, projection }) => [
@@ -1157,7 +1228,9 @@ async function executeProjectionCandidate(
   let readyBoundary = false;
   let failureStage:
     | "preflight"
-    | "coverage"
+    | "coverage_target_load"
+    | "coverage_localization"
+    | "coverage_probe"
     | "prepare"
     | "load_inputs"
     | "target_guide"
@@ -1182,7 +1255,7 @@ async function executeProjectionCandidate(
       operationKind: input.operationKind,
       targetViewAngle: input.targetViewAngle,
     });
-    failureStage = "coverage";
+    failureStage = "coverage_target_load";
     let observedCoverage: Readonly<
       Record<string, ObservedInkProjectionCoverage>
     > = Object.freeze({});
@@ -1199,6 +1272,7 @@ async function executeProjectionCandidate(
           preflight.sourceUrl,
         ),
       );
+      failureStage = "coverage_localization";
       const localized = await (
         dependencies.localizeProjection ?? localizeProjectionFeatures
       )(dependencies, {
@@ -1215,6 +1289,7 @@ async function executeProjectionCandidate(
       const uncertainFeatures = preflight.features.filter(
         (feature) => feature.impact === "uncertain",
       );
+      failureStage = "coverage_probe";
       const coverageEpisodes = await Promise.all(uncertainFeatures.map(
         async (preparedFeature) => {
           const feature = referenceByVersion.get(
