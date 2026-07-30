@@ -1636,6 +1636,28 @@ camera/framing is judged only against the immutable original target. Response
 schemas, confidence thresholds, placement authority, and fail-closed behavior
 are unchanged.
 
+**Role-bound v3 production result and feature-mask v2 correction
+(2026-07-30):** `ab1a1c8b16e5979c07b6f166f282987c55207ee4`
+deployed successfully. Controlled three-quarter operation
+`095b9526-3ef0-4c95-a6e3-2f9733176971` again invoked no image-generation
+provider. Pose coverage correctly marked the left shoulder and right sleeve
+hidden and the forehead visible. Deterministic composition changed 1,617
+pixels inside 2,838 authorized pixels with zero outside-authority changes.
+With image roles finally visible, the target-guide audit then rejected that
+forehead mask at 90% confidence for missing the exact accepted sublocation and
+including conflicting face anatomy. Nothing was charged.
+
+Inspection of the exact before/accepted evidence frames confirms the rejection:
+the full-frame authoring provider introduced moderate facial texture drift in
+addition to the dominant high-contrast forehead star. Feature-mask v1 retained
+multiple material moderate-difference components inside the broad face
+anatomy, so deterministic projection faithfully carried a contaminated source
+mask. Feature-mask v2 keeps the existing moderate change boundary but requires
+each retained component to carry a material share of the strongest
+high-confidence change. Diffuse generative drift is removed; similarly strong
+disconnected tattoo parts remain eligible. Missing or ambiguous evidence still
+fails closed, and the independent target-guide audit remains mandatory.
+
 **Program-status synchronization:** the master R7 plan and former R7-8
 acceptance record now carry D-77's reopened status. The old calibrated-tuple
 pilot remains useful historical evidence, but disabled registry locations,

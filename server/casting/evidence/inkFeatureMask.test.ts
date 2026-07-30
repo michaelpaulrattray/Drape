@@ -115,11 +115,81 @@ describe("accepted tattoo feature mask", () => {
     expect(result.mask[90 * WIDTH + 110]).toBe(255);
   });
 
+  it("drops diffuse generative drift while retaining the dominant tattoo", async () => {
+    const result = await extractAcceptedInkFeatureMask({
+      cleanSource: await image(),
+      acceptedCandidate: await image([
+        {
+          x: 104,
+          y: 82,
+          width: 12,
+          height: 24,
+          colour: { r: 12, g: 12, b: 12 },
+        },
+        {
+          x: 92,
+          y: 120,
+          width: 38,
+          height: 12,
+          colour: { r: 160, g: 116, b: 95 },
+        },
+      ]),
+      anatomyGuide: guide({ x: 90, y: 60, width: 42, height: 80 }),
+    });
+
+    expect(result.mask[90 * WIDTH + 110]).toBe(255);
+    expect(result.mask[125 * WIDTH + 110]).toBe(0);
+    expect(result.normalizedBounds.y).toBeLessThan(0.5);
+  });
+
+  it("retains similarly strong disconnected parts of one tattoo", async () => {
+    const result = await extractAcceptedInkFeatureMask({
+      cleanSource: await image(),
+      acceptedCandidate: await image([
+        {
+          x: 98,
+          y: 82,
+          width: 8,
+          height: 20,
+          colour: { r: 12, g: 12, b: 12 },
+        },
+        {
+          x: 116,
+          y: 82,
+          width: 8,
+          height: 20,
+          colour: { r: 12, g: 12, b: 12 },
+        },
+      ]),
+      anatomyGuide: guide({ x: 90, y: 60, width: 42, height: 80 }),
+    });
+
+    expect(result.retainedComponentCount).toBe(2);
+    expect(result.mask[90 * WIDTH + 101]).toBe(255);
+    expect(result.mask[90 * WIDTH + 119]).toBe(255);
+  });
+
   it("fails closed when no material feature was added", async () => {
     const unchanged = await image();
     await expect(extractAcceptedInkFeatureMask({
       cleanSource: unchanged,
       acceptedCandidate: unchanged,
+      anatomyGuide: guide({ x: 90, y: 60, width: 42, height: 80 }),
+    })).rejects.toMatchObject<Partial<InkFeatureMaskError>>({
+      code: "feature_absent",
+    });
+  });
+
+  it("fails closed when evidence contains only moderate diffuse drift", async () => {
+    await expect(extractAcceptedInkFeatureMask({
+      cleanSource: await image(),
+      acceptedCandidate: await image([{
+        x: 92,
+        y: 76,
+        width: 38,
+        height: 50,
+        colour: { r: 160, g: 116, b: 95 },
+      }]),
       anatomyGuide: guide({ x: 90, y: 60, width: 42, height: 80 }),
     })).rejects.toMatchObject<Partial<InkFeatureMaskError>>({
       code: "feature_absent",

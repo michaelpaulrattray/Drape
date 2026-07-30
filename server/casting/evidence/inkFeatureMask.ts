@@ -4,7 +4,7 @@ import type { NormalizedInkZone } from "./composer/inkZoneGuide";
 import type { InkPoseAnatomyGuide } from "./inkPoseGeometry";
 
 export const INK_FEATURE_MASK_RECIPE_VERSION =
-  "ink.feature-mask.v1" as const;
+  "ink.feature-mask.v2" as const;
 
 export type InkFeatureMaskFailureCode =
   | "decode_failed"
@@ -42,6 +42,9 @@ const MIN_DIMENSION = 64;
 const MAX_DIMENSION = 8192;
 const BLUR_SIGMA = 0.65;
 const COLOUR_DISTANCE_THRESHOLD = 38;
+const HIGH_CONFIDENCE_COLOUR_DISTANCE_THRESHOLD = 82;
+const MIN_DOMINANT_COMPONENT_RATIO = 0.08;
+const MIN_HIGH_CONFIDENCE_COMPONENT_PIXELS = 3;
 const MIN_FEATURE_PIXELS = 20;
 const MIN_FEATURE_ANATOMY_FRACTION = 0.00045;
 const MAX_FEATURE_ANATOMY_FRACTION = 0.72;
@@ -111,17 +114,16 @@ async function decode(image: Uint8Array): Promise<DecodedImage> {
   }
 }
 
-function changedPixel(
+function colourDistance(
   source: Buffer,
   accepted: Buffer,
   pixelIndex: number,
-): boolean {
+): number {
   const offset = pixelIndex * 3;
   const red = source[offset]! - accepted[offset]!;
   const green = source[offset + 1]! - accepted[offset + 1]!;
   const blue = source[offset + 2]! - accepted[offset + 2]!;
-  return Math.sqrt(red * red + green * green + blue * blue)
-    >= COLOUR_DISTANCE_THRESHOLD;
+  return Math.sqrt(red * red + green * green + blue * blue);
 }
 
 function dilate(mask: Uint8Array, width: number, height: number): Uint8Array {
@@ -246,6 +248,7 @@ function components(
 
 function retainMaterialComponents(
   mask: Uint8Array,
+  highConfidenceMask: Uint8Array,
   width: number,
   height: number,
   initialFeaturePixels: number,
@@ -258,9 +261,36 @@ function retainMaterialComponents(
     3,
     Math.floor(initialFeaturePixels * 0.0025),
   );
-  const retained = components(mask, width, height)
+  const material = components(mask, width, height)
     .filter((component) => component.pixels.length >= minimumComponentPixels)
-    .sort((left, right) => right.pixels.length - left.pixels.length);
+    .map((component) => ({
+      component,
+      highConfidencePixels: component.pixels.reduce(
+        (count, index) => count + (highConfidenceMask[index] ? 1 : 0),
+        0,
+      ),
+    }));
+  const largestHighConfidenceComponent = material.reduce(
+    (largest, value) =>
+      Math.max(largest, value.highConfidencePixels),
+    0,
+  );
+  const minimumDominantPixels = Math.max(
+    MIN_HIGH_CONFIDENCE_COMPONENT_PIXELS,
+    Math.ceil(
+      largestHighConfidenceComponent * MIN_DOMINANT_COMPONENT_RATIO,
+    ),
+  );
+  const retained = material
+    .filter(
+      (value) => value.highConfidencePixels >= minimumDominantPixels,
+    )
+    .sort(
+      (left, right) =>
+        right.highConfidencePixels - left.highConfidencePixels
+        || right.component.pixels.length - left.component.pixels.length,
+    )
+    .map((value) => value.component);
   if (retained.length > MAX_RETAINED_COMPONENTS) {
     throw new InkFeatureMaskError(
       "feature_fragmented",
@@ -331,12 +361,21 @@ export async function extractAcceptedInkFeatureMask(input: {
   let initialFeaturePixels = 0;
   let outsideAnatomyChangedPixelCount = 0;
   const initial = new Uint8Array(anatomyGuide.mask.length);
+  const highConfidence = new Uint8Array(anatomyGuide.mask.length);
   for (let index = 0; index < initial.length; index += 1) {
     const withinAnatomy = anatomyGuide.mask[index]! >= 128;
     if (withinAnatomy) anatomyPixelCount += 1;
-    if (!changedPixel(source.pixels, accepted.pixels, index)) continue;
+    const distance = colourDistance(
+      source.pixels,
+      accepted.pixels,
+      index,
+    );
+    if (distance < COLOUR_DISTANCE_THRESHOLD) continue;
     if (withinAnatomy) {
       initial[index] = 255;
+      if (distance >= HIGH_CONFIDENCE_COLOUR_DISTANCE_THRESHOLD) {
+        highConfidence[index] = 255;
+      }
       initialFeaturePixels += 1;
     } else {
       outsideAnatomyChangedPixelCount += 1;
@@ -381,6 +420,7 @@ export async function extractAcceptedInkFeatureMask(input: {
   );
   const retained = retainMaterialComponents(
     closed,
+    highConfidence,
     source.width,
     source.height,
     initialFeaturePixels,
