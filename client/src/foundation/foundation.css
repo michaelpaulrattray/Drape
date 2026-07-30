@@ -104,6 +104,20 @@
   --content-max: 1240px;
 }
 
+/*
+  Surfaces that still own their own layout — the lobby views during shell
+  adoption. The shell contributes chrome and tokens only, so their existing
+  padding and grids are not doubled up. Not for new surfaces.
+*/
+.dp-content--bare {
+  max-width: none;
+  padding: 0;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 /* ---- Rail ---- */
 
 .dp-rail {
@@ -185,6 +199,31 @@
 
 .dp-account:hover { box-shadow: 0 0 0 1px var(--ink); }
 
+.dp-account > img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.dp-account-anchor { position: relative; }
+
+/* Opens up and to the right of the chip — the rail is at the viewport edge. */
+.dp-account-menu {
+  position: absolute;
+  left: calc(100% + var(--s-3));
+  bottom: 0;
+  z-index: 40;
+  width: 200px;
+  padding: 5px;
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadowPop);
+  animation: dp-scaleIn var(--t-mid) var(--ease) both;
+  transform-origin: left bottom;
+}
+
 /* Below ~720px the rail is icon-only (README §7). */
 @media (max-width: 720px) {
   .dp-rail { width: 56px; }
@@ -247,6 +286,32 @@
 }
 
 .dp-topbar__spacer { flex: 1; }
+
+/*
+  Credit balance (D-45: visible on every surface that can spend). Mono,
+  because it is a machine fact. Rendered as a button when topping up is
+  reachable from here, as plain text when it is not — never as a dead control.
+*/
+.dp-credits {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 6px 11px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-btn);
+  background: transparent;
+  font: 500 11px var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--secondary);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+button.dp-credits { cursor: pointer; }
+button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 
 /* ============================================================
    BUTTONS (README §5) — one primary per view

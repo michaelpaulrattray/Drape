@@ -31,7 +31,7 @@ function ToolRow({ number, title, description, onClick, pending, cue }: ToolRowP
       disabled={pending}
       className="group/tool w-full flex items-center gap-5 sm:gap-8 py-6 text-left"
       style={{
-        borderTop: '1px solid rgba(0,0,0,0.08)',
+        borderTop: '1px solid var(--border)',
         cursor: pending ? 'wait' : 'pointer',
         background: 'transparent',
       }}
@@ -41,7 +41,7 @@ function ToolRow({ number, title, description, onClick, pending, cue }: ToolRowP
         style={{
           fontSize: 12,
           fontWeight: 500,
-          color: '#B0AFA8',
+          color: 'var(--meta)',
           letterSpacing: '0.06em',
           fontVariantNumeric: 'tabular-nums',
         }}
@@ -53,7 +53,7 @@ function ToolRow({ number, title, description, onClick, pending, cue }: ToolRowP
         style={{
           fontSize: 'clamp(19px, 2.5vw, 24px)',
           fontWeight: 600,
-          color: '#1a1a1a',
+          color: 'var(--ink)',
           letterSpacing: '-0.01em',
         }}
       >
@@ -65,7 +65,7 @@ function ToolRow({ number, title, description, onClick, pending, cue }: ToolRowP
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: '#B0AFA8',
+            color: 'var(--meta)',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
           }}
@@ -75,17 +75,17 @@ function ToolRow({ number, title, description, onClick, pending, cue }: ToolRowP
       )}
       <span
         className="hidden sm:block ml-auto text-right"
-        style={{ fontSize: 14, color: '#71716A' }}
+        style={{ fontSize: 14, color: 'var(--metaStrong)' }}
       >
         {description}
       </span>
       <span className="flex-shrink-0 sm:ml-0 ml-auto">
         {pending ? (
-          <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#71716A' }} />
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--metaStrong)' }} />
         ) : (
           <ArrowRight
             className="w-4 h-4 transition-transform duration-300 group-hover/tool:translate-x-1"
-            style={{ color: '#71716A' }}
+            style={{ color: 'var(--metaStrong)' }}
             strokeWidth={1.5}
           />
         )}
@@ -101,11 +101,11 @@ export function ToolsIndex({ onNewCanvas, isCreatingCanvas, firstRun }: ToolsInd
     <section>
       <h2
         className="mb-2"
-        style={{ fontSize: 13, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+        style={{ fontSize: 13, fontWeight: 600, color: 'var(--metaStrong)', letterSpacing: '0.06em', textTransform: 'uppercase' }}
       >
         Tools
       </h2>
-      <div style={{ borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+      <div style={{ borderBottom: '1px solid var(--border)' }}>
         <ToolRow
           number="01"
           title="Casting Studio"

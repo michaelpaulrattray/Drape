@@ -20,19 +20,19 @@ export function NewItemTile({ label, onClick, pending, style }: NewItemTileProps
       disabled={pending}
       className="flex flex-col items-center justify-center gap-2 rounded-2xl transition-colors duration-200"
       style={{
-        border: '1px dashed rgba(0,0,0,0.18)',
-        color: '#71716A',
+        border: '1px dashed var(--dashed)',
+        color: 'var(--metaStrong)',
         cursor: pending ? 'wait' : 'pointer',
         minHeight: 160,
         ...style,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.4)';
-        e.currentTarget.style.color = '#1a1a1a';
+        e.currentTarget.style.borderColor = 'var(--ink)';
+        e.currentTarget.style.color = 'var(--ink)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.18)';
-        e.currentTarget.style.color = '#71716A';
+        e.currentTarget.style.borderColor = 'var(--dashed)';
+        e.currentTarget.style.color = 'var(--metaStrong)';
       }}
     >
       {pending ? (

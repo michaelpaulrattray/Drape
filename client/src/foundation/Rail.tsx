@@ -1,6 +1,7 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { Frame, Home, Library, User, Users } from "lucide-react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import { BrandOrb } from "./BrandOrb";
 
@@ -35,6 +36,14 @@ export type RailAccount = {
   /** Up to two characters. Omitted rather than faked when unknown. */
   initials?: string;
   label: string;
+  /** The app supplies the real avatar; the chip only owns size and ring. */
+  avatar?: ReactNode;
+  /**
+   * The account menu. The shell owns the chip and its open/close behaviour;
+   * what the menu offers is the app's business, so a surface can reach parity
+   * with whatever its old account row exposed.
+   */
+  menu?: ReactNode;
 };
 
 export function Rail({
@@ -44,6 +53,27 @@ export function Rail({
   current?: RailDestinationId;
   account?: RailAccount;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const footRef = useRef<HTMLDivElement>(null);
+
+  // Escape closes, and a click anywhere outside dismisses — the same contract
+  // shadcn's popovers give, without pulling a portal into the shell.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    const onPointer = (event: MouseEvent) => {
+      if (!footRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointer);
+    };
+  }, [menuOpen]);
+
   return (
     <nav className="dp-rail" aria-label="Primary">
       <BrandOrb />
@@ -58,18 +88,28 @@ export function Rail({
           <span className="dp-rail__label">{label}</span>
         </Link>
       ))}
-      <div className="dp-rail__foot">
+      <div className="dp-rail__foot" ref={footRef}>
         <span className="dp-rail__divider" />
-        <button type="button" className="dp-account" title={account?.label ?? "Account"}>
-          {account?.initials ? (
-            account.initials
-          ) : (
-            <>
+        <div className="dp-account-anchor">
+          <button
+            type="button"
+            className="dp-account"
+            title={account?.label ?? "Account"}
+            aria-label={account?.label ?? "Account"}
+            aria-haspopup={account?.menu ? "menu" : undefined}
+            aria-expanded={account?.menu ? menuOpen : undefined}
+            onClick={() => account?.menu && setMenuOpen((open) => !open)}
+          >
+            {account?.avatar ?? account?.initials ?? (
               <User size={14} strokeWidth={1.8} aria-hidden="true" />
-              <span className="dp-sr">{account?.label ?? "Account"}</span>
-            </>
-          )}
-        </button>
+            )}
+          </button>
+          {account?.menu && menuOpen ? (
+            <div className="dp-account-menu" role="menu">
+              {account.menu}
+            </div>
+          ) : null}
+        </div>
       </div>
     </nav>
   );

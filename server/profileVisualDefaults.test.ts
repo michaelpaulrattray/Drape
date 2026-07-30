@@ -33,8 +33,10 @@ describe("profile visual defaults", () => {
 
   it("puts resilient defaults on every main account surface", () => {
     for (const file of [
+      // LobbyRail.tsx was deleted at M2 when the lobby adopted the foundation
+      // shell. Its avatar duty moved into AppLobby.tsx, which supplies the
+      // rail's account chip — so the surface is still covered, one line up.
       "client/src/pages/AppLobby.tsx",
-      "client/src/features/lobby/LobbyRail.tsx",
       "client/src/components/UserCard.tsx",
       "client/src/features/studio/components/StudioSlimHeader.tsx",
       "client/src/features/boards/BoardHeader.tsx",

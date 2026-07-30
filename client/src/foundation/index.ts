@@ -40,6 +40,7 @@ export {
   Button,
   Card,
   Chip,
+  CreditsChip,
   DerivedChip,
   Dock,
   DropZone,

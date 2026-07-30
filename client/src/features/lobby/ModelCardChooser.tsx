@@ -101,7 +101,7 @@ export function ModelCardChooser({ model, onClose }: { model: ChooserModel | nul
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0" style={{ background: 'rgba(10,10,10,0.3)' }} onClick={onClose} />
+      <div className="absolute inset-0" style={{ background: 'var(--scrim)' }} onClick={onClose} />
       <div
         className="relative w-full overflow-hidden rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong"
         style={{ maxWidth: mode === 'card' ? 420 : 520 }}

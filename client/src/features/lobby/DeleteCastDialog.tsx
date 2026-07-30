@@ -82,32 +82,32 @@ export function DeleteCastDialog({ target, onClose, onDeleted }: DeleteCastDialo
   return (
     <Dialog open={target !== null} onOpenChange={(open) => { if (!open) close(); }}>
       <DialogContent
-        className="max-w-[430px] gap-0 overflow-hidden border-black/10 bg-white p-0 text-[#0A0A0A] shadow-2xl"
+        className="max-w-[430px] gap-0 overflow-hidden border-border bg-card p-0 text-[var(--ink)] shadow-2xl"
         showCloseButton={!deletion.isPending}
         onEscapeKeyDown={(event) => { if (deletion.isPending) event.preventDefault(); }}
         onPointerDownOutside={(event) => { if (deletion.isPending) event.preventDefault(); }}
       >
         <DialogHeader className="gap-3 px-6 pb-5 pt-6 text-left">
           <div className="flex size-9 items-center justify-center rounded-full bg-black/[0.045]">
-            <Trash2 className="size-4 text-[#52524B]" strokeWidth={1.7} />
+            <Trash2 className="size-4 text-[var(--secondary)]" strokeWidth={1.7} />
           </div>
           <DialogTitle className="text-[19px] tracking-[-0.02em]">
             Delete {target?.name || 'this Cast'}?
           </DialogTitle>
-          <DialogDescription className="text-[13px] leading-5 text-[#71716A]">
+          <DialogDescription className="text-[13px] leading-5 text-[var(--metaStrong)]">
             Delete this Cast permanently? Its Cast views and linked Canvas/Wardrobe placements will be removed. Other images and videos you created stay.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mx-6 border-y border-black/[0.07] py-3">
+        <div className="mx-6 border-y border-border py-3">
           {plan.isLoading || plan.isFetching ? (
-            <div className="flex items-center gap-2 py-2 text-[12px] text-[#71716A]">
+            <div className="flex items-center gap-2 py-2 text-[12px] text-[var(--metaStrong)]">
               <LoaderCircle className="size-3.5 animate-spin" />
               Checking what will be removed…
             </div>
           ) : plan.isError ? (
             <div className="flex items-center justify-between gap-4 py-1.5">
-              <p className="text-[12px] leading-5 text-[#71716A]">Couldn’t check what will be removed.</p>
+              <p className="text-[12px] leading-5 text-[var(--metaStrong)]">Couldn’t check what will be removed.</p>
               <Button variant="ghost" size="sm" onClick={() => plan.refetch()} className="text-[12px]">
                 Try again
               </Button>
@@ -116,18 +116,18 @@ export function DeleteCastDialog({ target, onClose, onDeleted }: DeleteCastDialo
             <dl className="space-y-2">
               {rows.map((row) => (
                 <div key={row.label} className="flex items-baseline justify-between gap-6 text-[12px]">
-                  <dt className="text-[#71716A]">{row.label}</dt>
-                  <dd className="font-medium tabular-nums text-[#1A1A1A]">{row.value}</dd>
+                  <dt className="text-[var(--metaStrong)]">{row.label}</dt>
+                  <dd className="font-medium tabular-nums text-[var(--ink)]">{row.value}</dd>
                 </div>
               ))}
             </dl>
           ) : (
-            <p className="py-1 text-[12px] text-[#71716A]">No linked views or placements were found.</p>
+            <p className="py-1 text-[12px] text-[var(--metaStrong)]">No linked views or placements were found.</p>
           )}
         </div>
 
         <DialogFooter className="gap-2 px-6 py-5 sm:justify-between">
-          <Button variant="ghost" onClick={close} disabled={deletion.isPending} className="text-[#52524B]">
+          <Button variant="ghost" onClick={close} disabled={deletion.isPending} className="text-[var(--secondary)]">
             Cancel
           </Button>
           <Button

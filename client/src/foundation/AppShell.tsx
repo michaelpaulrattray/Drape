@@ -25,17 +25,29 @@ export function AppShell({
   current?: RailDestinationId;
   account?: RailAccount;
   topbarRight?: ReactNode;
-  width?: "browse" | "working";
+  /**
+   * `browse` (1180px) and `working` (1240px) are the two documented content
+   * columns. `bare` gives the surface the raw column with no padding or
+   * maximum — for surfaces that still own their own layout, like the lobby
+   * views during the M2 shell adoption (§D.14 wraps them, it does not
+   * restyle them). New surfaces should not use `bare`.
+   */
+  width?: "browse" | "working" | "bare";
   children: ReactNode;
 }) {
+  const contentClass =
+    width === "bare"
+      ? "dp-content dp-content--bare"
+      : width === "working"
+        ? "dp-content dp-content--working"
+        : "dp-content";
+
   return (
     <div className="dp-root">
       <Rail current={current} account={account} />
       <div className="dp-main">
         <Topbar breadcrumb={breadcrumb} right={topbarRight} />
-        <div className={width === "working" ? "dp-content dp-content--working" : "dp-content"}>
-          {children}
-        </div>
+        <div className={contentClass}>{children}</div>
       </div>
     </div>
   );

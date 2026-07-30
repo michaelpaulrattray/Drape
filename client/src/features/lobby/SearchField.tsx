@@ -14,16 +14,16 @@ export function SearchField({ value, onChange, placeholder }: SearchFieldProps) 
   return (
     <label
       className="flex items-center gap-2"
-      style={{ borderBottom: '1px solid rgba(0,0,0,0.15)', paddingBottom: 4 }}
+      style={{ borderBottom: '1px solid var(--borderInput)', paddingBottom: 4 }}
     >
-      <Search className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#B0AFA8' }} />
+      <Search className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--meta)' }} />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="outline-none bg-transparent placeholder:text-[#B0AFA8]"
-        style={{ fontSize: 13, color: '#1a1a1a', width: 170 }}
+        className="outline-none bg-transparent placeholder:text-[var(--meta)]"
+        style={{ fontSize: 13, color: 'var(--ink)', width: 170 }}
       />
     </label>
   );

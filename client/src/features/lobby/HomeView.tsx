@@ -40,15 +40,15 @@ export function HomeView() {
   if (isLoading) {
     return (
       <div className="w-full px-6 sm:px-12 xl:px-16 pt-8 sm:pt-12" style={{ maxWidth: 1500, margin: '0 auto' }}>
-        <div className="rounded-lg animate-pulse mb-8" style={{ width: 200, height: 28, background: 'rgba(0,0,0,0.05)' }} />
+        <div className="rounded-lg animate-pulse mb-8" style={{ width: 200, height: 28, background: 'var(--fill)' }} />
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-10">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-2xl animate-pulse" style={{ height: 240, background: 'rgba(0,0,0,0.03)' }} />
+            <div key={i} className="rounded-2xl animate-pulse" style={{ height: 240, background: 'var(--fill)' }} />
           ))}
         </div>
         <div className="flex flex-col gap-3" style={{ maxWidth: 1080 }}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-lg animate-pulse" style={{ height: 56, background: 'rgba(0,0,0,0.03)' }} />
+            <div key={i} className="rounded-lg animate-pulse" style={{ height: 56, background: 'var(--fill)' }} />
           ))}
         </div>
       </div>
@@ -66,14 +66,14 @@ export function HomeView() {
           style={{
             fontSize: 'clamp(24px, 4vw, 32px)',
             fontWeight: 700,
-            color: '#1a1a1a',
+            color: 'var(--ink)',
             letterSpacing: '-0.02em',
           }}
         >
           Your{' '}
           <span className="font-heading italic" style={{ fontWeight: 400 }}>studio</span>
         </h1>
-        <p style={{ fontSize: 15, color: '#71716A', marginTop: 4 }}>
+        <p style={{ fontSize: 15, color: 'var(--metaStrong)', marginTop: 4 }}>
           {feed.length > 0
             ? 'Your creative workspace. Resume recent work or start fresh.'
             : 'Start by casting your first model — then dress it in Wardrobe.'}

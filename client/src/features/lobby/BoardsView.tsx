@@ -40,13 +40,13 @@ export function BoardsView() {
   if (isLoading) {
     return (
       <div className="w-full px-6 sm:px-12 xl:px-16 pt-8 sm:pt-12">
-        <div className="rounded-lg animate-pulse mb-8" style={{ width: 160, height: 28, background: 'rgba(0,0,0,0.05)' }} />
+        <div className="rounded-lg animate-pulse mb-8" style={{ width: 160, height: 28, background: 'var(--fill)' }} />
         <div
           className="grid gap-5"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
         >
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="rounded-2xl animate-pulse" style={{ height: 240, background: 'rgba(0,0,0,0.03)' }} />
+            <div key={i} className="rounded-2xl animate-pulse" style={{ height: 240, background: 'var(--fill)' }} />
           ))}
         </div>
       </div>
@@ -75,13 +75,13 @@ export function BoardsView() {
             style={{
               fontSize: 'clamp(24px, 4vw, 32px)',
               fontWeight: 700,
-              color: '#1a1a1a',
+              color: 'var(--ink)',
               letterSpacing: '-0.02em',
             }}
           >
             Canvas
           </h1>
-          <p style={{ fontSize: 15, color: '#71716A', marginTop: 4 }}>
+          <p style={{ fontSize: 15, color: 'var(--metaStrong)', marginTop: 4 }}>
             {items.length === 0
               ? 'Open canvases to compose everything.'
               : `${items.length} ${items.length === 1 ? 'canvas' : 'canvases'}.`}
@@ -96,7 +96,7 @@ export function BoardsView() {
 
       {query.trim() && visibleItems.length === 0 ? (
         <p style={reveal(0.1)}>
-          <span style={{ fontSize: 14, color: '#71716A' }}>
+          <span style={{ fontSize: 14, color: 'var(--metaStrong)' }}>
             No canvases match “{query.trim()}”.
           </span>
         </p>

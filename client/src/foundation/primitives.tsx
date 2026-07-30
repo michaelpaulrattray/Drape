@@ -361,6 +361,31 @@ export function EmptyState({
   );
 }
 
+/**
+ * The credit balance in the topbar (D-45 — visible wherever spending is
+ * possible). A button when there is somewhere to go, plain text otherwise:
+ * a chip that looks clickable and isn't is a dead control.
+ */
+export function CreditsChip({
+  balance,
+  onClick,
+  label = "credits",
+}: {
+  balance: number | undefined;
+  onClick?: () => void;
+  label?: string;
+}) {
+  if (balance === undefined) return null;
+  const content = `${balance.toLocaleString()} ${label}`;
+  return onClick ? (
+    <button type="button" className="dp-credits" onClick={onClick} title="Billing">
+      {content}
+    </button>
+  ) : (
+    <span className="dp-credits">{content}</span>
+  );
+}
+
 export function Progress({ value }: { value: number }) {
   const clamped = Math.min(100, Math.max(0, value));
   return (

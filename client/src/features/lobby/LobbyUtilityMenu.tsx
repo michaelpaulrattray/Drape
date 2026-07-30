@@ -74,15 +74,15 @@ export function LobbyUtilityMenu() {
   return (
     <div className="hidden md:block absolute top-4 right-5 z-40">
       <style>{`
-        .lobby-menu-item { color: #888; }
-        .lobby-menu-item:hover { background: rgba(0,0,0,0.04); color: #1a1a1a; }
+        .lobby-menu-item { color: var(--faint); }
+        .lobby-menu-item:hover { background: var(--well); color: var(--ink); }
       `}</style>
       <button
         onClick={() => (open ? close() : setOpen(true))}
-        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-[rgba(0,0,0,0.05)]"
+        className="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-[var(--fill)]"
         aria-label="Help and preferences"
       >
-        <MoreHorizontal className="w-4 h-4" style={{ color: '#71716A' }} />
+        <MoreHorizontal className="w-4 h-4" style={{ color: 'var(--metaStrong)' }} />
       </button>
 
       {open && (
@@ -91,9 +91,9 @@ export function LobbyUtilityMenu() {
           <div
             className="absolute right-0 top-10 z-50 rounded-xl"
             style={{
-              background: '#fff',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-              border: '1px solid rgba(0,0,0,0.06)',
+              background: 'var(--surface)',
+              boxShadow: 'var(--shadowPop)',
+              border: '1px solid var(--border)',
               width: mode ? 300 : 200,
               padding: mode ? 14 : 6,
             }}
@@ -105,7 +105,7 @@ export function LobbyUtilityMenu() {
                   style={{
                     fontSize: 11,
                     fontWeight: 600,
-                    color: '#B0AFA8',
+                    color: 'var(--meta)',
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                   }}
@@ -118,11 +118,11 @@ export function LobbyUtilityMenu() {
             ) : (
               <>
                 <div className="flex items-center justify-between mb-2.5">
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
                     {FORM_COPY[mode].title}
                   </span>
                   <button onClick={close} aria-label="Close">
-                    <X className="w-3.5 h-3.5" style={{ color: '#71716A' }} />
+                    <X className="w-3.5 h-3.5" style={{ color: 'var(--metaStrong)' }} />
                   </button>
                 </div>
                 <textarea
@@ -134,9 +134,9 @@ export function LobbyUtilityMenu() {
                   className="w-full rounded-lg outline-none resize-none p-2.5"
                   style={{
                     fontSize: 13,
-                    color: '#1a1a1a',
-                    background: '#F5F3F0',
-                    border: '1px solid rgba(0,0,0,0.06)',
+                    color: 'var(--ink)',
+                    background: 'var(--fill)',
+                    border: '1px solid var(--border)',
                   }}
                 />
                 <button
@@ -144,8 +144,8 @@ export function LobbyUtilityMenu() {
                   disabled={submitMutation.isPending}
                   className="flex items-center justify-center gap-1.5 w-full mt-2 py-2 rounded-lg"
                   style={{
-                    background: '#1a1a1a',
-                    color: '#fff',
+                    background: 'var(--ink)',
+                    color: 'var(--surface)',
                     fontSize: 13,
                     fontWeight: 500,
                     cursor: submitMutation.isPending ? 'wait' : 'pointer',

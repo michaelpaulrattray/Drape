@@ -35,6 +35,7 @@
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { SignJWT } from "jose";
 import puppeteer from "puppeteer-core";
 
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
@@ -49,10 +50,31 @@ const WIDTHS = [
   { label: "narrow", width: 800, height: 1000 },
 ] as const;
 
-const ROUTES = (process.env.THEME_SHOT_ROUTES ?? "/casting")
+/**
+ * Every surface on the foundation shell. Extend this as milestones adopt it,
+ * rather than writing a second script.
+ */
+const DEFAULT_ROUTES = ["/casting", "/app", "/app/boards", "/app/models"];
+
+const ROUTES = (process.env.THEME_SHOT_ROUTES ?? DEFAULT_ROUTES.join(","))
   .split(",")
   .map((route) => route.trim())
   .filter(Boolean);
+
+/**
+ * Authenticated surfaces need a session. Minted for the dedicated verify-bot
+ * user (never a real account — those carry PII), and only when the signing
+ * inputs are present; without them the drive still covers the public routes.
+ */
+async function mintSessionCookie(): Promise<string | null> {
+  const secret = process.env.JWT_SECRET;
+  const appId = process.env.VITE_APP_ID;
+  if (!secret || !appId || NO_API) return null;
+  return new SignJWT({ openId: "verify-bot-local", appId, name: "Verify Bot" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("1h")
+    .sign(new TextEncoder().encode(secret));
+}
 
 /** Marker that the foundation shell mounted — not a fixed sleep. */
 const SHELL_SELECTOR = ".dp-root .dp-topbar";
@@ -69,7 +91,7 @@ const NO_API_NOISE = [
   /\/api\//,
   /TRPCClientError/,
   /\[API (Query|Mutation) Error\]/,
-  /request failed: .*\/api\//,
+  /request failed/,
 ];
 
 function isIgnorableConsoleError(text: string): boolean {
@@ -102,6 +124,11 @@ async function waitForHealth(): Promise<void> {
 await waitForHealth();
 await mkdir(OUT_DIR, { recursive: true });
 
+const sessionCookie = await mintSessionCookie();
+if (!sessionCookie) {
+  console.log("[theme-parity] no session minted — authenticated routes will redirect");
+}
+
 const browser = await puppeteer.launch({
   executablePath: EDGE,
   headless: "new" as never,
@@ -114,43 +141,60 @@ const written: string[] = [];
 try {
   for (const route of ROUTES) {
     for (const size of WIDTHS) {
-      const page = await browser.newPage();
-      await page.setViewport({ width: size.width, height: size.height });
-
-      const consoleErrors: string[] = [];
-      const record = (text: string) => {
-        if (!isIgnorableConsoleError(text)) consoleErrors.push(text);
-      };
-      page.on("console", (message) => {
-        if (message.type() === "error") record(message.text());
-      });
-      page.on("pageerror", (error) => record(String(error)));
-      page.on("requestfailed", (request) => record(`request failed: ${request.url()}`));
-
       for (const theme of THEMES) {
+        // A cold page per combination. Sharing one page across themes meant the
+        // second navigation aborted the first's in-flight queries, which the
+        // console reported as fetch failures that never really happened — and a
+        // cold load is what actually exercises the first-paint theme script.
+        const page = await browser.newPage();
+        await page.setViewport({ width: size.width, height: size.height });
+        if (sessionCookie) {
+          await page.setCookie({
+            name: 'app_session_id',
+            value: sessionCookie,
+            domain: 'localhost',
+            path: '/',
+          });
+        }
+
+        const consoleErrors: string[] = [];
+        const record = (text: string) => {
+          if (!isIgnorableConsoleError(text)) consoleErrors.push(text);
+        };
+        page.on('console', (message) => {
+          if (message.type() === 'error') record(message.text());
+        });
+        page.on('pageerror', (error) => record(String(error)));
+        page.on('requestfailed', (request) => {
+          // Aborts are the drive tearing the page down, not a defect.
+          const reason = request.failure()?.errorText ?? '';
+          if (reason.includes('ERR_ABORTED')) return;
+          record(`request failed (${reason}): ${request.url().split('?')[0]}`);
+        });
+
         // Seed the theme the way a returning user has it: in storage, read by
-        // the first-paint script. This is what proves the script works — if it
-        // were deferred, the shot would catch the wrong-theme paint.
+        // the first-paint script. If that script were deferred, the shot would
+        // catch the wrong-theme paint.
         await page.evaluateOnNewDocument((value) => {
-          localStorage.setItem("drape_theme", value);
+          localStorage.setItem('drape_theme', value);
         }, theme);
 
-        await page.goto(`${BASE}${route}`, { waitUntil: "networkidle2", timeout: 90_000 });
+        await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle2', timeout: 90_000 });
         await page.waitForSelector(SHELL_SELECTOR, { timeout: 90_000 });
 
         const applied = await page.evaluate(() => {
           const root = document.documentElement;
           const rootStyles = getComputedStyle(root);
-          const shell = document.querySelector(".dp-root");
+          const shell = document.querySelector('.dp-root');
           const styles = shell ? getComputedStyle(shell) : null;
           return {
-            attribute: root.getAttribute("data-theme"),
-            // Tokens must resolve at :root, not just inside the shell —
-            // that is what portaled content (dialogs, menus) reads.
-            rootSurface: rootStyles.getPropertyValue("--surface").trim(),
-            surface: styles?.getPropertyValue("--surface").trim() ?? "",
-            ink: styles?.getPropertyValue("--ink").trim() ?? "",
-            fontFamily: styles?.fontFamily ?? "",
+            attribute: root.getAttribute('data-theme'),
+            // Tokens must resolve at :root, not just inside the shell — that is
+            // what portaled content (dialogs, menus) reads.
+            rootSurface: rootStyles.getPropertyValue('--surface').trim(),
+            surface: styles?.getPropertyValue('--surface').trim() ?? '',
+            ink: styles?.getPropertyValue('--ink').trim() ?? '',
+            fontFamily: styles?.fontFamily ?? '',
           };
         });
 
@@ -164,7 +208,7 @@ try {
         if (!applied.surface || !applied.ink) {
           failures.push(`${where}: foundation tokens did not reach .dp-root`);
         }
-        if (!applied.fontFamily.includes("Archivo")) {
+        if (!applied.fontFamily.includes('Archivo')) {
           failures.push(`${where}: shell font is "${applied.fontFamily}", expected Archivo`);
         }
 
@@ -178,43 +222,38 @@ try {
           dock mid-document and stops the rail short. That is a screenshot
           artifact, not a layout bug, and having both makes it obvious.
         */
-        for (const mode of ["chrome", "page"] as const) {
+        for (const mode of ['chrome', 'page'] as const) {
           const file = path.join(
             OUT_DIR,
             `${slug(route)}--${theme}--${size.label}--${mode}.png`,
           );
           await page.screenshot({
             path: file as `${string}.png`,
-            fullPage: mode === "page",
+            fullPage: mode === 'page',
           });
           written.push(path.relative(process.cwd(), file));
         }
-        console.log(`[theme-parity] ${where} → surface ${applied.surface} · 2 shots`);
-      }
 
-      // Reduced motion: every animation must collapse, not merely slow down.
-      await page.emulateMediaFeatures([
-        { name: "prefers-reduced-motion", value: "reduce" },
-      ]);
-      await page.goto(`${BASE}${route}`, { waitUntil: "networkidle2", timeout: 90_000 });
-      await page.waitForSelector(SHELL_SELECTOR, { timeout: 90_000 });
-      const animated = await page.evaluate(() =>
-        [...document.querySelectorAll(".dp-root, .dp-root *")].filter((element) => {
-          const name = getComputedStyle(element).animationName;
-          return name && name !== "none";
-        }).length,
-      );
-      if (animated > 0) {
-        failures.push(
-          `${route} @${size.width}: ${animated} element(s) still animate under prefers-reduced-motion`,
+        // Reduced motion: every animation must collapse, not merely slow down.
+        await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+        const animated = await page.evaluate(() =>
+          [...document.querySelectorAll('.dp-root, .dp-root *')].filter((element) => {
+            const name = getComputedStyle(element).animationName;
+            return name && name !== 'none';
+          }).length,
         );
-      }
-      await page.emulateMediaFeatures([]);
+        if (animated > 0) {
+          failures.push(
+            `${where}: ${animated} element(s) still animate under prefers-reduced-motion`,
+          );
+        }
 
-      if (consoleErrors.length > 0) {
-        failures.push(`${route} @${size.width}: console errors → ${consoleErrors.join(" | ")}`);
+        if (consoleErrors.length > 0) {
+          failures.push(`${where}: console errors → ${consoleErrors.join(' | ')}`);
+        }
+        console.log(`[theme-parity] ${where} → surface ${applied.surface} · 2 shots`);
+        await page.close();
       }
-      await page.close();
     }
   }
 

@@ -88,14 +88,14 @@ export function RecentWorkSection({
     <section>
       <div className="flex items-baseline justify-between mb-4">
         <h2
-          style={{ fontSize: 13, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+          style={{ fontSize: 13, fontWeight: 600, color: 'var(--metaStrong)', letterSpacing: '0.06em', textTransform: 'uppercase' }}
         >
           Recent
         </h2>
         <button
           onClick={() => navigate('/app/boards')}
-          className="transition-colors duration-200 hover:text-[#1a1a1a]"
-          style={{ fontSize: 13, color: '#71716A' }}
+          className="transition-colors duration-200 hover:text-[var(--ink)]"
+          style={{ fontSize: 13, color: 'var(--metaStrong)' }}
         >
           All canvases →
         </button>

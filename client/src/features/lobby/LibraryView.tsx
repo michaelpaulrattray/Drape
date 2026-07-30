@@ -192,13 +192,13 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
   if (isLoading) {
     return (
       <div className="w-full px-6 sm:px-12 xl:px-16 pt-8 sm:pt-12">
-        <div className="rounded-lg animate-pulse mb-8" style={{ width: 160, height: 28, background: 'rgba(0,0,0,0.05)' }} />
+        <div className="rounded-lg animate-pulse mb-8" style={{ width: 160, height: 28, background: 'var(--fill)' }} />
         <div
           className="grid gap-5"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
         >
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="rounded-xl animate-pulse" style={{ aspectRatio: '3 / 4', background: 'rgba(0,0,0,0.03)' }} />
+            <div key={i} className="rounded-xl animate-pulse" style={{ aspectRatio: '3 / 4', background: 'var(--fill)' }} />
           ))}
         </div>
       </div>
@@ -214,7 +214,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
             style={{
               fontSize: 'clamp(24px, 4vw, 32px)',
               fontWeight: 700,
-              color: '#1a1a1a',
+              color: 'var(--ink)',
               letterSpacing: '-0.02em',
             }}
           >
@@ -224,7 +224,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                 style={{
                   fontSize: 15,
                   fontWeight: 400,
-                  color: '#B0AFA8',
+                  color: 'var(--meta)',
                   fontVariantNumeric: 'tabular-nums',
                 }}
               >
@@ -232,7 +232,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
               </span>
             )}
           </h1>
-          <p style={{ fontSize: 15, color: '#71716A', marginTop: 4 }}>{copy.subtitle}</p>
+          <p style={{ fontSize: 15, color: 'var(--metaStrong)', marginTop: 4 }}>{copy.subtitle}</p>
         </div>
         {totalCount > 0 && (
           <div className="hidden sm:block flex-shrink-0 pb-1">
@@ -255,13 +255,13 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
           </div>
         ) : (
           <p style={reveal(0.1)}>
-            <span style={{ fontSize: 14, color: '#71716A' }}>{copy.empty} </span>
+            <span style={{ fontSize: 14, color: 'var(--metaStrong)' }}>{copy.empty} </span>
             <button
               onClick={() => navigate(copy.emptyAction.href)}
               style={{
                 fontSize: 14,
-                color: '#1a1a1a',
-                borderBottom: '1px solid rgba(0,0,0,0.4)',
+                color: 'var(--ink)',
+                borderBottom: '1px solid var(--ink)',
               }}
             >
               {copy.emptyAction.label}
@@ -270,7 +270,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
         )
       ) : visibleSections.length === 0 ? (
         <p style={reveal(0.1)}>
-          <span style={{ fontSize: 14, color: '#71716A' }}>
+          <span style={{ fontSize: 14, color: 'var(--metaStrong)' }}>
             No {kind} match “{query.trim()}”.
           </span>
         </p>
@@ -284,7 +284,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#71716A',
+                    color: 'var(--metaStrong)',
                     letterSpacing: '0.06em',
                     textTransform: 'uppercase',
                   }}
@@ -330,8 +330,8 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                       className="relative overflow-hidden rounded-xl w-full"
                       style={{
                         aspectRatio: '3 / 4',
-                        background: '#F5F3F0',
-                        border: '1px solid rgba(0,0,0,0.05)',
+                        background: 'var(--fill)',
+                        border: '1px solid var(--fill)',
                       }}
                     >
                       <img
@@ -344,11 +344,11 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                         <span
                           className="absolute top-2 left-2 px-2 py-0.5 rounded-full"
                           style={{
-                            background: 'rgba(255,255,255,0.9)',
+                            background: 'var(--scrimChip)',
                             backdropFilter: 'blur(8px)',
                             fontSize: 11,
                             fontWeight: 600,
-                            color: '#52524B',
+                            color: 'var(--secondary)',
                             letterSpacing: '0.03em',
                           }}
                         >
@@ -362,7 +362,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                             event.stopPropagation();
                             setDeleteTarget(item.deleteTarget!);
                           }}
-                          className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-white/90 text-[#71716A] opacity-100 shadow-sm backdrop-blur-md transition-all hover:text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25 sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover/thumb:opacity-100"
+                          className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-[var(--scrimChip)] text-[var(--onScrim)] opacity-100 shadow-sm backdrop-blur-md transition-all hover:bg-[var(--scrimChipHov)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accentSolid)] sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover/thumb:opacity-100"
                           aria-label={`Delete ${item.deleteTarget.name}`}
                         >
                           <Trash2 className="size-3.5" strokeWidth={1.7} />
@@ -373,7 +373,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                       className="block mt-1.5"
                       style={{
                         fontSize: 12,
-                        color: '#71716A',
+                        color: 'var(--metaStrong)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -404,7 +404,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
       {preview && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6"
-          style={{ background: 'rgba(20,20,18,0.72)', backdropFilter: 'blur(4px)' }}
+          style={{ background: 'var(--scrimPill)', backdropFilter: 'blur(4px)' }}
           onClick={() => setPreview(null)}
         >
           <div
@@ -418,7 +418,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
               style={{ maxHeight: '78vh', maxWidth: '90vw', objectFit: 'contain' }}
             />
             <div className="flex items-center gap-3 mt-4">
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+              <span style={{ fontSize: 14, color: 'var(--onScrim)', fontWeight: 500 }}>
                 {preview.title}
               </span>
               {preview.downloadable && (
@@ -428,7 +428,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-                  style={{ background: 'rgba(255,255,255,0.12)', fontSize: 13, color: '#fff' }}
+                  style={{ background: 'rgba(255,255,255,0.12)', fontSize: 13, color: 'var(--onScrim)' }}
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download
@@ -438,10 +438,10 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
             <button
               onClick={() => setPreview(null)}
               className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(255,255,255,0.92)' }}
+              style={{ background: 'var(--scrimChip)' }}
               aria-label="Close preview"
             >
-              <X className="w-4 h-4" style={{ color: '#1a1a1a' }} />
+              <X className="w-4 h-4" style={{ color: 'var(--onScrim)' }} />
             </button>
           </div>
         </div>

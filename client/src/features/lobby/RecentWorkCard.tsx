@@ -110,8 +110,8 @@ export function RecentWorkCard({
       }}
       className="group relative rounded-2xl overflow-hidden cursor-pointer"
       style={{
-        background: '#fff',
-        border: '1px solid rgba(0,0,0,0.06)',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
         opacity: isDeleting ? 0.4 : 1,
         transition: 'all 0.2s ease',
       }}
@@ -121,7 +121,7 @@ export function RecentWorkCard({
         className="relative w-full overflow-hidden"
         style={{
           height: 180,
-          background: item.thumbnailUrl ? undefined : '#F5F3F0',
+          background: item.thumbnailUrl ? undefined : 'var(--fill)',
         }}
       >
         {item.thumbnailUrl ? (
@@ -136,7 +136,7 @@ export function RecentWorkCard({
               style={{
                 fontSize: 40,
                 fontWeight: 200,
-                color: 'rgba(0,0,0,0.08)',
+                color: 'var(--border)',
                 fontFamily: 'var(--font-heading)',
                 fontStyle: 'italic',
               }}
@@ -150,11 +150,11 @@ export function RecentWorkCard({
         <div
           className="absolute top-3 left-3 px-2.5 py-1 rounded-full"
           style={{
-            background: 'rgba(255,255,255,0.9)',
+            background: 'var(--scrimChip)',
             backdropFilter: 'blur(8px)',
             fontSize: 11,
             fontWeight: 600,
-            color: '#52524B',
+            color: 'var(--onScrim)',
             letterSpacing: '0.03em',
           }}
         >
@@ -170,11 +170,11 @@ export function RecentWorkCard({
             }}
             className="w-7 h-7 rounded-full flex items-center justify-center"
             style={{
-              background: 'rgba(255,255,255,0.9)',
+              background: 'var(--scrimChip)',
               backdropFilter: 'blur(8px)',
             }}
           >
-            <MoreHorizontal className="w-3.5 h-3.5" style={{ color: '#52524B' }} />
+            <MoreHorizontal className="w-3.5 h-3.5" style={{ color: 'var(--onScrim)' }} />
           </button>
 
           {/* Dropdown menu */}
@@ -190,9 +190,9 @@ export function RecentWorkCard({
               <div
                 className="absolute right-0 top-9 z-50 py-1.5 rounded-xl"
                 style={{
-                  background: '#fff',
-                  boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-                  border: '1px solid rgba(0,0,0,0.06)',
+                  background: 'var(--surface)',
+                  boxShadow: 'var(--shadowPop)',
+                  border: '1px solid var(--border)',
                   minWidth: 140,
                 }}
               >
@@ -206,9 +206,9 @@ export function RecentWorkCard({
                         setEditName(title);
                       }}
                       className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left"
-                      style={{ fontSize: 13, color: '#1a1a1a' }}
+                      style={{ fontSize: 13, color: 'var(--ink)' }}
                     >
-                      <Pencil className="w-3.5 h-3.5" style={{ color: '#71716A' }} />
+                      <Pencil className="w-3.5 h-3.5" style={{ color: 'var(--metaStrong)' }} />
                       Rename
                     </button>
                     <button
@@ -218,12 +218,12 @@ export function RecentWorkCard({
                         onArchiveBoard(item.boardId);
                       }}
                       className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left"
-                      style={{ fontSize: 13, color: '#1a1a1a' }}
+                      style={{ fontSize: 13, color: 'var(--ink)' }}
                     >
-                      <Archive className="w-3.5 h-3.5" style={{ color: '#71716A' }} />
+                      <Archive className="w-3.5 h-3.5" style={{ color: 'var(--metaStrong)' }} />
                       Archive
                     </button>
-                    <div style={{ height: 1, background: 'rgba(0,0,0,0.06)', margin: '2px 0' }} />
+                    <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
                   </>
                 )}
                 {(item.tool !== 'casting' || canDeleteCast) && <button
@@ -233,9 +233,9 @@ export function RecentWorkCard({
                     onDelete(item);
                   }}
                   className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left"
-                  style={{ fontSize: 13, color: '#dc2626' }}
+                  style={{ fontSize: 13, color: 'var(--errorInk)' }}
                 >
-                  <Trash2 className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
+                  <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--errorInk)' }} />
                   Delete
                 </button>}
               </div>
@@ -261,8 +261,8 @@ export function RecentWorkCard({
             style={{
               fontSize: 15,
               fontWeight: 600,
-              color: '#1a1a1a',
-              borderColor: '#1a1a1a',
+              color: 'var(--ink)',
+              borderColor: 'var(--ink)',
               paddingBottom: 2,
               background: 'transparent',
             }}
@@ -272,7 +272,7 @@ export function RecentWorkCard({
             style={{
               fontSize: 15,
               fontWeight: 600,
-              color: '#1a1a1a',
+              color: 'var(--ink)',
               lineHeight: 1.3,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -284,7 +284,7 @@ export function RecentWorkCard({
         )}
         <div
           className="flex items-center gap-2 mt-1.5"
-          style={{ fontSize: 12, color: '#71716A' }}
+          style={{ fontSize: 12, color: 'var(--metaStrong)' }}
         >
           <span>{itemMeta(item)}</span>
         </div>
@@ -293,8 +293,8 @@ export function RecentWorkCard({
       {/* Hover border effect */}
       <style>{`
         .group:hover {
-          box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-          border-color: rgba(0,0,0,0.1) !important;
+          box-shadow: 0 2px 16px var(--border);
+          border-color: var(--borderCard) !important;
         }
       `}</style>
     </div>

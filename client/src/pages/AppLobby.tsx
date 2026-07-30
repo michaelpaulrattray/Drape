@@ -1,20 +1,25 @@
 /**
- * AppLobby — the /app lobby shell: auth guard, left rail, routed view.
+ * AppLobby — the /app lobby: auth guard, routed view, account modals.
  *
- * The rail navigates between Home (recent work + tools), Boards, and the
- * three library views; all five URLs render this same shell so the rail
- * never remounts. The rail's user row opens the shared account card
- * (Settings / Billing / Share Drape / Log out), whose modals — profile
- * settings, billing, top-up, referral — are owned here, wired the same
- * way as in DrapeStudio. Below md the rail is hidden and a slim header
- * carries logo + logout.
+ * M2 moved the chrome to the shared foundation shell (plan §D.4, §D.14): the
+ * 76px rail and 56px topbar replace the old 216px text rail and the mobile
+ * header, so the lobby and Casting V2 now navigate identically and both
+ * follow the theme. All five lobby URLs render this same component, so the
+ * shell never remounts between them.
+ *
+ * What did NOT change here is the information architecture — the views, the
+ * account card's contents and the five modals are as they were. The lobby
+ * redesign proper (tool tabs, "On the wire", unified sheet) waits for Casting
+ * V2 to settle its vocabulary, per §D.14.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
-import { LobbyRail } from '@/features/lobby/LobbyRail';
+import { AppShell, CreditsChip } from '@/foundation';
+import type { RailDestinationId } from '@/foundation';
+import { UserCard } from '@/components/UserCard';
 import { LobbyUtilityMenu } from '@/features/lobby/LobbyUtilityMenu';
 import { HomeView } from '@/features/lobby/HomeView';
 import { BoardsView } from '@/features/lobby/BoardsView';
@@ -25,57 +30,11 @@ import { ReferralModal } from '@/features/referral/ReferralModal';
 import ProfileSettingsModal from '@/components/ProfileSettingsModal';
 import { ProfileAvatar } from '@/features/profile/ProfileVisual';
 
-function MobileHeader({
-  user,
-  onLogout,
-}: {
-  user: { name: string | null; email?: string | null; avatarUrl?: string | null };
-  onLogout: () => void;
-}) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  return (
-    <header className="md:hidden flex items-center justify-between px-6 py-5">
-      <img src="/drape-logo.svg" alt="drape" style={{ height: 20 }} />
-      <div className="relative">
-        <button onClick={() => setMenuOpen(!menuOpen)} className="block" aria-label="Account menu">
-          <ProfileAvatar
-            src={user.avatarUrl}
-            identity={user}
-            alt={user.name ?? 'User'}
-            className="w-8 h-8 rounded-full object-cover"
-            style={{ border: '2px solid rgba(0,0,0,0.06)' }}
-          />
-        </button>
-        {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-            <div
-              className="absolute right-0 top-10 z-50 py-1.5 rounded-xl"
-              style={{
-                background: '#fff',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-                border: '1px solid rgba(0,0,0,0.06)',
-                minWidth: 140,
-              }}
-            >
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onLogout();
-                }}
-                className="w-full px-3.5 py-2 text-left"
-                style={{ fontSize: 13, color: '#1a1a1a' }}
-              >
-                Log out
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </header>
-  );
-}
+/*
+  MobileHeader retired at M2. Below 720px the foundation rail collapses to
+  icons but keeps every destination and the account chip, so the slim header
+  (logo + log out) no longer covered anything the rail does not.
+*/
 
 export default function AppLobby() {
   const { user, loading, logout } = useAuth();
@@ -109,47 +68,71 @@ export default function AppLobby() {
 
   // Show nothing while checking auth
   if (loading) {
-    return (
-      <div
-        className="flex items-center justify-center"
-        style={{ height: '100vh', background: '#f8f7f4' }}
-      />
-    );
+    return <div style={{ height: '100vh', background: 'var(--surface)' }} />;
   }
 
-  let view;
-  switch (location) {
-    case '/app/boards':
-      view = <BoardsView />;
-      break;
-    case '/app/models':
-      view = <LibraryView kind="models" />;
-      break;
-    case '/app/garments':
-      view = <LibraryView kind="garments" />;
-      break;
-    case '/app/looks':
-      view = <LibraryView kind="looks" />;
-      break;
-    default:
-      view = <HomeView />;
-  }
+  const LOBBY_VIEWS: Record<
+    string,
+    { view: ReactElement; crumb: string; rail: RailDestinationId }
+  > = {
+    '/app/boards': { view: <BoardsView />, crumb: 'Canvas', rail: 'canvas' },
+    '/app/models': { view: <LibraryView kind="models" />, crumb: 'Library / Models', rail: 'library' },
+    '/app/garments': {
+      view: <LibraryView kind="garments" />,
+      crumb: 'Library / Garments',
+      rail: 'library',
+    },
+    '/app/looks': { view: <LibraryView kind="looks" />, crumb: 'Library / Looks', rail: 'library' },
+  };
+  const current = LOBBY_VIEWS[location] ?? {
+    view: <HomeView />,
+    crumb: 'Home',
+    rail: 'home' as RailDestinationId,
+  };
+
+  const avatarUrl = profileImage ?? user?.avatarUrl ?? null;
 
   return (
-    <div className="flex relative" style={{ height: '100vh', background: '#f8f7f4' }}>
+    <AppShell
+      breadcrumb={current.crumb}
+      current={current.rail}
+      width="bare"
+      topbarRight={
+        <CreditsChip balance={creditsData?.balance} onClick={() => setIsBillingOpen(true)} />
+      }
+      account={
+        user
+          ? {
+              label: user.name ?? 'Account',
+              avatar: (
+                <ProfileAvatar
+                  src={avatarUrl}
+                  identity={user}
+                  alt={user.name ?? 'User'}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ),
+              // Same card the old rail's user row opened — parity, not a redesign.
+              menu: (
+                <UserCard
+                  userInitial={(user.name ?? '?').charAt(0).toUpperCase()}
+                  userName={user.name ?? 'Account'}
+                  profileImage={avatarUrl}
+                  profileIdentity={user}
+                  creditsBalance={creditsData?.balance ?? 0}
+                  role={user.role}
+                  onOpenSettings={() => setShowSettings(true)}
+                  onOpenBilling={() => setIsBillingOpen(true)}
+                  onOpenReferral={() => setIsReferralOpen(true)}
+                  onLogout={logout}
+                />
+              ),
+            }
+          : undefined
+      }
+    >
       <LobbyUtilityMenu />
-      <LobbyRail
-        user={user}
-        profileImage={profileImage}
-        onLogout={logout}
-        onOpenSettings={() => setShowSettings(true)}
-        onOpenBilling={() => setIsBillingOpen(true)}
-        onOpenReferral={() => setIsReferralOpen(true)}
-      />
-      <main className="flex-1 overflow-y-auto flex flex-col">
-        {user && <MobileHeader user={user} onLogout={logout} />}
-        {view}
-      </main>
+      {current.view}
 
       {/* Account modals */}
       <ProfileSettingsModal
@@ -180,6 +163,6 @@ export default function AppLobby() {
         open={isReferralOpen}
         onClose={() => setIsReferralOpen(false)}
       />
-    </div>
+    </AppShell>
   );
 }
