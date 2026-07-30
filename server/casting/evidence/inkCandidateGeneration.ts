@@ -126,6 +126,7 @@ import { buildPoseInkProjectionGuide } from "./inkPoseGuide";
 import {
   buildInkProjectionProviderParts,
 } from "./composer/inkProjectionProvider";
+import { buildInkProbeProviderParts } from "./composer/inkProbeProvider";
 
 const log = createModuleLogger("casting/evidence/inkCandidateGeneration");
 const CANDIDATE_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
@@ -639,16 +640,22 @@ export function buildInkProbeProviderConfig(
 async function defaultProbe(request: InkProbeRequest): Promise<unknown> {
   return withTextQueue(async () => {
     try {
+      const projectionProbe = request.kind === "feature_projection"
+        || request.kind === "feature_projection_placement"
+        || request.kind === "projection_target_guide"
+        || request.kind === "coverage";
       const response = await withTimeout(
         getAiClient().models.generateContent({
           model: request.model,
           contents: {
-            parts: [
-              ...request.images.map((image) => ({
-                inlineData: image.inlineData,
-              })),
-              { text: request.prompt },
-            ],
+            parts: projectionProbe
+              ? buildInkProbeProviderParts(request)
+              : [
+                  ...request.images.map((image) => ({
+                    inlineData: image.inlineData,
+                  })),
+                  { text: request.prompt },
+                ],
           },
           config: buildInkProbeProviderConfig(request),
         }),

@@ -17,6 +17,7 @@ import type { InkProbeRequest } from "./composer/inkProbe";
 import {
   buildInkProjectionProviderParts,
 } from "./composer/inkProjectionProvider";
+import { buildInkProbeProviderParts } from "./composer/inkProbeProvider";
 
 let png: Buffer;
 let webp: Buffer;
@@ -396,6 +397,42 @@ describe("ink candidate generation", () => {
         imageSize: "1K",
       },
     });
+    const probeParts = buildInkProbeProviderParts({
+      kind: "feature_projection",
+      model: "gemini-2.5-flash",
+      recipeVersion: "ink.add.anywhere.projection.probe.v3",
+      responseMimeType: "application/json",
+      responseSchema: { confidence: "integer_0_100" },
+      thinkingBudget: 0,
+      includeThoughts: false,
+      maxOutputTokens: 4096,
+      prompt: "Audit the exact target and candidate.",
+      images: [
+        "identity_anchor",
+        "original_target",
+        "evidence_mosaic",
+        "candidate",
+      ].map((role) => ({
+        role,
+        inlineData: {
+          mimeType: "image/png" as const,
+          data: "AA==",
+        },
+      })) as InkProbeRequest["images"],
+    });
+    expect(probeParts).toHaveLength(10);
+    expect(probeParts[1]).toEqual({
+      text: "IMAGE ROLE - IDENTITY ANCHOR",
+    });
+    expect(probeParts[3]).toEqual({
+      text: "IMAGE ROLE - IMMUTABLE ORIGINAL TARGET",
+    });
+    expect(probeParts[7]).toEqual({
+      text: "IMAGE ROLE - CLEAN CANDIDATE TO AUDIT",
+    });
+    expect(probeParts[9]).toEqual({
+      text: expect.stringContaining("AUDIT INSTRUCTIONS"),
+    });
   });
 
   it("forwards the closed non-thinking probe configuration to the provider", () => {
@@ -579,8 +616,8 @@ describe("ink candidate generation", () => {
         targetAngle: "backFull",
         sourceAngle: "backFull",
         composerRecipeVersion: "ink.add.anywhere.projection.v7",
-        probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
-        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v9",
+        probeRecipeVersion: "ink.add.anywhere.projection.probe.v3",
+        visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v10",
         features: [{
           featureId: "feature-1",
           featureVersionId: "version-1",
@@ -745,7 +782,7 @@ describe("ink candidate generation", () => {
     );
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "coverage",
-      recipeVersion: "ink.add.anywhere.coverage-probe.v9",
+      recipeVersion: "ink.add.anywhere.coverage-probe.v10",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "coordinate_guide" }),
@@ -755,7 +792,7 @@ describe("ink candidate generation", () => {
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "projection_target_guide",
       recipeVersion:
-        "ink.add.anywhere.projection-target-guide-audit.v2",
+        "ink.add.anywhere.projection-target-guide-audit.v3",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "guided_target" }),
         expect.objectContaining({ role: "evidence_reference" }),
@@ -763,12 +800,12 @@ describe("ink candidate generation", () => {
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection",
-      recipeVersion: "ink.add.anywhere.projection.probe.v2",
+      recipeVersion: "ink.add.anywhere.projection.probe.v3",
     }));
     expect(deps.probe).toHaveBeenCalledWith(expect.objectContaining({
       kind: "feature_projection_placement",
       recipeVersion:
-        "ink.add.anywhere.projection-placement-audit.v2",
+        "ink.add.anywhere.projection-placement-audit.v3",
     }));
 
     const failedProjection = dependencies({

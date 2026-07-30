@@ -1607,6 +1607,42 @@ still remains open until its cohorts pass evidence and founder acceptance.
 Typecheck, the production build, 312 evidence tests, and the full
 254-file / 3,216-test unit suite pass locally.
 
+**First deterministic projection production result and probe-role correction
+(2026-07-30):** Railway deployed
+`61aab1850c7ffbc43801248625e3b76b78927ad8` successfully. Controlled
+three-quarter operation `2f0f7b63-4c32-42eb-8f8e-e259fffb714c` invoked no
+image-generation provider. The deterministic compositor transferred 1,617
+tattoo pixels inside a 2,838-pixel forehead authority and proved zero changed
+pixels outside it. Pre-charge coverage and the target-guide audit again passed,
+with the shoulder and sleeve hidden and the forehead guide correct at 95%
+confidence.
+
+The post-composition model probe nevertheless returned the exact same
+identity/camera/feature/prior-ink/unexpected-ink failure shape as the earlier
+full-frame generative outputs, while its separate placement audit again found
+the correct anatomy and authorized mask at 90% confidence. The 300 credits
+were refunded. Because identity, camera, framing, background, and all
+non-authorized pixels are unchanged by construction, this is a false-negative
+probe presentation result rather than a compositor leak.
+
+The same transport defect previously fixed for image generation also existed
+in projection probes: their server DTO retained image roles, but the Gemini
+request discarded them and sent unlabeled image bytes followed by prose.
+Projection probe v3, placement audit v3, target-guide audit v3, and coverage
+probe v10 now bind a constant role label immediately before every target,
+candidate, guide, identity, or evidence image. The main probe also states that
+an authorized evidence-matching tattoo is not an identity change and that
+camera/framing is judged only against the immutable original target. Response
+schemas, confidence thresholds, placement authority, and fail-closed behavior
+are unchanged.
+
+**Program-status synchronization:** the master R7 plan and former R7-8
+acceptance record now carry D-77's reopened status. The old calibrated-tuple
+pilot remains useful historical evidence, but disabled registry locations,
+disabled first-unseen views, founder-only availability, and absent removal
+cannot be counted as completion. No R8 work begins while R7-7G and R7-8 are
+open.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

@@ -183,7 +183,7 @@ describe("multi-feature projection composition", () => {
     });
     expect(request.kind).toBe("feature_projection_placement");
     expect(request.recipeVersion)
-      .toBe("ink.add.anywhere.projection-placement-audit.v2");
+      .toBe("ink.add.anywhere.projection-placement-audit.v3");
     expect(request.images.map((entry) => entry.role)).toEqual([
       "candidate",
       "placement_audit_candidate",
@@ -302,7 +302,7 @@ describe("multi-feature projection composition", () => {
       coordinateGuide: base,
     });
     expect(request.kind).toBe("coverage");
-    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v9");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.coverage-probe.v10");
     expect(request.prompt).toContain(
       "partial upper arm or forearm counts as visible",
     );
@@ -405,7 +405,7 @@ describe("multi-feature projection composition", () => {
     expect(request).toMatchObject({
       kind: "projection_target_guide",
       recipeVersion:
-        "ink.add.anywhere.projection-target-guide-audit.v2",
+        "ink.add.anywhere.projection-target-guide-audit.v3",
     });
     expect(request.prompt).toContain("accepted tattoo witnesses");
     expect(request.prompt).toContain("black botanical full sleeve");
