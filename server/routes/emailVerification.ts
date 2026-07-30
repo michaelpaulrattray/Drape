@@ -73,7 +73,8 @@ export async function sendVerificationEmail(
   const firstName = name ? name.split(" ")[0] : "there";
 
   const { error } = await resend.emails.send({
-    from: "Drape <onboarding@resend.dev>", // Uses Resend's shared domain for now
+    from: "Drape <verify@mail.klieglabs.com>",
+    replyTo: "support@klieglabs.com",
     to: email,
     subject: "Verify your email — Drape",
     html: `
