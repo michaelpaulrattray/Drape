@@ -227,18 +227,19 @@
   padding: var(--card-padding-inner);
 }
 
-/* Text utilities */
-.text-primary {
-  color: var(--color-text-primary);
-}
+/*
+  Text utilities removed at M2 (.text-primary / .text-secondary / .text-muted).
 
-.text-secondary {
-  color: var(--color-text-secondary);
-}
+  They were unlayered, so they silently overrode Tailwind's same-named
+  utilities app-wide — not only on the marketing pages this file exists to
+  style. `text-muted` and `text-secondary` turned out to have no bare
+  consumers anywhere; `text-primary` had nine, every one of which wanted the
+  shadcn semantic primary and now correctly resolves to the themed `--ink`
+  (in light that is #0A0A0A → #111112, imperceptible; in dark it is the
+  difference between invisible and legible).
 
-.text-muted {
-  color: var(--color-text-muted);
-}
+  Do not reintroduce a class here whose name matches a Tailwind utility.
+*/
 
 /* Heading utilities */
 .heading-section {

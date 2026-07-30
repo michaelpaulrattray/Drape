@@ -100,6 +100,48 @@ describe("foundation colours live only in tokens.css", () => {
   });
 });
 
+describe("no stylesheet shadows a Tailwind utility name", () => {
+  /**
+   * The marketing stylesheet defined unlayered `.text-primary`,
+   * `.text-secondary` and `.text-muted`. Being unlayered, they beat Tailwind's
+   * layered utilities of the same name *everywhere in the app*, not just on
+   * the pages that stylesheet exists to style. Removed at M2 — this stops the
+   * class of bug rather than those three instances.
+   */
+  const SHADOWABLE = [
+    "text-primary",
+    "text-secondary",
+    "text-muted",
+    "text-foreground",
+    "text-background",
+    "bg-primary",
+    "bg-secondary",
+    "bg-muted",
+    "bg-background",
+    "border-border",
+    "border-input",
+  ];
+
+  const stylesheets = ["styles/tokens.css", "styles/animations.css", "styles/canvas-tokens.css"]
+    .map((relative) => ({
+      relative,
+      source: fs.readFileSync(path.join(clientSrc, relative), "utf8"),
+    }));
+
+  it("declares no class whose name is a Tailwind semantic utility", () => {
+    const offenders = stylesheets.flatMap(({ relative, source }) =>
+      SHADOWABLE.filter((name) =>
+        new RegExp(`^\\s*\\.${name}\\s*(,|\\{)`, "m").test(source),
+      ).map((name) => `${relative}: .${name}`),
+    );
+
+    expect(
+      offenders,
+      "An unlayered class with a utility's name overrides that utility app-wide",
+    ).toEqual([]);
+  });
+});
+
 describe("foundation tokens define every token in both themes", () => {
   const tokens = fs.readFileSync(path.join(clientSrc, "foundation", "tokens.css"), "utf8");
 
