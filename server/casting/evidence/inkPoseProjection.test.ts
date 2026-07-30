@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import type { InkFeatureMask } from "./inkFeatureMask";
@@ -7,6 +8,7 @@ import {
   INK_POSE_GEOMETRY_RECIPE_VERSION,
 } from "./inkPoseGeometry";
 import {
+  composeAcceptedInkProjection,
   InkPoseProjectionError,
   projectAcceptedInkFeatureMask,
 } from "./inkPoseProjection";
@@ -135,7 +137,156 @@ function centroid(mask: Uint8Array, width: number): { x: number; y: number } {
   return { x: sumX / count / width, y: sumY / count / (mask.length / width) };
 }
 
+async function paintedImage(
+  mask: Uint8Array,
+  base: readonly [number, number, number],
+  ink?: readonly [number, number, number],
+): Promise<Buffer> {
+  const pixels = Buffer.alloc(mask.length * 3);
+  for (let pixel = 0; pixel < mask.length; pixel += 1) {
+    const colour = ink && mask[pixel] ? ink : base;
+    const offset = pixel * 3;
+    pixels[offset] = colour[0];
+    pixels[offset + 1] = colour[1];
+    pixels[offset + 2] = colour[2];
+  }
+  return sharp(pixels, {
+    raw: { width: 240, height: 320, channels: 3 },
+  }).png().toBuffer();
+}
+
+async function rawRgb(image: Uint8Array): Promise<Buffer> {
+  return sharp(Buffer.from(image)).removeAlpha().raw().toBuffer();
+}
+
 describe("deterministic tattoo pose projection", () => {
+  it("round-trips accepted tattoo pixels while keeping every outside pixel exact", async () => {
+    const tuple = {
+      zone: "upper_arm",
+      surface: "anterior",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const sourceFeature = featureMask(
+      sourceGuide,
+      (x, y) => x > 0.28 && x < 0.37 && y > 0.3 && y < 0.4,
+    );
+    const targetGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const projection = projectAcceptedInkFeatureMask({
+      tuple,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask: sourceFeature,
+      targetAnalysis: sourceAnalysis,
+      targetGuide,
+    });
+    const clean = await paintedImage(
+      new Uint8Array(sourceFeature.mask.length),
+      [188, 139, 112],
+    );
+    const accepted = await paintedImage(
+      sourceFeature.mask,
+      [188, 139, 112],
+      [18, 16, 14],
+    );
+    const result = await composeAcceptedInkProjection({
+      targetBytes: clean,
+      targetAnalysis: sourceAnalysis,
+      features: [{
+        cleanSource: clean,
+        acceptedCandidate: accepted,
+        sourceAnalysis,
+        sourceGuide,
+        featureMask: sourceFeature,
+        targetGuide,
+        projection,
+      }],
+    });
+    const [cleanPixels, acceptedPixels, outputPixels] = await Promise.all([
+      rawRgb(clean),
+      rawRgb(accepted),
+      rawRgb(result.bytes),
+    ]);
+
+    expect(result.outsideAuthorizedChangeCount).toBe(0);
+    expect(result.changedPixelCount).toBeGreaterThan(20);
+    let outsideMismatch = 0;
+    let acceptedMismatch = 0;
+    for (let pixel = 0; pixel < projection.mask.length; pixel += 1) {
+      const offset = pixel * 3;
+      if (
+        !projection.mask[pixel]
+        && !outputPixels.subarray(offset, offset + 3)
+          .equals(cleanPixels.subarray(offset, offset + 3))
+      ) {
+        outsideMismatch += 1;
+      }
+      if (
+        sourceFeature.mask[pixel]
+        && !outputPixels.subarray(offset, offset + 3)
+          .equals(acceptedPixels.subarray(offset, offset + 3))
+      ) {
+        acceptedMismatch += 1;
+      }
+    }
+    expect(outsideMismatch).toBe(0);
+    expect(acceptedMismatch).toBe(0);
+  });
+
+  it("moves accepted tattoo colour with mirrored anatomical geometry", async () => {
+    const tuple = {
+      zone: "upper_arm",
+      surface: "anterior",
+      side: "right",
+    } as const;
+    const sourceAnalysis = analysis();
+    const targetAnalysis = analysis({ mirrored: true });
+    const sourceGuide = buildInkPoseAnatomyGuide(tuple, sourceAnalysis);
+    const sourceFeature = featureMask(
+      sourceGuide,
+      (_x, y) => y > 0.3 && y < 0.39,
+    );
+    const targetGuide = buildInkPoseAnatomyGuide(tuple, targetAnalysis);
+    const projection = projectAcceptedInkFeatureMask({
+      tuple,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask: sourceFeature,
+      targetAnalysis,
+      targetGuide,
+    });
+    const empty = new Uint8Array(sourceFeature.mask.length);
+    const cleanSource = await paintedImage(empty, [190, 145, 118]);
+    const accepted = await paintedImage(
+      sourceFeature.mask,
+      [190, 145, 118],
+      [20, 18, 16],
+    );
+    const target = await paintedImage(empty, [166, 124, 101]);
+    const result = await composeAcceptedInkProjection({
+      targetBytes: target,
+      targetAnalysis,
+      features: [{
+        cleanSource,
+        acceptedCandidate: accepted,
+        sourceAnalysis,
+        sourceGuide,
+        featureMask: sourceFeature,
+        targetGuide,
+        projection,
+      }],
+    });
+    const output = await rawRgb(result.bytes);
+    const darkMask = new Uint8Array(targetAnalysis.width * targetAnalysis.height);
+    for (let pixel = 0; pixel < darkMask.length; pixel += 1) {
+      if (output[pixel * 3]! < 80) darkMask[pixel] = 255;
+    }
+
+    expect(result.outsideAuthorizedChangeCount).toBe(0);
+    expect(centroid(darkMask, targetAnalysis.width).x).toBeGreaterThan(0.5);
+  });
+
   it("preserves anatomical right when the target frame is mirrored", () => {
     const tuple = {
       zone: "upper_arm",

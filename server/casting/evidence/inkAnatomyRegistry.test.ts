@@ -18,7 +18,7 @@ import {
 describe("all-body ink anatomy registry", () => {
   it("keeps earlier projection evidence readable after pose projection", () => {
     expect(INK_ANYWHERE_PROJECTION_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.projection.v6");
+      .toBe("ink.add.anywhere.projection.v7");
     expect(INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.projection.v1",
       "ink.add.anywhere.projection.v2",
@@ -26,6 +26,7 @@ describe("all-body ink anatomy registry", () => {
       "ink.add.anywhere.projection.v4",
       "ink.add.anywhere.projection.v5",
       "ink.add.anywhere.projection.v6",
+      "ink.add.anywhere.projection.v7",
     ]);
   });
 

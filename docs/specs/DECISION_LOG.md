@@ -1565,6 +1565,48 @@ tests, full 254-file / 3,214-test unit suite, typecheck, production build, and
 diff checks pass. This correction remains provider-free until deployment and
 one controlled founder calibration justify another image attempt.
 
+**Projection v6 production result and deterministic layer ruling
+(2026-07-30):** Railway deployed
+`66537333a8c0c9aeaee783c78a811c53a2cf03fb` successfully. Controlled
+three-quarter operation `bada8add-8cbf-4e5f-93a0-bf9c422bc09d` again passed
+pre-charge coverage and the target-guide audit: the accepted shoulder and
+sleeve were certainly hidden, the forehead feature was visible, and its guide
+covered the correct surface at 95% confidence without opposite-side or
+conflicting anatomy. Both included image-provider attempts still failed.
+Placement remained on the correct anatomy and inside the authorized mask at
+90% confidence, but identity, camera/framing, exact feature continuity,
+prior-ink continuity, no-unexpected-ink, no-outside-change, and overall
+evidence all failed. The 300 credits were refunded in full and the displayed
+balance returned to 66,200.
+
+The repeated result closes the architectural diagnosis: provider-visible role
+binding was necessary request hygiene, but full-frame latent regeneration
+cannot make the saved target immutable. No evidence probe or threshold is
+weakened, and no further paid image-provider attempt is justified on that
+architecture.
+
+Projection recipe v7 therefore makes cross-view tattoo carry-over a
+deterministic layer operation. The existing accepted-feature extractor and
+pose mapper now retain the accepted tattoo's colour delta instead of
+discarding it after producing a binary mask. The delta is normalized against
+unchanged source skin, inverse-mapped through the same anatomical
+capsule/ellipse/polygon authority, and composited onto the exact saved target.
+Only features lacking accepted target evidence are applied; prior accepted
+target ink remains untouched. The request path asserts zero changed pixels
+outside the union of projected masks before canonical lossless storage.
+Projection candidates no longer call the image provider, and a failed
+deterministic result does not repeat the same composition as a meaningless
+included retry. Independent visibility, guide, identity, feature, laterality,
+placement, prior-ink, unexpected-ink, and overall probes remain in force.
+
+The first offline gate proves a same-view accepted tattoo round-trip with exact
+outside-mask pixels, and a mirrored-pose test proves colour follows anatomical
+laterality rather than viewer side. This is the layer-stack foundation needed
+for exact removal and multi-view recomposition; all-body/profile/Walk release
+still remains open until its cohorts pass evidence and founder acceptance.
+Typecheck, the production build, 312 evidence tests, and the full
+254-file / 3,216-test unit suite pass locally.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

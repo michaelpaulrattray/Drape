@@ -300,6 +300,13 @@ function dependencies(
         features: references,
         projections,
         guidedTarget: input.target,
+        deterministicCandidate: input.target,
+        deterministicComposition: {
+          changedPixelCount: 120,
+          authorizedPixelCount: 180,
+          outsideAuthorizedChangeCount: 0,
+          featureChangedPixelCounts: references.map(() => 60),
+        },
       };
     }),
     localizeAuthoring: vi.fn(async (_dependencies, input) => ({
@@ -328,7 +335,7 @@ describe("ink candidate generation", () => {
   it("binds projection image roles in provider-visible parts and pins 1K", () => {
     const projectionRequest = {
       model: "gemini-3-pro-image-preview" as const,
-      recipeVersion: "ink.add.anywhere.projection.v6" as const,
+      recipeVersion: "ink.add.anywhere.projection.v7" as const,
       attemptNumber: 1 as const,
       responseModalities: ["IMAGE"] as const,
       prompt: "Edit only the authorized tattoo pixels.",
@@ -571,7 +578,7 @@ describe("ink candidate generation", () => {
         ontologyVersion: "body-zones.ink.v2",
         targetAngle: "backFull",
         sourceAngle: "backFull",
-        composerRecipeVersion: "ink.add.anywhere.projection.v6",
+        composerRecipeVersion: "ink.add.anywhere.projection.v7",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
         visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v9",
         features: [{
@@ -710,13 +717,10 @@ describe("ink candidate generation", () => {
         },
       },
     }));
-    expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.projection.v6",
-      images: expect.arrayContaining([
-        expect.objectContaining({ role: "original_target" }),
-        expect.objectContaining({ role: "evidence_mosaic" }),
-      ]),
-    }));
+    expect(deps.generate).not.toHaveBeenCalled();
+    expect(deps.canonicalize).toHaveBeenCalledWith(
+      expect.stringMatching(/^data:image\/png;base64,/),
+    );
     const coverageRequests = vi.mocked(deps.probe!).mock.calls
       .map(([request]) => request)
       .filter((request) => request.kind === "coverage");
@@ -766,6 +770,32 @@ describe("ink candidate generation", () => {
       recipeVersion:
         "ink.add.anywhere.projection-placement-audit.v2",
     }));
+
+    const failedProjection = dependencies({
+      loadProjectionPreflight: vi.fn(async () => preflight),
+      prepareProjection: vi.fn(async () => projectionPrepared),
+      prepareIncludedRetry: vi.fn(async () => {
+        throw new Error("deterministic projection must not retry");
+      }),
+      probe: vi.fn(async (request) => {
+        const response = passProbe(request) as Record<string, unknown>;
+        return request.kind === "feature_projection"
+          ? { ...response, identityMatch: false }
+          : response;
+      }),
+    });
+    await expect(generateInkProjectionCandidate(failedProjection, {
+      userId: projectionPrepared.userId,
+      modelId: projectionPrepared.modelId,
+      targetViewAngle: "backFull",
+      clientRequestId: "93939393-9393-4393-8393-939393939393",
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("could not be created"),
+    });
+    expect(failedProjection.prepareIncludedRetry).not.toHaveBeenCalled();
+    expect(failedProjection.generate).not.toHaveBeenCalled();
+    expect(failedProjection.invalidate).toHaveBeenCalledTimes(1);
 
     const refused = dependencies({
       loadProjectionPreflight: vi.fn(async () => preflight),

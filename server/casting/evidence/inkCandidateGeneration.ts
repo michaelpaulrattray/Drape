@@ -90,7 +90,6 @@ import {
 import {
   buildInkCoverageProbeRequest,
   buildInkEvidenceMosaic,
-  buildInkProjectionComposerRequest,
   buildInkProjectionTargetGuideAuditProbeRequest,
   parseInkProjectionTargetGuideAuditResponse,
   projectionTargetGuideAuditPasses,
@@ -118,6 +117,7 @@ import {
   InkFeatureMaskError,
 } from "./inkFeatureMask";
 import {
+  composeAcceptedInkProjection,
   InkPoseProjectionError,
   projectAcceptedInkFeatureMask,
   type InkPoseProjection,
@@ -144,6 +144,7 @@ type InkProjectionLocalizationFailureCode =
   | "feature_mask_failed"
   | "target_geometry_failed"
   | "feature_projection_failed"
+  | "feature_composition_failed"
   | "target_guide_render_failed";
 
 class InkProjectionLocalizationError extends Error {
@@ -338,6 +339,13 @@ interface LocalizedProjectionSet {
   features: readonly InkProjectionFeatureReference[];
   projections: ReadonlyMap<string, InkPoseProjection>;
   guidedTarget: ComposerImage;
+  deterministicCandidate: ComposerImage;
+  deterministicComposition: {
+    changedPixelCount: number;
+    authorizedPixelCount: number;
+    outsideAuthorizedChangeCount: 0;
+    featureChangedPixelCounts: readonly number[];
+  };
 }
 
 interface LocalizedAuthoringTarget {
@@ -479,7 +487,15 @@ async function localizeProjectionFeatures(
       witness,
       isProjectionTarget: feature.isProjectionTarget,
     };
-    return { reference: Object.freeze(reference), projection };
+    return {
+      reference: Object.freeze(reference),
+      projection,
+      cleanSource,
+      sourceAnalysis,
+      sourceGuide,
+      featureMask,
+      targetGuide,
+    };
   }));
   const guide = await localizationStage(
     "target_guide_render_failed",
@@ -494,6 +510,25 @@ async function localizeProjectionFeatures(
       })),
     }),
   );
+  const projectionTargets = localized.filter(
+    ({ reference }) => reference.isProjectionTarget,
+  );
+  const deterministicCandidate = await localizationStage(
+    "feature_composition_failed",
+    () => composeAcceptedInkProjection({
+      targetBytes: input.target.bytes,
+      targetAnalysis,
+      features: projectionTargets.map((feature) => ({
+        cleanSource: feature.cleanSource.bytes,
+        acceptedCandidate: feature.reference.witness.bytes,
+        sourceAnalysis: feature.sourceAnalysis,
+        sourceGuide: feature.sourceGuide,
+        featureMask: feature.featureMask,
+        targetGuide: feature.targetGuide,
+        projection: feature.projection,
+      })),
+    }),
+  );
   return Object.freeze({
     features: Object.freeze(localized.map(({ reference }) => reference)),
     projections: new Map(localized.map(({ reference, projection }) => [
@@ -501,6 +536,15 @@ async function localizeProjectionFeatures(
       projection,
     ])),
     guidedTarget: composerImage(guide),
+    deterministicCandidate: composerImage(deterministicCandidate),
+    deterministicComposition: Object.freeze({
+      changedPixelCount: deterministicCandidate.changedPixelCount,
+      authorizedPixelCount: deterministicCandidate.authorizedPixelCount,
+      outsideAuthorizedChangeCount:
+        deterministicCandidate.outsideAuthorizedChangeCount,
+      featureChangedPixelCounts:
+        deterministicCandidate.featureChangedPixelCounts,
+    }),
   });
 }
 
@@ -668,6 +712,8 @@ async function loadInputs(
       projectionFeatures: localized.features,
       projectionMasks: localized.projections,
       evidenceMosaic: composerImage(evidenceMosaic),
+      deterministicCandidate: localized.deterministicCandidate,
+      deterministicComposition: localized.deterministicComposition,
     };
   }
   if (prepared.authority.kind === "anywhere_v2") {
@@ -690,6 +736,8 @@ async function loadInputs(
       projectionFeatures: null,
       projectionMasks: null,
       evidenceMosaic: null,
+      deterministicCandidate: null,
+      deterministicComposition: null,
     };
   }
   const guide = await buildInkZoneGuide({
@@ -704,6 +752,8 @@ async function loadInputs(
     projectionFeatures: null,
     projectionMasks: null,
     evidenceMosaic: null,
+    deterministicCandidate: null,
+    deterministicComposition: null,
   };
 }
 
@@ -730,45 +780,43 @@ async function runAttempt(input: {
   await (dependencies.markGenerating ?? markInkCandidateAttemptGenerating)(
     prepared,
   );
-  const composerRequest = prepared.authority.kind === "legacy_v1"
-    ? buildInkComposerRequest({
-        identityText: prepared.identityText,
-        normalizedDescriptor: prepared.normalizedDescriptor,
-        side: prepared.authority.anatomy.side,
-        attemptNumber: prepared.attemptNumber,
-        identityAnchor: images.anchor,
-        guidedTarget: images.guidedTarget,
-        evidenceReference: images.reference ?? undefined,
-        retryDirectives: input.retryDirectives,
-      })
-    : prepared.authority.kind === "anywhere_v2"
-    ? buildInkAnywhereComposerRequest({
-        identityText: prepared.identityText,
-        normalizedDescriptor: prepared.normalizedDescriptor,
-        anatomy: prepared.authority.anatomy,
-        sourceAngle: prepared.sourceViewAngle,
-        attemptNumber: prepared.attemptNumber,
-        originalTarget: images.target,
-        identityAnchor: images.anchor,
-        guidedTarget: images.guidedTarget,
-        evidenceReference: images.reference ?? undefined,
-        retryDirectives: input.retryDirectives,
-      })
-    : buildInkProjectionComposerRequest({
-        identityText: prepared.identityText,
-        sourceAngle: prepared.authority.sourceAngle,
-        targetAngle: prepared.authority.targetAngle,
-        features: images.projectionFeatures!,
-        attemptNumber: prepared.attemptNumber,
-        originalTarget: images.target,
-        identityAnchor: images.anchor,
-        guidedTarget: images.guidedTarget,
-        evidenceMosaic: images.evidenceMosaic!,
-        retryDirectives: input.retryDirectives,
-      });
-  const imageDataUrl = await (dependencies.generate ?? defaultGenerate)(
-    composerRequest,
-  );
+  let imageDataUrl: string;
+  if (prepared.authority.kind === "projection_v2") {
+    if (!images.deterministicCandidate) {
+      throw new InkCandidateStateError("source_unavailable");
+    }
+    imageDataUrl =
+      `data:${images.deterministicCandidate.mime};base64,${
+        Buffer.from(images.deterministicCandidate.bytes).toString("base64")
+      }`;
+  } else {
+    const composerRequest = prepared.authority.kind === "legacy_v1"
+      ? buildInkComposerRequest({
+          identityText: prepared.identityText,
+          normalizedDescriptor: prepared.normalizedDescriptor,
+          side: prepared.authority.anatomy.side,
+          attemptNumber: prepared.attemptNumber,
+          identityAnchor: images.anchor,
+          guidedTarget: images.guidedTarget,
+          evidenceReference: images.reference ?? undefined,
+          retryDirectives: input.retryDirectives,
+        })
+      : buildInkAnywhereComposerRequest({
+          identityText: prepared.identityText,
+          normalizedDescriptor: prepared.normalizedDescriptor,
+          anatomy: prepared.authority.anatomy,
+          sourceAngle: prepared.sourceViewAngle,
+          attemptNumber: prepared.attemptNumber,
+          originalTarget: images.target,
+          identityAnchor: images.anchor,
+          guidedTarget: images.guidedTarget,
+          evidenceReference: images.reference ?? undefined,
+          retryDirectives: input.retryDirectives,
+        });
+    imageDataUrl = await (dependencies.generate ?? defaultGenerate)(
+      composerRequest,
+    );
+  }
   const candidate = await (
     dependencies.canonicalize ?? canonicalizeEvidenceDataUrl
   )(imageDataUrl);
@@ -895,6 +943,9 @@ async function runAttempt(input: {
     return { type: "ready", prepared, expiresAt };
   }
   if (decision.action === "included_retry") {
+    if (prepared.authority.kind === "projection_v2") {
+      return { type: "failed", prepared };
+    }
     const generateId = dependencies.generateId ?? randomUUID;
     const next = await (
       dependencies.prepareIncludedRetry ?? prepareIncludedInkCandidateRetry
@@ -1430,6 +1481,17 @@ async function executeProjectionCandidate(
     });
     failureStage = "load_inputs";
     const images = await loadInputs(dependencies, prepared);
+    if (
+      prepared.authority.kind === "projection_v2"
+      && images.deterministicComposition
+    ) {
+      log.info({
+        operationId: gate.operationId,
+        candidateId: prepared.candidateId,
+        targetViewAngle: input.targetViewAngle,
+        ...images.deterministicComposition,
+      }, "Ink projection composed deterministically");
+    }
     if (
       prepared.authority.kind === "projection_v2"
       && images.projectionFeatures

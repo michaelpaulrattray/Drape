@@ -132,7 +132,7 @@ describe("multi-feature projection composition", () => {
       "identity_anchor",
       "evidence_mosaic",
     ]);
-    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v6");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v7");
     expect(request.prompt).toContain(
       "CLEAN ORIGINAL TARGET AND IMMUTABLE OUTPUT CANVAS",
     );

@@ -1,3 +1,5 @@
+import sharp from "sharp";
+
 import type { NormalizedInkZone } from "./composer/inkZoneGuide";
 import type { InkFeatureMask } from "./inkFeatureMask";
 import {
@@ -19,14 +21,16 @@ export type InkPoseProjectionFailureCode =
   | "authority_mismatch"
   | "primitive_mismatch"
   | "source_outside_anatomy"
-  | "target_surface_empty";
+  | "target_surface_empty"
+  | "delta_contaminated";
 
 export class InkPoseProjectionError extends Error {
   constructor(
     readonly code: InkPoseProjectionFailureCode,
     message: string,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
     this.name = "InkPoseProjectionError";
   }
 }
@@ -42,7 +46,35 @@ export interface InkPoseProjection {
   expectedPixelCount: number;
 }
 
+export interface DeterministicInkProjectionFeature {
+  cleanSource: Uint8Array;
+  acceptedCandidate: Uint8Array;
+  sourceAnalysis: InkPoseAnalysis;
+  sourceGuide: InkPoseAnatomyGuide;
+  featureMask: InkFeatureMask;
+  targetGuide: InkPoseAnatomyGuide;
+  projection: InkPoseProjection;
+}
+
+export interface DeterministicInkProjectionComposite {
+  bytes: Buffer;
+  mime: "image/png";
+  width: number;
+  height: number;
+  changedPixelCount: number;
+  authorizedPixelCount: number;
+  outsideAuthorizedChangeCount: 0;
+  featureChangedPixelCounts: readonly number[];
+}
+
 type Point = InkPoseGeometryPoint;
+
+const MAX_COMPOSITE_PIXELS = 40_000_000;
+const GAIN_BIN_COUNT = 1001;
+const MIN_GLOBAL_GAIN = 0.8;
+const MAX_GLOBAL_GAIN = 1.25;
+const MIN_INK_RATIO = 0.04;
+const MAX_INK_RATIO = 4;
 
 function distanceSquared(left: Point, right: Point): number {
   const x = left.x - right.x;
@@ -291,6 +323,402 @@ function countMask(mask: Uint8Array): number {
     if (mask[index]) count += 1;
   }
   return count;
+}
+
+async function decodeRgb(
+  image: Uint8Array,
+  options?: { width: number; height: number },
+): Promise<{ width: number; height: number; pixels: Buffer }> {
+  try {
+    let pipeline = sharp(Buffer.from(image), {
+      failOn: "error",
+      limitInputPixels: MAX_COMPOSITE_PIXELS,
+    }).rotate().removeAlpha().toColourspace("srgb");
+    if (options) {
+      pipeline = pipeline.resize(options.width, options.height, {
+        fit: "fill",
+        kernel: "lanczos3",
+      });
+    }
+    const decoded = await pipeline.raw().toBuffer({ resolveWithObject: true });
+    const { width, height, channels } = decoded.info;
+    if (
+      !width
+      || !height
+      || width * height > MAX_COMPOSITE_PIXELS
+      || channels !== 3
+      || decoded.data.length !== width * height * 3
+    ) {
+      throw new Error("invalid deterministic projection image");
+    }
+    return { width, height, pixels: decoded.data };
+  } catch (error) {
+    throw new InkPoseProjectionError(
+      "dimension_mismatch",
+      "Tattoo projection pixels could not be decoded",
+      { cause: error },
+    );
+  }
+}
+
+function ratioBin(value: number): number {
+  const clamped = Math.min(1.5, Math.max(0.5, value));
+  return Math.round((clamped - 0.5) * (GAIN_BIN_COUNT - 1));
+}
+
+function binRatio(index: number): number {
+  return 0.5 + index / (GAIN_BIN_COUNT - 1);
+}
+
+function medianGlobalGain(input: {
+  clean: Buffer;
+  accepted: Buffer;
+  guide: InkPoseAnatomyGuide;
+  featureMask: InkFeatureMask;
+}): readonly [number, number, number] {
+  const bins = [
+    new Uint32Array(GAIN_BIN_COUNT),
+    new Uint32Array(GAIN_BIN_COUNT),
+    new Uint32Array(GAIN_BIN_COUNT),
+  ] as const;
+  const counts = [0, 0, 0];
+  for (let pixel = 0; pixel < input.guide.mask.length; pixel += 1) {
+    if (
+      input.guide.mask[pixel]! < 128
+      || input.featureMask.mask[pixel]
+    ) {
+      continue;
+    }
+    const offset = pixel * 3;
+    for (let channel = 0; channel < 3; channel += 1) {
+      const clean = input.clean[offset + channel]!;
+      const accepted = input.accepted[offset + channel]!;
+      if (clean < 24 || accepted < 8) continue;
+      bins[channel]![ratioBin(accepted / clean)] += 1;
+      counts[channel] += 1;
+    }
+  }
+  const minimumSamples = Math.max(
+    64,
+    Math.floor(input.featureMask.anatomyPixelCount * 0.05),
+  );
+  return Object.freeze(counts.map((count, channel) => {
+    if (count < minimumSamples) {
+      throw new InkPoseProjectionError(
+        "delta_contaminated",
+        "Tattoo evidence does not retain enough unchanged skin authority",
+      );
+    }
+    const midpoint = Math.ceil(count / 2);
+    let total = 0;
+    for (let index = 0; index < GAIN_BIN_COUNT; index += 1) {
+      total += bins[channel]![index]!;
+      if (total < midpoint) continue;
+      const gain = binRatio(index);
+      if (gain < MIN_GLOBAL_GAIN || gain > MAX_GLOBAL_GAIN) {
+        throw new InkPoseProjectionError(
+          "delta_contaminated",
+          "Tattoo evidence contains an unsafe global colour shift",
+        );
+      }
+      return gain;
+    }
+    throw new InkPoseProjectionError(
+      "delta_contaminated",
+      "Tattoo evidence colour authority could not be established",
+    );
+  }) as [number, number, number]);
+}
+
+function bilinearChannel(
+  pixels: Buffer,
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+  channel: number,
+): number {
+  const left = Math.max(0, Math.min(width - 1, Math.floor(x)));
+  const top = Math.max(0, Math.min(height - 1, Math.floor(y)));
+  const right = Math.min(width - 1, left + 1);
+  const bottom = Math.min(height - 1, top + 1);
+  const xWeight = Math.max(0, Math.min(1, x - left));
+  const yWeight = Math.max(0, Math.min(1, y - top));
+  const topLeft = pixels[(top * width + left) * 3 + channel]!;
+  const topRight = pixels[(top * width + right) * 3 + channel]!;
+  const bottomLeft = pixels[(bottom * width + left) * 3 + channel]!;
+  const bottomRight = pixels[(bottom * width + right) * 3 + channel]!;
+  const topValue = topLeft + (topRight - topLeft) * xWeight;
+  const bottomValue = bottomLeft + (bottomRight - bottomLeft) * xWeight;
+  return topValue + (bottomValue - topValue) * yWeight;
+}
+
+function bilinearMask(
+  mask: Uint8Array,
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+): number {
+  const left = Math.max(0, Math.min(width - 1, Math.floor(x)));
+  const top = Math.max(0, Math.min(height - 1, Math.floor(y)));
+  const right = Math.min(width - 1, left + 1);
+  const bottom = Math.min(height - 1, top + 1);
+  const xWeight = Math.max(0, Math.min(1, x - left));
+  const yWeight = Math.max(0, Math.min(1, y - top));
+  const topValue =
+    mask[top * width + left]!
+    + (mask[top * width + right]! - mask[top * width + left]!) * xWeight;
+  const bottomValue =
+    mask[bottom * width + left]!
+    + (
+      mask[bottom * width + right]!
+      - mask[bottom * width + left]!
+    ) * xWeight;
+  return (topValue + (bottomValue - topValue) * yWeight) / 255;
+}
+
+function targetMaskIndex(
+  x: number,
+  y: number,
+  outputWidth: number,
+  outputHeight: number,
+  projection: InkPoseProjection,
+): number {
+  const targetX = Math.min(
+    projection.width - 1,
+    Math.floor(((x + 0.5) / outputWidth) * projection.width),
+  );
+  const targetY = Math.min(
+    projection.height - 1,
+    Math.floor(((y + 0.5) / outputHeight) * projection.height),
+  );
+  return targetY * projection.width + targetX;
+}
+
+function validateCompositeFeature(
+  feature: DeterministicInkProjectionFeature,
+  targetAnalysis: InkPoseAnalysis,
+): void {
+  if (
+    !sameTuple(feature.projection.tuple, feature.sourceGuide.tuple)
+    || !sameTuple(feature.projection.tuple, feature.targetGuide.tuple)
+    || feature.projection.width !== targetAnalysis.width
+    || feature.projection.height !== targetAnalysis.height
+    || feature.targetGuide.width !== targetAnalysis.width
+    || feature.targetGuide.height !== targetAnalysis.height
+    || feature.sourceGuide.width !== feature.sourceAnalysis.width
+    || feature.sourceGuide.height !== feature.sourceAnalysis.height
+    || feature.featureMask.width !== feature.sourceAnalysis.width
+    || feature.featureMask.height !== feature.sourceAnalysis.height
+    || feature.projection.mask.length
+      !== targetAnalysis.width * targetAnalysis.height
+    || feature.sourceGuide.mask.length
+      !== feature.sourceAnalysis.width * feature.sourceAnalysis.height
+    || feature.featureMask.mask.length
+      !== feature.sourceAnalysis.width * feature.sourceAnalysis.height
+  ) {
+    throw new InkPoseProjectionError(
+      "authority_mismatch",
+      "Tattoo projection colour authority is inconsistent",
+    );
+  }
+}
+
+/**
+ * Transfer only the accepted tattoo's multiplicative colour delta through the
+ * deterministic pose map. The saved target is copied first and pixels outside
+ * the projected feature masks are never written.
+ */
+export async function composeAcceptedInkProjection(input: {
+  targetBytes: Uint8Array;
+  targetAnalysis: InkPoseAnalysis;
+  features: readonly DeterministicInkProjectionFeature[];
+}): Promise<DeterministicInkProjectionComposite> {
+  if (input.features.length < 1 || input.features.length > 9) {
+    throw new InkPoseProjectionError(
+      "authority_mismatch",
+      "Tattoo projection requires one bounded feature set",
+    );
+  }
+  input.features.forEach((feature) =>
+    validateCompositeFeature(feature, input.targetAnalysis)
+  );
+  const target = await decodeRgb(input.targetBytes);
+  if (
+    Math.abs(
+      target.width / target.height
+      - input.targetAnalysis.width / input.targetAnalysis.height,
+    ) > 0.005
+  ) {
+    throw new InkPoseProjectionError(
+      "dimension_mismatch",
+      "Tattoo projection target dimensions do not match pose authority",
+    );
+  }
+  const output = Buffer.from(target.pixels);
+  const authorized = new Uint8Array(target.width * target.height);
+  const featureChangedPixelCounts: number[] = [];
+
+  for (const feature of input.features) {
+    const [clean, accepted] = await Promise.all([
+      decodeRgb(feature.cleanSource, {
+        width: feature.sourceAnalysis.width,
+        height: feature.sourceAnalysis.height,
+      }),
+      decodeRgb(feature.acceptedCandidate, {
+        width: feature.sourceAnalysis.width,
+        height: feature.sourceAnalysis.height,
+      }),
+    ]);
+    const gain = medianGlobalGain({
+      clean: clean.pixels,
+      accepted: accepted.pixels,
+      guide: feature.sourceGuide,
+      featureMask: feature.featureMask,
+    });
+    const sourcePrimitives = buildInkPoseGeometryPrimitives(
+      feature.projection.tuple,
+      feature.sourceAnalysis,
+    );
+    const targetPrimitives = buildInkPoseGeometryPrimitives(
+      feature.projection.tuple,
+      input.targetAnalysis,
+      { allowClippedVisibility: true },
+    );
+    const visibleTargetPrimitiveIndexes = new Set(
+      feature.targetGuide.visiblePrimitiveIndexes,
+    );
+    let featureChangedPixelCount = 0;
+    for (let y = 0; y < target.height; y += 1) {
+      for (let x = 0; x < target.width; x += 1) {
+        const outputPixel = y * target.width + x;
+        const projectionPixel = targetMaskIndex(
+          x,
+          y,
+          target.width,
+          target.height,
+          feature.projection,
+        );
+        if (!feature.projection.mask[projectionPixel]) continue;
+        authorized[outputPixel] = 255;
+        const targetPoint = {
+          x: (x + 0.5) / target.width,
+          y: (y + 0.5) / target.height,
+        };
+        const primitiveIndex = targetPrimitives.findIndex(
+          (primitive, index) =>
+            visibleTargetPrimitiveIndexes.has(index)
+            && contains(primitive, targetPoint),
+        );
+        if (primitiveIndex < 0) continue;
+        const sourcePoint = mapPoint(
+          targetPoint,
+          targetPrimitives[primitiveIndex]!,
+          sourcePrimitives[primitiveIndex]!,
+        );
+        const sourceX =
+          sourcePoint.x * feature.sourceAnalysis.width - 0.5;
+        const sourceY =
+          sourcePoint.y * feature.sourceAnalysis.height - 0.5;
+        if (
+          sourceX < -0.5
+          || sourceX > feature.sourceAnalysis.width - 0.5
+          || sourceY < -0.5
+          || sourceY > feature.sourceAnalysis.height - 0.5
+        ) {
+          continue;
+        }
+        const alpha = bilinearMask(
+          feature.featureMask.mask,
+          feature.featureMask.width,
+          feature.featureMask.height,
+          sourceX,
+          sourceY,
+        );
+        if (alpha <= 0.01) continue;
+        const offset = outputPixel * 3;
+        let changed = false;
+        for (let channel = 0; channel < 3; channel += 1) {
+          const cleanValue = bilinearChannel(
+            clean.pixels,
+            clean.width,
+            clean.height,
+            sourceX,
+            sourceY,
+            channel,
+          );
+          const acceptedValue = bilinearChannel(
+            accepted.pixels,
+            accepted.width,
+            accepted.height,
+            sourceX,
+            sourceY,
+            channel,
+          ) / gain[channel]!;
+          const ratio = Math.min(
+            MAX_INK_RATIO,
+            Math.max(MIN_INK_RATIO, acceptedValue / Math.max(8, cleanValue)),
+          );
+          const current = output[offset + channel]!;
+          const projected = Math.max(0, Math.min(255, current * ratio));
+          const next = Math.round(current + (projected - current) * alpha);
+          if (next !== current) changed = true;
+          output[offset + channel] = next;
+        }
+        if (changed) featureChangedPixelCount += 1;
+      }
+    }
+    const outputScale =
+      (target.width * target.height)
+      / (feature.projection.width * feature.projection.height);
+    const minimumChangedPixels = Math.max(
+      8,
+      Math.floor(feature.projection.expectedPixelCount * outputScale * 0.3),
+    );
+    if (featureChangedPixelCount < minimumChangedPixels) {
+      throw new InkPoseProjectionError(
+        "target_surface_empty",
+        "Tattoo colour pixels did not map materially onto the target anatomy",
+      );
+    }
+    featureChangedPixelCounts.push(featureChangedPixelCount);
+  }
+
+  let changedPixelCount = 0;
+  let authorizedPixelCount = 0;
+  let outsideAuthorizedChangeCount = 0;
+  for (let pixel = 0; pixel < authorized.length; pixel += 1) {
+    if (authorized[pixel]) authorizedPixelCount += 1;
+    const offset = pixel * 3;
+    const changed =
+      output[offset] !== target.pixels[offset]
+      || output[offset + 1] !== target.pixels[offset + 1]
+      || output[offset + 2] !== target.pixels[offset + 2];
+    if (changed) {
+      changedPixelCount += 1;
+      if (!authorized[pixel]) outsideAuthorizedChangeCount += 1;
+    }
+  }
+  if (outsideAuthorizedChangeCount !== 0) {
+    throw new InkPoseProjectionError(
+      "authority_mismatch",
+      "Tattoo projection changed pixels outside its authority",
+    );
+  }
+  const bytes = await sharp(output, {
+    raw: { width: target.width, height: target.height, channels: 3 },
+  }).png().toBuffer();
+  return Object.freeze({
+    bytes,
+    mime: "image/png",
+    width: target.width,
+    height: target.height,
+    changedPixelCount,
+    authorizedPixelCount,
+    outsideAuthorizedChangeCount: 0 as const,
+    featureChangedPixelCounts: Object.freeze(featureChangedPixelCounts),
+  });
 }
 
 function sameTuple(
