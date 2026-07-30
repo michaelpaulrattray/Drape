@@ -42,7 +42,7 @@ function mysqlDefault(value: unknown): string | null {
 
 async function snapshotRows() {
   const snapshot = JSON.parse(await readFile(
-    new URL("../../../drizzle/meta/0016_snapshot.json", import.meta.url),
+    new URL("../../../drizzle/meta/0017_snapshot.json", import.meta.url),
     "utf8",
   )) as Snapshot;
   const columns = Object.entries(snapshot.tables).flatMap(
@@ -55,7 +55,7 @@ async function snapshotRows() {
     })),
   );
   // Drizzle snapshots follow declaration order. MySQL appends a column added
-  // by ALTER TABLE, so model the physical 0016 order verified at startup.
+  // by ALTER TABLE, so model the physical order verified at startup.
   const priorInkIndex = columns.findIndex(
     (row) =>
       row.TABLE_NAME === "casting_evidence_candidate_attempts"
@@ -111,7 +111,7 @@ function client(rows: Awaited<ReturnType<typeof snapshotRows>>) {
 }
 
 describe("R7-7G composer startup schema fence", () => {
-  it("accepts the generated 0016 shape and rejects partial or stale shapes", async () => {
+  it("accepts the current generated shape and rejects partial or stale shapes", async () => {
     const healthy = await snapshotRows();
     await expect(assertEvidenceComposerSchemaWithClient(client(healthy)))
       .resolves.toBeUndefined();

@@ -52,7 +52,11 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       "model_delete",
       "account_delete",
       "evidence_cleanup",
+      // Evidence candidates. Distinct from the Casting V2 value below: two
+      // retention policies behind one enum value would make the cleanup
+      // worker's batches ambiguous.
       "candidate_cleanup",
+      "casting_candidate_cleanup",
     ]);
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_ingest");
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_discard");

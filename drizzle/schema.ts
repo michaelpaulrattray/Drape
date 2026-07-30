@@ -489,7 +489,12 @@ export const STORAGE_CLEANUP_BATCH_KINDS = [
   "model_delete",
   "account_delete",
   "evidence_cleanup",
+  // `candidate_cleanup` is EVIDENCE candidates and predates Casting V2. The
+  // roll domain's expiring candidates needed their own value rather than
+  // sharing it — two retention policies behind one enum value would make the
+  // worker's batches ambiguous (§G.6).
   "candidate_cleanup",
+  "casting_candidate_cleanup",
 ] as const;
 export type StorageCleanupBatchKind = typeof STORAGE_CLEANUP_BATCH_KINDS[number];
 
@@ -1837,3 +1842,176 @@ export const boardEdges = mysqlTable("board_edges", {
 
 export type BoardEdge = typeof boardEdges.$inferSelect;
 export type InsertBoardEdge = typeof boardEdges.$inferInsert;
+
+/* ==========================================================================
+   CASTING V2 — the roll domain (plan §G, migration 0017)
+
+   The pre-Sign world: a resumable sheet, immutable rolls of eight, and the
+   candidates a user keeps or discards. Deliberately NOT built on the existing
+   model/evidence tables — evidence is owned identity truth, whereas candidates
+   are exploratory, expiring and non-authoritative. Reusing those tables would
+   have made "delete every candidate after 7 idle days" a dangerous statement
+   to write.
+
+   Convention: every "→" below is a LOGICAL foreign key — an indexed plain
+   column plus an application join. This repo contains zero engine-level
+   foreign keys, and adding them here would fight `db:push`, the D-64 purge
+   ordering and the append-only migration journal.
+
+   A durable Cast record exists only at Sign (M7). Nothing here is identity
+   authority.
+   ========================================================================== */
+
+export const CASTING_SESSION_STATUSES = ["open", "abandoned", "expired"] as const;
+export type CastingSessionStatus = typeof CASTING_SESSION_STATUSES[number];
+
+export const CASTING_SESSION_ORIGINS = ["roster", "canvas", "wardrobe"] as const;
+export type CastingSessionOrigin = typeof CASTING_SESSION_ORIGINS[number];
+
+export const CASTING_ROLL_STATUSES = [
+  "pending",
+  "generating",
+  "complete",
+  "partial",
+  "failed",
+  "cancelled",
+] as const;
+export type CastingRollStatus = typeof CASTING_ROLL_STATUSES[number];
+
+export const CASTING_CANDIDATE_STATUSES = [
+  "queued",
+  "dispatched",
+  "ready",
+  "failed",
+  "discarded",
+  "signed",
+  "cancelled",
+  "expired",
+] as const;
+export type CastingCandidateStatus = typeof CASTING_CANDIDATE_STATUSES[number];
+
+/**
+ * The resumable unsigned sheet.
+ *
+ * A session stays `open` after a Sign — multiple Signs are legal, each its own
+ * ceremony, and the tray keeps the rest. There is no user-facing "close":
+ * navigation never destroys work. The other states are reached only by expiry.
+ */
+export const castingSessions = mysqlTable("casting_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // →users; the ownership predicate on every statement
+  originType: mysqlEnum("originType", CASTING_SESSION_ORIGINS).default("roster").notNull(),
+  // Server-owned canvas return destination, verified against board ownership
+  // in the same statement that creates the session.
+  originBoardId: int("originBoardId"),
+  originItemId: int("originItemId"),
+  activeRollId: int("activeRollId"),
+  status: mysqlEnum("status", CASTING_SESSION_STATUSES).default("open").notNull(),
+  signedCastCount: int("signedCastCount").default(0).notNull(),
+  parentCastId: int("parentCastId"), // fork-from-room lineage →models
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  lastActivityAt: timestamp("lastActivityAt").defaultNow().onUpdateNow().notNull(),
+  // Slides with activity; 7 idle days (§G.6). The bulk purge reads this.
+  expiresAt: timestamp("expiresAt"),
+}, (table) => ([
+  uniqueIndex("uq_casting_sessions_public").on(table.publicId),
+  index("idx_casting_sessions_user_status").on(table.userId, table.status),
+  index("idx_casting_sessions_expires").on(table.expiresAt),
+]));
+
+export type CastingSession = typeof castingSessions.$inferSelect;
+export type InsertCastingSession = typeof castingSessions.$inferInsert;
+
+/**
+ * An immutable version. Rolls are never edited after a terminal state — a
+ * changed mind produces a new roll, which is what makes roll history navigable.
+ */
+export const castingRolls = mysqlTable("casting_rolls", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  sessionId: int("sessionId").notNull(), // →casting_sessions
+  userId: int("userId").notNull(), // denormalized so child writes prove ownership without a join
+  // Allocated under SELECT … FOR UPDATE on the session row, so two tabs get
+  // sequential indexes instead of a duplicate-key failure after the charge.
+  rollIndex: int("rollIndex").notNull(),
+  briefText: text("briefText").notNull(), // the user's own sentence
+  compiledBrief: json("compiledBrief"), // INTERNAL — never projected
+  cohortKey: varchar("cohortKey", { length: 48 }),
+  styleKey: varchar("styleKey", { length: 48 }),
+  // Sub-style descriptors for stylized cohorts (style-profile law, 2026-07-30).
+  // Internal; surfaced only as a removable chip.
+  styleProfile: json("styleProfile"),
+  lockContract: json("lockContract"),
+  // Follow lineage. The parent candidate is resolved through
+  // casting_candidates.userId = ctx.user.id in the same insert-select, so a
+  // client-supplied id can never reference a foreign candidate.
+  parentRollId: int("parentRollId"),
+  parentCandidateId: int("parentCandidateId"),
+  status: mysqlEnum("status", CASTING_ROLL_STATUSES).default("pending").notNull(),
+  // = 8 × perCandidateCredits. Integer by construction: the ledger is
+  // integer-only and refund slices come from each candidate's own row.
+  priceCredits: int("priceCredits").default(0).notNull(),
+  operationId: varchar("operationId", { length: 36 }).notNull(), // →generation_operations
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_casting_rolls_public").on(table.publicId),
+  // Idempotency: a replayed claim returns the existing roll rather than
+  // creating a second one for the same operation.
+  uniqueIndex("uq_casting_rolls_operation").on(table.operationId),
+  uniqueIndex("uq_casting_rolls_session_index").on(table.sessionId, table.rollIndex),
+]));
+
+export type CastingRoll = typeof castingRolls.$inferSelect;
+export type InsertCastingRoll = typeof castingRolls.$inferInsert;
+
+/**
+ * One of eight. Every status transition is a CAS predicate, never a
+ * read-modify-write, so two tabs cannot both win.
+ */
+export const castingCandidates = mysqlTable("casting_candidates", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  rollId: int("rollId").notNull(), // →casting_rolls
+  sessionId: int("sessionId").notNull(), // denormalized — the tray query is session-scoped
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  position: int("position").notNull(), // display only; never keys a transition
+  status: mysqlEnum("status", CASTING_CANDIDATE_STATUSES).default("queued").notNull(),
+  // The integer per-candidate slice. Refund authority reads it from the row
+  // rather than deriving a fraction of the roll price.
+  pointsCost: int("pointsCost").default(0).notNull(),
+  imageKey: varchar("imageKey", { length: 512 }),
+  thumbKey: varchar("thumbKey", { length: 512 }),
+  // INTERNAL provenance (D-12). Never projected.
+  provider: varchar("provider", { length: 32 }),
+  providerModel: varchar("providerModel", { length: 96 }),
+  providerRef: varchar("providerRef", { length: 96 }),
+  personaLine: varchar("personaLine", { length: 160 }),
+  internalPrompt: json("internalPrompt"), // INTERNAL — the compiled instruction
+  keptAt: timestamp("keptAt"),
+  discardedAt: timestamp("discardedAt"),
+  attemptCount: int("attemptCount").default(0).notNull(),
+  failureClass: varchar("failureClass", { length: 24 }),
+  // Set only by the Sign CAS (M7). The unique index is a backstop preventing
+  // two candidates claiming one Cast; the CAS is the double-Sign defence.
+  signedCastId: int("signedCastId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  /**
+   * Stamped on discard, not at insert. A candidate's expiry is unknowable when
+   * it is created — it depends on whether the user discards it, and on when
+   * the next roll makes that discard un-undoable (§G.6). Everything else
+   * purges with its session.
+   */
+  expiresAt: timestamp("expiresAt"),
+}, (table) => ([
+  uniqueIndex("uq_casting_candidates_public").on(table.publicId),
+  uniqueIndex("uq_casting_candidates_roll_position").on(table.rollId, table.position),
+  // Backstop only — see signedCastId above. Sparse: MySQL permits many NULLs.
+  uniqueIndex("uq_casting_candidates_signed_cast").on(table.signedCastId),
+  index("idx_casting_candidates_roll").on(table.rollId),
+  index("idx_casting_candidates_tray").on(table.sessionId, table.keptAt),
+  index("idx_casting_candidates_expires").on(table.expiresAt),
+]));
+
+export type CastingCandidate = typeof castingCandidates.$inferSelect;
+export type InsertCastingCandidate = typeof castingCandidates.$inferInsert;

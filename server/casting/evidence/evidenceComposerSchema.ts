@@ -92,8 +92,11 @@ const EXISTING_COLUMN_TYPES: Readonly<Record<string, string>> = {
     "enum('draft','active','locked','archived','provisioning')",
   "generations.type":
     "enum('masterPrompt','castingImage','fullBody','multiView','iteration','upscale','wardrobeVTO','wardrobeComposite','wardrobeRefinement','wardrobeDigitize','evidenceCandidate')",
+  // `casting_candidate_cleanup` added by migration 0017 (Casting V2 roll
+  // domain). This constant pins the live DDL, so it must be updated in the
+  // same change as the enum itself or startup validation fails.
   "storage_cleanup_batches.kind":
-    "enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup')",
+    "enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup','casting_candidate_cleanup')",
   "model_reference_plates.kind":
     "enum('uploaded_reference','accepted_candidate')",
   "model_reference_plates.featureIntentId": "varchar(36)",
