@@ -6,6 +6,7 @@ import type { PrivateEvidenceStorageAdapter } from "./evidenceDelivery";
 import type { CanonicalEvidenceImage } from "./imageValidation";
 import type { PreparedInkCandidateAttempt } from "../../db/inkAddCandidates";
 import {
+  buildInkCandidateProviderConfig,
   buildInkProbeProviderConfig,
   generateInkAddCandidate,
   generateInkProjectionCandidate,
@@ -13,6 +14,9 @@ import {
   type InkCandidateGenerationDependencies,
 } from "./inkCandidateGeneration";
 import type { InkProbeRequest } from "./composer/inkProbe";
+import {
+  buildInkProjectionProviderParts,
+} from "./composer/inkProjectionProvider";
 
 let png: Buffer;
 let webp: Buffer;
@@ -321,6 +325,72 @@ function dependencies(
 }
 
 describe("ink candidate generation", () => {
+  it("binds projection image roles in provider-visible parts and pins 1K", () => {
+    const projectionRequest = {
+      model: "gemini-3-pro-image-preview" as const,
+      recipeVersion: "ink.add.anywhere.projection.v6" as const,
+      attemptNumber: 1 as const,
+      responseModalities: ["IMAGE"] as const,
+      prompt: "Edit only the authorized tattoo pixels.",
+      images: [
+        "original_target",
+        "guided_target",
+        "identity_anchor",
+        "evidence_mosaic",
+      ].map((role) => ({
+        role,
+        inlineData: {
+          mimeType: "image/png" as const,
+          data: "AA==",
+        },
+      })) as [
+        {
+          role: "original_target";
+          inlineData: { mimeType: "image/png"; data: string };
+        },
+        {
+          role: "guided_target";
+          inlineData: { mimeType: "image/png"; data: string };
+        },
+        {
+          role: "identity_anchor";
+          inlineData: { mimeType: "image/png"; data: string };
+        },
+        {
+          role: "evidence_mosaic";
+          inlineData: { mimeType: "image/png"; data: string };
+        },
+      ],
+    };
+    const parts = buildInkProjectionProviderParts(projectionRequest);
+    expect(parts).toHaveLength(10);
+    expect(parts[0]).toEqual({
+      text:
+        "MULTI-IMAGE EDIT INPUTS. Each constant role label applies only to the image immediately following it.",
+    });
+    expect(parts[1]).toMatchObject({
+      text: expect.stringContaining("CLEAN ORIGINAL TARGET"),
+    });
+    expect(parts[2]).toEqual({
+      inlineData: projectionRequest.images[0].inlineData,
+    });
+    expect(parts[7]).toMatchObject({
+      text: expect.stringContaining("PRIVATE TATTOO EVIDENCE"),
+    });
+    expect(parts[8]).toEqual({
+      inlineData: projectionRequest.images[3].inlineData,
+    });
+    expect(parts[9]).toEqual({
+      text: expect.stringContaining("EDIT INSTRUCTIONS"),
+    });
+    expect(buildInkCandidateProviderConfig(projectionRequest)).toMatchObject({
+      imageConfig: {
+        aspectRatio: "3:4",
+        imageSize: "1K",
+      },
+    });
+  });
+
   it("forwards the closed non-thinking probe configuration to the provider", () => {
     const config = buildInkProbeProviderConfig({
       kind: "visibility",
@@ -501,7 +571,7 @@ describe("ink candidate generation", () => {
         ontologyVersion: "body-zones.ink.v2",
         targetAngle: "backFull",
         sourceAngle: "backFull",
-        composerRecipeVersion: "ink.add.anywhere.projection.v5",
+        composerRecipeVersion: "ink.add.anywhere.projection.v6",
         probeRecipeVersion: "ink.add.anywhere.projection.probe.v2",
         visibilityRecipeVersion: "ink.add.anywhere.coverage-probe.v9",
         features: [{
@@ -641,7 +711,7 @@ describe("ink candidate generation", () => {
       },
     }));
     expect(deps.generate).toHaveBeenCalledWith(expect.objectContaining({
-      recipeVersion: "ink.add.anywhere.projection.v5",
+      recipeVersion: "ink.add.anywhere.projection.v6",
       images: expect.arrayContaining([
         expect.objectContaining({ role: "original_target" }),
         expect.objectContaining({ role: "evidence_mosaic" }),

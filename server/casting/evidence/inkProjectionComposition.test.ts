@@ -117,7 +117,7 @@ describe("multi-feature projection composition", () => {
     const base = await image("#999");
     const request = buildInkProjectionComposerRequest({
       identityText: "same immutable person",
-      sourceAngle: "frontFull",
+      sourceAngle: "backFull",
       targetAngle: "backFull",
       features: selected,
       attemptNumber: 1,
@@ -132,9 +132,9 @@ describe("multi-feature projection composition", () => {
       "identity_anchor",
       "evidence_mosaic",
     ]);
-    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v5");
+    expect(request.recipeVersion).toBe("ink.add.anywhere.projection.v6");
     expect(request.prompt).toContain(
-      "Image 1 is the clean original target and immutable pixel canvas",
+      "CLEAN ORIGINAL TARGET AND IMMUTABLE OUTPUT CANVAS",
     );
     expect(request.prompt).toContain(
       "Blue F-label text is metadata and never authorizes ink",
@@ -148,6 +148,28 @@ describe("multi-feature projection composition", () => {
     expect(request.prompt).toContain(
       "WITNESS: The subject's right appears on frame left in the witness.",
     );
+    expect(request.prompt).toContain(
+      "Never reconstruct it from another image",
+    );
+  });
+
+  it("refuses to reconstruct a missing target angle from another camera", async () => {
+    const selected = await features();
+    const base = await image("#999");
+    const mosaic = await buildInkEvidenceMosaic(selected);
+    expect(() =>
+      buildInkProjectionComposerRequest({
+        identityText: "same immutable person",
+        sourceAngle: "frontFull",
+        targetAngle: "backFull",
+        features: selected,
+        attemptNumber: 1,
+        originalTarget: base,
+        identityAnchor: base,
+        guidedTarget: base,
+        evidenceMosaic: mosaic,
+      })
+    ).toThrow("requires an exact target-angle canvas");
   });
 
   it("independently refuses a mirrored or out-of-zone feature", async () => {

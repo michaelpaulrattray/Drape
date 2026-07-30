@@ -18,13 +18,14 @@ import {
 describe("all-body ink anatomy registry", () => {
   it("keeps earlier projection evidence readable after pose projection", () => {
     expect(INK_ANYWHERE_PROJECTION_RECIPE_VERSION)
-      .toBe("ink.add.anywhere.projection.v5");
+      .toBe("ink.add.anywhere.projection.v6");
     expect(INK_ANYWHERE_READABLE_PROJECTION_RECIPE_VERSIONS).toEqual([
       "ink.add.anywhere.projection.v1",
       "ink.add.anywhere.projection.v2",
       "ink.add.anywhere.projection.v3",
       "ink.add.anywhere.projection.v4",
       "ink.add.anywhere.projection.v5",
+      "ink.add.anywhere.projection.v6",
     ]);
   });
 

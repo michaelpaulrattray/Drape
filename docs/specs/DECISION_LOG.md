@@ -1532,6 +1532,39 @@ geometry, projection, mask, candidate-generation, and execution tests, and the
 full 254-file / 3,212-test unit suite pass locally. No provider generation or
 additional controlled production attempt has run on this change yet.
 
+**First deterministic-composer production result and role-binding correction
+(2026-07-30):** Railway deployed
+`520ebddf4967509a6a07aeaa698b0fbcc1e85684` successfully. Controlled
+three-quarter operation `bee3a08e-299d-498a-843a-78d8e62dd3f5` passed
+deterministic localization, per-feature visibility, and the independent target
+guide audit. Only the centre anterior-face feature was materially visible; the
+accepted left shoulder and right sleeve were certainly hidden. The face guide
+covered its visible surface at 100% confidence without touching the opposite
+side or conflicting anatomy.
+
+The image provider then returned two included candidates, and both failed the
+unchanged post-generation checks. Placement itself was on the correct anatomy
+and within the authorized face mask at 90% confidence, but identity, camera and
+framing, exact feature continuity, prior-ink continuity, absence of unexpected
+ink, and the overall evidence result all failed. The 300-credit charge was
+refunded in full and the displayed balance returned to 66,200. This closed
+evidence identifies a generated-image/composition failure, not an overly strict
+visibility or placement check. No safety threshold or probe is weakened.
+
+Code review found that projection image roles existed only in the server DTO.
+The Gemini request discarded those roles and sent four unlabeled images followed
+by prose, allowing the model to identify the face placement while reconstructing
+the wrong overall canvas. Projection recipe v6 binds a constant, provider-visible
+role immediately before every image, makes Image 1 the only immutable output
+canvas, states that the guide, identity anchor, and evidence mosaic can never be
+output canvases, and refuses any request that lacks an exact target-angle image
+instead of asking the provider to synthesize another camera. All casting and
+evidence image-provider requests now explicitly pin `1K`; the product's evidence
+and export checks are unchanged. The 61 focused projection/package/casting
+tests, full 254-file / 3,214-test unit suite, typecheck, production build, and
+diff checks pass. This correction remains provider-free until deployment and
+one controlled founder calibration justify another image attempt.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

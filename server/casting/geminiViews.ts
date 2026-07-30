@@ -11,7 +11,7 @@
 import { IMAGE_PRO, IMAGE_FALLBACK } from "@shared/modelRegistry";
 import type { CanonicalViewAngle } from "../../shared/boardTypes";
 import type { ModelViews, GeminiPart } from "./geminiTypes";
-import { AspectRatio } from "./geminiTypes";
+import { AspectRatio, ImageResolution } from "./geminiTypes";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -95,7 +95,10 @@ export const generateFullBody = async (
       },
       config: {
         responseModalities: ['IMAGE'],
-        imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
+        imageConfig: {
+          aspectRatio: AspectRatio.PORTRAIT,
+          imageSize: ImageResolution.STANDARD,
+        },
         safetySettings: SAFETY_SETTINGS
       }
     });
@@ -187,7 +190,10 @@ export const generateRemainingViews = async (
         },
         config: {
           responseModalities: ['IMAGE'],
-          imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
+          imageConfig: {
+            aspectRatio: AspectRatio.PORTRAIT,
+            imageSize: ImageResolution.STANDARD,
+          },
           safetySettings: SAFETY_SETTINGS
         }
       });
@@ -288,7 +294,10 @@ export const generateSingleView = async (
       },
       config: {
         responseModalities: ['IMAGE'],
-        imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
+        imageConfig: {
+          aspectRatio: AspectRatio.PORTRAIT,
+          imageSize: ImageResolution.STANDARD,
+        },
         safetySettings: SAFETY_SETTINGS
       }
     });

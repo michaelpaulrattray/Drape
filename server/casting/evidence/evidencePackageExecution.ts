@@ -19,7 +19,7 @@ import {
   SAFETY_SETTINGS,
   withTimeout,
 } from "../geminiClient";
-import { AspectRatio } from "../geminiTypes";
+import { AspectRatio, ImageResolution } from "../geminiTypes";
 import { withImageQueue, withTextQueue } from "../geminiQueue";
 import { slotCost } from "../packagePricing";
 import {
@@ -99,6 +99,9 @@ import {
   type InkPoseProjection,
 } from "./inkPoseProjection";
 import { buildPoseInkProjectionGuide } from "./inkPoseGuide";
+import {
+  buildInkProjectionProviderParts,
+} from "./composer/inkProjectionProvider";
 
 const log = createModuleLogger("casting/evidence/evidencePackageExecution");
 const PACKAGE_FAILURE = "The view could not be updated from its saved evidence.";
@@ -249,14 +252,25 @@ async function defaultGenerate(
         getAiClient().models.generateContent({
           model: request.model,
           contents: {
-            parts: [
-              ...request.images.map((image) => ({ inlineData: image.inlineData })),
-              { text: request.prompt },
-            ],
+            parts: request.images.some(
+                (image) => image.role === "evidence_mosaic",
+              )
+              ? buildInkProjectionProviderParts(
+                  request as InkProjectionComposerRequest,
+                )
+              : [
+                  ...request.images.map((image) => ({
+                    inlineData: image.inlineData,
+                  })),
+                  { text: request.prompt },
+                ],
           },
           config: {
             responseModalities: [...request.responseModalities],
-            imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
+            imageConfig: {
+              aspectRatio: AspectRatio.PORTRAIT,
+              imageSize: ImageResolution.STANDARD,
+            },
             safetySettings: SAFETY_SETTINGS,
           },
         }),

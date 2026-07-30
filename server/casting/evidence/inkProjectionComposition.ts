@@ -372,23 +372,30 @@ export function buildInkProjectionComposerRequest(input: {
   if (!identityText || identityText.length > 50_000) {
     throw new TypeError("Invalid projection identity authority");
   }
+  if (input.sourceAngle !== input.targetAngle) {
+    throw new TypeError(
+      "Projection composition requires an exact target-angle canvas",
+    );
+  }
   const featureLines = input.features.map((feature, index) =>
     `F${index + 1} (${feature.isProjectionTarget ? "newly exposed continuation" : "already evidenced"}): ${feature.anatomyLabel}; ${feature.normalizedDescriptor}. TARGET: ${feature.sideAuthority} WITNESS: ${feature.witnessSideAuthority}`
   ).join("\n");
-  const cameraInstruction = input.sourceAngle === input.targetAngle
-    ? "Keep the exact camera, crop, pose, framing, clothing, lighting, and background pixels of image 1."
-    : `Render the same person as canonical ${input.targetAngle}; image 1 is the clean target/source appearance view (${input.sourceAngle}), not permission to alter identity, body, clothing, lighting, or background.`;
   const prompt = [
-    "Edit the saved Cast using the four ordered images.",
-    "Image 1 is the clean original target and immutable pixel canvas. Preserve its pixels everywhere except where listed tattoo evidence must be reproduced or extended.",
-    "Image 2 is a placement guide only. Its translucent red pose-projected pixels identify the exact target-image locations. Blue F-label text is metadata and never authorizes ink. Never reproduce either overlay or use this annotated image as the output canvas.",
-    "Image 3 is immutable identity authority.",
-    "Image 4 is a private evidence mosaic. Each F-number is an immutable tattoo design witness.",
-    cameraInstruction,
+    "Create one complete flattened fashion casting image by editing the exact saved target canvas supplied below.",
+    "ROLE OF IMAGE 1 - CLEAN ORIGINAL TARGET AND IMMUTABLE OUTPUT CANVAS:",
+    `It is already the canonical ${input.targetAngle} view. Use this exact image as the output canvas. Preserve its person, camera, crop, pose, framing, clothing, lighting, background, current pixels, and existing permanent marks. Never reconstruct it from another image.`,
+    "ROLE OF IMAGE 2 - PLACEMENT GUIDE ONLY:",
+    "It is Image 1 with translucent red pose-projected pixels at the only authorized tattoo locations. Blue F-label text is metadata and never authorizes ink. Never reproduce either overlay and never use this annotated image as the output canvas.",
+    "ROLE OF IMAGE 3 - IDENTITY CHECK ONLY:",
+    "It confirms the same immutable person. It is not an output canvas and does not authorize a camera, pose, crop, clothing, lighting, background, or mark change.",
+    "ROLE OF IMAGE 4 - PRIVATE TATTOO EVIDENCE ONLY:",
+    "Each F-number is an immutable tattoo design witness. The mosaic is not an output canvas and its crop, scale, background, labels, person pixels, or layout must never appear in the output.",
+    "AUTHORIZED CHANGE:",
+    "Inside Image 2's red-authorized pixels only, reproduce each listed tattoo feature on Image 1. Outside those pixels, Image 1 is immutable.",
     "Anatomical laterality is semantic, not a matching frame coordinate. Map each tattoo from its WITNESS camera authority to its TARGET camera authority. A tattoo seen on frame-left in its witness may belong elsewhere in the target camera; never mirror or copy by viewer side.",
     "For MATCH features, reproduce only the visible portion exactly. For EXTEND features, continue the same physical tattoo coherently onto the newly exposed surface; do not redesign, mirror, recolour, duplicate, resize, or invent motifs.",
     "If an authorized body part is partly occluded, reproduce ink only on its visible red-authorized pixels. Never bridge gaps, fill background, or relocate a tattoo to the opposite or more visible limb to make it easier to see.",
-    "Do not add any unlisted ink. Do not remove or move any listed ink. Do not alter face, hair, skin, body proportions, expression, clothing, accessories, pose, lighting, or background except the camera change explicitly required above.",
+    "Do not add any unlisted ink. Do not remove or move any listed ink. Do not alter face, hair, skin, body proportions, expression, clothing, accessories, camera, crop, pose, lighting, or background.",
     `Identity authority:\n${identityText}`,
     `Feature authority:\n${featureLines}`,
     `Return exactly one portrait ${input.targetAngle} image and no text.`,

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { GenerateContentConfig } from "@google/genai";
 import { TRPCError } from "@trpc/server";
-import { AspectRatio } from "../geminiTypes";
+import { AspectRatio, ImageResolution } from "../geminiTypes";
 import {
   diagnoseResponse,
   extractImageFromResponse,
@@ -123,6 +123,9 @@ import {
   type InkPoseProjection,
 } from "./inkPoseProjection";
 import { buildPoseInkProjectionGuide } from "./inkPoseGuide";
+import {
+  buildInkProjectionProviderParts,
+} from "./composer/inkProjectionProvider";
 
 const log = createModuleLogger("casting/evidence/inkCandidateGeneration");
 const CANDIDATE_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
@@ -512,18 +515,16 @@ async function defaultGenerate(
       getAiClient().models.generateContent({
         model: request.model,
         contents: {
-          parts: [
-            ...request.images.map((image) => ({
-              inlineData: image.inlineData,
-            })),
-            { text: request.prompt },
-          ],
+          parts: isProjectionComposerRequest(request)
+            ? buildInkProjectionProviderParts(request)
+            : [
+                ...request.images.map((image) => ({
+                  inlineData: image.inlineData,
+                })),
+                { text: request.prompt },
+              ],
         },
-        config: {
-          responseModalities: [...request.responseModalities],
-          imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
-          safetySettings: SAFETY_SETTINGS,
-        },
+        config: buildInkCandidateProviderConfig(request),
       }),
       90_000,
       "InkCandidate",
@@ -534,6 +535,30 @@ async function defaultGenerate(
     if (!image) throw new Error("ink candidate provider returned no image");
     return image;
   }, "inkCandidate");
+}
+
+type InkCandidateComposerRequest =
+  | InkComposerRequest
+  | InkAnywhereComposerRequest
+  | InkProjectionComposerRequest;
+
+function isProjectionComposerRequest(
+  request: InkCandidateComposerRequest,
+): request is InkProjectionComposerRequest {
+  return request.images.some((image) => image.role === "evidence_mosaic");
+}
+
+export function buildInkCandidateProviderConfig(
+  request: InkCandidateComposerRequest,
+): GenerateContentConfig {
+  return {
+    responseModalities: [...request.responseModalities],
+    imageConfig: {
+      aspectRatio: AspectRatio.PORTRAIT,
+      imageSize: ImageResolution.STANDARD,
+    },
+    safetySettings: SAFETY_SETTINGS,
+  };
 }
 
 function responseSchema(request: InkProbeRequest) {
