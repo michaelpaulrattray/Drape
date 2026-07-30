@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--surface:#FFFFFF;--raised:#FAFAFB;--page:#FCFCFD;--wellSoft:#F7F7F9;--well:#F6F6F8;--fill:#F4F4F6;--fillStrong:#F2F2F4;--media:#F1F1F3;--rule:#F0F0F2;--ruleSoft:#EFEFF1;--border:#ECECEE;--borderSoft:#EAEAED;--borderMedia:#E8E8EB;--borderInput:#E6E6E9;--borderCard:#E4E4E7;--dots:#DEDEE2;--dotsStrong:#DADADE;--dashed:#D6D6DA;--sink:#D2D2D6;--lineStrong:#C8C8CC;--lineSoft:#BFBFC5;--muted:#B4B4BA;--faint:#A0A0A6;--meta:#8E8E94;--metaStrong:#6B6B70;--linkHover:#5C5C61;--secondary:#3E3E42;--ink:#111112;--inkDeep:#0A0A0B;--barGlass:rgba(255,255,255,.92);--accentWash:#FEF2F0;--accentLine:#F1CDC6;--accentInk:#A23E33;--onWash:#FFFFFF;--dockGlass:rgba(255,255,255,.94);--accentWashHover:#FCE6EC;}
+body[data-theme="dark"]{--surface:#1C1C1F;--raised:#1A1A1D;--page:#141416;--wellSoft:#1F1F23;--well:#202024;--fill:#232326;--fillStrong:#26262A;--media:#232326;--rule:#2A2A2E;--ruleSoft:#2A2A2E;--border:#2C2C30;--borderSoft:#2C2C30;--borderMedia:#303036;--borderInput:#33333A;--borderCard:#33333A;--dots:#3A3A42;--dotsStrong:#3E3E46;--dashed:#44444C;--sink:#494951;--lineStrong:#55555E;--lineSoft:#5E5E66;--muted:#6E6E77;--faint:#8A8A92;--meta:#9A9AA2;--metaStrong:#9A9AA2;--linkHover:#B4B4BA;--secondary:#B4B4BA;--ink:#EDEDEF;--inkDeep:#F5F5F7;--barGlass:rgba(28,28,31,.92);--accentWash:rgba(226,104,90,.14);--accentLine:rgba(226,104,90,.32);--accentInk:#E88778;--onWash:#FFFFFF;--dockGlass:rgba(28,28,31,.94);--accentWashHover:rgba(226,104,90,.22);}
+body{margin:0;background:var(--surface);font-family:Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--ink)}
+*{box-sizing:border-box}
+::placeholder{color:var(--meta)}
+a{color:var(--ink);text-decoration:none}a:hover{color:var(--linkHover)}
+@keyframes dcspin{to{transform:rotate(360deg)}}
+@keyframes obreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
+@keyframes odriftA{0%{transform:translate(0%,0%) scale(1)}33%{transform:translate(14%,10%) scale(1.14)}66%{transform:translate(-8%,16%) scale(.94)}100%{transform:translate(0%,0%) scale(1)}}
+@keyframes odriftB{0%{transform:translate(0%,0%) scale(1.04)}30%{transform:translate(-16%,8%) scale(.9)}62%{transform:translate(10%,-12%) scale(1.16)}100%{transform:translate(0%,0%) scale(1.04)}}
+@keyframes odriftC{0%{transform:translate(0%,0%) scale(.96)}40%{transform:translate(12%,-14%) scale(1.2)}75%{transform:translate(-14%,-6%) scale(1)}100%{transform:translate(0%,0%) scale(.96)}}
+@keyframes odriftD{0%{transform:translate(0%,0%) scale(1.1)}45%{transform:translate(-10%,-16%) scale(.92)}80%{transform:translate(6%,12%) scale(1.14)}100%{transform:translate(0%,0%) scale(1.1)}}
+@keyframes klamp{0%,100%{opacity:.82;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes kcore{0%,100%{opacity:.92}50%{opacity:1}}
+@keyframes ohalosoft{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.06);opacity:.66}}
+@keyframes ohalo{0%,100%{transform:scale(1) rotate(0deg);opacity:.46}50%{transform:scale(1.1) rotate(18deg);opacity:.62}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh">
+
+<!-- RAIL -->
+<div style="width:76px;flex:none;border-right:1px solid var(--border);background:var(--raised);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 0 14px">
+  <div style="position:relative;width:34px;height:34px;margin-bottom:12px;flex:none;animation:obreathe 9s ease-in-out infinite">
+    <div style="position:absolute;inset:-8%;border-radius:34%;filter:blur(3px);animation:ohalosoft 13s ease-in-out infinite;background:radial-gradient(circle at 38% 32%,#FFC6AC,transparent 58%),radial-gradient(circle at 72% 74%,#8E9EDC,transparent 58%)"></div>
+    <div style="position:absolute;inset:0;border-radius:10px;overflow:hidden;background:#FFF1EC">
+      <div style="position:absolute;left:-6%;top:-14%;width:78%;height:74%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,var(--surface) 0 46%,transparent 72%);animation:odriftA 15s ease-in-out infinite"></div>
+      <div style="position:absolute;left:34%;top:-4%;width:74%;height:70%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#FFBFA4 0 46%,transparent 72%);animation:odriftB 19s ease-in-out infinite"></div>
+      <div style="position:absolute;left:6%;top:42%;width:84%;height:80%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#E2685A 0 46%,transparent 74%);animation:odriftC 17s ease-in-out infinite"></div>
+      <div style="position:absolute;left:52%;top:52%;width:66%;height:64%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#7E8FD4 0 44%,transparent 72%);animation:odriftD 23s ease-in-out infinite"></div>
+    </div>
+  </div>
+  <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+    <sc-if value="{{ n.on }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ n.go }}" style="width:60px;padding:9px 0 7px;border-radius:10px;background:var(--fillStrong);display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:none">
+        <span style="display:flex;color:var(--ink)">{{ n.icon }}</span>
+        <span style="font:500 9.5px Archivo,sans-serif;color:var(--ink)">{{ n.label }}</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ n.off }}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{ n.go }}" style="width:60px;padding:9px 0 7px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:none" style-hover="background:var(--fillStrong)">
+        <span style="display:flex;color:var(--meta)">{{ n.icon }}</span>
+        <span style="font:400 9.5px Archivo,sans-serif;color:var(--metaStrong)">{{ n.label }}</span>
+      </div>
+    </sc-if>
+  </sc-for>
+  <div style="margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:12px;flex:none;padding-top:14px">
+
+    <span onClick="{{ openMembers }}" title="Invite team members" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+      <span style="display:flex;align-items:center">
+        <sc-for list="{{ teamStack }}" as="ts" hint-placeholder-count="2">
+          <span title="{{ ts.name }}" style="width:21px;height:21px;border-radius:50%;background:{{ ts.bg }};box-shadow:0 0 0 1.5px var(--raised);margin-right:-6px"></span>
+        </sc-for>
+        <span style="width:21px;height:21px;border-radius:50%;border:1px dashed var(--muted);background:var(--surface);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px var(--raised)" style-hover="border-color:var(--ink)">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--metaStrong)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        </span>
+      </span>
+      <span style="font:400 9.5px Archivo,sans-serif;color:var(--metaStrong)">Invite</span>
+    </span>
+
+    <span style="width:34px;height:1px;background:var(--borderSoft)"></span>
+
+    <span onClick="{{ openSettings }}" title="Settings · Klieg Studio" style="position:relative;display:flex;cursor:pointer">
+      <span style="width:30px;height:30px;border-radius:50%;background:linear-gradient(160deg,var(--media),var(--dashed));display:flex;align-items:center;justify-content:center;font:500 10.5px Archivo,sans-serif;color:var(--linkHover);box-shadow:0 0 0 1px var(--borderCard)" style-hover="box-shadow:0 0 0 1px var(--ink)">MR</span>
+
+    </span>
+
+  </div>
+</div>
+
+<!-- MAIN -->
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+<div style="height:56px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px 0 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--barGlass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:20">
+
+  <div style="display:flex;align-items:center;gap:11px;flex:none">
+    <span data-scope-menu="true" style="position:relative;display:flex;flex:none">
+      <span onClick="{{ toggleProj }}" style="display:flex;align-items:center;gap:8px;padding:5px 10px 5px 8px;border-radius:8px;cursor:pointer" style-hover="background:var(--fillStrong)">
+        <span style="width:16px;height:16px;border-radius:5px;background:{{ projSwatch }};flex:none"></span>
+        <span style="font:500 12.5px Archivo,sans-serif">{{ projName }}</span>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+      <sc-if value="{{ projOpen }}" hint-placeholder-val="{{ false }}">
+        <span style="position:absolute;left:0;top:38px;z-index:30;width:268px;display:flex;flex-direction:column;border:1px solid var(--borderCard);border-radius:11px;background:var(--surface);box-shadow:0 12px 34px rgba(17,17,18,.14);overflow:hidden">
+          <span style="padding:9px 13px;border-bottom:1px solid var(--fillStrong);font:500 10.5px JetBrains Mono,monospace;letter-spacing:.1em;color:var(--metaStrong)">SCOPE</span>
+          <sc-for list="{{ brands }}" as="b" hint-placeholder-count="5">
+            <span onClick="{{ b.go }}" style="display:flex;align-items:center;gap:10px;padding:8px 13px;cursor:pointer" style-hover="background:var(--well)">
+              <span style="width:18px;height:18px;flex:none;border-radius:6px;background:{{ b.swatch }}"></span>
+              <span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0">
+                <span style="font:500 12.5px Archivo,sans-serif">{{ b.name }}</span>
+                <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">{{ b.meta }}</span>
+              </span>
+              <sc-if value="{{ b.on }}" hint-placeholder-val="{{ false }}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
+              </sc-if>
+            </span>
+          </sc-for>
+          <span style="display:flex;align-items:center;gap:7px;padding:9px 13px;border-top:1px solid var(--fillStrong);font:400 12px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="background:var(--well);color:var(--ink)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>New project
+          </span>
+        </span>
+      </sc-if>
+    </span>
+    <span style="width:1px;height:18px;background:var(--borderSoft)"></span>
+    <span style="font:400 12.5px Archivo,sans-serif;color:var(--metaStrong)">{{ crumb }}</span>
+  </div>
+
+  <div style="flex:1;display:flex;justify-content:center;min-width:0;align-items:center">
+    <span style="display:flex;align-items:center;gap:9px;flex:1 1 auto;min-width:0;max-width:400px;height:34px;box-sizing:border-box;padding:0 11px;border:1px solid var(--borderInput);border-radius:9px;background:var(--raised);cursor:text" style-hover="border-color:var(--sink);background:var(--surface)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+      <span style="font:400 12.5px Archivo,sans-serif;color:var(--meta);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Search frames, faces, prompts…</span>
+      <span style="display:flex;gap:3px;flex:none">
+        <span style="font:500 10px Archivo,sans-serif;color:var(--metaStrong);border:1px solid var(--borderSoft);border-radius:4px;padding:1px 4px">⌘</span>
+        <span style="font:500 10px Archivo,sans-serif;color:var(--metaStrong);border:1px solid var(--borderSoft);border-radius:4px;padding:1px 5px">K</span>
+      </span>
+    </span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:6px;flex:none">
+
+    <span style="display:flex;align-items:center;gap:7px;padding:5px 11px 5px 8px;border-radius:999px;background:var(--accentWash);cursor:pointer" style-hover="background:var(--accentWashHover)">
+      <span style="width:12px;height:12px;flex:none;border-radius:50%;border:1.6px solid var(--accentLine);border-top-color:#E2685A;animation:dcspin 1s linear infinite"></span>
+      <span style="font:500 11.5px Archivo,sans-serif;color:var(--accentInk)">{{ queueLabel }}</span>
+      <span style="font:400 11px Archivo,sans-serif;color:var(--accentInk)">· {{ queueEta }}</span>
+    </span>
+
+    <span style="display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;border:1px solid var(--borderInput);cursor:pointer" style-hover="background:var(--fill)">
+      <span style="width:9px;height:9px;flex:none;border-radius:50%;background:conic-gradient(#F3CFB4,#EFB9C6,#CFC3EE,#B5D2EE,#F3CFB4)"></span>
+      <span style="font:500 11.5px Archivo,sans-serif;color:var(--secondary)">1,240</span>
+    </span>
+
+    <span style="width:1px;height:18px;background:var(--borderSoft);margin:0 3px"></span>
+
+    <sc-for list="{{ barIcons }}" as="bi" hint-placeholder-count="3">
+      <span title="{{ bi.title }}" style="position:relative;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--metaStrong);cursor:pointer" style-hover="background:var(--fillStrong);color:var(--ink)">
+        {{ bi.icon }}
+        <sc-if value="{{ bi.dot }}" hint-placeholder-val="{{ false }}">
+          <span style="position:absolute;right:6px;top:6px;width:5px;height:5px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 1.5px var(--surface)"></span>
+        </sc-if>
+      </span>
+    </sc-for>
+
+    <span onClick="{{ toggleTheme }}" title="{{ themeHint }}" style="width:28px;height:28px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--metaStrong);cursor:pointer" style-hover="background:var(--fill);color:var(--ink)">{{ themeIcon }}</span>
+    <span data-account-menu="true" style="position:relative;display:flex;flex:none;margin-left:2px">
+      <span onClick="{{ toggleAccount }}" style="display:flex;align-items:center;gap:6px;padding:3px 9px 3px 3px;border-radius:999px;cursor:pointer" style-hover="background:var(--fillStrong)">
+        <span style="width:24px;height:24px;border-radius:50%;background:linear-gradient(160deg,var(--media),var(--sink));display:flex;align-items:center;justify-content:center;font:500 10px Archivo,sans-serif;color:var(--metaStrong)">MR</span>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+      <sc-if value="{{ accountOpen }}" hint-placeholder-val="{{ false }}">
+        <span style="position:absolute;right:0;top:38px;z-index:30;width:216px;display:flex;flex-direction:column;border:1px solid var(--borderCard);border-radius:11px;background:var(--surface);box-shadow:0 12px 34px rgba(17,17,18,.14);overflow:hidden">
+          <span style="display:flex;flex-direction:column;gap:1px;padding:11px 13px;border-bottom:1px solid var(--fillStrong)">
+            <span style="font:500 12px Archivo,sans-serif">Michael Rattray</span>
+            <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Owner · Klieg Studio</span>
+          </span>
+          <sc-for list="{{ accountItems }}" as="ai" hint-placeholder-count="3">
+            <span onClick="{{ ai.go }}" style="padding:8px 13px;font:400 12px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--well);color:var(--ink)">{{ ai.label }}</span>
+          </sc-for>
+          <span onClick="{{ closeAccount }}" style="padding:8px 13px;border-top:1px solid var(--fillStrong);font:400 12px Archivo,sans-serif;color:var(--accentInk);cursor:pointer" style-hover="background:var(--accentWash)">Sign out</span>
+        </span>
+      </sc-if>
+    </span>
+
+  </div>
+</div>
+
+<div style="flex:1;overflow-y:auto">
+
+<!-- ===== STUDIO ===== -->
+<sc-if value="{{ isStudio }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:1120px;margin:0 auto;padding:40px 32px 32px;display:flex;flex-direction:column;gap:42px">
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h1 style="margin:0;font:500 32px/1.1 Archivo,sans-serif;letter-spacing:-.035em">Good afternoon, Michael</h1>
+      <span style="font:400 13.5px Archivo,sans-serif;color:var(--metaStrong)">Pick a tool, attach a face, and go. Everything you make lands on the sheet below.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);overflow:hidden">
+      <div style="display:flex;align-items:center;gap:2px;padding:8px 8px 2px;flex-wrap:wrap;border-bottom:1px solid var(--fillStrong)">
+        <sc-for list="{{ modes }}" as="m" hint-placeholder-count="6">
+          <sc-if value="{{ m.on }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ m.go }}" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 12px Archivo,sans-serif;cursor:pointer;white-space:nowrap;margin-bottom:6px">
+              <span style="display:flex">{{ m.icon }}</span>{{ m.label }}
+            </span>
+          </sc-if>
+          <sc-if value="{{ m.off }}" hint-placeholder-val="{{ true }}">
+            <span onClick="{{ m.go }}" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;color:var(--metaStrong);font:400 12px Archivo,sans-serif;cursor:pointer;white-space:nowrap;margin-bottom:6px" style-hover="background:var(--fillStrong);color:var(--ink)">
+              <span style="display:flex">{{ m.icon }}</span>{{ m.label }}
+            </span>
+          </sc-if>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:7px;padding:14px 14px 0;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:7px;padding:5px 11px 5px 5px;background:var(--fill);border:1px solid var(--borderCard);border-radius:999px;cursor:pointer" style-hover="border-color:var(--lineStrong)">
+          <span style="width:19px;height:19px;border-radius:50%;background:linear-gradient(160deg,var(--media),var(--dotsStrong));display:flex;align-items:center;justify-content:center;font:500 9.5px Archivo,sans-serif;color:var(--metaStrong)">M</span>
+          <span style="font:500 11.5px Archivo,sans-serif;color:var(--ink)">{{ demoFace }}</span>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </span>
+        <span style="display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--borderInput);border-radius:999px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="border-color:var(--lineStrong)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--metaStrong)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Reference
+        </span>
+      </div>
+
+      <textarea placeholder="Describe what you want to make…" style="width:100%;min-height:74px;border:none;outline:none;resize:none;background:transparent;padding:12px 15px 6px;font:400 13.5px/1.55 Archivo,sans-serif;color:var(--ink)"></textarea>
+
+      <div style="display:flex;gap:6px;padding:0 15px 12px;flex-wrap:wrap">
+        <sc-for list="{{ suggestions }}" as="sg" hint-placeholder-count="3">
+          <span style="padding:4px 10px;border-radius:6px;background:var(--fill);font:400 11px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="background:var(--fillStrong);color:var(--ink)">{{ sg }}</span>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 11px 11px 15px;border-top:1px solid var(--fillStrong);flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:5px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="color:var(--ink)">{{ modelName }}
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        </span>
+        <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">16:9</span>
+        <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">4 frames</span>
+        <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">More options ›</span>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:11px">
+          <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">4 credits</span>
+          <button onClick="{{ openCanvas }}" style="display:flex;align-items:center;gap:7px;background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 15px;font:500 12px Archivo,sans-serif;cursor:pointer">Create<span style="opacity:.5">⏎</span></button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:13px">
+    <span style="font:500 13.5px Archivo,sans-serif">On the wire</span>
+    <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden">
+      <sc-for list="{{ wire }}" as="w" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:1px solid var(--fillStrong);cursor:pointer" style-hover="background:var(--raised)">
+          <sc-if value="{{ w.live }}" hint-placeholder-val="{{ false }}">
+            <span style="width:13px;height:13px;flex:none;border-radius:50%;border:1.8px solid var(--accentLine);border-top-color:#E2685A;animation:dcspin 1s linear infinite"></span>
+          </sc-if>
+          <sc-if value="{{ w.done }}" hint-placeholder-val="{{ true }}">
+            <span style="width:13px;height:13px;flex:none;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></span>
+          </sc-if>
+          <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong);border:1px solid var(--borderMedia);border-radius:5px;padding:2px 7px;flex:none">{{ w.kind }}</span>
+          <span style="display:flex;flex-direction:column;gap:1px;min-width:0;flex:1">
+            <span style="font:500 12.5px Archivo,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.title }}</span>
+            <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ w.sub }}</span>
+          </span>
+          <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);flex:none">{{ w.when }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:13px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <span style="font:500 13.5px Archivo,sans-serif">The sheet</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="padding:5px 11px;border-radius:7px;background:var(--ink);color:var(--surface);font:400 11.5px Archivo,sans-serif;cursor:pointer">All</span>
+        <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="5">
+          <span style="padding:5px 11px;border:1px solid var(--borderInput);border-radius:7px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--fill)">{{ k }}</span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0;border:1px solid var(--borderCard)">
+      <sc-for list="{{ sheet }}" as="f" hint-placeholder-count="12">
+        <div style="position:relative;background:var(--surface);padding:7px;cursor:pointer;box-shadow:0 0 0 0.5px var(--borderCard)" style-hover="background:var(--raised)">
+          <div style="position:relative;aspect-ratio:4/5;background:var(--media);overflow:hidden">
+            <div style="width:100%;height:100%;background:{{ f.bg }}"></div>
+            <span style="position:absolute;left:5px;top:5px;padding:2px 6px;border-radius:4px;background:rgba(17,17,18,.72);font:500 9px Archivo,sans-serif;color:var(--onWash);pointer-events:none">{{ f.kind }}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:6px 1px 1px">
+            <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</span>
+            <span style="font:400 10px Archivo,sans-serif;color:var(--metaStrong);flex-shrink:0">{{ f.idx }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:13px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font:500 13.5px Archivo,sans-serif">Avatars</span>
+      <span onClick="{{ goAvatars }}" style="font:400 12.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">View all</span>
+    </div>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">
+      <div onClick="{{ goAvatars }}" style="width:84px;height:104px;flex:none;border:1px dashed var(--dashed);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" style-hover="border-color:var(--ink);background:var(--raised)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">New</span>
+      </div>
+      <sc-for list="{{ roster }}" as="r" hint-placeholder-count="7">
+        <div onClick="{{ goAvatars }}" style="position:relative;width:84px;height:104px;flex:none;border-radius:9px;overflow:hidden;cursor:pointer;background:linear-gradient(160deg,var(--fill),var(--borderCard));border:1px solid var(--border);display:flex;align-items:center;justify-content:center" style-hover="border-color:var(--lineStrong)">
+          <span style="font:500 19px Archivo,sans-serif;color:var(--secondary)">{{ r.initial }}</span>
+          <span style="position:absolute;left:0;right:0;bottom:0;padding:16px 7px 6px;background:linear-gradient(to top,rgba(0,0,0,.55),transparent);font:500 10.5px Archivo,sans-serif;color:var(--onWash);pointer-events:none">{{ r.first }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+</sc-if>
+
+<!-- ===== CREATE ===== -->
+<sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1120px;margin:0 auto;padding:32px 32px 40px;display:flex;flex-direction:column;gap:22px">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <h1 style="margin:0;font:500 26px Archivo,sans-serif;letter-spacing:-.03em">Image &amp; video</h1>
+    <div style="display:flex;gap:2px;padding:3px;background:var(--fillStrong);border-radius:9px">
+      <sc-for list="{{ createKinds }}" as="ck" hint-placeholder-count="3">
+        <sc-if value="{{ ck.on }}" hint-placeholder-val="{{ false }}">
+          <span onClick="{{ ck.go }}" style="padding:6px 14px;border-radius:7px;background:var(--surface);font:500 12px Archivo,sans-serif;color:var(--ink);cursor:pointer;box-shadow:0 1px 2px rgba(17,17,18,.07)">{{ ck.label }}</span>
+        </sc-if>
+        <sc-if value="{{ ck.off }}" hint-placeholder-val="{{ true }}">
+          <span onClick="{{ ck.go }}" style="padding:6px 14px;border-radius:7px;font:400 12px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">{{ ck.label }}</span>
+        </sc-if>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--border);margin-top:4px">
+    <sc-for list="{{ feedTabs }}" as="ft" hint-placeholder-count="2">
+      <sc-if value="{{ ft.on }}" hint-placeholder-val="{{ false }}">
+        <span onClick="{{ ft.go }}" style="padding:0 0 10px;border-bottom:2px solid var(--ink);font:500 13px Archivo,sans-serif;cursor:pointer;margin-bottom:-1px">{{ ft.label }}</span>
+      </sc-if>
+      <sc-if value="{{ ft.off }}" hint-placeholder-val="{{ true }}">
+        <span onClick="{{ ft.go }}" style="padding:0 0 10px;border-bottom:2px solid transparent;font:400 13px Archivo,sans-serif;color:var(--meta);cursor:pointer;margin-bottom:-1px" style-hover="color:var(--ink)">{{ ft.label }}</span>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <div style="columns:220px 4;column-gap:14px;padding-bottom:40px">
+    <sc-for list="{{ feed }}" as="fd" hint-placeholder-count="14">
+      <div style="break-inside:avoid;margin-bottom:14px;position:relative;border-radius:10px;overflow:hidden;background:var(--media);border:1px solid var(--border);cursor:pointer" style-hover="border-color:var(--lineStrong)">
+        <div style="position:relative;padding-bottom:{{ fd.pad }}">
+          <div style="position:absolute;inset:0;width:100%;height:100%;background:{{ fd.bg }}"></div>
+        </div>
+        <span style="position:absolute;left:7px;top:7px;padding:2px 7px;border-radius:5px;background:rgba(17,17,18,.72);font:500 9px Archivo,sans-serif;color:var(--onWash);pointer-events:none">{{ fd.kind }}</span>
+        <sc-if value="{{ fd.tagged }}" hint-placeholder-val="{{ false }}">
+          <span style="position:absolute;right:7px;top:7px;padding:2px 7px;border-radius:5px;background:rgba(17,17,18,.72);font:500 9px Archivo,sans-serif;color:var(--onWash);pointer-events:none">{{ fd.tag }}</span>
+        </sc-if>
+        <div style="position:absolute;left:0;right:0;bottom:0;padding:26px 7px 7px;background:linear-gradient(to top,rgba(17,17,18,.72),transparent);display:flex;align-items:center;gap:4px;opacity:0;transition:opacity .13s" style-hover="opacity:1">
+          <sc-for list="{{ frameActions }}" as="fa" hint-placeholder-count="4">
+            <span title="{{ fa.title }}" style="width:25px;height:25px;flex:none;border-radius:7px;background:var(--barGlass);display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer" style-hover="background:var(--surface)">{{ fa.icon }}</span>
+          </sc-for>
+          <span style="margin-left:auto;font:400 9.5px Archivo,sans-serif;color:rgba(255,255,255,.72)">{{ fd.when }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+
+<div style="position:fixed;left:76px;right:0;bottom:0;display:flex;justify-content:center;padding:0 24px 20px;pointer-events:none;z-index:9">
+  <div style="width:100%;max-width:720px;pointer-events:auto;border-radius:16px;background:var(--dockGlass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 14px 40px rgba(17,17,18,.16),0 0 0 1px rgba(17,17,18,.07)">
+  <div style="position:relative">
+    <div style="display:flex;gap:8px;padding:14px 14px 0">
+      <sc-for list="{{ refs }}" as="rf" hint-placeholder-count="2">
+        <div style="position:relative;width:52px;height:52px;flex:none;border-radius:8px;overflow:hidden;background:linear-gradient(160deg,var(--fill),var(--borderMedia));border:1px solid var(--borderInput);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:var(--lineStrong)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"></rect><circle cx="8.5" cy="9.5" r="1.6"></circle><path d="M21 15l-5-4.5L7 20"></path></svg>
+          <span style="position:absolute;left:0;right:0;bottom:0;padding:9px 5px 3px;background:linear-gradient(to top,rgba(0,0,0,.5),transparent);font:500 8px Archivo,sans-serif;letter-spacing:.05em;color:var(--onWash);pointer-events:none;text-align:center">{{ rf.label }}</span>
+        </div>
+      </sc-for>
+      <div style="width:52px;height:52px;flex:none;border-radius:8px;border:1px dashed var(--dashed);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:var(--ink);background:var(--raised)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+      </div>
+    </div>
+
+    <div style="padding:13px 15px 4px;font:400 13.5px/1.7 Archivo,sans-serif;color:var(--ink);min-height:74px">
+      <span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 3px;margin-right:3px;border-radius:999px;background:var(--fill);border:1px solid var(--borderCard);vertical-align:baseline">
+        <span style="width:16px;height:16px;border-radius:50%;background:linear-gradient(160deg,var(--media),var(--dotsStrong));display:flex;align-items:center;justify-content:center;font:500 8.5px Archivo,sans-serif;color:var(--metaStrong)">M</span>
+        <span style="font:500 12px Archivo,sans-serif;color:var(--ink)">@{{ demoFace }}</span>
+      </span>{{ demoPrompt }}<span style="display:inline-block;width:1.5px;height:15px;background:var(--ink);vertical-align:-2px;margin-left:2px"></span>
+    </div>
+
+    <sc-if value="{{ mentionOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:15px;top:150px;z-index:8;width:290px;border:1px solid var(--borderCard);border-radius:11px;background:var(--surface);box-shadow:0 12px 32px rgba(17,17,18,.14);overflow:hidden">
+        <div style="padding:9px 13px;border-bottom:1px solid var(--fillStrong);font:500 10.5px Archivo,sans-serif;letter-spacing:.1em;color:var(--meta)">AVATARS</div>
+        <sc-for list="{{ mentionAvatars }}" as="ma" hint-placeholder-count="4">
+          <div onClick="{{ closeMention }}" style="display:flex;align-items:center;gap:10px;padding:8px 13px;cursor:pointer" style-hover="background:var(--well)">
+            <span style="width:24px;height:28px;flex:none;border-radius:6px;background:linear-gradient(160deg,var(--media),var(--dots));display:flex;align-items:center;justify-content:center;font:500 10.5px Archivo,sans-serif;color:var(--meta)">{{ ma.initial }}</span>
+            <span style="font:500 12.5px Archivo,sans-serif;flex:1">{{ ma.name }}</span>
+            <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ ma.looks }} frames</span>
+          </div>
+        </sc-for>
+        <div style="padding:9px 13px;border-top:1px solid var(--fillStrong);border-bottom:1px solid var(--fillStrong);font:500 10.5px Archivo,sans-serif;letter-spacing:.1em;color:var(--meta)">ASSETS</div>
+        <sc-for list="{{ mentionAssets }}" as="mb" hint-placeholder-count="2">
+          <div onClick="{{ closeMention }}" style="display:flex;align-items:center;gap:10px;padding:8px 13px;cursor:pointer" style-hover="background:var(--well)">
+            <span style="width:24px;height:24px;flex:none;border-radius:6px;background:var(--media);border:1px solid var(--borderInput)"></span>
+            <span style="font:400 12.5px Archivo,sans-serif;flex:1">{{ mb.name }}</span>
+            <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ mb.kind }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;align-items:center;gap:12px;padding:11px 11px 11px 15px;border-top:1px solid var(--fillStrong);flex-wrap:wrap">
+      <span onClick="{{ toggleMention }}" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--borderInput);border-radius:7px;font:500 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="border-color:var(--ink);color:var(--ink)">@ Tag</span>
+      <span style="display:flex;align-items:center;gap:5px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="color:var(--ink)">{{ createModel }}
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+      <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">16:9</span>
+      <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">2K</span>
+      <span style="display:flex;align-items:center;gap:8px;font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">
+        <span style="cursor:pointer;padding:0 3px" style-hover="color:var(--ink)">−</span>4 frames<span style="cursor:pointer;padding:0 3px" style-hover="color:var(--ink)">+</span>
+      </span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:11px">
+        <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">4 credits</span>
+        <button style="display:flex;align-items:center;gap:7px;background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 16px;font:500 12px Archivo,sans-serif;cursor:pointer">Generate<span style="opacity:.5">· 4</span></button>
+      </span>
+    </div>
+  </div>
+    <div style="padding:0 15px 11px;font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Type <span style="font-weight:500;color:var(--ink)">@</span> to bring in an avatar or an asset — tagged faces keep their identity across every frame.</div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ===== LIBRARY ===== -->
+<sc-if value="{{ isLibrary }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1120px;margin:0 auto;padding:36px 32px 32px;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h1 style="margin:0;font:500 26px Archivo,sans-serif;letter-spacing:-.03em">Library</h1>
+      <span style="font:400 13px Archivo,sans-serif;color:var(--metaStrong)">{{ libraryBlurb }}</span>
+    </div>
+    <span style="font:400 12px Archivo,sans-serif;color:var(--metaStrong)">{{ libraryCount }}</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;padding:8px 11px;border:1px solid var(--borderInput);border-radius:8px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+      <input placeholder="Search frames, prompts, avatars…" style="border:none;outline:none;background:transparent;font:400 12.5px Archivo,sans-serif;color:var(--ink);width:100%"></input>
+    </div>
+    <div style="display:flex;gap:2px;padding:3px;background:var(--fillStrong);border-radius:8px;flex:none">
+      <sc-for list="{{ keepTabs }}" as="kt" hint-placeholder-count="2">
+        <sc-if value="{{ kt.on }}" hint-placeholder-val="{{ false }}">
+          <span onClick="{{ kt.go }}" style="padding:5px 12px;border-radius:6px;background:var(--surface);font:500 11.5px Archivo,sans-serif;color:var(--ink);cursor:pointer;box-shadow:0 1px 2px rgba(17,17,18,.07)">{{ kt.label }}</span>
+        </sc-if>
+        <sc-if value="{{ kt.off }}" hint-placeholder-val="{{ true }}">
+          <span onClick="{{ kt.go }}" style="padding:5px 12px;border-radius:6px;font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">{{ kt.label }}</span>
+        </sc-if>
+      </sc-for>
+    </div>
+    <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="5">
+      <span style="padding:7px 11px;border:1px solid var(--borderInput);border-radius:7px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--fill)">{{ k }}</span>
+    </sc-for>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0;border:1px solid var(--borderCard)">
+    <sc-for list="{{ library }}" as="f" hint-placeholder-count="20">
+      <div style="position:relative;background:var(--surface);padding:7px;cursor:pointer;box-shadow:0 0 0 0.5px var(--borderCard)" style-hover="background:var(--raised)">
+        <div style="position:relative;aspect-ratio:4/5;background:var(--media);overflow:hidden">
+          <div style="width:100%;height:100%;background:{{ f.bg }}"></div>
+          <span style="position:absolute;left:5px;top:5px;padding:2px 6px;border-radius:4px;background:rgba(17,17,18,.72);font:500 9px Archivo,sans-serif;color:var(--onWash);pointer-events:none">{{ f.kind }}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:6px 1px 1px">
+          <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</span>
+          <span style="font:400 10px Archivo,sans-serif;color:var(--metaStrong);flex-shrink:0">{{ f.idx }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ===== THREADS ===== -->
+<sc-if value="{{ isThreads }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1120px;margin:0 auto;padding:36px 32px 32px;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h1 style="margin:0;font:500 26px Archivo,sans-serif;letter-spacing:-.03em">Canvas</h1>
+      <span style="font:400 13px Archivo,sans-serif;color:var(--metaStrong)">Multi-step work on an open board — wire tools together and re-run the whole chain.</span>
+    </div>
+    <button onClick="{{ openCanvas }}" style="display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 14px;font:500 12.5px Archivo,sans-serif;cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--surface)" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>New canvas
+    </button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+      <span style="font:500 13.5px Archivo,sans-serif">Start from a preset</span>
+      <span style="font:400 12px Archivo,sans-serif;color:var(--metaStrong)">Opens pre-wired — swap any node</span>
+    </div>
+    <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--dashed) transparent">
+      <sc-for list="{{ presets }}" as="p" hint-placeholder-count="6">
+        <div onClick="{{ openCanvas }}" style="width:214px;flex:none;scroll-snap-align:start;border:1px solid var(--borderCard);border-radius:12px;overflow:hidden;cursor:pointer;background:var(--surface)" style-hover="border-color:var(--ink)">
+          <div style="position:relative;height:124px;background:var(--raised);background-image:radial-gradient(circle,var(--dots) 0.7px,transparent 0.7px);background-size:13px 13px;overflow:hidden">
+            <sc-for list="{{ p.wires }}" as="w" hint-placeholder-count="2">
+              <span style="position:absolute;left:{{ w.l }};top:{{ w.t }};width:{{ w.w }};height:1.5px;background:var(--lineStrong);border-radius:1px"></span>
+            </sc-for>
+            <sc-for list="{{ p.nodes }}" as="n" hint-placeholder-count="3">
+              <span style="position:absolute;left:{{ n.l }};top:{{ n.t }};width:{{ n.w }};height:{{ n.h }};border-radius:4px;background:{{ n.fill }};box-shadow:0 1px 3px rgba(17,17,18,.09),0 0 0 1px rgba(17,17,18,.07)"></span>
+            </sc-for>
+            <span style="position:absolute;left:9px;top:9px;display:flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:var(--barGlass);box-shadow:0 0 0 1px rgba(17,17,18,.06);pointer-events:none">
+              <span style="display:flex;color:var(--secondary)">{{ p.icon }}</span>
+              <span style="font:500 9.5px Archivo,sans-serif;color:var(--secondary)">{{ p.steps }}</span>
+            </span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;padding:11px 13px 13px;border-top:1px solid var(--border)">
+            <span style="font:500 12.5px Archivo,sans-serif">{{ p.label }}</span>
+            <span style="font:400 11px/1.45 Archivo,sans-serif;color:var(--metaStrong)">{{ p.body }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:13px">
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:190px;padding:8px 11px;border:1px solid var(--borderInput);border-radius:8px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+        <input placeholder="Search canvases" style="border:none;outline:none;background:transparent;font:400 12.5px Archivo,sans-serif;color:var(--ink);width:100%"></input>
+      </div>
+      <sc-for list="{{ canvasScopes }}" as="cs" hint-placeholder-count="3">
+        <sc-if value="{{ cs.on }}" hint-placeholder-val="{{ false }}">
+          <span onClick="{{ cs.go }}" style="padding:7px 12px;border-radius:7px;background:var(--ink);color:var(--surface);font:500 11.5px Archivo,sans-serif;cursor:pointer">{{ cs.label }}</span>
+        </sc-if>
+        <sc-if value="{{ cs.off }}" hint-placeholder-val="{{ true }}">
+          <span onClick="{{ cs.go }}" style="padding:7px 12px;border:1px solid var(--borderInput);border-radius:7px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--fill)">{{ cs.label }}</span>
+        </sc-if>
+      </sc-for>
+      <span style="width:1px;height:20px;background:var(--borderSoft);margin:0 2px"></span>
+      <span style="display:flex;align-items:center;gap:5px;padding:7px 11px;border:1px solid var(--borderInput);border-radius:7px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--fill)">
+        {{ canvasSort }}<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+      <span style="font:500 13.5px Archivo,sans-serif">{{ canvasHeading }}</span>
+      <span style="font:400 12px Archivo,sans-serif;color:var(--metaStrong)">{{ canvasCount }}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px;align-items:start">
+      <sc-for list="{{ threads }}" as="t" hint-placeholder-count="8">
+        <div onClick="{{ openCanvas }}" style="display:flex;flex-direction:column;gap:9px;cursor:pointer">
+          <div style="position:relative;aspect-ratio:16/10;border-radius:8px;overflow:hidden;background:var(--well);border:1px solid var(--border)">
+            <span style="position:absolute;left:11%;top:24%;width:20%;height:32%;border-radius:3px;background:var(--borderCard)"></span>
+            <span style="position:absolute;left:43%;top:15%;width:30%;height:56%;border-radius:4px;background:var(--surface);border:1px solid var(--borderCard)"></span>
+            <span style="position:absolute;left:80%;top:33%;width:13%;height:22%;border-radius:3px;background:var(--surface);border:1px solid var(--borderCard)"></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font:500 12.5px Archivo,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
+            <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ t.meta }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ===== AVATARS ===== -->
+<sc-if value="{{ isAvatars }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1120px;margin:0 auto;padding:36px 32px 32px;display:flex;flex-direction:column;gap:22px">
+  <div style="border:1px solid var(--borderCard);border-radius:14px;overflow:hidden;display:flex;flex-wrap:wrap;align-items:stretch">
+    <div style="flex:1 1 320px;min-width:300px;padding:32px 30px;display:flex;flex-direction:column;gap:13px;justify-content:center">
+      <span style="font:500 10.5px Archivo,sans-serif;letter-spacing:.12em;color:var(--meta)">AVATARS</span>
+      <h1 style="margin:0;font:500 32px/1.08 Archivo,sans-serif;letter-spacing:-.038em">One face.<br>Every frame.</h1>
+      <span style="font:400 13px/1.65 Archivo,sans-serif;color:var(--metaStrong);max-width:370px">Sign a face once and it's yours. Attach it to any tool — image, video, try-on, UGC — and the same person comes back, shot after shot, with nothing to re-prompt.</span>
+      <div style="display:flex;gap:8px;padding-top:5px">
+        <button style="display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:10px 15px;font:500 12.5px Archivo,sans-serif;cursor:pointer">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--surface)" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Sign a new face
+        </button>
+        <button style="background:var(--surface);color:var(--ink);border:1px solid var(--borderInput);border-radius:8px;padding:10px 14px;font:500 12.5px Archivo,sans-serif;cursor:pointer" style-hover="background:var(--fill)">How it works</button>
+      </div>
+      <span style="display:flex;align-items:center;gap:7px;padding-top:8px;font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--ink);flex:none"></span>{{ identityStat }}
+      </span>
+    </div>
+    <div style="flex:1 1 460px;min-width:300px;display:flex;gap:1px;background:var(--borderCard);border-left:1px solid var(--borderCard);min-height:290px;overflow-x:auto">
+      <sc-for list="{{ strip }}" as="sf" hint-placeholder-count="4">
+        <div style="flex:1 1 150px;min-width:150px;position:relative;background:var(--media)">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ sf.slotId }}" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="{{ sf.name }}"></x-import>
+          <sc-if value="{{ sf.motion }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute;left:8px;top:8px;display:flex;align-items:center;gap:5px;padding:3px 8px 3px 6px;border-radius:999px;background:rgba(17,17,18,.72);pointer-events:none">
+              <svg width="8" height="8" viewBox="0 0 12 12" fill="var(--surface)"><path d="M3 2l7 4-7 4z"></path></svg>
+              <span style="font:500 9px Archivo,sans-serif;color:var(--onWash)">{{ sf.dur }}</span>
+            </span>
+          </sc-if>
+          <span style="position:absolute;left:0;right:0;bottom:0;padding:18px 9px 8px;background:linear-gradient(to top,rgba(0,0,0,.5),transparent);font:500 9.5px Archivo,sans-serif;letter-spacing:.06em;color:var(--onWash);pointer-events:none">{{ sf.idx }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;padding-top:6px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <span style="font:500 13.5px Archivo,sans-serif">Put a face to work</span>
+      <span style="font:400 12px Archivo,sans-serif;color:var(--metaStrong)">Starts with {{ demoFace }} — swap the face on the next step</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+      <sc-for list="{{ quickActions }}" as="q" hint-placeholder-count="4">
+        <div onClick="{{ openCanvas }}" style="position:relative;aspect-ratio:5/2;border-radius:13px;overflow:hidden;cursor:pointer;background:{{ q.bg }};box-shadow:0 0 0 1px rgba(17,17,18,.07)" style-hover="box-shadow:0 0 0 1px rgba(17,17,18,.16),0 6px 20px rgba(17,17,18,.1)">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ q.slotId }}" shape="rect" hint-size="100%,100%" style="display:block;position:absolute;inset:0;width:100%;height:100%" placeholder="{{ q.hint }}"></x-import>
+          <span style="position:absolute;inset:0;background:linear-gradient(100deg,rgba(17,17,18,.92) 0%,rgba(17,17,18,.74) 22%,rgba(17,17,18,.10) 52%,transparent 68%);pointer-events:none"></span>
+          <div style="position:absolute;inset:0;padding:17px 19px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none">
+            <div style="display:flex;flex-direction:column;gap:5px;max-width:76%">
+              <span style="display:flex;align-items:center;gap:7px">
+                <span style="display:flex;color:rgba(255,255,255,.72)">{{ q.icon }}</span>
+                <span style="font:500 9.5px Archivo,sans-serif;letter-spacing:.11em;color:rgba(255,255,255,.62)">{{ q.eyebrow }}</span>
+              </span>
+              <span style="font:500 16px/1.2 Archivo,sans-serif;letter-spacing:-.02em;color:var(--onWash)">{{ q.label }}</span>
+              <span style="font:400 11.5px/1.5 Archivo,sans-serif;color:rgba(255,255,255,.66);max-width:250px">{{ q.body }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="display:flex;align-items:center;gap:6px;padding:2px 9px 2px 2px;border-radius:999px;background:rgba(255,255,255,.13)">
+                <span style="width:16px;height:16px;border-radius:50%;background:linear-gradient(160deg,var(--borderCard),var(--lineSoft));display:flex;align-items:center;justify-content:center;font:500 8px Archivo,sans-serif;color:var(--accentInk)">M</span>
+                <span style="font:500 10px Archivo,sans-serif;color:rgba(255,255,255,.88)">{{ demoFace }}</span>
+              </span>
+              <span style="font:400 10px Archivo,sans-serif;color:rgba(255,255,255,.52)">{{ q.ratio }}</span>
+            </div>
+          </div>
+          <span style="position:absolute;right:15px;bottom:15px;width:28px;height:28px;border-radius:50%;background:var(--dockGlass);display:flex;align-items:center;justify-content:center;pointer-events:none">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M18 6H9M18 6v9"></path></svg>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding-top:6px">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:190px;padding:8px 11px;border:1px solid var(--borderInput);border-radius:8px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+      <input placeholder="Search faces" style="border:none;outline:none;background:transparent;font:400 12.5px Archivo,sans-serif;color:var(--ink);width:100%"></input>
+    </div>
+    <sc-for list="{{ avatarScopes }}" as="as" hint-placeholder-count="3">
+      <sc-if value="{{ as.on }}" hint-placeholder-val="{{ false }}">
+        <span onClick="{{ as.go }}" style="padding:7px 12px;border-radius:7px;background:var(--ink);color:var(--surface);font:500 11.5px Archivo,sans-serif;cursor:pointer">{{ as.label }}</span>
+      </sc-if>
+      <sc-if value="{{ as.off }}" hint-placeholder-val="{{ true }}">
+        <span onClick="{{ as.go }}" style="padding:7px 12px;border:1px solid var(--borderInput);border-radius:7px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--fill)">{{ as.label }}</span>
+      </sc-if>
+    </sc-for>
+    <span style="width:1px;height:20px;background:var(--borderSoft);margin:0 2px"></span>
+    <span style="display:flex;align-items:center;gap:5px;padding:7px 11px;border:1px solid var(--borderInput);border-radius:7px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--fill)">
+      {{ avatarSort }}<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </span>
+  </div>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <span style="font:500 13.5px Archivo,sans-serif">{{ avatarScopeLabel }}</span>
+    <span style="font:400 12px Archivo,sans-serif;color:var(--metaStrong)">9 faces</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:18px;align-items:start">
+    <sc-for list="{{ avatarCards }}" as="a" hint-placeholder-count="9">
+      <div onClick="{{ a.go }}" style="display:flex;flex-direction:column;gap:9px;cursor:pointer">
+        <div style="aspect-ratio:4/5;border-radius:10px;overflow:hidden;background:var(--media);border:1px solid var(--border)">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ a.slotId }}" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="{{ a.name }}"></x-import>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font:500 12.5px Archivo,sans-serif">{{ a.name }}</span>
+          <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ a.looks }} frames · Locked</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ===== ASSETS ===== -->
+<sc-if value="{{ isAssets }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1120px;margin:0 auto;padding:36px 32px 40px;display:flex;flex-direction:column;gap:24px">
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h1 style="margin:0;font:500 26px Archivo,sans-serif;letter-spacing:-.03em">Assets</h1>
+      <span style="font:400 13px Archivo,sans-serif;color:var(--metaStrong)">Everything you've brought in, grouped by project and classified on upload — no folders to keep tidy.</span>
+    </div>
+    <button style="display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 14px;font:500 12.5px Archivo,sans-serif;cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"></path><path d="M4.5 16v3.5h15V16"></path></svg>Upload
+    </button>
+  </div>
+
+
+  <div style="display:flex;align-items:center;gap:18px;padding:16px 18px;border:1px solid var(--borderCard);border-radius:12px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:190px">
+      <span style="font:500 13px Archivo,sans-serif">{{ kitName }}</span>
+      <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ kitBlurb }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ kitMeta }}</span>
+      <button style="background:var(--surface);color:var(--ink);border:1px solid var(--borderInput);border-radius:8px;padding:8px 13px;font:500 12px Archivo,sans-serif;cursor:pointer" style-hover="border-color:var(--ink)">Project settings</button>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:200px;padding:8px 11px;border:1px solid var(--borderInput);border-radius:8px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+      <input placeholder="Search assets — try “blue bottle” or “worn denim”" style="border:none;outline:none;background:transparent;font:400 12.5px Archivo,sans-serif;color:var(--ink);width:100%"></input>
+    </div>
+    <sc-for list="{{ smartSets }}" as="ss" hint-placeholder-count="6">
+      <sc-if value="{{ ss.on }}" hint-placeholder-val="{{ false }}">
+        <span onClick="{{ ss.go }}" style="display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:7px;background:var(--ink);color:var(--surface);font:500 11.5px Archivo,sans-serif;cursor:pointer">{{ ss.label }}<span style="opacity:.5">{{ ss.count }}</span></span>
+      </sc-if>
+      <sc-if value="{{ ss.off }}" hint-placeholder-val="{{ true }}">
+        <span onClick="{{ ss.go }}" style="display:flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid var(--borderInput);border-radius:7px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--fill)">{{ ss.label }}<span style="color:var(--faint)">{{ ss.count }}</span></span>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0;border:1px solid var(--borderCard)">
+    <div style="background:var(--surface);padding:7px;cursor:pointer;box-shadow:0 0 0 0.5px var(--borderCard)" style-hover="background:var(--raised)">
+      <div style="aspect-ratio:1/1;border:1px dashed var(--dashed);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">Upload</span>
+      </div>
+      <div style="padding:6px 1px 1px"><span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Classified on arrival</span></div>
+    </div>
+    <sc-for list="{{ assets }}" as="a" hint-placeholder-count="11">
+      <div style="position:relative;background:var(--surface);padding:7px;cursor:pointer;box-shadow:0 0 0 0.5px var(--borderCard)" style-hover="background:var(--raised)">
+        <div style="position:relative;aspect-ratio:1/1;overflow:hidden">
+          <div style="width:100%;height:100%;background:{{ a.bg }}"></div>
+          <span style="position:absolute;left:5px;top:5px;padding:2px 6px;border-radius:4px;background:rgba(17,17,18,.72);font:500 9px Archivo,sans-serif;color:var(--onWash);pointer-events:none">{{ a.kind }}</span>
+          <span style="position:absolute;right:5px;bottom:5px;width:13px;height:13px;border-radius:50%;background:{{ a.brandSwatch }};border:1.5px solid var(--surface);pointer-events:none"></span>
+        </div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:6px 1px 1px">
+          <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.name }}</span>
+          <span style="font:400 10px Archivo,sans-serif;color:var(--metaStrong);flex-shrink:0">{{ a.used }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</sc-if>
+
+<!-- ===== AVATAR DETAIL ===== -->
+<sc-if value="{{ isPerson }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1120px;margin:0 auto;padding:30px 32px 32px;display:flex;flex-direction:column;gap:28px">
+  <span onClick="{{ goAvatars }}" style="display:flex;align-items:center;gap:5px;font:400 12.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer;width:fit-content" style-hover="color:var(--ink)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Avatars
+  </span>
+  <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+    <div style="width:128px;flex:none;aspect-ratio:4/5;border-radius:10px;overflow:hidden;background:var(--media);border:1px solid var(--border)">
+      <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="ds-hero" shape="rect" hint-size="128px,160px" style="display:block;width:100%;height:100%" placeholder="master portrait"></x-import>
+    </div>
+    <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:15px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h1 style="margin:0;font:500 30px/1.05 Archivo,sans-serif;letter-spacing:-.035em">{{ person }}</h1>
+          <span style="font:400 13px/1.6 Archivo,sans-serif;color:var(--metaStrong);max-width:420px">Late-20s, warm mid-tone, natural brunette. Holds identity from close-up to full-length.</span>
+        </div>
+        <div style="display:flex;gap:7px">
+          <button style="background:var(--surface);color:var(--ink);border:1px solid var(--borderInput);border-radius:8px;padding:9px 13px;font:500 12.5px Archivo,sans-serif;cursor:pointer">Share</button>
+          <button onClick="{{ openCanvas }}" style="background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 14px;font:500 12.5px Archivo,sans-serif;cursor:pointer">Use in a thread</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="5">
+          <span style="display:flex;flex-direction:column;gap:2px">
+            <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ s.k }}</span>
+            <span style="font:500 14px Archivo,sans-serif">{{ s.v }}</span>
+          </span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <span style="font:500 13.5px Archivo,sans-serif">Looks &amp; iterations</span>
+    <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">Kept on this avatar — untried versions clear after 30 days</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:0;border:1px solid var(--borderCard)">
+    <sc-for list="{{ frames }}" as="fr" hint-placeholder-count="12">
+      <div style="position:relative;background:var(--surface);padding:7px;cursor:pointer;box-shadow:0 0 0 0.5px var(--borderCard)" style-hover="background:var(--raised)">
+        <div style="position:relative;aspect-ratio:4/5;background:var(--media);overflow:hidden">
+          <div style="width:100%;height:100%;background:{{ fr.bg }}"></div>
+        </div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:6px 1px 1px">
+          <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fr.name }}</span>
+          <span style="font:400 10px Archivo,sans-serif;color:var(--metaStrong);flex-shrink:0">{{ fr.idx }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+</div>
+
+</div>
+</div>
+
+<!-- SETTINGS -->
+<sc-if value="{{ settingsOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:28px;background:rgba(17,17,18,.32)">
+  <div onClick="{{ closeSettings }}" style="position:absolute;inset:0"></div>
+  <div style="position:relative;width:100%;max-width:880px;height:100%;max-height:620px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--borderCard);border-radius:16px;box-shadow:0 24px 64px rgba(17,17,18,.22);overflow:hidden">
+
+    <div style="display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--rule);flex:none">
+      <span style="font:500 14px Archivo,sans-serif">Settings</span>
+      <span style="font:400 12px Archivo,sans-serif;color:var(--metaStrong)">{{ workspace }}</span>
+      <span onClick="{{ closeSettings }}" style="margin-left:auto;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:var(--fillStrong)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--metaStrong)" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </span>
+    </div>
+
+    <div style="flex:1;min-height:0;display:flex">
+      <div style="width:186px;flex:none;border-right:1px solid var(--rule);padding:12px 10px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+        <sc-for list="{{ setTabs }}" as="st" hint-placeholder-count="6">
+          <sc-if value="{{ st.on }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ st.go }}" style="display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;background:var(--fillStrong);font:500 12.5px Archivo,sans-serif;cursor:pointer">
+              <span style="display:flex;color:var(--ink)">{{ st.icon }}</span>{{ st.label }}
+            </span>
+          </sc-if>
+          <sc-if value="{{ st.off }}" hint-placeholder-val="{{ true }}">
+            <span onClick="{{ st.go }}" style="display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:8px;font:400 12.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="background:var(--wellSoft);color:var(--ink)">
+              <span style="display:flex;color:var(--meta)">{{ st.icon }}</span>{{ st.label }}
+            </span>
+          </sc-if>
+        </sc-for>
+        <span style="margin-top:auto;padding:9px 11px;font:400 11.5px Archivo,sans-serif;color:var(--accentInk);cursor:pointer" style-hover="text-decoration:underline">Sign out</span>
+      </div>
+
+      <div style="flex:1;min-width:0;overflow-y:auto;padding:22px 24px 26px">
+
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:20px;max-width:440px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font:500 13.5px Archivo,sans-serif">Profile</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="width:56px;height:56px;flex:none;border-radius:50%;background:linear-gradient(160deg,var(--ruleSoft),var(--sink));box-shadow:0 0 0 1px var(--borderCard)"></span>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;gap:7px">
+                <span style="padding:7px 12px;border:1px solid var(--borderCard);border-radius:8px;font:500 11.5px Archivo,sans-serif;cursor:pointer;background:var(--surface)" style-hover="border-color:var(--ink)">Upload</span>
+                <span style="padding:7px 12px;border-radius:8px;font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="background:var(--fill);color:var(--ink)">Remove</span>
+              </div>
+              <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">JPG, PNG or WebP · up to 5 MB · square works best</span>
+            </div>
+          </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font:500 11.5px Archivo,sans-serif">Display name</span>
+          <div style="display:flex;align-items:center;padding:9px 12px;border:1px solid var(--borderCard);border-radius:9px;background:var(--surface)">
+            <span style="font:400 12.5px Archivo,sans-serif;color:var(--ink)">Michael Rattray</span>
+          </div>
+          <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Shown on shared canvases and comments.</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font:500 11.5px Archivo,sans-serif">Email</span>
+          <div style="display:flex;align-items:center;padding:9px 12px;border:1px solid var(--ruleSoft);border-radius:9px;background:var(--wellSoft)">
+            <span style="font:400 12.5px Archivo,sans-serif;color:var(--metaStrong)">michaelpaulrattray@gmail.com</span>
+          </div>
+          <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Contact support to change the address on the account.</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font:500 11.5px Archivo,sans-serif">Workspace name</span>
+          <div style="display:flex;align-items:center;padding:9px 12px;border:1px solid var(--borderCard);border-radius:9px;background:var(--surface)">
+            <span style="font:400 12.5px Archivo,sans-serif;color:var(--ink)">Klieg Studio</span>
+          </div>
+          <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Appears in the top bar and on client shares.</span>
+        </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isUsage }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <span style="font:500 13.5px Archivo,sans-serif">Usage this month</span>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--borderCard);border-radius:11px;overflow:hidden">
+            <sc-for list="{{ usageStats }}" as="u" hint-placeholder-count="3">
+              <div style="padding:14px 15px;display:flex;flex-direction:column;gap:3px;box-shadow:0 0 0 0.5px var(--borderCard)">
+                <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">{{ u.k }}</span>
+                <span style="font:500 19px Archivo,sans-serif;letter-spacing:-.02em">{{ u.v }}</span>
+                <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">{{ u.note }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <span style="font:500 12px Archivo,sans-serif">Credits by tool</span>
+            <sc-for list="{{ usageBars }}" as="ub" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:64px;flex:none;font:400 11.5px Archivo,sans-serif;color:var(--secondary)">{{ ub.label }}</span>
+                <span style="flex:1;height:6px;border-radius:3px;background:var(--rule);overflow:hidden;display:flex">
+                  <span style="width:{{ ub.pct }};height:100%;background:{{ ub.fill }}"></span>
+                </span>
+                <span style="width:52px;flex:none;text-align:right;font:400 11px JetBrains Mono,monospace;color:var(--metaStrong)">{{ ub.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;padding:14px 15px;border:1px solid var(--borderCard);border-radius:11px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <span style="font:500 12px Archivo,sans-serif">Storage</span>
+              <span style="font:400 11px JetBrains Mono,monospace;color:var(--metaStrong)">18.4 GB / 50 GB</span>
+            </div>
+            <span style="height:6px;border-radius:3px;background:var(--rule);overflow:hidden;display:flex"><span style="width:37%;height:100%;background:var(--ink)"></span></span>
+            <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Unkept frames clear after 30 days, which is most of what you free up.</span>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isBilling }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <span style="font:500 13.5px Archivo,sans-serif">Billing &amp; plan</span>
+          <div style="display:flex;align-items:center;gap:16px;padding:16px 17px;border:1px solid var(--borderCard);border-radius:12px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:150px">
+              <span style="font:500 14px Archivo,sans-serif">Studio</span>
+              <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">$149/mo · 4 seats · 6,000 credits/mo · renews 12 Aug</span>
+            </div>
+            <span style="padding:8px 13px;border:1px solid var(--borderCard);border-radius:8px;font:500 11.5px Archivo,sans-serif;cursor:pointer;background:var(--surface)" style-hover="border-color:var(--ink)">Change plan</span>
+            <button style="background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 14px;font:500 11.5px Archivo,sans-serif;cursor:pointer">Buy credits</button>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:190px;padding:14px 15px;border:1px solid var(--borderCard);border-radius:11px;display:flex;flex-direction:column;gap:7px">
+              <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Credits remaining</span>
+              <span style="font:500 19px Archivo,sans-serif;letter-spacing:-.02em">1,240</span>
+              <span style="height:5px;border-radius:3px;background:var(--rule);overflow:hidden;display:flex"><span style="width:21%;height:100%;background:#E2685A"></span></span>
+              <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">21% of this month's allowance left</span>
+            </div>
+            <div style="flex:1;min-width:190px;padding:14px 15px;border:1px solid var(--borderCard);border-radius:11px;display:flex;flex-direction:column;gap:8px">
+              <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">Payment method</span>
+              <span style="font:500 12.5px Archivo,sans-serif">Visa ···· 4417</span>
+              <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">Update card</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1px;border:1px solid var(--borderCard);border-radius:11px;overflow:hidden">
+            <sc-for list="{{ invoices }}" as="iv" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 15px;box-shadow:0 0 0 0.5px var(--rule);cursor:pointer" style-hover="background:var(--raised)">
+                <span style="font:400 12px Archivo,sans-serif;flex:1">{{ iv.date }}</span>
+                <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ iv.amount }}</span>
+                <span style="font:400 11px JetBrains Mono,monospace;color:var(--metaStrong)">PDF</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isMembers }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font:500 13.5px Archivo,sans-serif">Members</span>
+              <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">3 of 4 seats used. Reviewers are free and cannot spend credits.</span>
+            </div>
+            <button style="background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 14px;font:500 11.5px Archivo,sans-serif;cursor:pointer">Invite</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px dashed var(--dashed);border-radius:10px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.9" stroke-linecap="round"><path d="M3.5 6.5h17v11h-17zM4 7l8 6 8-6"></path></svg>
+            <span style="flex:1;font:400 12px Archivo,sans-serif;color:var(--meta)">name@company.com</span>
+            <span style="display:flex;align-items:center;gap:5px;font:500 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer">Creator
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+            </span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1px;border:1px solid var(--borderCard);border-radius:11px;overflow:hidden">
+            <sc-for list="{{ members }}" as="m" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 15px;box-shadow:0 0 0 0.5px var(--rule)">
+                <span style="width:30px;height:30px;flex:none;border-radius:50%;background:{{ m.bg }};display:flex;align-items:center;justify-content:center;font:500 11px Archivo,sans-serif;color:var(--metaStrong)">{{ m.initial }}</span>
+                <span style="display:flex;flex-direction:column;gap:1px;flex:1;min-width:0">
+                  <span style="font:500 12.5px Archivo,sans-serif">{{ m.name }}</span>
+                  <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ m.email }}</span>
+                </span>
+                <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ m.scope }}</span>
+                <span style="display:flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid var(--borderInput);border-radius:7px;font:500 11px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="border-color:var(--ink);color:var(--ink)">{{ m.role }}
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;padding:14px 15px;border:1px solid var(--borderCard);border-radius:11px">
+            <span style="font:500 12px Archivo,sans-serif">What each role can do</span>
+            <sc-for list="{{ roleNotes }}" as="rn" hint-placeholder-count="4">
+              <div style="display:flex;gap:10px">
+                <span style="width:66px;flex:none;font:500 11.5px Archivo,sans-serif">{{ rn.role }}</span>
+                <span style="font:400 11.5px/1.5 Archivo,sans-serif;color:var(--metaStrong);flex:1">{{ rn.can }}</span>
+              </div>
+            </sc-for>
+            <span style="font:400 10.5px/1.5 Archivo,sans-serif;color:var(--metaStrong);padding-top:2px">Project access is set per project — open a project's settings to choose who can reach it.</span>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isNotifs }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:460px">
+          <span style="font:500 13.5px Archivo,sans-serif">Notifications</span>
+          <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--borderCard);border-radius:10px">
+              <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+                <span style="font:500 12px Archivo,sans-serif">{{ n.label }}</span>
+                <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ n.note }}</span>
+              </span>
+              <span style="width:34px;height:20px;flex:none;border-radius:999px;background:{{ n.track }};display:flex;align-items:center;padding:2px;cursor:pointer;justify-content:{{ n.justify }}">
+                <span style="width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(17,17,18,.2),0 0 0 1px var(--lineStrong)"></span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isSecurity }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px;max-width:460px">
+          <span style="font:500 13.5px Archivo,sans-serif">Security</span>
+          <sc-for list="{{ security }}" as="sec" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:14px;padding:13px 15px;border:1px solid var(--borderCard);border-radius:10px">
+              <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+                <span style="font:500 12px Archivo,sans-serif">{{ sec.label }}</span>
+                <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ sec.note }}</span>
+              </span>
+              <span style="padding:7px 12px;border:1px solid var(--borderCard);border-radius:8px;font:500 11.5px Archivo,sans-serif;cursor:pointer;background:var(--surface);flex:none" style-hover="border-color:var(--ink)">{{ sec.action }}</span>
+            </div>
+          </sc-for>
+          <div style="display:flex;align-items:center;gap:14px;padding:13px 15px;border:1px solid var(--accentLine);border-radius:10px;background:var(--accentWash)">
+            <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+              <span style="font:500 12px Archivo,sans-serif;color:var(--accentInk)">Delete workspace</span>
+              <span style="font:400 11px Archivo,sans-serif;color:var(--accentInk)">Removes every avatar, canvas and frame. This cannot be undone.</span>
+            </span>
+            <span style="padding:7px 12px;border:1px solid #E4A99B;border-radius:8px;font:500 11.5px Archivo,sans-serif;color:var(--accentInk);cursor:pointer;background:var(--surface);flex:none" style-hover="border-color:var(--accentInk)">Delete</span>
+          </div>
+        </div>
+        </sc-if>
+
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--rule);flex:none">
+      <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">Changes save as you edit</span>
+      <span style="margin-left:auto;display:flex;gap:8px">
+        <span onClick="{{ closeSettings }}" style="padding:8px 14px;border:1px solid var(--borderCard);border-radius:8px;font:500 11.5px Archivo,sans-serif;cursor:pointer;background:var(--surface)" style-hover="border-color:var(--ink)">Close</span>
+        <button onClick="{{ closeSettings }}" style="background:var(--ink);color:var(--surface);border:none;border-radius:8px;padding:9px 15px;font:500 11.5px Archivo,sans-serif;cursor:pointer">Done</button>
+      </span>
+    </div>
+
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+const P = {
+  studio: 'M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
+  library: 'M4 5h6v14H4zM12 5h3v14h-3zM17 5.5l3 .6-2.4 12.8-3-.6z',
+  thread: 'M4 5.5h7v6H4zM13 5.5h7v4h-7zM13 11.5h7v7h-7zM4 13.5h7v5H4z',
+  avatar: 'M12 12.5a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20.5c1.2-3.4 4-5.2 7.5-5.2s6.3 1.8 7.5 5.2',
+  asset: 'M3.5 5.5h17v13h-17zM3.5 14l4.5-4 4 3.5 3.5-3 5 4.5',
+  image: 'M3.5 5h17v14h-17zM3.5 15l4.5-4 3.5 3 4-3.5 5 4.5',
+  video: 'M4 6h11v12H4zM15 10.5l5-3v9l-5-3',
+  tryon: 'M4 7l4-2 4 2 4-2 4 2v12H4z',
+  ugc: 'M12 4a4 4 0 0 1 4 4v3a4 4 0 0 1-8 0V8a4 4 0 0 1 4-4zM5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3',
+  upscale: 'M4 9V4.5h5M20 15v4.5h-5M4 15v4.5h5M20 9V4.5h-5',
+  voice: 'M4 11v2M8 8v8M12 4v16M16 8v8M20 11v2',
+  campaign: 'M4 7l4-2 4 2 4-2 4 2v12H4z',
+  grid: 'M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z',
+  book: 'M5 4h14v16l-7-3.5L5 20z',
+  card: 'M3 6.5h18v11H3zM3 10.5h18M6 14.5h4',
+  bell: 'M12 4a5.5 5.5 0 0 0-5.5 5.5c0 4-1.5 5.5-1.5 5.5h14s-1.5-1.5-1.5-5.5A5.5 5.5 0 0 0 12 4zM10 18.5a2 2 0 0 0 4 0',
+  shield: 'M12 3.5l7 2.5v6c0 4-3 7-7 8.5-4-1.5-7-4.5-7-8.5V6zM9 12l2.2 2.2L15.5 10',
+  people: 'M9.5 12a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8M2.5 20c1-3 3.6-4.6 7-4.6s6 1.6 7 4.6M16 5.6a3.2 3.2 0 0 1 0 6.3M18 15.6c2 .7 3.2 2.2 3.5 4.4',
+};
+const svg = (d, w) => React.createElement("svg", { width: w || 15, height: w || 15, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" },
+  d.split("M").filter(Boolean).map((s, i) => React.createElement("path", { key: i, d: "M" + s })));
+
+const THREADS = [
+  ["Autumn canvas", "Generating · 2 of 6", "Acme Skincare"],
+  ["UGC · skincare", "Updated yesterday", "Acme Skincare"],
+  ["Ad variants A/B", "Updated 5 days ago", "Acme Skincare"],
+  ["Dead Field — opening", "Updated 2 days ago", "Mourning Star"],
+  ["Cliff pass — sequence", "Updated 4 days ago", "Mourning Star"],
+  ["Plague mask tests", "Updated last week", "Mourning Star"],
+  ["Denim story", "Updated 3 days ago", "Nord Denim"],
+  ["Lookbook — resort", "Updated last week", "Nord Denim"],
+];
+
+const WIRE = [
+  { live: true, done: false, kind: "Video", title: "Autumn canvas — frame 3 of 6", sub: "Seedance 2.0 · rooftop, overcast", when: "14s", project: "Acme Skincare" },
+  { live: true, done: false, kind: "UGC", title: "Talking cut — take 2 of 3", sub: "Drape Live · Theo K.", when: "38s", project: "Acme Skincare" },
+  { live: false, done: true, kind: "Image", title: "Serum hero — 4 frames", sub: "Drape V2 · Maya R.", when: "1h", project: "Acme Skincare" },
+  { live: true, done: false, kind: "Video", title: "Cliff pass — dawn, take 4", sub: "Seedance 2.0 · storm plate", when: "26s", project: "Mourning Star" },
+  { live: false, done: true, kind: "Image", title: "Plague mask — 6 frames", sub: "Drape V2 · Rafa D.", when: "40m", project: "Mourning Star" },
+  { live: false, done: true, kind: "Try-on", title: "Beaten cloak — fit pass", sub: "Drape V2 · Noor A.", when: "2h", project: "Mourning Star" },
+  { live: false, done: true, kind: "Try-on", title: "Denim story — 8 frames", sub: "Drape V2 · Ines B.", when: "12m", project: "Nord Denim" },
+  { live: false, done: true, kind: "Image", title: "Lookbook — resort, 5 frames", sub: "Drape V2 · Elle V.", when: "3h", project: "Nord Denim" },
+  { live: false, done: true, kind: "Image", title: "Grain study — 2 frames", sub: "Drape V2 · no avatar", when: "1d", project: "Test bench" },
+];
+
+const MEMBERS = [
+  { name: "Michael Rattray", email: "michaelpaulrattray@gmail.com", role: "Owner", scope: "All projects", initial: "MR", bg: "linear-gradient(160deg,var(--ruleSoft),var(--sink))" },
+  { name: "Sam Okafor", email: "sam@kliegstudio.com", role: "Admin", scope: "All projects", initial: "SO", bg: "linear-gradient(160deg,var(--borderMedia),var(--lineStrong))" },
+  { name: "Lena Vos", email: "lena@kliegstudio.com", role: "Creator", scope: "2 projects", initial: "LV", bg: "linear-gradient(160deg,var(--borderCard),var(--lineSoft))" },
+  { name: "Acme brand team", email: "review@acme.com", role: "Reviewer", scope: "Acme Skincare", initial: "AC", bg: "linear-gradient(160deg,var(--dashed),var(--muted))" },
+];
+
+const STRIP = {
+  "All projects": [
+    { name: "Maya — studio grey", motion: false },
+    { name: "Maya — rooftop clip (drop an mp4)", motion: true, dur: "0:04" },
+    { name: "Maya — walk cycle (drop an mp4)", motion: true, dur: "0:06" },
+  ],
+  "Acme Skincare": [
+    { name: "Maya — bathroom counter", motion: false },
+    { name: "Maya — serum hold (drop an mp4)", motion: true, dur: "0:04" },
+    { name: "Maya — talking cut (drop an mp4)", motion: true, dur: "0:09" },
+  ],
+  "Mourning Star": [
+    { name: "Rafa — torchlit interior", motion: false },
+    { name: "Rafa — cliff pass (drop an mp4)", motion: true, dur: "0:06" },
+    { name: "Rafa — ridge walk (drop an mp4)", motion: true, dur: "0:08" },
+  ],
+  "Nord Denim": [
+    { name: "Ines — wet street", motion: false },
+    { name: "Ines — denim turn (drop an mp4)", motion: true, dur: "0:05" },
+    { name: "Ines — resort wide (drop an mp4)", motion: true, dur: "0:07" },
+  ],
+  "Test bench": [
+    { name: "Juno — flat light", motion: false },
+    { name: "Juno — angle sweep (drop an mp4)", motion: true, dur: "0:04" },
+    { name: "Juno — upscale test (drop an mp4)", motion: true, dur: "0:03" },
+  ],
+};
+
+const SUGGESTIONS = {
+  "All projects": ["Rooftop, overcast", "Linen suit, full length", "Product in hand, close"],
+  "Acme Skincare": ["Serum in hand, close", "Bathroom counter, morning", "Talking to camera, 9:16"],
+  "Mourning Star": ["Cliff pass, dawn", "Torchlit interior", "Beaten cloak, full length"],
+  "Nord Denim": ["Denim set, street", "Backstage candid", "Resort, wide"],
+  "Test bench": ["Grain and halation test", "Face lock, five angles", "Upscale to 4K"],
+};
+
+const DEMO = {
+  "All projects": "on a rooftop at golden hour, linen suit, shot on 50mm",
+  "Acme Skincare": "holding the serum at a bathroom counter, morning light, shot on 50mm",
+  "Mourning Star": "on the cliff pass at dawn, beaten cloak, storm sky, anamorphic",
+  "Nord Denim": "in the denim set on a wet street, overcast, shot on 35mm",
+  "Test bench": "half-length, flat light, testing identity lock across angles",
+};
+
+const CAST = {
+  "All projects": ["Maya R.", "Theo K.", "Ines B.", "Juno W.", "Cass M.", "Noor A.", "Rafa D.", "Elle V."],
+  "Acme Skincare": ["Maya R.", "Theo K."],
+  "Mourning Star": ["Rafa D.", "Noor A."],
+  "Nord Denim": ["Ines B.", "Elle V."],
+  "Test bench": ["Juno W."],
+};
+
+const FRAMES = {
+  "Acme Skincare": ["Serum hero", "Rooftop, overcast", "Product hold", "Golden hour", "Studio grey", "Talking cut 01", "Cleanser — close", "Bathroom scene", "Hands, serum", "Counter flatlay", "Morning light", "Bottle loop"],
+  "Mourning Star": ["Dead Field — wide", "Cliff pass — dawn", "Plague mask — close", "Beaten cloak", "Storm sky plate", "Torch light", "Village burn", "Rider silhouette", "Mud and rain", "Council chamber", "Dawn ridge", "Last stand"],
+  "Nord Denim": ["Denim set", "Linen suit — full length", "Backstage candid", "Resort — wide", "Street candid", "Coat — three-quarter", "Rain shot", "Editorial b&w", "Sport set", "Desk portrait", "Nightwear", "Beach — wide"],
+  "Test bench": ["Grain study", "Warm palette test", "Lens flare test", "Motion blur test", "Upscale test", "Face lock test"],
+};
+
+class Component extends DCLogic {
+  state = { view: "studio", person: 0, mode: "image", ckind: "Image", feedTab: "Yours", mentionOpen: false, keep: "Kept", brand: "Acme Skincare", smart: "All", cscope: "All", ascope: "All", settingsOpen: false, stab: "Profile", accountOpen: false };
+  go(view, person) { this.setState({ view, person: person ?? this.state.person }); window.scrollTo(0, 0); }
+
+  componentDidMount() {
+    this._away = (e) => {
+      if (!this.state.projOpen) return;
+      if (e.target.closest && e.target.closest("[data-scope-menu]")) return;
+      this.setState({ projOpen: false });
+    };
+    this._awayAccount = (e) => {
+      if (!this.state.accountOpen) return;
+      if (e.target.closest && e.target.closest("[data-account-menu]")) return;
+      this.setState({ accountOpen: false });
+    };
+    document.addEventListener("click", this._away, true);
+    document.addEventListener("click", this._awayAccount, true);
+    this.applyTheme();
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener("click", this._away, true);
+    document.removeEventListener("click", this._awayAccount, true);
+  }
+  applyTheme() {
+    const d = (this.state.lobbyTheme ?? "light") === "dark";
+    if (document && document.body) document.body.setAttribute("data-theme", d ? "dark" : "light");
+  }
+  componentDidUpdate() { this.applyTheme(); }
+
+  renderVals() {
+    const s = this.state;
+    const people = [["Maya R.",24],["Theo K.",18],["Ines B.",31],["Juno W.",12],["Cass M.",9],["Noor A.",27],["Rafa D.",15],["Elle V.",22],["Sim P.",7]];
+    const cur = people[s.person] || people[0];
+    const names = ["Rooftop, overcast","Linen suit — full length","Product hold","Talking cut 01","Golden hour","Studio grey","Denim set","Backstage candid","Resort — wide","Close-up","Motion still","Editorial b&w","Street candid","Kitchen scene","Nightwear","Sport set","Beach — wide","Desk portrait","Coat — three-quarter","Rain shot"];
+    const kindOf = (i) => ["Image","Video","Try-on","UGC","Image","Image","Try-on","Image","Video","Image","Video","Image"][i % 12];
+    const GRADS = [
+      "linear-gradient(155deg,#F1EBE6 0%,#D3C6BC 100%)",
+      "linear-gradient(155deg,#EAE6EC 0%,#C2B9CB 100%)",
+      "linear-gradient(155deg,#FBEBEF 0%,#E3B6C6 100%)",
+      "linear-gradient(155deg,#E7ECE8 0%,#BDC8C1 100%)",
+      "linear-gradient(155deg,#F4EEE7 0%,#DBC9B4 100%)",
+      "linear-gradient(155deg,#E6E9EE 0%,#B7BFCC 100%)",
+      "linear-gradient(155deg,#F2E9F0 0%,#C8B2C9 100%)",
+      "linear-gradient(155deg,#EDEAE5 0%,#BFB9B1 100%)",
+      "linear-gradient(155deg,#F6ECE9 0%,#D9BAB0 100%)",
+      "linear-gradient(155deg,#E9EDEF 0%,#BCC6CB 100%)",
+    ];
+    const grad = (i) => GRADS[i % GRADS.length];
+    const PROJECTS = [
+      { name: "All projects", type: "all", dot: "#B4B8BE", swatch: "linear-gradient(140deg,#D7D9DD,#B4B8BE)", meta: "everything you own" },
+      { name: "Acme Skincare", type: "brand", dot: "#7A9E86", swatch: "linear-gradient(140deg,#A8C4B2,#5F8570)", meta: "Brand · 5 assets · 3 canvases" },
+      { name: "Mourning Star", type: "production", dot: "#3A3550", swatch: "linear-gradient(140deg,#6E6A86,#3A3550)", meta: "Production · 6 assets · 3 canvases" },
+      { name: "Nord Denim", type: "brand", dot: "#4C6079", swatch: "linear-gradient(140deg,#7E93AE,#4C6079)", meta: "Brand · 3 assets · 2 canvases" },
+      { name: "Test bench", type: "personal", dot: "#A79B8C", swatch: "linear-gradient(140deg,#D8CFC4,#A79B8C)", meta: "Personal · 2 assets" },
+    ];
+    const set = (label, count) => ({ label, count });
+    const KIT = {
+      all: { label: "everything you own", blurb: "Uploads across every project. Pick a project in the top bar to narrow it down.", meta: "5 projects · 148 files",
+        sets: [set("All", "148"), set("Products", "34"), set("Wardrobe", "22"), set("Locations", "19"), set("Audio", "11")] },
+      brand: { label: "brand folder", blurb: "Everything uploaded for this client. Drop any of it into a prompt when you want it — nothing is applied automatically.", meta: "48 files · last upload 2d ago",
+        sets: [set("All", "48"), set("Products", "21"), set("Garments", "9"), set("Logos", "4"), set("Backdrops", "8"), set("Audio", "6")] },
+      production: { label: "production folder", blurb: "Locations, wardrobe, props and plates for this production. Reference them per shot as you need them.", meta: "62 files · last upload 4d ago",
+        sets: [set("All", "62"), set("Locations", "19"), set("Wardrobe", "13"), set("Props", "15"), set("Plates", "10"), set("Audio", "5")] },
+      personal: { label: "scratch folder", blurb: "Loose references and tests. Nothing here is tied to a client.", meta: "38 files · last upload 1w ago",
+        sets: [set("All", "38"), set("References", "24"), set("Palettes", "6"), set("Audio", "8")] },
+    };
+    const proj = PROJECTS.find((p) => p.name === s.brand) || PROJECTS[0];
+    const scoped = proj.type === "all" ? names : (FRAMES[proj.name] || names);
+    const frame = (prefix) => (name, i) => ({ name, kind: kindOf(i), idx: String(i + 1).padStart(2, "0"), slotId: prefix + i, bg: grad(i) });
+    const mode = (key, label, icon) => ({ label, icon: svg(icon, 13), on: s.mode === key, off: s.mode !== key, go: () => this.setState({ mode: key }) });
+    const crumbs = { studio: "Home", create: "Image & video", library: "Library", threads: "Canvas", avatars: "Avatars", person: "Avatars / " + cur[0], assets: "Assets" };
+    const models = { image: "Drape V2", video: "Seedance 2.0", tryon: "Drape V2", ugc: "Drape Live", upscale: "Topaz", voice: "Drape Voice" };
+    return {
+      isStudio: s.view === "studio", isLibrary: s.view === "library", isThreads: s.view === "threads",
+      isAvatars: s.view === "avatars", isPerson: s.view === "person", isAssets: s.view === "assets",
+      isCreate: s.view === "create",
+      mentionOpen: s.mentionOpen,
+      toggleMention: () => this.setState({ mentionOpen: !s.mentionOpen }),
+      closeMention: () => this.setState({ mentionOpen: false }),
+      createModel: { Image: "Drape V2", Video: "Seedance 2.0", "Lip sync": "Drape Live" }[s.ckind] || "Drape V2",
+      createKinds: ["Image", "Video", "Lip sync"].map((label) => ({
+        label, on: s.ckind === label, off: s.ckind !== label, go: () => this.setState({ ckind: label }),
+      })),
+      feedTabs: ["Yours", "Explore"].map((label) => ({
+        label, on: s.feedTab === label, off: s.feedTab !== label, go: () => this.setState({ feedTab: label }),
+      })),
+      refs: [{ label: "POSE" }, { label: "LIGHT" }],
+      mentionAvatars: people.slice(0, 4).map((p) => ({ initial: p[0][0], name: p[0], looks: p[1] })),
+      mentionAssets: [{ name: "Silk blouson — flat", kind: "Product" }, { name: "Rooftop plate", kind: "Reference" }],
+      feed: (proj.type === "all" ? [
+        ["Rooftop, overcast","Image","56%",true,"Maya"],["Walk cycle","Video","150%",true,"Maya"],["Serum hero","Image","125%",false,""],
+        ["Talking cut 02","Video","56%",true,"Theo"],["Denim — full length","Try-on","133%",true,"Ines"],["Backstage candid","Image","75%",false,""],
+        ["Product in hand","Image","100%",false,""],["Golden hour","Image","133%",true,"Maya"],["Loop — bottle","Video","100%",false,""],
+        ["Editorial b&w","Image","125%",true,"Juno"],["Street candid","Image","75%",false,""],["Resort — wide","Image","56%",true,"Elle"],
+        ["Close-up","Image","110%",true,"Maya"],["Rain shot","Video","140%",false,""],
+      ] : scoped.map((n, i) => {
+        const cast = CAST[proj.name] || CAST["All projects"];
+        return [n, kindOf(i), ["56%", "125%", "100%", "133%", "75%", "110%", "150%", "56%"][i % 8], i % 3 !== 2, cast[i % cast.length].split(" ")[0]];
+      }))
+        .map(([name, kind, pad, tagged, tag], i) => ({
+          name, kind, pad, tagged, tag, slotId: "ds-fd-" + i, bg: grad(i + 3),
+          when: ["just now", "just now", "2m", "8m", "14m", "1h", "1h", "3h", "5h", "yesterday", "yesterday", "2d", "3d", "1w"][i % 14],
+        })),
+      crumb: crumbs[s.view] || "Home",
+      person: cur[0],
+      modelName: models[s.mode] || "Drape V2",
+      goAvatars: () => this.go("avatars"),
+      openCanvas: () => window.open("Canvas Redesign Explorations.dc.html#8a", "_blank"),
+      nav: [
+        { key: "studio", label: "Home", icon: svg(P.studio) },
+        { key: "create", label: "Create", icon: svg(P.image) },
+        { key: "threads", label: "Canvas", icon: svg(P.thread) },
+        { key: "avatars", label: "Avatars", icon: svg(P.avatar) },
+        { key: "assets", label: "Assets", icon: svg(P.asset) },
+        { key: "library", label: "Library", icon: svg(P.library) },
+      ].map((n) => {
+        const on = s.view === n.key || (s.view === "person" && n.key === "avatars");
+        return { ...n, on, off: !on, go: () => this.go(n.key) };
+      }),
+      modes: [
+        mode("image", "Image", P.image), mode("video", "Video", P.video),
+        mode("tryon", "Try-on", P.tryon), mode("ugc", "UGC", P.ugc),
+        mode("upscale", "Upscale", P.upscale), mode("voice", "Voice", P.voice),
+      ],
+      kinds: ["Images", "Video", "Try-on", "UGC", "Upscaled"],
+      keepTabs: ["Kept", "All"].map((label) => ({
+        label, on: s.keep === label, off: s.keep !== label, go: () => this.setState({ keep: label }),
+      })),
+      libraryBlurb: s.keep === "Kept"
+        ? "Things you downloaded, exported, or saved as a look. Attempts stay where you made them."
+        : "Everything generated, including attempts. Unkept frames clear after 30 days.",
+      libraryCount: proj.type === "all"
+        ? (s.keep === "Kept" ? "312 kept" : "1,842 frames · 1,530 clearing")
+        : (s.keep === "Kept" ? "84 kept in " + proj.name : "512 frames in " + proj.name),
+      suggestions: SUGGESTIONS[proj.name] || SUGGESTIONS["All projects"],
+      demoPrompt: DEMO[proj.name] || DEMO["All projects"],
+      demoFace: (CAST[proj.name] || CAST["All projects"])[0],
+      frameActions: [
+        { title: "Use as reference", icon: svg("M4 5h16v14H4zM8.5 10.5a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2M4 17l5-4.5 3.5 3 3-2.5L20 17", 12) },
+        { title: "Save as asset", icon: svg("M5 4h11l3 3v13H5zM8.5 4v5.5h7V4M8.5 20v-6h7v6", 12) },
+        { title: "Download", icon: svg("M12 4v10M7.5 10L12 14.5 16.5 10M4.5 19.5h15", 12) },
+        { title: "Delete", icon: svg("M5 7h14M9.5 7V4.5h5V7M6.5 7l1 12.5h9L17.5 7", 12) },
+      ],
+      projName: proj.type === "all" ? "All projects" : proj.name,
+      projSwatch: proj.swatch,
+      projOpen: s.projOpen,
+      toggleProj: () => this.setState({ projOpen: !s.projOpen }),
+      canvasCount: (proj.type === "all" ? 8 : THREADS.filter((t) => t[2] === proj.name).length) + " canvases",
+      barIcons: [
+        { title: "Report a bug", dot: false, icon: svg("M9 4.5l1.5 2.5h3L15 4.5M7 9.5h10v5a5 5 0 0 1-10 0zM3.5 11h3.5M17 11h3.5M4.5 16.5L7 15.5M19.5 16.5L17 15.5M5.5 6.5L7.5 8M18.5 6.5L16.5 8", 15) },
+        { title: "Help & docs", dot: false, icon: svg("M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 16.5v.6", 15) },
+        { title: "What's new", dot: true, icon: svg("M6 9.5h4l5-3.5v12l-5-3.5H6zM17.5 9.5a4 4 0 0 1 0 5", 15) },
+      ],
+      canvasSort: "Recent",
+      avatarSort: "Recent",
+      canvasScopeLabel: s.cscope === "All" ? "All canvases" : s.cscope,
+      avatarScopeLabel: s.ascope === "All" ? "Under contract" : s.ascope,
+      canvasScopes: ["All", "Mine", "Shared"].map((label) => ({
+        label, on: s.cscope === label, off: s.cscope !== label, go: () => this.setState({ cscope: label }),
+      })),
+      avatarScopes: ["All", "Signed", "Drafts"].map((label) => ({
+        label, on: s.ascope === label, off: s.ascope !== label, go: () => this.setState({ ascope: label }),
+      })),
+      queueLabel: WIRE.filter((w) => w.live && (proj.type === "all" || w.project === proj.name)).length + " running",
+      queueEta: "40s",
+      wire: WIRE.filter((w) => proj.type === "all" || w.project === proj.name),
+
+      sheet: scoped.slice(0, 12).map(frame("ds-s-")),
+      library: (proj.type === "all" ? names : scoped).map(frame("ds-l-")),
+      frames: names.slice(0, 12).map(frame("ds-f-")),
+      roster: people.slice(0, 7).map((p) => ({ initial: p[0][0], first: p[0].split(" ")[0] })),
+      avatarCards: people.map((p, i) => ({ name: p[0], looks: p[1], slotId: "ds-a-" + i, go: () => this.go("person", i) })),
+      strip: (STRIP[proj.name] || STRIP["All projects"]).map((f, i) => ({
+        ...f, idx: String(i + 1).padStart(2, "0"), slotId: "ds-strip-" + i,
+      })),
+      identityStat: proj.type === "all"
+        ? "99.4% identity retention across 1,842 frames"
+        : "99.4% identity retention across 512 frames in " + proj.name,
+      quickActions: [
+        { eyebrow: "UGC", label: "Talking UGC ad", body: "Paste a script — get three takes to camera", icon: svg(P.ugc, 12), ratio: "9:16 · three takes", bg: grad(3), slotId: "ds-qa-0", hint: "UGC take" },
+        { eyebrow: "TRY-ON", label: "Try a product on", body: "Drop a product and dress this face", icon: svg(P.tryon, 12), ratio: "4:5 · six frames", bg: grad(7), slotId: "ds-qa-1", hint: "try-on" },
+        { eyebrow: "CAMPAIGN", label: "Six-look campaign", body: "One brief, a full set of hero stills", icon: svg(P.campaign, 12), ratio: "Every ratio", bg: grad(11), slotId: "ds-qa-2", hint: "hero still" },
+        { eyebrow: "MOTION", label: "Still to video", body: "Turn any frame of theirs into motion", icon: svg(P.video, 12), ratio: "16:9 · up to 8s", bg: grad(15), slotId: "ds-qa-3", hint: "clip" },
+      ],
+      brands: PROJECTS.map((b) => ({ ...b, on: s.brand === b.name, off: s.brand !== b.name, go: () => this.setState({ brand: b.name, smart: "All", projOpen: false }) })),
+      kitName: proj.type === "all" ? "All uploads" : proj.name + " — " + KIT[proj.type].label,
+      kitBlurb: KIT[proj.type].blurb,
+      kitMeta: KIT[proj.type].meta,
+      canvasHeading: proj.type === "all"
+        ? (s.cscope === "All" ? "All canvases" : s.cscope)
+        : (s.cscope === "All" ? "Canvases in " + proj.name : s.cscope + " · " + proj.name),
+      closeProj: () => this.setState({ projOpen: false }),
+      workspace: "Klieg Studio · Studio plan",
+      themeHint: (s.lobbyTheme ?? "light") === "dark" ? "Switch to light" : "Switch to dark",
+      themeIcon: (s.lobbyTheme ?? "light") === "dark"
+        ? svg("M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2M6.7 6.7l1.4 1.4M15.9 15.9l1.4 1.4M17.3 6.7l-1.4 1.4M8.1 15.9l-1.4 1.4M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0", 15)
+        : svg("M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z", 15),
+      toggleTheme: () => this.setState({ lobbyTheme: (s.lobbyTheme ?? "light") === "dark" ? "light" : "dark" }),
+      settingsOpen: s.settingsOpen,
+      openSettings: () => this.setState({ settingsOpen: true, stab: "Profile" }),
+      openMembers: () => this.setState({ settingsOpen: true, stab: "Members" }),
+      teamStack: MEMBERS.filter((m) => m.role !== "Owner" && m.role !== "Reviewer").slice(0, 3)
+        .map((m) => ({ name: m.name + " · " + m.role, bg: m.bg })),
+      closeSettings: () => this.setState({ settingsOpen: false }),
+      isProfile: s.stab === "Profile", isUsage: s.stab === "Usage", isBilling: s.stab === "Billing",
+      isMembers: s.stab === "Members", isNotifs: s.stab === "Notifications", isSecurity: s.stab === "Security",
+      accountOpen: s.accountOpen,
+      toggleAccount: () => this.setState({ accountOpen: !s.accountOpen }),
+      closeAccount: () => this.setState({ accountOpen: false }),
+      accountItems: [
+        { label: "Settings", tab: "Profile" },
+        { label: "Members & invites", tab: "Members" },
+        { label: "Billing & credits", tab: "Billing" },
+      ].map((a) => ({ ...a, go: () => this.setState({ settingsOpen: true, stab: a.tab, accountOpen: false }) })),
+      setTabs: [
+        ["Profile", P.avatar], ["Usage", P.grid], ["Billing", P.card],
+        ["Members", P.people], ["Notifications", P.bell], ["Security", P.shield],
+      ].map(([label, d]) => ({
+        label, icon: svg(d, 14), on: s.stab === label, off: s.stab !== label,
+        go: () => this.setState({ stab: label }),
+      })),
+      usageStats: [
+        { k: "Credits used", v: "4,760", note: "of 6,000 this month" },
+        { k: "Frames made", v: "512", note: "84 kept" },
+        { k: "Avatars", v: "9", note: "3 added this month" },
+      ],
+      usageBars: [
+        { label: "Video", value: "2,140", pct: "72%", fill: "var(--ink)" },
+        { label: "Image", value: "1,380", pct: "46%", fill: "var(--secondary)" },
+        { label: "Try-on", value: "780", pct: "26%", fill: "var(--metaStrong)" },
+        { label: "UGC", value: "340", pct: "12%", fill: "var(--meta)" },
+        { label: "Upscale", value: "120", pct: "5%", fill: "var(--muted)" },
+      ],
+      invoices: [
+        { date: "12 Jul 2026", amount: "$149.00" },
+        { date: "12 Jun 2026", amount: "$149.00" },
+        { date: "12 May 2026", amount: "$149.00" },
+      ],
+      members: MEMBERS,
+      roleNotes: [
+        { role: "Owner", can: "Everything, plus billing and deleting the workspace." },
+        { role: "Admin", can: "Invite people, create projects, generate — no billing access." },
+        { role: "Creator", can: "Generate and edit in the projects they're added to. Spends credits." },
+        { role: "Reviewer", can: "Open, comment, approve and download. Cannot generate, so never spends your credits — free, and the safe way to bring a client in." },
+      ],
+      notifs: [
+        { label: "Render finished", note: "When a generation completes or fails", track: "var(--ink)", justify: "flex-end" },
+        { label: "Comments and approvals", note: "When someone reacts to a frame you made", track: "var(--ink)", justify: "flex-end" },
+        { label: "Someone joins a project", note: "New members added to projects you're in", track: "var(--borderCard)", justify: "flex-start" },
+        { label: "Credits running low", note: "At 20% and again at 5% remaining", track: "var(--ink)", justify: "flex-end" },
+        { label: "Product news", note: "New models and features, roughly monthly", track: "var(--borderCard)", justify: "flex-start" },
+      ],
+      security: [
+        { label: "Password", note: "Last changed 4 months ago", action: "Change" },
+        { label: "Two-factor authentication", note: "Not enabled — recommended for owners", action: "Enable" },
+        { label: "Active sessions", note: "3 devices signed in", action: "Review" },
+      ],
+      smartSets: KIT[proj.type].sets.map((x) => ({ ...x, on: s.smart === x.label, off: s.smart !== x.label, go: () => this.setState({ smart: x.label }) })),
+      assets: [
+        ["Serum bottle — hero","Product","Acme Skincare","used 12×"],
+        ["Cleanser tube","Product","Acme Skincare","used 7×"],
+        ["Logo lockup","Logo","Acme Skincare","used 31×"],
+        ["Studio backdrop","Backdrop","Acme Skincare","used 18×"],
+        ["VO — spring script","Audio","Acme Skincare","used 2×"],
+        ["Silk blouson — flat","Garment","Nord Denim","used 5×"],
+        ["Denim swatch","Garment","Nord Denim","used 3×"],
+        ["Rooftop plate","Backdrop","Nord Denim","used 9×"],
+        ["Dead Field — wide","Location","Mourning Star","used 14×"],
+        ["Cliff pass — dawn","Location","Mourning Star","used 8×"],
+        ["Cloak — beaten","Wardrobe","Mourning Star","used 22×"],
+        ["Plague mask","Prop","Mourning Star","used 17×"],
+        ["Sky plate — storm","Plate","Mourning Star","used 6×"],
+        ["Score — main title","Audio","Mourning Star","used 3×"],
+        ["Grain study","Reference","Test bench","used 4×"],
+        ["Warm palette","Palette","Test bench","used 1×"],
+      ].filter((a) => proj.type === "all" || a[2] === proj.name)
+       .map(([name, kind, project, used], i) => ({
+         name, kind, used, bg: grad(i + 6),
+         brandSwatch: (PROJECTS.find((p) => p.name === project) || {}).dot || "#8E8E94",
+       })),
+      stats: [
+        { k: "Identity", v: "Locked" }, { k: "Frames", v: String(cur[1]) },
+        { k: "Canvases", v: "6" }, { k: "Drift", v: "0.6%" }, { k: "Signed", v: "Mar 2026" },
+      ],
+      presets: [
+        { label: "Campaign set", body: "Product → avatar → six hero stills", icon: svg(P.campaign, 11), steps: "4 nodes",
+          nodes: [{l:"9%",t:"26%",w:"20%",h:"26%",fill:"#E8E8EB"},{l:"9%",t:"56%",w:"20%",h:"26%",fill:"#DCDCE0"},{l:"41%",t:"30%",w:"24%",h:"40%",fill:"#FFFFFF"},{l:"76%",t:"36%",w:"16%",h:"28%",fill:"#FFFFFF"}],
+          wires: [{l:"29%",t:"39%",w:"12%"},{l:"29%",t:"69%",w:"12%"},{l:"65%",t:"50%",w:"11%"}] },
+        { label: "Talking UGC", body: "Script to three talking cuts", icon: svg(P.ugc, 11), steps: "3 nodes",
+          nodes: [{l:"10%",t:"34%",w:"22%",h:"32%",fill:"#E8E8EB"},{l:"44%",t:"34%",w:"18%",h:"32%",fill:"#DCDCE0"},{l:"74%",t:"14%",w:"17%",h:"22%",fill:"#FFFFFF"},{l:"74%",t:"42%",w:"17%",h:"22%",fill:"#FFFFFF"},{l:"74%",t:"70%",w:"17%",h:"22%",fill:"#FFFFFF"}],
+          wires: [{l:"32%",t:"50%",w:"12%"},{l:"62%",t:"25%",w:"12%"},{l:"62%",t:"53%",w:"12%"},{l:"62%",t:"81%",w:"12%"}] },
+        { label: "Lookbook", body: "One avatar, many products", icon: svg(P.book, 11), steps: "5 nodes",
+          nodes: [{l:"9%",t:"36%",w:"19%",h:"28%",fill:"#DCDCE0"},{l:"40%",t:"14%",w:"16%",h:"22%",fill:"#E8E8EB"},{l:"40%",t:"39%",w:"16%",h:"22%",fill:"#E8E8EB"},{l:"40%",t:"68%",w:"16%",h:"22%",fill:"#E8E8EB"},{l:"70%",t:"32%",w:"22%",h:"36%",fill:"#FFFFFF"}],
+          wires: [{l:"28%",t:"25%",w:"12%"},{l:"28%",t:"50%",w:"12%"},{l:"28%",t:"79%",w:"12%"},{l:"56%",t:"50%",w:"14%"}] },
+        { label: "Ad variants", body: "One winner, every ratio", icon: svg(P.grid, 11), steps: "4 nodes",
+          nodes: [{l:"9%",t:"38%",w:"20%",h:"24%",fill:"#FFFFFF"},{l:"41%",t:"38%",w:"14%",h:"24%",fill:"#DCDCE0"},{l:"68%",t:"12%",w:"24%",h:"16%",fill:"#FFFFFF"},{l:"68%",t:"36%",w:"15%",h:"28%",fill:"#FFFFFF"},{l:"68%",t:"72%",w:"20%",h:"20%",fill:"#FFFFFF"}],
+          wires: [{l:"29%",t:"50%",w:"12%"},{l:"55%",t:"20%",w:"13%"},{l:"55%",t:"50%",w:"13%"},{l:"55%",t:"82%",w:"13%"}] },
+        { label: "Product loop", body: "One asset, a seamless motion cycle", icon: svg(P.video, 11), steps: "3 nodes",
+          nodes: [{l:"11%",t:"32%",w:"22%",h:"36%",fill:"#E8E8EB"},{l:"45%",t:"32%",w:"18%",h:"36%",fill:"#FFFFFF"},{l:"74%",t:"38%",w:"17%",h:"24%",fill:"#DCDCE0"}],
+          wires: [{l:"33%",t:"50%",w:"12%"},{l:"63%",t:"50%",w:"11%"}] },
+        { label: "Scene build", body: "Location, wardrobe and cast in one shot", icon: svg(P.campaign, 11), steps: "5 nodes",
+          nodes: [{l:"8%",t:"20%",w:"18%",h:"20%",fill:"#E8E8EB"},{l:"8%",t:"40%",w:"18%",h:"20%",fill:"#E8E8EB"},{l:"8%",t:"68%",w:"18%",h:"20%",fill:"#DCDCE0"},{l:"40%",t:"28%",w:"22%",h:"44%",fill:"#FFFFFF"},{l:"74%",t:"38%",w:"17%",h:"24%",fill:"#FFFFFF"}],
+          wires: [{l:"26%",t:"30%",w:"14%"},{l:"26%",t:"50%",w:"14%"},{l:"26%",t:"78%",w:"14%"},{l:"62%",t:"50%",w:"12%"}] },
+      ].map((p) => ({ ...p, steps: p.nodes.length + " nodes" })),
+      threads: THREADS.filter((t) => proj.type === "all" || t[2] === proj.name)
+        .map(([name, meta]) => ({ name, meta })),
+    };
+  }
+}
+</script>
+</body>
+</html>

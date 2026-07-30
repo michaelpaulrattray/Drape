@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{--surface:#FFFFFF;--raised:#FAFAFB;--page:#FCFCFD;--wellSoft:#F7F7F9;--well:#F6F6F8;--fill:#F4F4F6;--fillStrong:#F2F2F4;--media:#F1F1F3;--rule:#F0F0F2;--ruleSoft:#EFEFF1;--border:#ECECEE;--borderSoft:#EAEAED;--borderMedia:#E8E8EB;--borderInput:#E6E6E9;--borderCard:#E4E4E7;--dots:#DEDEE2;--dotsStrong:#DADADE;--dashed:#D6D6DA;--sink:#D2D2D6;--lineStrong:#C8C8CC;--lineSoft:#BFBFC5;--muted:#B4B4BA;--faint:#A0A0A6;--meta:#8E8E94;--metaStrong:#6B6B70;--linkHover:#5C5C61;--secondary:#3E3E42;--ink:#111112;--inkDeep:#0A0A0B;--barGlass:rgba(255,255,255,.92);--accentWash:#FEF2F0;--accentLine:#F1CDC6;--accentInk:#A23E33;--accentSolid:#E2685A;--onWash:#FFFFFF;--dockGlass:rgba(255,255,255,.94);--accentWashHover:#FCE6EC;--shadowCard:0 12px 34px rgba(17,17,18,.14);}
+body[data-theme="dark"]{--surface:#1C1C1F;--raised:#1A1A1D;--page:#141416;--wellSoft:#1F1F23;--well:#202024;--fill:#232326;--fillStrong:#26262A;--media:#232326;--rule:#2A2A2E;--ruleSoft:#2A2A2E;--border:#2C2C30;--borderSoft:#2C2C30;--borderMedia:#303036;--borderInput:#33333A;--borderCard:#33333A;--dots:#3A3A42;--dotsStrong:#3E3E46;--dashed:#44444C;--sink:#494951;--lineStrong:#55555E;--lineSoft:#5E5E66;--muted:#6E6E77;--faint:#8A8A92;--meta:#9A9AA2;--metaStrong:#9A9AA2;--linkHover:#B4B4BA;--secondary:#B4B4BA;--ink:#EDEDEF;--inkDeep:#F5F5F7;--barGlass:rgba(28,28,31,.92);--accentWash:rgba(226,104,90,.14);--accentLine:rgba(226,104,90,.32);--accentInk:#E88778;--accentSolid:#E2685A;--onWash:#FFFFFF;--dockGlass:rgba(28,28,31,.94);--accentWashHover:rgba(226,104,90,.22);--shadowCard:0 12px 34px rgba(0,0,0,.5);}
+body{margin:0;background:var(--surface);font-family:Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--ink)}
+*{box-sizing:border-box}
+::placeholder{color:var(--meta)}
+a{color:var(--ink);text-decoration:none}a:hover{color:var(--linkHover)}
+@keyframes obreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
+@keyframes ohalosoft{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.06);opacity:.66}}
+@keyframes odriftA{0%{transform:translate(0%,0%) scale(1)}33%{transform:translate(14%,10%) scale(1.14)}66%{transform:translate(-8%,16%) scale(.94)}100%{transform:translate(0%,0%) scale(1)}}
+@keyframes odriftB{0%{transform:translate(0%,0%) scale(1.04)}30%{transform:translate(-16%,8%) scale(.9)}62%{transform:translate(10%,-12%) scale(1.16)}100%{transform:translate(0%,0%) scale(1.04)}}
+@keyframes odriftC{0%{transform:translate(0%,0%) scale(.96)}40%{transform:translate(12%,-14%) scale(1.2)}75%{transform:translate(-14%,-6%) scale(1)}100%{transform:translate(0%,0%) scale(.96)}}
+@keyframes odriftD{0%{transform:translate(0%,0%) scale(1.1)}45%{transform:translate(-10%,-16%) scale(.92)}80%{transform:translate(6%,12%) scale(1.14)}100%{transform:translate(0%,0%) scale(1.1)}}
+@keyframes kcsweep{0%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
+@keyframes kcrise{0%{opacity:0;transform:translateY(7px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes kcpulse{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes kcwave{0%,100%{transform:scaleY(.36)}50%{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh">
+
+<!-- ══ RAIL ══ -->
+<div style="width:76px;flex:none;border-right:1px solid var(--border);background:var(--raised);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 0 14px;z-index:30">
+  <div style="position:relative;width:34px;height:34px;margin-bottom:12px;flex:none;animation:obreathe 9s ease-in-out infinite">
+    <div style="position:absolute;inset:-8%;border-radius:34%;filter:blur(3px);animation:ohalosoft 13s ease-in-out infinite;background:radial-gradient(circle at 38% 32%,#FFC6AC,transparent 58%),radial-gradient(circle at 72% 74%,#8E9EDC,transparent 58%)"></div>
+    <div style="position:absolute;inset:0;border-radius:10px;overflow:hidden;background:#FFF1EC">
+      <div style="position:absolute;left:-6%;top:-14%;width:78%;height:74%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#FFFFFF 0 46%,transparent 72%);animation:odriftA 15s ease-in-out infinite"></div>
+      <div style="position:absolute;left:34%;top:-4%;width:74%;height:70%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#FFBFA4 0 46%,transparent 72%);animation:odriftB 19s ease-in-out infinite"></div>
+      <div style="position:absolute;left:6%;top:42%;width:84%;height:80%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#E2685A 0 46%,transparent 74%);animation:odriftC 17s ease-in-out infinite"></div>
+      <div style="position:absolute;left:52%;top:52%;width:66%;height:64%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#7E8FD4 0 44%,transparent 72%);animation:odriftD 23s ease-in-out infinite"></div>
+    </div>
+  </div>
+  <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6">
+    <sc-if value="{{ n.on }}" hint-placeholder-val="{{ false }}">
+      <div style="width:60px;padding:9px 0 7px;border-radius:10px;background:var(--fillStrong);display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:none">
+        <span style="display:flex;color:var(--ink)">{{ n.icon }}</span>
+        <span style="font:500 9.5px Archivo,sans-serif;color:var(--ink)">{{ n.label }}</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ n.off }}" hint-placeholder-val="{{ true }}">
+      <div style="width:60px;padding:9px 0 7px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:none" style-hover="background:var(--fillStrong)">
+        <span style="display:flex;color:var(--meta)">{{ n.icon }}</span>
+        <span style="font:400 9.5px Archivo,sans-serif;color:var(--metaStrong)">{{ n.label }}</span>
+      </div>
+    </sc-if>
+  </sc-for>
+  <div style="margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:12px;flex:none;padding-top:14px">
+    <span style="width:34px;height:1px;background:var(--borderSoft)"></span>
+    <span title="Settings" style="width:30px;height:30px;border-radius:50%;background:linear-gradient(160deg,var(--media),var(--dashed));display:flex;align-items:center;justify-content:center;font:500 10.5px Archivo,sans-serif;color:var(--linkHover);box-shadow:0 0 0 1px var(--borderCard);cursor:pointer" style-hover="box-shadow:0 0 0 1px var(--ink)">MR</span>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+<!-- topbar -->
+<div style="height:56px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px 0 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--barGlass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:25">
+  <div style="display:flex;align-items:center;gap:11px;flex:none">
+    <span style="display:flex;align-items:center;gap:8px;padding:5px 10px 5px 8px;border-radius:8px;cursor:pointer" style-hover="background:var(--fillStrong)">
+      <span style="width:16px;height:16px;border-radius:5px;background:linear-gradient(150deg,#E2685A,#F0A88F);flex:none"></span>
+      <span style="font:500 12.5px Archivo,sans-serif">Nook</span>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </span>
+    <span style="width:1px;height:18px;background:var(--borderSoft)"></span>
+    <span style="font:400 12.5px Archivo,sans-serif;color:var(--metaStrong)">{{ crumb }}</span>
+  </div>
+  <div style="flex:1"></div>
+  <span onClick="{{ toggleTheme }}" title="Theme" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="background:var(--fillStrong)">{{ themeIcon }}</span>
+  <span style="display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--borderInput);border-radius:8px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer;flex:none" style-hover="border-color:var(--ink);color:var(--ink)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 16.5v.6"></path></svg>How casting works
+  </span>
+</div>
+
+<!-- ══════════ ROSTER ══════════ -->
+<sc-if value="{{ isRoster }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:1180px;margin:0 auto;width:100%;padding:34px 32px 44px;display:flex;flex-direction:column;gap:26px">
+
+  <!-- hero + quick start -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--raised);overflow:hidden;display:flex;flex-wrap:wrap;align-items:stretch">
+    <div style="flex:1 1 470px;min-width:400px;padding:28px 28px 24px;display:flex;flex-direction:column;gap:14px;justify-content:center">
+      <span style="font:500 10.5px JetBrains Mono,monospace;letter-spacing:.12em;color:var(--meta)">CASTING</span>
+      <h1 style="margin:0;font:500 31px/1.08 Archivo,sans-serif;letter-spacing:-.038em">Say who you need.<br>Meet eight of them.</h1>
+      <span style="font:400 13px/1.65 Archivo,sans-serif;color:var(--metaStrong);max-width:430px">A cast member is a face, a voice and a way of talking — signed once, reusable in every campaign. Describe one and pick from a sheet, or start from photos of a real person.</span>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;padding:12px 14px;border:1px solid var(--borderInput);border-radius:11px;background:var(--surface)" style-hover="border-color:var(--lineStrong)">
+        <input value="{{ prompt }}" onChange="{{ setPrompt }}" onKeyDown="{{ promptKey }}" placeholder="a dad in his 30s in a cluttered garage, dry humour, explains things like he's talking to a mate" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:400 13px Archivo,sans-serif;color:var(--ink)"></input>
+        <span onClick="{{ startSheet }}" style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 12px Archivo,sans-serif;cursor:pointer;flex:none" style-hover="opacity:.86">
+          Cast it
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 7l5 5-5 5"></path></svg>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <span style="font:500 10px JetBrains Mono,monospace;letter-spacing:.1em;color:var(--muted);margin-right:2px">TRY</span>
+        <sc-for list="{{ seeds }}" as="sd" hint-placeholder-count="4">
+          <span onClick="{{ sd.go }}" style="padding:5px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="border-color:var(--accentLine);background:var(--accentWash);color:var(--accentInk)">{{ sd.label }}</span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:1 1 320px;min-width:300px;display:flex;gap:1px;background:var(--border);outline:1px solid var(--border);min-height:286px">
+      <div style="flex:1;position:relative;background:var(--media)">
+        <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="kc-hero-a" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="signed performer — portrait"></x-import>
+        <span style="position:absolute;left:9px;bottom:9px;padding:3px 8px;border-radius:999px;background:rgba(17,17,18,.7);font:500 9.5px JetBrains Mono,monospace;letter-spacing:.06em;color:#FFFFFF;pointer-events:none">SIGNED</span>
+      </div>
+      <div style="flex:1;position:relative;background:var(--media)">
+        <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="kc-hero-b" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="same face, different campaign"></x-import>
+        <span style="position:absolute;left:9px;bottom:9px;padding:3px 8px;border-radius:999px;background:rgba(17,17,18,.7);font:500 9.5px JetBrains Mono,monospace;letter-spacing:.06em;color:#FFFFFF;pointer-events:none">212 FRAMES</span>
+      </div>
+    </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div onClick="{{ startSheet }}" style="border:1px solid var(--borderCard);border-radius:13px;padding:16px 18px;display:flex;gap:13px;align-items:flex-start;cursor:pointer;background:var(--surface)" style-hover="border-color:var(--lineStrong);background:var(--raised)">
+        <span style="width:32px;height:32px;flex:none;border-radius:9px;border:1px dashed var(--dashed);display:flex;align-items:center;justify-content:center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--metaStrong)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V5.5M7.5 10L12 5.5 16.5 10M4.5 19.5h15"></path></svg>
+        </span>
+        <span style="display:flex;flex-direction:column;gap:4px;min-width:0">
+          <span style="font:500 12.5px Archivo,sans-serif">Upload a real person</span>
+          <span style="font:400 11.5px/1.55 Archivo,sans-serif;color:var(--metaStrong)">Six photos or one 20-second clip. Likeness locks in about four minutes.</span>
+        </span>
+      </div>
+      <div style="border:1px solid var(--borderCard);border-radius:13px;padding:16px 18px;display:flex;gap:13px;align-items:flex-start;cursor:pointer;background:var(--surface)" style-hover="border-color:var(--lineStrong);background:var(--raised)">
+        <span style="display:flex;align-items:center;flex:none;padding-top:1px">
+          <sc-for list="{{ stockStack }}" as="ss" hint-placeholder-count="3">
+            <span style="width:26px;height:32px;border-radius:6px;background:linear-gradient(160deg,var(--fill),var(--dots));box-shadow:0 0 0 1.5px var(--surface);margin-right:-9px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;font:500 9px Archivo,sans-serif;color:var(--faint)">{{ ss.initial }}</span>
+          </sc-for>
+        </span>
+        <span style="display:flex;flex-direction:column;gap:4px;min-width:0;padding-left:8px">
+          <span style="font:500 12.5px Archivo,sans-serif">Browse the signed roster</span>
+          <span style="font:400 11.5px/1.55 Archivo,sans-serif;color:var(--metaStrong)">184 performers already cleared for paid ads. Sign one and use it today.</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- filters -->
+  <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding-top:6px">
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:210px;padding:8px 11px;border:1px solid var(--borderInput);border-radius:8px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+      <input placeholder="Search cast by name, voice, or vibe" style="border:none;outline:none;background:transparent;font:400 12.5px Archivo,sans-serif;color:var(--ink);width:100%"></input>
+    </div>
+    <sc-for list="{{ scopes }}" as="sc" hint-placeholder-count="3">
+      <sc-if value="{{ sc.on }}" hint-placeholder-val="{{ false }}">
+        <span onClick="{{ sc.go }}" style="padding:7px 12px;border-radius:7px;background:var(--ink);color:var(--surface);font:500 11.5px Archivo,sans-serif;cursor:pointer;flex:none">{{ sc.label }}</span>
+      </sc-if>
+      <sc-if value="{{ sc.off }}" hint-placeholder-val="{{ true }}">
+        <span onClick="{{ sc.go }}" style="padding:7px 12px;border-radius:7px;border:1px solid var(--borderInput);font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer;flex:none" style-hover="border-color:var(--ink);color:var(--ink)">{{ sc.label }}</span>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <span style="font:500 13.5px Archivo,sans-serif">{{ scopeLabel }}</span>
+    <span style="font:400 12px Archivo,sans-serif;color:var(--metaStrong)">{{ castCount }}</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:16px">
+    <div onClick="{{ startSheet }}" style="aspect-ratio:4/5;border:1px dashed var(--dashed);border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer" style-hover="border-color:var(--ink);background:var(--wellSoft)">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+      <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">New cast member</span>
+    </div>
+    <sc-for list="{{ cast }}" as="c" hint-placeholder-count="8">
+      <div onClick="{{ c.go }}" style="display:flex;flex-direction:column;gap:9px;cursor:pointer">
+        <div style="position:relative;aspect-ratio:4/5;border-radius:11px;overflow:hidden;background:var(--media);border:1px solid var(--border)">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ c.slotId }}" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="{{ c.hint }}"></x-import>
+          <sc-if value="{{ c.mascot }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:999px;background:var(--accentWash);border:1px solid var(--accentLine);font:500 9.5px JetBrains Mono,monospace;letter-spacing:.06em;color:var(--accentInk);pointer-events:none">MASCOT</span>
+          </sc-if>
+          <sc-if value="{{ c.draft }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:999px;background:rgba(17,17,18,.7);font:500 9.5px JetBrains Mono,monospace;letter-spacing:.06em;color:#FFFFFF;pointer-events:none">UNSIGNED</span>
+          </sc-if>
+          <span style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:6px;padding:22px 10px 9px;background:linear-gradient(to top,rgba(0,0,0,.6),transparent);pointer-events:none">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.1" stroke-linecap="round"><path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5M6 12a6 6 0 0 0 12 0M12 18.5v2.5"></path></svg>
+            <span style="font:400 10.5px Archivo,sans-serif;color:#FFFFFF">{{ c.voice }}</span>
+          </span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font:500 12.5px Archivo,sans-serif">{{ c.name }}</span>
+          <span style="font:400 11px Archivo,sans-serif;color:var(--metaStrong)">{{ c.line }}</span>
+          <span style="font:400 10.5px JetBrains Mono,monospace;color:var(--faint);padding-top:2px">{{ c.used }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ══════════ CASTING SHEET ══════════ -->
+<sc-if value="{{ isSheet }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;background:var(--page);min-height:0">
+
+  <div style="max-width:1240px;width:100%;margin:0 auto;padding:24px 32px 8px;display:flex;flex-direction:column;gap:16px">
+    <span onClick="{{ goRoster }}" style="display:flex;align-items:center;gap:5px;font:400 12.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer;width:fit-content" style-hover="color:var(--ink)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Casting
+    </span>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1">
+        <span style="font:500 10.5px JetBrains Mono,monospace;letter-spacing:.12em;color:var(--meta)">{{ sheetEyebrow }}</span>
+        <span style="font:400 15px/1.45 Archivo,sans-serif;color:var(--ink);max-width:660px">{{ activePrompt }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex:none">
+        <sc-if value="{{ hasFocus }}" hint-placeholder-val="{{ false }}">
+          <span onClick="{{ clearFocus }}" style="display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--accentLine);background:var(--accentWash);border-radius:7px;font:500 11.5px Archivo,sans-serif;color:var(--accentInk);cursor:pointer">
+            Following {{ focusLabel }}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </span>
+        </sc-if>
+        <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ sheetMeta }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:14px 32px 168px">
+    <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:16px">
+      <sc-if value="{{ gen }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ ghosts }}" as="g" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="position:relative;aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:var(--fill);border:1px solid var(--border)">
+              <span style="position:absolute;inset:0;background:linear-gradient(100deg,transparent,var(--surface),transparent);opacity:.75;animation:kcsweep 1.5s ease-in-out infinite"></span>
+              <span style="position:absolute;left:10px;bottom:10px;font:500 10px JetBrains Mono,monospace;letter-spacing:.08em;color:var(--faint);animation:kcpulse 1.6s ease-in-out infinite">{{ g.label }}</span>
+            </div>
+            <span style="width:62%;height:9px;border-radius:4px;background:var(--fillStrong)"></span>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ candidates }}" as="c" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;gap:9px;animation:kcrise .34s ease-out both">
+            <div style="position:relative;aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:var(--media);border:1px solid var(--border)">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ c.slotId }}" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="{{ c.hint }}"></x-import>
+              <sc-if value="{{ c.kept }}" hint-placeholder-val="{{ false }}">
+                <span style="position:absolute;inset:0;border-radius:12px;border:2px solid var(--accentSolid);pointer-events:none"></span>
+                <span style="position:absolute;right:8px;top:8px;width:22px;height:22px;border-radius:50%;background:var(--accentSolid);display:flex;align-items:center;justify-content:center;pointer-events:none">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
+                </span>
+              </sc-if>
+              <sc-if value="{{ c.lineage }}" hint-placeholder-val="{{ false }}">
+                <span style="position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:999px;background:rgba(17,17,18,.72);font:500 9.5px JetBrains Mono,monospace;letter-spacing:.06em;color:#FFFFFF;pointer-events:none">{{ c.lineageLabel }}</span>
+              </sc-if>
+              <span style="position:absolute;left:0;right:0;bottom:0;padding:26px 8px 8px;background:linear-gradient(to top,rgba(0,0,0,.66),transparent);display:flex;align-items:center;gap:6px">
+                <span onClick="{{ c.keep }}" title="Keep" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 0;border-radius:7px;background:rgba(255,255,255,.94);font:500 11px Archivo,sans-serif;color:#111112;cursor:pointer" style-hover="background:#FFFFFF">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>{{ c.keepLabel }}
+                </span>
+                <span onClick="{{ c.follow }}" title="More faces like this one" style="width:28px;height:28px;flex:none;border-radius:7px;background:rgba(17,17,18,.62);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(17,17,18,.86)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l1.5 4.2 4.2 1.5-4.2 1.5L12 16l-1.5-4.3L6.3 10.2l4.2-1.5zM17.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg>
+                </span>
+                <span onClick="{{ c.drop }}" title="Discard" style="width:28px;height:28px;flex:none;border-radius:7px;background:rgba(17,17,18,.62);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(17,17,18,.86)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </span>
+              </span>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <span style="font:400 11.5px Archivo,sans-serif;color:var(--secondary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.line }}</span>
+              <span style="font:500 10px JetBrains Mono,monospace;color:var(--faint);flex:none">{{ c.idx }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- dock -->
+  <div style="position:sticky;bottom:0;z-index:20;padding:14px 32px 18px;background:linear-gradient(to top,var(--page) 42%,transparent)">
+    <div style="max-width:1240px;margin:0 auto;border:1px solid var(--borderCard);border-radius:14px;background:var(--dockGlass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadowCard);padding:12px 14px;display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--borderInput);border-radius:10px;background:var(--surface)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.7 4.8 4.8 1.7-4.8 1.7L12 16.5l-1.7-4.8L5.5 10l4.8-1.7z"></path></svg>
+          <input value="{{ prompt }}" onChange="{{ setPrompt }}" onKeyDown="{{ promptKey }}" placeholder="Change the direction — or press ⏎ to roll eight more" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:400 12.5px Archivo,sans-serif;color:var(--ink)"></input>
+        </div>
+        <span onClick="{{ reroll }}" style="display:flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid var(--borderInput);border-radius:9px;font:500 12px Archivo,sans-serif;color:var(--ink);cursor:pointer;flex:none;background:var(--surface)" style-hover="border-color:var(--ink)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.6-5.7M19.5 4.5V9h-4.5"></path></svg>Roll again
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;flex:1;min-width:220px">
+          <span style="font:500 10px JetBrains Mono,monospace;letter-spacing:.1em;color:var(--muted)">NUDGE</span>
+          <sc-for list="{{ nudges }}" as="nd" hint-placeholder-count="5">
+            <span onClick="{{ nd.go }}" style="padding:5px 10px;border:1px solid var(--border);border-radius:999px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer;background:var(--surface)" style-hover="border-color:var(--accentLine);background:var(--accentWash);color:var(--accentInk)">{{ nd.label }}</span>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex:none">
+          <sc-if value="{{ hasDropped }}" hint-placeholder-val="{{ false }}">
+            <span style="display:flex;align-items:center;gap:8px;font:400 11.5px Archivo,sans-serif;color:var(--meta)">
+              {{ droppedLabel }}
+              <span onClick="{{ undoDrop }}" style="display:flex;align-items:center;gap:4px;font:500 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="color:var(--ink)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5L4.5 9.5 9 14M4.5 9.5h9a6 6 0 0 1 0 12h-4"></path></svg>Undo
+              </span>
+              <span style="width:1px;height:16px;background:var(--borderSoft)"></span>
+            </span>
+          </sc-if>
+          <sc-if value="{{ hasKept }}" hint-placeholder-val="{{ false }}">
+            <span style="display:flex;align-items:center">
+              <sc-for list="{{ keptStack }}" as="ks" hint-placeholder-count="2">
+                <span style="width:24px;height:30px;border-radius:6px;background:linear-gradient(160deg,var(--fill),var(--dots));box-shadow:0 0 0 1.5px var(--surface);margin-right:-8px"></span>
+              </sc-for>
+            </span>
+            <span onClick="{{ sign }}" style="display:flex;align-items:center;gap:7px;padding:10px 15px;border-radius:9px;background:var(--ink);color:var(--surface);font:500 12px Archivo,sans-serif;cursor:pointer;margin-left:8px" style-hover="opacity:.86">
+              {{ signLabel }}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 7l5 5-5 5"></path></svg>
+            </span>
+          </sc-if>
+          <sc-if value="{{ noneKept }}" hint-placeholder-val="{{ true }}">
+            <span style="font:400 11.5px Archivo,sans-serif;color:var(--meta)">Keep the ones worth a second look</span>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ══════════ CASTING ROOM ══════════ -->
+<sc-if value="{{ isMember }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:1180px;margin:0 auto;width:100%;padding:26px 32px 48px;display:flex;flex-direction:column;gap:22px">
+
+  <span onClick="{{ goRoster }}" style="display:flex;align-items:center;gap:5px;font:400 12.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer;width:fit-content" style-hover="color:var(--ink)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Casting
+  </span>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:7px;min-width:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h1 style="margin:0;font:500 27px Archivo,sans-serif;letter-spacing:-.032em">{{ mName }}</h1>
+        <span style="padding:4px 9px;border-radius:999px;background:var(--fillStrong);font:500 9.5px JetBrains Mono,monospace;letter-spacing:.08em;color:var(--metaStrong)">{{ mKind }}</span>
+      </div>
+      <span style="font:400 13px/1.6 Archivo,sans-serif;color:var(--metaStrong);max-width:520px">{{ mLine }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex:none">
+      <span style="display:flex;align-items:center;gap:6px;padding:9px 13px;border:1px solid var(--borderInput);border-radius:8px;font:400 12px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="border-color:var(--ink);color:var(--ink)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h5v5H6zM13 13h5v5h-5zM11 8.5h2a2 2 0 0 1 2 2v2.5"></path></svg>Open in canvas
+      </span>
+      <span style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 12px Archivo,sans-serif;cursor:pointer" style-hover="opacity:.86">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM8.5 10.5a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2M4 17l5-4.5 3.5 3 3-2.5L20 17"></path></svg>Cast in a campaign
+      </span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+    <!-- left: stills + refine -->
+    <div style="flex:1 1 560px;min-width:420px;display:flex;flex-direction:column;gap:14px">
+      <div style="border:1px solid var(--borderCard);border-radius:14px;overflow:hidden;background:var(--raised)">
+        <div style="display:flex;gap:1px;background:var(--border)">
+          <div style="flex:1 1 58%;aspect-ratio:4/5;background:var(--media);position:relative">
+            <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="kc-hero" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="master portrait — this is the locked likeness"></x-import>
+            <span style="position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:999px;background:rgba(17,17,18,.72);font:500 9.5px JetBrains Mono,monospace;letter-spacing:.08em;color:#FFFFFF">MASTER</span>
+          </div>
+          <div style="flex:1 1 42%;display:flex;flex-direction:column;gap:1px">
+            <div style="flex:1;background:var(--media);min-height:0">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="kc-h2" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="three-quarter, daylight"></x-import>
+            </div>
+            <div style="flex:1;background:var(--media);min-height:0">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="kc-h3" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="mid-sentence, to camera"></x-import>
+            </div>
+          </div>
+        </div>
+        <div style="padding:13px 15px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--border)">
+          <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ mRetention }}</span>
+          <span style="display:flex;align-items:center;gap:5px;font:500 11px JetBrains Mono,monospace;letter-spacing:.06em;color:var(--accentInk)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11V8a6 6 0 0 1 12 0v3M5 11h14v9H5z"></path></svg>IDENTITY LOCKED
+          </span>
+        </div>
+      </div>
+
+      <!-- refine — the iteration loop -->
+      <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:15px 16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <span style="font:500 12.5px Archivo,sans-serif">Refine without recasting</span>
+          <span style="font:400 11px Archivo,sans-serif;color:var(--meta)">Face stays locked. Everything else is fair game.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--borderInput);border-radius:10px;background:var(--raised)" style-hover="border-color:var(--lineStrong)">
+          <input value="{{ refine }}" onChange="{{ setRefine }}" placeholder="softer light, less styled hair, plain grey tee" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:400 12.5px Archivo,sans-serif;color:var(--ink)"></input>
+          <span style="padding:7px 13px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 11.5px Archivo,sans-serif;cursor:pointer;flex:none" style-hover="opacity:.86">New takes</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <sc-for list="{{ refineChips }}" as="rc" hint-placeholder-count="5">
+            <span onClick="{{ rc.go }}" style="padding:5px 10px;border:1px solid var(--border);border-radius:999px;font:400 11.5px Archivo,sans-serif;color:var(--secondary);cursor:pointer" style-hover="border-color:var(--accentLine);background:var(--accentWash);color:var(--accentInk)">{{ rc.label }}</span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:11px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <span style="font:500 12.5px Archivo,sans-serif">Takes</span>
+          <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong)">{{ mTakes }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px">
+          <sc-for list="{{ takes }}" as="t" hint-placeholder-count="7">
+            <div style="position:relative;aspect-ratio:4/5;border-radius:9px;overflow:hidden;background:var(--media);border:1px solid var(--border);cursor:pointer" style-hover="border-color:var(--lineStrong)">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ t.slotId }}" shape="rect" hint-size="100%,100%" style="display:block;width:100%;height:100%" placeholder="{{ t.hint }}"></x-import>
+              <sc-if value="{{ t.motion }}" hint-placeholder-val="{{ false }}">
+                <span style="position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:4px;padding:3px 7px 3px 5px;border-radius:999px;background:rgba(17,17,18,.72);pointer-events:none">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5l11 7-11 7z"></path></svg>
+                  <span style="font:500 9px JetBrains Mono,monospace;color:#FFFFFF">{{ t.dur }}</span>
+                </span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="aspect-ratio:4/5;border:1px dashed var(--dashed);border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:var(--ink);background:var(--wellSoft)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: voice + campaigns -->
+    <div style="flex:1 1 300px;min-width:290px;display:flex;flex-direction:column;gap:14px">
+
+      <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:15px 16px;display:flex;flex-direction:column;gap:13px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <span style="font:500 10.5px JetBrains Mono,monospace;letter-spacing:.12em;color:var(--meta)">VOICE</span>
+          <span style="font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">Change</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span onClick="{{ togglePlay }}" style="width:38px;height:38px;flex:none;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="opacity:.86">{{ playIcon }}</span>
+          <span style="display:flex;align-items:center;gap:2px;height:34px;flex:1;min-width:0;overflow:hidden">
+            <sc-for list="{{ wave }}" as="w" hint-placeholder-count="30">
+              <span style="flex:1;min-width:2px;border-radius:2px;background:{{ w.color }};height:{{ w.h }}%;animation:{{ w.anim }}"></span>
+            </sc-for>
+          </span>
+          <span style="font:500 10px JetBrains Mono,monospace;color:var(--faint);flex:none">{{ mClip }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;padding-top:2px;border-top:1px solid var(--rule)">
+          <span style="font:500 12.5px Archivo,sans-serif;padding-top:10px">{{ mVoiceName }}</span>
+          <span style="font:400 11.5px/1.55 Archivo,sans-serif;color:var(--metaStrong)">{{ mVoiceLine }}</span>
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);overflow:hidden">
+        <div style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--rule)">
+          <span style="font:500 10.5px JetBrains Mono,monospace;letter-spacing:.12em;color:var(--meta)">IN CAMPAIGNS</span>
+          <span style="font:400 11px Archivo,sans-serif;color:var(--faint)">{{ mCampCount }}</span>
+        </div>
+        <sc-for list="{{ campaigns }}" as="cp" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:11px;padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--ruleSoft)" style-hover="background:var(--well)">
+            <span title="{{ cp.hint }}" style="width:34px;height:42px;flex:none;border-radius:6px;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border)"></span>
+            <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+              <span style="font:500 12px Archivo,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ cp.name }}</span>
+              <span style="font:400 10.5px Archivo,sans-serif;color:var(--metaStrong)">{{ cp.meta }}</span>
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          </div>
+        </sc-for>
+        <div style="padding:11px 16px;display:flex;align-items:center;gap:7px;font:400 11.5px Archivo,sans-serif;color:var(--metaStrong);cursor:pointer" style-hover="background:var(--well);color:var(--ink)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Cast into a new campaign
+        </div>
+      </div>
+
+      <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--raised);padding:15px 16px;display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 10.5px JetBrains Mono,monospace;letter-spacing:.12em;color:var(--meta)">SIBLINGS</span>
+        <span style="font:400 11.5px/1.6 Archivo,sans-serif;color:var(--metaStrong)">Variants cast from the same sheet. Useful when a campaign needs a near-miss rather than a new face.</span>
+        <div style="display:flex;gap:8px;padding-top:2px">
+          <sc-for list="{{ siblings }}" as="sb" hint-placeholder-count="3">
+            <span title="{{ sb.hint }}" style="width:52px;height:64px;flex:none;border-radius:7px;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border);cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;font:500 9px JetBrains Mono,monospace;color:var(--faint)" style-hover="border-color:var(--ink)">{{ sb.label }}</span>
+          </sc-for>
+          <span style="width:52px;height:64px;flex:none;border:1px dashed var(--dashed);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:var(--ink)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940},&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;roster&quot;,&quot;sheet&quot;,&quot;member&quot;],&quot;default&quot;:&quot;roster&quot;,&quot;tsType&quot;:&quot;\&quot;roster\&quot; | \&quot;sheet\&quot; | \&quot;member\&quot;&quot;,&quot;section&quot;:&quot;State&quot;},&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;State&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#E2685A&quot;,&quot;options&quot;:[&quot;#E2685A&quot;,&quot;#7E8FD4&quot;,&quot;#3E8F6E&quot;,&quot;#B0873F&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;}}">
+const svg = (d, s = 15) => React.createElement("svg", { width: s, height: s, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement("path", { d }));
+
+const P = {
+  studio: "M4 11l8-6 8 6v8.5H4z",
+  image: "M4 5h16v14H4zM8.5 10.5a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2M4 17l5-4.5 3.5 3 3-2.5L20 17",
+  thread: "M6 6h5v5H6zM13 13h5v5h-5zM11 8.5h2a2 2 0 0 1 2 2v2.5",
+  cast: "M5 4.5h14v15H5zM12 12.5a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2M8 19a4 4 0 0 1 8 0",
+  asset: "M5 4h11l3 3v13H5zM8.5 4v5.5h7V4",
+  library: "M5 5h4v14H5zM11 5h4v14h-4zM17.5 6l2.6 12.4",
+};
+
+const CAST = [
+  ["Maya Okafor", "Warm, unhurried — talks like a friend", "Maya · warm alto", "4 campaigns · 212 frames", 0, 0],
+  ["Dev Raman", "Dry, deadpan, mid-explanation", "Dev · flat baritone", "3 campaigns · 148 frames", 0, 0],
+  ["Ines Duval", "Polished, quiet, French-accented", "Ines · low soft", "2 campaigns · 96 frames", 0, 0],
+  ["Bo", "The Nook otter — fixed look, never off-model", "Bo · pitched up", "6 campaigns · 340 frames", 1, 0],
+  ["Talia Brooks", "Bright, quick, gets to the point", "Talia · bright mid", "5 campaigns · 268 frames", 0, 0],
+  ["Jonah Vance", "Garage energy, talks with his hands", "Jonah · rough tenor", "1 campaign · 44 frames", 0, 0],
+  ["Priya Nair", "Calm, measured, night-routine voice", "Priya · soft alto", "3 campaigns · 130 frames", 0, 0],
+  ["Sam Adeyemi", "Confident, low, a little amused", "Sam · deep warm", "Not yet used", 0, 1],
+  ["June Park", "Playful, up-tempo, slightly chaotic", "June · light quick", "Not yet used", 0, 1],
+];
+
+const HINTS = ["portrait, natural light", "three-quarter, studio", "candid, warm daylight", "mascot render, front-on", "portrait, soft shadow", "portrait, garage light", "portrait, cool evening", "portrait, plain backdrop", "portrait, bright window"];
+
+const CANDS = [
+  ["Warm, unhurried", "portrait — warm, open face, soft light"],
+  ["Dry and flat", "portrait — deadpan, tired eyes, garage light"],
+  ["Bright, talkative", "portrait — animated, mid-laugh"],
+  ["Quiet, careful", "portrait — reserved, low key light"],
+  ["Confident, amused", "portrait — half-smile, direct gaze"],
+  ["Rough, lived-in", "portrait — weathered, workwear, daylight"],
+  ["Neat, corporate", "portrait — tidy, neutral backdrop"],
+  ["Young, restless", "portrait — early 20s, harsh flash"],
+];
+
+const SEEDS = [
+  "Skincare founder, 40s, unbothered",
+  "Gen-Z gym rat, ring light, fast talker",
+  "Bodega owner, Brooklyn, gravelly",
+  "Night-routine voice, almost whispering",
+];
+
+const NUDGES = ["Warmer", "Older", "Less styled", "Different hair", "Real-room light", "Less symmetrical"];
+const REFINE_CHIPS = ["Softer light", "Plain wardrobe", "Outdoors", "Closer crop", "Tired, end of day"];
+
+const WAVE = [22, 46, 70, 38, 88, 62, 34, 96, 54, 28, 74, 44, 100, 58, 30, 82, 48, 66, 36, 92, 52, 26, 78, 42, 68, 34, 86, 50, 24, 60, 40, 72];
+
+class Component extends DCLogic {
+  state = {
+    view: "roster", dark: false, prompt: "", active: "a dad in his 30s in a cluttered garage, dry humour, explains things like he's talking to a mate",
+    gen: false, kept: [], dropped: [], focus: null, member: 0, playing: false, scope: "All", refine: "", roll: 1,
+  };
+
+  componentDidMount() {
+    const p = this.props;
+    if (p.startView) this.setState({ view: p.startView });
+    if (p.dark) this.setState({ dark: true });
+    this.applyTheme(p.dark ? "dark" : "light");
+    this.applyAccent();
+  }
+
+  componentDidUpdate(pp) {
+    if (pp.accent !== this.props.accent) this.applyAccent();
+  }
+
+  applyTheme(t) { document.body.setAttribute("data-theme", t); }
+
+  applyAccent() {
+    const hex = this.props.accent;
+    if (!hex) return;
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const s = document.body.style;
+    s.setProperty("--accentSolid", hex);
+    s.setProperty("--accentInk", this.state.dark ? `rgb(${Math.min(255, r + 30)},${Math.min(255, g + 40)},${Math.min(255, b + 40)})` : `rgb(${Math.round(r * .68)},${Math.round(g * .5)},${Math.round(b * .48)})`);
+    s.setProperty("--accentWash", `rgba(${r},${g},${b},${this.state.dark ? .14 : .07})`);
+    s.setProperty("--accentLine", `rgba(${r},${g},${b},${this.state.dark ? .32 : .38})`);
+  }
+
+  go(view) { this.setState({ view }); window.scrollTo(0, 0); }
+
+  roll(promptText) {
+    clearTimeout(this._t);
+    this.setState((s) => ({ view: "sheet", gen: true, active: promptText || s.active || s.prompt, prompt: "", roll: s.roll + 1, kept: [], dropped: [] }));
+    this._t = setTimeout(() => this.setState({ gen: false }), 1150);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const kept = s.kept;
+    const dropped = s.dropped;
+    const focusName = s.focus == null ? null : "0" + (s.focus + 1);
+
+    const list = CANDS.map((c, i) => ({
+      i, line: c[0], hint: c[1], idx: String(i + 1).padStart(2, "0"), slotId: "kc-cd-" + s.roll + "-" + i,
+      kept: kept.indexOf(i) > -1, keepLabel: kept.indexOf(i) > -1 ? "Kept" : "Keep",
+      lineage: s.focus != null && i > 3, lineageLabel: "FROM " + focusName,
+      keep: (e) => {
+        e.stopPropagation();
+        this.setState((st) => ({ kept: st.kept.indexOf(i) > -1 ? st.kept.filter((k) => k !== i) : st.kept.concat(i) }));
+      },
+      follow: (e) => { e.stopPropagation(); this.setState({ focus: i }); this.roll(s.active); },
+      drop: (e) => {
+        e.stopPropagation();
+        this.setState((st) => st.dropped.indexOf(i) > -1 ? null : ({ dropped: st.dropped.concat(i), kept: st.kept.filter((k) => k !== i) }));
+      },
+    })).filter((c) => dropped.indexOf(c.i) === -1);
+    const alive = list.length;
+
+    return {
+      nav: [
+        ["studio", "Home", P.studio], ["create", "Create", P.image], ["threads", "Canvas", P.thread],
+        ["casting", "Casting", P.cast], ["assets", "Assets", P.asset], ["library", "Library", P.library],
+      ].map(([key, label, d]) => {
+        const on = key === "casting";
+        return { key, label, icon: svg(d), on, off: !on };
+      }),
+
+      crumb: s.view === "roster" ? "Casting" : s.view === "sheet" ? "Casting / Sheet" : "Casting / " + CAST[s.member][0],
+      isRoster: s.view === "roster", isSheet: s.view === "sheet", isMember: s.view === "member",
+
+      themeIcon: s.dark
+        ? svg("M12 4.5v1.5M12 18v1.5M4.5 12H6M18 12h1.5M6.7 6.7l1.1 1.1M16.2 16.2l1.1 1.1M17.3 6.7l-1.1 1.1M7.8 16.2l-1.1 1.1M12 15.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2", 15)
+        : svg("M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5", 15),
+      toggleTheme: () => {
+        const dark = !s.dark;
+        this.setState({ dark }, () => { this.applyTheme(dark ? "dark" : "light"); this.applyAccent(); });
+      },
+
+      prompt: s.prompt,
+      setPrompt: (e) => this.setState({ prompt: e.target.value }),
+      promptKey: (e) => { if (e.key === "Enter") this.roll(e.target.value); },
+      startSheet: () => this.roll(s.prompt),
+      reroll: () => this.roll(s.prompt),
+      goRoster: () => this.go("roster"),
+
+      seeds: SEEDS.map((label) => ({ label, go: () => this.roll(label) })),
+      nudges: NUDGES.map((label) => ({ label, go: () => this.roll(s.active + ", " + label.toLowerCase()) })),
+      refineChips: REFINE_CHIPS.map((label) => ({ label, go: () => this.setState({ refine: label.toLowerCase() }) })),
+
+      stockStack: [{ initial: "R" }, { initial: "K" }, { initial: "A" }],
+      scopes: ["All", "Signed", "Unsigned"].map((label) => ({
+        label, on: s.scope === label, off: s.scope !== label, go: () => this.setState({ scope: label }),
+      })),
+      scopeLabel: s.scope === "All" ? "Everyone under contract" : s.scope === "Signed" ? "Signed and cleared" : "Waiting to be signed",
+      castCount: (s.scope === "All" ? 9 : s.scope === "Signed" ? 7 : 2) + " cast members",
+      cast: CAST.map((c, i) => ({
+        name: c[0], line: c[1], voice: c[2], used: c[3], mascot: !!c[4], draft: !!c[5],
+        slotId: "kc-cast-" + i, hint: HINTS[i],
+        go: () => this.setState({ view: "member", member: i }),
+      })).filter((c) => s.scope === "All" || (s.scope === "Signed" ? !c.draft : c.draft)),
+
+      gen: s.gen, ready: !s.gen,
+      ghosts: CANDS.map((_, i) => ({ label: "CASTING " + String(i + 1).padStart(2, "0") })),
+      activePrompt: s.active,
+      sheetEyebrow: s.focus == null ? "CASTING SHEET · ROLL " + String(s.roll).padStart(2, "0") : "FOLLOWING CANDIDATE " + focusName,
+      sheetMeta: s.gen ? "casting eight…" : (kept.length ? kept.length + " kept of " + alive : alive + (alive === 1 ? " candidate" : " candidates")),
+      hasFocus: s.focus != null, focusLabel: focusName,
+      clearFocus: () => this.setState({ focus: null }),
+
+      candidates: list,
+
+      hasDropped: dropped.length > 0,
+      droppedLabel: dropped.length + (dropped.length === 1 ? " discarded" : " discarded"),
+      undoDrop: () => this.setState((st) => ({ dropped: st.dropped.slice(0, -1) })),
+
+      hasKept: kept.length > 0, noneKept: kept.length === 0,
+      keptStack: kept.slice(0, 3).map((k) => ({ k })),
+      signLabel: kept.length === 1 ? "Sign to roster" : "Sign " + kept.length + " to roster",
+      sign: () => this.setState({ view: "member", member: 5, kept: [] }),
+
+      mName: CAST[s.member][0],
+      mKind: CAST[s.member][4] ? "MASCOT" : CAST[s.member][5] ? "UNSIGNED" : "PERFORMER",
+      mLine: CAST[s.member][1] + ". Cast from a sheet on " + ["12 Mar", "3 Apr", "28 Apr", "9 May", "21 May", "2 Jun", "14 Jun", "1 Jul", "8 Jul"][s.member] + ".",
+      mRetention: CAST[s.member][5] ? "No frames yet — this face is still a draft" : "99.4% identity retention across " + CAST[s.member][3].split("· ")[1],
+      mTakes: CAST[s.member][5] ? "8 takes from the sheet" : CAST[s.member][3].split("· ")[1] + " on file",
+      mVoiceName: CAST[s.member][2],
+      mVoiceLine: ["Unhurried, drops the ends of sentences.", "Flat delivery, lands dry jokes without trying.", "Soft, precise, slight French vowels.", "Pitched up, a little rubbery — always Bo.", "Fast, bright, forward-leaning.", "Gravel and warmth, talks over himself.", "Low and even, good for night routines.", "Deep, relaxed, amused underneath.", "Quick and bouncy, hard to keep still."][s.member],
+      mClip: "0:14",
+      mCampCount: CAST[s.member][3].split(" ")[0] === "Not" ? "none yet" : CAST[s.member][3].split(" ")[0],
+      playIcon: s.playing
+        ? React.createElement("svg", { width: 13, height: 13, viewBox: "0 0 24 24", fill: "var(--surface)" }, React.createElement("path", { d: "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" }))
+        : React.createElement("svg", { width: 13, height: 13, viewBox: "0 0 24 24", fill: "var(--surface)" }, React.createElement("path", { d: "M8 5l11 7-11 7z" })),
+      togglePlay: () => this.setState({ playing: !s.playing }),
+      wave: WAVE.map((h, i) => ({
+        h, color: s.playing && i < 14 ? "var(--accentSolid)" : s.playing ? "var(--lineStrong)" : "var(--dotsStrong)",
+        anim: s.playing ? `kcwave ${(700 + (i % 5) * 130)}ms ease-in-out ${(i % 7) * 60}ms infinite` : "none",
+      })),
+
+      refine: s.refine,
+      setRefine: (e) => this.setState({ refine: e.target.value }),
+
+      takes: [
+        ["to camera, mid-sentence", 0, ""], ["side profile, window light", 0, ""], ["holding product", 0, ""],
+        ["talking head, 9:16", 1, "0:08"], ["wide, in a kitchen", 0, ""], ["laughing, unposed", 0, ""],
+        ["walk-and-talk", 1, "0:12"],
+      ].map(([hint, motion, dur], i) => ({ hint, motion: !!motion, dur, slotId: "kc-take-" + s.member + "-" + i })),
+
+      campaigns: [
+        { name: "Summer Refill", meta: "12 frames · live", hint: "campaign hero still", slotId: "kc-cp-0" },
+        { name: "Nook Sleep — Q3", meta: "6 frames · in review", hint: "night routine frame", slotId: "kc-cp-1" },
+        { name: "Try-on drop 04", meta: "3 clips · draft", hint: "try-on frame", slotId: "kc-cp-2" },
+      ],
+      siblings: [0, 1, 2].map((i) => ({ label: "V" + (i + 2), hint: "Variant " + (i + 2) + " from the same sheet" })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./tokens.css">
+<style>
+@keyframes obreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
+@keyframes ohalosoft{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.06);opacity:.66}}
+@keyframes odriftA{0%{transform:translate(0%,0%) scale(1)}33%{transform:translate(14%,10%) scale(1.14)}66%{transform:translate(-8%,16%) scale(.94)}100%{transform:translate(0%,0%) scale(1)}}
+@keyframes odriftB{0%{transform:translate(0%,0%) scale(1.04)}30%{transform:translate(-16%,8%) scale(.9)}62%{transform:translate(10%,-12%) scale(1.16)}100%{transform:translate(0%,0%) scale(1.04)}}
+@keyframes odriftC{0%{transform:translate(0%,0%) scale(.96)}40%{transform:translate(12%,-14%) scale(1.2)}75%{transform:translate(-14%,-6%) scale(1)}100%{transform:translate(0%,0%) scale(.96)}}
+@keyframes odriftD{0%{transform:translate(0%,0%) scale(1.1)}45%{transform:translate(-10%,-16%) scale(.92)}80%{transform:translate(6%,12%) scale(1.14)}100%{transform:translate(0%,0%) scale(1.1)}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh">
+
+<!-- ═══ RAIL — 76px, sticky, full height ═══ -->
+<div style="width:76px;flex:none;border-right:1px solid var(--border);background:var(--raised);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 0 14px;z-index:30">
+  <div style="position:relative;width:34px;height:34px;margin-bottom:12px;flex:none;animation:obreathe 9s ease-in-out infinite">
+    <div style="position:absolute;inset:-8%;border-radius:34%;filter:blur(3px);animation:ohalosoft 13s ease-in-out infinite;background:radial-gradient(circle at 38% 32%,#FFC6AC,transparent 58%),radial-gradient(circle at 72% 74%,#8E9EDC,transparent 58%)"></div>
+    <div style="position:absolute;inset:0;border-radius:10px;overflow:hidden;background:#FFF1EC">
+      <div style="position:absolute;left:-6%;top:-14%;width:78%;height:74%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#FFFFFF 0 46%,transparent 72%);animation:odriftA 15s ease-in-out infinite"></div>
+      <div style="position:absolute;left:34%;top:-4%;width:74%;height:70%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#FFBFA4 0 46%,transparent 72%);animation:odriftB 19s ease-in-out infinite"></div>
+      <div style="position:absolute;left:6%;top:42%;width:84%;height:80%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#E2685A 0 46%,transparent 74%);animation:odriftC 17s ease-in-out infinite"></div>
+      <div style="position:absolute;left:52%;top:52%;width:66%;height:64%;border-radius:50%;filter:blur(5px);background:radial-gradient(circle,#7E8FD4 0 44%,transparent 72%);animation:odriftD 23s ease-in-out infinite"></div>
+    </div>
+  </div>
+  <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6">
+    <sc-if value="{{ n.on }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ n.go }}" style="width:60px;padding:9px 0 7px;border-radius:10px;background:var(--fillStrong);display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:none">
+        <span style="display:flex;color:var(--ink)">{{ n.icon }}</span>
+        <span style="font:500 9.5px var(--font-sans);color:var(--ink)">{{ n.label }}</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ n.off }}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{ n.go }}" style="width:60px;padding:9px 0 7px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:none" style-hover="background:var(--fillStrong)">
+        <span style="display:flex;color:var(--meta)">{{ n.icon }}</span>
+        <span style="font:400 9.5px var(--font-sans);color:var(--metaStrong)">{{ n.label }}</span>
+      </div>
+    </sc-if>
+  </sc-for>
+  <div style="margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:12px;flex:none;padding-top:14px">
+    <span style="width:34px;height:1px;background:var(--borderSoft)"></span>
+    <span style="width:30px;height:30px;border-radius:50%;background:linear-gradient(160deg,var(--media),var(--dashed));display:flex;align-items:center;justify-content:center;font:500 10.5px var(--font-sans);color:var(--linkHover);box-shadow:0 0 0 1px var(--borderCard);cursor:pointer" style-hover="box-shadow:0 0 0 1px var(--ink)">MR</span>
+  </div>
+</div>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+<!-- ═══ TOPBAR — 56px, sticky, glass ═══ -->
+<div style="height:56px;flex:none;display:flex;align-items:center;gap:14px;padding:0 18px 0 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--barGlass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:25">
+  <div style="display:flex;align-items:center;gap:11px;flex:none">
+    <span style="display:flex;align-items:center;gap:8px;padding:5px 10px 5px 8px;border-radius:8px;cursor:pointer" style-hover="background:var(--fillStrong)">
+      <span style="width:16px;height:16px;border-radius:5px;background:linear-gradient(150deg,var(--accentSolid),#F0A88F);flex:none"></span>
+      <span style="font:500 12.5px var(--font-sans)">Nook</span>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </span>
+    <span style="width:1px;height:18px;background:var(--borderSoft)"></span>
+    <span style="font:400 12.5px var(--font-sans);color:var(--metaStrong)">Foundation</span>
+  </div>
+  <div style="flex:1"></div>
+  <span onClick="{{ toggleTheme }}" title="Theme" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="background:var(--fillStrong)">{{ themeIcon }}</span>
+  <span style="display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--borderInput);border-radius:8px;font:400 11.5px var(--font-sans);color:var(--secondary);cursor:pointer;flex:none" style-hover="border-color:var(--ink);color:var(--ink)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 16.5v.6"></path></svg>Docs
+  </span>
+</div>
+
+<div style="max-width:1180px;width:100%;margin:0 auto;padding:34px 32px 80px;display:flex;flex-direction:column;gap:44px">
+
+<!-- header -->
+<div style="display:flex;flex-direction:column;gap:9px">
+  <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">DRAPE FOUNDATION · V1</span>
+  <h1 style="margin:0;font:500 31px/1.08 var(--font-sans);letter-spacing:-.038em">Shared app foundation.<br>Build every surface from this.</h1>
+  <span style="font:400 13px/1.65 var(--font-sans);color:var(--metaStrong);max-width:560px">Tokens, type, chrome and primitives lifted from the lobby, canvas and casting designs. Every value here already ships in at least two surfaces — nothing on this page is theoretical. Toggle the theme in the topbar; nothing below is theme-conditional.</span>
+</div>
+
+<!-- ══ 01 SURFACES ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">01 · SURFACES &amp; LINES</span>
+    <span style="font:400 11.5px var(--font-sans);color:var(--faint)">tokens.css</span>
+  </div>
+  <span style="font:400 12.5px/1.6 var(--font-sans);color:var(--metaStrong);max-width:620px">Elevation is expressed by value, never by shadow. A card on <code style="font:400 11.5px var(--font-mono);color:var(--accentInk)">--surface</code> uses <code style="font:400 11.5px var(--font-mono);color:var(--accentInk)">--raised</code>; a working surface behind cards uses <code style="font:400 11.5px var(--font-mono);color:var(--accentInk)">--page</code>. Shadow is reserved for things that float over content — dock, dialog, menu.</span>
+  <sc-for list="{{ ramps }}" as="r" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted)">{{ r.title }}</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(126px,1fr));gap:8px">
+        <sc-for list="{{ r.items }}" as="t" hint-placeholder-count="8">
+          <div style="border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--surface)">
+            <div style="height:38px;background:{{ t.bg }};border-bottom:1px solid var(--border)"></div>
+            <div style="padding:7px 9px 8px;display:flex;flex-direction:column;gap:2px">
+              <span style="font:500 10px var(--font-mono);color:var(--secondary)">{{ t.name }}</span>
+              <span style="font:400 10px/1.4 var(--font-sans);color:var(--meta)">{{ t.use }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<!-- ══ 02 TEXT + ACCENT ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">02 · TEXT &amp; ACCENT</span>
+  </div>
+  <div style="display:flex;gap:20px;flex-wrap:wrap">
+    <div style="flex:1 1 340px;min-width:300px;display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{ textRamp }}" as="t" hint-placeholder-count="7">
+        <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid var(--ruleSoft)">
+          <span style="font:500 10px var(--font-mono);color:var(--faint);width:96px;flex:none">{{ t.name }}</span>
+          <span style="font:400 13px var(--font-sans);color:{{ t.bg }};flex:1;min-width:0">{{ t.use }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="flex:1 1 300px;min-width:280px;display:flex;flex-direction:column;gap:10px">
+      <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--raised);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+        <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted)">ACCENT — ONE HUE, FOUR ROLES</span>
+        <div style="display:flex;gap:8px">
+          <span style="flex:1;height:44px;border-radius:9px;background:var(--accentSolid);display:flex;align-items:center;justify-content:center;font:500 10px var(--font-mono);color:var(--onWash)">SOLID</span>
+          <span style="flex:1;height:44px;border-radius:9px;background:var(--accentWash);border:1px solid var(--accentLine);display:flex;align-items:center;justify-content:center;font:500 10px var(--font-mono);color:var(--accentInk)">WASH</span>
+        </div>
+        <span style="font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">Accent means <b style="font-weight:500;color:var(--ink)">kept, selected, or active choice</b> — never decoration and never a whole background. Text on wash is always <code style="font:400 11px var(--font-mono);color:var(--accentInk)">--accentInk</code>, never <code style="font:400 11px var(--font-mono);color:var(--accentInk)">--accentSolid</code> (that fails contrast at body sizes).</span>
+      </div>
+      <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--raised);padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted)">TYPE SCALE</span>
+        <sc-for list="{{ typeScale }}" as="ty" hint-placeholder-count="8">
+          <div style="display:flex;align-items:baseline;gap:12px;padding-bottom:6px;border-bottom:1px solid var(--ruleSoft)">
+            <span style="font:500 9.5px var(--font-mono);color:var(--faint);width:74px;flex:none">{{ ty.spec }}</span>
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ty.sample }}</span>
+          </div>
+        </sc-for>
+        <span style="font:400 11px/1.55 var(--font-sans);color:var(--meta)">Archivo for everything human. JetBrains Mono only for eyebrows, counts, indices, status pills and metadata — never for sentences.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 03 BUTTONS ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">03 · BUTTONS</span>
+    <span style="font:400 11.5px var(--font-sans);color:var(--faint)">one primary per view</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:12px;align-items:start">
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Primary — ink fill</span>
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 12px var(--font-sans);cursor:pointer" style-hover="opacity:.86">
+          Cast it
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 7l5 5-5 5"></path></svg>
+        </span>
+        <span style="padding:7px 13px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 11.5px var(--font-sans);cursor:pointer" style-hover="opacity:.86">Small</span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Hover is <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">opacity:.86</code>, not a colour change — survives theme flip and accent retint.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Secondary — outline</span>
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:6px;padding:9px 13px;border:1px solid var(--borderInput);border-radius:8px;font:400 12px var(--font-sans);color:var(--secondary);cursor:pointer;background:var(--surface)" style-hover="border-color:var(--ink);color:var(--ink)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h5v5H6zM13 13h5v5h-5zM11 8.5h2a2 2 0 0 1 2 2v2.5"></path></svg>Open in canvas
+        </span>
+        <span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="background:var(--fillStrong)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--secondary)" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="5.5" r="1.4"></circle><circle cx="12" cy="18.5" r="1.4"></circle></svg>
+        </span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Border darkens to <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--ink</code> on hover and the label follows. Icon-only buttons in chrome get a <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--fillStrong</code> pad instead.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Over media — dark glass only</span>
+      <div style="position:relative;height:84px;border-radius:11px;overflow:hidden;background:linear-gradient(160deg,var(--fill),var(--dots))">
+        <span style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:6px;padding:26px 8px 8px;background:linear-gradient(to top,var(--scrim),transparent)">
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 0;border-radius:7px;background:rgba(255,255,255,.94);font:500 11px var(--font-sans);color:#111112;cursor:pointer">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>Keep
+          </span>
+          <span style="width:28px;height:28px;flex:none;border-radius:7px;background:var(--scrimChip);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:var(--scrimChipHov)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </span>
+        </span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">⚠ Never translucent <i>white</i> chips over media — measured 2.5:1 against white glyphs on light imagery. Use <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--scrimChip</code>.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Quiet, destructive, disabled</span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:5px;font:400 12px var(--font-sans);color:var(--metaStrong);cursor:pointer" style-hover="color:var(--ink)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Back
+        </span>
+        <span style="padding:8px 12px;border:1px solid var(--borderInput);border-radius:8px;font:400 11.5px var(--font-sans);color:var(--secondary);cursor:pointer" style-hover="border-color:#C0473A;color:#C0473A">Delete</span>
+        <span style="padding:8px 12px;border-radius:8px;background:var(--fill);font:500 11.5px var(--font-sans);color:var(--muted);cursor:not-allowed">Unavailable</span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Prefer replacing a disabled primary with an instruction in <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--meta</code>. Destructive is a hover state, never a resting red button.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 04 INPUTS ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">04 · INPUTS</span>
+    <span style="font:400 11.5px var(--font-sans);color:var(--faint)">placeholders are examples, never instructions</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:720px">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--borderInput);border-radius:11px;background:var(--surface)" style-hover="border-color:var(--lineStrong)">
+      <input placeholder="a dad in his 30s in a cluttered garage, dry humour" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:400 13px var(--font-sans);color:var(--ink)"></input>
+      <span style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 12px var(--font-sans);cursor:pointer;flex:none" style-hover="opacity:.86">Cast it</span>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1 1 260px;display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid var(--borderInput);border-radius:8px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+        <input placeholder="Search cast by name, voice, or vibe" style="border:none;outline:none;background:transparent;font:400 12.5px var(--font-sans);color:var(--ink);width:100%"></input>
+      </div>
+      <div style="flex:1 1 200px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 11px;border:1px solid var(--borderInput);border-radius:8px;cursor:pointer" style-hover="border-color:var(--lineStrong)">
+        <span style="font:400 12.5px var(--font-sans);color:var(--ink)">Newest first</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+    </div>
+    <div style="border:1px solid var(--borderInput);border-radius:10px;background:var(--raised);padding:11px 13px;display:flex;flex-direction:column;gap:8px">
+      <textarea placeholder="Notes for the team — what this cast member is for, and what to avoid." style="border:none;outline:none;background:transparent;resize:vertical;min-height:52px;font:400 12.5px/1.6 var(--font-sans);color:var(--ink)"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:8px;border-top:1px solid var(--rule)">
+        <span style="font:400 10.5px var(--font-mono);color:var(--faint)">0 / 280</span>
+        <span style="padding:6px 12px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 11.5px var(--font-sans);cursor:pointer" style-hover="opacity:.86">Save</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #C0473A;border-radius:11px;background:var(--surface)">
+      <input value="" placeholder="Name is required" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:400 13px var(--font-sans);color:var(--ink)"></input>
+      <span style="font:400 11px var(--font-mono);color:#C0473A;flex:none">REQUIRED</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 05 CHIPS & PILLS ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">05 · CHIPS, PILLS &amp; TABS</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Action chip — one tap, does something</span>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--muted)">NUDGE</span>
+        <sc-for list="{{ chipDemo }}" as="c" hint-placeholder-count="4">
+          <span style="padding:5px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font:400 11.5px var(--font-sans);color:var(--secondary);cursor:pointer" style-hover="border-color:var(--accentLine);background:var(--accentWash);color:var(--accentInk)">{{ c.label }}</span>
+        </sc-for>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Hover previews accent so it reads as "this will apply", not "this is selected".</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Derived chip — removable state</span>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <sc-for list="{{ derived }}" as="d" hint-placeholder-count="4">
+          <span style="display:flex;align-items:center;gap:6px;padding:5px 8px 5px 10px;border:1px solid var(--accentLine);background:var(--accentWash);border-radius:999px;font:500 11.5px var(--font-sans);color:var(--accentInk);cursor:pointer">
+            {{ d.label }}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </span>
+        </sc-for>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Anything the system inferred or a user set away from default appears here. <b style="font-weight:500;color:var(--ink)">No setting is ever applied invisibly.</b></span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Scope pills &amp; tabs</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <sc-for list="{{ scopes }}" as="s" hint-placeholder-count="3">
+          <sc-if value="{{ s.on }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ s.go }}" style="padding:7px 12px;border-radius:7px;background:var(--ink);color:var(--surface);font:500 11.5px var(--font-sans);cursor:pointer">{{ s.label }}</span>
+          </sc-if>
+          <sc-if value="{{ s.off }}" hint-placeholder-val="{{ true }}">
+            <span onClick="{{ s.go }}" style="padding:7px 12px;border-radius:7px;border:1px solid var(--borderInput);font:400 11.5px var(--font-sans);color:var(--secondary);cursor:pointer" style-hover="border-color:var(--ink);color:var(--ink)">{{ s.label }}</span>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:2px;border-bottom:1px solid var(--border)">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ t.go }}" style="padding:9px 12px;font:500 12px var(--font-sans);color:var(--ink);border-bottom:2px solid var(--ink);margin-bottom:-1px;cursor:pointer">{{ t.label }}</span>
+          </sc-if>
+          <sc-if value="{{ t.off }}" hint-placeholder-val="{{ true }}">
+            <span onClick="{{ t.go }}" style="padding:9px 12px;font:400 12px var(--font-sans);color:var(--metaStrong);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer" style-hover="color:var(--ink)">{{ t.label }}</span>
+          </sc-if>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Status pills — mono, uppercase</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="padding:4px 9px;border-radius:999px;background:var(--accentWash);border:1px solid var(--accentLine);font:500 9.5px var(--font-mono);letter-spacing:.06em;color:var(--accentInk)">MASCOT</span>
+        <span style="padding:4px 9px;border-radius:999px;background:var(--fillStrong);font:500 9.5px var(--font-mono);letter-spacing:.08em;color:var(--metaStrong)">PERFORMER</span>
+        <span style="padding:4px 9px;border-radius:999px;background:var(--scrimPill);font:500 9.5px var(--font-mono);letter-spacing:.06em;color:#FFFFFF">ON MEDIA</span>
+        <span style="display:flex;align-items:center;gap:5px;font:500 11px var(--font-mono);letter-spacing:.06em;color:var(--accentInk)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11V8a6 6 0 0 1 12 0v3M5 11h14v9H5z"></path></svg>IDENTITY LOCKED
+        </span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Status is always mono + uppercase so it never competes with names. On media it uses <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">--scrimPill</code>, not a token surface.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 06 CARDS ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">06 · CARDS, ROWS &amp; MEDIA</span>
+    <span style="font:400 11.5px var(--font-sans);color:var(--faint)">1px border + radius; shadow only when floating</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:12px;align-items:start">
+
+    <div style="border:1px solid var(--borderCard);border-radius:13px;padding:16px 18px;display:flex;gap:13px;align-items:flex-start;cursor:pointer;background:var(--surface)" style-hover="border-color:var(--lineStrong);background:var(--raised)">
+      <span style="width:32px;height:32px;flex:none;border-radius:9px;border:1px dashed var(--dashed);display:flex;align-items:center;justify-content:center">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--metaStrong)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V5.5M7.5 10L12 5.5 16.5 10M4.5 19.5h15"></path></svg>
+      </span>
+      <span style="display:flex;flex-direction:column;gap:4px;min-width:0">
+        <span style="font:500 12.5px var(--font-sans)">Route card</span>
+        <span style="font:400 11.5px/1.55 var(--font-sans);color:var(--metaStrong)">Secondary way into a flow. Copy states the cost or the size — "locks in about four minutes".</span>
+      </span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:9px;cursor:pointer;max-width:196px">
+      <div style="position:relative;aspect-ratio:4/5;border-radius:11px;overflow:hidden;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border)">
+        <span style="position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:999px;background:var(--scrimPill);font:500 9.5px var(--font-mono);letter-spacing:.06em;color:#FFFFFF">SIGNED</span>
+        <span style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:6px;padding:22px 10px 9px;background:linear-gradient(to top,var(--scrim),transparent)">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.1" stroke-linecap="round"><path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 0 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5M6 12a6 6 0 0 0 12 0M12 18.5v2.5"></path></svg>
+          <span style="font:400 10.5px var(--font-sans);color:#FFFFFF">Maya · warm alto</span>
+        </span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font:500 12.5px var(--font-sans)">Media card</span>
+        <span style="font:400 11px var(--font-sans);color:var(--metaStrong)">4:5, scrim for text over image</span>
+        <span style="font:400 10.5px var(--font-mono);color:var(--faint);padding-top:2px">4 campaigns · 212 frames</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column">
+      <div style="padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--rule)">
+        <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">LIST PANEL</span>
+        <span style="font:400 11px var(--font-sans);color:var(--faint)">3</span>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:11px;padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--ruleSoft)" style-hover="background:var(--well)">
+          <span style="width:34px;height:42px;flex:none;border-radius:6px;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border)"></span>
+          <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+            <span style="font:500 12px var(--font-sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+            <span style="font:400 10.5px var(--font-sans);color:var(--metaStrong)">{{ r.meta }}</span>
+          </span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+        </div>
+      </sc-for>
+      <div style="padding:11px 16px;display:flex;align-items:center;gap:7px;font:400 11.5px var(--font-sans);color:var(--metaStrong);cursor:pointer" style-hover="background:var(--well);color:var(--ink)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Add another
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:196px">
+      <div style="aspect-ratio:4/5;border:1px dashed var(--dashed);border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer" style-hover="border-color:var(--ink);background:var(--wellSoft)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        <span style="font:400 11.5px var(--font-sans);color:var(--metaStrong)">Empty / add target</span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Dashed = "you can put something here". Never dashed for decoration.</span>
+    </div>
+  </div>
+
+  <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--raised);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+    <span style="font:500 12px var(--font-sans)">Media rule — two treatments, by size</span>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="width:132px;aspect-ratio:4/5;border-radius:11px;overflow:hidden;background:var(--media);border:1px solid var(--borderMedia)">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="dpf-slot" shape="rect" hint-size="132px,165px" style="display:block;width:100%;height:100%" placeholder="drop-target, ≥64px"></x-import>
+        </div>
+        <span style="font:500 10px var(--font-mono);color:var(--faint)">≥ 64px — REAL SLOT</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;gap:8px">
+          <span style="width:52px;height:64px;border-radius:7px;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border);display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;font:500 9px var(--font-mono);color:var(--faint)">V2</span>
+          <span style="width:34px;height:42px;border-radius:6px;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border)"></span>
+        </div>
+        <span style="font:500 10px var(--font-mono);color:var(--faint)">&lt; 64px — GRADIENT TILE</span>
+      </div>
+      <span style="flex:1 1 240px;min-width:220px;font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">Below ~64px, placeholder prose clips mid-word and reads as broken text. Small thumbs use <code style="font:400 11px var(--font-mono);color:var(--accentInk)">linear-gradient(160deg,var(--fill),var(--dots))</code> + 1px border, with an optional short mono label and the description on <code style="font:400 11px var(--font-mono);color:var(--accentInk)">title</code>.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 07 OVERLAYS ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">07 · OVERLAYS &amp; DOCK</span>
+    <span style="font:400 11.5px var(--font-sans);color:var(--faint)">glass + shadowCard</span>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <span onClick="{{ openDialog }}" style="padding:9px 14px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 12px var(--font-sans);cursor:pointer" style-hover="opacity:.86">Open dialog</span>
+    <span style="display:flex;align-items:center;gap:6px;padding:9px 13px;border:1px solid var(--borderInput);border-radius:8px;font:400 12px var(--font-sans);color:var(--secondary);cursor:pointer" style-hover="border-color:var(--ink);color:var(--ink)">Context menu ↓</span>
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
+    <div style="width:212px;border:1px solid var(--borderCard);border-radius:11px;background:var(--surface);box-shadow:var(--shadowPop);padding:5px;display:flex;flex-direction:column;gap:1px">
+      <sc-for list="{{ menu }}" as="m" hint-placeholder-count="4">
+        <sc-if value="{{ m.plain }}" hint-placeholder-val="{{ true }}">
+          <span style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font:400 12px var(--font-sans);color:var(--ink);cursor:pointer" style-hover="background:var(--well)">
+            <span style="display:flex;color:var(--metaStrong)">{{ m.icon }}</span>{{ m.label }}
+          </span>
+        </sc-if>
+        <sc-if value="{{ m.sep }}" hint-placeholder-val="{{ false }}">
+          <span style="height:1px;background:var(--rule);margin:4px 0"></span>
+        </sc-if>
+        <sc-if value="{{ m.danger }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font:400 12px var(--font-sans);color:var(--metaStrong);cursor:pointer" style-hover="background:var(--well);color:#C0473A">
+            <span style="display:flex">{{ m.icon }}</span>{{ m.label }}
+          </span>
+        </sc-if>
+      </sc-for>
+    </div>
+
+    <div style="flex:1 1 420px;min-width:340px;border:1px solid var(--borderCard);border-radius:14px;background:var(--dockGlass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadowCard);padding:12px 14px;display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--borderInput);border-radius:10px;background:var(--surface)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--meta)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.7 4.8 4.8 1.7-4.8 1.7L12 16.5l-1.7-4.8L5.5 10l4.8-1.7z"></path></svg>
+          <input placeholder="Sticky dock — persistent input for a working surface" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:400 12.5px var(--font-sans);color:var(--ink)"></input>
+        </div>
+        <span style="padding:10px 14px;border:1px solid var(--borderInput);border-radius:9px;font:500 12px var(--font-sans);color:var(--ink);cursor:pointer;background:var(--surface);flex:none" style-hover="border-color:var(--ink)">Roll again</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="flex:1;min-width:160px;display:flex;align-items:center;gap:8px;font:400 11.5px var(--font-sans);color:var(--meta)">
+          2 discarded
+          <span style="display:flex;align-items:center;gap:4px;font:500 11.5px var(--font-sans);color:var(--secondary);cursor:pointer" style-hover="color:var(--ink)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5L4.5 9.5 9 14M4.5 9.5h9a6 6 0 0 1 0 12h-4"></path></svg>Undo
+          </span>
+        </span>
+        <span style="display:flex;align-items:center;flex:none">
+          <span style="width:24px;height:30px;border-radius:6px;background:linear-gradient(160deg,var(--fill),var(--dots));box-shadow:0 0 0 1.5px var(--surface);margin-right:-8px"></span>
+          <span style="width:24px;height:30px;border-radius:6px;background:linear-gradient(160deg,var(--fill),var(--dots));box-shadow:0 0 0 1.5px var(--surface)"></span>
+        </span>
+        <span style="padding:10px 15px;border-radius:9px;background:var(--ink);color:var(--surface);font:500 12px var(--font-sans);cursor:pointer;flex:none" style-hover="opacity:.86">Sign 2</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 08 STATES ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">08 · STATES &amp; MOTION</span>
+    <span style="font:400 11.5px var(--font-sans);color:var(--faint)">nothing in a task flow exceeds 340ms</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:12px;align-items:start">
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Loading — per-tile, never one blocking spinner</span>
+      <div style="display:flex;gap:8px">
+        <sc-for list="{{ ghosts }}" as="g" hint-placeholder-count="3">
+          <div style="flex:1;aspect-ratio:4/5;border-radius:9px;overflow:hidden;background:var(--fill);border:1px solid var(--border);position:relative">
+            <span style="position:absolute;inset:0;background:linear-gradient(100deg,transparent,var(--surface),transparent);opacity:.75;animation:dp-sweep 1.5s ease-in-out infinite"></span>
+            <span style="position:absolute;left:7px;bottom:7px;font:500 9px var(--font-mono);letter-spacing:.08em;color:var(--faint);animation:dp-pulse 1.6s ease-in-out infinite">{{ g.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Results replace their own tile with <code style="font:400 10.5px var(--font-mono);color:var(--accentInk)">dp-rise 340ms</code> as each finishes. Never hold a batch behind the slowest item.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Selected state</span>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;aspect-ratio:4/5;border-radius:9px;background:linear-gradient(160deg,var(--fill),var(--dots));position:relative">
+          <span style="position:absolute;inset:0;border-radius:9px;border:2px solid var(--accentSolid)"></span>
+          <span style="position:absolute;right:6px;top:6px;width:20px;height:20px;border-radius:50%;background:var(--accentSolid);display:flex;align-items:center;justify-content:center">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
+          </span>
+        </div>
+        <div style="flex:1;aspect-ratio:4/5;border-radius:9px;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border)"></div>
+        <div style="flex:1;aspect-ratio:4/5;border-radius:9px;background:linear-gradient(160deg,var(--fill),var(--dots));border:1px solid var(--border)"></div>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">2px accent inset ring + filled check. Selection is the <i>only</i> job of accentSolid on media.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Empty state</span>
+      <div style="border:1px dashed var(--dashed);border-radius:11px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+        <span style="font:500 12.5px var(--font-sans)">No cast signed yet</span>
+        <span style="font:400 11.5px/1.55 var(--font-sans);color:var(--metaStrong);max-width:220px">Describe who you need and pick from eight candidates.</span>
+        <span style="margin-top:4px;padding:7px 13px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 11.5px var(--font-sans);cursor:pointer" style-hover="opacity:.86">Cast someone</span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Every empty state names the thing, explains the mechanism in one line, and offers the action. No illustrations.</span>
+    </div>
+
+    <div style="border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 12px var(--font-sans)">Progress &amp; playback</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span onClick="{{ togglePlay }}" style="width:34px;height:34px;flex:none;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="opacity:.86">{{ playIcon }}</span>
+        <span style="display:flex;align-items:center;gap:2px;height:30px;flex:1;min-width:0;overflow:hidden">
+          <sc-for list="{{ wave }}" as="w" hint-placeholder-count="26">
+            <span style="flex:1;min-width:2px;border-radius:2px;background:{{ w.color }};height:{{ w.h }}%;animation:{{ w.anim }}"></span>
+          </sc-for>
+        </span>
+        <span style="font:500 10px var(--font-mono);color:var(--faint);flex:none">0:14</span>
+      </div>
+      <div style="height:4px;border-radius:2px;background:var(--fill);overflow:hidden">
+        <span style="display:block;width:62%;height:100%;background:var(--accentSolid)"></span>
+      </div>
+      <span style="font:400 11px/1.55 var(--font-sans);color:var(--metaStrong)">Bars animate only while playing. Determinate progress uses accent; indeterminate uses the shimmer, never a spinner over content.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 09 LAYOUT ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">09 · LAYOUT &amp; RESPONSIVE</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:12px">
+    <sc-for list="{{ layoutRules }}" as="l" hint-placeholder-count="6">
+      <div style="border:1px solid var(--borderCard);border-radius:13px;background:var(--surface);padding:15px 17px;display:flex;flex-direction:column;gap:7px">
+        <span style="font:500 10px var(--font-mono);letter-spacing:.1em;color:var(--accentInk)">{{ l.tag }}</span>
+        <span style="font:500 12.5px var(--font-sans)">{{ l.title }}</span>
+        <span style="font:400 11.5px/1.6 var(--font-sans);color:var(--metaStrong)">{{ l.body }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<!-- ══ 10 RULES ══ -->
+<div style="display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="font:500 10.5px var(--font-mono);letter-spacing:.12em;color:var(--meta)">10 · NON-NEGOTIABLES</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px">
+    <sc-for list="{{ rules }}" as="ru" hint-placeholder-count="8">
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:13px 15px;border:1px solid var(--border);border-radius:11px;background:var(--raised)">
+        <span style="flex:none;width:18px;height:18px;border-radius:5px;background:var(--accentWash);border:1px solid var(--accentLine);display:flex;align-items:center;justify-content:center;font:500 9.5px var(--font-mono);color:var(--accentInk);margin-top:1px">{{ ru.n }}</span>
+        <span style="font:400 12px/1.6 var(--font-sans);color:var(--secondary);min-width:0">{{ ru.text }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+</div>
+</div>
+
+<!-- ═══ DIALOG ═══ -->
+<sc-if value="{{ dialogOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeDialog }}" style="position:fixed;inset:0;z-index:60;background:rgba(10,10,11,.44);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px;animation:dp-fade 200ms ease-out both">
+  <div style="width:100%;max-width:432px;border:1px solid var(--borderCard);border-radius:14px;background:var(--surface);box-shadow:var(--shadowCard);overflow:hidden;animation:dp-scaleIn 200ms cubic-bezier(.22,.61,.36,1) both">
+    <div style="padding:18px 20px 14px;display:flex;flex-direction:column;gap:7px">
+      <span style="font:500 15px var(--font-sans);letter-spacing:-.012em">Discard this roll?</span>
+      <span style="font:400 12.5px/1.6 var(--font-sans);color:var(--metaStrong)">The eight candidates go away. Anything you kept stays in the tray, and roll 02 is still in history.</span>
+    </div>
+    <div style="padding:13px 20px;display:flex;align-items:center;justify-content:flex-end;gap:9px;border-top:1px solid var(--rule);background:var(--raised)">
+      <span onClick="{{ closeDialog }}" style="padding:8px 13px;border:1px solid var(--borderInput);border-radius:8px;font:400 12px var(--font-sans);color:var(--secondary);cursor:pointer" style-hover="border-color:var(--ink);color:var(--ink)">Keep it</span>
+      <span onClick="{{ closeDialog }}" style="padding:8px 14px;border-radius:8px;background:var(--ink);color:var(--surface);font:500 12px var(--font-sans);cursor:pointer" style-hover="opacity:.86">Discard roll</span>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:960},&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const svg = (d, s = 15) => React.createElement("svg", { width: s, height: s, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" }, React.createElement("path", { d }));
+
+const P = {
+  studio: "M4 11l8-6 8 6v8.5H4z",
+  image: "M4 5h16v14H4zM8.5 10.5a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2M4 17l5-4.5 3.5 3 3-2.5L20 17",
+  thread: "M6 6h5v5H6zM13 13h5v5h-5zM11 8.5h2a2 2 0 0 1 2 2v2.5",
+  cast: "M5 4.5h14v15H5zM12 12.5a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2M8 19a4 4 0 0 1 8 0",
+  asset: "M5 4h11l3 3v13H5zM8.5 4v5.5h7V4",
+  library: "M5 5h4v14H5zM11 5h4v14h-4zM17.5 6l2.6 12.4",
+};
+
+const SURFACES = [
+  ["--surface", "app bg, cards"], ["--raised", "card on surface"], ["--page", "working surface"],
+  ["--wellSoft", "hover on dashed"], ["--well", "hover on rows"], ["--fill", "inert fill"],
+  ["--fillStrong", "rail active"], ["--media", "behind imagery"],
+];
+const LINES = [
+  ["--rule", "divider in card"], ["--border", "default border"], ["--borderInput", "input, 2° btn"],
+  ["--borderCard", "card border"], ["--dots", "dot grid, tiles"], ["--dashed", "add targets"],
+  ["--lineStrong", "input hover"], ["--sink", "pressed"],
+];
+const TEXTS = [
+  ["--muted", "Glyph on a quiet affordance"], ["--faint", "Mono metadata and counts"],
+  ["--meta", "Placeholder, tertiary label"], ["--metaStrong", "Secondary body copy"],
+  ["--secondary", "Label on a secondary button"], ["--ink", "Primary text and primary fill"],
+];
+
+const TYPE = [
+  ["31/500 -.038em", "Page headline, two lines max"],
+  ["27/500 -.032em", "Entity name"],
+  ["15/500", "Dialog title"],
+  ["13.5/500", "Section heading"],
+  ["13/1.65", "Body copy"],
+  ["12.5/500", "Card title, control label"],
+  ["11.5/1.55", "Secondary copy"],
+  ["10.5 mono .12em", "EYEBROW / STATUS"],
+];
+
+const WAVE = [24, 52, 74, 40, 92, 62, 34, 96, 54, 28, 78, 44, 100, 58, 30, 84, 48, 66, 36, 90, 52, 26, 80, 42, 68, 38];
+
+const LAYOUT = [
+  ["76 / 56", "Chrome is fixed", "Rail 76px, topbar 56px, both sticky, both present on every signed-in surface. Casting, canvas and lobby are rail destinations — never modals over another surface."],
+  ["1180 / 1240", "Two content widths", "1180px for browsing and detail pages. 1240px for working surfaces that need grid room (candidate sheet, canvas). Centred, 32px side padding."],
+  ["FLEX-BASIS", "Columns wrap, they don't collapse", "Two-column layouts use flex-wrap with flex:1 1 <ideal> and min-width, so they reflow at any container width without a media query. Left column basis 560px, right 300px."],
+  ["AUTO-FILL", "Grids are intrinsic", "repeat(auto-fill, minmax(N, 1fr)) — 178px roster, 212px candidates, 104px takes. Gap 16 (12 for dense). Never a fixed column count."],
+  ["GAP", "Spacing is gap, never margin", "Sibling groups — chips, buttons, nav items, toolbars — are flex/grid with gap. Survives drag-reorder, delete and duplicate; whitespace text nodes don't."],
+  ["OUTLINE", "Seams on wrapping panels", "A split panel that wraps uses outline:1px on the second column, not border-left — a border strands a stray edge once the columns stack."],
+];
+
+const RULES = [
+  "No hex outside tokens.css. Two exceptions: white glyphs/text on a scrim, and the brand orb gradient.",
+  "Every token exists in both themes, so no component ever branches on theme. Dark is body[data-theme=\"dark\"].",
+  "Elevation by value, not shadow. Shadow only for things floating over content: dock, dialog, menu, tooltip.",
+  "One primary button per view. If two things look equally primary, one of them isn't.",
+  "Accent means kept / selected / active. It is never a background, a gradient, or decoration.",
+  "Text on accentWash is accentInk. accentSolid as text fails contrast at body sizes.",
+  "Mono is for machine facts only — counts, indices, status, IDs, timestamps. Never a sentence.",
+  "Radii come from the scale (7·8·9·10·11·12·13·14·999). A new radius needs a new reason.",
+  "Placeholders are real examples. Instructions belong in labels, and replace disabled buttons.",
+  "Copy states the cost or the size: \"locks in about four minutes\", \"184 already cleared\".",
+  "Nothing in a task flow animates longer than 340ms, and reduced-motion kills all of it.",
+  "Streaming beats batching. Show per-item skeletons and swap each as it lands.",
+];
+
+class Component extends DCLogic {
+  state = { dark: false, scope: "All", tab: "Overview", dialogOpen: false, playing: false };
+
+  componentDidMount() {
+    if (this.props.dark) this.setState({ dark: true });
+    document.body.setAttribute("data-theme", this.props.dark ? "dark" : "light");
+  }
+
+  renderVals() {
+    const s = this.state;
+    return {
+      nav: [
+        ["Home", P.studio], ["Create", P.image], ["Canvas", P.thread],
+        ["Casting", P.cast], ["Assets", P.asset], ["Library", P.library],
+      ].map(([label, d]) => ({ label, icon: svg(d), on: label === "Home", off: label !== "Home" })),
+
+      themeIcon: s.dark
+        ? svg("M12 4.5v1.5M12 18v1.5M4.5 12H6M18 12h1.5M6.7 6.7l1.1 1.1M16.2 16.2l1.1 1.1M17.3 6.7l-1.1 1.1M7.8 16.2l-1.1 1.1M12 15.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2", 15)
+        : svg("M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5", 15),
+      toggleTheme: () => {
+        const dark = !s.dark;
+        this.setState({ dark }, () => document.body.setAttribute("data-theme", dark ? "dark" : "light"));
+      },
+
+      ramps: [
+        { title: "SURFACES — ELEVATION BY VALUE", items: SURFACES.map(([name, use]) => ({ name, use, bg: "var(" + name + ")" })) },
+        { title: "LINES — HAIRLINE TO STRUCTURAL", items: LINES.map(([name, use]) => ({ name, use, bg: "var(" + name + ")" })) },
+      ],
+      textRamp: TEXTS.map(([name, use]) => ({ name, use, bg: "var(" + name + ")" })),
+      typeScale: TYPE.map(([spec, sample]) => ({ spec, sample })),
+
+      chipDemo: ["Warmer", "Older", "Less styled", "Real-room light"].map((label) => ({ label })),
+      derived: ["Woman", "Late 20s", "Shaved head", "Editorial"].map((label) => ({ label })),
+      scopes: ["All", "Signed", "Unsigned"].map((label) => ({
+        label, on: s.scope === label, off: s.scope !== label, go: () => this.setState({ scope: label }),
+      })),
+      tabs: ["Overview", "Views", "Wardrobe", "Versions"].map((label) => ({
+        label, on: s.tab === label, off: s.tab !== label, go: () => this.setState({ tab: label }),
+      })),
+
+      rows: [
+        { name: "Summer Refill", meta: "12 frames · live" },
+        { name: "Nook Sleep — Q3", meta: "6 frames · in review" },
+        { name: "Try-on drop 04", meta: "3 clips · draft" },
+      ],
+
+      menu: [
+        { plain: true, label: "Open", icon: svg("M5 12h13M13 7l5 5-5 5", 13) },
+        { plain: true, label: "Duplicate", icon: svg("M8 8h11v11H8zM5 16V5h11", 13) },
+        { plain: true, label: "Rename", icon: svg("M4 20h4L20 8l-4-4L4 16z", 13) },
+        { sep: true },
+        { danger: true, label: "Delete", icon: svg("M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13", 13) },
+      ],
+
+      ghosts: [1, 2, 3].map((i) => ({ label: "GEN 0" + i })),
+
+      openDialog: () => this.setState({ dialogOpen: true }),
+      closeDialog: () => this.setState({ dialogOpen: false }),
+      dialogOpen: s.dialogOpen,
+
+      togglePlay: () => this.setState({ playing: !s.playing }),
+      playIcon: React.createElement("svg", { width: 12, height: 12, viewBox: "0 0 24 24", fill: "var(--surface)" },
+        React.createElement("path", { d: s.playing ? "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" : "M8 5l11 7-11 7z" })),
+      wave: WAVE.map((h, i) => ({
+        h,
+        color: s.playing && i < 11 ? "var(--accentSolid)" : s.playing ? "var(--lineStrong)" : "var(--dotsStrong)",
+        anim: s.playing ? `dp-wave ${700 + (i % 5) * 130}ms ease-in-out ${(i % 7) * 60}ms infinite` : "none",
+      })),
+
+      layoutRules: LAYOUT.map(([tag, title, body]) => ({ tag, title, body })),
+      rules: RULES.map((text, i) => ({ n: String(i + 1).padStart(2, "0"), text })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
