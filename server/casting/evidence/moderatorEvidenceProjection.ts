@@ -16,15 +16,24 @@ function stringOrUndefined(value: unknown): string | undefined {
 /**
  * Candidate generations are private evidence children. Moderator/admin
  * surfaces receive only the closed operational facts needed for support;
- * URLs, storage keys, descriptors, provider prose, and probe internals never
- * cross this projection.
+ * storage keys, descriptors, provider prose, and probe internals never cross
+ * this projection.
+ *
+ * Nulling the result URL here protected evidence candidates and nothing else —
+ * every other generation type still handed staff a permanent public URL to a
+ * customer's image. That hole is closed at the query: the moderator history no
+ * longer selects the URL for any row, and carries `hasResult` instead.
+ *
+ * The nulling stays anyway, as defence in depth for any future caller that
+ * does select it. `resultUrl` is optional on the input so callers that never
+ * fetched it need not pretend to have it.
  */
 export function projectEvidenceCandidateForModerator<Row extends {
   type: string;
   status: string;
-  resultUrl: string | null;
   errorMessage: string | null;
   metadata: unknown;
+  resultUrl?: string | null;
 }>(row: Row): Row {
   if (row.type !== "evidenceCandidate") return row;
   const source = row.metadata && typeof row.metadata === "object"
@@ -43,7 +52,7 @@ export function projectEvidenceCandidateForModerator<Row extends {
   };
   return {
     ...row,
-    resultUrl: null,
+    ...("resultUrl" in row ? { resultUrl: null } : {}),
     errorMessage: row.status === "failed"
       ? EVIDENCE_CANDIDATE_PUBLIC_FAILURE
       : null,

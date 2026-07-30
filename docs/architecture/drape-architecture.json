@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d615f70e3624dfa2"
+    "sourceFingerprint": "6a0c2334e13b3732"
   },
   "domains": [
     {
@@ -7716,6 +7716,10 @@
     {
       "id": "test:server/slack/slackWebhook.test.ts",
       "path": "server/slack/slackWebhook.test.ts"
+    },
+    {
+      "id": "test:server/staffImageBoundary.test.ts",
+      "path": "server/staffImageBoundary.test.ts"
     },
     {
       "id": "test:server/storage-key-generation.test.ts",

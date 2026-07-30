@@ -183,13 +183,33 @@ export async function getDetailedGenerationHistory(
     endDate?: Date;
   } = {}
 ): Promise<{
+  /**
+   * Metadata only — the staff image boundary (CLAUDE.md "Metadata only is a
+   * boundary, not a convenience").
+   *
+   * Staff may see *that* a generation happened — kind, timestamp, credit cost,
+   * status — for support, billing and abuse work. They may not have the
+   * creative content. This projection therefore carries `hasResult` instead of
+   * `resultUrl`: support can still tell a produced image from a failed one,
+   * which is the actual investigative need, without handing over a permanent
+   * public URL to a customer's work.
+   *
+   * The URL is not merely omitted after selection: it is never selected, so
+   * there is no path by which a future edit reintroduces it accidentally
+   * (access-control law 8 — by construction, not by remembering).
+   *
+   * `metadata` stays: `projectEvidenceCandidateForModerator` reduces it to the
+   * operational facts support actually uses (candidate id, attempt number,
+   * billing role, engine, recipe version) for evidence candidates, and the
+   * prompt half of the boundary is not implicated — see CLAUDE.md.
+   */
   generations: Array<{
     id: number;
     modelId: number | null;
     type: string;
     status: string;
     pointsCost: number;
-    resultUrl: string | null;
+    hasResult: boolean;
     errorMessage: string | null;
     metadata: unknown;
     createdAt: Date;
@@ -251,7 +271,8 @@ export async function getDetailedGenerationHistory(
         type: generations.type,
         status: generations.status,
         pointsCost: generations.pointsCost,
-        resultUrl: generations.resultUrl,
+        // Presence, never the URL itself — see the projection note above.
+        hasResult: sql<number>`${generations.resultUrl} IS NOT NULL`,
         errorMessage: generations.errorMessage,
         metadata: generations.metadata,
         createdAt: generations.createdAt,
@@ -311,7 +332,10 @@ export async function getDetailedGenerationHistory(
         : 0;
 
     return {
-      generations: gens.map(projectEvidenceCandidateForModerator),
+      generations: gens
+        .map(projectEvidenceCandidateForModerator)
+        // MySQL returns the boolean expression as 0/1.
+        .map((gen) => ({ ...gen, hasResult: Boolean(gen.hasResult) })),
       total,
       summary: {
         totalGenerations,

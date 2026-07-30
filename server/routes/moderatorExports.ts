@@ -128,7 +128,11 @@ export const moderatorExportsRouter = router({
         severity: "info",
       });
 
-      const header = "ID,Timestamp,Type,Status,Credits Cost,Model Name,Model ID,Result URL,Error Message,Completed At";
+      // "Has Result" replaced the image-link column: a CSV of permanent public
+      // links to a customer's work is the staff image boundary at its worst —
+      // it walks out of the building. Support needs to know an image was
+      // produced, not to hold it (CLAUDE.md, "Metadata only is a boundary").
+      const header = "ID,Timestamp,Type,Status,Credits Cost,Model Name,Model ID,Has Result,Error Message,Completed At";
       const rows = result.generations.map((gen) => {
         const ts = new Date(gen.createdAt).toISOString();
         const completedTs = gen.completedAt ? new Date(gen.completedAt).toISOString() : "";
@@ -136,7 +140,7 @@ export const moderatorExportsRouter = router({
           gen.id, ts, gen.type, gen.status, gen.pointsCost,
           gen.modelName ? escapeCsv(gen.modelName) : "",
           gen.modelId ?? "",
-          gen.resultUrl ? escapeCsv(gen.resultUrl) : "",
+          gen.hasResult ? "yes" : "no",
           gen.errorMessage ? escapeCsv(gen.errorMessage) : "",
           completedTs,
         ].join(",");
