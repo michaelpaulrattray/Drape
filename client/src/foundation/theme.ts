@@ -16,8 +16,22 @@ export type Theme = "light" | "dark";
 /** Persistence key. The legacy `theme` key is dead and never read (§L.R item 3). */
 export const THEME_STORAGE_KEY = "drape_theme";
 
-/** Dark, for continuity with the current product (§B-10). */
-export const DEFAULT_THEME: Theme = "dark";
+/**
+ * Light (founder decision, 2026-07-30 — supersedes §B-10's "dark for
+ * continuity").
+ *
+ * §B-10 chose dark for continuity with the current product. Measurement at M2
+ * showed the premise was wrong: every legacy surface rendered *light*
+ * regardless of theme, because the shadcn slots were light-only and components
+ * hardcoded their colours. Defaulting to dark therefore made the app look
+ * mixed — themed lobby and Casting against a light studio, admin, moderator
+ * and board canvas — until every surface migrates.
+ *
+ * Light is what the product actually looks like today, so nothing jars, and
+ * dark is one toggle away. Flip this back once the remaining surfaces follow
+ * tokens; it is the only place the default lives.
+ */
+export const DEFAULT_THEME: Theme = "light";
 
 export function isTheme(value: unknown): value is Theme {
   return value === "light" || value === "dark";

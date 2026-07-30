@@ -148,6 +148,10 @@ function read(relative: string): string {
 
 const AUTH_BY_BUILDER: Record<string, string> = {
   publicProcedure: "public",
+  // Signed in but not yet approved — the narrow onboarding surface. Its own
+  // class, not a flavour of "protected", because it is the one place the beta
+  // approval gate deliberately does not apply.
+  onboardingProcedure: "onboarding",
   protectedProcedure: "protected",
   adminProcedure: "admin",
   moderatorProcedure: "moderator",
@@ -280,7 +284,11 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
         if (!chain) continue;
         const text = chain.getText();
 
-        const builder = text.match(/\b(publicProcedure|protectedProcedure|adminProcedure|moderatorProcedure)\b/)?.[1];
+        // Derived from AUTH_BY_BUILDER so a new builder cannot be classified
+        // here without also being given an auth class there.
+        const builder = text.match(
+          new RegExp(`\\b(${Object.keys(AUTH_BY_BUILDER).join("|")})\\b`),
+        )?.[1];
         const typeMatch = text.match(/\.(query|mutation|subscription)\s*\(/);
         if (!typeMatch) continue;
 
@@ -456,6 +464,16 @@ function computeFindings(
         subject: procedure.id,
         message:
           "Public endpoint. The allowlist is enumerated by decision (access-control law 5) — confirm this belongs on it.",
+      });
+    }
+    if (procedure.auth === "onboarding") {
+      findings.push({
+        id: `finding:onboarding-endpoint:${procedure.id}`,
+        severity: "info",
+        kind: "onboarding-endpoint",
+        subject: procedure.id,
+        message:
+          "Reachable by a signed-in but unapproved account. Like the public allowlist, this set is enumerated by decision — an unapproved account is meant to redeem a code and nothing else.",
       });
     }
     if (!procedure.strictInput && procedure.auth !== "public") {
@@ -662,7 +680,7 @@ export const SCHEMA = {
         type: "object",
         required: ["id", "namespace", "name", "type", "auth", "strictInput", "rateLimited", "file"],
         properties: {
-          auth: { enum: ["public", "protected", "admin", "moderator", "unclassified"] },
+          auth: { enum: ["public", "onboarding", "protected", "admin", "moderator", "unclassified"] },
           type: { enum: ["query", "mutation", "subscription"] },
         },
       },

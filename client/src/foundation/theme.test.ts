@@ -22,8 +22,11 @@ function inlineScripts(html: string): string[] {
 }
 
 describe("theme boot", () => {
-  it("defaults to dark for continuity with the current product", () => {
-    expect(DEFAULT_THEME).toBe("dark");
+  it("defaults to light, matching how the product actually renders today", () => {
+    // Founder decision 2026-07-30, superseding the plan's §B-10. Dark was
+    // chosen "for continuity", but every legacy surface renders light, so the
+    // dark default showed a mixed app. Revisit when the rest follow tokens.
+    expect(DEFAULT_THEME).toBe("light");
   });
 
   it("falls back to the default instead of leaving the app unthemed", () => {

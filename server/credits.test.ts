@@ -20,6 +20,7 @@ function createAuthContext(): TrpcContext {
     email: "test@example.com",
     name: "Test User",
     loginMethod: "manus",
+    approved: true,
     role: "user",
     avatarUrl: null,
     createdAt: new Date(),

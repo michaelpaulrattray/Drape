@@ -107,6 +107,7 @@ function authCtx(userId = 7): TrpcContext {
     email: `wardrobe-${userId}@example.com`,
     name: "Wardrobe User",
     loginMethod: "manus",
+    approved: true,
     role: "user",
     createdAt: new Date(),
     updatedAt: new Date(),

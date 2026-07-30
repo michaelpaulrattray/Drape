@@ -21,6 +21,7 @@ function createMockContext(overrides: Partial<AuthenticatedUser> = {}): TrpcCont
     bannerKey: null,
     bio: null,
     loginMethod: "manus",
+    approved: true,
     role: "user",
     storageUsed: 0,
     storageLimit: 104857600,

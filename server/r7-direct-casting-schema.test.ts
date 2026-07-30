@@ -10,6 +10,7 @@ function authCtx(): TrpcContext {
       email: "r7-direct@example.com",
       name: "R7 Direct Schema",
       loginMethod: "email",
+      approved: true,
       role: "user",
       createdAt: new Date(),
       updatedAt: new Date(),

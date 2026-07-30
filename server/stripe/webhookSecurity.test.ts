@@ -81,6 +81,7 @@ const mockUser = {
   email: "john@example.com",
   openId: "test-open-id",
   loginMethod: "manus",
+  approved: true,
   role: "user",
   createdAt: new Date(),
   updatedAt: new Date(),

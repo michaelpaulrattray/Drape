@@ -52,7 +52,7 @@ const operation: PublicGenerationOperation = {
 
 function authCtx(userId = 12): TrpcContext {
   return {
-    user: { id: userId } as NonNullable<TrpcContext["user"]>,
+    user: { id: userId, approved: true } as NonNullable<TrpcContext["user"]>,
     req: { protocol: "https", headers: {}, ip: "127.0.0.1" } as TrpcContext["req"],
     res: { clearCookie: () => undefined } as unknown as TrpcContext["res"],
   };

@@ -16,7 +16,7 @@
          the THEME_BOOT_SCRIPT constant in server/security/securityHeaders.ts —
          its CSP sha256 hash is what allows this to run in production, and
          client/src/foundation/theme.test.ts fails if the two drift. -->
-    <script>(function(){try{var t=localStorage.getItem("drape_theme");if(t!=="light"&&t!=="dark")t="dark";document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+    <script>(function(){try{var t=localStorage.getItem("drape_theme");if(t!=="light"&&t!=="dark")t="light";document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
   </head>
 
   <body>

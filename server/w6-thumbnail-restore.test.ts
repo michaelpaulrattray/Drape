@@ -58,7 +58,7 @@ describe('W6-E board thumbnail lifecycle', () => {
   it('accepts null and passes it through to the database update', async () => {
     db.getBoardById.mockResolvedValueOnce({ id: 41, userId: 7 });
     db.updateBoard.mockClear();
-    const caller = boardsRouter.createCaller({ user: { id: 7 } } as never);
+    const caller = boardsRouter.createCaller({ user: { id: 7, approved: true } } as never);
 
     await caller.update({ boardId: 41, thumbnailUrl: null });
 

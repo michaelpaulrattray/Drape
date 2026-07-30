@@ -7,6 +7,7 @@ function context(userId = 77): TrpcContext {
   return {
     user: {
       id: userId,
+      approved: true,
       suspendedAt: null,
       lockedUntil: null,
     } as User,

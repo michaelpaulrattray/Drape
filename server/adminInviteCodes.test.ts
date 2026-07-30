@@ -18,6 +18,7 @@ function createAdminContext(overrides: Partial<AuthenticatedUser> = {}): TrpcCon
     bannerKey: null,
     bio: null,
     loginMethod: "manus",
+    approved: true,
     role: "admin",
     storageUsed: 0,
     storageLimit: 104857600,

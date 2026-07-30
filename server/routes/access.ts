@@ -7,7 +7,7 @@
  *   - access.status: Protected — checks if the current user is approved
  */
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, onboardingProcedure } from "../_core/trpc";
 import { redeemInviteCode } from "../db/inviteCodes";
 import { validateInviteCode } from "../db/validateInviteCode";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
@@ -44,7 +44,7 @@ export const accessRouter = router({
    * Redeem an invite/access code to unlock the dashboard.
    * Rate limited: 5 attempts per 15 minutes per user.
    */
-  redeem: protectedProcedure
+  redeem: onboardingProcedure
     .input(
       z.object({
         code: z.string().min(1, "Access code is required").max(64),
@@ -85,7 +85,7 @@ export const accessRouter = router({
   /**
    * Check if the current user is approved (has access).
    */
-  status: protectedProcedure.query(({ ctx }) => {
+  status: onboardingProcedure.query(({ ctx }) => {
     return {
       approved: ctx.user.approved ?? false,
       isAdmin: ctx.user.role === "admin",

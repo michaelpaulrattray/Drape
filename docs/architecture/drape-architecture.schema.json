@@ -73,6 +73,7 @@
           "auth": {
             "enum": [
               "public",
+              "onboarding",
               "protected",
               "admin",
               "moderator",

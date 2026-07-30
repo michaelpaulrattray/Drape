@@ -12,6 +12,7 @@ function createAuthContext(userId = 1): TrpcContext {
     email: `test${userId}@example.com`,
     name: `Test User ${userId}`,
     loginMethod: "manus",
+    approved: true,
     role: "user",
     createdAt: new Date(),
     updatedAt: new Date(),

@@ -178,6 +178,7 @@ describe("Role Management", () => {
         bannerKey: null,
         bio: null,
         loginMethod: "oauth",
+        approved: true,
         storageUsed: 0,
         storageLimit: 104857600,
         suspendedAt: null,

@@ -39,6 +39,7 @@ function fullUserRow(): User {
     bannerKey: "server-only/banner-key",
     bio: "Server-only bio",
     loginMethod: "email",
+    approved: true,
     role: "moderator",
     storageUsed: 1234,
     storageLimit: 5678,

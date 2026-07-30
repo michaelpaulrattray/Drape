@@ -243,7 +243,8 @@ type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 function authCtx(userId = 1): TrpcContext {
   const user = {
     id: userId, openId: `t-${userId}`, email: `t${userId}@x.com`, name: "T",
-    loginMethod: "manus", role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(),
+    loginMethod: "manus",
+    approved: true, role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date(),
   } as AuthenticatedUser;
   return {
     user,
