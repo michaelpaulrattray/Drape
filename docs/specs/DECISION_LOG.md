@@ -1217,6 +1217,65 @@ delete-now hygiene (§L), and the D-22/D-74 supersessions (recorded at the
 Canvas and Sign milestones) all remain outside M1 so its rollback stays a
 single revert.
 
+### D-78 — Casting V2 M2: the app has one palette, and it was never really dark *(executor decisions 2026-07-30; advisor-reviewed; one founder question raised, not decided)*
+
+**What shipped**, as four independently revertible commits: (A) foundation
+tokens promoted from `.dp-root` to `:root`, closing D-77's deferral; (B) the
+shadcn semantic remap; (C) the marketing stylesheet's Tailwind shadowing
+removed; (D) the lobby moved onto the foundation shell.
+
+**Name correspondence is broken in the remap, deliberately.** shadcn's
+`--muted`, `--secondary` and `--accent` are *background* colours; the
+foundation's same-named tokens are *text* colours. Mapping by name would have
+made `bg-muted` a mid-grey slab and `bg-accent` a brand-orange slab — the
+latter also breaking non-negotiable 5, which reserves accent for selection.
+Each maps to the surface it actually is, with its `-foreground` partner taking
+the text token. The reasoned table lives inline in `index.css`; that block is
+the milestone's rollback unit.
+
+**One switch.** The `dark` custom variant now reads `[data-theme="dark"]`, so
+the `.dark` class is gone from `applyTheme`, from the first-paint script and
+from the CSP hash. `--errorInk` was added as the error family's text role
+after measuring plain `--error` at 3.40:1 on the dark surface — below the
+4.5:1 floor — mirroring how `--accentInk` relates to `--accentSolid`.
+
+**Two things measurement contradicted.**
+
+1. **§B-10's premise is wrong.** It sets the default theme to dark "for
+   continuity with the current product", and M2's own reality check says the
+   app is "dark today via hardcoded component styling". It is not: every
+   legacy surface rendered *light* regardless of theme, because the shadcn
+   slots were light-only and the components hardcoded their colours. The
+   consequence is now visible — the lobby and Casting V2 follow the theme
+   while `/studio`, admin, moderator and the board canvas remain light until
+   their own milestones, so a founder on the dark default sees a mixed app.
+   **This is a product decision and it is left to the founder** (§K M2's gate
+   is exactly this eyeball): keep dark and accept the mixed period, or default
+   to light until enough surfaces migrate and flip later. No code presumes the
+   answer — it is one constant in `foundation/theme.ts`.
+
+2. **§D.1's "scope the marketing stylesheet to marketing routes" is not the
+   tidy-up it sounds like.** That file's `:root` block shadows Tailwind's own
+   palette names — `--color-gray-100/200/400/500` and `--color-black` — so it
+   silently repaints roughly 90 utility usages on surfaces with no relation to
+   marketing. Scoping or deleting it is therefore an app-wide visual change
+   needing its own reviewed commit, not part of M2. What *was* removed is the
+   narrower, unambiguous bug: unlayered `.text-primary` / `.text-secondary` /
+   `.text-muted` classes overriding Tailwind's same-named utilities
+   everywhere. A guard test now fails on any class named after a semantic
+   utility. (Correction to an earlier count in this program: the reported "45
+   affected usages" came from a word-boundary grep in which `text-muted` also
+   matched `text-muted-foreground`. Real figures: 0, 0, and 9 — the nine all
+   wanting the shadcn primary, which they now correctly get.)
+
+**Lobby scope.** §D.14 says M2 wraps existing lobby content "cheaply". Wrapping
+alone would have produced a themed shell around permanently light content, so
+the 125 hardcoded colours in the 13 lobby files were tokenised too — that is
+the "tokens" §D.14 names, not the deferred redesign. Information architecture,
+views and modals are untouched. Controls over media were converted to dark
+glass on the way (non-negotiable 13). `LobbyRail.tsx` and `MobileHeader` are
+deleted, their duties covered by the shell.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
