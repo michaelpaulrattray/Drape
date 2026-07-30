@@ -534,12 +534,47 @@ function computeFindings(
  * for no reason" and trains people to regenerate without looking. The
  * fingerprint must cover everything the output depends on.
  */
+/**
+ * Annotations are only worth writing if something checks them (§P.4).
+ *
+ * v1 validates the one thing that rots silently: a `path:` naming a file that
+ * no longer exists. A coupled-contract list whose members have been renamed is
+ * worse than none, because it reads as authoritative while pointing nowhere.
+ *
+ * Deliberately parsed line-wise rather than by adding a YAML dependency — the
+ * file's shape is fixed and this keeps the generator's dependency surface at
+ * ts-morph plus ajv.
+ */
+function annotationFindings(): Finding[] {
+  const file = path.join(repoRoot, "docs", "architecture", "annotations.yaml");
+  if (!fs.existsSync(file)) return [];
+
+  const findings: Finding[] = [];
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  for (const [index, line] of lines.entries()) {
+    const match = line.match(/^\s*-?\s*path:\s*(\S+)\s*$/);
+    if (!match) continue;
+    const target = match[1].replace(/^["']|["']$/g, "");
+    if (fs.existsSync(path.join(repoRoot, target))) continue;
+    findings.push({
+      id: `finding:stale-annotation:${target}`,
+      severity: "error",
+      kind: "stale-annotation",
+      subject: target,
+      message: `annotations.yaml line ${index + 1} names a path that does not exist. Annotations cannot be allowed to rot — fix or remove it.`,
+    });
+  }
+  return findings;
+}
+
 function fingerprint(): string {
   const hash = createHash("sha256");
   for (const file of allFiles) {
     hash.update(file);
     hash.update(read(file));
   }
+  const annotations = path.join(repoRoot, "docs", "architecture", "annotations.yaml");
+  if (fs.existsSync(annotations)) hash.update(fs.readFileSync(annotations));
   return hash.digest("hex").slice(0, 16);
 }
 
@@ -567,7 +602,7 @@ export function buildAtlas() {
     }));
 
   const edges = collectImportEdges(project);
-  const findings = computeFindings(procedures, modules, edges);
+  const findings = [...computeFindings(procedures, modules, edges), ...annotationFindings()].sort((a, b) => a.id.localeCompare(b.id));
 
   return {
     meta: {

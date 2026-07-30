@@ -12,15 +12,45 @@
 # An annotation naming a path or route that does not exist is a hard failure,
 # so annotations cannot rot silently.
 #
-# v1 ships this file empty of overrides on purpose. The 169 non-strict-input
-# warnings and the 12 public endpoints are real, currently-true statements
-# about the codebase — accepting them wholesale here would silence exactly the
-# class of finding the Atlas exists to surface. They are worked down by M4's
-# `.strict()` sweep and reviewed against the enumerated allowlist, not annotated
-# away.
+# v1 ships with no domain overrides and no accepted findings on purpose. The
+# 169 non-strict-input warnings and the 12 public endpoints are real,
+# currently-true statements about the codebase — accepting them wholesale would
+# silence exactly the class of finding the Atlas exists to surface. They are
+# worked down by M4's `.strict()` sweep and reviewed against the enumerated
+# allowlist, not annotated away.
 
 modules: {}
 
 routes: {}
 
 acceptedFindings: []
+
+# ---------------------------------------------------------------------------
+# Coupled contracts
+#
+# Sets of files that must change together. Code cannot express "if you edit
+# this enum, three other places pin its DDL" — so it is written down here,
+# where the next person changing one of them can find the other two
+# mechanically instead of discovering them through a failing startup fence.
+# ---------------------------------------------------------------------------
+
+coupledContracts:
+  - id: storage-cleanup-batch-kind-enum
+    reason: >
+      The `storage_cleanup_batches.kind` enum is pinned in three places besides
+      its own definition. Migration 0017 (Casting V2) hit all three; the plan
+      named only the first two, and the third was found by a failing test.
+      Any future value must be added to every entry below in the same change.
+    files:
+      - path: drizzle/schema.ts
+        role: the enum itself (STORAGE_CLEANUP_BATCH_KINDS)
+      - path: server/casting/evidence/evidenceComposerSchema.ts
+        role: >
+          hardcoded DDL string in EXISTING_COLUMN_TYPES, validated against the
+          live database at startup — a mismatch refuses to boot
+      - path: server/r7-evidence-ingestion-contract.test.ts
+        role: asserts the exact enum member list
+      - path: server/casting/evidence/evidenceComposerSchema.test.ts
+        role: >
+          builds its "healthy" fixture from drizzle/meta/<latest>_snapshot.json,
+          so this reference moves with every migration touching a pinned column
