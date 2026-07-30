@@ -254,6 +254,10 @@ export async function analyzeInkPoseImage(
       );
     }
 
+    // A cold process has no usable tensor backend until the detector runtime
+    // has selected and initialized WASM. Creating the input tensor first makes
+    // the first projection request fail before inference can start.
+    const detector = await getDetector();
     const tensor = tf.tensor3d(
       new Uint8Array(
         decoded.data.buffer,
@@ -264,7 +268,6 @@ export async function analyzeInkPoseImage(
     );
     let maskTensor: tf.Tensor3D | null = null;
     try {
-      const detector = await getDetector();
       detector.reset();
       const poses = await detector.estimatePoses(tensor, {
         flipHorizontal: false,
@@ -320,6 +323,13 @@ export async function analyzeInkPoseImage(
         ),
         personMask: maskBytes(values, width * height),
       });
+    } catch (error) {
+      if (error instanceof InkPoseAnalysisError) throw error;
+      throw new InkPoseAnalysisError(
+        "model_unavailable",
+        "Tattoo pose inference failed",
+        { cause: error },
+      );
     } finally {
       maskTensor?.dispose();
       tensor.dispose();

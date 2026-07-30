@@ -1475,6 +1475,28 @@ the production build, and the full 253-file / 3,208-test unit suite pass
 locally. No third controlled attempt may run until this diagnostic-only patch
 is deployed.
 
+**Cold-start pose-runtime defect resolved (2026-07-30):** Railway deployed
+`57a9888780690855077058d1c74712c7d54b957b` successfully. Controlled
+three-quarter operation `89b4f723-fa4a-4427-bf1e-00823521782a` stopped before
+charge or image-provider generation, and the displayed balance remained
+66,200 credits. Its new closed diagnostic was
+`coverage_localization / target_pose_failed`; no source asset, private
+witness, feature mask, coverage probe, or composer was reached.
+
+The failure was reproduced locally on a public test image. On a cold process,
+`analyzeInkPoseImage` created its input tensor before `getDetector()` had
+selected and initialized TensorFlow's WASM backend. TensorFlow therefore
+raised that its highest-priority backend had not yet been initialized. The
+runtime now initializes the detector/backend before creating any tensor and
+converts any otherwise-unclassified inference failure to the existing
+fail-closed `model_unavailable` pose code. A cold-start regression test proves
+the required call order, and a real full-body sample now completes detector
+initialization, inference, all 33 image/world landmarks, and the person mask.
+No evidence threshold, visibility rule, release gate, prompt, billing path, or
+refund behavior changed. Typecheck, the production build, and the full
+254-file / 3,209-test unit suite pass locally. No additional controlled
+production attempt has run on the fix yet.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
