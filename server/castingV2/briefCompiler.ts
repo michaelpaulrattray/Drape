@@ -57,11 +57,13 @@ import {
   personaLineFor,
   resolveArchetype,
   resolveCandidateIdentity,
+  briefStatesHair,
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
 import { scrubBrands } from "./brandScrub";
 import { promoteStatedHeritage } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
+import { applySheetTaste } from "./realizedAxes";
 
 const log = createModuleLogger("castingV2/briefCompiler");
 
@@ -353,6 +355,58 @@ function buildChips(intent: CastingIntent, followPersonaLine: string | null): Ca
 }
 
 /**
+ * Resolve the whole sheet, apply the sheet-level taste rules, then compose.
+ *
+ * That order is the point, and it is why this is a function rather than two
+ * loops. The founder's hairstyle rules — at most one statement cut, at least
+ * five distinct cuts — are properties of a SET of eight, and the first
+ * implementation tried to enforce them inside the per-candidate realizer by
+ * guessing what the other positions had drawn. It guessed from the wrong
+ * weighted list whenever heritage varied, which is every open brief.
+ *
+ * Composition happens AFTER the pass, so the persisted `resolvedIdentity` is
+ * the same person the prompt describes. Adjusting a record after composing its
+ * prompt would leave a stored identity that quietly contradicts the image the
+ * customer was actually sent.
+ *
+ * Two cases skip the pass entirely:
+ *
+ *   - **A follow.** Every candidate copies the anchor's realized axes on
+ *     purpose; eight inherited pixies is the follow working, not a sheet
+ *     failing. Neither bar applies there.
+ *   - **A brief that states hair.** Then no candidate emits a hair line at all
+ *     (deference), so there is nothing on the sheet for the rules to govern.
+ */
+function resolveSheet(input: {
+  intent: CastingIntent;
+  briefText: string;
+  archetype: ArchetypeKey;
+  candidateCount: number;
+  rollSeed: string;
+  anchor?: FollowAnchor;
+}): { candidates: CandidateSpec[] } {
+  const { intent, briefText, archetype, rollSeed, anchor } = input;
+  const resolved = Array.from({ length: input.candidateCount }, (_, position) =>
+    resolveCandidateIdentity(intent, position, rollSeed, anchor),
+  );
+
+  const inherited = anchor?.realized != null;
+  const tasted =
+    inherited || briefStatesHair(briefText, intent.role, intent.characterNotes)
+      ? resolved
+      : applySheetTaste(resolved, rollSeed);
+
+  return {
+    candidates: tasted.map((identity, position) => ({
+      position,
+      prompt: composeCandidatePrompt({ briefText, intent, resolved: identity, archetype, seed: position }),
+      personaLine: personaLineFor(identity, intent.reads[position] ?? null),
+      resolvedIdentity: identity,
+    })),
+  };
+}
+
+/**
  * Compile one brief into eight prompts.
  *
  * The `engine` seam exists so tests can drive the interpreter's exact output —
@@ -454,13 +508,19 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   const locks: LockFacts = lockFactsOf(intent);
   const archetype = resolveArchetype(intent, input.rollSeed);
 
-  const candidates: CandidateSpec[] = [];
-  const violations: string[] = [];
+  const sheet = resolveSheet({
+    intent,
+    briefText,
+    archetype,
+    candidateCount: input.candidateCount,
+    rollSeed: input.rollSeed,
+    anchor: anchor ?? undefined,
+  });
+  const candidates = sheet.candidates;
 
-  for (let position = 0; position < input.candidateCount; position += 1) {
-    const resolved = resolveCandidateIdentity(intent, position, input.rollSeed, anchor);
-    const broken = validateLocks(locks, resolved);
-    if (broken.length > 0) {
+  const violations = candidates
+    .map((candidate) => {
+      const broken = validateLocks(locks, candidate.resolvedIdentity);
       /*
         Under Path A this cannot happen unless the adapter is broken: it
         composes *from* the locks, so a violation means resolution stopped
@@ -468,15 +528,11 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
         not become a user-facing refusal on the eve of a paid roll — and the
         contract test is what makes sure it never ships.
       */
-      violations.push(`${position}:${broken.map((violation) => violation.field).join(",")}`);
-    }
-    candidates.push({
-      position,
-      prompt: composeCandidatePrompt({ briefText, intent, resolved, archetype, seed: position }),
-      personaLine: personaLineFor(resolved, intent.reads[position] ?? null),
-      resolvedIdentity: resolved,
-    });
-  }
+      return broken.length > 0
+        ? `${candidate.position}:${broken.map((violation) => violation.field).join(",")}`
+        : null;
+    })
+    .filter(Boolean);
 
   if (violations.length > 0) {
     log.error({ violations }, "[briefCompiler] resolved identities broke the brief's locks");
@@ -519,14 +575,14 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
   }
   const intent = applyUnlocks(fallbackIntent(briefText), input.unlock ?? []);
   const archetype = resolveArchetype(intent, input.rollSeed);
-  const candidates: CandidateSpec[] = Array.from({ length: input.candidateCount }, (_, position) => {
-    const resolved = resolveCandidateIdentity(intent, position, input.rollSeed);
-    return {
-      position,
-      prompt: composeCandidatePrompt({ briefText, intent, resolved, archetype, seed: position }),
-      personaLine: personaLineFor(resolved, intent.reads[position] ?? null),
-      resolvedIdentity: resolved,
-    };
+  // The same helper the real compiler uses. Two hand-written loops is how the
+  // fallback path drifts into producing sheets the main path would not.
+  const { candidates } = resolveSheet({
+    intent,
+    briefText,
+    archetype,
+    candidateCount: input.candidateCount,
+    rollSeed: input.rollSeed,
   });
 
   return {

@@ -65,42 +65,8 @@ function fromWeights(entries: ReturnType<typeof stylesFor>, seed: number): HairS
   return entries[entries.length - 1][0];
 }
 
-/**
- * One statement cut per sheet, structurally.
- *
- * The weights alone make a second statement unlikely, not impossible — about
- * one sheet in ten came back with two, and the founder's acceptance bar is *at
- * most one*. Rarity that holds nine times in ten is not a rule, so the second
- * one is demoted rather than hoped against.
- *
- * The check re-derives the earlier positions from the same seed rather than
- * threading state through the caller: realization is deterministic in
- * (rollSeed, position), so position 5 can ask what positions 0–4 drew without
- * anyone having to remember. Eight candidates make this twenty-eight extra
- * hashes, which is nothing, and it keeps `realizeAxes` a pure function of one
- * candidate — the property the follow anchor and M7's registry both rely on.
- */
-function pickStyle(
-  sex: Sex,
-  heritage: string,
-  ageBand: AgeBand,
-  position: number,
-  seedFor: (axis: string) => number,
-  seedAt: (axis: string, position: number) => number,
-): HairStyle {
-  const entries = stylesFor(sex, heritage, ageBand);
-  const chosen = fromWeights(entries, seedFor("hairStyle"));
-  if (!chosen.statement) return chosen;
-
-  const claimedEarlier = Array.from({ length: position }, (_, earlier) =>
-    fromWeights(entries, seedAt("hairStyle", earlier)),
-  ).some((style) => style.statement);
-  if (!claimedEarlier) return chosen;
-
-  // Demote into the ordinary cuts, with its own hash so the replacement is not
-  // just whatever sat next to the statement in the list.
-  const ordinary = entries.filter(([style]) => !style.statement);
-  return fromWeights(ordinary, seedFor("hairStyleDemoted"));
+function pickStyle(sex: Sex, heritage: string, ageBand: AgeBand, seed: number): HairStyle {
+  return fromWeights(stylesFor(sex, heritage, ageBand), seed);
 }
 
 function weightedPick<T extends string>(entries: readonly (readonly [T, number])[], seed: number): T {
@@ -277,9 +243,8 @@ export function realizeAxes(input: {
 }): RealizedAxes {
   const { heritage, ageBand, sex, position, rollSeed } = input;
   const primary = (heritage[0]?.heritage ?? "") as Heritage | "";
-  const seedAt = (axis: string, at: number) => hash(`${rollSeed}:${axis}:${at}`);
-  const seedFor = (axis: string) => seedAt(axis, position);
-  const hairStyle = pickStyle(sex, primary, ageBand, position, seedFor, seedAt);
+  const seedFor = (axis: string) => hash(`${rollSeed}:${axis}:${position}`);
+  const hairStyle = pickStyle(sex, primary, ageBand, seedFor("hairStyle"));
 
   return {
     eyeColour: weightedPick(EYE_BY_HERITAGE[primary] ?? EYE_DEFAULT, seedFor("eyeColour")),
@@ -352,3 +317,101 @@ export function describeRealizedAxes(
 
 /** Exported so the registry has exactly one definition. */
 export { REALIZED_AXIS_KEYS };
+
+/* ----------------------------------------------------- the sheet-level pass */
+
+/**
+ * The two taste rules that are properties of the SHEET, not of a person.
+ *
+ * The founder set both at the M5 gate: at most one statement cut across eight
+ * candidates, and at least five visibly distinct hairstyles. Neither can be
+ * decided by `realizeAxes`, which sees one candidate — and the first attempt
+ * proved it the expensive way. It re-derived what the earlier positions "would
+ * have" drawn from THIS candidate's weighted list, which is exact only when the
+ * brief locks heritage; on an open brief every position draws from a different
+ * list, so the re-derivation was a fiction. It passed a fixed-heritage unit
+ * test at 200/200 while leaking on 2.3% of real sheets.
+ *
+ * So the rules live here, over the resolved set, and run before the prompts are
+ * composed — a record that disagrees with the prompt that was actually sent is
+ * the failure mode this whole file exists to prevent.
+ *
+ * **Distinct means by NAME.** "plain short cut" and "side part" count as two.
+ * That is the resolution the user sees on a sheet: they are looking at eight
+ * photographs, and two different named cuts photograph differently even when
+ * they share a silhouette.
+ *
+ * **Replacements are ordinary cuts from the candidate's OWN list.** Never
+ * cross-list, because the list is what makes a style legal for this person, and
+ * never a statement, because filling the variety floor with statement cuts
+ * would satisfy one founder ruling by breaking the other.
+ *
+ * **M7 note:** after this pass, `realizeAxes(rollSeed, position)` no longer
+ * reproduces the stored value for an adjusted candidate. The registry must read
+ * the persisted `resolvedIdentity` as truth and never re-derive it.
+ */
+const STATEMENT_CAP = 1;
+const DISTINCT_FLOOR = 5;
+
+export type SheetCandidate = {
+  heritage: HeritageComponent[];
+  ageBand: AgeBand;
+  sex: Sex;
+  realized: RealizedAxes;
+};
+
+export function applySheetTaste<T extends SheetCandidate>(sheet: T[], rollSeed: string): T[] {
+  const seen = new Set<string>();
+  let statements = 0;
+
+  return sheet.map((candidate, position) => {
+    const primary = (candidate.heritage[0]?.heritage ?? "") as Heritage | "";
+    const entries = stylesFor(candidate.sex, primary, candidate.ageBand);
+    const ordinary = entries.filter(([style]) => !style.statement);
+    const current = candidate.realized.hairStyle;
+
+    const overStatement = current.statement === true && statements >= STATEMENT_CAP;
+    /*
+      The floor, enforced only as late as it has to be. A sheet is allowed to
+      repeat a cut — on a real street two women both have long hair — right up
+      to the point where the positions that are left can no longer reach five.
+      From there, every remaining draw has to be one nobody has taken.
+
+      `mustBeNew` asks that arithmetically rather than "is this a repeat": with
+      `d` distinct so far and `r` positions left including this one, declining
+      to add a new cut here caps the sheet at `d + r - 1`. The first version
+      asked the narrower question and the demotion path slipped past it — a
+      statement being demoted could land on a name already used and quietly
+      spend the slot the floor was counting on. One sheet in four hundred came
+      out at four.
+    */
+    const remaining = sheet.length - position;
+    const mustBeNew = seen.size + remaining - 1 < DISTINCT_FLOOR;
+
+    let style = current;
+    if (overStatement || (mustBeNew && seen.has(current.name))) {
+      const unused = ordinary.filter(([entry]) => !seen.has(entry.name));
+      const pool = mustBeNew && unused.length > 0 ? unused : ordinary;
+      if (pool.length > 0) {
+        style = fromWeights(pool, hash(`${rollSeed}:hairStyleTaste:${position}`));
+      }
+    }
+
+    if (style.statement) statements += 1;
+    seen.add(style.name);
+    if (style === current) return candidate;
+
+    /*
+      Texture follows the cut. A style that dictates its own texture wins, and a
+      swap that left the old dictation behind would strand "coiled" on a bob —
+      the illegal pairing the entry-level legality rule exists to prevent.
+    */
+    const hairTexture =
+      style.texture ??
+      weightedPick(
+        TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
+        hash(`${rollSeed}:hairTexture:${position}`),
+      );
+    return { ...candidate, realized: { ...candidate.realized, hairStyle: style, hairTexture } };
+  });
+}

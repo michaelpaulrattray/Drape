@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { realizeAxes } from "./realizedAxes";
 import { composeCandidatePrompt, resolveCandidateIdentity } from "./cohortPhotorealHuman";
+import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
+import type { TextEngine } from "../providers/types";
 import { ARCHETYPES, type CastingIntent, type HeritageComponent } from "./castingIntent";
 import { FINISH_RENDER, statedFinish } from "./hairStyles";
 
@@ -39,31 +41,23 @@ function sheet(options: {
 const SEEDS = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 describe("the hairstyle axis carries named cuts", () => {
-  it("reaches at least five distinct styles across eight candidates", () => {
-    // The founder's acceptance bar for item 6, asserted directly.
+  it("draws widely enough for the sheet to have something to work with", () => {
+    // The raw draw's job. The FLOOR is a sheet property, asserted below.
     for (const seed of SEEDS) {
       for (const sex of ["male", "female"] as const) {
         const names = new Set(sheet({ heritage: "British Isles", sex, seed }).map((a) => a.hairStyle.name));
-        expect(names.size, `${sex}/${seed}`).toBeGreaterThanOrEqual(5);
+        expect(names.size, `${sex}/${seed}`).toBeGreaterThanOrEqual(4);
       }
     }
   });
 
-  it("never puts two statement cuts on one sheet", () => {
-    /*
-      The taste ruling, as a rule rather than a probability. The weights alone
-      left about one sheet in ten with two, which is not "at most one" — the
-      demotion in pickStyle is what makes this hold every time.
-    */
-    const sheets = Array.from({ length: 200 }, (_, i) =>
-      sheet({ heritage: "Western European", sex: i % 2 ? "male" : "female", seed: `taste${i}` }),
-    );
-    const counts = sheets.map((eight) => eight.filter((a) => a.hairStyle.statement).length);
-    expect(Math.max(...counts)).toBeLessThanOrEqual(1);
-    // Rare-but-POSSIBLE. A statement cut that never occurs is not restraint.
-    expect(counts.some((n) => n === 1)).toBe(true);
-    // And still rare: most sheets carry none at all.
-    expect(counts.filter((n) => n === 0).length / counts.length).toBeGreaterThan(0.4);
+  it("keeps statement cuts rare in the raw draw", () => {
+    // The weights' job. The per-sheet CAP is a different rule, asserted below
+    // through the compiler — which is the only place that can see a sheet.
+    const all = SEEDS.flatMap((seed) => sheet({ heritage: "Western European", seed }));
+    const rate = all.filter((a) => a.hairStyle.statement).length / all.length;
+    expect(rate).toBeLessThan(0.15);
+    expect(rate).toBeGreaterThan(0); // rare-but-POSSIBLE; never is not restraint
   });
 
   it("gets rarer with age — a wolf cut at seventy reads as costume", () => {
@@ -205,6 +199,131 @@ describe("the skin finish", () => {
   it("gives every archetype a finish, so no sheet falls back to nothing", () => {
     for (const [name, entry] of Object.entries(ARCHETYPES)) {
       expect(FINISH_RENDER[entry.finish], name).toBeTruthy();
+    }
+  });
+});
+
+describe("the sheet-level taste rules", () => {
+  /*
+    Asserted through the COMPILER, on the real resolve path, because that is
+    where the rules now live and because the first implementation passed a
+    fixed-heritage unit test at 200/200 while leaking on 2.3% of real sheets.
+    A sheet property tested against a synthetic sheet proves nothing about
+    sheets.
+
+    Everything here is deterministic in (brief, rollSeed), so these are exact
+    assertions over hundreds of seeds, not tolerances.
+  */
+  async function sheetsOf(brief: string, count = 300) {
+    return Promise.all(
+      Array.from({ length: count }, (_, roll) =>
+        deterministicBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: `bars-${brief}-${roll}` }),
+      ),
+    );
+  }
+
+  const BRIEFS = [
+    "a model",
+    "a male model",
+    "a west african woman in her 40s",
+    "a nordic man",
+    "an oncology nurse at the end of a shift",
+  ];
+
+  it.each(BRIEFS)("never puts two statement cuts on one sheet — %j", async (brief) => {
+    for (const compiled of await sheetsOf(brief)) {
+      const statements = compiled.candidates.filter(
+        (candidate) => candidate.resolvedIdentity.realized.hairStyle.statement,
+      ).length;
+      expect(statements).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it.each(BRIEFS)("reaches five distinct cuts on every sheet — %j", async (brief) => {
+    // The founder's acceptance bar for item 6. Distinct means by NAME.
+    for (const compiled of await sheetsOf(brief)) {
+      const names = new Set(
+        compiled.candidates.map((candidate) => candidate.resolvedIdentity.realized.hairStyle.name),
+      );
+      expect(names.size).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it("still lets a sheet repeat a cut — the floor is a floor, not a ban", async () => {
+    /*
+      Two women on a real street both have long hair, and the street ruling
+      governs who any one person is. If every sheet came back with eight
+      different cuts the pass would have replaced the weights rather than
+      bounded them.
+    */
+    const repeats = (await sheetsOf("a model", 100)).filter((compiled) => {
+      const names = compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle.name);
+      return new Set(names).size < names.length;
+    });
+    expect(repeats.length).toBeGreaterThan(50);
+  });
+
+  it("never strands a texture on a cut that was swapped under it", async () => {
+    // The swap has to recompute texture, or a demoted set of locs leaves
+    // "coiled" attached to a bob — the illegal pairing legality-in-the-entry
+    // exists to make unsayable.
+    for (const compiled of await sheetsOf("a model", 200)) {
+      for (const candidate of compiled.candidates) {
+        const { hairStyle, hairTexture } = candidate.resolvedIdentity.realized;
+        if (hairStyle.texture) expect(hairTexture).toBe(hairStyle.texture);
+      }
+    }
+  });
+
+  it("describes in the prompt exactly the person it persists", async () => {
+    /*
+      The pass runs BEFORE composition. Adjusting a record afterwards would
+      leave a stored identity that contradicts the image the customer was sent,
+      and nothing downstream would ever notice.
+    */
+    for (const compiled of await sheetsOf("a model", 100)) {
+      for (const candidate of compiled.candidates) {
+        expect(candidate.prompt).toContain(candidate.resolvedIdentity.realized.hairStyle.name);
+      }
+    }
+  });
+
+  it("leaves a follow alone — eight inherited cuts is the follow working", async () => {
+    const parent = resolveCandidateIdentity(
+      { heritage: [], reads: [] } as unknown as CastingIntent,
+      0,
+      "parent-roll",
+    );
+    const compiled = await castingBriefCompiler({
+      briefText: "someone like her",
+      candidateCount: 8,
+      rollSeed: "follow-roll",
+      followIdentity: parent,
+      engine: {
+        id: "test",
+        complete: async () => ({
+          text: JSON.stringify({ cohort: "photoreal_human", role: "model", characterNotes: null, reads: null }),
+          latencyMs: 1,
+          provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
+        }),
+      } satisfies TextEngine,
+    });
+    const names = new Set(compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle.name));
+    expect(names.size).toBe(1);
+    expect([...names][0]).toBe(parent.realized.hairStyle.name);
+  });
+
+  it("says nothing about hair at all when the brief already decided it", async () => {
+    const compiled = await deterministicBriefCompiler({
+      briefText: "a woman with a shaved head",
+      candidateCount: 8,
+      rollSeed: "stated-hair",
+    });
+    for (const candidate of compiled.candidates) {
+      // Keyed on the hair line's own closing clause, not on "HAIR:" — the
+      // constant's "FACIAL HAIR:" contains that substring, and an assertion
+      // that matches the wrong line is an assertion that proves nothing.
+      expect(candidate.prompt).not.toContain("Cut and worn as that style is genuinely worn");
     }
   });
 });

@@ -945,6 +945,21 @@ const HAIR_WORDS = [
   "silver", "platinum", "bleached", "highlights", "roots",
 ];
 
+/** Style names that are already plural and must not take an article. */
+const PLURAL_STYLES = new Set(["locs", "braids", "soft layers"]);
+
+/**
+ * Did the brief already decide the hair?
+ *
+ * Exported so the compiler's sheet-taste pass asks the same question with the
+ * same word list. A second copy of `HAIR_WORDS` next to a second reader is
+ * exactly how the two would drift out of agreement about what "stated" means.
+ */
+export function briefStatesHair(...sources: (string | null | undefined)[]): boolean {
+  const words = new Set(sources.filter(Boolean).join(" ").toLowerCase().split(/[^a-z]+/));
+  return HAIR_WORDS.some((word) => words.has(word));
+}
+
 function describeHair(
   hair: Hair | null,
   stated: string,
@@ -962,8 +977,7 @@ function describeHair(
     and a `\s` became the letter "s". A word list cannot be mangled into
     something that looks right and does nothing.
   */
-  const words = new Set(stated.toLowerCase().split(/[^a-z]+/));
-  if (HAIR_WORDS.some((word) => words.has(word))) return "";
+  if (briefStatesHair(stated)) return "";
   if (!hair) return "";
   /*
     The named cut, not the silhouette.
@@ -975,10 +989,18 @@ function describeHair(
     generically is the same collapse wearing a label, so the prompt asks for the
     cut as it is actually worn.
   */
+  /*
+    Grammar, because the prompt is prose the model reads. "a ash blonde straight
+    bob" and "a black coiled locs" both came out of the first draft — a wrong
+    article is noise in a sentence whose every other word is doing work.
+  */
+  const description = `${hair.colour} ${style.texture ?? texture} ${style.name}`;
+  const plural = PLURAL_STYLES.has(style.name);
+  const article = plural ? "" : /^[aeiou]/.test(description) ? "an " : "a ";
   const cut =
     style.family === "shaved"
-      ? ` HAIR: ${style.name}, ${hair.colour} where it is grown out.`
-      : ` HAIR: a ${hair.colour} ${style.texture ?? texture} ${style.name}.`;
+      ? ` HAIR: a ${style.name}, ${hair.colour} where it is grown out.`
+      : ` HAIR: ${article}${description}.`;
   return `${cut} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
 }
 
