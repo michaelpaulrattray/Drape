@@ -344,8 +344,21 @@ export default function CastingSheet() {
       intent, and it was just restated.
     */
     const briefChanged = brief.trim() !== (roll.data?.briefText ?? "").trim();
+    const hadOverrides = Object.keys(overrides).length > 0;
     const sendOverrides = briefChanged ? {} : overrides;
-    if (briefChanged) clearOverrides();
+    if (briefChanged) {
+      clearOverrides();
+      /*
+        Say it out loud, because it is destructive and easy to trigger by
+        accident. The box arrives pre-filled with the roll's own sentence, so
+        the user is editing rather than composing — and a stray character now
+        spends every adjustment they made. Dropping them is right (the sentence
+        is the statement of intent, and it has just been restated); dropping
+        them silently would leave someone wondering where their 50s went, which
+        is the same class of confusion as the stale override it replaced.
+      */
+      if (hadOverrides) toast("Brief edited — your adjustments were cleared");
+    }
 
     const clientRequestId = createClientRequestId();
     const release = () => {
