@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
   AppShell,
   Button,
-  DerivedChip,
   Dock,
   EmptyState,
   Field,
@@ -14,6 +13,7 @@ import {
   Instruction,
   Skeleton,
 } from "@/foundation";
+import { BriefEcho } from "@/features/castingV2/components/BriefEcho";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
@@ -63,6 +63,8 @@ export default function CastingSheet() {
     setOptimisticKept,
     setOptimisticDiscarded,
     clearOptimistic,
+    overrides,
+    setOverride,
   } = useSheetState();
   const [brief, setBrief] = useState("");
 
@@ -310,6 +312,7 @@ export default function CastingSheet() {
           candidateId,
           briefText: brief,
           unlock: unlocked.length > 0 ? unlocked : undefined,
+          overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
         },
         options,
       );
@@ -320,6 +323,7 @@ export default function CastingSheet() {
           sessionId,
           briefText: brief,
           unlock: unlocked.length > 0 ? unlocked : undefined,
+          overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
         },
         options,
       );
@@ -367,6 +371,18 @@ export default function CastingSheet() {
     if (!fromRollId) return null;
     const parent = rolls.find((entry) => entry.rollId === fromRollId);
     return parent ? `FROM ${String(parent.rollIndex).padStart(2, "0")}` : null;
+  }, [roll.data?.lineage.fromRollId, rolls]);
+
+  /*
+    The same lineage, said in the echo's register rather than the pill's.
+    "FROM 02" is a mono tag on a tile; a sentence says "the roll before this
+    one". Both point at the same parent — they are not two facts.
+  */
+  const followLabel = useMemo(() => {
+    const fromRollId = roll.data?.lineage.fromRollId;
+    if (!fromRollId) return null;
+    const parent = rolls.find((entry) => entry.rollId === fromRollId);
+    return parent ? `roll ${String(parent.rollIndex).padStart(2, "0")}` : null;
   }, [roll.data?.lineage.fromRollId, rolls]);
 
   if (!sessionId) return null;
@@ -434,28 +450,31 @@ export default function CastingSheet() {
           </div>
         ) : null}
 
-        {roll.data && roll.data.chips.length > 0 ? (
-          <div className="dp-row">
-            {roll.data.chips.map((chip) =>
-              chip.removable && chip.field ? (
-                <DerivedChip
-                  key={`${chip.kind}:${chip.label}`}
-                  label={chip.label}
-                  removeLabel={`Stop pinning ${chip.label} on the next roll`}
-                  onRemove={() => {
-                    unlock(chip.field as UnlockableField);
-                    // Rolls are immutable: this cannot change the sheet in
-                    // front of them, only the next one. The toast says which.
-                    toast(`${chip.label} unpinned — applies to your next roll`);
-                  }}
-                />
-              ) : (
-                <span key={`${chip.kind}:${chip.label}`} className="dp-chip dp-chip--static">
-                  {chip.label}
-                </span>
-              ),
-            )}
-          </div>
+        {/*
+          The brief echo, in place of the row of pills the founder called
+          tokenized. One sentence, the pinned facts adjustable in place.
+
+          `terse` on the second and later rolls of a session: a returning user
+          has already read which axes are free, and the pins are what they are
+          checking.
+        */}
+        {roll.data ? (
+          <BriefEcho
+            facts={roll.data.facts}
+            followLabel={followLabel}
+            terse={rolls.length > 1}
+            onAdjust={(adjustment) => {
+              if (adjustment.kind === "vary") {
+                unlock(adjustment.field as UnlockableField);
+                // Rolls are immutable: this cannot change the sheet in front of
+                // them, only the next one. The copy says which.
+                toast(`${adjustment.field === "energy" ? "presence" : adjustment.field} unpinned — applies to your next roll`);
+                return;
+              }
+              setOverride(adjustment.field, adjustment.value as never);
+              toast(`${adjustment.value} — applies to your next roll`);
+            }}
+          />
         ) : null}
 
         {/*

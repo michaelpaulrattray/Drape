@@ -273,6 +273,53 @@ async function assertOverMediaChips(page: Page, where: string) {
   );
 }
 
+/**
+ * Law 8. The brief echo is a sentence, and every fact in it is reachable.
+ *
+ * The echo replaced a row of pills, and the two ways it could quietly become a
+ * pill row again are a fact getting chip clothing (a background or a border) and
+ * the two-layer contrast collapsing so nothing scans. The third failure is the
+ * one the mock actually shipped: an underlined word that is not a button, which
+ * a founder clicks and nothing happens.
+ */
+async function assertBriefEcho(page: Page, where: string) {
+  const result = await page.evaluate(() => {
+    const echo = document.querySelector<HTMLElement>(".dpc-echo");
+    if (!echo) return null;
+    const triggers = Array.from(echo.querySelectorAll<HTMLElement>(".dp-pop__trigger"));
+    const prose = echo.querySelector<HTMLElement>(".dpc-echo__prose");
+    const style = getComputedStyle(echo);
+    const chipLike = triggers.filter((trigger) => {
+      const own = getComputedStyle(trigger);
+      const bg = own.backgroundColor;
+      return (bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") || own.borderTopWidth !== "0px";
+    });
+    return {
+      triggers: triggers.length,
+      unreachable: triggers.filter((t) => t.tabIndex < 0 || !t.getAttribute("aria-label")).length,
+      chipLike: chipLike.length,
+      layered: prose ? getComputedStyle(prose).color !== (triggers[0] && getComputedStyle(triggers[0]).color) : false,
+      clamped: style.webkitLineClamp === "2",
+      lines: Math.round(echo.getBoundingClientRect().height / parseFloat(style.lineHeight)),
+      legacyPills: document.querySelectorAll(".dp-chip--static").length,
+    };
+  });
+  if (result === null) {
+    console.log(`  --   [${where}] no brief echo on this surface`);
+    return;
+  }
+  check(result.triggers > 0, `[${where}] the echo has adjustable facts`, "no triggers in the sentence");
+  check(
+    result.unreachable === 0,
+    `[${where}] every fact is keyboard-reachable and named`,
+    `${result.unreachable} unreachable`,
+  );
+  check(result.chipLike === 0, `[${where}] facts are underlined words, not chips`, `${result.chipLike} chip-like`);
+  check(result.layered, `[${where}] pinned facts and prose are two layers`, "prose and facts share one colour");
+  check(result.clamped && result.lines <= 2, `[${where}] the echo never exceeds two lines`, `${result.lines} lines`);
+  check(result.legacyPills === 0, `[${where}] the pill row is gone`, `${result.legacyPills} static chips remain`);
+}
+
 async function auditSurface(page: Page, url: string, where: string, waitFor?: string) {
   console.log(`\n── ${where}`);
   await page.goto(url, { waitUntil: "networkidle2" });
@@ -287,6 +334,7 @@ async function auditSurface(page: Page, url: string, where: string, waitFor?: st
   await assertRetentionStated(page, where);
   await assertNoOrphanSkeletons(page, where);
   await assertOverMediaChips(page, where);
+  await assertBriefEcho(page, where);
 }
 
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new" });

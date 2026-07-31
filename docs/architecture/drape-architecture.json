@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cbfd1333db1b1d16"
+    "sourceFingerprint": "23e745e58ee6429d"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 5
+      "moduleCount": 7
     },
     {
       "id": "domain:client-shared",
@@ -68,7 +68,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 11
+      "moduleCount": 12
     },
     {
       "id": "domain:home",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:studio",
@@ -1383,8 +1383,20 @@
       "lifecycle": "retire"
     },
     {
+      "id": "module:client/src/features/castingV2/briefEcho.ts",
+      "path": "client/src/features/castingV2/briefEcho.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/castingV2.css",
       "path": "client/src/features/castingV2/castingV2.css",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/BriefEcho.tsx",
+      "path": "client/src/features/castingV2/components/BriefEcho.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -2009,6 +2021,12 @@
     {
       "id": "module:client/src/foundation/BrandOrb.tsx",
       "path": "client/src/foundation/BrandOrb.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/Popover.tsx",
+      "path": "client/src/foundation/Popover.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -3983,6 +4001,12 @@
     {
       "id": "module:shared/castingOptions.ts",
       "path": "shared/castingOptions.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/castingVocabularies.ts",
+      "path": "shared/castingVocabularies.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -7049,6 +7073,10 @@
   ],
   "tests": [
     {
+      "id": "test:client/src/features/castingV2/briefEcho.test.ts",
+      "path": "client/src/features/castingV2/briefEcho.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/singleFlight.test.ts",
       "path": "client/src/features/castingV2/singleFlight.test.ts"
     },
@@ -7549,6 +7577,10 @@
       "path": "server/castingV2/castingV2Scope.test.ts"
     },
     {
+      "id": "test:server/castingV2/overridePrecedence.test.ts",
+      "path": "server/castingV2/overridePrecedence.test.ts"
+    },
+    {
       "id": "test:server/castingV2/rollProjection.test.ts",
       "path": "server/castingV2/rollProjection.test.ts"
     },
@@ -7563,6 +7595,10 @@
     {
       "id": "test:server/castingV2/styleRefusal.test.ts",
       "path": "server/castingV2/styleRefusal.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/vocabularyParity.test.ts",
+      "path": "server/castingV2/vocabularyParity.test.ts"
     },
     {
       "id": "test:server/changeRequests.test.ts",
@@ -10465,6 +10501,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
+      "to": "module:client/src/features/castingV2/briefEcho.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
+      "to": "module:client/src/features/castingV2/sheetState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
+      "to": "module:client/src/foundation/Popover.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
@@ -10472,6 +10528,11 @@
     {
       "from": "module:client/src/features/castingV2/dispatchFailure.ts",
       "to": "module:client/src/features/castingV2/sheetState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/sheetState.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -11995,6 +12056,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/Popover.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/primitives.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -12317,6 +12383,11 @@
     {
       "from": "module:client/src/pages/CastingFoundation.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "kind": "imports"
     },
     {
@@ -15660,6 +15731,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -15707,6 +15783,11 @@
     {
       "from": "module:server/castingV2/rollProjection.ts",
       "to": "module:server/castingV2/briefCompiler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },
     {
@@ -17812,6 +17893,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/candidateService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },
     {

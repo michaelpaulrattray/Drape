@@ -462,3 +462,31 @@
   The shortlist now rides in the dock as `.dpc-keptstack`, where Sign joins it
   at M7.
 */
+
+/* ---- the brief echo: what the sheet says back ---- */
+
+/*
+  Two layers, per the founder's condition. Pinned facts sit at full ink; the
+  connective prose between them at secondary. A regular scans the facts at
+  chip-speed because they are the only thing at full contrast, and the sentence
+  still reads as a sentence for a first-timer.
+
+  Archivo, body size, no mono — the moment a fact gets a background or a border
+  this is the pill row again, which is the thing it replaces.
+*/
+.dpc-echo {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink);
+  /* Hard cap at two lines. The grammar collapses rather than enumerating, so
+     this is a backstop for a long heritage pair, not the mechanism. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dpc-echo__prose { color: var(--metaStrong); }
+.dpc-echo__fact { color: var(--ink); }

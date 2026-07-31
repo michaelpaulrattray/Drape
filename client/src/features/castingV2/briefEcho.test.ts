@@ -1,0 +1,177 @@
+import { describe, expect, it } from "vitest";
+
+import { composeEcho, echoText, type BriefFacts } from "./briefEcho";
+
+/**
+ * The sentence has to survive every shape of intent, from everything pinned to
+ * nothing pinned, without ever reading as a template with words dropped in.
+ *
+ * These are readability assertions as much as correctness ones: several check
+ * the exact string, because "does it read like English" is the requirement and
+ * a looser assertion would pass on prose no one would ship.
+ */
+
+function facts(partial: Partial<BriefFacts>): BriefFacts {
+  return { locks: {}, open: [], variationAxis: null, ...partial };
+}
+
+describe("the sentence composes rather than templates", () => {
+  it("fuses sex, age and build into one noun phrase", () => {
+    const spans = composeEcho(
+      facts({
+        locks: { sex: "female", ageBand: "20s", agePhase: "early", build: "slim" },
+        variationAxis: "look",
+      }),
+    );
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is a slim woman in her early 20s. The eight differ by look.",
+    );
+  });
+
+  it("drops the phase when the brief only pinned the decade", () => {
+    const spans = composeEcho(facts({ locks: { sex: "male", ageBand: "50s" } }));
+    expect(echoText(spans)).toBe("Everyone on this sheet is a man in his 50s.");
+  });
+
+  it("writes heritage, presence and look as prose, not as a list", () => {
+    const spans = composeEcho(
+      facts({
+        locks: { sex: "female", ageBand: "20s", heritage: ["East Asian"], energy: "dry", look: "severe minimal" },
+        variationAxis: "look",
+      }),
+    );
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is a woman in her 20s, of East Asian heritage, reading dry, held to severe minimal. The eight differ by look.",
+    );
+  });
+
+  it("says both heritages when two were pinned", () => {
+    const spans = composeEcho(facts({ locks: { heritage: ["Nordic", "Slavic"], sex: "male" } }));
+    expect(echoText(spans)).toContain("of Nordic and Slavic heritage");
+  });
+
+  it("says 'seventies or older' rather than the raw band label", () => {
+    const spans = composeEcho(facts({ locks: { sex: "male", ageBand: "70s+" } }));
+    expect(echoText(spans)).toBe("Everyone on this sheet is a man in his seventies or older.");
+  });
+});
+
+describe("varying is visible, and never becomes a list", () => {
+  it("names up to three open axes in real English", () => {
+    const spans = composeEcho(
+      facts({
+        locks: { sex: "female", ageBand: "50s" },
+        open: ["heritage", "build", "energy"],
+        variationAxis: "look",
+      }),
+    );
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is a woman in her 50s. Heritage, build and presence were left to the roll. The eight differ by look.",
+    );
+  });
+
+  it("collapses past three rather than enumerating them", () => {
+    // Six named axes is the pill row wearing a coat, which is the thing this
+    // whole design replaces.
+    const spans = composeEcho(
+      facts({
+        locks: { ageBand: "30s", sex: "male" },
+        open: ["heritage", "build", "energy", "look", "sex", "ageBand"],
+        variationAxis: "disposition",
+      }),
+    );
+    const text = echoText(spans);
+    expect(text).not.toContain("left to the roll");
+    expect(text).toBe("Everyone on this sheet is a man in his 30s. The eight differ by disposition.");
+  });
+
+  it("never names an axis the variation clause already names", () => {
+    /*
+      "presence was left to the roll. The eight differ by disposition" is one
+      idea colliding with itself — the collision Fable caught in the mock.
+    */
+    const spans = composeEcho(
+      facts({
+        locks: { sex: "female", ageBand: "40s" },
+        open: ["energy", "build"],
+        variationAxis: "disposition",
+      }),
+    );
+    const text = echoText(spans);
+    expect(text).toContain("Build was left to the roll");
+    expect(text).not.toContain("presence");
+  });
+
+  it("falls back to the free-cast line when nothing at all was pinned", () => {
+    const spans = composeEcho(facts({ open: ["sex", "ageBand", "heritage"], variationAxis: "disposition" }));
+    expect(echoText(spans)).toBe(
+      "Nothing pinned — the roll cast freely from your words. The eight differ by disposition.",
+    );
+  });
+});
+
+describe("lineage and the terser repeat form", () => {
+  it("closes with the followed candidate and the axis in one clause", () => {
+    const spans = composeEcho(
+      facts({ locks: { sex: "female", ageBand: "40s" }, variationAxis: "look" }),
+      { followLabel: "the third face on roll 01" },
+    );
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is a woman in her 40s. The eight follow the third face on roll 01, and differ by look.",
+    );
+  });
+
+  it("terse drops the open-axis clause, keeping the pinned facts", () => {
+    // Founder condition: prefer the terser composed form on repeat rolls within
+    // a session. The pins are what a returning user is checking; the latitude
+    // sentence is what they have already read.
+    const full = composeEcho(
+      facts({ locks: { sex: "female", ageBand: "20s" }, open: ["heritage", "build"], variationAxis: "look" }),
+    );
+    const terse = composeEcho(
+      facts({ locks: { sex: "female", ageBand: "20s" }, open: ["heritage", "build"], variationAxis: "look" }),
+      { terse: true },
+    );
+    expect(echoText(full)).toContain("were left to the roll");
+    expect(echoText(terse)).toBe("Everyone on this sheet is a woman in her 20s. The eight differ by look.");
+    expect(echoText(terse).length).toBeLessThan(echoText(full).length);
+  });
+});
+
+describe("the spans carry the two-layer typography", () => {
+  it("marks pinned facts as facts and connective prose as text", () => {
+    const spans = composeEcho(
+      facts({ locks: { sex: "female", ageBand: "20s", heritage: ["Nordic"] }, variationAxis: "look" }),
+    );
+    const fields = spans.filter((span) => span.kind === "fact").map((span) => span.field);
+    expect(fields).toEqual(["sex", "ageBand", "heritage"]);
+    // Every non-fact span is connective prose, which renders at secondary
+    // weight — that split IS the founder's two-layer condition.
+    expect(spans.some((span) => span.kind === "text")).toBe(true);
+  });
+
+  it("marks named open axes as pinnable rather than as dead prose", () => {
+    // The mock shipped two of three open axes as unclickable text, which a
+    // founder would have clicked. Every named axis is a span with a field.
+    const spans = composeEcho(
+      facts({ locks: { sex: "male" }, open: ["heritage", "build"], variationAxis: "look" }),
+    );
+    const open = spans.filter((span) => span.kind === "open");
+    expect(open.map((span) => span.field)).toEqual(["heritage", "build"]);
+  });
+
+  it("gives every fact and open span a field the server will accept", () => {
+    const spans = composeEcho(
+      facts({
+        locks: { sex: "female", ageBand: "30s", build: "athletic", energy: "wry", look: "quiet luxury" },
+        open: ["heritage"],
+        variationAxis: null,
+      }),
+    );
+    const OVERRIDABLE = new Set(["sex", "ageBand", "agePhase", "heritage", "build", "energy", "look"]);
+    for (const span of spans) {
+      if (span.kind === "text") continue;
+      expect(OVERRIDABLE.has(span.field)).toBe(true);
+    }
+  });
+});

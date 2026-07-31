@@ -1,5 +1,15 @@
 import { create } from "zustand";
 
+import type {
+  AgeBand,
+  AgePhase,
+  Build,
+  EnergyKey,
+  Heritage,
+  LookKey,
+  Sex,
+} from "@shared/castingVocabularies";
+
 /**
  * Ephemeral sheet state — everything the server is not the authority on.
  *
@@ -31,11 +41,41 @@ import { create } from "zustand";
 export type DispatchFailureKind = "refused" | "credits" | "busy" | "unavailable";
 
 export type UnlockableField = "sex" | "ageBand" | "heritage" | "build" | "energy" | "archetype";
+/*
+  Typed against the shared vocabularies rather than as `string`.
+
+  A loose `Record<field, string>` compiles happily and then posts a value the
+  server's strict enum refuses — a paid action failing validation after the
+  click. The types are the check that the popover can only offer what the roll
+  can accept.
+*/
+export type LockOverrides = {
+  sex?: Sex;
+  ageBand?: AgeBand;
+  agePhase?: AgePhase;
+  heritage?: Heritage;
+  build?: Build;
+  energy?: EnergyKey;
+  look?: LookKey;
+};
+export type OverridableField = keyof LockOverrides;
 
 type SheetState = {
   pending: Record<string, true>;
   undoable: string | null;
   unlocked: UnlockableField[];
+  /**
+   * Facts the user set by hand in the brief echo.
+   *
+   * These do NOT clear when a roll is dispatched, and that asymmetry with
+   * `unlocked` is the founder's ratified precedence law rather than an
+   * oversight. Unpinning is a one-shot request for variety on the next roll;
+   * setting a value is a standing correction. A roll re-reads the brief every
+   * time, so an override that cleared on dispatch would be silently re-derived
+   * away by the interpreter on the roll after it — the adjustment would not be
+   * refused, it would just evaporate.
+   */
+  overrides: LockOverrides;
   draftBrief: string;
   /**
    * A roll was dispatched and its rows have not appeared yet.
@@ -83,6 +123,7 @@ type SheetState = {
 
   setUndoable: (candidateId: string | null) => void;
   unlock: (field: UnlockableField) => void;
+  setOverride: <F extends OverridableField>(field: F, value: NonNullable<LockOverrides[F]>) => void;
   setDraftBrief: (brief: string) => void;
   setStartingRoll: (startingRoll: boolean) => void;
   setDispatchFailure: (failure: { kind: DispatchFailureKind; message: string } | null) => void;
@@ -100,6 +141,7 @@ export const useSheetState = create<SheetState>((set, get) => ({
   pending: {},
   undoable: null,
   unlocked: [],
+  overrides: {},
   draftBrief: "",
   startingRoll: false,
   dispatchFailure: null,
@@ -143,6 +185,19 @@ export const useSheetState = create<SheetState>((set, get) => ({
       state.unlocked.includes(field) ? state : { unlocked: [...state.unlocked, field] },
     ),
 
+  setOverride: (field, value) =>
+    set((state) => ({
+      overrides: { ...state.overrides, [field]: value },
+      /*
+        Setting a value also clears any unpin of the same field. "Let age vary"
+        then "no, make it 40s" is one decision changing its mind, and leaving
+        both in flight would send the server a contradiction it has to resolve
+        by ordering — which works, but relies on the client and server agreeing
+        about precedence forever.
+      */
+      unlocked: state.unlocked.filter((unlockedField) => unlockedField !== field),
+    })),
+
   setDraftBrief: (draftBrief) => set({ draftBrief }),
 
   setStartingRoll: (startingRoll) => set({ startingRoll }),
@@ -154,6 +209,7 @@ export const useSheetState = create<SheetState>((set, get) => ({
   rollDispatched: () =>
     set({
       undoable: null,
+      // `overrides` is deliberately absent here — see the field's comment.
       unlocked: [],
       pending: {},
       optimisticKept: {},
@@ -166,6 +222,8 @@ export const useSheetState = create<SheetState>((set, get) => ({
       pending: {},
       undoable: null,
       unlocked: [],
+      // Reset is leaving the sheet entirely, so the standing corrections go too.
+      overrides: {},
       draftBrief: "",
       startingRoll: false,
       optimisticKept: {},

@@ -941,3 +941,102 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   white-space: nowrap;
   border: 0;
 }
+
+/* ---- popover: one open at a time, anchored to a word in a sentence ---- */
+
+.dp-pop { position: relative; display: inline; }
+
+/*
+  The trigger is a word inside prose, so it inherits everything: font, size,
+  colour. A hairline underneath is the whole affordance — the moment it gets a
+  background or a border it is a chip again, which is what the echo replaced.
+*/
+.dp-pop__trigger {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 1px solid var(--lineStrong);
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+.dp-pop__trigger:hover { border-bottom-color: var(--ink); }
+.dp-pop__trigger[aria-expanded="true"] { border-bottom-color: var(--accentSolid); }
+
+.dp-pop__trigger:focus-visible {
+  outline: 2px solid var(--accentSolid);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* An axis the roll varied: same affordance, weaker mark, secondary colour. */
+.dp-pop__trigger--open {
+  color: var(--metaStrong);
+  border-bottom-style: dashed;
+  border-bottom-color: var(--dashed);
+}
+
+.dp-pop__trigger--open:hover { border-bottom-color: var(--metaStrong); }
+
+.dp-pop__panel {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: -12px;
+  z-index: 40;
+  width: 216px;
+  padding: var(--s-2);
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadowCard);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.dp-pop__heading {
+  display: block;
+  padding: 7px 9px 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.dp-pop__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+}
+
+.dp-pop__option:hover { background: var(--well); }
+.dp-pop__option:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
+.dp-pop__option--quiet { color: var(--metaStrong); }
+
+.dp-pop__mark {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--accentSolid);
+  flex: none;
+}
+
+.dp-pop__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-pop__trigger { transition: none; }
+}

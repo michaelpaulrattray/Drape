@@ -34,6 +34,44 @@
  * fidelity. Adoption is per-item judgment; what was taken and why is noted at
  * each site.
  */
+
+import {
+  AGE_BANDS,
+  AGE_PHASES,
+  BUILDS,
+  ENERGY_KEYS,
+  HERITAGES,
+  LOOK_KEYS,
+  SEXES,
+  VARIATION_AXES,
+  type AgeBand,
+  type AgePhase,
+  type Build,
+  type EnergyKey,
+  type Heritage,
+  type LookKey,
+  type Sex,
+  type VariationAxis,
+} from "../../shared/castingVocabularies";
+
+/*
+  Re-exported so every existing import of these from `castingIntent` keeps
+  working. The values themselves now live in `shared/` because the brief echo's
+  popover offers them to the user: a hand-copied client list had already drifted
+  three values before anyone picked one.
+*/
+export {
+  AGE_BANDS,
+  AGE_PHASES,
+  BUILDS,
+  ENERGY_KEYS,
+  HERITAGES,
+  LOOK_KEYS,
+  SEXES,
+  VARIATION_AXES,
+};
+export type { AgeBand, AgePhase, Build, EnergyKey, Heritage, LookKey, Sex, VariationAxis };
+
 import { z } from "zod";
 
 /* ------------------------------------------------------------ vocabularies */
@@ -44,8 +82,6 @@ import { z } from "zod";
  * is what "in her 20s" actually says, and the adapter varies *within* it so
  * eight candidates are not eight thirty-year-olds.
  */
-export const AGE_BANDS = ["teens", "20s", "30s", "40s", "50s", "60s", "70s+"] as const;
-export type AgeBand = (typeof AGE_BANDS)[number];
 
 /**
  * Where in the decade — and it is a separate lock from the band.
@@ -59,16 +95,12 @@ export type AgeBand = (typeof AGE_BANDS)[number];
  * Null still means the brief only named the decade, in which case the phase is
  * genuine latitude — "in her 30s" should not all be 31.
  */
-export const AGE_PHASES = ["early", "mid", "late"] as const;
-export type AgePhase = (typeof AGE_PHASES)[number];
 
 /**
  * H11, kept whole: nothing infers non-binary, an explicit word always wins,
  * and absence is absence. The interpreter is told the same in prose; this list
  * is what makes it true regardless.
  */
-export const SEXES = ["female", "male", "nonbinary"] as const;
-export type Sex = (typeof SEXES)[number];
 
 /**
  * Heritage, ported from the legacy blend system as the founder ruling requires
@@ -87,24 +119,7 @@ export type Sex = (typeof SEXES)[number];
  * The blend machinery already carried two components; what was missing was
  * somewhere for the second one to land.
  */
-export const HERITAGES = [
-  "Slavic",
-  "Nordic",
-  "British Isles",
-  "Western European",
-  "Mediterranean",
-  "East Asian",
-  "South Asian",
-  "Afro-Caribbean",
-  "West African",
-  "Latino",
-  "Middle Eastern",
-  "Polynesian",
-] as const;
-export type Heritage = (typeof HERITAGES)[number];
 
-export const BUILDS = ["slight", "slim", "average", "athletic", "broad", "heavy"] as const;
-export type Build = (typeof BUILDS)[number];
 
 /**
  * Presence — how this person occupies the frame. Stated energy locks across
@@ -131,8 +146,12 @@ export const ENERGIES = {
   wry: "wry — one brow marginally higher, a knowing asymmetry at a closed mouth, quietly entertained",
   plain: "plain and direct — unperformed and straight to the lens, present and unbothered",
 } as const;
-export type EnergyKey = keyof typeof ENERGIES;
-export const ENERGY_KEYS = Object.keys(ENERGIES) as EnergyKey[];
+/*
+  Pinned to the shared list rather than derived loosely: `ENERGIES` holds the
+  prose (which stays server-side, it is prompt craft) while the shared module
+  holds the keys the client offers. Typing the object as Record<EnergyKey, …>
+  means adding an energy in one place and not the other fails the build.
+*/
 
 /**
  * LOOKS — the casting-house shelf, and the variation axis for model briefs.
@@ -204,8 +223,6 @@ export const LOOKS = {
     whisper: "Warm and genuine, eyes that connect directly.",
   },
 } as const;
-export type LookKey = keyof typeof LOOKS;
-export const LOOK_KEYS = Object.keys(LOOKS) as LookKey[];
 
 /**
  * Which axis the eight candidates differ along.
@@ -215,8 +232,6 @@ export const LOOK_KEYS = Object.keys(LOOKS) as LookKey[];
  * the eight are different people and mood is exactly the right difference.
  * The interpreter picks; both are correct, for different briefs.
  */
-export const VARIATION_AXES = ["look", "disposition"] as const;
-export type VariationAxis = (typeof VARIATION_AXES)[number];
 
 /**
  * Direction archetypes — the shelf (plan line 211, archetype-library ruling).
