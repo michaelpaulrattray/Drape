@@ -19,8 +19,6 @@ import { createClientRequestId } from "@shared/clientRequestId";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
-import heroPortrait from "@/assets/casting/hero-portrait.webp";
-import heroSecondFrame from "@/assets/casting/hero-second-frame.webp";
 import "@/features/castingV2/castingV2.css";
 
 /**
@@ -324,10 +322,18 @@ export default function CastingV2() {
           */}
           <div className="dpc-hero__pair">
             <div className="dpc-hero__slot">
-              <img src={heroPortrait} alt="A cast member, portrait" />
+              <img src="/casting-hero/hero-left.png" alt="" />
             </div>
+            {/*
+              The right frame carries a faint pseudo-text artifact along its
+              bottom edge. `--trim-bottom` overscales the image inside the
+              clipped slot so that edge is always outside the frame — which
+              `object-position` alone cannot guarantee, because at a slot
+              narrower than 3:4 cover-fit shows the image's full height and the
+              artifact would come back.
+            */}
             <div className="dpc-hero__slot">
-              <img src={heroSecondFrame} alt="The same cast member in a second frame" />
+              <img className="dpc-hero__img--trim-bottom" src="/casting-hero/hero-right.png" alt="" />
             </div>
           </div>
         </div>

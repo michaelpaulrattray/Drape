@@ -78,6 +78,26 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Brand art, not a cast — decorative, so it carries no alt text and no pill. */
+  object-position: center;
+}
+
+/*
+  Bias the visible window upward and guarantee the bottom edge is clipped.
+  The overscale is what makes it a guarantee rather than a hope: with plain
+  `object-position: top`, a slot narrower than the image's 3:4 makes cover-fit
+  scale to height instead, showing the full image — artifact included.
+*/
+/*
+  Selector deliberately as specific as the rule it overrides.
+  `.dpc-hero__slot > img` is (0,2,1); a bare class is (0,1,0) and silently
+  loses — which is exactly how the focus ring survived its first fix. Measured,
+  not assumed: the drive asserts the image box is genuinely taller than its
+  slot.
+*/
+.dpc-hero__slot > img.dpc-hero__img--trim-bottom {
+  height: 112%;
+  object-position: center top;
 }
 
 /* ---- the two entry cards ---- */
