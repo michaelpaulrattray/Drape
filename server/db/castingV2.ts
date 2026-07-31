@@ -370,6 +370,56 @@ export async function getOwnedRoll(userId: number, rollPublicId: string): Promis
   return roll ?? null;
 }
 
+/**
+ * A follow roll's parent, as public ids.
+ *
+ * `casting_rolls` stores lineage as internal numeric ids, which must never
+ * leave the server (§J). This turns them into the opaque public ids the sheet
+ * can use, scoped to the owner in the statements that read them — a roll of
+ * someone else's cannot be resolved into a lineage label on this user's sheet.
+ *
+ * Both halves are nullable, and the asymmetry is real rather than defensive:
+ * the parent **candidate** row can be purged while the parent **roll**
+ * survives (a discarded candidate past its 24h floor is purgeable once it is
+ * no longer the active roll's — §G.6), so a roll can legitimately know which
+ * roll it came from but no longer which candidate. Callers key the lineage
+ * pill on the roll.
+ */
+export async function getRollLineage(
+  userId: number,
+  roll: Pick<CastingRoll, "parentRollId" | "parentCandidateId">,
+): Promise<{ parentRollPublicId: string | null; parentCandidatePublicId: string | null }> {
+  assertPositiveId(userId, "userId");
+  if (!roll.parentRollId && !roll.parentCandidateId) {
+    return { parentRollPublicId: null, parentCandidatePublicId: null };
+  }
+  const db = await requireDb();
+
+  const [parentRoll] = roll.parentRollId
+    ? await db
+        .select({ publicId: castingRolls.publicId })
+        .from(castingRolls)
+        .where(and(eq(castingRolls.id, roll.parentRollId), eq(castingRolls.userId, userId)))
+        .limit(1)
+    : [];
+
+  const [parentCandidate] = roll.parentCandidateId
+    ? await db
+        .select({ publicId: castingCandidates.publicId })
+        .from(castingCandidates)
+        .where(and(
+          eq(castingCandidates.id, roll.parentCandidateId),
+          eq(castingCandidates.userId, userId),
+        ))
+        .limit(1)
+    : [];
+
+  return {
+    parentRollPublicId: parentRoll?.publicId ?? null,
+    parentCandidatePublicId: parentCandidate?.publicId ?? null,
+  };
+}
+
 export async function getRollByOperation(userId: number, operationId: string): Promise<CastingRoll | null> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();

@@ -128,10 +128,11 @@ describe("lifecycle states collapse to the three the client knows", () => {
     expect(projectCandidateStatus("cancelled")).toBe("failed-refunded");
   });
 
-  it("shows nothing at all for expired, rather than claiming a refund", () => {
-    // An expired candidate arrived after its roll was cancelled: delivered, so
-    // never refunded (§H.6). Labelling it `failed-refunded` would tell the
-    // user they got credits back that they did not.
+  it("shows nothing at all for expired, which is what makes refunding it safe", () => {
+    // An expired candidate arrived after its roll was cancelled. Since the
+    // generosity ruling it IS refunded — and that is only defensible because
+    // it is never shown. Project it and cancelling becomes a way to buy images
+    // for nothing.
     expect(projectCandidateStatus("expired")).toBeNull();
     expect(projectCandidateStatus("discarded")).toBeNull();
 
@@ -146,5 +147,47 @@ describe("lifecycle states collapse to the three the client knows", () => {
   it("labels positions for display without keying anything by them", () => {
     expect(projectCandidate(candidateRow({ position: 0 }))?.indexLabel).toBe("01");
     expect(projectCandidate(candidateRow({ position: 7 }))?.indexLabel).toBe("08");
+  });
+});
+
+describe("lineage", () => {
+  it("carries the parent as public ids, never the internal ones", () => {
+    const projected = projectRoll({
+      roll: rollRow({ parentRollId: 41, parentCandidateId: 907 }),
+      candidates: [candidateRow()],
+      parentRollPublicId: "roll-parent",
+      parentCandidatePublicId: "cand-parent",
+    });
+
+    expect(projected.lineage).toEqual({
+      fromRollId: "roll-parent",
+      fromCandidateId: "cand-parent",
+    });
+    // The numeric ids are internal and must not appear anywhere (§J).
+    expect(JSON.stringify(projected)).not.toContain("907");
+    expect(JSON.stringify(projected)).not.toContain("41");
+  });
+
+  it("still names the parent roll when the parent candidate has been purged", () => {
+    /*
+      A discarded candidate past its 24h floor is purgeable once it is no
+      longer the active roll's (§G.6), while its roll lives as long as the
+      session. So "I came from roll 04" outlives "I came from that face" — and
+      the pill keys on the roll for exactly this reason.
+    */
+    const projected = projectRoll({
+      roll: rollRow({ parentRollId: 41, parentCandidateId: 907 }),
+      candidates: [candidateRow()],
+      parentRollPublicId: "roll-parent",
+      parentCandidatePublicId: null,
+    });
+
+    expect(projected.lineage.fromRollId).toBe("roll-parent");
+    expect(projected.lineage.fromCandidateId).toBeUndefined();
+  });
+
+  it("is empty for a roll that followed nothing", () => {
+    const projected = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
+    expect(projected.lineage).toEqual({});
   });
 });

@@ -36,6 +36,7 @@ import {
   createCastingSession,
   getOwnedCastingSession,
   getOwnedRoll,
+  getRollLineage,
   listKeptCandidates,
   listOpenCastingSessions,
   listRollCandidates,
@@ -85,7 +86,16 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
   const roll = await getOwnedRoll(userId, rollPublicId);
   if (!roll) throw new TRPCError({ code: "NOT_FOUND", message: "Roll not found" });
   const candidates = await listRollCandidates(userId, roll.id);
-  return projectRoll({ roll, candidates });
+  // Without this the projection's `lineage` is always empty, and every
+  // affordance built on it — the FROM pill, the "following" chip — is dead on
+  // arrival. It was, until M6.
+  const lineage = await getRollLineage(userId, roll);
+  return projectRoll({
+    roll,
+    candidates,
+    parentRollPublicId: lineage.parentRollPublicId,
+    parentCandidatePublicId: lineage.parentCandidatePublicId,
+  });
 }
 
 export const castingV2Router = router({

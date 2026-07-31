@@ -65,20 +65,54 @@ export default function CastingSheet() {
   );
 
   const activeRollId = session.data?.activeRollId ?? null;
+  const rolls = session.data?.rolls ?? [];
+
+  /*
+    Which roll the user is LOOKING at, which is not the same thing as which
+    roll is live.
+
+    This is pure client state and performs no server mutation, deliberately.
+    `activeRollId` means "the newest dispatched roll" and nothing else: undo is
+    anchored to it server-side so that "undo clears on the next roll" is a
+    server fact rather than a client convention (§F), and the retention sweep
+    exempts the active roll's discards from purging (§G.6). If navigating
+    repointed it, walking back to roll 2 would resurrect roll-2 discards past
+    the next-roll boundary and would quietly change what the cleanup worker is
+    allowed to delete. Navigation must never do either — a view is not an
+    event.
+  */
+  const [viewedRollId, setViewedRollId] = useState<string | null>(null);
+  const shownRollId = viewedRollId ?? activeRollId;
+  const viewingHistory = Boolean(shownRollId && activeRollId && shownRollId !== activeRollId);
+
   const roll = trpc.castingV2.getRoll.useQuery(
-    { rollId: activeRollId ?? "" },
+    { rollId: shownRollId ?? "" },
     {
-      enabled: Boolean(activeRollId),
+      enabled: Boolean(shownRollId),
       /*
         Poll only while there is something to wait for. A finished sheet polled
         forever is 24 requests a minute per tab against a 60/min limit — two
         tabs and the session poll and the user rate-limits themselves out of
         their own sheet.
+
+        Keyed on the roll being terminal, not on it being the active one: rolls
+        can generate concurrently, so a previous roll may still be landing
+        candidates after a newer one was dispatched.
       */
       refetchInterval: (query) =>
         query.state.data && TERMINAL_ROLL_STATUSES.has(query.state.data.status) ? false : POLL_MS,
     },
   );
+
+  /*
+    The active roll's own status, read from the session poll rather than from a
+    third query — `castingPoll` allows 60/min and the session plus viewed-roll
+    polls already cost 48. The dock's operational state comes from here so that
+    cancelling and the generating indicator keep describing the live roll while
+    the user reads an old one.
+  */
+  const activeRollStatus = rolls.find((entry) => entry.rollId === activeRollId)?.status ?? null;
+  const activeIsGenerating = activeRollStatus !== null && !TERMINAL_ROLL_STATUSES.has(activeRollStatus);
 
   // The brief field starts as the roll's own sentence, so "roll again" is an
   // edit of what they asked for rather than a blank box.
@@ -126,6 +160,15 @@ export default function CastingSheet() {
 
   const onDiscard = guardedMutation((input: { candidateId: string }) =>
     discard.mutateAsync(input).then(() => {
+      /*
+        Discarding from a historical roll is legal, and it is immediately
+        un-undoable: the undo CAS is anchored to the active roll, so it would
+        refuse. Say that instead of setting an undo the user cannot spend.
+      */
+      if (viewingHistory) {
+        toast("Discarded — undo is only available on the latest roll");
+        return;
+      }
       setUndoable(input.candidateId);
       toast("Discarded");
     }),
@@ -171,6 +214,8 @@ export default function CastingSheet() {
 
     rollDispatched();
     setStartingRoll(true);
+    // Rolling from a historical view jumps you to what you just paid for.
+    setViewedRollId(null);
 
     if (mode === "follow" && candidateId) {
       follow.mutate(
@@ -217,11 +262,27 @@ export default function CastingSheet() {
   const price = config.data?.rollPriceCredits ?? 0;
   const candidates = roll.data?.candidates ?? [];
   const rollWasCancelled = roll.data?.status === "cancelled";
-  const isGenerating = (roll.data?.counts.casting ?? 0) > 0;
+
+  /*
+    "FROM 04" — the roll this one followed.
+
+    Resolved through the session's roll list rather than by arithmetic. The
+    parent is whichever roll the followed candidate belonged to, which is not
+    necessarily the one before this: follow a candidate from roll 2 while
+    sitting on roll 5 and the parent is 2. M5 computed `rollIndex - 1` and was
+    simply wrong whenever the user reached backwards — and it never rendered
+    at all, because the projection's lineage was empty until M6 populated it.
+
+    Keyed on the roll, not the candidate: a discarded parent candidate can be
+    purged after its 24h floor while its roll survives the session, so the
+    candidate id is allowed to be absent here.
+  */
   const lineageLabel = useMemo(() => {
-    const fromRoll = roll.data?.lineage.fromRollId;
-    return fromRoll && roll.data ? `FROM ${String(roll.data.rollIndex - 1).padStart(2, "0")}` : null;
-  }, [roll.data]);
+    const fromRollId = roll.data?.lineage.fromRollId;
+    if (!fromRollId) return null;
+    const parent = rolls.find((entry) => entry.rollId === fromRollId);
+    return parent ? `FROM ${String(parent.rollIndex).padStart(2, "0")}` : null;
+  }, [roll.data?.lineage.fromRollId, rolls]);
 
   if (!sessionId) return null;
 
@@ -239,6 +300,43 @@ export default function CastingSheet() {
             </span>
           ) : null}
         </div>
+
+        {/*
+          The roll rail. Rolls are immutable versions, so this is navigation
+          and nothing more — no server call, no state change, no cost. Every
+          roll a session has paid for stays reachable for its whole life.
+        */}
+        {rolls.length > 1 ? (
+          <div className="dpc-rollrail" role="tablist" aria-label="Rolls in this sheet">
+            {rolls.map((entry) => {
+              const shown = entry.rollId === shownRollId;
+              const generating = !TERMINAL_ROLL_STATUSES.has(entry.status);
+              return (
+                <button
+                  key={entry.rollId}
+                  type="button"
+                  role="tab"
+                  aria-selected={shown}
+                  className={`dpc-rollrail__item${shown ? " is-shown" : ""}`}
+                  onClick={() => setViewedRollId(entry.rollId)}
+                >
+                  {String(entry.rollIndex).padStart(2, "0")}
+                  {/* A live dot, not a spinner — the rail is a map, not a status board. */}
+                  {generating ? <span className="dpc-rollrail__live" aria-label="still casting" /> : null}
+                </button>
+              );
+            })}
+            {viewingHistory ? (
+              <button
+                type="button"
+                className="dpc-rollrail__back"
+                onClick={() => setViewedRollId(null)}
+              >
+                Back to the latest roll
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {roll.data && roll.data.chips.length > 0 ? (
           <div className="dp-row">
@@ -270,7 +368,7 @@ export default function CastingSheet() {
           eight skeletons that never resolve would be a far worse answer than
           one honest line.
         */}
-        {!activeRollId && !startingRoll && session.isFetched ? (
+        {!shownRollId && !startingRoll && session.isFetched ? (
           <EmptyState
             title="Nothing cast on this sheet yet"
             body="Describe who you need in the box below and roll."
@@ -283,7 +381,7 @@ export default function CastingSheet() {
           one as the window narrows, never a pinned column count.
         */}
         <div className="dp-grid" style={{ ["--dp-grid-min" as string]: "252px" }}>
-          {!roll.data && (startingRoll || activeRollId)
+          {!roll.data && (startingRoll || shownRollId)
             ? // Eight skeletons the instant a roll is on its way — the sheet's
               // shape is known long before its contents are.
               Array.from({ length: config.data?.candidatesPerRoll ?? 8 }, (_, index) => (
@@ -341,8 +439,23 @@ export default function CastingSheet() {
           <div className="dp-row">
             <Instruction>Keep the ones worth a second look</Instruction>
             <span style={{ flex: 1 }} />
-            {undoable ? <UndoDiscard onUndo={onUndo} busy={undo.isPending} /> : null}
-            {isGenerating ? (
+            {/*
+              Undo is offered only on the live roll. The server already refuses
+              it elsewhere — the CAS is anchored to `activeRollId`, which is
+              what makes "undo clears on the next roll" true rather than
+              merely intended — so hiding it here is affordance honesty, not a
+              second enforcement layer. Offering a button whose only outcome is
+              a refusal is the thing invariant 7 is about, read backwards.
+            */}
+            {undoable && !viewingHistory ? (
+              <UndoDiscard onUndo={onUndo} busy={undo.isPending} />
+            ) : null}
+            {/*
+              Cancel follows the ACTIVE roll, not the viewed one: reading roll
+              2 while roll 5 generates must still let you stop roll 5, and must
+              never offer to cancel a roll that finished days ago.
+            */}
+            {activeIsGenerating ? (
               <Button variant="quiet" onClick={onCancel} disabled={cancel.isPending}>
                 Cancel · refunds what you haven't seen
               </Button>

@@ -191,6 +191,69 @@
   border-radius: 11px;
 }
 
+/* ---- roll rail: every roll this sheet has paid for, still reachable ---- */
+
+.dpc-rollrail {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.dpc-rollrail__item {
+  position: relative;
+  min-width: 34px;
+  padding: 5px 9px;
+  border: 1px solid var(--borderInput);
+  border-radius: var(--r-sm);
+  background: transparent;
+  font: 500 10.5px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--metaStrong);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.dpc-rollrail__item:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.dpc-rollrail__item.is-shown {
+  background: var(--fillStrong);
+  border-color: var(--lineStrong);
+  color: var(--ink);
+}
+
+/* A live dot, not a spinner: the rail reports, it does not perform. */
+.dpc-rollrail__live {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accentSolid);
+  box-shadow: 0 0 0 2px var(--page);
+}
+
+.dpc-rollrail__back {
+  margin-left: var(--s-2);
+  border: none;
+  background: transparent;
+  padding: 4px 2px;
+  font: 400 11.5px var(--font-sans);
+  color: var(--metaStrong);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dpc-rollrail__back:hover { color: var(--ink); }
+
 /*
   A candidate that did not arrive. Deliberately quiet — a failed tile that
   shouts turns a refunded slice into an incident, when what the user needs to
