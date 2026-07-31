@@ -630,7 +630,7 @@ export default function CastingSheet() {
               <Input
                 value={brief}
                 onChange={(event) => setBrief(event.target.value)}
-                placeholder="a dad in his 30s, dry humour, hands that have done some work"
+                placeholder="a fitness creator in their 30s, close-cropped hair"
                 aria-label="Casting brief"
               />
             </Field>

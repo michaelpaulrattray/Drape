@@ -78,7 +78,7 @@ export default function CastingFoundation() {
         <SectionHead eyebrow="02 · Inputs" aside="placeholders are examples" />
         <div className="dp-stack" style={{ gap: 12, maxWidth: 720 }}>
           <Field>
-            <Input placeholder="a dad in his 30s in a cluttered garage, dry humour" />
+            <Input placeholder="a fitness creator in their 30s, close-cropped hair" />
             <Button variant="primary" size="small">
               Cast it · 160 cr
             </Button>

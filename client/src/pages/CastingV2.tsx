@@ -306,7 +306,19 @@ export default function CastingV2() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") void startCasting();
                 }}
-                placeholder="a dad in his 30s, dry humour, hands that have done some work"
+                /*
+                  PLACEHOLDER LAW (founder, 2026-08-01): a placeholder obeys every
+                  clause the seeds obey. It is the most-read example on the page —
+                  seen by everyone, tapped by nobody — so a bad one teaches the
+                  wrong shape to every visitor.
+
+                  The previous text broke four at once: "a dad in his 30s, dry
+                  humour, hands that have done some work" was the wrong audience,
+                  named a pronoun (which pins sex), asked for humour (performance,
+                  which the expression law forbids), and promised HANDS — which the
+                  waist-up frame with arms at the sides cannot show at all.
+                */
+                placeholder="a fitness creator in their 30s, close-cropped hair"
                 aria-label="Casting brief"
               />
               <Button variant="primary" size="small" onClick={startCasting} disabled={starting}>
