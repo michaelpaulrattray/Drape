@@ -43,6 +43,7 @@ Reply with a single JSON object and nothing else:
   "characterNotes": string | null,
   "sex": ${SEXES.map((value) => `"${value}"`).join(" | ")} | null,
   "ageBand": ${AGE_BANDS.map((value) => `"${value}"`).join(" | ")} | null,
+  "agePhase": "early" | "mid" | "late" | null,
   "heritage": [{ "heritage": one of ${HERITAGES.join(", ")}, "pct": number }] (0, 1 or 2 entries),
   "build": ${BUILDS.map((value) => `"${value}"`).join(" | ")} | null,
   "energy": ${ENERGY_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
@@ -69,6 +70,11 @@ WHAT TO EXTRACT
   Never output "nonbinary" unless the brief says so explicitly.
 - "ageBand": from a stated age or an age idiom ("in her 20s", "mid-forties" →
   "40s", "late teens" → "teens", "older" → null unless a decade is implied).
+- "agePhase": set it ONLY when the brief pins where in the decade. "early 20s"
+  → "early"; "mid-forties" → "mid"; "late teens" → "late"; a bare "in her 20s"
+  → null. This is a second, separate lock: filling it wrongly narrows the
+  casting pool, and leaving it null when the user said "early" lets the sheet
+  drift a decade older than they asked for.
 - "heritage": only when stated. A nationality maps to the nearest listed
   heritage. Bare "mixed" or "ambiguous" is not a heritage — leave it empty.
 - "energy": only when the brief describes how the person carries themselves.

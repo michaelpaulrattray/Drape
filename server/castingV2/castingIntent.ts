@@ -48,6 +48,21 @@ export const AGE_BANDS = ["teens", "20s", "30s", "40s", "50s", "60s", "70s+"] as
 export type AgeBand = (typeof AGE_BANDS)[number];
 
 /**
+ * Where in the decade — and it is a separate lock from the band.
+ *
+ * "Early 20s" says two things, and the first version of this only heard one:
+ * the band was captured and the phase was thrown away, so the adapter then
+ * re-rolled early/mid/late across the eight and the founder's "early 20s"
+ * came back reading 28–35. A stated fact that the compiler re-randomises is a
+ * lock violation, not a variation axis.
+ *
+ * Null still means the brief only named the decade, in which case the phase is
+ * genuine latitude — "in her 30s" should not all be 31.
+ */
+export const AGE_PHASES = ["early", "mid", "late"] as const;
+export type AgePhase = (typeof AGE_PHASES)[number];
+
+/**
  * H11, kept whole: nothing infers non-binary, an explicit word always wins,
  * and absence is absence. The interpreter is told the same in prose; this list
  * is what makes it true regardless.
@@ -94,14 +109,14 @@ export type Build = (typeof BUILDS)[number];
  * adapter's expression clause enforces the same rule from the other side.
  */
 export const ENERGIES = {
-  warm: "warm and unhurried — soft eyes, relaxed brow, shoulders down, mouth closed and at rest",
-  dry: "dry and deadpan — flat gaze, level brow, no lift at the mouth",
-  bright: "alert and awake — bright direct eyes, lifted brow, held still and mouth closed",
-  grave: "still and serious — steady gaze, set jaw, composed",
-  open: "open and unguarded — soft eyes, the faintest closed-mouth trace of warmth",
-  guarded: "guarded and watchful — held back, reading the room, chin fractionally lowered",
-  wry: "wry — one brow marginally higher, the smallest asymmetry at a closed mouth",
-  plain: "plain and direct — unperformed, straight to the lens, nothing added",
+  warm: "warm and unhurried — soft engaged eyes, relaxed brow, the corners of a closed mouth just lifted. Genuinely friendly, not posed",
+  dry: "dry and deadpan — level brow, unimpressed but switched on. Clearly thinking, not empty",
+  bright: "bright and awake — lively direct eyes, brow slightly raised, an amused closed-mouth lightness",
+  grave: "still and serious — steady, intelligent gaze, composed. Grounded, never sullen",
+  open: "open and unguarded — soft warm eyes, an easy closed-mouth half-smile, nothing held back",
+  guarded: "watchful and self-possessed — reading the room, alert, chin fractionally lowered",
+  wry: "wry — one brow marginally higher, a knowing asymmetry at a closed mouth, quietly entertained",
+  plain: "plain and direct — unperformed and straight to the lens, present and unbothered",
 } as const;
 export type EnergyKey = keyof typeof ENERGIES;
 export const ENERGY_KEYS = Object.keys(ENERGIES) as EnergyKey[];
@@ -190,6 +205,8 @@ export type CastingIntent = {
   characterNotes: string | null;
   sex: Sex | null;
   ageBand: AgeBand | null;
+  /** Stated phase within the decade. Locked when present, varied when null. */
+  agePhase: AgePhase | null;
   heritage: HeritageComponent[];
   build: Build | null;
   energy: EnergyKey | null;
@@ -265,6 +282,7 @@ const wireSchema = z.object({
   characterNotes: z.unknown().optional(),
   sex: nullableEnum(SEXES),
   ageBand: nullableEnum(AGE_BANDS),
+  agePhase: nullableEnum(AGE_PHASES),
   build: nullableEnum(BUILDS),
   energy: nullableEnum(ENERGY_KEYS as unknown as readonly [string, ...string[]]),
   archetype: nullableEnum(ARCHETYPE_KEYS as unknown as readonly [string, ...string[]]),
@@ -357,6 +375,7 @@ export function parseCastingIntent(raw: unknown): IntentParseResult {
       characterNotes: cleanFreeText(wire.characterNotes, NOTES_MAX),
       sex: wire.sex as Sex | null,
       ageBand: wire.ageBand as AgeBand | null,
+      agePhase: wire.agePhase as AgePhase | null,
       heritage: parseHeritage(wire.heritage),
       build: wire.build as Build | null,
       energy: wire.energy as EnergyKey | null,
@@ -381,6 +400,7 @@ export function parseCastingIntent(raw: unknown): IntentParseResult {
 export type LockFacts = {
   sex?: Sex;
   ageBand?: AgeBand;
+  agePhase?: AgePhase;
   heritage?: HeritageComponent[];
   build?: Build;
   energy?: EnergyKey;
@@ -390,6 +410,7 @@ export function lockFactsOf(intent: CastingIntent): LockFacts {
   return {
     ...(intent.sex ? { sex: intent.sex } : {}),
     ...(intent.ageBand ? { ageBand: intent.ageBand } : {}),
+    ...(intent.agePhase ? { agePhase: intent.agePhase } : {}),
     ...(intent.heritage.length > 0 ? { heritage: intent.heritage } : {}),
     ...(intent.build ? { build: intent.build } : {}),
     ...(intent.energy ? { energy: intent.energy } : {}),
@@ -404,8 +425,17 @@ export function lockFactsOf(intent: CastingIntent): LockFacts {
 export type ResolvedIdentity = {
   sex: Sex;
   ageBand: AgeBand;
+  agePhase: AgePhase;
   heritage: HeritageComponent[];
-  build: Build;
+  /**
+   * Null when a casting category governs physique instead.
+   *
+   * A stated category ("editorial fashion model") implies a physical envelope,
+   * and asserting a random build alongside it puts the two in contradiction —
+   * which is how a sheet that asked for models returned people who would not
+   * be seen at the door. Silence lets the category decide.
+   */
+  build: Build | null;
   energy: EnergyKey;
 };
 
@@ -438,8 +468,11 @@ export function validateLocks(locks: LockFacts, resolved: ResolvedIdentity): Loc
   if (locks.ageBand && locks.ageBand !== resolved.ageBand) {
     violations.push({ field: "ageBand", expected: locks.ageBand, got: resolved.ageBand });
   }
+  if (locks.agePhase && locks.agePhase !== resolved.agePhase) {
+    violations.push({ field: "agePhase", expected: locks.agePhase, got: resolved.agePhase });
+  }
   if (locks.build && locks.build !== resolved.build) {
-    violations.push({ field: "build", expected: locks.build, got: resolved.build });
+    violations.push({ field: "build", expected: locks.build, got: resolved.build ?? "unset" });
   }
   if (locks.energy && locks.energy !== resolved.energy) {
     violations.push({ field: "energy", expected: locks.energy, got: resolved.energy });

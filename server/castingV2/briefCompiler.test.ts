@@ -30,6 +30,7 @@ const BASE_INTENT: CastingIntent = {
   characterNotes: null,
   sex: null,
   ageBand: null,
+  agePhase: null,
   heritage: [],
   build: null,
   energy: null,
@@ -68,6 +69,7 @@ describe("the precedence fix", () => {
     // camera, lighting or props to live, so they are gone rather than carried.
     expect(Object.keys(parsed.intent).sort()).toEqual([
       "ageBand",
+      "agePhase",
       "archetype",
       "build",
       "characterNotes",

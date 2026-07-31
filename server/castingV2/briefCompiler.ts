@@ -164,6 +164,7 @@ function fallbackIntent(briefText: string): CastingIntent {
     characterNotes: null,
     sex: null,
     ageBand: null,
+    agePhase: null,
     heritage: [],
     build: null,
     energy: null,

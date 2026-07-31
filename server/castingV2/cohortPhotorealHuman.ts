@@ -27,6 +27,7 @@
  * wardrobe-baseline ruling — V2 presentation views are clothed.
  */
 import {
+  AGE_PHASES,
   ARCHETYPES,
   ARCHETYPE_KEYS,
   AGE_BANDS,
@@ -36,6 +37,7 @@ import {
   HERITAGES,
   type ArchetypeKey,
   type AgeBand,
+  type AgePhase,
   type Build,
   type CastingIntent,
   type EnergyKey,
@@ -57,26 +59,42 @@ import {
  * an internal VTO slot now, not what the customer looks at.
  */
 const FRAMING = [
-  "FRAMING: Single subject, waist-up, centred, square to camera, head straight with no tilt.",
-  "Shoulders level. Arms relaxed at the sides or loosely crossed. Mouth closed.",
   /*
-    EXPRESSION — presence, not performance (founder ruling at the M5 gate,
-    2026-07-31, under the cohort quality law).
-
-    The energy axes below describe who someone IS, and an image model reads
-    words like "fast talker" or "bright, quick" as instructions to ACT: mouth
-    open mid-word, a laugh, a gesture. A casting sheet showing eight people
-    performing is unusable — you cannot read bone structure through a laugh,
-    and every candidate stops being comparable. The direction has to be
-    carried in the eyes and the set of the face while the subject is still.
-
-    This sits in the code-owned constant deliberately: it is a fidelity rule
-    the interpreter and any future treatment stage can never soften.
+    CROP (founder gate, 2026-07-31): the first sheets cropped scalps and read
+    as mugshots. A casting frame has air above the head — a tight crop reads as
+    a booking photo no matter how good the light is.
   */
-  "EXPRESSION: Composed casting expression, held still, as if between takes rather than during one.",
-  "The character's energy reads in the eyes, the brow and the set of the mouth — never in a performed action.",
-  "Absolutely no mid-laugh, mid-speech, mid-gesture or acted moments. Not smiling broadly, not talking, not caught in motion.",
-  "Background: seamless mid-grey studio backdrop filling the entire frame, no edges, no borders, no floor line.",
+  "FRAMING: Single subject, waist-up, centred, square to camera, head straight with no tilt.",
+  "CROP: The entire head is inside the frame with natural headroom — clear space above the hair, never touching or cutting the top edge. The scalp and hairline must never be cropped.",
+  "Frame from mid-torso up in a 4:5 portrait. Shoulders fully inside the frame with margin at both sides.",
+  "Shoulders level, spine straight, neck relaxed. Arms relaxed at the sides. Mouth closed.",
+  /*
+    EXPRESSION — composed but ALIVE.
+
+    Two corrections, in order. First: energy words like "fast talker" were
+    being read as instructions to act, so candidates came back mid-laugh and
+    mid-word, and you cannot read bone structure through a laugh. Then the fix
+    overshot — the founder's second grade called the result vacant and grim,
+    which is its own failure: a dead-eyed sheet is as uncastable as a
+    performing one.
+
+    Legacy solved this with a *whisper* (catalog C3) rather than a suppression
+    — "Mouth closed, soft. Eyes direct into lens, quietly alert and
+    observant." Present and engaged, holding still. That is the target, and
+    the negative list below only forbids performance, never life.
+  */
+  "EXPRESSION: Eyes looking directly into the lens, engaged and unmistakably alive — someone present in the room, meeting the camera.",
+  "Mouth closed, lips together and relaxed. A faint closed-mouth warmth is welcome where the subject's presence calls for it; a broad smile is not.",
+  "Energy reads in the eyes and brow. The default is interested, not neutral — a casting polaroid of someone who wants the job, holding still.",
+  "Never vacant, blank, sedated, grim, sullen or severe. Equally never performing — no mid-laugh, no mid-speech, no acted moment.",
+  /*
+    BACKDROP: the founder's note was "flat penal grey". Legacy's seamless is
+    *bright* and has falloff — it is lit paper, not a painted wall, and that
+    luminance is a large part of why legacy output reads as a studio rather
+    than an intake room.
+  */
+  "BACKGROUND: Bright light-grey seamless paper, luminous rather than flat, filling the entire frame. No texture, no pattern, no corners, no floor line, no black borders.",
+  "The flash falls off naturally across the paper — brighter immediately behind the subject, gently deeper toward the frame edges. Soft gradient, never a hard vignette.",
   "WARDROBE: plain unbranded clothing in neutral grey or off-white — a simple crew-neck tee or plain shirt.",
   "No jackets, no accessories, no jewellery, no hats, no props of any kind, nothing held in the hands.",
 ].join(" ");
@@ -87,10 +105,17 @@ const FRAMING = [
  * "high quality photo" does not.
  */
 const CAPTURE = [
-  "CAPTURE: Medium-format sensor, 85mm equivalent, f/5.6–f/8, subject sharp front to back.",
-  "Bare direct near-axis flash, shadow falling behind the subject, no gels and no diffusion — a true casting polaroid, unflattering and honest.",
-  "Neutral daylight grade, 5500–5800K. No stylized colour grading, no teal-orange, no filter look.",
-  "Fine luminance-dominant grain, barely visible, like fine sand. No colour noise.",
+  "CAMERA: Medium-format sensor, Hasselblad class. 85mm equivalent, f/5.6–f/8. Subject sharp front to back.",
+  "Fine luminance-dominant noise, barely visible, like fine sand. No colour noise.",
+  "LIGHTING: Direct on-camera or slightly off-axis front flash. Sharp, honest, bright and even light with shadows falling directly behind the subject. No gels, no diffusion.",
+  /*
+    A3's deferral, kept whole. Without it the lighting block silently
+    overrides whatever skin finish the character calls for, and every
+    candidate comes back with the same sheen.
+  */
+  "How the skin RESPONDS to this light — specular, matte or dewy — is defined by the subject's own skin finish. Defer to that.",
+  "Specular highlights sit on the forehead, nose and cheekbones where the flash strikes.",
+  "COLOUR: Neutral daylight, 5500–5800K. Skin tones warm and dimensional with visible subsurface scattering. No stylized grading, no teal-orange, no filter look, no cool clinical cast.",
 ].join(" ");
 
 /**
@@ -251,8 +276,20 @@ export function resolveCandidateIdentity(
   return {
     sex: intent.sex ?? varySex(position, rollSeed),
     ageBand: intent.ageBand ?? weightedPick(AGE_WEIGHTS, seed >>> 3),
+    /*
+      A stated phase is a lock. Only an unstated one varies — otherwise
+      "early 20s" gets re-rolled into mid and late across the sheet, which is
+      exactly how the founder's brief came back reading 28-35.
+    */
+    agePhase: intent.agePhase ?? AGE_PHASES[(seed >>> 11) % AGE_PHASES.length],
     heritage: intent.heritage.length > 0 ? intent.heritage : varyHeritage(seed >>> 5),
-    build: intent.build ?? weightedPick(BUILD_WEIGHTS, seed >>> 7),
+    /*
+      Stated build wins. Otherwise: if the brief named a casting category, the
+      category owns physique and this stays null — varying it would cast
+      outside the category the user asked for (founder gate B5). With no
+      category, street-real variety across builds is exactly right.
+    */
+    build: intent.build ?? (intent.role ? null : weightedPick(BUILD_WEIGHTS, seed >>> 7)),
     // Energy is the one axis that cycles rather than samples: eight candidates
     // against eight energies gives one of each, which is the most legible
     // difference a sheet can carry. Stated energy locks it flat across all
@@ -277,11 +314,50 @@ export function resolveArchetype(intent: CastingIntent, rollSeed: string): Arche
 
 /* ---------------------------------------------------------- composition */
 
-function describeAge(band: AgeBand, seed: number): string {
-  if (band === "70s+") return "in their seventies or older";
-  const decade = band.replace("s", "");
-  const phase = ["early", "mid", "late"][seed % 3];
-  return band === "teens" ? `in their ${phase} teens` : `in their ${phase} ${decade}s`;
+/**
+ * Years per band phase.
+ *
+ * "Early 20s" came back reading 28–35 (founder gate). Prose alone does not
+ * hold an age: the image model has a strong prior toward a generically adult
+ * face, and a phrase like "early twenties" loses to it. Naming the years, and
+ * then naming the physiology that must NOT be present, is what legacy's age
+ * handling did (catalog H12 mapped idioms to exact ages; A11 reconciled age
+ * against skin texture so a 23-year-old never came back with crow's feet).
+ */
+const AGE_YEARS: Record<AgeBand, [string, string, string]> = {
+  teens: ["16–17", "17–18", "18–19"],
+  "20s": ["20–23", "24–26", "27–29"],
+  "30s": ["30–33", "34–36", "37–39"],
+  "40s": ["40–43", "44–46", "47–49"],
+  "50s": ["50–53", "54–56", "57–59"],
+  "60s": ["60–63", "64–66", "67–69"],
+  "70s+": ["70–74", "75–79", "80+"],
+};
+
+function describeAge(band: AgeBand, phase: AgePhase): string {
+  const phaseIndex = AGE_PHASES.indexOf(phase);
+  const years = AGE_YEARS[band][phaseIndex];
+  const spoken =
+    band === "70s+"
+      ? "in their seventies or older"
+      : band === "teens"
+        ? `in their ${phase} teens`
+        : `in their ${phase} ${band.replace("s", "")}s`;
+
+  /*
+    Stated as an absolute with a corroborating negative. The negative is the
+    half that works: telling the model what a 22-year-old does NOT have
+    (nasolabial depth, eye-area lines, jowl softening) is far more effective
+    than asking again for "early twenties".
+  */
+  const guard =
+    band === "teens" || band === "20s"
+      ? " Skin, bone maturity and the eye area must corroborate this age — taut jawline, no nasolabial depth, no crow's feet, no under-eye hollowing, no adult heaviness through the jaw."
+      : band === "70s+" || band === "60s" || band === "50s"
+        ? " Age must be genuinely present in the skin and structure — do not render a younger face with grey hair."
+        : "";
+
+  return `${spoken}, apparent age ${years} years — this is an absolute casting requirement, not an approximation.${guard}`;
 }
 
 function describeHeritage(components: HeritageComponent[]): string {
@@ -314,12 +390,33 @@ export function composeCandidatePrompt(input: {
   const { intent, resolved, archetype } = input;
   const direction = ARCHETYPES[archetype];
 
+  /*
+    CASTING CATEGORY — a stated role is a LOCK, not a flavour (founder gate,
+    2026-07-31, B5).
+
+    The brief "female model early 20s editorial fashion model" returned people
+    who were not plausibly editorial models. The old line — "They read as: X"
+    — invited the model to treat the role as an energy to suggest rather than
+    a category to cast within, so diversity wandered straight out of the
+    category it was supposed to vary inside.
+
+    Legacy enforced this implicitly: every prompt was written from a casting
+    director's chair, and a casting director does not put forward someone who
+    would be rejected at the door. Made explicit here. Variation still runs
+    across heritage, features and energy — but *within* the category, never
+    out of it.
+  */
+  const category = intent.role
+    ? [
+        `CASTING CATEGORY (ABSOLUTE): This person is cast as — ${intent.role}.`,
+        "Every candidate must be a genuinely plausible, castable member of that category: the bone structure, proportions, grooming and bearing a professional casting director would require before putting them forward for it.",
+        "Vary heritage, features, colouring and energy WITHIN this category. Never cast outside it. A candidate who would not be credible in this role is a failed candidate, however interesting the face.",
+        "Keep the user's own words for the category — do not substitute a generic type for the specific one they named.",
+      ].join(" ")
+    : "";
+
   const subject = [
-    `SUBJECT: A ${resolved.build} ${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, input.seed)}, ${describeHeritage(resolved.heritage)}.`,
-    // C6's archetype fidelity gate: the user's own words survive into every
-    // candidate. "Punk drummer" becoming a generic editorial face is the
-    // failure this line exists to prevent.
-    intent.role ? `They read as: ${intent.role}.` : "",
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     `PRESENCE: ${ENERGIES[resolved.energy]}.`,
   ]
@@ -328,7 +425,11 @@ export function composeCandidatePrompt(input: {
 
   const directionBlock = `DIRECTION: ${direction.thesis} ${direction.avoid}`;
 
-  return [subject, directionBlock, PHOTOREAL_HUMAN_CONSTANT].join("\n");
+  // Category first: it decides who is eligible at all, before direction shapes
+  // how they are cast and before the constant fixes how they are photographed.
+  return [category, subject, directionBlock, PHOTOREAL_HUMAN_CONSTANT]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** The label under a tile. Derived from the energy the adapter resolved. */
