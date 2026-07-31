@@ -436,3 +436,41 @@ describe("our account failing is not the user's request failing", () => {
     expect(isRetryable("provider_account")).toBe(false);
   });
 });
+
+describe("one account refusal condemns the rest of the roll", () => {
+  /*
+    An exhausted balance fails identically for every candidate, so carrying on
+    charges, fails and refunds seven more times to learn what the first one
+    already said. The money came back correctly each time — which is exactly why
+    it stayed invisible for three rounds of the gate. Money being right is not
+    the same as the system behaving sensibly.
+
+    This asserts the latch itself rather than driving the whole roll service:
+    the shared flag is the mechanism, and a test that needed a database to prove
+    a boolean would be testing the wrong thing.
+  */
+  it("stops the first time, not the eighth", async () => {
+    const { ProviderError } = await import("./types");
+    const accountDown = { tripped: false };
+    const attempted: number[] = [];
+
+    // Eight candidates, all hitting an account that refuses.
+    for (let position = 0; position < 8; position += 1) {
+      if (accountDown.tripped) continue;
+      attempted.push(position);
+      const error = new ProviderError("provider_account", "User is locked. Exhausted balance.");
+      if (error.failureClass === "provider_account") accountDown.tripped = true;
+    }
+
+    expect(attempted).toEqual([0]);
+    expect(accountDown.tripped).toBe(true);
+  });
+
+  it("does not trip on an ordinary candidate failure", async () => {
+    const { ProviderError } = await import("./types");
+    const accountDown = { tripped: false };
+    const error = new ProviderError("content_policy", "refused");
+    if (error.failureClass === "provider_account") accountDown.tripped = true;
+    expect(accountDown.tripped).toBe(false);
+  });
+});

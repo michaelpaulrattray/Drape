@@ -416,9 +416,12 @@ export async function createRoll(
   const engine = (dependencies.engine ?? castingCreativeEngine)();
   const promptByPosition = new Map(compiled.candidates.map((spec) => [spec.position, spec.prompt]));
 
+  /* Shared across the eight; see  on dispatchCandidate. */
+  const accountDown = { tripped: false };
   const settlements = await Promise.all(
     candidates.map((candidate) =>
       dispatchCandidate({
+        accountDown,
         dependencies,
         engine,
         userId: input.userId,
@@ -604,6 +607,15 @@ async function dispatchCandidate(input: {
   prompt: string;
   size: `${number}x${number}`;
   quality: "low" | "medium" | "high";
+  /**
+   * Trips the moment our provider ACCOUNT refuses (401/403).
+   *
+   * Not an abort of work in flight — it stops candidates that have not yet
+   * called out. An exhausted balance fails identically for all eight, so
+   * carrying on charges, fails and refunds seven more times to learn what the
+   * first one already said.
+   */
+  accountDown: { tripped: boolean };
 }): Promise<Settlement> {
   const { candidate, userId, operationId } = input;
   const engineId = input.engine.id;
@@ -635,6 +647,10 @@ async function dispatchCandidate(input: {
   const auditId = audit.generationId;
 
   try {
+    if (input.accountDown.tripped) {
+      // Refuse before spending: our account is already known bad this roll.
+      throw new ProviderError("provider_account", "skipped — the provider account already refused this roll");
+    }
     const image = await input.engine.generateCandidate({
       prompt: input.prompt,
       size: input.size,
@@ -724,6 +740,8 @@ async function dispatchCandidate(input: {
     return { outcome: "ready", refundedCredits: 0 };
   } catch (error) {
     const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+    // One account refusal condemns the rest of the roll.
+    if (failureClass === "provider_account") input.accountDown.tripped = true;
     /*
       The provider message is kept, not just the class. "capability" is where
       every 4xx we did not recognise lands, so on its own it says "something
