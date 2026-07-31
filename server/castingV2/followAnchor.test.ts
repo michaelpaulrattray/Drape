@@ -285,3 +285,72 @@ describe("the variation generator actually varies", () => {
     }
   });
 });
+
+describe("a locked look still lets presence differentiate", () => {
+  it("puts presence in the prompt when the look is pinned flat", async () => {
+    /*
+      The sameness bug. The rule was "one axis or the other, never both
+      shouting" — right when the LOOK varies across the eight, because then the
+      whisper is the difference. Wrong when the brief pins a look: all eight got
+      an identical look block, presence was computed and never reached the
+      prompt, and the only things left differing were heritage and hair. Inside
+      a locked heritage that is almost nothing, which is why the founder's sheet
+      came back as eight men with the same hair, the same eyes and no
+      personality.
+    */
+    const compiled = await castingBriefCompiler({
+      briefText: "a male fashion model, commanding glamour",
+      candidateCount: 8,
+      rollSeed: "locked-look",
+      engine: {
+        id: "test",
+        complete: async () => ({
+          text: JSON.stringify({
+            cohort: "photoreal_human",
+            role: "male fashion model",
+            sex: "male",
+            look: "commanding glamour",
+            variationAxis: "look",
+            reads: null,
+          }),
+          latencyMs: 1,
+          provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
+        }),
+      } satisfies TextEngine,
+    });
+
+    for (const candidate of compiled.candidates) {
+      expect(candidate.prompt).toContain("PRESENCE:");
+    }
+    // And the presences genuinely differ, or the fix is decorative.
+    const presences = new Set(compiled.candidates.map((c) => c.resolvedIdentity.energy));
+    expect(presences.size).toBeGreaterThanOrEqual(6);
+  });
+
+  it("still suppresses presence when the look is the varying axis", async () => {
+    // Eight different houses' casting, each with its own whisper — stacking a
+    // disposition line there would give the model two instructions for one face.
+    const compiled = await castingBriefCompiler({
+      briefText: "a male fashion model",
+      candidateCount: 8,
+      rollSeed: "varying-look",
+      engine: {
+        id: "test",
+        complete: async () => ({
+          text: JSON.stringify({
+            cohort: "photoreal_human",
+            role: "male fashion model",
+            variationAxis: "look",
+            reads: null,
+          }),
+          latencyMs: 1,
+          provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
+        }),
+      } satisfies TextEngine,
+    });
+    const withPresence = compiled.candidates.filter((c) => c.prompt.includes("PRESENCE:"));
+    expect(withPresence).toHaveLength(0);
+    // The looks are what differ instead.
+    expect(new Set(compiled.candidates.map((c) => c.resolvedIdentity.look)).size).toBeGreaterThan(5);
+  });
+});

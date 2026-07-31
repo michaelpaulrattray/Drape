@@ -41,7 +41,7 @@ describe("the sentence composes rather than templates", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a woman in her 20s, of East Asian heritage, reading dry, held to severe minimal. The eight differ by look.",
+      "Everyone on this sheet is a woman in her 20s, of East Asian heritage, reading dry, held to severe minimal. The eight differ by disposition.",
     );
   });
 
@@ -303,5 +303,26 @@ describe("the casting category is in the sentence", () => {
     const role = spans.find((span) => span.kind === "role");
     expect(role).toBeDefined();
     expect(spans.some((span) => span.kind === "fact" && span.text.includes("runway"))).toBe(false);
+  });
+});
+
+describe("a locked look cannot also be what the eight differ by", () => {
+  it("says disposition when the brief pinned the look", () => {
+    /*
+      The founder's sheet read "held to commanding glamour … The eight differ by
+      look" — a sentence contradicting itself, and not merely bad copy: it was
+      reporting the compiler's own confusion. A pinned look goes to every
+      candidate, so disposition is what actually varies.
+    */
+    const spans = composeEcho(
+      facts({ locks: { sex: "male", look: "commanding glamour" }, variationAxis: "look" }),
+    );
+    expect(echoText(spans)).toContain("The eight differ by disposition");
+    expect(echoText(spans)).not.toContain("differ by look");
+  });
+
+  it("still says look when the look is the thing varying", () => {
+    const spans = composeEcho(facts({ locks: { sex: "male" }, variationAxis: "look" }));
+    expect(echoText(spans)).toContain("The eight differ by look");
   });
 });

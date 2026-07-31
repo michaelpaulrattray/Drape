@@ -147,9 +147,18 @@ export async function runFalImageJob(input: {
 
   if (!submit.ok) {
     const text = await submit.text().catch(() => "");
-    throw new ProviderError(classifyFalHttp(submit.status, text), "fal.ai refused the request", {
-      status: submit.status,
-    });
+    /*
+      The provider's own words, not just ours. "fal.ai refused the request" is
+      what a roll that lost three of eight had to be diagnosed from, and it says
+      nothing: `capability` is the bucket for every 4xx we did not recognise, so
+      class plus a generic string leaves no way to tell a bad prompt from a bad
+      key. Truncated, because a provider body can be enormous.
+    */
+    throw new ProviderError(
+      classifyFalHttp(submit.status, text),
+      `fal.ai refused the request (${submit.status}): ${text.slice(0, 400)}`,
+      { status: submit.status },
+    );
   }
 
   const submitted = (await submit.json()) as {

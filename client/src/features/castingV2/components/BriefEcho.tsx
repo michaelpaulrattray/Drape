@@ -154,7 +154,23 @@ function EchoSpanView({
     pending — adjusting a fact that is already queued would need an undo the
     design does not have, and stacking two arrows would say nothing useful.
   */
-  const queuedValue = pending?.overrides[field];
+  /*
+    An override that has LANDED is not pending any more.
+
+    Overrides are standing corrections — they persist across rolls by design, so
+    the interpreter cannot re-derive them away. But the pending treatment was
+    keyed on the override merely existing, so once the next roll came back
+    carrying the new value the span read "severe minimal → severe minimal ·
+    next roll": a change to itself, forever. And because a pending span is
+    read-only, the fact became permanently uneditable — two decisions that were
+    each defensible alone and wrong together.
+
+    So the treatment is keyed on a DIFFERENCE, not on the presence of an
+    override. When the roll already shows the queued value, there is nothing
+    pending and the span goes back to being an ordinary adjustable fact.
+  */
+  const queued = pending?.overrides[field];
+  const queuedValue = queued && queued !== current ? queued : undefined;
   const queuedVary = !queuedValue && pending?.unlocked.includes(field) === true && pinned;
   if (queuedValue || queuedVary) {
     return (

@@ -924,13 +924,29 @@ export function composeCandidatePrompt(input: {
     `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
-      One axis or the other, never both shouting. A look carries its own
-      expression whisper (C3), so stacking a disposition line on top would
-      give the image model two different instructions for one face.
+      A LOCKED look still needs presence to vary. This is the sameness bug.
+
+      The rule used to be "one axis or the other, never both shouting" — a look
+      carries its own expression whisper (C3), so stacking a disposition line on
+      top would give the image model two instructions for one face. That is
+      right when the look is what VARIES across the eight: each candidate gets a
+      different house's casting, and the whisper is the difference.
+
+      It is wrong when the brief LOCKS a look. Then all eight get an identical
+      look block, presence is computed and silently never reaches the prompt,
+      and the only things left differing are heritage and hair — inside a locked
+      heritage, that is almost nothing. The founder's sheet came back eight men
+      with the same hair, the same eyes and no personality, and this is why.
+
+      So: a varying look suppresses presence, a locked look does not. When the
+      look is fixed, the whisper is the same for everyone and cannot be the
+      difference, so disposition has to be.
     */
-    resolved.look
+    resolved.look && !intent.look
       ? `LOOK: ${LOOKS[resolved.look].thesis} ${LOOKS[resolved.look].avoid} EXPRESSION WHISPER: ${LOOKS[resolved.look].whisper}`
-      : `PRESENCE: ${ENERGIES[resolved.energy]}.`,
+      : resolved.look
+        ? `LOOK: ${LOOKS[resolved.look].thesis} ${LOOKS[resolved.look].avoid} PRESENCE: ${ENERGIES[resolved.energy]}. Hold the look; let this presence differentiate this particular person from the others cast alongside them.`
+        : `PRESENCE: ${ENERGIES[resolved.energy]}.`,
   ]
     .filter(Boolean)
     .join(" ");

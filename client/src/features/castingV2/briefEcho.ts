@@ -230,7 +230,16 @@ function composeSpans(
     idea: saying presence is varying and then saying the eight differ by
     disposition is one thought colliding with itself.
   */
-  const axisTwin = variationAxis === "disposition" ? "energy" : variationAxis === "look" ? "look" : null;
+  /*
+    A locked look cannot also be the thing the eight differ by.
+
+    The sheet said "held to commanding glamour … The eight differ by look",
+    which is a sentence contradicting itself — and it was not merely bad copy,
+    it was reporting the compiler's own confusion. When the brief pins a look,
+    every candidate gets it, and disposition is what actually varies.
+  */
+  const effectiveAxis = locks.look && variationAxis === "look" ? "disposition" : variationAxis;
+  const axisTwin = effectiveAxis === "disposition" ? "energy" : effectiveAxis === "look" ? "look" : null;
   const namedOpen = AXIS_ORDER.filter((axis) => open.includes(axis) && axis !== axisTwin);
 
   if (!pinnedAnything) {
@@ -256,10 +265,10 @@ function composeSpans(
   if (options.followLabel) {
     spans.push({
       kind: "text",
-      text: ` The eight follow ${options.followLabel}${variationAxis ? `, and differ by ${variationAxis}` : ""}.`,
+      text: ` The eight follow ${options.followLabel}${variationAxis ? `, and differ by ${effectiveAxis}` : ""}.`,
     });
-  } else if (variationAxis) {
-    spans.push({ kind: "text", text: ` The eight differ by ${variationAxis}.` });
+  } else if (effectiveAxis) {
+    spans.push({ kind: "text", text: ` The eight differ by ${effectiveAxis}.` });
   }
 
   return spans;
