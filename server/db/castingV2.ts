@@ -388,10 +388,15 @@ export async function getOwnedRoll(userId: number, rollPublicId: string): Promis
 export async function getRollLineage(
   userId: number,
   roll: Pick<CastingRoll, "parentRollId" | "parentCandidateId">,
-): Promise<{ parentRollPublicId: string | null; parentCandidatePublicId: string | null }> {
+): Promise<{
+  parentRollPublicId: string | null;
+  parentCandidatePublicId: string | null;
+  /** The parent candidate's position, so lineage can name the FACE. */
+  parentCandidatePosition: number | null;
+}> {
   assertPositiveId(userId, "userId");
   if (!roll.parentRollId && !roll.parentCandidateId) {
-    return { parentRollPublicId: null, parentCandidatePublicId: null };
+    return { parentRollPublicId: null, parentCandidatePublicId: null, parentCandidatePosition: null };
   }
   const db = await requireDb();
 
@@ -405,7 +410,7 @@ export async function getRollLineage(
 
   const [parentCandidate] = roll.parentCandidateId
     ? await db
-        .select({ publicId: castingCandidates.publicId })
+        .select({ publicId: castingCandidates.publicId, position: castingCandidates.position })
         .from(castingCandidates)
         .where(and(
           eq(castingCandidates.id, roll.parentCandidateId),
@@ -417,6 +422,7 @@ export async function getRollLineage(
   return {
     parentRollPublicId: parentRoll?.publicId ?? null,
     parentCandidatePublicId: parentCandidate?.publicId ?? null,
+    parentCandidatePosition: parentCandidate?.position ?? null,
   };
 }
 

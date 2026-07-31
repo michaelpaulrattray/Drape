@@ -140,6 +140,7 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
     candidates,
     parentRollPublicId: lineage.parentRollPublicId,
     parentCandidatePublicId: lineage.parentCandidatePublicId,
+    parentCandidatePosition: lineage.parentCandidatePosition,
   });
 }
 

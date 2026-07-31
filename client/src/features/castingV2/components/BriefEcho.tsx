@@ -72,7 +72,9 @@ const HEADINGS: Record<EchoField, string> = {
 
 export type EchoAdjustment =
   | { kind: "set"; field: EchoField; value: LockOverrides[EchoField] & string }
-  | { kind: "vary"; field: EchoField };
+  | { kind: "vary"; field: EchoField }
+  /** Drop a queued change and keep whatever the sheet already cast. */
+  | { kind: "undo"; field: EchoField };
 
 /**
  * Adjustments the user has made that the sheet in front of them cannot show.
@@ -149,12 +151,6 @@ function EchoSpanView({
   const pinned = span.kind === "fact";
 
   /*
-    A pending change reads as a change: the value it had, an arrow, the value
-    it will have, and when. The whole span becomes read-only while it is
-    pending — adjusting a fact that is already queued would need an undo the
-    design does not have, and stacking two arrows would say nothing useful.
-  */
-  /*
     An override that has LANDED is not pending any more.
 
     Overrides are standing corrections — they persist across rolls by design, so
@@ -173,13 +169,42 @@ function EchoSpanView({
   const queuedValue = queued && queued !== current ? queued : undefined;
   const queuedVary = !queuedValue && pending?.unlocked.includes(field) === true && pinned;
   if (queuedValue || queuedVary) {
+    /*
+      A QUEUED CHANGE IS STILL CHANGEABLE.
+
+      It was read-only, on the reasoning that adjusting an already-queued fact
+      would need an undo the design lacked. That was wrong in the plainest
+      possible way: the founder mis-clicked Mediterranean to Slavic and could
+      not correct it. A control that cannot be corrected is worse than one that
+      can be pressed twice — and the undo it supposedly lacked is simply the
+      value the roll already has, which is right there.
+
+      So the queued value opens the same picker, showing what is queued as
+      current, with a way back to what the sheet actually cast.
+    */
     return (
-      <span className="dpc-echo__pending">
+      <Popover
+        label={`Change ${HEADINGS[field].toLowerCase()}, queued as ${queuedValue ?? "varying"}`}
+        heading={`${HEADINGS[field]} · queued`}
+        className="dpc-echo__pendingTrigger"
+        options={VOCABULARIES[field].map((value) => ({
+          value,
+          label: value,
+          current: value === queuedValue,
+        }))}
+        footer={{
+          label: current ? `Undo — keep ${current}` : "Undo this change",
+          onSelect: () => onAdjust({ kind: "undo", field }),
+        }}
+        onSelect={(value) =>
+          onAdjust({ kind: "set", field, value: value as LockOverrides[EchoField] & string })
+        }
+      >
         <span className="dpc-echo__was">{span.text}</span>
         <span aria-hidden="true"> → </span>
         <span className="dpc-echo__will">{queuedValue ?? "varying"}</span>
         <span className="dp-chrome dpc-echo__when"> · next roll</span>
-      </span>
+      </Popover>
     );
   }
 

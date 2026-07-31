@@ -66,6 +66,7 @@ export default function CastingSheet() {
     overrides,
     setOverride,
     clearOverrides,
+    undoOverride,
     provisionalRollIndex,
     beginProvisionalRoll,
   } = useSheetState();
@@ -448,8 +449,18 @@ export default function CastingSheet() {
     const fromRollId = roll.data?.lineage.fromRollId;
     if (!fromRollId) return null;
     const parent = rolls.find((entry) => entry.rollId === fromRollId);
-    return parent ? `roll ${String(parent.rollIndex).padStart(2, "0")}` : null;
-  }, [roll.data?.lineage.fromRollId, rolls]);
+    if (!parent) return null;
+    const rollLabel = `roll ${String(parent.rollIndex).padStart(2, "0")}`;
+    /*
+      Name the FACE, not just the roll. "The eight follow roll 01" is true and
+      useless — a roll holds eight faces and the user pointed at exactly one.
+      The candidate's own index is the thing they clicked, and it was already
+      being computed server-side for the lineage pill; it simply never reached
+      the sentence.
+    */
+    const face = roll.data?.lineage.fromCandidateLabel;
+    return face ? `${face} on ${rollLabel}` : rollLabel;
+  }, [roll.data?.lineage.fromRollId, roll.data?.lineage.fromCandidateLabel, rolls]);
 
   if (!sessionId) return null;
 
@@ -552,6 +563,11 @@ export default function CastingSheet() {
             // show, because rolls are immutable.
             pending={{ overrides, unlocked }}
             onAdjust={(adjustment) => {
+              if (adjustment.kind === "undo") {
+                undoOverride(adjustment.field);
+                toast("Change undone");
+                return;
+              }
               if (adjustment.kind === "vary") {
                 unlock(adjustment.field as UnlockableField);
                 // Rolls are immutable: this cannot change the sheet in front of

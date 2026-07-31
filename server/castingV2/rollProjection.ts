@@ -61,7 +61,13 @@ export type RollProjection = {
   chips: CastingChip[];
   /** The brief echo's facts — see `readBriefFacts`. */
   facts: BriefFacts;
-  lineage: { fromCandidateId?: string; fromRollId?: string };
+  /**
+   * Which FACE this roll followed, not merely which roll.
+   *
+   * `fromRollId` alone made the sheet say "the eight follow roll 01", which is
+   * true and useless — a roll has eight faces and the user pointed at one.
+   */
+  lineage: { fromCandidateId?: string; fromCandidateLabel?: string; fromRollId?: string };
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
   createdAt: string;
@@ -269,6 +275,7 @@ export function projectRoll(input: {
   roll: CastingRoll;
   candidates: readonly CastingCandidate[];
   parentCandidatePublicId?: string | null;
+  parentCandidatePosition?: number | null;
   parentRollPublicId?: string | null;
 }): RollProjection {
   const candidates = input.candidates
@@ -286,6 +293,9 @@ export function projectRoll(input: {
     facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief),
     lineage: {
       ...(input.parentCandidatePublicId ? { fromCandidateId: input.parentCandidatePublicId } : {}),
+      ...(typeof input.parentCandidatePosition === "number"
+        ? { fromCandidateLabel: String(input.parentCandidatePosition + 1).padStart(2, "0") }
+        : {}),
       ...(input.parentRollPublicId ? { fromRollId: input.parentRollPublicId } : {}),
     },
     priceCredits: input.roll.priceCredits,

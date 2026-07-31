@@ -139,6 +139,8 @@ type SheetState = {
   unlock: (field: UnlockableField) => void;
   beginProvisionalRoll: (index: number) => void;
   clearOverrides: () => void;
+  /** Drop one queued change, keeping whatever the sheet already cast. */
+  undoOverride: (field: OverridableField) => void;
   setOverride: <F extends OverridableField>(field: F, value: NonNullable<LockOverrides[F]>) => void;
   setDraftBrief: (brief: string) => void;
   setStartingRoll: (startingRoll: boolean) => void;
@@ -219,6 +221,13 @@ export const useSheetState = create<SheetState>((set, get) => ({
 
   /* Spent when the brief itself is rewritten — see `dispatchRoll`. */
   clearOverrides: () => set({ overrides: {} }),
+
+  undoOverride: (field) =>
+    set((state) => {
+      const overrides = { ...state.overrides };
+      delete overrides[field];
+      return { overrides };
+    }),
 
   setDraftBrief: (draftBrief) => set({ draftBrief }),
 

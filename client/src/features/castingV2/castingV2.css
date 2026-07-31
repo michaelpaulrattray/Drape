@@ -827,3 +827,7 @@
   flex: 0 0 clamp(210px, 24vw, 268px);
   scroll-snap-align: start;
 }
+
+/* A queued change is a trigger, not dead text — the whole span opens the picker. */
+.dpc-echo__pendingTrigger { border-bottom: 0; white-space: nowrap; }
+.dpc-echo__pendingTrigger:hover .dpc-echo__will { border-bottom-color: var(--ink); }
