@@ -92,16 +92,37 @@ const CASTING_SEEDS: Array<{ label: string; shows: string; requires?: string }> 
     and a seed row is a claim about what the product is FOR. Interesting is not
     the bar; recognisable is.
 
-    AND NO PRONOUNS. "Freckles she never covered" made the founder ask whether
+    CLAUSE 6 (founder, 2026-08-01): a seed whose DETAIL or ARCHETYPE is
+    strongly sex-coded states its sex. Curation, not capability.
+
+    "Beauty creator, late 20s, bleached brows" left sex open and the male
+    tiles read costume-y. Nothing malfunctioned — the system obeyed a brief
+    that said nothing about sex, exactly as it should. The seed gambled and
+    lost. "Silver at the temples" is the same bet: idiomatically a phrase
+    about men, and it had been sitting open too.
+
+    So the four split deliberately. Two leave sex open because their details
+    read well on anybody — a shaved head, freckles — and those are the seeds
+    that demonstrate latitude. Two state it, because their details do not.
+
+    This does not contradict clause 5. That one is about pinning sex by
+    ACCIDENT, on a word nobody noticed writing; this one is about pinning it
+    on purpose, where the alternative is a tile that undersells the product.
+
+    AND NO PRONOUNS (clause 5) — "Freckles she never covered" made the founder ask whether
     the sex lock was intended — it was not. The interpreter reads "she"
     correctly and pins sex, so that seed quietly closed an axis it existed to
     demonstrate. A seed showing latitude must not spend it on a word nobody
-    noticed writing.
+    noticed writing — which is why the two that DO state sex say so in plain
+    words rather than leaking it.
   */
-  { label: "Runway model, early 20s, shaved head", shows: "category + age lock, look variation" },
-  { label: "UGC creator, mid-20s, freckles across the nose", shows: "creator-type, freckles render" },
-  { label: "Skincare founder, 40s, silver at the temples", shows: "founder-type, age reads in the hair" },
-  { label: "Beauty creator, late 20s, bleached brows", shows: "influencer-type, grooming detail renders" },
+  // Sex left OPEN — the detail reads well on anyone, so these are the two
+  // seeds that demonstrate latitude.
+  { label: "Runway model, early 20s, shaved head", shows: "category + age lock, look varies" },
+  { label: "UGC creator, mid-20s, freckles across the nose", shows: "creator-type, sex varies" },
+  // Sex STATED — the detail is sex-coded, so leaving it open was a gamble.
+  { label: "A skincare founder in his 40s, silver at the temples", shows: "founder-type, age reads in the hair" },
+  { label: "A beauty creator in her late 20s, bleached brows", shows: "influencer-type, grooming detail renders" },
 ];
 
 /**
