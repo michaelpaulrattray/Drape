@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, Plus, Search, Trash2, Upload } from "lucide-react";
+import { ArrowRight, Plus, Search, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -419,7 +419,7 @@ export default function CastingV2() {
           />
           <div className="dp-grid">
             {openSessions.data.map((entry) => (
-              <Card key={entry.sessionId}>
+              <Card key={entry.sessionId} className="dpc-sheetcard">
                 <button
                   type="button"
                   className="dpc-sheetcard__open"
@@ -432,21 +432,29 @@ export default function CastingV2() {
                   </span>
                 </button>
                 {/*
-                  Deliberate disposal. Destructive-on-hover per the foundation
-                  button law, and one confirm — this is a pure delete of
-                  exploratory work with no refund implications, since every
-                  roll on the sheet was delivered.
+                  Deliberate disposal, quietly. A full destructive button sat
+                  under every sheet and made disposal the loudest thing on a
+                  card whose subject is the work — so it becomes the
+                  foundation's over-media chip: dark glass, in the corner,
+                  revealed on hover.
+
+                  Still deliberate, not hidden. It carries a real label for
+                  screen readers, appears on keyboard focus, and stays visible
+                  on touch, where there is no hover to reveal it. One confirm
+                  before it deletes — a pure delete of exploratory work with no
+                  refund implications, since every roll on the sheet was
+                  delivered.
                 */}
-                <Button
-                  variant="quiet"
-                  size="small"
-                  destructive
+                <button
+                  type="button"
+                  className="dp-btn--onmedia dpc-sheetcard__discard"
+                  aria-label={`Discard the sheet "${entry.briefText ?? "Untitled sheet"}"`}
+                  title="Discard this sheet"
                   disabled={abandoning === entry.sessionId}
                   onClick={() => discardSheet(entry.sessionId)}
                 >
-                  <Trash2 size={11} strokeWidth={2} aria-hidden="true" />
-                  Discard this sheet
-                </Button>
+                  <X size={13} strokeWidth={2} aria-hidden="true" />
+                </button>
               </Card>
             ))}
           </div>

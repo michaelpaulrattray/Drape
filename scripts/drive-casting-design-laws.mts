@@ -229,6 +229,50 @@ async function assertNoOrphanSkeletons(page: Page, where: string) {
   );
 }
 
+/**
+ * Law 7. An over-media chip is dark glass, and is never hover-only.
+ *
+ * Two failures in one control. The foundation measured translucent *white*
+ * chips at ~2.5:1 against white glyphs on light imagery — below the 3:1 floor
+ * — so the fill has to be dark. And a control revealed on hover has to survive
+ * having no hover: it must carry a real accessible name and be reachable by
+ * keyboard, or it does not exist on a phone or to a screen reader.
+ */
+async function assertOverMediaChips(page: Page, where: string) {
+  const result = await page.evaluate(() => {
+    const chips = Array.from(document.querySelectorAll<HTMLElement>(".dp-btn--onmedia"));
+    if (chips.length === 0) return null;
+    return chips.map((chip) => {
+      const style = getComputedStyle(chip);
+      const rgb = style.backgroundColor.match(/[\d.]+/g)?.map(Number) ?? [255, 255, 255];
+      const [r, g, b] = rgb;
+      return {
+        label: chip.getAttribute("aria-label") ?? chip.textContent?.trim() ?? "",
+        // Relative luminance is overkill here: the rule is "dark glass", and a
+        // white chip fails on any of the three channels being high.
+        light: r > 140 && g > 140 && b > 140,
+        focusable: chip.tabIndex >= 0 && !chip.hasAttribute("aria-hidden"),
+      };
+    });
+  });
+  if (result === null) {
+    console.log(`  --   [${where}] no over-media chips on this surface`);
+    return;
+  }
+  const pale = result.filter((chip) => chip.light);
+  check(
+    pale.length === 0,
+    `[${where}] over-media chips are dark glass`,
+    `${pale.length} translucent-white chip(s)`,
+  );
+  const unreachable = result.filter((chip) => !chip.focusable || chip.label.length === 0);
+  check(
+    unreachable.length === 0,
+    `[${where}] over-media chips are named and keyboard-reachable`,
+    `${unreachable.length} chip(s) unnamed or not focusable`,
+  );
+}
+
 async function auditSurface(page: Page, url: string, where: string, waitFor?: string) {
   console.log(`\n── ${where}`);
   await page.goto(url, { waitUntil: "networkidle2" });
@@ -242,6 +286,7 @@ async function auditSurface(page: Page, url: string, where: string, waitFor?: st
   await assertPricedButtons(page, where);
   await assertRetentionStated(page, where);
   await assertNoOrphanSkeletons(page, where);
+  await assertOverMediaChips(page, where);
 }
 
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new" });

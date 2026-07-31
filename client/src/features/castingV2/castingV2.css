@@ -292,6 +292,60 @@
 }
 
 /* An unsigned-sheet card opens on its body; the discard button sits beside. */
+/*
+  The sheet card's disposal chip. Dark glass in the corner, per the
+  foundation's over-media rule — translucent white measured 2.5:1 against
+  white glyphs and is never used here, even though this corner sits on card
+  fill rather than on an image.
+
+  Revealed on hover, but never hover-only: keyboard focus reveals it, and on
+  a coarse pointer it is simply always there. A control that only exists
+  under a mouse does not exist on a phone.
+*/
+.dpc-sheetcard {
+  position: relative;
+}
+
+.dpc-sheetcard__discard {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.dpc-sheetcard:hover .dpc-sheetcard__discard,
+.dpc-sheetcard__discard:focus-visible {
+  opacity: 1;
+}
+
+.dpc-sheetcard__discard:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (hover: none) {
+  .dpc-sheetcard__discard {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpc-sheetcard__discard {
+    transition: none;
+  }
+}
+
 .dpc-sheetcard__open {
   display: flex;
   flex-direction: column;
@@ -300,7 +354,8 @@
   text-align: left;
   border: none;
   background: transparent;
-  padding: 0;
+  /* Right inset keeps a long brief clear of the disposal chip's corner. */
+  padding: 0 26px 0 0;
   cursor: pointer;
   width: 100%;
 }
