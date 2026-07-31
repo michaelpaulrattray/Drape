@@ -412,24 +412,6 @@ export default function CastingV2() {
         </div>
       </div>
 
-      {/* ---- search + scope. Empty-safe: it filters nothing gracefully. ---- */}
-      <div className="dpc-filters">
-        <Field compact className="dpc-filters__search">
-          <Search size={13} strokeWidth={2} aria-hidden="true" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search cast by name or look"
-            aria-label="Search cast"
-          />
-        </Field>
-        {ROSTER_SCOPES.map((option) => (
-          <ScopePill key={option} active={scope === option} onClick={() => setScope(option)}>
-            {option}
-          </ScopePill>
-        ))}
-      </div>
-
       {openSessions.data && openSessions.data.length > 0 ? (
         <section className="dp-stack" style={{ gap: 12 }}>
           {/*
@@ -560,6 +542,35 @@ export default function CastingV2() {
       ) : null}
 
       <section className="dp-stack" style={{ gap: 12 }}>
+        {/*
+          Search and scope belong to the ROSTER, and now sit with it.
+
+          They were above the unsigned-sheets row, which put a control two
+          sections away from the only thing it acts on — and next to a row of
+          sheets it does not filter at all, which is worse than merely distant.
+          A filter reads as belonging to whatever it is nearest.
+
+          This is also what the prototype drew: "filter row above" meant above
+          the roster grid. The unsigned-sheets section landed between them
+          later and quietly took the search with it.
+        */}
+        <div className="dpc-filters">
+          <Field compact className="dpc-filters__search">
+            <Search size={13} strokeWidth={2} aria-hidden="true" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search cast by name or look"
+              aria-label="Search cast"
+            />
+          </Field>
+          {ROSTER_SCOPES.map((option) => (
+            <ScopePill key={option} active={scope === option} onClick={() => setScope(option)}>
+              {option}
+            </ScopePill>
+          ))}
+        </div>
+
         {/*
           Scope label + count, as drawn. The count is real — and when it is
           zero it says zero, which is the whole difference between this and
