@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a5785fca8f8463c5"
+    "sourceFingerprint": "816d1c32edb322ce"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 4
+      "moduleCount": 5
     },
     {
       "id": "domain:client-shared",
@@ -1403,6 +1403,12 @@
     {
       "id": "module:client/src/features/castingV2/sheetState.ts",
       "path": "client/src/features/castingV2/sheetState.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/singleFlight.ts",
+      "path": "client/src/features/castingV2/singleFlight.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7033,6 +7039,10 @@
   ],
   "tests": [
     {
+      "id": "test:client/src/features/castingV2/singleFlight.test.ts",
+      "path": "client/src/features/castingV2/singleFlight.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
     },
@@ -12308,6 +12318,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/singleFlight.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -12324,6 +12339,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/sheetState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/singleFlight.ts",
       "kind": "imports"
     },
     {

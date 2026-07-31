@@ -85,16 +85,23 @@ export type Build = (typeof BUILDS)[number];
  * These are written as castable direction rather than mood words, because the
  * image model is literal (A14): "still, composed, minimal movement" renders,
  * "enigmatic" does not.
+ *
+ * **Presence, never performance** (founder ruling at the M5 gate, 2026-07-31).
+ * Each axis names what the face DOES AT REST — eyes, brow, jaw, the set of a
+ * closed mouth — because an energy written as behaviour ("bright and quick",
+ * "fast talker") is read by the image model as an instruction to act it out,
+ * and a sheet of eight people mid-laugh is a sheet you cannot cast from. The
+ * adapter's expression clause enforces the same rule from the other side.
  */
 export const ENERGIES = {
-  warm: "warm and unhurried, relaxed shoulders, easy eye contact",
-  dry: "dry and deadpan, minimal expression, flat gaze",
-  bright: "bright and quick, alert eyes, engaged and awake",
-  grave: "still and serious, composed, minimal movement",
-  open: "open and easy, faint natural smile, unguarded",
-  guarded: "guarded and watchful, held back, reading the room",
-  wry: "wry and faintly amused, one-sided, knowing",
-  plain: "plain and direct, unperformed, straight to the lens",
+  warm: "warm and unhurried — soft eyes, relaxed brow, shoulders down, mouth closed and at rest",
+  dry: "dry and deadpan — flat gaze, level brow, no lift at the mouth",
+  bright: "alert and awake — bright direct eyes, lifted brow, held still and mouth closed",
+  grave: "still and serious — steady gaze, set jaw, composed",
+  open: "open and unguarded — soft eyes, the faintest closed-mouth trace of warmth",
+  guarded: "guarded and watchful — held back, reading the room, chin fractionally lowered",
+  wry: "wry — one brow marginally higher, the smallest asymmetry at a closed mouth",
+  plain: "plain and direct — unperformed, straight to the lens, nothing added",
 } as const;
 export type EnergyKey = keyof typeof ENERGIES;
 export const ENERGY_KEYS = Object.keys(ENERGIES) as EnergyKey[];

@@ -17,6 +17,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { useSheetState } from "@/features/castingV2/sheetState";
+import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import heroPortrait from "@/assets/casting/hero-portrait.webp";
 import heroSecondFrame from "@/assets/casting/hero-second-frame.webp";
 import "@/features/castingV2/castingV2.css";
@@ -66,6 +67,10 @@ export default function CastingV2() {
   const [scope, setScope] = useState<RosterScope>("All");
   const [starting, setStarting] = useState(false);
   const rosterRef = useRef<HTMLElement>(null);
+  /** Closes synchronously on click; see `startCasting` and `singleFlight.ts`. */
+  const latchRef = useRef<DispatchLatch | null>(null);
+  if (!latchRef.current) latchRef.current = createDispatchLatch();
+  const castLatch = latchRef.current;
   const reset = useSheetState((state) => state.reset);
   const setStartingRoll = useSheetState((state) => state.setStartingRoll);
 
@@ -118,7 +123,16 @@ export default function CastingV2() {
   const candidatesPerRoll = config.data.candidatesPerRoll ?? 8;
 
   const startCasting = async () => {
-    if (brief.trim().length < 3 || starting) return;
+    /*
+      The latch is a ref because `setStarting(true)` does not take effect until
+      the next render — two clicks (or two Enters) in one frame both pass a
+      state-based guard and both create a session and a paid roll. The ref
+      closes on the click that opened it.
+    */
+    if (brief.trim().length < 3) return;
+    // No session exists yet, so there is no id to wait on — the latch here is
+    // purely "one ceremony at a time", released only on failure.
+    if (!castLatch.tryAcquire(null)) return;
     setStarting(true);
     try {
       const session = await createSession.mutateAsync({ originType: "roster" });
@@ -158,9 +172,12 @@ export default function CastingV2() {
       // actions that leave you where you were, never on ones that move you.
       navigate(`/casting/s/${session.sessionId}`);
     } catch (error) {
-      toast(error instanceof Error ? error.message : "That roll could not start.");
-    } finally {
+      // Only a failure reopens the latch. On success we navigate away, and
+      // this page unmounts — reopening it there would briefly re-arm a button
+      // the user has already spent on.
+      castLatch.release();
       setStarting(false);
+      toast(error instanceof Error ? error.message : "That roll could not start.");
     }
   };
 
@@ -205,8 +222,8 @@ export default function CastingV2() {
                 aria-label="Casting brief"
               />
               <Button variant="primary" size="small" onClick={startCasting} disabled={starting}>
-                Cast it · {price} cr
-                <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />
+                {starting ? "Casting…" : `Cast it · ${price} cr`}
+                {starting ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
               </Button>
             </Field>
 

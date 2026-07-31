@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
 import { ShortlistTray } from "@/features/castingV2/components/ShortlistTray";
 import { useSheetState, type UnlockableField } from "@/features/castingV2/sheetState";
+import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 
 /**
  * The casting sheet (plan §J, handoff chapter 07).
@@ -55,6 +56,11 @@ export default function CastingSheet() {
     rollDispatched,
     startingRoll,
     setStartingRoll,
+    optimisticKept,
+    optimisticDiscarded,
+    setOptimisticKept,
+    setOptimisticDiscarded,
+    clearOptimistic,
   } = useSheetState();
   const [brief, setBrief] = useState("");
 
@@ -84,6 +90,29 @@ export default function CastingSheet() {
   const [viewedRollId, setViewedRollId] = useState<string | null>(null);
   const shownRollId = viewedRollId ?? activeRollId;
   const viewingHistory = Boolean(shownRollId && activeRollId && shownRollId !== activeRollId);
+
+  /** Closes synchronously on click; see `dispatchRoll` and `singleFlight.ts`. */
+  const latchRef = useRef<DispatchLatch | null>(null);
+  if (!latchRef.current) latchRef.current = createDispatchLatch();
+  const latch = latchRef.current;
+
+  /*
+    The roll we paid for now exists. Open the latch and let the dock work
+    again. Together with the error path's `release()`, this is what stops a
+    dispatch locking the sheet forever.
+  */
+  useEffect(() => {
+    if (latch.settleIfArrived(activeRollId)) setStartingRoll(false);
+  }, [activeRollId, latch, setStartingRoll]);
+
+  /**
+   * A dispatch is in flight and its roll has not appeared yet.
+   *
+   * Drives both halves of the fix: the paid affordances disable, and the grid
+   * swaps to skeletons in the same frame as the click, so Follow and Roll
+   * again answer as immediately as Cast it does.
+   */
+  const awaitingNewRoll = startingRoll && latch.held;
 
   const roll = trpc.castingV2.getRoll.useQuery(
     { rollId: shownRollId ?? "" },
@@ -152,32 +181,59 @@ export default function CastingSheet() {
   const createRoll = trpc.castingV2.createRoll.useMutation();
   const follow = trpc.castingV2.follow.useMutation();
 
-  const onKeep = guardedMutation((input: { candidateId: string; kept: boolean }) =>
-    keep.mutateAsync(input).then(() => {
-      toast(input.kept ? "Kept" : "Removed from kept");
-    }),
+  const onKeep = (candidateId: string, kept: boolean) => {
+    // Paint first, ask second (D-38). The ring appears on the click, not on
+    // the round trip.
+    setOptimisticKept(candidateId, kept);
+    void guardedMutation((input: { candidateId: string; kept: boolean }) =>
+      keep
+        .mutateAsync(input)
+        .then(() => toast(input.kept ? "Kept" : "Removed from kept"))
+        .catch((error: Error) => {
+          // The server said no. Drop the optimistic paint rather than leaving
+          // the screen claiming something that did not happen.
+          clearOptimistic(candidateId);
+          toast(error.message);
+        }),
+    )(candidateId, { candidateId, kept });
+  };
+
+  const discardMutation = guardedMutation((input: { candidateId: string }) =>
+    discard
+      .mutateAsync(input)
+      .then(() => {
+        /*
+          Discarding from a historical roll is legal, and it is immediately
+          un-undoable: the undo CAS is anchored to the active roll, so it would
+          refuse. Say that instead of setting an undo the user cannot spend.
+        */
+        if (viewingHistory) {
+          toast("Discarded — undo is only available on the latest roll");
+          return;
+        }
+        setUndoable(input.candidateId);
+        toast("Discarded");
+      })
+      .catch((error: Error) => {
+        clearOptimistic(input.candidateId);
+        toast(error.message);
+      }),
   );
 
-  const onDiscard = guardedMutation((input: { candidateId: string }) =>
-    discard.mutateAsync(input).then(() => {
-      /*
-        Discarding from a historical roll is legal, and it is immediately
-        un-undoable: the undo CAS is anchored to the active roll, so it would
-        refuse. Say that instead of setting an undo the user cannot spend.
-      */
-      if (viewingHistory) {
-        toast("Discarded — undo is only available on the latest roll");
-        return;
-      }
-      setUndoable(input.candidateId);
-      toast("Discarded");
-    }),
-  );
+  const onDiscard = (candidateId: string) => {
+    // The card leaves on the click. If the server refuses, the catch above
+    // puts it back and says why.
+    setOptimisticDiscarded(candidateId);
+    void discardMutation(candidateId, { candidateId });
+  };
 
   const onUndo = async () => {
     if (!undoable) return;
     await utils.castingV2.getRoll.cancel();
     await undo.mutateAsync({ candidateId: undoable });
+    // The card returns on the click too — drop the optimistic removal rather
+    // than waiting for the poll to contradict it.
+    clearOptimistic(undoable);
     setUndoable(null);
     // Undo restores the candidate, not its kept state — a discard clears kept
     // and this deliberately does not put it back. Say so rather than let the
@@ -200,16 +256,41 @@ export default function CastingSheet() {
    */
   const dispatchRoll = (mode: "roll" | "follow", candidateId?: string) => {
     if (!sessionId || brief.trim().length === 0) return;
+
+    /*
+      SINGLE FLIGHT. This latch is a ref, not React state, and that is the
+      whole point: `setState` does not take effect until the next render, so a
+      guard written as `if (starting) return` can be sailed straight through by
+      a second click in the same frame. A ref closes synchronously, on the
+      click that opened it.
+
+      This is the defect the founder hit — Follow showed nothing for the ~2.5s
+      until the next session poll, so they clicked again, and each click was a
+      separate paid roll. Four extra rolls, 640 credits, and every one of them
+      did exactly what the code said to do.
+
+      The latch opens again when the new roll actually EXISTS (below), not when
+      it finishes generating — a roll takes over a minute, and locking the dock
+      for that long would be a second bug wearing the first one's clothes.
+    */
+    if (!latch.tryAcquire(activeRollId)) return;
+
     const clientRequestId = createClientRequestId();
+    const release = () => {
+      latch.release();
+      setStartingRoll(false);
+    };
     const options = {
       onError: (error: { message: string }) => {
-        setStartingRoll(false);
+        release();
         toast(error.message);
       },
       onSuccess: () => {
         void invalidate();
       },
-      onSettled: () => setStartingRoll(false),
+      // Deliberately no onSettled release: settling means "all eight landed",
+      // which is a minute away. The latch is released by the new roll
+      // appearing, which is the thing the user is actually waiting to see.
     };
 
     rollDispatched();
@@ -381,7 +462,12 @@ export default function CastingSheet() {
           one as the window narrows, never a pinned column count.
         */}
         <div className="dp-grid" style={{ ["--dp-grid-min" as string]: "252px" }}>
-          {!roll.data && (startingRoll || shownRollId)
+          {/*
+            Skeletons the instant a dispatch starts — not only on first load.
+            Before this, Follow left the previous roll's eight faces on screen
+            with no sign anything had happened.
+          */}
+          {awaitingNewRoll || (!roll.data && (startingRoll || shownRollId))
             ? // Eight skeletons the instant a roll is on its way — the sheet's
               // shape is known long before its contents are.
               Array.from({ length: config.data?.candidatesPerRoll ?? 8 }, (_, index) => (
@@ -391,22 +477,32 @@ export default function CastingSheet() {
                   label={`CASTING 0${index + 1}`}
                 />
               ))
-            : candidates.map((candidate) => (
+            : candidates
+                // Optimistically discarded cards leave now, not on the next
+                // poll. The server is still the authority — a refusal puts
+                // them straight back.
+                .filter((candidate) => !optimisticDiscarded[candidate.candidateId])
+                .map((candidate) => (
                 <CandidateTile
                   key={candidate.candidateId}
-                  candidate={candidate}
+                  candidate={{
+                    ...candidate,
+                    kept: optimisticKept[candidate.candidateId] ?? candidate.kept,
+                  }}
                   lineageLabel={lineageLabel}
                   rollWasCancelled={rollWasCancelled}
                   busy={isPending(candidate.candidateId)}
+                  // Follow is a paid roll. Every tile's Follow locks the
+                  // moment any one of them is clicked, or the sheet offers
+                  // eight ways to buy the same thing twice.
+                  paidBusy={awaitingNewRoll}
                   onKeep={() =>
-                    onKeep(candidate.candidateId, {
-                      candidateId: candidate.candidateId,
-                      kept: !candidate.kept,
-                    })
+                    onKeep(
+                      candidate.candidateId,
+                      !(optimisticKept[candidate.candidateId] ?? candidate.kept),
+                    )
                   }
-                  onDiscard={() =>
-                    onDiscard(candidate.candidateId, { candidateId: candidate.candidateId })
-                  }
+                  onDiscard={() => onDiscard(candidate.candidateId)}
                   onFollow={() => dispatchRoll("follow", candidate.candidateId)}
                 />
               ))}
@@ -432,8 +528,17 @@ export default function CastingSheet() {
               a confirm step. Nudge chips carry no price of their own precisely
               because this button is next to them.
             */}
-            <Button variant="primary" onClick={() => dispatchRoll("roll")}>
-              Roll again · {price} cr
+            {/*
+              Disabled from the first click until the roll exists, and it says
+              what it is doing rather than going quiet — silence is what made
+              the founder click again.
+            */}
+            <Button
+              variant="primary"
+              onClick={() => dispatchRoll("roll")}
+              disabled={awaitingNewRoll}
+            >
+              {awaitingNewRoll ? "Rolling…" : `Roll again · ${price} cr`}
             </Button>
           </div>
           <div className="dp-row">

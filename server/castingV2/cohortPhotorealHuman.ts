@@ -59,6 +59,23 @@ import {
 const FRAMING = [
   "FRAMING: Single subject, waist-up, centred, square to camera, head straight with no tilt.",
   "Shoulders level. Arms relaxed at the sides or loosely crossed. Mouth closed.",
+  /*
+    EXPRESSION — presence, not performance (founder ruling at the M5 gate,
+    2026-07-31, under the cohort quality law).
+
+    The energy axes below describe who someone IS, and an image model reads
+    words like "fast talker" or "bright, quick" as instructions to ACT: mouth
+    open mid-word, a laugh, a gesture. A casting sheet showing eight people
+    performing is unusable — you cannot read bone structure through a laugh,
+    and every candidate stops being comparable. The direction has to be
+    carried in the eyes and the set of the face while the subject is still.
+
+    This sits in the code-owned constant deliberately: it is a fidelity rule
+    the interpreter and any future treatment stage can never soften.
+  */
+  "EXPRESSION: Composed casting expression, held still, as if between takes rather than during one.",
+  "The character's energy reads in the eyes, the brow and the set of the mouth — never in a performed action.",
+  "Absolutely no mid-laugh, mid-speech, mid-gesture or acted moments. Not smiling broadly, not talking, not caught in motion.",
   "Background: seamless mid-grey studio backdrop filling the entire frame, no edges, no borders, no floor line.",
   "WARDROBE: plain unbranded clothing in neutral grey or off-white — a simple crew-neck tee or plain shirt.",
   "No jackets, no accessories, no jewellery, no hats, no props of any kind, nothing held in the hands.",

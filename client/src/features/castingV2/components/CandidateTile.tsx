@@ -30,6 +30,7 @@ export function CandidateTile({
   lineageLabel,
   rollWasCancelled,
   busy,
+  paidBusy,
   onKeep,
   onDiscard,
   onFollow,
@@ -40,6 +41,13 @@ export function CandidateTile({
   /** Changes what a refunded tile says: cancelled by them, or failed by us. */
   rollWasCancelled?: boolean;
   busy?: boolean;
+  /**
+   * A paid roll is already in flight anywhere on this sheet. Follow is the
+   * only affordance here that spends, so it is the only one this disables —
+   * keeping and discarding stay live, because making free actions wait on a
+   * paid one would be a worse sheet, not a safer one.
+   */
+  paidBusy?: boolean;
   onKeep: () => void;
   onDiscard: () => void;
   onFollow: () => void;
@@ -101,7 +109,12 @@ export function CandidateTile({
           {candidate.kept ? <Check size={11} strokeWidth={2.4} aria-hidden="true" /> : null}
           {candidate.kept ? "Kept" : "Keep"}
         </Button>
-        <Button variant="quiet" size="small" disabled={busy} onClick={onFollow}>
+        <Button
+          variant="quiet"
+          size="small"
+          disabled={busy || paidBusy}
+          onClick={onFollow}
+        >
           <GitBranch size={11} strokeWidth={2} aria-hidden="true" />
           Follow
         </Button>

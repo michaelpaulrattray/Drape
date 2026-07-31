@@ -47,6 +47,21 @@ type SheetState = {
   endMutation: (candidateId: string) => void;
   isPending: (candidateId: string) => boolean;
 
+  /**
+   * Optimistic keep/discard (D-38).
+   *
+   * The buttons already disabled within a frame, but the *visible* result —
+   * the accent ring, the card leaving — waited on the round trip plus a
+   * refetch. Free actions should feel free. These hold the intended state
+   * until the poll catches up, and are dropped if the mutation fails, so the
+   * screen never claims something the server refused.
+   */
+  optimisticKept: Record<string, boolean>;
+  optimisticDiscarded: Record<string, true>;
+  setOptimisticKept: (candidateId: string, kept: boolean) => void;
+  setOptimisticDiscarded: (candidateId: string) => void;
+  clearOptimistic: (candidateId: string) => void;
+
   setUndoable: (candidateId: string | null) => void;
   unlock: (field: UnlockableField) => void;
   setDraftBrief: (brief: string) => void;
@@ -80,6 +95,26 @@ export const useSheetState = create<SheetState>((set, get) => ({
 
   isPending: (candidateId) => Boolean(get().pending[candidateId]),
 
+  optimisticKept: {},
+  optimisticDiscarded: {},
+
+  setOptimisticKept: (candidateId, kept) =>
+    set((state) => ({ optimisticKept: { ...state.optimisticKept, [candidateId]: kept } })),
+
+  setOptimisticDiscarded: (candidateId) =>
+    set((state) => ({
+      optimisticDiscarded: { ...state.optimisticDiscarded, [candidateId]: true as const },
+    })),
+
+  clearOptimistic: (candidateId) =>
+    set((state) => {
+      const optimisticKept = { ...state.optimisticKept };
+      const optimisticDiscarded = { ...state.optimisticDiscarded };
+      delete optimisticKept[candidateId];
+      delete optimisticDiscarded[candidateId];
+      return { optimisticKept, optimisticDiscarded };
+    }),
+
   setUndoable: (candidateId) => set({ undoable: candidateId }),
 
   unlock: (field) =>
@@ -91,8 +126,17 @@ export const useSheetState = create<SheetState>((set, get) => ({
 
   setStartingRoll: (startingRoll) => set({ startingRoll }),
 
-  rollDispatched: () => set({ undoable: null, unlocked: [], pending: {} }),
+  rollDispatched: () =>
+    set({ undoable: null, unlocked: [], pending: {}, optimisticKept: {}, optimisticDiscarded: {} }),
 
   reset: () =>
-    set({ pending: {}, undoable: null, unlocked: [], draftBrief: "", startingRoll: false }),
+    set({
+      pending: {},
+      undoable: null,
+      unlocked: [],
+      draftBrief: "",
+      startingRoll: false,
+      optimisticKept: {},
+      optimisticDiscarded: {},
+    }),
 }));
