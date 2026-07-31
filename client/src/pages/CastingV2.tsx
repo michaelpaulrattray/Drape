@@ -441,7 +441,23 @@ export default function CastingV2() {
             eyebrow="Unsigned sheets"
             aside="Unsigned sheets clear after 7 quiet days."
           />
-          <div className="dp-grid">
+          {/*
+            One row that scrolls, not a grid that grows.
+
+            Unsigned sheets are working state — scratch, kept for seven days —
+            and a grid of them expands forever until it outweighs the roster it
+            sits above. The cast is the subject of this page; the scratch should
+            never be able to push it below the fold.
+
+            A row also says the right thing about what these are: a shelf you
+            scan sideways and pick from, rather than a collection you browse.
+          */}
+          <div
+            className="dpc-sheetrow"
+            role="group"
+            aria-label="Unsigned sheets"
+            tabIndex={0}
+          >
             {openSessions.data.map((entry) => (
               <Card key={entry.sessionId} className="dpc-sheetcard">
                 <button

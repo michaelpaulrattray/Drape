@@ -623,6 +623,16 @@
 
 .dpc-sheetmenu { position: absolute; top: 8px; right: 8px; }
 
+/*
+  Quiet on card fill, not dark glass.
+
+  It was wearing  — the foundation's over-media chip, which
+  is deliberately heavy because it has to survive a photograph underneath it.
+  This trigger sits on card fill with nothing behind it, so the same weight
+  reads as a black blob, and worst in light mode where a 62%-opaque near-black
+  square against white is the highest contrast on the card. Over-media styling
+  belongs over media.
+*/
 .dpc-sheetmenu__trigger {
   display: flex;
   align-items: center;
@@ -631,14 +641,34 @@
   height: 26px;
   padding: 0;
   border: 0;
+  border-radius: var(--r-btn);
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
+  transition:
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.dpc-sheetmenu__trigger:hover {
+  background: var(--fillStrong);
+  color: var(--secondary);
+}
+
+.dpc-sheetmenu__trigger[aria-expanded="true"] {
+  background: var(--fillStrong);
+  color: var(--ink);
+}
+
+.dpc-sheetmenu__trigger:focus-visible {
+  outline: 2px solid var(--accentSolid);
+  outline-offset: 1px;
 }
 
 .dpc-sheetmenu__panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 30;
+  /* Fixed and portalled to body — see the component for why. */
+  position: fixed;
+  z-index: 60;
   min-width: 178px;
   padding: var(--s-2);
   display: flex;
@@ -762,3 +792,38 @@
 
 .dpc-confirm__keep:focus-visible,
 .dpc-confirm__go:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+
+/* ---- unsigned sheets: one row, scrolled sideways ---- */
+
+.dpc-sheetrow {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  /*
+    Vertical room for the menu's shadow and its focus ring. `overflow-x: auto`
+    computes `overflow-y` to `auto` as well, so without padding the panel would
+    be clipped at the row's edge — the same clipping mistake the brief echo
+    made, avoided here rather than rediscovered.
+  */
+  padding: 4px 2px 10px;
+  margin: -4px -2px -10px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dots) transparent;
+}
+
+.dpc-sheetrow::-webkit-scrollbar { height: 6px; }
+.dpc-sheetrow::-webkit-scrollbar-track { background: transparent; }
+.dpc-sheetrow::-webkit-scrollbar-thumb {
+  background: var(--dots);
+  border-radius: var(--r-pill);
+}
+.dpc-sheetrow:hover::-webkit-scrollbar-thumb { background: var(--dotsStrong); }
+
+/* Keyboard users scroll this row with arrow keys, so it must show focus. */
+.dpc-sheetrow:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+
+.dpc-sheetrow > .dpc-sheetcard {
+  flex: 0 0 clamp(210px, 24vw, 268px);
+  scroll-snap-align: start;
+}

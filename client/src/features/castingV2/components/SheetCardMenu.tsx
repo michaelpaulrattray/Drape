@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 
 /**
@@ -39,12 +40,47 @@ export function SheetCardMenu({
   onCancel: () => void;
 }) {
   const rootRef = useRef<HTMLSpanElement>(null);
+  const [at, setAt] = useState<{ top: number; right: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLSpanElement>(null);
+
+  /*
+    The panel is fixed-positioned in the viewport, so it has to be told where
+    the trigger is — and re-told if the row scrolls or the window resizes
+    underneath it. Cheaper and more predictable than leaving it open and
+    wrong: a menu that drifts off its card is worse than one that closes.
+  */
+  useLayoutEffect(() => {
+    if (!open) {
+      setAt(null);
+      return;
+    }
+    const place = () => {
+      const box = triggerRef.current?.getBoundingClientRect();
+      if (!box) return;
+      setAt({ top: box.bottom + 6, right: window.innerWidth - box.right });
+    };
+    place();
+    const row = rootRef.current?.closest(".dpc-sheetrow");
+    row?.addEventListener("scroll", onCancel, { passive: true });
+    window.addEventListener("resize", onCancel);
+    return () => {
+      row?.removeEventListener("scroll", onCancel);
+      window.removeEventListener("resize", onCancel);
+    };
+  }, [open, onCancel]);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current?.contains(event.target as Node)) return;
+      const target = event.target as Node;
+      /*
+        The panel is portalled to body, so it is NOT inside rootRef any more.
+        Checking only the root would fire this on the menu's own items:
+        pointerdown closes the menu, the panel unmounts, and the click never
+        lands on the button the user pressed.
+      */
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) return;
       onCancel();
     };
     const onKeyDown = (event: KeyboardEvent) => {
@@ -66,7 +102,7 @@ export function SheetCardMenu({
       <button
         ref={triggerRef}
         type="button"
-        className="dp-btn--onmedia dpc-sheetmenu__trigger"
+        className="dpc-sheetmenu__trigger"
         aria-label={`Actions for the sheet "${label}"`}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -75,9 +111,21 @@ export function SheetCardMenu({
         <MoreHorizontal size={14} strokeWidth={2} aria-hidden="true" />
       </button>
 
-      {open ? (
-        <span className="dpc-sheetmenu__panel" role="menu">
-          <>
+      {open && at
+        ? createPortal(
+            /*
+              Portalled, because the cards now live in a horizontally scrolling
+              row and `overflow-x: auto` computes `overflow-y` to auto too. An
+              absolutely-positioned panel inside that row would be clipped at
+              its edge — which is exactly the defect the brief echo shipped a
+              day ago, and there is no reason to rediscover it here.
+            */
+            <span
+              ref={panelRef}
+              className="dpc-sheetmenu__panel"
+              role="menu"
+              style={{ top: at.top, right: at.right }}
+            >
               <button type="button" role="menuitem" className="dpc-sheetmenu__item" onClick={onOpenSheet}>
                 Open sheet
               </button>
@@ -94,9 +142,10 @@ export function SheetCardMenu({
                 <Trash2 size={12} strokeWidth={2} aria-hidden="true" />
                 Delete
               </button>
-          </>
-        </span>
-      ) : null}
+            </span>,
+            document.body,
+          )
+        : null}
     </span>
   );
 }
