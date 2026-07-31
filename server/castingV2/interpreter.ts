@@ -79,6 +79,14 @@ WHAT TO EXTRACT
   specific enough.
 - "characterNotes": short character-side detail the brief gave — bearing,
   demeanour, hair, distinguishing features. Under 25 words.
+  This field and "role" are the only text that reaches the image model, and the
+  image model is literal. Write only what can be SEEN. "Wide-set almond eyes
+  with monolids" produces exactly that; "editorially magnetic" produces
+  nothing, and spends the field. No mood words, no marketing language, no
+  "stunning", "beautiful", "striking" or "effortless" — if a phrase does not
+  name something a photograph could show, leave it out.
+  Never write numbers, percentages, ratios or control-signal language in either
+  field. Image models render digits as text artefacts in the picture.
 - "sex": only from an explicit word or pronoun. "her", "she", "woman", "guy",
   "man" decide it. Never infer sex from a hairstyle, a colour, or an occupation.
   Never output "nonbinary" unless the brief says so explicitly.

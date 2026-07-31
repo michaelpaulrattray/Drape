@@ -18,12 +18,21 @@
  *   authored somewhere, and under Path A that somewhere is this file.
  *
  * The craft in the constant is ported from the legacy photoreal engine, which
- * the founder named as the thing that made the old output excellent (catalog
- * §A). Adopted per item, not wholesale: A1 studio directives, A2 sensor
- * physics, A4 neutral grade, A5–A8 macro protocols for eyes/lashes/lips/brows,
- * A9 skin realism clamp, A10 vellus disambiguation, A12 negative list, A14
- * anti-mood-word discipline, A15 no raw numbers, E1 fixed pose. Left behind:
- * the bare-face/undergarment rules, retired as presentation by the
+ * the founder named as the thing that made the old output excellent.
+ *
+ * **Which items, and at what strength, is recorded in
+ * `docs/specs/CASTING_V2_CRAFT_PORT_AUDIT.md` — not here.** This comment used
+ * to carry the list, and the list was wrong: it named A5–A8 as adopted when
+ * three of those four were compressed to their headlines, and elsewhere in this
+ * file a comment claimed C5's priority hierarchy was ported "in four lines"
+ * when nothing in the prompt stated it at all. A comment asserting a port is
+ * not evidence of one, and a list maintained by hand next to the code it
+ * describes will drift from it again. The audit is the record; it goes item by
+ * item through catalog sections A, B, C and D, and every entry is ported,
+ * consciously adapted with a reason, or explicitly dropped with a reason.
+ *
+ * Left behind, and worth knowing without opening that document: the
+ * bare-face/undergarment rules, retired as presentation by the
  * wardrobe-baseline ruling — V2 presentation views are clothed.
  */
 import {
@@ -76,7 +85,14 @@ const FRAMING = [
   */
   "CROP: The subject's ENTIRE HAIR SILHOUETTE is inside the frame with natural headroom above it — including afros, curls, volume, updos, buns and any height the hair carries. Clear space between the topmost hair and the top edge.",
   "Nothing on the head is clipped: not the crown, not the hairline, not a single strand at the outline. If the hair is tall, frame wider rather than cropping it.",
-  "Frame from mid-torso up in a 4:5 portrait. Shoulders fully inside the frame with margin at both sides.",
+  /*
+    The ratio has to match what is actually requested of the generator. This
+    said 4:5 while every roll asks for 1024×1536, which is 2:3 — the prompt was
+    describing a frame the image was never going to be. Legacy named its ratio
+    (A2, "sensor ratio 3:4") precisely because a stated crop that fights the
+    output crop is where clipped crowns come from.
+  */
+  "Frame from mid-torso up in a 2:3 portrait. Shoulders fully inside the frame with margin at both sides.",
   "Shoulders level, spine straight, neck relaxed. Arms relaxed at the sides. Mouth closed.",
   /*
     EXPRESSION — composed but ALIVE.
@@ -115,15 +131,20 @@ const FRAMING = [
  * "high quality photo" does not.
  */
 const CAPTURE = [
-  "CAMERA: Medium-format sensor, Hasselblad class. 85mm equivalent, f/5.6–f/8. Subject sharp front to back.",
+  "CAMERA: Medium-format sensor, Hasselblad class. 85mm equivalent, f/5.6–f/8, sensor ratio 2:3. Subject sharp front to back.",
   "Fine luminance-dominant noise, barely visible, like fine sand. No colour noise.",
   "LIGHTING: Direct on-camera or slightly off-axis front flash. Sharp, honest, bright and even light with shadows falling directly behind the subject. No gels, no diffusion.",
   /*
-    A3's deferral, kept whole. Without it the lighting block silently
-    overrides whatever skin finish the character calls for, and every
-    candidate comes back with the same sheen.
+    A3's deferral — but pointed at something that exists.
+
+    Legacy deferred to "the casting spec's skin finish", a field the user
+    picked from a matrix (A9). V2 has no such field, so the sentence was
+    deferring to nothing: an instruction with a dangling referent, which the
+    model resolves by ignoring it. The craft in A3 is that the light block must
+    NOT decide the sheen — so the deferral is kept and given a real referent.
   */
-  "How the skin RESPONDS to this light — specular, matte or dewy — is defined by the subject's own skin finish. Defer to that.",
+  "How the skin RESPONDS to this light — specular, matte, dry or dewy — is decided by THIS person: their age, their condition, their work and anything the character description says about their skin. The lighting block never flattens that into one sheen.",
+  "Eight candidates must not share one skin. A weathered outdoor face and a groomed indoor one respond to the same flash completely differently, and that difference must be visible.",
   "Specular highlights sit on the forehead, nose and cheekbones where the flash strikes.",
   "COLOUR: Neutral daylight, 5500–5800K. Skin tones warm and dimensional with visible subsurface scattering. No stylized grading, no teal-orange, no filter look, no cool clinical cast.",
 ].join(" ");
@@ -136,6 +157,14 @@ const CAPTURE = [
  */
 const SKIN_AND_FEATURES = [
   "REALISM: RAW skin with high micro-contrast — visible pores, vellus fuzz, uneven tone, real blemishes and asymmetry.",
+  /*
+    A1's operative half, which this file had compressed away. "High
+    micro-contrast" is a term; the sentence that makes it renderable is the one
+    naming what it produces — tactile, three-dimensional local contrast that
+    makes a surface feel physical. Without it the phrase reads as a quality
+    adjective and the model treats it as one.
+  */
+  "Skin, vellus hair and fine texture carry tactile, three-dimensional local contrast that makes the surface feel physical — a face you could touch, not a surface that has been rendered.",
   "No beauty retouching, no surface smoothing, no CGI sheen, no painterly softness, no excessive symmetry.",
   "EYES: the iris is not a flat disc — render radial striations and fibre-like collagen structure, lighter near the pupil and deepening to richer saturation toward the outer edge, closed by a distinct dark limbal ring where the iris meets the sclera.",
   "CATCHLIGHTS: one or two small, sharp specular reflections of the studio flash, high on the cornea. Without them the eyes read dead. Render the wet corneal gloss over the whole eye surface — visible, not glassy.",
@@ -157,10 +186,17 @@ const SKIN_AND_FEATURES = [
   "PUPILS: perfectly round, concentric within the iris, and IDENTICAL to each other in size and shape. Under studio flash both are moderately constricted, with a clean sharp edge where pupil meets iris. Never dilated, never oversized.",
   "Both catchlights match — same count, same relative position — because they come from one light. Both eyes are open to the same degree and converge on the lens together.",
   "The asymmetry licensed above is bone, soft tissue and skin. It is NEVER the eyes: mismatched pupils, a wandering eye or uneven catchlights read as a rendering fault, not as character, and fail the candidate.",
-  "LASHES: individual strands clumping in irregular groups, casting micro-shadows. Bare and natural, never a solid dark mass.",
-  "LIPS: vertical plicae and a natural moisture gradient, glossier at the centre. The lip border is organic and slightly irregular, never a vector-sharp line.",
-  "BROWS: individual hairs with visible growth direction — upward near the nose, arching laterally, tapering at the tail. Never a solid drawn-on block.",
-  "Vellus fuzz is translucent and near-invisible, catching light only at extreme angles — it is NOT stubble and NOT pigmented.",
+  /*
+    A6/A7/A8 restored to full strength. Each had been compressed to its
+    headline, and in every case what was cut was the anti-uniformity half —
+    varying lash length, colour variation across the lip and through the brow.
+    That half is the craft: a lash line of identical strands and a brow of one
+    flat colour are the two tells that survive an otherwise convincing face.
+  */
+  "LASHES: individual strands clumping in irregular groups, with varying length and slight curl variation, each catching light on its own and casting micro-shadows on the skin below. Bare and natural, never a solid dark mass, never mascara-heavy uniformity.",
+  "LIPS: vertical plicae and a natural moisture gradient, glossier at the centre and drier toward the edges, with natural colour variation from the vermillion border inward. Lips have topography, never a flat matte fill. The border is organic and slightly irregular, never a vector-sharp line.",
+  "BROWS: individual hairs with visible growth direction — upward near the nose, arching laterally, tapering at the tail — with natural gaps, overlapping strands and subtle colour variation from root to tip. Never a solid drawn-on block.",
+  "Vellus fuzz is translucent and near-invisible, catching light only at extreme angles — it is NOT terminal hair, NOT stubble, NOT dark and NOT pigmented.",
   /*
     STRUCTURAL FEATURES — licensed explicitly (founder ruling, 2026-08-01).
 
@@ -182,6 +218,67 @@ const SKIN_AND_FEATURES = [
   "STRUCTURAL FEATURES: When the character description names a permanent physical feature — a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, a shaved head, a tattoo — render it plainly and accurately as a real, healed, permanent part of this person.",
   "These are casting facts, not blemishes to correct. Do not idealise them away, do not soften them, and do not substitute an unmarked face. A named feature that fails to appear is a failed candidate.",
   "Render only what the description names. Never invent damage, scars or ink that was not asked for.",
+].join(" ");
+
+/**
+ * B2 — the ethnicity phenotype lock, restored by the craft-port audit
+ * (2026-08-01).
+ *
+ * This was the audit's most consequential absence. Legacy placed it FIRST in
+ * every new-generation prompt; V2 had nothing at all, while making heritage its
+ * PRIMARY diversity axis. Ethnicity washing — the model drifting toward a
+ * Eurocentric face when handed pale skin or light hair, and mixed heritage
+ * collapsing to one parent — is therefore the failure mode V2 was most exposed
+ * to and least defended against.
+ *
+ * The craft is that heritage is defended as BONE, independent of styling. A
+ * heritage that survives only until the brief mentions blonde hair is not a
+ * lock.
+ */
+const IDENTITY_INTEGRITY = [
+  "HERITAGE IS BONE: the subject's stated heritage determines eye shape and set, brow ridge, nose bridge and width, cheekbone height and projection, jaw and chin form, lip form, and hair growth pattern.",
+  "These are determined by bone and genetics. They do NOT change with hair colour, skin tone, grooming or styling. A platinum-blonde East Asian person still has East Asian bone structure and eyes; a pale-skinned West African person still has West African bone structure.",
+  "Where two heritages are named, BOTH must be legible in the face. Never collapse a mixed-heritage subject into one parent, and never resolve them into a generic ambiguous face that reads as neither.",
+  /*
+    D1/D4's half that survives without a colour picker. V2 has no eye-colour or
+    skin-tone field, so the fifteen engineered iris descriptions have nothing to
+    attach to — but the diversity risk they existed to solve is live: with no
+    direction at all, every candidate defaults to mid-brown eyes and the sheet
+    loses an axis of difference it should have had for free.
+  */
+  "Eye colour, hair colour and skin tone belong to this specific person and follow plausibly from their heritage and age. Do not default every subject to the same mid-brown eyes, and do not push a heritage toward its lightest or darkest stereotype.",
+  /*
+    A13, in the only form a per-candidate prompt can honestly carry it.
+
+    Legacy told the spec-writing text model "each cast should feel like a
+    DIFFERENT PERSON" and "two casts with the same brand and ethnicity should
+    not produce similar feature sets". V2 has no spec-writing stage, and each
+    candidate is generated without sight of the other seven, so a
+    cross-candidate instruction would be a claim the prompt cannot keep. What
+    ports is the per-face half: specificity over averageness.
+  */
+  "SPECIFICITY: this is one particular person, not a type. Two or three features should sit clearly beyond average — the nose, the jaw, the brow, the set of the eyes, the ears, the hairline — and read as inherited, not as damage.",
+  "Never render the smooth, symmetrical, conventionally attractive average face that every casting brief converges on. A face a casting director would remember is the requirement.",
+].join(" ");
+
+/**
+ * C5 — the signal priority hierarchy, restored by the craft-port audit.
+ *
+ * The code has always resolved locks first (`resolveCandidateIdentity` fills
+ * only the gaps), and a comment in this file claimed that was C5 "in four
+ * lines". It is not: code precedence decides what goes INTO the prompt, and
+ * says nothing about how the image model resolves a conflict between two things
+ * that are both in it. DIRECTION could quietly pull a face away from a stated
+ * heritage or build, and nothing said it must not.
+ *
+ * Legacy's worked example is the one V2 could not express: pale skin on a West
+ * African subject means pale-skinned WITH West African bone structure — not a
+ * different person.
+ */
+const PRIORITY = [
+  "PRIORITY WHEN INSTRUCTIONS CONFLICT: the SUBJECT block is absolute. Every fact stated there — sex, age, heritage, build — outranks the DIRECTION block, the LOOK, the expression whisper and any aesthetic association they carry.",
+  "Direction shapes HOW a subject is cast; it never changes WHO. If a direction's usual face disagrees with a stated fact, the stated fact wins and the direction bends around it.",
+  "An unusual combination is a deliberate casting choice, never an error to reconcile: pale skin on a West African subject means a pale-skinned person with West African bone structure, not a different person.",
 ].join(" ");
 
 /**
@@ -214,10 +311,21 @@ const OVERRIDE = [
   "The description says WHO to cast. This block says HOW to photograph them, and it always wins.",
 ].join(" ");
 
-/** Everything code owns, in order, as one block. */
-export const PHOTOREAL_HUMAN_CONSTANT = [FRAMING, CAPTURE, SKIN_AND_FEATURES, NEGATIVES, OVERRIDE].join(
-  "\n",
-);
+/**
+ * Everything code owns, in order, as one block.
+ *
+ * PRIORITY sits last before the authority paragraph on purpose: it resolves
+ * conflicts, so it has to be read after the things it arbitrates between.
+ */
+export const PHOTOREAL_HUMAN_CONSTANT = [
+  FRAMING,
+  CAPTURE,
+  SKIN_AND_FEATURES,
+  IDENTITY_INTEGRITY,
+  NEGATIVES,
+  PRIORITY,
+  OVERRIDE,
+].join("\n");
 
 /* --------------------------------------------------------- determinism */
 
@@ -458,6 +566,52 @@ function describeAge(band: AgeBand, phase: AgePhase): string {
   return `${spoken}, apparent age ${years} years — this is an absolute casting requirement, not an approximation.${guard}`;
 }
 
+/**
+ * C8 + C9 — build, translated into what the frame can actually show.
+ *
+ * The audit found build reaching the prompt as a bare adjective ("a slim
+ * woman"), which the model is free to read as a styling note and ignore.
+ * Legacy translated it into named, renderable anatomy — the neck, the
+ * collarbones, the traps — precisely because a bare adjective got ignored, and
+ * added an explicit "this is a deliberate casting choice" so it would not be
+ * regressed to the default runway physique.
+ *
+ * V2's frame is waist-up rather than legacy's headshot, so more of the body is
+ * visible and the translation matters more, not less.
+ */
+const BUILD_ANATOMY: Record<Build, string> = {
+  slight: "a narrow neck, visible collarbones and tendons, slender shoulders, a leaner face",
+  slim: "a slim neck, clearly visible collarbones, narrow shoulders, little soft tissue at the jaw",
+  average: "an ordinary neck and shoulder line, collarbones softly visible, nothing exaggerated in either direction",
+  athletic: "a thicker neck, defined trapezius and shoulders filling the frame, a firmer jawline",
+  broad: "a wide, solid neck and shoulder frame, heavy trapezius, substantial bone width through the shoulders",
+  heavy: "a fuller neck and jawline, soft tissue at the chin and under the chin, rounded shoulders and a broader torso",
+};
+
+function describeBuild(build: Build | null, role: string | null): string {
+  if (build) {
+    return ` PHYSIQUE: ${build} build — this is a deliberate casting choice and must be visible in the frame: ${BUILD_ANATOMY[build]}. Do not default to a slim runway physique.`;
+  }
+  /*
+    Build is null on purpose when a casting category was named: gate B5 gives
+    the category ownership of physique, so varying it would cast outside the
+    category the user asked for.
+
+    But "the category owns it" was being implemented as saying nothing at all,
+    which is not the same thing — and saying nothing is precisely the condition
+    C9 exists for. With no physique line, the model falls back to its prior for
+    a studio portrait, which is a slim runway body. A blacksmith with a runway
+    physique is C9's failure case exactly, arriving through the gate that was
+    supposed to protect the category.
+
+    So the category is told to own it out loud.
+  */
+  if (role) {
+    return " PHYSIQUE: whatever this casting category genuinely requires — the build, weight and musculature a real person doing this work or holding this position would have. Do not default to a slim runway physique unless the category itself calls for one.";
+  }
+  return "";
+}
+
 function describeHeritage(components: HeritageComponent[]): string {
   if (components.length === 0) return "";
   if (components.length === 1) return `${components[0].heritage} heritage`;
@@ -514,7 +668,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       One axis or the other, never both shouting. A look carries its own
@@ -565,6 +719,13 @@ export function personaLineFor(resolved: ResolvedIdentity, read?: string | null)
 }
 
 /** Exported for the contract test: the constant must survive composition. */
-export const COHORT_CONSTANT_MARKERS = [FRAMING, CAPTURE, NEGATIVES, OVERRIDE] as const;
+export const COHORT_CONSTANT_MARKERS = [
+  FRAMING,
+  CAPTURE,
+  IDENTITY_INTEGRITY,
+  NEGATIVES,
+  PRIORITY,
+  OVERRIDE,
+] as const;
 
 export { AGE_BANDS, BUILDS };
