@@ -994,7 +994,15 @@ function describeHair(
     bob" and "a black coiled locs" both came out of the first draft — a wrong
     article is noise in a sentence whose every other word is doing work.
   */
-  const description = `${hair.colour} ${style.texture ?? texture} ${style.name}`;
+  /*
+    A style whose name already carries its texture does not get it twice.
+    "a black curly curly crop" came out of the first live sheet — the kind of
+    thing that reads as a typo to a model and gets weighted like an emphasis.
+  */
+  const grain = style.texture ?? texture;
+  const description = style.name.includes(grain)
+    ? `${hair.colour} ${style.name}`
+    : `${hair.colour} ${grain} ${style.name}`;
   const plural = PLURAL_STYLES.has(style.name);
   const article = plural ? "" : /^[aeiou]/.test(description) ? "an " : "a ";
   const cut =
