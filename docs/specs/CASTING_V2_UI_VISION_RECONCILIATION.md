@@ -29,9 +29,9 @@ Deviation table — every prototype deviation and its resolution (no new decisio
 
 ## 2. Founder decisions (resolved 2026-07-31)
 
-- **F1 — Rail geography:** final rail is Home · Create · Canvas · Templates · Casting · Assets · Library (+ Invite, account). Decision recorded below in §5 (stub-inert vs add-as-built).
-- **F2 — Sign law stands:** single priced Sign incl. package; chapter 07's multi-sign/draft-develop-later rendition is a prototype seam. (Pending founder confirmation — see decision list sent 2026-07-31.)
-- **F3 — Unsigned label:** one word everywhere (UNSIGNED vs DRAFT inconsistency in package). (Pending founder confirmation.)
+- **F1 — Rail geography (DECIDED):** the shell adopts the final 7-destination rail now — Home · Create · Canvas · Templates · Casting · Assets · Library (+ Invite, account); **unbuilt destinations render as quiet inert stubs** (the handoff's own rule: the rail never changes shape). Internal keys (`avatars`, `threads`) never surface.
+- **F2 — Sign law (CONFIRMED):** the ratified law governs — one candidate per ceremony, one priced confirmation including the complete view package, no second mint. Chapter 07's unpriced/multi-sign/"not final mint" rendition is a prototype seam. The multi-keep tray survives; signing several = several deliberate ceremonies.
+- **F3 — Label (DECIDED):** **UNSIGNED** everywhere; DRAFT is retired vocabulary (collides with the legacy draft-model tier being deleted).
 
 ## 3. New shared patterns ADOPTED into the foundation set (additive, from `10-shared-patterns.md`)
 
