@@ -35,7 +35,12 @@
  * bare-face/undergarment rules, retired as presentation by the
  * wardrobe-baseline ruling — V2 presentation views are clothed.
  */
-import { FINISH_RENDER, statedFinish } from "./hairStyles";
+import {
+  DEFAULT_HAIR_COLOURS,
+  FINISH_RENDER,
+  HAIR_COLOUR_WEIGHTS,
+  statedFinish,
+} from "./hairStyles";
 import {
   AGE_PHASES,
   ARCHETYPES,
@@ -459,61 +464,12 @@ function varySex(position: number, rollSeed: string): Sex {
 
 /* ------------------------------------------------------------------ hair */
 
-/**
- * Hair colour, conditioned on heritage — the trap in authoring hair at all.
- *
- * An unconditioned colour pick is a heritage-washing vector: it would cheerfully
- * hand a West African candidate blonde hair a third of the time, and that fights
- * `IDENTITY_INTEGRITY` head-on. So the weights are per-heritage, and grey/white
- * is not in them at all — it comes from age, below, because grey is something
- * that happens to a person rather than something they are born with.
- *
- * These are casting-pool plausibilities, not genetics. The point is that a sheet
- * looks like a room of real people.
- */
 /*
-  Widened 2026-08-01 to the colourist-resolution palette. The rare shades are
-  deliberately rare and deliberately conditioned: platinum and white-blonde
-  occur naturally at the Nordic end and effectively nowhere else, so they carry
-  a few points there and are absent everywhere else. Strawberry and copper are
-  broken out of "auburn", which had been doing the work of three colours.
+  The heritage palettes moved to `hairStyles.ts` (2026-08-01) so the sheet-level
+  taste pass can reach them without importing this file — that direction is a
+  cycle, since this file already imports the pass. Hair vocabulary now lives in
+  one place, which is where it should have been.
 */
-const HAIR_COLOUR_WEIGHTS: Record<string, readonly (readonly [HairColour, number])[]> = {
-  Nordic: [
-    ["golden blonde", 20], ["ash blonde", 16], ["blonde", 10],
-    ["brown", 16], ["dark brown", 12], ["strawberry blonde", 8], ["red", 6],
-    ["copper", 4], ["auburn", 4], ["platinum blonde", 4],
-  ],
-  "British Isles": [
-    ["brown", 22], ["dark brown", 20], ["chestnut", 12], ["blonde", 10],
-    ["ash blonde", 8], ["red", 8], ["auburn", 8], ["copper", 6], ["strawberry blonde", 6],
-  ],
-  "Western European": [
-    ["brown", 24], ["dark brown", 24], ["chestnut", 14], ["blonde", 12],
-    ["golden blonde", 8], ["auburn", 9], ["copper", 5], ["red", 4],
-  ],
-  Slavic: [
-    ["dark brown", 26], ["brown", 24], ["ash blonde", 16], ["blonde", 12],
-    ["chestnut", 12], ["auburn", 6], ["red", 4],
-  ],
-  Mediterranean: [["black", 28], ["dark brown", 38], ["brown", 20], ["chestnut", 10], ["auburn", 4]],
-  "Middle Eastern": [["black", 44], ["dark brown", 38], ["brown", 14], ["chestnut", 4]],
-  "East Asian": [["black", 78], ["dark brown", 22]],
-  "South Asian": [["black", 72], ["dark brown", 28]],
-  "West African": [["black", 82], ["dark brown", 18]],
-  "Afro-Caribbean": [["black", 78], ["dark brown", 22]],
-  Latino: [["black", 38], ["dark brown", 40], ["brown", 16], ["chestnut", 6]],
-  Polynesian: [["black", 80], ["dark brown", 20]],
-};
-
-const DEFAULT_HAIR_COLOURS: readonly (readonly [HairColour, number])[] = [
-  ["dark brown", 32],
-  ["black", 24],
-  ["brown", 22],
-  ["chestnut", 10],
-  ["blonde", 8],
-  ["auburn", 4],
-];
 
 /** Greying is a function of age, so it is applied after colour, not instead. */
 const GREY_CHANCE: Record<AgeBand, number> = {

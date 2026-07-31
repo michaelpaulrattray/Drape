@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { realizeAxes } from "./realizedAxes";
+import { applySheetTaste, realizeAxes } from "./realizedAxes";
 import { composeCandidatePrompt, resolveCandidateIdentity } from "./cohortPhotorealHuman";
 import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
 import type { TextEngine } from "../providers/types";
 import { ARCHETYPES, type CastingIntent, type HeritageComponent } from "./castingIntent";
-import { FINISH_RENDER, statedFinish } from "./hairStyles";
+import {
+  DEFAULT_HAIR_COLOURS,
+  FINISH_RENDER,
+  HAIR_COLOUR_WEIGHTS,
+  adjacentShade,
+  statedFinish,
+} from "./hairStyles";
 
 /**
  * Items 6 and 7: the hairstyle vocabulary and the skin finish.
@@ -324,6 +330,177 @@ describe("the sheet-level taste rules", () => {
       // constant's "FACIAL HAIR:" contains that substring, and an assertion
       // that matches the wrong line is an assertion that proves nothing.
       expect(candidate.prompt).not.toContain("Cut and worn as that style is genuinely worn");
+    }
+  });
+});
+
+describe("the colour pair-breaker", () => {
+  /*
+    Founder ruling, 2026-08-01: colour gets a pair-breaker, NOT a distinctness
+    floor. A floor would fight realism to satisfy a metric, because palette
+    width is heritage-dependent — a Mediterranean or East Asian brief
+    legitimately produces a mostly dark-haired sheet. What actually went wrong
+    on the graded sheet was narrower: two candidates read as TWINS because they
+    shared both colour and silhouette.
+
+    **What is guaranteed, precisely.** Every collision the palette can break is
+    broken. A collision the palette CANNOT break stands, separated by its cut —
+    and that case is real rather than theoretical: an all-female East Asian
+    sheet has three style families and two colours, so six distinct
+    (colour, family) pairs exist for eight slots. Asserting "never collides"
+    would be asserting something arithmetic cannot deliver, so these tests
+    assert the two halves separately: no BREAKABLE collision survives, and no
+    re-pick ever leaves the candidate's own heritage palette.
+  */
+  function lockedSheet(heritageName: string, sex: "male" | "female", rollSeed: string) {
+    const intent = { heritage: heritage(heritageName), sex, reads: [] } as unknown as CastingIntent;
+    return applySheetTaste(
+      Array.from({ length: 8 }, (_, position) => resolveCandidateIdentity(intent, position, rollSeed)),
+      rollSeed,
+    );
+  }
+
+  function collisions(candidates: ReturnType<typeof lockedSheet>) {
+    const seen = new Set<string>();
+    const clashes: string[] = [];
+    for (const candidate of candidates) {
+      const colour = candidate.hair?.colour;
+      if (!colour || colour === "grey" || colour === "white") continue;
+      const key = `${colour}|${candidate.realized.hairStyle.family}`;
+      if (seen.has(key)) clashes.push(key);
+      seen.add(key);
+    }
+    return clashes;
+  }
+
+  it.each(["a model", "a male model", "a woman in her 20s"])(
+    "leaves no breakable collision on an open brief — %j",
+    async (brief) => {
+      for (let roll = 0; roll < 150; roll += 1) {
+        const compiled = await deterministicBriefCompiler({
+          briefText: brief,
+          candidateCount: 8,
+          rollSeed: `pair-${brief}-${roll}`,
+        });
+        const seen = new Set<string>();
+        for (const candidate of compiled.candidates) {
+          const { hair, heritage: components, realized } = candidate.resolvedIdentity;
+          const colour = hair?.colour;
+          if (!colour || colour === "grey" || colour === "white") continue;
+          const family = realized.hairStyle.family;
+          const key = `${colour}|${family}`;
+          if (seen.has(key)) {
+            /*
+              A survivor is acceptable only if nothing in this candidate's own
+              palette could have replaced it. Checking that — rather than
+              tolerating a failure rate — is what stops this being a test that
+              passes because the rule quietly stopped working.
+            */
+            const primary = components[0]?.heritage ?? "";
+            const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
+            const escape = adjacentShade(colour, palette, 0, (shade) => !seen.has(`${shade}|${family}`));
+            expect(escape, `${brief} roll ${roll}: ${key} was breakable`).toBeNull();
+          }
+          seen.add(key);
+        }
+      }
+    },
+  );
+
+  it("breaks every collision outright where the palette is wide", () => {
+    // Nordic and the British Isles carry nine or ten shades, so the space is
+    // never exhausted and the rule holds absolutely.
+    for (const heritageName of ["Nordic", "British Isles", "Western European"]) {
+      for (let roll = 0; roll < 80; roll += 1) {
+        const candidates = lockedSheet(heritageName, roll % 2 ? "male" : "female", `wide-${heritageName}-${roll}`);
+        expect(collisions(candidates), `${heritageName}/${roll}`).toEqual([]);
+      }
+    }
+  });
+
+  it("leaves a dark-haired sheet dark — the cuts carry it, not invented colour", () => {
+    /*
+      The reason this is a pair-breaker rather than a floor. Eight black-haired
+      East Asian candidates are correct; what makes the sheet castable is that
+      the cuts differ, which the style rules already guarantee.
+    */
+    const colours = new Set<string>();
+    for (let roll = 0; roll < 60; roll += 1) {
+      for (const candidate of lockedSheet("East Asian", "female", `dark-${roll}`)) {
+        if (candidate.hair) colours.add(candidate.hair.colour);
+      }
+    }
+    for (const colour of colours) {
+      expect(["black", "dark brown", "grey", "white"]).toContain(colour);
+    }
+  });
+
+  it("re-picks inside the candidate's own heritage palette, never outside it", () => {
+    // A pair-breaker that reached for any colour would be a heritage-washing
+    // vector wearing a taste rule's clothes.
+    const colours = new Set<string>();
+    for (let roll = 0; roll < 60; roll += 1) {
+      for (const candidate of lockedSheet("West African", roll % 2 ? "male" : "female", `wash-${roll}`)) {
+        if (candidate.hair) colours.add(candidate.hair.colour);
+      }
+    }
+    for (const banned of ["blonde", "golden blonde", "ash blonde", "platinum blonde", "red", "copper", "strawberry blonde", "auburn", "chestnut"]) {
+      expect(colours.has(banned), banned).toBe(false);
+    }
+  });
+
+  it("never shifts a grey or white head", () => {
+    /*
+      Greying is age, not a palette draw. Shifting one would quietly edit how
+      old the person reads — so the ladder has no rung for them, and a twinned
+      pair of grey heads is separated by its cut instead.
+    */
+    const intent = {
+      heritage: heritage("British Isles"),
+      sex: "female",
+      ageBand: "60s",
+      reads: [],
+    } as unknown as CastingIntent;
+    for (let roll = 0; roll < 80; roll += 1) {
+      const raw = Array.from({ length: 8 }, (_, position) =>
+        resolveCandidateIdentity(intent, position, `grey-${roll}`),
+      );
+      const tasted = applySheetTaste(raw, `grey-${roll}`);
+      raw.forEach((before, index) => {
+        if (before.hair?.colour === "grey" || before.hair?.colour === "white") {
+          expect(tasted[index].hair?.colour).toBe(before.hair?.colour);
+        }
+      });
+    }
+  });
+
+  it("actually moves a colour when it has to", () => {
+    // The rule has to be observable doing its job, or it could be a no-op that
+    // passes every "no collision" assertion by never colliding in the first
+    // place.
+    let moved = 0;
+    for (let roll = 0; roll < 200; roll += 1) {
+      const intent = { heritage: heritage("British Isles"), sex: "female", reads: [] } as unknown as CastingIntent;
+      const raw = Array.from({ length: 8 }, (_, position) =>
+        resolveCandidateIdentity(intent, position, `move-${roll}`),
+      );
+      const tasted = applySheetTaste(raw, `move-${roll}`);
+      moved += raw.filter((before, index) => before.hair?.colour !== tasted[index].hair?.colour).length;
+    }
+    expect(moved).toBeGreaterThan(0);
+  });
+
+  it("carries the shifted colour into the prompt, not just the record", async () => {
+    for (let roll = 0; roll < 60; roll += 1) {
+      const compiled = await deterministicBriefCompiler({
+        briefText: "a model",
+        candidateCount: 8,
+        rollSeed: `prompt-${roll}`,
+      });
+      for (const candidate of compiled.candidates) {
+        const colour = candidate.resolvedIdentity.hair?.colour;
+        if (colour) expect(candidate.prompt).toContain(colour);
+      }
     }
   });
 });

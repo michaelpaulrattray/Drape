@@ -1,10 +1,17 @@
 import {
   type AgeBand,
+  type Hair,
+  type HairColour,
   type Heritage,
   type HeritageComponent,
   type Sex,
 } from "./castingIntent";
-import { stylesFor } from "./hairStyles";
+import {
+  DEFAULT_HAIR_COLOURS,
+  HAIR_COLOUR_WEIGHTS,
+  adjacentShade,
+  stylesFor,
+} from "./hairStyles";
 import {
   REALIZED_AXIS_KEYS,
   type BrowStyle,
@@ -321,10 +328,10 @@ export { REALIZED_AXIS_KEYS };
 /* ----------------------------------------------------- the sheet-level pass */
 
 /**
- * The two taste rules that are properties of the SHEET, not of a person.
+ * The three taste rules that are properties of the SHEET, not of a person.
  *
- * The founder set both at the M5 gate: at most one statement cut across eight
- * candidates, and at least five visibly distinct hairstyles. Neither can be
+ * The founder set the first two at the M5 gate: at most one statement cut across
+ * eight candidates, and at least five visibly distinct hairstyles. Neither can be
  * decided by `realizeAxes`, which sees one candidate — and the first attempt
  * proved it the expensive way. It re-derived what the earlier positions "would
  * have" drawn from THIS candidate's weighted list, which is exact only when the
@@ -346,6 +353,21 @@ export { REALIZED_AXIS_KEYS };
  * never a statement, because filling the variety floor with statement cuts
  * would satisfy one founder ruling by breaking the other.
  *
+ * **Colour gets a pair-breaker, not a floor** (founder ruling, 2026-08-01). A
+ * "five distinct colours" rule would fight realism to satisfy a metric, because
+ * palette width is heritage-dependent: a Mediterranean or East Asian brief
+ * legitimately produces a mostly dark-haired sheet, and eight black-haired
+ * candidates are correct as long as the cuts differ. What actually went wrong
+ * on the graded sheet was narrower — two candidates read as twins because they
+ * shared BOTH colour and silhouette. So the rule is exactly that: no two
+ * candidates may share a colour and a style family, and a collision re-picks
+ * one colour to an adjacent shade inside its own heritage palette.
+ *
+ * A grey or white head is left alone. Those come from age rather than from the
+ * palette, so shifting one would quietly edit how old the person reads — and
+ * the ladder deliberately has no rung for them. A twinned pair of grey heads is
+ * therefore possible; it needs the style rule to separate them, which it does.
+ *
  * **M7 note:** after this pass, `realizeAxes(rollSeed, position)` no longer
  * reproduces the stored value for an adjusted candidate. The registry must read
  * the persisted `resolvedIdentity` as truth and never re-derive it.
@@ -357,12 +379,18 @@ export type SheetCandidate = {
   heritage: HeritageComponent[];
   ageBand: AgeBand;
   sex: Sex;
+  hair: Hair | null;
   realized: RealizedAxes;
 };
 
+/** Age-driven colours. Not palette draws, so the pair-breaker leaves them be. */
+const AGE_COLOURS = new Set<HairColour>(["grey", "white"]);
+
 export function applySheetTaste<T extends SheetCandidate>(sheet: T[], rollSeed: string): T[] {
   const seen = new Set<string>();
+  const twins = new Set<string>();
   let statements = 0;
+  const pairKey = (colour: HairColour, family: string) => `${colour}|${family}`;
 
   return sheet.map((candidate, position) => {
     const primary = (candidate.heritage[0]?.heritage ?? "") as Heritage | "";
@@ -399,7 +427,36 @@ export function applySheetTaste<T extends SheetCandidate>(sheet: T[], rollSeed: 
 
     if (style.statement) statements += 1;
     seen.add(style.name);
-    if (style === current) return candidate;
+
+    /*
+      The pair-breaker, applied after the cut is final — the collision is
+      against the style family this candidate actually ends up with, not the one
+      they drew and lost.
+    */
+    let colour = candidate.hair?.colour ?? null;
+    if (colour !== null && !AGE_COLOURS.has(colour)) {
+      if (twins.has(pairKey(colour, style.family))) {
+        const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
+        const shifted = adjacentShade(
+          colour,
+          palette,
+          hash(`${rollSeed}:hairColourTaste:${position}`),
+          (shade) => !twins.has(pairKey(shade, style.family)),
+        );
+        // Null means this heritage has nothing else to offer — an East Asian
+        // palette holds two colours, and inventing a third is the exact
+        // heritage-washing the per-heritage weights exist to prevent. The pair
+        // stands, separated by its cut.
+        if (shifted) colour = shifted;
+      }
+      twins.add(pairKey(colour, style.family));
+    }
+
+    const colourChanged = colour !== null && colour !== candidate.hair?.colour;
+    if (style === current && !colourChanged) return candidate;
+
+    const hair = colourChanged && candidate.hair ? { ...candidate.hair, colour } : candidate.hair;
+    if (style === current) return { ...candidate, hair };
 
     /*
       Texture follows the cut. A style that dictates its own texture wins, and a
@@ -412,6 +469,6 @@ export function applySheetTaste<T extends SheetCandidate>(sheet: T[], rollSeed: 
         TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
         hash(`${rollSeed}:hairTexture:${position}`),
       );
-    return { ...candidate, realized: { ...candidate.realized, hairStyle: style, hairTexture } };
+    return { ...candidate, hair, realized: { ...candidate.realized, hairStyle: style, hairTexture } };
   });
 }
