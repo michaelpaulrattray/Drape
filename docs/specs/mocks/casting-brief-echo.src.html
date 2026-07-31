@@ -1,0 +1,586 @@
+<title>The brief echo — casting sheet</title>
+
+<style>
+@font-face{font-family:Archivo;font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,__A400__) format("woff2")}
+@font-face{font-family:Archivo;font-style:normal;font-weight:500;font-display:swap;src:url(data:font/woff2;base64,__A500__) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,__M400__) format("woff2")}
+
+/* Drape foundation tokens, verbatim from client/src/foundation/tokens.css.
+   Nothing is invented here — the mock has to be judgeable as the real
+   surface, not as a nicer drawing of it. */
+:root{
+  --surface:#FFFFFF; --raised:#FAFAFB; --page:#FCFCFD; --well:#F6F6F8;
+  --fill:#F4F4F6; --fillStrong:#F2F2F4;
+  --rule:#F0F0F2; --border:#ECECEE; --borderInput:#E6E6E9; --borderCard:#E4E4E7;
+  --dashed:#D6D6DA; --lineStrong:#C8C8CC;
+  --muted:#B4B4BA; --faint:#A0A0A6; --meta:#8E8E94; --metaStrong:#6B6B70;
+  --secondary:#3E3E42; --ink:#111112; --inkDeep:#0A0A0B;
+  --accentSolid:#E2685A; --accentInk:#A23E33; --accentWash:#FEF2F0; --accentLine:#F1CDC6;
+  --shadowCard:0 12px 34px rgba(17,17,18,.14);
+  --r-pill:999px; --r-btn:8px; --r-sm:10px; --r-md:11px; --r-lg:12px; --r-2xl:14px;
+  --font-sans:Archivo,system-ui,-apple-system,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.61,.36,1); --t-fast:120ms;
+}
+@media (prefers-color-scheme:dark){:root{
+  --surface:#1C1C1F; --raised:#1A1A1D; --page:#141416; --well:#202024;
+  --fill:#232326; --fillStrong:#26262A;
+  --rule:#2A2A2E; --border:#2C2C30; --borderInput:#33333A; --borderCard:#33333A;
+  --dashed:#44444C; --lineStrong:#55555E;
+  --muted:#6E6E77; --faint:#8A8A92; --meta:#9A9AA2; --metaStrong:#9A9AA2;
+  --secondary:#B4B4BA; --ink:#EDEDEF; --inkDeep:#F5F5F7;
+  --accentInk:#E88778; --accentWash:rgba(226,104,90,.14); --accentLine:rgba(226,104,90,.32);
+  --shadowCard:0 12px 34px rgba(0,0,0,.5);
+}}
+:root[data-theme="dark"]{
+  --surface:#1C1C1F; --raised:#1A1A1D; --page:#141416; --well:#202024;
+  --fill:#232326; --fillStrong:#26262A;
+  --rule:#2A2A2E; --border:#2C2C30; --borderInput:#33333A; --borderCard:#33333A;
+  --dashed:#44444C; --lineStrong:#55555E;
+  --muted:#6E6E77; --faint:#8A8A92; --meta:#9A9AA2; --metaStrong:#9A9AA2;
+  --secondary:#B4B4BA; --ink:#EDEDEF; --inkDeep:#F5F5F7;
+  --accentInk:#E88778; --accentWash:rgba(226,104,90,.14); --accentLine:rgba(226,104,90,.32);
+  --shadowCard:0 12px 34px rgba(0,0,0,.5);
+}
+:root[data-theme="light"]{
+  --surface:#FFFFFF; --raised:#FAFAFB; --page:#FCFCFD; --well:#F6F6F8;
+  --fill:#F4F4F6; --fillStrong:#F2F2F4;
+  --rule:#F0F0F2; --border:#ECECEE; --borderInput:#E6E6E9; --borderCard:#E4E4E7;
+  --dashed:#D6D6DA; --lineStrong:#C8C8CC;
+  --muted:#B4B4BA; --faint:#A0A0A6; --meta:#8E8E94; --metaStrong:#6B6B70;
+  --secondary:#3E3E42; --ink:#111112; --inkDeep:#0A0A0B;
+  --accentInk:#A23E33; --accentWash:#FEF2F0; --accentLine:#F1CDC6;
+  --shadowCard:0 12px 34px rgba(17,17,18,.14);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:var(--font-sans); font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:56px 28px 96px; display:flex; flex-direction:column; gap:52px}
+
+/* ---- page head: a work document, not a pitch ---- */
+.head{display:flex; flex-direction:column; gap:10px; max-width:64ch}
+.eyebrow{
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--faint);
+}
+h1{margin:0; font-size:25px; font-weight:500; letter-spacing:-.015em; line-height:1.25; text-wrap:balance}
+.lede{margin:0; color:var(--metaStrong); font-size:14.5px; max-width:62ch}
+
+/* ---- section scaffolding ---- */
+section{display:flex; flex-direction:column; gap:20px}
+h2{
+  margin:0; font-size:12.5px; font-weight:500; letter-spacing:.02em;
+  padding-bottom:10px; border-bottom:1px solid var(--border);
+}
+h2 .n{font-family:var(--font-mono); font-size:10.5px; color:var(--faint); margin-right:10px}
+p{margin:0; color:var(--metaStrong); max-width:64ch}
+p strong{color:var(--ink); font-weight:500}
+
+/* ---- the specimen: a real fragment of the sheet, at real size ---- */
+.case{display:grid; grid-template-columns:150px minmax(0,1fr); gap:24px; align-items:start}
+@media (max-width:720px){.case{grid-template-columns:1fr; gap:10px}}
+.case__label{display:flex; flex-direction:column; gap:3px; padding-top:14px}
+.case__name{font-size:12.5px; font-weight:500}
+.case__note{font-size:11.5px; color:var(--meta); line-height:1.5}
+
+.specimen{
+  background:var(--surface); border:1px solid var(--borderCard);
+  border-radius:var(--r-2xl); padding:16px 18px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.brief{font-size:13px; color:var(--meta)}
+.brief b{font-weight:400; color:var(--secondary)}
+
+/* THE ECHO ITSELF.
+   Archivo, body size, ink. No background, no border, no mono — the moment a
+   fact gets a chip's clothes, this is the pill row again. */
+.echo{font-size:14px; line-height:1.65; color:var(--ink); max-width:none}
+.echo .vary{color:var(--metaStrong)}
+
+/* An adjustable fact: a hairline under the word, nothing else. */
+.fact{
+  font:inherit; color:inherit; background:none; border:0; padding:0;
+  cursor:pointer; position:relative;
+  border-bottom:1px solid var(--lineStrong);
+  transition:border-color var(--t-fast) var(--ease);
+}
+.fact:hover{border-bottom-color:var(--ink)}
+.fact[aria-expanded="true"]{border-bottom-color:var(--accentSolid)}
+.fact:focus-visible{outline:2px solid var(--accentSolid); outline-offset:3px; border-radius:2px}
+/* Open latitude is underlined too — it is adjustable in exactly the same way. */
+.fact--open{border-bottom-style:dashed; border-bottom-color:var(--dashed); color:var(--metaStrong)}
+.fact--open:hover{border-bottom-color:var(--metaStrong)}
+
+/* ---- the popover ---- */
+.anchor{position:relative; display:inline-block}
+.pop{
+  position:absolute; top:calc(100% + 9px); left:-12px; z-index:20;
+  width:216px; padding:6px; background:var(--surface);
+  border:1px solid var(--borderCard); border-radius:var(--r-md);
+  box-shadow:var(--shadowCard);
+  display:flex; flex-direction:column; gap:1px;
+}
+.pop[hidden]{display:none}
+.pop__head{
+  display:block;
+  font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--faint); padding:7px 9px 6px;
+}
+.pop__opt{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  font:inherit; font-size:13px; text-align:left; color:var(--ink);
+  background:none; border:0; border-radius:var(--r-btn);
+  padding:6px 9px; cursor:pointer; width:100%;
+}
+.pop__opt:hover{background:var(--well)}
+.pop__opt:focus-visible{outline:2px solid var(--accentSolid); outline-offset:-2px}
+.pop__opt[aria-current="true"]{color:var(--ink)}
+.pop__opt[aria-current="true"]::after{content:"·"; color:var(--accentSolid); font-size:20px; line-height:0}
+.pop__rule{display:block; height:1px; background:var(--rule); margin:5px 0}
+.pop__vary{color:var(--metaStrong)}
+
+/* ---- the toast that keeps immutability honest ---- */
+.toast{
+  align-self:flex-start; font-size:12px; color:var(--metaStrong);
+  background:var(--fill); border-radius:var(--r-pill); padding:5px 11px;
+}
+.toast[hidden]{display:none}
+
+/* ---- the old pill row, for the comparison ---- */
+.pills{display:flex; flex-wrap:wrap; gap:6px}
+.pill{
+  font-size:12px; color:var(--secondary); background:var(--fill);
+  border:1px solid var(--border); border-radius:var(--r-pill); padding:3px 10px;
+}
+.compare{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media (max-width:720px){.compare{grid-template-columns:1fr}}
+.compare__col{display:flex; flex-direction:column; gap:8px}
+.compare__cap{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--faint);
+}
+
+/* ---- the grammar table ---- */
+.grid{overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:13px}
+th,td{text-align:left; padding:9px 14px 9px 0; border-bottom:1px solid var(--rule); vertical-align:top}
+th{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--faint); font-weight:400;
+}
+td:first-child{white-space:nowrap; color:var(--metaStrong)}
+td code{font-family:var(--font-mono); font-size:11.5px; color:var(--metaStrong)}
+
+/* ---- the open question ---- */
+.ask{
+  border:1px solid var(--accentLine); background:var(--accentWash);
+  border-radius:var(--r-lg); padding:16px 18px;
+  display:flex; flex-direction:column; gap:8px; max-width:66ch;
+}
+.ask h3{margin:0; font-size:13px; font-weight:500; color:var(--accentInk)}
+.ask p{color:var(--metaStrong)}
+
+ul{margin:0; padding-left:18px; color:var(--metaStrong); display:flex; flex-direction:column; gap:6px; max-width:64ch}
+li::marker{color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+
+<div class="wrap">
+
+  <div class="head">
+    <span class="eyebrow">Casting V2 · M5 item 5 · mock for review</span>
+    <h1>The brief echo</h1>
+    <p class="lede">
+      What the sheet says back to you after a brief compiles. It replaces the row of
+      pills. One sentence, in the same type as everything else, with the facts the
+      system pinned underlined — click one to change it or let it vary.
+    </p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>What the sentence is made of</h2>
+    <p>
+      Your own words are not repeated back. They are still in the brief box above,
+      and a machine paraphrase of your sentence is the thing that makes software
+      feel like it is talking about you rather than working for you. The echo
+      covers only what the <em>system</em> did: what it pinned across all eight, what
+      it left free, and how the eight differ.
+    </p>
+    <p>
+      Two clauses carry the whole law. <strong>Held</strong> means everyone on the
+      sheet has it. <strong>Left to the roll</strong> means it varies. The compiler
+      checks every pinned fact against every candidate it composes, and refuses the
+      roll if one drifts — so the sentence is a true account of what was sent to be
+      photographed. It is not a claim about what came back. Judging the pictures is
+      still your job.
+    </p>
+    <p>
+      Details in your own words — a shaved head, soot in the creases, freckles she
+      never covered — are not restated. They reach every candidate as you wrote them,
+      and the echo covers only the facts the system pinned from its own vocabulary.
+      Saying your words back is padding; paraphrasing them is worse.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>Four sheets, four shapes of sentence</h2>
+    <p>
+      The point of composing rather than templating: a fuller brief and an emptier
+      one do not produce the same sentence with different words in the gaps — they
+      produce differently shaped sentences. Click any underlined fact.
+    </p>
+
+    <div class="case">
+      <div class="case__label">
+        <span class="case__name">Nearly everything pinned</span>
+        <span class="case__note">Six locks, one open axis</span>
+      </div>
+      <div class="specimen">
+        <div class="brief">Your brief · <b>Runway model, early 20s, shaved head, East Asian, dry</b></div>
+        <p class="echo">
+          Everyone on this sheet is
+          <span class="anchor"><button class="fact" type="button" data-pop="p1" aria-expanded="false">a slim woman in her early 20s</button>
+            <span class="pop" id="p1" hidden>
+              <span class="pop__head">Age</span>
+              <button class="pop__opt" type="button">teens</button>
+              <button class="pop__opt" type="button" aria-current="true">early 20s</button>
+              <button class="pop__opt" type="button">late 20s</button>
+              <button class="pop__opt" type="button">30s</button>
+              <span class="pop__rule"></span>
+              <button class="pop__opt pop__vary" type="button" data-vary="1">Let age vary</button>
+            </span>
+          </span>,
+          <span class="anchor"><button class="fact" type="button" data-pop="p2" aria-expanded="false">of East Asian heritage</button>
+            <span class="pop" id="p2" hidden>
+              <span class="pop__head">Heritage</span>
+              <button class="pop__opt" type="button" aria-current="true">East Asian</button>
+              <button class="pop__opt" type="button">South Asian</button>
+              <button class="pop__opt" type="button">Mediterranean</button>
+              <button class="pop__opt" type="button">British Isles</button>
+              <span class="pop__rule"></span>
+              <button class="pop__opt pop__vary" type="button" data-vary="1">Let heritage vary</button>
+            </span>
+          </span>,
+          reading
+          <span class="anchor"><button class="fact" type="button" data-pop="p3" aria-expanded="false">dry</button>
+            <span class="pop" id="p3" hidden>
+              <span class="pop__head">Presence</span>
+              <button class="pop__opt" type="button">warm</button>
+              <button class="pop__opt" type="button" aria-current="true">dry</button>
+              <button class="pop__opt" type="button">bright</button>
+              <button class="pop__opt" type="button">grave</button>
+              <button class="pop__opt" type="button">open</button>
+              <button class="pop__opt" type="button">guarded</button>
+              <button class="pop__opt" type="button">wry</button>
+              <button class="pop__opt" type="button">plain</button>
+              <span class="pop__rule"></span>
+              <button class="pop__opt pop__vary" type="button" data-vary="1">Let presence vary</button>
+            </span>
+          </span>.
+          The eight differ by <span class="vary">look</span>.
+        </p>
+        <span class="toast" hidden></span>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="case__label">
+        <span class="case__name">Half pinned</span>
+        <span class="case__note">Three open axes — few enough to name</span>
+      </div>
+      <div class="specimen">
+        <div class="brief">Your brief · <b>Blacksmith in her 50s, silver crew cut, soot in the creases</b></div>
+        <p class="echo">
+          Everyone on this sheet is
+          <span class="anchor"><button class="fact" type="button" data-pop="p4" aria-expanded="false">a woman in her 50s</button>
+            <span class="pop" id="p4" hidden>
+              <span class="pop__head">Age</span>
+              <button class="pop__opt" type="button">30s</button>
+              <button class="pop__opt" type="button">40s</button>
+              <button class="pop__opt" type="button" aria-current="true">50s</button>
+              <button class="pop__opt" type="button">60s</button>
+              <span class="pop__rule"></span>
+              <button class="pop__opt pop__vary" type="button" data-vary="1">Let age vary</button>
+            </span>
+          </span>.
+          <span class="vary">
+          <span class="anchor"><button class="fact fact--open" type="button" data-pop="p5" aria-expanded="false">Heritage</button>
+            <span class="pop" id="p5" hidden>
+              <span class="pop__head">Heritage · varying</span>
+              <button class="pop__opt" type="button">British Isles</button>
+              <button class="pop__opt" type="button">Nordic</button>
+              <button class="pop__opt" type="button">Slavic</button>
+              <button class="pop__opt" type="button">Mediterranean</button>
+              <button class="pop__opt" type="button">East Asian</button>
+            </span>
+          </span>
+          and
+          <span class="anchor"><button class="fact fact--open" type="button" data-pop="p5b" aria-expanded="false">build</button>
+            <span class="pop" id="p5b" hidden>
+              <span class="pop__head">Build · varying</span>
+              <button class="pop__opt" type="button">slight</button>
+              <button class="pop__opt" type="button">slim</button>
+              <button class="pop__opt" type="button">average</button>
+              <button class="pop__opt" type="button">athletic</button>
+              <button class="pop__opt" type="button">broad</button>
+              <button class="pop__opt" type="button">heavy</button>
+            </span>
+          </span>
+          were left to the roll.</span>
+          The eight differ by <span class="vary">disposition</span>.
+        </p>
+        <span class="toast" hidden></span>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="case__label">
+        <span class="case__name">Nothing pinned</span>
+        <span class="case__note">Too many open to list — so it stops listing</span>
+      </div>
+      <div class="specimen">
+        <div class="brief">Your brief · <b>Oncology nurse at the end of a double shift</b></div>
+        <p class="echo">
+          <span class="vary">Nothing pinned — the roll cast freely from your words.</span>
+          The eight differ by <span class="vary">disposition</span>.
+        </p>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="case__label">
+        <span class="case__name">Following a candidate</span>
+        <span class="case__note">Lineage closes the sentence</span>
+      </div>
+      <div class="specimen">
+        <div class="brief">Your brief · <b>Skincare founder, 40s, freckles she never covered</b> · following 03</div>
+        <p class="echo">
+          Everyone on this sheet is
+          <span class="anchor"><button class="fact" type="button" data-pop="p6" aria-expanded="false">a woman in her 40s</button>
+            <span class="pop" id="p6" hidden>
+              <span class="pop__head">Age</span>
+              <button class="pop__opt" type="button">30s</button>
+              <button class="pop__opt" type="button" aria-current="true">40s</button>
+              <button class="pop__opt" type="button">50s</button>
+              <span class="pop__rule"></span>
+              <button class="pop__opt pop__vary" type="button" data-vary="1">Let age vary</button>
+            </span>
+          </span>,
+          <span class="anchor"><button class="fact" type="button" data-pop="p7" aria-expanded="false">of British Isles heritage</button>
+            <span class="pop" id="p7" hidden>
+              <span class="pop__head">Heritage</span>
+              <button class="pop__opt" type="button" aria-current="true">British Isles</button>
+              <button class="pop__opt" type="button">Nordic</button>
+              <button class="pop__opt" type="button">Western European</button>
+              <span class="pop__rule"></span>
+              <button class="pop__opt pop__vary" type="button" data-vary="1">Let heritage vary</button>
+            </span>
+          </span>,
+          reading
+          <span class="anchor"><button class="fact" type="button" data-pop="p8" aria-expanded="false">open</button>
+            <span class="pop" id="p8" hidden>
+              <span class="pop__head">Presence</span>
+              <button class="pop__opt" type="button">warm</button>
+              <button class="pop__opt" type="button">bright</button>
+              <button class="pop__opt" type="button" aria-current="true">open</button>
+              <button class="pop__opt" type="button">wry</button>
+              <button class="pop__opt" type="button">plain</button>
+              <span class="pop__rule"></span>
+              <button class="pop__opt pop__vary" type="button" data-vary="1">Let presence vary</button>
+            </span>
+          </span>.
+          <span class="vary">The eight follow the third face on roll 01, and differ by look.</span>
+        </p>
+        <span class="toast" hidden></span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>Against what is there now</h2>
+    <div class="compare">
+      <div class="compare__col">
+        <span class="compare__cap">Now</span>
+        <div class="specimen">
+          <div class="pills">
+            <span class="pill">runway model</span>
+            <span class="pill">female</span>
+            <span class="pill">20s</span>
+            <span class="pill">slim</span>
+            <span class="pill">dry</span>
+            <span class="pill">East Asian</span>
+          </div>
+        </div>
+      </div>
+      <div class="compare__col">
+        <span class="compare__cap">Proposed</span>
+        <div class="specimen">
+          <p class="echo">
+            Everyone on this sheet is <span class="fact" style="cursor:default">a slim woman in her early 20s</span>,
+            <span class="fact" style="cursor:default">of East Asian heritage</span>, reading
+            <span class="fact" style="cursor:default">dry</span>.
+            The eight differ by <span class="vary">look</span>.
+          </p>
+        </div>
+      </div>
+    </div>
+    <p>
+      The same six facts either way, so this is not about density. The row makes you
+      read them as data and assemble the person yourself, and it cannot say the one
+      thing that matters most: that build was pinned to slim while look was
+      deliberately left to vary. To a pill those are the same kind of thing. The
+      sentence has somewhere to put the difference.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>The rules underneath</h2>
+    <div class="grid">
+      <table>
+        <thead>
+          <tr><th>Rule</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sex and age fuse</td>
+            <td>"a woman in her early 20s" — never two facts in a row. With no sex pinned the subject becomes "the eight".</td>
+          </tr>
+          <tr>
+            <td>Build folds in</td>
+            <td>An adjective on the noun, not an item: "a slim woman", not "a woman, slim".</td>
+          </tr>
+          <tr>
+            <td>Name open axes up to three</td>
+            <td>"heritage, build and presence were left to the roll" is a sentence. Six of them is the pill row wearing a coat — past three it collapses to "nothing pinned".</td>
+          </tr>
+          <tr>
+            <td>Your own details stay yours</td>
+            <td>A shaved head or soot in the creases is not restated. It reaches every candidate as written; the echo covers only what the system pinned from its own vocabulary.</td>
+          </tr>
+          <tr>
+            <td>Never name the same thing twice</td>
+            <td>If presence is varying and the eight differ by disposition, that is one fact. It is named once, in the closing clause.</td>
+          </tr>
+          <tr>
+            <td>Everyday words, not field names</td>
+            <td><code>energy</code> reads as presence, <code>variationAxis</code> as how the eight differ. The vocabulary the system stores is not the vocabulary a person casts in.</td>
+          </tr>
+          <tr>
+            <td>The sentence never says "I"</td>
+            <td>Verbs describe the sheet, never the model reading your brief.</td>
+          </tr>
+          <tr>
+            <td>Adjusting never changes this sheet</td>
+            <td>Rolls are immutable. Every change says "applies to your next roll", exactly as unpinning does today.</td>
+          </tr>
+          <tr>
+            <td>Only closed vocabularies</td>
+            <td>The popover offers the values the compiler can actually honour. Free text belongs in the brief box, where it gets interpreted.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>One thing to decide</h2>
+    <div class="ask">
+      <h3>The casting tab has no pill row to replace.</h3>
+      <p>
+        The pills only exist on the sheet, because interpretation happens when a roll
+        is dispatched — the tab has nothing compiled to echo yet. Putting a sentence
+        there means interpreting your brief as you type, which costs a call per pause,
+        adds a wait before the button you actually came to press, and shows a paraphrase
+        rewriting itself under your cursor.
+      </p>
+      <p>
+        <strong>Recommended:</strong> the echo lives on the sheet only, as a record of
+        what the roll did. On the sheet's next-roll box it becomes a short forward line
+        computed with no extra calls — <em>"Next roll: presence unpinned, age set to 40s.
+        Your words can still add pins."</em> If you do want the tab to tell you what it
+        heard before you spend credits, that is a different feature — interpret, then
+        confirm, then roll — and worth deciding on its own rather than as a side effect
+        of this one.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">06</span>What building it costs, and what it leaves out</h2>
+    <p>
+      <strong>Choosing a value needs a change the server does not have yet.</strong>
+      A roll today takes your brief and a list of things to unpin — there is no way
+      to say "make it 40s". So "Let age vary" would work on day one and every other
+      option in these popovers would be dead. I am building the missing half rather
+      than shipping a control that only half works, and it brings one real decision
+      with it: an adjustment you made by hand has to outrank the interpreter's
+      reading of your words, or your next roll quietly undoes it.
+    </p>
+    <ul>
+      <li>Editing a heritage blend's percentages. The popover replaces a heritage or lets it vary; a two-component 60/40 composer is the heaviest control here and earns nothing yet.</li>
+      <li>Pinning a fact the brief never mentioned and the system never derived. The brief box is where facts come from; the popover adjusts what is already on the sheet.</li>
+      <li>Anything on the casting tab, pending your answer above.</li>
+    </ul>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  const pops = Array.from(document.querySelectorAll(".pop"));
+  const facts = Array.from(document.querySelectorAll(".fact[data-pop]"));
+
+  function closeAll(except) {
+    for (const pop of pops) {
+      if (pop === except) continue;
+      pop.hidden = true;
+      const owner = document.querySelector('.fact[data-pop="' + pop.id + '"]');
+      if (owner) owner.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  for (const fact of facts) {
+    fact.addEventListener("click", function (event) {
+      event.stopPropagation();
+      const pop = document.getElementById(fact.dataset.pop);
+      const opening = pop.hidden;
+      closeAll(opening ? pop : null);
+      pop.hidden = !opening;
+      fact.setAttribute("aria-expanded", String(opening));
+    });
+  }
+
+  for (const pop of pops) {
+    pop.addEventListener("click", function (event) {
+      const option = event.target.closest(".pop__opt");
+      if (!option) return;
+      event.stopPropagation();
+      const specimen = pop.closest(".specimen");
+      const toast = specimen && specimen.querySelector(".toast");
+      if (toast) {
+        const label = option.textContent.trim();
+        toast.textContent = option.dataset.vary
+          ? label.replace(/^Let /, "").replace(/ vary$/, "") + " unpinned — applies to your next roll"
+          : label + " — applies to your next roll";
+        toast.hidden = false;
+      }
+      closeAll(null);
+    });
+  }
+
+  document.addEventListener("click", function () { closeAll(null); });
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    const open = pops.find(function (pop) { return !pop.hidden; });
+    if (!open) return;
+    closeAll(null);
+    const owner = document.querySelector('.fact[data-pop="' + open.id + '"]');
+    if (owner) owner.focus();
+  });
+})();
+</script>
