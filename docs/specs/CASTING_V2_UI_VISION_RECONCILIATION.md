@@ -1,0 +1,52 @@
+# Casting V2 — UI Vision Reconciliation (2026-07-31)
+
+Reconciles the founder's two vision packages — `Casting-ui-ux-design/design_handoff_studio/` (Klieg Studio: lobby + 7 tabs + casting flow + settings) and `design_handoff_canvas/` (Klieg Canvas) — against the ratified plan (`CASTING_V2_ARCHITECTURE_PLAN.md`) and the foundation (`drape-foundation/`).
+
+**Authority order (binding):** (1) ratified plan rulings → (2) foundation README non-negotiables → (3) vision packages (docs) → (4) prototype HTML (artwork; its inventions are seams unless a doc claims them). Where a vision prototype contradicts a ratified ruling, **the ruling wins and the prototype behavior is a seam** — confirmed per-item below.
+
+**Token verdict:** both packages use the canonical foundation token file **verbatim** (0 changed / 0 added / 0 removed values, incl. the `--cv*` layer). Perfect conformance.
+
+## 1. What binds M5 (the casting flow)
+
+Chapter `design_handoff_studio/07-casting.md` + the studio prototype's casting screens are the **visual binding** for M5's roster/sheet/room, layered UNDER the ratified interaction law. Chapter 07 itself defers to the deeper casting package for flow depth ("this doc covers what the studio prototype ships").
+
+Deviation table — every prototype deviation and its resolution (no new decisions except F2/F3 below):
+
+| Prototype behavior | Ratified law | Resolution |
+|---|---|---|
+| All 8 tiles flip at once (one fake timer) | Streaming per-candidate arrival (foundation §8 + plan) | Law wins — stream |
+| Keeps reset on every roll; no tray (docs assert carry-over; file discards) | Id-keyed keeps per roll + cross-roll tray, carried members tray-only | Law wins — build the tray |
+| No roll-history navigation | Rolls immutable + navigable | Law wins |
+| **Sign: unpriced, no confirm, multi-select ("Sign 3"), doc says "not final mint"** | Sign = single commitment, one price incl. full package, one candidate per ceremony, no second mint | **Law wins (F2 confirmed by founder)** — chapter 07's sign rendition is a seam |
+| No prices anywhere in casting dock | D-15: price on every paid affordance, persistently visible | Law wins — dock carries prices |
+| Candidate placeholder art varies lighting/wardrobe/crop | Framing law + wardrobe-baseline ruling: near-constant cohort framing | Law wins |
+| No advanced disclosure / no derived chips | Progressive disclosure + removable summary chips (settled) | Law wins — chips ship in M5 |
+| "Upload a real person" / "Browse signed roster" cards fake-roll | Tier 2 backlog / own-roster respectively | Cards: roster card ships (own roster); upload card omitted until Tier 2 (§B-9) |
+| Ambient fictions: "184 performers", "99.4% retention", "Drift 0.6%", "locks in ~4 min" | Honest-capability + no invented numbers (§B-17) | All decorative fiction — real numbers or nothing |
+| "Klieg V2" model selector in Home/Create composer | Provider choice server-owned app-wide | **Founder confirmed 2026-07-31: prototype fiction.** No engine dropdown anywhere; casting surfaces show none (prototype conforms there already) |
+
+**Confirms (build as drawn):** room composition (master block + IDENTITY LOCKED + Refine-without-recasting + Takes + Voice + campaigns + siblings), keep/discard/undo/follow mechanics incl. "FROM 0X" lineage pills and "Following 0X ×" chip, dock anatomy + "Keep the ones worth a second look" instruction, grid constants (178/212/104), widths (1180/1240), breadcrumbs, verbs.
+
+## 2. Founder decisions (resolved 2026-07-31)
+
+- **F1 — Rail geography:** final rail is Home · Create · Canvas · Templates · Casting · Assets · Library (+ Invite, account). Decision recorded below in §5 (stub-inert vs add-as-built).
+- **F2 — Sign law stands:** single priced Sign incl. package; chapter 07's multi-sign/draft-develop-later rendition is a prototype seam. (Pending founder confirmation — see decision list sent 2026-07-31.)
+- **F3 — Unsigned label:** one word everywhere (UNSIGNED vs DRAFT inconsistency in package). (Pending founder confirmation.)
+
+## 3. New shared patterns ADOPTED into the foundation set (additive, from `10-shared-patterns.md`)
+
+Toast law (every non-navigating action toasts, navigating never; ink pill, z-80, ~2.1s) · segmented control · dashed-create-tile-first law · section-header grammar (eyebrow/hairline/right slot) · hover-reveal via data-hoverhost · `--viewerScrim` (sixth scrim role) · popover discipline (capture-phase click-away, containing-block correction) · aspect-ratio sizing rule · slot-id conventions · z-ladder (25/40/60/70/80). Motion names: canonical prefix stays `dp-*`; `dsmarq` adopted as `dp-marq` when the marquee builds. Recorded contradictions to resolve foundation-side at implementation: marquee 62s motion near controls (extend the ambient exception deliberately or don't build it), `--shadowPop` on in-flow media cards (foundation default: don't).
+
+## 4. Canvas package (binds the canvas milestone, M10-era)
+
+Dual-theme confirmed (ruling satisfied). **Implementation rule: the `--cv*` token layer is authority; the prototype HTML is artwork** (484 raw hexes, doesn't load tokens.css — package itself says "build ONE scene on the token system"). Chapter-vs-token divergences (floor, wire hues, media-tile construction, port-rim dark) resolve token-side; `--cvWireLive` and `--cvAgentRow` have tokens but no drawn design yet. **Casting has NO design surface on canvas** — identity arrives as "Avatar · locked identity source" (matches one-Cast-source-of-truth) but the M10 moments (empty cast node, roster picker, cast-new, Sign-fills-node) need a small design addendum before M10. Today's failure/refund UX richness (retry, refund badges, failure reasons) must survive the redesign even though the vision draws no sad paths.
+
+## 5. Roadmap buckets (no scope added to the program without founder say-so)
+
+- **Binding now (M5–M7):** casting tab/sheet/room visuals per §1; naming vocabulary (§6 of studio deep-read): cast member/roster/candidate/roll/sheet/room/Sign/take/Siblings/frame/run/models(=engines)/credits; internal keys (`avatars`, `threads`) never surface.
+- **Design-ready, already-scheduled:** Home tab (evolved lobby — the deferred D.14 milestone now has its blueprint); Canvas board (M10 + addendum); Library's Kept/All + 30-day unkept retention (harmonizes with the sheet retention rulings).
+- **Vision / post-program (recorded, not scheduled):** Create tab (multi-mode composer, run strips, viewer, references, @mentions, team feed), Templates system (12 seeds, typed inputs, run history — note 7 of 12 take a Cast input: the differentiator), Assets (auto-classified uploads), canvas agent + video/try-on/reframe/upscale nodes + groups/run-scopes, campaigns entity + review workflow, multi-project scope, teams/RBAC/seats (Owner/Admin/Creator/Reviewer), notifications, 2FA/sessions, global search, model registry + intent ranking. Each becomes milestones only by founder decision after M14 (some — teams, workspace billing — align with existing backlog entries).
+
+## 6. Prototype seams (never replicate)
+
+`window.open` exploration links · non-behavioural search/"More options ›"/ratio chips · image-slot Replace/Edit chrome · casting entry cards that fake-roll · unrendered `quickActions`/`stats` JS · the one-boolean sheet timer · scrim raw-rgba literals (use `--scrim*` tokens) · doc/file z-index and topbar mismatches (foundation values win).

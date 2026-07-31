@@ -1,0 +1,243 @@
+/* ============================================================
+   DRAPE FOUNDATION — design tokens
+   Single source of truth. Load once, globally, before any
+   component CSS. Never hard-code a hex outside this file.
+
+   Light theme lives on :root. Dark theme is a body attribute:
+       <body data-theme="light">   (default)
+       <body data-theme="dark">
+   Every token below exists in BOTH themes, so no component
+   ever needs a theme conditional.
+   ============================================================ */
+
+:root {
+  /* ---- SURFACES (light → dark in elevation order) ---------- */
+  --surface:      #FFFFFF;  /* app background, cards on page   */
+  --raised:       #FAFAFB;  /* card sitting on surface         */
+  --page:         #FCFCFD;  /* working surface (sheet, canvas) */
+  --wellSoft:     #F7F7F9;  /* hover on dashed/empty targets   */
+  --well:         #F6F6F8;  /* hover on list rows              */
+  --fill:         #F4F4F6;  /* inert fill, gradient tile start */
+  --fillStrong:   #F2F2F4;  /* rail item active, icon btn hover*/
+  --media:        #F1F1F3;  /* behind any image or video       */
+
+  /* ---- LINES (hairlines → structural) --------------------- */
+  --rule:         #F0F0F2;  /* divider inside a card           */
+  --ruleSoft:     #EFEFF1;  /* divider between list rows       */
+  --border:       #ECECEE;  /* default border, gap-as-line     */
+  --borderSoft:   #EAEAED;  /* vertical separators in bars     */
+  --borderMedia:  #E8E8EB;  /* border on media containers      */
+  --borderInput:  #E6E6E9;  /* input + secondary button border */
+  --borderCard:   #E4E4E7;  /* border on a real card/panel     */
+  --dots:         #DEDEE2;  /* canvas dot grid, tile gradient  */
+  --dotsStrong:   #DADADE;  /* inactive waveform bars          */
+  --dashed:       #D6D6DA;  /* dashed "add" affordances        */
+  --sink:         #D2D2D6;  /* pressed / recessed              */
+  --lineStrong:   #C8C8CC;  /* input hover border, wires       */
+  --lineSoft:     #BFBFC5;  /* secondary wires                 */
+
+  /* ---- TEXT (lightest → darkest) -------------------------- */
+  --muted:        #B4B4BA;  /* icon glyph on quiet affordance  */
+  --faint:        #A0A0A6;  /* mono metadata, counts           */
+  --meta:         #8E8E94;  /* placeholder, tertiary label     */
+  --metaStrong:   #6B6B70;  /* secondary body copy             */
+  --linkHover:    #5C5C61;  /* link + quiet-text hover         */
+  --secondary:    #3E3E42;  /* label on secondary button       */
+  --ink:          #111112;  /* primary text, primary button bg */
+  --inkDeep:      #0A0A0B;  /* reserved: max-contrast headline */
+
+  /* ---- GLASS (bars that sit over scrolling content) ------- */
+  --barGlass:     rgba(255,255,255,.92);  /* topbar           */
+  --dockGlass:    rgba(255,255,255,.94);  /* sticky bottom dock*/
+
+  /* ---- ACCENT (single hue; brand-tintable, see §Accent) --- */
+  --accentSolid:      #E2685A;  /* the brand colour itself     */
+  --accentInk:        #A23E33;  /* accent TEXT on accentWash   */
+  --accentWash:       #FEF2F0;  /* accent background           */
+  --accentWashHover:  #FCE6EC;  /* accent background, hovered  */
+  --accentLine:       #F1CDC6;  /* accent border               */
+  --onWash:           #FFFFFF;  /* text on accentSolid         */
+
+  /* ---- SCRIM (over media; identical in both themes) ------- */
+  --scrim:        rgba(0,0,0,.66);      /* bottom gradient end */
+  --scrimChip:    rgba(17,17,18,.62);   /* button over media   */
+  --scrimChipHov: rgba(17,17,18,.86);
+  --scrimPill:    rgba(17,17,18,.72);   /* status pill on media*/
+  --onScrim:      #FFFFFF;              /* text/glyph on scrim */
+
+  /* ---- ELEVATION ------------------------------------------ */
+  --shadowCard:   0 12px 34px rgba(17,17,18,.14);  /* dock, dialog */
+  --shadowPop:    0 8px 22px rgba(17,17,18,.11);   /* menu, tooltip*/
+
+  /* ---- RADII (do not invent new values) ------------------- */
+  --r-pill:  999px;  /* chips, status pills                    */
+  --r-chip:  7px;    /* icon button sitting over media         */
+  --r-btn:   8px;    /* buttons, icon buttons in chrome        */
+  --r-ctl:   9px;    /* dock buttons, small media              */
+  --r-sm:    10px;   /* inputs inside a panel                  */
+  --r-md:    11px;   /* primary input, grid card               */
+  --r-lg:    12px;   /* candidate card                         */
+  --r-xl:    13px;   /* route card                             */
+  --r-2xl:   14px;   /* hero, panel, dock, dialog              */
+
+  /* ---- SPACING (4px base; use these, not arbitrary px) ---- */
+  --s-1: 4px;  --s-2: 6px;  --s-3: 8px;  --s-4: 10px;
+  --s-5: 12px; --s-6: 14px; --s-7: 16px; --s-8: 20px;
+  --s-9: 24px; --s-10: 28px; --s-11: 32px; --s-12: 44px;
+
+  /* ---- CHROME GEOMETRY (fixed; app-wide) ----------------- */
+  --rail-w:      76px;
+  --topbar-h:    56px;
+  --content-max: 1180px;  /* 1240px on working surfaces       */
+  --blur-bar:    14px;
+
+  /* ---- TYPE ---------------------------------------------- */
+  --font-sans: Archivo, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ---- MOTION (nothing in a task flow exceeds 340ms) ----- */
+  --ease:      cubic-bezier(.22,.61,.36,1);
+  --t-fast:    120ms;  /* hover, colour change               */
+  --t-mid:     200ms;  /* open/close, expand                 */
+  --t-enter:   340ms;  /* content arriving                   */
+
+  /* ============================================================
+     CANVAS LAYER
+     Only for the node graph. Every other surface ignores these.
+     The canvas reuses the base set wherever it can — node body
+     is --surface, node border --borderCard, filled port --ink,
+     dot grid --dots, node label --secondary. The tokens below
+     exist because nothing in the base set carries their meaning.
+     ============================================================ */
+
+  /* ground */
+  --cvGround:      #F6F6F8;  /* the floor behind all nodes    */
+  --cvGroupLine:   #C8C8CC;  /* group bounding box            */
+  --cvGroupBar:    #FFFFFF;  /* group / multi-select toolbar  */
+
+  /* ports & wires */
+  --cvPortRim:     #C8C8CC;  /* rim of an EMPTY port          */
+  --cvWire:        #C8C8CC;  /* connected wire                */
+  --cvWireSoft:    #BFBFC5;  /* unselected / background wire  */
+  --cvWireLive:    #E2685A;  /* wire on a running branch      */
+  --cvPipOff:      #E2E2E6;  /* unfilled pip in a meter row   */
+  --cvPlaceholder: #9A9A9E;  /* placeholder text in overlays  */
+
+  /* agent surfaces (accent-tinted, canvas-only) */
+  --cvAgentHalo:   #FFE9E2;  /* orb outer                     */
+  --cvAgentCore:   #FFF6F2;  /* orb inner                     */
+  --cvAgentRow:    #FCFBFB;  /* agent-suggested row in a menu */
+  --cvKeyLine:     #EFD3CE;  /* keycap border on accent text  */
+  --cvProgA:       #E2685A;  /* progress bar, start           */
+  --cvProgB:       #7E8FD4;  /* progress bar, end             */
+
+  /* node media placeholder — one tile for every node type, A→B at 160deg.
+     Node type is signalled by its icon and label, never by colour. */
+  --cvTileA: #F1F1F3;  --cvTileB: #D6D6DA;
+}
+
+body[data-theme="dark"] {
+  --surface:      #1C1C1F;
+  --raised:       #1A1A1D;
+  --page:         #141416;
+  --wellSoft:     #1F1F23;
+  --well:         #202024;
+  --fill:         #232326;
+  --fillStrong:   #26262A;
+  --media:        #232326;
+
+  --rule:         #2A2A2E;
+  --ruleSoft:     #2A2A2E;
+  --border:       #2C2C30;
+  --borderSoft:   #2C2C30;
+  --borderMedia:  #303036;
+  --borderInput:  #33333A;
+  --borderCard:   #33333A;
+  --dots:         #3A3A42;
+  --dotsStrong:   #3E3E46;
+  --dashed:       #44444C;
+  --sink:         #494951;
+  --lineStrong:   #55555E;
+  --lineSoft:     #5E5E66;
+
+  --muted:        #6E6E77;
+  --faint:        #8A8A92;
+  --meta:         #9A9AA2;
+  --metaStrong:   #9A9AA2;   /* intentionally == meta in dark */
+  --linkHover:    #B4B4BA;
+  --secondary:    #B4B4BA;
+  --ink:          #EDEDEF;
+  --inkDeep:      #F5F5F7;
+
+  --barGlass:     rgba(28,28,31,.92);
+  --dockGlass:    rgba(28,28,31,.94);
+
+  --accentSolid:      #E2685A;
+  --accentInk:        #E88778;
+  --accentWash:       rgba(226,104,90,.14);
+  --accentWashHover:  rgba(226,104,90,.22);
+  --accentLine:       rgba(226,104,90,.32);
+  --onWash:           #FFFFFF;
+
+  --shadowCard:   0 12px 34px rgba(0,0,0,.5);
+  --shadowPop:    0 8px 22px rgba(0,0,0,.44);
+
+  /* ---- CANVAS LAYER ---- */
+  --cvGround:      #141416;
+  --cvGroupLine:   #3C3C42;
+  --cvGroupBar:    #1C1C1F;
+
+  --cvPortRim:     #3C3C42;
+  --cvWire:        #55555E;
+  --cvWireSoft:    #44444C;
+  --cvWireLive:    #E2685A;
+  --cvPipOff:      #3C3C42;
+  --cvPlaceholder: #77777E;
+
+  --cvAgentHalo:   #2E2A29;
+  --cvAgentCore:   #3A2F2C;
+  --cvAgentRow:    #211F20;
+  --cvKeyLine:     #4A3330;
+  --cvProgA:       #E8AF97;
+  --cvProgB:       #C75B4E;
+
+  --cvTileA: #3A3A40;  --cvTileB: #26262A;
+}
+
+/* ---- GLOBAL RESET (the whole global stylesheet; keep it this small) ---- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::placeholder { color: var(--meta); }
+
+a { color: var(--ink); text-decoration: none; }
+a:hover { color: var(--linkHover); }
+
+:focus-visible {
+  outline: 2px solid var(--accentSolid);
+  outline-offset: 2px;
+}
+
+/* ---- MOTION ---- */
+@keyframes dp-rise   { from { opacity:0; transform:translateY(7px) } to { opacity:1; transform:none } }
+@keyframes dp-fade   { from { opacity:0 } to { opacity:1 } }
+@keyframes dp-sweep  { from { transform:translateX(-120%) } to { transform:translateX(220%) } }
+@keyframes dp-pulse  { 0%,100% { opacity:.5 } 50% { opacity:1 } }
+@keyframes dp-wave   { 0%,100% { transform:scaleY(.36) } 50% { transform:scaleY(1) } }
+@keyframes dp-spin   { to { transform:rotate(360deg) } }
+@keyframes dp-prog   { from { width:12% } to { width:84% } }
+@keyframes dp-scaleIn{ from { opacity:0; transform:scale(.97) } to { opacity:1; transform:none } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+}
