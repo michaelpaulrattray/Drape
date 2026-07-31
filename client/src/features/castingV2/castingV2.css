@@ -606,3 +606,14 @@
 /* The casting category: a lock, so full ink — but no underline, because it is
    free text and has no picker behind it. */
 .dpc-echo__role { color: var(--ink); }
+
+/*
+  The provisional roll pill: present, active, and visibly not yet real.
+  Dashed rather than solid, and inert — navigating to a roll with no rows
+  would show an empty sheet.
+*/
+.dpc-rollrail__item--provisional {
+  border-style: dashed;
+  cursor: default;
+  opacity: 0.78;
+}

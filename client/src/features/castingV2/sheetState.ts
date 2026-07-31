@@ -76,6 +76,20 @@ type SheetState = {
    * refused, it would just evaporate.
    */
   overrides: LockOverrides;
+  /**
+   * The roll the user just paid for, before the server has confirmed it exists.
+   *
+   * D-38 applied to the CHROME, not only to the tiles. The tiles went optimistic
+   * on the click and everything around them waited for the poll: the counter
+   * still read the old roll, the rail grew no pill, the eyebrow stayed in its
+   * resting state. One click produced two visible moments about 2.5 seconds
+   * apart, which reads as a stutter rather than a response.
+   *
+   * Everything here is knowable in the click frame — the next index is the
+   * count plus one — so it is one optimistic transaction, unwound by the same
+   * classified-failure contract that unwinds the tiles.
+   */
+  provisionalRollIndex: number | null;
   draftBrief: string;
   /**
    * A roll was dispatched and its rows have not appeared yet.
@@ -123,6 +137,7 @@ type SheetState = {
 
   setUndoable: (candidateId: string | null) => void;
   unlock: (field: UnlockableField) => void;
+  beginProvisionalRoll: (index: number) => void;
   setOverride: <F extends OverridableField>(field: F, value: NonNullable<LockOverrides[F]>) => void;
   setDraftBrief: (brief: string) => void;
   setStartingRoll: (startingRoll: boolean) => void;
@@ -142,6 +157,7 @@ export const useSheetState = create<SheetState>((set, get) => ({
   undoable: null,
   unlocked: [],
   overrides: {},
+  provisionalRollIndex: null,
   draftBrief: "",
   startingRoll: false,
   dispatchFailure: null,
@@ -198,13 +214,17 @@ export const useSheetState = create<SheetState>((set, get) => ({
       unlocked: state.unlocked.filter((unlockedField) => unlockedField !== field),
     })),
 
+  beginProvisionalRoll: (index) => set({ provisionalRollIndex: index }),
+
   setDraftBrief: (draftBrief) => set({ draftBrief }),
 
   setStartingRoll: (startingRoll) => set({ startingRoll }),
 
   setDispatchFailure: (dispatchFailure) =>
     // A failure ends the pending state by definition — nothing is coming.
-    set(dispatchFailure ? { dispatchFailure, startingRoll: false } : { dispatchFailure: null }),
+    set(dispatchFailure
+      ? { dispatchFailure, startingRoll: false, provisionalRollIndex: null }
+      : { dispatchFailure: null }),
 
   rollDispatched: () =>
     set({
@@ -224,6 +244,7 @@ export const useSheetState = create<SheetState>((set, get) => ({
       unlocked: [],
       // Reset is leaving the sheet entirely, so the standing corrections go too.
       overrides: {},
+      provisionalRollIndex: null,
       draftBrief: "",
       startingRoll: false,
       optimisticKept: {},

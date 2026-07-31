@@ -37,6 +37,8 @@ function arg(name: string, fallback = ""): string {
 const BASE = arg("base", "http://localhost:3000");
 const TOKEN = arg("token");
 const SESSION = arg("session");
+/** Law 9 clicks Follow for real, which costs credits. Opt in deliberately. */
+const OPTIMISTIC = process.argv.includes("--optimistic");
 if (!TOKEN) throw new Error("--token <app_session_id JWT> is required");
 
 const failures: string[] = [];
@@ -393,6 +395,82 @@ async function assertBriefEcho(page: Page, where: string) {
   await page.keyboard.press("Escape");
 }
 
+/**
+ * Law 9. One click, one optimistic transaction — chrome included.
+ *
+ * D-38 says everything the client already knows updates in the click's frame.
+ * The tiles did; the chrome did not. The counter still read the previous roll,
+ * the rail grew no pill, and the eyebrow stayed in its resting state until the
+ * poll landed 2.5 seconds later — so a single paid action produced two visible
+ * moments and read as a stutter.
+ *
+ * Asserted by clicking Follow for real and reading the chrome back with NO
+ * wait at all. A sleep here would let the poll arrive and the law would pass on
+ * the server's work rather than on the client's, which is the vacuous-pass
+ * failure this suite has already been caught by twice.
+ *
+ * Destructive — it spends credits — so it only runs with --optimistic.
+ */
+async function assertOptimisticChrome(page: Page, where: string) {
+  const follow = await page.evaluate(() => {
+    const button = Array.from(document.querySelectorAll("button")).find((b) =>
+      /^follow/i.test((b.innerText ?? "").trim()),
+    );
+    if (!button || (button as HTMLButtonElement).disabled) return null;
+    const before = {
+      counter: document.querySelector(".dp-metadata")?.textContent?.trim() ?? "",
+      railPills: document.querySelectorAll(".dpc-rollrail__item").length,
+      skeletons: document.querySelectorAll(".dp-skeleton").length,
+    };
+    button.click();
+    return before;
+  });
+  if (!follow) {
+    console.log(`  --   [${where}] no enabled Follow on this surface`);
+    return;
+  }
+
+  // Read back synchronously — one animation frame, not one poll.
+  const after = await page.evaluate(
+    () =>
+      new Promise<{ counter: string; railPills: number; provisional: number; skeletons: number; eyebrow: string }>(
+        (resolve) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              resolve({
+                counter: document.querySelector(".dp-metadata")?.textContent?.trim() ?? "",
+                railPills: document.querySelectorAll(".dpc-rollrail__item").length,
+                provisional: document.querySelectorAll(".dpc-rollrail__item--provisional").length,
+                skeletons: document.querySelectorAll(".dp-skeleton").length,
+                eyebrow: document.body.innerText.match(/Casting \d+…/)?.[0] ?? "",
+              }),
+            ),
+          ),
+      ),
+  );
+
+  check(
+    after.counter !== follow.counter && /casting/i.test(after.counter),
+    `[${where}] the roll counter moves in the click's frame`,
+    `still "${after.counter}"`,
+  );
+  check(
+    after.provisional === 1 && after.railPills > follow.railPills,
+    `[${where}] the rail grows a provisional pill in the click's frame`,
+    `${after.provisional} provisional, ${follow.railPills} → ${after.railPills} pills`,
+  );
+  check(
+    after.eyebrow.length > 0,
+    `[${where}] the eyebrow enters its casting state in the click's frame`,
+    "eyebrow unchanged",
+  );
+  check(
+    after.skeletons > 0,
+    `[${where}] the tiles are skeletons in the click's frame`,
+    `${after.skeletons} skeletons`,
+  );
+}
+
 async function auditSurface(page: Page, url: string, where: string, waitFor?: string) {
   console.log(`\n── ${where}`);
   await page.goto(url, { waitUntil: "networkidle2" });
@@ -408,6 +486,8 @@ async function auditSurface(page: Page, url: string, where: string, waitFor?: st
   await assertNoOrphanSkeletons(page, where);
   await assertOverMediaChips(page, where);
   await assertBriefEcho(page, where);
+  // Spends credits, so it is opt-in: --optimistic, on the sheet only.
+  if (OPTIMISTIC && where.includes("sheet")) await assertOptimisticChrome(page, where);
 }
 
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new" });

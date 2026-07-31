@@ -65,6 +65,8 @@ export default function CastingSheet() {
     clearOptimistic,
     overrides,
     setOverride,
+    provisionalRollIndex,
+    beginProvisionalRoll,
   } = useSheetState();
   const [brief, setBrief] = useState("");
 
@@ -106,8 +108,12 @@ export default function CastingSheet() {
     dispatch locking the sheet forever.
   */
   useEffect(() => {
-    if (latch.settleIfArrived(activeRollId)) setStartingRoll(false);
-  }, [activeRollId, latch, setStartingRoll]);
+    if (latch.settleIfArrived(activeRollId)) {
+      setStartingRoll(false);
+      // The real row has landed, so the provisional pill hands over to it.
+      beginProvisionalRoll(0);
+    }
+  }, [activeRollId, latch, setStartingRoll, beginProvisionalRoll]);
 
   /**
    * A dispatch is in flight and its roll has not appeared yet.
@@ -117,6 +123,16 @@ export default function CastingSheet() {
    * again answer as immediately as Cast it does.
    */
   const awaitingNewRoll = startingRoll && latch.held && !dispatchFailure;
+
+  /**
+   * The roll being paid for, or nothing.
+   *
+   * Gated on `awaitingNewRoll` rather than read raw, so the provisional chrome
+   * cannot outlive the dispatch it belongs to: a failure clears the flag and
+   * the pill goes with it, through the same classified-failure contract that
+   * unwinds the tiles.
+   */
+  const provisionalIndex = awaitingNewRoll ? provisionalRollIndex || null : null;
 
   const roll = trpc.castingV2.getRoll.useQuery(
     { rollId: shownRollId ?? "" },
@@ -280,6 +296,17 @@ export default function CastingSheet() {
     */
     if (!latch.tryAcquire(activeRollId)) return;
 
+    /*
+      The whole chrome goes optimistic here, not only the tiles.
+
+      The next index is knowable from the count, so the counter, the rail's
+      pill and the eyebrow can all move on this frame rather than on the poll
+      2.5 seconds later. One click, one visible moment — the founder's report
+      was that the tiles answered instantly and everything around them waited,
+      which reads as a stutter rather than as a response.
+    */
+    beginProvisionalRoll(rolls.length + 1);
+
     const clientRequestId = createClientRequestId();
     const release = () => {
       latch.release();
@@ -404,7 +431,8 @@ export default function CastingSheet() {
           */}
           {awaitingNewRoll ? (
             <span className="dp-metadata">
-              Roll {rolls.length + 1} · casting {config.data?.candidatesPerRoll ?? 8}
+              Roll {provisionalIndex ?? rolls.length + 1} · casting{" "}
+              {config.data?.candidatesPerRoll ?? 8}
             </span>
           ) : roll.data ? (
             <span className="dp-metadata">
@@ -418,7 +446,7 @@ export default function CastingSheet() {
           and nothing more — no server call, no state change, no cost. Every
           roll a session has paid for stays reachable for its whole life.
         */}
-        {rolls.length > 1 ? (
+        {rolls.length > 1 || provisionalIndex ? (
           <div className="dpc-rollrail" role="tablist" aria-label="Rolls in this sheet">
             {rolls.map((entry) => {
               const shown = entry.rollId === shownRollId;
@@ -438,6 +466,24 @@ export default function CastingSheet() {
                 </button>
               );
             })}
+            {/*
+              The roll being paid for, before its row exists.
+
+              Quiet rather than loud: it is the active pill, but dashed and
+              non-interactive, because navigating to a roll that has no rows yet
+              would show an empty sheet. It becomes the real pill when the row
+              lands, and disappears with the classified-failure contract if
+              creation fails — the same unwind the tiles use.
+            */}
+            {provisionalIndex ? (
+              <span
+                className="dpc-rollrail__item is-shown dpc-rollrail__item--provisional"
+                aria-label={`Roll ${String(provisionalIndex).padStart(2, "0")}, still being created`}
+              >
+                {String(provisionalIndex).padStart(2, "0")}
+                <span className="dpc-rollrail__live" aria-hidden="true" />
+              </span>
+            ) : null}
             {viewingHistory ? (
               <button
                 type="button"
@@ -632,7 +678,15 @@ export default function CastingSheet() {
                 )}
               </span>
             ) : null}
-            {shortlist.length > 0 ? (
+            {/*
+              The eyebrow flips on the click too. "Keep the ones worth a second
+              look" is an instruction for a sheet you can act on; while eight
+              are being cast there is nothing to keep yet, and leaving it up was
+              part of what made the chrome feel a beat behind the tiles.
+            */}
+            {awaitingNewRoll ? (
+              <Instruction>Casting {config.data?.candidatesPerRoll ?? 8}…</Instruction>
+            ) : shortlist.length > 0 ? (
               <span className="dp-small" style={{ marginLeft: 12 }}>
                 {shortlist.length} kept
               </span>
