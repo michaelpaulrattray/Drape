@@ -34,6 +34,9 @@ import {
 
 const log = createModuleLogger("castingV2/interpreter");
 
+/** Exported for the prompt-contract tests; never used at runtime. */
+export const SYSTEM_PROMPT_FOR_TESTS = () => SYSTEM_PROMPT;
+
 const SYSTEM_PROMPT = `You read a casting brief and extract only what it actually says about WHO to cast.
 
 Reply with a single JSON object and nothing else:
@@ -87,11 +90,33 @@ WHAT TO EXTRACT
   name something a photograph could show, leave it out.
   Never write numbers, percentages, ratios or control-signal language in either
   field. Image models render digits as text artefacts in the picture.
+  NEVER write a fashion house, magazine or brand name in either field —
+  not "Versace editorial style", not "a Vogue cover look". Translate the
+  aesthetic into castable direction instead ("sculpted, high-glamour editorial
+  casting") and put the house in "archetype" if one fits. A trademark in these
+  fields goes straight to the image provider, which refuses it — a real roll
+  lost five of eight candidates that way.
 - "sex": only from an explicit word or pronoun. "her", "she", "woman", "guy",
   "man" decide it. Never infer sex from a hairstyle, a colour, or an occupation.
   Never output "nonbinary" unless the brief says so explicitly.
 - "ageBand": from a stated age or an age idiom ("in her 20s", "mid-forties" →
-  "40s", "late teens" → "teens", "older" → null unless a decade is implied).
+  "40s", "late teens" → "teens").
+  A FUZZY AGE IS STILL A STATED AGE. This is the rule most often got wrong:
+  "young" is vaguer than "24" and it is not silence, and dropping it produces a
+  sheet running 40s–60s for a brief that said young. Map the idiom, then let the
+  phase carry the vagueness:
+      young, youthful, twenty-something, in their twenties  → "20s"
+      teenage, teen, adolescent, schoolgirl, schoolboy      → "teens"
+      young adult, early career, graduate, junior           → "20s"
+      thirty-something, early career-established            → "30s"
+      middle-aged, midlife, mid-career                      → "40s"
+      older, mature, senior, greying, veteran               → "60s"
+      elderly, elder, old, aged, pensioner, retired         → "70s+"
+  Set "agePhase" only where the brief pins the part of the decade. "Young" gives
+  ageBand "20s" and agePhase NULL — the band is what they said, the phase is the
+  latitude they left. That pairing is the whole point: it honours the fact
+  without inventing precision the brief did not carry.
+  Leave ageBand null only when the brief truly says nothing about age at all.
 - "agePhase": set it ONLY when the brief pins where in the decade. "early 20s"
   → "early"; "mid-forties" → "mid"; "late teens" → "late"; a bare "in her 20s"
   → null. This is a second, separate lock: filling it wrongly narrows the

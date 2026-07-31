@@ -498,6 +498,41 @@ export async function createRoll(
     status: failed > 0 || cancelled > 0 ? "partial" : "complete",
   });
 
+  /*
+    A roll that mostly failed says so, loudly (founder gate 21).
+
+    Five of eight candidates failed on one roll and the only trace was eight
+    separate warn lines, each about one candidate, none of them saying "this
+    roll lost 62% of what it was paid for". The refunds were correct, so
+    nothing was owed — which is exactly why it stayed invisible. Money being
+    right is not the same as the product working.
+
+    Two or fewer is ordinary provider weather. Three or more is a roll the user
+    experienced as broken, and it belongs in the log as one event with its class
+    breakdown, so the next occurrence is diagnosable from one line rather than
+    from a reconstruction.
+  */
+  if (failed >= 3) {
+    const byClass: Record<string, number> = {};
+    for (const settlement of settlements) {
+      if (settlement.outcome !== "failed") continue;
+      const key = settlement.failureClass ?? "unrecorded";
+      byClass[key] = (byClass[key] ?? 0) + 1;
+    }
+    log.error(
+      {
+        operationId: gate.operationId,
+        rollId: roll.publicId,
+        failed,
+        ready,
+        total: candidateCount,
+        failureRate: Math.round((failed / candidateCount) * 100),
+        byClass,
+      },
+      "[rollService] ROLL MOSTLY FAILED — most of this roll did not deliver",
+    );
+  }
+
   await completeDirectOperationSuccess({
     userId: input.userId,
     operationId: gate.operationId,
@@ -521,6 +556,8 @@ type Settlement = {
   outcome: "ready" | "expired" | "failed" | "skipped";
   refundedCredits: number;
   refundUnrecorded?: boolean;
+  /** Set on a failure, so the roll can report a class breakdown. */
+  failureClass?: string;
 };
 
 /**
@@ -658,8 +695,16 @@ async function dispatchCandidate(input: {
     return { outcome: "ready", refundedCredits: 0 };
   } catch (error) {
     const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+    /*
+      The provider message is kept, not just the class. "capability" is where
+      every 4xx we did not recognise lands, so on its own it says "something
+      about the request was wrong" and nothing more — which is exactly what we
+      had when a roll lost five of eight and could not be diagnosed afterwards.
+      Truncated, because a provider body can be enormous.
+    */
+    const providerMessage = error instanceof Error ? error.message.slice(0, 300) : String(error).slice(0, 300);
     log.warn(
-      { operationId, candidate: candidate.publicId, failureClass },
+      { operationId, candidate: candidate.publicId, failureClass, providerMessage },
       "[rollService] candidate failed — refunding its slice",
     );
 
@@ -672,7 +717,7 @@ async function dispatchCandidate(input: {
       });
     }
 
-    if (candidate.pointsCost <= 0) return { outcome: "failed", refundedCredits: 0 };
+    if (candidate.pointsCost <= 0) return { outcome: "failed", refundedCredits: 0, failureClass };
     const refund = await recordRefund(
       userId,
       candidate.pointsCost,
@@ -684,6 +729,7 @@ async function dispatchCandidate(input: {
     );
     return {
       outcome: "failed",
+      failureClass,
       refundedCredits: refund.recorded ? refund.amount : 0,
       refundUnrecorded: !refund.recorded,
     };

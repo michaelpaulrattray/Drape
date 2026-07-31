@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ac9fb4e9d6939e13"
+    "sourceFingerprint": "3fe2596304fa5505"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 11
+      "moduleCount": 12
     },
     {
       "id": "domain:castingV2",
@@ -3060,6 +3060,12 @@
       "id": "module:server/casting/wholeCastRestore.ts",
       "path": "server/casting/wholeCastRestore.ts",
       "domain": "casting",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/brandScrub.ts",
+      "path": "server/castingV2/brandScrub.ts",
+      "domain": "casting-v2",
       "lifecycle": "active"
     },
     {
@@ -7569,6 +7575,14 @@
     {
       "id": "test:server/castingV2-roll-domain-db.test.ts",
       "path": "server/castingV2-roll-domain-db.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/ageIdioms.test.ts",
+      "path": "server/castingV2/ageIdioms.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/brandScrub.test.ts",
+      "path": "server/castingV2/brandScrub.test.ts"
     },
     {
       "id": "test:server/castingV2/briefCompiler.test.ts",
@@ -15692,6 +15706,11 @@
     {
       "from": "module:server/casting/wholeCastRestore.ts",
       "to": "module:shared/modelLifecycle.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
     },
     {

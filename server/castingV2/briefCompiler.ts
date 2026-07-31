@@ -59,6 +59,7 @@ import {
   resolveCandidateIdentity,
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
+import { scrubBrands } from "./brandScrub";
 import { interpretBrief } from "./interpreter";
 
 const log = createModuleLogger("castingV2/briefCompiler");
@@ -430,7 +431,18 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   */
   const inherited: CastingIntent =
     anchor && !interpreted.sex ? { ...interpreted, sex: anchor.sex } : interpreted;
-  const intent = applyOverrides(applyUnlocks(inherited, input.unlock ?? []), input.overrides);
+  const adjusted = applyOverrides(applyUnlocks(inherited, input.unlock ?? []), input.overrides);
+  /*
+    Brand names never reach the image engine (founder gate 21). The two
+    free-text fields are the only things here that travel to the provider as
+    the user's own words, so they are scrubbed last, after every other
+    transform has finished writing to them.
+  */
+  const intent: CastingIntent = {
+    ...adjusted,
+    role: scrubBrands(adjusted.role),
+    characterNotes: scrubBrands(adjusted.characterNotes),
+  };
   const locks: LockFacts = lockFactsOf(intent);
   const archetype = resolveArchetype(intent, input.rollSeed);
 
