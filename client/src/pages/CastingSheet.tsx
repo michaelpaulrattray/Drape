@@ -182,11 +182,29 @@ export default function CastingSheet() {
   const activeRollStatus = rolls.find((entry) => entry.rollId === activeRollId)?.status ?? null;
   const activeIsGenerating = activeRollStatus !== null && !TERMINAL_ROLL_STATUSES.has(activeRollStatus);
 
-  // The brief field starts as the roll's own sentence, so "roll again" is an
-  // edit of what they asked for rather than a blank box.
+  /**
+   * The brief field starts as the roll's own sentence, so "roll again" is an
+   * edit of what they asked for rather than a blank box to retype.
+   *
+   * ONCE PER ROLL, not whenever the box happens to be empty. The first version
+   * keyed on `brief === ""` as a stand-in for "not filled yet", and those are
+   * not the same thing: clearing the box by hand looks identical to a fresh
+   * sheet, so the sentence sprang straight back and the field could not be
+   * emptied at all. The founder found it by holding backspace.
+   *
+   * Keyed on the roll instead. Clearing stays cleared, because the roll has
+   * already had its turn. Walking to another roll seeds that roll's sentence,
+   * but only into an empty box — arriving somewhere new should never overwrite
+   * words the user has already typed.
+   */
+  const prefilledFor = useRef<string | null>(null);
   useEffect(() => {
-    if (roll.data?.briefText && brief === "") setBrief(roll.data.briefText);
-  }, [roll.data?.briefText, brief]);
+    const rollId = roll.data?.rollId;
+    const text = roll.data?.briefText;
+    if (!rollId || !text || prefilledFor.current === rollId) return;
+    prefilledFor.current = rollId;
+    if (brief === "") setBrief(text);
+  }, [roll.data?.rollId, roll.data?.briefText, brief]);
 
   const invalidate = async () => {
     await Promise.all([
