@@ -408,3 +408,31 @@ describe("retry policy", () => {
     expect(attempts).toBe(0);
   });
 });
+
+describe("our account failing is not the user's request failing", () => {
+  /*
+    Three rounds of the M5 gate were spent chasing candidate failures that were
+    an exhausted fal balance — 403 with "User is locked. Reason: Exhausted
+    balance." Every one was classified `capability`, which is the bucket for
+    "the request asked for something this provider cannot do", so the
+    investigation kept looking at the prompt: brand names, prompt length,
+    content policy. Nothing about the request was ever wrong.
+  */
+  it("classifies 401 and 403 as an account problem, not a capability one", async () => {
+    const { classifyFalHttp } = await import("./falTransport");
+    expect(classifyFalHttp(403, '{"detail":"User is locked. Reason: Exhausted balance."}')).toBe(
+      "provider_account",
+    );
+    expect(classifyFalHttp(401, "unauthorized")).toBe("provider_account");
+  });
+
+  it("still calls a genuine bad request a capability problem", async () => {
+    const { classifyFalHttp } = await import("./falTransport");
+    expect(classifyFalHttp(400, '{"detail":"bad size"}')).toBe("capability");
+  });
+
+  it("never retries an account failure — every candidate would fail the same way", async () => {
+    const { isRetryable } = await import("./types");
+    expect(isRetryable("provider_account")).toBe(false);
+  });
+});

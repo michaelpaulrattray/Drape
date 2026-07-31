@@ -43,7 +43,8 @@ export function classifyFalHttp(status: number, body: string): ProviderFailureCl
   if (status === 429) return "rate_limit";
   if (status >= 500) return "transport";
   if (status === 408 || status === 504) return "timeout";
-  if (status === 401 || status === 403) return "capability";
+  // Our key or our balance, never the user's request. See `provider_account`.
+  if (status === 401 || status === 403) return "provider_account";
   if (status === 400 || status === 422) {
     return isContentRefusal(body) ? "content_policy" : "capability";
   }

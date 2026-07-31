@@ -44,6 +44,16 @@ export type ProviderFailureClass =
   | "content_policy"
   /** The request asked for something this provider cannot do. */
   | "capability"
+  /**
+   * OUR account with the provider is unusable — no credit, bad key, suspended.
+   *
+   * Split out of `capability` because it is categorically different: nothing
+   * about the request is wrong, every candidate after it will fail the same
+   * way, and no user action can fix it. It surfaced as an exhausted fal
+   * balance returning 403 on candidate after candidate, each one charged,
+   * failed and refunded, while the sheet told the founder "didn't arrive".
+   */
+  | "provider_account"
   /** Unmapped. Treated as non-retryable so unknowns fail closed. */
   | "unknown";
 

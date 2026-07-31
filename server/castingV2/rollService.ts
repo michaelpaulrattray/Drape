@@ -512,6 +512,35 @@ export async function createRoll(
     breakdown, so the next occurrence is diagnosable from one line rather than
     from a reconstruction.
   */
+  /*
+    Our account with the provider is broken — say so, loudly and separately.
+
+    This is not roll telemetry, it is an outage. An exhausted fal balance
+    returned 403 on candidate after candidate: each one charged, failed and
+    refunded, while the sheet told the founder "didn't arrive · refunded" as
+    though it were weather. Nothing about the request was wrong, no user action
+    could fix it, and it took three rounds of the gate to find because the class
+    was `capability` and the message was our own string.
+
+    Separate from the mostly-failed alarm below because the fix is different:
+    that one asks "what was wrong with this roll", this one says "stop, top up
+    the account".
+  */
+  const accountFailures = settlements.filter(
+    (settlement) => settlement.failureClass === "provider_account",
+  ).length;
+  if (accountFailures > 0) {
+    log.error(
+      {
+        operationId: gate.operationId,
+        rollId: roll.publicId,
+        accountFailures,
+        total: candidateCount,
+      },
+      "[rollService] PROVIDER ACCOUNT UNUSABLE — our key or balance is refusing work, not the user's brief",
+    );
+  }
+
   if (failed >= 3) {
     const byClass: Record<string, number> = {};
     for (const settlement of settlements) {
