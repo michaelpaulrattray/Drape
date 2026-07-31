@@ -394,7 +394,9 @@ describe("stated hair outranks authored hair", () => {
     const prompt = await promptFor("runway model", "shaved head");
     expect(prompt).toContain("shaved head");
     // The authored line is what contradicted it. It must simply not be there.
-    expect(prompt).not.toMatch(/HAIR: /);
+    // Keyed on the authored hair line's own tail, not on "HAIR: " — the realized
+    // FACIAL HAIR line contains that substring and would match by accident.
+    expect(prompt).not.toContain("The exact cut, parting and styling are open");
   });
 
   it.each([
@@ -403,12 +405,12 @@ describe("stated hair outranks authored hair", () => {
     ["bleached brows and a buzz cut"],
     ["greying at the temples"],
   ])("defers on %j", async (notes) => {
-    expect(await promptFor("creator", notes)).not.toMatch(/HAIR: /);
+    expect(await promptFor("creator", notes)).not.toContain("The exact cut, parting and styling are open");
   });
 
   it("still authors hair when the brief says nothing about it", async () => {
     // The follow inheritance depends on hair being authored, so deference must
     // be narrow: silence still gets a hair, or eight candidates share one.
-    expect(await promptFor("oncology nurse", "tired at the end of a shift")).toMatch(/HAIR: /);
+    expect(await promptFor("oncology nurse", "tired at the end of a shift")).toContain("The exact cut, parting and styling are open");
   });
 });

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7c66faca79b1b07c"
+    "sourceFingerprint": "f4148532b8955149"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 13
+      "moduleCount": 14
     },
     {
       "id": "domain:castingV2",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 18
+      "moduleCount": 19
     },
     {
       "id": "domain:studio",
@@ -3129,6 +3129,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/realizedAxes.ts",
+      "path": "server/castingV2/realizedAxes.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/rollEngine.ts",
       "path": "server/castingV2/rollEngine.ts",
       "domain": "casting-v2",
@@ -4031,6 +4037,12 @@
     {
       "id": "module:shared/castingOptions.ts",
       "path": "shared/castingOptions.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/castingRealization.ts",
+      "path": "shared/castingRealization.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -7637,6 +7649,10 @@
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
       "path": "server/castingV2/overridePrecedence.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/realizedAxes.test.ts",
+      "path": "server/castingV2/realizedAxes.test.ts"
     },
     {
       "id": "test:server/castingV2/rollProjection.test.ts",
@@ -15815,12 +15831,22 @@
     },
     {
       "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:server/castingV2/realizedAxes.ts",
       "kind": "imports"
     },
     {
@@ -15846,6 +15872,16 @@
     {
       "from": "module:server/castingV2/interpreter.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
     {

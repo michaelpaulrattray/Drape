@@ -59,9 +59,11 @@ import {
   type Heritage,
   type LookKey,
   type HeritageComponent,
+  type RealizedAxes,
   type ResolvedIdentity,
   type Sex,
 } from "./castingIntent";
+import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 
 /* --------------------------------------------------------- the constant */
 
@@ -553,6 +555,13 @@ export type FollowAnchor = {
   ageBand: AgeBand;
   hair: Hair | null;
   look: LookKey | null;
+  /**
+   * The realized axes carry on a follow too, for the same reason hair does: a
+   * trait you never authored is a trait you cannot inherit, and the founder
+   * followed a face expecting its eyes. Anchors, never locks — they bias the
+   * neighbourhood and stay out of the lock contract entirely.
+   */
+  realized: RealizedAxes | null;
 };
 
 /**
@@ -697,6 +706,9 @@ export function resolveCandidateIdentity(
       have.
     */
     hair: anchor ? anchoredHair(anchor, heritage, ageBand, position, rollSeed) : varyHair(heritage, ageBand, position, rollSeed),
+    realized:
+      anchor?.realized
+      ?? realizeAxes({ heritage, ageBand, sex: intent.sex ?? anchor?.sex ?? varySex(position, rollSeed), position, rollSeed }),
     // Energy is the one axis that cycles rather than samples: eight candidates
     // against eight energies gives one of each, which is the most legible
     // difference a sheet can carry. Stated energy locks it flat across all
@@ -866,6 +878,41 @@ function describeBuild(build: Build | null, role: string | null): string {
  * file; hair had simply never been asked the question, because until the follow
  * work it was not a field.
  */
+/**
+ * Deference, per axis. A stated fact outranks a realized one, always.
+ *
+ * The "shaved head" lesson generalised: the brief said shaved and the hair axis
+ * assigned curls anyway, because nothing asked whether the user had already
+ * decided. Five more axes now realize values, so five more could contradict the
+ * sentence in exactly the same way. Each checks first.
+ *
+ * Word lists rather than regexes — this session produced three separate
+ * escaping accidents that turned a pattern into something matching nothing
+ * while reading correctly.
+ */
+const AXIS_WORDS: Record<"eyes" | "facialHair" | "brows" | "skin", string[]> = {
+  eyes: [
+    "eye", "eyes", "eyed", "iris", "irises", "blue", "green", "hazel", "amber",
+    "grey", "gray", "brown", "heterochromia",
+  ],
+  facialHair: [
+    "beard", "bearded", "moustache", "mustache", "stubble", "goatee", "shaven",
+    "cleanshaven", "whiskers", "sideburns", "scruff",
+  ],
+  brows: ["brow", "brows", "eyebrow", "eyebrows", "unibrow", "monobrow"],
+  skin: [
+    "freckle", "freckles", "freckled", "acne", "scar", "scarred", "birthmark",
+    "mole", "beauty", "pockmarked", "weathered", "complexion", "skin",
+    "blemish", "blemishes",
+  ],
+};
+
+/** True when the brief's own words already decided this axis. */
+function statedAxis(axis: "eyes" | "facialHair" | "brows" | "skin", stated: string): boolean {
+  const words = new Set(stated.toLowerCase().split(/[^a-z]+/));
+  return AXIS_WORDS[axis].some((word) => words.has(word));
+}
+
 const HAIR_WORDS = [
   "hair", "haired", "bald", "shaved", "shaven", "buzz", "buzzcut", "crewcut",
   "cut", "undercut", "fade", "afro", "braid", "braids", "braided", "dreads",
@@ -875,7 +922,7 @@ const HAIR_WORDS = [
   "silver", "platinum", "bleached", "highlights", "roots",
 ];
 
-function describeHair(hair: Hair | null, stated: string): string {
+function describeHair(hair: Hair | null, stated: string, texture: string): string {
   /*
     The brief owns hair the moment it mentions it. Saying nothing here is the
     whole fix: the user's words are already in the prompt, and adding a second,
@@ -898,7 +945,7 @@ function describeHair(hair: Hair | null, stated: string): string {
         : `${hair.family} hair`;
   return hair.family === "shaved"
     ? ` HAIR: ${family}, ${hair.colour} where it is grown out.`
-    : ` HAIR: ${hair.colour} ${family}. The exact cut, parting and styling are open.`;
+    : ` HAIR: ${hair.colour} ${texture} ${family}. The exact cut, parting and styling are open.`;
 }
 
 function describeHeritage(components: HeritageComponent[]): string {
@@ -931,6 +978,8 @@ export function composeCandidatePrompt(input: {
   seed: number;
 }): string {
   const { intent, resolved, archetype } = input;
+  /* The user's own words, in one string — every deference check reads this. */
+  const statedText = [input.briefText ?? "", intent.role ?? "", intent.characterNotes ?? ""].join(" ");
   const direction = ARCHETYPES[archetype];
 
   /*
@@ -959,7 +1008,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, `${input.briefText ?? ""} ${intent.role ?? ""} ${intent.characterNotes ?? ""}`)}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText))}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.

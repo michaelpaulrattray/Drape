@@ -58,6 +58,8 @@ import {
   type Sex,
   type VariationAxis,
 } from "../../shared/castingVocabularies";
+import type { RealizedAxes } from "../../shared/castingRealization";
+export type { RealizedAxes };
 
 /*
   Re-exported so every existing import of these from `castingIntent` keeps
@@ -635,6 +637,14 @@ export type ResolvedIdentity = {
    * a trait you cannot follow.
    */
   hair: Hair | null;
+  /**
+   * The five axes legacy assigned and V2 was leaving to the image model.
+   *
+   * Not intent fields and never locks: an unassigned axis collapses to the
+   * model default, which is how the majority of casts came back brown-eyed.
+   * See `realizedAxes.ts`.
+   */
+  realized: RealizedAxes;
   energy: EnergyKey;
   /** Set when the sheet varies by look rather than disposition. */
   look: LookKey | null;

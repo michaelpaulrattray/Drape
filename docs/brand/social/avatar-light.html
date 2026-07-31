@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  /* klieg avatar — light/flat monogram: white circle-safe, near-black mark, no glow */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 400px; height: 400px; }
+  body {
+    background: #FFFFFF;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wm {
+    display: inline-block;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: #0A0A0A;
+    font-size: 172px;
+    line-height: 1;
+  }
+  .ii { position: relative; display: inline-block; }
+  .ii .dot {
+    position: absolute;
+    left: 50%;
+    top: 0.115em;
+    width: 0.13em;
+    height: 0.13em;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translateX(-50%);
+  }
+</style>
+</head>
+<body>
+  <span class="wm">k<span class="ii">ı<span class="dot"></span></span></span>
+</body>
+</html>

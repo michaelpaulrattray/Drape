@@ -259,6 +259,7 @@ function anchorFrom(parent: ResolvedIdentity | null): FollowAnchor | null {
     ageBand: parent.ageBand,
     hair: parent.hair ?? null,
     look: parent.look ?? null,
+    realized: parent.realized ?? null,
   };
 }
 
