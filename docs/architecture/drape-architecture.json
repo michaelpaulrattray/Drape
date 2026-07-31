@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f4148532b8955149"
+    "sourceFingerprint": "1883205c631aba7a"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 14
+      "moduleCount": 15
     },
     {
       "id": "domain:castingV2",
@@ -3113,6 +3113,12 @@
     {
       "id": "module:server/castingV2/cohortPhotorealHuman.ts",
       "path": "server/castingV2/cohortPhotorealHuman.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/hairStyles.ts",
+      "path": "server/castingV2/hairStyles.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7637,6 +7643,10 @@
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
       "path": "server/castingV2/followAnchor.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairStyles.test.ts",
+      "path": "server/castingV2/hairStyles.test.ts"
     },
     {
       "id": "test:server/castingV2/heritagePromotion.test.ts",
@@ -15846,7 +15856,27 @@
     },
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/realizedAxes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairStyles.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairStyles.ts",
+      "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
     {
@@ -15877,6 +15907,11 @@
     {
       "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
       "kind": "imports"
     },
     {
@@ -19652,6 +19687,11 @@
     {
       "from": "module:shared/castingClarification.ts",
       "to": "module:shared/castingOptions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/castingRealization.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {

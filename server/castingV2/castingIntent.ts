@@ -58,7 +58,7 @@ import {
   type Sex,
   type VariationAxis,
 } from "../../shared/castingVocabularies";
-import type { RealizedAxes } from "../../shared/castingRealization";
+import type { RealizedAxes, SkinFinish } from "../../shared/castingRealization";
 export type { RealizedAxes };
 
 /*
@@ -263,43 +263,61 @@ export const LOOKS = {
  * entry is a casting thesis plus its anti-pattern, in the C1 style — the
  * anti-pattern is what stops every entry converging on the same face.
  */
+/**
+ * The archetype shelf.
+ *
+ * Each entry owns the sheet's skin FINISH as well as its casting thesis — the
+ * A9 re-homing. A casting call is one lighting setup, so the finish is chosen
+ * once per roll rather than per candidate, and the archetype is the only thing
+ * in the pipeline that knows what kind of room this sheet is being shot in.
+ * A commercial sheet is dewy; a raw editorial one is matte. The person-level
+ * clause in CAPTURE keeps modulating on top of it, so eight candidates still
+ * do not share one skin.
+ */
 export const ARCHETYPES = {
   "quiet luxury": {
     thesis:
       "Understated, expensive-looking bone structure. Groomed but not styled. Reads as money that does not need to announce itself.",
     avoid: "Do not render as glossy, tanned or overtly glamorous.",
+    finish: "natural",
   },
   "raw editorial": {
     thesis:
       "Unusual, memorable features pushed past average — a strong nose, wide-set eyes, an asymmetric jaw. Interesting before it is pretty.",
     avoid: "Do not default to gaunt or alien. Distinctive, not damaged.",
+    finish: "matte",
   },
   "everyday real": {
     thesis:
       "A person you would actually meet. Ordinary proportions, real skin, nothing corrected. The face of someone with a job.",
     avoid: "Do not render as a model with dressed-down styling.",
+    finish: "natural",
   },
   "clean commercial": {
     thesis:
       "Warm, open, immediately likeable. Symmetric enough to read friendly, specific enough to read human.",
     avoid: "Do not render as bland or generically pretty — pick two features and make them specific.",
+    finish: "dewy",
   },
   "street cast": {
     thesis:
       "Found on a pavement, not in an agency. Idiosyncratic hair, real posture, unpolished confidence.",
     avoid: "Do not render as a costume version of a subculture.",
+    finish: "natural",
   },
   "athletic build": {
     thesis:
       "Physicality visible in the neck, traps and shoulders. Low body fat reads in the face — defined jaw, lean cheeks.",
     avoid: "Do not render as a bodybuilder unless the brief asks for one.",
+    finish: "oily",
   },
   "screen presence": {
     thesis:
       "The face holds attention while doing nothing. Strong eyes, still features, the stillness of someone used to a lens.",
     avoid: "Do not render as posed or acted.",
+    finish: "luminous",
   },
-} as const;
+} as const satisfies Record<string, { thesis: string; avoid: string; finish: SkinFinish }>;
 export type ArchetypeKey = keyof typeof ARCHETYPES;
 export const ARCHETYPE_KEYS = Object.keys(ARCHETYPES) as ArchetypeKey[];
 

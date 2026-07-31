@@ -98,12 +98,34 @@ export const HAIR_FAMILIES = [
 ] as const;
 export type HairFamily = (typeof HAIR_FAMILIES)[number];
 
+/**
+ * Hair colour, at the resolution a colourist would use.
+ *
+ * The ported eight were the coarse ones, and coarse tokens collapse: "blonde"
+ * across four candidates renders as one blonde, and "auburn" was carrying
+ * strawberry, copper and true auburn between them. The added shades are the
+ * ones that actually read differently on camera.
+ *
+ * **Natural pigment only** (founder ruling). Nothing here is a dye colour —
+ * variation must never hand someone pink or blue hair, and the identity block
+ * already insists a stated colour renders as born pigment rather than a visible
+ * dye job. `blonde` and `brown` stay as the generic values, because that is
+ * what a user who types "blonde" said; the specific shades are what variation
+ * reaches for. Grey and white stay age-driven and are never picked as a birth
+ * colour.
+ */
 export const HAIR_COLOURS = [
   "black",
   "dark brown",
   "brown",
+  "chestnut",
   "auburn",
+  "copper",
+  "strawberry blonde",
   "blonde",
+  "golden blonde",
+  "ash blonde",
+  "platinum blonde",
   "red",
   "grey",
   "white",

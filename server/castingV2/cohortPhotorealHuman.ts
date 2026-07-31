@@ -35,6 +35,7 @@
  * bare-face/undergarment rules, retired as presentation by the
  * wardrobe-baseline ruling — V2 presentation views are clothed.
  */
+import { FINISH_RENDER, statedFinish } from "./hairStyles";
 import {
   AGE_PHASES,
   ARCHETYPES,
@@ -64,6 +65,7 @@ import {
   type Sex,
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
+import type { HairStyle } from "../../shared/castingRealization";
 
 /* --------------------------------------------------------- the constant */
 
@@ -469,27 +471,48 @@ function varySex(position: number, rollSeed: string): Sex {
  * These are casting-pool plausibilities, not genetics. The point is that a sheet
  * looks like a room of real people.
  */
+/*
+  Widened 2026-08-01 to the colourist-resolution palette. The rare shades are
+  deliberately rare and deliberately conditioned: platinum and white-blonde
+  occur naturally at the Nordic end and effectively nowhere else, so they carry
+  a few points there and are absent everywhere else. Strawberry and copper are
+  broken out of "auburn", which had been doing the work of three colours.
+*/
 const HAIR_COLOUR_WEIGHTS: Record<string, readonly (readonly [HairColour, number])[]> = {
-  Nordic: [["blonde", 40], ["brown", 25], ["red", 10], ["dark brown", 15], ["auburn", 10]],
-  "British Isles": [["brown", 30], ["dark brown", 25], ["blonde", 20], ["red", 12], ["auburn", 13]],
-  "Western European": [["brown", 32], ["dark brown", 28], ["blonde", 22], ["auburn", 12], ["red", 6]],
-  Slavic: [["dark brown", 32], ["brown", 30], ["blonde", 22], ["auburn", 10], ["red", 6]],
-  Mediterranean: [["black", 30], ["dark brown", 40], ["brown", 22], ["auburn", 8]],
-  "Middle Eastern": [["black", 45], ["dark brown", 40], ["brown", 15]],
+  Nordic: [
+    ["golden blonde", 20], ["ash blonde", 16], ["blonde", 10],
+    ["brown", 16], ["dark brown", 12], ["strawberry blonde", 8], ["red", 6],
+    ["copper", 4], ["auburn", 4], ["platinum blonde", 4],
+  ],
+  "British Isles": [
+    ["brown", 22], ["dark brown", 20], ["chestnut", 12], ["blonde", 10],
+    ["ash blonde", 8], ["red", 8], ["auburn", 8], ["copper", 6], ["strawberry blonde", 6],
+  ],
+  "Western European": [
+    ["brown", 24], ["dark brown", 24], ["chestnut", 14], ["blonde", 12],
+    ["golden blonde", 8], ["auburn", 9], ["copper", 5], ["red", 4],
+  ],
+  Slavic: [
+    ["dark brown", 26], ["brown", 24], ["ash blonde", 16], ["blonde", 12],
+    ["chestnut", 12], ["auburn", 6], ["red", 4],
+  ],
+  Mediterranean: [["black", 28], ["dark brown", 38], ["brown", 20], ["chestnut", 10], ["auburn", 4]],
+  "Middle Eastern": [["black", 44], ["dark brown", 38], ["brown", 14], ["chestnut", 4]],
   "East Asian": [["black", 78], ["dark brown", 22]],
   "South Asian": [["black", 72], ["dark brown", 28]],
   "West African": [["black", 82], ["dark brown", 18]],
   "Afro-Caribbean": [["black", 78], ["dark brown", 22]],
-  Latino: [["black", 40], ["dark brown", 42], ["brown", 18]],
+  Latino: [["black", 38], ["dark brown", 40], ["brown", 16], ["chestnut", 6]],
   Polynesian: [["black", 80], ["dark brown", 20]],
 };
 
 const DEFAULT_HAIR_COLOURS: readonly (readonly [HairColour, number])[] = [
-  ["dark brown", 34],
-  ["black", 26],
-  ["brown", 24],
-  ["blonde", 10],
-  ["auburn", 6],
+  ["dark brown", 32],
+  ["black", 24],
+  ["brown", 22],
+  ["chestnut", 10],
+  ["blonde", 8],
+  ["auburn", 4],
 ];
 
 /** Greying is a function of age, so it is applied after colour, not instead. */
@@ -922,7 +945,12 @@ const HAIR_WORDS = [
   "silver", "platinum", "bleached", "highlights", "roots",
 ];
 
-function describeHair(hair: Hair | null, stated: string, texture: string): string {
+function describeHair(
+  hair: Hair | null,
+  stated: string,
+  texture: string,
+  style: HairStyle,
+): string {
   /*
     The brief owns hair the moment it mentions it. Saying nothing here is the
     whole fix: the user's words are already in the prompt, and adding a second,
@@ -937,15 +965,21 @@ function describeHair(hair: Hair | null, stated: string, texture: string): strin
   const words = new Set(stated.toLowerCase().split(/[^a-z]+/));
   if (HAIR_WORDS.some((word) => words.has(word))) return "";
   if (!hair) return "";
-  const family =
-    hair.family === "shaved"
-      ? "a shaved head"
-      : hair.family === "coiled"
-        ? "coiled natural hair"
-        : `${hair.family} hair`;
-  return hair.family === "shaved"
-    ? ` HAIR: ${family}, ${hair.colour} where it is grown out.`
-    : ` HAIR: ${hair.colour} ${texture} ${family}. The exact cut, parting and styling are open.`;
+  /*
+    The named cut, not the silhouette.
+
+    "Mid-length brown hair, the exact cut open" was an invitation the model
+    answered the same way eight times — its own salon-neutral default at that
+    length. D9's craft is that a cut has a NAME, and the name is what carries a
+    person's taste. The closing sentence is the other half: a named cut rendered
+    generically is the same collapse wearing a label, so the prompt asks for the
+    cut as it is actually worn.
+  */
+  const cut =
+    style.family === "shaved"
+      ? ` HAIR: ${style.name}, ${hair.colour} where it is grown out.`
+      : ` HAIR: a ${hair.colour} ${style.texture ?? texture} ${style.name}.`;
+  return `${cut} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
 }
 
 function describeHeritage(components: HeritageComponent[]): string {
@@ -1008,7 +1042,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText))}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture, resolved.realized.hairStyle)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText))}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.
@@ -1038,7 +1072,22 @@ export function composeCandidatePrompt(input: {
     .filter(Boolean)
     .join(" ");
 
-  const directionBlock = `DIRECTION: ${direction.thesis} ${direction.avoid}`;
+  /*
+    SKIN FINISH — A9's engineered prose, re-homed (item 7).
+
+    Precedence: what the brief said beats what the archetype chose. A user who
+    types "dewy" has decided; the archetype only decides when nobody has.
+
+    Once per ROLL, not per candidate: a sheet is one casting call under one
+    lighting setup, so eight candidates must be comparable. The CAPTURE block's
+    person-level clause still modulates on top of this — a weathered outdoor
+    face and a groomed indoor one respond to the same flash differently — which
+    is why this names the room's finish rather than each person's skin.
+  */
+  const finish = statedFinish(statedText) ?? direction.finish;
+  const finishBlock = `SKIN FINISH: ${FINISH_RENDER[finish]}`;
+
+  const directionBlock = `DIRECTION: ${direction.thesis} ${direction.avoid} ${finishBlock}`;
 
   // Category first: it decides who is eligible at all, before direction shapes
   // how they are cast and before the constant fixes how they are photographed.

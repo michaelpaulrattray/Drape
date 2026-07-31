@@ -17,6 +17,8 @@
  * out of the brief echo, which speaks locks, not realizations.
  */
 
+import type { HairFamily } from "./castingVocabularies";
+
 /**
  * Eye colour, at the resolution a casting director would use.
  *
@@ -95,6 +97,8 @@ export type SkinCharacter = (typeof SKIN_CHARACTERS)[number];
 /** Everything realization fills in, as one object. */
 export type RealizedAxes = {
   eyeColour: EyeColour;
+  /** The named cut. Carries its own coherent length and, sometimes, texture. */
+  hairStyle: HairStyle;
   facialHair: FacialHair | null;
   hairTexture: HairTexture;
   browStyle: BrowStyle;
@@ -110,9 +114,63 @@ export type RealizedAxes = {
  */
 export const REALIZED_AXIS_KEYS = [
   "eyeColour",
+  "hairStyle",
   "facialHair",
   "hairTexture",
   "browStyle",
   "skinCharacter",
 ] as const;
 export type RealizedAxisKey = (typeof REALIZED_AXIS_KEYS)[number];
+
+/**
+ * Named hairstyles, on legacy's D9 pattern.
+ *
+ * The realized hair axis varied over six coarse silhouettes — shaved, cropped,
+ * short, mid-length, long, coiled — so unstated hair collapsed to the model's
+ * default salon-neutral styling at each length. Eight candidates could all be
+ * "mid-length brown" and arrive as the same haircut.
+ *
+ * **Legality lives in the entry, not a matrix.** Each style is authored as an
+ * already-coherent combination: a pixie is short by definition, locs carry
+ * their own texture, a bob cannot be very long. That is the entire job legacy's
+ * D11 legality matrix existed to do, done by construction instead — there is no
+ * way to express "buzz cut, very long, curtain bangs" because no entry says it.
+ *
+ * **The weights read like a street, not an editorial** (founder ruling).
+ * Legacy's lists leaned stylish and every fourth candidate looked art-directed.
+ * Ordinary cuts carry the bulk; statement cuts stay rare-but-possible. Same
+ * lesson as legacy's silver-hair weighting: uniform randomness over stylish
+ * options destroys plausibility.
+ */
+export type HairStyle = {
+  name: string;
+  /** The silhouette it implies — coherent by construction. */
+  family: HairFamily;
+  /** Set when the style dictates its own texture; else the axis decides. */
+  texture?: HairTexture;
+  /** Rare-but-possible. At most one per sheet is the taste target. */
+  statement?: true;
+};
+
+/**
+ * Skin finish — A9's engineered prose, re-homed.
+ *
+ * Legacy injected an authored finish on every generation and the founder
+ * confirms those finishes produced visibly better skin. V2 kept only A3's
+ * deferral sentence with no vocabulary behind it, which reads as generic studio
+ * skin: the light block correctly refused to decide the sheen, and then nothing
+ * else decided it either.
+ *
+ * Deliberately NOT per-candidate. A sheet is one casting call under one
+ * lighting setup, so the finish is chosen once per roll by the archetype — the
+ * framing law holds and eight candidates stay comparable.
+ */
+export const SKIN_FINISHES = [
+  "matte",
+  "natural",
+  "dewy",
+  "luminous",
+  "oily",
+  "weathered",
+] as const;
+export type SkinFinish = (typeof SKIN_FINISHES)[number];

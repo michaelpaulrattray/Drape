@@ -4,11 +4,13 @@ import {
   type HeritageComponent,
   type Sex,
 } from "./castingIntent";
+import { stylesFor } from "./hairStyles";
 import {
   REALIZED_AXIS_KEYS,
   type BrowStyle,
   type EyeColour,
   type FacialHair,
+  type HairStyle,
   type HairTexture,
   type RealizedAxes,
   type SkinCharacter,
@@ -50,6 +52,55 @@ function hash(seed: string): number {
     value = Math.imul(value, 0x01000193) >>> 0;
   }
   return value >>> 0;
+}
+
+/** Styles are objects, so they need their own pick — same weighting, no strings. */
+function fromWeights(entries: ReturnType<typeof stylesFor>, seed: number): HairStyle {
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  let cursor = seed % total;
+  for (const [style, weight] of entries) {
+    cursor -= weight;
+    if (cursor < 0) return style;
+  }
+  return entries[entries.length - 1][0];
+}
+
+/**
+ * One statement cut per sheet, structurally.
+ *
+ * The weights alone make a second statement unlikely, not impossible — about
+ * one sheet in ten came back with two, and the founder's acceptance bar is *at
+ * most one*. Rarity that holds nine times in ten is not a rule, so the second
+ * one is demoted rather than hoped against.
+ *
+ * The check re-derives the earlier positions from the same seed rather than
+ * threading state through the caller: realization is deterministic in
+ * (rollSeed, position), so position 5 can ask what positions 0–4 drew without
+ * anyone having to remember. Eight candidates make this twenty-eight extra
+ * hashes, which is nothing, and it keeps `realizeAxes` a pure function of one
+ * candidate — the property the follow anchor and M7's registry both rely on.
+ */
+function pickStyle(
+  sex: Sex,
+  heritage: string,
+  ageBand: AgeBand,
+  position: number,
+  seedFor: (axis: string) => number,
+  seedAt: (axis: string, position: number) => number,
+): HairStyle {
+  const entries = stylesFor(sex, heritage, ageBand);
+  const chosen = fromWeights(entries, seedFor("hairStyle"));
+  if (!chosen.statement) return chosen;
+
+  const claimedEarlier = Array.from({ length: position }, (_, earlier) =>
+    fromWeights(entries, seedAt("hairStyle", earlier)),
+  ).some((style) => style.statement);
+  if (!claimedEarlier) return chosen;
+
+  // Demote into the ordinary cuts, with its own hash so the replacement is not
+  // just whatever sat next to the statement in the list.
+  const ordinary = entries.filter(([style]) => !style.statement);
+  return fromWeights(ordinary, seedFor("hairStyleDemoted"));
 }
 
 function weightedPick<T extends string>(entries: readonly (readonly [T, number])[], seed: number): T {
@@ -226,10 +277,13 @@ export function realizeAxes(input: {
 }): RealizedAxes {
   const { heritage, ageBand, sex, position, rollSeed } = input;
   const primary = (heritage[0]?.heritage ?? "") as Heritage | "";
-  const seedFor = (axis: string) => hash(`${rollSeed}:${axis}:${position}`);
+  const seedAt = (axis: string, at: number) => hash(`${rollSeed}:${axis}:${at}`);
+  const seedFor = (axis: string) => seedAt(axis, position);
+  const hairStyle = pickStyle(sex, primary, ageBand, position, seedFor, seedAt);
 
   return {
     eyeColour: weightedPick(EYE_BY_HERITAGE[primary] ?? EYE_DEFAULT, seedFor("eyeColour")),
+    hairStyle,
     /*
       Only men carry it. An androgynous subject is left alone rather than
       guessed at — the brief said nothing, and inventing a beard would be
@@ -237,7 +291,15 @@ export function realizeAxes(input: {
     */
     facialHair:
       sex === "male" ? weightedPick(FACIAL_HAIR_BY_AGE[ageBand], seedFor("facialHair")) : null,
-    hairTexture: weightedPick(TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT, seedFor("hairTexture")),
+    /*
+      A cut that dictates its own texture wins. Locs are coiled by definition,
+      and a "straight locs" pairing is exactly the kind of impossible
+      combination legacy needed a legality matrix (D11) to prevent — here the
+      style entry carries the answer and the axis defers to it.
+    */
+    hairTexture:
+      hairStyle.texture ??
+      weightedPick(TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT, seedFor("hairTexture")),
     browStyle: weightedPick(BROW_BY_SEX[sex], seedFor("browStyle")),
     skinCharacter: weightedPick(skinWeights(primary, ageBand), seedFor("skinCharacter")),
   };
