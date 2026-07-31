@@ -464,7 +464,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     }
     candidates.push({
       position,
-      prompt: composeCandidatePrompt({ intent, resolved, archetype, seed: position }),
+      prompt: composeCandidatePrompt({ briefText, intent, resolved, archetype, seed: position }),
       personaLine: personaLineFor(resolved, intent.reads[position] ?? null),
       resolvedIdentity: resolved,
     });
@@ -515,7 +515,7 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     const resolved = resolveCandidateIdentity(intent, position, input.rollSeed);
     return {
       position,
-      prompt: composeCandidatePrompt({ intent, resolved, archetype, seed: position }),
+      prompt: composeCandidatePrompt({ briefText, intent, resolved, archetype, seed: position }),
       personaLine: personaLineFor(resolved, intent.reads[position] ?? null),
       resolvedIdentity: resolved,
     };

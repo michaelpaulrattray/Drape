@@ -354,3 +354,61 @@ describe("a locked look still lets presence differentiate", () => {
     expect(new Set(compiled.candidates.map((c) => c.resolvedIdentity.look)).size).toBeGreaterThan(5);
   });
 });
+
+describe("stated hair outranks authored hair", () => {
+  /*
+    Caught by the seed-verification clause, which is the only reason it was
+    caught: "Runway model, early 20s, shaved head" came back with a full head of
+    curls. The hair axis added for follow-inheritance was assigning a family at
+    random and writing it into the SUBJECT block, contradicting the user's own
+    sentence a few lines above it.
+
+    The drop-a-stated-fact family again — this time authored by the fix for a
+    different one. Every other axis in this file already defers to a stated
+    fact; hair had simply never been asked, because until follow it was not a
+    field at all.
+  */
+  async function promptFor(role: string, notes: string | null): Promise<string> {
+    const compiled = await castingBriefCompiler({
+      briefText: `${role} ${notes ?? ""}`.trim(),
+      candidateCount: 1,
+      rollSeed: `hair:${role}:${notes}`,
+      engine: {
+        id: "test",
+        complete: async () => ({
+          text: JSON.stringify({
+            cohort: "photoreal_human",
+            role,
+            characterNotes: notes,
+            reads: null,
+          }),
+          latencyMs: 1,
+          provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
+        }),
+      } satisfies TextEngine,
+    });
+    return compiled.candidates[0].prompt;
+  }
+
+  it("writes no hair line when the brief already stated the hair", async () => {
+    const prompt = await promptFor("runway model", "shaved head");
+    expect(prompt).toContain("shaved head");
+    // The authored line is what contradicted it. It must simply not be there.
+    expect(prompt).not.toMatch(/HAIR: /);
+  });
+
+  it.each([
+    ["silver crew cut"],
+    ["long blonde hair"],
+    ["bleached brows and a buzz cut"],
+    ["greying at the temples"],
+  ])("defers on %j", async (notes) => {
+    expect(await promptFor("creator", notes)).not.toMatch(/HAIR: /);
+  });
+
+  it("still authors hair when the brief says nothing about it", async () => {
+    // The follow inheritance depends on hair being authored, so deference must
+    // be narrow: silence still gets a hair, or eight candidates share one.
+    expect(await promptFor("oncology nurse", "tired at the end of a shift")).toMatch(/HAIR: /);
+  });
+});

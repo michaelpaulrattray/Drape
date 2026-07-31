@@ -79,13 +79,27 @@ const ROLL_PRICE_FALLBACK = 0;
  * the user sees demonstrated. Stated facts lock; everything else varies.
  */
 const CASTING_SEEDS: Array<{ label: string; shows: string; requires?: string }> = [
-  // Editorial category — the look axis. "Shaved head" chosen over "scar through
-  // one eyebrow" on evidence: the shaved head rendered unambiguously, the scar
-  // came back as a faint brow break and failed the verification clause.
+  /*
+    A FIFTH CLAUSE, founder 2026-08-01: a seed must be a brief this audience
+    would actually type.
+
+    The previous set obeyed every other clause and still missed. A blacksmith
+    with soot in the creases and a nurse at the end of a double shift are good
+    briefs — they are simply not what someone opening this product came to cast.
+    People here are making UGC creators, AI influencers, models and founders,
+    and a seed row is a claim about what the product is FOR. Interesting is not
+    the bar; recognisable is.
+
+    AND NO PRONOUNS. "Freckles she never covered" made the founder ask whether
+    the sex lock was intended — it was not. The interpreter reads "she"
+    correctly and pins sex, so that seed quietly closed an axis it existed to
+    demonstrate. A seed showing latitude must not spend it on a word nobody
+    noticed writing.
+  */
   { label: "Runway model, early 20s, shaved head", shows: "category + age lock, look variation" },
-  { label: "Blacksmith in her 50s, silver crew cut, soot in the creases", shows: "trade face, age reads in skin" },
-  { label: "Skincare founder, 40s, freckles she never covered", shows: "founder-type, freckles render" },
-  { label: "Oncology nurse at the end of a double shift", shows: "unexpected, tiredness reads at rest" },
+  { label: "UGC creator, mid-20s, freckles across the nose", shows: "creator-type, freckles render" },
+  { label: "Skincare founder, 40s, silver at the temples", shows: "founder-type, age reads in the hair" },
+  { label: "Beauty creator, late 20s, bleached brows", shows: "influencer-type, grooming detail renders" },
 ];
 
 /**

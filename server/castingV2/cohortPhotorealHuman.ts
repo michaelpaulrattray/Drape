@@ -852,7 +852,43 @@ function describeBuild(build: Build | null, role: string | null): string {
  * own. Family and colour only — length, parting and fringe stay latitude, so
  * eight cousins still look like eight people.
  */
-function describeHair(hair: Hair | null): string {
+/**
+ * Words that mean the brief has already decided the hair.
+ *
+ * Caught by the seed-verification clause, which is the only reason it was
+ * caught at all: "Runway model, early 20s, shaved head" came back with a full
+ * head of curls. The hair axis added for follow-inheritance was assigning a
+ * family at random and writing it into the SUBJECT block, directly
+ * contradicting the user's own sentence a few lines above it.
+ *
+ * The drop-a-stated-fact family again, and this time authored by the fix for a
+ * different one. A stated fact outranks a varied one everywhere else in this
+ * file; hair had simply never been asked the question, because until the follow
+ * work it was not a field.
+ */
+const HAIR_WORDS = [
+  "hair", "haired", "bald", "shaved", "shaven", "buzz", "buzzcut", "crewcut",
+  "cut", "undercut", "fade", "afro", "braid", "braids", "braided", "dreads",
+  "dreadlocks", "locs", "curls", "curly", "wavy", "coiled", "ponytail", "bun",
+  "bob", "pixie", "fringe", "bangs", "mullet", "quiff", "blonde", "blond",
+  "brunette", "redhead", "ginger", "greying", "graying", "grey", "gray",
+  "silver", "platinum", "bleached", "highlights", "roots",
+];
+
+function describeHair(hair: Hair | null, stated: string): string {
+  /*
+    The brief owns hair the moment it mentions it. Saying nothing here is the
+    whole fix: the user's words are already in the prompt, and adding a second,
+    randomly-chosen hair sentence beside them is how "shaved head" became curls.
+
+    Token membership rather than a regex, deliberately. Three separate escaping
+    accidents this session turned a pattern into something that silently matched
+    nothing while reading correctly — a `\b` became a literal backspace once,
+    and a `\s` became the letter "s". A word list cannot be mangled into
+    something that looks right and does nothing.
+  */
+  const words = new Set(stated.toLowerCase().split(/[^a-z]+/));
+  if (HAIR_WORDS.some((word) => words.has(word))) return "";
   if (!hair) return "";
   const family =
     hair.family === "shaved"
@@ -887,6 +923,8 @@ function describeHeritage(components: HeritageComponent[]): string {
  * it explicitly.
  */
 export function composeCandidatePrompt(input: {
+  /** The user's own sentence — the reliable place to ask "did they say hair?". */
+  briefText?: string;
   intent: CastingIntent;
   resolved: ResolvedIdentity;
   archetype: ArchetypeKey;
@@ -921,7 +959,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair)}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, `${input.briefText ?? ""} ${intent.role ?? ""} ${intent.characterNotes ?? ""}`)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.

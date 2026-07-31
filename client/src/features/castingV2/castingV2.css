@@ -571,8 +571,10 @@
 
 .dpc-viewer__caption .dp-chrome { color: var(--onScrim); opacity: 0.72; }
 
-/* A tile you can open reads as one. */
-.dpc-card--openable { cursor: zoom-in; }
+/* A tile you can open reads as one — with the ordinary pointer. 
+   renders as a magnifying glass, which is loud and reads as a viewer control
+   rather than as "this is clickable". */
+.dpc-card--openable { cursor: pointer; }
 
 /* The media itself is the open affordance; the button adds no chrome. */
 .dpc-card__open {
@@ -582,7 +584,7 @@
   padding: 0;
   border: 0;
   background: none;
-  cursor: zoom-in;
+  cursor: pointer;
 }
 
 .dpc-card__open:focus-visible {
