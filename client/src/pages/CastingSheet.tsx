@@ -65,6 +65,7 @@ export default function CastingSheet() {
     clearOptimistic,
     overrides,
     setOverride,
+    clearOverrides,
     provisionalRollIndex,
     beginProvisionalRoll,
   } = useSheetState();
@@ -323,6 +324,28 @@ export default function CastingSheet() {
     */
     beginProvisionalRoll(rolls.length + 1);
 
+    /*
+      A REWRITTEN BRIEF BEATS A STANDING ADJUSTMENT.
+
+      Overrides persist across rolls on purpose: a roll re-reads the brief each
+      time, so an adjustment that did not persist would be silently re-derived
+      away by the interpreter. That is right while the sentence is unchanged.
+
+      It is wrong the moment the user edits the sentence. The founder typed
+      "a young ... model" and the sheet cast men in their 50s, because an
+      earlier age adjustment was still standing and, by design, ran last and
+      won. Their own freshly typed word lost to a control they had touched
+      minutes before and could no longer see.
+
+      So the rule gains its other half: an adjustment outranks the
+      interpreter's RE-READING of the same sentence, not a new one. Rewrite the
+      brief and the adjustments are spent — the sentence is the statement of
+      intent, and it was just restated.
+    */
+    const briefChanged = brief.trim() !== (roll.data?.briefText ?? "").trim();
+    const sendOverrides = briefChanged ? {} : overrides;
+    if (briefChanged) clearOverrides();
+
     const clientRequestId = createClientRequestId();
     const release = () => {
       latch.release();
@@ -355,7 +378,7 @@ export default function CastingSheet() {
           candidateId,
           briefText: brief,
           unlock: unlocked.length > 0 ? unlocked : undefined,
-          overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+          overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
         },
         options,
       );
@@ -366,7 +389,7 @@ export default function CastingSheet() {
           sessionId,
           briefText: brief,
           unlock: unlocked.length > 0 ? unlocked : undefined,
-          overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
+          overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
         },
         options,
       );
