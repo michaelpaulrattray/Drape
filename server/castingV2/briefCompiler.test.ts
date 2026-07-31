@@ -37,6 +37,7 @@ const BASE_INTENT: CastingIntent = {
   archetype: null,
   variationAxis: null,
   look: null,
+  reads: [],
 };
 
 describe("the precedence fix", () => {
@@ -79,6 +80,7 @@ describe("the precedence fix", () => {
       "energy",
       "heritage",
       "look",
+      "reads",
       "role",
       "sex",
       "variationAxis",

@@ -315,6 +315,16 @@ export type CastingIntent = {
   variationAxis: VariationAxis | null;
   /** A stated look locks across the sheet, per the archetype law. */
   look: LookKey | null;
+  /**
+   * Eight short reads in the brief's own register, for the tile captions.
+   *
+   * The fixed eight ("Warm, unhurried", "Dry and flat") were recycled onto
+   * every disposition sheet regardless of who was being cast, which reads as
+   * boilerplate the moment you see them twice. These are display-only: they
+   * caption a tile and never enter a prompt, so the worst a bad one can do is
+   * be a dull label — the energy DIRECTION driving the image stays code-owned.
+   */
+  reads: string[];
 };
 
 export const ROLE_MAX = 80;
@@ -392,6 +402,7 @@ const wireSchema = z.object({
   archetype: nullableEnum(ARCHETYPE_KEYS as unknown as readonly [string, ...string[]]),
   variationAxis: nullableEnum(VARIATION_AXES),
   look: nullableEnum(LOOK_KEYS as unknown as readonly [string, ...string[]]),
+  reads: z.array(z.unknown()).optional(),
   heritage: z
     .array(
       z.object({
@@ -436,6 +447,27 @@ function parseHeritage(raw: unknown): HeritageComponent[] {
     { ...components[0], pct: first },
     { ...components[1], pct: 100 - first },
   ];
+}
+
+/**
+ * Read labels: short, plain, and capped.
+ *
+ * Display-only, so validation is about keeping them terse and free of the
+ * things a label should never carry — quotes that could look like copy, and
+ * runaway length that would break a caption row.
+ */
+const READ_MAX = 26;
+
+function parseReads(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const reads: string[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "string") continue;
+    const clean = stripQuotedSpans(entry).replace(/\s+/g, " ").trim().slice(0, READ_MAX);
+    if (clean) reads.push(clean);
+    if (reads.length === 8) break;
+  }
+  return reads;
 }
 
 export type IntentParseResult =
@@ -488,6 +520,7 @@ export function parseCastingIntent(raw: unknown): IntentParseResult {
       archetype: wire.archetype as ArchetypeKey | null,
       variationAxis: wire.variationAxis as VariationAxis | null,
       look: wire.look as LookKey | null,
+      reads: parseReads(wire.reads),
     },
   };
 }

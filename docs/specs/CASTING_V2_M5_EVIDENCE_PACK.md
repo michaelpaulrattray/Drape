@@ -92,8 +92,29 @@ Every user-visible string on the casting surfaces, classified:
 
 ## 3. Seed law
 
-**Founder, 2026-07-31: every seed chip must be a brief the compiler fully
-honours today.** A seed is a promise about what the product can do; a seed the
+**Four clauses (founder, 2026-07-31 and 2026-08-01).** Each was learned from a
+seed that broke it:
+
+1. **Honest** — the compiler must fully honour it today.
+2. **A tiny story** — archetype plus one vivid detail, in the register of
+   "Bodega owner, Brooklyn, gravelly". Would a stranger tap it out of
+   curiosity? A demographic description nobody would touch is
+   capability-honest and useless.
+3. **Rest-state and permanent** — the detail must be structural and visible in
+   a still, closed-mouth frame. Never a performed expression.
+4. **Verified** — a seed ships only once a sample tile confirms the detail
+   renders.
+
+Cut by clause 3: "gap-toothed grin" (a grin is performance, and mouth-closed
+framing would hide the gap). Cut by clause 4: "scar through one eyebrow",
+which came back as a faint brow break rather than a scar. "Shaved head"
+rendered unambiguously and shipped in its place.
+
+**Shipped set:** Runway model / early 20s / shaved head · Blacksmith in her
+50s / silver crew cut / soot in the creases · Skincare founder / 40s /
+freckles she never covered · Oncology nurse at the end of a double shift.
+
+The original clause, still governing: A seed is a promise about what the product can do; a seed the
 system silently strips is worse than no seed, because the user taps it, pays,
 and gets something that ignored half of what they clicked.
 

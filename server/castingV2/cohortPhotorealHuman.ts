@@ -142,6 +142,27 @@ const SKIN_AND_FEATURES = [
   "LIPS: vertical plicae and a natural moisture gradient, glossier at the centre. The lip border is organic and slightly irregular, never a vector-sharp line.",
   "BROWS: individual hairs with visible growth direction — upward near the nose, arching laterally, tapering at the tail. Never a solid drawn-on block.",
   "Vellus fuzz is translucent and near-invisible, catching light only at extreme angles — it is NOT stubble and NOT pigmented.",
+  /*
+    STRUCTURAL FEATURES — licensed explicitly (founder ruling, 2026-08-01).
+
+    Two seed tiles asked for a broken nose and neither rendered one: the face
+    came back intact and handsome both times. The realism block was fighting
+    the brief. "No excessive symmetry" nudges toward an *interesting* face, but
+    nothing above licensed actual structural damage, and the model's prior for
+    a studio portrait is an undamaged one — so a named permanent feature lost
+    to the prior every time.
+
+    This does not invent features. It permits the ones the brief names, which
+    is the difference between a casting system that can cast a retired boxer
+    and one that quietly recasts him as a model.
+
+    The full marks vocabulary — the ink/scar/pigmentation/piercing detector and
+    its persistence rules (catalog H2/H3) — is scheduled with M12. This clause
+    is the narrow part that unblocks briefs today.
+  */
+  "STRUCTURAL FEATURES: When the character description names a permanent physical feature — a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, a shaved head, a tattoo — render it plainly and accurately as a real, healed, permanent part of this person.",
+  "These are casting facts, not blemishes to correct. Do not idealise them away, do not soften them, and do not substitute an unmarked face. A named feature that fails to appear is a failed candidate.",
+  "Render only what the description names. Never invent damage, scars or ink that was not asked for.",
 ].join(" ");
 
 /**
@@ -504,7 +525,9 @@ export function composeCandidatePrompt(input: {
  * explains the difference the user is looking at: the look for a modelling
  * brief, the disposition for a character one.
  */
-export function personaLineFor(resolved: ResolvedIdentity): string {
+export function personaLineFor(resolved: ResolvedIdentity, read?: string | null): string {
+  // A read written for THIS brief beats a label recycled across every sheet.
+  if (read) return read;
   if (resolved.look) {
     // Sentence case: these sit under a tile, not in a mono status pill.
     return resolved.look.charAt(0).toUpperCase() + resolved.look.slice(1);

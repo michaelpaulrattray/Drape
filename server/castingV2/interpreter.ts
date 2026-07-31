@@ -50,7 +50,8 @@ Reply with a single JSON object and nothing else:
   "energy": ${ENERGY_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
   "archetype": ${ARCHETYPE_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
   "variationAxis": "look" | "disposition" | null,
-  "look": ${LOOK_KEYS.map((value) => `"${value}"`).join(" | ")} | null
+  "look": ${LOOK_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
+  "reads": [8 short strings] | null
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -99,6 +100,17 @@ WHAT TO EXTRACT
 - "look": only when the brief names a specific casting look. A stated look
   locks across all eight; leave it null and the eight will each take a
   different one.
+- "reads": exactly eight short labels — two or three words each, under 26
+  characters — describing eight different people who all fit this brief. They
+  caption the tiles, so write them in the brief's OWN register: a nurse sheet
+  might read "Steady", "Seen it all", "Quietly funny"; a punk drummer sheet
+  would read nothing like that. Describe the person at rest, never an action or
+  an expression being performed. These are labels, not sentences, and they
+  never affect the image — only what the tile is called.
+  ALWAYS return eight. This is the one field that is not subject to the
+  leave-it-null rule: it is a caption, not a casting fact, so there is no
+  wrong guess to make — and falling back to a generic set makes every sheet
+  read like every other sheet.
 - "cohort": "photoreal_human" for any real-looking human. Use "other" for
   anime, illustration, animals, robots, fantasy creatures, or any brief that is
   not a photograph of a person.
@@ -173,7 +185,16 @@ export async function interpretBrief(input: {
       // Low, because this is extraction. Creativity belongs downstream, in the
       // adapter's variation axes and in the image model itself.
       temperature: 0.2,
-      maxOutputTokens: 500,
+      /*
+        Headroom, deliberately generous. The eight `reads` labels roughly
+        doubled the reply length, and at 500 the JSON began truncating
+        mid-object on longer briefs — which does not degrade to "no reads", it
+        fails the whole parse and drops the intent to `unavailable`. A brief
+        that interpreted fine yesterday silently lost every one of its locks.
+        The cost of the extra ceiling is a fraction of a cent; the cost of
+        truncation is the user's stated facts.
+      */
+      maxOutputTokens: 1200,
       signal: input.signal,
     });
 

@@ -171,6 +171,7 @@ function fallbackIntent(briefText: string): CastingIntent {
     archetype: null,
     variationAxis: null,
     look: null,
+    reads: [],
   };
 }
 
@@ -292,7 +293,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     candidates.push({
       position,
       prompt: composeCandidatePrompt({ intent, resolved, archetype, seed: position }),
-      personaLine: personaLineFor(resolved),
+      personaLine: personaLineFor(resolved, intent.reads[position] ?? null),
       resolvedIdentity: resolved,
     });
   }
@@ -343,7 +344,7 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     return {
       position,
       prompt: composeCandidatePrompt({ intent, resolved, archetype, seed: position }),
-      personaLine: personaLineFor(resolved),
+      personaLine: personaLineFor(resolved, intent.reads[position] ?? null),
       resolvedIdentity: resolved,
     };
   });

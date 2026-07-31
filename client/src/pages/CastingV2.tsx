@@ -55,33 +55,39 @@ const ROLL_PRICE_FALLBACK = 0;
  * and a seed the system silently strips is a worse lie than no seed — the user
  * taps it, pays, and gets something that ignored half of what they clicked.
  *
- * The prototype's four were copied verbatim and two of them broke this:
- *   - "Night-routine voice, almost whispering" — voice-only concept. Voice is
- *     M8b, and M3 found prompt-based voice design is not reachable through
- *     either router yet. Returns when Voice ships.
- *   - "Gen-Z gym rat, ring light, fast talker" — "ring light" is a lighting
- *     instruction, and the framing law strips presentation words by design.
+ * Four clauses, all founder-set, all learned from a seed that broke one:
+ *
+ *   1. **Honest** — the compiler must fully honour it today. No voice-only
+ *      concepts (M8b), no presentation or lighting words (the framing law
+ *      strips them by design), photoreal humans only until M9 certifies more.
+ *   2. **A tiny story** — an archetype plus one vivid detail, in the register
+ *      of "Bodega owner, Brooklyn, gravelly". The test is whether a stranger
+ *      would tap it out of curiosity. A demographic description nobody would
+ *      touch is capability-honest and useless.
+ *   3. **Rest-state and permanent** — the detail must be structural and
+ *      visible in a still, closed-mouth frame: a scar, a shaved head,
+ *      freckles, bleached brows. Never a performed expression; a grin is
+ *      performance, and mouth-closed framing would hide it anyway.
+ *   4. **Verified** — a seed ships only once a sample tile has been generated
+ *      and the detail confirmed to render. Two candidates were cut by this:
+ *      "gap-toothed grin" (performance) and "scar through one eyebrow", which
+ *      came back as a faint brow break rather than a scar.
  *
  * Seeds are **capability-versioned**: when Voice ships a voice seed returns,
  * when a cohort certifies at M9 an anime seed joins. `requires` records the
  * gate so re-enabling is a deliberate edit rather than an act of memory.
  *
- * PROPOSED SET — awaiting the founder's pick. Chosen to show real range: one
- * per axis the compiler actually varies.
+ * Deliberately loose: these state little, so the sheet's own latitude is what
+ * the user sees demonstrated. Stated facts lock; everything else varies.
  */
 const CASTING_SEEDS: Array<{ label: string; shows: string; requires?: string }> = [
-  // The look axis. Verified: the interpreter emitted variationAxis="look" on
-  // both graded calibration rounds for this brief.
-  { label: "Editorial fashion model, early 20s", shows: "category + age lock, look variation" },
-  // A character brief. "Unbothered" is a persona word the interpreter may map
-  // to a stated energy — in which case it LOCKS flat across the eight rather
-  // than varying, which is correct behaviour and worth being accurate about.
-  { label: "Skincare founder, 40s, unbothered", shows: "character brief, stated energy locks" },
-  // Dual heritage, now that the enum can hold both halves (founder ruling,
-  // 2026-08-01). This is the shape real briefs arrive in.
-  { label: "Nigerian-British woman, mid 30s", shows: "dual heritage + age lock" },
-  // The older-age guard: age must be genuinely present in skin and structure.
-  { label: "A retired fisherman in his 60s, weathered face", shows: "age band + skin texture" },
+  // Editorial category — the look axis. "Shaved head" chosen over "scar through
+  // one eyebrow" on evidence: the shaved head rendered unambiguously, the scar
+  // came back as a faint brow break and failed the verification clause.
+  { label: "Runway model, early 20s, shaved head", shows: "category + age lock, look variation" },
+  { label: "Blacksmith in her 50s, silver crew cut, soot in the creases", shows: "trade face, age reads in skin" },
+  { label: "Skincare founder, 40s, freckles she never covered", shows: "founder-type, freckles render" },
+  { label: "Oncology nurse at the end of a double shift", shows: "unexpected, tiredness reads at rest" },
 ];
 
 /**
