@@ -1,4 +1,5 @@
 import type { AgeBand, HairColour, Sex } from "./castingIntent";
+import type { HairTexture } from "../../shared/castingRealization";
 import type { HairStyle, SkinFinish } from "../../shared/castingRealization";
 
 /**
@@ -107,6 +108,32 @@ export function stylesFor(sex: Sex, heritage: string, ageBand: AgeBand): StyleWe
         : NONBINARY_STYLES;
   return ageAdjust(base, ageBand);
 }
+
+/* -------------------------------------------------------------- texture */
+
+/*
+  Hoisted here from realizedAxes 2026-08-01 so the neighbourhood computation
+  can read it without importing back into its own caller. Hair vocabulary in
+  one module; realizedAxes re-exports what it needs.
+*/
+export const TEXTURE_BY_HERITAGE: Record<string, readonly (readonly [HairTexture, number])[]> = {
+  Nordic: [["straight", 56], ["wavy", 34], ["curly", 10]],
+  "British Isles": [["straight", 44], ["wavy", 36], ["curly", 20]],
+  "Western European": [["straight", 44], ["wavy", 36], ["curly", 20]],
+  Slavic: [["straight", 52], ["wavy", 34], ["curly", 14]],
+  Mediterranean: [["wavy", 40], ["curly", 30], ["straight", 30]],
+  "Middle Eastern": [["wavy", 38], ["curly", 32], ["straight", 30]],
+  "East Asian": [["straight", 80], ["wavy", 18], ["curly", 2]],
+  "South Asian": [["straight", 56], ["wavy", 34], ["curly", 10]],
+  "West African": [["coiled", 74], ["curly", 24], ["wavy", 2]],
+  "Afro-Caribbean": [["coiled", 60], ["curly", 32], ["wavy", 8]],
+  Latino: [["wavy", 38], ["straight", 32], ["curly", 26], ["coiled", 4]],
+  Polynesian: [["wavy", 44], ["curly", 34], ["straight", 22]],
+};
+
+export const TEXTURE_DEFAULT: readonly (readonly [HairTexture, number])[] = [
+  ["straight", 42], ["wavy", 34], ["curly", 18], ["coiled", 6],
+];
 
 /* --------------------------------------------------------------- colour */
 

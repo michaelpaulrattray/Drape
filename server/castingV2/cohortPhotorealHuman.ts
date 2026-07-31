@@ -887,7 +887,8 @@ const AXIS_WORDS: Record<"eyes" | "facialHair" | "brows" | "skin", string[]> = {
 };
 
 /** True when the brief's own words already decided this axis. */
-function statedAxis(axis: "eyes" | "facialHair" | "brows" | "skin", stated: string): boolean {
+/** Exported so the sheet taste pass defers on the same words the prompt does. */
+export function statedAxis(axis: "eyes" | "facialHair" | "brows" | "skin", stated: string): boolean {
   const words = new Set(stated.toLowerCase().split(/[^a-z]+/));
   return AXIS_WORDS[axis].some((word) => words.has(word));
 }

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "41cf714ca8cc6c94"
+    "sourceFingerprint": "33f1287a163d79a9"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 15
+      "moduleCount": 16
     },
     {
       "id": "domain:castingV2",
@@ -3119,6 +3119,12 @@
     {
       "id": "module:server/castingV2/hairStyles.ts",
       "path": "server/castingV2/hairStyles.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/heritageNeighbourhoods.ts",
+      "path": "server/castingV2/heritageNeighbourhoods.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7647,6 +7653,10 @@
     {
       "id": "test:server/castingV2/hairStyles.test.ts",
       "path": "server/castingV2/hairStyles.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/heritageNeighbourhoods.test.ts",
+      "path": "server/castingV2/heritageNeighbourhoods.test.ts"
     },
     {
       "id": "test:server/castingV2/heritagePromotion.test.ts",
@@ -15885,6 +15895,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/heritageNeighbourhoods.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/heritageNeighbourhoods.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/heritageNeighbourhoods.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/heritagePromotion.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -15917,6 +15942,11 @@
     {
       "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:server/castingV2/heritageNeighbourhoods.ts",
       "kind": "imports"
     },
     {

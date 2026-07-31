@@ -7,8 +7,18 @@ import {
   type Sex,
 } from "./castingIntent";
 import {
+  beardBucket,
+  colourBucket,
+  sameNeighbourhood,
+  secondAxis,
+  type BeardBucket,
+  type ColourBucket,
+} from "./heritageNeighbourhoods";
+import {
   DEFAULT_HAIR_COLOURS,
   HAIR_COLOUR_WEIGHTS,
+  TEXTURE_BY_HERITAGE,
+  TEXTURE_DEFAULT,
   adjacentShade,
   stylesFor,
 } from "./hairStyles";
@@ -163,24 +173,6 @@ const FACIAL_HAIR_BY_AGE: Record<AgeBand, Weights<FacialHair>> = {
 
 /* ---------------------------------------------------------- hair texture */
 
-const TEXTURE_BY_HERITAGE: Record<string, Weights<HairTexture>> = {
-  Nordic: [["straight", 56], ["wavy", 34], ["curly", 10]],
-  "British Isles": [["straight", 44], ["wavy", 36], ["curly", 20]],
-  "Western European": [["straight", 44], ["wavy", 36], ["curly", 20]],
-  Slavic: [["straight", 52], ["wavy", 34], ["curly", 14]],
-  Mediterranean: [["wavy", 40], ["curly", 30], ["straight", 30]],
-  "Middle Eastern": [["wavy", 38], ["curly", 32], ["straight", 30]],
-  "East Asian": [["straight", 80], ["wavy", 18], ["curly", 2]],
-  "South Asian": [["straight", 56], ["wavy", 34], ["curly", 10]],
-  "West African": [["coiled", 74], ["curly", 24], ["wavy", 2]],
-  "Afro-Caribbean": [["coiled", 60], ["curly", 32], ["wavy", 8]],
-  Latino: [["wavy", 38], ["straight", 32], ["curly", 26], ["coiled", 4]],
-  Polynesian: [["wavy", 44], ["curly", 34], ["straight", 22]],
-};
-
-const TEXTURE_DEFAULT: Weights<HairTexture> = [
-  ["straight", 42], ["wavy", 34], ["curly", 18], ["coiled", 6],
-];
 
 /* ------------------------------------------------------------------ brows */
 
@@ -386,17 +378,37 @@ export type SheetCandidate = {
 /** Age-driven colours. Not palette draws, so the pair-breaker leaves them be. */
 const AGE_COLOURS = new Set<HairColour>(["grey", "white"]);
 
-export function applySheetTaste<T extends SheetCandidate>(sheet: T[], rollSeed: string): T[] {
+export function applySheetTaste<T extends SheetCandidate>(
+  sheet: T[],
+  rollSeed: string,
+  options: { statedFacialHair?: boolean; hairAuthored?: boolean } = {},
+): T[] {
+  /*
+    When the brief stated hair, nothing authored here reaches the prompt, so
+    every hair rule stands down rather than editing a record the image never
+    saw. The twin rule keeps working on its second axis — that is the whole
+    reason this is a flag and not an early return.
+  */
+  const hairAuthored = options.hairAuthored ?? true;
   const seen = new Set<string>();
   const twins = new Set<string>();
   let statements = 0;
   const pairKey = (colour: HairColour, family: string) => `${colour}|${family}`;
+  /*
+    The neighbourhood ledger. One entry per candidate, holding only what the
+    twin rule reads, so the check is against what each earlier candidate ENDED
+    UP as rather than what they drew.
+  */
+  const placed: { heritage: string; family: string; beard: BeardBucket | null; bucket: ColourBucket | null }[] = [];
+  const neighbours = (heritage: string) => placed.filter((entry) => sameNeighbourhood(entry.heritage, heritage));
 
   return sheet.map((candidate, position) => {
     const primary = (candidate.heritage[0]?.heritage ?? "") as Heritage | "";
     const entries = stylesFor(candidate.sex, primary, candidate.ageBand);
     const ordinary = entries.filter(([style]) => !style.statement);
     const current = candidate.realized.hairStyle;
+    const nearby = neighbours(primary);
+    const familiesNearby = new Set(nearby.map((entry) => entry.family));
 
     const overStatement = current.statement === true && statements >= STATEMENT_CAP;
     /*
@@ -415,14 +427,80 @@ export function applySheetTaste<T extends SheetCandidate>(sheet: T[], rollSeed: 
     */
     const remaining = sheet.length - position;
     const mustBeNew = seen.size + remaining - 1 < DISTINCT_FLOOR;
+    const familyClashes = familiesNearby.has(current.family);
+
+    /*
+      ONE style decision, taking every constraint as a pool filter.
+
+      The rules are not applied in sequence and they must not be: the shipped
+      distinct-floor bug was a second rule re-picking a style AFTER `seen` had
+      been written, so an abandoned name inflated `seen.size` and the floor
+      arithmetic lied. The law that generalises from it — no rule may mutate an
+      axis after that axis's sheet-level bookkeeping is committed — is why the
+      cap, the floor and the neighbourhood family constraint all narrow the
+      same pool and the bookkeeping below happens once, on the final value.
+
+      Pools fall back outward: the tightest that still has entries wins, so a
+      constrained sheet degrades one constraint at a time instead of failing.
+    */
+    /*
+      How many second-axis values this candidate could actually reach. A man
+      can always be moved between bearded and bare; a woman is bounded by how
+      many colour buckets her heritage palette holds, which for East Asian and
+      West African is exactly one. A grey head cannot move at all — that is an
+      age fact, not a palette draw.
+    */
+    const ownColour = candidate.hair?.colour ?? null;
+    const reachableBuckets: ReadonlySet<string> =
+      secondAxis(candidate.sex) === "beard"
+        ? new Set(["bearded", "bare"])
+        : ownColour !== null && AGE_COLOURS.has(ownColour)
+          ? new Set([colourBucket(ownColour)])
+          : new Set(
+              (HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS).map(([shade]) => colourBucket(shade)),
+            );
+
+    /*
+      A family still has room when the neighbourhood has not already used every
+      second-axis value alongside it. Without this the pool knew only "is this
+      silhouette taken at all", so once all five families were spoken for it
+      chose blindly and landed on families whose every bucket was gone — 6 of a
+      possible 8 distinct pairings on a sheet with capacity for 10.
+    */
+    const familyHasRoom = (family: string) => {
+      const used = new Set<string>();
+      for (const entry of nearby) {
+        if (entry.family !== family) continue;
+        const bucket = secondAxis(candidate.sex) === "beard" ? entry.beard : entry.bucket;
+        if (bucket !== null) used.add(bucket);
+      }
+      return Array.from(reachableBuckets).some((bucket) => !used.has(bucket));
+    };
 
     let style = current;
-    if (overStatement || (mustBeNew && seen.has(current.name))) {
-      const unused = ordinary.filter(([entry]) => !seen.has(entry.name));
-      const pool = mustBeNew && unused.length > 0 ? unused : ordinary;
-      if (pool.length > 0) {
-        style = fromWeights(pool, hash(`${rollSeed}:hairStyleTaste:${position}`));
-      }
+    if (hairAuthored && (overStatement || (mustBeNew && seen.has(current.name)) || familyClashes)) {
+      const usable = ordinary.filter(([entry]) => !overStatement || !entry.statement);
+      /*
+        The floor is a HARD filter, not another preference. Ranking the twin
+        constraints above it is precisely the mistake that produced the shipped
+        distinct-floor bug in a new costume: the first draft of this pool put
+        `familyHasRoom` ahead of `mustBeNew` and sheets started coming back with
+        four distinct cuts. When the floor is at risk, every option must already
+        be a name nobody has used; the twin rules then choose among those.
+      */
+      const base = mustBeNew ? usable.filter(([entry]) => !seen.has(entry.name)) : usable;
+      const pools = [
+        // A silhouette nobody nearby has.
+        base.filter(([entry]) => !familiesNearby.has(entry.family)),
+        // Silhouettes are exhausted — take one that still has a free bucket, so
+        // the second axis can finish the separation.
+        base.filter(([entry]) => familyHasRoom(entry.family)),
+        base,
+        // Nothing left to satisfy; at least stop the statement overflow.
+        usable,
+      ];
+      const pool = pools.find((option) => option.length > 0);
+      if (pool) style = fromWeights(pool, hash(`${rollSeed}:hairStyleTaste:${position}`));
     }
 
     if (style.statement) statements += 1;
@@ -433,42 +511,114 @@ export function applySheetTaste<T extends SheetCandidate>(sheet: T[], rollSeed: 
       against the style family this candidate actually ends up with, not the one
       they drew and lost.
     */
+    const wantsColour = secondAxis(candidate.sex) === "colour";
+    /*
+      The second half of the twin rule, and the subtlety that matters: the
+      conflict is with earlier candidates sharing this SILHOUETTE, not with
+      everyone in the neighbourhood.
+
+      The first version compared against every nearby bucket and barely worked —
+      by the third candidate both beard buckets were present somewhere on the
+      sheet, so the flip moved into a bucket that was equally taken and changed
+      nothing. A twin is (same neighbourhood AND same family AND same bucket);
+      the fix has to be keyed on the same conjunction the violation is.
+    */
+    const sameSilhouette = nearby.filter((entry) => entry.family === style.family);
+    const bucketsHere = new Set(
+      sameSilhouette.map((entry) => entry.bucket).filter((bucket): bucket is ColourBucket => bucket !== null),
+    );
+
     let colour = candidate.hair?.colour ?? null;
-    if (colour !== null && !AGE_COLOURS.has(colour)) {
-      if (twins.has(pairKey(colour, style.family))) {
-        const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
-        const shifted = adjacentShade(
-          colour,
-          palette,
-          hash(`${rollSeed}:hairColourTaste:${position}`),
-          (shade) => !twins.has(pairKey(shade, style.family)),
-        );
-        // Null means this heritage has nothing else to offer — an East Asian
-        // palette holds two colours, and inventing a third is the exact
-        // heritage-washing the per-heritage weights exist to prevent. The pair
-        // stands, separated by its cut.
-        if (shifted) colour = shifted;
+    if (hairAuthored && colour !== null && !AGE_COLOURS.has(colour)) {
+      const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
+      const seed = hash(`${rollSeed}:hairColourTaste:${position}`);
+      const bucketClashes = wantsColour && bucketsHere.has(colourBucket(colour));
+
+      if (twins.has(pairKey(colour, style.family)) || bucketClashes) {
+        /*
+          One re-pick serving both colour rules, for the same reason the style
+          pick serves three: two sequential shifts would let the second undo
+          what the first bought. Tightest predicate first, then relax.
+        */
+        const wants = [
+          (shade: HairColour) =>
+            !twins.has(pairKey(shade, style.family)) &&
+            (!wantsColour || !bucketsHere.has(colourBucket(shade))),
+          (shade: HairColour) => !twins.has(pairKey(shade, style.family)),
+        ];
+        for (const acceptable of wants) {
+          const shifted = adjacentShade(colour, palette, seed, acceptable);
+          // Null means this heritage has nothing else to offer — an East Asian
+          // palette holds two colours, and inventing a third is the exact
+          // heritage-washing the per-heritage weights exist to prevent. The
+          // pair stands, separated by whatever else differs.
+          if (shifted) {
+            colour = shifted;
+            break;
+          }
+        }
       }
       twins.add(pairKey(colour, style.family));
     }
 
+    /*
+      Facial hair last, and safely: it carries no sheet-level bookkeeping of
+      its own, so moving it cannot invalidate a decision already committed.
+
+      Skipped when the brief STATED facial hair. Under deference no realized
+      facial-hair line is emitted at all, so flipping the value would change
+      nothing the customer sees while making the persisted identity disagree
+      with the prompt that was actually sent — the record-that-lies failure
+      this whole pass is ordered to avoid.
+    */
+    let facialHair = candidate.realized.facialHair;
+    if (facialHair !== null && !options.statedFacialHair && secondAxis(candidate.sex) === "beard") {
+      const beardsHere = new Set(
+        nearby
+          .filter((entry) => !hairAuthored || entry.family === style.family)
+          .map((entry) => entry.beard)
+          .filter((bucket): bucket is BeardBucket => bucket !== null),
+      );
+      if (beardsHere.has(beardBucket(facialHair)!)) {
+        const wanted: BeardBucket = beardBucket(facialHair) === "bearded" ? "bare" : "bearded";
+        const pool = FACIAL_HAIR_BY_AGE[candidate.ageBand].filter(
+          ([value]) => beardBucket(value) === wanted,
+        );
+        if (pool.length > 0) {
+          facialHair = weightedPick(pool, hash(`${rollSeed}:facialHairTaste:${position}`));
+        }
+      }
+    }
+
+    placed.push({
+      heritage: primary,
+      family: style.family,
+      beard: beardBucket(facialHair),
+      bucket: colour === null ? null : colourBucket(colour),
+    });
+
     const colourChanged = colour !== null && colour !== candidate.hair?.colour;
-    if (style === current && !colourChanged) return candidate;
+    const beardChanged = facialHair !== candidate.realized.facialHair;
+    if (style === current && !colourChanged && !beardChanged) return candidate;
 
     const hair = colourChanged && candidate.hair ? { ...candidate.hair, colour } : candidate.hair;
-    if (style === current) return { ...candidate, hair };
-
     /*
       Texture follows the cut. A style that dictates its own texture wins, and a
       swap that left the old dictation behind would strand "coiled" on a bob —
       the illegal pairing the entry-level legality rule exists to prevent.
     */
     const hairTexture =
-      style.texture ??
-      weightedPick(
-        TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
-        hash(`${rollSeed}:hairTexture:${position}`),
-      );
-    return { ...candidate, hair, realized: { ...candidate.realized, hairStyle: style, hairTexture } };
+      style === current
+        ? candidate.realized.hairTexture
+        : style.texture ??
+          weightedPick(
+            TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
+            hash(`${rollSeed}:hairTexture:${position}`),
+          );
+    return {
+      ...candidate,
+      hair,
+      realized: { ...candidate.realized, hairStyle: style, hairTexture, facialHair },
+    };
   });
 }

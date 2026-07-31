@@ -58,6 +58,7 @@ import {
   resolveArchetype,
   resolveCandidateIdentity,
   briefStatesHair,
+  statedAxis,
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
 import { scrubBrands } from "./brandScrub";
@@ -390,11 +391,38 @@ function resolveSheet(input: {
     resolveCandidateIdentity(intent, position, rollSeed, anchor),
   );
 
+  const stated = [briefText, intent.role ?? "", intent.characterNotes ?? ""].join(" ");
   const inherited = anchor?.realized != null;
-  const tasted =
-    inherited || briefStatesHair(briefText, intent.role, intent.characterNotes)
-      ? resolved
-      : applySheetTaste(resolved, rollSeed);
+  /*
+    A follow is the one full skip: every candidate copies the anchor's realized
+    axes on purpose, so eight inherited pixies is the follow working.
+
+    Stated hair is NOT a full skip, and treating it as one was a real gap. The
+    founder's own brief — "a skincare founder in his 40s, silver at the
+    temples" — mentions hair, which suppressed every authored hair line AND, in
+    the first version of this, the whole taste pass with it. The twin rule's
+    second axis is facial hair, which deference over HAIR has nothing to say
+    about, so the sheet that prompted the twin-breaker was the one sheet it
+    would never have run on.
+  */
+  const tasted = inherited
+    ? resolved
+    : applySheetTaste(resolved, rollSeed, {
+        /*
+          Deference reaches the taste pass too. A brief that named facial hair
+          suppresses the realized line, so flipping the value would change
+          nothing visible while making the stored identity disagree with the
+          prompt that was sent.
+        */
+        statedFacialHair: statedAxis("facialHair", stated),
+        /*
+          When the brief states hair, none of the authored hair reaches the
+          prompt. Mutating it would edit a record the image never saw, so the
+          hair rules stand down and the twin rule falls back to separating on
+          its second axis alone.
+        */
+        hairAuthored: !briefStatesHair(briefText, intent.role, intent.characterNotes),
+      });
 
   return {
     candidates: tasted.map((identity, position) => ({
