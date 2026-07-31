@@ -10,6 +10,187 @@
   screen branching on the theme.
 */
 
+/* ============================================================
+   CASTING TAB — the prototype's page anatomy (chapter 07, F5)
+   ============================================================ */
+
+/*
+  The hero card. One bordered pane holding copy and a media pair, which is a
+  different object from "a headline with a picture next to it": the border is
+  what makes the casting pitch read as a card rather than as page furniture.
+*/
+.dpc-hero {
+  border: 1px solid var(--borderCard);
+  border-radius: 14px;
+  background: var(--raised);
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.dpc-hero__copy {
+  flex: 1 1 470px;
+  min-width: min(400px, 100%);
+  padding: 28px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: center;
+}
+
+.dpc-hero__title {
+  margin: 0;
+  font: 500 31px/1.08 var(--font-sans);
+  letter-spacing: -0.038em;
+  color: var(--ink);
+}
+
+.dpc-hero__field {
+  margin-top: 4px;
+}
+
+/*
+  The outline-seam construction. The 1px flex gap lets the `--border`
+  background show through as the seam between the two frames, and the outline
+  draws the same hairline around the pair — so seam and edge are one weight.
+  Two separately-bordered boxes would double the line where they meet.
+*/
+.dpc-hero__pair {
+  flex: 1 1 320px;
+  min-width: min(300px, 100%);
+  display: flex;
+  gap: 1px;
+  background: var(--border);
+  outline: 1px solid var(--border);
+  min-height: 286px;
+}
+
+.dpc-hero__slot {
+  flex: 1;
+  position: relative;
+  background: var(--media);
+  overflow: hidden;
+}
+
+.dpc-hero__slot > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- the two entry cards ---- */
+
+.dpc-entries {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.dpc-entry {
+  border: 1px solid var(--borderCard);
+  border-radius: 13px;
+  padding: 16px 18px;
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.dpc-entry:hover {
+  border-color: var(--lineStrong);
+  background: var(--raised);
+}
+
+/*
+  Drawn, but not yet real. It keeps its shape and loses its affordances: no
+  pointer, no hover, no tab stop. The copy carries the truth — the card is not
+  relying on being greyed out to say it.
+*/
+.dpc-entry--inert {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.dpc-entry--inert:hover {
+  border-color: var(--borderCard);
+  background: var(--surface);
+}
+
+.dpc-entry__icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  border: 1px dashed var(--dashed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--metaStrong);
+}
+
+.dpc-entry__stack {
+  display: flex;
+  align-items: center;
+  flex: none;
+  padding-top: 1px;
+  padding-right: 8px;
+}
+
+.dpc-entry__chip {
+  width: 26px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(160deg, var(--fill), var(--dots));
+  box-shadow: 0 0 0 1.5px var(--surface);
+  margin-right: -9px;
+}
+
+/* ---- search + scope row ---- */
+
+.dpc-filters {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.dpc-filters__search {
+  flex: 1;
+  min-width: 210px;
+}
+
+.dpc-rosterhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/*
+  The roster grid: 178px minimum, 4:5 tiles. Its own grid rather than the
+  shared `.dp-grid` because the roster's tile width is a documented constant of
+  this page, not the app-wide browsing default.
+*/
+.dpc-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.dpc-roster__new {
+  aspect-ratio: 4 / 5;
+  border-radius: 11px;
+}
+
 /*
   A candidate that did not arrive. Deliberately quiet — a failed tile that
   shouts turns a refunded slice into an incident, when what the user needs to
