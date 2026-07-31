@@ -97,6 +97,16 @@ export type SessionProjection = {
  * boundary without being checked against a closed list first.
  */
 export type BriefFacts = {
+  /**
+   * The casting category, in the user's own words.
+   *
+   * Not in `lockContract`, because `LockFacts` is the validator's input and
+   * has no role field — but it IS a lock, and the loudest one: the prompt
+   * carries it as "CASTING CATEGORY (ABSOLUTE)" and a candidate who would not
+   * be credible in it is a failed candidate (gate B5). An echo that omitted it
+   * was omitting the single strongest constraint on the sheet.
+   */
+  role: string | null;
   locks: {
     sex?: string;
     ageBand?: string;
@@ -147,11 +157,23 @@ export function readBriefFacts(lockContract: unknown, compiledBrief: unknown): B
 
   const open = OPEN_AXES.filter((axis) => !(axis in locks));
 
-  const axis = (compiledBrief as { intent?: { variationAxis?: unknown } } | null)?.intent
-    ?.variationAxis;
+  const intent = (compiledBrief as { intent?: Record<string, unknown> } | null)?.intent;
+  const axis = intent?.variationAxis;
   const variationAxis = axis === "look" || axis === "disposition" ? axis : null;
 
-  return { locks, open, variationAxis };
+  /*
+    Free text, so it is bounded and stripped rather than enum-checked — the
+    only field here that cannot be. The interpreter caps it at 12 words; this
+    is the belt to that braces, because the compiled brief is written by a
+    model behind a seam.
+  */
+  const rawRole = intent?.role;
+  const role =
+    typeof rawRole === "string" && rawRole.trim().length > 0
+      ? rawRole.replace(/\s+/g, " ").trim().slice(0, 60)
+      : null;
+
+  return { role, locks, open, variationAxis };
 }
 
 const CHIP_KINDS = new Set<CastingChip["kind"]>(["subject", "style", "direction", "lineage"]);

@@ -136,6 +136,14 @@ function EchoSpanView({
 }) {
   if (span.kind === "text") return <span className="dpc-echo__prose">{span.text}</span>;
 
+  /*
+    The casting category. Full ink like any other lock, and deliberately not a
+    button: every adjustable fact opens a closed vocabulary, and a category is
+    free text. An underline here would promise a picker that cannot exist —
+    the brief box is where a category changes.
+  */
+  if (span.kind === "role") return <span className="dpc-echo__role">{span.text}</span>;
+
   const { field } = span;
   const current = currentValue(facts, field);
   const pinned = span.kind === "fact";

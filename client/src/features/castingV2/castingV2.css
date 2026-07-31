@@ -602,3 +602,7 @@
 .dpc-echo__was { color: var(--meta); text-decoration: line-through; text-decoration-thickness: 1px; }
 .dpc-echo__will { color: var(--ink); border-bottom: 1px solid var(--accentSolid); }
 .dpc-echo__when { color: var(--faint); font-size: 10.5px; letter-spacing: 0.06em; }
+
+/* The casting category: a lock, so full ink — but no underline, because it is
+   free text and has no picker behind it. */
+.dpc-echo__role { color: var(--ink); }

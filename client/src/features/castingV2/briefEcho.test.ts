@@ -12,7 +12,7 @@ import { composeEcho, echoText, type BriefFacts } from "./briefEcho";
  */
 
 function facts(partial: Partial<BriefFacts>): BriefFacts {
-  return { locks: {}, open: [], variationAxis: null, ...partial };
+  return { role: null, locks: {}, open: [], variationAxis: null, ...partial };
 }
 
 describe("the sentence composes rather than templates", () => {
@@ -184,6 +184,7 @@ describe("the two-line cap is enforced by saying less", () => {
       A shorter true sentence beats a longer one with its end cut off.
     */
     const long = composeEcho({
+      role: null,
       locks: {
         sex: "female",
         ageBand: "20s",
@@ -204,6 +205,7 @@ describe("the two-line cap is enforced by saying less", () => {
 
   it("keeps the latitude clause when there is room for it", () => {
     const short = composeEcho({
+      role: null,
       locks: { sex: "male", ageBand: "40s" },
       open: ["heritage", "build"],
       variationAxis: "look",
@@ -215,6 +217,7 @@ describe("the two-line cap is enforced by saying less", () => {
     // Latitude is what gets cut. A fact disappearing would be the CSS clip's
     // failure reproduced in the grammar.
     const spans = composeEcho({
+      role: null,
       locks: {
         sex: "female",
         ageBand: "30s",
@@ -229,5 +232,76 @@ describe("the two-line cap is enforced by saying less", () => {
     }, { followLabel: "the sixth face on roll 02" });
     const fields = spans.filter((s) => s.kind === "fact").map((s) => s.field);
     expect(fields).toEqual(["build", "ageBand", "heritage", "energy", "look"]);
+  });
+});
+
+describe("the casting category is in the sentence", () => {
+  /*
+    Founder's round-6 finding: "a runway model early 20s" echoed as
+    "Everyone on this sheet is someone early 20s" — the category missing
+    entirely, and the grammar broken where it should have been.
+
+    The interpreter was innocent: it captured role="runway model" on that exact
+    brief and on every phrasing tried. The echo was composed from lockContract,
+    which is the VALIDATOR's input and has no role field, so the category was
+    never in the data the sentence was written from. The loudest lock on the
+    sheet was the one the sentence could not see.
+  */
+  it("names the category the founder's brief stated", () => {
+    const spans = composeEcho(
+      facts({ role: "runway model", locks: { ageBand: "20s", agePhase: "early" }, variationAxis: "look" }),
+    );
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is cast as a runway model — in their early 20s. The eight differ by look.",
+    );
+  });
+
+  it("never says 'someone early 20s' again", () => {
+    // The other half of the report: with no sex pinned the preposition was
+    // dropped, because it only existed on the branch that had a noun.
+    const spans = composeEcho(facts({ locks: { ageBand: "20s", agePhase: "early" } }));
+    expect(echoText(spans)).toBe("Everyone on this sheet is in their early 20s.");
+    expect(echoText(spans)).not.toContain("someone");
+  });
+
+  it("carries the category alongside a full subject", () => {
+    const spans = composeEcho(
+      facts({
+        role: "oncology nurse",
+        locks: { sex: "female", ageBand: "50s", heritage: ["British Isles"], energy: "grave" },
+        variationAxis: "disposition",
+      }),
+    );
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave. The eight differ by disposition.",
+    );
+  });
+
+  it("stands alone when the category is all the brief gave", () => {
+    const spans = composeEcho(facts({ role: "blacksmith", variationAxis: "disposition" }));
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is cast as a blacksmith. The eight differ by disposition.",
+    );
+  });
+
+  it("does not double the article on a category the user wrote with one", () => {
+    const spans = composeEcho(facts({ role: "a retired boxer" }));
+    expect(echoText(spans)).toBe("Everyone on this sheet is cast as a retired boxer.");
+    expect(echoText(spans)).not.toContain("as a a ");
+  });
+
+  it("picks 'an' before a vowel", () => {
+    expect(echoText(composeEcho(facts({ role: "editorial fashion model" })))).toContain(
+      "cast as an editorial fashion model",
+    );
+  });
+
+  it("renders the category as a role span — full ink, never a picker", () => {
+    // Every other fact opens a closed vocabulary. A category is free text, so
+    // underlining it would promise an adjustment that cannot exist.
+    const spans = composeEcho(facts({ role: "runway model", locks: { sex: "female" } }));
+    const role = spans.find((span) => span.kind === "role");
+    expect(role).toBeDefined();
+    expect(spans.some((span) => span.kind === "fact" && span.text.includes("runway"))).toBe(false);
   });
 });

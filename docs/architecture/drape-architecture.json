@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4ed76ade4810a464"
+    "sourceFingerprint": "c1ff60973b62404e"
   },
   "domains": [
     {
@@ -7573,6 +7573,10 @@
     {
       "id": "test:server/castingV2/briefCompiler.test.ts",
       "path": "server/castingV2/briefCompiler.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/briefFactsRole.test.ts",
+      "path": "server/castingV2/briefFactsRole.test.ts"
     },
     {
       "id": "test:server/castingV2/candidateRetention.test.ts",

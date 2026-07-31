@@ -26,6 +26,8 @@
  */
 
 export type BriefFacts = {
+  /** The casting category, in the user's own words. A lock, and the loudest. */
+  role: string | null;
   locks: {
     sex?: string;
     ageBand?: string;
@@ -54,6 +56,8 @@ export type EchoField = "sex" | "ageBand" | "agePhase" | "heritage" | "build" | 
  */
 export type EchoSpan =
   | { kind: "text"; text: string }
+  /** The casting category: full ink, not adjustable — free text has no picker. */
+  | { kind: "role"; text: string }
   | { kind: "fact"; text: string; field: EchoField }
   | { kind: "open"; text: string; field: EchoField };
 
@@ -69,44 +73,87 @@ const AXIS_WORDS: Record<string, string> = {
 
 const AXIS_ORDER: EchoField[] = ["heritage", "build", "energy", "look", "sex", "ageBand"];
 
+/** "a"/"an", for a category the user wrote without one. */
+function article(word: string): string {
+  return /^[aeiou]/i.test(word) ? "an" : "a";
+}
+
+/**
+ * The casting category — the loudest lock on the sheet, and the one the echo
+ * used to leave out entirely.
+ *
+ * "a runway model early 20s" echoed as "Everyone on this sheet is someone early
+ * 20s" — the strongest constraint on the roll, silently absent. It happened
+ * because the echo was built from `lockContract`, and `LockFacts` is the
+ * *validator's* input: it has no role field, because the validator compares
+ * enum values and a category is free text. So the category was never in the
+ * data the sentence was composed from.
+ *
+ * The design rule it collided with was mine — "your own words are never
+ * repeated back", written to keep the echo from paraphrasing the brief. That
+ * rule is still right about the brief as a whole and wrong about this: the
+ * category is not the user's sentence, it is the single fact the compiler
+ * treats as ABSOLUTE ("a candidate who would not be credible in this role is a
+ * failed candidate"). Omitting it made the echo quietest about the thing it
+ * enforced hardest.
+ *
+ * It renders at full ink and is NOT adjustable. Every other fact opens a closed
+ * vocabulary; a category is free text, so underlining it would promise a
+ * picker that cannot exist. The brief box is where a category changes.
+ */
+function categoryPhrase(role: string | null): EchoSpan[] {
+  if (!role) return [];
+  const lead = /^(a|an|the)\s/i.test(role) ? role : `${article(role)} ${role}`;
+  return [
+    { kind: "text", text: "Everyone on this sheet is cast as " },
+    { kind: "role", text: lead },
+  ];
+}
+
 /** "female" + "20s" + "early" + "slim" → "a slim woman in her early 20s". */
-function subjectPhrase(locks: BriefFacts["locks"]): EchoSpan[] {
+function subjectPhrase(locks: BriefFacts["locks"], hasRole: boolean): EchoSpan[] {
   const spans: EchoSpan[] = [];
   const { sex, ageBand, agePhase, build } = locks;
 
   const noun = sex === "female" ? "woman" : sex === "male" ? "man" : sex ? "person" : null;
   const possessive = sex === "female" ? "her" : sex === "male" ? "his" : "their";
 
+  // With a category already named, the subject continues it rather than
+  // opening a second sentence about the same people.
+  const opener = hasRole ? " — " : "Everyone on this sheet is ";
+
   // No sex and no age: there is no subject noun phrase to write at all.
   if (!noun && !ageBand) {
     if (!build) return [];
     return [
-      { kind: "text", text: "Everyone on this sheet is " },
+      { kind: "text", text: opener },
       { kind: "fact", text: `${build} built`, field: "build" },
     ];
   }
 
-  spans.push({ kind: "text", text: "Everyone on this sheet is " });
+  spans.push({ kind: "text", text: opener });
 
   if (noun) {
     // Build folds into the noun as an adjective — "a slim woman", never
     // "a woman, slim". One fused span, because a user adjusting "slim woman"
     // is adjusting two facts and the popover offers whichever they clicked.
-    const article = build && /^[aeiou]/i.test(build) ? "an" : "a";
     spans.push(
       build
-        ? { kind: "fact", text: `${article} ${build} ${noun}`, field: "build" }
+        ? { kind: "fact", text: `${article(build)} ${build} ${noun}`, field: "build" }
         : { kind: "fact", text: `a ${noun}`, field: "sex" },
     );
-  } else {
-    spans.push({ kind: "text", text: "someone " });
   }
 
   if (ageBand) {
     const phase = agePhase ? `${agePhase} ` : "";
     const decade = ageBand === "70s+" ? "seventies or older" : ageBand;
-    const preposition = noun ? ` in ${possessive} ` : "";
-    spans.push({ kind: "text", text: preposition || " " });
+    /*
+      "someone early 20s" was the other half of the founder's report, and it is
+      simply broken English — the preposition only existed on the branch that
+      had a noun to attach it to. With no sex pinned the subject is "everyone",
+      so the age reads "in their early 20s" either way.
+    */
+    spans.push({ kind: "text", text: noun ? ` in ${possessive} ` : "in their " });
     spans.push({ kind: "fact", text: `${phase}${decade}`, field: "ageBand" });
   }
 
@@ -154,8 +201,8 @@ function composeSpans(
   facts: BriefFacts,
   options: { terse?: boolean; followLabel?: string | null },
 ): EchoSpan[] {
-  const { locks, open, variationAxis } = facts;
-  const spans: EchoSpan[] = [...subjectPhrase(locks)];
+  const { role, locks, open, variationAxis } = facts;
+  const spans: EchoSpan[] = [...categoryPhrase(role), ...subjectPhrase(locks, Boolean(role))];
 
   if (locks.heritage && locks.heritage.length > 0) spans.push(...heritagePhrase(locks.heritage));
 
