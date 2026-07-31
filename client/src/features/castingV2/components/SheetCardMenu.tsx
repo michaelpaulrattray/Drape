@@ -16,32 +16,27 @@ import { MoreHorizontal, Trash2 } from "lucide-react";
  * menu is Open, Copy link and Delete, which is everything a sheet can actually
  * do today, and it grows when the operations do.
  *
- * Delete confirms inside the menu rather than in a system dialog. It was
- * `window.confirm` — the browser's chrome and a title bar reading localhost,
- * dropped into a monochrome editorial product.
+ * Delete opens a confirmation dialog rather than resolving here. A permanent
+ * delete of someone's work confirmed in a 178px popover, at the same visual
+ * weight as "Copy link", was too quiet for what it does — weight should match
+ * consequence.
  */
 export function SheetCardMenu({
   label,
   open,
-  armed,
-  deleting,
   onToggle,
   onOpenSheet,
   onCopyLink,
   onArm,
   onCancel,
-  onDelete,
 }: {
   label: string;
   open: boolean;
-  armed: boolean;
-  deleting: boolean;
   onToggle: () => void;
   onOpenSheet: () => void;
   onCopyLink: () => void;
   onArm: () => void;
   onCancel: () => void;
-  onDelete: () => void;
 }) {
   const rootRef = useRef<HTMLSpanElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -82,30 +77,7 @@ export function SheetCardMenu({
 
       {open ? (
         <span className="dpc-sheetmenu__panel" role="menu">
-          {armed ? (
-            /*
-              The confirm replaces the menu's contents rather than opening a
-              second layer on top of it. One surface, one decision — and the
-              destructive item is the only thing on screen at the moment it
-              matters.
-            */
-            <>
-              <span className="dpc-sheetmenu__ask">Delete this sheet and its candidates?</span>
-              <button
-                type="button"
-                role="menuitem"
-                className="dpc-sheetmenu__item dpc-sheetmenu__item--danger"
-                disabled={deleting}
-                onClick={onDelete}
-              >
-                {deleting ? "Deleting…" : "Delete permanently"}
-              </button>
-              <button type="button" role="menuitem" className="dpc-sheetmenu__item" onClick={onCancel}>
-                Keep it
-              </button>
-            </>
-          ) : (
-            <>
+          <>
               <button type="button" role="menuitem" className="dpc-sheetmenu__item" onClick={onOpenSheet}>
                 Open sheet
               </button>
@@ -122,8 +94,7 @@ export function SheetCardMenu({
                 <Trash2 size={12} strokeWidth={2} aria-hidden="true" />
                 Delete
               </button>
-            </>
-          )}
+          </>
         </span>
       ) : null}
     </span>

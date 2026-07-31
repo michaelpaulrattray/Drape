@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
+import { ConfirmDialog } from "@/features/castingV2/components/ConfirmDialog";
 import { SheetCardMenu } from "@/features/castingV2/components/SheetCardMenu";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import "@/features/castingV2/castingV2.css";
@@ -144,7 +145,7 @@ export default function CastingV2() {
   const [menuFor, setMenuFor] = useState<string | null>(null);
 
   const discardSheet = async (sessionId: string) => {
-    // The confirmation lives inside the card's menu, not in an OS dialog.
+    // The confirmation is the modal; this only runs once it is answered.
     if (abandoning) return;
     setAbandoning(sessionId);
     try {
@@ -159,6 +160,9 @@ export default function CastingV2() {
       setAbandoning(null);
     }
   };
+
+  /** The sheet a delete has been requested for, resolved to its row. */
+  const armedSheet = openSessions.data?.find((entry) => entry.sessionId === armed) ?? null;
 
   const createSession = trpc.castingV2.createSession.useMutation();
   const createRoll = trpc.castingV2.createRoll.useMutation();
@@ -499,8 +503,6 @@ export default function CastingV2() {
                 <SheetCardMenu
                   label={entry.briefText ?? "Untitled sheet"}
                   open={menuFor === entry.sessionId}
-                  armed={armed === entry.sessionId}
-                  deleting={abandoning === entry.sessionId}
                   onToggle={() =>
                     setMenuFor(menuFor === entry.sessionId ? null : entry.sessionId)
                   }
@@ -512,17 +514,33 @@ export default function CastingV2() {
                     setMenuFor(null);
                     toast("Link copied");
                   }}
-                  onArm={() => setArmed(entry.sessionId)}
-                  onCancel={() => {
-                    setArmed(null);
+                  onArm={() => {
                     setMenuFor(null);
+                    setArmed(entry.sessionId);
                   }}
-                  onDelete={() => discardSheet(entry.sessionId)}
+                  onCancel={() => setMenuFor(null)}
                 />
               </Card>
             ))}
           </div>
         </section>
+      ) : null}
+
+      {/*
+        One dialog for the page, not one per card. A modal is a single
+        conversation, and eight mounted copies waiting in the DOM would be
+        eight things to keep in sync for no benefit.
+      */}
+      {armedSheet ? (
+        <ConfirmDialog
+          title="Delete this sheet?"
+          body={`"${armedSheet.briefText ?? "Untitled sheet"}" and every candidate on it will be deleted. This cannot be undone.`}
+          confirmLabel="Delete sheet"
+          busyLabel="Deleting…"
+          busy={abandoning === armedSheet.sessionId}
+          onConfirm={() => discardSheet(armedSheet.sessionId)}
+          onCancel={() => setArmed(null)}
+        />
       ) : null}
 
       <section className="dp-stack" style={{ gap: 12 }}>

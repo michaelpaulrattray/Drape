@@ -293,6 +293,20 @@
 
 /* An unsigned-sheet card opens on its body; the discard button sits beside. */
 
+/*
+  The positioning context for the card menu.
+
+  This was deleted by accident when the old hover chip was removed — the
+  regex that stripped the chip took the card rule with it, and the menu then
+  positioned against the page instead of the card and rendered at the far
+  right edge, off the card entirely. "I cannot see the 3 dot menu" was exactly
+  right, and it was invisible to a DOM check because the element existed and
+  was fully opaque; only its box was wrong.
+*/
+.dpc-sheetcard {
+  position: relative;
+}
+
 .dpc-sheetcard__open {
   display: flex;
   flex-direction: column;
@@ -667,3 +681,84 @@
   font: 400 12px/1.45 var(--font-sans);
   color: var(--metaStrong);
 }
+
+/* ---- destructive confirmation ---- */
+
+.dpc-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--viewerScrim);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dpc-confirm__panel {
+  width: min(100%, 420px);
+  padding: 22px 24px 18px;
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadowCard);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dpc-confirm__title {
+  margin: 0;
+  font: 500 15.5px/1.3 var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dpc-confirm__body {
+  margin: 0;
+  font: 400 13.5px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dpc-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  margin-top: 10px;
+}
+
+.dpc-confirm__keep,
+.dpc-confirm__go {
+  font: 500 13px var(--font-sans);
+  padding: 8px 15px;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+}
+
+.dpc-confirm__keep {
+  background: transparent;
+  border: 1px solid var(--borderInput);
+  color: var(--secondary);
+}
+
+.dpc-confirm__keep:hover { background: var(--well); border-color: var(--lineStrong); }
+
+/*
+  Filled, not outlined. The reference outlines its destructive button, but in
+  this system an outline reads as secondary — and the destructive action is the
+  thing the dialog is asking about, so it carries the weight.
+*/
+.dpc-confirm__go {
+  background: var(--error);
+  border: 1px solid var(--error);
+  color: #ffffff;
+}
+
+.dpc-confirm__go:hover { filter: brightness(0.94); }
+.dpc-confirm__keep:disabled,
+.dpc-confirm__go:disabled { opacity: 0.6; cursor: default; }
+
+.dpc-confirm__keep:focus-visible,
+.dpc-confirm__go:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
