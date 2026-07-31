@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "816d1c32edb322ce"
+    "sourceFingerprint": "1134d692de7216e1"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 5
+      "moduleCount": 4
     },
     {
       "id": "domain:client-shared",
@@ -1391,12 +1391,6 @@
     {
       "id": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "path": "client/src/features/castingV2/components/CandidateTile.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/ShortlistTray.tsx",
-      "path": "client/src/features/castingV2/components/ShortlistTray.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10452,11 +10446,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/components/ShortlistTray.tsx",
-      "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/export/ExportPackDialog.tsx",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -12304,11 +12293,6 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateTile.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:client/src/features/castingV2/components/ShortlistTray.tsx",
       "kind": "imports"
     },
     {

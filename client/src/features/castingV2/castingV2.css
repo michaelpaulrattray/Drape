@@ -191,6 +191,104 @@
   border-radius: 11px;
 }
 
+/* ============================================================
+   CANDIDATE CARD — media, with the action row beneath it
+   ============================================================ */
+
+.dpc-card {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--media);
+  border: 1px solid var(--border);
+}
+
+.dpc-card > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Kept: 2px accent inset ring. The accent's only job in this system. */
+.dpc-card__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  border: 2px solid var(--accentSolid);
+  pointer-events: none;
+}
+
+.dpc-card__check {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accentSolid);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dpc-card__lineage {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--scrimPill);
+  font: 500 9.5px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  pointer-events: none;
+}
+
+/*
+  The on-media scrim action row the prototype draws is not built: the founder
+  preferred the labelled row beneath the card, which reads more plainly than
+  two glyph squares on a photograph. Its cost was vertical height, and the
+  sticky dock absorbed that.
+*/
+
+.dpc-card__caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dpc-card__line {
+  font: 400 11.5px var(--font-sans);
+  color: var(--secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- the dock's kept stack: the shortlist, where Sign will sit ---- */
+
+.dpc-keptstack {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.dpc-keptstack__chip {
+  width: 24px;
+  height: 30px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: linear-gradient(160deg, var(--fill), var(--dots));
+  box-shadow: 0 0 0 1.5px var(--surface);
+  margin-right: -8px;
+}
+
 /* ---- roll rail: every roll this sheet has paid for, still reachable ---- */
 
 .dpc-rollrail {
@@ -268,27 +366,10 @@
   border-color: var(--dashed);
 }
 
-/* The tray: kept candidates, carried across rolls. Small, horizontal, quiet. */
-.dpc-tray {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-4);
-}
-
-.dpc-tray__item {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 0;
-  width: 76px;
-}
-
-.dpc-tray__img {
-  display: block;
-  width: 76px;
-  height: 95px;
-  object-fit: cover;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--borderMedia);
-  background: var(--media);
-}
+/*
+  The standalone shortlist tray that used to live here is gone. It was never
+  in the prototype, and being a full section below the grid it pushed the dock
+  off-screen — which is what made Roll again unreachable without scrolling.
+  The shortlist now rides in the dock as `.dpc-keptstack`, where Sign joins it
+  at M7.
+*/

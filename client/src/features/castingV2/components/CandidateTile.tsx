@@ -1,6 +1,6 @@
-import { Check, GitBranch, RotateCcw, X } from "lucide-react";
+import { Check, RotateCcw, Sparkles, X } from "lucide-react";
 
-import { Button, MediaFrame, Skeleton, StatusPill } from "@/foundation";
+import { Button, Skeleton } from "@/foundation";
 
 /**
  * One candidate, one tile, arriving on its own.
@@ -80,23 +80,47 @@ export function CandidateTile({
   }
 
   return (
-    <div className="dp-stack dpc-tile" style={{ gap: 9 }} data-hoverhost>
-      <MediaFrame
-        src={candidate.imageUrl ?? undefined}
-        alt={candidate.personaLine ?? `Candidate ${candidate.indexLabel}`}
-        selected={candidate.kept}
-        topLeft={
-          lineageLabel ? <StatusPill tone="onMedia">{lineageLabel}</StatusPill> : undefined
-        }
-      />
-      <div className="dp-row" style={{ justifyContent: "space-between", gap: 8 }}>
-        <span className="dp-label">{candidate.personaLine ?? candidate.indexLabel}</span>
+    <div className="dp-stack dpc-tile" style={{ gap: 9 }}>
+      <div className="dpc-card">
+        {candidate.imageUrl ? (
+          <img
+            src={candidate.imageUrl}
+            alt={candidate.personaLine ?? `Candidate ${candidate.indexLabel}`}
+          />
+        ) : null}
+
+        {lineageLabel ? <span className="dpc-card__lineage">{lineageLabel}</span> : null}
+
+        {/* Kept renders in place: inset ring + badge, on the tile itself. */}
+        {candidate.kept ? (
+          <>
+            <span className="dpc-card__ring" aria-hidden="true" />
+            <span className="dpc-card__check" aria-hidden="true">
+              <Check size={12} strokeWidth={2.6} />
+            </span>
+          </>
+        ) : null}
+
+      </div>
+
+      <div className="dpc-card__caption">
+        <span className="dpc-card__line">{candidate.personaLine ?? candidate.indexLabel}</span>
         <span className="dp-metadata">{candidate.indexLabel}</span>
       </div>
+
       {/*
-        Real buttons, not hover-only divs: the keep/discard/follow row has to
-        be reachable by keyboard, which the foundation bans at the primitive
-        layer rather than leaving to each call site (plan §D.10).
+        The action row sits under the card (founder preference, 2026-07-31 —
+        superseding the on-media scrim row the prototype draws). It reads more
+        plainly: three labelled controls at full contrast rather than two glyph
+        squares on a photograph, and nothing is hidden behind an image.
+
+        It costs vertical height, which is what pushed the dock off-screen
+        before — but the dock is sticky now and the grid is scroll-padded, so
+        the cost no longer lands anywhere.
+
+        Real buttons, so keyboard and focus work: the foundation bans
+        hover-only divs at the primitive layer rather than leaving it to each
+        call site (plan §D.10).
       */}
       <div className="dp-row" style={{ gap: 6 }}>
         <Button
@@ -109,13 +133,8 @@ export function CandidateTile({
           {candidate.kept ? <Check size={11} strokeWidth={2.4} aria-hidden="true" /> : null}
           {candidate.kept ? "Kept" : "Keep"}
         </Button>
-        <Button
-          variant="quiet"
-          size="small"
-          disabled={busy || paidBusy}
-          onClick={onFollow}
-        >
-          <GitBranch size={11} strokeWidth={2} aria-hidden="true" />
+        <Button variant="quiet" size="small" disabled={busy || paidBusy} onClick={onFollow}>
+          <Sparkles size={11} strokeWidth={1.9} aria-hidden="true" />
           Follow
         </Button>
         <Button

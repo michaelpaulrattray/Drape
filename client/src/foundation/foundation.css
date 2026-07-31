@@ -782,7 +782,13 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 }
 
 /* The scroll container needs room so the last row is never trapped under it. */
-.dp-dock-scroll { padding-bottom: calc(var(--s-9) + 92px); }
+/*
+  Room for the dock to float over. 168px is the casting sheet's measured need
+  (two dock rows plus the fade); the old 92px-plus-gap left the last row of
+  candidates trapped underneath, which is half of why Roll again could not be
+  reached without scrolling.
+*/
+.dp-dock-scroll { padding-bottom: 168px; }
 
 /*
   The dock's soft fade into the surface below it. Opt-in, because the fade has
@@ -793,6 +799,23 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 .dp-dock-fade {
   background: linear-gradient(to top, var(--page) 42%, transparent);
   padding-top: var(--s-9);
+  /*
+    The fade is what sticks, not the dock inside it — otherwise the dock
+    floats free of its own gradient and the content scrolls up through a hard
+    edge. This matches the prototype, where the sticky element carries the
+    page-fade and the dock is an ordinary child of it.
+  */
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  padding-bottom: var(--s-5);
+}
+
+/* Inside a fade, the dock stops positioning itself. Standalone docks (the
+   primitive gallery) keep their own sticky behaviour. */
+.dp-dock-fade > .dp-dock {
+  position: static;
+  bottom: auto;
 }
 
 /* ============================================================

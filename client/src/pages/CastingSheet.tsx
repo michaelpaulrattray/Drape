@@ -18,7 +18,6 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
-import { ShortlistTray } from "@/features/castingV2/components/ShortlistTray";
 import { useSheetState, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 
@@ -140,6 +139,7 @@ export default function CastingSheet() {
     cancelling and the generating indicator keep describing the live roll while
     the user reads an old one.
   */
+  const shortlist = session.data?.shortlist ?? [];
   const activeRollStatus = rolls.find((entry) => entry.rollId === activeRollId)?.status ?? null;
   const activeIsGenerating = activeRollStatus !== null && !TERMINAL_ROLL_STATUSES.has(activeRollStatus);
 
@@ -508,7 +508,6 @@ export default function CastingSheet() {
               ))}
         </div>
 
-        <ShortlistTray entries={session.data?.shortlist ?? []} />
       </div>
 
       <div className="dp-dock-fade">
@@ -542,7 +541,38 @@ export default function CastingSheet() {
             </Button>
           </div>
           <div className="dp-row">
-            <Instruction>Keep the ones worth a second look</Instruction>
+            {/*
+              The shortlist lives here now, as a small stack where Sign will
+              sit in M7. It used to be a section of its own below the grid —
+              unprototyped, and tall enough to push the dock off-screen, which
+              is what made Roll again unreachable without scrolling.
+            */}
+            {shortlist.length > 0 ? (
+              <span
+                className="dpc-keptstack"
+                title={`${shortlist.length} kept across this sheet`}
+              >
+                {shortlist.slice(0, 4).map((entry) =>
+                  entry.thumbUrl || entry.imageUrl ? (
+                    <img
+                      key={entry.candidateId}
+                      className="dpc-keptstack__chip"
+                      src={entry.thumbUrl ?? entry.imageUrl ?? undefined}
+                      alt=""
+                    />
+                  ) : (
+                    <span key={entry.candidateId} className="dpc-keptstack__chip" />
+                  ),
+                )}
+              </span>
+            ) : null}
+            {shortlist.length > 0 ? (
+              <span className="dp-small" style={{ marginLeft: 12 }}>
+                {shortlist.length} kept
+              </span>
+            ) : (
+              <Instruction>Keep the ones worth a second look</Instruction>
+            )}
             <span style={{ flex: 1 }} />
             {/*
               Undo is offered only on the live roll. The server already refuses
