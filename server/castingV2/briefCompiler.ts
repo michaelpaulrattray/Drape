@@ -411,14 +411,14 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     );
     throw new BriefRefusal(
       "unsupported_cohort",
-      "Casting can only make photographic people for now — anime, illustration and non-human characters are coming. Describe a real-looking person and we'll cast them. You have not been charged.",
+      "Casting makes photographic people, and only ones who are nobody in particular — not a named person, not a character from a game or film, and not anime or illustration yet. Describe the kind of face you want and we'll cast that. You have not been charged.",
     );
   }
 
   if (!outcome.ok && outcome.reason === "unsupported_cohort") {
     throw new BriefRefusal(
       "unsupported_cohort",
-      "Casting can only make photographic people for now — anime, illustration and non-human characters are coming. Describe a real-looking person and we'll cast them. You have not been charged.",
+      "Casting makes photographic people, and only ones who are nobody in particular — not a named person, not a character from a game or film, and not anime or illustration yet. Describe the kind of face you want and we'll cast that. You have not been charged.",
     );
   }
 

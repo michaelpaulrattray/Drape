@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "758c6630acd4c10a"
+    "sourceFingerprint": "d76d228d66da0f72"
   },
   "domains": [
     {
@@ -7615,6 +7615,10 @@
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
       "path": "server/castingV2/followAnchor.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/likenessRefusal.test.ts",
+      "path": "server/castingV2/likenessRefusal.test.ts"
     },
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",

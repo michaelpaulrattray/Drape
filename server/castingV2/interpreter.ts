@@ -157,6 +157,20 @@ WHAT TO EXTRACT
 - "cohort": "photoreal_human" for any real-looking human. Use "other" for
   anime, illustration, animals, robots, fantasy creatures, or any brief that is
   not a photograph of a person.
+  ALSO use "other" when the brief asks for a SPECIFIC PERSON OR CHARACTER —
+  a named actor, musician, athlete or public figure, or a named fictional
+  character from a game, film, comic or show. "Master Chief from Halo", "a
+  Spider-Man look-alike", "someone who looks like <name>" are all "other".
+  This holds however it is phrased: "look-alike", "inspired by", "in the style
+  of", "vibes of", "reminds me of" are the same request wearing softer words.
+  Two reasons, and both matter. We do not manufacture a likeness of a real
+  person or someone else's character — the same principle that says a
+  customer's own cast is theirs. And we cannot: the frame is a plain studio
+  portrait with no costume, armour, mask or props, so the thing that makes
+  that character recognisable is exactly what the frame strips away.
+  A GENRE is not a character. "a space marine", "a superhero type", "a fantasy
+  ranger" describe a kind of person and are ordinary photoreal briefs — cast
+  them normally.
 
 WHAT TO IGNORE COMPLETELY — the engine owns these, and anything you say about
 them is discarded before it reaches the image model:
