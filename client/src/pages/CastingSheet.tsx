@@ -343,22 +343,15 @@ export default function CastingSheet() {
       brief and the adjustments are spent — the sentence is the statement of
       intent, and it was just restated.
     */
-    const briefChanged = brief.trim() !== (roll.data?.briefText ?? "").trim();
-    const hadOverrides = Object.keys(overrides).length > 0;
-    const sendOverrides = briefChanged ? {} : overrides;
-    if (briefChanged) {
-      clearOverrides();
-      /*
-        Say it out loud, because it is destructive and easy to trigger by
-        accident. The box arrives pre-filled with the roll's own sentence, so
-        the user is editing rather than composing — and a stray character now
-        spends every adjustment they made. Dropping them is right (the sentence
-        is the statement of intent, and it has just been restated); dropping
-        them silently would leave someone wondering where their 50s went, which
-        is the same class of confusion as the stale override it replaced.
-      */
-      if (hadOverrides) toast("Brief edited — your adjustments were cleared");
-    }
+    /*
+      Nothing to reconcile here any more.
+
+      Editing the sentence spends the adjustments, and that now happens on the
+      keystroke rather than at dispatch — so by the time a roll is fired, the
+      store already holds the truth. Clearing again here would be a second
+      mechanism for one rule, which is how the two halves drift apart later.
+    */
+    const sendOverrides = overrides;
 
     const clientRequestId = createClientRequestId();
     const release = () => {
@@ -706,7 +699,30 @@ export default function CastingSheet() {
               <Sparkles size={13} strokeWidth={1.9} aria-hidden="true" />
               <Input
                 value={brief}
-                onChange={(event) => setBrief(event.target.value)}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setBrief(next);
+                  /*
+                    THE ECHO REVERTS THE MOMENT YOU START TYPING.
+
+                    Editing the sentence spends the queued adjustments — that
+                    part was already true, but it only happened when the roll
+                    was dispatched. So the echo went on promising "20s → 50s ·
+                    next roll" throughout the typing, for a change that was
+                    already condemned. It described a future that was not going
+                    to happen.
+
+                    Doing it on the keystroke makes the rule teach itself:
+                    touch the sentence and you watch the adjustments fall away,
+                    which is the whole precedence law demonstrated rather than
+                    documented.
+                  */
+                  const diverged = next.trim() !== (roll.data?.briefText ?? "").trim();
+                  if (diverged && Object.keys(overrides).length > 0) {
+                    clearOverrides();
+                    toast("Brief edited — your adjustments were cleared");
+                  }
+                }}
                 placeholder="a fitness creator in their 30s, close-cropped hair"
                 aria-label="Casting brief"
               />
