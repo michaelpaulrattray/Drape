@@ -137,7 +137,26 @@ const CAPTURE = [
 const SKIN_AND_FEATURES = [
   "REALISM: RAW skin with high micro-contrast — visible pores, vellus fuzz, uneven tone, real blemishes and asymmetry.",
   "No beauty retouching, no surface smoothing, no CGI sheen, no painterly softness, no excessive symmetry.",
-  "EYES: the iris is not a flat disc — render striations radiating from the pupil, a distinct limbal ring, crisp catchlights, corneal gloss, and faint sclera vascularity. A perfectly white sclera looks synthetic.",
+  "EYES: the iris is not a flat disc — render radial striations and fibre-like collagen structure, lighter near the pupil and deepening to richer saturation toward the outer edge, closed by a distinct dark limbal ring where the iris meets the sclera.",
+  "CATCHLIGHTS: one or two small, sharp specular reflections of the studio flash, high on the cornea. Without them the eyes read dead. Render the wet corneal gloss over the whole eye surface — visible, not glassy.",
+  "SCLERA: never pure white — a faint warm undertone with subtle vascularity toward the corners. A perfectly white sclera looks synthetic.",
+  /*
+    OCULAR SYMMETRY — founder-reported, 2026-08-01, and a legacy artifact too.
+
+    Mismatched pupils recur across sheets, and the realism block above is part
+    of the cause: "real blemishes and asymmetry" plus "no excessive symmetry"
+    is a licence the model applies to the whole face, eyes included. Facial
+    asymmetry is what makes a face real; pupil asymmetry is what makes it look
+    generated — a viewer reads it as a rendering fault or a head injury, never
+    as character.
+
+    So the exception has to be stated as loudly as the rule it carves out of.
+    Same shape as the interpreter's restraint doctrine: a one-directional
+    instruction gets over-applied until its other half is named.
+  */
+  "PUPILS: perfectly round, concentric within the iris, and IDENTICAL to each other in size and shape. Under studio flash both are moderately constricted, with a clean sharp edge where pupil meets iris. Never dilated, never oversized.",
+  "Both catchlights match — same count, same relative position — because they come from one light. Both eyes are open to the same degree and converge on the lens together.",
+  "The asymmetry licensed above is bone, soft tissue and skin. It is NEVER the eyes: mismatched pupils, a wandering eye or uneven catchlights read as a rendering fault, not as character, and fail the candidate.",
   "LASHES: individual strands clumping in irregular groups, casting micro-shadows. Bare and natural, never a solid dark mass.",
   "LIPS: vertical plicae and a natural moisture gradient, glossier at the centre. The lip border is organic and slightly irregular, never a vector-sharp line.",
   "BROWS: individual hairs with visible growth direction — upward near the nose, arching laterally, tapering at the tail. Never a solid drawn-on block.",
