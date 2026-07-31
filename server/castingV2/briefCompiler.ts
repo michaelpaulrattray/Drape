@@ -169,6 +169,8 @@ function fallbackIntent(briefText: string): CastingIntent {
     build: null,
     energy: null,
     archetype: null,
+    variationAxis: null,
+    look: null,
   };
 }
 

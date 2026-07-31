@@ -23,6 +23,7 @@ import type { TextEngine } from "../providers/types";
 import {
   AGE_BANDS,
   ARCHETYPE_KEYS,
+  LOOK_KEYS,
   BUILDS,
   ENERGY_KEYS,
   HERITAGES,
@@ -47,7 +48,9 @@ Reply with a single JSON object and nothing else:
   "heritage": [{ "heritage": one of ${HERITAGES.join(", ")}, "pct": number }] (0, 1 or 2 entries),
   "build": ${BUILDS.map((value) => `"${value}"`).join(" | ")} | null,
   "energy": ${ENERGY_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
-  "archetype": ${ARCHETYPE_KEYS.map((value) => `"${value}"`).join(" | ")} | null
+  "archetype": ${ARCHETYPE_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
+  "variationAxis": "look" | "disposition" | null,
+  "look": ${LOOK_KEYS.map((value) => `"${value}"`).join(" | ")} | null
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -80,6 +83,18 @@ WHAT TO EXTRACT
 - "energy": only when the brief describes how the person carries themselves.
 - "archetype": only when the brief clearly points at one of the listed
   directions. Otherwise null.
+- "variationAxis": what should differ between the eight candidates.
+  Use "look" when the brief asks for a KIND OF FACE — a model, editorial,
+  fashion, runway, beauty or campaign casting. Eight models differ by the sort
+  of face a house casts, not by mood; varying mood there returns one look
+  wearing eight expressions.
+  Use "disposition" when the brief asks for a KIND OF PERSON — a character, an
+  occupation, a UGC creator, anyone you would meet. There, eight different
+  temperaments is exactly the right difference.
+  Null if you genuinely cannot tell.
+- "look": only when the brief names a specific casting look. A stated look
+  locks across all eight; leave it null and the eight will each take a
+  different one.
 - "cohort": "photoreal_human" for any real-looking human. Use "other" for
   anime, illustration, animals, robots, fantasy creatures, or any brief that is
   not a photograph of a person.

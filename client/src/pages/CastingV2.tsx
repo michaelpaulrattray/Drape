@@ -46,18 +46,55 @@ import "@/features/castingV2/castingV2.css";
 const ROLL_PRICE_FALLBACK = 0;
 
 /**
- * Starting points, not presets. They fill the box so the first sentence is
- * easy to write; nothing is applied until the user reads it and rolls.
+ * Seed chips — starting points, not presets. One tap fills the box; nothing is
+ * applied until the user reads it and rolls.
+ *
+ * **Seed law (founder, 2026-07-31): every seed must be a brief the compiler
+ * fully honours TODAY.** A seed is a promise about what the product can do,
+ * and a seed the system silently strips is a worse lie than no seed — the user
+ * taps it, pays, and gets something that ignored half of what they clicked.
+ *
+ * The prototype's four were copied verbatim and two of them broke this:
+ *   - "Night-routine voice, almost whispering" — voice-only concept. Voice is
+ *     M8b, and M3 found prompt-based voice design is not reachable through
+ *     either router yet. Returns when Voice ships.
+ *   - "Gen-Z gym rat, ring light, fast talker" — "ring light" is a lighting
+ *     instruction, and the framing law strips presentation words by design.
+ *
+ * Seeds are **capability-versioned**: when Voice ships a voice seed returns,
+ * when a cohort certifies at M9 an anime seed joins. `requires` records the
+ * gate so re-enabling is a deliberate edit rather than an act of memory.
+ *
+ * PROPOSED SET — awaiting the founder's pick. Chosen to show real range: one
+ * per axis the compiler actually varies.
  */
-const TRY_BRIEFS = [
-  "Skincare founder, 40s, unbothered",
-  "Gen-Z gym rat, ring light, fast talker",
-  "Bodega owner, Brooklyn, gravelly",
-  "Night-routine voice, almost whispering",
+const CASTING_SEEDS: Array<{ label: string; shows: string; requires?: string }> = [
+  // The look axis. Verified: the interpreter emitted variationAxis="look" on
+  // both graded calibration rounds for this brief.
+  { label: "Editorial fashion model, early 20s", shows: "category + age lock, look variation" },
+  // A character brief. "Unbothered" is a persona word the interpreter may map
+  // to a stated energy — in which case it LOCKS flat across the eight rather
+  // than varying, which is correct behaviour and worth being accurate about.
+  { label: "Skincare founder, 40s, unbothered", shows: "character brief, stated energy locks" },
+  /*
+    Heritage lock. Deliberately a single in-vocabulary heritage: the enum is
+    the ported legacy ten (plan line 209) and has no value "British" maps to,
+    so a hyphenated "Nigerian-British" would silently drop half of what the
+    user asked for — precisely the failure the seed law names. Extending that
+    enum is a plan-level question, not a seed-level one.
+  */
+  { label: "West African woman, mid 30s", shows: "heritage + age lock" },
+  // The older-age guard: age must be genuinely present in skin and structure.
+  { label: "A retired fisherman in his 60s, weathered face", shows: "age band + skin texture" },
 ];
 
-/** F3: UNSIGNED everywhere. DRAFT is retired vocabulary. */
-const ROSTER_SCOPES = ["All", "Signed", "UNSIGNED"] as const;
+/**
+ * F3: UNSIGNED is the vocabulary everywhere; DRAFT is retired. But the *casing*
+ * is a separate question from the word — these are filter labels in a sentence
+ * -case row, so they read as filters. Uppercase UNSIGNED is reserved for the
+ * mono status pill on a cast card, where shouting is the point.
+ */
+const ROSTER_SCOPES = ["All", "Signed", "Unsigned"] as const;
 type RosterScope = (typeof ROSTER_SCOPES)[number];
 
 export default function CastingV2() {
@@ -185,7 +222,7 @@ export default function CastingV2() {
   const scopeCounts: Record<RosterScope, number> = {
     All: signedCount,
     Signed: signedCount,
-    UNSIGNED: 0,
+    Unsigned: 0,
   };
 
   return (
@@ -218,7 +255,7 @@ export default function CastingV2() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") void startCasting();
                 }}
-                placeholder="a dad in his 30s in a cluttered garage, dry humour, explains things like he's talking to a mate"
+                placeholder="a dad in his 30s, dry humour, hands that have done some work"
                 aria-label="Casting brief"
               />
               <Button variant="primary" size="small" onClick={startCasting} disabled={starting}>
@@ -235,9 +272,9 @@ export default function CastingV2() {
             */}
             <div className="dp-row" style={{ gap: 7 }}>
               <span className="dp-chrome">TRY</span>
-              {TRY_BRIEFS.map((suggestion) => (
-                <Chip key={suggestion} onClick={() => setBrief(suggestion)}>
-                  {suggestion}
+              {CASTING_SEEDS.map((seed) => (
+                <Chip key={seed.label} onClick={() => setBrief(seed.label)}>
+                  {seed.label}
                 </Chip>
               ))}
             </div>
@@ -313,7 +350,7 @@ export default function CastingV2() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search cast by name, voice, or vibe"
+            placeholder="Search cast by name or look"
             aria-label="Search cast"
           />
         </Field>

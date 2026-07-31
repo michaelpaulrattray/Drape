@@ -29,6 +29,8 @@
 import {
   AGE_PHASES,
   ARCHETYPES,
+  LOOKS,
+  LOOK_KEYS,
   ARCHETYPE_KEYS,
   AGE_BANDS,
   BUILDS,
@@ -42,6 +44,7 @@ import {
   type CastingIntent,
   type EnergyKey,
   type Heritage,
+  type LookKey,
   type HeritageComponent,
   type ResolvedIdentity,
   type Sex,
@@ -65,7 +68,14 @@ const FRAMING = [
     a booking photo no matter how good the light is.
   */
   "FRAMING: Single subject, waist-up, centred, square to camera, head straight with no tilt.",
-  "CROP: The entire head is inside the frame with natural headroom — clear space above the hair, never touching or cutting the top edge. The scalp and hairline must never be cropped.",
+  /*
+    Hair, not just head. The first version said "the entire head" and crowns
+    were still clipped — an afro, an updo or any volume sits well above the
+    skull, and a model told to keep the head in frame will happily crop the
+    hair off the top of it.
+  */
+  "CROP: The subject's ENTIRE HAIR SILHOUETTE is inside the frame with natural headroom above it — including afros, curls, volume, updos, buns and any height the hair carries. Clear space between the topmost hair and the top edge.",
+  "Nothing on the head is clipped: not the crown, not the hairline, not a single strand at the outline. If the hair is tall, frame wider rather than cropping it.",
   "Frame from mid-torso up in a 4:5 portrait. Shoulders fully inside the frame with margin at both sides.",
   "Shoulders level, spine straight, neck relaxed. Arms relaxed at the sides. Mouth closed.",
   /*
@@ -228,11 +238,29 @@ const BUILD_WEIGHTS: readonly (readonly [Build, number])[] = [
  * exactly the reason that real casting diversity is the desirable outcome.
  * D15's 30% blend chance carries over.
  */
-function varyHeritage(seed: number): HeritageComponent[] {
-  const primary = HERITAGES[seed % HERITAGES.length] as Heritage;
-  if (seed % 10 >= 3) return [{ heritage: primary, pct: 100 }];
-  const offset = 1 + ((seed >>> 8) % (HERITAGES.length - 1));
-  const secondary = HERITAGES[(seed % HERITAGES.length + offset) % HERITAGES.length] as Heritage;
+function varyHeritage(position: number, rollSeed: string): HeritageComponent[] {
+  /*
+    Cycle, do not sample.
+
+    Heritage is the PRIMARY diversity axis when the brief leaves it open, and a
+    hash-sample over ten values collides constantly — a graded sheet came back
+    Polynesian, Polynesian, Middle Eastern, Middle Eastern, Latino, and read as
+    four people rather than eight. Cycling with a per-roll offset guarantees
+    eight distinct heritages out of ten while keeping two rolls of the same
+    brief from opening identically. Same reasoning as the energy axis, which
+    was cycled from the start for exactly this reason.
+  */
+  const offset = hash(`${rollSeed}:heritage`) % HERITAGES.length;
+  const primary = HERITAGES[(position + offset) % HERITAGES.length] as Heritage;
+
+  // D15's 30% blend chance, kept.
+  const blendRoll = hash(`${rollSeed}:blend:${position}`) % 10;
+  if (blendRoll >= 3) return [{ heritage: primary, pct: 100 }];
+
+  const step = 1 + (hash(`${rollSeed}:blend2:${position}`) % (HERITAGES.length - 1));
+  const secondary = HERITAGES[
+    (position + offset + step) % HERITAGES.length
+  ] as Heritage;
   return [
     { heritage: primary, pct: 60 },
     { heritage: secondary, pct: 40 },
@@ -282,7 +310,7 @@ export function resolveCandidateIdentity(
       exactly how the founder's brief came back reading 28-35.
     */
     agePhase: intent.agePhase ?? AGE_PHASES[(seed >>> 11) % AGE_PHASES.length],
-    heritage: intent.heritage.length > 0 ? intent.heritage : varyHeritage(seed >>> 5),
+    heritage: intent.heritage.length > 0 ? intent.heritage : varyHeritage(position, rollSeed),
     /*
       Stated build wins. Otherwise: if the brief named a casting category, the
       category owns physique and this stays null — varying it would cast
@@ -295,7 +323,37 @@ export function resolveCandidateIdentity(
     // difference a sheet can carry. Stated energy locks it flat across all
     // eight (plan line 205).
     energy: intent.energy ?? ENERGY_KEYS[position % ENERGY_KEYS.length],
+    /*
+      The look axis. A stated look locks flat across the sheet (archetype law);
+      otherwise, when the brief named a casting category whose job IS a kind of
+      face, each candidate takes a different look — eight houses' casting, not
+      eight moods. Offset by the roll so two rolls of the same brief do not
+      open with the same look.
+    */
+    look:
+      intent.look
+      ?? (varyByLook(intent)
+        ? LOOK_KEYS[(position + (hash(`${rollSeed}:look`) % LOOK_KEYS.length)) % LOOK_KEYS.length]
+        : null),
   };
+}
+
+/**
+ * Does this sheet vary by look rather than disposition?
+ *
+ * The interpreter decides, full stop — it read the brief and knows whether the
+ * job is a kind of face or a kind of person. When it declines to say, the
+ * sheet varies by disposition, which is the safer default: a character sheet
+ * that varies looks is stranger than a model sheet that varies mood.
+ *
+ * An earlier version of this comment described a keyword fallback on the role
+ * text. That was never implemented, and the mismatch is worth naming rather
+ * than quietly deleting: a comment claiming behaviour the code does not have
+ * is how a reviewer signs off on something that is not there.
+ */
+function varyByLook(intent: CastingIntent): boolean {
+  if (intent.variationAxis) return intent.variationAxis === "look";
+  return false;
 }
 
 /**
@@ -418,7 +476,14 @@ export function composeCandidatePrompt(input: {
   const subject = [
     `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
-    `PRESENCE: ${ENERGIES[resolved.energy]}.`,
+    /*
+      One axis or the other, never both shouting. A look carries its own
+      expression whisper (C3), so stacking a disposition line on top would
+      give the image model two different instructions for one face.
+    */
+    resolved.look
+      ? `LOOK: ${LOOKS[resolved.look].thesis} ${LOOKS[resolved.look].avoid} EXPRESSION WHISPER: ${LOOKS[resolved.look].whisper}`
+      : `PRESENCE: ${ENERGIES[resolved.energy]}.`,
   ]
     .filter(Boolean)
     .join(" ");
@@ -432,8 +497,18 @@ export function composeCandidatePrompt(input: {
     .join("\n");
 }
 
-/** The label under a tile. Derived from the energy the adapter resolved. */
+/**
+ * The label under a tile.
+ *
+ * Names whichever axis this sheet actually varies along, so the caption
+ * explains the difference the user is looking at: the look for a modelling
+ * brief, the disposition for a character one.
+ */
 export function personaLineFor(resolved: ResolvedIdentity): string {
+  if (resolved.look) {
+    // Sentence case: these sit under a tile, not in a mono status pill.
+    return resolved.look.charAt(0).toUpperCase() + resolved.look.slice(1);
+  }
   const labels: Record<EnergyKey, string> = {
     warm: "Warm, unhurried",
     dry: "Dry and flat",

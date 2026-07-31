@@ -485,6 +485,40 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   color: var(--ink);
 }
 
+/*
+  TEXT FIELDS FOCUS ON THE WRAPPER, NEVER THE INNER ELEMENT.
+
+  `tokens.css` carries a blanket `.dp-root :focus-visible { outline: 2px }` so
+  no interactive control can ever be focus-invisible. For buttons and links
+  that is exactly right. For a text field it is wrong twice over: the ring
+  lands on the bare <input>, which is inset inside its own bordered box, so an
+  accent rectangle draws *around the text* rather than around the control.
+
+  It is also a specificity trap, which is why `outline: none` above did not
+  hold: `.dp-root :focus-visible` is (0,2,0) and `.dp-input` is (0,1,0), so the
+  blanket rule won on focus. These selectors are deliberately specific enough
+  to beat it rather than relying on order.
+
+  A focused field is signalled the way a text field should be: the caret, plus
+  the wrapper's border shifting to `--ink`. Both are visible in either theme,
+  and the control that appears focused is the one the user is typing into.
+*/
+.dp-root .dp-input:focus,
+.dp-root .dp-input:focus-visible,
+.dp-root textarea:focus,
+.dp-root textarea:focus-visible {
+  outline: none;
+}
+
+.dp-field:focus-within {
+  border-color: var(--ink);
+}
+
+/* An invalid field stays red while focused — focus never hides an error. */
+.dp-field--invalid:focus-within {
+  border-color: var(--error);
+}
+
 .dp-field--compact .dp-input { font-size: 12.5px; }
 
 .dp-required {

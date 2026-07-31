@@ -375,7 +375,18 @@ export default function CastingSheet() {
             <ArrowLeft size={12} strokeWidth={2} aria-hidden="true" />
             Casting
           </Button>
-          {roll.data ? (
+          {/*
+            The header goes optimistic on the same latch as the button. It used
+            to read the roll query, which still holds the PREVIOUS roll until
+            the next poll — so the sheet showed "Roll 1" above the skeletons of
+            roll 2. The index and the skeletons now change together, because
+            they are driven by the same fact: a roll was dispatched.
+          */}
+          {awaitingNewRoll ? (
+            <span className="dp-metadata">
+              Roll {rolls.length + 1} · casting {config.data?.candidatesPerRoll ?? 8}
+            </span>
+          ) : roll.data ? (
             <span className="dp-metadata">
               Roll {roll.data.rollIndex} · {roll.data.counts.ready} of {roll.data.counts.total}
             </span>
@@ -496,6 +507,7 @@ export default function CastingSheet() {
                   // moment any one of them is clicked, or the sheet offers
                   // eight ways to buy the same thing twice.
                   paidBusy={awaitingNewRoll}
+                  rollPriceCredits={price}
                   onKeep={() =>
                     onKeep(
                       candidate.candidateId,
@@ -518,7 +530,7 @@ export default function CastingSheet() {
               <Input
                 value={brief}
                 onChange={(event) => setBrief(event.target.value)}
-                placeholder="a dad in his 30s in a cluttered garage, dry humour"
+                placeholder="a dad in his 30s, dry humour, hands that have done some work"
                 aria-label="Casting brief"
               />
             </Field>

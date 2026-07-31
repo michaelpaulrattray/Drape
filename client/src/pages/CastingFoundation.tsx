@@ -59,7 +59,7 @@ export default function CastingFoundation() {
         <SectionHead eyebrow="01 · Buttons" aside="one primary per view" />
         <div className="dp-row">
           <Button variant="primary">
-            Cast it
+            Cast it · 160 cr
             <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />
           </Button>
           <Button variant="secondary">Open in canvas</Button>
@@ -80,7 +80,7 @@ export default function CastingFoundation() {
           <Field>
             <Input placeholder="a dad in his 30s in a cluttered garage, dry humour" />
             <Button variant="primary" size="small">
-              Cast it
+              Cast it · 160 cr
             </Button>
           </Field>
           <div className="dp-row" style={{ gap: 12 }}>
@@ -148,13 +148,13 @@ export default function CastingFoundation() {
               }
             />
             <span className="dp-label">Media card</span>
-            <span className="dp-metadata">4:5 · scrim for text over image</span>
+            <span className="dp-secondary">4:5 · scrim for text over image</span>
           </div>
 
           <div className="dp-stack" style={{ gap: 9 }}>
             <Skeleton style={{ aspectRatio: "4 / 5" }} label="CASTING 04" />
             <span className="dp-label">Skeleton tile</span>
-            <span className="dp-metadata">swaps on its own arrival</span>
+            <span className="dp-secondary">swaps on its own arrival</span>
           </div>
 
           <div className="dp-stack" style={{ gap: 9 }}>
@@ -162,7 +162,7 @@ export default function CastingFoundation() {
               <span className="dp-secondary">Empty / add target</span>
             </DropZone>
             <span className="dp-label">Drop target</span>
-            <span className="dp-metadata">dashed means you can put something here</span>
+            <span className="dp-secondary">dashed means you can put something here</span>
           </div>
         </div>
 

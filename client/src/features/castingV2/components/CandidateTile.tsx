@@ -31,6 +31,7 @@ export function CandidateTile({
   rollWasCancelled,
   busy,
   paidBusy,
+  rollPriceCredits,
   onKeep,
   onDiscard,
   onFollow,
@@ -48,6 +49,12 @@ export function CandidateTile({
    * paid one would be a worse sheet, not a safer one.
    */
   paidBusy?: boolean;
+  /**
+   * Follow dispatches a paid roll, so it states its price (D-15). The founder
+   * lost 640 credits to Follow reading as a free action; an unpriced button
+   * that spends is the same mistake wearing a different hat.
+   */
+  rollPriceCredits?: number;
   onKeep: () => void;
   onDiscard: () => void;
   onFollow: () => void;
@@ -135,7 +142,7 @@ export function CandidateTile({
         </Button>
         <Button variant="quiet" size="small" disabled={busy || paidBusy} onClick={onFollow}>
           <Sparkles size={11} strokeWidth={1.9} aria-hidden="true" />
-          Follow
+          {rollPriceCredits ? `Follow · ${rollPriceCredits} cr` : "Follow"}
         </Button>
         <Button
           variant="quiet"

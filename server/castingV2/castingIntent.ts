@@ -122,6 +122,90 @@ export type EnergyKey = keyof typeof ENERGIES;
 export const ENERGY_KEYS = Object.keys(ENERGIES) as EnergyKey[];
 
 /**
+ * LOOKS — the casting-house shelf, and the variation axis for model briefs.
+ *
+ * The eight fixed reads the sheet used to caption ("Warm, unhurried", "Dry and
+ * flat") were the prototype's placeholder captions, never a ruling — and for a
+ * modelling brief they vary the wrong thing entirely. Eight editorial models
+ * do not differ by mood; they differ by the *kind of face* a house casts.
+ * Varying disposition there produces one look wearing eight expressions.
+ *
+ * This is legacy's `BRAND_PROFILES` finished properly (catalog C1 + C3): each
+ * entry pairs a casting thesis with its anti-pattern — the anti-pattern is
+ * what stops every entry converging — and a quiet expression whisper, because
+ * legacy kept those separate on purpose. The descriptor is dramatic prose for
+ * *who to cast*; the whisper is what the face actually does in the frame.
+ *
+ * **Descriptive names, never house names.** The archetype ruling is explicit
+ * that real brand names stay internal vocabulary, and these keys are projected
+ * — a `personaLine` is client-visible. The lineage is recorded in comments
+ * where it is useful to a reader and nowhere the customer can see.
+ */
+export const LOOKS = {
+  "commanding glamour": {
+    thesis:
+      "Classically gorgeous and symmetrical. Unapologetic supermodel beauty — strong bones, striking proportions, nothing apologetic about it.",
+    avoid: "Do not render as soft or girl-next-door.",
+    whisper: "Chin fractionally lifted, eyes locked on the lens with full confidence.",
+  },
+  "severe minimal": {
+    thesis:
+      "Intellectual and precise. Sharp, expensive-looking bone structure where the severity reads refined rather than brutal.",
+    avoid: "Do not render as warm, cute or approachable.",
+    whisper: "Flat, unreadable gaze. Cool and measured, no warmth.",
+  },
+  "off-kilter charm": {
+    thesis:
+      "Interesting asymmetry and unusual proportions. Personality over perfection — a face with something that makes you look twice. Pick two or three features and make them bold and specific; let the rest be natural.",
+    avoid: "Do not default to severe or angular, and do not render as conventionally perfect.",
+    whisper: "Deadpan and quietly observing, unbothered. Calm, still, intelligent eyes.",
+  },
+  "angular and unslept": {
+    thesis:
+      "Gaunt, angular and effortlessly cool. Bones that suggest late nights — sharp, slightly wasted, zero effort.",
+    avoid: "Do not render as healthy-glowing or gym-fit.",
+    whisper: "Heavy-lidded and bored, sleepy-eyed. Post-party calm.",
+  },
+  "raw street-cast": {
+    thesis:
+      "Brutally honest and unconventional. Bone structure pushed toward the extreme; found rather than groomed.",
+    avoid: "Do not render as polished, and do not render as a costume of a subculture.",
+    whisper: "Blank and confrontational, direct at the lens. No performance.",
+  },
+  "clean commercial": {
+    thesis:
+      "Attractive and balanced without extremes. Immediately likeable, versatile, the face a brand can put anywhere.",
+    avoid: "Do not render as bland — pick two features and make them specific.",
+    whisper: "Approachable and relaxed, a natural pleasant gaze. Friendly without being eager.",
+  },
+  "quiet luxury": {
+    thesis:
+      "Understated, expensive-looking structure. Groomed but not styled — money that does not need to announce itself.",
+    avoid: "Do not render as glossy, tanned or overtly glamorous.",
+    whisper: "Steady and self-assured, lips together and relaxed.",
+  },
+  "authentic creator": {
+    thesis:
+      "Natural and unmanufactured. Attractive but trustworthy rather than extreme — real skin texture and character welcome.",
+    avoid: "Do not render as an agency model dressed down.",
+    whisper: "Warm and genuine, eyes that connect directly.",
+  },
+} as const;
+export type LookKey = keyof typeof LOOKS;
+export const LOOK_KEYS = Object.keys(LOOKS) as LookKey[];
+
+/**
+ * Which axis the eight candidates differ along.
+ *
+ * `look` for casting categories where the job is a *type of face* — models,
+ * editorial, beauty, runway. `disposition` for character and UGC briefs, where
+ * the eight are different people and mood is exactly the right difference.
+ * The interpreter picks; both are correct, for different briefs.
+ */
+export const VARIATION_AXES = ["look", "disposition"] as const;
+export type VariationAxis = (typeof VARIATION_AXES)[number];
+
+/**
  * Direction archetypes — the shelf (plan line 211, archetype-library ruling).
  *
  * Descriptive names, never real houses: the ruling is explicit that brand
@@ -211,6 +295,13 @@ export type CastingIntent = {
   build: Build | null;
   energy: EnergyKey | null;
   archetype: ArchetypeKey | null;
+  /**
+   * Which axis the eight differ along. Null lets the adapter decide from
+   * whether a casting category was named at all.
+   */
+  variationAxis: VariationAxis | null;
+  /** A stated look locks across the sheet, per the archetype law. */
+  look: LookKey | null;
 };
 
 export const ROLE_MAX = 80;
@@ -286,6 +377,8 @@ const wireSchema = z.object({
   build: nullableEnum(BUILDS),
   energy: nullableEnum(ENERGY_KEYS as unknown as readonly [string, ...string[]]),
   archetype: nullableEnum(ARCHETYPE_KEYS as unknown as readonly [string, ...string[]]),
+  variationAxis: nullableEnum(VARIATION_AXES),
+  look: nullableEnum(LOOK_KEYS as unknown as readonly [string, ...string[]]),
   heritage: z
     .array(
       z.object({
@@ -380,6 +473,8 @@ export function parseCastingIntent(raw: unknown): IntentParseResult {
       build: wire.build as Build | null,
       energy: wire.energy as EnergyKey | null,
       archetype: wire.archetype as ArchetypeKey | null,
+      variationAxis: wire.variationAxis as VariationAxis | null,
+      look: wire.look as LookKey | null,
     },
   };
 }
@@ -404,6 +499,7 @@ export type LockFacts = {
   heritage?: HeritageComponent[];
   build?: Build;
   energy?: EnergyKey;
+  look?: LookKey;
 };
 
 export function lockFactsOf(intent: CastingIntent): LockFacts {
@@ -414,6 +510,7 @@ export function lockFactsOf(intent: CastingIntent): LockFacts {
     ...(intent.heritage.length > 0 ? { heritage: intent.heritage } : {}),
     ...(intent.build ? { build: intent.build } : {}),
     ...(intent.energy ? { energy: intent.energy } : {}),
+    ...(intent.look ? { look: intent.look } : {}),
   };
 }
 
@@ -437,6 +534,8 @@ export type ResolvedIdentity = {
    */
   build: Build | null;
   energy: EnergyKey;
+  /** Set when the sheet varies by look rather than disposition. */
+  look: LookKey | null;
 };
 
 export type LockViolation = {
@@ -476,6 +575,9 @@ export function validateLocks(locks: LockFacts, resolved: ResolvedIdentity): Loc
   }
   if (locks.energy && locks.energy !== resolved.energy) {
     violations.push({ field: "energy", expected: locks.energy, got: resolved.energy });
+  }
+  if (locks.look && locks.look !== resolved.look) {
+    violations.push({ field: "look", expected: locks.look, got: resolved.look ?? "unset" });
   }
   if (locks.heritage && locks.heritage.length > 0) {
     const expected = locks.heritage.map((component) => component.heritage).sort().join("+");
