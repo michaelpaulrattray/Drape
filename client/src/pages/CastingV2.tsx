@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, Plus, Search, Upload, X } from "lucide-react";
+import { ArrowRight, Plus, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -123,11 +123,12 @@ export default function CastingV2() {
 
   const abandonSession = trpc.castingV2.abandonSession.useMutation();
   const [abandoning, setAbandoning] = useState<string | null>(null);
+  /** The sheet whose delete is armed. One at a time, and never on load. */
+  const [armed, setArmed] = useState<string | null>(null);
 
   const discardSheet = async (sessionId: string) => {
+    // The confirmation is the armed chip on the card, not an OS dialog.
     if (abandoning) return;
-    // One confirm. Exploratory work, but it is still the user's work.
-    if (!window.confirm("Discard this sheet? The candidates on it are deleted.")) return;
     setAbandoning(sessionId);
     try {
       await abandonSession.mutateAsync({ sessionId });
@@ -425,6 +426,28 @@ export default function CastingV2() {
                   className="dpc-sheetcard__open"
                   onClick={() => navigate(`/casting/s/${entry.sessionId}`)}
                 >
+                  {/*
+                    Faces, so the card looks like the sheet it opens.
+
+                    A contact strip rather than one hero image: this is a
+                    casting product, and four faces in a row is what a sheet
+                    IS — one big thumbnail would say "an image" instead. The
+                    tiles keep the candidate 4:5 so they read as the same
+                    objects the sheet is made of.
+
+                    A sheet whose candidates have all expired or not landed
+                    shows nothing rather than a row of grey boxes: an empty
+                    strip is quieter than a broken one.
+                  */}
+                  {entry.previewUrls.length > 0 ? (
+                    <span className="dpc-sheetcard__strip" aria-hidden="true">
+                      {entry.previewUrls.map((url) => (
+                        <span key={url} className="dpc-sheetcard__frame">
+                          <img src={url} alt="" loading="lazy" />
+                        </span>
+                      ))}
+                    </span>
+                  ) : null}
                   <span className="dp-label">{entry.briefText ?? "Untitled sheet"}</span>
                   <span className="dp-secondary">
                     {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
@@ -440,21 +463,51 @@ export default function CastingV2() {
 
                   Still deliberate, not hidden. It carries a real label for
                   screen readers, appears on keyboard focus, and stays visible
-                  on touch, where there is no hover to reveal it. One confirm
-                  before it deletes — a pure delete of exploratory work with no
-                  refund implications, since every roll on the sheet was
-                  delivered.
+                  on touch, where there is no hover to reveal it.
+
+                  A BIN, not an ×. An × means close — it is the glyph on every
+                  dialog and every dismissed banner — so putting it on a
+                  permanent delete asks the user to learn an exception.
+
+                  And the confirm is ours now. It was `window.confirm`: an OS
+                  dialog with the browser's chrome, the browser's typography and
+                  a title bar naming localhost, dropped into the middle of a
+                  monochrome editorial product. Arming the chip in place is the
+                  same single deliberate confirmation, in our own voice — and it
+                  disarms on a second thought, which a system dialog's Cancel
+                  makes into an event.
                 */}
-                <button
-                  type="button"
-                  className="dp-btn--onmedia dpc-sheetcard__discard"
-                  aria-label={`Discard the sheet "${entry.briefText ?? "Untitled sheet"}"`}
-                  title="Discard this sheet"
-                  disabled={abandoning === entry.sessionId}
-                  onClick={() => discardSheet(entry.sessionId)}
-                >
-                  <X size={13} strokeWidth={2} aria-hidden="true" />
-                </button>
+                {armed === entry.sessionId ? (
+                  <span className="dpc-sheetcard__confirm">
+                    <button
+                      type="button"
+                      className="dpc-sheetcard__confirmYes"
+                      aria-label={`Delete the sheet "${entry.briefText ?? "Untitled sheet"}" permanently`}
+                      disabled={abandoning === entry.sessionId}
+                      onClick={() => discardSheet(entry.sessionId)}
+                    >
+                      {abandoning === entry.sessionId ? "Deleting…" : "Delete"}
+                    </button>
+                    <button
+                      type="button"
+                      className="dpc-sheetcard__confirmNo"
+                      aria-label="Keep this sheet"
+                      onClick={() => setArmed(null)}
+                    >
+                      Keep
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="dp-btn--onmedia dpc-sheetcard__discard"
+                    aria-label={`Delete the sheet "${entry.briefText ?? "Untitled sheet"}"`}
+                    title="Delete this sheet"
+                    onClick={() => setArmed(entry.sessionId)}
+                  >
+                    <Trash2 size={13} strokeWidth={2} aria-hidden="true" />
+                  </button>
+                )}
               </Card>
             ))}
           </div>

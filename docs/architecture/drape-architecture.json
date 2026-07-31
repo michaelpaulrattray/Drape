@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a47da10a6846a4ce"
+    "sourceFingerprint": "f8f395893871bfa7"
   },
   "domains": [
     {
@@ -17961,6 +17961,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {

@@ -19,6 +19,7 @@ import { TRPCError } from "@trpc/server";
 
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
+import { storagePublicUrl } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
@@ -201,9 +202,37 @@ export const castingV2Router = router({
           const rolls = await listSessionRolls(ctx.user.id, session.id);
           const kept = await listKeptCandidates(ctx.user.id, session.id);
           const latest = rolls[rolls.length - 1] ?? null;
+
+          /*
+            A few faces, so the card looks like the sheet it opens.
+
+            This procedure used to say "counts only — a summary, not a preview",
+            on the reasoning that candidate images belong on the one page whose
+            retention and cancellation rules are written about them. The founder
+            has reversed that, and the original worry does not survive contact:
+            these are the owner's own faces, on an owner-scoped projection,
+            read-only, and nothing on this card can keep, discard or cancel
+            anything.
+
+            Kept candidates first — a sheet you have shortlisted should show
+            what you shortlisted — and the newest roll otherwise. Four, because
+            that is what the strip holds.
+          */
+          const previewSource =
+            kept.length > 0
+              ? kept
+              : latest
+                ? await listRollCandidates(ctx.user.id, latest.id)
+                : [];
+          const previewUrls = previewSource
+            .filter((candidate) => candidate.status === "ready" && candidate.thumbKey)
+            .slice(0, 4)
+            .map((candidate) => storagePublicUrl(candidate.thumbKey as string));
+
           return {
             sessionId: session.publicId,
             briefText: latest?.briefText ?? null,
+            previewUrls,
             rollCount: rolls.length,
             keptCount: kept.length,
             lastActivityAt: session.lastActivityAt.toISOString(),
