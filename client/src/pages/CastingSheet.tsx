@@ -20,6 +20,7 @@ import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
 import { useSheetState, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
+import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 
 /**
  * The casting sheet (plan §J, handoff chapter 07).
@@ -55,6 +56,8 @@ export default function CastingSheet() {
     rollDispatched,
     startingRoll,
     setStartingRoll,
+    dispatchFailure,
+    setDispatchFailure,
     optimisticKept,
     optimisticDiscarded,
     setOptimisticKept,
@@ -111,7 +114,7 @@ export default function CastingSheet() {
    * swaps to skeletons in the same frame as the click, so Follow and Roll
    * again answer as immediately as Cast it does.
    */
-  const awaitingNewRoll = startingRoll && latch.held;
+  const awaitingNewRoll = startingRoll && latch.held && !dispatchFailure;
 
   const roll = trpc.castingV2.getRoll.useQuery(
     { rollId: shownRollId ?? "" },
@@ -280,11 +283,12 @@ export default function CastingSheet() {
       latch.release();
       setStartingRoll(false);
     };
+    const onFailure = (error: unknown) => {
+      release();
+      setDispatchFailure(classifyDispatchFailure(error));
+    };
     const options = {
-      onError: (error: { message: string }) => {
-        release();
-        toast(error.message);
-      },
+      onError: onFailure,
       onSuccess: () => {
         void invalidate();
       },
@@ -455,12 +459,40 @@ export default function CastingSheet() {
         ) : null}
 
         {/*
-          An empty sheet is a real state and gets real copy. It happens when a
-          roll was refused after the user had already been moved here — and
-          eight skeletons that never resolve would be a far worse answer than
-          one honest line.
+          A failed dispatch says so, here, where the skeletons would have been.
+
+          This is the state that did not exist when the founder's anime brief
+          was refused: the refusal was correct and free, and the sheet showed
+          eight skeletons that waited forever. Nothing may ever hang.
         */}
-        {!shownRollId && !startingRoll && session.isFetched ? (
+        {dispatchFailure ? (
+          <EmptyState
+            title={
+              dispatchFailure.kind === "refused"
+                ? "That brief can't be cast"
+                : "The roll didn't start"
+            }
+            body={dispatchFailure.message}
+            action={
+              <Button
+                variant="primary"
+                size="small"
+                onClick={() => {
+                  setDispatchFailure(null);
+                  navigate("/casting");
+                }}
+              >
+                {failureActionLabel(dispatchFailure.kind)}
+              </Button>
+            }
+          />
+        ) : null}
+
+        {/*
+          An empty sheet is a real state and gets real copy — a session that
+          exists with nothing cast on it yet.
+        */}
+        {!shownRollId && !startingRoll && !dispatchFailure && session.isFetched ? (
           <EmptyState
             title="Nothing cast on this sheet yet"
             body="Describe who you need in the box below and roll."
@@ -478,7 +510,7 @@ export default function CastingSheet() {
             Before this, Follow left the previous roll's eight faces on screen
             with no sign anything had happened.
           */}
-          {awaitingNewRoll || (!roll.data && (startingRoll || shownRollId))
+          {!dispatchFailure && (awaitingNewRoll || (!roll.data && (startingRoll || shownRollId)))
             ? // Eight skeletons the instant a roll is on its way — the sheet's
               // shape is known long before its contents are.
               Array.from({ length: config.data?.candidatesPerRoll ?? 8 }, (_, index) => (

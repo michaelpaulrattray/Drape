@@ -906,6 +906,34 @@ export async function listExpiredSessions(input: {
     .limit(input.limit ?? 50);
 }
 
+/**
+ * Abandon a sheet on purpose.
+ *
+ * The user's own disposal of exploratory work. It writes the same terminal
+ * status the 7-day sweep writes, so everything downstream — the object purge,
+ * the kept/signed exemptions — is the machinery that already exists rather
+ * than a second path that has to agree with the first.
+ *
+ * Owner-scoped in the statement (invariant 1), and only from `open`: a sheet
+ * that already expired is not abandoned twice.
+ */
+export async function abandonCastingSession(input: {
+  userId: number;
+  sessionPublicId: string;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  const db = await requireDb();
+  const result = await db
+    .update(castingSessions)
+    .set({ status: "abandoned" })
+    .where(and(
+      eq(castingSessions.publicId, input.sessionPublicId),
+      eq(castingSessions.userId, input.userId),
+      eq(castingSessions.status, "open"),
+    ));
+  return affectedRows(result) === 1;
+}
+
 export async function markSessionExpired(sessionId: number): Promise<boolean> {
   assertPositiveId(sessionId, "sessionId");
   const db = await requireDb();

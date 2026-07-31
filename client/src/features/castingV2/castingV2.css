@@ -271,6 +271,20 @@
   white-space: nowrap;
 }
 
+/* An unsigned-sheet card opens on its body; the discard button sits beside. */
+.dpc-sheetcard__open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+}
+
 /* ---- the dock's kept stack: the shortlist, where Sign will sit ---- */
 
 .dpc-keptstack {

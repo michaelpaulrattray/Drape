@@ -24,6 +24,12 @@ import { create } from "zustand";
  *   roll is dispatched is what makes that true rather than merely stated.
  */
 
+/**
+ * What went wrong, in the terms the copy needs. A refusal is about the brief
+ * and is always free; the others are about the system.
+ */
+export type DispatchFailureKind = "refused" | "credits" | "busy" | "unavailable";
+
 export type UnlockableField = "sex" | "ageBand" | "heritage" | "build" | "energy" | "archetype";
 
 type SheetState = {
@@ -42,6 +48,19 @@ type SheetState = {
    * show eight skeletons forever, which is the most patient possible lie.
    */
   startingRoll: boolean;
+
+  /**
+   * Why the last dispatch failed, if it did.
+   *
+   * This lives in the store rather than in a component because of the defect
+   * it exists to fix: the tab fires the roll and navigates away in the same
+   * tick, and React Query does NOT invoke `mutate`'s callbacks once the
+   * component that called it has unmounted. So `onError` never ran, the
+   * pending flag never cleared, and a server-side refusal rendered as eight
+   * skeletons that waited forever. The store outlives the navigation; the
+   * sheet reads this and says what happened.
+   */
+  dispatchFailure: { kind: DispatchFailureKind; message: string } | null;
 
   beginMutation: (candidateId: string) => void;
   endMutation: (candidateId: string) => void;
@@ -66,6 +85,7 @@ type SheetState = {
   unlock: (field: UnlockableField) => void;
   setDraftBrief: (brief: string) => void;
   setStartingRoll: (startingRoll: boolean) => void;
+  setDispatchFailure: (failure: { kind: DispatchFailureKind; message: string } | null) => void;
   /**
    * Called when a roll is dispatched. The undo stack clears because the server
    * anchors undo to the active roll — leaving the affordance up would offer a
@@ -82,6 +102,7 @@ export const useSheetState = create<SheetState>((set, get) => ({
   unlocked: [],
   draftBrief: "",
   startingRoll: false,
+  dispatchFailure: null,
 
   beginMutation: (candidateId) =>
     set((state) => ({ pending: { ...state.pending, [candidateId]: true } })),
@@ -126,8 +147,19 @@ export const useSheetState = create<SheetState>((set, get) => ({
 
   setStartingRoll: (startingRoll) => set({ startingRoll }),
 
+  setDispatchFailure: (dispatchFailure) =>
+    // A failure ends the pending state by definition — nothing is coming.
+    set(dispatchFailure ? { dispatchFailure, startingRoll: false } : { dispatchFailure: null }),
+
   rollDispatched: () =>
-    set({ undoable: null, unlocked: [], pending: {}, optimisticKept: {}, optimisticDiscarded: {} }),
+    set({
+      undoable: null,
+      unlocked: [],
+      pending: {},
+      optimisticKept: {},
+      optimisticDiscarded: {},
+      dispatchFailure: null,
+    }),
 
   reset: () =>
     set({
@@ -138,5 +170,6 @@ export const useSheetState = create<SheetState>((set, get) => ({
       startingRoll: false,
       optimisticKept: {},
       optimisticDiscarded: {},
+      dispatchFailure: null,
     }),
 }));

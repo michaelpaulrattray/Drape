@@ -33,6 +33,7 @@ import {
 } from "../castingV2/rollProjection";
 import {
   CastingV2OwnershipError,
+  abandonCastingSession,
   createCastingSession,
   getOwnedCastingSession,
   getOwnedRoll,
@@ -297,6 +298,26 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
       return undo({ userId: ctx.user.id, candidatePublicId: input.candidateId });
+    }),
+
+  /**
+   * Throw a sheet away on purpose.
+   *
+   * A pure delete of exploratory work — no refund implications, because every
+   * roll on it was delivered. It writes the same `abandoned` status the 7-day
+   * sweep writes, so the object purge that follows is the existing machinery.
+   */
+  abandonSession: protectedProcedure
+    .input(z.object({ sessionId: publicId }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      const abandoned = await abandonCastingSession({
+        userId: ctx.user.id,
+        sessionPublicId: input.sessionId,
+      });
+      if (!abandoned) throw new TRPCError({ code: "NOT_FOUND", message: "Sheet not found" });
+      return { abandoned: true as const };
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

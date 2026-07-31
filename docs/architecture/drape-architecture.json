@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "31804f0606f6d669"
+    "sourceFingerprint": "36feb39eb0881dcc"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 4
+      "moduleCount": 5
     },
     {
       "id": "domain:client-shared",
@@ -1391,6 +1391,12 @@
     {
       "id": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "path": "client/src/features/castingV2/components/CandidateTile.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/dispatchFailure.ts",
+      "path": "client/src/features/castingV2/dispatchFailure.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -5021,6 +5027,16 @@
       "file": "server/routes/bugReports.ts"
     },
     {
+      "id": "route:castingV2.abandonSession",
+      "namespace": "castingV2",
+      "name": "abandonSession",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.cancel",
       "namespace": "castingV2",
       "name": "cancel",
@@ -7523,6 +7539,10 @@
     {
       "id": "test:server/castingV2/briefCompiler.test.ts",
       "path": "server/castingV2/briefCompiler.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/candidateRetention.test.ts",
+      "path": "server/castingV2/candidateRetention.test.ts"
     },
     {
       "id": "test:server/castingV2/castingV2Scope.test.ts",
@@ -10446,6 +10466,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/dispatchFailure.ts",
+      "to": "module:client/src/features/castingV2/sheetState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/export/ExportPackDialog.tsx",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -12297,6 +12322,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/dispatchFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/sheetState.ts",
       "kind": "imports"
     },
@@ -12318,6 +12348,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/dispatchFailure.ts",
       "kind": "imports"
     },
     {

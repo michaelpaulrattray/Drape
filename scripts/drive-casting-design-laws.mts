@@ -180,6 +180,55 @@ async function assertPricedButtons(page: Page, where: string) {
   );
 }
 
+/**
+ * Law 5. Retention is stated wherever unsigned sheets surface.
+ *
+ * A sheet that quietly disappears after a week is a worse surprise than one
+ * that said so. Only asserted where the section actually renders.
+ */
+async function assertRetentionStated(page: Page, where: string) {
+  /*
+    Wait for the section rather than sampling once. `openSessions` is a query;
+    checking before it resolves reports "no section here" and passes without
+    having tested anything — the vacuous pass this suite exists to prevent.
+  */
+  await page
+    .waitForFunction(() => /unsigned sheets/i.test(document.body.innerText), { timeout: 6000 })
+    .catch(() => undefined);
+
+  const result = await page.evaluate(() => {
+    const text = document.body.innerText;
+    if (!/unsigned sheets/i.test(text)) return null;
+    return /7 quiet days/i.test(text);
+  });
+  if (result === null) {
+    console.log(`  --   [${where}] no unsigned-sheets section on this surface`);
+    return;
+  }
+  check(result, `[${where}] retention stated where sheets surface`, "no expiry copy found");
+}
+
+/**
+ * Law 6. A refused brief never hangs.
+ *
+ * The founder's anime brief was refused server-side — correctly, and for free
+ * — and the sheet showed eight skeletons that waited forever. The law is that
+ * a failure always resolves to copy with an action.
+ */
+async function assertNoOrphanSkeletons(page: Page, where: string) {
+  const result = await page.evaluate(() => {
+    const skeletons = document.querySelectorAll(".dp-skeleton").length;
+    const hasFailureCopy = /can't be cast|didn't start/i.test(document.body.innerText);
+    return { skeletons, hasFailureCopy };
+  });
+  // Skeletons and a failure message must never coexist: one of them is lying.
+  check(
+    !(result.skeletons > 0 && result.hasFailureCopy),
+    `[${where}] skeletons never sit under a failure message`,
+    `${result.skeletons} skeletons alongside failure copy`,
+  );
+}
+
 async function auditSurface(page: Page, url: string, where: string, waitFor?: string) {
   console.log(`\n── ${where}`);
   await page.goto(url, { waitUntil: "networkidle2" });
@@ -191,6 +240,8 @@ async function auditSurface(page: Page, url: string, where: string, waitFor?: st
   await assertDockVisible(page, where);
   await assertNoMonoSentences(page, where);
   await assertPricedButtons(page, where);
+  await assertRetentionStated(page, where);
+  await assertNoOrphanSkeletons(page, where);
 }
 
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new" });

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, Plus, Search, Upload } from "lucide-react";
+import { ArrowRight, Plus, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
+import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import heroPortrait from "@/assets/casting/hero-portrait.webp";
 import heroSecondFrame from "@/assets/casting/hero-second-frame.webp";
 import "@/features/castingV2/castingV2.css";
@@ -76,14 +77,9 @@ const CASTING_SEEDS: Array<{ label: string; shows: string; requires?: string }> 
   // to a stated energy — in which case it LOCKS flat across the eight rather
   // than varying, which is correct behaviour and worth being accurate about.
   { label: "Skincare founder, 40s, unbothered", shows: "character brief, stated energy locks" },
-  /*
-    Heritage lock. Deliberately a single in-vocabulary heritage: the enum is
-    the ported legacy ten (plan line 209) and has no value "British" maps to,
-    so a hyphenated "Nigerian-British" would silently drop half of what the
-    user asked for — precisely the failure the seed law names. Extending that
-    enum is a plan-level question, not a seed-level one.
-  */
-  { label: "West African woman, mid 30s", shows: "heritage + age lock" },
+  // Dual heritage, now that the enum can hold both halves (founder ruling,
+  // 2026-08-01). This is the shape real briefs arrive in.
+  { label: "Nigerian-British woman, mid 30s", shows: "dual heritage + age lock" },
   // The older-age guard: age must be genuinely present in skin and structure.
   { label: "A retired fisherman in his 60s, weathered face", shows: "age band + skin texture" },
 ];
@@ -103,27 +99,42 @@ export default function CastingV2() {
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<RosterScope>("All");
   const [starting, setStarting] = useState(false);
-  const rosterRef = useRef<HTMLElement>(null);
   /** Closes synchronously on click; see `startCasting` and `singleFlight.ts`. */
   const latchRef = useRef<DispatchLatch | null>(null);
   if (!latchRef.current) latchRef.current = createDispatchLatch();
   const castLatch = latchRef.current;
   const reset = useSheetState((state) => state.reset);
   const setStartingRoll = useSheetState((state) => state.setStartingRoll);
+  const setDispatchFailure = useSheetState((state) => state.setDispatchFailure);
 
   const focusBrief = () =>
     document.querySelector<HTMLInputElement>('input[aria-label="Casting brief"]')?.focus();
 
-  /** The roster card targets the real roster — not a fake destination. */
-  const scrollToRoster = () => {
-    rosterRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
+  const utils = trpc.useUtils();
   const config = trpc.castingV2.config.useQuery({});
   const openSessions = trpc.castingV2.openSessions.useQuery(
     {},
     { enabled: config.data?.enabled === true },
   );
+
+  const abandonSession = trpc.castingV2.abandonSession.useMutation();
+  const [abandoning, setAbandoning] = useState<string | null>(null);
+
+  const discardSheet = async (sessionId: string) => {
+    if (abandoning) return;
+    // One confirm. Exploratory work, but it is still the user's work.
+    if (!window.confirm("Discard this sheet? The candidates on it are deleted.")) return;
+    setAbandoning(sessionId);
+    try {
+      await abandonSession.mutateAsync({ sessionId });
+      await utils.castingV2.openSessions.invalidate();
+      toast("Sheet discarded");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "That sheet could not be discarded.");
+    } finally {
+      setAbandoning(null);
+    }
+  };
 
   const createSession = trpc.castingV2.createSession.useMutation();
   const createRoll = trpc.castingV2.createRoll.useMutation();
@@ -190,20 +201,24 @@ export default function CastingV2() {
       */
       reset();
       setStartingRoll(true);
-      createRoll.mutate(
-        {
+      /*
+        `mutateAsync().catch(...)` rather than `mutate(..., { onError })`.
+
+        React Query does not invoke `mutate`'s callbacks once the component
+        that called it has unmounted — and this one navigates away in the same
+        tick, so `onError` never ran. A refused brief left the pending flag set
+        and the sheet showed eight skeletons forever. A promise chain has no
+        such rule: it settles wherever it was created, and writes the failure
+        into the store, which outlives the navigation.
+      */
+      void createRoll
+        .mutateAsync({
           clientRequestId: createClientRequestId(),
           sessionId: session.sessionId,
           briefText: brief.trim(),
-        },
-        {
-          onError: (error) => {
-            setStartingRoll(false);
-            toast(error.message);
-          },
-          onSettled: () => setStartingRoll(false),
-        },
-      );
+        })
+        .then(() => setStartingRoll(false))
+        .catch((error: unknown) => setDispatchFailure(classifyDispatchFailure(error)));
 
       // Navigating IS the confirmation, so no toast — the toast law fires on
       // actions that leave you where you were, never on ones that move you.
@@ -242,10 +257,18 @@ export default function CastingV2() {
               <br />
               Meet eight of them.
             </h1>
+            {/*
+              Adapted until M8b (founder ruling, 2026-08-01). The prototype's
+              line — "a face, a voice and a way of talking … or start from
+              photos of a real person" — claims two capabilities that do not
+              exist: voice is M8b, and upload is the inert card below. Voice
+              had already been adapted out of the search placeholder, so
+              keeping it here was the audit contradicting itself.
+
+              Restore the full line when Voice ships.
+            */}
             <span className="dp-body">
-              A cast member is a face, a voice and a way of talking — signed once, reusable in
-              every campaign. Describe one and pick from a sheet, or start from photos of a
-              real person.
+              A cast member is a face and a presence — signed once, reusable in every campaign.
             </span>
 
             <Field className="dpc-hero__field">
@@ -325,7 +348,18 @@ export default function CastingV2() {
             </span>
           </div>
 
-          <button type="button" className="dpc-entry" onClick={scrollToRoster}>
+          {/*
+            The Klieg-owned catalog of ready-made signed casts — a future
+            product, not this account's roster (founder correction, 2026-08-01;
+            an earlier reading wired it to scroll to the grid below, which just
+            duplicated what was already on screen).
+
+            Ships as an honest skeleton per F5: the card keeps its place as the
+            eventual front door, and says plainly that it is coming. The
+            backlog entry it belongs to is the pre-made roster / starter casts
+            catalog.
+          */}
+          <div className="dpc-entry dpc-entry--inert" aria-disabled="true">
             <span className="dpc-entry__stack" aria-hidden="true">
               <span className="dpc-entry__chip" />
               <span className="dpc-entry__chip" />
@@ -334,12 +368,11 @@ export default function CastingV2() {
             <span className="dp-stack" style={{ gap: 4, minWidth: 0 }}>
               <span className="dp-label">Browse the signed roster</span>
               <span className="dp-secondary">
-                {signedCount === 0
-                  ? "No one signed yet. Cast a sheet and sign the one you want to keep."
-                  : `${signedCount} signed and ready to use in any campaign.`}
+                A ready-made roster of signed cast members, cleared to use without casting —
+                coming.
               </span>
             </span>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -363,26 +396,52 @@ export default function CastingV2() {
 
       {openSessions.data && openSessions.data.length > 0 ? (
         <section className="dp-stack" style={{ gap: 12 }}>
-          <SectionHead eyebrow="Unsigned sheets" aside="pick up where you left off" />
+          {/*
+            Retention stated wherever unsigned sheets surface. A sheet that
+            quietly disappears after a week is a worse surprise than one that
+            said so.
+          */}
+          <SectionHead
+            eyebrow="Unsigned sheets"
+            aside="Unsigned sheets clear after 7 quiet days."
+          />
           <div className="dp-grid">
             {openSessions.data.map((entry) => (
-              <Card
-                key={entry.sessionId}
-                interactive
-                onClick={() => navigate(`/casting/s/${entry.sessionId}`)}
-              >
-                <span className="dp-label">{entry.briefText ?? "Untitled sheet"}</span>
-                <span className="dp-secondary">
-                  {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
-                  {entry.keptCount > 0 ? ` · ${entry.keptCount} kept` : ""}
-                </span>
+              <Card key={entry.sessionId}>
+                <button
+                  type="button"
+                  className="dpc-sheetcard__open"
+                  onClick={() => navigate(`/casting/s/${entry.sessionId}`)}
+                >
+                  <span className="dp-label">{entry.briefText ?? "Untitled sheet"}</span>
+                  <span className="dp-secondary">
+                    {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
+                    {entry.keptCount > 0 ? ` · ${entry.keptCount} kept` : ""}
+                  </span>
+                </button>
+                {/*
+                  Deliberate disposal. Destructive-on-hover per the foundation
+                  button law, and one confirm — this is a pure delete of
+                  exploratory work with no refund implications, since every
+                  roll on the sheet was delivered.
+                */}
+                <Button
+                  variant="quiet"
+                  size="small"
+                  destructive
+                  disabled={abandoning === entry.sessionId}
+                  onClick={() => discardSheet(entry.sessionId)}
+                >
+                  <Trash2 size={11} strokeWidth={2} aria-hidden="true" />
+                  Discard this sheet
+                </Button>
               </Card>
             ))}
           </div>
         </section>
       ) : null}
 
-      <section className="dp-stack" style={{ gap: 12 }} ref={rosterRef}>
+      <section className="dp-stack" style={{ gap: 12 }}>
         {/*
           Scope label + count, as drawn. The count is real — and when it is
           zero it says zero, which is the whole difference between this and

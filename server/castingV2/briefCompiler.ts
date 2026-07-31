@@ -261,7 +261,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   if (!outcome.ok && outcome.reason === "unsupported_cohort") {
     throw new BriefRefusal(
       "unsupported_cohort",
-      "Casting can only make photographic people right now. Describe a real-looking person and we'll cast them — you have not been charged.",
+      "Casting can only make photographic people for now — anime, illustration and non-human characters are coming. Describe a real-looking person and we'll cast them. You have not been charged.",
     );
   }
 

@@ -71,14 +71,27 @@ export const SEXES = ["female", "male", "nonbinary"] as const;
 export type Sex = (typeof SEXES)[number];
 
 /**
- * Heritage, ported from the legacy blend system exactly as the founder ruling
- * requires (plan line 209) — the ten-value enum including Mediterranean, which
- * exists because Italian/Spanish/Greek briefs had nowhere else to land (H10).
- * Structured, so it can be locked when stated and *varied* when it isn't.
+ * Heritage, ported from the legacy blend system as the founder ruling requires
+ * (plan line 209) — including Mediterranean, which exists because
+ * Italian/Spanish/Greek briefs had nowhere else to land (H10). Structured, so
+ * it can be locked when stated and *varied* when it isn't.
+ *
+ * **Extended 2026-08-01 (founder ruling).** The ported ten had no value that
+ * "British" could map to, so a brief saying "Nigerian-British" silently lost
+ * half of what the user asked for. The founder's call: hyphenated and dual
+ * heritage is exactly what real briefs contain, and heritage-blend is named
+ * ported craft — dropping half a stated heritage is a lock violation, not a
+ * vocabulary gap. Two values close the gap for the British Isles and Northern
+ * Europe, which the legacy list covered only via "Nordic" and "Slavic".
+ *
+ * The blend machinery already carried two components; what was missing was
+ * somewhere for the second one to land.
  */
 export const HERITAGES = [
   "Slavic",
   "Nordic",
+  "British Isles",
+  "Western European",
   "Mediterranean",
   "East Asian",
   "South Asian",

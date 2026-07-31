@@ -80,6 +80,10 @@ WHAT TO EXTRACT
   drift a decade older than they asked for.
 - "heritage": only when stated. A nationality maps to the nearest listed
   heritage. Bare "mixed" or "ambiguous" is not a heritage — leave it empty.
+  A hyphenated or dual heritage gives TWO entries, not one: "Nigerian-British"
+  is West African + British Isles, "Korean-American" is East Asian alone
+  unless the brief says more. Dropping half of a stated dual heritage loses a
+  fact the user pinned, so return both and let the percentages split.
 - "energy": only when the brief describes how the person carries themselves.
 - "archetype": only when the brief clearly points at one of the listed
   directions. Otherwise null.
