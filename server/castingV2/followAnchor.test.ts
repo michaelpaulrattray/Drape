@@ -206,3 +206,48 @@ describe("the anchor never becomes a lock the user did not write", () => {
     expect(compiled.lockContract).not.toHaveProperty("ageBand");
   });
 });
+
+describe("the variation generator actually varies", () => {
+  /*
+    Found by grading a real follow-run, not by reading code. Every axis used to
+    derive its value from one hash shifted by a different amount, and the shifts
+    collide with the weight totals: FNV-1a advances by its prime per position, so
+    `(seed >>> 5) % 100` returns the SAME bucket for consecutive candidates.
+    Hair family came back 1 distinct value across eight faces, and `ageBand` had
+    been quietly doing the same (2 of 7) since before hair existed.
+
+    A sheet whose entire job is eight different people cannot take its difference
+    from a generator that repeats — so the spread is asserted, not assumed.
+  */
+  const openIntent = intentOf({ role: null });
+
+  function spread(get: (r: ResolvedIdentity) => string | null, seeds = ["a", "b", "c", "d", "e"]) {
+    return seeds.map((seed) => new Set(eightWith(openIntent, seed).map(get)).size);
+  }
+
+  function eightWith(intent: CastingIntent, seed: string): ResolvedIdentity[] {
+    return Array.from({ length: 8 }, (_, position) =>
+      resolveCandidateIdentity(intent, position, seed, null),
+    );
+  }
+
+  it("age spans most of the band vocabulary across eight candidates", () => {
+    for (const distinct of spread((r) => r.ageBand)) expect(distinct).toBeGreaterThanOrEqual(4);
+  });
+
+  it("build is not the same body eight times", () => {
+    for (const distinct of spread((r) => r.build)) expect(distinct).toBeGreaterThanOrEqual(3);
+  });
+
+  it("hair family varies — the axis that came back 1-of-8", () => {
+    for (const distinct of spread((r) => r.hair?.family ?? null)) {
+      expect(distinct).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("hair colour varies", () => {
+    for (const distinct of spread((r) => r.hair?.colour ?? null)) {
+      expect(distinct).toBeGreaterThanOrEqual(3);
+    }
+  });
+});

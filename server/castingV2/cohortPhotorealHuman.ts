@@ -513,14 +513,15 @@ const HAIR_FAMILY_WEIGHTS: readonly (readonly [HairFamily, number])[] = [
 function varyHair(
   heritage: HeritageComponent[],
   ageBand: AgeBand,
-  seed: number,
+  position: number,
+  rollSeed: string,
 ): Hair {
-  const family = weightedPick(HAIR_FAMILY_WEIGHTS, seed >>> 5);
+  const family = weightedPick(HAIR_FAMILY_WEIGHTS, hash(`${rollSeed}:hairFamily:${position}`));
   const primary = heritage[0]?.heritage ?? "";
   const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
-  let colour = weightedPick(palette, seed >>> 13);
+  let colour = weightedPick(palette, hash(`${rollSeed}:hairColour:${position}`));
 
-  const greyRoll = (seed >>> 19) % 100;
+  const greyRoll = hash(`${rollSeed}:grey:${position}`) % 100;
   if (greyRoll < GREY_CHANCE[ageBand]) {
     // Salt-and-pepper reads as grey; a full head of white belongs to the
     // oldest bands, where it is common rather than remarkable.
@@ -587,8 +588,14 @@ function anchoredHeritage(
 }
 
 /** Hair in a follow: the family and colour carry; everything else stays free. */
-function anchoredHair(anchor: FollowAnchor, heritage: HeritageComponent[], ageBand: AgeBand, seed: number): Hair | null {
-  return anchor.hair ?? varyHair(heritage, ageBand, seed);
+function anchoredHair(
+  anchor: FollowAnchor,
+  heritage: HeritageComponent[],
+  ageBand: AgeBand,
+  position: number,
+  rollSeed: string,
+): Hair | null {
+  return anchor.hair ?? varyHair(heritage, ageBand, position, rollSeed);
 }
 
 /**
@@ -606,7 +613,21 @@ export function resolveCandidateIdentity(
   rollSeed: string,
   anchor: FollowAnchor | null = null,
 ): ResolvedIdentity {
-  const seed = hash(`${rollSeed}:${position}`);
+  /*
+    One hash per axis, never one hash shifted per axis.
+
+    The first version derived every axis from `hash(rollSeed:position)` with a
+    different bit shift, and the shifts interact with the weight totals: FNV-1a
+    advances by its prime per position, so `(seed >>> 5) % 100` lands on the
+    SAME bucket for consecutive candidates. Measured, not theorised — hair
+    family came back 1–2 distinct values across eight candidates, and `ageBand`
+    was quietly doing the same thing (2 of 7) before hair existed at all.
+
+    A sheet whose whole job is eight different people cannot derive its
+    difference from a generator that repeats. Named strings per axis, which is
+    what `varyHeritage` and the energy cycle already did correctly.
+  */
+  const seedFor = (axis: string) => hash(`${rollSeed}:${axis}:${position}`);
 
   /*
     Precedence inside a follow, and it matches the ratified chain everywhere
@@ -614,7 +635,7 @@ export function resolveCandidateIdentity(
     into the box, and the brief wins — the anchor supplies what the brief left
     unsaid, exactly as the variation vocabularies do.
   */
-  const ageBand = intent.ageBand ?? anchor?.ageBand ?? weightedPick(AGE_WEIGHTS, seed >>> 3);
+  const ageBand = intent.ageBand ?? anchor?.ageBand ?? weightedPick(AGE_WEIGHTS, seedFor("ageBand"));
   const heritage =
     intent.heritage.length > 0
       ? intent.heritage
@@ -630,7 +651,7 @@ export function resolveCandidateIdentity(
       "early 20s" gets re-rolled into mid and late across the sheet, which is
       exactly how the founder's brief came back reading 28-35.
     */
-    agePhase: intent.agePhase ?? AGE_PHASES[(seed >>> 11) % AGE_PHASES.length],
+    agePhase: intent.agePhase ?? AGE_PHASES[seedFor("agePhase") % AGE_PHASES.length],
     heritage,
     /*
       Stated build wins. Otherwise: if the brief named a casting category, the
@@ -638,14 +659,14 @@ export function resolveCandidateIdentity(
       outside the category the user asked for (founder gate B5). With no
       category, street-real variety across builds is exactly right.
     */
-    build: intent.build ?? (intent.role ? null : weightedPick(BUILD_WEIGHTS, seed >>> 7)),
+    build: intent.build ?? (intent.role ? null : weightedPick(BUILD_WEIGHTS, seedFor("build"))),
     /*
       Hair carries on a follow and varies otherwise. Conditioned on the
       resolved heritage rather than the brief's, so a candidate who varied into
       a different heritage gets hair that belongs to the face they actually
       have.
     */
-    hair: anchor ? anchoredHair(anchor, heritage, ageBand, seed) : varyHair(heritage, ageBand, seed),
+    hair: anchor ? anchoredHair(anchor, heritage, ageBand, position, rollSeed) : varyHair(heritage, ageBand, position, rollSeed),
     // Energy is the one axis that cycles rather than samples: eight candidates
     // against eight energies gives one of each, which is the most legible
     // difference a sheet can carry. Stated energy locks it flat across all
