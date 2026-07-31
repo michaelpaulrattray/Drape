@@ -112,8 +112,24 @@ export default function CastingSheet() {
       setStartingRoll(false);
       // The real row has landed, so the provisional pill hands over to it.
       beginProvisionalRoll(0);
+      /*
+        THE ROLL ARRIVING PROVES THE FAILURE WRONG.
+
+        `createRoll` does not return until all eight candidates land — about
+        seventy seconds — and rows commit BEFORE dispatch. So a gateway that
+        gives up on that request leaves the server working normally while the
+        client's mutation rejects, and the sheet said "the roll didn't start"
+        above eight tiles that were visibly casting.
+
+        The poll is the authority here, not the mutation's outcome. Once the
+        roll exists, the client's opinion about whether it started is simply
+        out of date, and the banner has to go — the design law that skeletons
+        never sit under a failure message was written for precisely this, and
+        it was the failure that was wrong rather than the skeletons.
+      */
+      setDispatchFailure(null);
     }
-  }, [activeRollId, latch, setStartingRoll, beginProvisionalRoll]);
+  }, [activeRollId, latch, setStartingRoll, beginProvisionalRoll, setDispatchFailure]);
 
   /**
    * A dispatch is in flight and its roll has not appeared yet.
@@ -538,7 +554,16 @@ export default function CastingSheet() {
             title={
               dispatchFailure.kind === "refused"
                 ? "That brief can't be cast"
-                : "The roll didn't start"
+                : /*
+                    "The roll didn't start" is a claim, and on a transport
+                    failure it is one we cannot make: we never heard back, and
+                    the roll commits its rows before it dispatches. The other
+                    kinds ARE refusals the server told us about, so they can
+                    keep the definite title.
+                  */
+                  dispatchFailure.kind === "unavailable"
+                  ? "We lost contact"
+                  : "The roll didn't start"
             }
             body={dispatchFailure.message}
             action={

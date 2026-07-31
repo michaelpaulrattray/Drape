@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fe8a97e5b21596e3"
+    "sourceFingerprint": "32ebdbcb106aafa3"
   },
   "domains": [
     {
@@ -7099,6 +7099,10 @@
     {
       "id": "test:client/src/features/castingV2/briefEcho.test.ts",
       "path": "client/src/features/castingV2/briefEcho.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/dispatchFailure.test.ts",
+      "path": "client/src/features/castingV2/dispatchFailure.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/singleFlight.test.ts",

@@ -64,9 +64,31 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
     reader. Anything reaching here was not — it is a transport or parse failure
     whose text comes from a library or a proxy. There is nothing to pass on.
   */
+  /*
+    The fallback shows OUR sentence, never the error's.
+
+    The founder was shown: `Unexpected token 'u', "upstream error" is not valid
+    JSON`. That is a JSON parser talking about a gateway's plain-text 502 —
+    three layers of implementation detail, in the place where a person is
+    trying to find out whether they were charged.
+
+    The earlier branches use `serverMessage` deliberately: those are tRPC codes
+    our own server raised, and the sentence attached to them was written for a
+    reader. Anything reaching here was not — it is a transport or parse failure
+    whose text comes from a library or a proxy.
+
+    AND IT NO LONGER PROMISES THE MONEY IS SAFE. It used to say "Nothing was
+    charged", which the earlier branches can say truthfully because the server
+    refused before claiming. This branch cannot: a transport failure means we
+    never heard the answer, and `createRoll` commits rows and charges while the
+    request is still open. The roll may be running right now — the founder saw
+    exactly that, a "didn't start" banner above eight tiles casting normally.
+    So the copy stops asserting an outcome it does not know, and the sheet
+    clears it the moment the poll proves a roll exists.
+  */
   return {
     kind: "unavailable",
-    message: "Casting could not start. Nothing was charged — try that again in a moment.",
+    message: "We lost contact while your roll was starting. Checking — if it did start, it will appear here in a moment.",
   };
 }
 
