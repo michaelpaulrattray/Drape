@@ -58,8 +58,18 @@ THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
 null unless the brief states it or unmistakably implies it. Do not fill fields
 with plausible defaults. A field you guess wrong is a broken promise to the
 user; a field you leave null is creative room for the casting engine, which
-will vary it across the eight candidates. Under-filling is always the safer
-error.
+will vary it across the eight candidates.
+
+THE OTHER HALF OF THAT RULE, AND IT IS EQUALLY BINDING: restraint means never
+INVENTING. It never means discarding. If the brief plainly states a fact —
+an age, a sex, a heritage, a build — you MUST record it. Dropping something
+the user actually said is not caution; it is losing their instruction, and it
+produces a sheet that ignores what they asked for. Read the brief twice and
+check you have captured every fact it contains before you answer.
+
+Worked example: "Mediterranean man in his 70s, weathered face" states three
+facts. sex = "male". ageBand = "70s+". heritage = Mediterranean. All three are
+stated; none of them may come back null.
 
 WHAT TO EXTRACT
 - "role": the archetype in the user's own words, under 12 words — "a dad in his
