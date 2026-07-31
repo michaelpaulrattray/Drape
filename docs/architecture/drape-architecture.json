@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "91057022a1da9624"
+    "sourceFingerprint": "05973f82a5aecbf6"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 8
+      "moduleCount": 9
     },
     {
       "id": "domain:client-shared",
@@ -1409,6 +1409,12 @@
     {
       "id": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "path": "client/src/features/castingV2/components/CandidateViewer.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/SheetCardMenu.tsx",
+      "path": "client/src/features/castingV2/components/SheetCardMenu.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -12456,6 +12462,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/SheetCardMenu.tsx",
       "kind": "imports"
     },
     {

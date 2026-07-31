@@ -292,59 +292,6 @@
 }
 
 /* An unsigned-sheet card opens on its body; the discard button sits beside. */
-/*
-  The sheet card's disposal chip. Dark glass in the corner, per the
-  foundation's over-media rule — translucent white measured 2.5:1 against
-  white glyphs and is never used here, even though this corner sits on card
-  fill rather than on an image.
-
-  Revealed on hover, but never hover-only: keyboard focus reveals it, and on
-  a coarse pointer it is simply always there. A control that only exists
-  under a mouse does not exist on a phone.
-*/
-.dpc-sheetcard {
-  position: relative;
-}
-
-.dpc-sheetcard__discard {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: none;
-  cursor: pointer;
-  opacity: 0;
-  transition:
-    opacity var(--t-fast) var(--ease),
-    background var(--t-fast) var(--ease);
-}
-
-.dpc-sheetcard:hover .dpc-sheetcard__discard,
-.dpc-sheetcard__discard:focus-visible {
-  opacity: 1;
-}
-
-.dpc-sheetcard__discard:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-@media (hover: none) {
-  .dpc-sheetcard__discard {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dpc-sheetcard__discard {
-    transition: none;
-  }
-}
 
 .dpc-sheetcard__open {
   display: flex;
@@ -657,39 +604,66 @@
   object-position: center top;
 }
 
-/* ---- deletion, confirmed in place rather than by the operating system ---- */
 
-.dpc-sheetcard__confirm {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+/* ---- the sheet card's overflow menu ---- */
+
+.dpc-sheetmenu { position: absolute; top: 8px; right: 8px; }
+
+.dpc-sheetmenu__trigger {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: var(--r-btn);
-  background: var(--scrimChip);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-.dpc-sheetcard__confirmYes,
-.dpc-sheetcard__confirmNo {
-  font: 500 11px var(--font-sans);
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: 0;
-  border-radius: 5px;
-  padding: 4px 8px;
   cursor: pointer;
 }
 
-/* The destructive one carries the weight; "Keep" is the quiet way out. */
-.dpc-sheetcard__confirmYes { background: var(--error); color: #ffffff; }
-.dpc-sheetcard__confirmYes:disabled { opacity: 0.7; cursor: default; }
-.dpc-sheetcard__confirmNo { background: transparent; color: var(--onScrim); }
-.dpc-sheetcard__confirmNo:hover { background: rgba(255, 255, 255, 0.14); }
+.dpc-sheetmenu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 178px;
+  padding: var(--s-2);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadowCard);
+}
 
-.dpc-sheetcard__confirmYes:focus-visible,
-.dpc-sheetcard__confirmNo:focus-visible {
-  outline: 2px solid var(--onScrim);
-  outline-offset: -1px;
+.dpc-sheetmenu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: 7px 9px;
+  font: 400 13px var(--font-sans);
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+}
+
+.dpc-sheetmenu__item:hover { background: var(--well); }
+.dpc-sheetmenu__item:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
+.dpc-sheetmenu__item:disabled { opacity: 0.6; cursor: default; }
+
+/* Destructive reveals itself on hover, per the foundation button law. */
+.dpc-sheetmenu__item--danger { color: var(--metaStrong); }
+.dpc-sheetmenu__item--danger:hover { color: var(--errorInk); background: var(--well); }
+
+.dpc-sheetmenu__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }
+
+.dpc-sheetmenu__ask {
+  display: block;
+  padding: 7px 9px 5px;
+  font: 400 12px/1.45 var(--font-sans);
+  color: var(--metaStrong);
 }

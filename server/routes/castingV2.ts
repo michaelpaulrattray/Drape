@@ -224,10 +224,24 @@ export const castingV2Router = router({
               : latest
                 ? await listRollCandidates(ctx.user.id, latest.id)
                 : [];
+          /*
+            `thumbKey ?? imageKey`, and the fallback is the whole point.
+
+            The first version filtered on `thumbKey` alone and the strip was
+            empty on every real sheet — nothing writes that column. The
+            thumbnail transform worker is deferred scope (§G.6), so `thumbKey`
+            is null on every candidate in production and always has been. It
+            rendered in a dev check only because the fixture set it by hand.
+
+            Filtering on a field nothing populates is the same mistake as a
+            control that is never called: it looks right, it passes review, and
+            it does nothing. Full images are heavier than thumbs and four of
+            them at 90px is a cost worth paying until the worker exists.
+          */
           const previewUrls = previewSource
-            .filter((candidate) => candidate.status === "ready" && candidate.thumbKey)
+            .filter((candidate) => candidate.status === "ready" && (candidate.thumbKey || candidate.imageKey))
             .slice(0, 4)
-            .map((candidate) => storagePublicUrl(candidate.thumbKey as string));
+            .map((candidate) => storagePublicUrl((candidate.thumbKey ?? candidate.imageKey) as string));
 
           return {
             sessionId: session.publicId,

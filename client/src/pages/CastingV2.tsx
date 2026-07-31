@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, Plus, Search, Trash2, Upload } from "lucide-react";
+import { ArrowRight, Plus, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
+import { SheetCardMenu } from "@/features/castingV2/components/SheetCardMenu";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import "@/features/castingV2/castingV2.css";
 
@@ -139,15 +140,19 @@ export default function CastingV2() {
   const [abandoning, setAbandoning] = useState<string | null>(null);
   /** The sheet whose delete is armed. One at a time, and never on load. */
   const [armed, setArmed] = useState<string | null>(null);
+  /** Which card has its overflow menu open. One at a time. */
+  const [menuFor, setMenuFor] = useState<string | null>(null);
 
   const discardSheet = async (sessionId: string) => {
-    // The confirmation is the armed chip on the card, not an OS dialog.
+    // The confirmation lives inside the card's menu, not in an OS dialog.
     if (abandoning) return;
     setAbandoning(sessionId);
     try {
       await abandonSession.mutateAsync({ sessionId });
       await utils.castingV2.openSessions.invalidate();
-      toast("Sheet discarded");
+      setArmed(null);
+      setMenuFor(null);
+      toast("Sheet deleted");
     } catch (error) {
       toast(error instanceof Error ? error.message : "That sheet could not be discarded.");
     } finally {
@@ -491,37 +496,29 @@ export default function CastingV2() {
                   disarms on a second thought, which a system dialog's Cancel
                   makes into an event.
                 */}
-                {armed === entry.sessionId ? (
-                  <span className="dpc-sheetcard__confirm">
-                    <button
-                      type="button"
-                      className="dpc-sheetcard__confirmYes"
-                      aria-label={`Delete the sheet "${entry.briefText ?? "Untitled sheet"}" permanently`}
-                      disabled={abandoning === entry.sessionId}
-                      onClick={() => discardSheet(entry.sessionId)}
-                    >
-                      {abandoning === entry.sessionId ? "Deleting…" : "Delete"}
-                    </button>
-                    <button
-                      type="button"
-                      className="dpc-sheetcard__confirmNo"
-                      aria-label="Keep this sheet"
-                      onClick={() => setArmed(null)}
-                    >
-                      Keep
-                    </button>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="dp-btn--onmedia dpc-sheetcard__discard"
-                    aria-label={`Delete the sheet "${entry.briefText ?? "Untitled sheet"}"`}
-                    title="Delete this sheet"
-                    onClick={() => setArmed(entry.sessionId)}
-                  >
-                    <Trash2 size={13} strokeWidth={2} aria-hidden="true" />
-                  </button>
-                )}
+                <SheetCardMenu
+                  label={entry.briefText ?? "Untitled sheet"}
+                  open={menuFor === entry.sessionId}
+                  armed={armed === entry.sessionId}
+                  deleting={abandoning === entry.sessionId}
+                  onToggle={() =>
+                    setMenuFor(menuFor === entry.sessionId ? null : entry.sessionId)
+                  }
+                  onOpenSheet={() => navigate(`/casting/s/${entry.sessionId}`)}
+                  onCopyLink={async () => {
+                    await navigator.clipboard.writeText(
+                      `${window.location.origin}/casting/s/${entry.sessionId}`,
+                    );
+                    setMenuFor(null);
+                    toast("Link copied");
+                  }}
+                  onArm={() => setArmed(entry.sessionId)}
+                  onCancel={() => {
+                    setArmed(null);
+                    setMenuFor(null);
+                  }}
+                  onDelete={() => discardSheet(entry.sessionId)}
+                />
               </Card>
             ))}
           </div>
