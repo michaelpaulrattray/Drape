@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Check, RotateCcw, Sparkles, X } from "lucide-react";
 
 import { Button, Skeleton } from "@/foundation";
+import { CandidateViewer } from "./CandidateViewer";
 
 /**
  * One candidate, one tile, arriving on its own.
@@ -59,6 +61,10 @@ export function CandidateTile({
   onDiscard: () => void;
   onFollow: () => void;
 }) {
+  // Declared before any early return — a hook after a conditional return is a
+  // hook that sometimes does not run.
+  const [viewing, setViewing] = useState(false);
+
   if (candidate.status === "casting") {
     return (
       <div className="dp-stack" style={{ gap: 9 }}>
@@ -88,11 +94,36 @@ export function CandidateTile({
 
   return (
     <div className="dp-stack dpc-tile" style={{ gap: 9 }}>
-      <div className="dpc-card">
+      <div className={candidate.imageUrl ? "dpc-card dpc-card--openable" : "dpc-card"}>
+        {/*
+          Open the viewer (item 18). A founder cannot judge a face at 178px,
+          and choosing between eight faces is what this whole surface is for.
+
+          A button rather than a click handler on the image, so it is a real
+          tab stop with a real name — and it wraps only the media, leaving the
+          Keep/Discard row beneath untouched. View-only per D-52: this opens a
+          picture and closes again.
+        */}
         {candidate.imageUrl ? (
-          <img
-            src={candidate.imageUrl}
-            alt={candidate.personaLine ?? `Candidate ${candidate.indexLabel}`}
+          <button
+            type="button"
+            className="dpc-card__open"
+            aria-label={`View candidate ${candidate.indexLabel} larger`}
+            onClick={() => setViewing(true)}
+          >
+            <img
+              src={candidate.imageUrl}
+              alt={candidate.personaLine ?? `Candidate ${candidate.indexLabel}`}
+            />
+          </button>
+        ) : null}
+
+        {viewing && candidate.imageUrl ? (
+          <CandidateViewer
+            imageUrl={candidate.imageUrl}
+            indexLabel={candidate.indexLabel}
+            personaLine={candidate.personaLine}
+            onClose={() => setViewing(false)}
           />
         ) : null}
 

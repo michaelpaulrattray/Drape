@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "23e745e58ee6429d"
+    "sourceFingerprint": "0bc81606ac83de4d"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 7
+      "moduleCount": 8
     },
     {
       "id": "domain:client-shared",
@@ -1403,6 +1403,12 @@
     {
       "id": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "path": "client/src/features/castingV2/components/CandidateTile.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "path": "client/src/features/castingV2/components/CandidateViewer.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7577,6 +7583,10 @@
       "path": "server/castingV2/castingV2Scope.test.ts"
     },
     {
+      "id": "test:server/castingV2/followAnchor.test.ts",
+      "path": "server/castingV2/followAnchor.test.ts"
+    },
+    {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
       "path": "server/castingV2/overridePrecedence.test.ts"
     },
@@ -10518,6 +10528,11 @@
     {
       "from": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
+      "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
     },
     {

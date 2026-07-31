@@ -71,3 +71,43 @@ export type LookKey = (typeof LOOK_KEYS)[number];
 
 export const VARIATION_AXES = ["look", "disposition"] as const;
 export type VariationAxis = (typeof VARIATION_AXES)[number];
+
+/**
+ * Hair, as identity rather than as styling.
+ *
+ * V2 deliberately dropped legacy's hair machinery (catalog D9–D13) as
+ * form-vocabulary — the sub-axis matrix, the legality table, the buzz-cut
+ * suppression. This is not that returning. It is a small closed identity
+ * vocabulary, and it exists because the follow ruling reclassified hair:
+ * "more faces like this one" names hair family as a trait to carry, and you
+ * cannot carry a trait you never authored. The founder followed a blonde woman
+ * and her blondeness existed only in pixels — no field held it, so nothing
+ * could inherit it.
+ *
+ * Deliberately coarse. Length, parting, fringe and volume stay latitude for
+ * the image model; these are the two axes a person would use to describe
+ * someone they were trying to find again.
+ */
+export const HAIR_FAMILIES = [
+  "shaved",
+  "cropped",
+  "short",
+  "mid-length",
+  "long",
+  "coiled",
+] as const;
+export type HairFamily = (typeof HAIR_FAMILIES)[number];
+
+export const HAIR_COLOURS = [
+  "black",
+  "dark brown",
+  "brown",
+  "auburn",
+  "blonde",
+  "red",
+  "grey",
+  "white",
+] as const;
+export type HairColour = (typeof HAIR_COLOURS)[number];
+
+export type Hair = { family: HairFamily; colour: HairColour };

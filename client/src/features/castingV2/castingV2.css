@@ -479,14 +479,114 @@
   font-size: 14px;
   line-height: 1.65;
   color: var(--ink);
-  /* Hard cap at two lines. The grammar collapses rather than enumerating, so
-     this is a backstop for a long heritage pair, not the mechanism. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  /*
+    The two-line cap, WITHOUT clipping.
+
+    The first version used `-webkit-line-clamp` with `overflow: hidden`, and
+    that one declaration broke three things the founder then reported as one
+    item. An absolutely-positioned descendant is clipped by an ancestor's
+    `overflow: hidden`, so the popover panel was cut off at the sentence's
+    bottom edge — one option visible instead of eight, and a stray fragment of
+    the panel painting over the skeleton grid. A clipped sentence also hid the
+    later facts outright, which is why only one word looked clickable.
+
+    So the cap is now a height ceiling rather than a clip: two lines of room,
+    nothing hidden if it somehow needs a third. The grammar is what actually
+    keeps it to two — it collapses the open-axis clause rather than
+    enumerating — and a drive assertion measures the rendered height, so a
+    regression is caught by the suite instead of by the founder.
+
+    Nothing here clips. The cap lives in the grammar, which drops the
+    open-axis clause once the sentence gets long — a shorter true sentence
+    rather than a longer one with its end cut off.
+  */
 }
 
 .dpc-echo__prose { color: var(--metaStrong); }
 .dpc-echo__fact { color: var(--ink); }
+
+/* ---- the candidate viewer (item 18, view-only per D-52) ---- */
+
+.dpc-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--viewerScrim);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.dpc-viewer__close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.dpc-viewer__frame {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  /* The image gets the room; the caption sits under it, never over it. */
+  max-height: 100%;
+  min-height: 0;
+}
+
+.dpc-viewer__frame > img {
+  display: block;
+  /*
+    Fit, never crop. The whole point is judging a face — a viewer that filled
+    the screen by cutting the top off the head would be a bigger version of the
+    problem it was built to solve.
+  */
+  max-width: min(100%, 760px);
+  max-height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  border-radius: var(--r-lg);
+  background: var(--media);
+}
+
+.dpc-viewer__caption {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--onScrim);
+  font-size: 12.5px;
+  flex: none;
+}
+
+.dpc-viewer__caption .dp-chrome { color: var(--onScrim); opacity: 0.72; }
+
+/* A tile you can open reads as one. */
+.dpc-card--openable { cursor: zoom-in; }
+
+/* The media itself is the open affordance; the button adds no chrome. */
+.dpc-card__open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.dpc-card__open:focus-visible {
+  outline: 2px solid var(--accentSolid);
+  outline-offset: -2px;
+  border-radius: var(--r-lg);
+}

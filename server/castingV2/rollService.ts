@@ -98,10 +98,30 @@ function readResolvedIdentity(internalPrompt: unknown): ResolvedIdentity | null 
   const resolved = (internalPrompt as { resolved?: unknown }).resolved;
   if (!resolved || typeof resolved !== "object") return null;
   const candidate = resolved as Record<string, unknown>;
+  /*
+    ONLY the fields that are genuinely always present (founder gate 16).
+
+    This used to require `build` to be a string, and `build` is deliberately
+    null whenever the brief names a casting category — which is most briefs,
+    because the category owns physique (gate B5). So the check rejected almost
+    every parent, `followFrom` received null, the next roll re-interpreted the
+    brief with nothing inherited, and `varySex` alternated: the founder
+    followed a blonde woman and got four men back.
+
+    Nothing refused and nothing logged. The identity was simply thrown away for
+    being correctly shaped. Exactly the defect we fixed a day earlier, where a
+    bare `.optional()` rejected an explicit null and discarded a correct
+    interpreter reply — a validator treating a legitimate absence as garbage.
+
+    So: required fields are checked, optional ones are read if present and
+    ignored if not. Rows written before a field existed — `agePhase`, `look`,
+    now `hair` — degrade to null rather than to a discarded parent, which also
+    means adding the next trait cannot silently break follow for every
+    candidate already on disk.
+  */
   if (
     typeof candidate.sex !== "string"
     || typeof candidate.ageBand !== "string"
-    || typeof candidate.build !== "string"
     || typeof candidate.energy !== "string"
     || !Array.isArray(candidate.heritage)
   ) {
@@ -229,7 +249,13 @@ export async function createRoll(
     if (!parent) {
       throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
     }
-    followPersonaLine = parent.personaLine;
+    /*
+      The candidate's INDEX, not its caption (founder gate 16). The ruling is
+      that the sentence and the lineage pill say "following 08" and "FROM 08" —
+      the face the user pointed at — rather than a persona label that could sit
+      under any of the eight.
+    */
+    followPersonaLine = String(parent.position + 1).padStart(2, "0");
     followIdentity = readResolvedIdentity(parent.internalPrompt);
   }
 

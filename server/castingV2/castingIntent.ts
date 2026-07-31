@@ -43,6 +43,8 @@ import {
   HERITAGES,
   LOOK_KEYS,
   SEXES,
+  HAIR_COLOURS,
+  HAIR_FAMILIES,
   VARIATION_AXES,
   type AgeBand,
   type AgePhase,
@@ -50,6 +52,9 @@ import {
   type EnergyKey,
   type Heritage,
   type LookKey,
+  type Hair,
+  type HairColour,
+  type HairFamily,
   type Sex,
   type VariationAxis,
 } from "../../shared/castingVocabularies";
@@ -64,13 +69,27 @@ export {
   AGE_BANDS,
   AGE_PHASES,
   BUILDS,
+  HAIR_COLOURS,
+  HAIR_FAMILIES,
   ENERGY_KEYS,
   HERITAGES,
   LOOK_KEYS,
   SEXES,
   VARIATION_AXES,
 };
-export type { AgeBand, AgePhase, Build, EnergyKey, Heritage, LookKey, Sex, VariationAxis };
+export type {
+  AgeBand,
+  AgePhase,
+  Build,
+  EnergyKey,
+  Hair,
+  HairColour,
+  HairFamily,
+  Heritage,
+  LookKey,
+  Sex,
+  VariationAxis,
+};
 
 import { z } from "zod";
 
@@ -607,6 +626,15 @@ export type ResolvedIdentity = {
    * be seen at the door. Silence lets the category decide.
    */
   build: Build | null;
+  /**
+   * Realized per candidate so a follow can inherit it (founder gate 16).
+   *
+   * Hair used to reach the image only through the free-text role, shared by all
+   * eight — so the followed candidate's blondeness was the image model's own
+   * unrecorded choice and nothing could carry it. A trait you never authored is
+   * a trait you cannot follow.
+   */
+  hair: Hair | null;
   energy: EnergyKey;
   /** Set when the sheet varies by look rather than disposition. */
   look: LookKey | null;

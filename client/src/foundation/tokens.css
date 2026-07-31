@@ -99,6 +99,9 @@
   /* ---- ELEVATION ------------------------------------------ */
   --shadowCard:   0 12px 34px rgba(17,17,18,.14);  /* dock, dialog */
   --shadowPop:    0 8px 22px rgba(17,17,18,.11);   /* menu, tooltip*/
+  /* Image-viewer backdrop (handoff 01, verbatim). Darker than --scrim: a
+     viewer takes the whole screen, so the page behind it must recede. */
+  --viewerScrim:  rgba(17,17,18,.62);
 
   /* ---- RADII (do not invent new values) ------------------- */
   --r-pill:  999px;  /* chips, status pills                    */
@@ -183,6 +186,7 @@
 
   --shadowCard:   0 12px 34px rgba(0,0,0,.5);
   --shadowPop:    0 8px 22px rgba(0,0,0,.44);
+  --viewerScrim:  rgba(0,0,0,.74);
 }
 
 /* ---- RESET — deliberately still scoped to the shell ----------

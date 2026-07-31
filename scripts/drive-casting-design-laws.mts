@@ -316,8 +316,81 @@ async function assertBriefEcho(page: Page, where: string) {
   );
   check(result.chipLike === 0, `[${where}] facts are underlined words, not chips`, `${result.chipLike} chip-like`);
   check(result.layered, `[${where}] pinned facts and prose are two layers`, "prose and facts share one colour");
-  check(result.clamped && result.lines <= 2, `[${where}] the echo never exceeds two lines`, `${result.lines} lines`);
+  check(result.lines <= 2, `[${where}] the echo never exceeds two lines`, `${result.lines} lines`);
   check(result.legacyPills === 0, `[${where}] the pill row is gone`, `${result.legacyPills} static chips remain`);
+
+  /*
+    And the check that would have caught the defect the founder found.
+
+    The first version asserted against the DOM — the options were in the
+    markup, so it passed — while the sentence's `overflow: hidden` clipped the
+    popover panel to a sliver on screen. Reading the tree proves a thing
+    exists; only measuring proves a user can see it. So this opens a popover
+    for real and compares its rendered box against every clipping ancestor.
+  */
+  const panel = await page.evaluate(() => {
+    const trigger = document.querySelector<HTMLElement>(".dpc-echo .dp-pop__trigger");
+    if (!trigger) return null;
+    trigger.click();
+    return true;
+  });
+  if (!panel) return;
+  await new Promise((r) => setTimeout(r, 300));
+
+  const visibility = await page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>(".dp-pop__panel");
+    if (!el) return { open: false, options: 0, clippedBy: "none", visible: 0 };
+    const box = el.getBoundingClientRect();
+    let clippedBy = "none";
+    for (let node = el.parentElement; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (style.overflow === "visible" && style.overflowY === "visible") continue;
+      const bounds = node.getBoundingClientRect();
+      if (box.bottom > bounds.bottom + 1 || box.right > bounds.right + 1) {
+        clippedBy = node.className || node.tagName;
+        break;
+      }
+    }
+    /*
+      How many option rows are actually PAINTED.
+
+      A clipped element still reports a full bounding box — measured that way,
+      the founder's defect scored 7 of 7 visible while showing one option on
+      screen. So the rect is intersected with every clipping ancestor first,
+      which is what "can the user see it" actually means.
+    */
+    let clip = { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth };
+    for (let node = el.parentElement; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (style.overflow === "visible" && style.overflowY === "visible") continue;
+      const b = node.getBoundingClientRect();
+      clip = {
+        top: Math.max(clip.top, b.top),
+        bottom: Math.min(clip.bottom, b.bottom),
+        left: Math.max(clip.left, b.left),
+        right: Math.min(clip.right, b.right),
+      };
+    }
+    const options = Array.from(el.querySelectorAll<HTMLElement>(".dp-pop__option"));
+    const visible = options.filter((option) => {
+      const r = option.getBoundingClientRect();
+      return r.height > 0 && r.top >= clip.top - 1 && r.bottom <= clip.bottom + 1;
+    }).length;
+    return { open: true, options: options.length, clippedBy, visible };
+  });
+
+  check(visibility.open, `[${where}] a fact's popover actually opens`, "no panel rendered");
+  check(
+    visibility.clippedBy === "none",
+    `[${where}] the popover is not clipped by an ancestor`,
+    `clipped by .${visibility.clippedBy}`,
+  );
+  check(
+    visibility.visible === visibility.options && visibility.options > 1,
+    `[${where}] every option is on screen`,
+    `${visibility.visible} of ${visibility.options} visible`,
+  );
+  await page.keyboard.press("Escape");
 }
 
 async function auditSurface(page: Page, url: string, where: string, waitFor?: string) {

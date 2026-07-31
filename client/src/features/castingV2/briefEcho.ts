@@ -126,9 +126,33 @@ function heritagePhrase(heritage: string[]): EchoSpan[] {
  * Returns spans rather than a string so the renderer can give facts their own
  * typography and their own popover without parsing prose back apart.
  */
+/**
+ * Beyond this many characters the sentence needs a third line at the widths
+ * the sheet actually renders at. Measured, not guessed: the sheet's echo column
+ * fits roughly 110 characters per line at 14px Archivo.
+ */
+const TWO_LINE_BUDGET = 210;
+
 export function composeEcho(
   facts: BriefFacts,
   options: { terse?: boolean; followLabel?: string | null } = {},
+): EchoSpan[] {
+  const full = composeSpans(facts, options);
+  /*
+    The founder's hard two-line cap, enforced by SAYING LESS rather than by
+    clipping. The first version capped with `-webkit-line-clamp` and
+    `overflow: hidden`, which hid the later facts entirely and cut the popover
+    panel off at the sentence's bottom edge. A shorter true sentence beats a
+    longer one with its end cut off — and the terse form drops the latitude
+    clause, which is the part a returning user has already read.
+  */
+  if (options.terse || echoText(full).length <= TWO_LINE_BUDGET) return full;
+  return composeSpans(facts, { ...options, terse: true });
+}
+
+function composeSpans(
+  facts: BriefFacts,
+  options: { terse?: boolean; followLabel?: string | null },
 ): EchoSpan[] {
   const { locks, open, variationAxis } = facts;
   const spans: EchoSpan[] = [...subjectPhrase(locks)];

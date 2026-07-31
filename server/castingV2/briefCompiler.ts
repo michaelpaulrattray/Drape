@@ -57,6 +57,7 @@ import {
   personaLineFor,
   resolveArchetype,
   resolveCandidateIdentity,
+  type FollowAnchor,
 } from "./cohortPhotorealHuman";
 import { interpretBrief } from "./interpreter";
 
@@ -228,24 +229,34 @@ function fallbackIntent(briefText: string): CastingIntent {
 }
 
 /**
- * Follow: eight more people in the direction of one of them.
+ * Follow: eight cousins of one candidate, not eight copies and not strangers.
  *
- * The parent's *identity* facts carry over — who this person broadly is —
- * while build and presence keep varying, so a follow roll is a sheet of
- * different people down the same road rather than eight near-copies of the
- * candidate the user already has. The brief still outranks the parent: an
- * explicit fact in the sentence is never overwritten by inheritance, which is
- * the same precedence rule that governs everything else here.
+ * The founder's report — followed a blonde woman, next roll held four men —
+ * had two causes stacked. The reader discarded the parent identity over a
+ * legitimately-null `build` (fixed in `rollService`), and this function was the
+ * wrong shape even when it did receive one: it copied the parent's heritage
+ * into the *intent*, which makes it a LOCK. Eight candidates with identical
+ * heritage is the opposite failure — clones rather than relatives.
  *
- * Unlocking a chip beats both, because it runs after this.
+ * So inheritance no longer touches the intent at all, except for sex. A
+ * non-null intent field means "the brief said it", and that convention feeds
+ * `lockFactsOf`, `validateLocks` and the brief echo's sentence — an anchored
+ * trait in there would be a lock the user never wrote and a fact the echo would
+ * claim they had pinned. Everything else travels as a `FollowAnchor` into the
+ * resolver, where it biases the neighborhood instead of fixing it.
+ *
+ * Sex is the exception because the ruling makes it absolute. The brief still
+ * outranks it, which is the same precedence chain that governs everything else
+ * here, and unlocking still beats both because it runs after.
  */
-function followFrom(intent: CastingIntent, parent: ResolvedIdentity | null): CastingIntent {
-  if (!parent) return intent;
+function anchorFrom(parent: ResolvedIdentity | null): FollowAnchor | null {
+  if (!parent) return null;
   return {
-    ...intent,
-    sex: intent.sex ?? parent.sex,
-    ageBand: intent.ageBand ?? parent.ageBand,
-    heritage: intent.heritage.length > 0 ? intent.heritage : parent.heritage,
+    sex: parent.sex,
+    heritage: parent.heritage,
+    ageBand: parent.ageBand,
+    hair: parent.hair ?? null,
+    look: parent.look ?? null,
   };
 }
 
@@ -411,10 +422,15 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   }
 
   const interpreted = outcome.ok ? outcome.intent : fallbackIntent(briefText);
-  const intent = applyOverrides(
-    applyUnlocks(followFrom(interpreted, input.followIdentity ?? null), input.unlock ?? []),
-    input.overrides,
-  );
+  const anchor = anchorFrom(input.followIdentity ?? null);
+  /*
+    Sex is the only inherited fact that becomes a lock, because it is the only
+    one the ruling makes absolute. It rides the intent so the validator checks
+    it and the echo can say it; every other inherited trait rides the anchor.
+  */
+  const inherited: CastingIntent =
+    anchor && !interpreted.sex ? { ...interpreted, sex: anchor.sex } : interpreted;
+  const intent = applyOverrides(applyUnlocks(inherited, input.unlock ?? []), input.overrides);
   const locks: LockFacts = lockFactsOf(intent);
   const archetype = resolveArchetype(intent, input.rollSeed);
 
@@ -422,7 +438,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   const violations: string[] = [];
 
   for (let position = 0; position < input.candidateCount; position += 1) {
-    const resolved = resolveCandidateIdentity(intent, position, input.rollSeed);
+    const resolved = resolveCandidateIdentity(intent, position, input.rollSeed, anchor);
     const broken = validateLocks(locks, resolved);
     if (broken.length > 0) {
       /*

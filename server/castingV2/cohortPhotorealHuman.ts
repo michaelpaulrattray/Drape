@@ -45,6 +45,7 @@ import {
   BUILDS,
   ENERGIES,
   ENERGY_KEYS,
+  HAIR_FAMILIES,
   HERITAGES,
   type ArchetypeKey,
   type AgeBand,
@@ -52,6 +53,9 @@ import {
   type Build,
   type CastingIntent,
   type EnergyKey,
+  type Hair,
+  type HairColour,
+  type HairFamily,
   type Heritage,
   type LookKey,
   type HeritageComponent,
@@ -448,6 +452,145 @@ function varySex(position: number, rollSeed: string): Sex {
   return (position + (hash(`${rollSeed}:sex`) % 2)) % 2 === 0 ? "female" : "male";
 }
 
+
+/* ------------------------------------------------------------------ hair */
+
+/**
+ * Hair colour, conditioned on heritage — the trap in authoring hair at all.
+ *
+ * An unconditioned colour pick is a heritage-washing vector: it would cheerfully
+ * hand a West African candidate blonde hair a third of the time, and that fights
+ * `IDENTITY_INTEGRITY` head-on. So the weights are per-heritage, and grey/white
+ * is not in them at all — it comes from age, below, because grey is something
+ * that happens to a person rather than something they are born with.
+ *
+ * These are casting-pool plausibilities, not genetics. The point is that a sheet
+ * looks like a room of real people.
+ */
+const HAIR_COLOUR_WEIGHTS: Record<string, readonly (readonly [HairColour, number])[]> = {
+  Nordic: [["blonde", 40], ["brown", 25], ["red", 10], ["dark brown", 15], ["auburn", 10]],
+  "British Isles": [["brown", 30], ["dark brown", 25], ["blonde", 20], ["red", 12], ["auburn", 13]],
+  "Western European": [["brown", 32], ["dark brown", 28], ["blonde", 22], ["auburn", 12], ["red", 6]],
+  Slavic: [["dark brown", 32], ["brown", 30], ["blonde", 22], ["auburn", 10], ["red", 6]],
+  Mediterranean: [["black", 30], ["dark brown", 40], ["brown", 22], ["auburn", 8]],
+  "Middle Eastern": [["black", 45], ["dark brown", 40], ["brown", 15]],
+  "East Asian": [["black", 78], ["dark brown", 22]],
+  "South Asian": [["black", 72], ["dark brown", 28]],
+  "West African": [["black", 82], ["dark brown", 18]],
+  "Afro-Caribbean": [["black", 78], ["dark brown", 22]],
+  Latino: [["black", 40], ["dark brown", 42], ["brown", 18]],
+  Polynesian: [["black", 80], ["dark brown", 20]],
+};
+
+const DEFAULT_HAIR_COLOURS: readonly (readonly [HairColour, number])[] = [
+  ["dark brown", 34],
+  ["black", 26],
+  ["brown", 24],
+  ["blonde", 10],
+  ["auburn", 6],
+];
+
+/** Greying is a function of age, so it is applied after colour, not instead. */
+const GREY_CHANCE: Record<AgeBand, number> = {
+  teens: 0,
+  "20s": 0,
+  "30s": 4,
+  "40s": 14,
+  "50s": 38,
+  "60s": 58,
+  "70s+": 74,
+};
+
+const HAIR_FAMILY_WEIGHTS: readonly (readonly [HairFamily, number])[] = [
+  ["shaved", 5],
+  ["cropped", 14],
+  ["short", 24],
+  ["mid-length", 26],
+  ["long", 24],
+  ["coiled", 7],
+];
+
+function varyHair(
+  heritage: HeritageComponent[],
+  ageBand: AgeBand,
+  seed: number,
+): Hair {
+  const family = weightedPick(HAIR_FAMILY_WEIGHTS, seed >>> 5);
+  const primary = heritage[0]?.heritage ?? "";
+  const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
+  let colour = weightedPick(palette, seed >>> 13);
+
+  const greyRoll = (seed >>> 19) % 100;
+  if (greyRoll < GREY_CHANCE[ageBand]) {
+    // Salt-and-pepper reads as grey; a full head of white belongs to the
+    // oldest bands, where it is common rather than remarkable.
+    colour = ageBand === "70s+" && greyRoll < GREY_CHANCE[ageBand] / 2 ? "white" : "grey";
+  }
+  return { family, colour };
+}
+
+/**
+ * What a follow inherits from the candidate it follows.
+ *
+ * Deliberately NOT merged into `CastingIntent`, and that distinction is the
+ * whole design. A non-null intent field means *the brief said it* — that
+ * convention feeds `lockFactsOf`, `validateLocks` and the brief echo. An
+ * anchored trait smuggled in there would become a lock the user never wrote, a
+ * validator violation the moment a cousin legitimately varies, and a fact in
+ * the echo's sentence claiming the brief pinned something it never mentioned.
+ *
+ * The previous `followFrom` did exactly that, copying the parent's heritage
+ * into the intent — which under the founder's ruling is doubly wrong, because
+ * an inherited *lock* produces eight clones with identical heritage rather
+ * than eight cousins.
+ */
+export type FollowAnchor = {
+  /** Locked. "Sex holds absolutely" — the adapter never varies it. */
+  sex: Sex;
+  /** The primary component holds; the secondary varies per candidate. */
+  heritage: HeritageComponent[];
+  ageBand: AgeBand;
+  hair: Hair | null;
+  look: LookKey | null;
+};
+
+/**
+ * Heritage in a follow: cousins, not clones and never unrelated.
+ *
+ * The parent's PRIMARY heritage is kept on every candidate — that is the
+ * "never unrelated" half, and it also keeps `IDENTITY_INTEGRITY` honest, since
+ * a mixed-heritage parent never collapses to one parent. What varies is the
+ * second component: some candidates carry the parent's blend, some are
+ * single-heritage, some pick up a different second heritage. Eight relatives
+ * rather than eight copies.
+ */
+function anchoredHeritage(
+  anchor: FollowAnchor,
+  position: number,
+  rollSeed: string,
+): HeritageComponent[] {
+  const primary = anchor.heritage[0];
+  if (!primary) return varyHeritage(position, rollSeed);
+
+  const roll = hash(`${rollSeed}:followHeritage:${position}`) % 10;
+  if (roll < 4) return [{ heritage: primary.heritage, pct: 100 }];
+  if (roll < 7 && anchor.heritage[1]) return anchor.heritage;
+
+  const step = 1 + (hash(`${rollSeed}:followBlend:${position}`) % (HERITAGES.length - 1));
+  const secondary = HERITAGES[
+    (HERITAGES.indexOf(primary.heritage as Heritage) + step) % HERITAGES.length
+  ] as Heritage;
+  return [
+    { heritage: primary.heritage, pct: 60 },
+    { heritage: secondary, pct: 40 },
+  ];
+}
+
+/** Hair in a follow: the family and colour carry; everything else stays free. */
+function anchoredHair(anchor: FollowAnchor, heritage: HeritageComponent[], ageBand: AgeBand, seed: number): Hair | null {
+  return anchor.hair ?? varyHair(heritage, ageBand, seed);
+}
+
 /**
  * Resolve one candidate.
  *
@@ -461,19 +604,34 @@ export function resolveCandidateIdentity(
   intent: CastingIntent,
   position: number,
   rollSeed: string,
+  anchor: FollowAnchor | null = null,
 ): ResolvedIdentity {
   const seed = hash(`${rollSeed}:${position}`);
 
+  /*
+    Precedence inside a follow, and it matches the ratified chain everywhere
+    else: the brief still outranks the anchor. Follow a woman, then type "man"
+    into the box, and the brief wins — the anchor supplies what the brief left
+    unsaid, exactly as the variation vocabularies do.
+  */
+  const ageBand = intent.ageBand ?? anchor?.ageBand ?? weightedPick(AGE_WEIGHTS, seed >>> 3);
+  const heritage =
+    intent.heritage.length > 0
+      ? intent.heritage
+      : anchor
+        ? anchoredHeritage(anchor, position, rollSeed)
+        : varyHeritage(position, rollSeed);
+
   return {
-    sex: intent.sex ?? varySex(position, rollSeed),
-    ageBand: intent.ageBand ?? weightedPick(AGE_WEIGHTS, seed >>> 3),
+    sex: intent.sex ?? anchor?.sex ?? varySex(position, rollSeed),
+    ageBand,
     /*
       A stated phase is a lock. Only an unstated one varies — otherwise
       "early 20s" gets re-rolled into mid and late across the sheet, which is
       exactly how the founder's brief came back reading 28-35.
     */
     agePhase: intent.agePhase ?? AGE_PHASES[(seed >>> 11) % AGE_PHASES.length],
-    heritage: intent.heritage.length > 0 ? intent.heritage : varyHeritage(position, rollSeed),
+    heritage,
     /*
       Stated build wins. Otherwise: if the brief named a casting category, the
       category owns physique and this stays null — varying it would cast
@@ -481,6 +639,13 @@ export function resolveCandidateIdentity(
       category, street-real variety across builds is exactly right.
     */
     build: intent.build ?? (intent.role ? null : weightedPick(BUILD_WEIGHTS, seed >>> 7)),
+    /*
+      Hair carries on a follow and varies otherwise. Conditioned on the
+      resolved heritage rather than the brief's, so a candidate who varied into
+      a different heritage gets hair that belongs to the face they actually
+      have.
+    */
+    hair: anchor ? anchoredHair(anchor, heritage, ageBand, seed) : varyHair(heritage, ageBand, seed),
     // Energy is the one axis that cycles rather than samples: eight candidates
     // against eight energies gives one of each, which is the most legible
     // difference a sheet can carry. Stated energy locks it flat across all
@@ -495,6 +660,7 @@ export function resolveCandidateIdentity(
     */
     look:
       intent.look
+      ?? anchor?.look
       ?? (varyByLook(intent)
         ? LOOK_KEYS[(position + (hash(`${rollSeed}:look`) % LOOK_KEYS.length)) % LOOK_KEYS.length]
         : null),
@@ -627,6 +793,27 @@ function describeBuild(build: Build | null, role: string | null): string {
   return "";
 }
 
+/**
+ * Hair, said plainly.
+ *
+ * A realized trait that never reaches the prompt would be a record that lies:
+ * the follow would claim to carry hair while the image model kept picking its
+ * own. Family and colour only — length, parting and fringe stay latitude, so
+ * eight cousins still look like eight people.
+ */
+function describeHair(hair: Hair | null): string {
+  if (!hair) return "";
+  const family =
+    hair.family === "shaved"
+      ? "a shaved head"
+      : hair.family === "coiled"
+        ? "coiled natural hair"
+        : `${hair.family} hair`;
+  return hair.family === "shaved"
+    ? ` HAIR: ${family}, ${hair.colour} where it is grown out.`
+    : ` HAIR: ${hair.colour} ${family}. The exact cut, parting and styling are open.`;
+}
+
 function describeHeritage(components: HeritageComponent[]): string {
   if (components.length === 0) return "";
   if (components.length === 1) return `${components[0].heritage} heritage`;
@@ -683,7 +870,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       One axis or the other, never both shouting. A look carries its own

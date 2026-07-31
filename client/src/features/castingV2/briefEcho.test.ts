@@ -175,3 +175,59 @@ describe("the spans carry the two-layer typography", () => {
     }
   });
 });
+
+describe("the two-line cap is enforced by saying less", () => {
+  it("drops the latitude clause when the full sentence would need a third line", () => {
+    /*
+      The first cap was CSS — line-clamp plus overflow:hidden — and it hid the
+      later facts and cut the popover panel off at the sentence's bottom edge.
+      A shorter true sentence beats a longer one with its end cut off.
+    */
+    const long = composeEcho({
+      locks: {
+        sex: "female",
+        ageBand: "20s",
+        agePhase: "early",
+        build: "athletic",
+        heritage: ["Western European", "Southeast Asian"],
+        energy: "guarded",
+        look: "commanding glamour",
+      },
+      open: ["look"],
+      variationAxis: "disposition",
+    }, { followLabel: "the third face on roll 01" });
+    // The latitude clause is what goes. Asserting the fallback fired rather
+    // than a magic character count — the rendered line count is measured by the
+    // drive suite at real widths, which is the only place it is knowable.
+    expect(echoText(long)).not.toContain("left to the roll");
+  });
+
+  it("keeps the latitude clause when there is room for it", () => {
+    const short = composeEcho({
+      locks: { sex: "male", ageBand: "40s" },
+      open: ["heritage", "build"],
+      variationAxis: "look",
+    });
+    expect(echoText(short)).toContain("were left to the roll");
+  });
+
+  it("never drops a pinned fact to make room", () => {
+    // Latitude is what gets cut. A fact disappearing would be the CSS clip's
+    // failure reproduced in the grammar.
+    const spans = composeEcho({
+      locks: {
+        sex: "female",
+        ageBand: "30s",
+        agePhase: "late",
+        build: "broad",
+        heritage: ["Mediterranean", "West African"],
+        energy: "wry",
+        look: "quiet luxury",
+      },
+      open: [],
+      variationAxis: "look",
+    }, { followLabel: "the sixth face on roll 02" });
+    const fields = spans.filter((s) => s.kind === "fact").map((s) => s.field);
+    expect(fields).toEqual(["build", "ageBand", "heritage", "energy", "look"]);
+  });
+});
