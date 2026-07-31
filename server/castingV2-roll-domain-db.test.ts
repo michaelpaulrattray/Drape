@@ -358,6 +358,99 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
     });
   });
 
+  describe("a session with no rolls is not a sheet yet", () => {
+    /*
+      Founder bug, 2026-08-01: "if you produce a sheet with 0 rolls — for
+      example you write a prompt for a cast and it errors — it should not
+      produce a blank unsigned sheet".
+
+      The client creates the session in its own mutation before the brief is
+      compiled, so every refused brief (anime, a named person, a sentence with
+      no subject in it) left an empty row behind. The card had no brief text —
+      that is read from the latest roll — no images and no rolls: debris from an
+      error the user was already told about.
+    */
+    it("keeps a zero-roll session out of the lobby", async () => {
+      await newSession(owner);
+      expect(await db.listOpenCastingSessions(owner)).toEqual([]);
+    });
+
+    it("lists it the moment a roll commits", async () => {
+      const session = await newSession(owner);
+      expect(await db.listOpenCastingSessions(owner)).toEqual([]);
+      await newRoll(owner, session.publicId);
+      const listed = await db.listOpenCastingSessions(owner);
+      expect(listed.map((entry) => entry.publicId)).toEqual([session.publicId]);
+    });
+
+    it("still lists a sheet whose candidates have all failed", async () => {
+      /*
+        Deliberately NOT hidden. That sheet has a brief, a roll and a charge
+        with its refund against it — a workspace to retry in rather than
+        debris, and the sheet page's composer is the retry surface.
+      */
+      const session = await newSession(owner);
+      const roll = await newRoll(owner, session.publicId);
+      await connection.execute("UPDATE casting_candidates SET status = 'failed' WHERE rollId = ?", [
+        roll.roll.id,
+      ]);
+      await connection.execute("UPDATE casting_rolls SET status = 'failed' WHERE id = ?", [roll.roll.id]);
+      const listed = await db.listOpenCastingSessions(owner);
+      expect(listed.map((entry) => entry.publicId)).toEqual([session.publicId]);
+    });
+
+    it("still lists a sheet that is mid-generation with nothing ready yet", async () => {
+      /*
+        The reason the filter keys on ROLLS and not on landed candidates. Rows
+        commit before dispatch and a sheet takes 66–82s to generate, so a
+        "has a ready candidate" filter would hide a sheet for the whole time it
+        is being made — which is exactly the sheet someone reopening the lobby
+        is looking for.
+      */
+      const session = await newSession(owner);
+      const roll = await newRoll(owner, session.publicId);
+      await connection.execute("UPDATE casting_candidates SET status = 'dispatched' WHERE rollId = ?", [
+        roll.roll.id,
+      ]);
+      const listed = await db.listOpenCastingSessions(owner);
+      expect(listed.map((entry) => entry.publicId)).toEqual([session.publicId]);
+    });
+
+    it("leaves the hidden row for the retention sweep rather than deleting it", async () => {
+      /*
+        A read filter, not a new disposal path. The row still carries its
+        seven-day `expiresAt` from creation and a refusal throws before
+        anything touches it, so the existing sweep collects it on schedule.
+      */
+      const session = await newSession(owner);
+      /*
+        UTC_TIMESTAMP, not a JS Date through this raw connection. Drizzle
+        serializes timestamps as UTC while mysql2's default is the client's
+        local zone, so passing a Date here writes a value ten hours away from
+        what the query compares against and the test fails for a reason that
+        has nothing to do with the code under test.
+      */
+      await connection.execute(
+        "UPDATE casting_sessions SET expiresAt = UTC_TIMESTAMP() - INTERVAL 1 MINUTE WHERE publicId = ?",
+        [session.publicId],
+      );
+      const expired = await db.listExpiredSessions({ limit: 50 });
+      expect(expired.some((entry) => entry.id === session.id)).toBe(true);
+    });
+
+    it("never leaks another user's sheet through the new predicate", async () => {
+      // The EXISTS subquery joins on sessionId; ownership still comes from the
+      // session row, and a subquery is a good place to lose a WHERE by accident.
+      const mine = await newSession(owner);
+      await newRoll(owner, mine.publicId);
+      const theirs = await newSession(stranger);
+      await newRoll(stranger, theirs.publicId);
+
+      const listed = await db.listOpenCastingSessions(owner);
+      expect(listed.map((entry) => entry.publicId)).toEqual([mine.publicId]);
+    });
+  });
+
   describe("retention selection", () => {
     it("never offers a kept or signed candidate for purge", async () => {
       const session = await newSession(owner);

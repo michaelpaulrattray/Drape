@@ -465,6 +465,25 @@ export async function listSessionRolls(userId: number, sessionId: number): Promi
  * A session is a durable seven-day object, and until something can list them
  * that durability is unreachable: close the tab and the sheet you paid for
  * exists only in a URL you no longer have. This is the read behind "resume".
+ *
+ * **A session with no rolls is not a sheet yet** (founder bug, 2026-08-01).
+ * The client creates the session in its own mutation *before* compiling, so a
+ * brief that is refused — anime, a named person, an uninterpretable
+ * sentence — throws before any roll commits and leaves an empty row behind.
+ * The card it produced had no brief (`briefText` is read from the latest roll),
+ * no images and no rolls: a blank tile the user has to tidy up after an error
+ * they were already told about.
+ *
+ * The filter is on ROLLS, deliberately, and not on landed candidates. A roll
+ * commits its rows before dispatch, so this hides only the seconds during
+ * compilation — whereas a "has a ready candidate" filter would hide a sheet
+ * for the whole 66–82s it takes to generate, which is exactly the sheet
+ * someone reopening the lobby is looking for.
+ *
+ * A roll whose candidates all failed keeps its sheet listed on purpose. That
+ * one has a brief, a roll and a charge with its refund, so it is a workspace
+ * to retry in rather than debris — the sheet page's composer is the designed
+ * retry surface for it.
  */
 export async function listOpenCastingSessions(
   userId: number,
@@ -475,7 +494,13 @@ export async function listOpenCastingSessions(
   return db
     .select()
     .from(castingSessions)
-    .where(and(eq(castingSessions.userId, userId), eq(castingSessions.status, "open")))
+    .where(
+      and(
+        eq(castingSessions.userId, userId),
+        eq(castingSessions.status, "open"),
+        sql`EXISTS (SELECT 1 FROM ${castingRolls} WHERE ${castingRolls.sessionId} = ${castingSessions.id})`,
+      ),
+    )
     .orderBy(desc(castingSessions.lastActivityAt))
     .limit(limit);
 }
