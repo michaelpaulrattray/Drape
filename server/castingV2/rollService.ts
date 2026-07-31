@@ -580,9 +580,12 @@ async function dispatchCandidate(input: {
         failure path below lives with — a crash inside it leaves the slice
         unrefunded, and the recovery sweep cannot pick it up because `expired`
         is also written by the 7-day retention sweep over work the user did
-        receive. Stated rather than hidden; closing it needs a status that
-        distinguishes the two, which is a migration this milestone does not
-        need to make.
+        receive.
+
+        SCHEDULED: migration 0018 (M7) adds the column that separates those two
+        meanings, at which point this refund becomes idempotent and recovery
+        can adjudicate `expired` safely. Until then the window is real and
+        documented — see the migration slices in the plan.
       */
       if (candidate.pointsCost <= 0) return { outcome: "expired", refundedCredits: 0 };
       const refund = await recordRefund(

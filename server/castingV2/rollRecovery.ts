@@ -98,6 +98,11 @@ function hasLanded(candidate: CandidateRow): boolean {
  * for a week. Refunding on the strength of the status alone would pay people
  * back for work they received, which is exactly what the sweep correction
  * (44748ae5) forbade.
+ *
+ * That overload is scheduled to end: migration 0018 (M7) adds the column that
+ * distinguishes an unseen landing from an aged-out one. When it lands, this
+ * function stops being the last word on `expired` and the sweep can settle the
+ * generosity slice a crash left behind.
  */
 function wasDelivered(candidate: CandidateRow): boolean {
   return (
