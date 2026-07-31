@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f6c0ceac8841e92b"
+    "sourceFingerprint": "456c4ff87b7a454d"
   },
   "domains": [
     {
@@ -7559,6 +7559,10 @@
     {
       "id": "test:server/castingV2/rollService.test.ts",
       "path": "server/castingV2/rollService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/styleRefusal.test.ts",
+      "path": "server/castingV2/styleRefusal.test.ts"
     },
     {
       "id": "test:server/changeRequests.test.ts",

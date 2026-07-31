@@ -391,9 +391,9 @@ const nullableEnum = <T extends readonly [string, ...string[]]>(values: T) =>
     });
 
 const wireSchema = z.object({
-  cohort: z.string().optional(),
-  role: z.unknown().optional(),
-  characterNotes: z.unknown().optional(),
+  cohort: z.string().nullable().optional(),
+  role: z.unknown().nullable().optional(),
+  characterNotes: z.unknown().nullable().optional(),
   sex: nullableEnum(SEXES),
   ageBand: nullableEnum(AGE_BANDS),
   agePhase: nullableEnum(AGE_PHASES),
@@ -402,7 +402,19 @@ const wireSchema = z.object({
   archetype: nullableEnum(ARCHETYPE_KEYS as unknown as readonly [string, ...string[]]),
   variationAxis: nullableEnum(VARIATION_AXES),
   look: nullableEnum(LOOK_KEYS as unknown as readonly [string, ...string[]]),
-  reads: z.array(z.unknown()).optional(),
+  reads: z.array(z.unknown()).nullable().optional(),
+  /*
+    `.nullable()` matters as much as `.optional()` here, and the difference
+    cost a founder 160 credits. Models return `null` and `undefined`
+    interchangeably for "nothing"; a bare `.optional()` rejects `null`, which
+    fails the WHOLE parse — so a reply that had correctly identified an
+    uncertified cohort was discarded on a technicality, and the fallback then
+    cast the brief as a photoreal human and charged for it.
+
+    Nothing in this schema may reject a null. The whole design is that unknown
+    fields are dropped and known fields are coerced — never that one awkward
+    value throws the reply away.
+  */
   heritage: z
     .array(
       z.object({
@@ -410,6 +422,7 @@ const wireSchema = z.object({
         pct: z.union([z.number(), z.string()]).optional(),
       }),
     )
+    .nullable()
     .optional(),
 });
 

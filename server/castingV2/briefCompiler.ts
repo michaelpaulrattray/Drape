@@ -259,6 +259,54 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   }
 
   const outcome = await interpretBrief({ briefText, engine: input.engine });
+
+  /*
+    DEFENCE IN DEPTH: an interpreter outage must never become a photoreal
+    charge for a brief that asked for something else.
+
+    Falling back to a photoreal compile is right for an ordinary brief — an
+    outage should not cost someone their roll (catalog H30). It is wrong the
+    moment the sentence names a visual style we cannot cast, because then the
+    fallback silently produces, and bills for, output that ignores a stated
+    fact. That is exactly what happened: a reply correctly identifying an
+    uncertified cohort was lost to a schema technicality, and the fallback
+    charged 160 credits for eight photoreal humans.
+
+    So the fallback screens for style words itself. A keyword list is a blunt
+    instrument and would be the wrong tool for a creative decision — but this
+    is not a creative decision, it is a refusal-to-spend, and the failure modes
+    are asymmetric: refusing a photoreal brief that happens to say "cartoonish"
+    costs the user nothing and is one edit away from working, while casting an
+    anime brief as photoreal costs them money for something they did not ask
+    for. It only ever runs when the interpreter could not answer.
+  */
+  /*
+    Token membership rather than a regex. The first version of this line was
+    written with word-boundary escapes that a shell heredoc silently turned
+    into literal backspace characters, so the pattern matched nothing and the
+    guard was dead while looking correct in review. Plain string comparison
+    cannot be mangled that way.
+  */
+  const STYLE_WORDS = new Set([
+    "anime", "manga", "cartoon", "cartoonish", "cel", "celshaded",
+    "illustrated", "illustration", "painterly", "comic", "chibi", "waifu",
+    "cgi", "pixar", "disney", "render", "rendered", "3d", "toon",
+  ]);
+  const styledBrief = briefText
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .some((token) => STYLE_WORDS.has(token));
+  if (!outcome.ok && outcome.reason === "unavailable" && styledBrief) {
+    log.warn(
+      { briefText: briefText.slice(0, 80) },
+      "[briefCompiler] interpreter unavailable on a styled brief — refusing rather than casting photoreal",
+    );
+    throw new BriefRefusal(
+      "unsupported_cohort",
+      "Casting can only make photographic people for now — anime, illustration and non-human characters are coming. Describe a real-looking person and we'll cast them. You have not been charged.",
+    );
+  }
+
   if (!outcome.ok && outcome.reason === "unsupported_cohort") {
     throw new BriefRefusal(
       "unsupported_cohort",
