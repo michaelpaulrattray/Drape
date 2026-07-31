@@ -215,7 +215,7 @@ const SKIN_AND_FEATURES = [
     its persistence rules (catalog H2/H3) — is scheduled with M12. This clause
     is the narrow part that unblocks briefs today.
   */
-  "STRUCTURAL FEATURES: When the character description names a permanent physical feature — a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, a shaved head, a tattoo — render it plainly and accurately as a real, healed, permanent part of this person.",
+  "STRUCTURAL FEATURES: When the character description names a permanent physical feature — a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, active acne or acne scarring, weathered or sun-damaged skin, a shaved head, a tattoo — render it plainly and accurately as a real, healed, permanent part of this person.",
   "These are casting facts, not blemishes to correct. Do not idealise them away, do not soften them, and do not substitute an unmarked face. A named feature that fails to appear is a failed candidate.",
   "Render only what the description names. Never invent damage, scars or ink that was not asked for.",
 ].join(" ");
@@ -246,7 +246,21 @@ const IDENTITY_INTEGRITY = [
     direction at all, every candidate defaults to mid-brown eyes and the sheet
     loses an axis of difference it should have had for free.
   */
-  "Eye colour, hair colour and skin tone belong to this specific person and follow plausibly from their heritage and age. Do not default every subject to the same mid-brown eyes, and do not push a heritage toward its lightest or darkest stereotype.",
+  "When the description does not state them, eye colour, hair colour and skin tone belong to this specific person and follow plausibly from their heritage and age. Do not default every subject to the same mid-brown eyes, and do not push a heritage toward its lightest or darkest stereotype.",
+  /*
+    D2, which the audit had recorded as "folded in" and Fable's skim showed was
+    not. The clause above resolves WHETHER an unusual colour is allowed; D2's
+    craft is HOW it renders — as this person's own pigment, not as an applied
+    product. Legacy learned this the hard way: without it, "mint eyes" comes
+    back with a visible contact-lens ring and "platinum on dark skin" comes back
+    looking like an obvious dye job.
+
+    It also has to be stated separately because the sentence above leans the
+    other way: "follow plausibly from their heritage" is prior-reinforcing
+    language, and on its own it invites reconciling a stated mint eye back to
+    brown.
+  */
+  "When the description DOES state a colour, render it as this person's natural born pigment — real iris tissue, real grown hair — never as contact lenses, a visible dye job, a wig, or anything applied.",
   /*
     A13, in the only form a per-candidate prompt can honestly carry it.
 
@@ -257,7 +271,8 @@ const IDENTITY_INTEGRITY = [
     cross-candidate instruction would be a claim the prompt cannot keep. What
     ports is the per-face half: specificity over averageness.
   */
-  "SPECIFICITY: this is one particular person, not a type. Two or three features should sit clearly beyond average — the nose, the jaw, the brow, the set of the eyes, the ears, the hairline — and read as inherited, not as damage.",
+  "SPECIFICITY: this is one particular person, not a type. Two or three features should sit clearly beyond average — the nose, the jaw, the brow, the ears, the hairline — and read as inherited, not as damage.",
+  "Those features must still belong to someone this casting category would book: memorable within the casting, never disqualified by it.",
   "Never render the smooth, symmetrical, conventionally attractive average face that every casting brief converges on. A face a casting director would remember is the requirement.",
 ].join(" ");
 
@@ -722,6 +737,15 @@ export function personaLineFor(resolved: ResolvedIdentity, read?: string | null)
 export const COHORT_CONSTANT_MARKERS = [
   FRAMING,
   CAPTURE,
+  /*
+    SKIN_AND_FEATURES was missing from this array — including from the version
+    that shipped before the craft-port audit, and including from the version
+    the audit itself declared a working guard. It is the most craft-dense block
+    in the file (A1, A5–A10, the structural-features clause), so the one block
+    the guard did not cover was the one the audit was triggered by. Caught by
+    Fable's skim of the audit, which is the argument for the review step.
+  */
+  SKIN_AND_FEATURES,
   IDENTITY_INTEGRITY,
   NEGATIVES,
   PRIORITY,

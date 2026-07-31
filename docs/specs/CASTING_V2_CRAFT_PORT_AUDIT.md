@@ -25,18 +25,28 @@ problem.
 
 ## Summary
 
-| | Count |
-|---|---|
-| Ported at full strength | 21 |
-| Consciously adapted | 12 |
-| Deliberately dropped | 9 |
-| **Silently compressed — found and fixed by this audit** | **11** |
-| **Silently absent — found and fixed by this audit** | **4** |
+Forty-eight catalog items: A1–A15, B1–B6, C1–C10, D1–D17. Every item has exactly
+one verdict, so these sum to 48.
 
-The eleven compressions and four absences are the reason the audit was worth
-running. Three of the absences are load-bearing: **B2** (ethnicity phenotype
-lock), **C5** (in-prompt priority hierarchy) and **A13** (specificity over
-averageness). All are now in the constant.
+| Verdict | Items |
+|---|---|
+| Ported at full strength | 7 |
+| Consciously adapted | 9 |
+| Deliberately dropped | 16 |
+| **Silently compressed — found and fixed by this audit** | **10** |
+| **Silently absent — found and fixed by this audit** | **6** |
+| | **48** |
+
+*(The first version of this table read 21/12/9/11/4 and summed to 57. It was
+written before the rows were finished and never reconciled against them — which,
+in an audit whose entire subject is "is this whole?", is worth leaving on the
+record rather than quietly correcting. Caught by Fable's skim. The row count is
+44 rather than 48 because D9–D13 share one row.)*
+
+The compressions and absences are the reason the audit was worth running. Three
+of the absences are load-bearing: **B2** (ethnicity phenotype lock), **C5**
+(in-prompt priority hierarchy) and **A13** (specificity over averageness). All
+are now in the constant.
 
 ---
 
@@ -52,7 +62,7 @@ averageness). All are now in the constant.
 | **A6** eyelashes | **Compressed → restored** | Headline kept, anti-uniformity half cut: varying length, slight curl variation, strands catching light individually, and the explicit ban on mascara-heavy uniformity. Restored. |
 | **A7** lips | **Compressed → restored** | Plicae and moisture gradient kept; colour variation from the vermillion border inward and "topography, not a flat matte fill" cut. Restored. |
 | **A8** eyebrows | **Compressed → restored** | Growth direction kept; natural gaps, overlapping strands and root-to-tip colour variation cut. Restored. |
-| **A9** skin texture/finish matrix | Deliberately dropped | V2 has no texture or finish field — the user writes a brief, not a form. The five-by-four matrix has nothing to attach to. **Consequence handled:** its A3 dependency was dangling (above), and the anti-retouch clamp it closed with survives independently in the REALISM block. |
+| **A9** skin texture/finish matrix | Deliberately dropped | V2 has no texture or finish field — the user writes a brief, not a form. The five-by-four matrix has nothing to attach to. **Two consequences handled.** Its A3 dependency was dangling (above). And its deeper purpose — letting *deliberately bad* skin be ordered without the model fixing it — was only half covered: the anti-retouch clamp survives in the REALISM block, but the structural-features clause enumerated scars and freckling without naming skin conditions, and the broken-nose evidence shows a named-but-unenumerated feature loses to the prior every time. Active acne, acne scarring and weathered or sun-damaged skin are now named in that enumeration. |
 | **A10** vellus disambiguation | **Compressed → restored** | Kept "NOT stubble, NOT pigmented"; dropped "NOT terminal hair, NOT dark". Both restored — the clause exists to stop peach fuzz rendering as a moustache shadow, and it needs all four negatives to do it. |
 | **A11** age ↔ skin-texture reconciliation | Consciously adapted | Legacy silently downgraded a Mature texture below age 35. With no texture field there is nothing to downgrade, but the *problem* — a face whose skin contradicts its stated age — is solved better here: `describeAge` names exact years and then names the physiology that must not be present ("no nasolabial depth, no crow's feet"), in both directions. |
 | **A12** universal negative list | Ported at full strength | Plus two additions this milestone's evidence demanded: no text of any kind, and no scene. |
@@ -72,7 +82,7 @@ language; they belong to M7 and M12 and are untouched by this audit.
 | **B2** ethnicity phenotype lock | **Absent → restored** | **The audit's most consequential finding.** Legacy placed this FIRST in every generation prompt. V2 had *nothing*, while making heritage its primary diversity axis — so the failure mode it was most exposed to was the one it was least defended against. Restored as `IDENTITY_INTEGRITY`: heritage is defended as bone, named locus by locus, explicitly independent of hair colour, skin tone and styling, with legacy's own example (a platinum-blonde East Asian person still has East Asian bone structure). Mixed heritage must show both parents and must not resolve to a generic ambiguous face. |
 | **B3** dominance bands (image model) | Consciously adapted | Legacy needed four bands across a continuous 0–100 blend. V2 only ever produces 100 or 60/40, so two bands cover the whole value space exactly. Adding two unreachable bands would be theatre. |
 | **B4** `formatEthnicityBlend` (text-model twin) | Deliberately dropped | Legacy ran a spec-writing text model that needed its own differently-tuned bands. V2 has no spec-writing stage — the interpreter emits structured facts and the adapter composes. There is no second consumer to tune for. |
-| **B5** CASTING OVERRIDES prefix | Consciously adapted | The mechanism defends *non-default* values against the model's statistical priors. V2 has no eye/hair/facial-hair fields for it to guard, and the equivalent — a stated fact regressing to a prior — is caught rather than prevented: `validateLocks` checks every composed candidate against the lock contract and refuses the roll on drift. Legacy had no such check. |
+| **B5** CASTING OVERRIDES prefix | Consciously adapted | The mechanism defends *non-default* values against the image model's statistical priors. V2 has no eye/hair/facial-hair fields for it to guard, and the principle — a deliberate choice must assert itself as deliberate — is carried per-lock instead: age states "an absolute casting requirement, not an approximation" with corroborating negatives, build states "a deliberate casting choice", heritage is defended as bone by the restored B2, and `PRIORITY` adds the unusual-combination clause. **An earlier draft of this row claimed `validateLocks` supersedes B5. It does not, and the claim is exactly the failure this audit is about.** The validator compares the *resolved identity object* to the lock contract before any image exists, and under Path A the adapter composes from those locks — so it is a CI tripwire for adapter bugs, not a drift catcher. **Image-level regression to priors is unverified in V2 and stays unverified until M7's view-conformance gate.** |
 | **B6** stale-reinforcement suppression | Deliberately dropped — **scheduled M12** | Solves an *edit* problem (an old value shouting while a new one is authorized). V2 has no identity edit path until M12. |
 
 ## C) Creative direction — whispers and priority
@@ -97,8 +107,8 @@ stated first and the rest follow from the same reasoning.
 
 | Item | Verdict | Detail |
 |---|---|---|
-| **D1** 15 engineered iris descriptions | Deliberately dropped — **partial port restored** | V2 has no eye-colour field, so fifteen per-colour optical descriptions have nothing to attach to. Adding the field is a product decision, not a port. **But the diversity risk they existed to solve is live:** with no direction at all, every candidate defaults to mid-brown and the sheet silently loses an axis of difference it could have had for free. A clause now states that eye colour belongs to this specific person and follows plausibly from heritage and age. The optical rendering half is not lost either — A5's restored iris protocol governs how *any* iris is rendered. |
-| **D2** natural-colour framing rule | Consciously adapted | No colour fields to guard, but an unusual colour can still arrive through `characterNotes`. Folded into the same clause: never push a heritage toward a stereotype, never treat an unusual combination as an error — which is C5's restored rule doing this job too. |
+| **D1** 15 engineered iris descriptions | Deliberately dropped — **partial port restored** | V2 has no eye-colour field, so fifteen per-colour optical descriptions have nothing to attach to. Adding the field is a product decision, not a port. **But the diversity risk they existed to solve is live:** with no direction at all, every candidate defaults to mid-brown and the sheet silently loses an axis of difference it could have had for free. A clause now states that eye colour belongs to this specific person and follows plausibly from heritage and age. A5's restored iris protocol governs iris *structure* for every candidate — striations, limbal ring, catchlights — but not per-colour zoning, so a colour arriving through `characterNotes` renders unengineered. That is a real loss, accepted rather than covered. |
+| **D2** natural-colour framing rule | **Absent → restored** | This row first read "folded into the same clause", and Fable's skim showed it was not. The colour clause resolves *whether* an unusual combination is allowed; D2's craft is *how it renders* — as this person's own born pigment, never as contact lenses, a visible dye job or a wig. Nothing said that, and the surrounding sentence leaned the wrong way: "follow plausibly from their heritage and age" is prior-reinforcing language that invites reconciling a stated mint eye back to brown. Both halves now stated, split on whether the description names a colour. |
 | **D3** `SKIN_TONE_VALUES` + swatches | Deliberately dropped | A picker vocabulary for a UI V2 does not have. V2's user writes a sentence. |
 | **D4** skin-tone P1 anti-stereotype clause | **Absent → restored** | The *rule* survives its field. "Do not default to the darkest or lightest shade for this heritage" is a statement about the model's priors, not about the picker, and it is restored in `IDENTITY_INTEGRITY` alongside B2 where it belongs. |
 | **D5** `EYE_COLORS` + photographic presets | Deliberately dropped | Same reason as D3 — picker assets. |
@@ -132,3 +142,11 @@ every block, so a block cannot be dropped from the composed prompt without the
 contract test failing. That catches deletion. It does not catch compression, and
 nothing mechanical will — which is why the catalog exists and why this audit had
 to be read rather than run.
+
+**That paragraph was false when first written, in the exact way it warns about.**
+The markers array omitted `SKIN_AND_FEATURES` — the most craft-dense block in the
+file, holding A1, A5–A10 and the structural-features clause. The one block the
+guard did not cover was the block the audit was triggered by, and the audit
+declared the guard working anyway. Fable's skim caught it; the array now covers
+all seven blocks. Left on the record because an audit that quietly corrects its
+own false claim has learned nothing from finding everyone else's.
