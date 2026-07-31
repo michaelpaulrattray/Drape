@@ -23,6 +23,22 @@ import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
+import {
+  AGE_BANDS,
+  AGE_PHASES,
+  ARCHETYPE_KEYS,
+  BUILDS,
+  ENERGY_KEYS,
+  HERITAGES,
+  LOOK_KEYS,
+  SEXES,
+  type ArchetypeKey,
+  type EnergyKey,
+  type LookKey,
+} from "../castingV2/castingIntent";
+
+/** `z.enum` wants a non-empty tuple; these three are derived key arrays. */
+const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import {
@@ -57,6 +73,33 @@ const publicId = z.string().uuid();
  * everything is not.
  */
 const unlockList = z.array(z.enum(UNLOCKABLE_FIELDS)).max(UNLOCKABLE_FIELDS.length).optional();
+
+/**
+ * Facts the user set by hand in the brief echo.
+ *
+ * Every value is a closed enum, for the same reason `unlockList` is: this
+ * decides what the compiler pins, so an unrecognised value has to be a
+ * validation failure rather than a silently dropped key. `.strict()` means a
+ * field name outside this object is refused too (invariant 4) — there is no
+ * such thing as a free-text override, because free text is what the brief box
+ * is for.
+ *
+ * Heritage is one value rather than a blend: the popover replaces a heritage
+ * or lets it vary, and percentage editing is deliberately not in v1.
+ */
+const overrideObject = z
+  .object({
+    sex: z.enum(SEXES).optional(),
+    ageBand: z.enum(AGE_BANDS).optional(),
+    agePhase: z.enum(AGE_PHASES).optional(),
+    heritage: z.enum(HERITAGES).optional(),
+    build: z.enum(BUILDS).optional(),
+    energy: z.enum(tuple<EnergyKey>(ENERGY_KEYS)).optional(),
+    look: z.enum(tuple<LookKey>(LOOK_KEYS)).optional(),
+    archetype: z.enum(tuple<ArchetypeKey>(ARCHETYPE_KEYS)).optional(),
+  })
+  .strict()
+  .optional();
 
 function requireCastingV2(userId: number): void {
   if (!captureCastingV2Enabled(userId)) {
@@ -211,6 +254,7 @@ export const castingV2Router = router({
           sessionId: publicId,
           briefText: z.string().min(1).max(2000),
           unlock: unlockList,
+          overrides: overrideObject,
         })
         .strict(),
     )
@@ -224,6 +268,7 @@ export const castingV2Router = router({
         sessionPublicId: input.sessionId,
         briefText: input.briefText,
         unlock: input.unlock,
+        overrides: input.overrides,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
     }),
@@ -243,6 +288,7 @@ export const castingV2Router = router({
           candidateId: publicId,
           briefText: z.string().min(1).max(2000),
           unlock: unlockList,
+          overrides: overrideObject,
         })
         .strict(),
     )
@@ -256,6 +302,7 @@ export const castingV2Router = router({
         sessionPublicId: input.sessionId,
         briefText: input.briefText,
         unlock: input.unlock,
+        overrides: input.overrides,
         // Re-anchored to this user's own candidates inside the roll
         // transaction; a foreign id can only fail to resolve.
         followCandidatePublicId: input.candidateId,

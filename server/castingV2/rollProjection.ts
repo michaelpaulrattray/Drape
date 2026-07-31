@@ -7,14 +7,37 @@
  * (access-control invariant 8).
  *
  * What may never appear in anything this module returns:
- * `compiledBrief`, `lockContract`, `internalPrompt`, provider names, provider
- * models, provider request ids, storage keys, queue internals, or any row
- * belonging to another user. The types below are constructed field by field
- * so adding one of those is a deliberate edit, not an accident of shape.
+ * `compiledBrief`, `internalPrompt`, provider names, provider models, provider
+ * request ids, storage keys, queue internals, or any row belonging to another
+ * user. The types below are constructed field by field so adding one of those
+ * is a deliberate edit, not an accident of shape.
+ *
+ * **Amendment, 2026-08-01 (brief echo).** `lockContract` was on that list and
+ * is now partly off it, which is the kind of change that has to be stated
+ * rather than made quietly. The *raw column* still never crosses — it is
+ * compiler-written JSON, and forwarding it would be the injection path this
+ * module exists to close. What crosses is `readBriefFacts`: a validated
+ * projection of the pinned facts, every value checked against a closed
+ * vocabulary, no free text, no percentages, no prompts.
+ *
+ * The reason it is safe is not that it is small. It is that these are the
+ * user's own stated facts, returned to the user who stated them, on a
+ * projection that is already owner-scoped. Nothing here is a recipe: the
+ * cast's creative content — the composed prompt, the archetype thesis, the
+ * character notes — stays inside `compiledBrief` and stays here.
  */
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
 import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
+import {
+  AGE_BANDS,
+  AGE_PHASES,
+  BUILDS,
+  ENERGY_KEYS,
+  HERITAGES,
+  LOOK_KEYS,
+  SEXES,
+} from "./castingIntent";
 
 /** §J's exact enum. Internal lifecycle states collapse into these three. */
 export type CandidateProjectionStatus = "casting" | "ready" | "failed-refunded";
@@ -36,6 +59,8 @@ export type RollProjection = {
   status: CastingRoll["status"];
   briefText: string;
   chips: CastingChip[];
+  /** The brief echo's facts — see `readBriefFacts`. */
+  facts: BriefFacts;
   lineage: { fromCandidateId?: string; fromRollId?: string };
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
@@ -52,6 +77,82 @@ export type SessionProjection = {
   createdAt: string;
   expiresAt: string | null;
 };
+
+/**
+ * The facts behind the brief echo.
+ *
+ * Founder condition, 2026-08-01: *"the sentence generates from the same
+ * validated lock contract the compiler enforces (one source of truth)."* So
+ * this reads `roll.lockContract` — the column `validateLocks` checks every
+ * candidate against — rather than re-deriving anything from the compiled brief.
+ * If the sentence and the sheet ever disagree, it is because the validator
+ * would also have disagreed, which is the only honest failure mode available.
+ *
+ * `open` is the other half of the law and the half the pill row could not show:
+ * a field that is null is not unknown, it is deliberately varying, and the user
+ * could not see that or pin it.
+ *
+ * Invariant 8: an explicit projection of named fields. The compiled brief is
+ * written by a compiler that is an LLM behind a seam, so nothing crosses this
+ * boundary without being checked against a closed list first.
+ */
+export type BriefFacts = {
+  locks: {
+    sex?: string;
+    ageBand?: string;
+    agePhase?: string;
+    heritage?: string[];
+    build?: string;
+    energy?: string;
+    look?: string;
+  };
+  /** Fields the roll deliberately varied. Named, up to three; else collapsed. */
+  open: string[];
+  /** Which axis the eight differ along, when the compiler recorded one. */
+  variationAxis: "look" | "disposition" | null;
+};
+
+/** Closed lists, so a compiler-side surprise cannot reach the client. */
+const FACT_VOCABULARIES: Record<string, readonly string[]> = {
+  sex: SEXES,
+  ageBand: AGE_BANDS,
+  agePhase: AGE_PHASES,
+  build: BUILDS,
+  energy: ENERGY_KEYS,
+  look: LOOK_KEYS,
+};
+
+/** Everything the echo can name as varying, in the order it reads best. */
+const OPEN_AXES = ["sex", "ageBand", "heritage", "build", "energy", "look"] as const;
+
+export function readBriefFacts(lockContract: unknown, compiledBrief: unknown): BriefFacts {
+  const raw = (lockContract ?? {}) as Record<string, unknown>;
+  const locks: BriefFacts["locks"] = {};
+
+  for (const [field, vocabulary] of Object.entries(FACT_VOCABULARIES)) {
+    const value = raw[field];
+    if (typeof value === "string" && vocabulary.includes(value)) {
+      (locks as Record<string, string>)[field] = value;
+    }
+  }
+
+  if (Array.isArray(raw.heritage)) {
+    const heritages = raw.heritage
+      .map((entry) =>
+        entry && typeof entry === "object" ? (entry as { heritage?: unknown }).heritage : null,
+      )
+      .filter((value): value is string => typeof value === "string" && HERITAGES.includes(value as never));
+    if (heritages.length > 0) locks.heritage = heritages.slice(0, 2);
+  }
+
+  const open = OPEN_AXES.filter((axis) => !(axis in locks));
+
+  const axis = (compiledBrief as { intent?: { variationAxis?: unknown } } | null)?.intent
+    ?.variationAxis;
+  const variationAxis = axis === "look" || axis === "disposition" ? axis : null;
+
+  return { locks, open, variationAxis };
+}
 
 const CHIP_KINDS = new Set<CastingChip["kind"]>(["subject", "style", "direction", "lineage"]);
 
@@ -160,6 +261,7 @@ export function projectRoll(input: {
     // The user's own sentence, returned to them. Never the compiled brief.
     briefText: input.roll.briefText,
     chips: readChips(input.roll.compiledBrief),
+    facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief),
     lineage: {
       ...(input.parentCandidatePublicId ? { fromCandidateId: input.parentCandidatePublicId } : {}),
       ...(input.parentRollPublicId ? { fromRollId: input.parentRollPublicId } : {}),

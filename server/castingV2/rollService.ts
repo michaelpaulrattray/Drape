@@ -76,6 +76,7 @@ import {
   castingBriefCompiler,
   type BriefCompiler,
   type CompiledRollBrief,
+  type LockOverrides,
   type UnlockableField,
 } from "./briefCompiler";
 import type { ResolvedIdentity } from "./castingIntent";
@@ -133,6 +134,14 @@ export type CreateRollInput = {
    * shown on.
    */
   unlock?: readonly UnlockableField[];
+  /**
+   * Facts the user set by hand from the brief echo.
+   *
+   * Unlike `unlock`, these are re-sent on every roll for as long as they stand:
+   * a roll re-reads the brief each time, so an adjustment that was not re-sent
+   * would be silently re-derived away by the interpreter. See `applyOverrides`.
+   */
+  overrides?: LockOverrides;
   /** Follow lineage: a `ready` candidate of this user, in this session. */
   followCandidatePublicId?: string | null;
 };
@@ -234,6 +243,7 @@ export async function createRoll(
       // people. Idempotency and variety from one value.
       rollSeed: input.clientRequestId,
       unlock: input.unlock ?? [],
+      overrides: input.overrides,
       followPersonaLine,
       followIdentity,
     });

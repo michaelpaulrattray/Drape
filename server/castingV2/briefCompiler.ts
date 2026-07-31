@@ -40,9 +40,17 @@ import type { TextEngine } from "../providers/types";
 import {
   lockFactsOf,
   validateLocks,
+  type AgeBand,
+  type AgePhase,
+  type ArchetypeKey,
+  type Build,
   type CastingIntent,
+  type EnergyKey,
+  type Heritage,
   type LockFacts,
+  type LookKey,
   type ResolvedIdentity,
+  type Sex,
 } from "./castingIntent";
 import {
   composeCandidatePrompt,
@@ -70,6 +78,44 @@ export type CastingChip = {
 
 export const UNLOCKABLE_FIELDS = ["sex", "ageBand", "heritage", "build", "energy", "archetype"] as const;
 export type UnlockableField = (typeof UNLOCKABLE_FIELDS)[number];
+
+/**
+ * Fields the user can SET by hand, as opposed to merely unpin.
+ *
+ * `agePhase` and `look` join the unlockable list here because setting a value
+ * is a different act from clearing one: "make it late 40s" is a sentence a user
+ * says, while "stop pinning where in the decade" is not.
+ */
+export const OVERRIDABLE_FIELDS = [
+  "sex",
+  "ageBand",
+  "agePhase",
+  "heritage",
+  "build",
+  "energy",
+  "look",
+  "archetype",
+] as const;
+export type OverridableField = (typeof OVERRIDABLE_FIELDS)[number];
+
+/**
+ * A hand-made adjustment, carried separately from the interpreter's reading.
+ *
+ * Heritage is a single value rather than a blend: replacing a heritage or
+ * letting it vary is the whole v1 affordance, and a two-component percentage
+ * composer inside a popover is the heaviest control in the design for no
+ * benefit yet.
+ */
+export type LockOverrides = Partial<{
+  sex: Sex;
+  ageBand: AgeBand;
+  agePhase: AgePhase;
+  heritage: Heritage;
+  build: Build;
+  energy: EnergyKey;
+  look: LookKey;
+  archetype: ArchetypeKey;
+}>;
 
 /** One of the eight. `prompt` is internal and never projected. */
 export type CandidateSpec = {
@@ -128,6 +174,12 @@ export type BriefCompilerInput = {
   rollSeed: string;
   /** Facts the user unpinned by removing a chip. Applied to the next roll. */
   unlock?: readonly UnlockableField[];
+  /**
+   * Facts the user set by hand from the brief echo. Applied LAST, after
+   * interpretation and after unpins — see `applyOverrides` for why position is
+   * the whole guarantee.
+   */
+  overrides?: LockOverrides;
   /** Set on a follow roll; the sheet narrows around this candidate. */
   followPersonaLine?: string | null;
   followIdentity?: ResolvedIdentity | null;
@@ -203,6 +255,50 @@ function applyUnlocks(intent: CastingIntent, unlock: readonly UnlockableField[])
   for (const field of unlock) {
     if (field === "heritage") next.heritage = [];
     else next[field] = null;
+  }
+  return next;
+}
+
+/**
+ * A hand-made adjustment beats everything, and it runs LAST to say so.
+ *
+ * Founder ruling, 2026-08-01, ratified as law: *"a hand-made adjustment
+ * outranks the interpreter's re-reading on every subsequent roll — this is the
+ * legacy parser's override mechanism (catalog H8, 'the core innovation')
+ * reborn."*
+ *
+ * The failure it prevents is specific and quiet. A roll re-reads the brief
+ * every time, so a user who adjusts age to 40s and rolls again would have the
+ * interpreter derive "early 20s" from the unchanged brief text and hand it
+ * straight back. Their adjustment would not be refused — it would simply
+ * evaporate, which is worse, because nothing tells them it happened.
+ *
+ * H8's spirit is that the user's own statement is carried in its own channel
+ * rather than being reconciled into the enum and lost. Same here: the override
+ * never passes through interpretation, so nothing can re-derive it away.
+ *
+ * Position is the whole guarantee. This runs after `followFrom` (lineage) and
+ * after `applyUnlocks`, so:
+ *   interpreter → lineage → unpins → hand adjustments
+ * and each stage beats the one before it. Setting a field the user also
+ * unpinned in the same roll resolves to the set value, which is the right
+ * reading of "vary this" followed by "no, make it 40s".
+ */
+function applyOverrides(intent: CastingIntent, overrides: LockOverrides | undefined): CastingIntent {
+  if (!overrides) return intent;
+  const entries = Object.entries(overrides).filter(([, value]) => value != null);
+  if (entries.length === 0) return intent;
+
+  const next = { ...intent };
+  for (const [field, value] of entries) {
+    if (field === "heritage") {
+      // Single-value replace: the popover offers one heritage or none, so an
+      // override always resolves the blend to one component rather than
+      // editing percentages.
+      next.heritage = [{ heritage: value as Heritage, pct: 100 }];
+      continue;
+    }
+    (next as Record<string, unknown>)[field] = value;
   }
   return next;
 }
@@ -315,9 +411,9 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   }
 
   const interpreted = outcome.ok ? outcome.intent : fallbackIntent(briefText);
-  const intent = applyUnlocks(
-    followFrom(interpreted, input.followIdentity ?? null),
-    input.unlock ?? [],
+  const intent = applyOverrides(
+    applyUnlocks(followFrom(interpreted, input.followIdentity ?? null), input.unlock ?? []),
+    input.overrides,
   );
   const locks: LockFacts = lockFactsOf(intent);
   const archetype = resolveArchetype(intent, input.rollSeed);
