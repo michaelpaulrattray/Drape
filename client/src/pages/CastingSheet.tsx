@@ -463,6 +463,9 @@ export default function CastingSheet() {
             facts={roll.data.facts}
             followLabel={followLabel}
             terse={rolls.length > 1}
+            // What the user has queued but the sheet in front of them cannot
+            // show, because rolls are immutable.
+            pending={{ overrides, unlocked }}
             onAdjust={(adjustment) => {
               if (adjustment.kind === "vary") {
                 unlock(adjustment.field as UnlockableField);

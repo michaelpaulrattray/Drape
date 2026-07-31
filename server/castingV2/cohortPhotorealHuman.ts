@@ -587,6 +587,36 @@ function anchoredHeritage(
   ];
 }
 
+/**
+ * Look in a follow: an anchor, not a lock (founder ruling, round 5).
+ *
+ * The first version carried the parent's look flat across all eight, and the
+ * graded run showed exactly what that costs: every candidate inherited "angular
+ * and unslept" and the sheet read gaunt as a group — coherent, and same-y. So
+ * the look behaves like heritage now. Most candidates hold the followed look;
+ * two or three take an adjacent one, which keeps the sheet recognisably one
+ * casting while giving the eye somewhere to go.
+ *
+ * "Adjacent" is positional, not semantic, and that is worth stating plainly:
+ * LOOKS has no natural ordering, so a neighbour in the array is simply *a
+ * different look from the same shelf* rather than a measured near-relative.
+ * Inventing a semantic adjacency would be guesswork dressed as a model.
+ */
+function anchoredLook(anchor: FollowAnchor, position: number, rollSeed: string): LookKey | null {
+  if (!anchor.look) return null;
+  const index = LOOK_KEYS.indexOf(anchor.look);
+  if (index < 0) return anchor.look;
+
+  // Two or three of the eight drift, chosen per roll so two follows of the
+  // same candidate do not drift on the same tiles.
+  const drifting = 2 + (hash(`${rollSeed}:lookSpread`) % 2);
+  const offset = hash(`${rollSeed}:lookOffset`) % LOOK_KEYS.length;
+  if ((position + offset) % LOOK_KEYS.length >= drifting) return anchor.look;
+
+  const step = hash(`${rollSeed}:lookStep:${position}`) % 2 === 0 ? 1 : LOOK_KEYS.length - 1;
+  return LOOK_KEYS[(index + step) % LOOK_KEYS.length] as LookKey;
+}
+
 /** Hair in a follow: the family and colour carry; everything else stays free. */
 function anchoredHair(
   anchor: FollowAnchor,
@@ -681,7 +711,7 @@ export function resolveCandidateIdentity(
     */
     look:
       intent.look
-      ?? anchor?.look
+      ?? (anchor ? anchoredLook(anchor, position, rollSeed) : null)
       ?? (varyByLook(intent)
         ? LOOK_KEYS[(position + (hash(`${rollSeed}:look`) % LOOK_KEYS.length)) % LOOK_KEYS.length]
         : null),

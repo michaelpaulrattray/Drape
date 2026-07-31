@@ -590,3 +590,15 @@
   outline-offset: -2px;
   border-radius: var(--r-lg);
 }
+
+/*
+  A queued adjustment, shown on the span rather than announced by a toast.
+
+  Rolls are immutable, so a change can only land on the next roll — the
+  sentence has to say that without pretending the current sheet changed. The
+  old value recedes, the new one takes full ink, and the timing is chrome.
+*/
+.dpc-echo__pending { white-space: nowrap; }
+.dpc-echo__was { color: var(--meta); text-decoration: line-through; text-decoration-thickness: 1px; }
+.dpc-echo__will { color: var(--ink); border-bottom: 1px solid var(--accentSolid); }
+.dpc-echo__when { color: var(--faint); font-size: 10.5px; letter-spacing: 0.06em; }

@@ -74,16 +74,35 @@ export type EchoAdjustment =
   | { kind: "set"; field: EchoField; value: LockOverrides[EchoField] & string }
   | { kind: "vary"; field: EchoField };
 
+/**
+ * Adjustments the user has made that the sheet in front of them cannot show.
+ *
+ * Rolls are immutable, so an adjustment can only ever change the NEXT roll —
+ * and until this existed the only feedback was a toast, which is gone in three
+ * seconds and leaves the sentence still reading the old value. The founder's
+ * word for it was degenerate, and they were right: you could adjust a fact
+ * twice and have no way to know either had registered.
+ *
+ * So the span itself shows the change, in the founder's own copy:
+ * "early 20s → teens · next roll".
+ */
+export type PendingAdjustments = {
+  overrides: Partial<Record<EchoField, string>>;
+  unlocked: readonly string[];
+};
+
 export function BriefEcho({
   facts,
   followLabel,
   terse,
+  pending,
   onAdjust,
 }: {
   facts: BriefFacts;
   followLabel?: string | null;
   /** True on the second and later rolls of a session. */
   terse?: boolean;
+  pending?: PendingAdjustments;
   onAdjust: (adjustment: EchoAdjustment) => void;
 }) {
   const spans = composeEcho(facts, { terse, followLabel });
@@ -98,7 +117,7 @@ export function BriefEcho({
     */
     <p className="dpc-echo" aria-label={echoText(spans)}>
       {spans.map((span, index) => (
-        <EchoSpanView key={index} span={span} facts={facts} onAdjust={onAdjust} />
+        <EchoSpanView key={index} span={span} facts={facts} pending={pending} onAdjust={onAdjust} />
       ))}
     </p>
   );
@@ -107,10 +126,12 @@ export function BriefEcho({
 function EchoSpanView({
   span,
   facts,
+  pending,
   onAdjust,
 }: {
   span: EchoSpan;
   facts: BriefFacts;
+  pending?: PendingAdjustments;
   onAdjust: (adjustment: EchoAdjustment) => void;
 }) {
   if (span.kind === "text") return <span className="dpc-echo__prose">{span.text}</span>;
@@ -118,6 +139,25 @@ function EchoSpanView({
   const { field } = span;
   const current = currentValue(facts, field);
   const pinned = span.kind === "fact";
+
+  /*
+    A pending change reads as a change: the value it had, an arrow, the value
+    it will have, and when. The whole span becomes read-only while it is
+    pending — adjusting a fact that is already queued would need an undo the
+    design does not have, and stacking two arrows would say nothing useful.
+  */
+  const queuedValue = pending?.overrides[field];
+  const queuedVary = !queuedValue && pending?.unlocked.includes(field) === true && pinned;
+  if (queuedValue || queuedVary) {
+    return (
+      <span className="dpc-echo__pending">
+        <span className="dpc-echo__was">{span.text}</span>
+        <span aria-hidden="true"> → </span>
+        <span className="dpc-echo__will">{queuedValue ?? "varying"}</span>
+        <span className="dp-chrome dpc-echo__when"> · next roll</span>
+      </span>
+    );
+  }
 
   return (
     <Popover

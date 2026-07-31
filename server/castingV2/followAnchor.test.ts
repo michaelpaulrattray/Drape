@@ -104,6 +104,40 @@ describe("cousins, not clones, and never unrelated", () => {
     expect(new Set(resolved.map((r) => r.agePhase)).size).toBeGreaterThan(1);
   });
 
+  it("holds the followed look on most, and lets two or three drift", () => {
+    /*
+      Founder ruling, round 5: look is an anchor, not a lock. The first version
+      carried it flat and the graded sheet read gaunt as a group — every
+      candidate inheriting "angular and unslept". Most hold; a few move, so the
+      sheet stays one casting without becoming one mood.
+    */
+    const anchored: FollowAnchor = { ...BLONDE_WOMAN, look: "severe minimal" };
+    for (const seed of ["s1", "s2", "s3", "s4"]) {
+      const looks = Array.from({ length: 8 }, (_, position) =>
+        resolveCandidateIdentity(intentOf(), position, seed, anchored).look,
+      );
+      const held = looks.filter((look) => look === "severe minimal").length;
+      const drifted = looks.length - held;
+      expect(held, seed).toBeGreaterThanOrEqual(5);
+      expect(drifted, seed).toBeGreaterThanOrEqual(2);
+      expect(drifted, seed).toBeLessThanOrEqual(3);
+      // Never unrelated: a drifted look is still a look, never null.
+      for (const look of looks) expect(look).not.toBeNull();
+    }
+  });
+
+  it("an explicitly stated look still locks flat across all eight", () => {
+    // The archetype law is unchanged — anchoring is what the FOLLOW does, not
+    // what a stated look does.
+    const looks = Array.from({ length: 8 }, (_, position) =>
+      resolveCandidateIdentity(intentOf({ look: "quiet luxury" }), position, "stated", {
+        ...BLONDE_WOMAN,
+        look: "severe minimal",
+      }).look,
+    );
+    expect(looks).toEqual(Array(8).fill("quiet luxury"));
+  });
+
   it("keeps presence varying, because faces still need to differ", () => {
     const resolved = eight(intentOf(), BLONDE_WOMAN);
     expect(new Set(resolved.map((r) => r.energy)).size).toBeGreaterThan(1);
