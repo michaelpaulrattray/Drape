@@ -153,6 +153,7 @@ vi.mock("../casting/directOperation", () => ({
 const OPERATION_ID = "33333333-3333-4333-8333-333333333333";
 
 const { createRoll, cancelRoll } = await import("./rollService");
+const { deterministicBriefCompiler } = await import("./briefCompiler");
 const { candidateChargeReference } = await import("./rollRecovery");
 const { ProviderError } = await import("../providers/types");
 
@@ -188,6 +189,14 @@ function engineWhere(fails: (position: number) => boolean) {
 function baseDependencies(fails: (position: number) => boolean = () => false) {
   return {
     engine: engineWhere(fails),
+    /*
+      Compile without an interpreter. These tests are about the billing
+      sequence, and the default compiler now reaches for a text transport —
+      which, with a real key in `.env`, turns a 17ms unit suite into 32
+      seconds of live API calls against someone's account. A unit test that
+      silently spends money is not a unit test.
+    */
+    compileBrief: deterministicBriefCompiler,
     admit: () => ({ admitted: true as const }),
     markRunning: vi.fn(async () => {
       journal.push("running");
@@ -352,7 +361,7 @@ describe("cancel", () => {
     expect(dbCalls.setRollStatus).toHaveBeenCalledWith("cancelled");
   });
 
-  it("does not refund a candidate that lands after the cancel", async () => {
+  it("refunds a candidate that lands unseen after the cancel", async () => {
     rows.candidates = [
       { id: 1, publicId: "cand-1", position: 0, pointsCost: 20, status: "queued", cancelledMidFlight: true },
     ];
@@ -363,11 +372,26 @@ describe("cancel", () => {
       message: expect.stringContaining("cancelled"),
     });
 
-    // It was dispatched, so the provider was paid for it; the user cancelled
-    // after that. They keep no image and get no refund — the written law, and
-    // the wrinkle worth a founder's eye rather than an executor's.
+    // The generosity ruling (founder, 2026-07-31): we paid the provider, but
+    // the user never saw it, so the credits go back. "Cancel refunds
+    // everything you haven't seen" is the promise this test holds up.
     expect(rows.candidates[0].status).toBe("expired");
-    expect(refunds).toHaveLength(0);
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0].amount).toBe(20);
+  });
+
+  it("refunds the unseen landing under its own reference, not the failure one", async () => {
+    rows.candidates = [
+      { id: 1, publicId: "cand-1", position: 0, pointsCost: 20, status: "queued", cancelledMidFlight: true },
+    ];
+    await expect(createRoll(baseDependencies(), INPUT)).rejects.toThrow();
+
+    // Absorbed COGS and "we failed you" are different events. The ledger has
+    // to be able to tell them apart, or the generosity rule is invisible in
+    // the accounts it costs money in.
+    const failureReference = candidateChargeReference(OPERATION_ID, "cand-1");
+    expect(refunds[0].reference).not.toBe(failureReference);
+    expect(refunds[0].reference).toContain("unseen");
   });
 
   it("is a no-op on a terminal roll rather than a refusal", async () => {

@@ -18,6 +18,8 @@ import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AppLobby from "./pages/AppLobby";
 import CastingFoundation from "./pages/CastingFoundation";
+import CastingSheet from "./pages/CastingSheet";
+import CastingV2 from "./pages/CastingV2";
 import { BoardPage } from "./features/boards/BoardPage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { GenerationOperationBridge } from "./features/operations/GenerationOperationBridge";
@@ -52,12 +54,19 @@ function Router() {
           <Route path="/studio" component={DrapeStudio} />
 
           {/*
-            Casting V2 foundation shell (M1). Deliberately unlinked: nothing in
-            the product navigates here, so M1 has no visible product effect.
-            M5 replaces this component with the real roster brief screen behind
-            the CASTING_V2_SCOPE flag.
+            Casting V2 (M5). Both routes gate on `castingV2.config.enabled`,
+            which reads the server-owned CASTING_V2_SCOPE — an account outside
+            the scope gets an honest "not open yet", never a broken sheet, and
+            the procedures behind these screens refuse it regardless of what
+            the client renders.
+
+            The M1 primitive gallery keeps its own address: the light/dark
+            screenshot drive compares one page that exercises every primitive,
+            and that page should not be the product.
           */}
-          <Route path="/casting" component={CastingFoundation} />
+          <Route path="/casting" component={CastingV2} />
+          <Route path="/casting/s/:sessionId" component={CastingSheet} />
+          <Route path="/casting/foundation" component={CastingFoundation} />
 
           {/* Admin */}
           <Route path="/admin/overview" component={AdminOverview} />

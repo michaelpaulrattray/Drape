@@ -84,11 +84,20 @@ function hasLanded(candidate: CandidateRow): boolean {
  * would be wrong?
  *
  * Wider than `hasLanded`, and the difference is the whole point. A discarded
- * candidate was delivered and then thrown away by its owner. An expired one
- * arrived after a cancel: delivered, unshown, and never refunded by law
- * (§F, §H.6). A signed one became a Cast. None of them is owed anything, and
- * an adjudicator that reasoned "not landed ⇒ refund" would hand money back for
- * every one of them the moment a lease lapsed.
+ * candidate was delivered and then thrown away by its owner. A signed one
+ * became a Cast. Neither is owed anything, and an adjudicator that reasoned
+ * "not landed ⇒ refund" would hand money back for both the moment a lease
+ * lapsed.
+ *
+ * `expired` sits here for a different reason, and it is worth stating because
+ * the law behind it changed. Since the generosity ruling (2026-07-31) a
+ * candidate that lands after a cancel IS refunded — but at the landing site,
+ * under its own reference, by the code that knows it landed unseen. This sweep
+ * must still keep its hands off, because `expired` is an overloaded status:
+ * the 7-day retention sweep also writes it, over candidates the user looked at
+ * for a week. Refunding on the strength of the status alone would pay people
+ * back for work they received, which is exactly what the sweep correction
+ * (44748ae5) forbade.
  */
 function wasDelivered(candidate: CandidateRow): boolean {
   return (
@@ -134,6 +143,25 @@ export function candidateChargeReference(operationId: string, candidatePublicId:
 
 export function candidateRefundReference(operationId: string, candidatePublicId: string): string {
   return refundReferenceFor(candidateChargeReference(operationId, candidatePublicId));
+}
+
+/**
+ * The generosity slice: a candidate that was dispatched when its roll was
+ * cancelled, ran to completion, and landed `expired` — generated, paid for,
+ * and never shown to anyone.
+ *
+ * It refunds under a reference of its own (founder ruling, 2026-07-31) so the
+ * ledger can tell "we failed you" apart from "you cancelled and we ate the
+ * cost". The COGS is real and absorbed; the credits go back because the
+ * product promise is *cancel refunds everything you haven't seen*, and no
+ * abuse vector follows from it — an expired candidate is never projected, so
+ * nobody can cancel their way to free images.
+ */
+export function candidateUnseenChargeReference(
+  operationId: string,
+  candidatePublicId: string,
+): string {
+  return `${candidateChargeReference(operationId, candidatePublicId)}:unseen`;
 }
 
 /**

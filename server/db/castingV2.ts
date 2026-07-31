@@ -403,6 +403,57 @@ export async function listSessionRolls(userId: number, sessionId: number): Promi
     .orderBy(asc(castingRolls.rollIndex));
 }
 
+/**
+ * This user's unsigned sheets, most recently worked on first.
+ *
+ * A session is a durable seven-day object, and until something can list them
+ * that durability is unreachable: close the tab and the sheet you paid for
+ * exists only in a URL you no longer have. This is the read behind "resume".
+ */
+export async function listOpenCastingSessions(
+  userId: number,
+  limit = 6,
+): Promise<CastingSession[]> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  return db
+    .select()
+    .from(castingSessions)
+    .where(and(eq(castingSessions.userId, userId), eq(castingSessions.status, "open")))
+    .orderBy(desc(castingSessions.lastActivityAt))
+    .limit(limit);
+}
+
+/**
+ * One ready candidate of this user's, by public id.
+ *
+ * Read before a follow roll compiles, so the new sheet can be conditioned on
+ * who the parent actually was rather than starting from the sentence again.
+ * The ownership predicate is in this statement, not checked beforehand
+ * (invariant 1) — but this read is *not* the authority for the lineage link.
+ * `createRollWithCandidates` re-resolves the same candidate inside its
+ * transaction, scoped to the session it is writing into, and that is what the
+ * stored `parentCandidateId` comes from. A foreign id fails here and fails
+ * there; it cannot be laundered by passing through this function.
+ */
+export async function getOwnedReadyCandidate(
+  userId: number,
+  candidatePublicId: string,
+): Promise<CastingCandidate | null> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [candidate] = await db
+    .select()
+    .from(castingCandidates)
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+      eq(castingCandidates.status, "ready"),
+    ))
+    .limit(1);
+  return candidate ?? null;
+}
+
 /** The cross-roll tray: kept candidates of one session, oldest keep first. */
 export async function listKeptCandidates(userId: number, sessionId: number): Promise<CastingCandidate[]> {
   assertPositiveId(userId, "userId");

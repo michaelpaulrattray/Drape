@@ -135,6 +135,37 @@ export interface CreativeEngine {
   generateCandidate(request: CandidateRequest): Promise<ImageResult>;
 }
 
+/**
+ * The text stage (§E "Brief compiler"). One completion, one answer.
+ *
+ * Separate from the image engines because it is billed, queued and failed
+ * differently: a text call costs a fraction of a cent and takes a second or
+ * two, so it runs *before* the claim, where a failure is free. Nothing that
+ * comes back from here is ever trusted — see `castingIntent.ts` for what
+ * happens to it.
+ */
+export type TextRequest = {
+  system: string;
+  user: string;
+  /** Ask the provider for a JSON object. A hint, never a guarantee. */
+  json?: boolean;
+  temperature?: number;
+  maxOutputTokens?: number;
+  signal?: AbortSignal;
+};
+
+export type TextResult = {
+  text: string;
+  provenance: ProviderProvenance;
+  /** Milliseconds from dispatch to text in hand (M3 condition 4). */
+  latencyMs: number;
+};
+
+export interface TextEngine {
+  readonly id: string;
+  complete(request: TextRequest): Promise<TextResult>;
+}
+
 export type ReferenceImage = {
   bytes: Buffer;
   contentType: string;

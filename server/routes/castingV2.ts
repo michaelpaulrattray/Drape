@@ -22,6 +22,7 @@ import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLim
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
+import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import {
@@ -36,12 +37,24 @@ import {
   getOwnedCastingSession,
   getOwnedRoll,
   listKeptCandidates,
+  listOpenCastingSessions,
   listRollCandidates,
   listSessionRolls,
 } from "../db/castingV2";
 
 /** Opaque public ids. Bounded so a hostile value never reaches a query. */
 const publicId = z.string().uuid();
+
+/**
+ * Chips the user removed, sent with the next roll.
+ *
+ * A closed enum rather than free strings: this list decides which facts the
+ * compiler stops pinning, so an unrecognised value must be a validation
+ * failure and not a silently ignored one. Bounded by the field count, because
+ * unlocking everything is a legitimate request and unlocking more than
+ * everything is not.
+ */
+const unlockList = z.array(z.enum(UNLOCKABLE_FIELDS)).max(UNLOCKABLE_FIELDS.length).optional();
 
 function requireCastingV2(userId: number): void {
   if (!captureCastingV2Enabled(userId)) {
@@ -116,6 +129,36 @@ export const castingV2Router = router({
       }
     }),
 
+  /**
+   * Sheets this account can go back to. The roster's "resume" affordance.
+   *
+   * Counts only — a summary, not a preview. Showing candidate images here
+   * would put the sheet on a page that is not the sheet, and the retention and
+   * cancellation rules are all written about one place where candidates live.
+   */
+  openSessions: protectedProcedure
+    .input(z.object({}).strict())
+    .query(async ({ ctx }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      const sessions = await listOpenCastingSessions(ctx.user.id);
+      return Promise.all(
+        sessions.map(async (session) => {
+          const rolls = await listSessionRolls(ctx.user.id, session.id);
+          const kept = await listKeptCandidates(ctx.user.id, session.id);
+          const latest = rolls[rolls.length - 1] ?? null;
+          return {
+            sessionId: session.publicId,
+            briefText: latest?.briefText ?? null,
+            rollCount: rolls.length,
+            keptCount: kept.length,
+            lastActivityAt: session.lastActivityAt.toISOString(),
+            expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,
+          };
+        }),
+      );
+    }),
+
   /** The resumable unsigned sheet: its rolls, and the cross-roll tray. */
   getSession: protectedProcedure
     .input(z.object({ sessionId: publicId }).strict())
@@ -156,6 +199,7 @@ export const castingV2Router = router({
           clientRequestId: z.string(),
           sessionId: publicId,
           briefText: z.string().min(1).max(2000),
+          unlock: unlockList,
         })
         .strict(),
     )
@@ -168,6 +212,7 @@ export const castingV2Router = router({
         clientRequestId: input.clientRequestId,
         sessionPublicId: input.sessionId,
         briefText: input.briefText,
+        unlock: input.unlock,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);
     }),
@@ -186,6 +231,7 @@ export const castingV2Router = router({
           sessionId: publicId,
           candidateId: publicId,
           briefText: z.string().min(1).max(2000),
+          unlock: unlockList,
         })
         .strict(),
     )
@@ -198,6 +244,7 @@ export const castingV2Router = router({
         clientRequestId: input.clientRequestId,
         sessionPublicId: input.sessionId,
         briefText: input.briefText,
+        unlock: input.unlock,
         // Re-anchored to this user's own candidates inside the roll
         // transaction; a foreign id can only fail to resolve.
         followCandidatePublicId: input.candidateId,

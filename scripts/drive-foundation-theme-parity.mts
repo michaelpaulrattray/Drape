@@ -54,7 +54,10 @@ const WIDTHS = [
  * Every surface on the foundation shell. Extend this as milestones adopt it,
  * rather than writing a second script.
  */
-const DEFAULT_ROUTES = ["/casting", "/app", "/app/boards", "/app/models"];
+// The primitive gallery moved to /casting/foundation in M5, when /casting
+// became the product. Theme parity is checked against the gallery, because it
+// is the page that renders every primitive in one place.
+const DEFAULT_ROUTES = ["/casting/foundation", "/casting", "/app", "/app/boards", "/app/models"];
 
 const ROUTES = (process.env.THEME_SHOT_ROUTES ?? DEFAULT_ROUTES.join(","))
   .split(",")

@@ -1,4 +1,5 @@
 import { createModuleLogger } from "../logging/logger";
+import { isContentRefusal } from "./falTransport";
 import { ProviderQueue, withRetry } from "./providerQueue";
 import {
   ProviderError,
@@ -55,10 +56,13 @@ function classifyHttp(status: number, body: string): ProviderFailureClass {
   if (status >= 500) return "transport";
   if (status === 408 || status === 504) return "timeout";
   if (status === 400 || status === 422) {
-    // OpenRouter forwards upstream moderation refusals as 400s with prose.
-    return /moderation|safety|policy|content|rejected/i.test(body)
-      ? "content_policy"
-      : "capability";
+    // OpenRouter forwards upstream moderation refusals as 400s with prose —
+    // but through the specific-phrase matcher, not a word list containing the
+    // bare token `content`. That looser test is the one M3 caught turning five
+    // transient errors into permanently failed, refunded candidates
+    // (`content_type` matched it), and it survived here after being fixed on
+    // the fal path.
+    return isContentRefusal(body) ? "content_policy" : "capability";
   }
   if (status === 401 || status === 403) return "capability";
   return "unknown";

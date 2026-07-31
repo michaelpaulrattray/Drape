@@ -14,7 +14,7 @@
  */
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
-import type { CastingChip } from "./briefCompiler";
+import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
 
 /** §J's exact enum. Internal lifecycle states collapse into these three. */
 export type CandidateProjectionStatus = "casting" | "ready" | "failed-refunded";
@@ -69,13 +69,19 @@ export function readChips(compiledBrief: unknown): CastingChip[] {
   const chips: CastingChip[] = [];
   for (const entry of raw) {
     if (!entry || typeof entry !== "object") continue;
-    const { label, kind, removable } = entry as Record<string, unknown>;
+    const { label, kind, removable, field } = entry as Record<string, unknown>;
     if (typeof label !== "string" || !label) continue;
     if (typeof kind !== "string" || !CHIP_KINDS.has(kind as CastingChip["kind"])) continue;
     chips.push({
       label: label.slice(0, 60),
       kind: kind as CastingChip["kind"],
       removable: removable === true,
+      // Checked against the closed list, not forwarded: the sheet sends this
+      // back as an `unlock`, so a value invented upstream would be a value the
+      // client then posts to a strict enum and gets refused for.
+      ...(typeof field === "string" && UNLOCKABLE_FIELDS.includes(field as UnlockableField)
+        ? { field: field as UnlockableField }
+        : {}),
     });
   }
   return chips.slice(0, 12);
@@ -88,12 +94,17 @@ export function readChips(compiledBrief: unknown): CastingChip[] {
  * client's undo affordance holds the id it just discarded rather than reading
  * it back from a projection.
  *
- * `expired` also returns null, and that omission is a truth claim. An expired
- * candidate is one that arrived after its roll was cancelled: it was
- * delivered, so it was NOT refunded (§H.6), and labelling it
- * `failed-refunded` would tell the user they got their credits back when they
- * did not. There is nothing honest to show for it, so nothing is shown; the
- * roll itself reads as cancelled.
+ * `expired` also returns null, and that omission is now load-bearing in a way
+ * it was not before. An expired candidate arrived after its roll was
+ * cancelled, and under the generosity ruling (2026-07-31) it was refunded —
+ * which is only defensible *because* it is never shown. Project it and
+ * cancelling becomes a way to buy images for nothing. The roll reads as
+ * cancelled; the tile does not exist.
+ *
+ * `cancelled` — the slices that never ran — projects as `failed-refunded`,
+ * and the sheet reads the roll's own `cancelled` status to say so in the
+ * user's own terms rather than blaming us for a failure they chose. The §J
+ * enum stays as ratified; the copy is derived, not a fourth state.
  */
 export function projectCandidateStatus(
   status: CastingCandidate["status"],

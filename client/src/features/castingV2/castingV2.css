@@ -1,0 +1,50 @@
+/*
+  Casting V2 surface styles.
+
+  Only what the shared primitives genuinely do not cover — a refused tile and
+  the shortlist tray. Everything else on these screens is foundation classes and
+  tokens, and anything that starts looking reusable here belongs in
+  foundation.css rather than being copied to the next surface.
+
+  No raw colours: every value is a token, so both themes follow without either
+  screen branching on the theme.
+*/
+
+/*
+  A candidate that did not arrive. Deliberately quiet — a failed tile that
+  shouts turns a refunded slice into an incident, when what the user needs to
+  know is only that this one is gone and the credits came back.
+*/
+.dpc-tile__failed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fill);
+  border-style: dashed;
+  border-color: var(--dashed);
+}
+
+/* The tray: kept candidates, carried across rolls. Small, horizontal, quiet. */
+.dpc-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+
+.dpc-tray__item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  width: 76px;
+}
+
+.dpc-tray__img {
+  display: block;
+  width: 76px;
+  height: 95px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--borderMedia);
+  background: var(--media);
+}

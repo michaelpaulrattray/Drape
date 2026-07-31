@@ -1,0 +1,447 @@
+/**
+ * The CastingIntent: what a sentence means, in a shape code can reason about.
+ *
+ * This module exists because of one measured defect. In M3's A/B the
+ * interpreter was asked for "one vivid, concrete description" and obliged —
+ * inventing a plaid shirt and a mug captioned *"World's Okayest Handyman"*.
+ * Every candidate inherited both, and the mug's text overrode the framing
+ * block's "no text, no logos" rule. Free prose from a language model was being
+ * concatenated into an image prompt, so whatever it said outranked whatever we
+ * said (M3 report §4.2).
+ *
+ * The fix is structural, not a better prompt:
+ *
+ *   1. The interpreter returns **this type**, not prose. Identity facts are
+ *      closed vocabularies — an enum cannot smuggle a mug.
+ *   2. The two free-text fields are capped, labelled, and carry the character,
+ *      never the photograph. They are the honest weak point, and the guarantee
+ *      that covers them is positional: the cohort's framing block is appended
+ *      *last*, with explicit override authority over anything above it.
+ *   3. Anything the model returns that is not in the allowlist is dropped —
+ *      not warned about, not passed through.
+ *
+ * WHAT THIS IS NOT. It is not a security boundary. A hostile brief sabotages
+ * the author's own paid roll and nobody else's; there is no other user's data
+ * on the other side of it. This is a quality control, and it is built to the
+ * standard a quality control deserves rather than the standard an auth check
+ * would.
+ *
+ * Craft consulted (plan §I craft-reference law, obligatory for
+ * compiler-touching milestones): H7 restraint doctrine, H10 nationality
+ * mapping, H11 gender inference, H12 age idioms, H13 vibe ceiling, H14
+ * critical don'ts, H15 precedence, H16 allowlist + clamps, H17 engine's-choice
+ * sentinels, D14 weighted randomizer, C5 signal priority, C6 archetype
+ * fidelity. Adoption is per-item judgment; what was taken and why is noted at
+ * each site.
+ */
+import { z } from "zod";
+
+/* ------------------------------------------------------------ vocabularies */
+
+/**
+ * Age as a band, never a number. Legacy's H12 mapped idioms onto exact ages
+ * ("Mid-forties" → 45), which reads as precision the brief never had. A band
+ * is what "in her 20s" actually says, and the adapter varies *within* it so
+ * eight candidates are not eight thirty-year-olds.
+ */
+export const AGE_BANDS = ["teens", "20s", "30s", "40s", "50s", "60s", "70s+"] as const;
+export type AgeBand = (typeof AGE_BANDS)[number];
+
+/**
+ * H11, kept whole: nothing infers non-binary, an explicit word always wins,
+ * and absence is absence. The interpreter is told the same in prose; this list
+ * is what makes it true regardless.
+ */
+export const SEXES = ["female", "male", "nonbinary"] as const;
+export type Sex = (typeof SEXES)[number];
+
+/**
+ * Heritage, ported from the legacy blend system exactly as the founder ruling
+ * requires (plan line 209) — the ten-value enum including Mediterranean, which
+ * exists because Italian/Spanish/Greek briefs had nowhere else to land (H10).
+ * Structured, so it can be locked when stated and *varied* when it isn't.
+ */
+export const HERITAGES = [
+  "Slavic",
+  "Nordic",
+  "Mediterranean",
+  "East Asian",
+  "South Asian",
+  "Afro-Caribbean",
+  "West African",
+  "Latino",
+  "Middle Eastern",
+  "Polynesian",
+] as const;
+export type Heritage = (typeof HERITAGES)[number];
+
+export const BUILDS = ["slight", "slim", "average", "athletic", "broad", "heavy"] as const;
+export type Build = (typeof BUILDS)[number];
+
+/**
+ * Presence — how this person occupies the frame. Stated energy locks across
+ * the sheet; unstated energy is a prime variation axis (plan line 205).
+ *
+ * These are written as castable direction rather than mood words, because the
+ * image model is literal (A14): "still, composed, minimal movement" renders,
+ * "enigmatic" does not.
+ */
+export const ENERGIES = {
+  warm: "warm and unhurried, relaxed shoulders, easy eye contact",
+  dry: "dry and deadpan, minimal expression, flat gaze",
+  bright: "bright and quick, alert eyes, engaged and awake",
+  grave: "still and serious, composed, minimal movement",
+  open: "open and easy, faint natural smile, unguarded",
+  guarded: "guarded and watchful, held back, reading the room",
+  wry: "wry and faintly amused, one-sided, knowing",
+  plain: "plain and direct, unperformed, straight to the lens",
+} as const;
+export type EnergyKey = keyof typeof ENERGIES;
+export const ENERGY_KEYS = Object.keys(ENERGIES) as EnergyKey[];
+
+/**
+ * Direction archetypes — the shelf (plan line 211, archetype-library ruling).
+ *
+ * Descriptive names, never real houses: the ruling is explicit that brand
+ * names stay internal vocabulary and should migrate to descriptive ones as the
+ * adapter is built, so this shelf starts where legacy was told to end up. Each
+ * entry is a casting thesis plus its anti-pattern, in the C1 style — the
+ * anti-pattern is what stops every entry converging on the same face.
+ */
+export const ARCHETYPES = {
+  "quiet luxury": {
+    thesis:
+      "Understated, expensive-looking bone structure. Groomed but not styled. Reads as money that does not need to announce itself.",
+    avoid: "Do not render as glossy, tanned or overtly glamorous.",
+  },
+  "raw editorial": {
+    thesis:
+      "Unusual, memorable features pushed past average — a strong nose, wide-set eyes, an asymmetric jaw. Interesting before it is pretty.",
+    avoid: "Do not default to gaunt or alien. Distinctive, not damaged.",
+  },
+  "everyday real": {
+    thesis:
+      "A person you would actually meet. Ordinary proportions, real skin, nothing corrected. The face of someone with a job.",
+    avoid: "Do not render as a model with dressed-down styling.",
+  },
+  "clean commercial": {
+    thesis:
+      "Warm, open, immediately likeable. Symmetric enough to read friendly, specific enough to read human.",
+    avoid: "Do not render as bland or generically pretty — pick two features and make them specific.",
+  },
+  "street cast": {
+    thesis:
+      "Found on a pavement, not in an agency. Idiosyncratic hair, real posture, unpolished confidence.",
+    avoid: "Do not render as a costume version of a subculture.",
+  },
+  "athletic build": {
+    thesis:
+      "Physicality visible in the neck, traps and shoulders. Low body fat reads in the face — defined jaw, lean cheeks.",
+    avoid: "Do not render as a bodybuilder unless the brief asks for one.",
+  },
+  "screen presence": {
+    thesis:
+      "The face holds attention while doing nothing. Strong eyes, still features, the stillness of someone used to a lens.",
+    avoid: "Do not render as posed or acted.",
+  },
+} as const;
+export type ArchetypeKey = keyof typeof ARCHETYPES;
+export const ARCHETYPE_KEYS = Object.keys(ARCHETYPES) as ArchetypeKey[];
+
+/** The only cohort M5 compiles. Anything else is refused, not approximated. */
+export const SUPPORTED_COHORTS = ["photoreal_human"] as const;
+export type CohortKey = (typeof SUPPORTED_COHORTS)[number];
+
+/* ------------------------------------------------------------ the intent */
+
+export type HeritageComponent = { heritage: Heritage; pct: number };
+
+/**
+ * One brief, understood.
+ *
+ * **Null means the brief did not say**, and that is the load-bearing
+ * convention this whole design rests on (H7). A null field is not a gap to be
+ * filled with a plausible default — it is creative latitude the adapter turns
+ * into variation between candidates. Legacy states the consequence better than
+ * a comment can: *"Empty fields become creative opportunities for the engine;
+ * wrong fields become user-trust violations."*
+ *
+ * Everything non-null is therefore, by construction, something the user said —
+ * which is what makes `lockFactsOf` below a derivation rather than a guess.
+ */
+export type CastingIntent = {
+  cohort: CohortKey;
+  /**
+   * The archetype in the user's own terms — "a dad in his 30s", "punk
+   * drummer", "wiry cyclist". C6's fidelity gate is why this survives at all:
+   * a named social archetype may never be replaced by a generic type, and if
+   * the sheet would look the same with this phrase deleted, it was not
+   * specific enough.
+   */
+  role: string | null;
+  /** Character-side detail only. Never the photograph, never the scene. */
+  characterNotes: string | null;
+  sex: Sex | null;
+  ageBand: AgeBand | null;
+  heritage: HeritageComponent[];
+  build: Build | null;
+  energy: EnergyKey | null;
+  archetype: ArchetypeKey | null;
+};
+
+export const ROLE_MAX = 80;
+export const NOTES_MAX = 180;
+
+/* --------------------------------------------------------------- scrubbing */
+
+/**
+ * Strip quoted spans from free text.
+ *
+ * Narrow on purpose. A general blocklist over prose is theatre — "a barista
+ * mid-shift" legitimately describes a person and smuggles a café, and no word
+ * list separates those. Quoted text is different: it is the single highest-cost
+ * leak (the image model renders it as *letters in the picture*, which is the
+ * one thing the framing block forbids outright) and it is a precise signal
+ * with almost no legitimate use in a character description.
+ *
+ * This reduces leakage. It does not guarantee absence, and the guarantee that
+ * does the real work is positional — see `composeCandidatePrompt`.
+ */
+export function stripQuotedSpans(value: string): string {
+  return (
+    value
+      // Double quotes only, straight or curly. An apostrophe is not a quote
+      // mark: treating it as one turned `a mug reading "World's Okayest
+      // Handyman"` into `a mug reading s Okayest Handyman"` — the caption
+      // survived and the scrub read as working. Possessives are ordinary
+      // English and this must not touch them.
+      .replace(/["“”][^"“”]{1,80}["“”]/g, " ")
+      // A single-quoted span only counts when the quotes stand alone, which is
+      // what separates 'quoted text' from someone's apostrophe.
+      .replace(/(^|\s)['‘][^'’]{1,80}['’](?=\s|$|[.,;:!?])/g, "$1 ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
+function cleanFreeText(value: unknown, max: number): string | null {
+  if (typeof value !== "string") return null;
+  const scrubbed = stripQuotedSpans(value).slice(0, max).trim();
+  return scrubbed.length > 0 ? scrubbed : null;
+}
+
+/* ---------------------------------------------------------------- parsing */
+
+/**
+ * The wire schema.
+ *
+ * Deliberately permissive about *shape* and ruthless about *content*: models
+ * return `"none"`, `""` and `null` interchangeably for absence, and a schema
+ * that rejects the whole payload over one such field would fail a roll that a
+ * single coercion saves. Unknown keys are stripped rather than refused for the
+ * same reason — a hallucinated `wardrobe` field must not reach the prompt, but
+ * it also must not cost the user their sheet.
+ */
+const nullableEnum = <T extends readonly [string, ...string[]]>(values: T) =>
+  z
+    .union([z.enum(values), z.string(), z.null()])
+    .optional()
+    .transform((value) => {
+      if (typeof value !== "string") return null;
+      const match = values.find((option) => option.toLowerCase() === value.trim().toLowerCase());
+      return (match as T[number] | undefined) ?? null;
+    });
+
+const wireSchema = z.object({
+  cohort: z.string().optional(),
+  role: z.unknown().optional(),
+  characterNotes: z.unknown().optional(),
+  sex: nullableEnum(SEXES),
+  ageBand: nullableEnum(AGE_BANDS),
+  build: nullableEnum(BUILDS),
+  energy: nullableEnum(ENERGY_KEYS as unknown as readonly [string, ...string[]]),
+  archetype: nullableEnum(ARCHETYPE_KEYS as unknown as readonly [string, ...string[]]),
+  heritage: z
+    .array(
+      z.object({
+        heritage: z.string(),
+        pct: z.union([z.number(), z.string()]).optional(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * Heritage blend: at most two components, percentages clamped and normalized.
+ *
+ * The two-component cap is legacy's (the engine could not hold more than two
+ * coherently, and neither can this one). Normalization matters because a model
+ * asked for percentages will happily return 60/60.
+ */
+function parseHeritage(raw: unknown): HeritageComponent[] {
+  if (!Array.isArray(raw)) return [];
+  const components: HeritageComponent[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const name = (entry as { heritage?: unknown }).heritage;
+    if (typeof name !== "string") continue;
+    const match = HERITAGES.find((option) => option.toLowerCase() === name.trim().toLowerCase());
+    if (!match) continue;
+    if (components.some((component) => component.heritage === match)) continue;
+    const rawPct = Number((entry as { pct?: unknown }).pct);
+    components.push({
+      heritage: match,
+      pct: Number.isFinite(rawPct) ? Math.min(100, Math.max(0, Math.round(rawPct))) : 100,
+    });
+    if (components.length === 2) break;
+  }
+  if (components.length === 0) return [];
+  if (components.length === 1) return [{ ...components[0], pct: 100 }];
+
+  const total = components[0].pct + components[1].pct;
+  if (total <= 0) return components.map((component) => ({ ...component, pct: 50 }));
+  const first = Math.round((components[0].pct / total) * 100);
+  return [
+    { ...components[0], pct: first },
+    { ...components[1], pct: 100 - first },
+  ];
+}
+
+export type IntentParseResult =
+  | { ok: true; intent: CastingIntent }
+  | { ok: false; reason: "unreadable" | "unsupported_cohort" };
+
+/**
+ * Turn whatever came back into an intent, or say why not.
+ *
+ * Never throws on model output. The caller's fallback path is the answer to a
+ * bad response, and an exception here would turn a recoverable interpreter
+ * wobble into a failed roll.
+ */
+export function parseCastingIntent(raw: unknown): IntentParseResult {
+  let payload = raw;
+  if (typeof raw === "string") {
+    try {
+      // Fenced JSON is common enough to be worth one unwrap (H22's lesson,
+      // one stage rather than three — this transport asks for json_object).
+      payload = JSON.parse(raw.replace(/^\s*```(?:json)?|```\s*$/g, "").trim());
+    } catch {
+      return { ok: false, reason: "unreadable" };
+    }
+  }
+
+  const parsed = wireSchema.safeParse(payload);
+  if (!parsed.success) return { ok: false, reason: "unreadable" };
+  const wire = parsed.data;
+
+  const cohort = typeof wire.cohort === "string" ? wire.cohort.trim().toLowerCase() : "photoreal_human";
+  if (!SUPPORTED_COHORTS.includes(cohort as CohortKey)) {
+    // Honest capability: a certified adapter exists for one cohort, so an
+    // anime brief is refused for free rather than rendered as a photograph of
+    // someone vaguely anime-adjacent.
+    return { ok: false, reason: "unsupported_cohort" };
+  }
+
+  return {
+    ok: true,
+    intent: {
+      cohort: cohort as CohortKey,
+      role: cleanFreeText(wire.role, ROLE_MAX),
+      characterNotes: cleanFreeText(wire.characterNotes, NOTES_MAX),
+      sex: wire.sex as Sex | null,
+      ageBand: wire.ageBand as AgeBand | null,
+      heritage: parseHeritage(wire.heritage),
+      build: wire.build as Build | null,
+      energy: wire.energy as EnergyKey | null,
+      archetype: wire.archetype as ArchetypeKey | null,
+    },
+  };
+}
+
+/* ------------------------------------------------------------- lock facts */
+
+/**
+ * The facts the brief pinned.
+ *
+ * Derived, not declared — a field is locked exactly when the interpreter left
+ * it non-null, which under the restraint doctrine means the brief said it.
+ * One rule, no second channel to disagree with the first.
+ *
+ * `role` is deliberately absent: it is prose, and a lock has to be
+ * comparable. C6's archetype fidelity is enforced by keeping the phrase in
+ * every candidate's prompt, not by asserting a string appears in an image.
+ */
+export type LockFacts = {
+  sex?: Sex;
+  ageBand?: AgeBand;
+  heritage?: HeritageComponent[];
+  build?: Build;
+  energy?: EnergyKey;
+};
+
+export function lockFactsOf(intent: CastingIntent): LockFacts {
+  return {
+    ...(intent.sex ? { sex: intent.sex } : {}),
+    ...(intent.ageBand ? { ageBand: intent.ageBand } : {}),
+    ...(intent.heritage.length > 0 ? { heritage: intent.heritage } : {}),
+    ...(intent.build ? { build: intent.build } : {}),
+    ...(intent.energy ? { energy: intent.energy } : {}),
+  };
+}
+
+/**
+ * What a single candidate actually resolved to, after the adapter varied
+ * everything the brief left open. Structured for exactly one reason: so the
+ * validator below compares values instead of hunting for words in a prompt.
+ */
+export type ResolvedIdentity = {
+  sex: Sex;
+  ageBand: AgeBand;
+  heritage: HeritageComponent[];
+  build: Build;
+  energy: EnergyKey;
+};
+
+export type LockViolation = {
+  field: keyof LockFacts;
+  expected: string;
+  got: string;
+};
+
+/**
+ * Does this candidate still honour what the user pinned?
+ *
+ * The check that Path B does not ship without. M3's A/B measured 10.9%
+ * treatment-level lock violations — a brief saying "her" came back male in 7
+ * of 8 treatments — and the plan makes the validator the unlock condition
+ * rather than a companion (M3 addendum, condition 2).
+ *
+ * Under Path A this is a contract test: the adapter composes from the locks,
+ * so a violation means the adapter is broken, and finding that in CI is the
+ * point. Under Path B it becomes a runtime gate — a violating treatment is
+ * dropped and the roll falls back to Path A rather than putting a male cyclist
+ * on a sheet that asked for her.
+ */
+export function validateLocks(locks: LockFacts, resolved: ResolvedIdentity): LockViolation[] {
+  const violations: LockViolation[] = [];
+
+  if (locks.sex && locks.sex !== resolved.sex) {
+    violations.push({ field: "sex", expected: locks.sex, got: resolved.sex });
+  }
+  if (locks.ageBand && locks.ageBand !== resolved.ageBand) {
+    violations.push({ field: "ageBand", expected: locks.ageBand, got: resolved.ageBand });
+  }
+  if (locks.build && locks.build !== resolved.build) {
+    violations.push({ field: "build", expected: locks.build, got: resolved.build });
+  }
+  if (locks.energy && locks.energy !== resolved.energy) {
+    violations.push({ field: "energy", expected: locks.energy, got: resolved.energy });
+  }
+  if (locks.heritage && locks.heritage.length > 0) {
+    const expected = locks.heritage.map((component) => component.heritage).sort().join("+");
+    const got = resolved.heritage.map((component) => component.heritage).sort().join("+");
+    if (expected !== got) violations.push({ field: "heritage", expected, got });
+  }
+
+  return violations;
+}

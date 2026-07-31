@@ -165,6 +165,19 @@
 
 .dp-rail__item[aria-current="page"] svg { color: var(--ink); }
 
+/*
+  Destinations that exist on the map but not yet in the product (F1). Quiet,
+  not struck through or badged: the rail's job here is to be a stable shape,
+  and an item shouting about its own absence is louder than the places that
+  actually work.
+*/
+.dp-rail__item--stub {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.dp-rail__item--stub:hover { background: transparent; }
+
 .dp-rail__foot {
   margin-top: auto;
   display: flex;
@@ -518,6 +531,18 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 }
 
 .dp-chip--derived:hover { background: var(--accentWashHover); }
+
+/*
+  A chip that states rather than acts — the brief's own words on the sheet.
+  Not a button, so it must not offer a button's hover: a control that previews
+  the accent and then does nothing is a dead control.
+*/
+.dp-chip--static {
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+  color: var(--metaStrong);
+}
 
 .dp-scopepill {
   padding: 7px var(--s-5);

@@ -58,6 +58,7 @@ import {
   cancelQueuedCandidate,
   createRollWithCandidates,
   failCandidate,
+  getOwnedReadyCandidate,
   getOwnedRoll,
   getRollByOperation,
   landCandidate,
@@ -72,14 +73,41 @@ import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
   BriefRefusal,
-  deterministicBriefCompiler,
+  castingBriefCompiler,
   type BriefCompiler,
   type CompiledRollBrief,
+  type UnlockableField,
 } from "./briefCompiler";
+import type { ResolvedIdentity } from "./castingIntent";
 import { admitRoll, castingCreativeEngine, type AdmissionDecision } from "./rollEngine";
-import { candidateChargeReference } from "./rollRecovery";
+import { candidateChargeReference, candidateUnseenChargeReference } from "./rollRecovery";
 
 const log = createModuleLogger("castingV2/rollService");
+
+/**
+ * The parent's resolved identity, read back out of its stored internal prompt.
+ *
+ * Validated rather than trusted, like every other read of a json column: the
+ * shape is written by this service today, but a column that is parsed as
+ * whatever it happens to contain is one migration away from being an injection
+ * path into the next roll's prompt.
+ */
+function readResolvedIdentity(internalPrompt: unknown): ResolvedIdentity | null {
+  if (!internalPrompt || typeof internalPrompt !== "object") return null;
+  const resolved = (internalPrompt as { resolved?: unknown }).resolved;
+  if (!resolved || typeof resolved !== "object") return null;
+  const candidate = resolved as Record<string, unknown>;
+  if (
+    typeof candidate.sex !== "string"
+    || typeof candidate.ageBand !== "string"
+    || typeof candidate.build !== "string"
+    || typeof candidate.energy !== "string"
+    || !Array.isArray(candidate.heritage)
+  ) {
+    return null;
+  }
+  return resolved as ResolvedIdentity;
+}
 
 /** Objects live under one namespace so cleanup and audit can find them. */
 const CANDIDATE_KEY_PREFIX = "casting-v2/candidates";
@@ -99,6 +127,12 @@ export type CreateRollInput = {
   clientRequestId: string;
   sessionPublicId: string;
   briefText: string;
+  /**
+   * Facts the user unpinned by removing a chip. Rolls are immutable, so this
+   * can only ever affect the roll being created — never the one the chip was
+   * shown on.
+   */
+  unlock?: readonly UnlockableField[];
   /** Follow lineage: a `ready` candidate of this user, in this session. */
   followCandidatePublicId?: string | null;
 };
@@ -152,7 +186,7 @@ export async function createRoll(
   dependencies: RollServiceDependencies,
   input: CreateRollInput,
 ): Promise<RollResult> {
-  const compile = dependencies.compileBrief ?? deterministicBriefCompiler;
+  const compile = dependencies.compileBrief ?? castingBriefCompiler;
   const admit = dependencies.admit ?? admitRoll;
   const candidateCount = CASTING_V2_COSTS.rollCandidateCount;
   const price = CASTING_V2_COSTS.rollCandidate * candidateCount;
@@ -172,12 +206,36 @@ export async function createRoll(
     });
   }
 
+  /*
+    A follow roll is "more faces like this one", so the parent has to be in
+    hand before compilation — otherwise following a candidate produces eight
+    strangers and the lineage pill is a label on nothing. Read owner-scoped;
+    the authoritative lineage link is still re-resolved inside the roll
+    transaction (invariant 2), so this read cannot launder a foreign id.
+  */
+  let followPersonaLine: string | null = null;
+  let followIdentity: ResolvedIdentity | null = null;
+  if (input.followCandidatePublicId) {
+    const parent = await getOwnedReadyCandidate(input.userId, input.followCandidatePublicId);
+    if (!parent) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
+    }
+    followPersonaLine = parent.personaLine;
+    followIdentity = readResolvedIdentity(parent.internalPrompt);
+  }
+
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
       briefText: input.briefText,
       candidateCount,
-      followPersonaLine: null,
+      // The client request id: a replay recompiles to the identical sheet,
+      // while a genuine second roll of the same sentence casts eight new
+      // people. Idempotency and variety from one value.
+      rollSeed: input.clientRequestId,
+      unlock: input.unlock ?? [],
+      followPersonaLine,
+      followIdentity,
     });
   } catch (error) {
     if (error instanceof BriefRefusal) {
@@ -238,7 +296,10 @@ export async function createRoll(
         publicId: randomUUID(),
         position: spec.position,
         personaLine: spec.personaLine,
-        internalPrompt: { prompt: spec.prompt },
+        // The resolved identity rides along with the prompt: it is what a
+        // follow roll conditions on, and what a later validator compares
+        // against. Internal, like everything in this column (§J).
+        internalPrompt: { prompt: spec.prompt, resolved: spec.resolvedIdentity },
       })),
     });
   } catch (error) {
@@ -501,16 +562,44 @@ async function dispatchCandidate(input: {
 
     if (landing === "expired") {
       /*
-        The roll was cancelled while this was in flight. §F and §H.6 are
-        explicit: work that was delivered is never refunded, and an in-flight
-        candidate runs to completion and is marked expired on landing. The
-        user cancelled after we had already paid the provider for this one.
+        The roll was cancelled while this was in flight. It ran to completion
+        because an in-flight candidate always does, and it landed into a
+        cancelled roll — so it will never be projected, and nobody will ever
+        see it.
+
+        The late-landing generosity ruling (founder, 2026-07-31) says we give
+        the credits back anyway. The provider cost is real and we absorb it;
+        what the user is owed is decided by what reached them, and the promise
+        is *cancel refunds everything you haven't seen*. The refund carries its
+        own reference so the ledger can separate absorbed COGS from failures.
+
+        No abuse vector: `projectCandidate` returns null for `expired`, so
+        cancelling cannot buy anyone a free image.
+
+        The window between the landing CAS and this refund is the same one the
+        failure path below lives with — a crash inside it leaves the slice
+        unrefunded, and the recovery sweep cannot pick it up because `expired`
+        is also written by the 7-day retention sweep over work the user did
+        receive. Stated rather than hidden; closing it needs a status that
+        distinguishes the two, which is a migration this milestone does not
+        need to make.
       */
-      log.info(
-        { operationId, candidate: candidate.publicId },
-        "[rollService] candidate landed after cancel — kept as expired, not refunded",
+      if (candidate.pointsCost <= 0) return { outcome: "expired", refundedCredits: 0 };
+      const refund = await recordRefund(
+        userId,
+        candidate.pointsCost,
+        "Cancelled before you saw it",
+        candidateUnseenChargeReference(operationId, candidate.publicId),
       );
-      return { outcome: "expired", refundedCredits: 0 };
+      log.info(
+        { operationId, candidate: candidate.publicId, recorded: refund.recorded },
+        "[rollService] candidate landed unseen after cancel — refunded under the generosity rule",
+      );
+      return {
+        outcome: "expired",
+        refundedCredits: refund.recorded ? refund.amount : 0,
+        refundUnrecorded: !refund.recorded,
+      };
     }
     if (landing === "lost") {
       /*

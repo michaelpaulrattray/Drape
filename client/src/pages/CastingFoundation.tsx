@@ -24,17 +24,19 @@ import {
 } from "@/foundation";
 
 /**
- * M1 foundation surface, mounted on the unlinked `/casting` route.
+ * The primitive gallery, on the unlinked `/casting/foundation` route.
  *
  * This is the shell's proving ground, not the product: it renders every
- * primitive M1 ships so the light/dark screenshot drive
+ * primitive the foundation ships so the light/dark screenshot drive
  * (scripts/drive-foundation-theme-parity.mts) has one page to compare, and so
  * the founder can eyeball the system against the living reference
  * (docs/specs/Casting-ui-ux-design/drape-foundation/Drape Foundation.dc.html).
  *
- * M5 replaces this body with the real roster brief screen. Nothing here calls
- * the API, spends a credit, or claims a capability the product does not have —
- * the copy describes the foundation itself.
+ * M5 took `/casting` for the real product and left this page its own address
+ * rather than deleting it — theme parity is easier to check on one page that
+ * exercises everything than across the surfaces that each use a little.
+ * Nothing here calls the API, spends a credit, or claims a capability the
+ * product does not have; the copy describes the foundation itself.
  */
 export default function CastingFoundation() {
   return (
