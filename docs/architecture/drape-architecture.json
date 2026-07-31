@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cab2303783ed0df6"
+    "sourceFingerprint": "03840daf2b790302"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 12
+      "moduleCount": 13
     },
     {
       "id": "domain:castingV2",
@@ -3113,6 +3113,12 @@
     {
       "id": "module:server/castingV2/cohortPhotorealHuman.ts",
       "path": "server/castingV2/cohortPhotorealHuman.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/heritagePromotion.ts",
+      "path": "server/castingV2/heritagePromotion.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7619,6 +7625,10 @@
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
       "path": "server/castingV2/followAnchor.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/heritagePromotion.test.ts",
+      "path": "server/castingV2/heritagePromotion.test.ts"
     },
     {
       "id": "test:server/castingV2/likenessRefusal.test.ts",
@@ -15755,6 +15765,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/heritagePromotion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/interpreter.ts",
       "kind": "imports"
     },
@@ -15805,6 +15820,11 @@
     },
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/heritagePromotion.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },

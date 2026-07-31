@@ -60,6 +60,7 @@ import {
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
 import { scrubBrands } from "./brandScrub";
+import { promoteStatedHeritage } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
 
 const log = createModuleLogger("castingV2/briefCompiler");
@@ -423,6 +424,12 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   }
 
   const interpreted = outcome.ok ? outcome.intent : fallbackIntent(briefText);
+  /*
+    Repair a heritage the interpreter stated in prose but left out of the lock.
+    Runs before everything else so unlocks and overrides still outrank it.
+  */
+  const recovered = promoteStatedHeritage(interpreted, briefText);
+
   const anchor = anchorFrom(input.followIdentity ?? null);
   /*
     Sex is the only inherited fact that becomes a lock, because it is the only
@@ -430,7 +437,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     it and the echo can say it; every other inherited trait rides the anchor.
   */
   const inherited: CastingIntent =
-    anchor && !interpreted.sex ? { ...interpreted, sex: anchor.sex } : interpreted;
+    anchor && !recovered.sex ? { ...recovered, sex: anchor.sex } : recovered;
   const adjusted = applyOverrides(applyUnlocks(inherited, input.unlock ?? []), input.overrides);
   /*
     Brand names never reach the image engine (founder gate 21). The two
