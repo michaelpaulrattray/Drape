@@ -1,6 +1,7 @@
 import type { ResolvedIdentity } from "./castingIntent";
 import type { HairStyle, WornState } from "../../shared/castingRealization";
 import { TEXTURE_BY_HERITAGE, TEXTURE_DEFAULT, stylesFor, wornStatesFor } from "./hairStyles";
+import { applyTasteWrite, type TasteWrite } from "./axisRegistry";
 
 /**
  * The sheet variance budget — a paid sheet where the pick doesn't matter
@@ -250,7 +251,17 @@ function applyRung(
       hairStyle: cut,
       // The cut carries its own worn state and texture when it declares them.
       ...(cut.worn ? { wornState: cut.worn } : {}),
-      ...(cut.texture ? { hairTexture: cut.texture } : {}),
+      /*
+        A shaved cut has no grain, so a release onto one drops the texture it
+        was carrying rather than stranding a wave on a scalp. Otherwise the
+        cut's own dictation wins, and a texture-agnostic cut keeps what it had —
+        the release is spending variance on the CUT here, not on the grain.
+      */
+      ...(cut.family === "shaved"
+        ? { hairTexture: null }
+        : cut.texture
+          ? { hairTexture: cut.texture }
+          : {}),
     });
   });
 }
@@ -268,11 +279,17 @@ function firstFreeing<T>(
   return null;
 }
 
-function withRealized(
-  identity: ResolvedIdentity,
-  change: Record<string, unknown>,
-): ResolvedIdentity {
-  return { ...identity, realized: { ...identity.realized, ...change } } as ResolvedIdentity;
+/**
+ * Routed through the registry's write surface rather than spreading in place.
+ *
+ * The release ladder is the third writer of the cut, after resolution and the
+ * sheet taste pass, and a bare spread here is what let `hair.family` drift back
+ * out of step with `hairStyle.family` after D-87's first repair. Going through
+ * `applyTasteWrite` means the mirror is maintained for this writer the same way
+ * it is for the other one, without this module knowing the mirror exists.
+ */
+function withRealized(identity: ResolvedIdentity, change: TasteWrite): ResolvedIdentity {
+  return applyTasteWrite(identity as never, change) as ResolvedIdentity;
 }
 
 /** Other cuts this face could plausibly walk in with — never cross-list. */

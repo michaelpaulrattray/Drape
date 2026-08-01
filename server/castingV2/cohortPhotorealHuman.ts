@@ -41,6 +41,7 @@ import {
   HAIR_COLOUR_WEIGHTS,
   resolveModifiers,
   describeModifiers,
+  resolveTexture,
   resolveWornState,
   describeWornState,
   statedFinish,
@@ -513,22 +514,30 @@ const GREY_CHANCE: Record<AgeBand, number> = {
   "70s+": 74,
 };
 
-const HAIR_FAMILY_WEIGHTS: readonly (readonly [HairFamily, number])[] = [
-  ["shaved", 5],
-  ["cropped", 14],
-  ["short", 24],
-  ["mid-length", 26],
-  ["long", 24],
-  ["coiled", 7],
-];
-
-function varyHair(
+/**
+ * The COLOUR only — and the silhouette that used to be drawn here is D-87.
+ *
+ * `Hair` carried a `family` alongside its colour, drawn from its own weighted
+ * list, before named cuts existed. When `hairStyle` landed it brought its own
+ * family, coherent with the cut by construction, and that is the one the
+ * composer reads. The old draw was never removed, so every candidate persisted
+ * a SECOND silhouette that nothing composed and that routinely contradicted the
+ * first: real sheets carried `hairStyle: buzz cut / shaved` beside
+ * `hair: { family: "long" }`, a record claiming a person has long hair and a
+ * buzz cut at once. A follow then inherited the inert one.
+ *
+ * Found by the M7 axis sweep's own reasoning — persisted, never composed —
+ * before the sweep existed, and logged as D-87 rather than folded in silently.
+ *
+ * So the family is no longer drawn. It is DERIVED from the cut at assembly, and
+ * the two can no longer disagree because there is only one of them.
+ */
+function varyHairColour(
   heritage: HeritageComponent[],
   ageBand: AgeBand,
   position: number,
   rollSeed: string,
-): Hair {
-  const family = weightedPick(HAIR_FAMILY_WEIGHTS, hash(`${rollSeed}:hairFamily:${position}`));
+): HairColour {
   const primary = heritage[0]?.heritage ?? "";
   const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
   let colour = weightedPick(palette, hash(`${rollSeed}:hairColour:${position}`));
@@ -539,7 +548,19 @@ function varyHair(
     // oldest bands, where it is common rather than remarkable.
     colour = ageBand === "70s+" && greyRoll < GREY_CHANCE[ageBand] / 2 ? "white" : "grey";
   }
-  return { family, colour };
+  return colour;
+}
+
+/**
+ * Assemble the hair record from the colour and the cut that actually composed.
+ *
+ * One place, so the family cannot be sourced from anywhere but the cut. The
+ * fallback chain only runs when there is no cut at all — a follow of a
+ * candidate whose hair the brief had stated, where deference blanked the style
+ * — and in that case the record is about to be blanked anyway.
+ */
+function hairRecord(colour: HairColour, style: HairStyle | null, anchor: FollowAnchor | null): Hair {
+  return { family: style?.family ?? anchor?.hair?.family ?? "mid-length", colour };
 }
 
 /**
@@ -646,15 +667,15 @@ function anchoredLook(anchor: FollowAnchor, position: number, rollSeed: string):
   return LOOK_KEYS[(index + step) % LOOK_KEYS.length] as LookKey;
 }
 
-/** Hair in a follow: the family and colour carry; everything else stays free. */
-function anchoredHair(
+/** Hair colour in a follow: it holds on all eight — colour is the family signal. */
+function anchoredHairColour(
   anchor: FollowAnchor,
   heritage: HeritageComponent[],
   ageBand: AgeBand,
   position: number,
   rollSeed: string,
-): Hair | null {
-  return anchor.hair ?? varyHair(heritage, ageBand, position, rollSeed);
+): HairColour {
+  return anchor.hair?.colour ?? varyHairColour(heritage, ageBand, position, rollSeed);
 }
 
 /**
@@ -724,14 +745,14 @@ function anchoredRealized(
       - the cut held — so does its texture. This is a follow.
   */
   const drifted = cut !== held.hairStyle;
-  const texture =
-    cut?.texture
-    ?? (drifted
-      ? weightedPick(
-          TEXTURE_BY_HERITAGE[heritage[0]?.heritage ?? ""] ?? TEXTURE_DEFAULT,
-          hash(`${rollSeed}:hairTextureDrift:${position}`),
-        )
-      : held.hairTexture);
+  /*
+    A drift re-resolves through the owning helper rather than re-picking here,
+    so the shaved-has-no-grain rule holds on a follow too. Holding still keeps
+    the parent's texture, which is the point of a follow.
+  */
+  const texture = drifted
+    ? resolveTexture(cut, heritage[0]?.heritage ?? "", hash(`${rollSeed}:hairTextureDrift:${position}`))
+    : cut?.texture ?? held.hairTexture;
 
   const facialHair =
     sex === "male" && driftsAt(position, rollSeed, "beardDrift", boost)
@@ -888,6 +909,26 @@ export function resolveCandidateIdentity(
   const sexCoded = !intent.sex && !anchor?.sex && briefStatesSexCodedFacialHair(intent.role, intent.characterNotes);
   const sex = intent.sex ?? anchor?.sex ?? (sexCoded ? "male" : varySex(position, rollSeed));
 
+  /*
+    THE CUT IS RESOLVED BEFORE THE HAIR RECORD, and the order is the D-87 fix.
+
+    Both used to be assembled in the same object literal, independently: the
+    realized cut drew its own family and `varyHair` drew another, so a candidate
+    could persist "buzz cut" beside "long". Deriving the record from the cut is
+    only possible if the cut exists first, so it is lifted out of the literal.
+
+    Drifted BEFORE composition, so the persisted `resolvedIdentity` matches the
+    prompt that was actually sent. A record that disagrees with its own prompt
+    is the failure the registry reads as sole truth and can never re-derive.
+  */
+  const realized =
+    (anchor ? anchoredRealized(anchor, sex, heritage, ageBand, position, rollSeed, driftBoost) : null)
+    ?? realizeAxes({ heritage, ageBand, sex, position, rollSeed });
+
+  const hairColour = anchor
+    ? anchoredHairColour(anchor, heritage, ageBand, position, rollSeed)
+    : varyHairColour(heritage, ageBand, position, rollSeed);
+
   return {
     sex,
     ageBand,
@@ -909,18 +950,10 @@ export function resolveCandidateIdentity(
       Hair carries on a follow and varies otherwise. Conditioned on the
       resolved heritage rather than the brief's, so a candidate who varied into
       a different heritage gets hair that belongs to the face they actually
-      have.
+      have — and its silhouette comes from the cut, never from a second draw.
     */
-    hair: anchor ? anchoredHair(anchor, heritage, ageBand, position, rollSeed) : varyHair(heritage, ageBand, position, rollSeed),
-    /*
-      Drifted BEFORE composition, so the persisted `resolvedIdentity` matches
-      the prompt that was actually sent. A record that disagrees with its own
-      prompt is the failure M7's registry inherits — it reads this as sole
-      truth and can never re-derive it.
-    */
-    realized:
-      (anchor ? anchoredRealized(anchor, sex, heritage, ageBand, position, rollSeed, driftBoost) : null)
-      ?? realizeAxes({ heritage, ageBand, sex, position, rollSeed }),
+    hair: hairRecord(hairColour, realized.hairStyle, anchor),
+    realized,
     /*
       Energy is the one axis that cycles rather than samples: eight candidates
       against eight energies gives one of each, which is the most legible
@@ -1301,8 +1334,17 @@ function describeHair(
   modifiers: HairModifiers | null = null,
   wornState: WornState | null = null,
 ): string {
-  // Nothing authored survives suppression; the record says so too.
-  if (!style || texture === null) return "";
+  /*
+    Nothing authored survives suppression; the record says so too.
+
+    The test is the CUT, not the texture. Those used to be one condition, and
+    separating them is what lets a shaved head stop claiming a grain: its
+    texture is legitimately null now (`resolveTexture`), and the old guard would
+    have read that as deference and deleted the whole hair line — turning a
+    record fix into a silent loss of the one sentence that says the head is
+    shaved at all.
+  */
+  if (!style) return "";
   /*
     The brief owns hair the moment it mentions it. Saying nothing here is the
     whole fix: the user's words are already in the prompt, and adding a second,
@@ -1368,8 +1410,14 @@ function describeHair(
       how the hair GROWS is not a styling instruction that competes with the
       casting the user asked for.
     */
+    /*
+      A shaved silhouette has no grain to name, and now says so by omission
+      rather than by rendering the word "null" into a paid prompt. Every other
+      family always resolves one.
+    */
     const grain = style.texture ?? texture;
-    return ` ${line}${worn} Naturally ${grain}. Natural colour: ${hair.colour}.`;
+    const naturally = grain ? ` Naturally ${grain}.` : "";
+    return ` ${line}${worn}${naturally} Natural colour: ${hair.colour}.`;
   }
   /*
     The named cut, not the silhouette.
@@ -1391,10 +1439,16 @@ function describeHair(
     "a black curly curly crop" came out of the first live sheet — the kind of
     thing that reads as a typo to a model and gets weighted like an emphasis.
   */
+  /*
+    A shaved cut names no grain (its own branch below says colour alone), so the
+    description falls back to colour + name rather than splicing a null into the
+    middle of the sentence.
+  */
   const grain = style.texture ?? texture;
-  const description = style.name.includes(grain)
-    ? `${hair.colour} ${style.name}`
-    : `${hair.colour} ${grain} ${style.name}`;
+  const description =
+    grain === null || style.name.includes(grain)
+      ? `${hair.colour} ${style.name}`
+      : `${hair.colour} ${grain} ${style.name}`;
   const plural = PLURAL_STYLES.has(style.name);
   const article = plural ? "" : /^[aeiou]/.test(description) ? "an " : "a ";
   /*

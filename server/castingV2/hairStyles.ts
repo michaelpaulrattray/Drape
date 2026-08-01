@@ -197,6 +197,37 @@ export const TEXTURE_DEFAULT: readonly (readonly [HairTexture, number])[] = [
   ["straight", 42], ["wavy", 34], ["curly", 18], ["coiled", 6],
 ];
 
+/**
+ * The texture of this cut, or null when the cut has none to show.
+ *
+ * **A shaved head has no grain.** The composer already knew that — its shaved
+ * branch says "a buzz cut, dark brown where it is grown out" and stops — but
+ * the axis kept resolving a texture anyway, so about three candidates in a
+ * hundred carried a persisted wave that no prompt asked for and no image would
+ * ever wear. Found by the M7 axis sweep, which is exactly the record-that-lies
+ * shape it was built to find.
+ *
+ * This exists as ONE function for the reason the whole registry exists: the
+ * rule had to hold at three sites — first resolution, the taste pass's re-pick
+ * after a cut swaps, and a follow's drift — and a rule repeated at three sites
+ * is a rule that will hold at two of them. `resolveWornState` above already
+ * returns null for the families that cannot wear one; texture now answers the
+ * same question the same way.
+ *
+ * A cut that dictates its own texture still wins (locs are coiled by
+ * definition), which is the legality-by-construction rule untouched.
+ */
+export function resolveTexture(
+  style: HairStyle | null,
+  heritage: string,
+  seed: number,
+): HairTexture | null {
+  if (!style) return null;
+  if (style.texture) return style.texture;
+  if (style.family === "shaved") return null;
+  return weightedPick(TEXTURE_BY_HERITAGE[heritage] ?? TEXTURE_DEFAULT, seed);
+}
+
 /* --------------------------------------------------------------- colour */
 
 /**

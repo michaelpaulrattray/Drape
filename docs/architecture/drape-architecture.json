@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a9f0a422dcb702b5"
+    "sourceFingerprint": "9bcb1837d242b0f1"
   },
   "domains": [
     {
@@ -16351,6 +16351,11 @@
     {
       "from": "module:server/castingV2/stylingResolution.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/varianceBudget.ts",
+      "to": "module:server/castingV2/axisRegistry.ts",
       "kind": "imports"
     },
     {

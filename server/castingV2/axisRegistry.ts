@@ -266,6 +266,24 @@ export function applyTasteWrite<T extends TasteTarget>(candidate: T, write: Tast
     (realized as Record<string, unknown>)[key] = write[key];
   }
 
+  /*
+    THE SILHOUETTE FOLLOWS THE CUT — D-87's other half, and the reason this is
+    a helper rather than a spread at each call site.
+
+    `hair.family` is a denormalized mirror of the cut's family. It used to be an
+    independent draw, which is how a candidate came to persist "buzz cut" beside
+    "long". Deriving it once at resolution fixed the draw and did NOT fix the
+    divergence, because two more writers change the cut afterwards: the sheet
+    taste pass swapping a style, and the variance budget's adjacent-cut rung.
+    Each of them would have had to remember, which is the discipline invariant
+    this whole milestone exists to delete.
+
+    So the mirror is maintained HERE, by the one surface every non-resolution
+    write goes through. A rule says which cut it chose; it never has to know
+    that a second field shadows it.
+  */
+  if (write.hairStyle && hair) hair = { ...hair, family: write.hairStyle.family };
+
   return { ...candidate, hair, realized };
 }
 

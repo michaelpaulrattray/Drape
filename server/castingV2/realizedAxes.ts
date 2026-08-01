@@ -17,6 +17,7 @@ import {
 } from "./heritageNeighbourhoods";
 import {
   resolveModifiers,
+  resolveTexture,
   resolveWornState,
   DEFAULT_HAIR_COLOURS,
   HAIR_COLOUR_WEIGHTS,
@@ -305,10 +306,11 @@ export function realizeAxes(input: {
       and a "straight locs" pairing is exactly the kind of impossible
       combination legacy needed a legality matrix (D11) to prevent — here the
       style entry carries the answer and the axis defers to it.
+
+      Null on a shaved cut, because a shaved head has no grain to show and the
+      composer never says one. See `resolveTexture`.
     */
-    hairTexture:
-      hairStyle.texture ??
-      weightedPick(TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT, seedFor("hairTexture")),
+    hairTexture: resolveTexture(hairStyle, primary, seedFor("hairTexture")),
     browStyle: weightedPick(BROW_BY_SEX[sex], seedFor("browStyle")),
     skinCharacter: weightedPick(skinWeights(primary, ageBand), seedFor("skinCharacter")),
   };
@@ -719,12 +721,7 @@ export function applySheetTaste<T extends SheetCandidate>(
         entry-level legality rule exists to make unsayable, reintroduced by a
         spread that looks like it is copying something safe.
       */
-      write.hairTexture =
-        style.texture ??
-        weightedPick(
-          TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
-          hash(`${rollSeed}:hairTexture:${position}`),
-        );
+      write.hairTexture = resolveTexture(style, primary, hash(`${rollSeed}:hairTexture:${position}`));
       write.hairModifiers = resolveModifiers(style, (axis) => hash(`${rollSeed}:${axis}:${position}`));
       write.wornState = resolveWornState(style.family, style, hash(`${rollSeed}:wornState:${position}`));
     }

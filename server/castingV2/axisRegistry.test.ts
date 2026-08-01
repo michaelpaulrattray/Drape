@@ -424,36 +424,72 @@ describe("the unowned-axis sweep", () => {
     expect(sheets).toBe(120);
 
     /*
-      THE ONE KNOWN GAP, pinned rather than excused.
+      ZERO, and it was not zero when this was written.
 
-      A shaved-family cut persists a `hairTexture` that the prompt never
-      carries: the composer's shaved branch says "a buzz cut, dark brown where
-      it is grown out" and stops, because a shaved head has no grain to show.
-      The record then claims a wave nobody asked for and no image will ever
-      wear — the record-that-lies shape, at about 3% of candidates.
+      The wide draw found thirty real hits on its first run: a shaved-family cut
+      persisted a `hairTexture` the prompt never carried, because the composer's
+      shaved branch says "a buzz cut, dark brown where it is grown out" and
+      stops — a shaved head has no grain to show. About three candidates in a
+      hundred wore a wave no image would ever have.
 
-      It is NOT silenced into the registry as a fake exemption, and it is not
-      quietly repaired inside the refactor either: slice zero is
-      behavior-preserving, and nulling the value in `realizeAxes` would delete
-      the whole HAIR line, since `describeHair` returns "" on a null texture.
-      The fix belongs at the record boundary where the other record-truth
-      blanking already lives, and it ships as its own named commit with the
-      D-87 `hair.family` repair, which is the same class in the same file.
-
-      Pinned EXACTLY, so the gap cannot grow and no new axis can hide inside
-      it: every finding must be this one, and any other axis fails the suite.
+      That gap was pinned here exactly rather than excused into the registry as
+      a fake exemption, then closed by `resolveTexture` in the following commit,
+      and only then was this tightened to zero. The order matters: a sweep that
+      is written green has never proved it can go red.
     */
-    const unexpected = findings.filter(
-      (finding) => !(finding.axis === "hairTexture" && finding.tier === "prescribe"),
-    );
-    expect(unexpected).toEqual([]);
-    for (const finding of findings) {
-      expect(finding.reason).toBe("persisted-but-never-composed");
-    }
-    // A real, bounded number — not "some". If it moves, something moved.
-    expect(findings.length).toBeGreaterThan(0);
-    expect(findings.length).toBeLessThan(sheets * 8 * 0.06);
+    expect(findings).toEqual([]);
   }, 60_000);
+
+  /*
+    The two record-truth repairs the sweep found, pinned at the record rather
+    than through the sweep — a sweep assertion proves the prompt and the record
+    agree, and these are claims about what the record must SAY.
+  */
+  it("gives a shaved head no grain, and no second silhouette (D-87)", async () => {
+    /*
+      Many seeds, because a shaved cut is a 5%-weighted draw and a single sheet
+      routinely contains none — the first version of this test asserted over one
+      sheet, drew no shaved candidate, and was saved only by its own vacuity
+      guard. That guard is the reason the count is asserted at the end rather
+      than assumed.
+    */
+    let shaved = 0;
+    let checked = 0;
+
+    for (let seed = 0; seed < 20; seed += 1) {
+      const compiled = (await castingBriefCompiler({
+        briefText: "a person",
+        candidateCount: 8,
+        rollSeed: `record-truth-${seed}`,
+        engine: engine({}),
+      } as never)) as unknown as CompiledSheet;
+
+      for (const candidate of compiled.candidates) {
+        const identity = candidate.resolvedIdentity;
+        const style = identity.realized.hairStyle;
+        if (!style) continue;
+        checked += 1;
+
+        /*
+          D-87: one silhouette per candidate. `hair.family` used to be drawn
+          from its own weighted list, so real sheets persisted "buzz cut /
+          shaved" beside `hair: { family: "long" }` — a record claiming a person
+          has long hair and a buzz cut at once, which a follow then inherited.
+        */
+        expect(identity.hair?.family, `${style.name} @ seed ${seed}`).toBe(style.family);
+
+        if (style.family === "shaved") {
+          shaved += 1;
+          // No grain on a shaved head, in the record or in the prompt.
+          expect(identity.realized.hairTexture, `${style.name} @ seed ${seed}`).toBeNull();
+          expect(candidate.prompt).toContain(style.name);
+        }
+      }
+    }
+
+    expect(checked).toBeGreaterThan(100);
+    expect(shaved).toBeGreaterThan(0);
+  }, 30_000);
 
   it("would CATCH a value persisted but never composed — the sweep has teeth", () => {
     /*
