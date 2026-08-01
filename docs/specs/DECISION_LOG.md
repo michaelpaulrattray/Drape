@@ -1308,4 +1308,63 @@ deleted, their duties covered by the shell.
 
 **Nothing from brief §4 was rejected**; D-11/D-13/D-20 accepted with modifications noted. **Locked-ledger amendments to date, all founder-initiated or brief-invited:** D-8 (red confirm), D-29 (root/view rendering, proposed), D-32 (no-modal rule refined), D-33/D-35 (inline-first for casting). Everything else in the locked ledger (reference-asset framing, edges-as-lineage, the non-negotiables, sentence case / two weights / hairlines) is preserved unchanged.
 
+### D-79 — Partial deference: RULED, SHIPPED, AND ROLLED BACK ON FIRST FOUNDER VERIFICATION *(founder ruling 2026-08-01; shipped `6ec7878c`; reverted `7596848f` the same day)*
+
+**Status: reverted. Not in production. Do not re-ship without the fix and the
+tests described below.**
+
+**The ruling stands** — the unit of "said" is the fact, not the axis. What
+failed was the implementation, on its first contact with real briefs.
+
+**What the founder saw.** Three of five verification briefs dropped their stated
+hair fact entirely: "shaved head" returned zero shaved heads, "pastel pink hair"
+returned all black, "a redhead" returned no redheads and the brief echo omitted
+the hair fact altogether ("everyone on this sheet is a woman in her 30s").
+"Silver at the temples" still worked.
+
+**Root cause: the interpreter's decomposition CONSUMED the fact.** Reproduced by
+running the real interpreter against the shipped build:
+
+| brief | role | characterNotes | hairSpoken |
+|---|---|---|---|
+| "a woman with pastel pink hair" | **null** | **null** | `["colour"]` |
+| "a redhead in her 30s" | **null** | **null** | `["colour"]` |
+| "silver at the temples" | "skincare founder" | "silver at the temples" | `[]` + greyOverlay |
+
+`role` and `characterNotes` are the ONLY fields that carry the user's words to
+the image model. Told to classify hair into a new structured field, the model
+treated `hairSpoken` as the place hair now lives and stopped writing the words
+at all — so the fact reached neither the prompt nor the echo. "Redhead" also took
+`role` down with it, losing the casting category as well as the hair.
+
+Silver survived precisely because it routed through `greyOverlay`, a path that
+did not invite the model to drop prose. That asymmetry is the diagnostic
+signature the founder identified before any code was read, and it was correct.
+
+**The scrubbing was not the culprit.** "Complement, never restate" only edits the
+authored line; the stated words travel separately and were intact wherever the
+interpreter still wrote them.
+
+**Why the tests were green while this shipped — the important lesson.** Every
+test in `partialDeference.test.ts` drove the interpreter through a stub engine
+that returned a hand-written intent already containing the phrase. They proved
+the COMPOSER behaves when handed a good intent, and never exercised the
+decomposition that produces one. The sacred coverage regression was green for
+the same reason. A test that supplies the input the bug corrupts cannot see the
+bug.
+
+**Conditions for re-shipping**, beyond the founder's original four:
+
+1. The interpreter prompt must state that `hairSpoken` is a CLASSIFICATION and
+   that the user's words must STILL appear verbatim in `role` or
+   `characterNotes` — the structured field is a hint about what is open, never a
+   substitute for the fact.
+2. Pinned tests asserting the stated words are present in the COMPOSED PROMPT
+   for each of the five founder briefs — at the prompt layer, not the composer's
+   input.
+3. At least one test that exercises the real decomposition rather than a stub,
+   so a prompt change that makes the model drop prose fails the build.
+4. All five founder briefs pass a live verification before the flag goes on.
+
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
