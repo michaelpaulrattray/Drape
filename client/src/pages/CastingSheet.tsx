@@ -174,7 +174,25 @@ export default function CastingSheet() {
     dispatchFailure !== null
     && activeRollId !== null
     && activeRollId !== dispatchFailure.afterRollId;
-  const visibleFailure = staleFailure ? null : dispatchFailure;
+
+  /*
+    A ROLL THE USER CANCELLED IS NOT A FAILURE TO REPORT BACK TO THEM.
+
+    `createRoll` stays open for the whole roll, so cancelling makes it reject —
+    a minute or two later — carrying the server's "That roll was cancelled.
+    160 credits were refunded." The money is right and the sentence is true,
+    but it arrives long after the fact, describing something the user did on
+    purpose and has already been told about.
+
+    The cancel line owns that story now, live and in the dock. A second notice
+    is noise at best; arriving late and out of context it reads as a new
+    problem. So a dispatch failure is suppressed on a sheet whose roll the user
+    cancelled.
+  */
+  // `cancelRequested` alone here: it is owned from the click and needs no poll,
+  // and the roll query is not in scope this early in the render.
+  const cancelledByUser = cancelRequested;
+  const visibleFailure = staleFailure || cancelledByUser ? null : dispatchFailure;
 
   /**
    * A dispatch is in flight and its roll has not appeared yet.

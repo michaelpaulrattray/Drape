@@ -25,9 +25,13 @@ import type { DispatchFailure } from "./sheetState";
  */
 
 /** Exactly the derivation `CastingSheet` performs, kept in one place. */
-function bannerVisible(activeRollId: string | null, failure: DispatchFailure | null): boolean {
+function bannerVisible(
+  activeRollId: string | null,
+  failure: DispatchFailure | null,
+  cancelledByUser = false,
+): boolean {
   const stale = failure !== null && activeRollId !== null && activeRollId !== failure.afterRollId;
-  return !stale && failure !== null;
+  return !stale && !cancelledByUser && failure !== null;
 }
 
 const lostContact = (afterRollId: string | null): DispatchFailure => ({
@@ -91,5 +95,34 @@ describe("the banner dismisses itself", () => {
 
   it("stays on an empty sheet whose dispatch failed and produced nothing", () => {
     expect(bannerVisible(null, lostContact(null))).toBe(true);
+  });
+});
+
+describe("a roll the user cancelled reports no failure", () => {
+  it("suppresses the banner once the user has cancelled", () => {
+    /*
+      `createRoll` stays open for the whole roll, so cancelling makes it reject
+      a minute or two later carrying "That roll was cancelled. N credits were
+      refunded." True, and long after the fact — describing something the user
+      did on purpose and has already been told about, live, in the dock.
+
+      The founder saw that sentence arrive while they were doing something
+      else. The cancel line owns the story; a second late notice reads as a new
+      problem.
+    */
+    const failure = lostContact("roll-1");
+    expect(bannerVisible("roll-1", failure, false)).toBe(true);
+    expect(bannerVisible("roll-1", failure, true)).toBe(false);
+  });
+
+  it("still shows a REAL failure on a sheet the user never cancelled", () => {
+    // The negative control: suppression is scoped to the user's own cancel,
+    // never a blanket silence on dispatch failures.
+    const refusal: DispatchFailure = {
+      kind: "refused",
+      message: "That brief names a real person.",
+      afterRollId: "roll-3",
+    };
+    expect(bannerVisible("roll-3", refusal, false)).toBe(true);
   });
 });

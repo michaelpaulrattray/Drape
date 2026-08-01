@@ -231,12 +231,25 @@ export function readChips(compiledBrief: unknown): CastingChip[] {
  * client's undo affordance holds the id it just discarded rather than reading
  * it back from a projection.
  *
- * `expired` also returns null, and that omission is now load-bearing in a way
- * it was not before. An expired candidate arrived after its roll was
- * cancelled, and under the generosity ruling (2026-07-31) it was refunded —
- * which is only defensible *because* it is never shown. Project it and
- * cancelling becomes a way to buy images for nothing. The roll reads as
- * cancelled; the tile does not exist.
+ * `expired` projects as `failed-refunded` WITH ITS IMAGE SUPPRESSED, and the
+ * distinction between those two halves is the whole rule.
+ *
+ * An expired candidate arrived after its roll was cancelled and was refunded
+ * under the generosity ruling (2026-07-31), which is only defensible because
+ * the user never receives the image. That constraint is about the IMAGE, not
+ * about the tile — and the first version enforced it by returning null, which
+ * removed the tile as well.
+ *
+ * The founder found what that costs: cancel a roll whose eight were already
+ * dispatched, every candidate lands and expires, and the sheet empties out
+ * completely. Not even skeletons — a blank page where eight faces had been,
+ * with no account of what happened to them. A sheet that erases itself is a
+ * worse answer than one that says "cancelled · refunded" eight times.
+ *
+ * So the tile stays and the image does not. `imageUrl` and `thumbUrl` are
+ * nulled for every refunded candidate below, at the projection rather than in
+ * the component, so no future caller can reintroduce the leak by rendering a
+ * field it found on the object.
  *
  * `cancelled` — the slices that never ran — projects as `failed-refunded`,
  * and the sheet reads the roll's own `cancelled` status to say so in the
@@ -255,9 +268,9 @@ export function projectCandidateStatus(
       return "ready";
     case "failed":
     case "cancelled":
+    case "expired":
       return "failed-refunded";
     case "discarded":
-    case "expired":
       return null;
   }
 }
@@ -271,9 +284,21 @@ export function projectCandidate(candidate: CastingCandidate): CandidateProjecti
     // "01" through "08" — display metadata only. Nothing is ever keyed by it.
     indexLabel: String(candidate.position + 1).padStart(2, "0"),
     status,
-    // Built from the key at read time; the key itself never leaves the server.
-    imageUrl: candidate.imageKey ? storagePublicUrl(candidate.imageKey) : null,
-    thumbUrl: candidate.thumbKey ? storagePublicUrl(candidate.thumbKey) : null,
+    /*
+      Built from the key at read time; the key itself never leaves the server.
+
+      A REFUNDED CANDIDATE NEVER CARRIES ITS IMAGE. An `expired` one has a real
+      `imageKey` — it landed, just too late to be shown — and the generosity
+      refund is only defensible because the user does not receive it. Suppressed
+      here rather than left to the tile, so the rule holds for every caller
+      including ones that do not exist yet.
+    */
+    imageUrl: status === "failed-refunded" || !candidate.imageKey
+      ? null
+      : storagePublicUrl(candidate.imageKey),
+    thumbUrl: status === "failed-refunded" || !candidate.thumbKey
+      ? null
+      : storagePublicUrl(candidate.thumbKey),
     personaLine: candidate.personaLine,
     kept: candidate.keptAt !== null,
   };

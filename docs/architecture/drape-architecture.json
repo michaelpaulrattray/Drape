@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "855226dab5923d6b"
+    "sourceFingerprint": "c804d7c422ba7086"
   },
   "domains": [
     {
@@ -7191,6 +7191,10 @@
     {
       "id": "test:client/src/features/castingV2/singleFlight.test.ts",
       "path": "client/src/features/castingV2/singleFlight.test.ts"
+    },
+    {
+      "id": "test:client/src/features/operations/bridgeOwnership.test.ts",
+      "path": "client/src/features/operations/bridgeOwnership.test.ts"
     },
     {
       "id": "test:client/src/foundation/theme.test.ts",

@@ -128,20 +128,53 @@ describe("lifecycle states collapse to the three the client knows", () => {
     expect(projectCandidateStatus("cancelled")).toBe("failed-refunded");
   });
 
-  it("shows nothing at all for expired, which is what makes refunding it safe", () => {
-    // An expired candidate arrived after its roll was cancelled. Since the
-    // generosity ruling it IS refunded — and that is only defensible because
-    // it is never shown. Project it and cancelling becomes a way to buy images
-    // for nothing.
-    expect(projectCandidateStatus("expired")).toBeNull();
+  it("keeps the expired TILE and suppresses its IMAGE, which is what makes refunding it safe", () => {
+    /*
+      REWRITTEN, deliberately. This asserted that an expired candidate is not
+      projected at all — and the constraint it was protecting is about the
+      IMAGE, not the tile. Returning null enforced it by removing both.
+
+      The founder found what that costs: cancel a roll whose eight were already
+      dispatched, every candidate lands and expires, and the sheet empties out
+      completely — a blank page where eight faces had been, with no account of
+      what happened to them.
+
+      The rule that actually matters is unchanged and is now asserted directly:
+      no image URL ever reaches a refunded candidate, so cancelling can never
+      become a way to buy images for nothing.
+    */
+    expect(projectCandidateStatus("expired")).toBe("failed-refunded");
+    // `discarded` still vanishes: the user removed it, and it is gone.
     expect(projectCandidateStatus("discarded")).toBeNull();
 
     const projected = projectRoll({
       roll: rollRow({ status: "cancelled" }),
-      candidates: [candidateRow({ status: "expired" }), candidateRow({ status: "discarded" })],
+      candidates: [
+        candidateRow({ status: "expired", imageKey: "real/key.png", thumbKey: "real/thumb.png" }),
+        candidateRow({ status: "discarded" }),
+      ],
     });
-    expect(projected.candidates).toHaveLength(0);
+
+    // The sheet still accounts for the candidate the user paid for.
+    expect(projected.candidates).toHaveLength(1);
+    expect(projected.candidates[0].status).toBe("failed-refunded");
+    // And it carries no way to see it, even though the object exists in R2.
+    expect(projected.candidates[0].imageUrl).toBeNull();
+    expect(projected.candidates[0].thumbUrl).toBeNull();
     expect(projected.status).toBe("cancelled");
+  });
+
+  it("suppresses the image on every refunded candidate, not only expired ones", () => {
+    // Enforced at the projection so no future caller can reintroduce the leak
+    // by rendering a field it happened to find on the object.
+    for (const status of ["failed", "cancelled", "expired"] as const) {
+      const projected = projectRoll({
+        roll: rollRow({ status: "cancelled" }),
+        candidates: [candidateRow({ status, imageKey: "real/key.png", thumbKey: "real/thumb.png" })],
+      });
+      expect(projected.candidates[0].imageUrl, status).toBeNull();
+      expect(projected.candidates[0].thumbUrl, status).toBeNull();
+    }
   });
 
   it("labels positions for display without keying anything by them", () => {
