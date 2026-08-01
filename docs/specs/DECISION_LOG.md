@@ -1535,4 +1535,85 @@ through it would be loosening compiler options — worse than the gap. Recorded
 here as known and open.
 
 
+### D-82 — A name never becomes a casting category *(executor finding, advisor-reviewed, 2026-08-01)*
+
+Gate 21's second occurrence, and it came from our own repair rather than from
+the model.
+
+The golden harness went red on "a Wes Anderson casting, mid 30s". Measured
+live, six samples: the interpreter returned `role: null` every time — it never
+wrote the name, and captured the aesthetic into the direction correctly.
+`promoteStatedRole` then promoted THE WHOLE BRIEF, so every candidate of the
+roll carried `CASTING CATEGORY (ABSOLUTE): This person is cast as — a Wes
+Anderson casting, mid 30s`. Same shape as the Versace roll that lost five of
+eight to provider refusal.
+
+**The ruling: never-reaches-the-engine outranks the user's own words.**
+`scrubBrands` deleting "Versace" from a user's sentence is the ratified
+precedent, and this extends it from a list of houses to a listless shape. No
+list of directors, films or people exists here, or is wanted.
+
+Two halves, because either alone leaves it reachable — gate 21's own doctrine:
+
+1. The **repair** declines when the span still names someone *after* the brand
+   scrub. Cheap, and it separates "the repair declined" from "the interpreter
+   wrote a name" in the logs.
+2. The **guard**, at intent finalization beside `scrubBrands`, nulls a name
+   from any author. This is the load-bearing half: the interpreter wrote
+   "Versace" into `role` unprompted once already, and no repair covers that.
+
+**Where the guard sits is the design decision.** Not at prompt assembly —
+`role` is read by gate B5's category-owns-physique rule and by the echo, so
+guarding only the prompt would leave B5 clamping variation and the echo
+claiming a category the prompt does not carry. Three readers disagreeing about
+one field is the same three-way contradiction the narrowing of this repair
+already recorded once. Null it once, where every reader sees it.
+
+**The trigger was never the bug.** `variationAxis === "look"` is honest on this
+brief — it really does ask for a kind of face. The broken step was inferring
+"this sentence IS a category string" from it.
+
+**A wrong golden was demanding the defect.** The entry was marked
+`category: true` against the file's own definition ("names an occupation, type
+or kind of person"); "a Wes Anderson casting" names an aesthetic and an age.
+The only way to make that assertion pass was to promote the whole brief. It is
+re-marked `category: false` in the same commit as the behaviour, with the
+aesthetic assertion untouched — **founder: this is a change to your pinned
+memory, flagged rather than made silently.**
+
+**Two over-reaches the suite caught before they shipped**, both now pinned:
+a capitalized leading article ("An East Asian model") must not read as a name,
+and a brand brief must still promote its category, because the scrub removes
+the house and keeps the sentence. Getting either wrong reopens category-drop —
+the original defect wearing the fix's clothes.
+
+Verified live, not stubbed: goldens 12 briefs x 3 runs green with Margiela
+still capturing, and 0 of 64 candidate prompts carrying a name.
+
+### D-83 — A reply cut off at the ceiling is transport, not a verdict *(founder ruling 2026-08-01)*
+
+> *"Close the class, not just the ceiling. 500 ate locks, then 1200, now 1800 —
+> every new field walks the reply toward whatever the ceiling is, and each time
+> the failure is silent."*
+
+A truncated interpreter reply is a JSON fragment; a fragment fails the whole
+parse; the compiler falls back and casts the sheet as though the brief had said
+nothing. Every lock the user typed, lost — silently, and indistinguishably from
+a genuine "the model returned nonsense".
+
+Two structural additions, and neither is a bigger number:
+
+1. The provider reports `truncated` from `finish_reason`, and the interpreter
+   classifies it as the **retryable transport failure it is** rather than
+   swallowing it into the fallback. A reply that is merely malformed is NOT
+   retried — that is the model failing, and retrying it would be superstition.
+2. The parse-failure rate is **counted and alarms**, in the roll alarm's shape
+   and with its `failureRate` key. A ceiling will always be a guess; whether we
+   are hitting it must not be.
+
+The A/B harness tallies TRUNCATED apart from parse-failed, because folding them
+together is exactly how this stayed invisible through three raises — and the
+run that found it had itself been counting truncated replies as landed.
+
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
