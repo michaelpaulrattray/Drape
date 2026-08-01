@@ -1,4 +1,6 @@
 import { HERITAGES, type CastingIntent, type Heritage } from "./castingIntent";
+import { namesUnknownProperNoun } from "./properNouns";
+import { scrubBrands } from "./brandScrub";
 
 /**
  * A heritage the brief stated must be a LOCK, not a word in the role.
@@ -100,12 +102,33 @@ export { HERITAGE_WORDS, HERITAGES };
  * editorial, fashion, runway, beauty or campaign casting. That is a statement
  * about the category, not about the mood, and it is exactly the signal present
  * on the roll that prompted this repair.
+ *
+ * **And it declines on a name.** "a Wes Anderson casting, mid 30s" sets the
+ * `look` axis honestly — it really does ask for a kind of face — but the brief
+ * text is not a category, and promoting it put a director's name into the
+ * CASTING CATEGORY block on every candidate. The axis was never wrong; the
+ * repair's inference from it was, in conflating "asks for look variation" with
+ * "this sentence IS a category string".
+ *
+ * Declining here is belt to `guardRole`'s braces, and it earns its place: the
+ * guard would null the same value a moment later, but only this line
+ * distinguishes "the repair chose not to fire" from "the interpreter wrote a
+ * name" in the logs. Ages are deliberately NOT stripped — "a dad in his 30s" is
+ * a category, and the working goldens carry ages.
+ *
+ * It declines on what SURVIVES the brand scrub, not on the raw words, and the
+ * difference is a category. "a Margiela runway face, early 20s" carries a house
+ * the scrub is built to remove — it becomes "runway face, early 20s", which is
+ * a real category and must still be promoted. Testing the raw text instead
+ * declined it, silently reopening the category-drop bug on every brand brief.
+ * Gate 21's own promise: remove the name, keep the sentence.
  */
 export function promoteStatedRole(intent: CastingIntent, briefText: string): CastingIntent {
   if (intent.role) return intent;
   if (intent.variationAxis !== "look") return intent;
   const words = capAtWordBoundary(briefText.replace(/\s+/g, " ").trim(), 80);
   if (!words) return intent;
+  if (namesUnknownProperNoun(scrubBrands(words) ?? "", { mode: "phrase" })) return intent;
   return { ...intent, role: words };
 }
 

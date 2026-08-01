@@ -91,7 +91,24 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
   },
   {
     brief: "a Wes Anderson casting, mid 30s",
-    category: true,
+    /*
+      RE-MARKED true → false, with the behaviour, in one commit.
+
+      It was marked `category: true` against this file's own definition eight
+      lines up: "the sentence names an occupation, type or kind of person". "a
+      Wes Anderson casting" names none — it names an aesthetic and an age. The
+      live evidence agrees: the interpreter returns `role: null` on six of six
+      and puts the aesthetic into the direction, which is the correct reading.
+
+      What the wrong mark was holding up: the only way to make the assertion
+      pass was for `promoteStatedRole` to promote the whole brief, which is
+      what put a director's name into CASTING CATEGORY on every candidate. A
+      red golden was demanding the defect.
+
+      The aesthetic half of this entry is untouched and still binding — the
+      reference must land somewhere, and the token must never reach a prompt.
+    */
+    category: false,
     aestheticReference: true,
     because:
       "The boundary the founder pinned: a reference to someone's AESTHETIC is direction. Casting the person stays refused under the named-person law.",

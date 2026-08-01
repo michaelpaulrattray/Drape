@@ -62,8 +62,41 @@ import {
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
 import { scrubBrands } from "./brandScrub";
+import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
+
+/**
+ * A name never becomes a casting category. The second half of gate 21.
+ *
+ * `scrubBrands` is a list of fashion houses, and a list can only ever catch
+ * what is on it. Live measurement on "a Wes Anderson casting, mid 30s": the
+ * interpreter returned `role: null` on six of six — it never wrote the name —
+ * and then OUR OWN `promoteStatedRole` repair promoted the whole brief,
+ * putting a director into `CASTING CATEGORY (ABSOLUTE): This person is cast as
+ * — a Wes Anderson casting, mid 30s` on every candidate. Same shape as the
+ * Versace roll that lost five of eight to provider refusal, authored this time
+ * by the repair built to prevent a different bug.
+ *
+ * So the check is LISTLESS and it sits here, at intent finalization, rather
+ * than at prompt assembly. `role` is read by gate B5's category-owns-physique
+ * rule and by the echo; guarding only the prompt would leave B5 clamping
+ * variation and the echo claiming a category the prompt does not carry — three
+ * readers disagreeing about the same field. Null it once and they all agree.
+ *
+ * It FAILS CLOSED to null and never edits the span, which is the ratified
+ * garment-guard shape: reject, fall back to shelf behaviour, never fail a roll.
+ * A brief whose only "category" was a person's name has no category, and the
+ * aesthetic still lands through the direction, look and archetype channels.
+ */
+function guardRole(role: string | null): string | null {
+  if (!role) return role;
+  // Every token counts: a role is not a sentence, and "Zendaya lookalike"
+  // leads with the name.
+  if (!namesUnknownProperNoun(role, { mode: "phrase" })) return role;
+  log.warn({ stage: "guardRole" }, "[compiler] role named someone we cannot vouch for — dropping it to null");
+  return null;
+}
 import { applySheetTaste } from "./realizedAxes";
 import { stylingResolutionFor, type StylingResolution } from "./stylingResolution";
 
@@ -626,7 +659,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   */
   const intent: CastingIntent = {
     ...adjusted,
-    role: scrubBrands(adjusted.role),
+    role: guardRole(scrubBrands(adjusted.role)),
     characterNotes: scrubBrands(adjusted.characterNotes),
   };
   const locks: LockFacts = lockFactsOf(intent);

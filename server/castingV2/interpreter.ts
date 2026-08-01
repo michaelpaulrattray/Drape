@@ -32,6 +32,7 @@ import {
   type CastingIntent,
 } from "./castingIntent";
 import { containsBrand } from "./brandScrub";
+import { namesUnknownProperNoun } from "./properNouns";
 
 const log = createModuleLogger("castingV2/interpreter");
 
@@ -100,17 +101,6 @@ function needsAestheticRetry(briefText: string, intent: CastingIntent): boolean 
   return intent.composedDirection === null && intent.look === null && intent.archetype === null;
 }
 
-/**
- * Every word in our closed vocabularies, so a stated FACT never reads as a
- * reference. "A Mediterranean man" names a heritage we already model.
- */
-const VOCABULARY_WORDS: ReadonlySet<string> = new Set(
-  [...HERITAGES, ...ARCHETYPE_KEYS, ...LOOK_KEYS, ...BUILDS, ...ENERGY_KEYS, ...SEXES, ...AGE_BANDS]
-    .join(" ")
-    .toLowerCase()
-    .split(/[^a-z]+/)
-    .filter(Boolean),
-);
 
 /**
  * Does the brief name something SPECIFIC that we might have failed to capture?
@@ -135,17 +125,8 @@ const VOCABULARY_WORDS: ReadonlySet<string> = new Set(
  */
 function namesSomethingSpecific(briefText: string): boolean {
   if (containsBrand(briefText)) return true;
-
-  const tokens = briefText.split(/\s+/);
-  return tokens.some((token, index) => {
-    // Sentence-initial capitals say nothing — every brief starts with one.
-    if (index === 0) return false;
-    const word = token.replace(/[^A-Za-z'-]/g, "");
-    if (word.length < 2) return false;
-    const first = word[0];
-    if (first !== first.toUpperCase() || first === first.toLowerCase()) return false;
-    return !VOCABULARY_WORDS.has(word.toLowerCase());
-  });
+  // Sentence-initial capitals say nothing — every brief starts with one.
+  return namesUnknownProperNoun(briefText, { mode: "sentence" });
 }
 
 /** Exported for the prompt-contract tests; never used at runtime. */

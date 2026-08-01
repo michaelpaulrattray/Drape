@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bbab6887ab3f4b5f"
+    "sourceFingerprint": "8a0ee752fe8a91a5"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 18
+      "moduleCount": 19
     },
     {
       "id": "domain:castingV2",
@@ -3143,6 +3143,12 @@
     {
       "id": "module:server/castingV2/interpreter.ts",
       "path": "server/castingV2/interpreter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/properNouns.ts",
+      "path": "server/castingV2/properNouns.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7701,6 +7707,10 @@
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",
       "path": "server/castingV2/realizedAxes.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/roleNameGuard.test.ts",
+      "path": "server/castingV2/roleNameGuard.test.ts"
     },
     {
       "id": "test:server/castingV2/rollProjection.test.ts",
@@ -15855,6 +15865,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/properNouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/realizedAxes.ts",
       "kind": "imports"
     },
@@ -15970,7 +15985,17 @@
     },
     {
       "from": "module:server/castingV2/heritagePromotion.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/heritagePromotion.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/heritagePromotion.ts",
+      "to": "module:server/castingV2/properNouns.ts",
       "kind": "imports"
     },
     {
@@ -15981,6 +16006,11 @@
     {
       "from": "module:server/castingV2/interpreter.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/interpreter.ts",
+      "to": "module:server/castingV2/properNouns.ts",
       "kind": "imports"
     },
     {
@@ -15996,6 +16026,11 @@
     {
       "from": "module:server/castingV2/interpreter.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/properNouns.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },
     {
