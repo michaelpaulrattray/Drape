@@ -342,6 +342,29 @@ export type HeritageComponent = { heritage: Heritage; pct: number };
  * Everything non-null is therefore, by construction, something the user said —
  * which is what makes `lockFactsOf` below a derivation rather than a guess.
  */
+/**
+ * The parts of "hair" a brief can speak to, separately.
+ *
+ * Partial deference (founder ruling, 2026-08-01). The doctrine is unchanged at
+ * its root — null means the brief did not say — but **the unit of "said" is the
+ * fact, not the axis**. "Silver at the temples" states a colour fact; cut,
+ * length and texture remain null and get authored, as they always should have.
+ *
+ * The bug this closes was measured on a paid sheet: that brief silenced the
+ * entire hair axis, so the image model chose one look and repeated it across
+ * eight candidates while the persisted identities claimed mid-length, cropped,
+ * short and long. Difference the record asserts and the picture does not show
+ * is the failure mode this whole subsystem exists to prevent.
+ *
+ * **Coverage is the exception and stays all-or-nothing.** "Shaved head", "bald",
+ * "buzzed" leave no remainder to author — there is no cut on a bald man — so
+ * they suppress everything, exactly as today. That regression is the founding
+ * bug of the deference doctrine and it is guarded twice: here, and by a word
+ * list that cannot be talked out of it.
+ */
+export const HAIR_SUB_AXES = ["colour", "cutLength", "texture", "coverage"] as const;
+export type HairSubAxis = (typeof HAIR_SUB_AXES)[number];
+
 export type CastingIntent = {
   cohort: CohortKey;
   /**
@@ -379,6 +402,30 @@ export type CastingIntent = {
    * be a dull label — the energy DIRECTION driving the image stays code-owned.
    */
   reads: string[];
+  /**
+   * Which parts of hair the brief actually spoke to.
+   *
+   * Brief metadata, deliberately NOT a lock fact: it records what the sentence
+   * touched, not a value to hold the sheet to, so `lockFactsOf` ignores it.
+   * Empty means the brief said nothing about hair — but see the keyword gate in
+   * the compiler, which may widen this and can never narrow it.
+   */
+  hairSpoken: HairSubAxis[];
+  /**
+   * Greying stated as an OVERLAY rather than a base colour — "silver at the
+   * temples", "greying", "salt-and-pepper".
+   *
+   * Separate from `hairSpoken` because it does not claim the colour axis, it
+   * CONSTRAINS it: a base colour still exists underneath and still gets
+   * authored, restricted to the shades on which silver temples actually read.
+   * The resolver already modelled this shape — grey is "applied after colour,
+   * not instead" — so this is that idea reaching the brief.
+   *
+   * A boolean rather than a palette hint on purpose. Handing a language model a
+   * channel into the colour vocabulary is the smuggling this whole type exists
+   * to prevent; the model classifies, and code owns what compatibility means.
+   */
+  greyOverlay: boolean;
 };
 
 export const ROLE_MAX = 80;
@@ -457,6 +504,8 @@ const wireSchema = z.object({
   variationAxis: nullableEnum(VARIATION_AXES),
   look: nullableEnum(LOOK_KEYS as unknown as readonly [string, ...string[]]),
   reads: z.array(z.unknown()).nullable().optional(),
+  hairSpoken: z.array(z.unknown()).nullable().optional(),
+  greyOverlay: z.unknown().nullable().optional(),
   /*
     `.nullable()` matters as much as `.optional()` here, and the difference
     cost a founder 160 credits. Models return `null` and `undefined`
@@ -537,6 +586,25 @@ function parseReads(raw: unknown): string[] {
   return reads;
 }
 
+/**
+ * Coerce and drop, never reject — the same contract as every other field here.
+ *
+ * An unknown string in this array is dropped rather than failing the parse,
+ * because a paid roll must not die on a model's spelling. The consequence of
+ * dropping is more authoring, which is why the compiler's keyword gate sits
+ * outside this and can still force full deference.
+ */
+function parseHairSpoken(raw: unknown): HairSubAxis[] {
+  if (!Array.isArray(raw)) return [];
+  const spoken = new Set<HairSubAxis>();
+  for (const entry of raw) {
+    if (typeof entry !== "string") continue;
+    const value = entry.trim();
+    if ((HAIR_SUB_AXES as readonly string[]).includes(value)) spoken.add(value as HairSubAxis);
+  }
+  return Array.from(spoken);
+}
+
 export type IntentParseResult =
   | { ok: true; intent: CastingIntent }
   | { ok: false; reason: "unreadable" | "unsupported_cohort" };
@@ -588,6 +656,8 @@ export function parseCastingIntent(raw: unknown): IntentParseResult {
       variationAxis: wire.variationAxis as VariationAxis | null,
       look: wire.look as LookKey | null,
       reads: parseReads(wire.reads),
+      hairSpoken: parseHairSpoken(wire.hairSpoken),
+      greyOverlay: wire.greyOverlay === true,
     },
   };
 }

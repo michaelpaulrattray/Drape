@@ -82,8 +82,16 @@ function fromWeights(entries: ReturnType<typeof stylesFor>, seed: number): HairS
   return entries[entries.length - 1][0];
 }
 
-function pickStyle(sex: Sex, heritage: string, ageBand: AgeBand, seed: number): HairStyle {
-  return fromWeights(stylesFor(sex, heritage, ageBand), seed);
+function pickStyle(
+  sex: Sex,
+  heritage: string,
+  ageBand: AgeBand,
+  seed: number,
+  avoidTextured = false,
+): HairStyle {
+  const entries = stylesFor(sex, heritage, ageBand);
+  const usable = avoidTextured ? entries.filter(([style]) => !style.texture) : entries;
+  return fromWeights(usable.length > 0 ? usable : entries, seed);
 }
 
 function weightedPick<T extends string>(entries: readonly (readonly [T, number])[], seed: number): T {
@@ -239,11 +247,18 @@ export function realizeAxes(input: {
   sex: Sex;
   position: number;
   rollSeed: string;
+  /*
+    Set when the brief stated a texture. A cut whose NAME carries its own grain
+    — afro, locs, curly crop — would restate or contradict the user's word even
+    with the grain word dropped from the sentence, so those cuts are kept out of
+    the draw rather than papered over at composition time.
+  */
+  avoidTexturedStyles?: boolean;
 }): RealizedAxes {
   const { heritage, ageBand, sex, position, rollSeed } = input;
   const primary = (heritage[0]?.heritage ?? "") as Heritage | "";
   const seedFor = (axis: string) => hash(`${rollSeed}:${axis}:${position}`);
-  const hairStyle = pickStyle(sex, primary, ageBand, seedFor("hairStyle"));
+  const hairStyle = pickStyle(sex, primary, ageBand, seedFor("hairStyle"), input.avoidTexturedStyles === true);
 
   return {
     eyeColour: weightedPick(EYE_BY_HERITAGE[primary] ?? EYE_DEFAULT, seedFor("eyeColour")),
@@ -381,15 +396,34 @@ const AGE_COLOURS = new Set<HairColour>(["grey", "white"]);
 export function applySheetTaste<T extends SheetCandidate>(
   sheet: T[],
   rollSeed: string,
-  options: { statedFacialHair?: boolean; hairAuthored?: boolean } = {},
+  options: {
+    statedFacialHair?: boolean;
+    styleAuthored?: boolean;
+    colourAuthored?: boolean;
+    /*
+      Set when the brief said the hair is GREYING. Every re-pick then has to
+      stay on shades silver actually reads against — without this the colour
+      pair-breaker cheerfully shifted a compatible chestnut to auburn and
+      reintroduced the contradiction the resolver had just avoided.
+    */
+    greyOverlay?: boolean;
+    /** Mirrors the draw-time filter, so a re-pick cannot undo it. */
+    avoidTexturedStyles?: boolean;
+  } = {},
 ): T[] {
   /*
-    When the brief stated hair, nothing authored here reaches the prompt, so
-    every hair rule stands down rather than editing a record the image never
-    saw. The twin rule keeps working on its second axis — that is the whole
-    reason this is a flag and not an early return.
+    PER SUB-AXIS, not one switch. Under partial deference a brief can leave the
+    cut open while claiming the colour, so the style rules must keep running
+    while the colour rules stand down — a single boolean would take both out
+    together and the acceptance sheet could still twin on cuts.
+
+    A rule stands down rather than running because anything it changed would
+    edit a record the image never saw.
   */
-  const hairAuthored = options.hairAuthored ?? true;
+  const styleAuthored = options.styleAuthored ?? true;
+  const colourAuthored = options.colourAuthored ?? true;
+  const compatible = (shade: HairColour) =>
+    !options.greyOverlay || colourBucket(shade) === "dark";
   const seen = new Set<string>();
   const twins = new Set<string>();
   let statements = 0;
@@ -405,7 +439,12 @@ export function applySheetTaste<T extends SheetCandidate>(
   return sheet.map((candidate, position) => {
     const primary = (candidate.heritage[0]?.heritage ?? "") as Heritage | "";
     const entries = stylesFor(candidate.sex, primary, candidate.ageBand);
-    const ordinary = entries.filter(([style]) => !style.statement);
+    const usableEntries = options.avoidTexturedStyles
+      ? (entries.filter(([style]) => !style.texture).length > 0
+          ? entries.filter(([style]) => !style.texture)
+          : entries)
+      : entries;
+    const ordinary = usableEntries.filter(([style]) => !style.statement);
     const current = candidate.realized.hairStyle;
     const nearby = neighbours(primary);
     const familiesNearby = new Set(nearby.map((entry) => entry.family));
@@ -478,7 +517,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     };
 
     let style = current;
-    if (hairAuthored && (overStatement || (mustBeNew && seen.has(current.name)) || familyClashes)) {
+    if (styleAuthored && (overStatement || (mustBeNew && seen.has(current.name)) || familyClashes)) {
       const usable = ordinary.filter(([entry]) => !overStatement || !entry.statement);
       /*
         The floor is a HARD filter, not another preference. Ranking the twin
@@ -529,7 +568,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     );
 
     let colour = candidate.hair?.colour ?? null;
-    if (hairAuthored && colour !== null && !AGE_COLOURS.has(colour)) {
+    if (colourAuthored && colour !== null && !AGE_COLOURS.has(colour)) {
       const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
       const seed = hash(`${rollSeed}:hairColourTaste:${position}`);
       const bucketClashes = wantsColour && bucketsHere.has(colourBucket(colour));
@@ -542,9 +581,10 @@ export function applySheetTaste<T extends SheetCandidate>(
         */
         const wants = [
           (shade: HairColour) =>
+            compatible(shade) &&
             !twins.has(pairKey(shade, style.family)) &&
             (!wantsColour || !bucketsHere.has(colourBucket(shade))),
-          (shade: HairColour) => !twins.has(pairKey(shade, style.family)),
+          (shade: HairColour) => compatible(shade) && !twins.has(pairKey(shade, style.family)),
         ];
         for (const acceptable of wants) {
           const shifted = adjacentShade(colour, palette, seed, acceptable);
@@ -575,7 +615,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     if (facialHair !== null && !options.statedFacialHair && secondAxis(candidate.sex) === "beard") {
       const beardsHere = new Set(
         nearby
-          .filter((entry) => !hairAuthored || entry.family === style.family)
+          .filter((entry) => !styleAuthored || entry.family === style.family)
           .map((entry) => entry.beard)
           .filter((bucket): bucket is BeardBucket => bucket !== null),
       );

@@ -41,6 +41,7 @@ import {
   HAIR_COLOUR_WEIGHTS,
   statedFinish,
 } from "./hairStyles";
+import { colourBucket } from "./heritageNeighbourhoods";
 import {
   AGE_PHASES,
   ARCHETYPES,
@@ -64,6 +65,7 @@ import {
   type HairFamily,
   type Heritage,
   type LookKey,
+  type HairSubAxis,
   type HeritageComponent,
   type RealizedAxes,
   type ResolvedIdentity,
@@ -496,17 +498,38 @@ function varyHair(
   ageBand: AgeBand,
   position: number,
   rollSeed: string,
+  greyOverlay = false,
 ): Hair {
   const family = weightedPick(HAIR_FAMILY_WEIGHTS, hash(`${rollSeed}:hairFamily:${position}`));
   const primary = heritage[0]?.heritage ?? "";
-  const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
-  let colour = weightedPick(palette, hash(`${rollSeed}:hairColour:${position}`));
+  const full = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
+  /*
+    COMPATIBILITY, which is the new contradiction test (founder ruling).
 
-  const greyRoll = hash(`${rollSeed}:grey:${position}`) % 100;
-  if (greyRoll < GREY_CHANCE[ageBand]) {
-    // Salt-and-pepper reads as grey; a full head of white belongs to the
-    // oldest bands, where it is common rather than remarkable.
-    colour = ageBand === "70s+" && greyRoll < GREY_CHANCE[ageBand] / 2 ? "white" : "grey";
+    "Silver at the temples" does not name a colour; it says something is
+    happening TO one. So a base colour is still authored — otherwise the model
+    free-picks it and the collapse this whole change fixes on the cut axis
+    simply reappears on colour — but only from shades silver temples actually
+    read against. Grey at the temples of a blonde head is invisible, and a
+    prompt that says both is a prompt asking for a contradiction.
+
+    Code decides what compatible means. The interpreter only classifies.
+  */
+  const palette = greyOverlay ? full.filter(([shade]) => colourBucket(shade) === "dark") : full;
+  let colour = weightedPick(palette.length > 0 ? palette : full, hash(`${rollSeed}:hairColour:${position}`));
+
+  /*
+    The age-driven grey roll stands down under an overlay: the user's own words
+    already say where the silver is, and replacing the base with "grey" would
+    overwrite the fact they stated with a coarser version of it.
+  */
+  if (!greyOverlay) {
+    const greyRoll = hash(`${rollSeed}:grey:${position}`) % 100;
+    if (greyRoll < GREY_CHANCE[ageBand]) {
+      // Salt-and-pepper reads as grey; a full head of white belongs to the
+      // oldest bands, where it is common rather than remarkable.
+      colour = ageBand === "70s+" && greyRoll < GREY_CHANCE[ageBand] / 2 ? "white" : "grey";
+    }
   }
   return { family, colour };
 }
@@ -612,8 +635,9 @@ function anchoredHair(
   ageBand: AgeBand,
   position: number,
   rollSeed: string,
+  greyOverlay: boolean,
 ): Hair | null {
-  return anchor.hair ?? varyHair(heritage, ageBand, position, rollSeed);
+  return anchor.hair ?? varyHair(heritage, ageBand, position, rollSeed, greyOverlay);
 }
 
 /**
@@ -684,10 +708,21 @@ export function resolveCandidateIdentity(
       a different heritage gets hair that belongs to the face they actually
       have.
     */
-    hair: anchor ? anchoredHair(anchor, heritage, ageBand, position, rollSeed) : varyHair(heritage, ageBand, position, rollSeed),
+    hair: anchor
+      ? anchoredHair(anchor, heritage, ageBand, position, rollSeed, intent.greyOverlay === true)
+      : varyHair(heritage, ageBand, position, rollSeed, intent.greyOverlay === true),
     realized:
       anchor?.realized
-      ?? realizeAxes({ heritage, ageBand, sex: intent.sex ?? anchor?.sex ?? varySex(position, rollSeed), position, rollSeed }),
+      ?? realizeAxes({
+        heritage,
+        ageBand,
+        sex: intent.sex ?? anchor?.sex ?? varySex(position, rollSeed),
+        position,
+        rollSeed,
+        // A cut whose name carries its own grain would restate the texture the
+        // brief already named, so those cuts stay out of the draw.
+        avoidTexturedStyles: (intent.hairSpoken ?? []).includes("texture"),
+      }),
     // Energy is the one axis that cycles rather than samples: eight candidates
     // against eight energies gives one of each, which is the most legible
     // difference a sheet can carry. Stated energy locks it flat across all
@@ -902,40 +937,130 @@ const HAIR_WORDS = [
   "silver", "platinum", "bleached", "highlights", "roots",
 ];
 
+/**
+ * Words that mean there is no remainder to author.
+ *
+ * The coverage backstop, and it is belt-and-braces on purpose. Under partial
+ * deference the interpreter classifies which parts of hair a brief decided, and
+ * a misclassification anywhere else costs a slightly wrong sentence. Here it
+ * would author a french crop onto a bald man — the founding bug of the whole
+ * deference doctrine, and the founder called that regression sacred. So the
+ * decomposition never gets a vote on coverage: these words suppress everything,
+ * exactly as they did before partial deference existed.
+ *
+ * "buzzed" is listed separately from "buzz" and "buzzcut" because the tokenizer
+ * splits on non-letters and would not match it otherwise.
+ *
+ * Note "shaven" keeps a clean-SHAVEN brief fully suppressing hair, which is
+ * over-deference inherited from the original list rather than something this
+ * change introduces. Loosening it is a separate, deliberate decision.
+ */
+const COVERAGE_WORDS = [
+  "bald", "balding", "shaved", "shaven", "buzz", "buzzed", "buzzcut",
+  "crewcut", "receding", "thinning", "hairless",
+];
+
 /** Style names that are already plural and must not take an article. */
 const PLURAL_STYLES = new Set(["locs", "braids", "soft layers"]);
 
 /**
- * Did the brief already decide the hair?
+ * Did the brief mention hair at all?
  *
- * Exported so the compiler's sheet-taste pass asks the same question with the
- * same word list. A second copy of `HAIR_WORDS` next to a second reader is
- * exactly how the two would drift out of agreement about what "stated" means.
+ * The OUTER GATE for partial deference, and its direction is the whole point:
+ * keywords may force MORE deference, never less. The interpreter refines
+ * *within* a brief that mentions hair; it cannot unlock a brief that does not
+ * mention hair into being authored differently, and it cannot claim hair was
+ * spoken when no hair word exists.
+ *
+ * That asymmetry also covers a nasty default. A model that omits `hairSpoken`
+ * yields an empty array, which read naively means "author everything" — the
+ * exact opposite of safe. The gate converts that silence into full deference.
+ *
+ * Exported so every reader asks the question with the same word list; a second
+ * copy next to a second reader is how the two drift on what "stated" means.
  */
 export function briefStatesHair(...sources: (string | null | undefined)[]): boolean {
   const words = new Set(sources.filter(Boolean).join(" ").toLowerCase().split(/[^a-z]+/));
   return HAIR_WORDS.some((word) => words.has(word));
 }
 
+/** Coverage, which is all-or-nothing however the brief was decomposed. */
+export function briefStatesCoverage(...sources: (string | null | undefined)[]): boolean {
+  const words = new Set(sources.filter(Boolean).join(" ").toLowerCase().split(/[^a-z]+/));
+  return COVERAGE_WORDS.some((word) => words.has(word));
+}
+
+/**
+ * What the sheet is still allowed to author, after the gate and the backstop.
+ *
+ * One place decides this, and everything downstream — the prompt sentence, the
+ * taste pass, the persisted identity — reads the same answer.
+ */
+export type OpenHairAxes = { cutLength: boolean; texture: boolean; colour: boolean };
+
+export function openHairAxes(input: {
+  spoken: readonly HairSubAxis[];
+  greyOverlay: boolean;
+  stated: string;
+}): OpenHairAxes {
+  /*
+    COVERAGE FIRST, before the mention gate, and that order is load-bearing.
+    "A buzzed marine" and "a balding accountant" contain no word in HAIR_WORDS —
+    it carries "buzz" and "bald", and the tokenizer splits on non-letters, so
+    neither inflected form matched. Checking the mention gate first therefore
+    declared those briefs hair-free and authored a full head of hair onto them.
+    Coverage is strictly the strongest statement anyone can make about hair;
+    nothing should be able to reach past it.
+  */
+  if (briefStatesCoverage(input.stated) || input.spoken.includes("coverage")) {
+    return { cutLength: false, texture: false, colour: false };
+  }
+  // Nothing mentioned: everything is ours to author, as it always was.
+  if (!briefStatesHair(input.stated)) return { cutLength: true, texture: true, colour: true };
+  /*
+    Hair was mentioned but nothing was decomposed — an interpreter outage, an
+    older cached intent, or the deterministic fallback, which has no
+    interpreter at all. Fail toward the behaviour that shipped before this
+    existed rather than toward guessing.
+  */
+  if (input.spoken.length === 0 && !input.greyOverlay) {
+    return { cutLength: false, texture: false, colour: false };
+  }
+  return {
+    cutLength: !input.spoken.includes("cutLength"),
+    texture: !input.spoken.includes("texture"),
+    // Greying constrains the base colour rather than claiming it, so colour
+    // stays open and `varyHair` restricts the palette instead.
+    colour: !input.spoken.includes("colour"),
+  };
+}
+
+/**
+ * The authored hair sentence, composed only from the parts the brief left open.
+ *
+ * Under partial deference this is a SUBSET, and the composition is where a
+ * subset can go wrong. Three things it must never do:
+ *
+ *   - restate a sub-axis the user already decided (condition 4 of the ruling —
+ *     the brief's words are senior, and this complements them);
+ *   - name a cut whose own name carries a suppressed sub-axis, which the style
+ *     pool handles by refusing texture-bearing cuts when texture is spoken;
+ *   - keep the closing sentence when there is no named cut left to close over.
+ *     "Cut and worn as that style is genuinely worn" points at nothing when the
+ *     cut noun is gone.
+ *
+ * The sentence is recomposed from the surviving pieces rather than stripped,
+ * so the article agrees with whatever word actually starts it.
+ */
 function describeHair(
   hair: Hair | null,
-  stated: string,
+  open: OpenHairAxes,
   texture: string,
   style: HairStyle,
 ): string {
-  /*
-    The brief owns hair the moment it mentions it. Saying nothing here is the
-    whole fix: the user's words are already in the prompt, and adding a second,
-    randomly-chosen hair sentence beside them is how "shaved head" became curls.
-
-    Token membership rather than a regex, deliberately. Three separate escaping
-    accidents this session turned a pattern into something that silently matched
-    nothing while reading correctly — a `\b` became a literal backspace once,
-    and a `\s` became the letter "s". A word list cannot be mangled into
-    something that looks right and does nothing.
-  */
-  if (briefStatesHair(stated)) return "";
   if (!hair) return "";
+  if (!open.cutLength && !open.texture && !open.colour) return "";
+
   /*
     The named cut, not the silhouette.
 
@@ -945,28 +1070,40 @@ function describeHair(
     person's taste. The closing sentence is the other half: a named cut rendered
     generically is the same collapse wearing a label, so the prompt asks for the
     cut as it is actually worn.
-  */
-  /*
-    Grammar, because the prompt is prose the model reads. "a ash blonde straight
-    bob" and "a black coiled locs" both came out of the first draft — a wrong
-    article is noise in a sentence whose every other word is doing work.
-  */
-  /*
+
     A style whose name already carries its texture does not get it twice.
     "a black curly curly crop" came out of the first live sheet — the kind of
     thing that reads as a typo to a model and gets weighted like an emphasis.
   */
   const grain = style.texture ?? texture;
-  const description = style.name.includes(grain)
-    ? `${hair.colour} ${style.name}`
-    : `${hair.colour} ${grain} ${style.name}`;
-  const plural = PLURAL_STYLES.has(style.name);
+  const words = [
+    open.colour ? hair.colour : null,
+    open.texture && !style.name.includes(grain) ? grain : null,
+    open.cutLength ? style.name : null,
+  ].filter((word): word is string => word !== null);
+  if (words.length === 0) return "";
+
+  const description = words.join(" ");
+  /*
+    Grammar, because the prompt is prose the model reads. "a ash blonde straight
+    bob" and "a black coiled locs" both came out of the first draft — a wrong
+    article is noise in a sentence whose every other word is doing work. Built
+    from the composed string so a dropped leading word still agrees.
+  */
+  const plural = open.cutLength && PLURAL_STYLES.has(style.name);
   const article = plural ? "" : /^[aeiou]/.test(description) ? "an " : "a ";
-  const cut =
-    style.family === "shaved"
-      ? ` HAIR: a ${style.name}, ${hair.colour} where it is grown out.`
-      : ` HAIR: ${article}${description}.`;
-  return `${cut} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
+
+  if (open.cutLength && style.family === "shaved") {
+    return ` HAIR: a ${style.name}${open.colour ? `, ${hair.colour} where it is grown out` : ""}.`;
+  }
+  // Without a cut noun the sentence describes hair rather than naming a style,
+  // so it says so plainly instead of dangling an article over a colour.
+  const sentence = open.cutLength
+    ? ` HAIR: ${article}${description}.`
+    : ` HAIR: ${description} hair.`;
+  return open.cutLength
+    ? `${sentence} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`
+    : sentence;
 }
 
 function describeHeritage(components: HeritageComponent[]): string {
@@ -1029,7 +1166,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture, resolved.realized.hairStyle)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText))}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, openHairAxes({ spoken: intent.hairSpoken ?? [], greyOverlay: intent.greyOverlay === true, stated: statedText }), resolved.realized.hairTexture, resolved.realized.hairStyle)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText))}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.

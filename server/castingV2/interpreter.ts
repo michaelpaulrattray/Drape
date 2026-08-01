@@ -54,7 +54,9 @@ Reply with a single JSON object and nothing else:
   "archetype": ${ARCHETYPE_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
   "variationAxis": "look" | "disposition" | null,
   "look": ${LOOK_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
-  "reads": [8 short strings] | null
+  "reads": [8 short strings] | null,
+  "hairSpoken": ["colour" | "cutLength" | "texture" | "coverage"],
+  "greyOverlay": true | false
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -143,6 +145,27 @@ WHAT TO EXTRACT
 - "look": only when the brief names a specific casting look. A stated look
   locks across all eight; leave it null and the eight will each take a
   different one.
+- "hairSpoken": WHICH PARTS OF HAIR the brief actually spoke to. This is not
+  "did it mention hair" — it is which aspects it decided, so the casting engine
+  knows what is still free to vary across the eight.
+      "colour"    — a base hair colour: blonde, black, red, brunette, ginger
+      "cutLength" — a cut or a length: bob, pixie, long, cropped, undercut
+      "texture"   — straight, wavy, curly, coiled, kinky
+      "coverage"  — shaved, bald, buzzed, a receding hairline, thinning
+  List only what the brief decided. "A blonde woman" → ["colour"], and nothing
+  else: her cut and texture are still open, and the engine will give the eight
+  eight different haircuts.
+  IF YOU CANNOT TELL which aspects were decided, list ALL FOUR. That is the
+  safe answer — it means "treat the hair as fully described" and the engine
+  will add nothing. Never guess that an aspect is free when it might not be.
+  If the brief says nothing about hair at all, return [].
+- "greyOverlay": true when the brief says the hair is GREYING rather than
+  naming its colour — "silver at the temples", "greying", "salt-and-pepper",
+  "going grey". This is the one case that is a constraint rather than a
+  decision: it says something is happening to the hair, while the colour
+  underneath is still open. So "silver at the temples" is greyOverlay TRUE and
+  does NOT put "colour" in hairSpoken. "Grey hair" with no base implied is a
+  colour statement: hairSpoken ["colour"], greyOverlay false.
 - "reads": exactly eight short labels — two or three words each, under 26
   characters — describing eight different people who all fit this brief. They
   caption the tiles, so write them in the brief's OWN register: a nurse sheet

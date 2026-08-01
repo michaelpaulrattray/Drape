@@ -58,6 +58,7 @@ import {
   resolveArchetype,
   resolveCandidateIdentity,
   briefStatesHair,
+  openHairAxes,
   statedAxis,
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
@@ -230,6 +231,14 @@ function fallbackIntent(briefText: string): CastingIntent {
     variationAxis: null,
     look: null,
     reads: [],
+    /*
+      No interpreter means no decomposition, so the keyword gate is the only
+      signal available. It runs outside this and forces full deference on any
+      hair mention — failing toward the safe behaviour rather than authoring a
+      haircut nobody asked for.
+    */
+    hairSpoken: [],
+    greyOverlay: false,
   };
 }
 
@@ -356,6 +365,30 @@ function buildChips(intent: CastingIntent, followPersonaLine: string | null): Ca
 }
 
 /**
+ * Blank the hair the prompt did not carry, so the stored identity is honest.
+ *
+ * Kept narrow: only the sub-axes suppressed by deference, and only on the copy
+ * that is persisted. The follow anchor reads this record, so a follow of a
+ * deferred candidate inherits "the brief decided this" rather than a value we
+ * invented and never used.
+ */
+function withSuppressedHairNulled(
+  identity: ResolvedIdentity,
+  open: { cutLength: boolean; texture: boolean; colour: boolean },
+): ResolvedIdentity {
+  if (open.cutLength && open.texture && open.colour) return identity;
+  return {
+    ...identity,
+    hair: open.colour || open.cutLength ? identity.hair : null,
+    realized: {
+      ...identity.realized,
+      ...(open.cutLength ? {} : { hairStyle: null }),
+      ...(open.texture ? {} : { hairTexture: null }),
+    },
+  } as ResolvedIdentity;
+}
+
+/**
  * Resolve the whole sheet, apply the sheet-level taste rules, then compose.
  *
  * That order is the point, and it is why this is a function rather than two
@@ -392,6 +425,13 @@ function resolveSheet(input: {
   );
 
   const stated = [briefText, intent.role ?? "", intent.characterNotes ?? ""].join(" ");
+  /*
+    PARTIAL DEFERENCE, decided once for the sheet because it is a property of
+    the brief rather than of a candidate. Everything downstream — the prompt
+    sentence, the taste rules, the persisted identity — reads this one answer,
+    so they cannot disagree about what the user decided.
+  */
+  const open = openHairAxes({ spoken: intent.hairSpoken ?? [], greyOverlay: intent.greyOverlay === true, stated });
   const inherited = anchor?.realized != null;
   /*
     A follow is the one full skip: every candidate copies the anchor's realized
@@ -416,12 +456,15 @@ function resolveSheet(input: {
         */
         statedFacialHair: statedAxis("facialHair", stated),
         /*
-          When the brief states hair, none of the authored hair reaches the
-          prompt. Mutating it would edit a record the image never saw, so the
-          hair rules stand down and the twin rule falls back to separating on
-          its second axis alone.
+          Each hair rule runs exactly when its sub-axis reaches the prompt.
+          A rule that mutated a suppressed sub-axis would edit a record the
+          image never saw; the twin rule falls back to its second axis when
+          the silhouette is not ours to move.
         */
-        hairAuthored: !briefStatesHair(briefText, intent.role, intent.characterNotes),
+        styleAuthored: open.cutLength,
+        colourAuthored: open.colour,
+        greyOverlay: intent.greyOverlay === true,
+        avoidTexturedStyles: (intent.hairSpoken ?? []).includes("texture"),
       });
 
   return {
@@ -429,7 +472,15 @@ function resolveSheet(input: {
       position,
       prompt: composeCandidatePrompt({ briefText, intent, resolved: identity, archetype, seed: position }),
       personaLine: personaLineFor(identity, intent.reads[position] ?? null),
-      resolvedIdentity: identity,
+      /*
+        The record matches the prompt that was sent. Before this, a fully
+        deferred brief still persisted a fabricated cut, colour and texture
+        that no image ever rendered — which is precisely how the founder's
+        sameness report was diagnosed as a resolver problem when the resolver
+        had been overruled. A suppressed sub-axis is null, not a plausible
+        value nobody used.
+      */
+      resolvedIdentity: withSuppressedHairNulled(identity, open),
     })),
   };
 }
