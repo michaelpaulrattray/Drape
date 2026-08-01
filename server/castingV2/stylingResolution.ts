@@ -28,6 +28,24 @@ import { ARCHETYPES, LOOKS, type CastingIntent } from "./castingIntent";
  * women — degrading it would take the only separator those sheets have.
  */
 
+/**
+ * The composed-direction kill switch — one line, beside the other taste
+ * toggles, so a rollback is sixty seconds and does not grow the flag registry
+ * (founder ruling, no env flag).
+ *
+ * Flip to `false` and the field is still parsed, capped and guarded; it simply
+ * never reaches a prompt. That is the safe direction: behaviour returns to
+ * exactly what shipped before, with no other path changing.
+ */
+/*
+  OFF pending a founder ruling. Measured on the live harness at three samples
+  per brief: miu miu captured 3/3, Margiela 2/3, Wes Anderson 1/3. The founder
+  set "Margiela must still capture" as a non-negotiable anti-regression
+  condition, and 2/3 does not meet it — so the whole path lands dark rather
+  than shipping on a bar that was not cleared.
+*/
+export const COMPOSED_DIRECTION_ENABLED = false;
+
 export type StylingResolution =
   /** The brief named the styling itself; nothing is authored (deference). */
   | "stated"

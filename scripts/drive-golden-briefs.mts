@@ -37,6 +37,16 @@ type Failure = { brief: string; run: number; problem: string };
 const failures: Failure[] = [];
 
 for (const golden of GOLDEN_BRIEFS) {
+  /*
+    A brief pinning a bar that later work will meet is reported, not failed.
+    A permanently red harness is one people stop reading, and the point of
+    recording a future bar is that it survives to be met.
+  */
+  if (golden.deferredTo) {
+    console.log(`PEND  deferred     "${golden.brief}"\n        bar met by: ${golden.deferredTo}`);
+    continue;
+  }
+
   const roles: (string | null)[] = [];
 
   for (let run = 1; run <= RUNS; run += 1) {

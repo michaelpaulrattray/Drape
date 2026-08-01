@@ -71,6 +71,7 @@ import {
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import {
+  COMPOSED_DIRECTION_ENABLED,
   HAIR_BIAS_PROSE,
   stylingResolutionFor,
   type StylingResolution,
@@ -1076,11 +1077,17 @@ export function briefStatesHair(...sources: (string | null | undefined)[]): bool
  * and rendered androgynous. Presentation must be intent, never a collision
  * artefact between two axes that never consulted each other.
  *
- * **Presence only, and the narrowing is deliberate.** "Clean-shaven",
- * "beardless" and "unshaven" are facial-hair facts too and none of them codes
- * for sex — every woman is clean-shaven, so reading that as male would invent a
- * lock from a fact carrying none. Only growth that a brief has to be describing
- * a man to state counts here.
+ * **Presence only, ratified as the ruling. The principle behind it is the part
+ * to keep: RESOLVE ONLY WHAT WOULD OTHERWISE CONTRADICT, NEVER INFER BEYOND.**
+ *
+ * A stated beard on an alternated sheet forces a contradiction — four
+ * candidates resolve female and carry a beard they were told to have — so sex
+ * gets resolved to remove it. "Clean-shaven" forces no contradiction on anyone,
+ * because every woman is clean-shaven, so there is nothing to resolve and
+ * inferring male from it would invent a lock out of a fact that carries none.
+ *
+ * The rule exists to prevent manufactured contradictions, never to guess
+ * intent. Any future cross-axis implication has to pass the same test.
  *
  * This never overrides an explicit statement: a stated sex is checked first and
  * wins outright, so "a bearded woman" renders exactly as written.
@@ -1285,7 +1292,21 @@ export function composeCandidatePrompt(input: {
   const finish = statedFinish(statedText) ?? direction.finish;
   const finishBlock = `SKIN FINISH: ${FINISH_RENDER[finish]}`;
 
-  const directionBlock = `DIRECTION: ${direction.thesis} ${direction.avoid} ${finishBlock}`;
+  /*
+    The composed direction, beside the shelf entry rather than instead of it.
+
+    Precedence: stated facts > category > shelf archetype > composed direction >
+    styling-bias > prior. Below the shelf because a reviewed constant outranks
+    generated prose; above styling-bias for the same reason bias exists at all.
+
+    Never in CASTING CATEGORY — that block is the user's own words and is
+    absolute. An aesthetic reference is a direction, not a category.
+  */
+  const composed =
+    COMPOSED_DIRECTION_ENABLED && intent.composedDirection
+      ? ` REFERENCE DIRECTION: ${intent.composedDirection.thesis} ${intent.composedDirection.avoid}`
+      : "";
+  const directionBlock = `DIRECTION: ${direction.thesis} ${direction.avoid}${composed} ${finishBlock}`;
 
   // Category first: it decides who is eligible at all, before direction shapes
   // how they are cast and before the constant fixes how they are photographed.

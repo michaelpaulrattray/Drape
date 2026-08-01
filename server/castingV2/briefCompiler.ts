@@ -231,6 +231,7 @@ function fallbackIntent(briefText: string): CastingIntent {
     variationAxis: null,
     look: null,
     reads: [],
+    composedDirection: null,
   };
 }
 

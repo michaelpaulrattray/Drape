@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d72d94703cf41e0a"
+    "sourceFingerprint": "9c099e75800d23a1"
   },
   "domains": [
     {
@@ -7661,6 +7661,10 @@
     {
       "id": "test:server/castingV2/categorySurvival.test.ts",
       "path": "server/castingV2/categorySurvival.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/composedDirection.test.ts",
+      "path": "server/castingV2/composedDirection.test.ts"
     },
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
@@ -15889,6 +15893,11 @@
     {
       "from": "module:server/castingV2/candidateService.ts",
       "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
     },
     {

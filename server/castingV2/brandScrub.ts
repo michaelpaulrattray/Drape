@@ -76,6 +76,36 @@ export function scrubBrands(text: string | null): string | null {
   return stripped.length > 0 ? stripped : null;
 }
 
+/**
+ * Words that mean a direction is describing CLOTHES rather than a person.
+ *
+ * The garment guard, and it REJECTS rather than edits (founder ruling): a
+ * composed direction that mentions clothing was written against the wrong
+ * brief, and half of it is not salvageable. Two standing rules behind that —
+ * never patch a language model's output with code, and never fail a roll over
+ * it. A rejected direction falls back to shelf behaviour and the roll runs.
+ *
+ * It matters because the frame forbids all of this: a plain grey tee on
+ * seamless paper, no props, no accessories. A direction describing a coat is a
+ * direction that will be ignored at best and fought at worst — and because
+ * brand identity in fashion lives in objects, it is also the likeliest way a
+ * house sneaks back in without its name.
+ */
+const GARMENT_WORDS = [
+  "jacket", "coat", "dress", "suit", "shirt", "blouse", "trouser", "trousers",
+  "skirt", "denim", "leather", "knit", "knitwear", "tailoring", "silhouette",
+  "heel", "heels", "boot", "boots", "shoe", "shoes", "bag", "handbag",
+  "jewellery", "jewelry", "necklace", "earring", "earrings", "logo", "monogram",
+  "print", "fabric", "hem", "collar", "lapel", "buckle", "hardware", "garment",
+  "clothing", "outfit", "wardrobe", "accessory", "accessories", "makeup",
+];
+
+export function mentionsGarments(text: string | null): boolean {
+  if (!text) return false;
+  const words = new Set(text.toLowerCase().split(/[^a-z]+/));
+  return GARMENT_WORDS.some((word) => words.has(word));
+}
+
 /** True when the text still carries a mark — for tests and for the guard. */
 export function containsBrand(text: string | null): boolean {
   if (!text) return false;

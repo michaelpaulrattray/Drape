@@ -94,6 +94,7 @@ export type {
 };
 
 import { z } from "zod";
+import { mentionsGarments, scrubBrands } from "./brandScrub";
 
 /* ------------------------------------------------------------ vocabularies */
 
@@ -379,7 +380,23 @@ export type CastingIntent = {
    * be a dull label — the energy DIRECTION driving the image stays code-owned.
    */
   reads: string[];
+  /**
+   * A casting direction composed for an aesthetic reference no shelf entry
+   * fits — the C7 descendant. Null whenever `archetype` covers it, because a
+   * reviewed constant outranks generated prose.
+   *
+   * In the ARCHETYPE GRAMMAR rather than free text, so the anti-pattern is a
+   * required field rather than something the model may omit, and so it has an
+   * obvious slot in the prompt beside the shelf entry it stands in for.
+   */
+  composedDirection: ComposedDirection | null;
 };
+
+/** The same shape an  entry uses, and reviewed the same way. */
+export type ComposedDirection = { thesis: string; avoid: string };
+
+export const COMPOSED_THESIS_MAX = 200;
+export const COMPOSED_AVOID_MAX = 120;
 
 export const ROLE_MAX = 80;
 export const NOTES_MAX = 180;
@@ -457,6 +474,7 @@ const wireSchema = z.object({
   variationAxis: nullableEnum(VARIATION_AXES),
   look: nullableEnum(LOOK_KEYS as unknown as readonly [string, ...string[]]),
   reads: z.array(z.unknown()).nullable().optional(),
+  composedDirection: z.unknown().nullable().optional(),
   /*
     `.nullable()` matters as much as `.optional()` here, and the difference
     cost a founder 160 credits. Models return `null` and `undefined`
@@ -537,6 +555,37 @@ function parseReads(raw: unknown): string[] {
   return reads;
 }
 
+/**
+ * The composed direction, contained the way every other free field here is.
+ *
+ * Four ways it can be dropped, and dropping is always the answer — a rejected
+ * direction falls back to shelf behaviour and the roll still runs. Never patch
+ * a language model's output with code; never fail a paid roll over it.
+ *
+ *   1. Not the right shape at all.
+ *   2. A garment word in either half. The frame is a plain grey tee on
+ *      seamless paper, so a direction about clothes is written against the
+ *      wrong brief — and since brand identity lives in objects, it is also the
+ *      likeliest way a house returns without its name. **Rejected whole**
+ *      (founder ruling): half of it is not salvageable.
+ *   3. Nothing left after the brand scrub.
+ *   4. Either half empty. Half a direction is worse than none — the
+ *      anti-pattern is what stops "editorial" collapsing into generic gloss.
+ */
+function parseComposedDirection(raw: unknown): ComposedDirection | null {
+  if (!raw || typeof raw !== "object") return null;
+  const wire = raw as { thesis?: unknown; avoid?: unknown };
+  if (typeof wire.thesis !== "string" || typeof wire.avoid !== "string") return null;
+
+  if (mentionsGarments(wire.thesis) || mentionsGarments(wire.avoid)) return null;
+
+  const thesis = scrubBrands(cleanFreeText(wire.thesis, COMPOSED_THESIS_MAX));
+  const avoid = scrubBrands(cleanFreeText(wire.avoid, COMPOSED_AVOID_MAX));
+  if (!thesis || !avoid) return null;
+
+  return { thesis, avoid };
+}
+
 export type IntentParseResult =
   | { ok: true; intent: CastingIntent }
   | { ok: false; reason: "unreadable" | "unsupported_cohort" };
@@ -588,6 +637,7 @@ export function parseCastingIntent(raw: unknown): IntentParseResult {
       variationAxis: wire.variationAxis as VariationAxis | null,
       look: wire.look as LookKey | null,
       reads: parseReads(wire.reads),
+      composedDirection: parseComposedDirection(wire.composedDirection),
     },
   };
 }

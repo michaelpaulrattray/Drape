@@ -54,7 +54,8 @@ Reply with a single JSON object and nothing else:
   "archetype": ${ARCHETYPE_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
   "variationAxis": "look" | "disposition" | null,
   "look": ${LOOK_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
-  "reads": [8 short strings] | null
+  "reads": [8 short strings] | null,
+  "composedDirection": { "thesis": string, "avoid": string } | null
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -161,6 +162,24 @@ WHAT TO EXTRACT
 - "look": only when the brief names a specific casting look. A stated look
   locks across all eight; leave it null and the eight will each take a
   different one.
+- "composedDirection": ONLY when the brief names an aesthetic reference — a
+  fashion house, a director, a film, a scene — that none of the listed
+  "archetype" values fits. Compose a casting direction for it in the same shape
+  the archetype list uses:
+      "thesis": what kind of FACE this casting wants, under 30 words.
+      "avoid":  the anti-pattern — what it must not collapse into, under 20.
+  ADDITIVE, NEVER A SUBSTITUTE. Keep filling "archetype", "look" and every
+  other field exactly as you would have. If a listed archetype fits, use it and
+  leave this null — this field is for references the list cannot hold, not a
+  second place to put things that already have a home.
+  FACE, HAIR AND BEARING ONLY. Never clothing, accessories, makeup, fabric,
+  logos or setting — the photograph is a plain grey tee on seamless paper, so a
+  direction about clothes describes something that cannot appear.
+  NEVER NAME THE REFERENCE. Not the house, not the designer, not the film.
+  Describe the casting, not the brand: "quirky, slightly awkward prep-school
+  beauty — unconventional features worn with total ease", never "the X girl".
+  A reference to someone's AESTHETIC is direction and belongs here. Casting the
+  PERSON is refused — that rule is unchanged and this field never overrides it.
 - "reads": exactly eight short labels — two or three words each, under 26
   characters — describing eight different people who all fit this brief. They
   caption the tiles, so write them in the brief's OWN register: a nurse sheet

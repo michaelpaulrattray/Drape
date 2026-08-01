@@ -29,6 +29,14 @@ export type GoldenBrief = {
    * an archetype, a look, or a composed direction. Never all three null.
    */
   aestheticReference?: boolean;
+  /**
+   * A bar this brief pins for LATER, named by the work that will meet it.
+   *
+   * The harness reports these as PENDING rather than FAIL. A permanently red
+   * harness is one people stop reading, and the point of recording a future
+   * bar is that it survives to be met — not that it shouts every run.
+   */
+  deferredTo?: string;
   /** Why it is on the list. */
   because: string;
 };
@@ -87,6 +95,13 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
     aestheticReference: true,
     because:
       "The boundary the founder pinned: a reference to someone's AESTHETIC is direction. Casting the person stays refused under the named-person law.",
+  },
+  {
+    brief: "a gothic male heavy metal bogan with a long beard and long hair in his mid 20s",
+    category: true,
+    deferredTo: "D-79 re-ship (partial deference), at M7",
+    because:
+      "THE FACT-LEVEL DEFERENCE GAP, pinned. Stating a length silences the whole colour axis as well, so the goth prior fills it and the sheet comes back uniformly black. Bar when partial deference returns: length and beard honoured 8/8 as stated, and colour still AUTHORED — dark-leaning for the aesthetic but not uniform, so the sheet can produce its blonde goth.",
   },
   {
     brief: "a redhead in her 30s",
