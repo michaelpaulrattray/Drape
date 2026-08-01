@@ -833,6 +833,15 @@ export type ResolvedIdentity = {
   energy: EnergyKey;
   /** Set when the sheet varies by look rather than disposition. */
   look: LookKey | null;
+  /**
+   * Where each hair axis came from — stated, anchored, realized or suppressed.
+   *
+   * Metadata about the other fields rather than an axis of its own, which is
+   * why the registry excludes it alongside `stylingResolution`. It exists so a
+   * later reader never has to INFER provenance: inferring is how a follow of a
+   * bias-tier parent came to inherit specificity its lineage never had.
+   */
+  hairTiers?: Record<string, string>;
 };
 
 export type LockViolation = {

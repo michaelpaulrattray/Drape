@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6cb7645f3c0ea65b"
+    "sourceFingerprint": "364d1c7fee09756b"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 21
+      "moduleCount": 22
     },
     {
       "id": "domain:castingV2",
@@ -3143,6 +3143,12 @@
     {
       "id": "module:server/castingV2/goldenBriefs.ts",
       "path": "server/castingV2/goldenBriefs.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/hairResolver.ts",
+      "path": "server/castingV2/hairResolver.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -16083,6 +16089,11 @@
     },
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:server/castingV2/hairResolver.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/hairStyles.ts",
       "kind": "imports"
     },
@@ -16098,6 +16109,16 @@
     },
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairResolver.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairResolver.ts",
       "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },

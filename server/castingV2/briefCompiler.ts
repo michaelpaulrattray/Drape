@@ -558,8 +558,14 @@ function resolveSheet(input: {
   anchor?: FollowAnchor;
 }): { candidates: CandidateSpec[]; variance: VarianceReport } {
   const { intent, briefText, archetype, rollSeed, anchor } = input;
+  /*
+    Derived ONCE, before anything resolves, and handed to every reader — the
+    resolver, the taste pass and the composer. Three readers deriving their own
+    answer to "what did the brief settle" is the shape that produced gate 21.
+  */
+  const deference = hairDeferenceFor({ briefText, intent });
   const resolved = Array.from({ length: input.candidateCount }, (_, position) =>
-    resolveCandidateIdentity(intent, position, rollSeed, anchor),
+    resolveCandidateIdentity(intent, position, rollSeed, anchor, 0, deference),
   );
 
   const stated = [briefText, intent.role ?? "", intent.characterNotes ?? ""].join(" ");
@@ -603,7 +609,6 @@ function resolveSheet(input: {
     With the flag off this collapses to today's answer: any hair word masks every
     part, so nothing authored survives.
   */
-  const deference = hairDeferenceFor({ briefText, intent });
   const authoredParts = new Set<HairPart>(
     HAIR_PARTS.filter((part) => !deference.coverage && !deference.spoken.has(part)),
   );

@@ -179,7 +179,18 @@ const _realizedFieldsEnumerated: RealizedFieldsEnumerated = true;
  * rows rather than a row itself. `realized` is excluded because its contents are
  * enumerated by `REALIZED_AXIS_KEYS` above.
  */
-type IdentityAxisField = Exclude<keyof ResolvedIdentity, "stylingResolution" | "realized">;
+type IdentityAxisField = Exclude<
+  keyof ResolvedIdentity,
+  /*
+    Metadata about the axes, not axes. `stylingResolution` records the TIER the
+    styling axes were authored at; `hairTiers` records where each hair value
+    came from. Both describe the other rows rather than being rows.
+
+    That this list had to grow is the binding doing its job: adding `hairTiers`
+    stopped the build until somebody decided which it was.
+  */
+  "stylingResolution" | "realized" | "hairTiers"
+>;
 
 export const IDENTITY_FIELD_AXES = {
   sex: ["sex"],

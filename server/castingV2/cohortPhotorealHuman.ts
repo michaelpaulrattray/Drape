@@ -80,6 +80,7 @@ import {
   type StatedHair,
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
+import { resolveHairAxes, type HairTiers } from "./hairResolver";
 import {
   COMPOSED_DIRECTION_ENABLED,
   HAIR_BIAS_PROSE,
@@ -879,6 +880,8 @@ export function resolveCandidateIdentity(
   anchor: FollowAnchor | null = null,
   /** The variance budget's release. 0 on every ordinary sheet. */
   driftBoost = 0,
+  /** What the brief settled about hair. Derived once, by the compiler. */
+  deference: HairDeference = hairDeferenceFor({ intent }),
 ): ResolvedIdentity {
   /*
     One hash per axis, never one hash shifted per axis.
@@ -926,24 +929,34 @@ export function resolveCandidateIdentity(
   const sex = intent.sex ?? anchor?.sex ?? (sexCoded ? "male" : varySex(position, rollSeed));
 
   /*
-    THE CUT IS RESOLVED BEFORE THE HAIR RECORD, and the order is the D-87 fix.
+    HAIR RESOLVES THROUGH ONE FUNCTION, with its precedence written down —
+    M7's resolver unification, first axis group (founder condition on the slice
+    zero deferral).
 
-    Both used to be assembled in the same object literal, independently: the
-    realized cut drew its own family and `varyHair` drew another, so a candidate
-    could persist "buzz cut" beside "long". Deriving the record from the cut is
-    only possible if the cut exists first, so it is lifted out of the literal.
+    Everything hair used to be decided by two `??` chains here plus a blanking
+    pass in the compiler, with the order implied rather than stated. It now
+    states it: stated → (no hand tier for hair) → follow-anchored → realized,
+    with sheet-adjusted running later over the whole set where it belongs, and
+    each axis carrying the tier it came from.
 
-    Drifted BEFORE composition, so the persisted `resolvedIdentity` matches the
-    prompt that was actually sent. A record that disagrees with its own prompt
-    is the failure the registry reads as sole truth and can never re-derive.
+    The cut still resolves BEFORE the hair record, which is the D-87 fix: the
+    realized cut used to draw its own family while `varyHair` drew another, so a
+    candidate could persist "buzz cut" beside "long".
   */
-  const realized =
-    (anchor ? anchoredRealized(anchor, sex, heritage, ageBand, position, rollSeed, driftBoost) : null)
-    ?? realizeAxes({ heritage, ageBand, sex, position, rollSeed });
-
-  const hairColour = anchor
-    ? anchoredHairColour(anchor, heritage, ageBand, position, rollSeed)
-    : varyHairColour(heritage, ageBand, position, rollSeed);
+  const hair = resolveHairAxes({
+    spoken: deference.spoken,
+    coverage: deference.coverage,
+    anchored: anchor
+      ? () => anchoredRealized(anchor, sex, heritage, ageBand, position, rollSeed, driftBoost)
+      : null,
+    anchoredColour: anchor
+      ? () => anchoredHairColour(anchor, heritage, ageBand, position, rollSeed)
+      : null,
+    realize: () => realizeAxes({ heritage, ageBand, sex, position, rollSeed }),
+    realizeColour: () => varyHairColour(heritage, ageBand, position, rollSeed),
+  });
+  const realized = hair.realized;
+  const hairColour = hair.colour;
 
   return {
     sex,
@@ -968,8 +981,14 @@ export function resolveCandidateIdentity(
       a different heritage gets hair that belongs to the face they actually
       have — and its silhouette comes from the cut, never from a second draw.
     */
-    hair: hairRecord(hairColour, realized.hairStyle),
+    hair: hairColour === null ? null : hairRecord(hairColour, realized.hairStyle),
     realized,
+    /*
+      The tiers travel with the identity so no later reader has to infer where a
+      value came from — inferring is how a follow of a bias-tier parent came to
+      inherit specificity its lineage never had.
+    */
+    hairTiers: hair.tiers,
     /*
       Energy is the one axis that cycles rather than samples: eight candidates
       against eight energies gives one of each, which is the most legible
@@ -1591,7 +1610,7 @@ function bareTerm(value: string | null): string | null {
  * guarantee that is for its code path not to change at all.
  */
 function describePartialHair(input: {
-  hair: Hair;
+  hair: Hair | null;
   deference: HairDeference;
   style: HairStyle;
   texture: string | null;
@@ -1611,7 +1630,7 @@ function describePartialHair(input: {
     colour leaves length and texture genuinely unsaid, so authoring them is the
     feature working; it is only the spoken part that must stay silent.
   */
-  const colour = spoken.has("colour") ? bareTerm(stated.colour) : hair.colour;
+  const colour = spoken.has("colour") ? bareTerm(stated.colour) : hair?.colour ?? null;
   const grain = style.texture ?? input.texture;
   const texture = spoken.has("texture") ? bareTerm(stated.texture) : grain;
   const length = spoken.has("cutLength") ? bareTerm(stated.cutLength) : style.name;
@@ -1687,7 +1706,17 @@ function describeHair(
     shaved at all.
   */
   if (!style) return "";
-  if (!hair) return "";
+
+  /*
+    A NULL HAIR RECORD IS NOT AN ABSENT CUT.
+
+    Under partial deference the colour can be suppressed on its own — the brief
+    named it, so nothing is authored — while the cut is still ours to describe.
+    Bailing on `!hair` here would let a stated COLOUR silence the LENGTH, which
+    is the whole-axis behaviour this feature exists to end, reintroduced one
+    layer down.
+  */
+  if (!hair && !PARTIAL_DEFERENCE_ENABLED) return "";
 
   /*
     COVERAGE IS TOTAL, and it is checked before anything else.
@@ -1735,6 +1764,8 @@ function describeHair(
       wornState,
     });
   }
+
+  if (!hair) return "";
 
   /*
     BIAS MODE. The brief carried creative context, so a named cut would compete

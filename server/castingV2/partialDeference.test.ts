@@ -4,6 +4,7 @@ import { castingBriefCompiler } from "./briefCompiler";
 import { EMPTY_STATED_HAIR, parseCastingIntent, tokensComeFromBrief } from "./castingIntent";
 import { briefStatesCoverage, spokenHairParts } from "./cohortPhotorealHuman";
 import { PARTIAL_DEFERENCE_ENABLED } from "./stylingResolution";
+import { resolveHairAxes } from "./hairResolver";
 import type { TextEngine } from "../providers/types";
 
 /**
@@ -204,5 +205,93 @@ describe("the kill switch", () => {
       on.
     */
     expect(PARTIAL_DEFERENCE_ENABLED).toBe(true);
+  });
+});
+
+/* ------------------------------------------------- the resolver's precedence */
+
+describe("the hair resolver states its own precedence", () => {
+  /*
+    M7's resolver unification, first axis group — the founder's condition on
+    accepting slice zero's deferral. The value of this is not that the code got
+    shorter; it is that the ORDER is now a thing a test can read.
+  */
+  const realized = {
+    eyeColour: "blue",
+    hairStyle: { name: "low bun", family: "long" },
+    facialHair: null,
+    hairTexture: "straight",
+    hairModifiers: null,
+    wornState: "worn up",
+    browStyle: "full",
+    skinCharacter: "plain",
+  } as never;
+  const anchoredRealized = { ...(realized as object), hairStyle: { name: "pixie", family: "short" } } as never;
+
+  const resolve = (over: Partial<Parameters<typeof resolveHairAxes>[0]> = {}) =>
+    resolveHairAxes({
+      spoken: new Set(),
+      coverage: false,
+      anchored: null,
+      anchoredColour: null,
+      realize: () => realized,
+      realizeColour: () => "brown",
+      ...over,
+    });
+
+  it("falls to realized when nothing outranks it", () => {
+    const out = resolve();
+    expect(out.tiers.hairStyle).toBe("realized");
+    expect(out.tiers.hairColour).toBe("realized");
+    expect(out.colour).toBe("brown");
+  });
+
+  it("lets a follow anchor outrank realization", () => {
+    const out = resolve({
+      anchored: () => anchoredRealized,
+      anchoredColour: () => "blonde",
+    });
+    expect(out.tiers.hairStyle).toBe("anchored");
+    expect(out.tiers.hairColour).toBe("anchored");
+    expect(out.colour).toBe("blonde");
+    expect(out.realized.hairStyle?.name).toBe("pixie");
+  });
+
+  it("lets a STATED part outrank even the anchor — suppressed, never authored", () => {
+    /*
+      The theorem, as a tier. A followed candidate whose new brief names a
+      colour must not inherit the parent's: the brief outranks the lineage,
+      which is the same precedence the rest of the compiler already obeys.
+    */
+    const out = resolve({
+      spoken: new Set(["colour"]),
+      anchored: () => anchoredRealized,
+      anchoredColour: () => "blonde",
+    });
+    expect(out.tiers.hairColour).toBe("suppressed");
+    expect(out.colour).toBeNull();
+    // And the parts the brief left open still inherit.
+    expect(out.tiers.hairStyle).toBe("anchored");
+  });
+
+  it("takes the cut's components and worn state down with a stated length", () => {
+    // Authoring a curtain fringe onto a length the user named is authoring
+    // inside a fact they stated.
+    const out = resolve({ spoken: new Set(["cutLength"]) });
+    expect(out.tiers.hairStyle).toBe("suppressed");
+    expect(out.tiers.hairModifiers).toBe("suppressed");
+    expect(out.tiers.wornState).toBe("suppressed");
+    // Colour and texture answer for themselves.
+    expect(out.tiers.hairColour).toBe("realized");
+    expect(out.tiers.hairTexture).toBe("realized");
+  });
+
+  it("suppresses the scalp entirely on coverage, and leaves the jaw alone", () => {
+    const out = resolve({ coverage: true });
+    expect(out.tiers.hairStyle).toBe("suppressed");
+    expect(out.tiers.hairColour).toBe("suppressed");
+    // Facial hair has its own gate — a statement about a scalp is not one
+    // about a jaw, and conflating them is a defect this codebase already fixed.
+    expect(out.tiers.facialHair).not.toBe("suppressed");
   });
 });
