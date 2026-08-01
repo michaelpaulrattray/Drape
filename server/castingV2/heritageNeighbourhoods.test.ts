@@ -9,7 +9,7 @@ import {
   secondAxis,
 } from "./heritageNeighbourhoods";
 import { applySheetTaste } from "./realizedAxes";
-import { resolveCandidateIdentity } from "./cohortPhotorealHuman";
+import { resolveCandidateIdentity, briefStatesHair } from "./cohortPhotorealHuman";
 import { deterministicBriefCompiler } from "./briefCompiler";
 import { HAIR_COLOUR_WEIGHTS, stylesFor } from "./hairStyles";
 import type { CastingIntent, HeritageComponent, ResolvedIdentity } from "./castingIntent";
@@ -459,6 +459,78 @@ describe("a brief that states hair", () => {
       const raw = rawSheet(`both-${roll}`);
       const after = applySheetTaste(raw, `both-${roll}`, { hairAuthored: false, statedFacialHair: true });
       expect(after).toEqual(raw);
+    }
+  });
+});
+
+describe("a brow is not a hair statement", () => {
+  /*
+    Founder finding, confirmed from the persisted record before fixing. "A
+    beauty creator in her late 20s, bleached brows" tripped the hair gate on
+    "bleached", so hair rules stood down across the whole sheet — sixteen tiles
+    with no authored hair, for a statement about eyebrows. Roll 2 tiles 06/07
+    then came back twins: Afro-Caribbean and West African (one neighbourhood),
+    both mid-length, both black, and a sheet of women has no facial-hair axis
+    for the twin rule to fall back on.
+  */
+  it("does not defer hair for a brow or lash statement", () => {
+    expect(briefStatesHair("A beauty creator in her late 20s, bleached brows")).toBe(false);
+    expect(briefStatesHair("a beauty creator with bleached lashes")).toBe(false);
+    expect(briefStatesHair("bleached eyebrows and freckles")).toBe(false);
+    expect(briefStatesHair("silver eyebrows")).toBe(false);
+  });
+
+  it("still defers when an unambiguous hair word is present too", () => {
+    // Surrendering the ambiguous word never surrenders the sentence: one real
+    // hair word anywhere still decides it.
+    expect(briefStatesHair("a woman with bleached blonde hair")).toBe(true);
+    expect(briefStatesHair("bleached brows and a platinum bob")).toBe(true);
+    expect(briefStatesHair("bleached brows, long hair")).toBe(true);
+  });
+
+  it("still defers for an ambiguous word with nothing else claiming it", () => {
+    // "Bleached" alone is a hair statement — there is no brow in the sentence.
+    expect(briefStatesHair("a model with bleached ends")).toBe(true);
+    expect(briefStatesHair("silver at the temples")).toBe(true);
+  });
+
+  it("authors hair again for the founder's brief", async () => {
+    const compiled = await deterministicBriefCompiler({
+      briefText: "A beauty creator in her late 20s, bleached brows",
+      candidateCount: 8,
+      rollSeed: "brow-authors",
+    });
+    for (const candidate of compiled.candidates) {
+      const cleaned = candidate.prompt.split("FACIAL HAIR:").join("FH:");
+      expect(cleaned).toContain(" HAIR: ");
+    }
+  });
+
+  it("separates the pair that prompted this", async () => {
+    /*
+      With hair authored again, the twin rule has silhouette and colour to work
+      with, and the neighbourhood pair separates.
+    */
+    for (let roll = 0; roll < 100; roll += 1) {
+      const compiled = await deterministicBriefCompiler({
+        briefText: "A beauty creator in her late 20s, bleached brows",
+        candidateCount: 8,
+        rollSeed: `brow-twin-${roll}`,
+      });
+      const sheet = compiled.candidates.map((c) => c.resolvedIdentity);
+      for (let i = 0; i < sheet.length; i += 1) {
+        for (let j = i + 1; j < sheet.length; j += 1) {
+          const hi = sheet[i].heritage[0]?.heritage ?? "";
+          const hj = sheet[j].heritage[0]?.heritage ?? "";
+          if (!sameNeighbourhood(hi, hj)) continue;
+          if (sheet[i].realized.hairStyle.family !== sheet[j].realized.hairStyle.family) continue;
+          const same =
+            sheet[i].hair &&
+            sheet[j].hair &&
+            colourBucket(sheet[i].hair!.colour) === colourBucket(sheet[j].hair!.colour);
+          expect(same, `roll ${roll} tiles ${i + 1}/${j + 1}`).toBeFalsy();
+        }
+      }
     }
   });
 });

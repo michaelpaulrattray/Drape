@@ -360,6 +360,17 @@ export { REALIZED_AXIS_KEYS };
  * the ladder deliberately has no rung for them. A twinned pair of grey heads is
  * therefore possible; it needs the style rule to separate them, which it does.
  *
+ * **NAMED LIMIT: a sheet of women whose hair the brief genuinely stated cannot
+ * be separated at all.** The hair rules stand down because nothing authored
+ * reaches the prompt, and the twin rule's fallback axis is facial hair, which a
+ * sheet of women does not have. Measured at 189 neighbourhood twins across 200
+ * such sheets, against 1 when the hair rules run. This sits beside the
+ * narrow-palette limit as something the design cannot currently fix rather than
+ * something it forgot: closing it needs a second visible axis for women that
+ * survives hair deference — build is null under any stated role, so it would
+ * have to be something new. Recorded rather than worked around, because a
+ * silent partial fix here would be worse than a known gap.
+ *
  * **M7 note:** after this pass, `realizeAxes(rollSeed, position)` no longer
  * reproduces the stored value for an adjusted candidate. The registry must read
  * the persisted `resolvedIdentity` as truth and never re-derive it.

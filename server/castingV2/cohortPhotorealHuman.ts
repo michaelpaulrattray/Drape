@@ -902,6 +902,26 @@ const HAIR_WORDS = [
   "silver", "platinum", "bleached", "highlights", "roots",
 ];
 
+/**
+ * Words that describe hair ONLY when nothing else on the face owns them.
+ *
+ * "A beauty creator in her late 20s, bleached brows" tripped the gate on
+ * "bleached" and stood the hair rules down across an entire sheet — for a
+ * statement about eyebrows. The founder found the consequence: roll 2 tiles
+ * 06/07 came back twins, because the twin rule's fallback axis is facial hair
+ * and a sheet of women has none, so nothing was left to separate them with.
+ *
+ * A brow is not hair. Each of these is a colour or treatment that applies as
+ * readily to brows and lashes, and none of them names hair by itself.
+ */
+const AMBIGUOUS_HAIR_WORDS = new Set(["bleached", "highlights", "silver", "platinum", "grey", "gray"]);
+
+/** The features that can claim an ambiguous word away from the hair axis. */
+const OTHER_FEATURE_WORDS = [
+  "brow", "brows", "eyebrow", "eyebrows", "unibrow", "monobrow",
+  "lash", "lashes", "eyelash", "eyelashes", "beard", "moustache", "mustache",
+];
+
 /** Style names that are already plural and must not take an article. */
 const PLURAL_STYLES = new Set(["locs", "braids", "soft layers"]);
 
@@ -914,7 +934,22 @@ const PLURAL_STYLES = new Set(["locs", "braids", "soft layers"]);
  */
 export function briefStatesHair(...sources: (string | null | undefined)[]): boolean {
   const words = new Set(sources.filter(Boolean).join(" ").toLowerCase().split(/[^a-z]+/));
-  return HAIR_WORDS.some((word) => words.has(word));
+  /*
+    An ambiguous word claimed by another feature is not a hair statement. When
+    the brief says "bleached brows", the brow owns "bleached" and hair was never
+    mentioned — deferring the whole hair axis there loses variation the user
+    never asked us to give up.
+
+    Only the AMBIGUOUS words are surrendered. An unambiguous hair word anywhere
+    in the sentence still decides it, so "bleached brows and a blonde bob" is
+    still a hair statement, and the reading stays conservative: surrendering an
+    ambiguous word costs authored variation, never a stated fact, because the
+    user's own words travel to the prompt either way.
+  */
+  const claimedElsewhere = OTHER_FEATURE_WORDS.some((word) => words.has(word));
+  return HAIR_WORDS.some(
+    (word) => words.has(word) && !(claimedElsewhere && AMBIGUOUS_HAIR_WORDS.has(word)),
+  );
 }
 
 function describeHair(

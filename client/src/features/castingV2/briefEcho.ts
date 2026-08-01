@@ -160,9 +160,25 @@ function subjectPhrase(locks: BriefFacts["locks"], hasRole: boolean): EchoSpan[]
   return spans;
 }
 
-function heritagePhrase(heritage: string[]): EchoSpan[] {
+/**
+ * The connector before an optional clause, aware of whether it is FIRST.
+ *
+ * Every clause after the subject was written assuming a subject existed, so it
+ * hard-coded a leading ", ". When the brief pins a heritage and nothing else —
+ * no category, no sex, no age, no build — both openers return nothing and the
+ * sentence began with a comma: ", of East Asian heritage. The eight differ by
+ * look." Broken English on the sheet's most-read line.
+ *
+ * A helper rather than a conditional at each site, because there are three
+ * such clauses today and the next one added would reproduce the bug.
+ */
+function connector(spans: EchoSpan[], opening: string, continuing: string): EchoSpan {
+  return { kind: "text", text: spans.length === 0 ? opening : continuing };
+}
+
+function heritagePhrase(heritage: string[], first: boolean): EchoSpan[] {
   return [
-    { kind: "text", text: ", of " },
+    { kind: "text", text: first ? "Everyone on this sheet is of " : ", of " },
     { kind: "fact", text: `${heritage.join(" and ")} heritage`, field: "heritage" },
   ];
 }
@@ -204,15 +220,17 @@ function composeSpans(
   const { role, locks, open, variationAxis } = facts;
   const spans: EchoSpan[] = [...categoryPhrase(role), ...subjectPhrase(locks, Boolean(role))];
 
-  if (locks.heritage && locks.heritage.length > 0) spans.push(...heritagePhrase(locks.heritage));
+  if (locks.heritage && locks.heritage.length > 0) {
+    spans.push(...heritagePhrase(locks.heritage, spans.length === 0));
+  }
 
   if (locks.energy) {
-    spans.push({ kind: "text", text: ", reading " });
+    spans.push(connector(spans, "Everyone on this sheet reads ", ", reading "));
     spans.push({ kind: "fact", text: locks.energy, field: "energy" });
   }
 
   if (locks.look) {
-    spans.push({ kind: "text", text: ", held to " });
+    spans.push(connector(spans, "Everyone on this sheet is held to ", ", held to "));
     spans.push({ kind: "fact", text: locks.look, field: "look" });
   }
 

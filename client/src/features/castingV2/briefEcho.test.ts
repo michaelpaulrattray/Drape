@@ -326,3 +326,61 @@ describe("a locked look cannot also be what the eight differ by", () => {
     expect(echoText(spans)).toContain("The eight differ by look");
   });
 });
+
+describe("no clause may open the sentence with a comma", () => {
+  /*
+    Founder report: "An East Asian model with long pastel pink hair" echoed as
+    ", of East Asian heritage. The eight differ by look." — a leading comma and
+    no opening clause.
+
+    Cause: every clause after the subject was written assuming a subject
+    existed, so each hard-coded a leading ", ". With no category and no sex,
+    age or build, both openers return nothing and the first optional clause
+    became the first thing on the line.
+
+    One test per clause that can lead, because the bug is positional and a
+    clause added later would reproduce it.
+  */
+  it("opens on heritage when heritage is the only thing pinned", () => {
+    const spans = composeEcho(facts({ locks: { heritage: ["East Asian"] }, variationAxis: "look" }));
+    const text = echoText(spans);
+    expect(text.startsWith(",")).toBe(false);
+    expect(text).toBe("Everyone on this sheet is of East Asian heritage. The eight differ by look.");
+  });
+
+  it("opens on presence when presence is the only thing pinned", () => {
+    const spans = composeEcho(facts({ locks: { energy: "dry" } }));
+    expect(echoText(spans)).toBe("Everyone on this sheet reads dry.");
+  });
+
+  it("opens on look when the look is the only thing pinned", () => {
+    const spans = composeEcho(facts({ locks: { look: "severe minimal" } }));
+    expect(echoText(spans)).toBe("Everyone on this sheet is held to severe minimal.");
+  });
+
+  it("still continues rather than re-opening once a subject exists", () => {
+    const spans = composeEcho(
+      facts({ locks: { sex: "female", heritage: ["Nordic"], energy: "warm" } }),
+    );
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is a woman, of Nordic heritage, reading warm.",
+    );
+  });
+
+  it("never starts with punctuation, whatever single fact is pinned", () => {
+    // The class, not the instance. Any one lock alone must still read.
+    const singles: Partial<BriefFacts["locks"]>[] = [
+      { heritage: ["Latino"] },
+      { energy: "wry" },
+      { look: "clean commercial" },
+      { sex: "male" },
+      { ageBand: "40s" },
+      { build: "athletic" },
+    ];
+    for (const locks of singles) {
+      const text = echoText(composeEcho(facts({ locks })));
+      expect(text[0], text).toMatch(/[A-Z]/);
+      expect(text, text).not.toContain(" ,");
+    }
+  });
+});
