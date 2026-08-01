@@ -62,6 +62,8 @@ const BLONDE_WOMAN: FollowAnchor = {
     hairStyle: { name: "simple long hair", family: "long" },
     facialHair: null,
     hairTexture: "straight",
+    hairModifiers: null,
+    wornState: null,
     browStyle: "feathered",
     skinCharacter: "lightly freckled",
   },

@@ -65,6 +65,30 @@ import { scrubBrands } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
+import { planVariance, RELEASE_LADDER, type VariancePlan } from "./varianceBudget";
+
+/**
+ * How many rungs of the release ladder this sheet may legally spend.
+ *
+ * A rung whose axis the USER STATED is not available — that is the whole
+ * safety property, and it is computed here rather than inside the budget
+ * because only the compiler knows what the brief pinned. Reverse-authority
+ * order means the loosest thing gives first and a stated fact never gives at
+ * all.
+ *
+ * A follow can spend everything: its anchor is a request for a family, not a
+ * statement of fact, and widening drift inside a family is what the founder
+ * ruled the follow should do anyway. An open sheet with a stated age and a
+ * stated heritage has almost nothing left to give, which is exactly the case
+ * the confession exists for.
+ */
+function releaseHeadroom(intent: CastingIntent, isFollow: boolean): number {
+  let rungs = isFollow ? 2 : 0; // widen-drift and loosen-styling need an anchor
+  if (intent.heritage.length === 0) rungs += 1; // widen-heritage
+  if (!intent.agePhase) rungs += 1; // widen-age-phase
+  rungs += 1; // strengthen-presence is always available; nobody states presence
+  return Math.min(rungs, RELEASE_LADDER.length);
+}
 
 /**
  * A name never becomes a casting category. The second half of gate 21.
@@ -176,6 +200,14 @@ export type CompiledRollBrief = {
   styleProfile: Record<string, unknown> | null;
   chips: CastingChip[];
   candidates: CandidateSpec[];
+  /**
+   * How varied this sheet actually is, and what was done about it.
+   *
+   * Persisted with the compiled brief because it is the evidence for a taste
+   * decision the user is paying for: when the echo confesses that the eight
+   * will differ mainly in expression, this is the count that said so.
+   */
+  variance: VariancePlan;
   /** Sheet candidates render at 1K, medium quality (§H.10). */
   size: `${number}x${number}`;
   quality: "low" | "medium" | "high";
@@ -433,8 +465,23 @@ function withHonestRecord(
   resolution: StylingResolution,
   statedFacialHair: boolean,
 ): ResolvedIdentity {
+  /*
+    BIAS TIER RECORDS NO CUT AND NO COMPONENTS.
+
+    The prompt in bias mode carries a silhouette, not a named cut — so the
+    authored components below the cut were never asked for either. Recording a
+    curtain fringe the prompt never mentioned is the same defect as recording a
+    named cut it never carried, and that one is already ratified. M7's registry
+    reads this record as sole truth and can never re-derive it.
+  */
+  const biasNulls = resolution === "bias" ? { hairModifiers: null } : {};
+
   if (resolution !== "stated" && !statedFacialHair) {
-    return { ...identity, stylingResolution: resolution } as ResolvedIdentity;
+    return {
+      ...identity,
+      stylingResolution: resolution,
+      realized: { ...identity.realized, ...biasNulls },
+    } as ResolvedIdentity;
   }
   return {
     ...identity,
@@ -442,7 +489,12 @@ function withHonestRecord(
     ...(resolution === "stated" ? { hair: null } : {}),
     realized: {
       ...identity.realized,
-      ...(resolution === "stated" ? { hairStyle: null, hairTexture: null } : {}),
+      ...biasNulls,
+      // Deference: the brief owns hair, so nothing authored survives — the cut,
+      // its texture, and the components that belong to the cut go together.
+      ...(resolution === "stated"
+        ? { hairStyle: null, hairTexture: null, hairModifiers: null, wornState: null }
+        : {}),
       ...(statedFacialHair ? { facialHair: null } : {}),
     },
   } as ResolvedIdentity;
@@ -478,7 +530,7 @@ function resolveSheet(input: {
   candidateCount: number;
   rollSeed: string;
   anchor?: FollowAnchor;
-}): { candidates: CandidateSpec[] } {
+}): { candidates: CandidateSpec[]; variance: VariancePlan } {
   const { intent, briefText, archetype, rollSeed, anchor } = input;
   const resolved = Array.from({ length: input.candidateCount }, (_, position) =>
     resolveCandidateIdentity(intent, position, rollSeed, anchor),
@@ -535,8 +587,56 @@ function resolveSheet(input: {
           stylingResolutionFor({ intent, briefStatesHair: briefStatesHair(stated) }) === "bias",
       });
 
+  /*
+    THE VARIANCE BUDGET (founder ruling, 2026-08-01).
+
+    Counted after resolution and before composition, which is the only window
+    where the sheet exists as a whole and nothing has been written to a prompt
+    yet.
+
+    The release is deliberately NOT applied by mutating identities here. Every
+    lever the ladder names — more drift tiles, texture and worn state moving
+    where the cut holds, a wider secondary heritage — belongs to the resolver
+    that owns that axis, and reaching in from outside is how a record starts
+    disagreeing with its own prompt. So this stage measures, records the plan,
+    and re-resolves through the owning path with the plan in hand.
+
+    What it will never do is touch a stated lock. A sheet that quietly varies a
+    fact the user pinned is a worse failure than a boring sheet: the boring one
+    is at least honest, and the honest answer to "everything is held" is to say
+    so before the money moves.
+  */
+  const headroom = releaseHeadroom(intent, anchor != null);
+  let variance = planVariance(tasted, headroom);
+  let sheet = tasted;
+
+  /*
+    RELEASE, by re-resolving through the axis's own owner.
+
+    One extra pass, not a loop: the boost is monotonic, so if widening the drift
+    to five or six of eight does not clear the floor, nothing available will,
+    and the honest answer is the confession rather than an escalating spiral of
+    re-resolutions on the eve of a paid roll.
+
+    Only the follow rungs are mechanised here, because they are the ones whose
+    axes this stage owns. The rest of the ladder is recorded in the plan and
+    read by the echo — a rung that is not yet implemented must not silently
+    count as spent.
+  */
+  if (variance.release.includes("widen-drift") && anchor) {
+    const released = Array.from({ length: input.candidateCount }, (_, position) =>
+      resolveCandidateIdentity(intent, position, rollSeed, anchor, variance.release.length),
+    );
+    const releasedVariance = planVariance(released, headroom);
+    if (releasedVariance.live > variance.live) {
+      sheet = released;
+      variance = { ...releasedVariance, release: variance.release };
+    }
+  }
+
   return {
-    candidates: tasted.map((identity, position) => ({
+    variance,
+    candidates: sheet.map((identity, position) => ({
       position,
       prompt: composeCandidatePrompt({
         briefText,
@@ -713,6 +813,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     styleProfile: null,
     chips: buildChips(intent, input.followPersonaLine ?? null),
     candidates,
+    variance: sheet.variance,
     size: "1024x1536",
     quality: "medium",
   };
@@ -734,7 +835,7 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
   const archetype = resolveArchetype(intent, input.rollSeed);
   // The same helper the real compiler uses. Two hand-written loops is how the
   // fallback path drifts into producing sheets the main path would not.
-  const { candidates } = resolveSheet({
+  const { candidates, variance } = resolveSheet({
     intent,
     briefText,
     archetype,
@@ -750,6 +851,7 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     styleProfile: null,
     chips: buildChips(intent, input.followPersonaLine ?? null),
     candidates,
+    variance,
     size: "1024x1536",
     quality: "medium",
   };

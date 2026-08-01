@@ -16,6 +16,8 @@ import {
   type ColourBucket,
 } from "./heritageNeighbourhoods";
 import {
+  resolveModifiers,
+  resolveWornState,
   DEFAULT_HAIR_COLOURS,
   HAIR_COLOUR_WEIGHTS,
   TEXTURE_BY_HERITAGE,
@@ -249,6 +251,18 @@ export function realizeAxes(input: {
   return {
     eyeColour: weightedPick(EYE_BY_HERITAGE[primary] ?? EYE_DEFAULT, seedFor("eyeColour")),
     hairStyle,
+    /*
+      The cut's authored components (D10), resolved beside the cut they belong
+      to. Legality is the entry's own declaration, so a buzz cut cannot be
+      given a fringe here — there is no slot to fill.
+    */
+    hairModifiers: resolveModifiers(hairStyle, seedFor),
+    /*
+      Its own named hash, per the collision law. Sharing the cut's seed would
+      tie the two together — every ponytail arriving on the same tiles — which
+      is the correlation that made a whole gate's sheets quietly narrower.
+    */
+    wornState: resolveWornState(hairStyle.family, hairStyle, seedFor("wornState")),
     /*
       Only men carry it. An androgynous subject is left alone rather than
       guessed at — the brief said nothing, and inventing a beard would be
@@ -662,10 +676,31 @@ export function applySheetTaste<T extends SheetCandidate>(
             TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
             hash(`${rollSeed}:hairTexture:${position}`),
           );
+    /*
+      Components follow the cut too, for the same reason texture does. Carrying
+      the old ones through a swap strands a curtain fringe on a french crop —
+      the illegal pairing the entry-level declaration exists to make unsayable,
+      reintroduced by a spread.
+    */
+    const hairModifiers =
+      style === current
+        ? candidate.realized.hairModifiers
+        : resolveModifiers(style, (axis) => hash(`${rollSeed}:${axis}:${position}`));
+    const wornState =
+      style === current
+        ? candidate.realized.wornState
+        : resolveWornState(style.family, style, hash(`${rollSeed}:wornState:${position}`));
     return {
       ...candidate,
       hair,
-      realized: { ...candidate.realized, hairStyle: style, hairTexture, facialHair },
+      realized: {
+        ...candidate.realized,
+        hairStyle: style,
+        hairTexture,
+        hairModifiers,
+        wornState,
+        facialHair,
+      },
     };
   });
 }

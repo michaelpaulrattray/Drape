@@ -68,6 +68,14 @@ export type RollProjection = {
    * true and useless — a roll has eight faces and the user pointed at one.
    */
   lineage: { fromCandidateId?: string; fromCandidateLabel?: string; fromRollId?: string };
+  /**
+   * The sheet could not be varied, and the user is entitled to know.
+   *
+   * A boolean, not the count: the count is a taste instrument and belongs
+   * inside `compiledBrief` with the rest of the internals. What crosses the
+   * boundary is the one thing the user can act on.
+   */
+  varianceHeld: boolean;
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
   createdAt: string;
@@ -271,6 +279,20 @@ export function projectCandidate(candidate: CastingCandidate): CandidateProjecti
   };
 }
 
+/**
+ * Did the sheet fail to reach the variance floor even after the release?
+ *
+ * Validated rather than trusted, like every other read of a json column — the
+ * shape is written by the compiler today, but a column parsed as whatever it
+ * happens to contain is one migration away from being a lie the echo repeats.
+ */
+function readVarianceHeld(compiledBrief: unknown): boolean {
+  if (!compiledBrief || typeof compiledBrief !== "object") return false;
+  const variance = (compiledBrief as { variance?: unknown }).variance;
+  if (!variance || typeof variance !== "object") return false;
+  return (variance as { confess?: unknown }).confess === true;
+}
+
 export function projectRoll(input: {
   roll: CastingRoll;
   candidates: readonly CastingCandidate[];
@@ -290,6 +312,7 @@ export function projectRoll(input: {
     // The user's own sentence, returned to them. Never the compiled brief.
     briefText: input.roll.briefText,
     chips: readChips(input.roll.compiledBrief),
+    varianceHeld: readVarianceHeld(input.roll.compiledBrief),
     facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief),
     lineage: {
       ...(input.parentCandidatePublicId ? { fromCandidateId: input.parentCandidatePublicId } : {}),

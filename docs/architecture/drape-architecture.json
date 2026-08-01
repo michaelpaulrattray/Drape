@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d0dd8894ed94e4d4"
+    "sourceFingerprint": "0be9b18877a4905e"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 19
+      "moduleCount": 20
     },
     {
       "id": "domain:castingV2",
@@ -3197,6 +3197,12 @@
     {
       "id": "module:server/castingV2/stylingResolution.ts",
       "path": "server/castingV2/stylingResolution.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/varianceBudget.ts",
+      "path": "server/castingV2/varianceBudget.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7665,6 +7671,10 @@
       "path": "server/castingV2/ageIdioms.test.ts"
     },
     {
+      "id": "test:server/castingV2/biasTierAxes.test.ts",
+      "path": "server/castingV2/biasTierAxes.test.ts"
+    },
+    {
       "id": "test:server/castingV2/brandScrub.test.ts",
       "path": "server/castingV2/brandScrub.test.ts"
     },
@@ -7699,6 +7709,10 @@
     {
       "id": "test:server/castingV2/followDrift.test.ts",
       "path": "server/castingV2/followDrift.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairModifiers.test.ts",
+      "path": "server/castingV2/hairModifiers.test.ts"
     },
     {
       "id": "test:server/castingV2/hairStyles.test.ts",
@@ -7763,6 +7777,10 @@
     {
       "id": "test:server/castingV2/typecheckGate.test.ts",
       "path": "server/castingV2/typecheckGate.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/varianceBudget.test.ts",
+      "path": "server/castingV2/varianceBudget.test.ts"
     },
     {
       "id": "test:server/castingV2/vocabularyParity.test.ts",
@@ -15915,6 +15933,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/varianceBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -16250,6 +16273,11 @@
     },
     {
       "from": "module:server/castingV2/stylingResolution.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/varianceBudget.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },

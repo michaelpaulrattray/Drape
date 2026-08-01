@@ -913,3 +913,75 @@
 /* A queued change is a trigger, not dead text — the whole span opens the picker. */
 .dpc-echo__pendingTrigger { border-bottom: 0; white-space: nowrap; }
 .dpc-echo__pendingTrigger:hover .dpc-echo__will { border-bottom-color: var(--ink); }
+
+/* ---- FOLLOWING: the standing follow chip (§F) ---- */
+
+.dpc-following {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 2px;
+  flex-wrap: wrap;
+}
+
+.dpc-following__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 13px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/*
+  A ×, and here it is the right glyph: this one really does mean "close" —
+  the follow stops. That is the opposite of the sheet-card delete, where an ×
+  would have meant a permanent deletion and a bin was correct.
+*/
+.dpc-following__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  opacity: 0.55;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dpc-following__clear:hover {
+  opacity: 1;
+  background: var(--fill);
+}
+
+.dpc-following__clear:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  opacity: 1;
+}
+
+/* The boundary, said in words — the chip alone does not teach what it does. */
+.dpc-following__note {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/*
+  The variance confession. Quiet, in the echo's register — it is a statement
+  about the sheet, not a warning about a failure.
+*/
+.dpc-variance-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  opacity: 0.62;
+}

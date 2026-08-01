@@ -39,8 +39,14 @@ import {
   DEFAULT_HAIR_COLOURS,
   FINISH_RENDER,
   HAIR_COLOUR_WEIGHTS,
+  resolveModifiers,
+  describeModifiers,
+  resolveWornState,
+  describeWornState,
   statedFinish,
   stylesFor,
+  TEXTURE_BY_HERITAGE,
+  TEXTURE_DEFAULT,
 } from "./hairStyles";
 import {
   AGE_PHASES,
@@ -77,7 +83,13 @@ import {
   stylingResolutionFor,
   type StylingResolution,
 } from "./stylingResolution";
-import { FACIAL_HAIR, type FacialHair, type HairStyle } from "../../shared/castingRealization";
+import {
+  FACIAL_HAIR,
+  type FacialHair,
+  type HairModifiers,
+  type HairStyle,
+  type WornState,
+} from "../../shared/castingRealization";
 
 /* --------------------------------------------------------- the constant */
 
@@ -689,27 +701,78 @@ function anchoredRealized(
   ageBand: AgeBand,
   position: number,
   rollSeed: string,
+  boost = 0,
 ): RealizedAxes | null {
   const held = anchor.realized;
   if (!held) return null;
 
-  const cut = driftsAt(position, rollSeed, "hairDrift")
+  const cut = driftsAt(position, rollSeed, "hairDrift", boost)
     ? adjacentStyle(held.hairStyle, sex, heritage, ageBand, position, rollSeed)
     : held.hairStyle;
 
   /*
-    A drifted cut may dictate its own texture — a buzz has no wave to speak of.
-    Deferring to the cut keeps the record and the prompt agreeing, which is the
-    same rule `realizeAxes` follows when it picks a style.
+    TEXTURE MOVES WITH THE CUT, and this is the founder's own note: "a drifted
+    cut in the same colour at the same length reads as the same haircut at tile
+    scale". A different name in the record that looks identical on the tile is
+    not a variation, it is a record.
+
+    Three cases, in order:
+      - the new cut DICTATES a texture (a buzz has no wave to speak of) — defer
+        to it, which is the same rule `realizeAxes` follows when it picks;
+      - the cut drifted and is texture-agnostic — re-pick from this candidate's
+        own heritage shelf, so the drift is visible rather than notional;
+      - the cut held — so does its texture. This is a follow.
   */
-  const texture = cut?.texture ?? (cut === held.hairStyle ? held.hairTexture : held.hairTexture);
+  const drifted = cut !== held.hairStyle;
+  const texture =
+    cut?.texture
+    ?? (drifted
+      ? weightedPick(
+          TEXTURE_BY_HERITAGE[heritage[0]?.heritage ?? ""] ?? TEXTURE_DEFAULT,
+          hash(`${rollSeed}:hairTextureDrift:${position}`),
+        )
+      : held.hairTexture);
 
   const facialHair =
-    sex === "male" && driftsAt(position, rollSeed, "beardDrift")
+    sex === "male" && driftsAt(position, rollSeed, "beardDrift", boost)
       ? adjacentFacialHair(held.facialHair, position, rollSeed)
       : held.facialHair;
 
-  return { ...held, hairStyle: cut, hairTexture: texture, facialHair };
+  /*
+    Re-resolved on a drift, never spread through.
+
+    `{ ...held }` would carry the parent's authored components onto a cut that
+    cannot physically wear them — a curtain fringe surviving onto a french crop
+    — and it would do it silently, because a spread looks like it is copying
+    something safe. The components belong to the cut, so they move with it.
+  */
+  const hairModifiers = drifted
+    ? cut
+      ? resolveModifiers(cut, (axis) => hash(`${rollSeed}:${axis}:drift:${position}`))
+      : null
+    : held.hairModifiers;
+
+  /*
+    Worn state drifts on its OWN tiles, not the cut's.
+
+    It is the axis that saved the Versace sheet: when the follow anchored sex,
+    heritage and colour, the direction locked the look and the category put
+    hair at silhouette tier, worn-state was the only thing left that could tell
+    two tiles apart at arm's length. Giving it the cut's drift seed would have
+    hidden it on exactly the sheets that need it.
+  */
+  const wornState = driftsAt(position, rollSeed, "wornDrift", boost)
+    ? resolveWornState(
+        cut?.family ?? held.hairStyle?.family ?? "long",
+        cut?.worn ? cut : null,
+        hash(`${rollSeed}:wornDrift:${position}`),
+      )
+    : drifted && cut
+      ? resolveWornState(cut.family, cut, hash(`${rollSeed}:wornState:drift:${position}`))
+      : held.wornState;
+
+
+  return { ...held, hairStyle: cut, hairTexture: texture, hairModifiers, wornState, facialHair };
 }
 
 /**
@@ -719,8 +782,14 @@ function anchoredRealized(
  * move on different faces. Two or three of the eight, chosen per roll, so two
  * follows of the same candidate do not drift the same tiles.
  */
-function driftsAt(position: number, rollSeed: string, axis: string): boolean {
-  const drifting = 2 + (hash(`${rollSeed}:${axis}:spread`) % 2);
+function driftsAt(position: number, rollSeed: string, axis: string, boost = 0): boolean {
+  /*
+    `boost` is the variance budget's release, and it is the ONLY thing that
+    widens this. Two or three of eight is the taste ruling; more than that is a
+    deliberate response to a sheet that would otherwise be an eight-way tie,
+    and it is spent on the anchor tier only — never on a stated lock.
+  */
+  const drifting = Math.min(6, 2 + (hash(`${rollSeed}:${axis}:spread`) % 2) + boost);
   const offset = hash(`${rollSeed}:${axis}:offset`) % 8;
   return (position + offset) % 8 < drifting;
 }
@@ -771,6 +840,8 @@ export function resolveCandidateIdentity(
   position: number,
   rollSeed: string,
   anchor: FollowAnchor | null = null,
+  /** The variance budget's release. 0 on every ordinary sheet. */
+  driftBoost = 0,
 ): ResolvedIdentity {
   /*
     One hash per axis, never one hash shifted per axis.
@@ -848,7 +919,7 @@ export function resolveCandidateIdentity(
       truth and can never re-derive it.
     */
     realized:
-      (anchor ? anchoredRealized(anchor, sex, heritage, ageBand, position, rollSeed) : null)
+      (anchor ? anchoredRealized(anchor, sex, heritage, ageBand, position, rollSeed, driftBoost) : null)
       ?? realizeAxes({ heritage, ageBand, sex, position, rollSeed }),
     /*
       Energy is the one axis that cycles rather than samples: eight candidates
@@ -1227,6 +1298,8 @@ function describeHair(
   texture: string | null,
   style: HairStyle | null,
   resolution: StylingResolution,
+  modifiers: HairModifiers | null = null,
+  wornState: WornState | null = null,
 ): string {
   // Nothing authored survives suppression; the record says so too.
   if (!style || texture === null) return "";
@@ -1259,8 +1332,44 @@ function describeHair(
     separator a sheet of women has.
   */
   if (resolution === "bias") {
+    /*
+      WORN STATE IS SAID EVEN HERE, and this is the fix rather than a detail.
+
+      The bias prose used to end "how it is worn off the face, as this casting
+      wears it" — which hands the axis to the category prior, and a prior has
+      exactly one favourite answer. A Versace follow came back with eight
+      identical pulled-back heads the parent did not even have. Nobody owned
+      the axis, so the loudest voice in the room decided it, once, for
+      everyone.
+
+      Worn state is silhouette-level, so naming it does not compete with the
+      casting the way a named cut would. It is the one styling component that
+      belongs at this tier, and on a heavily-locked sheet it is often the only
+      thing left that separates two tiles at arm's length.
+    */
     const line = HAIR_BIAS_PROSE[style.family] ?? HAIR_BIAS_PROSE["mid-length"];
-    return ` ${line} Natural colour: ${hair.colour}.`;
+    const worn = wornState && wornState !== "loose" ? ` Worn ${wornState.replace(/^worn /, "")}.` : "";
+    /*
+      TEXTURE TOO, and it convicts itself the same way.
+
+      Texture was resolved and PERSISTED at this tier and then never rendered —
+      the bias line carried family and colour only. So on category briefs, which
+      is most real briefs, texture fell to the editorial prior, which leans wavy
+      and curly: the founder has never seen a straight-haired model on a
+      category sheet, while straight carries the largest weight in most heritage
+      palettes.
+
+      It also closes a record-vs-prompt gap rather than only a taste one. A row
+      saying "straight" beside a prompt that never asked for it is a record that
+      lies, and M7's registry reads these rows as sole truth. Saying it makes it
+      true.
+
+      Silhouette-level like worn state, so it is bias-legal for the same reason:
+      how the hair GROWS is not a styling instruction that competes with the
+      casting the user asked for.
+    */
+    const grain = style.texture ?? texture;
+    return ` ${line}${worn} Naturally ${grain}. Natural colour: ${hair.colour}.`;
   }
   /*
     The named cut, not the silhouette.
@@ -1288,10 +1397,24 @@ function describeHair(
     : `${hair.colour} ${grain} ${style.name}`;
   const plural = PLURAL_STYLES.has(style.name);
   const article = plural ? "" : /^[aeiou]/.test(description) ? "an " : "a ";
+  /*
+    D10's components, composed into the same sentence as the cut.
+
+    Their own clause rather than their own line: they are how this person wears
+    THIS cut, and splitting them off would read as a second instruction the
+    model can weigh against the first. "a brown wavy long, curtain fringe,
+    centre-parted" is one description of one head of hair.
+  */
+  const components = describeModifiers(modifiers);
+  /*
+    Only when the cut's own name does not already say it — "a ponytail, in a
+    ponytail" is the kind of doubling a model reads as emphasis.
+  */
+  const worn = style.worn ? "" : describeWornState(wornState);
   const cut =
     style.family === "shaved"
       ? ` HAIR: a ${style.name}, ${hair.colour} where it is grown out.`
-      : ` HAIR: ${article}${description}.`;
+      : ` HAIR: ${article}${description}${worn}${components}.`;
   return `${cut} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
 }
 
@@ -1366,7 +1489,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture, resolved.realized.hairStyle, resolution)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.

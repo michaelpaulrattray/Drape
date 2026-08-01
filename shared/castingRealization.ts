@@ -107,6 +107,21 @@ export type RealizedAxes = {
   hairStyle: HairStyle | null;
   facialHair: FacialHair | null;
   hairTexture: HairTexture | null;
+  /**
+   * The cut's authored components, or null.
+   *
+   * Null in exactly the cases the cut itself is absent or unsaid: deference
+   * suppressed the axis, or the sheet is in BIAS tier where the prompt carries
+   * a silhouette rather than a named cut. A record that named a fringe no
+   * prompt ever asked for is the same defect as a record naming a cut no prompt
+   * carried, and that one is already ratified.
+   */
+  hairModifiers: HairModifiers | null;
+  /**
+   * Up, down, or somewhere between. Null when the family cannot wear it (a
+   * buzz cut is not "worn up") or when deference silenced the whole axis.
+   */
+  wornState: WornState | null;
   browStyle: BrowStyle;
   skinCharacter: SkinCharacter;
 };
@@ -123,6 +138,8 @@ export const REALIZED_AXIS_KEYS = [
   "hairStyle",
   "facialHair",
   "hairTexture",
+  "hairModifiers",
+  "wornState",
   "browStyle",
   "skinCharacter",
 ] as const;
@@ -156,6 +173,69 @@ export type HairStyle = {
   texture?: HairTexture;
   /** Rare-but-possible. At most one per sheet is the taste target. */
   statement?: true;
+  /**
+   * Set when the cut's NAME already says how it is worn — a ponytail is worn
+   * in a ponytail. The axis defers to it, exactly as it defers to `texture`,
+   * so "a bun, worn loose" is unsayable rather than merely unlikely.
+   */
+  worn?: WornState;
+  /**
+   * Which authored components this cut can PHYSICALLY wear (catalog D10).
+   *
+   * Legality by construction, the same way `texture` works: a buzz cut has no
+   * fringe and no parting, and the way to make that unsayable is for the entry
+   * not to offer the slot — rather than generating "buzz cut, curtain fringe"
+   * and hoping a validator catches it. Absent means "the ordinary set", which
+   * is what most cuts wear; an explicit empty list means "none".
+   */
+  wears?: readonly ModifierSlot[];
+};
+
+/**
+ * The modifier slots — legacy's D10 layer, restored.
+ *
+ * The D9 port took the named cuts and dropped the components that make a cut
+ * belong to a PERSON. "Long hair" is a length; "long, curtain fringe,
+ * centre-parted, soft flyaways" is somebody's hair. Legacy authored these and
+ * the founder's eye caught their absence.
+ */
+/**
+ * How the hair is WORN — the fourth confirmed unowned-axis collapse.
+ *
+ * Two founder observations that turned out to be one defect from opposite
+ * ends. Open sheets never showed hair up: nothing authored the axis, so the
+ * image prior answered it and its favourite answer is "down", eight times. And
+ * a category follow converged on identical pulled-back editorial styling the
+ * parent did not have: the bias prose said "how it is worn off the face, as
+ * this casting wears it", handing the same axis to the CATEGORY prior — which
+ * also has exactly one favourite answer.
+ *
+ * The law, now fourth-instanced: an axis nobody owns is not free, it is
+ * decided by whichever prior is loudest, identically on every tile. Naming it
+ * is what makes it vary.
+ *
+ * It is silhouette-level, which is why it is the one styling component legal
+ * at BIAS tier — a named cut would compete with the casting the user asked
+ * for, but whether the hair is up or down would not.
+ */
+export const WORN_STATES = ["loose", "tied back", "in a ponytail", "worn up", "half-up"] as const;
+export type WornState = (typeof WORN_STATES)[number];
+
+export const MODIFIER_SLOTS = ["fringe", "parting", "volume", "flyaways"] as const;
+export type ModifierSlot = (typeof MODIFIER_SLOTS)[number];
+
+/**
+ * The resolved components, as ONE composite value rather than four axes.
+ *
+ * They are subordinate to the cut, not peers of it: they are nulled with it
+ * under deference, re-resolved when it swaps, and legal only relative to it.
+ * Four separate registry keys would mean four fields that every consumer has to
+ * remember to null and re-resolve together — a discipline invariant repeated
+ * across sites, which is the exact shape that produced the records that lied
+ * about their own prompts. One null-partner cannot drift apart from itself.
+ */
+export type HairModifiers = {
+  [K in ModifierSlot]: string | null;
 };
 
 /**

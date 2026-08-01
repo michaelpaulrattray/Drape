@@ -75,6 +75,8 @@ export default function CastingSheet() {
     setOptimisticCancelled,
     cancelNotice,
     setCancelNotice,
+    followDismissed,
+    setFollowDismissed,
     /*
       Addressed to THIS sheet. The store was one flat singleton, so an
       adjustment made here appeared in another sheet's echo — and a roll fired
@@ -404,6 +406,17 @@ export default function CastingSheet() {
     */
     const sendOverrides = overrides;
 
+    /*
+      The chip decides which paid mutation fires.
+
+      This is §F's actual shape and the reason the one-dispatch follow was the
+      deviation: while the chip is up, Roll again CONTINUES the family rather
+      than dropping back to open casting. Same price, same procedure
+      server-side, same claim keyed on a fresh `clientRequestId` — the only
+      difference is whether a parent rides along.
+    */
+    const anchorId = mode === "follow" ? candidateId : (standingFollowId ?? undefined);
+
     const clientRequestId = createClientRequestId();
     const release = () => {
       latch.release();
@@ -411,6 +424,23 @@ export default function CastingSheet() {
     };
     const onFailure = (error: unknown) => {
       release();
+      /*
+        THE PARENT CAN GO AWAY, and a standing chip is what makes that reachable
+        in ordinary use for the first time. A followed candidate can be
+        discarded, purged past its retention floor, or signed — and then the
+        family it anchored no longer exists.
+
+        Nothing was charged: the parent is resolved before the claim. So this
+        is not a failure screen, it is the chip quietly falling away with a
+        sentence saying why. Turning a normal end-of-life into a red banner
+        would be the screen blaming the user for time passing.
+      */
+      const message = error instanceof Error ? error.message : "";
+      if (anchorId && /not found/i.test(message)) {
+        setFollowDismissed(true);
+        setCancelNotice("That face is no longer on this sheet — back to open casting. Nothing was charged.");
+        return;
+      }
       setDispatchFailure(classifyDispatchFailure(error));
     };
     const options = {
@@ -424,16 +454,19 @@ export default function CastingSheet() {
     };
 
     rollDispatched();
+    // Clicking Follow on a tile is an explicit request to start a family, so
+    // it re-arms a chip the user had previously dismissed.
+    if (mode === "follow") setFollowDismissed(false);
     setStartingRoll(true);
     // Rolling from a historical view jumps you to what you just paid for.
     setViewedRollId(null);
 
-    if (mode === "follow" && candidateId) {
+    if (anchorId) {
       follow.mutate(
         {
           clientRequestId,
           sessionId,
-          candidateId,
+          candidateId: anchorId,
           briefText: brief,
           unlock: unlocked.length > 0 ? unlocked : undefined,
           overrides: Object.keys(sendOverrides).length > 0 ? sendOverrides : undefined,
@@ -489,6 +522,22 @@ export default function CastingSheet() {
     setCancelNotice(cancelNoticeFor(result));
     await invalidate();
   };
+
+  /*
+    THE STANDING FOLLOW (§F): "the sheet header shows FOLLOWING <index> with a
+    dismissible chip; dismissing only affects future rolls."
+
+    Derived, not stored. Whether the roll on screen is a follow is already
+    server truth — `lineage.fromCandidateId` — and the only thing the client
+    owns is whether the NEXT roll should continue that family. So a reload
+    still shows FOLLOWING, because the sheet genuinely still is one, and no new
+    server fact had to be invented to say so.
+
+    Hidden while reading history: the chip is a statement about what Roll again
+    will do, and Roll again always applies to the live sheet.
+  */
+  const standingFollowId =
+    !viewingHistory && !followDismissed ? (roll.data?.lineage.fromCandidateId ?? null) : null;
 
   const price = config.data?.rollPriceCredits ?? 0;
   const candidates = roll.data?.candidates ?? [];
@@ -618,6 +667,56 @@ export default function CastingSheet() {
                 Back to the latest roll
               </button>
             ) : null}
+          </div>
+        ) : null}
+
+        {/*
+          THE SHEET SAYS WHEN IT COULD NOT VARY.
+
+          Every rule that produced the eight-way tie was individually correct —
+          the follow anchored sex, heritage and colour, the captured direction
+          locked the look, the stated age locked the band, the category put hair
+          at silhouette tier. Their intersection left nothing alive that
+          separates two faces at arm's length, and the sheet cost the same as a
+          good one.
+
+          Said plainly rather than hidden: a user looking at eight near-copies
+          should be told it was the locks, not the engine having a bad day.
+        */}
+        {roll.data?.varianceHeld ? (
+          <p className="dpc-variance-note">
+            Most of this sheet is held — the eight will differ mainly in expression.
+          </p>
+        ) : null}
+
+        {/*
+          FOLLOWING — the standing follow chip (§F).
+
+          It says what the next roll will do, which is the only thing about it
+          the user can still change. Rolls are immutable, so dismissing cannot
+          and does not touch the sheet on screen: the eight in front of them
+          really are a family, and the × means "the next eight need not be".
+
+          Beside the rail rather than in the dock: the dock is where you act,
+          and this is state — the same register as which roll you are reading.
+        */}
+        {standingFollowId ? (
+          <div className="dpc-following">
+            <span className="dpc-following__chip">
+              FOLLOWING {roll.data?.lineage.fromCandidateLabel ?? "—"}
+              <button
+                type="button"
+                className="dpc-following__clear"
+                onClick={() => setFollowDismissed(true)}
+                aria-label="Stop following — the next roll casts openly"
+                title="Stop following — the next roll casts openly"
+              >
+                ×
+              </button>
+            </span>
+            <span className="dpc-following__note">
+              Roll again keeps this family. Clear it to cast openly.
+            </span>
           </div>
         ) : null}
 

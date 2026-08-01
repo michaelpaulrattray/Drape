@@ -322,7 +322,13 @@ export async function createRoll(
       sessionPublicId: input.sessionPublicId,
       operationId: gate.operationId,
       briefText: input.briefText,
-      compiledBrief: compiled.compiledBrief,
+      /*
+        The variance plan rides with the compiled brief so the sheet can say,
+        after the fact, why eight faces differ mainly in expression. It is
+        internal like the rest of `compiledBrief`; only the confession flag is
+        projected.
+      */
+      compiledBrief: { ...(compiled.compiledBrief as object), variance: compiled.variance },
       lockContract: compiled.lockContract,
       cohortKey: compiled.cohortKey,
       styleKey: compiled.styleKey,

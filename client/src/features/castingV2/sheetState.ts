@@ -167,6 +167,18 @@ export type SheetSlice = {
    * rather than the answer.
    */
   cancelNotice: string | null;
+  /**
+   * The user dismissed the FOLLOWING chip on this sheet.
+   *
+   * §F: "dismissing only affects future rolls" — existing rolls are immutable
+   * versions and the sheet on screen still IS a follow family, so this cannot
+   * and must not rewrite anything. It is pre-dispatch intent, exactly the class
+   * `overrides` and `unlocked` already occupy, which is why it lives here
+   * rather than as a server fact: whether the latest roll is a follow is
+   * already server truth (`lineage`), and the only thing the client owns is
+   * whether the NEXT one should be.
+   */
+  followDismissed: boolean;
 };
 
 /**
@@ -186,6 +198,7 @@ const EMPTY_SLICE: SheetSlice = {
   optimisticDiscarded: {},
   optimisticCancelled: {},
   cancelNotice: null,
+  followDismissed: false,
 };
 
 type SheetState = {
@@ -216,6 +229,7 @@ type SheetState = {
     failure: { kind: DispatchFailureKind; message: string } | null,
   ) => void;
   setCancelNotice: (sessionId: string, notice: string | null) => void;
+  setFollowDismissed: (sessionId: string, dismissed: boolean) => void;
   /**
    * Called when a roll is dispatched. The undo stack clears because the server
    * anchors undo to the active roll — leaving the affordance up would offer a
@@ -357,6 +371,11 @@ export const useSheetState = create<SheetState>((set) => ({
       sessions: patch(state.sessions, sessionId, () => ({ cancelNotice })),
     })),
 
+  setFollowDismissed: (sessionId, followDismissed) =>
+    set((state) => ({
+      sessions: patch(state.sessions, sessionId, () => ({ followDismissed })),
+    })),
+
   rollDispatched: (sessionId) =>
     set((state) => ({
       sessions: patch(state.sessions, sessionId, () => ({
@@ -369,6 +388,9 @@ export const useSheetState = create<SheetState>((set) => ({
         optimisticCancelled: {},
         cancelNotice: null,
         dispatchFailure: null,
+        // `followDismissed` is deliberately absent: the chip STANDS across
+        // rolls, which is the whole point of §F's standing follow. It is
+        // cleared only by the × or by starting a new follow.
       })),
     })),
 
@@ -416,6 +438,7 @@ export function useSheetSession(sessionId: string) {
       setDispatchFailure: (failure: { kind: DispatchFailureKind; message: string } | null) =>
         state().setDispatchFailure(sessionId, failure),
       setCancelNotice: (notice: string | null) => state().setCancelNotice(sessionId, notice),
+      setFollowDismissed: (dismissed: boolean) => state().setFollowDismissed(sessionId, dismissed),
       rollDispatched: () => state().rollDispatched(sessionId),
     };
   }, [sessionId, store]);

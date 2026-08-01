@@ -135,6 +135,36 @@ describe("a follow reads as one family, not one barber", () => {
     }
   });
 
+  it("moves the TEXTURE with the cut, so a drift is visible and not notional", () => {
+    /*
+      This is the test that was missing, and the founder found the gap by eye:
+      "a drifted cut in the same colour at the same length reads as the same
+      haircut at tile scale". The first implementation had both branches of a
+      ternary return `held.hairTexture` — texture never moved, every assertion
+      in this file still passed, and the record said "drifted" above eight tiles
+      that looked identical. A different name in the record is not a variation.
+    */
+    let driftedCuts = 0;
+    let alsoMovedTexture = 0;
+
+    for (let i = 0; i < 60; i += 1) {
+      const seed = `texture-${i}`;
+      const anchor = anchorFor(seed);
+      for (const candidate of sheet(seed)) {
+        if (candidate.realized.hairStyle?.name === anchor.realized.hairStyle?.name) continue;
+        driftedCuts += 1;
+        // Either the new cut dictates its own texture, or the axis re-picked.
+        if (candidate.realized.hairTexture !== anchor.realized.hairTexture) alsoMovedTexture += 1;
+      }
+    }
+
+    expect(driftedCuts).toBeGreaterThan(20);
+    // Not every re-pick lands on a different value — the shelf is weighted, so
+    // some legitimately draw the same texture again. A clear majority moving is
+    // the bar; zero is the bug.
+    expect(alsoMovedTexture / driftedCuts).toBeGreaterThan(0.4);
+  });
+
   it("holds the COLOUR on all eight — colour is the family signal", () => {
     const colours = new Set(sheet("colour-holds").map((c) => c.hair?.colour));
     expect(colours.size).toBe(1);

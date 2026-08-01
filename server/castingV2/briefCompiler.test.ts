@@ -230,6 +230,8 @@ describe("locks", () => {
         hairStyle: { name: "plain short cut", family: "short" },
         facialHair: "clean-shaven",
         hairTexture: "straight",
+        hairModifiers: null,
+        wornState: null,
         browStyle: "full",
         skinCharacter: "plain",
       },
