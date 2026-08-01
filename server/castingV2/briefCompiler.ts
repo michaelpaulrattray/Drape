@@ -62,7 +62,7 @@ import {
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
 import { scrubBrands } from "./brandScrub";
-import { promoteStatedHeritage } from "./heritagePromotion";
+import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
 import { applySheetTaste } from "./realizedAxes";
 
@@ -511,7 +511,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     Repair a heritage the interpreter stated in prose but left out of the lock.
     Runs before everything else so unlocks and overrides still outrank it.
   */
-  const recovered = promoteStatedHeritage(interpreted, briefText);
+  const recovered = promoteStatedRole(promoteStatedHeritage(interpreted, briefText), briefText);
 
   const anchor = anchorFrom(input.followIdentity ?? null);
   /*

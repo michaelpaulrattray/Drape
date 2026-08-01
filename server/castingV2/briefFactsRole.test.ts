@@ -23,7 +23,20 @@ function engineReturning(role: string | null): TextEngine {
   return {
     id: "test:interpreter",
     complete: async () => ({
-      text: JSON.stringify({ cohort: "photoreal_human", role, variationAxis: "look", reads: null }),
+      text: JSON.stringify({
+        cohort: "photoreal_human",
+        role,
+        /*
+          The axis tracks the role, because the real interpreter sets "look"
+          only when the brief asks for a KIND OF FACE — a modelling or campaign
+          casting. Hard-coding it for a brief with no category described an
+          intent the interpreter would never return, and the deterministic
+          category repair reads exactly that pair as evidence a category was
+          recognised and dropped.
+        */
+        variationAxis: role ? "look" : null,
+        reads: null,
+      }),
       latencyMs: 1,
       provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
     }),

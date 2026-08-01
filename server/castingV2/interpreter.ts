@@ -75,11 +75,24 @@ facts. sex = "male". ageBand = "70s+". heritage = Mediterranean. All three are
 stated; none of them may come back null.
 
 WHAT TO EXTRACT
-- "role": the archetype in the user's own words, under 12 words — "a dad in his
-  30s", "punk drummer", "wiry cyclist", "corporate lawyer". Keep the specific
-  social or cultural archetype. Never replace it with a generic fashion type: if
-  the brief would produce the same casting after deleting this phrase, it is not
-  specific enough.
+- "role": THE CASTING CATEGORY, in the user's own words, under 12 words — "a dad
+  in his 30s", "punk drummer", "wiry cyclist", "corporate lawyer", "high-fashion
+  editorial model", "beauty creator".
+  REQUIRED whenever the brief names any occupation, type, category or kind of
+  person — INCLUDING fashion and modelling categories. "editorial model",
+  "runway model", "beauty creator" and "influencer" are all categories and all
+  belong here. This field is the only thing that carries the category to the
+  casting engine, and losing it produces a sheet of generic people instead of
+  the casting the user asked for.
+  Keep THEIR words. The rule is never to paraphrase a specific archetype UP into
+  a vaguer one — do not turn "punk drummer" into "musician" or "model". It is
+  not a reason to drop a category for being broad: if the user's own words are
+  "editorial model", then "editorial model" is the role.
+  "archetype" NEVER substitutes for this. That field is a closed list of casting
+  DIRECTIONS and setting it does not capture the category; a brief can have both,
+  and a brief that names a category must fill this one whatever else it fills.
+  Leave it null only when the brief names no category at all — "someone with
+  kind eyes", "a person in their 40s".
 - "characterNotes": short character-side detail the brief gave — bearing,
   demeanour, hair, distinguishing features. Under 25 words.
   This field and "role" are the only text that reaches the image model, and the

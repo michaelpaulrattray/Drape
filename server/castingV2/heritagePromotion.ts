@@ -61,3 +61,37 @@ export function promoteStatedHeritage(intent: CastingIntent, briefText: string):
 
 /** Exported for the test's own table, so the two cannot drift apart. */
 export { HERITAGE_WORDS, HERITAGES };
+
+/**
+ * A category the brief named must reach the sheet, even when the interpreter
+ * dropped it.
+ *
+ * Same both-halves shape as the heritage repair above, and it exists for a
+ * measured failure. The founder's roll — "female mid 20's high-fashion
+ * editorial model" — persisted `role: null` with `archetype: "raw editorial"`:
+ * the category was routed into the closed direction vocabulary and the user's
+ * own words for it were dropped. The sheet then read as generic women, because
+ * `role` is the only thing that produces the CASTING CATEGORY block, and gate
+ * B5's category-owns-physique rule never fired.
+ *
+ * The instruction that caused it has been rewritten, but a prompt is a
+ * probability, not a guarantee — the same brief returns a role 25 times out of
+ * 25 locally and still came back null in production. So the miss is also
+ * repaired deterministically.
+ *
+ * **Narrow on purpose.** It fires only when the interpreter demonstrably
+ * recognised a casting context — it set a direction, or it decided the eight
+ * should differ by look — and still left the category empty. That combination
+ * is evidence a category existed in the sentence. A brief with no such signal
+ * keeps its null role, which matters: a null role is what lets build vary, so
+ * backfilling every null would quietly stop physique varying on exactly the
+ * briefs that have no category to own it.
+ */
+export function promoteStatedRole(intent: CastingIntent, briefText: string): CastingIntent {
+  if (intent.role) return intent;
+  const recognisedACastingContext = intent.archetype !== null || intent.variationAxis === "look";
+  if (!recognisedACastingContext) return intent;
+  const words = briefText.replace(/\s+/g, " ").trim().slice(0, 80);
+  if (!words) return intent;
+  return { ...intent, role: words };
+}

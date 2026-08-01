@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "382b8bd0a7c1cdaa"
+    "sourceFingerprint": "879b33720fd6dc04"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:castingV2",
@@ -3113,6 +3113,12 @@
     {
       "id": "module:server/castingV2/cohortPhotorealHuman.ts",
       "path": "server/castingV2/cohortPhotorealHuman.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/goldenBriefs.ts",
+      "path": "server/castingV2/goldenBriefs.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7645,6 +7651,10 @@
     {
       "id": "test:server/castingV2/castingV2Scope.test.ts",
       "path": "server/castingV2/castingV2Scope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/categorySurvival.test.ts",
+      "path": "server/castingV2/categorySurvival.test.ts"
     },
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
