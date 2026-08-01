@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
 import {
   lockFactsOf,
+  EMPTY_STATED_HAIR,
   parseCastingIntent,
   stripQuotedSpans,
   validateLocks,
@@ -27,6 +28,7 @@ function engineReturning(text: string): TextEngine {
 const BASE_INTENT: CastingIntent = {
   cohort: "photoreal_human",
   role: "a dad in his 30s",
+  statedHair: EMPTY_STATED_HAIR,
   characterNotes: null,
   sex: null,
   ageBand: null,
@@ -85,6 +87,9 @@ describe("the precedence fix", () => {
       "reads",
       "role",
       "sex",
+      // D-79's re-ship: WHAT the brief said about each part of hair. The
+      // interpreter never decides WHETHER — that is the code-owned gate.
+      "statedHair",
       "variationAxis",
     ]);
   });

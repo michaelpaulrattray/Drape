@@ -76,11 +76,14 @@ import {
   type RealizedAxes,
   type ResolvedIdentity,
   type Sex,
+  EMPTY_STATED_HAIR,
+  type StatedHair,
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import {
   COMPOSED_DIRECTION_ENABLED,
   HAIR_BIAS_PROSE,
+  PARTIAL_DEFERENCE_ENABLED,
   stylingResolutionFor,
   type StylingResolution,
 } from "./stylingResolution";
@@ -90,6 +93,8 @@ import {
   type HairModifiers,
   type HairStyle,
   type WornState,
+  HAIR_PARTS,
+  type HairPart,
 } from "../../shared/castingRealization";
 
 /* --------------------------------------------------------- the constant */
@@ -1200,15 +1205,55 @@ export function statedAxis(axis: "eyes" | "facialHair" | "brows" | "skin", state
   back to facial hair, all twin protection at the same time — the one brief
   shape where both separators vanish at once.
 */
-const HAIR_WORDS = [
-  "hair", "haired", "bald", "balding", "shaved", "buzz", "buzzcut", "crewcut",
-  "undercut", "fade", "afro", "braid", "braids", "braided", "cornrows", "dreads",
-  "dreadlocks", "locs", "curls", "curly", "wavy", "coiled", "ponytail", "ponytails",
-  "topknot", "pigtail", "pigtails", "bun", "mohawk",
-  "bob", "pixie", "fringe", "bangs", "mullet", "quiff", "blonde", "blond",
-  "brunette", "redhead", "ginger", "auburn", "greying", "graying", "grey", "gray",
-  "silver", "platinum", "bleached", "highlights", "roots",
+/**
+ * The hair vocabulary, split by WHICH PART of hair each word speaks to.
+ *
+ * D-79's ruling is that the unit of "said" is the fact, not the axis — so the
+ * gate has to know which fact a word names. `HAIR_WORDS` below is derived from
+ * these, never listed separately, so the whole-axis question and the per-part
+ * question can never disagree about what counts as a hair statement. That
+ * disagreement is precisely what `briefStatesHair`'s own doc comment warns
+ * about, and a second copy of the list is how it would happen.
+ *
+ * A word may sit in two groups honestly: an afro is a length and a texture at
+ * once, and "curls" names both what the hair does and roughly how long it is.
+ */
+const COVERAGE_WORDS = [
+  "bald", "balding", "shaved", "buzz", "buzzed", "buzzcut", "receding",
 ];
+
+const LENGTH_WORDS = [
+  "crewcut", "undercut", "fade", "afro", "braid", "braids", "braided",
+  "cornrows", "dreads", "dreadlocks", "locs", "ponytail", "ponytails",
+  "topknot", "pigtail", "pigtails", "bun", "mohawk", "bob", "pixie",
+  "fringe", "bangs", "mullet", "quiff",
+];
+
+const COLOUR_WORDS = [
+  "blonde", "blond", "brunette", "redhead", "ginger", "auburn", "greying",
+  "graying", "grey", "gray", "silver", "platinum", "bleached", "highlights",
+  "roots",
+];
+
+const TEXTURE_WORDS = ["curls", "curly", "wavy", "coiled", "afro", "frizzy", "kinky"];
+
+/**
+ * Words that say "this brief is about hair" without naming a part.
+ *
+ * "Hair" and "haired" carry no sub-axis of their own, so they can only ever
+ * mean the whole axis is spoken — which is the safe reading and today's.
+ */
+const BARE_HAIR_WORDS = ["hair", "haired"];
+
+const HAIR_WORDS = Array.from(
+  new Set([
+    ...BARE_HAIR_WORDS,
+    ...COVERAGE_WORDS,
+    ...LENGTH_WORDS,
+    ...COLOUR_WORDS,
+    ...TEXTURE_WORDS,
+  ]),
+);
 
 /**
  * Hair statements the tokenizer cannot see, because they contain punctuation.
@@ -1276,8 +1321,49 @@ const PLURAL_STYLES = new Set(["locs", "braids", "soft layers"]);
  * exactly how the two would drift out of agreement about what "stated" means.
  */
 export function briefStatesHair(...sources: (string | null | undefined)[]): boolean {
+  return spokenHairParts(...sources).size > 0 || mentionsHairAtAll(...sources);
+}
+
+/**
+ * A bare "hair" or "haired", naming no part of it.
+ *
+ * Kept separate from the parts because it is a different fact: the brief is
+ * ABOUT hair, and the gate cannot say which part. `hairDeferenceFor` resolves
+ * it with the interpreter's answer, and falls back to whole-axis deference when
+ * the interpreter had nothing — which is exactly today's behaviour.
+ */
+export function mentionsHairAtAll(...sources: (string | null | undefined)[]): boolean {
+  const words = new Set(sources.filter(Boolean).join(" ").toLowerCase().split(/[^a-z]+/));
+  return BARE_HAIR_WORDS.some((word) => words.has(word));
+}
+
+/**
+ * WHICH PARTS of hair the brief spoke to — the code-owned half of D-79.
+ *
+ * **This function is the authority on WHETHER a part was spoken; the
+ * interpreter is only ever the authority on WHAT was said** (D-89). It reads
+ * the user's own sentence, which no model can corrupt, and that asymmetry is
+ * what makes partial deference survivable: the composer never authors a part
+ * this returns, so the worst possible interpreter output degrades to today's
+ * suppression rather than to the D-79 contradiction.
+ *
+ * `briefStatesHair` is now derived from it rather than duplicating the walk, so
+ * the whole-axis question and the per-part question cannot drift apart about
+ * what counts as a hair statement.
+ *
+ * **Coverage suppresses everything.** There is no cut on a bald man, and
+ * authoring one is the founding bug of the entire deference doctrine, so a
+ * coverage word returns every part rather than just its own.
+ */
+export function spokenHairParts(
+  ...sources: (string | null | undefined)[]
+): ReadonlySet<HairPart> {
   const text = sources.filter(Boolean).join(" ").toLowerCase();
-  if (HAIR_PHRASES.some((phrase) => text.includes(phrase))) return true;
+  const parts = new Set<HairPart>();
+
+  // A phrase the tokenizer cannot see. Always a colour statement, and always
+  // the greying kind — "salt and pepper" is not a shade, it is a process.
+  if (HAIR_PHRASES.some((phrase) => text.includes(phrase))) parts.add("colour");
 
   /*
     An ambiguous word claimed by a feature word NEXT TO IT is not a hair
@@ -1289,17 +1375,45 @@ export function briefStatesHair(...sources: (string | null | undefined)[]): bool
     blonde bob" is a hair statement on the strength of "blonde" alone.
   */
   const tokens = text.split(/[^a-z]+/);
-  return tokens.some((token, index) => {
-    if (!HAIR_WORDS.includes(token)) return false;
-    if (!AMBIGUOUS_HAIR_WORDS.has(token)) return true;
-    const from = Math.max(0, index - CLAIM_WINDOW);
-    const to = Math.min(tokens.length, index + CLAIM_WINDOW + 1);
-    const claimed = tokens.slice(from, to).some((near, offset) => {
-      if (from + offset === index) return false;
-      return OTHER_FEATURE_WORDS.has(near);
-    });
-    return !claimed;
+  tokens.forEach((token, index) => {
+    if (!HAIR_WORDS.includes(token)) return;
+    if (AMBIGUOUS_HAIR_WORDS.has(token)) {
+      const from = Math.max(0, index - CLAIM_WINDOW);
+      const to = Math.min(tokens.length, index + CLAIM_WINDOW + 1);
+      const claimed = tokens.slice(from, to).some((near, offset) => {
+        if (from + offset === index) return false;
+        return OTHER_FEATURE_WORDS.has(near);
+      });
+      if (claimed) return;
+    }
+
+    // Coverage is total: there is no cut on a bald man.
+    if (COVERAGE_WORDS.includes(token)) {
+      HAIR_PARTS.forEach((part) => parts.add(part));
+      return;
+    }
+    /*
+      A bare "hair" names NO part, so it cannot be attributed to one. It is
+      recorded as the axis being unspecified rather than as every part being
+      spoken — see `hairDeferenceFor`, where the interpreter's own answer
+      resolves it. Treating it as all-parts is what made the feature inert on
+      the founder's actual phrasings: "pastel pink hair" and "long hair" both
+      carry it, so every brief anyone writes would have deferred whole.
+    */
+    if (BARE_HAIR_WORDS.includes(token)) return;
+    if (LENGTH_WORDS.includes(token)) parts.add("cutLength");
+    if (COLOUR_WORDS.includes(token)) parts.add("colour");
+    if (TEXTURE_WORDS.includes(token)) parts.add("texture");
   });
+
+  return parts;
+}
+
+/** True when the brief named coverage — shaved, bald, buzzed. Suppresses all. */
+export function briefStatesCoverage(...sources: (string | null | undefined)[]): boolean {
+  const text = sources.filter(Boolean).join(" ").toLowerCase();
+  const words = new Set(text.split(/[^a-z]+/));
+  return COVERAGE_WORDS.some((word) => words.has(word));
 }
 
 /**
@@ -1336,9 +1450,177 @@ export function briefStatesSexCodedFacialHair(...sources: (string | null | undef
   return SEX_CODING_FACIAL_HAIR.some((word) => words.has(word));
 }
 
+/**
+ * What the brief settled about hair, and what it left open — D-79 / D-89.
+ *
+ * `spoken` comes from the code-owned gate over the user's own sentence and is
+ * the authority on WHETHER. `stated` comes from the interpreter and is only
+ * ever the authority on WHAT. The composer authors nothing in `spoken`, so the
+ * worst the interpreter can do is leave a part unsaid — which costs a detail,
+ * never a contradiction.
+ */
+export type HairDeference = {
+  spoken: ReadonlySet<HairPart>;
+  stated: StatedHair;
+  /** Shaved, bald, buzzed — no remainder to author, so the axis goes silent. */
+  coverage: boolean;
+  /**
+   * The brief spoke about hair AT ALL, whichever part.
+   *
+   * Carried separately from `spoken` because the two answer different
+   * questions, and conflating them broke both directions at once. With the flag
+   * OFF this is what must silence the axis — today's behaviour is keyed on the
+   * mention, not on the attribution. And with it ON, greying mentions hair
+   * while deliberately leaving every part open, so `spoken` is empty and the
+   * sentence still has something to say.
+   */
+  mentioned: boolean;
+};
+
+/**
+ * Build the deference view for one roll.
+ *
+ * The mask is derived ONCE, here, so the composer, the sheet taste pass and the
+ * signature cap cannot disagree about what "stated" means — three readers
+ * disagreeing about one field is the shape that produced gate 21 and the
+ * role-guard rework, and a boolean per rule is how it starts.
+ */
+export function hairDeferenceFor(input: {
+  briefText?: string;
+  intent: CastingIntent;
+}): HairDeference {
+  const sources = [input.briefText ?? "", input.intent.role ?? "", input.intent.characterNotes ?? ""];
+  const stated = input.intent.statedHair ?? EMPTY_STATED_HAIR;
+  const coverage = briefStatesCoverage(...sources);
+  const spoken = new Set<HairPart>(spokenHairParts(...sources));
+
+  /*
+    THE ENGAGEMENT RULE, and it is where the gate hands the unspecified case to
+    the interpreter without giving up its authority.
+
+    A bare "hair" names no part — "pastel pink hair", "long hair" — so the gate
+    genuinely cannot attribute it. Two readings, and the choice between them is
+    decided by whether the interpreter engaged at all:
+
+      - it named at least one part → it read the sentence, so its answer
+        attributes the mention. Named parts are honoured; the rest are authored,
+        which is the feature working.
+      - it named nothing → we are back to not knowing, so the whole axis defers.
+        That is today's shipped behaviour, and it is the safe degrade the D-89
+        theorem promises: the interpreter failing costs a detail, never a
+        contradiction.
+
+    Coverage still outranks both.
+  */
+  const named = HAIR_PARTS.filter((part) => stated[part] != null);
+  if (!coverage && mentionsHairAtAll(...sources)) {
+    if (named.length > 0 || stated.greying) named.forEach((part) => spoken.add(part));
+    else HAIR_PARTS.forEach((part) => spoken.add(part));
+  }
+
+  /*
+    GREYING LEAVES THE BASE OPEN — the greyOverlay rule, and the reason that path
+    survived the D-79 rollback while everything around it failed.
+
+    "Salt and pepper" and "silver at the temples" say something is happening TO
+    the hair; they do not name the colour underneath. So the colour axis stays
+    AUTHORED and the greying is rendered on top of it. Suppressing colour here
+    would produce the exact sheet the founder's bar forbids — eight uniformly
+    grey heads — by treating a process as a shade.
+
+    Only when the brief also names an actual colour does colour become spoken,
+    which the check below preserves.
+  */
+  if (stated.greying && stated.colour == null) spoken.delete("colour");
+
+  return {
+    spoken,
+    stated,
+    coverage,
+    mentioned: coverage || spoken.size > 0 || stated.greying || mentionsHairAtAll(...sources),
+  };
+}
+
+/** Stated values arrive as bare noun phrases; an article would double up. */
+function bareTerm(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.replace(/^(?:a|an|the)\s+/i, "").trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * The partial-deference sentence: the user's own words for what they said,
+ * authored craft for everything they left open.
+ *
+ * Kept as its own branch rather than folded into the full-authoring path below,
+ * deliberately. A brief that says nothing about hair must compose byte-for-byte
+ * what it composed before this feature existed, and the cheapest way to
+ * guarantee that is for its code path not to change at all.
+ */
+function describePartialHair(input: {
+  hair: Hair;
+  deference: HairDeference;
+  style: HairStyle;
+  texture: string | null;
+  modifiers: HairModifiers | null;
+  wornState: WornState | null;
+}): string {
+  const { deference, style, hair } = input;
+  const { spoken, stated } = deference;
+
+  /*
+    A part the brief spoke to is NEVER authored. If the interpreter also failed
+    to say what it was, the part is simply omitted — the fact still reaches the
+    image through the user's own words in the role and character fields, and an
+    omission costs a detail where authoring would cost a contradiction.
+
+    Note this suppresses per PART rather than the whole axis. A brief naming a
+    colour leaves length and texture genuinely unsaid, so authoring them is the
+    feature working; it is only the spoken part that must stay silent.
+  */
+  const colour = spoken.has("colour") ? bareTerm(stated.colour) : hair.colour;
+  const grain = style.texture ?? input.texture;
+  const texture = spoken.has("texture") ? bareTerm(stated.texture) : grain;
+  const length = spoken.has("cutLength") ? bareTerm(stated.cutLength) : style.name;
+
+  const greying = stated.greying
+    ? " Greying naturally at the temples and through the sides, the base colour still visible."
+    : "";
+
+  const words = [colour, texture, length].filter((word): word is string => Boolean(word));
+  /*
+    Greying can be the ONLY thing left. "Salt and pepper" states a process and
+    no shade, so if every other part was suppressed the sentence is just the
+    greying — and dropping it here is how the one fact the brief actually
+    carried would go missing.
+  */
+  if (words.length === 0) return greying ? ` HAIR:${greying}` : "";
+
+  const description = words.join(" ");
+  const plural = length != null && PLURAL_STYLES.has(length);
+  const article = plural ? "" : /^[aeiou]/i.test(description) ? "an " : "a ";
+
+  /*
+    Components and worn state belong to the CUT, so they only speak when the cut
+    is ours to describe. Hanging a curtain fringe off a length the user named is
+    authoring inside a fact they stated.
+  */
+  const authoredCut = !spoken.has("cutLength");
+  const components = authoredCut ? describeModifiers(input.modifiers) : "";
+  const worn = authoredCut && !style.worn ? describeWornState(input.wornState) : "";
+
+  /*
+    Greying is a constraint on the base, never a colour of its own — the one
+    path that survived the D-79 rollback. "Silver at the temples" says something
+    is happening TO the hair while what is underneath is still open, so the
+    palette is already pulled dark and this says the rest out loud.
+  */
+  return ` HAIR: ${article}${description}${worn}${components}.${greying} Cut and worn as that style is genuinely worn, not a salon-neutral version of it.`;
+}
+
 function describeHair(
   hair: Hair | null,
-  stated: string,
+  deference: HairDeference,
   texture: string | null,
   style: HairStyle | null,
   resolution: StylingResolution,
@@ -1356,19 +1638,54 @@ function describeHair(
     shaved at all.
   */
   if (!style) return "";
-  /*
-    The brief owns hair the moment it mentions it. Saying nothing here is the
-    whole fix: the user's words are already in the prompt, and adding a second,
-    randomly-chosen hair sentence beside them is how "shaved head" became curls.
-
-    Token membership rather than a regex, deliberately. Three separate escaping
-    accidents this session turned a pattern into something that silently matched
-    nothing while reading correctly — a `\b` became a literal backspace once,
-    and a `\s` became the letter "s". A word list cannot be mangled into
-    something that looks right and does nothing.
-  */
-  if (briefStatesHair(stated)) return "";
   if (!hair) return "";
+
+  /*
+    COVERAGE IS TOTAL, and it is checked before anything else.
+
+    There is no cut on a bald man. Authoring one is the founding bug of the
+    whole deference doctrine, so a coverage word silences the axis outright and
+    the user's own words carry it through the role and character fields — the
+    path that has always worked.
+  */
+  if (deference.coverage) return "";
+
+  const spoken = deference.spoken;
+
+  /*
+    The brief owns hair the moment it mentions it — the pre-D-79 rule, and what
+    the kill switch returns to. Saying nothing here is the whole of it: the
+    user's words are already in the prompt, and adding a second, randomly-chosen
+    hair sentence beside them is how "shaved head" became curls.
+
+    Under partial deference this narrows from the AXIS to the PART, which is the
+    ruling: "silver at the temples" states a colour and leaves the cut, the
+    length and the texture genuinely unsaid, so silencing all four to honour one
+    is what collapsed a sheet to a single repeated look.
+  */
+  if (deference.mentioned) {
+    /*
+      OFF is exactly today: the brief owns hair the moment it mentions it, and
+      the whole axis goes quiet. Keyed on the MENTION rather than on the parts,
+      because a greying brief attributes no part and must still defer here.
+    */
+    if (!PARTIAL_DEFERENCE_ENABLED) return "";
+    /*
+      Bias tier keeps the old whole-axis behaviour for now. Its line is a
+      silhouette handed to the casting rather than a described cut, so splicing
+      a stated colour into it would need its own prose and its own founder
+      grading — Path B territory, not this slice's.
+    */
+    if (resolution === "bias") return "";
+    return describePartialHair({
+      hair,
+      deference,
+      style,
+      texture,
+      modifiers,
+      wornState,
+    });
+  }
 
   /*
     BIAS MODE. The brief carried creative context, so a named cut would compete
@@ -1554,7 +1871,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, hairDeferenceFor({ briefText: input.briefText, intent }), resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.

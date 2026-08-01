@@ -150,7 +150,8 @@ Reply with a single JSON object and nothing else:
   "variationAxis": "look" | "disposition" | null,
   "look": ${LOOK_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
   "reads": [8 short strings] | null,
-  "composedDirection": { "thesis": string, "avoid": string } | null
+  "composedDirection": { "thesis": string, "avoid": string } | null,
+  "statedHair": { "cutLength": string | null, "colour": string | null, "texture": string | null, "greying": boolean }
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -286,6 +287,28 @@ WHAT TO EXTRACT
   leave-it-null rule: it is a caption, not a casting fact, so there is no
   wrong guess to make — and falling back to a generic set makes every sheet
   read like every other sheet.
+- "statedHair": WHAT the brief said about each part of the hair, in the user's
+  own words. Copy their words; do not translate, normalise or improve them.
+      "cutLength": the length or the cut — "long", "a bob", "shoulder-length".
+      "colour":    the colour — "pastel pink", "auburn", "jet black".
+      "texture":   how it grows — "curly", "straight", "coiled".
+      "greying":   true when the brief describes greying rather than naming a
+                   colour — "salt and pepper", "silver at the temples",
+                   "greying at the sides". This is a PROCESS, not a shade: the
+                   colour underneath is still open, so set this true and leave
+                   "colour" null.
+  Leave a part null when the brief did not speak to it. A brief that mentions
+  only the colour fills only "colour" — the cut and the texture stay null and
+  the casting engine will vary them across the eight, which is the point.
+  USE ONLY WORDS THAT APPEAR IN THE BRIEF. Anything you write here is checked
+  against the user's sentence and dropped if it contains a word they did not
+  type, so a paraphrase is worse than a null — it is silently discarded.
+  Do NOT fill this for "bald", "shaved" or "buzzed" briefs. Those leave no
+  remainder to describe and the engine handles them on its own.
+  THIS IS IN ADDITION TO, NEVER INSTEAD OF, "role" and "characterNotes". If the
+  brief says "a redhead in her 30s", "redhead" belongs in the hair colour AND
+  the sentence still gets whatever role and character detail it would otherwise
+  have had. Filling this field is never a reason to leave another one empty.
 - "cohort": "photoreal_human" for any real-looking human. Use "other" for
   anime, illustration, animals, robots, fantasy creatures, or any brief that is
   not a photograph of a person.
@@ -397,7 +420,7 @@ export async function interpretBrief(input: {
 
   try {
     const result = await runOnce();
-    const parsed = parseCastingIntent(result.text);
+    const parsed = parseCastingIntent(result.text, input.briefText);
     recordParseOutcome(!parsed.ok, result.truncated === true);
 
     /*
@@ -419,7 +442,7 @@ export async function interpretBrief(input: {
         "[interpreter] reply was CUT OFF at the token ceiling — retrying rather than dropping the brief's locks",
       );
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text);
+      const reparsed = parseCastingIntent(retry.text, input.briefText);
       recordParseOutcome(!reparsed.ok, retry.truncated === true);
       if (reparsed.ok) {
         return {
@@ -476,7 +499,7 @@ export async function interpretBrief(input: {
     if (needsAestheticRetry(input.briefText, intent)) {
       log.info({ stage: "interpreter" }, "[interpreter] aesthetic reference landed nowhere — re-sampling once");
       const retry = await runOnce();
-      const reparsed = parseCastingIntent(retry.text);
+      const reparsed = parseCastingIntent(retry.text, input.briefText);
       // Counted like any other attempt. A denominator that skips the retries
       // is a rate nobody can act on — this one keeps the same brief's second
       // reply in the same window as its first.

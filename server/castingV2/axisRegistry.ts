@@ -393,43 +393,18 @@ export const CROSS_AXIS_IMPLICATIONS: readonly CrossAxisImplication[] = [
  * suppress — it NULLS (`withHonestRecord`), and a null value is covered by the
  * sweep's null arm.
  *
- * The three `stated-*` entries are the exception, and they are exactly the
- * thing this doctrine says should not exist: an axis silenced without being
- * nulled, i.e. a record that lies. They are excused here as a NAMED KNOWN
- * DEFECT (D-88) rather than fixed, because nulling the biology tier is a record
- * change outside slice zero's behavior-preserving mandate — and named rather
- * than omitted, because a closed list whose exceptions are invisible is the
- * per-axis predicate it was chosen over.
+ * **D-88 CLOSED THE EXCEPTIONS.** Three `stated-*` suppressors used to sit here
+ * for eye, brow and skin deference, which silenced without nulling — the one
+ * thing this doctrine says should not exist. The founder ruled they ride the
+ * D-79 re-ship, since it is the same deference-record-truth change, so the
+ * biology tier now admits nulls and the null arm covers them. The list is back
+ * to holding only cases where a real value legitimately composes nothing.
  */
 export type SuppressorKey =
   /** A look that VARIES across the eight carries its own expression whisper, so
    *  a presence line on top would give the model two instructions for one face.
    *  A LOCKED look does not suppress it — that was the sameness bug. */
   | "varying-look"
-  /*
-    THE THREE BELOW ARE KNOWN-DEFECT EXCUSES, NOT CLEAN SUPPRESSORS — D-88.
-
-    Hair deference NULLS the axes it silences, which is why it needs no
-    suppressor. Eye, brow and skin deference silence WITHOUT nulling, so a brief
-    saying "green eyes" still persists a fabricated eye colour. The record lies,
-    and not only passively: a follow inherits the fabrication, and if the follow
-    brief does not repeat the eye words, it COMPOSES — flipping the followed
-    face's eyes away from what the brief asked for.
-
-    They are named here rather than left implicit precisely because the argument
-    for a closed shared suppressor list was that it cannot be bent to excuse one
-    axis quietly. Excusing three axes quietly would have proved the opposite.
-
-    The fix is to null them the way hair is nulled, which needs `RealizedAxes`
-    to admit nulls on the biology tier — a record change beyond slice zero's
-    behavior-preserving mandate. Queued, not forgotten.
-  */
-  /** The brief spoke about the eyes, so no authored eye line is emitted. */
-  | "stated-eyes"
-  /** The brief spoke about the brows. */
-  | "stated-brows"
-  /** The brief spoke about the skin. */
-  | "stated-skin"
   /** The cut's own NAME already says how it is worn — "a ponytail, in a
    *  ponytail" is doubling the model reads as emphasis. */
   | "cut-names-its-worn-state";
@@ -448,17 +423,11 @@ export function suppressorsFor(input: {
   tier: StylingResolution;
   /** The sheet varies BY look, so each candidate's whisper is the difference. */
   lookVaries: boolean;
-  statedEyes: boolean;
-  statedBrows: boolean;
-  statedSkin: boolean;
   /** The resolved cut's own name already says how it is worn. */
   cutNamesWornState: boolean;
 }): ReadonlySet<SuppressorKey> {
   const active = new Set<SuppressorKey>();
   if (input.lookVaries) active.add("varying-look");
-  if (input.statedEyes) active.add("stated-eyes");
-  if (input.statedBrows) active.add("stated-brows");
-  if (input.statedSkin) active.add("stated-skin");
   /*
     Only at prescribe tier. The bias line states the worn state outright
     regardless of the cut's name, because at that tier there is no name in the
@@ -569,8 +538,15 @@ function hasWord(text: string, phrase: string): boolean {
  * answer and makes every hair footprint fail rather than pass.
  */
 export function hairRegion(prompt: string): string {
-  const start = prompt.indexOf(" HAIR:");
-  if (start < 0) return "";
+  /*
+    " HAIR:" also sits inside " FACIAL HAIR:", and the composer emits the facial
+    line whenever the scalp line is suppressed — so a plain indexOf would hand
+    every hair footprint the BEARD sentence to look in. Anchored on a
+    non-letter that is not the "L" of FACIAL.
+  */
+  const match = /(^|[^A-Z])\sHAIR:/.exec(prompt);
+  if (!match) return "";
+  const start = match.index + match[1].length;
   const rest = prompt.slice(start + 1);
   const end = rest.search(/\n| EYE COLOUR:| FACIAL HAIR:| BROW CHARACTER:| SKIN CHARACTER:/);
   return end < 0 ? rest : rest.slice(0, end);
@@ -732,7 +708,7 @@ export const AXIS_REGISTRY = {
     unlockable: false,
     overridable: false,
     tiers: ALL_TIERS,
-    suppressors: ["stated-eyes"],
+    suppressors: [],
     silent: [],
     read: (ctx) => ctx.identity.realized.eyeColour,
     footprint: (value, prompt) => has(prompt, `EYE COLOUR: ${value}`),
@@ -745,7 +721,7 @@ export const AXIS_REGISTRY = {
     unlockable: false,
     overridable: false,
     tiers: ALL_TIERS,
-    suppressors: ["stated-brows"],
+    suppressors: [],
     silent: [],
     read: (ctx) => ctx.identity.realized.browStyle,
     footprint: (value, prompt) => has(prompt, `BROW CHARACTER: ${value}`),
@@ -758,7 +734,7 @@ export const AXIS_REGISTRY = {
     unlockable: false,
     overridable: false,
     tiers: ALL_TIERS,
-    suppressors: ["stated-skin"],
+    suppressors: [],
     /*
       "Plain" is most faces. Spending a prompt line to say a person has no
       distinguishing skin feature would crowd the lines that do carry one, and

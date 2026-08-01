@@ -28,8 +28,10 @@ import {
 } from "./hairStyles";
 import { applyTasteWrite, type TasteWrite } from "./axisRegistry";
 import {
+  HAIR_PARTS,
   REALIZED_AXIS_KEYS,
   type BrowStyle,
+  type HairPart,
   type EyeColour,
   type FacialHair,
   type HairStyle,
@@ -336,7 +338,7 @@ export function describeRealizedAxes(
 ): string {
   const parts: string[] = [];
 
-  if (!stated("eyes")) {
+  if (axes.eyeColour && !stated("eyes")) {
     parts.push(`EYE COLOUR: ${axes.eyeColour} — ${IRIS_RENDER[axes.eyeColour]}.`);
   }
   if (axes.facialHair && !stated("facialHair")) {
@@ -353,7 +355,7 @@ export function describeRealizedAxes(
           : `FACIAL HAIR: ${axes.facialHair}, grown naturally and unevenly, individual hairs visible at the edges.`,
     );
   }
-  if (!stated("brows")) {
+  if (axes.browStyle && !stated("brows")) {
     const render = BROW_RENDER[axes.browStyle];
     /*
       "BROW CHARACTER", not "BROWS" — the cohort constant already has a BROWS
@@ -364,7 +366,7 @@ export function describeRealizedAxes(
     */
     parts.push(`BROW CHARACTER: ${axes.browStyle}${render ? ` — ${render}` : ""}.`);
   }
-  if (axes.skinCharacter !== "plain" && !stated("skin")) {
+  if (axes.skinCharacter && axes.skinCharacter !== "plain" && !stated("skin")) {
     parts.push(
       axes.skinCharacter === "a beauty mark"
         ? "SKIN CHARACTER: one small natural beauty mark on the face, placed asymmetrically."
@@ -455,7 +457,16 @@ export function applySheetTaste<T extends SheetCandidate>(
   rollSeed: string,
   options: {
     statedFacialHair?: boolean;
-    hairAuthored?: boolean;
+    /**
+     * Which parts of hair this sheet may author — D-79's per-part mask.
+     *
+     * Was a single `hairAuthored` boolean, which is the shape the ruling
+     * rejects: "silver at the temples" states a colour and stood down the CUT
+     * rules too, so the sheet lost its variety to honour one fact. Derived once
+     * in the compiler from the same gate the composer reads, so the taste pass
+     * and the prompt cannot disagree about what was said.
+     */
+    authoredParts?: ReadonlySet<HairPart>;
     /*
       Under creative context the prompt carries the SILHOUETTE, not the cut, so
       distinctness has to be counted at the resolution the image actually
@@ -472,7 +483,9 @@ export function applySheetTaste<T extends SheetCandidate>(
     saw. The twin rule keeps working on its second axis — that is the whole
     reason this is a flag and not an early return.
   */
-  const hairAuthored = options.hairAuthored ?? true;
+  const authoredParts = options.authoredParts ?? new Set<HairPart>(HAIR_PARTS);
+  const authorsCut = authoredParts.has("cutLength");
+  const authorsColour = authoredParts.has("colour");
   /** What counts as "a distinct cut" — the name, or the silhouette it carries. */
   const identityOf = (style: HairStyle) => (options.biasResolution ? style.family : style.name);
   const seen = new Set<string>();
@@ -571,7 +584,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     };
 
     let style = current;
-    if (hairAuthored && (overStatement || (mustBeNew && seen.has(identityOf(current))) || familyClashes)) {
+    if (authorsCut && (overStatement || (mustBeNew && seen.has(identityOf(current))) || familyClashes)) {
       const usable = ordinary.filter(([entry]) => !overStatement || !entry.statement);
       /*
         The floor is a HARD filter, not another preference. Ranking the twin
@@ -622,7 +635,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     );
 
     let colour = candidate.hair?.colour ?? null;
-    if (hairAuthored && colour !== null && !AGE_COLOURS.has(colour)) {
+    if (authorsColour && colour !== null && !AGE_COLOURS.has(colour)) {
       const palette = HAIR_COLOUR_WEIGHTS[primary] ?? DEFAULT_HAIR_COLOURS;
       const seed = hash(`${rollSeed}:hairColourTaste:${position}`);
       const bucketClashes = wantsColour && bucketsHere.has(colourBucket(colour));
@@ -668,7 +681,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     if (facialHair !== null && !options.statedFacialHair && secondAxis(candidate.sex) === "beard") {
       const beardsHere = new Set(
         nearby
-          .filter((entry) => !hairAuthored || entry.family === style.family)
+          .filter((entry) => !authorsCut || entry.family === style.family)
           .map((entry) => entry.beard)
           .filter((bucket): bucket is BeardBucket => bucket !== null),
       );

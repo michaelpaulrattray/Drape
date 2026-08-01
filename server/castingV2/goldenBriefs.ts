@@ -121,6 +121,13 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
       "THE FACT-LEVEL DEFERENCE GAP, pinned. Stating a length silences the whole colour axis as well, so the goth prior fills it and the sheet comes back uniformly black. Bar when partial deference returns: length and beard honoured 8/8 as stated, and colour still AUTHORED — dark-leaning for the aesthetic but not uniform, so the sheet can produce its blonde goth.",
   },
   {
+    brief: "a photographer in his 50s with salt and pepper hair",
+    category: true,
+    deferredTo: "D-79 re-ship (partial deference), at M7",
+    because:
+      "THE GREYING CASE, and the one that has always half-worked. 'Salt and pepper' says something is happening TO the hair while the cut, the length and the base colour underneath are all still open — so full-axis deference silences four facts to honour one. It is the sibling of 'silver at the temples', which survived the D-79 rollback precisely because it routed through a structured field the code owns rather than through prose the interpreter had to keep writing. Bar when partial deference returns: the greying is honoured 8/8, the base reads dark rather than uniformly grey, and the cuts stay authored and varied.",
+  },
+  {
     brief: "a redhead in her 30s",
     category: false,
     because:

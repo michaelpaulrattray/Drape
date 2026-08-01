@@ -38,6 +38,7 @@
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import {
+  EMPTY_STATED_HAIR,
   lockFactsOf,
   validateLocks,
   type AgeBand,
@@ -58,6 +59,7 @@ import {
   resolveArchetype,
   resolveCandidateIdentity,
   briefStatesHair,
+  hairDeferenceFor,
   statedAxis,
   type FollowAnchor,
 } from "./cohortPhotorealHuman";
@@ -66,6 +68,7 @@ import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
 import { breakSignatureClusters, type VarianceReport } from "./varianceBudget";
+import { HAIR_PARTS, type HairPart } from "../../shared/castingRealization";
 
 /**
  * A name never becomes a casting category. The second half of gate 21.
@@ -274,6 +277,14 @@ function fallbackIntent(briefText: string): CastingIntent {
     look: null,
     reads: [],
     composedDirection: null,
+    /*
+      The fallback states nothing about hair, which is the honest reading: the
+      interpreter never ran, so nothing was extracted. The code-owned gate still
+      reads the user's raw sentence, so a "shaved head" brief is still deferred
+      to — the gate is the authority on WHETHER, and it does not need the
+      interpreter to have worked (D-89).
+    */
+    statedHair: EMPTY_STATED_HAIR,
   };
 }
 
@@ -441,6 +452,23 @@ function withHonestRecord(
   identity: ResolvedIdentity,
   resolution: StylingResolution,
   statedFacialHair: boolean,
+  /*
+    Which parts of hair actually reached the prompt — D-79's per-part mask.
+
+    Blanking used to be all-or-nothing with the resolution, which under partial
+    deference would null a colour the prompt HAD authored: the record would say
+    the candidate has no hair while the picture shows the colour we asked for.
+    That is the record-that-lies class, and it would have been minted by the fix
+    for it. The record blanks exactly what was suppressed and nothing else.
+  */
+  authoredParts: ReadonlySet<HairPart>,
+  /*
+    D-88: the biology tier nulls what deference silenced, exactly as hair does.
+    A "green eyes" brief emits no eye line, so persisting a fabricated colour
+    was a record that lied — and a follow inherits biology whole, so the
+    fabrication travelled and could COMPOSE on the next sheet.
+  */
+  statedBiology: { eyes: boolean; brows: boolean; skin: boolean },
 ): ResolvedIdentity {
   /*
     BIAS TIER RECORDS NO COMPONENTS.
@@ -459,26 +487,41 @@ function withHonestRecord(
   */
   const biasNulls = resolution === "bias" ? { hairModifiers: null } : {};
 
+  const biologyNulls = {
+    ...(statedBiology.eyes ? { eyeColour: null } : {}),
+    ...(statedBiology.brows ? { browStyle: null } : {}),
+    ...(statedBiology.skin ? { skinCharacter: null } : {}),
+  };
+  const authorsColour = authoredParts.has("colour");
+  const authorsCut = authoredParts.has("cutLength");
+  const authorsTexture = authoredParts.has("texture");
+
   if (resolution !== "stated" && !statedFacialHair) {
     return {
       ...identity,
       stylingResolution: resolution,
-      realized: { ...identity.realized, ...biasNulls },
+      realized: { ...identity.realized, ...biasNulls, ...biologyNulls },
     } as ResolvedIdentity;
   }
   return {
     ...identity,
     stylingResolution: resolution,
-    ...(resolution === "stated" ? { hair: null } : {}),
+    ...(resolution === "stated" && !authorsColour ? { hair: null } : {}),
     realized: {
       ...identity.realized,
       ...biasNulls,
-      // Deference: the brief owns hair, so nothing authored survives — the cut,
-      // its texture, and the components that belong to the cut go together.
-      ...(resolution === "stated"
-        ? { hairStyle: null, hairTexture: null, hairModifiers: null, wornState: null }
+      /*
+        Deference: the brief owns the parts it spoke to, so nothing authored
+        survives for those — the cut, its texture, and the components that
+        belong to the cut go together. A part the brief left open keeps its
+        authored value, because the prompt carried it.
+      */
+      ...(resolution === "stated" && !authorsCut
+        ? { hairStyle: null, hairModifiers: null, wornState: null }
         : {}),
+      ...(resolution === "stated" && !authorsTexture ? { hairTexture: null } : {}),
       ...(statedFacialHair ? { facialHair: null } : {}),
+      ...biologyNulls,
     },
   } as ResolvedIdentity;
 }
@@ -549,6 +592,22 @@ function resolveSheet(input: {
     briefStatesHair: briefStatesHair(stated),
     anchored: anchor != null,
   });
+  /*
+    THE PER-PART MASK, derived ONCE — D-79's re-ship (D-89).
+
+    The taste pass, the signature cap and the composer all need to know which
+    parts of hair the brief settled. Deriving it here and passing it down is what
+    stops three readers disagreeing about the same field, which is the shape that
+    produced gate 21 and the role-guard rework.
+
+    With the flag off this collapses to today's answer: any hair word masks every
+    part, so nothing authored survives.
+  */
+  const deference = hairDeferenceFor({ briefText, intent });
+  const authoredParts = new Set<HairPart>(
+    HAIR_PARTS.filter((part) => !deference.coverage && !deference.spoken.has(part)),
+  );
+
   const tasted = inherited
     ? resolved
     : applySheetTaste(resolved, rollSeed, {
@@ -565,7 +624,7 @@ function resolveSheet(input: {
           hair rules stand down and the twin rule falls back to separating on
           its second axis alone.
         */
-        hairAuthored: !briefStatesHair(briefText, intent.role, intent.characterNotes),
+        authoredParts,
         biasResolution:
           stylingResolutionFor({ intent, briefStatesHair: briefStatesHair(stated) }) === "bias",
       });
@@ -624,7 +683,11 @@ function resolveSheet(input: {
         anchored: anchor != null,
       }),
       personaLine: personaLineFor(identity, intent.reads[position] ?? null),
-      resolvedIdentity: withHonestRecord(identity, sheetResolution, statedFacialHairHere),
+      resolvedIdentity: withHonestRecord(identity, sheetResolution, statedFacialHairHere, authoredParts, {
+        eyes: statedAxis("eyes", stated),
+        brows: statedAxis("brows", stated),
+        skin: statedAxis("skin", stated),
+      }),
     })),
   };
 }

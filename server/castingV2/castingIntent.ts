@@ -390,10 +390,51 @@ export type CastingIntent = {
    * obvious slot in the prompt beside the shelf entry it stands in for.
    */
   composedDirection: ComposedDirection | null;
+  /**
+   * WHAT the brief said about each part of hair. Never WHETHER — that is the
+   * code-owned gate's job (D-89). See `StatedHair`.
+   */
+  statedHair: StatedHair;
 };
 
 /** The same shape an  entry uses, and reviewed the same way. */
 export type ComposedDirection = { thesis: string; avoid: string };
+
+/**
+ * WHAT the brief said about each part of hair — D-79's re-ship (D-89).
+ *
+ * The interpreter fills this; it does **not** decide whether a part was spoken.
+ * That is `spokenHairParts`, a code-owned gate over the user's own sentence,
+ * and the split is the whole safety argument: a null here degrades to
+ * suppression, never to authoring, so the worst possible interpreter output
+ * reproduces today's shipped behaviour instead of the D-79 contradiction.
+ *
+ * Free strings rather than closed vocabularies, deliberately — "pastel pink" is
+ * in no enum, and forcing it into one would lose the user's own words, which is
+ * the point of the feature. Containment comes from a closed SOURCE instead: see
+ * `tokensComeFromBrief`. The model may only echo words the user typed.
+ *
+ * `greying` is a boolean the code acts on rather than a value it splices, and
+ * that is not a detail — it is the one path that survived the D-79 rollback.
+ * "Silver at the temples" says something is happening TO the hair while the
+ * colour underneath is still open, so it constrains the base rather than
+ * claiming it.
+ */
+export type StatedHair = {
+  cutLength: string | null;
+  colour: string | null;
+  texture: string | null;
+  greying: boolean;
+};
+
+export const STATED_HAIR_MAX = 40;
+
+export const EMPTY_STATED_HAIR: StatedHair = {
+  cutLength: null,
+  colour: null,
+  texture: null,
+  greying: false,
+};
 
 export const COMPOSED_THESIS_MAX = 200;
 export const COMPOSED_AVOID_MAX = 120;
@@ -475,6 +516,7 @@ const wireSchema = z.object({
   look: nullableEnum(LOOK_KEYS as unknown as readonly [string, ...string[]]),
   reads: z.array(z.unknown()).nullable().optional(),
   composedDirection: z.unknown().nullable().optional(),
+  statedHair: z.unknown().nullable().optional(),
   /*
     `.nullable()` matters as much as `.optional()` here, and the difference
     cost a founder 160 credits. Models return `null` and `undefined`
@@ -586,6 +628,74 @@ function parseComposedDirection(raw: unknown): ComposedDirection | null {
   return { thesis, avoid };
 }
 
+/**
+ * Words that carry no content, so they need not be traceable to the brief.
+ *
+ * Small on purpose. The check below is a containment boundary, and every word
+ * added here is a word the model may introduce that the user never typed.
+ */
+const STATED_HAIR_STOPWORDS = new Set([
+  "a", "an", "the", "and", "or", "of", "with", "at", "in", "on", "to", "her",
+  "his", "their", "its", "hair", "haired", "worn", "cut", "is", "was",
+]);
+
+/**
+ * Every content word must come from the user's own sentence.
+ *
+ * **A closed SOURCE instead of a closed vocabulary** (D-89). Identity facts are
+ * enums precisely so a language model cannot smuggle a plaid shirt or a
+ * captioned mug into a paid prompt — but hair colour cannot be an enum without
+ * losing "pastel pink", which is exactly the fact the user wants honoured. So
+ * the containment moves: the value stays free text, and every content token in
+ * it has to appear in the raw brief.
+ *
+ * That one property closes three failure modes at once. The model cannot
+ * hallucinate a colour the brief never named; it cannot paraphrase "strawberry
+ * blonde" into something adjacent; and it cannot inject an instruction, because
+ * anything it writes must already be the user's own words — and the user
+ * sabotaging their own paid roll is not a threat model, it is a refund.
+ *
+ * The stakes justify the strictness: this text lands in the SUBJECT block,
+ * which the prompt's own priority line declares absolute.
+ */
+export function tokensComeFromBrief(value: string, briefText: string): boolean {
+  const source = new Set(briefText.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
+  const tokens = value.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+  return tokens.every((token) => STATED_HAIR_STOPWORDS.has(token) || source.has(token));
+}
+
+/**
+ * Parse the stated-hair fields, dropping anything that fails containment.
+ *
+ * Drop-to-null on every failure, never a refusal — the `parseComposedDirection`
+ * shape. A rejected field falls back to suppression, which is today's shipped
+ * behaviour, so the cost of the model misbehaving is that the feature does not
+ * apply rather than that a paid roll dies.
+ */
+export function parseStatedHair(raw: unknown, briefText: string): StatedHair {
+  if (!raw || typeof raw !== "object") return EMPTY_STATED_HAIR;
+  const wire = raw as Record<string, unknown>;
+
+  const field = (key: "cutLength" | "colour" | "texture"): string | null => {
+    const cleaned = scrubBrands(cleanFreeText(wire[key], STATED_HAIR_MAX));
+    if (!cleaned) return null;
+    // Digits render as text artefacts in the picture, and a garment word means
+    // the model answered about clothes. Both are drops, never edits.
+    if (/[0-9]/.test(cleaned)) return null;
+    if (mentionsGarments(cleaned)) return null;
+    if (!tokensComeFromBrief(cleaned, briefText)) return null;
+    return cleaned;
+  };
+
+  return {
+    cutLength: field("cutLength"),
+    colour: field("colour"),
+    texture: field("texture"),
+    greying: wire.greying === true,
+  };
+}
+
 export type IntentParseResult =
   | { ok: true; intent: CastingIntent }
   | { ok: false; reason: "unreadable" | "unsupported_cohort" };
@@ -597,7 +707,7 @@ export type IntentParseResult =
  * bad response, and an exception here would turn a recoverable interpreter
  * wobble into a failed roll.
  */
-export function parseCastingIntent(raw: unknown): IntentParseResult {
+export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseResult {
   let payload = raw;
   if (typeof raw === "string") {
     try {
@@ -638,6 +748,7 @@ export function parseCastingIntent(raw: unknown): IntentParseResult {
       look: wire.look as LookKey | null,
       reads: parseReads(wire.reads),
       composedDirection: parseComposedDirection(wire.composedDirection),
+      statedHair: parseStatedHair(wire.statedHair, briefText),
     },
   };
 }

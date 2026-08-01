@@ -58,6 +58,23 @@ import { ARCHETYPES, LOOKS, type CastingIntent } from "./castingIntent";
 */
 export const COMPOSED_DIRECTION_ENABLED = true;
 
+/**
+ * PARTIAL DEFERENCE — D-79's re-ship, off until the founder turns it on.
+ *
+ * A one-line constant beside the other taste toggles, the shape the founder
+ * ruled for the brand-translation kill switch: a rollback is sixty seconds and
+ * does not grow the flag registry.
+ *
+ * OFF is exactly today's behaviour — any hair word silences the whole hair
+ * axis. ON narrows that from the axis to the PART, so "silver at the temples"
+ * states a colour and still gets eight different authored cuts.
+ *
+ * It stays off until D-79's condition 4 is met — all five founder briefs
+ * verified live — and until the founder rules on the conditions amendment
+ * recorded in D-89. The feature being built is not the feature being on.
+ */
+export const PARTIAL_DEFERENCE_ENABLED = false;
+
 export type StylingResolution =
   /** The brief named the styling itself; nothing is authored (deference). */
   | "stated"

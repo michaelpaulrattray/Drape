@@ -96,7 +96,18 @@ export type SkinCharacter = (typeof SKIN_CHARACTERS)[number];
 
 /** Everything realization fills in, as one object. */
 export type RealizedAxes = {
-  eyeColour: EyeColour;
+  /*
+    NULLABLE, and that is D-88 (founder ruling: it rides the D-79 re-ship,
+    because it is the same deference-record-truth change).
+
+    Hair deference nulls what it silences. Eye, brow and skin deference used to
+    silence WITHOUT nulling, so a brief saying "green eyes" still persisted a
+    fabricated eye colour — and a follow inherits the biology tier whole, so the
+    fabrication travelled and could then COMPOSE, flipping the followed face's
+    eyes away from what the brief asked for. Same class as every other record
+    that lies; now it cannot be written.
+  */
+  eyeColour: EyeColour | null;
   /** The named cut. Carries its own coherent length and, sometimes, texture. */
   /*
     NULL when deference suppressed it. The persisted identity is the M7
@@ -122,8 +133,8 @@ export type RealizedAxes = {
    * buzz cut is not "worn up") or when deference silenced the whole axis.
    */
   wornState: WornState | null;
-  browStyle: BrowStyle;
-  skinCharacter: SkinCharacter;
+  browStyle: BrowStyle | null;
+  skinCharacter: SkinCharacter | null;
 };
 
 /**
@@ -251,6 +262,21 @@ export type HairModifiers = {
  * lighting setup, so the finish is chosen once per roll by the archetype — the
  * framing law holds and eight candidates stay comparable.
  */
+/**
+ * The parts of "hair" a brief can speak to, separately — D-79's unit of "said".
+ *
+ * The doctrine is unchanged at its root: null means the brief did not say. What
+ * changes is granularity. "Silver at the temples" states a colour fact; the cut,
+ * the length and the texture remain unsaid and should still be authored, which
+ * is what makes eight candidates eight people rather than one look repeated.
+ *
+ * Coverage is deliberately absent. "Shaved", "bald" and "buzzed" leave no
+ * remainder to author — there is no cut on a bald man — so they suppress every
+ * part at once rather than being a part of their own.
+ */
+export const HAIR_PARTS = ["cutLength", "colour", "texture"] as const;
+export type HairPart = (typeof HAIR_PARTS)[number];
+
 export const SKIN_FINISHES = [
   "matte",
   "natural",

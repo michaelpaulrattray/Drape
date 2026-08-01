@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import { HAIR_PARTS, type HairPart } from "../../shared/castingRealization";
+
+/*
+  D-79's per-part mask, in the two shapes these tests need. The old
+  `hairAuthored: false` said "the brief settled hair, author none of it"; the
+  mask says the same thing per part, which is what lets a brief settle a colour
+  and still get eight different cuts.
+*/
+const NO_HAIR_PARTS: ReadonlySet<HairPart> = new Set();
+const ALL_HAIR_PARTS: ReadonlySet<HairPart> = new Set(HAIR_PARTS);
+
 import {
   NEIGHBOUR_THRESHOLD,
   beardBucket,
@@ -430,7 +441,7 @@ describe("a brief that states hair", () => {
     for (let roll = 0; roll < 200; roll += 1) {
       const raw = rawSheet(`stated-${roll}`);
       before += beardTwins(raw);
-      after += beardTwins(applySheetTaste(raw, `stated-${roll}`, { hairAuthored: false }));
+      after += beardTwins(applySheetTaste(raw, `stated-${roll}`, { authoredParts: NO_HAIR_PARTS }));
       floor += pigeonholeFloor(raw);
     }
     expect(after).toBe(floor);
@@ -445,7 +456,7 @@ describe("a brief that states hair", () => {
     */
     for (let roll = 0; roll < 60; roll += 1) {
       const raw = rawSheet(`untouched-${roll}`);
-      const after = applySheetTaste(raw, `untouched-${roll}`, { hairAuthored: false });
+      const after = applySheetTaste(raw, `untouched-${roll}`, { authoredParts: NO_HAIR_PARTS });
       after.forEach((candidate, index) => {
         expect(candidate.hair).toEqual(raw[index].hair);
         expect(candidate.realized.hairStyle).toEqual(raw[index].realized.hairStyle);
@@ -458,7 +469,7 @@ describe("a brief that states hair", () => {
     // Both axes deferred: the pass has nothing left it is allowed to touch.
     for (let roll = 0; roll < 40; roll += 1) {
       const raw = rawSheet(`both-${roll}`);
-      const after = applySheetTaste(raw, `both-${roll}`, { hairAuthored: false, statedFacialHair: true });
+      const after = applySheetTaste(raw, `both-${roll}`, { authoredParts: NO_HAIR_PARTS, statedFacialHair: true });
       expect(after).toEqual(raw);
     }
   });

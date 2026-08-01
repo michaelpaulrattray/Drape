@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ac5c1602f198ebd8"
+    "sourceFingerprint": "5fb8d36c27d1ff0e"
   },
   "domains": [
     {
@@ -7765,6 +7765,14 @@
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
       "path": "server/castingV2/overridePrecedence.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/partialDeference.test.ts",
+      "path": "server/castingV2/partialDeference.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/partialDeferenceOn.test.ts",
+      "path": "server/castingV2/partialDeferenceOn.test.ts"
     },
     {
       "id": "test:server/castingV2/promptGuards.test.ts",
@@ -16016,6 +16024,11 @@
     {
       "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
     {

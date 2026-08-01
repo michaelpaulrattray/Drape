@@ -19,7 +19,7 @@ import {
 import { castingBriefCompiler } from "./briefCompiler";
 import { ARCHETYPES, LOOK_KEYS, type ResolvedIdentity } from "./castingIntent";
 import { REALIZED_AXIS_KEYS } from "../../shared/castingRealization";
-import { briefStatesHair, statedAxis } from "./cohortPhotorealHuman";
+import { briefStatesHair } from "./cohortPhotorealHuman";
 import type { TextEngine } from "../providers/types";
 
 /**
@@ -111,13 +111,13 @@ describe("the registry is complete", () => {
 
   it("pins the suppressor list — the sweep's only escape hatch", () => {
     const used = new Set(AXIS_KEYS.flatMap((key) => [...AXIS_REGISTRY[key].suppressors]));
-    expect([...used].sort()).toEqual([
-      "cut-names-its-worn-state",
-      "stated-brows",
-      "stated-eyes",
-      "stated-skin",
-      "varying-look",
-    ]);
+    /*
+      Two, not five. D-88 retired the three `stated-*` excuses by making the
+      biology tier nullable, so eye, brow and skin deference is covered by the
+      sweep's null arm rather than by an exemption. What remains is the honest
+      kind: a real value that legitimately composes nothing.
+    */
+    expect([...used].sort()).toEqual(["cut-names-its-worn-state", "varying-look"]);
   });
 
   it("registers the shipped cross-axis implication, and marks it hard", () => {
@@ -248,9 +248,6 @@ function contextFor(input: {
     suppressed: suppressorsFor({
       tier,
       lookVaries: identity.look != null && !input.lookLocked,
-      statedEyes: statedAxis("eyes", input.statedText),
-      statedBrows: statedAxis("brows", input.statedText),
-      statedSkin: statedAxis("skin", input.statedText),
       cutNamesWornState: identity.realized.hairStyle?.worn != null,
     }),
   };

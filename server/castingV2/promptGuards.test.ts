@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import { HAIR_PARTS, type HairPart } from "../../shared/castingRealization";
+
+/*
+  D-79's per-part mask, in the two shapes these tests need. The old
+  `hairAuthored: false` said "the brief settled hair, author none of it"; the
+  mask says the same thing per part, which is what lets a brief settle a colour
+  and still get eight different cuts.
+*/
+const NO_HAIR_PARTS: ReadonlySet<HairPart> = new Set();
+const ALL_HAIR_PARTS: ReadonlySet<HairPart> = new Set(HAIR_PARTS);
+
 import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompiler";
 import { applySheetTaste } from "./realizedAxes";
 import { resolveCandidateIdentity } from "./cohortPhotorealHuman";
@@ -129,7 +140,7 @@ describe("the female stated-hair limit, pinned rather than described", () => {
       const raw = Array.from({ length: 8 }, (_, position) =>
         resolveCandidateIdentity(intent, position, `limit-${roll}`),
       );
-      const sheet = applySheetTaste(raw, `limit-${roll}`, { hairAuthored: false });
+      const sheet = applySheetTaste(raw, `limit-${roll}`, { authoredParts: NO_HAIR_PARTS });
       for (let i = 0; i < sheet.length; i += 1) {
         for (let j = i + 1; j < sheet.length; j += 1) {
           const hi = sheet[i].heritage[0]?.heritage ?? "";
@@ -158,7 +169,7 @@ describe("the female stated-hair limit, pinned rather than described", () => {
       const raw = Array.from({ length: 8 }, (_, position) =>
         resolveCandidateIdentity(intent, position, `limit-${roll}`),
       );
-      const sheet = applySheetTaste(raw, `limit-${roll}`, { hairAuthored: true });
+      const sheet = applySheetTaste(raw, `limit-${roll}`, { authoredParts: ALL_HAIR_PARTS });
       for (let i = 0; i < sheet.length; i += 1) {
         for (let j = i + 1; j < sheet.length; j += 1) {
           const hi = sheet[i].heritage[0]?.heritage ?? "";

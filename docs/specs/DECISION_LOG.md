@@ -1770,7 +1770,16 @@ conflict, the conflict is the slice's product, not its embarrassment — each
 case is an individually-noted fix or a pinned known-gap, and never a quiet
 weakening of the sweep.
 
-### D-88 — Biology deference silences without nulling, and that is a record that lies *(Fable checkpoint-1 finding, 2026-08-01; excused by name, fix queued)*
+### D-88 — Biology deference silences without nulling, and that is a record that lies *(Fable checkpoint-1 finding, 2026-08-01; FIXED with the D-79 re-ship by founder ruling)*
+
+**Status: closed.** The founder ruled it rides the D-79 re-ship rather than
+waiting — *"it's the same deference-record-truth change; biology tier admits
+nulls there, not later"* — which is right: hair and biology are one doctrine and
+splitting them would have left the registry excusing half of it. `RealizedAxes`
+now admits nulls on `eyeColour`, `browStyle` and `skinCharacter`; the record
+blanks what deference silenced; and the three `stated-*` suppressors are retired
+from the registry, leaving the sweep's escape hatch holding only the honest kind
+of exemption. The finding as originally written follows.
 
 Found by the M7 slice-zero review, in the registry's own suppressor list.
 
@@ -1789,10 +1798,10 @@ followed *person*. So the fabrication travels; and if the follow's brief does
 not repeat the eye words, the inherited fabrication **composes**, flipping the
 followed face's eyes away from what the parent brief asked for.
 
-**Why it is excused rather than fixed today.** Nulling them needs `RealizedAxes`
-to admit nulls on the biology tier, which is a record-shape change beyond slice
-zero's behavior-preserving mandate, and it touches the follow anchor, the
-signature, and the taste pass together. Queued.
+**Why it was excused on the day it was found.** Nulling them needs
+`RealizedAxes` to admit nulls on the biology tier, which is a record-shape
+change beyond slice zero's behavior-preserving mandate. Queued then, ruled onto
+the D-79 re-ship the same day, and closed there.
 
 **Why it is written down loudly.** The argument for a closed, shared, named
 suppressor list over per-axis `composesWhen` predicates was that a shared list
@@ -1800,6 +1809,70 @@ cannot be bent to excuse one axis quietly. Excusing three axes quietly would
 have proved the opposite on the day the list was created. The three entries are
 annotated as known-defect excuses in `axisRegistry.ts`, not as clean
 suppressors.
+
+### D-89 — The D-79 re-ship mechanism: the gate owns WHETHER, the interpreter only owns WHAT *(founder-ratified mechanism 2026-08-01; conditions amendment PARKED for the founder)*
+
+D-79's ruling stands and its conditions stand. This records the **mechanism** the
+re-ship uses, which the log did not previously carry, and the one safety rule
+that makes it survivable.
+
+**The mechanism.** Stated hair facts become **structured fields the composer
+renders** — the `greyOverlay`/eye-colour pattern, the one path that survived the
+rollback — never prose that must survive the interpreter. The reverted build gave
+the model `hairSpoken`, a CLASSIFICATION; told to classify hair into a structured
+field, it treated that field as the place hair now lived and stopped writing the
+words at all.
+
+**The safety rule, and it is the whole design:**
+
+> **The code-owned raw-text gate is the authority on WHETHER a sub-axis was
+> spoken. The interpreter is only the authority on WHAT was said.**
+
+`briefStatesHair` reads the user's own sentence, which no model can corrupt. So:
+
+- the composer **never authors a sub-axis the gate detects as spoken**;
+- a gate-spoken sub-axis whose structured value is null **degrades to
+  suppression, never to authoring**.
+
+The consequence is the theorem worth having: **the worst possible interpreter
+output reproduces today's shipped behaviour.** It can never reproduce the D-79
+contradiction, because a contradiction requires authoring an axis the brief
+stated, and the gate makes that unreachable. This is deterministic, so it is a
+build test rather than a hope.
+
+**Free text in a paid prompt, contained by a closed SOURCE rather than a closed
+vocabulary.** "Pastel pink" is not in `HAIR_COLOURS`, and forcing it into the
+enum would lose the user's own words, which is the point of the feature. Instead
+every content token of a structured value must appear in the raw `briefText` —
+so the model cannot put words into the SUBJECT block that the user did not type.
+That one check closes hallucination, paraphrase drift and injection together.
+The existing containment applies on top: caps, `scrubBrands`, garment rejection,
+digit rejection, and drop-to-null on any failure — never fail the roll.
+
+**Coverage stays all-or-nothing and needs no structured field at all.** There is
+no cut on a bald man, so a coverage word suppresses the entire axis exactly as
+today, and the user's words travel in prose as they already do. That is the
+founding bug of the whole doctrine and it is left on the path that works.
+
+**Stated hair is NOT a lock.** `LockFacts` excludes prose deliberately — a lock
+has to be comparable, and `validateLocks` compares enum values across eight
+candidates. "Pastel pink" is comparable to no `HairColour`. Stated hair is a
+**deference fact**: it suppresses authoring and injects the user's phrase. It
+gets its own derived view rather than widening the lock channel.
+
+**PARKED FOR THE FOUNDER — a conditions amendment, not an executor call.**
+D-79's conditions 1 and 3 were written against the `hairSpoken`-classification
+design. Condition 1 (the prompt must say the words must still appear in
+`role`/`characterNotes`) is moot under a design that does not depend on prose
+surviving. Condition 3 (a test exercising the real decomposition, so a prompt
+change that drops prose fails the build) cannot be met literally, because a
+build test cannot call a paid provider. The proposed substitute regime is:
+**adversarial-stub build tests** (feed the composer gate-positive briefs with
+all-null and with junk structured values, and assert no authored hair
+contradicts), plus an **env-gated live-interpreter suite** that skips in
+`pnpm test`, plus the golden harness before the flag flips. Condition 4 is
+unchanged and unaffected. Until the founder rules, the feature ships behind a
+one-line disable constant and is not turned on.
 
 ---
 
