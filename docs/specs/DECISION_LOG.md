@@ -1770,6 +1770,37 @@ conflict, the conflict is the slice's product, not its embarrassment — each
 case is an individually-noted fix or a pinned known-gap, and never a quiet
 weakening of the sweep.
 
+### D-88 — Biology deference silences without nulling, and that is a record that lies *(Fable checkpoint-1 finding, 2026-08-01; excused by name, fix queued)*
+
+Found by the M7 slice-zero review, in the registry's own suppressor list.
+
+**Hair deference nulls what it silences.** A brief that states its hair blanks
+the cut, the texture, the components and the worn state in the persisted record
+(`withHonestRecord`), so nothing is left to disagree with the prompt.
+
+**Eye, brow and skin deference do not.** `describeRealizedAxes` skips the line
+when the brief spoke about the axis, but the resolved value stays in the record.
+So "a woman with green eyes" persists a fabricated `eyeColour` — dark brown, say
+— beside a prompt that never mentioned eyes.
+
+**Why it is worse than a passive lie.** A follow inherits the biology tier whole
+— that is the ruling, and it is right, because eyes, brows and skin are the
+followed *person*. So the fabrication travels; and if the follow's brief does
+not repeat the eye words, the inherited fabrication **composes**, flipping the
+followed face's eyes away from what the parent brief asked for.
+
+**Why it is excused rather than fixed today.** Nulling them needs `RealizedAxes`
+to admit nulls on the biology tier, which is a record-shape change beyond slice
+zero's behavior-preserving mandate, and it touches the follow anchor, the
+signature, and the taste pass together. Queued.
+
+**Why it is written down loudly.** The argument for a closed, shared, named
+suppressor list over per-axis `composesWhen` predicates was that a shared list
+cannot be bent to excuse one axis quietly. Excusing three axes quietly would
+have proved the opposite on the day the list was created. The three entries are
+annotated as known-defect excuses in `axisRegistry.ts`, not as clean
+suppressors.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

@@ -389,16 +389,41 @@ export const CROSS_AXIS_IMPLICATIONS: readonly CrossAxisImplication[] = [
  * The sweep asserts both halves: when a suppressor is active the axis may be
  * silent, and **when none is active the footprint MUST appear**.
  *
- * Note how few there are. Deference does not appear, because deference does not
+ * Note how few there are. HAIR deference does not appear, because it does not
  * suppress — it NULLS (`withHonestRecord`), and a null value is covered by the
- * sweep's null arm. An axis that deference silences without nulling is a record
- * that lies, and the sweep is supposed to catch it rather than excuse it.
+ * sweep's null arm.
+ *
+ * The three `stated-*` entries are the exception, and they are exactly the
+ * thing this doctrine says should not exist: an axis silenced without being
+ * nulled, i.e. a record that lies. They are excused here as a NAMED KNOWN
+ * DEFECT (D-88) rather than fixed, because nulling the biology tier is a record
+ * change outside slice zero's behavior-preserving mandate — and named rather
+ * than omitted, because a closed list whose exceptions are invisible is the
+ * per-axis predicate it was chosen over.
  */
 export type SuppressorKey =
   /** A look that VARIES across the eight carries its own expression whisper, so
    *  a presence line on top would give the model two instructions for one face.
    *  A LOCKED look does not suppress it — that was the sameness bug. */
   | "varying-look"
+  /*
+    THE THREE BELOW ARE KNOWN-DEFECT EXCUSES, NOT CLEAN SUPPRESSORS — D-88.
+
+    Hair deference NULLS the axes it silences, which is why it needs no
+    suppressor. Eye, brow and skin deference silence WITHOUT nulling, so a brief
+    saying "green eyes" still persists a fabricated eye colour. The record lies,
+    and not only passively: a follow inherits the fabrication, and if the follow
+    brief does not repeat the eye words, it COMPOSES — flipping the followed
+    face's eyes away from what the brief asked for.
+
+    They are named here rather than left implicit precisely because the argument
+    for a closed shared suppressor list was that it cannot be bent to excuse one
+    axis quietly. Excusing three axes quietly would have proved the opposite.
+
+    The fix is to null them the way hair is nulled, which needs `RealizedAxes`
+    to admit nulls on the biology tier — a record change beyond slice zero's
+    behavior-preserving mandate. Queued, not forgotten.
+  */
   /** The brief spoke about the eyes, so no authored eye line is emitted. */
   | "stated-eyes"
   /** The brief spoke about the brows. */
@@ -507,7 +532,49 @@ const ALL_TIERS = ["stated", "prescribe", "bias"] as const;
 /** Styling tiers where an authored styling line reaches the prompt at all. */
 const AUTHORED_TIERS = ["prescribe", "bias"] as const;
 
-const has = (prompt: string, needle: string) => prompt.includes(needle);
+const has = (prompt: string, needle: string) => needle.length > 0 && prompt.includes(needle);
+
+/**
+ * A footprint that a plain substring would find in the wrong sentence.
+ *
+ * Every prompt ends with the code-owned cohort constant, and that constant is
+ * full of ordinary English: "waist-up", "light-grey seamless", "off-white", "no
+ * black borders". A bare `includes` against the whole prompt therefore passes on
+ * words the axis never contributed — the review found three axes that could
+ * NEVER go red:
+ *
+ *   - `wornState: "worn up"` reduces to "up", which sits inside "waist-up";
+ *   - hair colours "grey", "white" and "black" all match the backdrop, and
+ *     "brown" matches the EYE COLOUR line;
+ *   - `sex: "male"` sits inside "female", so a record/prompt sex flip was
+ *     invisible in one direction — and sex flips are a live defect class.
+ *
+ * Two corrections, and both are the same idea: ask a narrower question. Match
+ * on WORD boundaries, and for the hair group look only inside the hair sentence
+ * the composer actually wrote.
+ */
+function hasWord(text: string, phrase: string): boolean {
+  if (phrase.length === 0) return false;
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Letters only on either side: a hyphen or a space is a real boundary here,
+  // which is what lets "worn up" match "waist-up" nowhere and ", worn up" fine.
+  return new RegExp(`(^|[^a-z])${escaped}($|[^a-z])`, "i").test(text);
+}
+
+/**
+ * The sentence the composer devoted to hair, and nothing else.
+ *
+ * Ends at the first realized-axis heading, because those are what follow it in
+ * the SUBJECT block. Returning "" when there is no hair sentence is the honest
+ * answer and makes every hair footprint fail rather than pass.
+ */
+export function hairRegion(prompt: string): string {
+  const start = prompt.indexOf(" HAIR:");
+  if (start < 0) return "";
+  const rest = prompt.slice(start + 1);
+  const end = rest.search(/\n| EYE COLOUR:| FACIAL HAIR:| BROW CHARACTER:| SKIN CHARACTER:/);
+  return end < 0 ? rest : rest.slice(0, end);
+}
 
 /**
  * Years per band phase, mirrored from the composer.
@@ -548,8 +615,14 @@ export const AXIS_REGISTRY = {
     suppressors: [],
     silent: [],
     read: (ctx) => ctx.identity.sex,
+    /*
+      Word-bounded, because "male" is a substring of "female" and a plain
+      `includes` therefore could not see a record saying male beside a prompt
+      saying female — in the one direction that matters most, given that sex
+      flips are the defect class the sex-coded implication exists to close.
+    */
     footprint: (value, prompt) =>
-      has(prompt, value === "nonbinary" ? "androgynous person" : value),
+      hasWord(prompt, value === "nonbinary" ? "androgynous person" : value),
   },
   ageBand: {
     key: "ageBand",
@@ -714,10 +787,19 @@ export const AXIS_REGISTRY = {
       compete with the casting the user asked for, so only the silhouette
       speaks. Asserting the name in both would demand the defect D-80 removed.
     */
-    footprint: (value, prompt, ctx) =>
-      ctx.tier === "bias"
-        ? has(prompt, HAIR_BIAS_PROSE[value.family] ?? "")
-        : has(prompt, value.name),
+    /*
+      Scoped to the hair sentence, and FALSE on a family the bias shelf does not
+      know. The `?? ""` this replaces made `has` trivially true, so a seventh
+      hair family would have composed the mid-length fallback prose and swept
+      clean — failing green, which is the wrong direction for a check whose
+      whole job is to notice an axis going unsaid.
+    */
+    footprint: (value, prompt, ctx) => {
+      const region = hairRegion(prompt);
+      if (ctx.tier !== "bias") return hasWord(region, value.name);
+      const prose = HAIR_BIAS_PROSE[value.family];
+      return prose != null && has(region, prose);
+    },
   },
   hairTexture: {
     key: "hairTexture",
@@ -745,7 +827,7 @@ export const AXIS_REGISTRY = {
       built — that second question is the composer's, and asking it here is what
       makes an assertion circular.
     */
-    footprint: (value, prompt) => has(prompt, value),
+    footprint: (value, prompt) => hasWord(hairRegion(prompt), value),
   },
   hairModifiers: {
     key: "hairModifiers",
@@ -769,8 +851,9 @@ export const AXIS_REGISTRY = {
       reads as silence rather than as a miss.
     */
     footprint: (value, prompt) => {
+      const region = hairRegion(prompt);
       const worn = Object.values(value).filter((part): part is string => Boolean(part));
-      return worn.length === 0 || worn.every((part) => has(prompt, part));
+      return worn.length === 0 || worn.every((part) => has(region, part));
     },
   },
   wornState: {
@@ -790,7 +873,13 @@ export const AXIS_REGISTRY = {
     */
     silent: ["loose"],
     read: (ctx) => ctx.identity.realized.wornState,
-    footprint: (value, prompt) => has(prompt, value.replace(/^worn /, "")),
+    /*
+      "worn up" reduces to "up", and "up" lives inside "waist-up" in the framing
+      constant of every single prompt. So this axis — one of the founder-caught
+      unowned axes, the one that saved the Versace sheet — had a footprint that
+      could never fail. Word-bounded, and scoped to the hair sentence.
+    */
+    footprint: (value, prompt) => hasWord(hairRegion(prompt), value.replace(/^worn /, "")),
   },
   facialHair: {
     key: "facialHair",
@@ -807,10 +896,13 @@ export const AXIS_REGISTRY = {
       Bias tier collapses five enum values into two buckets and says the bucket,
       never the length — deferring a fact is not licence to invent a bigger one.
     */
-    footprint: (value, prompt, ctx) =>
-      ctx.tier === "bias"
-        ? has(prompt, BEARD_BIAS_PROSE[beardBucket(value) ?? ""] ?? "")
-        : has(prompt, value),
+    footprint: (value, prompt, ctx) => {
+      if (ctx.tier !== "bias") return hasWord(prompt, value);
+      const bucket = beardBucket(value);
+      // False, not true, on a bucket the bias shelf does not know — see hairStyle.
+      const prose = bucket == null ? null : BEARD_BIAS_PROSE[bucket];
+      return prose != null && has(prompt, prose);
+    },
   },
   hairColour: {
     key: "hairColour",
@@ -823,7 +915,15 @@ export const AXIS_REGISTRY = {
     suppressors: [],
     silent: [],
     read: (ctx) => ctx.identity.hair?.colour ?? null,
-    footprint: (value, prompt) => has(prompt, value),
+    /*
+      Scoped hardest of all. "grey", "white" and "black" all appear in the
+      framing constant's backdrop and wardrobe language, and "brown" appears in
+      the EYE COLOUR line — so a whole-prompt check passed for four common
+      colours regardless of what the hair sentence said. Grey is the exact
+      colour from the earlier persisted-but-never-composed incident, which is
+      the strongest possible argument for looking in the right sentence.
+    */
+    footprint: (value, prompt) => hasWord(hairRegion(prompt), value),
   },
 
   /* --------------------------------------------------- shelf 3: treatments */

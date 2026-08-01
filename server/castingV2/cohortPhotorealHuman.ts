@@ -554,13 +554,24 @@ function varyHairColour(
 /**
  * Assemble the hair record from the colour and the cut that actually composed.
  *
- * One place, so the family cannot be sourced from anywhere but the cut. The
- * fallback chain only runs when there is no cut at all — a follow of a
- * candidate whose hair the brief had stated, where deference blanked the style
- * — and in that case the record is about to be blanked anyway.
+ * One place, so the family cannot be sourced from anywhere but the cut.
+ *
+ * **No cut means no hair record.** The first version fell back to "mid-length",
+ * and the comment justifying it — "the record is about to be blanked anyway" —
+ * was wrong on the one path that reaches it. Follow a candidate whose brief had
+ * stated its hair: the parent's style was blanked by deference, so the anchor
+ * carries no cut, and the follow resolves at PRESCRIBE tier because anchored
+ * styling renders at full fidelity. `withHonestRecord` only blanks at the
+ * stated tier, so nothing downstream would have cleaned it up. The candidate
+ * would have persisted a mid-length silhouette and a freshly drawn colour
+ * beside a null cut and a prompt with no hair line in it — inventing exactly
+ * the kind of fact D-87 was written to stop inventing.
+ *
+ * The old anchor-family arm was dead code as well: whenever `anchor.hair`
+ * exists, `anchoredRealized` holds the parent's cut, so `style` is non-null.
  */
-function hairRecord(colour: HairColour, style: HairStyle | null, anchor: FollowAnchor | null): Hair {
-  return { family: style?.family ?? anchor?.hair?.family ?? "mid-length", colour };
+function hairRecord(colour: HairColour, style: HairStyle | null): Hair | null {
+  return style ? { family: style.family, colour } : null;
 }
 
 /**
@@ -952,7 +963,7 @@ export function resolveCandidateIdentity(
       a different heritage gets hair that belongs to the face they actually
       have — and its silhouette comes from the cut, never from a second draw.
     */
-    hair: hairRecord(hairColour, realized.hairStyle, anchor),
+    hair: hairRecord(hairColour, realized.hairStyle),
     realized,
     /*
       Energy is the one axis that cycles rather than samples: eight candidates

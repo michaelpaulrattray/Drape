@@ -237,7 +237,7 @@ function applyRung(
     const shelf = (TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT).map(([value]) => value);
     const options = shelf.filter((value) => value !== realized.hairTexture);
     return firstFreeing(options, taken, (value) =>
-      withRealized(identity, { hairTexture: value as never }),
+      withRealized(identity, { hairTexture: value }),
     );
   }
 
@@ -289,7 +289,7 @@ function firstFreeing<T>(
  * it is for the other one, without this module knowing the mirror exists.
  */
 function withRealized(identity: ResolvedIdentity, change: TasteWrite): ResolvedIdentity {
-  return applyTasteWrite(identity as never, change) as ResolvedIdentity;
+  return applyTasteWrite(identity, change) as ResolvedIdentity;
 }
 
 /** Other cuts this face could plausibly walk in with — never cross-list. */

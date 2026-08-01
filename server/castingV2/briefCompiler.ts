@@ -443,13 +443,19 @@ function withHonestRecord(
   statedFacialHair: boolean,
 ): ResolvedIdentity {
   /*
-    BIAS TIER RECORDS NO CUT AND NO COMPONENTS.
+    BIAS TIER RECORDS NO COMPONENTS.
 
-    The prompt in bias mode carries a silhouette, not a named cut — so the
-    authored components below the cut were never asked for either. Recording a
-    curtain fringe the prompt never mentioned is the same defect as recording a
-    named cut it never carried, and that one is already ratified. M7's registry
-    reads this record as sole truth and can never re-derive it.
+    The prompt in bias mode carries a silhouette rather than a named cut, so the
+    authored components BELOW the cut — the fringe, the parting — were never
+    asked for. Recording a curtain fringe the prompt never mentioned is the same
+    defect as recording a named cut it never carried. The registry reads this
+    record as sole truth and can never re-derive it.
+
+    The heading used to say "NO CUT AND NO COMPONENTS", which the code below has
+    never done: the cut is KEPT at bias tier, because the sheet-taste rules and
+    the follow anchor both need to know which silhouette this candidate ended up
+    with, and the registry's sweep asserts the family's bias prose rather than
+    the name. Only the components are nulled.
   */
   const biasNulls = resolution === "bias" ? { hairModifiers: null } : {};
 

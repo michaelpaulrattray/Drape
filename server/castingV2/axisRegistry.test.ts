@@ -9,6 +9,7 @@ import {
   applyTasteWrite,
   axesOnShelf,
   lockStateOf,
+  hairRegion,
   sweepComposedPrompt,
   suppressorsFor,
   type AxisContext,
@@ -412,16 +413,57 @@ describe("the unowned-axis sweep", () => {
 
     const findings = [];
     let sheets = 0;
+    /*
+      COVERAGE COUNTERS, because a sheet count is not a draw count.
+
+      Asserting 120 sheets says the loop ran; it says nothing about whether the
+      loop reached the draws that matter. A weight change could stop producing
+      shaved cuts entirely and this test would stay green while silently no
+      longer covering the case it was written for — the same hollow-instrument
+      shape as a graded eye sheet that drew zero amber tiles. So the rare draws
+      are counted and floored.
+    */
+    const drew = { shaved: 0, dictatesTexture: 0, namesWornState: 0, statement: 0 };
+    const tiers = new Set<string>();
+
     for (const shape of shapes) {
       for (let seed = 0; seed < 12; seed += 1) {
         sheets += 1;
-        findings.push(
-          ...(await sweepBrief({ ...shape, rollSeed: `wide-${shape.briefText}-${seed}` })),
-        );
+        const rollSeed = `wide-${shape.briefText}-${seed}`;
+        findings.push(...(await sweepBrief({ ...shape, rollSeed })));
+
+        const compiled = (await castingBriefCompiler({
+          briefText: shape.briefText,
+          candidateCount: 8,
+          rollSeed,
+          engine: engine(shape.intent),
+        } as never)) as unknown as CompiledSheet;
+        for (const candidate of compiled.candidates) {
+          const identity = candidate.resolvedIdentity;
+          tiers.add(identity.stylingResolution ?? "prescribe");
+          const style = identity.realized.hairStyle;
+          if (!style) continue;
+          if (style.family === "shaved") drew.shaved += 1;
+          if (style.texture) drew.dictatesTexture += 1;
+          if (style.worn) drew.namesWornState += 1;
+          if (style.statement) drew.statement += 1;
+        }
       }
     }
 
     expect(sheets).toBe(120);
+    // The draws this sweep exists to reach. Floors, not exact counts.
+    expect(drew.shaved, "no shaved cut drawn — the instrument is hollow").toBeGreaterThan(0);
+    expect(drew.dictatesTexture, "no texture-dictating cut drawn").toBeGreaterThan(0);
+    expect(drew.namesWornState, "no worn-state-naming cut drawn").toBeGreaterThan(0);
+    expect(drew.statement, "no statement cut drawn").toBeGreaterThan(0);
+    /*
+      All THREE tiers, not the two this first asserted. "a redhead in her 30s"
+      states its own hair, so the wide draw reaches the stated tier as well —
+      better coverage than was claimed, so the claim moves up to meet it rather
+      than the instrument being trimmed down to the claim.
+    */
+    expect([...tiers].sort()).toEqual(["bias", "prescribe", "stated"]);
 
     /*
       ZERO, and it was not zero when this was written.
@@ -491,46 +533,69 @@ describe("the unowned-axis sweep", () => {
     expect(shaved).toBeGreaterThan(0);
   }, 30_000);
 
-  it("would CATCH a value persisted but never composed — the sweep has teeth", () => {
+  it("catches an axis surgically removed from a REAL composed prompt", async () => {
     /*
-      A negative control. Without it, every assertion above passes just as well
-      when the sweep silently stops looking at anything — which is precisely how
-      four instruments failed in one session (D-84).
-    */
-    const identity = {
-      stylingResolution: "prescribe",
-      sex: "female",
-      ageBand: "30s",
-      agePhase: "mid",
-      heritage: [{ heritage: "Nordic", pct: 100 }],
-      build: null,
-      hair: { family: "long", colour: "auburn" },
-      energy: "warm",
-      look: null,
-      realized: {
-        eyeColour: "amber",
-        hairStyle: { name: "low bun", family: "long" },
-        facialHair: null,
-        hairTexture: "straight",
-        hairModifiers: null,
-        wornState: "in a ponytail",
-        browStyle: "full",
-        skinCharacter: "freckled",
-      },
-    } as never as ResolvedIdentity;
+      The negative control, and its first version was too weak to trust.
 
-    const findings = sweepComposedPrompt("a prompt that mentions none of it", {
-      identity,
-      treatments: { archetype: "raw editorial", skinFinish: "matte", variationAxis: null },
-      tier: "prescribe",
-      suppressed: new Set(),
+      It swept a made-up sentence — "a prompt that mentions none of it" — which
+      proves only that the sweep notices a prompt containing nothing. The prompts
+      this actually runs against end with the cohort constant, and that constant
+      is full of ordinary English: "waist-up", "light-grey seamless", "off-white",
+      "no black borders". Against a REAL prompt, three footprints turned out to
+      be incapable of failing — "worn up" reduced to "up" inside "waist-up", hair
+      colours matched the backdrop, and "male" matched inside "female".
+
+      So the control now takes a real composed prompt, deletes exactly one axis's
+      contribution, and requires the sweep to notice. That is the only version of
+      this test that could have caught the defect it was written to prevent.
+    */
+    const compiled = (await castingBriefCompiler({
+      briefText: "someone in their 30s",
+      candidateCount: 8,
+      rollSeed: "negative-control",
+      engine: engine({ ageBand: "30s" }),
+    } as never)) as unknown as CompiledSheet;
+
+    const archetype = compiled.compiledBrief.archetype as keyof typeof ARCHETYPES;
+    const treatments: RollTreatments = {
+      archetype,
+      skinFinish: ARCHETYPES[archetype].finish,
+      variationAxis: null,
+    };
+
+    // A candidate whose hair actually composed, so deleting it means something.
+    const subject = compiled.candidates.find(
+      (candidate) =>
+        candidate.resolvedIdentity.realized.hairStyle != null
+        && hairRegion(candidate.prompt).length > 0,
+    );
+    expect(subject).toBeDefined();
+    const ctx = contextFor({
+      identity: subject!.resolvedIdentity,
+      treatments,
+      statedText: "someone in their 30s",
+      lookLocked: false,
     });
 
-    const caught = findings.map((finding) => finding.axis).sort();
-    expect(caught).toContain("eyeColour");
-    expect(caught).toContain("hairColour");
-    expect(caught).toContain("wornState");
-    expect(caught).toContain("skinCharacter");
-    expect(caught).toContain("heritage");
-  });
+    // Baseline: the real prompt is clean.
+    expect(sweepComposedPrompt(subject!.prompt, ctx)).toEqual([]);
+
+    // Remove the hair sentence and the hair axes must all report.
+    const withoutHair = subject!.prompt.replace(hairRegion(subject!.prompt), " ");
+    const hairCaught = sweepComposedPrompt(withoutHair, ctx).map((finding) => finding.axis);
+    expect(hairCaught).toContain("hairStyle");
+    expect(hairCaught).toContain("hairColour");
+
+    // Remove the eye line and only that axis reports.
+    const withoutEyes = subject!.prompt.replace(/ EYE COLOUR: [^.]*\./, " ");
+    const eyeCaught = sweepComposedPrompt(withoutEyes, ctx).map((finding) => finding.axis);
+    expect(eyeCaught).toEqual(["eyeColour"]);
+
+    // And a sex flip in the record is visible — "male" must not pass on "female".
+    const flipped = {
+      ...ctx,
+      identity: { ...ctx.identity, sex: ctx.identity.sex === "male" ? "female" : "male" },
+    } as AxisContext;
+    expect(sweepComposedPrompt(subject!.prompt, flipped).map((f) => f.axis)).toContain("sex");
+  }, 30_000);
 });
