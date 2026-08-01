@@ -1693,4 +1693,83 @@ heartbeats. At five minutes that window is smaller than it was. Worth fixing on
 its own terms; not fixed here.
 
 
+### D-86 — The post-M7 order, and Refine as a ratified feature *(founder ruling 2026-08-01)*
+
+The order of everything after M7, settled in one pass so that no later milestone
+has to be argued for on its own merits while the one before it is still warm:
+
+> **Sign → Refine → Path B → Takes → invites open → Voice → Fantasy.**
+
+Two things in that list are new, and one of them changes what M7 must build.
+
+**Refine is a ratified feature, second in the order.** Pre-Sign candidate
+refinement: a viewer with an instruction box, Nano Banana Pro reference-guided
+edits, variants stacked inside the candidate card. Full spec at
+`docs/specs/CASTING_V2_REFINEMENT_PROPOSAL.md` — written now, built at M8, and
+nothing may be built from it before then. The short form of why it ranks second:
+every refine is a deposit toward a Sign, and it moves identity decisions
+upstream to where they are made against one cheap image rather than against a
+built package.
+
+Its load-bearing conditions, recorded here because they are rulings rather than
+design detail:
+
+- **The sheet always shows ONE face per slot.** The variant stack is
+  viewer-only depth. Eight tiles that compare as characters is the product.
+- **Base-anchored edits.** Variant N = edit(ORIGINAL, composed instructions
+  1..N), never edit-of-edit; the original is immutable. A chain of edits is a
+  chain of lossy re-renders, invisible per step and obvious at the end.
+- **Eyes-only tier, and no validator pre-Sign.** There is no signed identity to
+  preserve yet, so **Sign remains the only identity guarantee in the product**
+  — a line defended in copy, not by a gate.
+- **HARD CONDITION: the record round-trip ships with v1.** Every edit
+  instruction round-trips through the interpreter to update the variant's
+  persisted identity, under the golden-harness rules. This is the
+  record-that-lies class minted in reverse: every prior instance was a value
+  persisted but never composed into a prompt; this one would be a value
+  composed into the picture but never written to the record. Same
+  disagreement, other direction, and the class is expensive enough already.
+
+**What this obliges M7 to do, and it is one line:** `castingV2.sign` reads the
+candidate's **selected image key**, never `candidate.imageKey` as though a
+candidate could only ever have one image. Today there is exactly one, so the
+cost is a single indirection and no schema; when variants land, Sign signs the
+face the user is actually looking at.
+
+**Path B stays where it has always been** — the standing answer to every
+"the category knows what the axes don't" finding (D-80's interim styling tier
+says so in its own comments), with the legacy bombshell image as the
+designed-face bar. **Voice (M8b) and Fantasy deliberately wait.** The one queue
+item allowed to cut the line is the retention-confession UI, because it gates
+real invites.
+
+### D-87 — The unowned axis is now mechanizable; the registry is where it gets closed *(executor finding under the ratified M7 slice zero, advisor-reviewed, 2026-08-01)*
+
+Recorded at the point the sweep was designed rather than after it ran, because
+the finding is about the *method* and it arrived before the code did.
+
+The unowned-axis collapse has been found five times, every time by the
+founder's eye. Its tell is mechanical and the founder named it: **a resolved
+value that is persisted but never composed into the prompt in the tier it was
+resolved in.** Slice zero's registry turns that from a hand-written per-axis
+check into a loop.
+
+**The sweep found its sixth instance before it existed.** `Hair.family` is
+drawn by `varyHair` from its own weighted list, persisted on every candidate's
+`resolvedIdentity`, and **composed into nothing** — the composer reads
+`hairStyle.family` (a different, independently drawn value) and `hair.colour`.
+The two families routinely disagree, and a follow inherits the inert one
+alongside a `hairStyle` that contradicts it. Write-only, and a record that lies
+about hair on every sheet ever cast.
+
+It is logged here rather than quietly repaired inside the refactor for the
+reason D-81 gives: a finding folded silently into a large diff is a finding
+nobody reviewed. **Slice zero is behavior-preserving; this is fixed as its own
+named commit.** Where "behavior-preserving" and "sweep green" genuinely
+conflict, the conflict is the slice's product, not its embarrassment — each
+case is an individually-noted fix or a pinned known-gap, and never a quiet
+weakening of the sweep.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
