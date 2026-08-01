@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "733f36ecae8c022d"
+    "sourceFingerprint": "d72d94703cf41e0a"
   },
   "domains": [
     {
@@ -7707,12 +7707,20 @@
       "path": "server/castingV2/rollService.test.ts"
     },
     {
+      "id": "test:server/castingV2/sexCoding.test.ts",
+      "path": "server/castingV2/sexCoding.test.ts"
+    },
+    {
       "id": "test:server/castingV2/styleRefusal.test.ts",
       "path": "server/castingV2/styleRefusal.test.ts"
     },
     {
       "id": "test:server/castingV2/stylingResolution.test.ts",
       "path": "server/castingV2/stylingResolution.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/typecheckGate.test.ts",
+      "path": "server/castingV2/typecheckGate.test.ts"
     },
     {
       "id": "test:server/castingV2/vocabularyParity.test.ts",

@@ -1429,4 +1429,110 @@ is the real fix**, and the bias prose must not accrete cleverness that Path B
 will have to unpick. The note is recorded in the code beside the prose itself.
 
 
+### D-81 — The four-pass adversarial review, and the test-teeth lesson *(Fable review + founder-directed hardening batch, 2026-08-01)*
+
+**Why this is in the repo and not a chat log:** the findings below are the kind
+a future session will re-introduce unless it can read what went wrong and why.
+Two commits: `63d3ca42` (gates, repairs, record truth) and `c127ab09` (test
+teeth).
+
+#### The gravest finding: a guard causing the contradiction it prevented
+
+`briefStatesHair`'s ambiguous-word surrender asked *"does any feature word
+appear anywhere in this brief"* — a question about the sentence rather than
+about the phrase. So **"a silver fox in his 50s with a trimmed beard"**
+surrendered "silver" to a beard eight words away, concluded hair had never been
+mentioned, and authored a dark colour directly against the silver fox the user
+asked for. The gate added to prevent over-deference was producing the exact
+contradiction deference exists to prevent.
+
+Claiming is now per-occurrence within two tokens either side.
+
+Three more in the same family, each a live defect:
+- Eye words did not claim, so **"grey eyes"** deferred the entire hair axis.
+- Bare `"cut"` sat in `HAIR_WORDS`, so **"a clean-cut banker"** did too.
+- `"shaven"`/`"cleanshaven"` sat in `HAIR_WORDS` as well as facial hair, so a
+  **clean-shaven** brief lost its authored cuts AND the twin rule's fallback
+  axis at once — the one brief shape where both separators vanish together.
+
+#### The rest of pass one
+
+- Vocabulary gaps that authored against stated facts: mohawk, balding,
+  cornrows, topknot, pigtail(s), ponytails, auburn; salt-and-pepper matched as
+  a phrase because the tokenizer splits it; unshaven and beardless on the
+  facial-hair axis.
+- **"Greying" sat in the interpreter's 60s age-idiom list.** A literal model
+  absorbed a HAIR fact into an age band, and a number cannot carry a colour, so
+  the grey never reached the picture. Same shape as D-79 and live at the time.
+- The heritage repair mapped bare **"asian"** to East Asian only, so *"a South
+  Asian model"* on an interpreter miss was repaired into the WRONG heritage — a
+  lock the user never wrote, over a fact they had stated correctly.
+- The role repair fired on *"an archetype was set"*, and an archetype lands from
+  VIBE as readily as from a category, so a mood brief had its whole sentence
+  installed as a casting category — killing build variation, flipping the sheet
+  into styling-bias mode past the flavoured-archetype design, and making the
+  echo claim a category nobody wrote.
+- **Record truth.** The persisted identity — which M7's registry will read as
+  sole truth — carried two fictions: suppressed axes kept fabricated values (a
+  shaved-head candidate recorded `hair: long, brown`), and bias-mode candidates
+  recorded a named cut where the prompt had carried a silhouette. Suppressed
+  axes are null now, the types say so, and the resolution tier is recorded
+  beside the identity.
+- **Follow precedence.** Bias mode never consulted the anchor, so every follow
+  under a role brief rendered an inherited named cut as generic silhouette
+  prose. The taste pass's follow skip keyed on `anchor?.realized != null`, so a
+  parent cast before realized axes existed left the pass free to rewrite
+  anchored hair. And unpinning was silently inert on a follow: `applyUnlocks`
+  cleared the intent, then the resolver read the anchor and put it straight
+  back.
+- The energy cycle had no per-roll offset, so tile 1 of every disposition sheet
+  was the same persona and re-rolling never moved it.
+
+#### THE TEST-TEETH LESSON — the part worth keeping
+
+Every defect above was invisible to a green suite, and they failed in two
+recurring shapes.
+
+**1. Tests were excluded from the typecheck.** The root `tsconfig.json`
+excluded `**/*.test.ts`, so for the whole life of this subsystem no test file
+was ever typechecked. `followAnchor.test.ts` built a `FollowAnchor` with **no
+`realized` field at all** — meaning no test in that file had ever exercised
+realized-axis inheritance, the most-changed thing about follows. A
+`ResolvedIdentity` fixture had drifted four fields. A `vi.fn` stub was declared
+with no arguments and called with one.
+
+**2. Suites proved the layer ABOVE the one that breaks.** The brand scrub had
+unit tests and no compile-path test, so deleting its call site in the compiler
+left the entire suite green — for the guard that exists because a trademark
+reaching the provider cost a real roll five of eight candidates. Absence-only
+assertions ("the prompt does not contain X") passed just as happily when the
+line was never emitted at all: the bias beard test was passing on **zero**
+facial-hair lines. And `COHORT_CONSTANT_MARKERS` was a hand-maintained parallel
+array missing `SKIN_AND_FEATURES` — the most craft-dense block in the file was
+the one block nothing checked, including in the version the craft-port audit
+declared a working guard.
+
+**The three standing rules that follow:**
+
+- **Assert at the boundary that matters.** If deleting a rule's call site leaves
+  the suite green, the rule is untested however many unit tests it has.
+- **Never absence-only.** Pair every "does not contain" with a count floor, or
+  the test passes when the feature silently disappears.
+- **Never a parallel list.** Derive the guard's list from the thing it guards;
+  a hand-kept copy always drifts, and patching one omission leaves the shape
+  that caused it.
+
+Enforced rather than remembered: `tsconfig.casting-tests.json` (glob-scoped, so
+it grows with the tree) runs inside the suite via
+`server/castingV2/typecheckGate.test.ts` and from `pnpm check`. Both were
+verified by negative control — disabling the scrub's call site, and introducing
+a type error, each fail the suite.
+
+**Scoped, not repo-wide.** Removing the test exclusion everywhere surfaces 471
+errors across unrelated suites and build scripts, mostly `downlevelIteration`
+and long-standing drift. That is a project, not a gate, and the only fast way
+through it would be loosening compiler options — worse than the gap. Recorded
+here as known and open.
+
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

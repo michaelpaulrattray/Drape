@@ -72,6 +72,42 @@ for (const golden of GOLDEN_BRIEFS) {
       exactly a case of a stated fact vanishing from that field — a harness
       that only checks `role` cannot see it happen again.
     */
+    /*
+      An aesthetic reference must never reach a prompt, and must never land
+      nowhere. Two separate failures, so two separate assertions — the token
+      leaking costs candidates at the provider, the aesthetic vanishing costs
+      the user the thing they asked for.
+    */
+    if (golden.aestheticReference) {
+      /*
+        Checked against the BRIEF'S OWN tokens, not `containsBrand` on the whole
+        prompt. The cohort constant says "neutral grey or off-white", which is a
+        colour and also a streetwear label, so a global check flags every prompt
+        ever composed and asserts nothing. Naming the token the brief actually
+        used is both precise and immune to that.
+      */
+      const words = golden.brief.toLowerCase();
+      const used = ["miu miu", "margiela", "versace", "gucci", "prada", "balenciaga"].filter((token) =>
+        words.includes(token),
+      );
+      for (const candidate of compiled.candidates) {
+        const leaked = used.find((token) => candidate.prompt.toLowerCase().includes(token));
+        if (leaked) {
+          failures.push({ brief: golden.brief, run, problem: `"${leaked}" reached the composed prompt` });
+          break;
+        }
+      }
+      const landed =
+        intent.archetype != null || intent.look != null || intent.composedDirection != null;
+      if (!landed) {
+        failures.push({
+          brief: golden.brief,
+          run,
+          problem: "the aesthetic landed nowhere — archetype, look and composedDirection all null",
+        });
+      }
+    }
+
     const notes = (intent.characterNotes as string | null) ?? null;
     if (notes) {
       const missing = compiled.candidates.filter((c) => !c.prompt.includes(notes)).length;

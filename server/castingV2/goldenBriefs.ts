@@ -23,6 +23,12 @@ export type GoldenBrief = {
   brief: string;
   /** The sentence names a castable category, so `role` must survive. */
   category: boolean;
+  /**
+   * The sentence names an AESTHETIC REFERENCE — a house, a director, a film.
+   * The token must never reach a prompt, and the aesthetic must land somewhere:
+   * an archetype, a look, or a composed direction. Never all three null.
+   */
+  aestheticReference?: boolean;
   /** Why it is on the list. */
   because: string;
 };
@@ -60,6 +66,27 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
     category: true,
     because:
       "The styling-tier brief. A named cut competes with a subcultural category and wins, so the sheet came back as eight tidy haircuts wearing the wrong casting. Bar: visibly subcultural AND at least four distinct silhouettes.",
+  },
+  {
+    brief: "female mid 20s fashion model casting for miu miu",
+    category: true,
+    aestheticReference: true,
+    because:
+      "The C7 case. Miu Miu fits no shelf archetype, so the reference landed nowhere at all — archetype null, look null — and the sheet was indistinguishable from one that said only campaign model.",
+  },
+  {
+    brief: "a Margiela runway face, early 20s",
+    category: true,
+    aestheticReference: true,
+    because:
+      "THE ANTI-REGRESSION. This one already captures via the look shelf. Adding a second channel for aesthetics must not tempt the interpreter to stop using the first — that is the D-79 failure shape exactly.",
+  },
+  {
+    brief: "a Wes Anderson casting, mid 30s",
+    category: true,
+    aestheticReference: true,
+    because:
+      "The boundary the founder pinned: a reference to someone's AESTHETIC is direction. Casting the person stays refused under the named-person law.",
   },
   {
     brief: "a redhead in her 30s",

@@ -688,8 +688,23 @@ export function resolveCandidateIdentity(
         ? anchoredHeritage(anchor, position, rollSeed)
         : varyHeritage(position, rollSeed);
 
+  /*
+    A SEX-CODED STATED FACT RESOLVES AN UNSTATED SEX.
+
+    The first cross-axis implication in the resolver: a fact on one axis
+    constraining another. "A 25 year old heavy metal bogan with a beard" left
+    sex open, so it alternated, and four candidates resolved female while
+    carrying the stated beard — androgynous faces nobody asked for. Two axes
+    each behaving correctly in isolation produced a sheet that was wrong.
+
+    Order matters and is the whole safety of it: a STATED sex is read first, so
+    "a bearded woman" is untouched. This only ever fills a null.
+  */
+  const sexCoded = !intent.sex && !anchor?.sex && briefStatesSexCodedFacialHair(intent.role, intent.characterNotes);
+  const sex = intent.sex ?? anchor?.sex ?? (sexCoded ? "male" : varySex(position, rollSeed));
+
   return {
-    sex: intent.sex ?? anchor?.sex ?? varySex(position, rollSeed),
+    sex,
     ageBand,
     /*
       A stated phase is a lock. Only an unstated one varies — otherwise
@@ -714,7 +729,7 @@ export function resolveCandidateIdentity(
     hair: anchor ? anchoredHair(anchor, heritage, ageBand, position, rollSeed) : varyHair(heritage, ageBand, position, rollSeed),
     realized:
       anchor?.realized
-      ?? realizeAxes({ heritage, ageBand, sex: intent.sex ?? anchor?.sex ?? varySex(position, rollSeed), position, rollSeed }),
+      ?? realizeAxes({ heritage, ageBand, sex, position, rollSeed }),
     /*
       Energy is the one axis that cycles rather than samples: eight candidates
       against eight energies gives one of each, which is the most legible
@@ -1050,6 +1065,34 @@ export function briefStatesHair(...sources: (string | null | undefined)[]): bool
     });
     return !claimed;
   });
+}
+
+/**
+ * Facial-hair words that CODE FOR SEX, as opposed to merely mentioning it.
+ *
+ * Founder ruling, 2026-08-01, extending H11 and seed-law clause 6 to runtime
+ * resolution. "A 25 year old heavy metal bogan with a beard" alternated sex
+ * across the sheet, so four candidates resolved female carrying a stated beard
+ * and rendered androgynous. Presentation must be intent, never a collision
+ * artefact between two axes that never consulted each other.
+ *
+ * **Presence only, and the narrowing is deliberate.** "Clean-shaven",
+ * "beardless" and "unshaven" are facial-hair facts too and none of them codes
+ * for sex — every woman is clean-shaven, so reading that as male would invent a
+ * lock from a fact carrying none. Only growth that a brief has to be describing
+ * a man to state counts here.
+ *
+ * This never overrides an explicit statement: a stated sex is checked first and
+ * wins outright, so "a bearded woman" renders exactly as written.
+ */
+const SEX_CODING_FACIAL_HAIR = [
+  "beard", "bearded", "moustache", "mustache", "stubble", "goatee",
+  "whiskers", "sideburns", "muttonchops",
+];
+
+export function briefStatesSexCodedFacialHair(...sources: (string | null | undefined)[]): boolean {
+  const words = new Set(sources.filter(Boolean).join(" ").toLowerCase().split(/[^a-z]+/));
+  return SEX_CODING_FACIAL_HAIR.some((word) => words.has(word));
 }
 
 function describeHair(
