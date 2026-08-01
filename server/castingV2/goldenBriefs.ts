@@ -56,6 +56,12 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
     because: "The brief that exposed full-axis hair deference collapsing a sheet to one haircut.",
   },
   {
+    brief: "a 30 year old heavy metal bogan",
+    category: true,
+    because:
+      "The styling-tier brief. A named cut competes with a subcultural category and wins, so the sheet came back as eight tidy haircuts wearing the wrong casting. Bar: visibly subcultural AND at least four distinct silhouettes.",
+  },
+  {
     brief: "a redhead in her 30s",
     category: false,
     because:

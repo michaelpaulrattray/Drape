@@ -6,6 +6,7 @@ import {
   type HeritageComponent,
   type Sex,
 } from "./castingIntent";
+import { BEARD_BIAS_PROSE, type StylingResolution } from "./stylingResolution";
 import {
   beardBucket,
   colourBucket,
@@ -279,6 +280,13 @@ export function realizeAxes(input: {
 export function describeRealizedAxes(
   axes: RealizedAxes,
   stated: (axis: "eyes" | "facialHair" | "brows" | "skin") => boolean,
+  /*
+    Only the STYLING tier reads this. Eye colour, brow character and skin
+    character are biology — no creative direction implies them, so they author
+    identically in every mode and a named cast direction can never disagree
+    with them.
+  */
+  resolution: StylingResolution = "prescribe",
 ): string {
   const parts: string[] = [];
 
@@ -286,10 +294,17 @@ export function describeRealizedAxes(
     parts.push(`EYE COLOUR: ${axes.eyeColour} — ${IRIS_RENDER[axes.eyeColour]}.`);
   }
   if (axes.facialHair && !stated("facialHair")) {
+    /*
+      Under context, whether there is a beard rather than which one — the shape
+      belongs to the casting. The twin rule loses nothing: its second axis for
+      men was already the two-value bucket, never the six-value enum.
+    */
     parts.push(
-      axes.facialHair === "clean-shaven"
-        ? "FACIAL HAIR: clean-shaven, with the faint shadow of real beard growth under the skin rather than a smooth blank jaw."
-        : `FACIAL HAIR: ${axes.facialHair}, grown naturally and unevenly, individual hairs visible at the edges.`,
+      resolution === "bias"
+        ? BEARD_BIAS_PROSE[beardBucket(axes.facialHair)!]
+        : axes.facialHair === "clean-shaven"
+          ? "FACIAL HAIR: clean-shaven, with the faint shadow of real beard growth under the skin rather than a smooth blank jaw."
+          : `FACIAL HAIR: ${axes.facialHair}, grown naturally and unevenly, individual hairs visible at the edges.`,
     );
   }
   if (!stated("brows")) {
@@ -392,7 +407,18 @@ const AGE_COLOURS = new Set<HairColour>(["grey", "white"]);
 export function applySheetTaste<T extends SheetCandidate>(
   sheet: T[],
   rollSeed: string,
-  options: { statedFacialHair?: boolean; hairAuthored?: boolean } = {},
+  options: {
+    statedFacialHair?: boolean;
+    hairAuthored?: boolean;
+    /*
+      Under creative context the prompt carries the SILHOUETTE, not the cut, so
+      distinctness has to be counted at the resolution the image actually
+      receives. Counting names there would let a sheet score eight distinct cuts
+      while showing four silhouettes — the taste rule satisfied on paper and not
+      in the picture.
+    */
+    biasResolution?: boolean;
+  } = {},
 ): T[] {
   /*
     When the brief stated hair, nothing authored here reaches the prompt, so
@@ -401,6 +427,8 @@ export function applySheetTaste<T extends SheetCandidate>(
     reason this is a flag and not an early return.
   */
   const hairAuthored = options.hairAuthored ?? true;
+  /** What counts as "a distinct cut" — the name, or the silhouette it carries. */
+  const identityOf = (style: HairStyle) => (options.biasResolution ? style.family : style.name);
   const seen = new Set<string>();
   const twins = new Set<string>();
   let statements = 0;
@@ -489,7 +517,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     };
 
     let style = current;
-    if (hairAuthored && (overStatement || (mustBeNew && seen.has(current.name)) || familyClashes)) {
+    if (hairAuthored && (overStatement || (mustBeNew && seen.has(identityOf(current))) || familyClashes)) {
       const usable = ordinary.filter(([entry]) => !overStatement || !entry.statement);
       /*
         The floor is a HARD filter, not another preference. Ranking the twin
@@ -499,7 +527,7 @@ export function applySheetTaste<T extends SheetCandidate>(
         four distinct cuts. When the floor is at risk, every option must already
         be a name nobody has used; the twin rules then choose among those.
       */
-      const base = mustBeNew ? usable.filter(([entry]) => !seen.has(entry.name)) : usable;
+      const base = mustBeNew ? usable.filter(([entry]) => !seen.has(identityOf(entry))) : usable;
       const pools = [
         // A silhouette nobody nearby has.
         base.filter(([entry]) => !familiesNearby.has(entry.family)),
@@ -515,7 +543,7 @@ export function applySheetTaste<T extends SheetCandidate>(
     }
 
     if (style.statement) statements += 1;
-    seen.add(style.name);
+    seen.add(identityOf(style));
 
     /*
       The pair-breaker, applied after the cut is final — the collision is

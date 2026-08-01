@@ -65,6 +65,7 @@ import { scrubBrands } from "./brandScrub";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
 import { applySheetTaste } from "./realizedAxes";
+import { stylingResolutionFor } from "./stylingResolution";
 
 const log = createModuleLogger("castingV2/briefCompiler");
 
@@ -422,6 +423,8 @@ function resolveSheet(input: {
           its second axis alone.
         */
         hairAuthored: !briefStatesHair(briefText, intent.role, intent.characterNotes),
+        biasResolution:
+          stylingResolutionFor({ intent, briefStatesHair: briefStatesHair(stated) }) === "bias",
       });
 
   return {

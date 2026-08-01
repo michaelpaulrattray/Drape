@@ -220,10 +220,28 @@ describe("the sheet-level taste rules", () => {
     Everything here is deterministic in (brief, rollSeed), so these are exact
     assertions over hundreds of seeds, not tolerances.
   */
+  /*
+    A CONTEXT-FREE intent, deliberately.
+
+    These bars are about the named-cut vocabulary, which only reaches the prompt
+    when the brief carries no creative context (founder ruling, 2026-08-01:
+    styling is subordinate to context). `deterministicBriefCompiler` sets `role`
+    to the brief text itself, so it now composes at bias resolution and these
+    assertions would be measuring the wrong tier. Stating the intent explicitly
+    keeps each test testing what it was written to test.
+  */
   async function sheetsOf(brief: string, count = 300) {
+    const engine = {
+      id: "context-free",
+      complete: async () => ({
+        text: JSON.stringify({ cohort: "photoreal_human", role: null, archetype: null, look: null }),
+        latencyMs: 1,
+        provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
+      }),
+    } as unknown as TextEngine;
     return Promise.all(
       Array.from({ length: count }, (_, roll) =>
-        deterministicBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: `bars-${brief}-${roll}` }),
+        castingBriefCompiler({ briefText: brief, candidateCount: 8, rollSeed: `bars-${brief}-${roll}`, engine }),
       ),
     );
   }

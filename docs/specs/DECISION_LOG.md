@@ -1367,4 +1367,66 @@ bug.
 4. All five founder briefs pass a live verification before the flag goes on.
 
 
+### D-80 — Styling realization is subordinate to creative context; biology is not *(founder ruling 2026-08-01 after Fable review, refined same day; executor-implemented, advisor-reviewed)*
+
+**The split.** The six realized axes are two tiers. **Biology** — eye colour,
+brow character, skin character — authors everywhere, unchanged: no creative
+direction implies them, so a named cast direction and a realized eye colour can
+never disagree. **Styling** — hair cut, hair texture, facial hair — changes
+resolution by context.
+
+**Precedence: stated > category > styling-bias > prior.**
+
+**Why.** A prescribed cut competes with the category the user asked for and
+wins, being the more specific instruction: "a 30 year old heavy metal bogan"
+plus "a brown straight french crop" is a sheet arguing with itself. Under
+creative context the styling axes drop to silhouette resolution.
+
+**What counts as context is the STATED intent** — `intent.role`, or a
+strongly-flavoured stated archetype/look. Never the resolved archetype:
+`resolveArchetype` always returns a direction, so reading it would put every
+context-free brief into bias mode whenever the roll drew a flavoured one.
+
+**The flavoured set is computed, not curated**, from each shelf entry's own
+positive description — `avoid` is excluded, because a prohibition mentioning
+styling is the shelf refusing a styling idea rather than owning one. Scanning
+whole entries wrongly flagged "everyday real", whose text says *do not render as
+a model with dressed-down styling*. Current outcome, pinned by test so an edit
+asks for a ruling: archetypes `street cast`, `quiet luxury`; looks
+`raw street-cast`, `quiet luxury`. Everything else neutral.
+
+**Hair colour is deliberately NOT in the styling tier.** It is closer to biology
+than grooming, and it is the twin-breaker's only second axis on a sheet of
+women.
+
+**The prose went through two versions, and the second is the ruling.** The first
+deferred everything — "worn toward the longer end of how this casting genuinely
+wears it" — and a paid sheet came back as eight ordinary people. A deferral
+renders as the model's own default; the named cut it replaced had at least been
+carrying the subcultural signal. The founder's correction: *prescription was not
+the enemy, category-blind prescription was.* So code still picks the silhouette
+family — that is the distinctness engine and what the taste rules count — but
+names it renderably, deferring only the CHARACTER (sharp or grown out, groomed
+or neglected), which is the part a category genuinely owns.
+
+Phrasing is absolute, never comparative: the image model renders one candidate
+and never sees the other seven, so "longer than the others" is a claim the
+prompt cannot keep.
+
+**Distinctness counts at family level under bias**, because that is the
+resolution the prompt carries — counting names there would score eight distinct
+cuts on a sheet showing four silhouettes.
+
+**Explicitly untouched, by ruling:** the sex and heritage spread (a subculture
+casts across every heritage — that dilution is a product value) and the wardrobe
+constant (the framing law is what makes candidates comparable).
+
+**THIS TIER IS AN INTERIM ANSWER.** Two paid bogan sheets met the ≥4-silhouette
+bar and neither read as visibly subcultural. That is the expected ceiling:
+subculture lives in what someone *wears*, and the cohort constant forbids all of
+it on purpose. **Path B — an authored treatment that knows what a bogan wears —
+is the real fix**, and the bias prose must not accrete cleverness that Path B
+will have to unpick. The note is recorded in the code beside the prose itself.
+
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

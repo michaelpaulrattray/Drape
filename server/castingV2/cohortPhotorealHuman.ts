@@ -70,6 +70,11 @@ import {
   type Sex,
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
+import {
+  HAIR_BIAS_PROSE,
+  stylingResolutionFor,
+  type StylingResolution,
+} from "./stylingResolution";
 import type { HairStyle } from "../../shared/castingRealization";
 
 /* --------------------------------------------------------- the constant */
@@ -957,6 +962,7 @@ function describeHair(
   stated: string,
   texture: string,
   style: HairStyle,
+  resolution: StylingResolution,
 ): string {
   /*
     The brief owns hair the moment it mentions it. Saying nothing here is the
@@ -971,6 +977,25 @@ function describeHair(
   */
   if (briefStatesHair(stated)) return "";
   if (!hair) return "";
+
+  /*
+    BIAS MODE. The brief carried creative context, so a named cut would compete
+    with the category the user actually asked for — and win, being the more
+    specific instruction. Silhouette and length instead, handed back to the
+    casting.
+
+    Its own sentence, deliberately, rather than the prescription template with
+    the name removed: that template closes on "cut and worn as that style is
+    genuinely worn", which dangles when no style is named, and a dangling
+    referent is an instruction the model discards.
+
+    Colour still travels — it is not a styling axis, and it is the only
+    separator a sheet of women has.
+  */
+  if (resolution === "bias") {
+    const line = HAIR_BIAS_PROSE[style.family] ?? HAIR_BIAS_PROSE["mid-length"];
+    return ` ${line} Natural colour: ${hair.colour}.`;
+  }
   /*
     The named cut, not the silhouette.
 
@@ -1037,6 +1062,14 @@ export function composeCandidatePrompt(input: {
   /* The user's own words, in one string — every deference check reads this. */
   const statedText = [input.briefText ?? "", intent.role ?? "", intent.characterNotes ?? ""].join(" ");
   const direction = ARCHETYPES[archetype];
+  /*
+    At what resolution the styling axes speak, decided once per candidate from
+    the STATED intent. Precedence: stated > category > styling-bias > prior.
+  */
+  const resolution: StylingResolution = stylingResolutionFor({
+    intent,
+    briefStatesHair: briefStatesHair(statedText),
+  });
 
   /*
     CASTING CATEGORY — a stated role is a LOCK, not a flavour (founder gate,
@@ -1064,7 +1097,7 @@ export function composeCandidatePrompt(input: {
     : "";
 
   const subject = [
-    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture, resolved.realized.hairStyle)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText))}`,
+    `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, statedText, resolved.realized.hairTexture, resolved.realized.hairStyle, resolution)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.

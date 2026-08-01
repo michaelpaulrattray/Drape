@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "879b33720fd6dc04"
+    "sourceFingerprint": "ba0804c18c82d707"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:castingV2",
@@ -3173,6 +3173,12 @@
     {
       "id": "module:server/castingV2/rollService.ts",
       "path": "server/castingV2/rollService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/stylingResolution.ts",
+      "path": "server/castingV2/stylingResolution.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7699,6 +7705,10 @@
     {
       "id": "test:server/castingV2/styleRefusal.test.ts",
       "path": "server/castingV2/styleRefusal.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/stylingResolution.test.ts",
+      "path": "server/castingV2/stylingResolution.test.ts"
     },
     {
       "id": "test:server/castingV2/vocabularyParity.test.ts",
@@ -15826,6 +15836,11 @@
     },
     {
       "from": "module:server/castingV2/briefCompiler.ts",
+      "to": "module:server/castingV2/stylingResolution.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -15887,6 +15902,11 @@
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/realizedAxes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:server/castingV2/stylingResolution.ts",
       "kind": "imports"
     },
     {
@@ -15957,6 +15977,11 @@
     {
       "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:server/castingV2/heritageNeighbourhoods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:server/castingV2/stylingResolution.ts",
       "kind": "imports"
     },
     {
@@ -16117,6 +16142,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/stylingResolution.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
     },
     {

@@ -409,8 +409,20 @@ describe("stated hair outranks authored hair", () => {
   });
 
   it("still authors hair when the brief says nothing about it", async () => {
-    // The follow inheritance depends on hair being authored, so deference must
-    // be narrow: silence still gets a hair, or eight candidates share one.
-    expect(await promptFor("oncology nurse", "tired at the end of a shift")).toContain("Cut and worn as that style is genuinely worn");
+    /*
+      The follow inheritance depends on hair being authored, so deference must
+      be narrow: silence still gets a hair, or eight candidates share one.
+
+      Asserted mode-agnostically. This brief states a role, so under the
+      styling-tier ruling it composes at BIAS resolution — silhouette rather
+      than a named cut. What matters here is that a hair line exists at all,
+      which is the property the follow depends on; which tier it speaks at is
+      `stylingResolution.test.ts`'s subject.
+    */
+    const prompt = await promptFor("oncology nurse", "tired at the end of a shift");
+    const authored =
+      prompt.includes("Cut and worn as that style is genuinely worn") ||
+      prompt.includes("as this casting wears it");
+    expect(authored, "no authored hair line in either tier").toBe(true);
   });
 });
