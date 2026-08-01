@@ -40,6 +40,7 @@ import {
   FINISH_RENDER,
   HAIR_COLOUR_WEIGHTS,
   statedFinish,
+  stylesFor,
 } from "./hairStyles";
 import {
   AGE_PHASES,
@@ -76,7 +77,7 @@ import {
   stylingResolutionFor,
   type StylingResolution,
 } from "./stylingResolution";
-import type { HairStyle } from "../../shared/castingRealization";
+import { FACIAL_HAIR, type FacialHair, type HairStyle } from "../../shared/castingRealization";
 
 /* --------------------------------------------------------- the constant */
 
@@ -645,6 +646,118 @@ function anchoredHair(
 }
 
 /**
+ * The realized axes in a follow: one family, not one barber.
+ *
+ * Founder taste ruling. The anchor's realized axes carried FLAT to all eight —
+ * the same named cut, the same beard, on every tile — and hair is the loudest
+ * signal a tile has, so the sheet read as a clone stamp rather than as eight
+ * people who could plausibly be cast for the same part.
+ *
+ * So it takes `anchoredLook`'s shape: most tiles hold, two or three drift.
+ * What drifts and what holds is the ruling, and each half has a reason:
+ *
+ *   - **The CUT drifts**, within the anchor's own family. Two people with the
+ *     same crop are not the same person; two people with the same haircut and
+ *     the same beard are a photocopy.
+ *   - **The COLOUR holds on all eight.** Colour is the family signal — it is
+ *     what makes the sheet legible as one casting at a glance — and cuts are
+ *     not. This is why the drift lives here rather than in `anchoredHair`.
+ *   - **The FAMILY holds.** "Adjacent within the family" is the ruling's own
+ *     wording, and it is also the only reading that survives contact with the
+ *     vocabulary: shaved and long are both on the shelf, and drifting between
+ *     them would not be a variation, it would be a different casting.
+ *   - **Facial hair drifts on its own tiles.** Independent seeds, deliberately
+ *     — sharing `anchoredLook`'s would stack every axis's variance onto the
+ *     same two or three faces and leave the rest identical, which is the
+ *     clone stamp again with extra steps.
+ *
+ * Two exclusions, both learned elsewhere:
+ *
+ *   - **Statement cuts are out of the drift pool.** The sheet-taste pass, which
+ *     caps a sheet at one statement, is skipped entirely on follows — so
+ *     drifting into three statement cuts would be uncapped by construction.
+ *   - **A thin shelf holds rather than reaching.** `shaved` and `coiled` have
+ *     one or two members for some faces; with nothing genuinely adjacent to
+ *     move to, holding is the honest outcome. Never cross-list (ratified taste
+ *     law): a candidate only ever draws from the styles their own sex,
+ *     heritage and age can wear.
+ */
+function anchoredRealized(
+  anchor: FollowAnchor,
+  sex: Sex,
+  heritage: HeritageComponent[],
+  ageBand: AgeBand,
+  position: number,
+  rollSeed: string,
+): RealizedAxes | null {
+  const held = anchor.realized;
+  if (!held) return null;
+
+  const cut = driftsAt(position, rollSeed, "hairDrift")
+    ? adjacentStyle(held.hairStyle, sex, heritage, ageBand, position, rollSeed)
+    : held.hairStyle;
+
+  /*
+    A drifted cut may dictate its own texture — a buzz has no wave to speak of.
+    Deferring to the cut keeps the record and the prompt agreeing, which is the
+    same rule `realizeAxes` follows when it picks a style.
+  */
+  const texture = cut?.texture ?? (cut === held.hairStyle ? held.hairTexture : held.hairTexture);
+
+  const facialHair =
+    sex === "male" && driftsAt(position, rollSeed, "beardDrift")
+      ? adjacentFacialHair(held.facialHair, position, rollSeed)
+      : held.facialHair;
+
+  return { ...held, hairStyle: cut, hairTexture: texture, facialHair };
+}
+
+/**
+ * Does this tile drift on this axis?
+ *
+ * `anchoredLook`'s spread and offset, taken per axis so hair, beard and look
+ * move on different faces. Two or three of the eight, chosen per roll, so two
+ * follows of the same candidate do not drift the same tiles.
+ */
+function driftsAt(position: number, rollSeed: string, axis: string): boolean {
+  const drifting = 2 + (hash(`${rollSeed}:${axis}:spread`) % 2);
+  const offset = hash(`${rollSeed}:${axis}:offset`) % 8;
+  return (position + offset) % 8 < drifting;
+}
+
+/** A different cut the same person could plausibly walk in with. */
+function adjacentStyle(
+  held: HairStyle | null,
+  sex: Sex,
+  heritage: HeritageComponent[],
+  ageBand: AgeBand,
+  position: number,
+  rollSeed: string,
+): HairStyle | null {
+  if (!held) return held;
+  const primary = heritage[0]?.heritage ?? "";
+  const pool = stylesFor(sex, primary, ageBand)
+    .map(([style]) => style)
+    .filter((style) => style.family === held.family && style.name !== held.name && !style.statement);
+  // A shelf with nothing else on it holds. Reaching outside the family — or
+  // outside this candidate's own list — would be a different casting.
+  if (pool.length === 0) return held;
+  return pool[hash(`${rollSeed}:hairDrift:${position}`) % pool.length];
+}
+
+/** The beard moves a step, or arrives, or goes. Never onto a face that has none. */
+function adjacentFacialHair(
+  held: FacialHair | null,
+  position: number,
+  rollSeed: string,
+): FacialHair | null {
+  if (!held) return held;
+  const pool = FACIAL_HAIR.filter((value) => value !== held);
+  if (pool.length === 0) return held;
+  return pool[hash(`${rollSeed}:beardDrift:${position}`) % pool.length];
+}
+
+/**
  * Resolve one candidate.
  *
  * Locks first, always: anything the brief stated is copied straight through,
@@ -728,8 +841,14 @@ export function resolveCandidateIdentity(
       have.
     */
     hair: anchor ? anchoredHair(anchor, heritage, ageBand, position, rollSeed) : varyHair(heritage, ageBand, position, rollSeed),
+    /*
+      Drifted BEFORE composition, so the persisted `resolvedIdentity` matches
+      the prompt that was actually sent. A record that disagrees with its own
+      prompt is the failure M7's registry inherits — it reads this as sole
+      truth and can never re-derive it.
+    */
     realized:
-      anchor?.realized
+      (anchor ? anchoredRealized(anchor, sex, heritage, ageBand, position, rollSeed) : null)
       ?? realizeAxes({ heritage, ageBand, sex, position, rollSeed }),
     /*
       Energy is the one axis that cycles rather than samples: eight candidates

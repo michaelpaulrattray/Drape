@@ -18,9 +18,11 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
-import { useSheetState, type UnlockableField } from "@/features/castingV2/sheetState";
+import { useSheetSession, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
+import { cancelNoticeFor } from "@/features/castingV2/cancelNotice";
+import { KeptTray } from "@/features/castingV2/components/KeptTray";
 
 /**
  * The casting sheet (plan §J, handoff chapter 07).
@@ -69,7 +71,17 @@ export default function CastingSheet() {
     undoOverride,
     provisionalRollIndex,
     beginProvisionalRoll,
-  } = useSheetState();
+    optimisticCancelled,
+    setOptimisticCancelled,
+    cancelNotice,
+    setCancelNotice,
+    /*
+      Addressed to THIS sheet. The store was one flat singleton, so an
+      adjustment made here appeared in another sheet's echo — and a roll fired
+      there would have posted a lock the user never set on that sheet. The hook
+      binds every action to the session id so a caller cannot forget it.
+    */
+  } = useSheetSession(sessionId);
   const [brief, setBrief] = useState("");
 
   const config = trpc.castingV2.config.useQuery({});
@@ -166,8 +178,29 @@ export default function CastingSheet() {
         can generate concurrently, so a previous roll may still be landing
         candidates after a newer one was dispatched.
       */
-      refetchInterval: (query) =>
-        query.state.data && TERMINAL_ROLL_STATUSES.has(query.state.data.status) ? false : POLL_MS,
+      /*
+        A CANCELLED ROLL IS NOT NECESSARILY A FINISHED ONE.
+
+        `cancelled` is terminal for the ROLL, so stopping here on status alone
+        froze the screen the instant the user clicked cancel — and the
+        candidates already with the provider were still coming. They land, they
+        refund under the generosity rule, and the sheet showed none of it. The
+        user was told refunds complete as work lands and then watched nothing
+        happen.
+
+        So the roll's status opens the question and its candidates close it:
+        keep polling while any candidate is still in flight, whatever the roll
+        is called.
+      */
+      refetchInterval: (query) => {
+        const data = query.state.data;
+        if (!data) return POLL_MS;
+        if (!TERMINAL_ROLL_STATUSES.has(data.status)) return POLL_MS;
+        const stillArriving = data.candidates.some(
+          (candidate) => candidate.status === "casting",
+        );
+        return stillArriving ? POLL_MS : false;
+      },
     },
   );
 
@@ -424,18 +457,36 @@ export default function CastingSheet() {
 
   const onCancel = async () => {
     if (!activeRollId) return;
-    const result = await cancel.mutateAsync({ rollId: activeRollId });
     /*
-      A point-in-time number, and worded as one. Candidates already with the
-      provider land seconds or minutes later and refund then, under the
-      generosity rule — so a total stated here as final would be wrong by the
-      time the user reads their balance.
+      D-38, honestly.
+
+      The click frame flips every still-casting tile to "Cancelling…" — that is
+      `cancel.isPending`, read by the tiles, so the sheet answers instantly. It
+      does NOT say "cancelled", because the sheet cannot know which tiles are
+      cancellable: §J's projection collapses queued and dispatched into one
+      status on purpose, and work already with the provider runs to completion
+      and refunds on arrival. Painting all eight cancelled would have the user
+      watch "cancelled" tiles fill with faces.
+
+      The server then names the ones it actually stopped, which is a fast CAS
+      with no image work — so the exact truth lands within a frame or two of the
+      optimistic state, and nothing was claimed in between.
     */
-    toast(
-      result.refundRecorded
-        ? `Cancelled · ${result.refundedCredits} credits back so far`
-        : "Cancelled — part of the refund could not be recorded. Support has the details.",
-    );
+    const result = await cancel.mutateAsync({ rollId: activeRollId });
+    setOptimisticCancelled(result.cancelledCandidateIds);
+    /*
+      Said in the sheet rather than in a toast (D-40: feedback renders where the
+      action happened). Two reasons it was wrong as a toast: sonner is global,
+      so a cancel awaited across a navigation delivered its notice onto a
+      DIFFERENT sheet; and the sheet is right here, which is when the toast is
+      the fallback rather than the answer.
+
+      The copy is conditional because R6's refund-honesty law requires the
+      recorded amount to reach the user verbatim. "0 credits back" alone reads
+      as a failure when it is often the honest description of a cancel that
+      caught nothing queued — so the zero case says what IS happening instead.
+    */
+    setCancelNotice(cancelNoticeFor(result));
     await invalidate();
   };
 
@@ -687,9 +738,23 @@ export default function CastingSheet() {
                   candidate={{
                     ...candidate,
                     kept: optimisticKept[candidate.candidateId] ?? candidate.kept,
+                    /*
+                      D-38 for cancel. A cancelled tile flips in the click frame
+                      rather than up to 2.5s later — and only tiles that were
+                      genuinely still queued are in this map, so the screen
+                      never says "cancelled" above work that is about to land.
+                    */
+                    status: optimisticCancelled[candidate.candidateId]
+                      ? "failed-refunded"
+                      : candidate.status,
                   }}
                   lineageLabel={lineageLabel}
-                  rollWasCancelled={rollWasCancelled}
+                  rollWasCancelled={
+                    rollWasCancelled || Boolean(optimisticCancelled[candidate.candidateId])
+                  }
+                  // The click frame, before the server has named which tiles it
+                  // stopped. Says "Cancelling…", never "Cancelled".
+                  cancelling={cancel.isPending}
                   busy={isPending(candidate.candidateId)}
                   // Follow is a paid roll. Every tile's Follow locks the
                   // moment any one of them is clicked, or the sheet offers
@@ -741,7 +806,19 @@ export default function CastingSheet() {
                     toast("Brief edited — your adjustments were cleared");
                   }
                 }}
-                placeholder="a fitness creator in their 30s, close-cropped hair"
+                /*
+                  THE BRIEF BOX STILL STEERS DURING A FOLLOW, and the founder
+                  did not know that — a confirmed discoverability gap, not a
+                  preference. A follow inherits the parent's face; the sentence
+                  is still read on top of it, so anything stated here overrides
+                  and everything unstated stays theirs. Saying so where the
+                  typing happens is the only place it can be learned.
+                */
+                placeholder={
+                  followLabel
+                    ? "Add anything that should change — the rest stays theirs"
+                    : "a fitness creator in their 30s, close-cropped hair"
+                }
                 aria-label="Casting brief"
               />
             </Field>
@@ -770,33 +847,37 @@ export default function CastingSheet() {
               unprototyped, and tall enough to push the dock off-screen, which
               is what made Roll again unreachable without scrolling.
             */}
-            {shortlist.length > 0 ? (
-              <span
-                className="dpc-keptstack"
-                title={`${shortlist.length} kept across this sheet`}
-              >
-                {shortlist.slice(0, 4).map((entry) =>
-                  entry.thumbUrl || entry.imageUrl ? (
-                    <img
-                      key={entry.candidateId}
-                      className="dpc-keptstack__chip"
-                      src={entry.thumbUrl ?? entry.imageUrl ?? undefined}
-                      alt=""
-                    />
-                  ) : (
-                    <span key={entry.candidateId} className="dpc-keptstack__chip" />
-                  ),
-                )}
-              </span>
-            ) : null}
+            <KeptTray shortlist={shortlist} />
             {/*
               The eyebrow flips on the click too. "Keep the ones worth a second
               look" is an instruction for a sheet you can act on; while eight
               are being cast there is nothing to keep yet, and leaving it up was
               part of what made the chrome feel a beat behind the tiles.
             */}
-            {awaitingNewRoll ? (
+            {/*
+              The cancel's outcome, said where the cancel happened (D-40).
+
+              It outranks the resting instruction because it is the answer to
+              the thing the user just did, and it stays until the next roll
+              clears it — a refund story that completes over the following
+              minute should not evaporate on a timer the way a toast does.
+            */}
+            {cancelNotice ? (
+              <Instruction>{cancelNotice}</Instruction>
+            ) : awaitingNewRoll ? (
               <Instruction>Casting {config.data?.candidatesPerRoll ?? 8}…</Instruction>
+            ) : followLabel ? (
+              /*
+                Said in words, not only in a placeholder — a placeholder is gone
+                the moment you type, which is exactly when this matters. It
+                outranks the kept count while a follow is on screen because the
+                founder did not know the box still steered, and a count they
+                already understand is the cheaper thing to lose.
+              */
+              <Instruction>
+                Your words steer this family — anything you state overrides, everything else
+                stays theirs
+              </Instruction>
             ) : shortlist.length > 0 ? (
               <span className="dp-small" style={{ marginLeft: 12 }}>
                 {shortlist.length} kept

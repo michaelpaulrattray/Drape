@@ -65,7 +65,19 @@ function Router() {
             and that page should not be the product.
           */}
           <Route path="/casting" component={CastingV2} />
-          <Route path="/casting/s/:sessionId" component={CastingSheet} />
+          {/*
+            Keyed by the session, so moving sheet-to-sheet REMOUNTS.
+
+            The store is session-scoped now, but the sheet also keeps things in
+            plain component state — the brief input, which roll is being viewed,
+            the dispatch latch — and a params-only navigation under wouter
+            re-renders the same element rather than replacing it. Without the
+            key, those carry across too: you would open another sheet and find
+            the previous sheet's typed brief sitting in the box.
+          */}
+          <Route path="/casting/s/:sessionId">
+            {(params) => <CastingSheet key={params.sessionId} />}
+          </Route>
           <Route path="/casting/foundation" component={CastingFoundation} />
 
           {/* Admin */}

@@ -787,6 +787,31 @@ export type CancelRollResult = {
   cancelled: number;
   refundedCredits: number;
   refundUnrecorded: boolean;
+  /**
+   * How many candidates were already with the provider when the cancel landed.
+   *
+   * A COUNT, not a billing figure — nothing here decides what is refunded. It
+   * exists so the sheet can tell the truth in one sentence instead of two
+   * misleading ones: a cancel that catches nothing queued honestly refunds
+   * zero, and "0 credits back" reads as a failure rather than as "the work you
+   * are about to see is work you already paid for". These land under the
+   * generosity rule and refund as they arrive.
+   *
+   * Counted server-side rather than from the client's poll snapshot, which can
+   * be up to 2.5s stale — the number would be wrong exactly when the user is
+   * watching it most closely.
+   */
+  stillFinishing: number;
+  /**
+   * The candidates this cancel actually stopped.
+   *
+   * The sheet cannot work these out for itself: §J's projection collapses
+   * `queued` and `dispatched` into one `casting` status on purpose, so the
+   * client can see that eight are in flight but not which of them are still
+   * cancellable. Guessing would paint "cancelled" over work that is about to
+   * arrive — the screen claiming something the server did not do.
+   */
+  cancelledCandidateIds: string[];
 };
 
 /**
@@ -808,10 +833,24 @@ export async function cancelRoll(input: {
   if (!["pending", "generating"].includes(roll.status)) {
     // Terminal rolls are immutable versions. Cancelling one is not an error
     // worth a refusal banner — there is simply nothing left to cancel.
-    return { cancelled: 0, refundedCredits: 0, refundUnrecorded: false };
+    return {
+      cancelled: 0,
+      refundedCredits: 0,
+      refundUnrecorded: false,
+      stillFinishing: 0,
+      cancelledCandidateIds: [],
+    };
   }
 
   const candidates = await listRollCandidates(input.userId, roll.id);
+  /*
+    Counted from the same snapshot the CAS loop walks, BEFORE the loop runs.
+    A candidate is either won by this cancel or already with the provider; the
+    ones that were `dispatched` when we looked are exactly the ones the user is
+    about to watch land.
+  */
+  const stillFinishing = candidates.filter((candidate) => candidate.status === "dispatched").length;
+  const cancelledCandidateIds: string[] = [];
   let cancelled = 0;
   let refundedCredits = 0;
   let refundUnrecorded = false;
@@ -821,6 +860,7 @@ export async function cancelRoll(input: {
     const won = await cancelQueuedCandidate({ userId: input.userId, candidateId: candidate.id });
     if (!won) continue;
     cancelled += 1;
+    cancelledCandidateIds.push(candidate.publicId);
     if (candidate.pointsCost <= 0) continue;
     const refund = await recordRefund(
       input.userId,
@@ -840,5 +880,5 @@ export async function cancelRoll(input: {
       "[rollService] cancel refund did not record — user remains charged",
     );
   }
-  return { cancelled, refundedCredits, refundUnrecorded };
+  return { cancelled, refundedCredits, refundUnrecorded, stillFinishing, cancelledCandidateIds };
 }

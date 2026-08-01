@@ -144,7 +144,13 @@ export default function CastingV2() {
   const latchRef = useRef<DispatchLatch | null>(null);
   if (!latchRef.current) latchRef.current = createDispatchLatch();
   const castLatch = latchRef.current;
-  const reset = useSheetState((state) => state.reset);
+  /*
+    Addressed writes, not ambient ones. This component fires the roll and
+    unmounts in the same tick, so its late `.catch` resolves while the user may
+    already be standing on a DIFFERENT sheet. Passing the session id it just
+    created means the failure lands on the sheet it belongs to rather than on
+    whichever one happens to be open.
+  */
   const setStartingRoll = useSheetState((state) => state.setStartingRoll);
   const setDispatchFailure = useSheetState((state) => state.setDispatchFailure);
 
@@ -248,8 +254,9 @@ export default function CastingV2() {
         eight queued candidates are there to render as skeletons, each swapping
         on its own arrival.
       */
-      reset();
-      setStartingRoll(true);
+      // No reset: a session id this new has no slice, and absence IS the empty
+      // state. Cleanliness by construction rather than by remembering to call.
+      setStartingRoll(session.sessionId, true);
       /*
         `mutateAsync().catch(...)` rather than `mutate(..., { onError })`.
 
@@ -266,8 +273,10 @@ export default function CastingV2() {
           sessionId: session.sessionId,
           briefText: brief.trim(),
         })
-        .then(() => setStartingRoll(false))
-        .catch((error: unknown) => setDispatchFailure(classifyDispatchFailure(error)));
+        .then(() => setStartingRoll(session.sessionId, false))
+        .catch((error: unknown) =>
+          setDispatchFailure(session.sessionId, classifyDispatchFailure(error)),
+        );
 
       // Navigating IS the confirmation, so no toast — the toast law fires on
       // actions that leave you where you were, never on ones that move you.
@@ -473,7 +482,7 @@ export default function CastingV2() {
             aria-label="Unsigned sheets"
             tabIndex={0}
           >
-            {openSessions.data.map((entry) => (
+            {openSessions.data.map((entry, index) => (
               <Card key={entry.sessionId} className="dpc-sheetcard">
                 <button
                   type="button"
@@ -506,6 +515,13 @@ export default function CastingV2() {
                   <span className="dp-secondary">
                     {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
                     {entry.keptCount > 0 ? ` · ${entry.keptCount} kept` : ""}
+                    {/*
+                      Which one you were last working on, said once and
+                      quietly. The row is ordered by activity, so this only
+                      names what the ordering already implies — a tag on every
+                      card would be a legend, not a signal.
+                    */}
+                    {index === 0 ? <span className="dpc-sheetcard__latest">latest</span> : null}
                   </span>
                 </button>
                 {/*

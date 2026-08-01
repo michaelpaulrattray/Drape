@@ -424,6 +424,12 @@ export const castingV2Router = router({
         // Truthful even when it went wrong: a refund that did not record is
         // never reported as "you weren't charged".
         refundRecorded: !result.refundUnrecorded,
+        // A count, so the sheet can say what happens next rather than leaving
+        // "0 credits back" to read as a failure. Never used to decide money.
+        stillFinishing: result.stillFinishing,
+        // Which tiles to paint cancelled. The client cannot derive this — the
+        // projection collapses queued and dispatched into one status.
+        cancelledCandidateIds: result.cancelledCandidateIds,
       };
     }),
 });

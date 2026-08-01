@@ -361,6 +361,20 @@ describe("cancel", () => {
     // by cancel or by dispatch — never both.
     expect(refunds).toHaveLength(4);
     expect(dbCalls.setRollStatus).toHaveBeenCalledWith("cancelled");
+
+    /*
+      The sheet paints from these two, and it cannot derive either: §J's
+      projection collapses queued and dispatched into one `casting` status, so
+      a client guessing which tiles to mark cancelled would paint over the four
+      that are about to arrive.
+    */
+    expect(result.stillFinishing).toBe(4);
+    expect(result.cancelledCandidateIds).toHaveLength(4);
+    // Exactly the ones the CAS won — never the dispatched four.
+    const dispatched = rows.candidates.slice(0, 4).map((candidate) => candidate.publicId);
+    for (const id of result.cancelledCandidateIds) {
+      expect(dispatched).not.toContain(id);
+    }
   });
 
   it("refunds a candidate that lands unseen after the cancel", async () => {
@@ -406,7 +420,15 @@ describe("cancel", () => {
     } as never);
 
     const result = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
-    expect(result).toEqual({ cancelled: 0, refundedCredits: 0, refundUnrecorded: false });
+    expect(result).toEqual({
+      cancelled: 0,
+      refundedCredits: 0,
+      refundUnrecorded: false,
+      // Nothing was stopped and nothing is coming — the sheet needs both to
+      // say "this had already finished" rather than reporting a bare zero.
+      stillFinishing: 0,
+      cancelledCandidateIds: [],
+    });
     expect(refunds).toHaveLength(0);
   });
 });

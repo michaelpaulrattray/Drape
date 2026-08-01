@@ -249,7 +249,7 @@ describe("a stated fact outranks a realized one", () => {
 });
 
 describe("a follow inherits the realized axes", () => {
-  it("carries every axis from the followed candidate", () => {
+  it("carries the parent's BIOLOGY on every tile, and only the styling drifts", () => {
     const parent = resolveCandidateIdentity(
       { ...({} as CastingIntent), heritage: [], reads: [] } as unknown as CastingIntent,
       0,
@@ -271,9 +271,28 @@ describe("a follow inherits the realized axes", () => {
         anchor,
       ),
     );
+    /*
+      REWRITTEN to the founder's follow-drift ruling, deliberately.
+
+      This asserted that every realized axis carried flat to all eight, which
+      is exactly the behaviour the ruling replaced: hair is the loudest signal
+      a tile has, and a follow that repeated the parent's cut and beard eight
+      times read as a clone stamp rather than as one family.
+
+      What the ruling kept is what this now pins. Biology is inherited whole —
+      eyes, brows and skin are the followed PERSON, and drifting them would be
+      following someone else. Styling is where a follow is allowed to breathe.
+    */
     for (const candidate of eight) {
-      expect(candidate.realized).toEqual(parent.realized);
+      expect(candidate.realized.eyeColour).toBe(parent.realized.eyeColour);
+      expect(candidate.realized.browStyle).toBe(parent.realized.browStyle);
+      expect(candidate.realized.skinCharacter).toBe(parent.realized.skinCharacter);
     }
+    // And the styling is not merely allowed to vary — it does. Without a count
+    // floor this passes just as well when the drift silently disappears.
+    const cuts = new Set(eight.map((candidate) => candidate.realized.hairStyle?.name));
+    const beards = new Set(eight.map((candidate) => candidate.realized.facialHair));
+    expect(cuts.size + beards.size).toBeGreaterThan(2);
   });
 });
 

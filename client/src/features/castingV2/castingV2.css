@@ -329,14 +329,96 @@
   flex: none;
 }
 
+/*
+  Sized to be COMPARABLE, which is the tray's whole job before a 500-credit
+  Sign. At 24px these were colour swatches; a face needs enough pixels to be
+  told from the face beside it.
+*/
 .dpc-keptstack__chip {
-  width: 24px;
-  height: 30px;
-  border-radius: 6px;
+  width: 44px;
+  height: 56px;
+  border-radius: 7px;
   object-fit: cover;
   background: linear-gradient(160deg, var(--fill), var(--dots));
   box-shadow: 0 0 0 1.5px var(--surface);
-  margin-right: -8px;
+  /* Overlapped at rest so four still read as one stack, not a filmstrip. */
+  margin-right: -12px;
+  padding: 0;
+  border: 0;
+  flex: none;
+}
+
+.dpc-keptstack__chip--open {
+  cursor: pointer;
+  display: block;
+  overflow: hidden;
+  transition: transform 140ms ease, margin-right 140ms ease;
+}
+
+.dpc-keptstack__chip--open > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Lifting the hovered face out of the stack is what makes it readable. */
+.dpc-keptstack__chip--open:hover,
+.dpc-keptstack__chip--open:focus-visible {
+  transform: translateY(-2px);
+  z-index: 1;
+  position: relative;
+}
+
+.dpc-keptstack__chip--open:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Expanded: stop overlapping, so every kept face is fully visible. */
+.dpc-keptstack--open .dpc-keptstack__chip {
+  margin-right: 4px;
+}
+
+.dpc-keptstack--open {
+  flex-wrap: wrap;
+  gap: 4px 0;
+  max-width: 320px;
+}
+
+.dpc-keptstack__more {
+  margin-left: 16px;
+  padding: 0 8px;
+  height: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink-soft, var(--ink));
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  flex: none;
+}
+
+.dpc-keptstack__more:hover {
+  border-color: var(--ink);
+}
+
+.dpc-keptstack__more:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/*
+  "latest" — a tag, not a badge. The row is already ordered by activity, so
+  this confirms the ordering rather than competing with the brief text for
+  attention. Lowercase and soft on purpose.
+*/
+.dpc-sheetcard__latest {
+  margin-left: 8px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
 }
 
 /* ---- roll rail: every roll this sheet has paid for, still reachable ---- */

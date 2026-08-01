@@ -31,6 +31,7 @@ export function CandidateTile({
   candidate,
   lineageLabel,
   rollWasCancelled,
+  cancelling,
   busy,
   paidBusy,
   rollPriceCredits,
@@ -43,6 +44,15 @@ export function CandidateTile({
   lineageLabel?: string | null;
   /** Changes what a refunded tile says: cancelled by them, or failed by us. */
   rollWasCancelled?: boolean;
+  /**
+   * A cancel is in flight for this roll.
+   *
+   * Deliberately weaker than `rollWasCancelled`: it says the request is on its
+   * way, not that this tile was stopped. The sheet cannot know which tiles are
+   * still cancellable — §J collapses queued and dispatched into one status —
+   * so the click frame says "Cancelling…" and the server names the rest.
+   */
+  cancelling?: boolean;
   busy?: boolean;
   /**
    * A paid roll is already in flight anywhere on this sheet. Follow is the
@@ -69,7 +79,7 @@ export function CandidateTile({
     return (
       <div className="dp-stack" style={{ gap: 9 }}>
         <Skeleton style={{ aspectRatio: "4 / 5" }} label={`CASTING ${candidate.indexLabel}`} />
-        <span className="dp-metadata">Casting…</span>
+        <span className="dp-metadata">{cancelling ? "Cancelling…" : "Casting…"}</span>
       </div>
     );
   }

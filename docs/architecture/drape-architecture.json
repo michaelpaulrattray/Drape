@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0c51ed83a4f6a716"
+    "sourceFingerprint": "d0dd8894ed94e4d4"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 10
+      "moduleCount": 12
     },
     {
       "id": "domain:client-shared",
@@ -1389,6 +1389,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/cancelNotice.ts",
+      "path": "client/src/features/castingV2/cancelNotice.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/castingV2.css",
       "path": "client/src/features/castingV2/castingV2.css",
       "domain": "castingV2",
@@ -1415,6 +1421,12 @@
     {
       "id": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
       "path": "client/src/features/castingV2/components/ConfirmDialog.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/KeptTray.tsx",
+      "path": "client/src/features/castingV2/components/KeptTray.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7153,6 +7165,10 @@
       "path": "client/src/features/castingV2/dispatchFailure.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/sheetState.test.ts",
+      "path": "client/src/features/castingV2/sheetState.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/singleFlight.test.ts",
       "path": "client/src/features/castingV2/singleFlight.test.ts"
     },
@@ -7679,6 +7695,10 @@
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
       "path": "server/castingV2/followAnchor.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/followDrift.test.ts",
+      "path": "server/castingV2/followDrift.test.ts"
     },
     {
       "id": "test:server/castingV2/hairStyles.test.ts",
@@ -10679,6 +10699,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
+      "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/dispatchFailure.ts",
       "to": "module:client/src/features/castingV2/sheetState.ts",
       "kind": "imports"
@@ -12540,12 +12565,22 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/cancelNotice.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateTile.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "kind": "imports"
     },
     {
