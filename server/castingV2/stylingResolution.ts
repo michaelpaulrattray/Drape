@@ -109,10 +109,28 @@ export function hasCreativeContext(intent: CastingIntent): boolean {
 export function stylingResolutionFor(input: {
   intent: CastingIntent;
   briefStatesHair: boolean;
+  /** True when this candidate's styling came from a followed candidate. */
+  anchored?: boolean;
 }): StylingResolution {
   // Stated outranks everything: the brief's own words govern and nothing is
   // authored beside them.
   if (input.briefStatesHair) return "stated";
+  /*
+    FOLLOW-ANCHORED OUTRANKS CATEGORY-BIAS.
+
+    A follow means "more faces like this one", and the anchor carries a
+    specific cut and a specific beard from a candidate the user actually
+    looked at and chose. Bias mode never consulted the anchor, so every follow
+    under a role brief rendered that inherited cut as generic silhouette prose
+    — the sheet promising cousins while describing strangers. Worse in the
+    other direction: a later context-free follow would re-prescribe a NAMED cut
+    that no image in the lineage ever wore.
+
+    Anchored styling therefore renders at full fidelity, category or not. The
+    category still owns everything else; it does not get to blur a choice the
+    user already made.
+  */
+  if (input.anchored) return "prescribe";
   return hasCreativeContext(input.intent) ? "bias" : "prescribe";
 }
 

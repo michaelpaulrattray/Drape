@@ -123,8 +123,13 @@ WHAT TO EXTRACT
       young adult, early career, graduate, junior           → "20s"
       thirty-something, early career-established            → "30s"
       middle-aged, midlife, mid-career                      → "40s"
-      older, mature, senior, greying, veteran               → "60s"
+      older, mature, senior, veteran                        → "60s"
       elderly, elder, old, aged, pensioner, retired         → "70s+"
+  "Greying" is NOT an age idiom and must not set ageBand. It is a statement
+  about HAIR, and absorbing it into an age band is how the grey stops reaching
+  the picture: the band is a number, and nothing downstream can recover a
+  colour from it. Record what the brief said about the hair in
+  "characterNotes" and leave the age alone unless the brief also gives one.
   Set "agePhase" only where the brief pins the part of the decade. "Young" gives
   ageBand "20s" and agePhase NULL — the band is what they said, the phase is the
   latitude they left. That pairing is the whole point: it honours the fact

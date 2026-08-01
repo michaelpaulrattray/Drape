@@ -633,6 +633,12 @@ export function lockFactsOf(intent: CastingIntent): LockFacts {
  * validator below compares values instead of hunting for words in a prompt.
  */
 export type ResolvedIdentity = {
+  /**
+   * At what resolution the STYLING axes reached the prompt for this candidate.
+   * Recorded so the M7 registry, and any follow of this candidate, can tell
+   * what the image was actually asked for rather than inferring it.
+   */
+  stylingResolution?: "stated" | "prescribe" | "bias";
   sex: Sex;
   ageBand: AgeBand;
   agePhase: AgePhase;

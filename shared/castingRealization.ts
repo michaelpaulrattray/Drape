@@ -98,9 +98,15 @@ export type SkinCharacter = (typeof SKIN_CHARACTERS)[number];
 export type RealizedAxes = {
   eyeColour: EyeColour;
   /** The named cut. Carries its own coherent length and, sometimes, texture. */
-  hairStyle: HairStyle;
+  /*
+    NULL when deference suppressed it. The persisted identity is the M7
+    registry sole truth, so it must not carry a cut no prompt ever asked for —
+    a shaved-head brief used to record hair: long, brown beside a prompt that
+    said neither.
+  */
+  hairStyle: HairStyle | null;
   facialHair: FacialHair | null;
-  hairTexture: HairTexture;
+  hairTexture: HairTexture | null;
   browStyle: BrowStyle;
   skinCharacter: SkinCharacter;
 };

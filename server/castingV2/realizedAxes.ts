@@ -442,10 +442,18 @@ export function applySheetTaste<T extends SheetCandidate>(
   const neighbours = (heritage: string) => placed.filter((entry) => sameNeighbourhood(entry.heritage, heritage));
 
   return sheet.map((candidate, position) => {
+    const current = candidate.realized.hairStyle;
+    /*
+      A candidate whose hair was suppressed by deference has nothing to arrange.
+      The pass runs before the persisted record is blanked, so this is normally
+      unreachable — but the type is nullable now, and a guard that states why is
+      better than a non-null assertion that hides it.
+    */
+    if (current === null) return candidate;
+
     const primary = (candidate.heritage[0]?.heritage ?? "") as Heritage | "";
     const entries = stylesFor(candidate.sex, primary, candidate.ageBand);
     const ordinary = entries.filter(([style]) => !style.statement);
-    const current = candidate.realized.hairStyle;
     const nearby = neighbours(primary);
     const familiesNearby = new Set(nearby.map((entry) => entry.family));
 

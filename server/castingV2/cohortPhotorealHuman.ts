@@ -531,12 +531,22 @@ function varyHair(
  * an inherited *lock* produces eight clones with identical heritage rather
  * than eight cousins.
  */
+/**
+ * What a follow inherits — and the unpinnable axes are NULLABLE, because a user
+ * can unpin one.
+ *
+ * Unpinning used to be silently inert on a follow. `applyUnlocks` cleared the
+ * field from the intent, and then the resolver read the anchor instead —
+ * `intent.sex ?? anchor?.sex` — so the chip vanished from the sheet and nothing
+ * about the casting changed. An unlock has to clear the anchor's supply of that
+ * axis too, or it is a control that does nothing.
+ */
 export type FollowAnchor = {
-  /** Locked. "Sex holds absolutely" — the adapter never varies it. */
-  sex: Sex;
+  /** Locked unless unpinned. "Sex holds absolutely" — the adapter never varies it. */
+  sex: Sex | null;
   /** The primary component holds; the secondary varies per candidate. */
   heritage: HeritageComponent[];
-  ageBand: AgeBand;
+  ageBand: AgeBand | null;
   hair: Hair | null;
   look: LookKey | null;
   /**
@@ -693,11 +703,21 @@ export function resolveCandidateIdentity(
     realized:
       anchor?.realized
       ?? realizeAxes({ heritage, ageBand, sex: intent.sex ?? anchor?.sex ?? varySex(position, rollSeed), position, rollSeed }),
-    // Energy is the one axis that cycles rather than samples: eight candidates
-    // against eight energies gives one of each, which is the most legible
-    // difference a sheet can carry. Stated energy locks it flat across all
-    // eight (plan line 205).
-    energy: intent.energy ?? ENERGY_KEYS[position % ENERGY_KEYS.length],
+    /*
+      Energy is the one axis that cycles rather than samples: eight candidates
+      against eight energies gives one of each, which is the most legible
+      difference a sheet can carry. Stated energy locks it flat across all
+      eight (plan line 205).
+
+      The cycle needs a per-roll OFFSET, though, or it always starts in the same
+      place — every disposition sheet ever cast opened on "warm", so tile 1 was
+      the same persona every time and re-rolling never moved it. Offset like
+      every other varied axis; the cycle's one-of-each property is unaffected
+      because a rotation is still a permutation.
+    */
+    energy:
+      intent.energy ??
+      ENERGY_KEYS[(position + (hash(`${rollSeed}:energyOffset`) % ENERGY_KEYS.length)) % ENERGY_KEYS.length],
     /*
       The look axis. A stated look locks flat across the sheet (archetype law);
       otherwise, when the brief named a casting category whose job IS a kind of
@@ -879,9 +899,15 @@ const AXIS_WORDS: Record<"eyes" | "facialHair" | "brows" | "skin", string[]> = {
     "eye", "eyes", "eyed", "iris", "irises", "blue", "green", "hazel", "amber",
     "grey", "gray", "brown", "heterochromia",
   ],
+  /*
+    "shaven" and "cleanshaven" belong HERE and only here. They used to sit in
+    `HAIR_WORDS` as well, so "a clean-shaven man in his 40s" — a statement about
+    a jaw — stood the hair axis down too, and with it the twin rule's fallback
+    axis. That is the one brief shape where both separators disappear at once.
+  */
   facialHair: [
     "beard", "bearded", "moustache", "mustache", "stubble", "goatee", "shaven",
-    "cleanshaven", "whiskers", "sideburns", "scruff",
+    "cleanshaven", "unshaven", "beardless", "whiskers", "sideburns", "scruff",
   ],
   brows: ["brow", "brows", "eyebrow", "eyebrows", "unibrow", "monobrow"],
   skin: [
@@ -898,14 +924,39 @@ export function statedAxis(axis: "eyes" | "facialHair" | "brows" | "skin", state
   return AXIS_WORDS[axis].some((word) => words.has(word));
 }
 
+/*
+  Two removals here are corrections, not tidying.
+
+  Bare "cut" is gone: "a clean-cut banker" is not a hair statement, and it was
+  standing the whole hair axis down on any brief using the word figuratively.
+  Every compound that IS about hair — buzzcut, crewcut, undercut — is listed in
+  its own right.
+
+  "shaven" and "cleanshaven" are gone too, and moved to facial-hair deference
+  where they belong. A clean-shaven brief is a statement about a JAW; treating
+  it as hair cost the sheet its authored cuts AND, because the twin rule falls
+  back to facial hair, all twin protection at the same time — the one brief
+  shape where both separators vanish at once.
+*/
 const HAIR_WORDS = [
-  "hair", "haired", "bald", "shaved", "shaven", "buzz", "buzzcut", "crewcut",
-  "cut", "undercut", "fade", "afro", "braid", "braids", "braided", "dreads",
-  "dreadlocks", "locs", "curls", "curly", "wavy", "coiled", "ponytail", "bun",
+  "hair", "haired", "bald", "balding", "shaved", "buzz", "buzzcut", "crewcut",
+  "undercut", "fade", "afro", "braid", "braids", "braided", "cornrows", "dreads",
+  "dreadlocks", "locs", "curls", "curly", "wavy", "coiled", "ponytail", "ponytails",
+  "topknot", "pigtail", "pigtails", "bun", "mohawk",
   "bob", "pixie", "fringe", "bangs", "mullet", "quiff", "blonde", "blond",
-  "brunette", "redhead", "ginger", "greying", "graying", "grey", "gray",
+  "brunette", "redhead", "ginger", "auburn", "greying", "graying", "grey", "gray",
   "silver", "platinum", "bleached", "highlights", "roots",
 ];
+
+/**
+ * Hair statements the tokenizer cannot see, because they contain punctuation.
+ *
+ * "Salt-and-pepper" splits into salt / and / pepper, none of which is a hair
+ * word and none of which safely could be — "salt" appears in plenty of briefs
+ * that have nothing to do with hair. Matched as a phrase against the raw text
+ * instead, which is the only form that is both safe and complete.
+ */
+const HAIR_PHRASES = ["salt and pepper", "salt-and-pepper", "pepper and salt"];
 
 /**
  * Words that describe hair ONLY when nothing else on the face owns them.
@@ -921,11 +972,36 @@ const HAIR_WORDS = [
  */
 const AMBIGUOUS_HAIR_WORDS = new Set(["bleached", "highlights", "silver", "platinum", "grey", "gray"]);
 
-/** The features that can claim an ambiguous word away from the hair axis. */
-const OTHER_FEATURE_WORDS = [
+/**
+ * The features that can claim an ambiguous word away from the hair axis.
+ *
+ * Eyes are here because "grey eyes" was deferring the entire hair axis — an eye
+ * colour standing hair down is the same class of mistake as a brow doing it.
+ */
+const OTHER_FEATURE_WORDS = new Set([
   "brow", "brows", "eyebrow", "eyebrows", "unibrow", "monobrow",
-  "lash", "lashes", "eyelash", "eyelashes", "beard", "moustache", "mustache",
-];
+  "lash", "lashes", "eyelash", "eyelashes", "beard", "bearded", "moustache", "mustache",
+  "eye", "eyes", "eyed", "iris", "irises",
+]);
+
+/**
+ * How close a feature word must sit to claim an ambiguous one.
+ *
+ * **Adjacency, not sentence-global — and this was the gravest finding of the
+ * review.** The first version asked "does any feature word appear anywhere in
+ * the brief", which is a question about the sentence rather than about the
+ * phrase. So "a silver fox in his 50s with a trimmed beard" surrendered
+ * "silver" to a beard eight words away, decided hair had never been mentioned,
+ * and authored a dark colour directly contradicting the silver fox the user
+ * asked for. The gate meant to prevent over-deference was causing the exact
+ * contradiction deference exists to prevent.
+ *
+ * Two tokens either side covers the real phrasings — "bleached brows", "brows
+ * bleached", "grey eyes", "eyes of pale grey" — without reaching across a
+ * clause boundary. Wider is not safer here: every extra token is another way to
+ * surrender a word the user meant as hair.
+ */
+const CLAIM_WINDOW = 2;
 
 /** Style names that are already plural and must not take an article. */
 const PLURAL_STYLES = new Set(["locs", "braids", "soft layers"]);
@@ -938,32 +1014,41 @@ const PLURAL_STYLES = new Set(["locs", "braids", "soft layers"]);
  * exactly how the two would drift out of agreement about what "stated" means.
  */
 export function briefStatesHair(...sources: (string | null | undefined)[]): boolean {
-  const words = new Set(sources.filter(Boolean).join(" ").toLowerCase().split(/[^a-z]+/));
-  /*
-    An ambiguous word claimed by another feature is not a hair statement. When
-    the brief says "bleached brows", the brow owns "bleached" and hair was never
-    mentioned — deferring the whole hair axis there loses variation the user
-    never asked us to give up.
+  const text = sources.filter(Boolean).join(" ").toLowerCase();
+  if (HAIR_PHRASES.some((phrase) => text.includes(phrase))) return true;
 
-    Only the AMBIGUOUS words are surrendered. An unambiguous hair word anywhere
-    in the sentence still decides it, so "bleached brows and a blonde bob" is
-    still a hair statement, and the reading stays conservative: surrendering an
-    ambiguous word costs authored variation, never a stated fact, because the
-    user's own words travel to the prompt either way.
+  /*
+    An ambiguous word claimed by a feature word NEXT TO IT is not a hair
+    statement. Claiming is per-occurrence, not per-sentence: "bleached brows"
+    surrenders that "bleached", while "a silver fox with a trimmed beard" keeps
+    its "silver", because the beard is nowhere near it.
+
+    An unambiguous hair word anywhere still decides it, so "bleached brows and a
+    blonde bob" is a hair statement on the strength of "blonde" alone.
   */
-  const claimedElsewhere = OTHER_FEATURE_WORDS.some((word) => words.has(word));
-  return HAIR_WORDS.some(
-    (word) => words.has(word) && !(claimedElsewhere && AMBIGUOUS_HAIR_WORDS.has(word)),
-  );
+  const tokens = text.split(/[^a-z]+/);
+  return tokens.some((token, index) => {
+    if (!HAIR_WORDS.includes(token)) return false;
+    if (!AMBIGUOUS_HAIR_WORDS.has(token)) return true;
+    const from = Math.max(0, index - CLAIM_WINDOW);
+    const to = Math.min(tokens.length, index + CLAIM_WINDOW + 1);
+    const claimed = tokens.slice(from, to).some((near, offset) => {
+      if (from + offset === index) return false;
+      return OTHER_FEATURE_WORDS.has(near);
+    });
+    return !claimed;
+  });
 }
 
 function describeHair(
   hair: Hair | null,
   stated: string,
-  texture: string,
-  style: HairStyle,
+  texture: string | null,
+  style: HairStyle | null,
   resolution: StylingResolution,
 ): string {
+  // Nothing authored survives suppression; the record says so too.
+  if (!style || texture === null) return "";
   /*
     The brief owns hair the moment it mentions it. Saying nothing here is the
     whole fix: the user's words are already in the prompt, and adding a second,
@@ -1057,6 +1142,8 @@ export function composeCandidatePrompt(input: {
   resolved: ResolvedIdentity;
   archetype: ArchetypeKey;
   seed: number;
+  /** True on a follow — anchored styling renders at full fidelity. */
+  anchored?: boolean;
 }): string {
   const { intent, resolved, archetype } = input;
   /* The user's own words, in one string — every deference check reads this. */
@@ -1069,6 +1156,7 @@ export function composeCandidatePrompt(input: {
   const resolution: StylingResolution = stylingResolutionFor({
     intent,
     briefStatesHair: briefStatesHair(statedText),
+    anchored: input.anchored === true,
   });
 
   /*

@@ -65,7 +65,7 @@ import { scrubBrands } from "./brandScrub";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
 import { applySheetTaste } from "./realizedAxes";
-import { stylingResolutionFor } from "./stylingResolution";
+import { stylingResolutionFor, type StylingResolution } from "./stylingResolution";
 
 const log = createModuleLogger("castingV2/briefCompiler");
 
@@ -267,6 +267,23 @@ function anchorFrom(parent: ResolvedIdentity | null): FollowAnchor | null {
   };
 }
 
+/**
+ * Strip the anchor's supply of any axis the user unpinned.
+ *
+ * Only the three axes a follow actually carries and a chip can remove overlap:
+ * sex, age band and heritage. The rest of the anchor — hair, look, the realized
+ * axes — has no chip, so nothing can unpin it here.
+ */
+function withUnlocksApplied(anchor: FollowAnchor, unlock: readonly UnlockableField[]): FollowAnchor {
+  if (unlock.length === 0) return anchor;
+  return {
+    ...anchor,
+    sex: unlock.includes("sex") ? null : anchor.sex,
+    ageBand: unlock.includes("ageBand") ? null : anchor.ageBand,
+    heritage: unlock.includes("heritage") ? [] : anchor.heritage,
+  };
+}
+
 function applyUnlocks(intent: CastingIntent, unlock: readonly UnlockableField[]): CastingIntent {
   if (unlock.length === 0) return intent;
   const next = { ...intent };
@@ -357,6 +374,47 @@ function buildChips(intent: CastingIntent, followPersonaLine: string | null): Ca
 }
 
 /**
+ * Blank what the prompt never carried, so the persisted identity is honest.
+ *
+ * **The M7 registry reads the persisted `resolvedIdentity` as sole truth**, so
+ * fiction here becomes fiction there. Two kinds were being recorded:
+ *
+ *   - **Suppressed axes with fabricated values.** A shaved-head brief defers the
+ *     whole hair axis, and the record still carried `hair: long, brown` — a cut
+ *     and a colour no prompt asked for and no image ever wore. That is the
+ *     record-that-lies failure this file's own comments keep warning about, and
+ *     it is how the founder's sameness report was first misdiagnosed.
+ *   - **Over-claimed resolution.** Under bias mode the prompt carries a
+ *     silhouette and a beard bucket; the record carried a named cut and a
+ *     six-value facial-hair enum. A follow of that candidate would inherit
+ *     specificity the lineage never had.
+ *
+ * The resolution tier is recorded beside the identity rather than degrading the
+ * values, because the family and the bucket are both derivable from what is
+ * there — but a reader has to be told which resolution actually reached the
+ * image, and now it is written down.
+ */
+function withHonestRecord(
+  identity: ResolvedIdentity,
+  resolution: StylingResolution,
+  statedFacialHair: boolean,
+): ResolvedIdentity {
+  if (resolution !== "stated" && !statedFacialHair) {
+    return { ...identity, stylingResolution: resolution } as ResolvedIdentity;
+  }
+  return {
+    ...identity,
+    stylingResolution: resolution,
+    ...(resolution === "stated" ? { hair: null } : {}),
+    realized: {
+      ...identity.realized,
+      ...(resolution === "stated" ? { hairStyle: null, hairTexture: null } : {}),
+      ...(statedFacialHair ? { facialHair: null } : {}),
+    },
+  } as ResolvedIdentity;
+}
+
+/**
  * Resolve the whole sheet, apply the sheet-level taste rules, then compose.
  *
  * That order is the point, and it is why this is a function rather than two
@@ -393,7 +451,17 @@ function resolveSheet(input: {
   );
 
   const stated = [briefText, intent.role ?? "", intent.characterNotes ?? ""].join(" ");
-  const inherited = anchor?.realized != null;
+  /*
+    Keyed on the FOLLOW, not on the anchor's contents.
+
+    It used to read `anchor?.realized != null`, which asks whether the parent
+    happened to carry realized axes — and a parent cast before those axes
+    existed carries none. On that lineage the pass believed it was not looking
+    at a follow at all and rewrote the anchored hair, which is the one thing a
+    follow exists to preserve. Whether this is a follow is a fact about the
+    request; the anchor's vintage is not part of it.
+  */
+  const inherited = anchor != null;
   /*
     A follow is the one full skip: every candidate copies the anchor's realized
     axes on purpose, so eight inherited pixies is the follow working.
@@ -406,6 +474,12 @@ function resolveSheet(input: {
     about, so the sheet that prompted the twin-breaker was the one sheet it
     would never have run on.
   */
+  const statedFacialHairHere = statedAxis("facialHair", stated);
+  const sheetResolution = stylingResolutionFor({
+    intent,
+    briefStatesHair: briefStatesHair(stated),
+    anchored: anchor != null,
+  });
   const tasted = inherited
     ? resolved
     : applySheetTaste(resolved, rollSeed, {
@@ -430,9 +504,17 @@ function resolveSheet(input: {
   return {
     candidates: tasted.map((identity, position) => ({
       position,
-      prompt: composeCandidatePrompt({ briefText, intent, resolved: identity, archetype, seed: position }),
+      prompt: composeCandidatePrompt({
+        briefText,
+        intent,
+        resolved: identity,
+        archetype,
+        seed: position,
+        // Anchored styling renders at full fidelity: the user chose that cut.
+        anchored: anchor != null,
+      }),
       personaLine: personaLineFor(identity, intent.reads[position] ?? null),
-      resolvedIdentity: identity,
+      resolvedIdentity: withHonestRecord(identity, sheetResolution, statedFacialHairHere),
     })),
   };
 }
@@ -522,9 +604,19 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     one the ruling makes absolute. It rides the intent so the validator checks
     it and the echo can say it; every other inherited trait rides the anchor.
   */
+  const unlock = input.unlock ?? [];
   const inherited: CastingIntent =
-    anchor && !recovered.sex ? { ...recovered, sex: anchor.sex } : recovered;
-  const adjusted = applyOverrides(applyUnlocks(inherited, input.unlock ?? []), input.overrides);
+    anchor && !recovered.sex && anchor.sex ? { ...recovered, sex: anchor.sex } : recovered;
+  const adjusted = applyOverrides(applyUnlocks(inherited, unlock), input.overrides);
+  /*
+    The unlock has to reach the ANCHOR too, not just the intent.
+
+    Clearing `intent.sex` alone was inert on a follow: the resolver reads
+    `intent.sex ?? anchor?.sex`, so the anchor immediately put it back and the
+    user watched a chip disappear while the sheet stayed identical. An unpinned
+    axis has to lose both of its suppliers.
+  */
+  const effectiveAnchor = anchor ? withUnlocksApplied(anchor, unlock) : null;
   /*
     Brand names never reach the image engine (founder gate 21). The two
     free-text fields are the only things here that travel to the provider as
@@ -545,7 +637,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     archetype,
     candidateCount: input.candidateCount,
     rollSeed: input.rollSeed,
-    anchor: anchor ?? undefined,
+    anchor: effectiveAnchor ?? undefined,
   });
   const candidates = sheet.candidates;
 

@@ -32,7 +32,14 @@ const HERITAGE_WORDS: Array<[Heritage, string[]]> = [
   ["British Isles", ["british", "english", "irish", "scottish", "welsh"]],
   ["Western European", ["french", "german", "dutch", "belgian", "austrian", "swiss"]],
   ["Slavic", ["slavic", "polish", "russian", "ukrainian", "czech", "serbian", "croatian"]],
-  ["East Asian", ["asian", "chinese", "japanese", "korean", "taiwanese"]],
+  /*
+    Bare "asian" is deliberately absent. It matched only East Asian, so "a South
+    Asian model" on an interpreter miss was repaired into the WRONG heritage —
+    a lock the user never wrote, on a fact they had actually stated correctly.
+    An ambiguous demonym is not a statement, and this repair only ever adds
+    locks the brief plainly supports; the same rule already drops multi-matches.
+  */
+  ["East Asian", ["chinese", "japanese", "korean", "taiwanese"]],
   ["South Asian", ["indian", "pakistani", "bangladeshi", "sri", "nepali"]],
   ["West African", ["nigerian", "ghanaian", "senegalese", "ivorian", "malian"]],
   ["Afro-Caribbean", ["caribbean", "jamaican", "haitian", "trinidadian", "bajan"]],
@@ -79,19 +86,39 @@ export { HERITAGE_WORDS, HERITAGES };
  * 25 locally and still came back null in production. So the miss is also
  * repaired deterministically.
  *
- * **Narrow on purpose.** It fires only when the interpreter demonstrably
- * recognised a casting context — it set a direction, or it decided the eight
- * should differ by look — and still left the category empty. That combination
- * is evidence a category existed in the sentence. A brief with no such signal
- * keeps its null role, which matters: a null role is what lets build vary, so
- * backfilling every null would quietly stop physique varying on exactly the
- * briefs that have no category to own it.
+ * **Narrowed after review.** The trigger was originally "a direction was set OR
+ * the eight differ by look", and the first half was too loose. An archetype is
+ * set from VIBE as readily as from a category — a pure mood brief lands one —
+ * so the repair was installing the whole sentence as a casting category on
+ * briefs that named none. Three consequences stacked: build stopped varying
+ * (gate B5 reads a non-null role), the sheet flipped into styling-bias mode
+ * past the flavoured-archetype design, and the echo claimed a category the
+ * user never wrote.
+ *
+ * The surviving signal is `variationAxis === "look"`, which the interpreter is
+ * instructed to set only when the brief asks for a KIND OF FACE — a model,
+ * editorial, fashion, runway, beauty or campaign casting. That is a statement
+ * about the category, not about the mood, and it is exactly the signal present
+ * on the roll that prompted this repair.
  */
 export function promoteStatedRole(intent: CastingIntent, briefText: string): CastingIntent {
   if (intent.role) return intent;
-  const recognisedACastingContext = intent.archetype !== null || intent.variationAxis === "look";
-  if (!recognisedACastingContext) return intent;
-  const words = briefText.replace(/\s+/g, " ").trim().slice(0, 80);
+  if (intent.variationAxis !== "look") return intent;
+  const words = capAtWordBoundary(briefText.replace(/\s+/g, " ").trim(), 80);
   if (!words) return intent;
   return { ...intent, role: words };
+}
+
+/**
+ * Cap without cutting a word in half.
+ *
+ * `slice(0, 80)` truncated mid-word, which reads as a typo in the CASTING
+ * CATEGORY block and can sever a trailing stated fact into nonsense. Falls back
+ * to the hard slice only when the first 80 characters contain no space at all.
+ */
+function capAtWordBoundary(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const clipped = text.slice(0, max);
+  const lastSpace = clipped.lastIndexOf(" ");
+  return (lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped).trim();
 }

@@ -1,8 +1,10 @@
 # Brand translation — the C7 descendant
 
-**Status: proposal. Nothing built.** Requested by the founder 2026-08-01
-("propose the C7-descendant design before building"). One founder ruling needed
-before any code; the open questions are at the end.
+**Status: APPROVED FOR BUILD, sequenced behind the review-hardening batch
+(founder ruling 2026-08-01). Nothing built yet.**
+
+Requested as a design-before-build; the rulings that settled it are recorded in
+§9, and this document is now the build spec.
 
 ---
 
@@ -213,7 +215,43 @@ before the paid sheet, and the D-79 re-ship conditions apply in spirit — if th
 harness shows any existing brief losing a fact it currently keeps, it does not
 ship.
 
-## 9. Open questions — founder ruling needed
+## 9. Rulings — settled 2026-08-01
+
+**All four approved, with conditions. Recorded here because this document is
+the build spec.**
+
+1. **Composed free text — YES**, with the caps and both guards as proposed.
+   Losing the reference silently is worse than containing authored text
+   carefully. **Non-negotiable condition:** the goldens gain brand briefs
+   BEFORE the interpreter prompt changes, with Margiela pinned as the
+   anti-regression — it must still capture via `look` afterwards.
+2. **Garment guard — REJECT, never edit.** A composed direction mentioning
+   clothing is dropped entirely and the roll falls back to shelf behaviour.
+   Two standing rules stated plainly: never patch LLM output with code, and
+   never fail a roll over it.
+3. **Non-fashion references — build the field GENERAL**, keep the refusal token
+   list fashion-only. One boundary pinned by a golden: a reference to someone's
+   AESTHETIC ("a Wes Anderson casting") is direction; casting the PERSON stays
+   refused under the named-person law.
+4. **No env flag.** Ship with a one-line disable constant beside the other taste
+   toggles — sixty-second rollback without growing the flag registry.
+
+### Ratified permanently
+
+**No brand dictionary in this repository, ever.** It rots, and it commits us to
+published claims about a trademark's aesthetic. Translation happens at
+interpretation time; the repo carries the refusal list and the grammar that
+receives the answer, and nothing else.
+
+**Face, hair and bearing only — never garments.** The frame is a plain grey tee
+on seamless paper. A direction describing clothing is a direction that will be
+ignored at best and fought at worst.
+
+### Build sequence (founder-set)
+
+Hardening batch → founder verification sheets → **this**, goldens first → M7.
+
+## 10. Superseded — the questions as originally posed
 
 1. **Is a composed free-text direction acceptable at all?** It widens the
    honest weak point. The alternative is accepting that unusual houses lose
@@ -237,7 +275,7 @@ ship.
    `CASTING_V2_SCOPE`. I do not think it needs a second one, but tonight is an
    argument for asking.
 
-## 10. Explicitly out of scope
+## 11. Explicitly out of scope
 
 - Any change to `scrubBrands` or `BRAND_TOKENS`. The safety half works.
 - Any change to the wardrobe constant to let subculture or brand read through
