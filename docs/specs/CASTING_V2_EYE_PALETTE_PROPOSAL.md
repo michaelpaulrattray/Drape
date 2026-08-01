@@ -138,12 +138,32 @@ graded sheet answers better than arithmetic does.
   is a separate change with its own verification, and it should be measured on
   images rather than on weights.
 
-## 5. Verification, if approved
+## 5. Verification — done, and what it took
 
-One graded paid sheet on an open brief, plus a re-run of the offline tally to
-confirm the projected share. The tally is free and exhaustive, so the paid
-sheet is only there to confirm the renders track the assignment — which is the
-half this diagnosis did *not* measure.
+The offline tally re-ran and is in the table above. The graded sheet answered
+the other half: do the renders track the assignment?
+
+**The first open-brief sheet could not answer it.** Amber plus honey is 12.5%
+of the population, so a sheet of eight expects about one tile — and this one
+drew none. A verification that cannot observe the thing it is verifying is not
+a pass, it is a null result, and reporting it as a pass would have been the
+broken-instrument mistake this program has already made twice.
+
+**The second sheet was targeted** at a palette where those colours are common
+("a Middle Eastern street casting, mid 20s" — amber 16, honey 10). It drew
+honey brown, amber, near-black, dark brown, brown, brown, dark brown and hazel,
+and every one rendered as itself:
+
+- **amber** renders visibly golden, not generic brown;
+- **honey brown** renders warm and light, clearly apart from dark brown;
+- **hazel** renders green-gold;
+- the three dark values still read as one another at tile scale, which is
+  exactly why Lever B shifts weight away from them rather than trying to
+  describe them apart.
+
+**Conclusion: renders track assignment. No D1 prose change is needed.** The
+follow-up the founder pre-authorised — strengthening the iris prose for amber
+and honey — is not required, and should not be done speculatively.
 
 ### Arithmetic correction made at ship time
 
