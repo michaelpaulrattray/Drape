@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0be9b18877a4905e"
+    "sourceFingerprint": "5278f7537f9433c3"
   },
   "domains": [
     {
@@ -16279,6 +16279,16 @@
     {
       "from": "module:server/castingV2/varianceBudget.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/varianceBudget.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/varianceBudget.ts",
+      "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
     {

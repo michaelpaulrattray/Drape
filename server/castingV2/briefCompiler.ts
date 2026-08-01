@@ -65,30 +65,7 @@ import { scrubBrands } from "./brandScrub";
 import { namesUnknownProperNoun } from "./properNouns";
 import { promoteStatedHeritage, promoteStatedRole } from "./heritagePromotion";
 import { interpretBrief } from "./interpreter";
-import { planVariance, RELEASE_LADDER, type VariancePlan } from "./varianceBudget";
-
-/**
- * How many rungs of the release ladder this sheet may legally spend.
- *
- * A rung whose axis the USER STATED is not available — that is the whole
- * safety property, and it is computed here rather than inside the budget
- * because only the compiler knows what the brief pinned. Reverse-authority
- * order means the loosest thing gives first and a stated fact never gives at
- * all.
- *
- * A follow can spend everything: its anchor is a request for a family, not a
- * statement of fact, and widening drift inside a family is what the founder
- * ruled the follow should do anyway. An open sheet with a stated age and a
- * stated heritage has almost nothing left to give, which is exactly the case
- * the confession exists for.
- */
-function releaseHeadroom(intent: CastingIntent, isFollow: boolean): number {
-  let rungs = isFollow ? 2 : 0; // widen-drift and loosen-styling need an anchor
-  if (intent.heritage.length === 0) rungs += 1; // widen-heritage
-  if (!intent.agePhase) rungs += 1; // widen-age-phase
-  rungs += 1; // strengthen-presence is always available; nobody states presence
-  return Math.min(rungs, RELEASE_LADDER.length);
-}
+import { breakSignatureClusters, type VarianceReport } from "./varianceBudget";
 
 /**
  * A name never becomes a casting category. The second half of gate 21.
@@ -207,7 +184,7 @@ export type CompiledRollBrief = {
    * decision the user is paying for: when the echo confesses that the eight
    * will differ mainly in expression, this is the count that said so.
    */
-  variance: VariancePlan;
+  variance: VarianceReport;
   /** Sheet candidates render at 1K, medium quality (§H.10). */
   size: `${number}x${number}`;
   quality: "low" | "medium" | "high";
@@ -530,7 +507,7 @@ function resolveSheet(input: {
   candidateCount: number;
   rollSeed: string;
   anchor?: FollowAnchor;
-}): { candidates: CandidateSpec[]; variance: VariancePlan } {
+}): { candidates: CandidateSpec[]; variance: VarianceReport } {
   const { intent, briefText, archetype, rollSeed, anchor } = input;
   const resolved = Array.from({ length: input.candidateCount }, (_, position) =>
     resolveCandidateIdentity(intent, position, rollSeed, anchor),
@@ -606,33 +583,26 @@ function resolveSheet(input: {
     is at least honest, and the honest answer to "everything is held" is to say
     so before the money moves.
   */
-  const headroom = releaseHeadroom(intent, anchor != null);
-  let variance = planVariance(tasted, headroom);
-  let sheet = tasted;
-
   /*
-    RELEASE, by re-resolving through the axis's own owner.
+    THE SIGNATURE CAP (founder ruling, 2026-08-01).
 
-    One extra pass, not a loop: the boost is monotonic, so if widening the drift
-    to five or six of eight does not clear the floor, nothing available will,
-    and the honest answer is the confession rather than an escalating spiral of
-    re-resolutions on the eve of a paid roll.
+    Applied after the taste pass and before composition — the only window where
+    the sheet exists whole and nothing has been written to a prompt yet, so the
+    persisted identity stays the person the prompt describes.
 
-    Only the follow rungs are mechanised here, because they are the ones whose
-    axes this stage owns. The rest of the ladder is recorded in the plan and
-    read by the echo — a rung that is not yet implemented must not silently
-    count as spent.
+    It replaced an axis COUNT, which cleared its own floor on the re-rolled
+    Versace sheet while five identical low buns sat in the middle of it. Axes
+    were a proxy for what the eye measures and they proxied badly.
   */
-  if (variance.release.includes("widen-drift") && anchor) {
-    const released = Array.from({ length: input.candidateCount }, (_, position) =>
-      resolveCandidateIdentity(intent, position, rollSeed, anchor, variance.release.length),
-    );
-    const releasedVariance = planVariance(released, headroom);
-    if (releasedVariance.live > variance.live) {
-      sheet = released;
-      variance = { ...releasedVariance, release: variance.release };
-    }
-  }
+  const { sheet: freed, report: variance } = breakSignatureClusters(tasted, {
+    rollSeed,
+    // Deference outranks everything here: when the brief states its own hair,
+    // none of it reaches the prompt, so freeing it would edit a record the
+    // image never saw.
+    hairStated: briefStatesHair(stated),
+    facialHairStated: statedFacialHairHere,
+  });
+  const sheet = freed;
 
   return {
     variance,

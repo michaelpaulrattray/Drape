@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  VARIANCE_FLOOR,
-  VISIBLE_AXES,
-  countVisibleVariance,
-  liveAxisCount,
-  planVariance,
+  SIGNATURE_CAP,
+  breakSignatureClusters,
+  distinctSignatures,
+  excessPositions,
+  signatureOf,
 } from "./varianceBudget";
-import { REALIZED_AXIS_KEYS } from "../../shared/castingRealization";
 import { castingBriefCompiler } from "./briefCompiler";
 import type { TextEngine } from "../providers/types";
 
@@ -16,14 +15,145 @@ import type { TextEngine } from "../providers/types";
  *
  * THE SHEET THAT FORCED IT: a follow of a blonde candidate under "a females 23
  * high fashion editorial casting for Versace" came back an eight-way tie. Four
- * rules, each individually correct — the follow anchored sex, heritage and
- * colour; the captured direction locked the look flat; the stated age locked
- * the band; the category put hair at silhouette tier — and their INTERSECTION
- * left no axis alive that separates two tiles at arm's length.
+ * rules, each individually correct, whose intersection left nothing alive that
+ * separates two tiles at arm's length.
  *
- * Nothing was broken. The sheet was simply worthless, and it cost the same as
- * a good one. That is the class this measures.
+ * THE SHEET THAT CONVICTED THE FIRST FIX: the re-roll cleared an axis-count
+ * floor with five live axes and still showed five identical low buns. "Cut has
+ * at least two distinct values" is true of a sheet that is seven-to-one. Axes
+ * were a proxy for what the eye measures; the founder's ruling replaced them
+ * with the tile SIGNATURE and made it a CAP — no more than two tiles may share
+ * one. A pair reads as family; three reads as a wall.
  */
+
+function identity(over: Record<string, unknown> = {}) {
+  return {
+    sex: "female",
+    ageBand: "20s",
+    heritage: [{ heritage: "Nordic", pct: 100 }],
+    hair: { family: "long", colour: "blonde" },
+    realized: {
+      eyeColour: "blue",
+      hairStyle: { name: "low bun", family: "long", worn: "worn up" },
+      facialHair: null,
+      hairTexture: "straight",
+      hairModifiers: null,
+      wornState: "worn up",
+      browStyle: "feathered",
+      skinCharacter: "plain",
+      ...((over.realized as object) ?? {}),
+    },
+    ...over,
+  } as never;
+}
+
+const context = { rollSeed: "cap", hairStated: false, facialHairStated: false };
+
+describe("the cap, not a floor", () => {
+  it("names the third and later members of a cluster as excess", () => {
+    const sheet = Array.from({ length: 8 }, () => identity());
+    expect(excessPositions(sheet)).toEqual([2, 3, 4, 5, 6, 7]);
+    expect(SIGNATURE_CAP).toBe(2);
+  });
+
+  it("leaves a matching PAIR alone — that reads as family", () => {
+    const sheet = [
+      identity(),
+      identity(),
+      identity({ realized: { wornState: "loose", hairStyle: { name: "simple long hair", family: "long" } } }),
+      identity({ realized: { hairTexture: "wavy", hairStyle: { name: "simple long hair", family: "long" } } }),
+    ];
+    expect(excessPositions(sheet)).toEqual([]);
+    const { report } = breakSignatureClusters(sheet, context);
+    expect(report.released).toEqual([]);
+    expect(report.confess).toBe(false);
+  });
+
+  it("would have PASSED the old axis metric on the sheet that convicted it", () => {
+    /*
+      The regression that matters most. Five identical low buns plus three
+      varied tiles: cut, texture and worn state each carry two or more values,
+      so the axis count read "varied" — and the founder looked at it and could
+      not choose between the middle five.
+    */
+    const sheet = [
+      identity({ realized: { hairStyle: { name: "half-up", family: "long", worn: "half-up" }, wornState: "half-up" } }),
+      identity({ realized: { hairStyle: { name: "bun", family: "long", worn: "worn up" }, hairTexture: "wavy" } }),
+      identity(),
+      identity(),
+      identity(),
+      identity(),
+      identity(),
+      identity({ realized: { hairStyle: { name: "half-up", family: "long", worn: "half-up" }, wornState: "half-up", hairTexture: "wavy" } }),
+    ];
+    // Axis-wise this looks fine: three distinct cuts, two textures, three worn
+    // states. Signature-wise it is a wall of five.
+    expect(excessPositions(sheet).length).toBe(3);
+  });
+});
+
+describe("the release is least-authoritative-first", () => {
+  it("breaks a cluster with WORN STATE, leaving the cut alone", () => {
+    /*
+      The whole reason this does not fight the drift ruling: a low bun and the
+      same hair worn loose are the same cut, worn differently. Five tiles
+      holding the anchor's cut is the ruling working.
+    */
+    const sheet = Array.from({ length: 8 }, () =>
+      identity({ realized: { hairStyle: { name: "simple long hair", family: "long" }, wornState: "loose" } }),
+    );
+    const { sheet: freed, report } = breakSignatureClusters(sheet, context);
+    expect(report.released[0]).toBe("worn-state");
+    // Every cut is untouched — the ladder started at the cheapest rung.
+    for (const candidate of freed) {
+      expect((candidate as never as { realized: { hairStyle: { name: string } } }).realized.hairStyle.name).toBe(
+        "simple long hair",
+      );
+    }
+    expect(excessPositions(freed)).toEqual([]);
+  });
+
+  it("does not re-wear a cut whose own name says how it is worn", () => {
+    // "a ponytail, worn loose" must stay unsayable. Those tiles fall through
+    // to texture rather than contradicting their own name.
+    const sheet = Array.from({ length: 8 }, () =>
+      identity({ realized: { hairStyle: { name: "ponytail", family: "long", worn: "in a ponytail" }, wornState: "in a ponytail" } }),
+    );
+    const { sheet: freed } = breakSignatureClusters(sheet, context);
+    for (const candidate of freed) {
+      const realized = (candidate as never as { realized: { hairStyle: { name: string }; wornState: string } }).realized;
+      if (realized.hairStyle.name === "ponytail") expect(realized.wornState).toBe("in a ponytail");
+    }
+  });
+
+  it("gets a sheet of eight identical tiles under the cap", () => {
+    const sheet = Array.from({ length: 8 }, () => identity());
+    const { sheet: freed, report } = breakSignatureClusters(sheet, context);
+    expect(excessPositions(freed)).toEqual([]);
+    expect(distinctSignatures(freed)).toBeGreaterThanOrEqual(4);
+    expect(report.confess).toBe(false);
+  });
+});
+
+describe("a stated lock is never touched", () => {
+  it("changes nothing when the brief stated its own hair, and confesses instead", () => {
+    /*
+      Deference outranks the cap. None of the authored hair reaches the prompt
+      when the brief states it, so freeing it would edit a record the image
+      never saw — the record-vs-prompt lie this codebase has now fixed three
+      times. The honest move is to say the sheet is held.
+    */
+    const sheet = Array.from({ length: 8 }, () => identity());
+    const before = sheet.map(signatureOf);
+    const { sheet: freed, report } = breakSignatureClusters(sheet, {
+      ...context,
+      hairStated: true,
+    });
+    expect(freed.map(signatureOf)).toEqual(before);
+    expect(report.released).toEqual([]);
+    expect(report.confess).toBe(true);
+  });
+});
 
 function engine(intent: Record<string, unknown>): TextEngine {
   return {
@@ -36,7 +166,7 @@ function engine(intent: Record<string, unknown>): TextEngine {
   } as unknown as TextEngine;
 }
 
-/** The exact stack: follow + stated age + captured direction + category. */
+/** The founder's exact stack: follow + stated age + captured direction. */
 async function versaceFollow(rollSeed: string) {
   return castingBriefCompiler({
     briefText: "a females 23 high fashion editorial casting for versace",
@@ -52,11 +182,11 @@ async function versaceFollow(rollSeed: string) {
       look: "severe minimal",
       realized: {
         eyeColour: "blue",
-        hairStyle: { name: "simple long hair", family: "long" },
+        hairStyle: { name: "low bun", family: "long", worn: "worn up" },
         facialHair: null,
         hairTexture: "straight",
         hairModifiers: null,
-        wornState: "loose",
+        wornState: "worn up",
         browStyle: "feathered",
         skinCharacter: "plain",
       },
@@ -71,129 +201,24 @@ async function versaceFollow(rollSeed: string) {
   } as never);
 }
 
-describe("the budget counts what a viewer can actually tell apart", () => {
-  it("does not count an axis carrying one value across all eight", () => {
-    const flat = Array.from({ length: 8 }, () => ({
-      heritage: [{ heritage: "Nordic", pct: 100 }],
-      agePhase: "early",
-      look: "severe minimal",
-      energy: "cool",
-      realized: {
-        hairStyle: { name: "simple long hair", family: "long" },
-        hairTexture: "straight",
-        wornState: "loose",
-        facialHair: null,
-        eyeColour: "blue",
-        skinCharacter: "plain",
-      },
-    })) as never[];
-    expect(liveAxisCount(flat)).toBe(0);
-    const counts = countVisibleVariance(flat);
-    for (const axis of VISIBLE_AXES) expect(counts[axis]).toBe(1);
-  });
-
-  it("counts an axis the moment it carries two", () => {
-    const two = Array.from({ length: 8 }, (_, i) => ({
-      heritage: [{ heritage: "Nordic", pct: 100 }],
-      agePhase: "early",
-      look: "severe minimal",
-      energy: "cool",
-      realized: {
-        hairStyle: { name: "simple long hair", family: "long" },
-        hairTexture: "straight",
-        wornState: i < 4 ? "loose" : "worn up",
-        facialHair: null,
-        eyeColour: "blue",
-        skinCharacter: "plain",
-      },
-    })) as never[];
-    expect(liveAxisCount(two)).toBe(1);
-  });
-});
-
-describe("the release never touches a stated lock", () => {
-  it("offers no headroom it has not earned", () => {
-    // A sheet with everything stated can spend only the presence rung, which
-    // nobody states — so it confesses rather than quietly varying a fact.
-    const plan = planVariance([] as never, 1);
-    expect(plan.release.length).toBeLessThanOrEqual(1);
-    expect(plan.confess).toBe(true);
-  });
-
-  it("stops confessing once the floor is met", () => {
-    const varied = Array.from({ length: 8 }, (_, i) => ({
-      heritage: [{ heritage: i % 2 ? "Nordic" : "Slavic", pct: 100 }],
-      agePhase: i % 3 ? "early" : "late",
-      look: "severe minimal",
-      energy: i % 2 ? "cool" : "warm",
-      realized: {
-        hairStyle: { name: "simple long hair", family: "long" },
-        hairTexture: "straight",
-        wornState: "loose",
-        facialHair: null,
-        eyeColour: "blue",
-        skinCharacter: "plain",
-      },
-    })) as never[];
-    expect(liveAxisCount(varied)).toBeGreaterThanOrEqual(VARIANCE_FLOOR);
-    expect(planVariance(varied, 5).confess).toBe(false);
-    expect(planVariance(varied, 5).release).toEqual([]);
-  });
-});
-
 describe("the Versace stack, reproduced", () => {
-  it("clears the floor where it used to tie", async () => {
-    /*
-      The regression this exists for. Before worn state, texture-at-bias and
-      the budget, this exact combination produced eight faces a founder could
-      not choose between — and the pass bar the founder set is a sheet where
-      choosing one tile over another is defensible.
-    */
-    let cleared = 0;
+  it("puts no three tiles under one signature, across many rolls", async () => {
     for (let i = 0; i < 8; i += 1) {
-      const compiled = (await versaceFollow(`versace-${i}`)) as unknown as {
-        candidates: Array<{ resolvedIdentity: unknown }>;
-        variance: { live: number };
+      const compiled = (await versaceFollow(`cap-versace-${i}`)) as unknown as {
+        variance: { stillClustered: number; confess: boolean };
       };
-      if (compiled.variance.live >= VARIANCE_FLOOR) cleared += 1;
+      expect(compiled.variance.stillClustered, `roll ${i}`).toBe(0);
+      expect(compiled.variance.confess).toBe(false);
     }
-    expect(cleared).toBe(8);
   });
 
-  it("no longer sends eight identical hair lines, which is what the tie looked like", async () => {
-    /*
-      Asserted on the composed HAIR line rather than on any single axis, because
-      the tie was a property of the SHEET as the founder saw it: eight faces
-      described identically. Worn state is usually what breaks it here — a
-      ponytail against loose hair reads at arm's length where an eye colour does
-      not — but the bar is the sentence, not the mechanism that varied it.
-    */
-    const compiled = (await versaceFollow("versace-worn")) as unknown as {
+  it("no longer sends five identical hair lines", async () => {
+    const compiled = (await versaceFollow("cap-versace-lines")) as unknown as {
       candidates: Array<{ prompt: string }>;
     };
-    const lines = new Set(
-      compiled.candidates.map((c) => c.prompt.match(/ HAIR: [^.]*\./)?.[0] ?? ""),
-    );
-    expect(lines.size).toBeGreaterThan(1);
-  });
-});
-
-describe("registry-shaped, so M7 slice zero owns it structurally", () => {
-  it("counts every realized axis that is visible, and names the ones it skips", () => {
-    /*
-      The completeness check that stops a new axis being silently uncounted —
-      which is exactly how an unowned axis collapses in the first place. When a
-      realized axis is added, it either joins VISIBLE_AXES or is named here as
-      deliberately invisible.
-    */
-    const invisible = new Set(["hairModifiers", "browStyle"]);
-    for (const key of REALIZED_AXIS_KEYS) {
-      const counted =
-        (VISIBLE_AXES as readonly string[]).includes(key)
-        || (key === "hairStyle" && (VISIBLE_AXES as readonly string[]).includes("cut"))
-        || (key === "hairTexture" && (VISIBLE_AXES as readonly string[]).includes("texture"))
-        || invisible.has(key);
-      expect(counted, `realized axis "${key}" is neither counted nor declared invisible`).toBe(true);
-    }
+    const lines = compiled.candidates.map((c) => c.prompt.match(/ HAIR: [^.]*\./)?.[0] ?? "");
+    const worst = Math.max(...[...new Set(lines)].map((l) => lines.filter((x) => x === l).length));
+    // A pair is family; three is a wall.
+    expect(worst).toBeLessThanOrEqual(SIGNATURE_CAP);
   });
 });

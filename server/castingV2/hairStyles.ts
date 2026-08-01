@@ -62,6 +62,17 @@ const BRAIDS: HairStyle = { name: "braids", family: "long", texture: "coiled" };
 const TWIST_OUT: HairStyle = { name: "twist-out", family: "mid-length", texture: "coiled" };
 const CURLY_CROP: HairStyle = { name: "curly crop", family: "cropped", texture: "curly" };
 
+/*
+  Coiled hair worn UP — the gap the founder caught, and it contradicted the
+  street ruling harder than the female list did: the coiled shelf had no
+  up-style at all, so every West African and Afro-Caribbean sheet came back
+  entirely worn out. These are the real names, not "coiled hair in a bun".
+*/
+const HIGH_PUFF: HairStyle = { name: "high puff", family: "coiled", texture: "coiled", worn: "worn up" };
+const WRAPPED_BUN: HairStyle = { name: "wrapped bun", family: "coiled", texture: "coiled", worn: "worn up" };
+const BRAIDED_UPDO: HairStyle = { name: "braided updo", family: "long", texture: "coiled", worn: "worn up" };
+const PINEAPPLE: HairStyle = { name: "pineapple", family: "coiled", texture: "coiled", worn: "worn up" };
+
 /* Statement cuts. Rare-but-possible, at most one per sheet by weight. */
 const QUIFF: HairStyle = { name: "quiff", family: "short", statement: true };
 const UNDERCUT: HairStyle = { name: "undercut", family: "short", statement: true };
@@ -105,10 +116,30 @@ const NONBINARY_STYLES: StyleWeights = [
   [PIXIE, 4], [UNDERCUT, 3], [WOLF, 2],
 ];
 
-/** Coiled-hair traditions, mixed in where heritage supports them. */
+/**
+ * Coiled-hair traditions, mixed in where heritage supports them.
+ *
+ * Share-conserved exactly as the long family was: the four up-styles are funded
+ * from within the families they belong to, so the silhouette mix is unchanged
+ * and only the vocabulary widens. Every family total is identical to before —
+ * coiled 18, long 34, mid-length 22, cropped 20, shaved 6.
+ *
+ * The first attempt at the female list simply ADDED entries and narrowed the
+ * silhouette mix without meaning to; the twin-breaker caught it. The lesson is
+ * cheap to apply twice, and the arithmetic is written down here so the next
+ * person can check it rather than trust it.
+ */
 const COILED_STYLES: StyleWeights = [
-  [TWIST_OUT, 22], [BRAIDS, 20], [AFRO, 18], [LOCS, 14],
-  [CURLY_CROP, 12], [STANDARD_CROP, 8], [BUZZ, 6],
+  // coiled — 18
+  [AFRO, 9], [HIGH_PUFF, 4], [PINEAPPLE, 3], [WRAPPED_BUN, 2],
+  // long — 34
+  [BRAIDS, 16], [LOCS, 11], [BRAIDED_UPDO, 7],
+  // mid-length — 22
+  [TWIST_OUT, 22],
+  // cropped — 20
+  [CURLY_CROP, 12], [STANDARD_CROP, 8],
+  // shaved — 6
+  [BUZZ, 6],
 ];
 
 const COILED_HERITAGES = new Set(["West African", "Afro-Caribbean"]);
@@ -481,6 +512,11 @@ const WORN_BY_FAMILY: Record<string, Weights<WornState>> = {
  * so it can vary the eight in a mode where a named cut would compete with the
  * casting the user actually asked for.
  */
+/** Every worn state this silhouette can physically take. */
+export function wornStatesFor(family: string): readonly WornState[] {
+  return (WORN_BY_FAMILY[family] ?? []).map(([value]) => value);
+}
+
 export function resolveWornState(
   family: string,
   style: HairStyle | null,

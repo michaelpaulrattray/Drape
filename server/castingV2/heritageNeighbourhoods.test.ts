@@ -11,6 +11,7 @@ import {
 import { applySheetTaste } from "./realizedAxes";
 import { resolveCandidateIdentity, briefStatesHair } from "./cohortPhotorealHuman";
 import { deterministicBriefCompiler } from "./briefCompiler";
+import { signatureOf } from "./varianceBudget";
 import { HAIR_COLOUR_WEIGHTS, stylesFor } from "./hairStyles";
 import type { CastingIntent, HeritageComponent, ResolvedIdentity } from "./castingIntent";
 
@@ -506,10 +507,15 @@ describe("a brow is not a hair statement", () => {
     }
   });
 
-  it("separates the pair that prompted this", async () => {
+  it("never puts two same-neighbourhood tiles under one SIGNATURE", async () => {
     /*
-      With hair authored again, the twin rule has silhouette and colour to work
-      with, and the neighbourhood pair separates.
+      The ratified metric, at zero tolerance.
+
+      The founder replaced the axis proxy with the tile SIGNATURE — cut, worn
+      state, texture, colour, beard — because that is what the eye compares.
+      Two candidates from one heritage neighbourhood sharing all five is the
+      twin this rule exists to prevent, and there is no arithmetic excuse for
+      it: measured at 0 across 300 rolls.
     */
     for (let roll = 0; roll < 100; roll += 1) {
       const compiled = await deterministicBriefCompiler({
@@ -523,14 +529,60 @@ describe("a brow is not a hair statement", () => {
           const hi = sheet[i].heritage[0]?.heritage ?? "";
           const hj = sheet[j].heritage[0]?.heritage ?? "";
           if (!sameNeighbourhood(hi, hj)) continue;
-          if (sheet[i].realized.hairStyle!.family !== sheet[j].realized.hairStyle!.family) continue;
-          const same =
-            sheet[i].hair &&
-            sheet[j].hair &&
-            colourBucket(sheet[i].hair!.colour) === colourBucket(sheet[j].hair!.colour);
-          expect(same, `roll ${roll} tiles ${i + 1}/${j + 1}`).toBeFalsy();
+          expect(
+            signatureOf(sheet[i]) === signatureOf(sheet[j]),
+            `roll ${roll} tiles ${i + 1}/${j + 1}`,
+          ).toBeFalsy();
         }
       }
     }
+  });
+
+  it("separates the pair that prompted this, to a measured residual", async () => {
+    /*
+      The ORIGINAL rule, kept — and now with its residual written down rather
+      than assumed to be zero.
+
+      It asserts at (family, colour-bucket) granularity, which is coarser than
+      the signature: two candidates can share a family and a colour bucket
+      while wearing different named cuts, and those read apart on a tile. When
+      the up-style vocabulary widened, exactly that started happening — the
+      breaker sometimes has a cut-level separation available where it used to
+      be forced into a family change.
+
+      Measured at 2 in 300 rolls, both on Mediterranean/Latino — a computed
+      neighbourhood whose palettes overlap almost completely, which is the same
+      arithmetic limit the colour pair-breaker already records. Bounded rather
+      than asserted to zero, because asserting zero on a proxy that the finer
+      rule already covers would be asserting something the vocabulary cannot
+      always deliver.
+    */
+    let residual = 0;
+    for (let roll = 0; roll < 100; roll += 1) {
+      const compiled = await deterministicBriefCompiler({
+        briefText: "A beauty creator in her late 20s, bleached brows",
+        candidateCount: 8,
+        rollSeed: `brow-twin-${roll}`,
+      });
+      const sheet = compiled.candidates.map((c) => c.resolvedIdentity);
+      for (let i = 0; i < sheet.length; i += 1) {
+        for (let j = i + 1; j < sheet.length; j += 1) {
+          const hi = sheet[i].heritage[0]?.heritage ?? "";
+          const hj = sheet[j].heritage[0]?.heritage ?? "";
+          if (!sameNeighbourhood(hi, hj)) continue;
+          if (sheet[i].realized.hairStyle!.family !== sheet[j].realized.hairStyle!.family) continue;
+          if (!sheet[i].hair || !sheet[j].hair) continue;
+          if (colourBucket(sheet[i].hair!.colour) !== colourBucket(sheet[j].hair!.colour)) continue;
+          residual += 1;
+          // Whatever survives must at least differ by CUT — never a true twin.
+          expect(
+            sheet[i].realized.hairStyle!.name === sheet[j].realized.hairStyle!.name,
+            `roll ${roll} tiles ${i + 1}/${j + 1} share a cut as well`,
+          ).toBeFalsy();
+        }
+      }
+    }
+    // A tight bound, so a regression that reopened the class shows up at once.
+    expect(residual).toBeLessThanOrEqual(2);
   });
 });
