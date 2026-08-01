@@ -33,6 +33,7 @@ export function CandidateTile({
   rollWasCancelled,
   cancelling,
   windingDown,
+  overdue,
   busy,
   paidBusy,
   rollPriceCredits,
@@ -65,6 +66,16 @@ export function CandidateTile({
    * and honest that it is still coming and will be refunded when it does.
    */
   windingDown?: boolean;
+  /**
+   * This tile has been casting noticeably longer than a roll takes.
+   *
+   * The companion to the shortened lease. Even at five minutes there is a
+   * window where a dead operation's tiles sit there saying "Casting…" as
+   * though nothing were wrong — and a user cannot tell that from slow. Saying
+   * so converts the wait from broken into supervised: it is true, it costs
+   * nothing, and it names the outcome so nobody has to wonder about the money.
+   */
+  overdue?: boolean;
   busy?: boolean;
   /**
    * A paid roll is already in flight anywhere on this sheet. Follow is the
@@ -94,7 +105,18 @@ export function CandidateTile({
       derived from the roll being cancelled, which is sticky, so a tile that
       has acknowledged the cancel never un-acknowledges it.
     */
-    const caption = cancelling ? "Cancelling…" : windingDown ? "Finishing — will be refunded" : "Casting…";
+    /*
+      Order matters and is deliberate: the cancel states outrank the overdue
+      one, because a user who has cancelled already knows why this is taking a
+      while and already has the refund promise in the dock's line.
+    */
+    const caption = cancelling
+      ? "Cancelling…"
+      : windingDown
+        ? "Finishing — will be refunded"
+        : overdue
+          ? "Taking longer than usual — this refunds automatically if it can't finish"
+          : "Casting…";
     return (
       <div className={windingDown ? "dp-stack dpc-tile--winding" : "dp-stack"} style={{ gap: 9 }}>
         <Skeleton style={{ aspectRatio: "4 / 5" }} label={`CASTING ${candidate.indexLabel}`} />

@@ -1616,4 +1616,81 @@ together is exactly how this stayed invisible through three raises — and the
 run that found it had itself been counting truncated replies as landed.
 
 
+### D-84 — Two instrument near-misses, and why they are logged as wins *(executor findings, founder-directed record, 2026-08-01)*
+
+D-81's third rule is that a test without teeth is worse than no test, because
+it converts an unknown into a false assurance. Its practical form is a habit:
+**check the instrument before believing the reading.** Two near-misses in one
+session, both caught by that habit rather than by review, both logged because
+the founder asked for them by name.
+
+**1. The query that could not see what it was looking for.**
+
+Auditing the roll a deploy orphaned, the ledger was searched with
+`referenceId LIKE '%<operationId>%'`. It returned a charge of 160 and **zero
+refunds** — which reads as 120 credits owed to the founder and not returned.
+
+It was the query that was wrong. Candidate refund references
+(`refund:op:<uuid>:charge:candidate:<uuid>`) exceed the ledger's 64-character
+limit and are hashed by `normalizeCreditReferenceId` into `sha256:…`. The
+operation id is not in the stored string at all, so a substring search cannot
+match a real refund. Computing the exact expected references found all six
+present and the money conserved exactly.
+
+The near-miss was a **false money finding reported to the founder** — the
+worst kind, because it is alarming, specific, and wrong. What caught it was
+refusing to report a money conclusion without confirming the query could
+observe the thing it claimed was absent.
+
+**2. The paraphrased money rule that was already wrong.**
+
+The deploy-collision test needed to know which candidates a sweep may settle.
+Rather than importing `isSettleable`, the first version restated it: "is this
+terminal and does it have an image?" The product asks something different:
+"was this ever settled by anyone?" The paraphrase re-refunded `failed`
+candidates on a second pass — free credits on every sweep tick — and it was
+wrong within ten lines of being written.
+
+**The rule this makes explicit: never paraphrase a money rule into a test.**
+Import it. A paraphrase is a second implementation of the rule, with none of
+the review the first one got, and its divergence is invisible precisely
+because it looks like agreement. `isSettleable` is exported for this reason.
+
+**The shared lesson.** Both failures were silent by construction: a query that
+matches nothing and a predicate that matches too much both return plausible
+answers. Neither would have been caught by a passing suite, and the same
+session had already invalidated an A/B measurement (broken ceiling) and a
+graded eye sheet (zero amber tiles drawn). Four instrument failures, four
+different shapes, all in work that was otherwise correct.
+
+### D-85 — Shorten the operation lease; a dead operation's user should not wait fifteen minutes *(founder ruling 2026-08-01)*
+
+`DEFAULT_GENERATION_OPERATION_LEASE_MS` was fifteen minutes, and the recovery
+sweep may not touch a `running` operation until its lease expires. Measured on
+the real deploy collision: 937 seconds from creation to settlement, six seconds
+after expiry. Fifteen minutes of frozen tiles and held credits, for no
+benefit — a live operation renews every 30 seconds, so lease length governs
+only how long a DEAD one keeps its rows non-terminal.
+
+> *"Shorten the default to 5 minutes — a live operation renews every 30s so
+> lease length only governs how long a dead operation's user waits for honesty;
+> 5 min keeps 10 heartbeats of tolerance and cuts the stranded window to
+> ~6 minutes."*
+
+Shipped, with the pinned arithmetic reading the real constant rather than a
+copy, so the next change updates deliberately.
+
+**Companion UX, same ruling.** Past ~2 minutes — longer than the 66–82s a roll
+actually takes — a still-casting tile says *"Taking longer than usual — this
+refunds automatically if it can't finish"*. True, cheap, and it converts the
+stranded window from broken to supervised: slow and dead look identical from a
+caption that only ever says "Casting…".
+
+**Recorded sharp edge this brings closer, not one it introduces:**
+`startOperationHeartbeat` latches on its first failure and stops renewing for
+good, so the grace after a heartbeat error is one lease rather than ten
+heartbeats. At five minutes that window is smaller than it was. Worth fixing on
+its own terms; not fixed here.
+
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

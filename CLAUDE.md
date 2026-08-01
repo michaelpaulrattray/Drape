@@ -241,20 +241,22 @@ did not receive. Do NOT build drain infrastructure for it (founder ruling,
 2026-08-01). `server/castingV2/deployCollision.test.ts` asserts the contract
 end to end — every candidate terminal, money conserved, settled in one pass.
 
-**What it costs the user: up to ~16 minutes, not ~2.** Measured on the real
-incident (production roll `78041664`, 2026-08-01): six candidates died with the
-deploy, and the operation settled **937 seconds** later — six seconds after its
-lease expired. That is the mechanism, not slow machinery: a `running` operation
-only becomes eligible for the sweep once `leaseExpiresAt` passes, and a roll
-claims the default 15-minute lease (`DEFAULT_GENERATION_OPERATION_LEASE_MS`)
-with a 30s heartbeat. Worst case is therefore 15 min + one 60s sweep.
+**What it costs the user: up to ~6 minutes.** A `running` operation only
+becomes eligible for the sweep once `leaseExpiresAt` passes, so the window is
+the remaining lease plus up to one 60s sweep. The lease is 5 minutes
+(`DEFAULT_GENERATION_OPERATION_LEASE_MS`) with a 30s heartbeat — ten renewals
+of tolerance for a live operation, which is the only thing that constrains how
+short it can be.
 
-During that window the sheet shows frozen tiles and the credits are still held.
-The money is safe and the recovery is correct — it is the WAIT that is long.
-Shortening it is a one-constant change (a roll takes 66–82s, so a 3-minute
-lease would still be renewed by a live process) and has not been made, because
-a shorter lease brings a live roll closer to being adjudicated while it is
-still running. Founder decision, not shipped.
+It was 15 minutes until 2026-08-01, and the real incident (production roll
+`78041664`) settled **937 seconds** after creation, six seconds after expiry.
+Shortened by founder ruling D-85: a live operation renews every 30s, so the
+length only ever governed how long a DEAD one kept its rows non-terminal and
+its credits held.
+
+During the window the money is safe and the recovery is correct — it is the
+WAIT that is visible. Past ~2 minutes a still-casting tile says so and names
+the outcome, so the wait reads as supervised rather than broken.
 
 ### Known gaps at deploy time
 

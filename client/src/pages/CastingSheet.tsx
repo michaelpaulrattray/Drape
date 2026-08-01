@@ -600,6 +600,20 @@ export default function CastingSheet() {
     still coming — failed, cancelled and expired alike, which is precisely the
     set that gets money back.
   */
+  /*
+    A roll takes 66–82 seconds. Past roughly two minutes, a tile that is still
+    casting is either unusually slow or its operation is dead — and the user
+    cannot tell those apart from a caption that says "Casting…".
+
+    Measured off the ROLL's own timestamp rather than the candidate's: the
+    projection carries no per-candidate clock, and the honest statement is
+    about this roll's age either way. Re-evaluated on every poll tick, which is
+    already running while anything is non-terminal, so it needs no timer.
+  */
+  const rollStartedAt = roll.data?.createdAt ? Date.parse(roll.data.createdAt) : null;
+  const rollIsOverdue =
+    rollStartedAt !== null && Number.isFinite(rollStartedAt) && Date.now() - rollStartedAt > 120_000;
+
   const counts = roll.data?.counts;
   const cancelLine = cancelStory({
     cancelled: rollWasCancelled || cancelRequested,
@@ -936,6 +950,7 @@ export default function CastingSheet() {
                     back to plain "Casting…".
                   */
                   windingDown={(rollWasCancelled || cancelRequested) && !cancel.isPending}
+                  overdue={rollIsOverdue}
                   busy={isPending(candidate.candidateId)}
                   // Follow is a paid roll. Every tile's Follow locks the
                   // moment any one of them is clicked, or the sheet offers

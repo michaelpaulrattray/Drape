@@ -51,7 +51,31 @@ import { isModelAvailableStatus, isModelDraftStatus } from "../../shared/modelLi
 import type { BoardItemCanvasMetadata, Provenance } from "../../shared/boardTypes";
 
 const log = createModuleLogger("db/generationOperations");
-export const DEFAULT_GENERATION_OPERATION_LEASE_MS = 15 * 60 * 1000;
+/**
+ * How long a dead operation's user waits for honesty.
+ *
+ * That is the only thing this number governs, and it is worth stating plainly
+ * because the intuition runs the other way. A LIVE operation renews its lease
+ * every 30 seconds (below), so the length never constrains real work — it
+ * constrains how long a crashed one keeps its rows non-terminal and its
+ * credits held before the recovery sweep is allowed to touch it.
+ *
+ * Measured on a real deploy collision (production roll `78041664`,
+ * 2026-08-01): the operation settled 937 seconds after it was created, six
+ * seconds after its lease expired. Fifteen minutes of a user watching frozen
+ * tiles, for no benefit to anybody.
+ *
+ * FIVE MINUTES (founder ruling, 2026-08-01) leaves ten heartbeats of tolerance
+ * and cuts the stranded window to roughly six minutes including the sweep.
+ *
+ * The tolerance is ten heartbeats rather than ten independent chances, and
+ * that distinction matters: `startOperationHeartbeat` latches on its first
+ * failure and stops renewing for good. So the real grace after a heartbeat
+ * error is one lease, not ten — shortening the lease narrows that window too.
+ * Recorded here because it is a pre-existing sharp edge this change brings
+ * closer, not one it introduces.
+ */
+export const DEFAULT_GENERATION_OPERATION_LEASE_MS = 5 * 60 * 1000;
 const DEFAULT_GENERATION_OPERATION_HEARTBEAT_MS = 30 * 1000;
 
 type ActiveHeartbeat = {

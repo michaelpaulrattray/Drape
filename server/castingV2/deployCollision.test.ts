@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { isSettleable } from "./rollRecovery";
+import { DEFAULT_GENERATION_OPERATION_LEASE_MS } from "../db/generationOperations";
 
 /**
  * DEPLOY-DURING-ROLL is a known collision class, and this is its assertion.
@@ -155,33 +156,72 @@ describe("deployCollisionLatency — how long the user waits, from constants", (
 
     The ops note was going to say deploys strand a roll for "~2 minutes".
     Measured against the real incident, the operation settled 937 SECONDS after
-    it was created — and 6 seconds after its lease expired. That is not a
-    coincidence and not slow machinery: a `running` operation is only eligible
-    for the sweep once `leaseExpiresAt` has passed, and the roll claims the
-    default 15-minute lease.
+    it was created — and 6 seconds after its lease expired. Not a coincidence
+    and not slow machinery: a `running` operation is only eligible for the
+    sweep once `leaseExpiresAt` has passed, and the roll claimed the default
+    lease, which was then fifteen minutes.
 
-    So the true window is the remaining lease (up to 15 minutes) plus up to one
-    60s sweep. Roughly EIGHT TIMES the assumed figure, and during it the sheet
-    shows frozen tiles and the credits are still held.
+    THE LEASE IS NOW FIVE (founder ruling, 2026-08-01). A live operation renews
+    every 30s, so the length only ever governed how long a DEAD one kept its
+    rows non-terminal and its credits held. Five leaves ten heartbeats of
+    tolerance and cuts the stranded window to about six minutes.
 
-    Pinned as arithmetic so that changing the lease constant — the one-line fix
-    that would bring reality in line with the assumption — updates this
-    deliberately rather than silently.
+    Pinned as arithmetic, and read from the real constant rather than a copy of
+    it, so the next change to the lease updates this deliberately instead of
+    leaving a comment that quietly describes the past.
   */
-  const LEASE_MS = 15 * 60 * 1000;
   const SWEEP_MS = 60 * 1000;
 
   it("is bounded by the lease, not by the sweep interval", () => {
-    const worstCaseMs = LEASE_MS + SWEEP_MS;
-    expect(worstCaseMs).toBe(960_000);
-    // The measured incident sits inside this bound and nowhere near the sweep.
-    const measuredMs = 937_000;
-    expect(measuredMs).toBeLessThanOrEqual(worstCaseMs);
-    expect(measuredMs).toBeGreaterThan(SWEEP_MS * 10);
+    const worstCaseMs = DEFAULT_GENERATION_OPERATION_LEASE_MS + SWEEP_MS;
+    expect(worstCaseMs).toBe(360_000);
+    // Still lease-dominated: shortening it did not turn this into a sweep
+    // problem, which is the property that makes the number worth stating.
+    expect(DEFAULT_GENERATION_OPERATION_LEASE_MS).toBeGreaterThan(SWEEP_MS * 4);
   });
 
-  it("is NOT the ~2 minutes the ops note assumed", () => {
-    // Kept as an explicit refutation so the wrong number cannot quietly return.
-    expect(LEASE_MS + SWEEP_MS).toBeGreaterThan(2 * 60 * 1000);
+  it("cuts the measured incident's window by more than half", () => {
+    // The incident ran 937s under the old 15-minute lease. The same crash now
+    // resolves inside 360s, which is the whole point of the ruling.
+    const measuredUnderOldLease = 937_000;
+    expect(DEFAULT_GENERATION_OPERATION_LEASE_MS + SWEEP_MS).toBeLessThan(measuredUnderOldLease);
+  });
+
+  it("keeps ten heartbeats of tolerance for a LIVE operation", () => {
+    /*
+      The safety side of the ruling. A roll takes 66–82s and heartbeats every
+      30s, so a living process renews many times over before the lease is near
+      expiry — the lease can only catch work that has genuinely stopped.
+    */
+    const HEARTBEAT_MS = 30 * 1000;
+    expect(DEFAULT_GENERATION_OPERATION_LEASE_MS / HEARTBEAT_MS).toBe(10);
+    const LONGEST_MEASURED_ROLL_MS = 82_000;
+    expect(DEFAULT_GENERATION_OPERATION_LEASE_MS).toBeGreaterThan(LONGEST_MEASURED_ROLL_MS * 3);
+  });
+});
+
+describe("the stranded window is supervised, not silent", () => {
+  /*
+    The companion to the shortened lease. Even six minutes is a long time to
+    watch a tile that says "Casting…" when nothing is coming — and slow and
+    dead look identical from there.
+
+    The caption is pure derivation from the roll's own age, so it is asserted
+    as the rule rather than through a render: past the threshold, a still-
+    casting tile says so and names the outcome.
+  */
+  const OVERDUE_MS = 120_000;
+  const LONGEST_MEASURED_ROLL_MS = 82_000;
+
+  it("waits longer than a real roll takes before saying anything", () => {
+    // A threshold below the honest duration of the work would cry wolf on
+    // every slow-but-fine roll, which is how a warning stops being read.
+    expect(OVERDUE_MS).toBeGreaterThan(LONGEST_MEASURED_ROLL_MS);
+  });
+
+  it("fires well inside the stranded window, so the wait is never unexplained", () => {
+    // The whole point: it must appear before recovery does, or it explains
+    // nothing that was not already resolved.
+    expect(OVERDUE_MS).toBeLessThan(DEFAULT_GENERATION_OPERATION_LEASE_MS);
   });
 });
