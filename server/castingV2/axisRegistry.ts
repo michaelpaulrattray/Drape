@@ -384,6 +384,20 @@ export const CROSS_AXIS_IMPLICATIONS: readonly CrossAxisImplication[] = [
     because:
       "An unstated sex alternates across the sheet, so half the candidates carry a stated beard on a female face — a contradiction neither axis can see on its own. A stated sex is read first, so 'a bearded woman' renders as written.",
   },
+  {
+    from: "a casting category that implies an age (twitch streamer, student)",
+    to: "ageBand",
+    strength: "soft",
+    because:
+      "A category knows something the brief never states, and left to the general population a streamer sheet returns a 58-year-old. It re-weights rather than resolving, because an unusual casting is surprising and not wrong — the heritage-draw ruling forbids the same move in its own domain.",
+  },
+  {
+    from: "a casting category that implies grooming (k-pop idol, lumberjack)",
+    to: "facialHair",
+    strength: "soft",
+    because:
+      "The lumberjack is the mirror of the idol: one category implies a beard as strongly as the other implies none. Three-valued, because 'either' is a lean toward variety and has to be distinguishable from the category saying nothing.",
+  },
 ];
 
 /* ------------------------------------------------------------ suppressors */

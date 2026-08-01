@@ -81,6 +81,7 @@ import {
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import { resolveHairAxes, type HairTiers } from "./hairResolver";
+import { leanAgeWeights } from "./poolTendencies";
 import {
   COMPOSED_DIRECTION_ENABLED,
   HAIR_BIAS_PROSE,
@@ -905,7 +906,15 @@ export function resolveCandidateIdentity(
     into the box, and the brief wins — the anchor supplies what the brief left
     unsaid, exactly as the variation vocabularies do.
   */
-  const ageBand = intent.ageBand ?? anchor?.ageBand ?? weightedPick(AGE_WEIGHTS, seedFor("ageBand"));
+  /*
+    A stated band wins, then the anchor, then the draw — and only the DRAW is
+    re-weighted. A tendency that could beat either would be a lock wearing a
+    softer name, which is the one thing the ruling forbids.
+  */
+  const ageBand =
+    intent.ageBand
+    ?? anchor?.ageBand
+    ?? weightedPick(leanAgeWeights(AGE_WEIGHTS, intent.poolTendencies?.ageLean ?? null), seedFor("ageBand"));
   const heritage =
     intent.heritage.length > 0
       ? intent.heritage
@@ -952,7 +961,15 @@ export function resolveCandidateIdentity(
     anchoredColour: anchor
       ? () => anchoredHairColour(anchor, heritage, ageBand, position, rollSeed)
       : null,
-    realize: () => realizeAxes({ heritage, ageBand, sex, position, rollSeed }),
+    realize: () =>
+      realizeAxes({
+        heritage,
+        ageBand,
+        sex,
+        position,
+        rollSeed,
+        facialHairLean: intent.poolTendencies?.facialHairLean ?? null,
+      }),
     realizeColour: () => varyHairColour(heritage, ageBand, position, rollSeed),
   });
   const realized = hair.realized;

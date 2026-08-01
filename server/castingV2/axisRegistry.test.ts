@@ -124,8 +124,14 @@ describe("the registry is complete", () => {
     const hard = CROSS_AXIS_IMPLICATIONS.filter((rule) => rule.strength === "hard");
     expect(hard).toHaveLength(1);
     expect(hard[0].to).toBe("sex");
-    // Soft implications (poolTendencies) are held; when one lands it lands here.
-    expect(CROSS_AXIS_IMPLICATIONS.filter((rule) => rule.strength === "soft")).toHaveLength(0);
+    /*
+      The soft slot the registry reserved is now occupied — poolTendencies
+      landed as two entries, and they landed HERE rather than as loose logic in
+      the resolver, which is what "cross-axis implications are registry
+      citizens" was supposed to mean.
+    */
+    const soft = CROSS_AXIS_IMPLICATIONS.filter((rule) => rule.strength === "soft");
+    expect(soft.map((rule) => rule.to).sort()).toEqual(["ageBand", "facialHair"]);
   });
 });
 

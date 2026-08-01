@@ -4,6 +4,7 @@ import { castingBriefCompiler, deterministicBriefCompiler } from "./briefCompile
 import {
   lockFactsOf,
   EMPTY_STATED_HAIR,
+  NO_TENDENCIES,
   parseCastingIntent,
   stripQuotedSpans,
   validateLocks,
@@ -29,6 +30,7 @@ const BASE_INTENT: CastingIntent = {
   cohort: "photoreal_human",
   role: "a dad in his 30s",
   statedHair: EMPTY_STATED_HAIR,
+  poolTendencies: NO_TENDENCIES,
   characterNotes: null,
   sex: null,
   ageBand: null,
@@ -84,6 +86,8 @@ describe("the precedence fix", () => {
       "energy",
       "heritage",
       "look",
+      // Soft category tendencies: they re-weight the draw, never lock it.
+      "poolTendencies",
       "reads",
       "role",
       "sex",

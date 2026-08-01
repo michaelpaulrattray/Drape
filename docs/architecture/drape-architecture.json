@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "364d1c7fee09756b"
+    "sourceFingerprint": "f8513284a69aee00"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 22
+      "moduleCount": 23
     },
     {
       "id": "domain:castingV2",
@@ -3173,6 +3173,12 @@
     {
       "id": "module:server/castingV2/interpreter.ts",
       "path": "server/castingV2/interpreter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/poolTendencies.ts",
+      "path": "server/castingV2/poolTendencies.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7779,6 +7785,10 @@
     {
       "id": "test:server/castingV2/partialDeferenceOn.test.ts",
       "path": "server/castingV2/partialDeferenceOn.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/poolTendencies.test.ts",
+      "path": "server/castingV2/poolTendencies.test.ts"
     },
     {
       "id": "test:server/castingV2/promptGuards.test.ts",
@@ -16074,6 +16084,11 @@
     },
     {
       "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:server/castingV2/poolTendencies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
@@ -16095,6 +16110,11 @@
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:server/castingV2/poolTendencies.ts",
       "kind": "imports"
     },
     {
@@ -16193,6 +16213,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/poolTendencies.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/poolTendencies.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/properNouns.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -16215,6 +16245,11 @@
     {
       "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:server/castingV2/heritageNeighbourhoods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:server/castingV2/poolTendencies.ts",
       "kind": "imports"
     },
     {

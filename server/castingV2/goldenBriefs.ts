@@ -128,6 +128,24 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
       "THE GREYING CASE, and the one that has always half-worked. 'Salt and pepper' says something is happening TO the hair while the cut, the length and the base colour underneath are all still open — so full-axis deference silences four facts to honour one. It is the sibling of 'silver at the temples', which survived the D-79 rollback precisely because it routed through a structured field the code owns rather than through prose the interpreter had to keep writing. Bar when partial deference returns: the greying is honoured 8/8, the base reads dark rather than uniformly grey, and the cuts stay authored and varied.",
   },
   {
+    brief: "a twitch streamer",
+    category: true,
+    because:
+      "THE AGE-TENDENCY CASE. Nothing in the sentence states an age, so the band drew from the general population and the sheet came back with people who do not stream. The category knows something the brief never says. Bar: the sheet centres on the 20s WITHOUT collapsing to it — an older streamer must stay reachable, because an unusual casting is surprising and not wrong.",
+  },
+  {
+    brief: "a k-pop idol",
+    category: true,
+    because:
+      "THE GROOMING-TENDENCY CASE, and the mirror of the lumberjack. Conventionally clean-shaven, and left to the age curve a sheet of eight returns beards on a third of them. Bar: clean-shaven around seven of eight, with the eighth still reachable — a lean, never a lock.",
+  },
+  {
+    brief: "a lumberjack in his 40s",
+    category: true,
+    because:
+      "The other half of the grooming tendency, kept as the counter-case so 'clean' cannot be implemented as a global clean-shaven bias. Bar: beards dominate rather than being suppressed.",
+  },
+  {
     brief: "a redhead in her 30s",
     category: false,
     because:

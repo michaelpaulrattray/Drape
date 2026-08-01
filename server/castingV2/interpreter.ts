@@ -151,7 +151,8 @@ Reply with a single JSON object and nothing else:
   "look": ${LOOK_KEYS.map((value) => `"${value}"`).join(" | ")} | null,
   "reads": [8 short strings] | null,
   "composedDirection": { "thesis": string, "avoid": string } | null,
-  "statedHair": { "cutLength": string | null, "colour": string | null, "texture": string | null, "greying": boolean }
+  "statedHair": { "cutLength": string | null, "colour": string | null, "texture": string | null, "greying": boolean },
+  "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null }
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -309,6 +310,23 @@ WHAT TO EXTRACT
   brief says "a redhead in her 30s", "redhead" belongs in the hair colour AND
   the sentence still gets whatever role and character detail it would otherwise
   have had. Filling this field is never a reason to leave another one empty.
+- "poolTendencies": what the CASTING CATEGORY typically implies about axes the
+  brief did not state. This is a TENDENCY, never a fact: it nudges the odds
+  across the eight candidates and can never override anything the brief said.
+      "ageLean": the age band this kind of casting centres on, when it clearly
+                 centres on one. A Twitch streamer or a university student
+                 leans "20s"; a retirement-community resident leans "70s+". A
+                 lawyer or a teacher leans nothing — leave it null.
+      "facialHairLean": "clean" when the category is conventionally clean-shaven
+                 (k-pop idol, cabin crew, competitive swimmer); "beard" when it
+                 conventionally is not (lumberjack, biker, craft brewer); "any"
+                 when the category genuinely spans both and you want the sheet
+                 to show the range. Null when the category implies nothing.
+  Only fill these from the CATEGORY, never from the individual. If the brief
+  states an age or facial hair, that is a fact and belongs in its own field —
+  putting it here instead would weaken a thing the user actually said.
+  Leave both null when the brief names no category, or names one that implies
+  nothing. A tendency you invent narrows the casting for no reason.
 - "cohort": "photoreal_human" for any real-looking human. Use "other" for
   anime, illustration, animals, robots, fantasy creatures, or any brief that is
   not a photograph of a person.

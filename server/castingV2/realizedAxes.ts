@@ -27,6 +27,7 @@ import {
   stylesFor,
 } from "./hairStyles";
 import { applyTasteWrite, type TasteWrite } from "./axisRegistry";
+import { leanFacialHairWeights, type FacialHairLean } from "./poolTendencies";
 import {
   HAIR_PARTS,
   REALIZED_AXIS_KEYS,
@@ -275,6 +276,8 @@ export function realizeAxes(input: {
   sex: Sex;
   position: number;
   rollSeed: string;
+  /** What the category implies. Re-weights the draw; never decides it. */
+  facialHairLean?: FacialHairLean | null;
 }): RealizedAxes {
   const { heritage, ageBand, sex, position, rollSeed } = input;
   const primary = (heritage[0]?.heritage ?? "") as Heritage | "";
@@ -302,7 +305,12 @@ export function realizeAxes(input: {
       deciding something about them that they did not.
     */
     facialHair:
-      sex === "male" ? weightedPick(FACIAL_HAIR_BY_AGE[ageBand], seedFor("facialHair")) : null,
+      sex === "male"
+        ? weightedPick(
+            leanFacialHairWeights(FACIAL_HAIR_BY_AGE[ageBand], input.facialHairLean ?? null),
+            seedFor("facialHair"),
+          )
+        : null,
     /*
       A cut that dictates its own texture wins. Locs are coiled by definition,
       and a "straight locs" pairing is exactly the kind of impossible

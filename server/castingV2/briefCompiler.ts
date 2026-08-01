@@ -39,6 +39,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import {
   EMPTY_STATED_HAIR,
+  NO_TENDENCIES,
   lockFactsOf,
   validateLocks,
   type AgeBand,
@@ -285,6 +286,8 @@ function fallbackIntent(briefText: string): CastingIntent {
       interpreter to have worked (D-89).
     */
     statedHair: EMPTY_STATED_HAIR,
+    // No interpreter ran, so no category was read and nothing is implied.
+    poolTendencies: NO_TENDENCIES,
   };
 }
 

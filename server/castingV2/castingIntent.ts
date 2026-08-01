@@ -94,6 +94,14 @@ export type {
 };
 
 import { z } from "zod";
+import {
+  FACIAL_HAIR_LEANS,
+  NO_TENDENCIES,
+  type FacialHairLean,
+  type PoolTendencies,
+} from "./poolTendencies";
+export { FACIAL_HAIR_LEANS, NO_TENDENCIES };
+export type { FacialHairLean, PoolTendencies };
 import { mentionsGarments, scrubBrands } from "./brandScrub";
 
 /* ------------------------------------------------------------ vocabularies */
@@ -395,6 +403,13 @@ export type CastingIntent = {
    * code-owned gate's job (D-89). See `StatedHair`.
    */
   statedHair: StatedHair;
+  /**
+   * What the CATEGORY implies about axes the brief never stated.
+   *
+   * Soft: these re-weight the draw and never lock it, so they can never beat a
+   * stated fact and never make a value impossible. See `poolTendencies.ts`.
+   */
+  poolTendencies: PoolTendencies;
 };
 
 /** The same shape an  entry uses, and reviewed the same way. */
@@ -517,6 +532,7 @@ const wireSchema = z.object({
   reads: z.array(z.unknown()).nullable().optional(),
   composedDirection: z.unknown().nullable().optional(),
   statedHair: z.unknown().nullable().optional(),
+  poolTendencies: z.unknown().nullable().optional(),
   /*
     `.nullable()` matters as much as `.optional()` here, and the difference
     cost a founder 160 credits. Models return `null` and `undefined`
@@ -696,6 +712,26 @@ export function parseStatedHair(raw: unknown, briefText: string): StatedHair {
   };
 }
 
+/**
+ * Closed vocabularies both, so a bad reply degrades to "no tendency".
+ *
+ * This is the narrowest possible channel for a stage that influences weights:
+ * an unrecognised value is dropped rather than coerced, and dropping it returns
+ * the axis to the general population — which is exactly today's behaviour.
+ */
+export function parsePoolTendencies(raw: unknown): PoolTendencies {
+  if (!raw || typeof raw !== "object") return NO_TENDENCIES;
+  const wire = raw as { ageLean?: unknown; facialHairLean?: unknown };
+  const age = typeof wire.ageLean === "string" ? wire.ageLean.trim().toLowerCase() : null;
+  const beard = typeof wire.facialHairLean === "string" ? wire.facialHairLean.trim().toLowerCase() : null;
+  return {
+    ageLean: (AGE_BANDS as readonly string[]).includes(age ?? "") ? (age as AgeBand) : null,
+    facialHairLean: (FACIAL_HAIR_LEANS as readonly string[]).includes(beard ?? "")
+      ? (beard as FacialHairLean)
+      : null,
+  };
+}
+
 export type IntentParseResult =
   | { ok: true; intent: CastingIntent }
   | { ok: false; reason: "unreadable" | "unsupported_cohort" };
@@ -749,6 +785,7 @@ export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseRes
       reads: parseReads(wire.reads),
       composedDirection: parseComposedDirection(wire.composedDirection),
       statedHair: parseStatedHair(wire.statedHair, briefText),
+      poolTendencies: parsePoolTendencies(wire.poolTendencies),
     },
   };
 }
