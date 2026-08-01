@@ -1,6 +1,6 @@
 # Eye colour: diagnosis and a plausibility-safe proposal
 
-**Status:** proposal, for founder review. No weights shipped.
+**Status:** APPROVED and shipped 2026-08-01, both levers. Heritage-draw option declined by ruling (§6).
 **Date:** 2026-08-01
 **Owner:** executor, at founder request ("diagnose before tuning")
 
@@ -84,7 +84,7 @@ rates; the proposal nudges them up by 4–8 points each, taken from `brown` and
 |---|---|
 | British Isles | brown 20→16, dark brown 10→8; green 16→18, grey 10→12, hazel 12→14 |
 | Western European | brown 24→20, dark brown 16→13; blue 20→22, green 12→14, grey 8→11 |
-| Slavic | brown 22→18, dark brown 12→10; grey 16→18, green 14→16 |
+| Slavic | brown 22→18, dark brown 12→10; grey 16→18, green 14→16, hazel 10→12 |
 | Nordic | unchanged — already 8% brown-family |
 
 ### Lever B — where light colours are NOT plausible, shift *within* brown
@@ -106,17 +106,25 @@ non-brown colour introduced anywhere it does not belong.
 | South Asian | dark brown 34→30, near-black 30→24; brown 20→24, amber 8→12, honey brown 8→10 |
 | Middle Eastern | dark brown 32→28, near-black 22→18; brown 20→22, amber 12→16, honey brown 4→10, hazel 10→6 |
 | Afro-Caribbean | dark brown 34→29, near-black 28→23; brown 22→26, amber 10→14, hazel 6→8 |
-| Mediterranean | dark brown 30→26, brown 24→22; amber 10→14, honey brown 10→12, hazel 14→16 |
+| Mediterranean | dark brown 30→26, brown 24→22; amber 10→14, hazel 14→16 (honey brown held at 10) |
 | Latino | dark brown 28→24; brown 24→22, honey brown 14→17, amber 10→13 |
 
-### Projected effect
+### Projected effect, and what actually happened
 
-Brown-family share on an open sheet falls from **65.5% to roughly 60%** — a
-deliberately small move, because the goal is legibility rather than a
-different-looking species. The bigger change is *inside* the brown family:
-near-black plus dark brown drop from 42.6% to about 34%, and amber plus honey
-brown roughly double. On a sheet of eight that is the difference between five
-indistinguishable dark eyes and a spread that reads.
+Deliberately a small move: the goal is legibility, not a different-looking
+species. Measured after shipping, on the same 3,200-candidate tally:
+
+| measure | before | projected | actual |
+|---|---|---|---|
+| brown family | 65.5% | ~60% | **61.4%** |
+| the two darkest (near-black + dark brown) | 42.6% | ~34% | **35.7%** |
+| amber + honey brown | 8.8% | "roughly double" | **12.5%** |
+
+The first two land. **The third was an overclaim** — 8.8% to 12.5% is a 42%
+increase, not a doubling. The projection was written by eye rather than
+computed, and the honest number is the one in the table. It is still the change
+that matters most at tile scale, and whether 12.5% is enough is a judgement the
+graded sheet answers better than arithmetic does.
 
 ## 4. What this does NOT do, deliberately
 
@@ -137,14 +145,28 @@ confirm the projected share. The tally is free and exhaustive, so the paid
 sheet is only there to confirm the renders track the assignment — which is the
 half this diagnosis did *not* measure.
 
-## 6. Open question for the founder
+### Arithmetic correction made at ship time
 
-The proposal treats "brown-dominant" as a legibility problem and fixes it
-inside plausibility. There is a second, larger option not proposed here:
-**weight the open-sheet HERITAGE draw** rather than the palettes, so fewer
-candidates come from brown-dominant populations. That would move the number
-much further and much faster.
+Two rows in the table above did not balance as first written, and the numbers
+here now match what shipped. Slavic was 2 short (hazel 10→12 absorbs it) and
+Mediterranean was 2 over (honey brown holds at 10 rather than rising to 12).
+The weighted picker normalises by total, so neither would have failed loudly —
+it would simply have shifted the intended proportions slightly. Every row is
+now verified to sum to 100 by a script rather than by reading.
 
-It is not proposed because it changes who gets cast rather than what colour
-their eyes are, and that is a product and representation decision rather than
-a taste one. Naming it so the choice is explicit rather than quietly foreclosed.
+## 6. Founder ruling — the heritage draw is not a lever
+
+The proposal treated "brown-dominant" as a legibility problem and fixed it
+inside plausibility. A second, larger option was named but not proposed:
+weighting the open-sheet HERITAGE draw so fewer candidates come from
+brown-dominant populations. It would move the number much further and faster.
+
+**Declined, and recorded as a ruling (founder, 2026-08-01):**
+
+> The even open-sheet heritage draw is an identity commitment, not a tuning
+> surface. Sheet demographics never become a lever in service of a downstream
+> aesthetic.
+
+This binds beyond eye colour. Any future taste problem whose easiest fix is
+"cast fewer of X" is out of bounds by this ruling, and the correct move is the
+one taken here: fix the axis that is actually failing, inside plausibility.

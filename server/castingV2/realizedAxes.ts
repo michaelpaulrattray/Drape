@@ -111,19 +111,48 @@ type Weights<T extends string> = readonly (readonly [T, number])[];
  * and the browns carry the variety elsewhere. Every palette spreads across at
  * least three values, because the failure being fixed is sameness.
  */
+/*
+  Palettes tuned 2026-08-01 after a measured diagnosis, founder-approved
+  (`docs/specs/CASTING_V2_EYE_PALETTE_PROPOSAL.md`).
+
+  The finding: 65.5% of candidates on an open sheet drew a brown-family eye,
+  with heritage spread evenly across all twelve — so it was the palettes
+  compounding, not the iris prose. Roughly globally accurate, and useless on a
+  sheet of eight, where five indistinguishable dark eyes means the axis
+  separates nobody.
+
+  Two levers, because "light" is not plausible everywhere:
+
+    A. Where light colours genuinely exist (the European palettes), nudge them
+       up 4–8 points, taken from `brown` and `dark brown`. Nordic is untouched
+       — it is already 8% brown-family, and pushing it further would be tuning
+       toward a stereotype rather than away from one.
+    B. Where they do not, shift WITHIN the brown family from the two darkest
+       values toward amber, honey and mid brown. This is the workhorse: it
+       applies to the eight palettes that dominate the average, and it is the
+       one that reads — near-black and dark brown do not separate at tile
+       scale, amber and honey do.
+
+  No palette gains a colour it did not already have. Plausibility is the
+  constraint the whole change is built inside, and the alternative of weighting
+  the HERITAGE draw instead was declined by founder ruling: the even open-sheet
+  draw is an identity commitment, not a tuning surface.
+*/
 const EYE_BY_HERITAGE: Record<string, Weights<EyeColour>> = {
+  // Lever A — European palettes, modest bumps out of the browns.
   Nordic: [["blue", 34], ["pale blue", 16], ["grey", 14], ["green", 14], ["green-grey", 8], ["hazel", 6], ["brown", 8]],
-  "British Isles": [["blue", 26], ["green", 16], ["grey", 10], ["hazel", 12], ["brown", 20], ["dark brown", 10], ["pale blue", 6]],
-  "Western European": [["brown", 24], ["blue", 20], ["green", 12], ["hazel", 14], ["dark brown", 16], ["grey", 8], ["amber", 6]],
-  Slavic: [["blue", 26], ["grey", 16], ["green", 14], ["hazel", 10], ["brown", 22], ["dark brown", 12]],
-  Mediterranean: [["dark brown", 30], ["brown", 24], ["hazel", 14], ["amber", 10], ["honey brown", 10], ["green", 8], ["near-black", 4]],
-  "Middle Eastern": [["dark brown", 32], ["near-black", 22], ["brown", 20], ["amber", 12], ["hazel", 10], ["honey brown", 4]],
-  "East Asian": [["near-black", 40], ["dark brown", 38], ["brown", 18], ["honey brown", 4]],
-  "South Asian": [["dark brown", 34], ["near-black", 30], ["brown", 20], ["amber", 8], ["honey brown", 8]],
-  "West African": [["dark brown", 36], ["near-black", 34], ["brown", 20], ["amber", 10]],
-  "Afro-Caribbean": [["dark brown", 34], ["near-black", 28], ["brown", 22], ["amber", 10], ["hazel", 6]],
-  Latino: [["dark brown", 28], ["brown", 24], ["honey brown", 14], ["hazel", 12], ["amber", 10], ["green", 8], ["near-black", 4]],
-  Polynesian: [["dark brown", 40], ["near-black", 30], ["brown", 24], ["amber", 6]],
+  "British Isles": [["blue", 26], ["green", 18], ["grey", 12], ["hazel", 14], ["brown", 16], ["dark brown", 8], ["pale blue", 6]],
+  "Western European": [["brown", 20], ["blue", 22], ["green", 14], ["hazel", 14], ["dark brown", 13], ["grey", 11], ["amber", 6]],
+  Slavic: [["blue", 26], ["grey", 18], ["green", 16], ["hazel", 12], ["brown", 18], ["dark brown", 10]],
+  // Lever B — the within-brown shift, away from the two darkest values.
+  Mediterranean: [["dark brown", 26], ["brown", 22], ["hazel", 16], ["amber", 14], ["honey brown", 10], ["green", 8], ["near-black", 4]],
+  "Middle Eastern": [["dark brown", 28], ["near-black", 18], ["brown", 22], ["amber", 16], ["hazel", 6], ["honey brown", 10]],
+  "East Asian": [["near-black", 32], ["dark brown", 34], ["brown", 24], ["honey brown", 10]],
+  "South Asian": [["dark brown", 30], ["near-black", 24], ["brown", 24], ["amber", 12], ["honey brown", 10]],
+  "West African": [["dark brown", 31], ["near-black", 28], ["brown", 26], ["amber", 15]],
+  "Afro-Caribbean": [["dark brown", 29], ["near-black", 23], ["brown", 26], ["amber", 14], ["hazel", 8]],
+  Latino: [["dark brown", 24], ["brown", 22], ["honey brown", 17], ["hazel", 12], ["amber", 13], ["green", 8], ["near-black", 4]],
+  Polynesian: [["dark brown", 34], ["near-black", 24], ["brown", 30], ["amber", 12]],
 };
 
 const EYE_DEFAULT: Weights<EyeColour> = [

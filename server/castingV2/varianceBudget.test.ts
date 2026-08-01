@@ -201,6 +201,28 @@ async function versaceFollow(rollSeed: string) {
   } as never);
 }
 
+/**
+ * FOR M7 SLICE ZERO — the sweep that would close this class for good.
+ *
+ * The unowned-axis collapse has now been found five times, every time by the
+ * founder's eye rather than by a test. But its tell is mechanizable, and the
+ * founder named it: **a resolved value that is persisted but never composed
+ * into a prompt in the tier it was resolved in.**
+ *
+ * Worn state was that. Texture at bias tier was that — resolved, persisted,
+ * never rendered, so the editorial prior answered it and the record described
+ * hair the prompt had never asked for.
+ *
+ * The sweep: for every axis in `REALIZED_AXIS_KEYS`, in every styling tier,
+ * assert that a non-null persisted value leaves a footprint in the composed
+ * prompt — or that the axis persists NULL in that tier. Today it would have to
+ * be hand-written per axis, which is exactly the discipline invariant that
+ * keeps failing. Once slice zero's registry enumerates the axes with their
+ * tier-legality, the sweep is a loop over the registry and the class closes.
+ *
+ * Recorded here rather than in a doc because this file is where the next
+ * person adding an axis will already be looking.
+ */
 describe("the Versace stack, reproduced", () => {
   it("puts no three tiles under one signature, across many rolls", async () => {
     for (let i = 0; i < 8; i += 1) {
