@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c804d7c422ba7086"
+    "sourceFingerprint": "a9f0a422dcb702b5"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 20
+      "moduleCount": 21
     },
     {
       "id": "domain:castingV2",
@@ -3090,6 +3090,12 @@
       "id": "module:server/casting/wholeCastRestore.ts",
       "path": "server/casting/wholeCastRestore.ts",
       "domain": "casting",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/axisRegistry.ts",
+      "path": "server/castingV2/axisRegistry.ts",
+      "domain": "casting-v2",
       "lifecycle": "active"
     },
     {
@@ -7687,6 +7693,10 @@
     {
       "id": "test:server/castingV2/ageIdioms.test.ts",
       "path": "server/castingV2/ageIdioms.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/axisRegistry.test.ts",
+      "path": "server/castingV2/axisRegistry.test.ts"
     },
     {
       "id": "test:server/castingV2/biasTierAxes.test.ts",
@@ -15924,6 +15934,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/axisRegistry.ts",
+      "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/axisRegistry.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/axisRegistry.ts",
+      "to": "module:server/castingV2/heritageNeighbourhoods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/axisRegistry.ts",
+      "to": "module:server/castingV2/stylingResolution.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/axisRegistry.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/axisRegistry.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/briefCompiler.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -16121,6 +16161,11 @@
     {
       "from": "module:server/castingV2/properNouns.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:server/castingV2/axisRegistry.ts",
       "kind": "imports"
     },
     {

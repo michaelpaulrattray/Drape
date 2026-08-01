@@ -25,6 +25,7 @@ import {
   adjacentShade,
   stylesFor,
 } from "./hairStyles";
+import { applyTasteWrite, type TasteWrite } from "./axisRegistry";
 import {
   REALIZED_AXIS_KEYS,
   type BrowStyle,
@@ -687,49 +688,47 @@ export function applySheetTaste<T extends SheetCandidate>(
       bucket: colour === null ? null : colourBucket(colour),
     });
 
-    const colourChanged = colour !== null && colour !== candidate.hair?.colour;
-    const beardChanged = facialHair !== candidate.realized.facialHair;
-    if (style === current && !colourChanged && !beardChanged) return candidate;
+    /*
+      EVERY DECISION THIS PASS MADE, AS ONE TYPED WRITE.
 
-    const hair = colourChanged && candidate.hair ? { ...candidate.hair, colour } : candidate.hair;
-    /*
-      Texture follows the cut. A style that dictates its own texture wins, and a
-      swap that left the old dictation behind would strand "coiled" on a bob —
-      the illegal pairing the entry-level legality rule exists to prevent.
+      The write surface is `TasteWrite`, whose key type is derived from the axis
+      registry's taste-writable set — and that set is provably a subset of the
+      realized shelf (`OnlyRealizedIsTasteWritable`, a compile-time binding).
+      So the ratified law, *only realized values are writable by the sheet taste
+      pass*, stops being a discipline enforced by per-rule skip lists and
+      becomes a thing the compiler refuses. Adding `sex` or `eyeColour` to this
+      object does not review badly; it does not build.
+
+      `applyTasteWrite` also owns the routing, which is why the colour no longer
+      reaches into `candidate.hair` from here. Where an axis is stored is the
+      registry's business — a rule should say what it decided, never where the
+      value lives.
     */
-    const hairTexture =
-      style === current
-        ? candidate.realized.hairTexture
-        : style.texture ??
-          weightedPick(
-            TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
-            hash(`${rollSeed}:hairTexture:${position}`),
-          );
-    /*
-      Components follow the cut too, for the same reason texture does. Carrying
-      the old ones through a swap strands a curtain fringe on a french crop —
-      the illegal pairing the entry-level declaration exists to make unsayable,
-      reintroduced by a spread.
-    */
-    const hairModifiers =
-      style === current
-        ? candidate.realized.hairModifiers
-        : resolveModifiers(style, (axis) => hash(`${rollSeed}:${axis}:${position}`));
-    const wornState =
-      style === current
-        ? candidate.realized.wornState
-        : resolveWornState(style.family, style, hash(`${rollSeed}:wornState:${position}`));
-    return {
-      ...candidate,
-      hair,
-      realized: {
-        ...candidate.realized,
-        hairStyle: style,
-        hairTexture,
-        hairModifiers,
-        wornState,
-        facialHair,
-      },
-    };
+    const write: TasteWrite = {};
+
+    if (colour !== null && colour !== candidate.hair?.colour) write.hairColour = colour;
+    if (facialHair !== candidate.realized.facialHair) write.facialHair = facialHair;
+
+    if (style !== current) {
+      write.hairStyle = style;
+      /*
+        Texture, components and worn state follow the CUT — all three, together,
+        in the same write. A style that dictates its own texture wins, and a
+        swap that left any of the old three behind would strand "coiled" on a
+        bob or a curtain fringe on a french crop: the illegal pairings the
+        entry-level legality rule exists to make unsayable, reintroduced by a
+        spread that looks like it is copying something safe.
+      */
+      write.hairTexture =
+        style.texture ??
+        weightedPick(
+          TEXTURE_BY_HERITAGE[primary] ?? TEXTURE_DEFAULT,
+          hash(`${rollSeed}:hairTexture:${position}`),
+        );
+      write.hairModifiers = resolveModifiers(style, (axis) => hash(`${rollSeed}:${axis}:${position}`));
+      write.wornState = resolveWornState(style.family, style, hash(`${rollSeed}:wornState:${position}`));
+    }
+
+    return applyTasteWrite(candidate, write);
   });
 }
