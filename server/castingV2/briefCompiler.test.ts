@@ -78,8 +78,6 @@ describe("the precedence fix", () => {
       "characterNotes",
       "cohort",
       "energy",
-      "greyOverlay",
-      "hairSpoken",
       "heritage",
       "look",
       "reads",

@@ -429,7 +429,7 @@ describe("a brief that states hair", () => {
     for (let roll = 0; roll < 200; roll += 1) {
       const raw = rawSheet(`stated-${roll}`);
       before += beardTwins(raw);
-      after += beardTwins(applySheetTaste(raw, `stated-${roll}`, { styleAuthored: false, colourAuthored: false }));
+      after += beardTwins(applySheetTaste(raw, `stated-${roll}`, { hairAuthored: false }));
       floor += pigeonholeFloor(raw);
     }
     expect(after).toBe(floor);
@@ -444,7 +444,7 @@ describe("a brief that states hair", () => {
     */
     for (let roll = 0; roll < 60; roll += 1) {
       const raw = rawSheet(`untouched-${roll}`);
-      const after = applySheetTaste(raw, `untouched-${roll}`, { styleAuthored: false, colourAuthored: false });
+      const after = applySheetTaste(raw, `untouched-${roll}`, { hairAuthored: false });
       after.forEach((candidate, index) => {
         expect(candidate.hair).toEqual(raw[index].hair);
         expect(candidate.realized.hairStyle).toEqual(raw[index].realized.hairStyle);
@@ -457,7 +457,7 @@ describe("a brief that states hair", () => {
     // Both axes deferred: the pass has nothing left it is allowed to touch.
     for (let roll = 0; roll < 40; roll += 1) {
       const raw = rawSheet(`both-${roll}`);
-      const after = applySheetTaste(raw, `both-${roll}`, { styleAuthored: false, colourAuthored: false, statedFacialHair: true });
+      const after = applySheetTaste(raw, `both-${roll}`, { hairAuthored: false, statedFacialHair: true });
       expect(after).toEqual(raw);
     }
   });

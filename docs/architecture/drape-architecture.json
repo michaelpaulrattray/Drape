@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "64cc74a07a7de2ff"
+    "sourceFingerprint": "33f1287a163d79a9"
   },
   "domains": [
     {
@@ -7669,10 +7669,6 @@
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
       "path": "server/castingV2/overridePrecedence.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/partialDeference.test.ts",
-      "path": "server/castingV2/partialDeference.test.ts"
     },
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",
@@ -15876,11 +15872,6 @@
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/hairStyles.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
-      "to": "module:server/castingV2/heritageNeighbourhoods.ts",
       "kind": "imports"
     },
     {
