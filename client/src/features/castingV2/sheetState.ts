@@ -184,14 +184,19 @@ export type SheetSlice = {
    */
   optimisticCancelled: Record<string, true>;
   /**
-   * The outcome of a cancel, said where the action happened (D-40).
+   * Whether this sheet's cancel recorded its refunds.
    *
-   * A toast was wrong twice over: sonner is global, so a cancel awaited across
-   * a navigation delivered its notice onto a different sheet; and the sheet is
-   * right there, which is exactly when D-40 says the toast is the fallback
-   * rather than the answer.
+   * Not a sentence. The notice used to be composed once from the mutation's
+   * reply and stored — frozen at the click, while the thing it described
+   * carried on for another minute. The line is derived from the projection
+   * now (see `cancelStory`), so the only thing worth keeping is the one fact
+   * the projection cannot supply: a refund that failed to RECORD leaves no row
+   * to count, and that branch must never be softened.
+   *
+   * Said where the action happened, per D-40 — sonner is global, so a cancel
+   * awaited across a navigation delivered its notice onto a different sheet.
    */
-  cancelNotice: string | null;
+  cancelRefundRecorded: boolean | null;
   /**
    * The user dismissed the FOLLOWING chip on this sheet.
    *
@@ -222,7 +227,7 @@ const EMPTY_SLICE: SheetSlice = {
   optimisticKept: {},
   optimisticDiscarded: {},
   optimisticCancelled: {},
-  cancelNotice: null,
+  cancelRefundRecorded: null,
   followDismissed: false,
 };
 
@@ -250,7 +255,7 @@ type SheetState = {
   ) => void;
   setStartingRoll: (sessionId: string, startingRoll: boolean) => void;
   setDispatchFailure: (sessionId: string, failure: DispatchFailure | null) => void;
-  setCancelNotice: (sessionId: string, notice: string | null) => void;
+  setCancelRefundRecorded: (sessionId: string, recorded: boolean | null) => void;
   setFollowDismissed: (sessionId: string, dismissed: boolean) => void;
   /**
    * Called when a roll is dispatched. The undo stack clears because the server
@@ -388,9 +393,9 @@ export const useSheetState = create<SheetState>((set) => ({
       ),
     })),
 
-  setCancelNotice: (sessionId, cancelNotice) =>
+  setCancelRefundRecorded: (sessionId, cancelRefundRecorded) =>
     set((state) => ({
-      sessions: patch(state.sessions, sessionId, () => ({ cancelNotice })),
+      sessions: patch(state.sessions, sessionId, () => ({ cancelRefundRecorded })),
     })),
 
   setFollowDismissed: (sessionId, followDismissed) =>
@@ -408,7 +413,7 @@ export const useSheetState = create<SheetState>((set) => ({
         optimisticKept: {},
         optimisticDiscarded: {},
         optimisticCancelled: {},
-        cancelNotice: null,
+        cancelRefundRecorded: null,
         dispatchFailure: null,
         // `followDismissed` is deliberately absent: the chip STANDS across
         // rolls, which is the whole point of §F's standing follow. It is
@@ -459,7 +464,8 @@ export function useSheetSession(sessionId: string) {
       setStartingRoll: (startingRoll: boolean) => state().setStartingRoll(sessionId, startingRoll),
       setDispatchFailure: (failure: DispatchFailure | null) =>
         state().setDispatchFailure(sessionId, failure),
-      setCancelNotice: (notice: string | null) => state().setCancelNotice(sessionId, notice),
+      setCancelRefundRecorded: (recorded: boolean | null) =>
+        state().setCancelRefundRecorded(sessionId, recorded),
       setFollowDismissed: (dismissed: boolean) => state().setFollowDismissed(sessionId, dismissed),
       rollDispatched: () => state().rollDispatched(sessionId),
     };

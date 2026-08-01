@@ -32,6 +32,7 @@ export function CandidateTile({
   lineageLabel,
   rollWasCancelled,
   cancelling,
+  windingDown,
   busy,
   paidBusy,
   rollPriceCredits,
@@ -53,6 +54,17 @@ export function CandidateTile({
    * so the click frame says "Cancelling…" and the server names the rest.
    */
   cancelling?: boolean;
+  /**
+   * This roll was cancelled and this tile was already with the provider.
+   *
+   * A TILE NEVER REVERTS. The first version flipped every casting tile to
+   * "Cancelling…" and then, when the server named the ones it had actually
+   * stopped, dropped the rest back to plain "Casting…" — as though the click
+   * had not happened. The user's intent has to stay acknowledged on every tile
+   * until it resolves, so an unstopped tile winds down instead: dimmed, slower,
+   * and honest that it is still coming and will be refunded when it does.
+   */
+  windingDown?: boolean;
   busy?: boolean;
   /**
    * A paid roll is already in flight anywhere on this sheet. Follow is the
@@ -76,10 +88,17 @@ export function CandidateTile({
   const [viewing, setViewing] = useState(false);
 
   if (candidate.status === "casting") {
+    /*
+      Three states, and the order matters: the click frame, then the wind-down,
+      then ordinary casting. Nothing here can move backwards — `windingDown` is
+      derived from the roll being cancelled, which is sticky, so a tile that
+      has acknowledged the cancel never un-acknowledges it.
+    */
+    const caption = cancelling ? "Cancelling…" : windingDown ? "Finishing — will be refunded" : "Casting…";
     return (
-      <div className="dp-stack" style={{ gap: 9 }}>
+      <div className={windingDown ? "dp-stack dpc-tile--winding" : "dp-stack"} style={{ gap: 9 }}>
         <Skeleton style={{ aspectRatio: "4 / 5" }} label={`CASTING ${candidate.indexLabel}`} />
-        <span className="dp-metadata">{cancelling ? "Cancelling…" : "Casting…"}</span>
+        <span className="dp-metadata">{caption}</span>
       </div>
     );
   }

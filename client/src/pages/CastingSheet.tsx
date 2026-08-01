@@ -21,7 +21,7 @@ import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/Cand
 import { useSheetSession, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
-import { cancelNoticeFor } from "@/features/castingV2/cancelNotice";
+import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
 
 /**
@@ -73,8 +73,8 @@ export default function CastingSheet() {
     beginProvisionalRoll,
     optimisticCancelled,
     setOptimisticCancelled,
-    cancelNotice,
-    setCancelNotice,
+    cancelRefundRecorded,
+    setCancelRefundRecorded,
     followDismissed,
     setFollowDismissed,
     /*
@@ -85,6 +85,13 @@ export default function CastingSheet() {
     */
   } = useSheetSession(sessionId);
   const [brief, setBrief] = useState("");
+  /*
+    Its own state rather than borrowing the cancel line, which it was doing.
+    A followed face can be discarded, purged or signed, and when that happens
+    the chip falls away — but it is not a cancel and must not be told through
+    the cancel's sentence.
+  */
+  const [parentGone, setParentGone] = useState(false);
 
   const config = trpc.castingV2.config.useQuery({});
   const session = trpc.castingV2.getSession.useQuery(
@@ -457,7 +464,7 @@ export default function CastingSheet() {
       const message = error instanceof Error ? error.message : "";
       if (anchorId && /not found/i.test(message)) {
         setFollowDismissed(true);
-        setCancelNotice("That face is no longer on this sheet — back to open casting. Nothing was charged.");
+        setParentGone(true);
         return;
       }
       setDispatchFailure({ ...classifyDispatchFailure(error), afterRollId: activeRollId });
@@ -538,7 +545,12 @@ export default function CastingSheet() {
       as a failure when it is often the honest description of a cancel that
       caught nothing queued — so the zero case says what IS happening instead.
     */
-    setCancelNotice(cancelNoticeFor(result));
+    /*
+      Only the fact the projection cannot supply. The sentence itself is
+      derived every render from the tiles — see `cancelLine` — so there is no
+      stored copy to go stale while the arc plays out.
+    */
+    setCancelRefundRecorded(result.refundRecorded);
     await invalidate();
   };
 
@@ -561,6 +573,28 @@ export default function CastingSheet() {
   const price = config.data?.rollPriceCredits ?? 0;
   const candidates = roll.data?.candidates ?? [];
   const rollWasCancelled = roll.data?.status === "cancelled";
+
+  /*
+    THE CANCEL LINE, derived every render from the projection the tiles are
+    drawn from — so it counts down as landings refund, cannot go stale, and
+    survives navigating away and back without a stored sentence to age.
+  */
+  const cancelLine = cancelStory({
+    cancelled: rollWasCancelled,
+    refunded: candidates.filter((candidate) => candidate.status === "failed-refunded").length,
+    finishing: candidates.filter((candidate) => candidate.status === "casting").length,
+    total: candidates.length,
+    /*
+      One candidate's share of the roll price. Derived rather than sent because
+      the per-slice cost is internal — and it is only ever used to STATE a
+      total the server already refunded, never to decide one.
+    */
+    sliceCredits:
+      candidates.length > 0 ? Math.round((roll.data?.priceCredits ?? 0) / candidates.length) : 0,
+    // Unknown after a hard reload; see the field's own note.
+    refundRecorded: cancelRefundRecorded ?? true,
+  });
+
 
   /*
     "FROM 04" — the roll this one followed.
@@ -873,6 +907,13 @@ export default function CastingSheet() {
                   // The click frame, before the server has named which tiles it
                   // stopped. Says "Cancelling…", never "Cancelled".
                   cancelling={cancel.isPending}
+                  /*
+                    Still with the provider on a cancelled roll. Sticky, because
+                    it derives from the roll's own status — so this tile stays
+                    acknowledged until it lands and refunds, and never drops
+                    back to plain "Casting…".
+                  */
+                  windingDown={rollWasCancelled && !cancel.isPending}
                   busy={isPending(candidate.candidateId)}
                   // Follow is a paid roll. Every tile's Follow locks the
                   // moment any one of them is clicked, or the sheet offers
@@ -980,8 +1021,21 @@ export default function CastingSheet() {
               clears it — a refund story that completes over the following
               minute should not evaporate on a timer the way a toast does.
             */}
-            {cancelNotice ? (
-              <Instruction>{cancelNotice}</Instruction>
+            {cancelLine ? (
+              /*
+                THE MONEY HAS EXACTLY ONE HOME.
+
+                Tiles say what they are doing; this line is the only place the
+                total is counted, and it outranks everything else on the dock
+                while a cancel is resolving. It is derived, so it counts down
+                on its own as landings refund and finishes on the recorded
+                figure rather than on a number captured at the click.
+              */
+              <Instruction>{cancelLine}</Instruction>
+            ) : parentGone ? (
+              <Instruction>
+                That face is no longer on this sheet — back to open casting. Nothing was charged.
+              </Instruction>
             ) : awaitingNewRoll ? (
               <Instruction>Casting {config.data?.candidatesPerRoll ?? 8}…</Instruction>
             ) : followLabel ? (

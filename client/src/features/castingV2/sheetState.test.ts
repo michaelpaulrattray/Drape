@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useSheetState } from "./sheetState";
-import { cancelNoticeFor } from "./cancelNotice";
+import { cancelNoticeFor, cancelStory } from "./cancelNotice";
 
 /**
  * Sheet state belongs to ONE sheet.
@@ -133,5 +133,72 @@ describe("what a cancel says", () => {
     expect(
       cancelNoticeFor({ refundedCredits: 0, refundRecorded: true, stillFinishing: 1 }),
     ).toContain("1 still finishing");
+  });
+});
+
+describe("the cancel arc is a state, not an event", () => {
+  const arc = (refunded: number, finishing: number, recorded = true) =>
+    cancelStory({
+      cancelled: true,
+      refunded,
+      finishing,
+      total: 8,
+      sliceCredits: 20,
+      refundRecorded: recorded,
+    });
+
+  it("says nothing at all on a roll that was not cancelled", () => {
+    expect(
+      cancelStory({ cancelled: false, refunded: 0, finishing: 8, total: 8, sliceCredits: 20, refundRecorded: true }),
+    ).toBeNull();
+  });
+
+  it("counts down as landings refund, instead of freezing at the click", () => {
+    /*
+      The founder's finding: the mechanics were right and the arc was
+      disjointed. A sentence composed once from the mutation's reply described
+      a moment, while the thing it described carried on for another minute.
+    */
+    expect(arc(0, 8)).toBe("Cancelled — 0 of 8 refunded · 8 finishing");
+    expect(arc(3, 5)).toBe("Cancelled — 3 of 8 refunded · 5 finishing");
+    expect(arc(7, 1)).toBe("Cancelled — 7 of 8 refunded · 1 finishing");
+  });
+
+  it("finishes on the recorded total, in the one place the money lives", () => {
+    expect(arc(8, 0)).toContain("160 credits back");
+    expect(arc(6, 0)).toContain("120 credits back");
+  });
+
+  it("NEVER MOVES BACKWARDS across the whole arc", () => {
+    /*
+      The pass bar, as a property. Walk the projection through every state a
+      real cancel passes: refunded counts only rise, finishing only falls, and
+      the line changes at every step until it reaches its terminal form.
+    */
+    const seen: string[] = [];
+    for (let refunded = 0; refunded <= 6; refunded += 1) {
+      seen.push(arc(refunded, 6 - refunded + 2) ?? "");
+    }
+    seen.push(arc(6, 0) ?? "");
+    // Monotonic: every line is distinct from the one before it.
+    for (let i = 1; i < seen.length; i += 1) expect(seen[i]).not.toBe(seen[i - 1]);
+    // And it ends on a total, not on a count.
+    expect(seen[seen.length - 1]).toContain("credits back");
+    expect(seen[seen.length - 1]).not.toContain("finishing");
+  });
+
+  it("keeps the unrecorded-refund branch verbatim, at any point in the arc", () => {
+    // R6's sacred branch. It outranks the count, because a refund that did not
+    // record is not a smaller number — it is a different fact.
+    expect(arc(4, 0, false)).toBe(
+      "Cancelled — part of the refund could not be recorded. Support has the details.",
+    );
+    expect(arc(4, 0, false)).toBe(cancelNoticeFor({ refundedCredits: 0, refundRecorded: false, stillFinishing: 4 }));
+  });
+
+  it("survives a reload with no stored sentence, because it derives", () => {
+    // Nothing is read from the store here except the recorded flag; the counts
+    // come from the projection, which the poll restores on its own.
+    expect(arc(5, 3)).toBe("Cancelled — 5 of 8 refunded · 3 finishing");
   });
 });

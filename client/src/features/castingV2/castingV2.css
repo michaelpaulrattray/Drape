@@ -985,3 +985,23 @@
   font-size: 13px;
   opacity: 0.62;
 }
+
+/*
+  A tile winding down after a cancel. Quieter and slower than casting — the
+  work is still coming, but nobody is waiting for it any more.
+*/
+.dpc-tile--winding {
+  opacity: 0.55;
+}
+
+.dpc-tile--winding .dp-skeleton,
+.dpc-tile--winding .dp-media {
+  animation-duration: 3.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpc-tile--winding .dp-skeleton,
+  .dpc-tile--winding .dp-media {
+    animation: none;
+  }
+}
