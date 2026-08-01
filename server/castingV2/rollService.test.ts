@@ -131,7 +131,9 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
 });
 
 const receipts = {
-  success: vi.fn(async () => undefined),
+  // Takes its input like the other two. It was declared with none and called
+  // with one — invisible while the typecheck skipped test files.
+  success: vi.fn(async (_input: unknown) => undefined),
   failure: vi.fn(async (input: { error: unknown }) => {
     throw input.error;
   }),
@@ -145,9 +147,9 @@ vi.mock("../casting/directOperation", () => ({
     journal.push("claim");
     return { type: "execute", operationId: OPERATION_ID };
   }),
-  completeDirectOperationSuccess: vi.fn(async (input: never) => receipts.success(input)),
-  completeDirectOperationFailure: vi.fn(async (input: never) => receipts.failure(input)),
-  failClaimedDirectOperation: vi.fn(async (input: never) => receipts.claimedFailure(input)),
+  completeDirectOperationSuccess: vi.fn(async (input: any) => receipts.success(input)),
+  completeDirectOperationFailure: vi.fn(async (input: any) => receipts.failure(input)),
+  failClaimedDirectOperation: vi.fn(async (input: any) => receipts.claimedFailure(input)),
 }));
 
 const OPERATION_ID = "33333333-3333-4333-8333-333333333333";

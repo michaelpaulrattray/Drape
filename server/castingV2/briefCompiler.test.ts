@@ -208,12 +208,29 @@ describe("locks", () => {
 
   it("names what broke when something does break", () => {
     const locks = lockFactsOf(CYCLIST);
+    /*
+      A complete identity, because a partial one is how this drifted: the
+      typecheck excluded test files, so the fixture quietly stopped matching
+      `ResolvedIdentity` and nothing said so. `tsconfig.casting-tests.json` is
+      what catches it now.
+    */
     const violations = validateLocks(locks, {
       sex: "male",
       ageBand: "40s",
+      agePhase: "mid",
       heritage: [],
       build: "slight",
       energy: "dry",
+      hair: { family: "short", colour: "dark brown" },
+      look: null,
+      realized: {
+        eyeColour: "brown",
+        hairStyle: { name: "plain short cut", family: "short" },
+        facialHair: "clean-shaven",
+        hairTexture: "straight",
+        browStyle: "full",
+        skinCharacter: "plain",
+      },
     });
     expect(violations.map((violation) => violation.field).sort()).toEqual(["ageBand", "sex"]);
     expect(violations.find((violation) => violation.field === "sex")).toMatchObject({

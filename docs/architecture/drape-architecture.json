@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ed55cf89a74e9b92"
+    "sourceFingerprint": "733f36ecae8c022d"
   },
   "domains": [
     {
@@ -7685,6 +7685,10 @@
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
       "path": "server/castingV2/overridePrecedence.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/promptGuards.test.ts",
+      "path": "server/castingV2/promptGuards.test.ts"
     },
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",

@@ -53,6 +53,37 @@ for (const golden of GOLDEN_BRIEFS) {
       failures.push({ brief: golden.brief, run, problem: "role came back NULL on a brief that names a category" });
     }
 
+    /*
+      The counter-case, asserted LIVE rather than only offline. Without this the
+      category assertion above could be satisfied by backfilling every null, and
+      the harness would call that a pass.
+    */
+    if (!golden.category && role) {
+      failures.push({
+        brief: golden.brief,
+        run,
+        problem: `role "${role}" invented on a brief that names no category`,
+      });
+    }
+
+    /*
+      characterNotes words must reach the prompt too, not just role words.
+      "Silver at the temples" travels in notes, and the D-79 rollback was
+      exactly a case of a stated fact vanishing from that field — a harness
+      that only checks `role` cannot see it happen again.
+    */
+    const notes = (intent.characterNotes as string | null) ?? null;
+    if (notes) {
+      const missing = compiled.candidates.filter((c) => !c.prompt.includes(notes)).length;
+      if (missing > 0) {
+        failures.push({
+          brief: golden.brief,
+          run,
+          problem: `characterNotes "${notes}" missing from ${missing}/8 prompts`,
+        });
+      }
+    }
+
     if (golden.category && role) {
       /* The category's own words must reach the image model. */
       const missing = compiled.candidates.filter((c) => !c.prompt.includes(role)).length;

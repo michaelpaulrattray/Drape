@@ -261,7 +261,7 @@ describe("crash: rows committed, charge not yet recorded", () => {
     // A crash before `markRunning` leaves the operation `claimed`, and the
     // running finalizer refuses a claimed row outright — sealing it with the
     // wrong one would throw and strand the operation.
-    await recover({ ...OPERATION, status: "claimed" });
+    await recover({ ...OPERATION, status: "claimed" as never });
     expect(finalizers.finalizeClaimedFailure).toHaveBeenCalledTimes(1);
     expect(finalizers.finalizeFailure).not.toHaveBeenCalled();
   });

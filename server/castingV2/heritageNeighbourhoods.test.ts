@@ -126,12 +126,12 @@ function twinViolations(sheet: { heritage: HeritageComponent[]; sex: string; hai
       const ha = a.heritage[0]?.heritage ?? "";
       const hb = b.heritage[0]?.heritage ?? "";
       if (!sameNeighbourhood(ha, hb)) continue;
-      if (a.realized.hairStyle.family !== b.realized.hairStyle.family) continue;
+      if (a.realized.hairStyle!.family !== b.realized.hairStyle!.family) continue;
       const second =
         secondAxis(a.sex as never) === "beard"
           ? beardBucket(a.realized.facialHair as never) === beardBucket(b.realized.facialHair as never)
           : a.hair && b.hair && colourBucket(a.hair.colour as never) === colourBucket(b.hair.colour as never);
-      if (second) violations.push(`${i}/${j} ${ha}~${hb} ${a.realized.hairStyle.family}`);
+      if (second) violations.push(`${i}/${j} ${ha}~${hb} ${a.realized.hairStyle!.family}`);
     }
   }
   return violations;
@@ -193,7 +193,7 @@ describe("the twin-breaker on a sheet", () => {
                   : candidate.hair
                     ? colourBucket(candidate.hair.colour)
                     : "none";
-              return `${candidate.realized.hairStyle.family}|${second}`;
+              return `${candidate.realized.hairStyle!.family}|${second}`;
             }),
           );
           /*
@@ -252,13 +252,13 @@ describe("the twin-breaker on a sheet", () => {
     */
     for (let roll = 0; roll < 200; roll += 1) {
       const sheet = lockedSheet({ heritage: "British Isles", sex: roll % 2 ? "male" : "female", rollSeed: `keep-${roll}` });
-      const names = new Set(sheet.map((c) => c.realized.hairStyle.name));
-      const statements = sheet.filter((c) => c.realized.hairStyle.statement).length;
+      const names = new Set(sheet.map((c) => c.realized.hairStyle!.name));
+      const statements = sheet.filter((c) => c.realized.hairStyle!.statement).length;
       expect(statements, `roll ${roll} statements`).toBeLessThanOrEqual(1);
       expect(names.size, `roll ${roll} distinct`).toBeGreaterThanOrEqual(5);
       const pairs = sheet
         .filter((c) => c.hair && c.hair.colour !== "grey" && c.hair.colour !== "white")
-        .map((c) => `${c.hair!.colour}|${c.realized.hairStyle.family}`);
+        .map((c) => `${c.hair!.colour}|${c.realized.hairStyle!.family}`);
       expect(new Set(pairs).size, `roll ${roll} colour pairs`).toBe(pairs.length);
     }
   });
@@ -279,7 +279,7 @@ describe("the twin-breaker on a sheet", () => {
   it("never mints a statement cut to break a twin", () => {
     for (let roll = 0; roll < 100; roll += 1) {
       const sheet = lockedSheet({ heritage: "Mediterranean", sex: "male", rollSeed: `stmt-${roll}` });
-      expect(sheet.filter((c) => c.realized.hairStyle.statement).length).toBeLessThanOrEqual(1);
+      expect(sheet.filter((c) => c.realized.hairStyle!.statement).length).toBeLessThanOrEqual(1);
     }
   });
 
@@ -523,7 +523,7 @@ describe("a brow is not a hair statement", () => {
           const hi = sheet[i].heritage[0]?.heritage ?? "";
           const hj = sheet[j].heritage[0]?.heritage ?? "";
           if (!sameNeighbourhood(hi, hj)) continue;
-          if (sheet[i].realized.hairStyle.family !== sheet[j].realized.hairStyle.family) continue;
+          if (sheet[i].realized.hairStyle!.family !== sheet[j].realized.hairStyle!.family) continue;
           const same =
             sheet[i].hair &&
             sheet[j].hair &&

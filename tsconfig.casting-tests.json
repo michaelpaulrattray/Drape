@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "build", "dist"],
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node", "vite/client", "vitest/globals"]
+  },
+  "include": [
+    "server/castingV2/**/*.ts",
+    "shared/**/*.ts",
+    "client/src/features/castingV2/**/*.ts"
+  ]
+}

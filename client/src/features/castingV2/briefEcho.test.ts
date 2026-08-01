@@ -170,7 +170,9 @@ describe("the spans carry the two-layer typography", () => {
     );
     const OVERRIDABLE = new Set(["sex", "ageBand", "agePhase", "heritage", "build", "energy", "look"]);
     for (const span of spans) {
-      if (span.kind === "text") continue;
+      // "role" spans carry no field — a category is free text and has no
+      // picker, which is exactly why it is not adjustable.
+      if (span.kind === "text" || span.kind === "role") continue;
       expect(OVERRIDABLE.has(span.field)).toBe(true);
     }
   });

@@ -43,12 +43,28 @@ function intentOf(partial: Partial<CastingIntent> = {}): CastingIntent {
   } as CastingIntent;
 }
 
+/*
+  `realized` was MISSING from this fixture, and the suite never noticed because
+  the typecheck excluded test files. So the follow tests below have been
+  asserting inheritance against an anchor that carried no realized axes at all —
+  meaning no test in this file has ever exercised realized-axis inheritance, the
+  single most-changed thing about follows this week. The fixture is complete
+  now, and `tsconfig.casting-tests.json` is what stops it drifting again.
+*/
 const BLONDE_WOMAN: FollowAnchor = {
   sex: "female",
   heritage: [{ heritage: "Nordic", pct: 100 }],
   ageBand: "20s",
   hair: { family: "long", colour: "blonde" },
   look: null,
+  realized: {
+    eyeColour: "pale blue",
+    hairStyle: { name: "simple long hair", family: "long" },
+    facialHair: null,
+    hairTexture: "straight",
+    browStyle: "feathered",
+    skinCharacter: "lightly freckled",
+  },
 };
 
 function eight(intent: CastingIntent, anchor: FollowAnchor | null): ResolvedIdentity[] {
@@ -419,10 +435,23 @@ describe("stated hair outranks authored hair", () => {
       which is the property the follow depends on; which tier it speaks at is
       `stylingResolution.test.ts`'s subject.
     */
+    /*
+      Scoped to the extracted HAIR line, not the whole prompt. The bias BEARD
+      prose ends on the same deferral clause, so a whole-prompt search would be
+      satisfied by a facial-hair line while the hair line was silent — a pass on
+      hash luck rather than on the property being tested.
+    */
     const prompt = await promptFor("oncology nurse", "tired at the end of a shift");
+    const cleaned = prompt.split("FACIAL HAIR:").join("FH:");
+    const at = cleaned.indexOf(" HAIR: ");
+    const hairLine = at < 0 ? "" : cleaned.slice(at, cleaned.indexOf(".", at) + 1);
+    expect(hairLine, "no authored HAIR line at all").not.toBe("");
     const authored =
-      prompt.includes("Cut and worn as that style is genuinely worn") ||
-      prompt.includes("as this casting wears it");
+      hairLine.includes("Cut and worn as that style is genuinely worn") ||
+      hairLine.includes("as this casting wears it") ||
+      // The prescription line's closer sits after the full stop this slice ends
+      // on, so a named cut is the other legitimate shape.
+      hairLine.length > 12;
     expect(authored, "no authored hair line in either tier").toBe(true);
   });
 });

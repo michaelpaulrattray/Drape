@@ -350,7 +350,17 @@ const OVERRIDE = [
  * PRIORITY sits last before the authority paragraph on purpose: it resolves
  * conflicts, so it has to be read after the things it arbitrates between.
  */
-export const PHOTOREAL_HUMAN_CONSTANT = [
+/**
+ * The blocks, in order. ONE list — the constant and its guard both read it.
+ *
+ * There used to be a second, hand-maintained array for the guard, and it was
+ * missing `SKIN_AND_FEATURES`: the most craft-dense block in the file was the
+ * one block nothing checked, including in the version the craft-port audit
+ * declared a working guard. Patching that omission left the shape that caused
+ * it in place. A parallel list of the same thing will always drift; deriving
+ * both from one array is what actually closes it.
+ */
+const CONSTANT_BLOCKS = [
   FRAMING,
   CAPTURE,
   SKIN_AND_FEATURES,
@@ -358,7 +368,9 @@ export const PHOTOREAL_HUMAN_CONSTANT = [
   NEGATIVES,
   PRIORITY,
   OVERRIDE,
-].join("\n");
+] as const;
+
+export const PHOTOREAL_HUMAN_CONSTANT = CONSTANT_BLOCKS.join("\n");
 
 /* --------------------------------------------------------- determinism */
 
@@ -1267,22 +1279,7 @@ export function personaLineFor(resolved: ResolvedIdentity, read?: string | null)
 }
 
 /** Exported for the contract test: the constant must survive composition. */
-export const COHORT_CONSTANT_MARKERS = [
-  FRAMING,
-  CAPTURE,
-  /*
-    SKIN_AND_FEATURES was missing from this array — including from the version
-    that shipped before the craft-port audit, and including from the version
-    the audit itself declared a working guard. It is the most craft-dense block
-    in the file (A1, A5–A10, the structural-features clause), so the one block
-    the guard did not cover was the one the audit was triggered by. Caught by
-    Fable's skim of the audit, which is the argument for the review step.
-  */
-  SKIN_AND_FEATURES,
-  IDENTITY_INTEGRITY,
-  NEGATIVES,
-  PRIORITY,
-  OVERRIDE,
-] as const;
+/** Derived, never re-listed. See CONSTANT_BLOCKS for why. */
+export const COHORT_CONSTANT_MARKERS = CONSTANT_BLOCKS;
 
 export { AGE_BANDS, BUILDS };

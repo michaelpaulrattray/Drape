@@ -51,7 +51,7 @@ describe("the hairstyle axis carries named cuts", () => {
     // The raw draw's job. The FLOOR is a sheet property, asserted below.
     for (const seed of SEEDS) {
       for (const sex of ["male", "female"] as const) {
-        const names = new Set(sheet({ heritage: "British Isles", sex, seed }).map((a) => a.hairStyle.name));
+        const names = new Set(sheet({ heritage: "British Isles", sex, seed }).map((a) => a.hairStyle!.name));
         expect(names.size, `${sex}/${seed}`).toBeGreaterThanOrEqual(4);
       }
     }
@@ -61,7 +61,7 @@ describe("the hairstyle axis carries named cuts", () => {
     // The weights' job. The per-sheet CAP is a different rule, asserted below
     // through the compiler — which is the only place that can see a sheet.
     const all = SEEDS.flatMap((seed) => sheet({ heritage: "Western European", seed }));
-    const rate = all.filter((a) => a.hairStyle.statement).length / all.length;
+    const rate = all.filter((a) => a.hairStyle!.statement).length / all.length;
     expect(rate).toBeLessThan(0.15);
     expect(rate).toBeGreaterThan(0); // rare-but-POSSIBLE; never is not restraint
   });
@@ -70,7 +70,7 @@ describe("the hairstyle axis carries named cuts", () => {
     const rate = (ageBand: "20s" | "70s+") => {
       const eight = Array.from({ length: 30 }, (_, i) => sheet({ heritage: "Nordic", ageBand, seed: `age${i}` }));
       const all = eight.flat();
-      return all.filter((a) => a.hairStyle.statement).length / all.length;
+      return all.filter((a) => a.hairStyle!.statement).length / all.length;
     };
     expect(rate("70s+")).toBeLessThan(rate("20s"));
   });
@@ -79,7 +79,7 @@ describe("the hairstyle axis carries named cuts", () => {
     const names = new Set(
       Array.from({ length: 10 }, (_, i) => sheet({ heritage: "West African", seed: `wa${i}` }))
         .flat()
-        .map((a) => a.hairStyle.name),
+        .map((a) => a.hairStyle!.name),
     );
     for (const expected of ["braids", "locs", "afro", "twist-out"]) {
       expect(names.has(expected), expected).toBe(true);
@@ -90,7 +90,7 @@ describe("the hairstyle axis carries named cuts", () => {
     const names = new Set(
       Array.from({ length: 10 }, (_, i) => sheet({ heritage: "East Asian", seed: `ea${i}` }))
         .flat()
-        .map((a) => a.hairStyle.name),
+        .map((a) => a.hairStyle!.name),
     );
     for (const absent of ["locs", "afro", "twist-out"]) {
       expect(names.has(absent), absent).toBe(false);
@@ -108,15 +108,15 @@ describe("the hairstyle axis carries named cuts", () => {
       ...sheet({ heritage: "Latino", sex: "male", seed }),
     ]);
     for (const axes of all) {
-      if (axes.hairStyle.texture) expect(axes.hairTexture).toBe(axes.hairStyle.texture);
+      if (axes.hairStyle!.texture) expect(axes.hairTexture).toBe(axes.hairStyle!.texture);
     }
   });
 
   it("varies independently of the other axes", () => {
     // The shifted-hash collision, re-asserted for the new axis.
     const eight = sheet({ heritage: "Mediterranean", sex: "male" });
-    const pairs = new Set(eight.map((a) => `${a.hairStyle.name}|${a.eyeColour}`));
-    expect(pairs.size).toBeGreaterThanOrEqual(new Set(eight.map((a) => a.hairStyle.name)).size);
+    const pairs = new Set(eight.map((a) => `${a.hairStyle!.name}|${a.eyeColour}`));
+    expect(pairs.size).toBeGreaterThanOrEqual(new Set(eight.map((a) => a.hairStyle!.name)).size);
   });
 });
 
@@ -257,7 +257,7 @@ describe("the sheet-level taste rules", () => {
   it.each(BRIEFS)("never puts two statement cuts on one sheet — %j", async (brief) => {
     for (const compiled of await sheetsOf(brief)) {
       const statements = compiled.candidates.filter(
-        (candidate) => candidate.resolvedIdentity.realized.hairStyle.statement,
+        (candidate) => candidate.resolvedIdentity.realized.hairStyle!.statement,
       ).length;
       expect(statements).toBeLessThanOrEqual(1);
     }
@@ -267,7 +267,7 @@ describe("the sheet-level taste rules", () => {
     // The founder's acceptance bar for item 6. Distinct means by NAME.
     for (const compiled of await sheetsOf(brief)) {
       const names = new Set(
-        compiled.candidates.map((candidate) => candidate.resolvedIdentity.realized.hairStyle.name),
+        compiled.candidates.map((candidate) => candidate.resolvedIdentity.realized.hairStyle!.name),
       );
       expect(names.size).toBeGreaterThanOrEqual(5);
     }
@@ -281,7 +281,7 @@ describe("the sheet-level taste rules", () => {
       bounded them.
     */
     const repeats = (await sheetsOf("a model", 100)).filter((compiled) => {
-      const names = compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle.name);
+      const names = compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle!.name);
       return new Set(names).size < names.length;
     });
     expect(repeats.length).toBeGreaterThan(50);
@@ -294,7 +294,7 @@ describe("the sheet-level taste rules", () => {
     for (const compiled of await sheetsOf("a model", 200)) {
       for (const candidate of compiled.candidates) {
         const { hairStyle, hairTexture } = candidate.resolvedIdentity.realized;
-        if (hairStyle.texture) expect(hairTexture).toBe(hairStyle.texture);
+        if (hairStyle?.texture) expect(hairTexture).toBe(hairStyle.texture);
       }
     }
   });
@@ -307,7 +307,7 @@ describe("the sheet-level taste rules", () => {
     */
     for (const compiled of await sheetsOf("a model", 100)) {
       for (const candidate of compiled.candidates) {
-        expect(candidate.prompt).toContain(candidate.resolvedIdentity.realized.hairStyle.name);
+        expect(candidate.prompt).toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
       }
     }
   });
@@ -332,9 +332,9 @@ describe("the sheet-level taste rules", () => {
         }),
       } satisfies TextEngine,
     });
-    const names = new Set(compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle.name));
+    const names = new Set(compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle!.name));
     expect(names.size).toBe(1);
-    expect([...names][0]).toBe(parent.realized.hairStyle.name);
+    expect([...names][0]).toBe(parent.realized.hairStyle!.name);
   });
 
   it("says nothing about hair at all when the brief already decided it", async () => {
@@ -384,7 +384,7 @@ describe("the colour pair-breaker", () => {
     for (const candidate of candidates) {
       const colour = candidate.hair?.colour;
       if (!colour || colour === "grey" || colour === "white") continue;
-      const key = `${colour}|${candidate.realized.hairStyle.family}`;
+      const key = `${colour}|${candidate.realized.hairStyle!.family}`;
       if (seen.has(key)) clashes.push(key);
       seen.add(key);
     }
@@ -405,7 +405,8 @@ describe("the colour pair-breaker", () => {
           const { hair, heritage: components, realized } = candidate.resolvedIdentity;
           const colour = hair?.colour;
           if (!colour || colour === "grey" || colour === "white") continue;
-          const family = realized.hairStyle.family;
+          const family = realized.hairStyle?.family;
+          if (!family) continue;
           const key = `${colour}|${family}`;
           if (seen.has(key)) {
             /*

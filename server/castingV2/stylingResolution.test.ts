@@ -127,7 +127,7 @@ describe("what counts as creative context", () => {
     });
     // Whatever direction the roll drew, a context-free brief keeps named cuts.
     for (const candidate of compiled.candidates) {
-      expect(hairLineOf(candidate.prompt)).toContain(candidate.resolvedIdentity.realized.hairStyle.name);
+      expect(hairLineOf(candidate.prompt)).toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
     }
   });
 
@@ -180,7 +180,7 @@ describe("bias mode composes with the category instead of contradicting it", () 
       for (const candidate of compiled.candidates) {
         const line = hairLineOf(candidate.prompt);
         expect(line).not.toBe("");
-        expect(line).not.toContain(candidate.resolvedIdentity.realized.hairStyle.name);
+        expect(line).not.toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
       }
     }
   });
@@ -226,7 +226,7 @@ describe("bias mode composes with the category instead of contradicting it", () 
     for (let roll = 0; roll < 60; roll += 1) {
       const compiled = await biasSheet("a 30 year old heavy metal bogan", `bogan-silhouette-${roll}`);
       const families = new Set(
-        compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle.family),
+        compiled.candidates.map((c) => c.resolvedIdentity.realized.hairStyle!.family),
       );
       expect(families.size, `roll ${roll}`).toBeGreaterThanOrEqual(4);
     }
@@ -276,7 +276,7 @@ describe("the context-free path is untouched", () => {
     });
     for (const candidate of compiled.candidates) {
       expect(candidate.prompt).toContain("Cut and worn as that style is genuinely worn");
-      expect(hairLineOf(candidate.prompt)).toContain(candidate.resolvedIdentity.realized.hairStyle.name);
+      expect(hairLineOf(candidate.prompt)).toContain(candidate.resolvedIdentity.realized.hairStyle!.name);
       expect(candidate.prompt).not.toContain(BIAS_DEFERRAL_CLAUSE);
     }
   });
