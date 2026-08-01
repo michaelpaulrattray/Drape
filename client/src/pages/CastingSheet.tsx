@@ -22,6 +22,7 @@ import { useSheetSession, type UnlockableField } from "@/features/castingV2/shee
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
+import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
 
 /**
@@ -614,6 +615,13 @@ export default function CastingSheet() {
   const rollIsOverdue =
     rollStartedAt !== null && Number.isFinite(rollStartedAt) && Date.now() - rollStartedAt > 120_000;
 
+  /*
+    Seven quiet days is idle time, not age: `expiresAt` is pushed out every
+    time the session is touched. So this only ever appears on a sheet the user
+    has genuinely left alone, which is the only case where it is news.
+  */
+  const expiryNotice = sheetExpiryNotice(session.data?.expiresAt ?? null);
+
   const counts = roll.data?.counts;
   const cancelLine = cancelStory({
     cancelled: rollWasCancelled || cancelRequested,
@@ -758,6 +766,16 @@ export default function CastingSheet() {
             ) : null}
           </div>
         ) : null}
+
+        {/*
+          THE SHEET SAYS WHEN IT IS ABOUT TO GO.
+
+          One sentence, once, at the top of the sheet it concerns — and only
+          inside the last two days, because a retention line on a sheet nobody
+          is at risk of losing is noise. It names the deadline and the action
+          and stops there.
+        */}
+        {expiryNotice ? <p className="dpc-expiry-note">{expiryNotice}</p> : null}
 
         {/*
           THE SHEET SAYS WHEN IT COULD NOT VARY.

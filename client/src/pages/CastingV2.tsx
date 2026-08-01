@@ -21,6 +21,11 @@ import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/si
 import { ConfirmDialog } from "@/features/castingV2/components/ConfirmDialog";
 import { SheetCardMenu } from "@/features/castingV2/components/SheetCardMenu";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
+import {
+  RETENTION_EMPTY_STATE,
+  isExpiryWarning,
+  sheetAgeLine,
+} from "@/features/castingV2/retentionCopy";
 import "@/features/castingV2/castingV2.css";
 
 /**
@@ -528,6 +533,31 @@ export default function CastingV2() {
                     */}
                     {index === 0 ? <span className="dpc-sheetcard__latest">latest</span> : null}
                   </span>
+                  {/*
+                    The retention confession, per card.
+
+                    Normally it just says how long the sheet has been sitting —
+                    which is useful on its own and costs nothing. Inside the
+                    last two days it says when the sheet goes instead, in the
+                    same quiet register: no colour, no icon, no countdown. The
+                    goal is that expiry is never a surprise, not that anyone
+                    feels chased.
+                  */}
+                  {(() => {
+                    const line = sheetAgeLine(entry);
+                    if (!line) return null;
+                    return (
+                      <span
+                        className={
+                          isExpiryWarning(line)
+                            ? "dp-secondary dpc-sheetcard__expiry"
+                            : "dp-secondary"
+                        }
+                      >
+                        {line}
+                      </span>
+                    );
+                  })()}
                 </button>
                 {/*
                   Deliberate disposal, quietly. A full destructive button sat
@@ -575,6 +605,22 @@ export default function CastingV2() {
               </Card>
             ))}
           </div>
+        </section>
+      ) : openSessions.isFetched ? (
+        /*
+          THE EMPTY STATE, which said nothing at all.
+
+          A sheet that expired and a sheet that was never cast leave exactly
+          the same empty page — expired sessions are gone from the projection
+          entirely, so the client genuinely cannot tell them apart. Stating the
+          RULE is true in both cases; claiming an event would be inventing a
+          history to fill a silence.
+
+          Gated on `isFetched` so it does not flash before the query answers.
+        */
+        <section className="dp-stack" style={{ gap: 12 }}>
+          <SectionHead eyebrow="Unsigned sheets" />
+          <p className="dp-secondary">{RETENTION_EMPTY_STATE}</p>
         </section>
       ) : null}
 

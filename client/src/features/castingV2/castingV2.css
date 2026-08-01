@@ -1005,3 +1005,19 @@
     animation: none;
   }
 }
+
+/*
+  The retention confession. Quiet by design — it is a statement of fact, not a
+  warning, so it carries no colour, no icon and no countdown. The only signal
+  is that the expiry line sits at full secondary weight while the ordinary age
+  line is dimmer still.
+*/
+.dpc-sheetcard__expiry {
+  opacity: 0.85;
+}
+
+.dpc-expiry-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  opacity: 0.62;
+}

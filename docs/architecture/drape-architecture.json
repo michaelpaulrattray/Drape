@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3afd00f7f0f6460c"
+    "sourceFingerprint": "855226dab5923d6b"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 12
+      "moduleCount": 13
     },
     {
       "id": "domain:client-shared",
@@ -1439,6 +1439,12 @@
     {
       "id": "module:client/src/features/castingV2/dispatchFailure.ts",
       "path": "client/src/features/castingV2/dispatchFailure.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/retentionCopy.ts",
+      "path": "client/src/features/castingV2/retentionCopy.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7175,6 +7181,10 @@
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/retentionCopy.test.ts",
+      "path": "client/src/features/castingV2/retentionCopy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/sheetState.test.ts",
       "path": "client/src/features/castingV2/sheetState.test.ts"
     },
@@ -12616,6 +12626,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/retentionCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/sheetState.ts",
       "kind": "imports"
     },
@@ -12652,6 +12667,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/dispatchFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/retentionCopy.ts",
       "kind": "imports"
     },
     {
