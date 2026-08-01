@@ -67,6 +67,31 @@ import type {
  */
 export type DispatchFailureKind = "refused" | "credits" | "busy" | "unavailable";
 
+/**
+ * A failed dispatch, and the sheet it failed on top of.
+ *
+ * `afterRollId` is the whole fix for the banner that would not go away. It is
+ * the active roll at the moment the dispatch was fired — so if the sheet is
+ * now rendering a DIFFERENT roll, this failure is definitionally about an
+ * earlier state of the world and dismisses itself.
+ *
+ * The bug it replaces: clearing used to depend on the single-flight latch
+ * settling, and the failure handler called `release()` on the latch before
+ * raising the banner. `settleIfArrived` returns false when the latch is not
+ * held, so the one mechanism that could clear the banner had already been
+ * torn down by the handler that raised it. The founder watched "We lost
+ * contact" sit above a roll rendering normally until they refreshed.
+ *
+ * Deriving it from the rendered roll means there is no second predicate to
+ * keep in step with the first — the banner and the sheet read the same source.
+ */
+export type DispatchFailure = {
+  kind: DispatchFailureKind;
+  message: string;
+  /** The active roll when this dispatch was fired; null if the sheet had none. */
+  afterRollId: string | null;
+};
+
 export type UnlockableField = "sex" | "ageBand" | "heritage" | "build" | "energy" | "archetype";
 /*
   Typed against the shared vocabularies rather than as `string`.
@@ -137,7 +162,7 @@ export type SheetSlice = {
    * called it has unmounted. The store outlives the navigation; the sheet reads
    * this and says what happened.
    */
-  dispatchFailure: { kind: DispatchFailureKind; message: string } | null;
+  dispatchFailure: DispatchFailure | null;
   /**
    * Optimistic keep/discard (D-38).
    *
@@ -224,10 +249,7 @@ type SheetState = {
     value: NonNullable<LockOverrides[F]>,
   ) => void;
   setStartingRoll: (sessionId: string, startingRoll: boolean) => void;
-  setDispatchFailure: (
-    sessionId: string,
-    failure: { kind: DispatchFailureKind; message: string } | null,
-  ) => void;
+  setDispatchFailure: (sessionId: string, failure: DispatchFailure | null) => void;
   setCancelNotice: (sessionId: string, notice: string | null) => void;
   setFollowDismissed: (sessionId: string, dismissed: boolean) => void;
   /**
@@ -435,7 +457,7 @@ export function useSheetSession(sessionId: string) {
       setOverride: <F extends OverridableField>(field: F, value: NonNullable<LockOverrides[F]>) =>
         state().setOverride(sessionId, field, value),
       setStartingRoll: (startingRoll: boolean) => state().setStartingRoll(sessionId, startingRoll),
-      setDispatchFailure: (failure: { kind: DispatchFailureKind; message: string } | null) =>
+      setDispatchFailure: (failure: DispatchFailure | null) =>
         state().setDispatchFailure(sessionId, failure),
       setCancelNotice: (notice: string | null) => state().setCancelNotice(sessionId, notice),
       setFollowDismissed: (dismissed: boolean) => state().setFollowDismissed(sessionId, dismissed),

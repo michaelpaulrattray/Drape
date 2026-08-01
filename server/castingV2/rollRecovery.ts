@@ -128,7 +128,8 @@ function wasDelivered(candidate: CandidateRow): boolean {
  * Everything else — `failed`, `cancelled`, `discarded`, `expired`, `signed` —
  * has already been settled by whoever put it in that state.
  */
-function isSettleable(candidate: CandidateRow): boolean {
+/** Exported so the deploy-collision assertion tests the REAL predicate. */
+export function isSettleable(candidate: CandidateRow): boolean {
   if (candidate.status === "queued" || candidate.status === "dispatched") return true;
   return candidate.status === "ready" && !candidate.imageKey;
 }

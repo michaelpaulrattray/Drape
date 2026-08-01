@@ -275,7 +275,12 @@ export default function CastingV2() {
         })
         .then(() => setStartingRoll(session.sessionId, false))
         .catch((error: unknown) =>
-          setDispatchFailure(session.sessionId, classifyDispatchFailure(error)),
+          setDispatchFailure(session.sessionId, {
+            ...classifyDispatchFailure(error),
+            // The sheet had no roll when this fired, so ANY roll appearing
+            // proves the failure stale and dismisses the banner.
+            afterRollId: null,
+          }),
         );
 
       // Navigating IS the confirmation, so no toast — the toast law fires on

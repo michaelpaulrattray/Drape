@@ -229,6 +229,33 @@ Vite inlines `VITE_*` vars into the client bundle at build time, so they must be
 - **Stripe**: webhook endpoint per environment; the raw-body route must stay registered before `express.json()` in `server/_core/index.ts` or signature verification breaks (learned in production).
 - **Resend**: no verified sending domain yet — emails send from `onboarding@resend.dev`, which only delivers to the Resend account owner. Email/password signup verification is therefore broken for everyone else until a domain is verified in Resend and the `from:` in `server/routes/emailVerification.ts` is updated. Google OAuth signups are unaffected.
 
+### Deploying while a paid roll is in flight
+
+Every push to `main` deploys, and the founder dogfoods paid rolls while that
+happens. A deploy that lands mid-roll kills the process holding its candidates.
+
+**This is a known and accepted collision class, not a bug.** Per-slice billing
+plus the recovery sweep is the designed answer: a roll is eight independently
+refundable units, so losing the process midway costs the user only what they
+did not receive. Do NOT build drain infrastructure for it (founder ruling,
+2026-08-01). `server/castingV2/deployCollision.test.ts` asserts the contract
+end to end — every candidate terminal, money conserved, settled in one pass.
+
+**What it costs the user: up to ~16 minutes, not ~2.** Measured on the real
+incident (production roll `78041664`, 2026-08-01): six candidates died with the
+deploy, and the operation settled **937 seconds** later — six seconds after its
+lease expired. That is the mechanism, not slow machinery: a `running` operation
+only becomes eligible for the sweep once `leaseExpiresAt` passes, and a roll
+claims the default 15-minute lease (`DEFAULT_GENERATION_OPERATION_LEASE_MS`)
+with a 30s heartbeat. Worst case is therefore 15 min + one 60s sweep.
+
+During that window the sheet shows frozen tiles and the credits are still held.
+The money is safe and the recovery is correct — it is the WAIT that is long.
+Shortening it is a one-constant change (a roll takes 66–82s, so a 3-minute
+lease would still be renewed by a live process) and has not been made, because
+a shorter lease brings a live roll closer to being adjudicated while it is
+still running. Founder decision, not shipped.
+
 ### Known gaps at deploy time
 
 - `hero/*` keys (home-page hero media, served via `server/heroProxy.ts`) were never re-hosted to R2 — the hero 502s in dev and prod alike. Needs source files + `scripts/upload-hero-v3.mjs`.

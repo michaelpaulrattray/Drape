@@ -68,7 +68,7 @@ describe("state never crosses sheets", () => {
       design would put it wherever the user happened to be.
     */
     useSheetState.getState().setStartingRoll(A, true);
-    useSheetState.getState().setDispatchFailure(A, { kind: "refused", message: "no" });
+    useSheetState.getState().setDispatchFailure(A, { kind: "refused", message: "no", afterRollId: null });
 
     expect(sliceOf(A).dispatchFailure?.kind).toBe("refused");
     expect(sliceOf(A).startingRoll).toBe(false);

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1b646b839328d2d5"
+    "sourceFingerprint": "506221ad693e91ab"
   },
   "domains": [
     {
@@ -7171,6 +7171,10 @@
       "path": "client/src/features/castingV2/dispatchFailure.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/lostContact.test.ts",
+      "path": "client/src/features/castingV2/lostContact.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/sheetState.test.ts",
       "path": "client/src/features/castingV2/sheetState.test.ts"
     },
@@ -7701,6 +7705,10 @@
     {
       "id": "test:server/castingV2/composedDirection.test.ts",
       "path": "server/castingV2/composedDirection.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/deployCollision.test.ts",
+      "path": "server/castingV2/deployCollision.test.ts"
     },
     {
       "id": "test:server/castingV2/followAnchor.test.ts",

@@ -129,23 +129,42 @@ export default function CastingSheet() {
       // The real row has landed, so the provisional pill hands over to it.
       beginProvisionalRoll(0);
       /*
-        THE ROLL ARRIVING PROVES THE FAILURE WRONG.
+        NOTE: this deliberately no longer clears the failure banner.
 
-        `createRoll` does not return until all eight candidates land — about
-        seventy seconds — and rows commit BEFORE dispatch. So a gateway that
-        gives up on that request leaves the server working normally while the
-        client's mutation rejects, and the sheet said "the roll didn't start"
-        above eight tiles that were visibly casting.
+        It used to, and that was the bug. `settleIfArrived` returns false when
+        the latch is not held — and the failure handler calls `release()`
+        BEFORE raising the banner, so by the time a roll arrived the only
+        mechanism that could dismiss it had already been torn down by the
+        handler that raised it. The founder watched "We lost contact" sit above
+        a roll rendering normally until they refreshed the page.
 
-        The poll is the authority here, not the mutation's outcome. Once the
-        roll exists, the client's opinion about whether it started is simply
-        out of date, and the banner has to go — the design law that skeletons
-        never sit under a failure message was written for precisely this, and
-        it was the failure that was wrong rather than the skeletons.
+        The banner is derived now (see `staleFailure`), from the same source
+        the sheet renders from. Two mechanisms for one rule is how they drift
+        apart, and this pair had already drifted.
       */
-      setDispatchFailure(null);
     }
-  }, [activeRollId, latch, setStartingRoll, beginProvisionalRoll, setDispatchFailure]);
+  }, [activeRollId, latch, setStartingRoll, beginProvisionalRoll]);
+
+  /*
+    THE BANNER IS DEFINITIONALLY STALE ONCE A NEWER ROLL RENDERS.
+
+    `createRoll` commits its rows and charges while the request is still open,
+    so a transport failure means we never heard the answer — not that nothing
+    happened. The roll may be running right now, and the founder has now seen
+    that twice: a "didn't start" banner above eight tiles casting normally, and
+    a "lost contact" banner above a roll that had plainly arrived.
+
+    So the sheet does not keep a second opinion about whether a roll exists. If
+    the roll it is RENDERING is not the one the failed dispatch fired on top
+    of, then a roll arrived after that failure, and the failure is describing a
+    world that no longer exists. No predicate to keep in step, no latch to tear
+    down: the banner reads what the sheet reads.
+  */
+  const staleFailure =
+    dispatchFailure !== null
+    && activeRollId !== null
+    && activeRollId !== dispatchFailure.afterRollId;
+  const visibleFailure = staleFailure ? null : dispatchFailure;
 
   /**
    * A dispatch is in flight and its roll has not appeared yet.
@@ -154,7 +173,7 @@ export default function CastingSheet() {
    * swaps to skeletons in the same frame as the click, so Follow and Roll
    * again answer as immediately as Cast it does.
    */
-  const awaitingNewRoll = startingRoll && latch.held && !dispatchFailure;
+  const awaitingNewRoll = startingRoll && latch.held && !visibleFailure;
 
   /**
    * The roll being paid for, or nothing.
@@ -441,7 +460,7 @@ export default function CastingSheet() {
         setCancelNotice("That face is no longer on this sheet — back to open casting. Nothing was charged.");
         return;
       }
-      setDispatchFailure(classifyDispatchFailure(error));
+      setDispatchFailure({ ...classifyDispatchFailure(error), afterRollId: activeRollId });
     };
     const options = {
       onError: onFailure,
@@ -762,10 +781,10 @@ export default function CastingSheet() {
           was refused: the refusal was correct and free, and the sheet showed
           eight skeletons that waited forever. Nothing may ever hang.
         */}
-        {dispatchFailure ? (
+        {visibleFailure ? (
           <EmptyState
             title={
-              dispatchFailure.kind === "refused"
+              visibleFailure.kind === "refused"
                 ? "That brief can't be cast"
                 : /*
                     "The roll didn't start" is a claim, and on a transport
@@ -774,11 +793,11 @@ export default function CastingSheet() {
                     kinds ARE refusals the server told us about, so they can
                     keep the definite title.
                   */
-                  dispatchFailure.kind === "unavailable"
+                  visibleFailure.kind === "unavailable"
                   ? "We lost contact"
                   : "The roll didn't start"
             }
-            body={dispatchFailure.message}
+            body={visibleFailure.message}
             action={
               <Button
                 variant="primary"
@@ -788,7 +807,7 @@ export default function CastingSheet() {
                   navigate("/casting");
                 }}
               >
-                {failureActionLabel(dispatchFailure.kind)}
+                {failureActionLabel(visibleFailure.kind)}
               </Button>
             }
           />
@@ -798,7 +817,7 @@ export default function CastingSheet() {
           An empty sheet is a real state and gets real copy — a session that
           exists with nothing cast on it yet.
         */}
-        {!shownRollId && !startingRoll && !dispatchFailure && session.isFetched ? (
+        {!shownRollId && !startingRoll && !visibleFailure && session.isFetched ? (
           <EmptyState
             title="Nothing cast on this sheet yet"
             body="Describe who you need in the box below and roll."
@@ -816,7 +835,7 @@ export default function CastingSheet() {
             Before this, Follow left the previous roll's eight faces on screen
             with no sign anything had happened.
           */}
-          {!dispatchFailure && (awaitingNewRoll || (!roll.data && (startingRoll || shownRollId)))
+          {!visibleFailure && (awaitingNewRoll || (!roll.data && (startingRoll || shownRollId)))
             ? // Eight skeletons the instant a roll is on its way — the sheet's
               // shape is known long before its contents are.
               Array.from({ length: config.data?.candidatesPerRoll ?? 8 }, (_, index) => (
