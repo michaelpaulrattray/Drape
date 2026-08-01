@@ -44,8 +44,56 @@ const log = createModuleLogger("castingV2/interpreter");
  * role-repair pattern rather than a guess — it can never fire on a true null.
  */
 function needsAestheticRetry(briefText: string, intent: CastingIntent): boolean {
-  if (!containsBrand(briefText)) return false;
+  if (!namesSomethingSpecific(briefText)) return false;
   return intent.composedDirection === null && intent.look === null && intent.archetype === null;
+}
+
+/**
+ * Every word in our closed vocabularies, so a stated FACT never reads as a
+ * reference. "A Mediterranean man" names a heritage we already model.
+ */
+const VOCABULARY_WORDS: ReadonlySet<string> = new Set(
+  [...HERITAGES, ...ARCHETYPE_KEYS, ...LOOK_KEYS, ...BUILDS, ...ENERGY_KEYS, ...SEXES, ...AGE_BANDS]
+    .join(" ")
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter(Boolean),
+);
+
+/**
+ * Does the brief name something SPECIFIC that we might have failed to capture?
+ *
+ * **A listless detector, deliberately** (founder amendment). Two signals, and
+ * the union is the point:
+ *
+ *   - a **proper-noun shape**: capitalized, not sentence-initial, and absent
+ *     from our own vocabularies. That catches a director, a film, a scene, a
+ *     house — anything a person names — without a list of them existing
+ *     anywhere, which is the ruling that keeps this from becoming a culture
+ *     dictionary we would have to maintain and defend.
+ *   - a **listed fashion token**, still, because the shape alone is not
+ *     enough: "miu miu" is typed lowercase, so the founder's own golden brief
+ *     would slip past a pure proper-noun test. The list keeps its real job in
+ *     `brandScrub` and merely contributes here.
+ *
+ * **False positives are acceptable by design.** The only cost of a wrong
+ * detection is one cheap re-interpretation, so the detector may be sloppy
+ * where the guards may not — an asymmetry worth naming, because the same
+ * looseness in `scrubBrands` or the garment guard would be a defect.
+ */
+function namesSomethingSpecific(briefText: string): boolean {
+  if (containsBrand(briefText)) return true;
+
+  const tokens = briefText.split(/\s+/);
+  return tokens.some((token, index) => {
+    // Sentence-initial capitals say nothing — every brief starts with one.
+    if (index === 0) return false;
+    const word = token.replace(/[^A-Za-z'-]/g, "");
+    if (word.length < 2) return false;
+    const first = word[0];
+    if (first !== first.toUpperCase() || first === first.toLowerCase()) return false;
+    return !VOCABULARY_WORDS.has(word.toLowerCase());
+  });
 }
 
 /** Exported for the prompt-contract tests; never used at runtime. */
@@ -302,8 +350,15 @@ export async function interpretBrief(input: {
         that interpreted fine yesterday silently lost every one of its locks.
         The cost of the extra ceiling is a fraction of a cent; the cost of
         truncation is the user's stated facts.
+
+        Raised 1200 → 1800 when `composedDirection` landed. The A/B measured
+        HALF of the Margiela samples failing to parse on the new prompt against
+        none on the old — the extra thesis-and-avoid pushes a reply that also
+        carries eight `reads` past the old ceiling. Same lesson as the 500, one
+        field later: a truncated reply does not degrade to a missing field, it
+        fails the whole parse and drops every lock the brief stated.
       */
-      maxOutputTokens: 1200,
+      maxOutputTokens: 1800,
       signal: input.signal,
     });
 
@@ -344,13 +399,12 @@ export async function interpretBrief(input: {
       roughly one run in three — so a single retry collapses it without turning
       a bad day at the provider into an unbounded spend.
 
-      **Named limit:** only FASHION references are detected, because the token
-      list is the only detector that exists and it is deliberately fashion-only
-      (extending it toward "every trademark in the world" would start eating
-      ordinary words — see `brandScrub`). A general reference like "a Wes
-      Anderson casting" gets no retry and captures stochastically. That is a
-      known gap, not an oversight, and the Path B treatment stage is where it
-      properly closes.
+      GENERAL references get the same promise tier as fashion ones, and the
+      former named limit is closed. The detector is LISTLESS: a proper-noun
+      shape none of our vocabularies claims, plus the fashion tokens for the
+      lowercase case. So "a Wes Anderson casting" is repaired exactly as "a miu
+      miu campaign model" is, and no film or culture list exists — or is
+      wanted.
     */
     let intent = parsed.intent;
     if (needsAestheticRetry(input.briefText, intent)) {

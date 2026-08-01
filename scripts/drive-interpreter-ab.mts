@@ -60,7 +60,7 @@ async function sample(system: string, briefText: string) {
     user: briefText,
     json: true,
     temperature: 0.2,
-    maxOutputTokens: 1200,
+    maxOutputTokens: 1800,
   });
   const parsed = parseCastingIntent(result.text);
   if (!parsed.ok) return { landed: false, where: "parse-failed" };
