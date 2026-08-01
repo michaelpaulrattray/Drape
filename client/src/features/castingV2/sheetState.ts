@@ -198,6 +198,20 @@ export type SheetSlice = {
    */
   cancelRefundRecorded: boolean | null;
   /**
+   * The user asked to cancel this sheet's live roll.
+   *
+   * Owned from the CLICK, not from the poll. Deriving the cancelled state
+   * purely from `roll.status` left a two-second hole between the mutation
+   * resolving and the next poll landing — and in that hole every winding-down
+   * tile dropped back to plain "Casting…" and the line disappeared. Measured on
+   * a real cancelled roll: the revert the second pass existed to remove,
+   * reintroduced in a window too short to notice while testing and long enough
+   * to see.
+   *
+   * Sticky for the life of the sheet slice, because a cancel is not undoable.
+   */
+  cancelRequested: boolean;
+  /**
    * The user dismissed the FOLLOWING chip on this sheet.
    *
    * §F: "dismissing only affects future rolls" — existing rolls are immutable
@@ -228,6 +242,7 @@ const EMPTY_SLICE: SheetSlice = {
   optimisticDiscarded: {},
   optimisticCancelled: {},
   cancelRefundRecorded: null,
+  cancelRequested: false,
   followDismissed: false,
 };
 
@@ -256,6 +271,7 @@ type SheetState = {
   setStartingRoll: (sessionId: string, startingRoll: boolean) => void;
   setDispatchFailure: (sessionId: string, failure: DispatchFailure | null) => void;
   setCancelRefundRecorded: (sessionId: string, recorded: boolean | null) => void;
+  requestCancel: (sessionId: string) => void;
   setFollowDismissed: (sessionId: string, dismissed: boolean) => void;
   /**
    * Called when a roll is dispatched. The undo stack clears because the server
@@ -393,6 +409,11 @@ export const useSheetState = create<SheetState>((set) => ({
       ),
     })),
 
+  requestCancel: (sessionId) =>
+    set((state) => ({
+      sessions: patch(state.sessions, sessionId, () => ({ cancelRequested: true })),
+    })),
+
   setCancelRefundRecorded: (sessionId, cancelRefundRecorded) =>
     set((state) => ({
       sessions: patch(state.sessions, sessionId, () => ({ cancelRefundRecorded })),
@@ -414,6 +435,7 @@ export const useSheetState = create<SheetState>((set) => ({
         optimisticDiscarded: {},
         optimisticCancelled: {},
         cancelRefundRecorded: null,
+        cancelRequested: false,
         dispatchFailure: null,
         // `followDismissed` is deliberately absent: the chip STANDS across
         // rolls, which is the whole point of §F's standing follow. It is
@@ -466,6 +488,7 @@ export function useSheetSession(sessionId: string) {
         state().setDispatchFailure(sessionId, failure),
       setCancelRefundRecorded: (recorded: boolean | null) =>
         state().setCancelRefundRecorded(sessionId, recorded),
+      requestCancel: () => state().requestCancel(sessionId),
       setFollowDismissed: (dismissed: boolean) => state().setFollowDismissed(sessionId, dismissed),
       rollDispatched: () => state().rollDispatched(sessionId),
     };

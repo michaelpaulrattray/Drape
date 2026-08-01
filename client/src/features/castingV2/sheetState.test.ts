@@ -196,6 +196,37 @@ describe("the cancel arc is a state, not an event", () => {
     expect(arc(4, 0, false)).toBe(cancelNoticeFor({ refundedCredits: 0, refundRecorded: false, stillFinishing: 4 }));
   });
 
+  it("counts a roll whose candidates all EXPIRED as fully refunded", () => {
+    /*
+      The case a paid roll found, and the one that matters most: a roll already
+      fully dispatched when the user cancels. Every candidate lands, every one
+      is refunded under the generosity rule, and every one is deliberately
+      HIDDEN from the projection — showing them would make cancelling a way to
+      buy images for nothing.
+
+      Counting the visible tiles therefore said "nothing to refund" while 160
+      credits were coming back. Counted from `counts` — total minus delivered
+      minus still-coming — it says what actually happened.
+    */
+    const fromCounts = (total: number, ready: number, casting: number) =>
+      cancelStory({
+        cancelled: true,
+        refunded: Math.max(0, total - ready - casting),
+        finishing: casting,
+        total,
+        sliceCredits: 20,
+        refundRecorded: true,
+      });
+
+    // Eight dispatched, none delivered, all expired after the cancel.
+    expect(fromCounts(8, 0, 0)).toContain("160 credits back");
+    expect(fromCounts(8, 0, 0)).not.toContain("nothing to refund");
+    // Mid-arc, five still landing.
+    expect(fromCounts(8, 0, 5)).toBe("Cancelled — 3 of 8 refunded · 5 finishing");
+    // Two genuinely delivered before the cancel: those are not refunded.
+    expect(fromCounts(8, 2, 0)).toContain("120 credits back");
+  });
+
   it("survives a reload with no stored sentence, because it derives", () => {
     // Nothing is read from the store here except the recorded flag; the counts
     // come from the projection, which the poll restores on its own.

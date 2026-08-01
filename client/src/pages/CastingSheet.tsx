@@ -75,6 +75,8 @@ export default function CastingSheet() {
     setOptimisticCancelled,
     cancelRefundRecorded,
     setCancelRefundRecorded,
+    cancelRequested,
+    requestCancel,
     followDismissed,
     setFollowDismissed,
     /*
@@ -516,6 +518,8 @@ export default function CastingSheet() {
 
   const onCancel = async () => {
     if (!activeRollId) return;
+    // Owned from the click. The poll confirms it; it does not decide it.
+    requestCancel();
     /*
       D-38, honestly.
 
@@ -579,18 +583,36 @@ export default function CastingSheet() {
     drawn from — so it counts down as landings refund, cannot go stale, and
     survives navigating away and back without a stored sentence to age.
   */
+  /*
+    COUNTED FROM `counts`, NOT FROM THE TILE ARRAY — and this is the correction
+    a paid roll forced.
+
+    `expired` candidates are deliberately absent from the projection: they
+    landed after the cancel and were refunded under the generosity rule, and
+    showing them would make cancelling a way to buy images for nothing. But
+    that means they vanish from `candidates` entirely — so counting the array
+    watched the total shrink 8 → 5 → 0 and then announced "this roll had
+    already finished, so there was nothing to refund" while 160 credits were on
+    their way back. Exactly the wrong sentence, in the direction that matters.
+
+    `counts.total` is taken from the raw rows before that filter, so the
+    denominator holds. Refunded is everything that is neither delivered nor
+    still coming — failed, cancelled and expired alike, which is precisely the
+    set that gets money back.
+  */
+  const counts = roll.data?.counts;
   const cancelLine = cancelStory({
-    cancelled: rollWasCancelled,
-    refunded: candidates.filter((candidate) => candidate.status === "failed-refunded").length,
-    finishing: candidates.filter((candidate) => candidate.status === "casting").length,
-    total: candidates.length,
+    cancelled: rollWasCancelled || cancelRequested,
+    refunded: counts ? Math.max(0, counts.total - counts.ready - counts.casting) : 0,
+    finishing: counts?.casting ?? 0,
+    total: counts?.total ?? 0,
     /*
       One candidate's share of the roll price. Derived rather than sent because
       the per-slice cost is internal — and it is only ever used to STATE a
       total the server already refunded, never to decide one.
     */
     sliceCredits:
-      candidates.length > 0 ? Math.round((roll.data?.priceCredits ?? 0) / candidates.length) : 0,
+      counts && counts.total > 0 ? Math.round((roll.data?.priceCredits ?? 0) / counts.total) : 0,
     // Unknown after a hard reload; see the field's own note.
     refundRecorded: cancelRefundRecorded ?? true,
   });
@@ -913,7 +935,7 @@ export default function CastingSheet() {
                     acknowledged until it lands and refunds, and never drops
                     back to plain "Casting…".
                   */
-                  windingDown={rollWasCancelled && !cancel.isPending}
+                  windingDown={(rollWasCancelled || cancelRequested) && !cancel.isPending}
                   busy={isPending(candidate.candidateId)}
                   // Follow is a paid roll. Every tile's Follow locks the
                   // moment any one of them is clicked, or the sheet offers
