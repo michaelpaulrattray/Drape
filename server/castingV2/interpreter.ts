@@ -36,6 +36,58 @@ import { containsBrand } from "./brandScrub";
 const log = createModuleLogger("castingV2/interpreter");
 
 /**
+ * Parse-failure telemetry, in the shape of the roll-failure alarm.
+ *
+ * The class this closes: a truncated reply fails the whole parse, the compiler
+ * falls back, and every lock the user stated is lost — SILENTLY. It has now
+ * happened at three different ceilings (500, 1200, 1800), each time discovered
+ * by someone tripping over it rather than by anything announcing it, and the
+ * most recent was a 50% rate found only because a paid A/B measurement happened
+ * to be running.
+ *
+ * A ceiling will always be a guess. Whether we are hitting it must not be, so
+ * the rate is counted and crosses into `log.error` on its own — the same
+ * "stop, something is wrong with US not the brief" shape the provider-account
+ * alarm uses, rather than per-request noise nobody aggregates.
+ */
+const parseStats = { attempts: 0, failures: 0, truncations: 0 };
+
+/** Exported so a test can assert the alarm fires rather than trusting it does. */
+export function interpreterParseStats(): Readonly<typeof parseStats> {
+  return { ...parseStats };
+}
+
+const ALARM_AFTER_ATTEMPTS = 20;
+const ALARM_FAILURE_RATE = 0.2;
+
+function recordParseOutcome(failed: boolean, truncated: boolean): void {
+  parseStats.attempts += 1;
+  if (failed) parseStats.failures += 1;
+  if (truncated) parseStats.truncations += 1;
+
+  if (parseStats.attempts < ALARM_AFTER_ATTEMPTS) return;
+  const rate = parseStats.failures / parseStats.attempts;
+  if (rate >= ALARM_FAILURE_RATE) {
+    log.error(
+      {
+        attempts: parseStats.attempts,
+        failures: parseStats.failures,
+        truncations: parseStats.truncations,
+        // Same units and same key as the roll alarm, so the two read alike.
+        failureRate: Math.round(rate * 100),
+      },
+      "[interpreter] PARSE FAILURES ABOVE THRESHOLD — briefs are losing their stated locks to the fallback; check the token ceiling first",
+    );
+  }
+  // Roll the window so one bad hour does not alarm forever.
+  if (parseStats.attempts >= ALARM_AFTER_ATTEMPTS * 5) {
+    parseStats.attempts = 0;
+    parseStats.failures = 0;
+    parseStats.truncations = 0;
+  }
+}
+
+/**
  * Did an aesthetic reference land nowhere at all?
  *
  * PROVABLE, not heuristic: a listed fashion token in the brief is evidence the
@@ -365,10 +417,43 @@ export async function interpretBrief(input: {
   try {
     const result = await runOnce();
     const parsed = parseCastingIntent(result.text);
+    recordParseOutcome(!parsed.ok, result.truncated === true);
+
+    /*
+      A REPLY CUT OFF FOR LENGTH IS TRANSPORT, NOT A VERDICT.
+
+      This is the gravest class in the subsystem wearing a transport costume:
+      the fragment fails the parse, the compiler falls back, and the sheet is
+      cast as though the brief had said nothing — losing the sex, the age, the
+      heritage the user actually typed. Silently, and identically to a genuine
+      "the model returned nonsense".
+
+      So it is retried once as the transport failure it is, rather than
+      swallowed. A truncated interpretation can never masquerade as an honest
+      null.
+    */
+    if (!parsed.ok && result.truncated) {
+      log.warn(
+        { latencyMs: result.latencyMs },
+        "[interpreter] reply was CUT OFF at the token ceiling — retrying rather than dropping the brief's locks",
+      );
+      const retry = await runOnce();
+      const reparsed = parseCastingIntent(retry.text);
+      recordParseOutcome(!reparsed.ok, retry.truncated === true);
+      if (reparsed.ok) {
+        return {
+          ok: true,
+          intent: reparsed.intent,
+          latencyMs: result.latencyMs + retry.latencyMs,
+          model: retry.provenance.servedModel ?? retry.provenance.model,
+        };
+      }
+    }
+
     if (!parsed.ok) {
       if (parsed.reason === "unsupported_cohort") return { ok: false, reason: "unsupported_cohort" };
       log.warn(
-        { latencyMs: result.latencyMs },
+        { latencyMs: result.latencyMs, truncated: result.truncated === true },
         "[interpreter] reply could not be read as an intent — falling back",
       );
       return { ok: false, reason: "unavailable", latencyMs: result.latencyMs };
@@ -411,6 +496,10 @@ export async function interpretBrief(input: {
       log.info({ stage: "interpreter" }, "[interpreter] aesthetic reference landed nowhere — re-sampling once");
       const retry = await runOnce();
       const reparsed = parseCastingIntent(retry.text);
+      // Counted like any other attempt. A denominator that skips the retries
+      // is a rate nobody can act on — this one keeps the same brief's second
+      // reply in the same window as its first.
+      recordParseOutcome(!reparsed.ok, retry.truncated === true);
       if (reparsed.ok && !needsAestheticRetry(input.briefText, reparsed.intent)) intent = reparsed.intent;
     }
 

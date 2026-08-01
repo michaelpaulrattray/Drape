@@ -134,7 +134,7 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
             }
 
             const payload = (await response.json()) as {
-              choices?: Array<{ message?: { content?: string } }>;
+              choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
               model?: string;
             };
             const text = payload.choices?.[0]?.message?.content ?? "";
@@ -146,8 +146,18 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
               });
             }
 
+            /*
+              "length" means the provider stopped at the ceiling, so `text` is
+              a fragment. Surfaced rather than inferred: the caller cannot tell
+              a truncated reply from a malformed one by looking at it, and the
+              two deserve opposite handling — one is retryable transport, the
+              other is the model failing.
+            */
+            const truncated = payload.choices?.[0]?.finish_reason === "length";
+
             return {
               text,
+              truncated,
               latencyMs: Date.now() - startedAt,
               provenance: {
                 provider: "openrouter",

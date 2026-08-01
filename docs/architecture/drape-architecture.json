@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fad6b9a503223762"
+    "sourceFingerprint": "bbab6887ab3f4b5f"
   },
   "domains": [
     {
@@ -7725,6 +7725,10 @@
     {
       "id": "test:server/castingV2/stylingResolution.test.ts",
       "path": "server/castingV2/stylingResolution.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/truncation.test.ts",
+      "path": "server/castingV2/truncation.test.ts"
     },
     {
       "id": "test:server/castingV2/typecheckGate.test.ts",

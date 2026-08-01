@@ -63,7 +63,16 @@ async function sample(system: string, briefText: string) {
     maxOutputTokens: 1800,
   });
   const parsed = parseCastingIntent(result.text);
-  if (!parsed.ok) return { landed: false, where: "parse-failed" };
+  if (!parsed.ok) {
+    /*
+      TRUNCATED and parse-failed are tallied apart because they are different
+      failures with different fixes, and folding them together is how the
+      ceiling problem stayed invisible through three raises. A truncation is
+      the transport running out of room; a parse failure is the model
+      answering badly. The bar for this run is zero of the former.
+    */
+    return { landed: false, where: result.truncated ? "TRUNCATED" : "parse-failed" };
+  }
   const i = parsed.intent;
   const where =
     i.composedDirection != null ? "composed" : i.look != null ? "look" : i.archetype != null ? "archetype" : "NOWHERE";
@@ -86,7 +95,7 @@ for (const { brief, label } of BRIEFS) {
     // Only VALID samples count. A parse failure or a transport error is the
     // harness failing, not the prompt, and folding them in either direction
     // reports a number nobody can act on.
-    const valid = wheres.filter((w) => w !== "parse-failed" && w !== "error");
+    const valid = wheres.filter((w) => w !== "parse-failed" && w !== "error" && w !== "TRUNCATED");
     const landed = valid.filter((w) => w !== "NOWHERE").length;
     const tally = [...new Set(wheres)].map((w) => `${w}:${wheres.filter((x) => x === w).length}`).join(" ");
     rows.push(`  ${side}: landed ${landed}/${valid.length} valid   (${tally})`);

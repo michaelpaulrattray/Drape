@@ -169,6 +169,17 @@ export type TextResult = {
   provenance: ProviderProvenance;
   /** Milliseconds from dispatch to text in hand (M3 condition 4). */
   latencyMs: number;
+  /**
+   * TRUE when the provider stopped because it hit the token ceiling.
+   *
+   * The reply is then a fragment, and a fragment of JSON does not degrade to a
+   * missing field — it fails the whole parse. Without this signal that failure
+   * is indistinguishable from "the model returned nonsense", so a truncated
+   * interpretation silently becomes "the brief said nothing" and every stated
+   * lock is lost. A ceiling will always be a guess; whether we HIT it must not
+   * be.
+   */
+  truncated?: boolean;
 };
 
 export interface TextEngine {
