@@ -38,13 +38,25 @@ import { ARCHETYPES, LOOKS, type CastingIntent } from "./castingIntent";
  * exactly what shipped before, with no other path changing.
  */
 /*
-  OFF pending a founder ruling. Measured on the live harness at three samples
-  per brief: miu miu captured 3/3, Margiela 2/3, Wes Anderson 1/3. The founder
-  set "Margiela must still capture" as a non-negotiable anti-regression
-  condition, and 2/3 does not meet it — so the whole path lands dark rather
-  than shipping on a bar that was not cleared.
+  ON, on measured evidence rather than on a three-sample impression.
+
+  It sat OFF first, because at three samples per brief Margiela captured 2/3
+  and the founder's anti-regression condition is "Margiela must still capture".
+  That instrument was then found to be broken twice over — it omitted the token
+  ceiling, so 50% of Margiela's samples were TRUNCATED replies counted as
+  landed, and the "before" figure it was compared against was a single sample.
+
+  Re-measured properly: ten samples per brief per side, live interpreter,
+  truncation tallied apart from parse failure, and zero of either.
+
+    Margiela (anti-regression)  OLD  9/10 → NEW 10/10   (composed 9, look 1)
+    miu miu                     OLD  0/10 → NEW 10/10
+    Wes Anderson (non-fashion)  OLD  4/9  → NEW 10/10
+
+  Margiela does not merely still capture; nothing regressed on any brief. And
+  the goldens are green live at three runs each with the flag on.
 */
-export const COMPOSED_DIRECTION_ENABLED = false;
+export const COMPOSED_DIRECTION_ENABLED = true;
 
 export type StylingResolution =
   /** The brief named the styling itself; nothing is authored (deference). */
