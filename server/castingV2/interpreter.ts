@@ -31,8 +31,22 @@ import {
   parseCastingIntent,
   type CastingIntent,
 } from "./castingIntent";
+import { containsBrand } from "./brandScrub";
 
 const log = createModuleLogger("castingV2/interpreter");
+
+/**
+ * Did an aesthetic reference land nowhere at all?
+ *
+ * PROVABLE, not heuristic: a listed fashion token in the brief is evidence the
+ * user named a reference, so all three channels coming back null is a
+ * demonstrable miss rather than an honest silence. That is what makes this the
+ * role-repair pattern rather than a guess — it can never fire on a true null.
+ */
+function needsAestheticRetry(briefText: string, intent: CastingIntent): boolean {
+  if (!containsBrand(briefText)) return false;
+  return intent.composedDirection === null && intent.look === null && intent.archetype === null;
+}
 
 /** Exported for the prompt-contract tests; never used at runtime. */
 export const SYSTEM_PROMPT_FOR_TESTS = () => SYSTEM_PROMPT;
@@ -271,8 +285,9 @@ export async function interpretBrief(input: {
   }
 
   const startedAt = Date.now();
-  try {
-    const result = await textEngine.complete({
+  /** One sampling of the interpreter. Named so the retry can repeat it exactly. */
+  const runOnce = () =>
+    textEngine.complete({
       system: SYSTEM_PROMPT,
       user: input.briefText,
       json: true,
@@ -292,6 +307,8 @@ export async function interpretBrief(input: {
       signal: input.signal,
     });
 
+  try {
+    const result = await runOnce();
     const parsed = parseCastingIntent(result.text);
     if (!parsed.ok) {
       if (parsed.reason === "unsupported_cohort") return { ok: false, reason: "unsupported_cohort" };
@@ -314,9 +331,38 @@ export async function interpretBrief(input: {
       "[interpreter] brief interpreted",
     );
 
+    /*
+      THE AESTHETIC-REFERENCE RETRY.
+
+      Narrow, provable, and it can never fire on a true null — the role-repair
+      pattern. The condition is: the brief contains a LISTED FASHION TOKEN, and
+      the interpretation landed the aesthetic nowhere at all. A brand token in
+      the sentence is proof the user named a reference, so "all three null" is
+      demonstrably a miss rather than an honest silence.
+
+      One re-sample, never a loop. The failure is stochastic — measured at
+      roughly one run in three — so a single retry collapses it without turning
+      a bad day at the provider into an unbounded spend.
+
+      **Named limit:** only FASHION references are detected, because the token
+      list is the only detector that exists and it is deliberately fashion-only
+      (extending it toward "every trademark in the world" would start eating
+      ordinary words — see `brandScrub`). A general reference like "a Wes
+      Anderson casting" gets no retry and captures stochastically. That is a
+      known gap, not an oversight, and the Path B treatment stage is where it
+      properly closes.
+    */
+    let intent = parsed.intent;
+    if (needsAestheticRetry(input.briefText, intent)) {
+      log.info({ stage: "interpreter" }, "[interpreter] aesthetic reference landed nowhere — re-sampling once");
+      const retry = await runOnce();
+      const reparsed = parseCastingIntent(retry.text);
+      if (reparsed.ok && !needsAestheticRetry(input.briefText, reparsed.intent)) intent = reparsed.intent;
+    }
+
     return {
       ok: true,
-      intent: parsed.intent,
+      intent,
       latencyMs: result.latencyMs,
       model: result.provenance.servedModel ?? result.provenance.model,
     };

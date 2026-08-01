@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9c099e75800d23a1"
+    "sourceFingerprint": "de262138d341346f"
   },
   "domains": [
     {
@@ -7633,6 +7633,10 @@
     {
       "id": "test:server/castingV2-roll-domain-db.test.ts",
       "path": "server/castingV2-roll-domain-db.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/aestheticRetry.test.ts",
+      "path": "server/castingV2/aestheticRetry.test.ts"
     },
     {
       "id": "test:server/castingV2/ageIdioms.test.ts",
@@ -15963,6 +15967,11 @@
     {
       "from": "module:server/castingV2/heritagePromotion.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/interpreter.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
     },
     {
