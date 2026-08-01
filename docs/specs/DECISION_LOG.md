@@ -1860,19 +1860,37 @@ candidates. "Pastel pink" is comparable to no `HairColour`. Stated hair is a
 **deference fact**: it suppresses authoring and injects the user's phrase. It
 gets its own derived view rather than widening the lock channel.
 
-**PARKED FOR THE FOUNDER — a conditions amendment, not an executor call.**
+**CONDITIONS AMENDMENT — APPROVED (founder ruling, 2026-08-01).**
+
+> *"Conditions serve their intent, not their letter."*
+
 D-79's conditions 1 and 3 were written against the `hairSpoken`-classification
-design. Condition 1 (the prompt must say the words must still appear in
-`role`/`characterNotes`) is moot under a design that does not depend on prose
-surviving. Condition 3 (a test exercising the real decomposition, so a prompt
-change that drops prose fails the build) cannot be met literally, because a
-build test cannot call a paid provider. The proposed substitute regime is:
-**adversarial-stub build tests** (feed the composer gate-positive briefs with
-all-null and with junk structured values, and assert no authored hair
-contradicts), plus an **env-gated live-interpreter suite** that skips in
-`pnpm test`, plus the golden harness before the flag flips. Condition 4 is
-unchanged and unaffected. Until the founder rules, the feature ships behind a
-one-line disable constant and is not turned on.
+design, and the re-ship does not use it.
+
+**Condition 1 is moot by design.** It required the interpreter prompt to state
+that the structured field is a hint and the user's words must still appear in
+`role`/`characterNotes`. The classification field it guarded no longer exists —
+the gate reads the sentence, so nothing depends on prose surviving.
+
+**Condition 3 is met in intent, more strongly than in letter.** Its intent was
+*never again a suite that proves the layer above the broken one*. A build test
+cannot call a paid provider, so the literal wording is unreachable; the
+substitute tests the exact failure shapes that shipped last time — an
+adversarial-stub suite driving the composer with a silent, all-null, junk,
+string-shaped and hallucinating interpreter, plus the live golden driver. That
+is a stronger instrument than the original wording, which would have been
+satisfied by any test that happened to call the real decomposition once.
+
+**Both substitutes are PERMANENT, not one-off gate-passes.** The stub suite
+stays in the build gate. The live driver
+(`scripts/drive-partial-deference.mts`) remains the bar for every future
+interpreter-prompt change, which is already law for the golden harness and now
+covers this too.
+
+Condition 4 was unchanged and is met: all seven briefs verified live, 0 safety
+failures across 21 samples, and the founder's own dogfood passed — pink 8/8,
+silver-at-the-temples with eight distinct cuts, shaved 8/8, the goth's stated
+length with colour varying. **`PARTIAL_DEFERENCE_ENABLED` is ON.**
 
 ---
 

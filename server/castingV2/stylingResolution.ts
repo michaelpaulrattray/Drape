@@ -69,11 +69,17 @@ export const COMPOSED_DIRECTION_ENABLED = true;
  * axis. ON narrows that from the axis to the PART, so "silver at the temples"
  * states a colour and still gets eight different authored cuts.
  *
- * It stays off until D-79's condition 4 is met — all five founder briefs
- * verified live — and until the founder rules on the conditions amendment
- * recorded in D-89. The feature being built is not the feature being on.
+ * ON since 2026-08-01, on evidence rather than on hope. The live driver ran the
+ * real interpreter over all seven briefs at 21 samples: zero safety failures,
+ * twenty-one of twenty-one landing their stated fact but one. The founder then
+ * dogfooded it — pink 8/8, silver-at-the-temples with eight distinct cuts,
+ * shaved 8/8, the goth's stated length with its colour still varying — and
+ * D-89's conditions amendment was approved with the verdict.
+ *
+ * The rollback remains sixty seconds: flip this to `false` and every path
+ * returns to whole-axis deference, with nothing else changing.
  */
-export const PARTIAL_DEFERENCE_ENABLED = false;
+export const PARTIAL_DEFERENCE_ENABLED = true;
 
 export type StylingResolution =
   /** The brief named the styling itself; nothing is authored (deference). */

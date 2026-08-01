@@ -194,25 +194,15 @@ describe("the interpreter at its WORST never contradicts the brief", () => {
 /* ------------------------------------------------------- the kill switch */
 
 describe("the kill switch", () => {
-  it("is OFF until the founder rules on D-89's conditions amendment", () => {
+  it("is ON — founder-flipped 2026-08-01 after the dogfood passed", () => {
     /*
-      Pinned deliberately. D-79 was shipped and rolled back the same day, and
-      condition 4 requires the five founder briefs verified live before this
-      turns on. A test that fails the day someone flips it is the point: the
-      flip should be a decision, not a diff nobody noticed.
+      Pinned in both directions, deliberately. It was pinned OFF while the
+      feature was being built, and it is pinned ON now, because the state of
+      this switch is a founder decision either way and should never be a diff
+      nobody noticed. D-79 was shipped and rolled back inside a day; the flip
+      that turns it back off should be as deliberate as the one that turned it
+      on.
     */
-    expect(PARTIAL_DEFERENCE_ENABLED).toBe(false);
-  });
-
-  it("composes exactly today's behaviour while off — the whole axis defers", async () => {
-    const compiled = await sheet(
-      "a photographer in his 50s with salt and pepper hair",
-      { role: "photographer", sex: "male", ageBand: "50s", statedHair: { greying: true } },
-      "off-behaviour",
-    );
-    // Nothing authored, because the brief spoke about hair at all.
-    for (const candidate of compiled.candidates) {
-      expect(hairLine(candidate.prompt)).toBe("");
-    }
+    expect(PARTIAL_DEFERENCE_ENABLED).toBe(true);
   });
 });

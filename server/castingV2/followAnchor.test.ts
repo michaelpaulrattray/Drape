@@ -417,13 +417,35 @@ describe("stated hair outranks authored hair", () => {
     expect(prompt).not.toContain("Cut and worn as that style is genuinely worn");
   });
 
+  /*
+    REWRITTEN FOR D-79's approved ruling, deliberately rather than deleted.
+
+    "Greying at the temples" moved OUT of this list with the ruling: it states a
+    process and names no cut, so authoring one is now the correct behaviour and
+    the whole point of partial deference — the founder's own silver-temples
+    brief is supposed to come back with eight distinct cuts.
+
+    "Silver crew cut" stayed, and it caught a real gap while it did. The
+    tokenizer splits "crew cut" into two words that are each innocent, so the
+    gate saw a colour and no length, and partial deference would have authored a
+    cut over the one the user asked for — the D-79 contradiction arriving
+    through the gate rather than through the interpreter. `HAIR_PART_PHRASES`
+    closes it.
+  */
   it.each([
     ["silver crew cut"],
     ["long blonde hair"],
     ["bleached brows and a buzz cut"],
-    ["greying at the temples"],
-  ])("defers on %j", async (notes) => {
+  ])("defers on %j — the brief named the cut itself", async (notes) => {
     expect(await promptFor("creator", notes)).not.toContain("Cut and worn as that style is genuinely worn");
+  });
+
+  it("authors a cut on 'greying at the temples' — that is the D-79 ruling", async () => {
+    // Stating a process about the colour must no longer silence the cut. This
+    // is the assertion that would have failed before the re-ship.
+    expect(await promptFor("creator", "greying at the temples")).toContain(
+      "Cut and worn as that style is genuinely worn",
+    );
   });
 
   it("still authors hair when the brief says nothing about it", async () => {

@@ -1266,6 +1266,36 @@ const HAIR_WORDS = Array.from(
 const HAIR_PHRASES = ["salt and pepper", "salt-and-pepper", "pepper and salt"];
 
 /**
+ * Multi-word hair statements, and the part each one names.
+ *
+ * The tokenizer splits on non-letters, so "crew cut" is `crew` + `cut` and
+ * neither is a hair word — `crew` belongs to a boat and bare `cut` was
+ * deliberately removed from the vocabulary because "a clean-cut banker" is not
+ * a hair statement. So a brief saying "silver crew cut" registered its COLOUR
+ * and not its LENGTH, and partial deference would then have authored a cut
+ * directly over the one the user asked for. That is the D-79 contradiction
+ * exactly, reintroduced through a gap in the gate rather than through the
+ * interpreter.
+ *
+ * Matched as phrases against the raw text, which is the only form that is both
+ * safe and complete — the same reasoning `HAIR_PHRASES` already carries for
+ * "salt and pepper".
+ */
+const HAIR_PART_PHRASES: readonly (readonly [string, HairPart])[] = [
+  ["crew cut", "cutLength"],
+  ["buzz cut", "cutLength"],
+  ["pixie cut", "cutLength"],
+  ["bowl cut", "cutLength"],
+  ["short back and sides", "cutLength"],
+  ["shoulder length", "cutLength"],
+  ["shoulder-length", "cutLength"],
+  ["chin length", "cutLength"],
+  ["chin-length", "cutLength"],
+  ["waist length", "cutLength"],
+  ["waist-length", "cutLength"],
+];
+
+/**
  * Words that describe hair ONLY when nothing else on the face owns them.
  *
  * "A beauty creator in her late 20s, bleached brows" tripped the gate on
@@ -1364,6 +1394,9 @@ export function spokenHairParts(
   // A phrase the tokenizer cannot see. Always a colour statement, and always
   // the greying kind — "salt and pepper" is not a shade, it is a process.
   if (HAIR_PHRASES.some((phrase) => text.includes(phrase))) parts.add("colour");
+  for (const [phrase, part] of HAIR_PART_PHRASES) {
+    if (text.includes(phrase)) parts.add(part);
+  }
 
   /*
     An ambiguous word claimed by a feature word NEXT TO IT is not a hair
@@ -1586,6 +1619,22 @@ function describePartialHair(input: {
   const greying = stated.greying
     ? " Greying naturally at the temples and through the sides, the base colour still visible."
     : "";
+
+  /*
+    THE CUT IS THE SENTENCE'S SUBJECT.
+
+    Colour and texture are adjectives hanging off a noun, so when the brief
+    named the cut and the interpreter did not say what it was, there is nothing
+    to hang them on — "a silver crew cut" would compose as "HAIR: a straight",
+    which is not a sentence and is not a fact either. The honest degrade is
+    whole-axis silence: the user's own words still reach the picture through the
+    role and character fields, exactly as they did before this feature existed.
+
+    Greying survives it, because it describes the hair rather than the cut.
+  */
+  if (spoken.has("cutLength") && length === null) {
+    return greying ? ` HAIR:${greying}` : "";
+  }
 
   const words = [colour, texture, length].filter((word): word is string => Boolean(word));
   /*
