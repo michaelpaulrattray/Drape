@@ -139,4 +139,20 @@ describe("the rename dialog", () => {
     const rename = await readFile(RENAME, "utf8");
     expect(rename.indexOf("dpc-signm__field")).toBeLessThan(rename.indexOf("dpc-renamem__helper"));
   });
+
+  it("gives the actions air, and does not double it where a cost line already does", async () => {
+    /*
+      The delete dialog has no cost line between its field and its buttons, so
+      without a margin the actions butt straight against the type row and read
+      as part of the field rather than as the decision being made. The sign
+      modal DOES have one, and stacking both would open a gap there.
+    */
+    const css = await readFile(CSS, "utf8");
+    const actions = css.slice(
+      css.indexOf(".dpc-signm__actions {"),
+      css.indexOf(".dpc-signm__secondary"),
+    );
+    expect(actions).toContain("margin-top: 18px");
+    expect(css).toContain(".dpc-signm__cost + .dpc-signm__actions { margin-top: 0; }");
+  });
 });

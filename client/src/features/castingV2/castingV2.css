@@ -2028,11 +2028,21 @@
 */
 .dpc-signm__tilde { color: var(--muted); }
 
+/*
+  The actions need air above them. The sign modal gets it from the cost line
+  sitting between field and buttons; the delete dialog has no cost line, so
+  without this the buttons butt straight against the type row and read as part
+  of the field rather than as the decision.
+*/
 .dpc-signm__actions {
   display: flex;
   justify-content: flex-end;
   gap: 9px;
+  margin-top: 18px;
 }
+
+/* The cost line already supplies the gap where there is one. */
+.dpc-signm__cost + .dpc-signm__actions { margin-top: 0; }
 
 .dpc-signm__secondary {
   padding: 10px 15px;
