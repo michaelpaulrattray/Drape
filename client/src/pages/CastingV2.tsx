@@ -476,11 +476,10 @@ export default function CastingV2() {
                 aria-label="Casting brief"
               />
               <Button variant="primary" size="small" onClick={startCasting} disabled={starting}>
-                {starting ? "Casting…" : `Cast it · ${price} cr`}
+                {starting ? "Casting…" : "Cast it"}
                 {starting ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
               </Button>
             </Field>
-
             {/*
               Nudge chips. One tap fills the box — they do not roll, and they
               carry no price of their own. A chip that both spends and hides
@@ -494,6 +493,21 @@ export default function CastingV2() {
                   {seed.label}
                 </Chip>
               ))}
+              {/*
+                THE COST, IN THE ROW THAT IS ALREADY THERE.
+
+                It had its own line under the field, which pushed the seeds down
+                and left a gap between the box and them — a price is metadata
+                and metadata should not cost a row. Folded to the end of the TRY
+                row it sits at the same optical distance from the button and
+                takes no vertical space at all.
+
+                NO BALANCE HERE (founder ruling, 2026-08-03). Casting from the
+                lobby happens once; "how much is left" answers a question nobody
+                is asking yet. It earns its place on the sheet, where you roll
+                again and again and the number is actually moving.
+              */}
+              <span className="dpc-hero__cost">{price} credits</span>
             </div>
           </div>
 

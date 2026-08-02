@@ -122,6 +122,10 @@ export default function CastingSheet() {
   */
   /** Which candidate the viewer is open on. Null when it is closed. */
   const [viewerCandidateId, setViewerCandidateId] = useState<string | null>(null);
+  /* Balance context for the cost line — the question a price actually raises. */
+  const balance = trpc.credits.getBalance.useQuery(undefined, {
+    staleTime: 30_000,
+  }).data?.balance;
   const [signing, setSigning] = useState<
     {
       candidateId: string;
@@ -1154,7 +1158,7 @@ export default function CastingSheet() {
               onClick={() => dispatchRoll("roll")}
               disabled={awaitingNewRoll}
             >
-              {awaitingNewRoll ? "Rolling…" : `Roll again · ${price} cr`}
+              {awaitingNewRoll ? "Rolling…" : "Roll again"}
             </Button>
           </div>
           <div className="dp-row">
@@ -1220,16 +1224,29 @@ export default function CastingSheet() {
             ) : (
               <Instruction>Keep the ones worth a second look</Instruction>
             )}
+            <span style={{ flex: 1 }} />
             {/*
-              THE PRICE, ONCE (founder ruling, 2026-08-02). Rolls and follows
-              cost the same thing, so they state it in one persistent place
-              adjacent to both rather than on every tile. No tap is unpriced;
-              no tap shouts.
+              THE COST LINE — the whole pricing doctrine in one string.
+
+              Cost is METADATA, never button text (founder ruling, 2026-08-03).
+              Immediate-fire actions — Roll again, Follow — carry no price;
+              this line carries it once for both, right-aligned and in mono
+              because it is a machine fact and the mono law says so. The
+              balance rides along BECAUSE THIS ACTION REPEATS: you roll, look,
+              roll again, and the number is genuinely moving. That is the whole
+              rule for whether it appears — the lobby's Cast it happens once and
+              shows the cost alone, since "how much is left" answers a question
+              nobody is asking yet (founder ruling, 2026-08-03).
+
+              Ceremony-gated actions are absent from it: Sign's price belongs
+              to its confirm, which is where the commitment happens.
             */}
             {price ? (
-              <span className="dpc-dock__price">Rolls and follows · {price} cr</span>
+              <span className="dpc-dock__cost">
+                {price} credits
+                {typeof balance === "number" ? ` · ${balance.toLocaleString()} left` : ""}
+              </span>
             ) : null}
-            <span style={{ flex: 1 }} />
             {/*
               Undo is offered only on the live roll. The server already refuses
               it elsewhere — the CAS is anchored to `activeRollId`, which is
@@ -1287,7 +1304,7 @@ export default function CastingSheet() {
                     : undefined
                 }
               >
-                Sign to roster{signPrice ? ` · ${signPrice} cr` : ""}
+                Sign to roster
               </Button>
             ) : (
               /*
