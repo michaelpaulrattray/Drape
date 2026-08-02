@@ -503,7 +503,25 @@ export async function recoverCastingV2SignOperation(
     });
   }
 
-  const views = activation.type === "activated" ? activation.slots.length : CAST_PACKAGE_VIEWS.length;
+  /*
+    VIEWS SOLD, not slots sealed — and they stopped being the same number.
+
+    `activation.slots` includes the `frontClose` slot that `activateSignedCast`
+    seals from the 1K anchor to satisfy the snapshot authority (D-97). Under
+    package v3.1 `frontClose` is no longer a view anybody buys, so counting
+    slots would report SIX views on a five-view Sign — on a receipt whose whole
+    purpose is to be read by support when something went wrong.
+
+    Intersected with this Sign's own promise, so the count is what she paid for
+    however the composition moves under her. The live path was always right
+    (`signService` counts committed views); only recovery read the slots.
+  */
+  const sealed = activation.type === "activated"
+    ? new Set(activation.slots.filter(
+      (angle) => promise.angles.includes(angle as CastViewAngle),
+    ))
+    : new Set<string>();
+  const views = activation.type === "activated" ? sealed.size : promise.angles.length;
   const partial = unsettled.length > 0 || refundedCredits > 0;
   await (options.finalizeFenced ?? finalizeFencedCastingV2SignOperation)({
     userId: operation.userId,

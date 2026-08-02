@@ -33,37 +33,46 @@ import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 
 /**
- * PACKAGE v3 — five generated views (founder ruling, 2026-08-02, after the gate
- * run), presented beneath the Master.
+ * PACKAGE v3.1 — the final composition (founder ruling, 2026-08-02). This ends
+ * the package saga.
  *
  * The strip shows SIX things and the first is not generated: **Master**, the
- * signed sheet image itself, then the close-up, the portrait, the front, the
- * profile and the back. The Master costs nothing and is never re-rendered — it
- * is the face that was chosen.
+ * signed sheet image itself, then the close-up, the three-quarter, the front,
+ * the profile and the back. The Master costs nothing and is never re-rendered —
+ * it is the face that was chosen.
  *
- * What changed in v3, and why:
+ * **A clean turnaround plus the detail shot.** Read as angles rather than as a
+ * list, the package is now 0° / 45° / 90° / 180°, with one crop that exists to
+ * show skin:
  *
- * - **A true `closeUp` exists** — a tight face macro at 2K, and the micro-detail
- *   lead for the character-sheet artifact. v2 asked `frontClose` to do this job
- *   and it never did: that slot renders head-and-shoulders and always has.
- * - **`frontClose` is honestly relabelled Portrait.** The label now describes
- *   what the pixels are rather than what the profile wished they were.
- * - **The three-quarter retires**, as the walk did in v2. A reconstruction needs
- *   detail, proportion, bone structure and hair mass; a three-quarter is a
- *   comp-card nicety and the close-up buys more.
- * - **The price does not move**: still five generated views, 200 + 5 x 50.
- * - The set a generator actually needs to rebuild a person from three-to-five
- *   references: **close-up** (detail), **front** (proportions), **profile**
- *   (bone structure), **back** (hair mass, and the garment surface VTO works
- *   on). **Three-quarter** stays for the comp-card deliverable.
+ *   Master      chest-up, 0°   — the signed face, free
+ *   Close-up    the beauty band — detail
+ *   Three-quarter          45°  — the angle engines and campaigns actually use
+ *   Full front             0°   — proportion
+ *   Side profile           90°  — bone structure
+ *   Full back              180° — hair mass, and the surface VTO works on
  *
- * Ordered as the room reads them, and every entry must be a canonical angle —
+ * **What v3.1 changed, and why.** v3 carried `frontClose` ("Portrait") as well
+ * as the Master and the close-up, which made **three frontal crops** — one too
+ * many. The Master already shows her chest-up and square to camera; a Portrait
+ * beside it is the same rung of the zoom ladder climbed twice. So the portrait
+ * retires and the **three-quarter returns**: 45° was the one genuinely missing
+ * viewpoint, and it is the one downstream generation asks for most.
+ *
+ * **The price does not move**: still five generated views, 200 + 5 × 50.
+ *
+ * **Historical record, as ever.** A Cast keeps the package it bought. "Package
+ * Three" keeps her Portrait forever; every Cast renders its own slots from its
+ * own durable promise, which is what makes a mixed roster legal by construction
+ * (D-102). Nothing here is retroactive.
+ *
+ * Ordered as the room reads them, and every entry must be a known angle —
  * `modelAssets.viewType` is a fixed enum and a profile that named something
  * outside it would fail at the first insert rather than at review.
  */
 export const CAST_PACKAGE_VIEWS: readonly CastViewAngle[] = [
   "closeUp",
-  "frontClose",
+  "threeQuarter",
   "frontFull",
   "sideClose",
   "backFull",
@@ -113,12 +122,33 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
  * The continuity the customer actually cares about is with the face they
  * signed, so that is what the spec asks for. It is also the only version that
  * stays true when the sheet's wardrobe latitude widens again.
+ *
+ * **The same defect, found a second time and closed properly (2026-08-02).**
+ * The v3.1 verification Sign lost its full-back view because the judge reported
+ * *"dark leather dress shoes instead of plain neutral shoes, and trousers with
+ * visible stitch detailing not specified as plain."* The anchor is a CHEST-UP
+ * photograph. It shows no trousers and no shoes, so there was nothing to
+ * compare against — the judge was left adjudicating our own adjective "plain"
+ * against its own taste, and the customer paid 50 credits for the ambiguity.
+ *
+ * An axis told to fail when unsure (§I) must therefore never be pointed at
+ * something the reference cannot establish. So this sentence — which BOTH the
+ * judge and the generator read (`composePackageViewPrompt`) — now names its own
+ * limits: compare what both images show, and treat additions as failures
+ * wherever they appear.
+ *
+ * The trousers and shoes did not simply vanish. They moved into the DIRECTIVE
+ * of the three full-length views, which is generation guidance and is never
+ * shown to the judge. The garment is still asked for; it just stops being
+ * grounds for a refund nobody could have earned.
  */
 export const CAST_PACKAGE_WARDROBE_SPEC =
   "the SAME plain unbranded crew-neck top the reference photograph shows, in the same colour, "
-  + "unchanged across every view; on full-length views, plain unbranded neutral trousers and plain "
-  + "unbranded shoes in a tone that sits with it. "
-  + "No jacket, no jewellery, no hat, no bag, no props, no printed text or logos anywhere.";
+  + "unchanged across every view. "
+  + "The reference is a chest-up photograph, so it shows no trousers and no shoes: anything "
+  + "below the frame of the reference CANNOT be compared to it and must not fail this check. "
+  + "Judge only what both images show, plus ADDITIONS — a jacket, jewellery, a hat, a bag, a "
+  + "prop, or any printed text or logo is a failure wherever it appears.";
 
 /**
  * The close-up's own wardrobe sentence.
@@ -176,35 +206,82 @@ const WARDROBE = CAST_PACKAGE_WARDROBE_SPEC;
 
 const VIEWS: Record<CastViewAngle, CastPackageView> = {
   /*
-    THE TRUE CLOSE-UP — v3's new view, and what the character-sheet artifact
-    will lead with. Deliberately tighter than any crop this product has
-    produced: the point is skin, iris and hairline detail a downstream
-    generator can rebuild a face from.
+    THE BEAUTY CROP — a BAND, not a point (founder ruling, 2026-08-02, final).
+
+    v3 shipped a macro that cropped at the lower lip, and it was too tight: a
+    face with no chin is a texture sample, not a portrait of anyone. The founder
+    supplied two references and the answer is the range between them —
+
+      tight bound   brow to chin
+      loose bound   forehead to chin
+
+    — with the chin and both eyes present in every case, the crown free to crop,
+    and hair free to run off the sides.
+
+    Writing it as a band is what makes the conformance check real. A single
+    ideal crop can only be judged by "how close is this", which a vision model
+    answers with a shrug.
+
+    So both bounds are stated as LANDMARK PREDICATES rather than as proportions.
+    A judge reliably answers "is the chin inside the frame" and "are the
+    shoulders in frame"; it answers "does the face fill 80% of the height"
+    badly. Too tight is therefore a CUT REQUIRED landmark — the margin of skin
+    below the chin is what a too-tight crop destroys first — and too loose is a
+    PRESENT FORBIDDEN one: shoulders, or headroom above the hair. Both are yes
+    or no by looking, which is also what makes §I's fail-closed default
+    ("unsure fails") work for us rather than against us.
+
+    And the DIRECTIVE aims mid-band, not at an edge. v3's directive commanded
+    "to just below the lower lip" — ship that beside this spec and every
+    close-up would fail its own conformance check by construction, charging and
+    refunding the customer for our contradiction. That is exactly the defect the
+    maiden voyage found in the wardrobe spec; it does not get to happen twice.
   */
   closeUp: {
     angle: "closeUp",
     label: "Close-up",
     spec: {
       framing:
-        "a tight macro of the face, filling the frame from just above the eyebrows to just "
-        + "below the lower lip, square to the camera, both eyes critically sharp — close "
-        + "enough to read skin texture, pores and iris detail",
+        "a tight, front-on crop of the face: no tighter than eyebrows-to-chin, and no looser "
+        + "than forehead-to-chin. The chin, the mouth and both eyes are entirely inside the "
+        + "frame, with a margin of skin visible BELOW the chin. "
+        + "TOO TIGHT, and it fails: the bottom edge cuts the chin or the mouth, or the chin "
+        + "touches the bottom edge with no skin below it. "
+        + "The top of the head may be cropped and hair may run off the left and right edges — "
+        + "but TOO LOOSE, and it fails: the neck and shoulders are in frame, or the whole "
+        + "head fits with clear space above the hair. That is a portrait, not a close-up.",
       wardrobe: CLOSE_UP_WARDROBE,
     },
     directive:
-      "EXTREME CLOSE-UP MACRO OF THE FACE. The face fills the entire frame — crop from just "
-      + "above the eyebrows to just below the lower lip, cutting off the top of the head and "
-      + "the sides of the hair. Square to camera, both eyes looking directly into the lens "
-      + "and critically sharp. Skin texture, pores, vellus hair, individual lashes and iris "
-      + "striations are all resolved at full detail. This is a macro, far closer than any "
-      + "portrait crop.",
+      "BEAUTY CLOSE-UP OF THE FACE, STRAIGHT ON. The face fills the frame. Crop the TOP of "
+      + "the frame across the forehead — anywhere between the eyebrows and the hairline — so "
+      + "the crown of the head is cut off, and let the hair run off the left and right edges. "
+      + "The BOTTOM of the frame sits below the chin: the whole chin is visible. Both eyes "
+      + "look directly into the lens and are critically sharp. Skin texture, pores, vellus "
+      + "hair, individual lashes and iris detail are all resolved. Do NOT crop at the mouth "
+      + "or cut the chin, and do NOT pull back far enough to show the whole head or the "
+      + "shoulders.",
   },
+  /*
+    RETIRED FROM THE PROFILE, kept in the record (package v3.1) — and unlike the
+    walk, this angle still does a job.
+
+    No new Sign buys a portrait: the Master already shows her chest-up and
+    square to camera, so a Portrait beside it was the same rung of the zoom
+    ladder climbed twice. But `frontClose` is the angle the 1K ANCHOR is stored
+    under, and `activateSignedCast` still seals a `frontClose` slot from it
+    because the snapshot authority requires a displayed headshot (D-97). The
+    entry therefore stays live rather than becoming a memorial: every Cast has
+    one of these rows, and Casts signed under v2 and v3 own a paid 2K view here
+    that must keep its spec and its label forever.
+  */
   frontClose: {
     angle: "frontClose",
     /*
       "Portrait" from v3. This slot renders head-and-shoulders and always did —
       v2's "Close-up" label described an intention the pixels never met, which
-      the founder spotted on his own Cast within a minute.
+      the founder spotted on his own Cast within a minute. `castPackageLabel`
+      resolves the era; a v3.1 Cast's only frontClose image is her Master.
     */
     label: "Portrait",
     spec: {
@@ -244,7 +321,10 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     directive:
       "FULL BODY FRONT VIEW. The subject stands square to camera, head to feet entirely inside the "
       + "frame with margin above the hair and below the shoes. Arms relaxed at the sides, weight even, "
-      + "standing still rather than posing.",
+      + "standing still rather than posing."
+      + "Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
+      + "tone that sits with the top — no visible hardware, buttons, stitch detailing or "
+      + "logos.",
   },
   sideClose: {
     angle: "sideClose",
@@ -287,7 +367,10 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     directive:
       "STRICT RIGHT-FACING FULL BODY SIDE PROFILE, WALKING. The subject's nose and toes point toward "
       + "the RIGHT EDGE OF THE OUTPUT FRAME; the torso stays in true profile and the stride is mid-walk. "
-      + "Head to feet entirely inside the frame.",
+      + "Head to feet entirely inside the frame."
+      + "Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
+      + "tone that sits with the top — no visible hardware, buttons, stitch detailing or "
+      + "logos.",
   },
   backFull: {
     angle: "backFull",
@@ -299,7 +382,10 @@ const VIEWS: Record<CastViewAngle, CastPackageView> = {
     },
     directive:
       "FULL BODY FROM BEHIND, walking away from camera. Head to feet entirely inside the frame. "
-      + "The face is not visible. Add nothing to the back or arms that the reference does not show.",
+      + "The face is not visible. Add nothing to the back or arms that the reference does not show."
+      + "Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
+      + "tone that sits with the top — no visible hardware, buttons, stitch detailing or "
+      + "logos.",
   },
 };
 
@@ -326,19 +412,26 @@ export function castPackageLabel(
   promisedAngles: readonly CastViewAngle[],
 ): string {
   /*
-    Two retirements now, so two eras to tell apart — and each is readable from
-    the Cast's own promise:
+    Every era of this one slot, told apart from the Cast's OWN promise — nothing
+    is stored, because the promise is already durable:
 
-      v1  contains the walk          -> `frontClose` was "Headshot"
-      v2  no walk, no true close-up  -> `frontClose` was "Close-up"
-      v3  contains a true close-up   -> `frontClose` is "Portrait"
+      v1    contains the walk            -> `frontClose` was "Headshot"
+      v2    no walk, no true close-up    -> `frontClose` was "Close-up"
+      v3    close-up AND frontClose      -> `frontClose` is "Portrait"
+      v3.1  no frontClose promised       -> the only frontClose image she has
+                                            IS the signed face: "Master"
 
-    A fourth composition adds a clause here. Nothing is stored, because the
-    promise is already durable.
+    The v3.1 clause is deliberately not dead code even though the room draws its
+    Master tile from the anchor directly. `frontClose` remains a real row in her
+    ledger — the anchor is stored under that angle, and `activateSignedCast`
+    still seals a `frontClose` slot from it, because the snapshot authority
+    requires one (D-97). Anything that walks those rows and asks for a label
+    must get an honest one rather than the label of a view she never bought.
   */
   if (angle !== "frontClose") return VIEWS[angle].label;
   if (promisedAngles.includes("sideFull")) return "Headshot";
   if (!promisedAngles.includes("closeUp")) return "Close-up";
+  if (!promisedAngles.includes("frontClose")) return "Master";
   return VIEWS.frontClose.label;
 }
 

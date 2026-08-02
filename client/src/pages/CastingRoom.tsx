@@ -59,7 +59,7 @@ const REFINE_CHIPS = ["Softer light", "Plain styling", "Outdoors", "Closer crop"
 const WAVE = [30, 55, 40, 70, 45, 85, 35, 60, 50, 75, 40, 65, 30, 80, 45, 55, 70, 35, 60, 40, 75, 50, 65, 30, 55, 45, 70, 40, 60, 35];
 
 /** What the two companion cells show, before either has landed. */
-const COMPANION_LABELS = ["Close-up", "Side profile"];
+const COMPANION_LABELS = ["Three-quarter", "Side profile"];
 
 /**
  * Save every landed image in the package, one after another.
@@ -159,7 +159,18 @@ export default function CastingRoom() {
     Until then the package's own best two fill the space rather than leaving a
     drawn block half empty.
   */
-  const companions = ["closeUp", "sideClose"].map(
+  /*
+    THE HERO SHOWS HER AS A PERSON, FROM THREE ANGLES (founder ruling,
+    2026-08-02, final): Master large, then the three-quarter and the side
+    profile beside it.
+
+    The close-up was here in v3 and it was the wrong companion — a face macro
+    next to a chest-up frame is the same view twice at different zooms, and the
+    hero's job is to say who she is, not how her skin resolves. It lives one
+    click away, in the strip and the viewer, which is where someone goes when
+    detail is what they came for.
+  */
+  const companions = ["threeQuarter", "sideClose"].map(
     (angle) =>
       data?.slots.find((slot) => slot.angle === angle && slot.url && !slot.standIn) ?? null,
   );

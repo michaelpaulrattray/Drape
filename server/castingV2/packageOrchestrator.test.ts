@@ -314,13 +314,17 @@ describe("what recovery still has to settle", () => {
       { viewType: "frontFull", resolution: "2K", storageUrl: "u", status: null },
       // A written-off view.
       { viewType: "backFull", resolution: "2K", storageUrl: "", status: { state: "failed" } },
-      // The 1K anchor: it fills the headshot SLOT, but it is not the 2K
-      // re-render the customer paid for, so that view is still unsettled.
+      /*
+        The 1K anchor. Package v3.1 does not sell `frontClose` at all, so it can
+        never be unsettled — but the row is kept in the fixture deliberately,
+        because it must not be mistaken for a landed view of anything. Recovery
+        settles what the PROFILE promised; this angle is not on the list.
+      */
       { viewType: "frontClose", resolution: "1K", storageUrl: "anchor", status: null },
     ] as never);
 
     const unsettled = await unsettledPackageAngles({ userId: 1, modelId: 901 });
-    expect(unsettled).toEqual(["closeUp", "frontClose", "sideClose"]);
+    expect(unsettled).toEqual(["closeUp", "threeQuarter", "sideClose"]);
   });
 });
 

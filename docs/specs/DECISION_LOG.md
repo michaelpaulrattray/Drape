@@ -2597,4 +2597,94 @@ only while there is a sheet to open.
 
 ---
 
+## D-106 — Package v3.1. The composition is final.
+
+**Founder ruling (2026-08-02).** This ends the package saga.
+
+    Master · Close-up · Three-quarter · Full front · Side profile · Full back
+
+**The three-quarter returns; the Portrait retires.** Five generated views,
+price unchanged at 450.
+
+**The reasoning, on the record.** v3 carried `frontClose` ("Portrait") alongside
+the Master and the close-up — **three frontal crops, one too many.** The Master
+already shows her chest-up and square to camera, so a Portrait beside it was the
+same rung of the zoom ladder climbed twice. 45° was the genuinely missing
+viewpoint and the one downstream generation asks for most. Read as angles, the
+package is now a clean **0° / 45° / 90° / 180° turnaround plus the detail shot**.
+
+**Historical record, as ever.** "Package Three" keeps her Portrait forever.
+Every Cast renders its own slots from its own durable promise, which is what
+makes a mixed roster legal by construction (D-102). Nothing is retroactive.
+
+### The close-up is a BAND
+
+Founder's final framing, from two supplied references:
+
+- **tight bound** — brow-to-chin
+- **loose bound** — forehead-to-chin
+- chin and both eyes always present; crown may crop; hair may frame the edges;
+  front-on
+
+**Written as landmark predicates, not proportions**, because that is the
+difference between a check and a shrug. A vision judge answers "is the chin
+inside the frame" and "are the shoulders in frame" reliably; it answers "does
+the face fill 80% of the height" badly. So *too tight* is a **cut required
+landmark** — the margin of skin below the chin is what a too-tight crop destroys
+first — and *too loose* is a **present forbidden landmark**: shoulders, or
+headroom above the hair. Both are yes-or-no by looking, which is also what makes
+§I's fail-closed default work for us instead of against us.
+
+**The directive aims mid-band.** v3's directive commanded "to just below the
+lower lip"; shipped beside this spec, every close-up would have failed its own
+conformance check by construction and refunded the customer for our
+contradiction. That is the maiden-voyage wardrobe defect exactly, and it does
+not get to happen twice.
+
+### The hero shows her as a person, from three angles
+
+Master large, **three-quarter and side profile** in the two companion cells. The
+close-up was the wrong companion — a face macro next to a chest-up frame is one
+view at two zooms. It lives one click away, in the strip and the viewer, which
+is where someone goes when detail is what they came for.
+
+### Two consequences that had to be fixed with it
+
+**The anchor no longer conjures a slot.** `castProjection` counted
+`entry.anchor` as evidence that a view existed. With `frontClose` unpromised,
+that would have drawn a "Portrait" tile out of the Master's own pixels and stood
+the two side by side. A landed 2K view or a failure marker each prove a slot was
+bought; the 1K anchor proves only that she was signed. Verified against every
+historical shape, and against the database: **no signed Cast lacks its durable
+promise**, so none loses a tile.
+
+**The recovery receipt counted slots, not views.** `activateSignedCast` seals a
+`frontClose` slot from the anchor to satisfy D-97, so recovery reported **six
+views on a five-view Sign** — on the one document support reads when something
+has gone wrong. Now intersected with the Sign's own promise. The live path was
+never wrong; only recovery read the slots.
+
+### And the wardrobe defect, found a second time
+
+The v3.1 verification lost its full-back view to *"dark leather dress shoes
+instead of plain neutral shoes, and trousers with visible stitch detailing not
+specified as plain."* **The anchor is a chest-up photograph.** It shows no
+trousers and no shoes, so there was nothing to compare against and the judge was
+left adjudicating our own adjective "plain" against its own taste. The customer
+paid 50 credits for the ambiguity.
+
+**An axis told to fail when unsure must never be pointed at something the
+reference cannot establish.** The judged spec now names its own limits: compare
+what both images show, and treat additions as failures wherever they appear. The
+garment instruction moved into the three full-length **directives**, which the
+generator reads and the judge never sees — the trousers are still asked for,
+they simply stop being grounds for a refund nobody could have earned.
+
+The trap worth recording: `spec.wardrobe` is read by BOTH the judge and the
+generator (`composePackageViewPrompt`). Scoping it for the judge alone would
+have quietly stopped asking for trousers at all — a fix creating a worse defect
+than the one it closed.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

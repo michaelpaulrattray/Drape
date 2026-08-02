@@ -255,9 +255,24 @@ export function projectSignedCast(input: {
     built is rendered from what is being built for it — today's profile, plus
     anything already on disk.
   */
+  /*
+    THE ANCHOR IS NOT EVIDENCE OF A PROMISED VIEW.
+
+    A landed 2K view or a failure marker each prove a slot was bought: one
+    delivered, the other confessed. The 1K anchor proves neither — it is the
+    signed sheet image, stored under `frontClose` because that is the angle it
+    is, and it exists for every Cast whatever her package promised.
+
+    Package v3.1 retires `frontClose` from the profile, so counting the anchor
+    here would conjure a "Portrait" tile out of the Master's own pixels and
+    stand the two side by side — the same rung of the zoom ladder climbed twice,
+    which is precisely what the ruling removed. Historical Casts are unaffected:
+    every era that BOUGHT a frontClose has it in `promised`, so it renders from
+    there.
+  */
   const evidenceAngles = CAST_VIEW_ANGLES.filter((angle) => {
     const entry = evidence.get(angle);
-    return Boolean(entry?.landed || entry?.failure || entry?.anchor);
+    return Boolean(entry?.landed || entry?.failure);
   });
   const promised = input.promisedAngles && input.promisedAngles.length > 0
     ? input.promisedAngles
@@ -274,7 +289,15 @@ export function projectSignedCast(input: {
     // The label this CAST bought, not the one today's profile sells. Her
     // waist-up headshot is not retroactively a close-up because the profile
     // changed after she was signed.
-    const label = castPackageLabel(angle, renderedAngles);
+    /*
+      The PROMISE decides the era, not what happened to render.
+
+      `renderedAngles` is promise ∪ evidence, so a Cast whose close-up produced
+      neither a picture nor a marker would look like a Cast from before the
+      close-up existed, and her portrait would be relabelled by an accident of
+      delivery. The promise is the durable fact; evidence is what became of it.
+    */
+    const label = castPackageLabel(angle, promised.length > 0 ? promised : renderedAngles);
 
     if (entry.landed) {
       return {

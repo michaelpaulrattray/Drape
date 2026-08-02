@@ -575,3 +575,47 @@ describe("zero of N, settled after the crash", () => {
     expect(outcome).toMatchObject({ refundedCredits: 200 });
   });
 });
+
+describe("the receipt counts views sold, not slots sealed", () => {
+  it("does not count the anchor's frontClose slot as a delivered view", async () => {
+    /*
+      A real defect, caught before it shipped. `activateSignedCast` seals a
+      `frontClose` slot from the 1K anchor because the snapshot authority
+      requires a displayed headshot (D-97) — and package v3.1 does not sell
+      `frontClose` at all. Counting sealed slots therefore reported SIX views on
+      a five-view Sign, on the one document a support person reads when
+      something has gone wrong.
+
+      The live path was never wrong: `signService` counts committed views.
+      Only recovery read the slots, so only recovery could produce a receipt
+      that overstated what the customer received.
+    */
+    // A package-v3.1 promise: five views, and `frontClose` is not one of them.
+    const v31 = {
+      angles: ["closeUp", "threeQuarter", "frontFull", "sideClose", "backFull"] as never,
+      source: "recorded" as const,
+    };
+    cast = { modelId: 901, candidateSignedCastId: 901, candidateStatus: "signed" };
+    ledgerRows = [chargeRow()];
+    castAssets = (v31.angles as unknown as string[]).map((angle) => ({
+      viewType: angle, resolution: "2K", storageUrl: `https://cdn/${angle}.png`, status: null,
+    }));
+    unsettled = [];
+    // What activation actually returns: the five sold views PLUS the anchor's
+    // `frontClose` slot, which exists only to satisfy the snapshot authority.
+    activation = {
+      type: "activated",
+      modelId: 901,
+      slots: [...(v31.angles as unknown as string[]), "frontClose"],
+    };
+
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => unsettled as CastViewAngle[],
+      promisedAngles: async () => v31,
+    });
+
+    // Five, not six. The anchor's slot is not a view anybody bought.
+    expect(outcome).toMatchObject({ views: 5 });
+    expect(seals.at(-1)).toMatchObject({ outcome: { result: { views: 5 } } });
+  });
+});

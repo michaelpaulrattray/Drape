@@ -126,19 +126,43 @@ describe("the casting room is built to the drawing", () => {
     expect(count).not.toContain("anchorUrl");
   });
 
-  it("names the package v3 slots, and no retired one", async () => {
+  it("fills the hero with three ANGLES of her, never the same crop twice", async () => {
+    /*
+      Founder ruling (2026-08-02, final): Master large, three-quarter and side
+      profile beside it. The hero's job is to say who she is, and the close-up
+      was the wrong companion for that — a face macro next to a chest-up frame
+      is one view at two zooms. It lives one click away, in the strip and the
+      viewer, which is where someone goes when detail is what they came for.
+
+      Pinned as the ANGLES, because this cell pair has now been refilled twice
+      and the failure mode both times was a duplicate rung rather than a missing
+      one — which looks fine in review and wrong on the page.
+    */
+    const room = await readFile(ROOM, "utf8");
+    expect(room).toContain('const companions = ["threeQuarter", "sideClose"]');
+    expect(room).toContain('const COMPANION_LABELS = ["Three-quarter", "Side profile"]');
+    // And the stand-in guard stays: a companion may never fall back to the
+    // anchor, or the hero shows her twice and calls one of them a view.
+    expect(room).toContain("!slot.standIn");
+  });
+
+  it("names the package v3.1 slots, and no retired one", async () => {
     const pkg = await readFile(
       new URL("../../../../server/castingV2/castViewPackage.ts", import.meta.url),
       "utf8",
     );
     const list = pkg.slice(pkg.indexOf("CAST_PACKAGE_VIEWS"), pkg.indexOf("CAST_PACKAGE_VIEW_PRICE"));
-    for (const angle of ["closeUp", "frontClose", "frontFull", "sideClose", "backFull"]) {
+    for (const angle of ["closeUp", "threeQuarter", "frontFull", "sideClose", "backFull"]) {
       expect(list).toContain(angle);
     }
-    // The walk retired in v2 and the three-quarter in v3. A profile that quietly
-    // regained one would change the price without changing the price constant.
+    /*
+      The walk retired in v2, the portrait in v3.1 — three frontal crops was one
+      too many once the Master leads the strip. A profile that quietly regained
+      a slot would change the real price without changing the price constant,
+      which is why the retirements are asserted by name rather than by count.
+    */
     expect(list).not.toContain("sideFull");
-    expect(list).not.toContain("threeQuarter");
+    expect(list).not.toContain("frontClose");
   });
 
   it("says the package never arrived, at the room level, not per slot", async () => {

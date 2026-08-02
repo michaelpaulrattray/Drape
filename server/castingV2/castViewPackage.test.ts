@@ -18,20 +18,28 @@ import {
 describe("the canonical view package", () => {
   it("promises five generated views, in the order the strip reads them", () => {
     /*
-      Package v3: close-up, portrait, front, profile, back — with the Master
-      leading the strip as presentation only. Both retirements are asserted by
-      name, because a retired view coming back is exactly the kind of change
-      that should have to argue for itself.
+      PACKAGE v3.1, the final composition: close-up, three-quarter, front,
+      profile, back — with the Master leading the strip as presentation only.
+      Read as angles it is a clean 0°/45°/90°/180° turnaround plus the detail
+      shot.
+
+      The retirement is asserted BY NAME, because a retired view coming back is
+      exactly the kind of change that should have to argue for itself — and
+      because this list has now moved three times, each time repricing the
+      product through the derived constant below.
     */
     expect([...CAST_PACKAGE_VIEWS]).toEqual([
       "closeUp",
-      "frontClose",
+      "threeQuarter",
       "frontFull",
       "sideClose",
       "backFull",
     ]);
+    // The walk retired in v2; the portrait in v3.1, because the Master already
+    // shows her chest-up and square to camera — three frontal crops was one too
+    // many.
     expect(CAST_PACKAGE_VIEWS).not.toContain("sideFull");
-    expect(CAST_PACKAGE_VIEWS).not.toContain("threeQuarter");
+    expect(CAST_PACKAGE_VIEWS).not.toContain("frontClose");
     expect(new Set(CAST_PACKAGE_VIEWS).size).toBe(CAST_PACKAGE_VIEWS.length);
   });
 
@@ -53,22 +61,49 @@ describe("the canonical view package", () => {
     expect(castPackageView("sideFull").label).toBe("Walk");
   });
 
-  it("makes the close-up a genuine macro, and the portrait honest", () => {
+  it("specifies the close-up as a BAND, failable from both sides", () => {
     /*
-      v2 asked `frontClose` to be the close-up and it never was — that slot
-      renders head-and-shoulders and always has, which the founder saw on his
-      own Cast within a minute. v3 gives the macro its own slot and lets the
-      portrait be called what it is.
+      The founder's final framing, and the reason it is a range rather than a
+      point: a single ideal crop can only be judged by "how close is this",
+      which a vision model answers with a shrug. Two named landmarks and two
+      named failure directions can each be checked by looking.
+
+      v3 shipped a macro cropped at the lower lip. It was too tight — a face
+      with no chin is a texture sample, not a portrait of anyone — so the
+      shipped spec is now a conformance FAILURE under its own successor.
     */
     const closeUp = castPackageView("closeUp");
     expect(closeUp.label).toBe("Close-up");
-    expect(closeUp.spec.framing).toContain("tight macro");
-    expect(closeUp.directive).toContain("EXTREME CLOSE-UP MACRO");
-    expect(closeUp.directive).toContain("fills the entire frame");
 
-    const portrait = castPackageView("frontClose");
-    expect(portrait.label).toBe("Portrait");
-    expect(portrait.spec.framing).toContain("head-and-shoulders");
+    // What must be in frame: the tight bound.
+    expect(closeUp.spec.framing).toContain("BELOW the chin");
+    expect(closeUp.spec.framing).toContain("both eyes");
+    // The band itself, stated by its two landmarks.
+    expect(closeUp.spec.framing).toContain("eyebrows-to-chin");
+    expect(closeUp.spec.framing).toContain("forehead-to-chin");
+    // BOTH failure directions, or the judge has nothing to fail on.
+    expect(closeUp.spec.framing).toContain("TOO TIGHT");
+    expect(closeUp.spec.framing).toContain("TOO LOOSE");
+    // And the superseded macro language is gone, not merely softened.
+    expect(closeUp.spec.framing).not.toContain("tight macro");
+    expect(closeUp.directive).not.toContain("EXTREME CLOSE-UP MACRO");
+    expect(closeUp.directive).not.toContain("below the lower lip");
+  });
+
+  it("brings the three-quarter back with its spec intact", () => {
+    /*
+      45° is the angle downstream generation actually asks for, and it was the
+      one genuinely missing viewpoint. Its entry survived the v3 retirement
+      untouched — including the reference-relative wardrobe the maiden voyage
+      forced, which it inherited from the shared constant rather than carrying
+      its own copy. A per-view wardrobe string would have rotted here silently.
+    */
+    const threeQuarter = castPackageView("threeQuarter");
+    expect(threeQuarter.label).toBe("Three-quarter");
+    expect(threeQuarter.spec.framing).toContain("45 degrees");
+    expect(threeQuarter.spec.framing).toContain("both eyes still visible");
+    // Reference-relative, never an absolute colour (the maiden-voyage defect).
+    expect(threeQuarter.spec.wardrobe).not.toMatch(/mid-grey|off-white/);
   });
 
   it("derives the Sign price from the number of views it actually promises", () => {
@@ -174,5 +209,50 @@ describe("the canonical view package", () => {
     expect(walk.label).toBe("Walk");
     expect(walk.spec.framing).toContain("walking");
     expect(walk.directive.toLowerCase()).toContain("walk");
+  });
+});
+
+describe("the wardrobe axis only judges what the reference can establish", () => {
+  it("does not ask the judge about clothing the anchor cannot show", () => {
+    /*
+      The maiden voyage lost a view to "mid-grey vs off-white"; the v3.1
+      verification lost its full back to "dark leather dress shoes instead of
+      plain neutral shoes". Same class, second occurrence: the anchor is a
+      CHEST-UP photograph, so it shows no trousers and no shoes, and the judge
+      was left adjudicating our own adjective against its own taste. An axis
+      told to fail when unsure must never be pointed at something the reference
+      cannot establish.
+    */
+    const wardrobe = castPackageView("backFull").spec.wardrobe;
+    expect(wardrobe).toContain("CANNOT be compared");
+    expect(wardrobe).toContain("must not fail this check");
+    /*
+      Trousers and shoes are still NAMED — the judge has to be told which
+      garments it cannot adjudicate, or the exclusion is unstateable. What must
+      be gone is the REQUIREMENT: the spec no longer demands a particular kind
+      of them, which is what the judge was measuring its own taste against.
+    */
+    expect(wardrobe).not.toContain("plain unbranded neutral trousers");
+    expect(wardrobe).not.toContain("plain unbranded shoes");
+    // Additions remain a failure wherever they appear — that is the half of
+    // this axis that IS answerable from a chest-up reference.
+    expect(wardrobe).toMatch(/jacket|jewellery|logo/);
+  });
+
+  it("still tells the GENERATOR what to put on her legs", () => {
+    /*
+      The instruction moved rather than vanished. `spec.wardrobe` is read by the
+      judge AND the generator (`composePackageViewPrompt`), so scoping it for
+      the judge would have quietly stopped asking for trousers at all — the fix
+      creating a worse defect than the one it closed.
+    */
+    for (const angle of ["frontFull", "sideFull", "backFull"] as const) {
+      expect(castPackageView(angle).directive).toContain("Below the waist");
+      expect(castPackageView(angle).directive).toContain("trousers");
+    }
+    // And never on a view that does not reach the waist.
+    for (const angle of ["closeUp", "threeQuarter", "sideClose"] as const) {
+      expect(castPackageView(angle).directive).not.toContain("Below the waist");
+    }
   });
 });
