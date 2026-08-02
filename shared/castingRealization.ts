@@ -229,10 +229,24 @@ export type HairStyle = {
  * at BIAS tier — a named cut would compete with the casting the user asked
  * for, but whether the hair is up or down would not.
  */
-export const WORN_STATES = ["loose", "tied back", "in a ponytail", "worn up", "half-up"] as const;
+export const WORN_STATES = [
+  "loose", "tied back", "in a ponytail", "worn up", "half-up",
+  /*
+    F7 - an ordinary styling state with no entry, so it was unsayable by the
+    dice in any world. A worn-state rather than a cut, which is why it is cheap:
+    it composes on top of whatever the person already has.
+  */
+  "slicked back",
+] as const;
 export type WornState = (typeof WORN_STATES)[number];
 
-export const MODIFIER_SLOTS = ["fringe", "parting", "volume", "flyaways"] as const;
+/*
+  `lineup` is F2's line-up finding, and it is a slot rather than a cut: the crisp
+  edge-up sits ON TOP of waves, an afro, locs or a buzz and is what makes them
+  read barbered rather than merely short. Legality by construction as ever - only
+  entries that declare it in `wears` can carry one.
+*/
+export const MODIFIER_SLOTS = ["fringe", "parting", "volume", "flyaways", "lineup"] as const;
 export type ModifierSlot = (typeof MODIFIER_SLOTS)[number];
 
 /**

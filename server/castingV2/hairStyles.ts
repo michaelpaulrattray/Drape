@@ -53,6 +53,15 @@ const BUN: HairStyle = { name: "low bun", family: "long", worn: "worn up" };
   one is what made every sheet read as loose hair.
 */
 const BUN_HIGH: HairStyle = { name: "bun", family: "long", worn: "worn up" };
+/*
+  F1 - one of the commonest hairstyles on earth, and unsayable until now.
+
+  The only braid entries lived in the coiled list with `texture: "coiled"`, so a
+  South Asian, Latina, Slavic or Mediterranean woman wearing a single plait - a
+  daily default for hundreds of millions of people - could not be produced by
+  the dice at all. Texture-open deliberately: a plait reads in any grain.
+*/
+const LONG_PLAIT: HairStyle = { name: "a single long plait", family: "long", worn: "tied back" };
 const HALF_UP: HairStyle = { name: "half-up", family: "long", worn: "half-up" };
 
 /* Textured cuts that carry their own texture by definition. */
@@ -61,6 +70,36 @@ const LOCS: HairStyle = { name: "locs", family: "long", texture: "coiled" };
 const BRAIDS: HairStyle = { name: "braids", family: "long", texture: "coiled" };
 const TWIST_OUT: HairStyle = { name: "twist-out", family: "mid-length", texture: "coiled" };
 const CURLY_CROP: HairStyle = { name: "curly crop", family: "cropped", texture: "curly" };
+/*
+  F2 - male coiled barbering, which was missing entirely.
+
+  `stylesFor` picked the coiled list BEFORE consulting sex, so West African and
+  Afro-Caribbean men and women drew one shared list: men could draw
+  female-typical up-styles, and the two arguably commonest Black male cuts in
+  the world - brushed waves and the tapered afro - had no entries at all.
+
+  `wears: ["lineup"]` is the founder's line-up finding: the crisp edge-up is
+  what makes a cut read barbered rather than merely short, and it sits ON TOP of
+  the cut rather than being one.
+*/
+const WAVES: HairStyle = {
+  name: "brushed waves", family: "cropped", texture: "coiled", wears: ["lineup"],
+};
+const TAPERED_AFRO: HairStyle = {
+  name: "tapered afro", family: "coiled", texture: "coiled", wears: ["lineup", "volume"],
+};
+const SPONGE_TWISTS: HairStyle = {
+  name: "sponge twists", family: "cropped", texture: "coiled", wears: ["lineup"],
+};
+/* Contemporary everyday styling, not editorial - braids with loose curl through. */
+const GODDESS_BRAIDS: HairStyle = { name: "goddess braids", family: "long", texture: "coiled" };
+/*
+  F3 - presence, not default. "Not every old lady looks like a granny" is the
+  ruling, so this carries weight ZERO in the base list and is funded in only by
+  the age adjustment at 70s+. An older sheet full of set curls would be the
+  age-bracket version of every-fourth-cast-art-directed.
+*/
+const SET_CURLS: HairStyle = { name: "short set curls", family: "short", texture: "curly" };
 
 /*
   Coiled hair worn UP — the gap the founder caught, and it contradicted the
@@ -98,12 +137,12 @@ const MALE_STYLES: StyleWeights = [
   preserved exactly: long 44, mid-length 42, short 8, statements 6.
 */
 const FEMALE_STYLES: StyleWeights = [
-  // long — 44
-  [SIMPLE_LONG, 15], [PONYTAIL, 10], [BUN, 7], [BUN_HIGH, 5], [HALF_UP, 4], [TIED_BACK, 3],
+  // long — 44 (F1's plait funded within: SIMPLE_LONG 15→13, PONYTAIL 10→8)
+  [SIMPLE_LONG, 13], [PONYTAIL, 8], [BUN, 7], [BUN_HIGH, 5], [HALF_UP, 4], [LONG_PLAIT, 4], [TIED_BACK, 3],
   // mid-length — 42
   [NATURAL_MID, 18], [SOFT_LAYERS, 14], [BOB, 10],
-  // short — 8
-  [PLAIN_SHORT, 8],
+  // short — 8. SET_CURLS rides at zero and is funded in at 70s+ only (F3).
+  [PLAIN_SHORT, 8], [SET_CURLS, 0],
   // Statements: 6 of 100, untouched by the up-style additions.
   [PIXIE, 3], [WOLF, 2], [UNDERCUT, 1],
 ];
@@ -111,7 +150,7 @@ const FEMALE_STYLES: StyleWeights = [
 const NONBINARY_STYLES: StyleWeights = [
   [PLAIN_SHORT, 18], [NATURAL_MID, 17], [STANDARD_CROP, 13], [SOFT_LAYERS, 12],
   // Long funded from within its own family here too.
-  [SIMPLE_LONG, 8], [TIED_BACK, 4],
+  [SIMPLE_LONG, 6], [LONG_PLAIT, 2], [TIED_BACK, 4],
   [BOB, 8], [SIDE_PART, 6], [BUZZ, 5],
   [PIXIE, 4], [UNDERCUT, 3], [WOLF, 2],
 ];
@@ -129,11 +168,33 @@ const NONBINARY_STYLES: StyleWeights = [
  * cheap to apply twice, and the arithmetic is written down here so the next
  * person can check it rather than trust it.
  */
-const COILED_STYLES: StyleWeights = [
-  // coiled — 18
-  [AFRO, 9], [HIGH_PUFF, 4], [PINEAPPLE, 3], [WRAPPED_BUN, 2],
+/*
+  Share-conserved against the single list's totals - coiled 18, long 34,
+  mid-length 22, cropped 20, shaved 6 - so the silhouette mix is unchanged and
+  only the vocabulary widens. The arithmetic is written beside each family so
+  the next person can check it rather than trust it.
+
+  Puff and pineapple stay POSSIBLE on men at low weight, which matches the
+  street: they are real and uncommon rather than wrong.
+*/
+const COILED_MALE_STYLES: StyleWeights = [
+  // coiled — 18 (AFRO 9→6, HIGH_PUFF 4→2, PINEAPPLE 3→2 fund TAPERED_AFRO 6)
+  [AFRO, 6], [TAPERED_AFRO, 6], [HIGH_PUFF, 2], [PINEAPPLE, 2], [WRAPPED_BUN, 2],
   // long — 34
   [BRAIDS, 16], [LOCS, 11], [BRAIDED_UPDO, 7],
+  // mid-length — 22
+  [TWIST_OUT, 22],
+  // cropped — 20 (CURLY_CROP 12→4, STANDARD_CROP 8→6 fund WAVES 8 + SPONGE_TWISTS 2)
+  [WAVES, 8], [STANDARD_CROP, 6], [CURLY_CROP, 4], [SPONGE_TWISTS, 2],
+  // shaved — 6
+  [BUZZ, 6],
+];
+
+const COILED_FEMALE_STYLES: StyleWeights = [
+  // coiled — 18
+  [AFRO, 9], [HIGH_PUFF, 4], [PINEAPPLE, 3], [WRAPPED_BUN, 2],
+  // long — 34 (BRAIDS 16→13, BRAIDED_UPDO 7→6 fund GODDESS_BRAIDS 4)
+  [BRAIDS, 13], [LOCS, 11], [BRAIDED_UPDO, 6], [GODDESS_BRAIDS, 4],
   // mid-length — 22
   [TWIST_OUT, 22],
   // cropped — 20
@@ -142,7 +203,7 @@ const COILED_STYLES: StyleWeights = [
   [BUZZ, 6],
 ];
 
-const COILED_HERITAGES = new Set(["West African", "Afro-Caribbean"]);
+export const COILED_HERITAGES = new Set(["West African", "Afro-Caribbean"]);
 
 /**
  * Age nudges the list rather than replacing it: a wolf cut at seventy reads as
@@ -156,13 +217,32 @@ function ageAdjust(entries: StyleWeights, ageBand: AgeBand): StyleWeights {
     if (old && (style === TIED_BACK || style === BUN || style === BUN_HIGH || style === PLAIN_SHORT)) {
       return [style, weight + 4] as const;
     }
+    /*
+      F3 - set curls appear at 70s+ ONLY, at presence weight rather than as the
+      default: roughly one appearance every fourth sheet, beside the sleek bobs
+      and worn-up long hair the age adjustment already favours. Funded from
+      NATURAL_MID -2 and SOFT_LAYERS -1 at the same band, so the family mix does
+      not shift under the sheet.
+    */
+    if (ageBand === "70s+") {
+      if (style === SET_CURLS) return [style, weight + 3] as const;
+      if (style === NATURAL_MID) return [style, Math.max(0, weight - 2)] as const;
+      if (style === SOFT_LAYERS) return [style, Math.max(0, weight - 1)] as const;
+    }
     return [style, weight] as const;
   });
 }
 
 export function stylesFor(sex: Sex, heritage: string, ageBand: AgeBand): StyleWeights {
+  /*
+    F2: the coiled lists are sex-split now. Nonbinary candidates draw the female
+    list, which is what they drew before the split - named in the audit as a
+    chosen default rather than an inherited one.
+  */
   const base = COILED_HERITAGES.has(heritage)
-    ? COILED_STYLES
+    ? sex === "male"
+      ? COILED_MALE_STYLES
+      : COILED_FEMALE_STYLES
     : sex === "male"
       ? MALE_STYLES
       : sex === "female"
@@ -443,11 +523,26 @@ const FLYAWAYS: Weights<string> = [
   ["strands escaping where it is pinned", 6],
 ];
 
+/*
+  F2's line-up, weighted CLOSER TO DEFAULT THAN GARNISH.
+
+  The founder's evidence was three independent photographs all wearing it: in a
+  real barbershop the crisp edge-up is what a finished cut looks like, not an
+  extra somebody asked for. So the null share is small here where every other
+  slot's is large — this is the one modifier whose absence is the notable case.
+*/
+const LINEUP: Weights<string> = [
+  ["", 30],
+  ["a crisp line-up at the hairline", 52],
+  ["a sharp edge-up across the forehead and temples", 18],
+];
+
 const SLOT_WEIGHTS: Record<ModifierSlot, Weights<string>> = {
   fringe: FRINGE,
   parting: PARTING,
   volume: VOLUME,
   flyaways: FLYAWAYS,
+  lineup: LINEUP,
 };
 
 /**
@@ -525,9 +620,10 @@ export function describeModifiers(modifiers: HairModifiers | null): string {
 const WORN_BY_FAMILY: Record<string, Weights<WornState>> = {
   shaved: [],
   cropped: [],
-  short: [["loose", 86], ["tied back", 14]],
-  "mid-length": [["loose", 58], ["tied back", 16], ["in a ponytail", 14], ["half-up", 12]],
-  long: [["loose", 44], ["in a ponytail", 18], ["worn up", 16], ["tied back", 12], ["half-up", 10]],
+  // F7's slicked-back is funded out of "loose" in each family that can wear it.
+  short: [["loose", 80], ["tied back", 14], ["slicked back", 6]],
+  "mid-length": [["loose", 52], ["tied back", 16], ["in a ponytail", 14], ["half-up", 12], ["slicked back", 6]],
+  long: [["loose", 38], ["in a ponytail", 18], ["worn up", 16], ["tied back", 12], ["half-up", 10], ["slicked back", 6]],
   coiled: [["loose", 62], ["worn up", 20], ["tied back", 18]],
 };
 
@@ -559,7 +655,19 @@ export function resolveWornState(
   return weightedPick(shelf, seed);
 }
 
+/**
+ * How a worn state renders, where the bare words do not render as the thing.
+ *
+ * The same lesson as D8's brow expansions and A9's finishes: "slicked back"
+ * alone comes back as merely tidy, and the comb ridges are what make it read as
+ * the style rather than as neat hair.
+ */
+const WORN_RENDER: Partial<Record<WornState, string>> = {
+  "slicked back": "slicked back - combed back wet-look, held flat to the skull, the ridges of the comb visible",
+};
+
 /** The clause, or "" when there is nothing to say. */
 export function describeWornState(worn: WornState | null): string {
-  return worn && worn !== "loose" ? `, ${worn}` : "";
+  if (!worn || worn === "loose") return "";
+  return `, ${WORN_RENDER[worn] ?? worn}`;
 }

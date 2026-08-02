@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4f150d3e1b0e3796"
+    "sourceFingerprint": "cc0b0e1069dd13aa"
   },
   "domains": [
     {
@@ -7753,6 +7753,10 @@
     {
       "id": "test:server/castingV2/followDrift.test.ts",
       "path": "server/castingV2/followDrift.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairCoverage.test.ts",
+      "path": "server/castingV2/hairCoverage.test.ts"
     },
     {
       "id": "test:server/castingV2/hairModifiers.test.ts",
