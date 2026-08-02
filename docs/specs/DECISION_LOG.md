@@ -2101,6 +2101,66 @@ roll, and it is a *drop-a-stated-fact* check rather than a feature: if the
 framing constant's anti-prop language eats a stated accessory, that is a bug
 today, not a future tier.
 
+### D-94 — The never-zero law protects people, not grooming *(founder ruling 2026-08-02)*
+
+The principled boundary the lean philosophy was missing, and it was missing in a
+way that produced a real defect.
+
+Every soft tendency was built on one rule: a lean re-weights, never locks, and
+the excluded value always stays reachable. That rule is right, and the reason it
+is right is **not** symmetry — it is that an excluded age or heritage is an
+**existence claim**. A casting system that makes a fifty-year-old streamer
+impossible has said something about who exists, and this product does not say
+that.
+
+**A silhouette is not a person.** A world's grooming register may genuinely rule
+a cut out: idols do not have buzz cuts, and holding a floor of one there was the
+principle misapplied — it kept putting buzz cuts on idol sheets in the name of
+something that was never about hair.
+
+So the split, recorded beside D-90:
+
+- **Demographic leans — age, heritage — keep their floor of one.** They are
+  claims about people, and the reachable tile is the whole ethic.
+- **Styling exclusions at `defines` tier are TRUE exclusions.** They are claims
+  about grooming, and a world may exclude a silhouette outright.
+
+**Stated cuts override absolutely, as ever.** Deference outranks every tendency,
+so "a k-pop idol with a shaved head" renders exactly as written and the pool's
+opinion is never consulted. And an exclusion that would empty a candidate's
+whole shelf is discarded rather than obeyed — the exclusion is wrong in that
+case, not the shelf.
+
+### D-95 — Stated-only is worth nothing if stated does not work *(founder verification 2026-08-02)*
+
+"A model in her 20s wearing chunky glasses" rendered **zero glasses**. The cause
+was in the cohort constant itself: its no-accessories clause, plus the AUTHORITY
+paragraph's instruction to ignore implied props, were overruling words the user
+had actually typed.
+
+Both clauses are correct about UNSTATED accessories — the frame is a plain grey
+tee on seamless paper, and a prop nobody asked for is exactly what the framing
+law exists to keep out. Neither was ever meant to apply to a stated fact.
+
+**This is the drop-a-stated-fact class arriving through the CONSTANT** rather
+than through the interpreter, which is a place it had not been found before —
+worth naming, because every previous instance was upstream and the constant has
+override authority over everything above it by design.
+
+It also quietly emptied a ratified product rule. Eyewear and jewelry are
+**stated-only**; stated-only means nothing at all if stated does not work.
+
+The fix mirrors the STRUCTURAL FEATURES licence in the same constant, which
+exists for precisely this reason and after precisely this evidence (a named
+broken nose rendering as an intact handsome face): a named worn accessory
+renders plainly, and **a failure to appear is a failed candidate**. It licenses
+nothing else — props, held objects, headwear and scene stay forbidden, and the
+clause says so rather than leaving it to be inferred. Unstated accessories are
+banned exactly as before.
+
+Nothing enters the echo: an accessory neither varies across the eight nor pins
+an identity axis, and the echo speaks locks.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

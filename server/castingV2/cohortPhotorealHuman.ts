@@ -283,6 +283,35 @@ const SKIN_AND_FEATURES = [
   "STRUCTURAL FEATURES: When the character description names a permanent physical feature — a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, active acne or acne scarring, weathered or sun-damaged skin, a shaved head, a tattoo — render it plainly and accurately as a real, healed, permanent part of this person.",
   "These are casting facts, not blemishes to correct. Do not idealise them away, do not soften them, and do not substitute an unmarked face. A named feature that fails to appear is a failed candidate.",
   "Render only what the description names. Never invent damage, scars or ink that was not asked for.",
+  /*
+    STATED ACCESSORIES — the same licence, for the same reason, after the same
+    kind of evidence (founder verification, 2026-08-02).
+
+    "A model in her 20s wearing chunky glasses" rendered ZERO glasses. Two
+    clauses in this very constant were overruling the user: the no-accessories
+    line a few blocks up, and the AUTHORITY paragraph's instruction to ignore
+    implied props. Both are correct about UNSTATED accessories — the frame is a
+    plain grey tee on seamless paper and a prop nobody asked for is exactly what
+    the framing law exists to keep out — and both were being applied to words
+    the user actually typed.
+
+    That is the drop-a-stated-fact class, arriving through the constant rather
+    than through the interpreter, which is a place it had not been found before.
+    It also quietly emptied a ratified product rule: eyewear and jewelry are
+    "stated-only", and stated-only is worth nothing if stated does not work.
+
+    Deliberately narrow. It licenses WORN accessories the description names, on
+    the same footing as a named scar: rendered plainly, and a failure to appear
+    is a failed candidate. It does not widen to props, to anything held, or to
+    the scene — those stay banned, and the clause says so rather than leaving it
+    to be inferred.
+
+    Nothing enters the echo. An accessory is not a lock: it neither varies
+    across the eight nor pins an identity axis, so the echo — which speaks
+    locks — has nothing to say about it.
+  */
+  "STATED ACCESSORIES: When the character description names something WORN on the face or body — glasses, a nose stud, a named earring, a chain, a wedding ring — render it plainly and accurately as this person's own, exactly as described. A named accessory that fails to appear is a failed candidate.",
+  "This licenses only what the description names. It does NOT permit props, objects held in the hands, headwear, or anything in the scene: those remain forbidden, and an accessory the description did not name must never be invented.",
 ].join(" ");
 
 /**

@@ -192,7 +192,8 @@ WHAT TO EXTRACT
   Leave it null only when the brief names no category at all — "someone with
   kind eyes", "a person in their 40s".
 - "characterNotes": short character-side detail the brief gave — bearing,
-  demeanour, hair, distinguishing features. Under 25 words.
+  demeanour, hair, distinguishing features, and any accessory the brief says
+  they are WEARING. Under 25 words.
   This field and "role" are the only text that reaches the image model, and the
   image model is literal. Write only what can be SEEN. "Wide-set almond eyes
   with monolids" produces exactly that; "editorially magnetic" produces
@@ -396,7 +397,12 @@ them is discarded before it reaches the image model:
 - The setting: locations, rooms, weather, activities, times of day. "In a
   cluttered garage" tells you this person works with their hands; it does not
   put a garage in the picture.
-- Wardrobe, props, objects held, accessories, or anything with writing on it.
+- Wardrobe, props, objects held, or anything with writing on it.
+  EXCEPT accessories the brief explicitly says the person is WEARING — glasses,
+  a nose stud, a named earring, a chain, a wedding ring. Those are stated facts
+  about this person and belong in "characterNotes" in the user's own words
+  ("wearing chunky glasses"). Dropping one is losing an instruction the user
+  typed. Never invent an accessory the brief did not name.
 - Mood words that are not castable ("magnetic", "stunning", "iconic").
 - Celebrity likeness. "Looks like Zendaya" gives you sex and maybe age. Stop
   there.

@@ -106,8 +106,14 @@ export type PoolTendencies = {
    * already speaks at, so this composes with the existing design rather than
    * fighting it.
    *
-   * Down-weighted to a floor rather than removed, and only at `defines`. A
-   * stated cut still wins outright — deference outranks every tendency, so
+   * **A TRUE EXCLUSION, not a floor — and the boundary is the point (D-94).**
+   * The never-zero law protects PEOPLE, not grooming: an excluded age or
+   * heritage is an existence claim, and this product does not make those. A
+   * silhouette is not a person. A world's grooming register may genuinely rule
+   * a cut out, and pretending otherwise put buzz cuts on idol sheets in the
+   * name of a principle that was never about hair.
+   *
+   * A stated cut still wins outright — deference outranks every tendency, so
    * "a k-pop idol with a shaved head" renders exactly as written.
    */
   avoidFamilies: readonly HairFamily[];
@@ -298,7 +304,8 @@ export function leanStyleWeights<T extends { family: string }>(
 ): readonly (readonly [T, number])[] {
   if (avoid.length === 0) return entries;
   const avoided = new Set<string>(avoid);
-  return entries.map(([style, weight]) =>
-    avoided.has(style.family) ? ([style, 1] as const) : ([style, weight] as const),
-  );
+  const permitted = entries.filter(([style]) => !avoided.has(style.family));
+  // Never strand a candidate with no cut at all: if a pool excluded everything
+  // its own shelf offers, the exclusion is wrong and the shelf wins.
+  return permitted.length > 0 ? permitted : entries;
 }

@@ -644,9 +644,11 @@ export function applySheetTaste<T extends SheetCandidate>(
       only unused one, and a k-pop sheet got its buzz cuts back from the rule
       that exists to spread silhouettes.
 
-      Excluding them here does not make the family a lock: the reachability that
-      keeps this a lean lives in the RESOLUTION draw, where the floor of 1
-      survives. This pass only ever re-picks a cut that is ours to choose.
+      The resolution draw excludes them too (D-94: the never-zero law protects
+      people, not grooming), so this is the same rule at the second of its three
+      sites rather than a stricter one. What keeps it honest is that it only
+      ever runs on a cut that is OURS to choose — a stated cut never reaches
+      here at all.
     */
     const avoided = new Set<string>(options.avoidFamilies ?? []);
     const all = stylesFor(candidate.sex, primary, candidate.ageBand);

@@ -251,18 +251,16 @@ describe("the styling lean — the last category-blind axis", () => {
       ).length / rows.length;
 
     /*
-      The bar is the ARITHMETIC, not a round number I liked. Six avoided entries
-      held at a floor of one, against roughly sixty parts of everything else,
-      lands near nine percent — under one tile per sheet, which is what "idols
-      do not have buzz cuts" honestly means.
+      ZERO, and that is the ruling (D-94). The never-zero law protects PEOPLE,
+      not grooming: an excluded age or heritage would be an existence claim,
+      which this product does not make. A silhouette is not a person, and a
+      world's grooming register may genuinely rule a cut out.
 
-      Both halves asserted: it must drop hard from the unleaned draw, AND it must
-      not reach zero, because the reachable tile is the difference between a lean
-      and a lock.
+      The floor-of-one this replaced was the principle misapplied — it put buzz
+      cuts on idol sheets in the name of something that was never about hair.
     */
-    expect(shavedShare(leaned)).toBeLessThan(shavedShare(plain) / 3);
-    expect(shavedShare(leaned)).toBeLessThan(0.12);
-    expect(shavedShare(leaned)).toBeGreaterThan(0);
+    expect(shavedShare(leaned)).toBe(0);
+    expect(shavedShare(plain)).toBeGreaterThan(0.2);
   });
 
   it("never beats a stated cut — deference outranks every tendency", async () => {

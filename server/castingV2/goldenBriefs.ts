@@ -158,6 +158,12 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
       "The other half of the grooming tendency, kept as the counter-case so 'clean' cannot be implemented as a global clean-shaven bias. Bar: beards dominate rather than being suppressed.",
   },
   {
+    brief: "a model in her 20s wearing chunky glasses",
+    category: true,
+    because:
+      "THE STATED-ACCESSORY CASE. Rendered ZERO glasses: the constant's own no-accessories clause and the AUTHORITY block's ignore-implied-props instruction were overruling words the user actually typed — the drop-a-stated-fact class arriving through the constant rather than the interpreter, which is a place it had never been found. It also emptied a ratified product rule, because 'eyewear and jewelry are stated-only' is worth nothing if stated does not work. Bar: 8/8 wearing them, and unstated accessories still absent everywhere else.",
+  },
+  {
     brief: "a redhead in her 30s",
     category: false,
     because:
