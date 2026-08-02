@@ -485,9 +485,26 @@ export async function listSessionRolls(userId: number, sessionId: number): Promi
  * to retry in rather than debris — the sheet page's composer is the designed
  * retry surface for it.
  */
+/**
+ * The ceiling, and why there still is one.
+ *
+ * It was 6, and that was a cap the user could not see past: the lobby's strip
+ * scrolls sideways without limit, so sheets seven and beyond were not merely
+ * further along the row — they were unreachable from the lobby entirely, with
+ * no affordance saying anything was missing. A sheet you paid for and cannot
+ * find is the same failure as a sheet that was never kept.
+ *
+ * Not unbounded, though. Sessions expire after seven quiet days, so the set is
+ * bounded in PRACTICE — but bounded by behaviour is not bounded by the
+ * statement, and an owner SELECT with no ceiling is one unusual week away from
+ * being a page-load that reads everything. Forty covers a heavy week several
+ * times over while keeping the query honest about having a limit at all.
+ */
+const OPEN_SESSION_CEILING = 40;
+
 export async function listOpenCastingSessions(
   userId: number,
-  limit = 6,
+  limit = OPEN_SESSION_CEILING,
 ): Promise<CastingSession[]> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();

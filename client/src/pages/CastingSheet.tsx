@@ -14,15 +14,24 @@ import {
   Skeleton,
 } from "@/foundation";
 import { BriefEcho } from "@/features/castingV2/components/BriefEcho";
+import { BriefField } from "@/features/castingV2/components/BriefField";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
 import { useSheetSession, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
+import {
+  displayText,
+  sameBrief,
+  shownRollChanged,
+  typed,
+  type BriefDraft,
+} from "@/features/castingV2/briefDraft";
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
+import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import {
   CandidateViewer,
   type ViewerFrame,
@@ -104,7 +113,12 @@ export default function CastingSheet() {
       binds every action to the session id so a caller cannot forget it.
     */
   } = useSheetSession(sessionId);
-  const [brief, setBrief] = useState("");
+  /*
+    The user's unspent typing, or nothing at all. The box itself is DERIVED —
+    see `briefDraft.ts` for the defect that shape deletes, and why a seeded
+    string could not.
+  */
+  const [draft, setDraft] = useState<BriefDraft>(null);
   /*
     Its own state rather than borrowing the cancel line, which it was doing.
     A followed face can be discarded, purged or signed, and when that happens
@@ -313,28 +327,27 @@ export default function CastingSheet() {
   const activeIsGenerating = activeRollStatus !== null && !TERMINAL_ROLL_STATUSES.has(activeRollStatus);
 
   /**
-   * The brief field starts as the roll's own sentence, so "roll again" is an
-   * edit of what they asked for rather than a blank box to retype.
+   * The brief box, derived rather than seeded.
    *
-   * ONCE PER ROLL, not whenever the box happens to be empty. The first version
-   * keyed on `brief === ""` as a stand-in for "not filled yet", and those are
-   * not the same thing: clearing the box by hand looks identical to a fresh
-   * sheet, so the sentence sprang straight back and the field could not be
-   * emptied at all. The founder found it by holding backspace.
+   * `shownBrief` is the sentence that produced the roll on screen, and with no
+   * draft that IS what the box says — so a reload, a history walk and a landing
+   * roll are all right without any of them being a case somebody remembered to
+   * handle. The rule for what happens to a draft when the viewed roll changes
+   * lives in `briefDraft.ts`, along with the paid-input bug it deletes.
    *
-   * Keyed on the roll instead. Clearing stays cleared, because the roll has
-   * already had its turn. Walking to another roll seeds that roll's sentence,
-   * but only into an empty box — arriving somewhere new should never overwrite
-   * words the user has already typed.
+   * The effect fires on the roll's IDENTITY, not on its text: two rolls can
+   * share a sentence, and walking between them is still arriving somewhere new.
    */
-  const prefilledFor = useRef<string | null>(null);
+  const shownBrief = roll.data?.briefText ?? "";
+  const brief = displayText(draft, shownBrief);
+  const draftAnchor = useRef<string | null>(null);
   useEffect(() => {
     const rollId = roll.data?.rollId;
     const text = roll.data?.briefText;
-    if (!rollId || !text || prefilledFor.current === rollId) return;
-    prefilledFor.current = rollId;
-    if (brief === "") setBrief(text);
-  }, [roll.data?.rollId, roll.data?.briefText, brief]);
+    if (!rollId || text === undefined || draftAnchor.current === rollId) return;
+    draftAnchor.current = rollId;
+    setDraft((current) => shownRollChanged(current, text));
+  }, [roll.data?.rollId, roll.data?.briefText]);
 
   const invalidate = async () => {
     await Promise.all([
@@ -727,6 +740,17 @@ export default function CastingSheet() {
   */
   const expiryNotice = sheetExpiryNotice(session.data?.expiresAt ?? null);
 
+  /*
+    One slot, one line. Both new facts are properties of the ROLL being viewed,
+    so walking the history rail correctly changes what the sheet confesses —
+    the sheet you are looking at is the one it describes.
+  */
+  const notice = sheetNotice({
+    fellBack: roll.data?.fellBack === true,
+    statedWardrobe: roll.data?.statedWardrobe === true,
+    expiryNotice,
+  });
+
   const counts = roll.data?.counts;
   const cancelLine = cancelStory({
     cancelled: rollWasCancelled || cancelRequested,
@@ -873,14 +897,15 @@ export default function CastingSheet() {
         ) : null}
 
         {/*
-          THE SHEET SAYS WHEN IT IS ABOUT TO GO.
+          THE SHEET'S ONE QUIET LINE.
 
-          One sentence, once, at the top of the sheet it concerns — and only
-          inside the last two days, because a retention line on a sheet nobody
-          is at risk of losing is noise. It names the deadline and the action
-          and stops there.
+          Three things can want this space — a lost interpretation, a stated
+          outfit the sheet did not render, an expiry two days out — and they
+          are all true at once often enough that stacking them was never an
+          option. The precedence lives in `sheetNotice`, next to the reasoning,
+          rather than as three conditionals here that drift apart.
         */}
-        {expiryNotice ? <p className="dpc-expiry-note">{expiryNotice}</p> : null}
+        {notice ? <p className="dpc-expiry-note">{notice}</p> : null}
 
         {/*
           THE SHEET SAYS WHEN IT COULD NOT VARY.
@@ -1099,13 +1124,13 @@ export default function CastingSheet() {
       <div className="dp-dock-fade">
         <Dock>
           <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
-            <Field className="dp-split__main">
+            <Field className="dp-split__main dpc-briefrow">
               <Sparkles size={13} strokeWidth={1.9} aria-hidden="true" />
-              <Input
+              <BriefField
                 value={brief}
                 onChange={(event) => {
                   const next = event.target.value;
-                  setBrief(next);
+                  setDraft(typed(next));
                   /*
                     THE ECHO REVERTS THE MOMENT YOU START TYPING.
 
@@ -1121,7 +1146,13 @@ export default function CastingSheet() {
                     which is the whole precedence law demonstrated rather than
                     documented.
                   */
-                  const diverged = next.trim() !== (roll.data?.briefText ?? "").trim();
+                  /*
+                    Divergence asks the same question the draft's spend rule
+                    asks, so it asks it the same way. Two notions of "the same
+                    sentence" is how the box and the adjustments would come to
+                    disagree about whether the brief had been rewritten.
+                  */
+                  const diverged = !sameBrief(next, shownBrief);
                   if (diverged && Object.keys(overrides).length > 0) {
                     clearOverrides();
                     toast("Brief edited — your adjustments were cleared");

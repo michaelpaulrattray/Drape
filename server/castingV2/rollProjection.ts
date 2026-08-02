@@ -29,6 +29,7 @@
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
 import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
+import { statesWardrobe } from "./statedWardrobe";
 import {
   AGE_BANDS,
   AGE_PHASES,
@@ -91,6 +92,18 @@ export type RollProjection = {
    * boundary is the one thing the user can act on.
    */
   varianceHeld: boolean;
+  /**
+   * The interpreter could not be read and this roll was compiled from the raw
+   * sentence — so nothing the brief stated was pinned. See `readFellBack`.
+   */
+  fellBack: boolean;
+  /**
+   * The brief said what they were wearing, and the sheet kept the studio tee.
+   *
+   * The override is law; the silence about it was not. See `statedWardrobe.ts`
+   * for why this is a narrower question than the composed-direction guard asks.
+   */
+  statedWardrobe: boolean;
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
   createdAt: string;
@@ -338,6 +351,29 @@ function readVarianceHeld(compiledBrief: unknown): boolean {
   return (variance as { confess?: unknown }).confess === true;
 }
 
+/**
+ * Was this roll compiled from a READ brief, or from the raw sentence?
+ *
+ * The compiler has recorded this since Path A shipped and nothing has ever
+ * shown it. That silence is the bug: when the interpreter is unreachable, or
+ * its reply cannot be read, the compile falls back to the sentence itself and
+ * **every lock the user stated is lost** — the sex, the age, the heritage they
+ * typed. The roll still runs and is still charged, and the sheet looks exactly
+ * like an ordinary one. A paid roll that quietly ignored half the brief.
+ *
+ * Fail-open on purpose (catalog H30): an interpreter outage must never cost
+ * someone their roll. Nothing here changes that. It only stops the outage being
+ * invisible to the person who paid for it.
+ *
+ * `=== false` rather than falsy, and the reason matters: rolls compiled before
+ * this field existed have no value, and "absent" is not "it fell back". An
+ * unknown must never be reported as a failure.
+ */
+function readFellBack(compiledBrief: unknown): boolean {
+  if (!compiledBrief || typeof compiledBrief !== "object") return false;
+  return (compiledBrief as { interpreted?: unknown }).interpreted === false;
+}
+
 export function projectRoll(input: {
   roll: CastingRoll;
   candidates: readonly CastingCandidate[];
@@ -361,6 +397,17 @@ export function projectRoll(input: {
     briefText: input.roll.briefText,
     chips: readChips(input.roll.compiledBrief),
     varianceHeld: readVarianceHeld(input.roll.compiledBrief),
+    fellBack: readFellBack(input.roll.compiledBrief),
+    /*
+      Derived from the sentence rather than persisted beside it.
+
+      A stored copy would be a second copy of a fact the roll already carries —
+      the class the `expiredReason` ruling named ("a second copy of a fact is a
+      copy that can be wrong"). `briefText` is immutable on a committed roll, so
+      deriving here is stable for the life of the roll, needs no migration, and
+      cannot drift from the sentence it describes.
+    */
+    statedWardrobe: statesWardrobe(input.roll.briefText),
     facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief),
     lineage: {
       ...(input.parentCandidatePublicId ? { fromCandidateId: input.parentCandidatePublicId } : {}),

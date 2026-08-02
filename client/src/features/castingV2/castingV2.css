@@ -2225,3 +2225,43 @@
 
 .dpc-renamem__secondary:focus-visible,
 .dpc-renamem__primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ---- the brief field, which grows ---- */
+
+/*
+  A brief you can read before you pay for it.
+
+  The single-line input scrolled its own beginning out of view past about sixty
+  characters, so a long brief could not be checked before it was spent. This
+  grows to four lines and then scrolls — the cap lives here rather than in the
+  measuring effect, so one place decides the maximum.
+
+  `line-height` is stated rather than inherited because the cap is expressed in
+  lines: 4 × 1.45 × 13px, plus nothing else, because the padding belongs to the
+  wrapping field.
+*/
+.dpc-brieffield {
+  line-height: 1.45;
+  max-height: calc(4 * 1.45 * 13px);
+  resize: none;
+  overflow-y: auto;
+  /* A textarea is inline-block by default and sits on the text baseline,
+     leaving a few stray pixels under it inside the field's border. */
+  display: block;
+  padding: 0;
+}
+
+/*
+  The field's own row stops centring once its input can be four lines tall — a
+  vertically centred sparkle beside a four-line brief floats in the middle of
+  the paragraph. Top-aligned, with the icon nudged onto the first line's
+  optical centre.
+*/
+.dp-field.dpc-briefrow {
+  align-items: flex-start;
+}
+
+.dp-field.dpc-briefrow > svg {
+  margin-top: 2px;
+  flex: none;
+}

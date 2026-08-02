@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "99f95752326ec54a"
+    "sourceFingerprint": "7df84f3e23ecbd9f"
   },
   "domains": [
     {
@@ -38,12 +38,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 34
+      "moduleCount": 35
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 17
+      "moduleCount": 20
     },
     {
       "id": "domain:client-shared",
@@ -1383,6 +1383,12 @@
       "lifecycle": "retire"
     },
     {
+      "id": "module:client/src/features/castingV2/briefDraft.ts",
+      "path": "client/src/features/castingV2/briefDraft.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/briefEcho.ts",
       "path": "client/src/features/castingV2/briefEcho.ts",
       "domain": "castingV2",
@@ -1403,6 +1409,12 @@
     {
       "id": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "path": "client/src/features/castingV2/components/BriefEcho.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/BriefField.tsx",
+      "path": "client/src/features/castingV2/components/BriefField.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -1469,6 +1481,12 @@
     {
       "id": "module:client/src/features/castingV2/retentionCopy.ts",
       "path": "client/src/features/castingV2/retentionCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/sheetNotice.ts",
+      "path": "client/src/features/castingV2/sheetNotice.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3317,6 +3335,12 @@
     {
       "id": "module:server/castingV2/spendGuards.ts",
       "path": "server/castingV2/spendGuards.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/statedWardrobe.ts",
+      "path": "server/castingV2/statedWardrobe.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7373,6 +7397,10 @@
   ],
   "tests": [
     {
+      "id": "test:client/src/features/castingV2/briefDraft.test.ts",
+      "path": "client/src/features/castingV2/briefDraft.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/briefEcho.test.ts",
       "path": "client/src/features/castingV2/briefEcho.test.ts"
     },
@@ -7411,6 +7439,10 @@
     {
       "id": "test:client/src/features/castingV2/roomAnatomy.test.ts",
       "path": "client/src/features/castingV2/roomAnatomy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/sheetNotice.test.ts",
+      "path": "client/src/features/castingV2/sheetNotice.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/sheetState.test.ts",
@@ -8071,6 +8103,10 @@
     {
       "id": "test:server/castingV2/signService.test.ts",
       "path": "server/castingV2/signService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/statedWardrobe.test.ts",
+      "path": "server/castingV2/statedWardrobe.test.ts"
     },
     {
       "id": "test:server/castingV2/styleRefusal.test.ts",
@@ -11030,6 +11066,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/BriefField.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
@@ -12941,12 +12982,22 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/briefDraft.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/cancelNotice.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/BriefEcho.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/BriefField.tsx",
       "kind": "imports"
     },
     {
@@ -12977,6 +13028,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/retentionCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/sheetNotice.ts",
       "kind": "imports"
     },
     {
@@ -16787,6 +16843,11 @@
     {
       "from": "module:server/castingV2/rollProjection.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollProjection.ts",
+      "to": "module:server/castingV2/statedWardrobe.ts",
       "kind": "imports"
     },
     {
