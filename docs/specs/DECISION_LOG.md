@@ -2357,4 +2357,59 @@ Recorded artefacts for the room: `docs/specs/CASTING_V2_ROOM_RECONCILIATION.md`
 
 ---
 
+## D-102 — A legacy authority meeting a V2 snapshot widens or refuses. It never filters.
+
+**Ruling (2026-08-02), after the first paid package-v3 Sign.**
+
+Package v3 added a true `closeUp`. It was deliberately kept OUT of
+`CANONICAL_VIEW_ANGLES`, because six modules correctly assert the comp card is
+exactly six — the PDF has six cells, the export six filenames, ink placement six
+zones. `CastViewAngle = CanonicalViewAngle | "closeUp"` carried the wider
+vocabulary instead.
+
+That was the right boundary and the wrong enforcement. **A filter or a loop
+typechecks identically against either list**, so nine read sites kept narrowing
+to the six, and the compiler had nothing to say. The paid run showed the cost:
+the close-up was planned, generated, charged, judged and refunded — and then
+dropped between the database and the screen. Every individual record was
+correct. The customer simply never saw the view they paid for.
+
+Two of the nine were worse than cosmetic, and neither was reachable from the
+failed run:
+
+- `promisedPackageAngles` is the RECOVERY REFUND WORK-LIST. Reading the durable
+  promise back through the six is the deploy-collision landmine wearing a
+  different coat: a v3 Sign swept by recovery would have refunded four slices of
+  five, leaving the customer 50 credits down with nothing to show.
+- `effectiveCastState` refused any snapshot holding a close-up
+  (`slot_angle_invalid`). Because every view failed, the run never sealed one.
+  **The first SUCCESSFUL v3 Sign would have bricked ink, evidence, export and
+  restore for exactly the Casts whose packages worked** — and
+  `wholeCastRestore` would have left such a Cast with no restore point at all,
+  making its deletion unrecoverable.
+
+**The law.** A legacy authority that meets a V2 snapshot has two honest moves:
+
+1. **Widen**, when its job is reading what a Cast actually has. That is right
+   for `effectiveCastState`, `snapshotTransitions` and `wholeCastRestore` — the
+   ledger legitimately holds a close-up and they exist to read the ledger.
+2. **Refuse by name**, when it genuinely cannot represent the view.
+
+It may never silently filter. Where a legacy artifact really does need the six —
+the PDF, the export, ink placement, minting — it calls `compCardViews(state)`,
+whose RETURN TYPE is narrowed, so a comp-card builder cannot be handed a
+close-up by accident; it would not compile. The narrowing is stated once, in one
+place, with its reason attached.
+
+**Enforcement, because fixing nine sites does nothing about the tenth.**
+`server/castingV2/viewVocabulary.test.ts` fails CI if any module under
+`server/castingV2/` so much as names `CANONICAL_VIEW_ANGLES` or
+`CanonicalViewAngle` outside a pinned exception list, and pins that the three
+legacy authorities read `CAST_VIEW_ANGLES`. The wrong list now fails the build
+even where it compiles. Prefer `Record<CastViewAngle, T>` over lists at any new
+site that enumerates views: a Record fails to compile when the union grows,
+an array never does.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

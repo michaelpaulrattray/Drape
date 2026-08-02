@@ -34,6 +34,7 @@ import { normalizeInkInstruction } from "../casting/evidence/inkInstructionPlann
 import {
   buildEffectiveCastState,
   type EffectiveCastState,
+  compCardViews,
 } from "../casting/effectiveCastState";
 import { modelOperationLockKey } from "../casting/operationContract";
 import { readSnapshotShadowStateIn } from "../casting/snapshotShadow";
@@ -285,7 +286,7 @@ export async function commitBeginInkAnywhereIntent(input: {
     }
     const source = chooseCurrentInkAuthoringSource(
       input.anatomy,
-      state.selectedViews.map((view) => ({
+      compCardViews(state).map((view) => ({
         angle: view.angle,
         assetId: view.asset.id,
         compatibility: view.compatibility,

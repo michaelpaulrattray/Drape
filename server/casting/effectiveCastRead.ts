@@ -22,6 +22,14 @@ function mapEffectiveCastStateError(error: unknown): never {
   });
 }
 
+/*
+  Re-exported so a ROUTE can narrow to the comp-card six without importing the
+  B1 resolver directly — that import list is pinned deliberately
+  (`r7-snapshot-selection-contract.test.ts`). Reads reach the effective state
+  through this module, and the comp-card narrowing is part of reading it.
+*/
+export { compCardViews } from "./effectiveCastState";
+
 export async function resolveEffectiveCastStateForRead(input: {
   userId: number;
   modelId: number;

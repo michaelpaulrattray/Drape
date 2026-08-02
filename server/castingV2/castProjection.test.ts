@@ -269,6 +269,42 @@ describe("the signed Cast projection", () => {
     expect(projection.slots[0].label).toBe("Close-up");
   });
 
+  it("renders the view a v3 Cast actually bought", () => {
+    /*
+      THE REGRESSION, found by the first paid package-v3 Sign and worth the
+      money it cost. `closeUp` is stored in the same column as the comp-card six
+      but is deliberately not one of them, and the strip was drawn by iterating
+      the six — so the slot was planned, generated, charged, judged, refunded
+      and then dropped on the floor between the database and the screen. Every
+      record was correct; the customer simply never saw it.
+
+      The lesson generalises past this slot: a V2 surface iterates
+      CAST_VIEW_ANGLES, and the comp-card six is a legacy list that happens to
+      overlap.
+    */
+    const projection = projectSignedCast({
+      model: model(),
+      assets: ledger(
+        anchor(),
+        asset({ id: 91, viewType: "closeUp" }),
+        asset({ id: 92, viewType: "frontClose" }),
+      ),
+      lineage,
+      promisedAngles: ["closeUp", "frontClose", "frontFull", "sideClose", "backFull"],
+    });
+    expect(projection.slots.map((entry) => entry.angle)).toEqual([
+      "closeUp",
+      "frontClose",
+      "frontFull",
+      "sideClose",
+      "backFull",
+    ]);
+    // And it leads the strip, carrying its own label rather than the portrait's.
+    expect(projection.slots[0].label).toBe("Close-up");
+    expect(projection.slots[0].state).toBe("ready");
+    expect(projection.slots[1].label).toBe("Portrait");
+  });
+
   it("never lets the stand-in pose as a delivered view", () => {
     /*
       Founder ruling: the MASTER is always the chest-up image she was signed in,

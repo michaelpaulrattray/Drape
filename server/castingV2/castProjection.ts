@@ -16,7 +16,7 @@
  * never arrive, and both are worse than the sentence.
  */
 import type { Model, ModelAsset } from "../../drizzle/schema";
-import { CANONICAL_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
+import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
@@ -142,7 +142,7 @@ function slotEvidence(assets: readonly ModelAsset[]): Map<CastViewAngle, SlotEvi
   const evidence = new Map<CastViewAngle, SlotEvidence>();
   for (const asset of assets) {
     const angle = asset.viewType as CastViewAngle;
-    if (!(CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)) continue;
+    if (!(CAST_VIEW_ANGLES as readonly string[]).includes(angle)) continue;
     const entry = evidence.get(angle) ?? {};
     const failure = readFailureMarker(asset);
     if (failure) {
@@ -199,7 +199,7 @@ export function projectSignedCast(input: {
     built is rendered from what is being built for it — today's profile, plus
     anything already on disk.
   */
-  const evidenceAngles = CANONICAL_VIEW_ANGLES.filter((angle) => {
+  const evidenceAngles = CAST_VIEW_ANGLES.filter((angle) => {
     const entry = evidence.get(angle);
     return Boolean(entry?.landed || entry?.failure || entry?.anchor);
   });
@@ -209,7 +209,7 @@ export function projectSignedCast(input: {
     // whose package has not opened yet. Today's profile is the honest guess for
     // something being built right now, and the evidence carries a finished one.
     : building ? CAST_PACKAGE_VIEWS : [];
-  const renderedAngles = CANONICAL_VIEW_ANGLES.filter(
+  const renderedAngles = CAST_VIEW_ANGLES.filter(
     (angle) => promised.includes(angle) || evidenceAngles.includes(angle),
   );
 

@@ -53,10 +53,16 @@ vi.mock("./casting/snapshotReadScope", async (importOriginal) => {
     captureSnapshotReadMode: vi.fn().mockReturnValue("r6"),
   };
 });
-vi.mock("./casting/effectiveCastRead", () => ({
-  resolveEffectiveCastStateForRead: vi.fn(),
-  resolveEffectiveCastStatesForRead: vi.fn(),
-}));
+vi.mock("./casting/effectiveCastRead", async (importOriginal) => {
+  // The comp-card narrowing is real logic, not a seam — the PDF must be built
+  // from the six it can actually place, so the mock keeps the real function.
+  const actual = await importOriginal<typeof import("./casting/effectiveCastRead")>();
+  return {
+    compCardViews: actual.compCardViews,
+    resolveEffectiveCastStateForRead: vi.fn(),
+    resolveEffectiveCastStatesForRead: vi.fn(),
+  };
+});
 vi.mock("./casting/snapshotPdfImages", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/snapshotPdfImages")>();
   return {

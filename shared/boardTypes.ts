@@ -42,6 +42,20 @@ export const CANONICAL_VIEW_ANGLES = [
   "backFull",
 ] as const satisfies readonly CanonicalViewAngle[];
 
+/**
+ * Every angle a Cast room may render, in strip order.
+ *
+ * The list a V2 surface iterates. `CANONICAL_VIEW_ANGLES` is the comp-card six
+ * and iterating IT is how package v3's close-up came to be generated, charged,
+ * refunded and then silently dropped from the room — the slot did all its work
+ * and never reached the screen, because the loop that draws the strip had never
+ * heard of it. Ordered close-up first, matching the profile.
+ */
+export const CAST_VIEW_ANGLES = [
+  "closeUp",
+  ...CANONICAL_VIEW_ANGLES,
+] as const satisfies readonly CastViewAngle[];
+
 /** The canonical identity package (D-39, ratified): face cluster locks
  *  facial identity, body cluster locks silhouette/build. */
 export const PACKAGE_SLOTS: readonly CanonicalViewAngle[] = CANONICAL_VIEW_ANGLES;

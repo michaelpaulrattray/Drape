@@ -26,7 +26,6 @@
  * absorb, not a second design.
  */
 import {
-  CANONICAL_VIEW_ANGLES,
   VIEW_ANGLE_LABELS,
   type CastViewAngle,
 } from "../../shared/boardTypes";

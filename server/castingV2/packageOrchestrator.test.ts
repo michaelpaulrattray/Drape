@@ -29,10 +29,15 @@ vi.mock("../db/castingV2Sign", () => ({
   recordPackageSlotFailure: vi.fn(),
   activateSignedCast: vi.fn(),
   listCastAssets: vi.fn(async () => []),
+  listOperationViewSteps: vi.fn(async () => []),
 }));
 
-const { buildCastPackage, packageSlotChargeReference, unsettledPackageAngles } =
-  await import("./packageOrchestrator");
+const {
+  buildCastPackage,
+  packageSlotChargeReference,
+  promisedPackageAngles,
+  unsettledPackageAngles,
+} = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
 
 const pass: ViewConformanceVerdict = {
@@ -299,5 +304,38 @@ describe("what recovery still has to settle", () => {
 
     const unsettled = await unsettledPackageAngles({ userId: 1, modelId: 901 });
     expect(unsettled).toEqual(["closeUp", "frontClose", "sideClose"]);
+  });
+});
+
+describe("the promise a Cast was actually charged against", () => {
+  it("reads back every view it recorded, including one this profile never sold", async () => {
+    /*
+      The refund work-list, and the reason it is read from the Cast's own audit
+      rows rather than from today's profile (the deploy-collision landmine).
+      That defence is only as good as the vocabulary it reads THROUGH: filtering
+      the recorded rows against the comp-card six silently dropped `closeUp`, so
+      a v3 Sign swept by recovery would have been refunded four slices out of
+      five and the customer would have been 50 credits down with nothing to show
+      for it. Every other part of the machinery was correct.
+    */
+    const { listOperationViewSteps } = await import("../db/castingV2Sign");
+    vi.mocked(listOperationViewSteps).mockResolvedValue([
+      { viewAngle: "backFull" },
+      { viewAngle: "closeUp" },
+      { viewAngle: "frontClose" },
+    ] as never);
+
+    const promise = await promisedPackageAngles({ userId: 1, operationId: "op-v3" });
+    expect(promise.source).toBe("recorded");
+    expect(promise.angles).toEqual(["closeUp", "frontClose", "backFull"]);
+  });
+
+  it("falls back to today's profile only when nothing was ever opened", async () => {
+    const { listOperationViewSteps } = await import("../db/castingV2Sign");
+    vi.mocked(listOperationViewSteps).mockResolvedValue([] as never);
+
+    const promise = await promisedPackageAngles({ userId: 1, operationId: "op-empty" });
+    expect(promise.source).toBe("profile");
+    expect(promise.angles).toEqual([...CAST_PACKAGE_VIEWS]);
   });
 });

@@ -32,8 +32,10 @@ import {
 } from "../../drizzle/schema";
 import {
   CANONICAL_VIEW_ANGLES,
+  CAST_VIEW_ANGLES,
   MINT_TIER_SLOTS,
   type CanonicalViewAngle,
+  type CastViewAngle,
   type MintTier,
 } from "../../shared/boardTypes";
 import {
@@ -353,7 +355,9 @@ async function validateFinalSelectionsIn(
   tx: TransactionHandle,
   modelId: number,
   slots: Array<{
-    viewAngle: CanonicalViewAngle;
+    // CastViewAngle: this validates what a snapshot ACTUALLY holds, and a
+    // signed v3 Cast legitimately holds a close-up (D-102).
+    viewAngle: CastViewAngle;
     selectedAssetId: number;
     compatibility: PackageSlotCompatibility;
     selectionReason: PackageSlotSelectionReason;
@@ -678,11 +682,12 @@ export async function commitModelSnapshotTransition<Result>(input: {
     }
 
     const staleCarried = !!transition.identity && transition.identity.reason !== "document_compact";
-    const selectivelyStaleAngles = transition.identity?.staleViewAngles === undefined
-      ? null
-      : new Set(transition.identity.staleViewAngles);
-    const finalByAngle = new Map<CanonicalViewAngle, {
-      viewAngle: CanonicalViewAngle;
+    const selectivelyStaleAngles: ReadonlySet<string> | null =
+      transition.identity?.staleViewAngles === undefined
+        ? null
+        : new Set<string>(transition.identity.staleViewAngles);
+    const finalByAngle = new Map<CastViewAngle, {
+      viewAngle: CastViewAngle;
       selectedAssetId: number;
       compatibility: PackageSlotCompatibility;
       selectionReason: PackageSlotSelectionReason;
@@ -690,13 +695,13 @@ export async function commitModelSnapshotTransition<Result>(input: {
     }>();
     if (!replacesSlots) {
       for (const slot of current?.slots ?? []) {
-        finalByAngle.set(slot.viewAngle as CanonicalViewAngle, {
-          viewAngle: slot.viewAngle as CanonicalViewAngle,
+        finalByAngle.set(slot.viewAngle as CastViewAngle, {
+          viewAngle: slot.viewAngle as CastViewAngle,
           selectedAssetId: slot.selectedAssetId,
           compatibility: staleCarried
             && (
               selectivelyStaleAngles === null
-              || selectivelyStaleAngles.has(slot.viewAngle as CanonicalViewAngle)
+              || selectivelyStaleAngles.has(slot.viewAngle)
             )
             ? "stale"
             : slot.compatibility,
@@ -756,7 +761,14 @@ export async function commitModelSnapshotTransition<Result>(input: {
         sourceSelectionId,
       });
     }
-    const finalSlots = CANONICAL_VIEW_ANGLES
+    /*
+      CAST_VIEW_ANGLES, because this rebuilds the SUCCESSOR snapshot from the
+      carried one. Iterating the comp-card six here would silently delete a
+      package-v3 close-up from the next snapshot the first time any legacy
+      transition touched a signed Cast — a view the customer paid for,
+      disappearing with no record that it ever existed (D-102).
+    */
+    const finalSlots = CAST_VIEW_ANGLES
       .map((angle) => finalByAngle.get(angle))
       .filter((slot): slot is NonNullable<typeof slot> => !!slot);
     await validateFinalSelectionsIn(tx, input.modelId, finalSlots);

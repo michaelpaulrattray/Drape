@@ -69,6 +69,7 @@ import {
 } from "./snapshotTransitions";
 import { storageDelete } from "../storage";
 import { resolveEffectiveCastStateForRead } from "./effectiveCastRead";
+import { compCardViews } from "./effectiveCastState";
 import type { EffectiveCastState } from "./effectiveCastState";
 import type { SnapshotReadMode } from "./snapshotReadScope";
 import { withUniqueCastPublicId } from "./castPublicId";
@@ -142,7 +143,7 @@ export function snapshotMintExecutionAuthority(
   const selectedById = new Map<number, AnchorAssetRow>();
 
   if (state.status === "current") {
-    for (const view of state.selectedViews) {
+    for (const view of compCardViews(state)) {
       // R7-7B6: snapshot selection is the accepted version ceremony. Legacy
       // row pins/revision stamps are dormant rollback data and cannot change
       // mint validity. A whole-Cast restore deliberately selects immutable
@@ -184,7 +185,7 @@ export function snapshotMintExecutionAuthority(
       : state.model,
     assets,
     existingAngles: state.status === "current"
-      ? state.selectedViews.map((view) => view.angle)
+      ? compCardViews(state).map((view) => view.angle)
       : [],
     identityText: state.status === "current" ? state.identity.identityText : "",
     selection: {

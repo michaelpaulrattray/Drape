@@ -41,7 +41,7 @@ import { parseInkCandidatePublicStorageKey } from "../casting/evidence/inkCandid
 import { availableModelWhere } from "../casting/modelAvailability";
 import { modelOperationLockKey } from "../casting/operationContract";
 import { slotCost } from "../casting/packagePricing";
-import { buildEffectiveCastState } from "../casting/effectiveCastState";
+import { buildEffectiveCastState, compCardViews } from "../casting/effectiveCastState";
 import {
   INK_ACTIVE_FAMILY_KEY,
   INK_ANYWHERE_CAPABILITY_KEY,
@@ -547,7 +547,7 @@ function projectionSource(
   state: ReturnType<typeof buildEffectiveCastState> & { status: "current" },
   angle: CanonicalViewAngle,
 ) {
-  const exact = state.selectedViews.find((view) => view.angle === angle);
+  const exact = compCardViews(state).find((view) => view.angle === angle);
   if (exact) {
     if (
       (exact.compatibility !== "current" && exact.compatibility !== "stale")
@@ -567,7 +567,7 @@ function projectionSource(
     "sideClose",
   ];
   const fallback = fallbackOrder.flatMap((candidate) =>
-    state.selectedViews.filter((view) =>
+    compCardViews(state).filter((view) =>
       view.angle === candidate
       && view.compatibility === "current"
       && !view.asset.pinned
@@ -1017,7 +1017,7 @@ export async function prepareInkCandidateGeneration(input: {
     if (intent.identitySnapshotId !== state.identity.id) {
       throw new InkCandidateStateError("source_unavailable");
     }
-    let source: typeof state.selectedViews[number] | undefined;
+    let source: ReturnType<typeof compCardViews>[number] | undefined;
     let authority: PreparedInkCandidateAttempt["authority"];
     if (intent.capabilityKey === INK_ADD_CAPABILITY_KEY) {
       if (
@@ -1033,7 +1033,7 @@ export async function prepareInkCandidateGeneration(input: {
       } catch {
         throw new InkCandidateStateError("intent_unavailable");
       }
-      source = state.selectedViews.find(
+      source = compCardViews(state).find(
         (view) => view.angle === INK_ADD_TARGET_VIEW,
       );
       if (intent.sourceAssetId !== source?.asset.id) {
@@ -1072,7 +1072,7 @@ export async function prepareInkCandidateGeneration(input: {
       }
       const choice = chooseCurrentInkAuthoringSource(
         anatomy,
-        state.selectedViews.map((view) => ({
+        compCardViews(state).map((view) => ({
           angle: view.angle,
           assetId: view.asset.id,
           compatibility: view.compatibility,
@@ -1082,7 +1082,7 @@ export async function prepareInkCandidateGeneration(input: {
       if (!choice) {
         throw new InkCandidateStateError("source_unavailable");
       }
-      source = state.selectedViews.find(
+      source = compCardViews(state).find(
         (view) => view.angle === choice.angle
           && view.asset.id === choice.assetId,
       );

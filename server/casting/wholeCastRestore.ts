@@ -27,7 +27,9 @@ import {
 } from "../../drizzle/schema";
 import {
   CANONICAL_VIEW_ANGLES,
+  CAST_VIEW_ANGLES,
   type CanonicalViewAngle,
+  type CastViewAngle,
 } from "../../shared/boardTypes";
 import {
   isModelDraftStatus,
@@ -300,7 +302,10 @@ export function resolveWholeCastRestorePoint(
   const unavailableAngles: CanonicalViewAngle[] = [];
   for (const selection of slots) {
     if (
-      !CANONICAL_VIEW_ANGLES.includes(selection.viewAngle as CanonicalViewAngle)
+      // CAST_VIEW_ANGLES: a v3 Cast's close-up slot is a legitimate ledger
+      // entry, and rejecting it here left such a Cast with NO valid restore
+      // point at all — the deletion became unrecoverable (D-102).
+      !CAST_VIEW_ANGLES.includes(selection.viewAngle as CastViewAngle)
       || seenAngles.has(selection.viewAngle)
       || seenAssets.has(selection.selectedAssetId)
     ) {

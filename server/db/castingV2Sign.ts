@@ -52,7 +52,7 @@ import {
   type Model,
   type ModelAsset,
 } from "../../drizzle/schema";
-import { CANONICAL_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
+import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
 import { CASTING_SESSION_IDLE_MS } from "./castingV2";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
@@ -676,7 +676,7 @@ export async function listCastPromisedAngles(
       like(generations.stepKey, "view:%"),
     ));
   const seen = new Set(rows.map((row) => row.viewAngle));
-  return CANONICAL_VIEW_ANGLES.filter((angle) => seen.has(angle));
+  return CAST_VIEW_ANGLES.filter((angle) => seen.has(angle));
 }
 
 /** Every asset row of an owned Cast, newest first (the ledger's own order). */
@@ -773,7 +773,7 @@ export async function activateSignedCast(input: {
     for (const asset of assets) {
       if (!asset.storageUrl) continue;
       const angle = asset.viewType as CastViewAngle;
-      if (!(CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)) continue;
+      if (!(CAST_VIEW_ANGLES as readonly string[]).includes(angle)) continue;
       if (!filledByAngle.has(angle)) filledByAngle.set(angle, asset.id);
     }
     if (!filledByAngle.has("frontClose")) {
@@ -794,7 +794,7 @@ export async function activateSignedCast(input: {
       reason: "mint",
       createdByOperationId: input.operationId,
     });
-    const slotAngles = CANONICAL_VIEW_ANGLES.filter((angle) => filledByAngle.has(angle));
+    const slotAngles = CAST_VIEW_ANGLES.filter((angle) => filledByAngle.has(angle));
     await tx.insert(modelPackageSnapshotSlots).values(
       slotAngles.map((angle) => ({
         id: randomUUID(),

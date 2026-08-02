@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5e88d509f455ff45"
+    "sourceFingerprint": "9e81486ecb05edc4"
   },
   "domains": [
     {
@@ -8005,6 +8005,10 @@
     {
       "id": "test:server/castingV2/viewConformance.test.ts",
       "path": "server/castingV2/viewConformance.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewVocabulary.test.ts",
+      "path": "server/castingV2/viewVocabulary.test.ts"
     },
     {
       "id": "test:server/castingV2/vocabularyParity.test.ts",

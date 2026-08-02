@@ -22,8 +22,10 @@ import {
   type ModelPackageSnapshotSlot,
 } from "../../drizzle/schema";
 import {
+  CAST_VIEW_ANGLES,
   CANONICAL_VIEW_ANGLES,
   type CanonicalViewAngle,
+  type CastViewAngle,
 } from "../../shared/boardTypes";
 import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { withTransaction } from "../db/connection";
@@ -81,10 +83,21 @@ export interface EffectiveCastStateRows {
 }
 
 export interface EffectiveSelectedView {
-  angle: CanonicalViewAngle;
+  angle: CastViewAngle;
   compatibility: "current" | "stale" | "unverified";
   selection: ModelPackageSnapshotSlot;
   asset: ModelAsset;
+}
+
+/**
+ * A selected view that is provably one of the comp-card six.
+ *
+ * The narrowing is carried in the TYPE, so a legacy artifact builder cannot be
+ * handed a close-up by accident — it would not compile. That is the difference
+ * between this and the filter it replaces.
+ */
+export interface EffectiveCompCardView extends EffectiveSelectedView {
+  angle: CanonicalViewAngle;
 }
 
 export type EffectiveCastState =
@@ -130,8 +143,48 @@ function hash(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function isCanonicalAngle(value: string): value is CanonicalViewAngle {
+/*
+  The LEDGER's vocabulary, not the comp card's.
+
+  This authority's job is to read what a Cast actually has, and package v3
+  legitimately seals a `closeUp` slot. Narrowing here to the comp-card six was a
+  live fault: the first SUCCESSFUL v3 Sign would have sealed a snapshot this
+  function then refused with `slot_angle_invalid`, bricking ink, evidence and
+  restore for exactly the Casts whose packages worked. A legacy authority
+  meeting a V2 snapshot widens or refuses by name — it never filters (D-102).
+*/
+function isCastAngle(value: string): value is CastViewAngle {
+  return (CAST_VIEW_ANGLES as readonly string[]).includes(value);
+}
+
+function isCanonicalAngle(value: CastViewAngle): value is CanonicalViewAngle {
   return (CANONICAL_VIEW_ANGLES as readonly string[]).includes(value);
+}
+
+/**
+ * The comp-card six a Cast currently has selected — the legacy artifact view.
+ *
+ * The ONE place the six-angle narrowing is allowed, and it is a function rather
+ * than a field so that reaching for it is a deliberate act with a name on it.
+ *
+ * Package v3 seals a `closeUp` slot, and the legacy artifacts genuinely have
+ * nowhere to put it: the PDF has six cells, the export has six filenames, ink
+ * placement has six zones. Those builders are right to want six. What they must
+ * not do is map over `selectedViews` and quietly drop the seventh — silent
+ * narrowing at the call site is exactly how a close-up came to be generated,
+ * charged, judged and refunded without ever reaching a screen.
+ *
+ * The narrowing is carried in the RETURN TYPE, so a comp-card builder cannot be
+ * handed a close-up by accident; it would not compile. Anything that wants
+ * every view a Cast owns keeps reading `selectedViews` (D-102).
+ */
+export function compCardViews(
+  state: EffectiveCastState,
+): readonly EffectiveCompCardView[] {
+  if (state.status !== "current") return [];
+  return state.selectedViews.filter(
+    (view): view is EffectiveCompCardView => isCanonicalAngle(view.angle),
+  );
 }
 
 /**
@@ -168,7 +221,7 @@ export function buildEffectiveCastState(rows: EffectiveCastStateRows): Effective
       anchor: null,
       displayedHeadshot: null,
       selectedViews: [],
-      sealedPackage: null,
+        sealedPackage: null,
       sealedIdentity: null,
       ledger: { assets: rows.assets },
     };
@@ -202,12 +255,12 @@ export function buildEffectiveCastState(rows: EffectiveCastStateRows): Effective
     fail("identity_anchor_invalid");
   }
 
-  const seenAngles = new Set<CanonicalViewAngle>();
+  const seenAngles = new Set<CastViewAngle>();
   const seenAssets = new Set<number>();
   const selectedViews: EffectiveSelectedView[] = [];
   for (const selection of rows.currentSlots) {
     if (selection.packageSnapshotId !== currentPackage.id) fail("slot_package_invalid");
-    if (!isCanonicalAngle(selection.viewAngle)) fail("slot_angle_invalid");
+    if (!isCastAngle(selection.viewAngle)) fail("slot_angle_invalid");
     if (seenAngles.has(selection.viewAngle)) fail("slot_duplicate_angle");
     if (seenAssets.has(selection.selectedAssetId)) fail("slot_duplicate_asset");
     if (
@@ -238,7 +291,9 @@ export function buildEffectiveCastState(rows: EffectiveCastStateRows): Effective
   const displayed = selectedViews.find((view) => view.angle === "frontClose");
   if (!displayed) fail("displayed_headshot_missing");
   selectedViews.sort(
-    (a, b) => CANONICAL_VIEW_ANGLES.indexOf(a.angle) - CANONICAL_VIEW_ANGLES.indexOf(b.angle),
+    // CAST_VIEW_ANGLES: a close-up would score -1 against the comp-card six and
+    // sort first by accident. It sorts first here on purpose.
+    (a, b) => CAST_VIEW_ANGLES.indexOf(a.angle) - CAST_VIEW_ANGLES.indexOf(b.angle),
   );
 
   const hasSealedIdentity = !!model.sealedIdentitySnapshotId;

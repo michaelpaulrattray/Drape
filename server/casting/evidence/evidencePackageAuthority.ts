@@ -15,7 +15,7 @@ import {
   type CanonicalViewAngle,
 } from "../../../shared/boardTypes";
 import { withTransaction, type TransactionHandle } from "../../db/connection";
-import { buildEffectiveCastState } from "../effectiveCastState";
+import { buildEffectiveCastState, compCardViews } from "../effectiveCastState";
 import { availableModelWhere } from "../modelAvailability";
 import { modelOperationLockKey } from "../operationContract";
 import { readSnapshotShadowStateIn } from "../snapshotShadow";
@@ -145,7 +145,7 @@ async function loadAuthorityRowsIn(
     identitySnapshotId: state.identity.id,
   });
   const slotStates = selectedSlotStates({
-    selected: state.selectedViews,
+    selected: compCardViews(state),
     assets: state.ledger.assets,
   });
   const plan = computeEvidencePackageSyncPlan({
@@ -304,7 +304,7 @@ async function inspectEvidencePackageRoutePlanIn(
     modelStatus: state.model.status,
     graph: featureRows.graph,
     slots: selectedSlotStates({
-      selected: state.selectedViews,
+      selected: compCardViews(state),
       assets: state.ledger.assets,
     }),
     requestedAngles: input.angles,

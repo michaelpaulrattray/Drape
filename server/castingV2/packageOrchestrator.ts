@@ -43,7 +43,7 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storagePut } from "../storage";
 import { ProviderError, type IdentityEngine, type ReferenceImage } from "../providers/types";
-import { CANONICAL_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
+import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import {
   CAST_PACKAGE_VIEWS,
   CAST_PACKAGE_VIEW_PRICE,
@@ -510,8 +510,14 @@ export async function promisedPackageAngles(input: {
   const angles = rows
     .map((row) => row.viewAngle)
     .filter((angle): angle is CastViewAngle =>
-      (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle ?? ""));
-  const unique = CANONICAL_VIEW_ANGLES.filter((angle) => angles.includes(angle));
+      (CAST_VIEW_ANGLES as readonly string[]).includes(angle ?? ""));
+  /*
+    CAST_VIEW_ANGLES, never the comp-card six — this is the refund work-list.
+    Reading the durable promise back through a filter that predates the promise
+    is the deploy-collision landmine wearing a different coat: a v3 Sign swept
+    by this code would have its close-up dropped here and never refunded.
+  */
+  const unique = CAST_VIEW_ANGLES.filter((angle) => angles.includes(angle));
   return unique.length > 0
     ? { angles: [...unique], source: "recorded" }
     : { angles: [...CAST_PACKAGE_VIEWS], source: "profile" };

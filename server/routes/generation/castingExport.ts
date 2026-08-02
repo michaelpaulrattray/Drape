@@ -37,7 +37,10 @@ import {
 } from "../../casting/directOperation";
 import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "../../casting/snapshotReadScope";
-import { resolveEffectiveCastStateForRead } from "../../casting/effectiveCastRead";
+import {
+  compCardViews,
+  resolveEffectiveCastStateForRead,
+} from "../../casting/effectiveCastRead";
 import { prepareRestoreSlotTransition } from "../../casting/restoreSlotTransition";
 import {
   resolveSnapshotPdfImages,
@@ -184,7 +187,7 @@ export const castingExportRouter = router({
           });
         }
         try {
-          images = await resolveSnapshotPdfImages(effective.selectedViews);
+          images = await resolveSnapshotPdfImages(compCardViews(effective));
         } catch (error) {
           if (!(error instanceof SnapshotPdfImageError)) throw error;
           throw new TRPCError({
