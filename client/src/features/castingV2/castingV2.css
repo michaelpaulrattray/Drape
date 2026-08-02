@@ -913,11 +913,27 @@
   color: var(--metaStrong);
 }
 
+/*
+  The confirm's cost, directly above the button it prices.
+
+  Same treatment as every other cost line in the product — muted, mono, machine
+  facts in machine type — and right-aligned so it sits over the primary button
+  rather than floating between the two.
+*/
+.dpc-confirm__cost {
+  display: block;
+  margin-top: 12px;
+  text-align: right;
+  font: 400 10.5px/1.4 var(--font-mono);
+  letter-spacing: 0.02em;
+  color: var(--meta);
+}
+
 .dpc-confirm__actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--s-3);
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .dpc-confirm__keep,
@@ -1745,8 +1761,8 @@
 
 .dpc-media { position: relative; }
 
-/* The package head now carries a real control, so it needs a middle slot. */
-.dpc-takes__actions { margin-left: auto; margin-right: 12px; display: inline-flex; }
+/* The package head carries the two whole-Cast actions, so it needs a slot. */
+.dpc-takes__actions { margin-left: auto; margin-right: 12px; display: inline-flex; align-items: center; }
 
 /*
   The hover action row is GONE (founder ruling, 2026-08-02). Clicking is
@@ -1849,3 +1865,26 @@
   corner — the name line IS the card here, so it is the hover host.
 */
 .dpc-room__nameline .dpc-cardmenu { margin-left: 2px; }
+
+/*
+  The room's one irreversible action, said as a sentence.
+
+  Accent-coloured because it is the only thing in the room that cannot be
+  undone, and quiet because it should never compete with her. It sits last in
+  the rail, after everything else about her — reading order carrying the same
+  meaning as the colour.
+*/
+.dpc-room__delete {
+  margin-left: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 12px/1.4 var(--font-sans);
+  color: var(--accentSolid);
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.dpc-room__delete:hover { opacity: 1; text-decoration: underline; }
+.dpc-room__delete:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }

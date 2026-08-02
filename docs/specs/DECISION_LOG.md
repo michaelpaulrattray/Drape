@@ -2899,8 +2899,34 @@ takes no vertical space at all.
 the commitment point, it already states the full price and what it includes, and
 that is where D-15's letter is satisfied.
 
-**Confirms keep explicit numbers forever.** They are the last thing read before
-money moves.
+**Confirms keep explicit numbers forever** — they are the last thing read
+before money moves — **but ABOVE the button, never inside it.**
+
+*Amended the same day, and the amendment is the doctrine catching its own
+exception.* The first version put the price on the confirm's button ("Sign to
+your roster · 450 credits") on the reasoning that confirms are special. They are
+not: the NUMBER stays because this is the commitment point, but it is still
+metadata, and metadata does not live in button text. One rule, no exception —
+the cost sits directly above the button, in the same muted mono as every other
+cost line in the product.
+
+### A destructive action is a sentence, not a menu
+
+Also ruled 2026-08-03, and it belongs here because it is the same instinct:
+**weight matches consequence, and furniture is not weight.**
+
+A three-dot menu beside a Cast's name put file-manager chrome on the one line
+meant to be *her*, and offered a Rename the name already does when clicked —
+two affordances for one action, the heavier one redundant. Deleting her is now
+one quiet accent line in the package head, beside "Download package", which is
+where the other whole-Cast action already lives.
+
+Accent-coloured because it is the only irreversible thing in the room; last in
+the row because it is the last thing anyone should reach for. The ceremony
+behind it, and its gating, are unchanged.
+
+**A menu belongs on a CARD** — a small repeated object in a grid, where the
+actions have nowhere else to live. A page has room to say what it means.
 
 ### The topbar credits chip is unchanged
 

@@ -101,7 +101,6 @@ export default function CastingRoom() {
   const [draftName, setDraftName] = useState<string | null>(null);
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
-  const [headerMenu, setHeaderMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
   /*
     The server owns the door; the client only decides whether to OFFER the
@@ -285,7 +284,7 @@ export default function CastingRoom() {
             */}
             <header className="dpc-room__head">
               <div className="dp-stack" style={{ gap: 7 }}>
-                <div className="dpc-room__nameline dpc-menuhost">
+                <div className="dpc-room__nameline">
                   {/*
                     INLINE RENAME (founder ruling, 2026-08-02). A name is display
                     metadata (FR-3B) and changing it never touches identity — so
@@ -323,38 +322,6 @@ export default function CastingRoom() {
                     />
                   )}
                   <span className="dpc-room__kind">PERFORMER</span>
-                  {/*
-                    THE SAME MENU AS THE ROSTER CARD (founder ruling,
-                    2026-08-03). Deleting a Cast from inside her own room is the
-                    place people reach for it — and the ceremony, the gating and
-                    the component are identical, so there is nothing here that
-                    can drift away from the roster's version.
-                  */}
-                  <CardMenu
-                    label={data.name ?? "this cast"}
-                    open={headerMenu}
-                    onToggle={() => setHeaderMenu(!headerMenu)}
-                    onCancel={() => setHeaderMenu(false)}
-                    items={[
-                      {
-                        label: "Rename",
-                        onSelect: () => {
-                          setHeaderMenu(false);
-                          setDraftName(data.name ?? "");
-                        },
-                      },
-                      ...(deleteDoorOpen && data.status !== "building"
-                        ? [{
-                          label: "Delete",
-                          danger: true,
-                          onSelect: () => {
-                            setHeaderMenu(false);
-                            setDeleting(true);
-                          },
-                        }]
-                        : []),
-                    ]}
-                  />
                 </div>
                 <p className="dpc-room__read">
                   {[data.personaLine, data.provenance].filter(Boolean).join(". ")}
@@ -545,6 +512,31 @@ export default function CastingRoom() {
                         <Download size={12} strokeWidth={1.9} aria-hidden="true" />
                         Download package
                       </Button>
+                      {/*
+                        DELETING HER IS A SENTENCE, NOT A MENU (founder ruling,
+                        2026-08-03) — and it sits with the other thing you can
+                        do to the whole Cast rather than to one picture.
+
+                        A three-dot menu beside her name put file-manager
+                        furniture on the one line that is meant to be her, and
+                        offered a Rename the name already does when you click
+                        it. Two affordances for one action, and a heavy one.
+
+                        Accent-coloured because it is the only irreversible
+                        thing in the room, and last in the row because it is the
+                        last thing anyone should reach for. Same gating as
+                        before: absent while she builds, absent while the
+                        server's door is shut.
+                      */}
+                      {deleteDoorOpen && data.status !== "building" ? (
+                        <button
+                          type="button"
+                          className="dpc-room__delete"
+                          onClick={() => setDeleting(true)}
+                        >
+                          Delete this cast
+                        </button>
+                      ) : null}
                     </span>
                     <span className="dpc-rcard__hint">
                       {/* The Master is not counted: it was never a paid view. */}
@@ -746,6 +738,7 @@ export default function CastingRoom() {
                     </Button>
                   ) : null}
                 </section>
+
               </div>
             </div>
           </>

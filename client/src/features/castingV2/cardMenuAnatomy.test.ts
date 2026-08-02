@@ -39,12 +39,21 @@ describe("there is exactly one overflow menu", () => {
     ).toEqual([]);
   });
 
-  it("is used by the sheet card, the roster card and the room", async () => {
+  it("is used by the two card surfaces, and NOT by the room", async () => {
+    /*
+      The room had one beside the name for a day, and the founder was right that
+      it was wrong: file-manager furniture on the one line that is meant to be
+      her, offering a Rename the name already does when you click it. Deleting
+      her is a sentence at the foot of the rail instead.
+
+      A menu belongs on a CARD — a small repeated object in a grid, where the
+      actions have nowhere else to live. A page has room to say what it means.
+    */
     const lobby = await readFile(LOBBY, "utf8");
     const room = await readFile(ROOM, "utf8");
-    // Two on the lobby — sheets and roster — and one in the room.
     expect(lobby.match(/<CardMenu/g) ?? []).toHaveLength(2);
-    expect(room).toContain("<CardMenu");
+    expect(room).not.toContain("<CardMenu");
+    expect(room).toContain("dpc-room__delete");
   });
 });
 
@@ -121,14 +130,12 @@ describe("the reveal ladder", () => {
   it("gives every caller a hover host", async () => {
     /*
       The first rung hangs off `.dpc-menuhost`, so a caller that forgets it
-      ships a menu that never appears. Asserted at all three sites rather than
-      left to review.
+      ships a menu that never appears. Asserted at both sites rather than left
+      to review.
     */
     const lobby = await readFile(LOBBY, "utf8");
-    const room = await readFile(ROOM, "utf8");
     expect(lobby).toContain("dpc-sheetcard dpc-menuhost");
     expect(lobby).toContain("dpc-castcard__wrap dpc-menuhost");
-    expect(room).toContain("dpc-room__nameline dpc-menuhost");
   });
 });
 
@@ -156,13 +163,22 @@ describe("what the menu may offer", () => {
     }
   });
 
-  it("shares one item list between the roster card and the room", async () => {
-    // They are the same decision about the same Cast, so they read the same.
+  it("keeps the roster card's item list in one place", async () => {
     const lobby = await readFile(LOBBY, "utf8");
     expect(lobby).toContain("const castMenuItems =");
+  });
+
+  it("gates the room's delete line exactly as the menu item was gated", async () => {
+    /*
+      The affordance changed shape; the rules did not. Absent while she builds,
+      absent while the server's door is shut — a control that could only refuse
+      is a dead control whether it is a menu item or a sentence.
+    */
     const room = await readFile(ROOM, "utf8");
-    for (const label of ["Rename", "Delete"]) {
-      expect(room).toContain(`label: "${label}"`);
-    }
+    const index = room.indexOf("dpc-room__delete");
+    expect(index).toBeGreaterThan(0);
+    const guard = room.slice(index - 700, index);
+    expect(guard).toContain("deleteDoorOpen");
+    expect(guard).toContain('status !== "building"');
   });
 });

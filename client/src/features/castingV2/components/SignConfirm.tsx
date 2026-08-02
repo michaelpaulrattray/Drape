@@ -166,6 +166,21 @@ export function SignConfirm({
           }}
         />
 
+        {/*
+          THE COST, ABOVE THE BUTTON (founder ruling, 2026-08-03).
+
+          It was ON the button — "Sign to your roster · 450 credits" — which
+          made a long label out of two different things and read as clutter
+          exactly where the design should be calmest.
+
+          D-109 said cost is metadata and never button text, and then carved out
+          confirms as an exception "because confirms keep explicit numbers".
+          Both halves are right and the exception was wrong: the NUMBER stays,
+          because this is the commitment point, but it is still metadata. It
+          belongs beside the button, not inside it. One rule now, no exception.
+        */}
+        <span className="dpc-confirm__cost">{priceCredits} credits</span>
+
         <div className="dpc-confirm__actions">
           <button
             ref={cancelRef}
@@ -182,7 +197,7 @@ export function SignConfirm({
             onClick={() => onConfirm(name.trim())}
             disabled={busy || !name.trim()}
           >
-            {busy ? "Signing…" : `Sign to your roster · ${priceCredits} credits`}
+            {busy ? "Signing…" : "Sign to your roster"}
           </button>
         </div>
       </div>

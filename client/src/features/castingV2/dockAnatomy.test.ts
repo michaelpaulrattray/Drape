@@ -51,12 +51,21 @@ describe("the sheet dock commits to one candidate", () => {
     expect(button).not.toContain("signPrice");
     expect(button).not.toMatch(/\d+\s*(cr|credits)/);
 
-    // And the confirm keeps its explicit number, derived, forever.
+    /*
+      And the confirm keeps its explicit number — but ABOVE the button, not
+      inside it. D-109 said cost is metadata and never button text, then carved
+      out confirms as an exception; the exception was wrong. The number stays
+      because this is the commitment point; it is still metadata.
+    */
     const confirm = await readFile(
       new URL("./components/SignConfirm.tsx", import.meta.url),
       "utf8",
     );
-    expect(confirm).toContain("priceCredits");
+    expect(confirm).toContain("dpc-confirm__cost");
+    expect(confirm).toContain("{priceCredits} credits");
+    // Never on the button itself.
+    const signButton = confirm.slice(confirm.indexOf('className="dpc-confirm__sign"'));
+    expect(signButton.slice(0, 300)).not.toContain("priceCredits");
   });
 
   it("states an immediate-fire cost once, as metadata", async () => {
