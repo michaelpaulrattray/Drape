@@ -1892,6 +1892,94 @@ failures across 21 samples, and the founder's own dogfood passed — pink 8/8,
 silver-at-the-temples with eight distinct cuts, shaved 8/8, the goth's stated
 length with colour varying. **`PARTIAL_DEFERENCE_ENABLED` is ON.**
 
+### D-90 — Pool tendencies: three axes, and a deliberate fourth that will never exist *(founder ruling 2026-08-01/02)*
+
+A casting category knows things about a pool the brief never states. Three axes
+carry that, and one is refused on principle.
+
+**The three:** `ageLean` (a streamer pool is young, a physical trade is
+working-age), `facialHairLean` (three-valued — the lumberjack mirrors the idol,
+and `any` is a lean toward RANGE rather than a shrug), and `heritageLean` (a
+k-pop pool is predominantly East Asian). All soft: they re-weight, never lock,
+never enter `LockFacts`, never reach the validator, never appear in the echo,
+and can never make a value impossible.
+
+**The boundary against the heritage-draw ruling, because they sit next to each
+other and could be confused.** That ruling bans weighting the heritage draw to
+fix a TASTE problem — *"cast fewer of X" is never the answer to a sheet you
+dislike* — and it stands untouched. `heritageLean` is a different thing: a k-pop
+idol pool really is predominantly East Asian, exactly as a streamer pool really
+is young. Category-implied heritage is **pool demography**; the banned move is
+**aesthetic-driven demographic tuning**. The test that separates them: would the
+answer change if we simply liked the sheet better the other way? For demography
+it would not.
+
+Honest tails are therefore mandatory rather than decorative — five or six of
+eight, never more. **Named limit, and it belongs on the F6 flag:** an honest
+k-pop tail wants a SOUTHEAST ASIAN heritage row that the vocabulary does not
+have. Until F6's researched workstream adds one, the tail draws from the general
+cycle, which is wider than the truth rather than narrower — the safe direction,
+and worth naming rather than quietly accepting.
+
+**THE FOURTH, REFUSED: there is no `sexLean`, and there will not be one.**
+
+"A clean-shaven lumberjack" alternated sex and produced women lumberjacks. That
+is the design working, not a miss. Three reasons, and the first is the one that
+decides it: occupational sex-skew is a **values call** dressed as a demographic
+fact, and encoding it would make the product quietly assert who does which job.
+Counter-stereotype casting is a product value rather than an accident we
+tolerate. And a user who means a man types one — the affordance already exists,
+costs one word, and is unambiguous.
+
+Recorded as a deliberate non-feature so that the next person who notices the
+"gap" finds the reasoning instead of filling it.
+
+### D-91 — The expression floor yields its CENTRE to the direction *(founder ruling 2026-08-02, from the presence audit)*
+
+Every sheet the product has ever cast shared one expression centre, and it was
+in the cohort constant: *"the default is interested, not neutral — someone who
+wants the job."* That block is appended LAST with override authority, so nothing
+could outrank it. A biker gang leader came back eager. The direction block was
+describing gravity into a prompt that had already decided the person was pleased
+to be there.
+
+**What stays absolute:** the mechanics. Mouth closed, lips together, no teeth,
+no mid-laugh, no acted moment. Those are the comparability law — a sheet whose
+subjects are photographed differently cannot be compared, and that is the whole
+product.
+
+**What yields:** the centre. When the DIRECTION block names a presence, that
+presence governs, within the same closed-mouth bounds. Gravity, flint, cool
+detachment and unimpressed all become expressible **without a mouth ever
+opening**.
+
+Per-tile disposition still varies around whatever centre is set, so the one warm
+biker survives — a lean, never a lock, the same law the tendencies obey.
+
+**Its companion, same audit:** `composedDirection` was emitting for aesthetic
+REFERENCES only, by its own instruction — *"ONLY when the brief names an
+aesthetic reference: a fashion house, a director, a film, a scene."* A k-pop
+idol is a category, so the interpreter obeyed and emitted nothing, and the
+sheet had no aesthetic at all. Live diagnosis confirmed it on six categories in
+a row: kpop, drill sergeant, monk, biker gang leader, Viking — `composedDirection`
+null on every one. The scope now includes **categories with a strong documented
+aesthetic**, while ordinary occupations (skincare founder, nurse, accountant)
+still earn nothing, because inventing an aesthetic for them narrows the sheet
+for free.
+
+And the direction grammar gains its **attitude half**: the thesis asks for face
+AND BEARING, because bearing is half of an aesthetic and usually the missing
+half — a house that commands the lens, a casting that is doe-eyed and slightly
+awkward, the soft stage-charisma of an idol, the flint of a man who leads a gang.
+
+**This also explains the Viking**, and it is a different fault from the one it
+resembled. "An early 30s male Viking look" returned Nordic heritage, a beard
+lean, and `composedDirection: null` — not because the aesthetic retry failed to
+fire, but because the retry re-sampled against an instruction that forbade the
+answer. The Wes Anderson golden's occasional miss IS the stochastic retry class;
+the Viking's is not, and treating them as one would have produced a fix for the
+wrong thing.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

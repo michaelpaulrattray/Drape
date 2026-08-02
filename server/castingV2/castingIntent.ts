@@ -724,7 +724,14 @@ export function parsePoolTendencies(raw: unknown): PoolTendencies {
   const wire = raw as { ageLean?: unknown; facialHairLean?: unknown };
   const age = typeof wire.ageLean === "string" ? wire.ageLean.trim().toLowerCase() : null;
   const beard = typeof wire.facialHairLean === "string" ? wire.facialHairLean.trim().toLowerCase() : null;
+  const heritageRaw = typeof (wire as { heritageLean?: unknown }).heritageLean === "string"
+    ? ((wire as { heritageLean: string }).heritageLean).trim().toLowerCase()
+    : null;
+  // Closed to the EXISTING heritage rows. A lean toward a heritage we have no
+  // vocabulary for would be dropped rather than approximated onto a neighbour.
+  const heritage = HERITAGES.find((option) => option.toLowerCase() === heritageRaw) ?? null;
   return {
+    heritageLean: heritage,
     ageLean: (AGE_BANDS as readonly string[]).includes(age ?? "") ? (age as AgeBand) : null,
     facialHairLean: (FACIAL_HAIR_LEANS as readonly string[]).includes(beard ?? "")
       ? (beard as FacialHairLean)

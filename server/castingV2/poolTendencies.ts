@@ -29,7 +29,7 @@
  * narrow, and an enum cannot carry a mug.
  */
 
-import type { AgeBand } from "./castingIntent";
+import type { AgeBand, Heritage } from "./castingIntent";
 import type { FacialHair } from "../../shared/castingRealization";
 
 /**
@@ -48,9 +48,47 @@ export type PoolTendencies = {
   /** The band this casting centres on. Re-weights; the sheet still spreads. */
   ageLean: AgeBand | null;
   facialHairLean: FacialHairLean | null;
+  /**
+   * The heritage this casting's real pool draws from.
+   *
+   * **The boundary, recorded because it sits next to a hard ruling.** The
+   * heritage-draw ruling forbids weighting the heritage draw to fix a TASTE
+   * problem — "cast fewer of X" is never the answer to a sheet you dislike, and
+   * that stands untouched. This is a different thing: a k-pop idol pool is
+   * predominantly East Asian as a matter of demographic fact, exactly as a
+   * Twitch streamer pool is predominantly young. Category-implied heritage is
+   * pool demography; aesthetic-driven demographic tuning is what the ruling
+   * bans. The test is whether the answer would change if we simply liked the
+   * sheet more the other way — here it would not.
+   *
+   * Honest tails are therefore mandatory rather than decorative: Thai and
+   * Chinese idols exist, and a sheet with no room for them is a stereotype
+   * rather than a casting. Never a lock.
+   */
+  heritageLean: Heritage | null;
 };
 
-export const NO_TENDENCIES: PoolTendencies = { ageLean: null, facialHairLean: null };
+export const NO_TENDENCIES: PoolTendencies = {
+  ageLean: null,
+  facialHairLean: null,
+  heritageLean: null,
+};
+
+/**
+ * How much of the sheet the leaned heritage takes.
+ *
+ * Five or six of eight — a clear majority with two or three tiles genuinely
+ * drawn from elsewhere. The tail is not a rounding artefact; it is the ruling,
+ * and it is why this is a lean rather than a lock.
+ *
+ * NAMED LIMIT, and it belongs on the F6 flag: an honest k-pop tail wants a
+ * SOUTHEAST ASIAN row, which the heritage vocabulary does not have. Until F6's
+ * researched heritage workstream adds one, the tail draws from the general
+ * cycle, which is wider than the truth rather than narrower — the safe
+ * direction, and worth naming rather than quietly accepting.
+ */
+export const HERITAGE_LEAN_FLOOR = 5;
+export const HERITAGE_LEAN_SPREAD = 2;
 
 /**
  * How hard an age lean pulls.

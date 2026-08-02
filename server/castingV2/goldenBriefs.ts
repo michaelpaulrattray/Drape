@@ -137,7 +137,13 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
     brief: "a k-pop idol",
     category: true,
     because:
-      "THE GROOMING-TENDENCY CASE, and the mirror of the lumberjack. Conventionally clean-shaven, and left to the age curve a sheet of eight returns beards on a third of them. Bar: clean-shaven around seven of eight, with the eighth still reachable — a lean, never a lock.",
+      "THE GROOMING-TENDENCY CASE, and the mirror of the lumberjack. Conventionally clean-shaven, and left to the age curve a sheet of eight returns beards on a third of them. Bar: clean-shaven around seven of eight, with the eighth still reachable — a lean, never a lock. ALSO the heritage bar: the pool is predominantly East Asian and both graded sheets cast roughly one in eight, because grooming had a channel and heritage did not. Bar: majority East Asian, with a real tail — Thai and Chinese idols exist and a sheet with no room for them is a stereotype rather than a casting.",
+  },
+  {
+    brief: "a skincare founder in his 40s",
+    category: true,
+    because:
+      "THE NULL CONTROL for pool tendencies. An ordinary occupation implies nothing about age, grooming or heritage, and a tendency invented for it narrows the casting for free. Pinned because the suspicion ran the other way once: two sheets came back beardier with a moustache on one, and the persisted record showed the interpreter had emitted NOTHING — the draw was the ordinary 40s distribution, not a tendency. Bar: all three leans null, and no composed direction either.",
   },
   {
     brief: "a lumberjack in his 40s",

@@ -149,6 +149,30 @@ describe("the facial-hair lean — three-valued, the lumberjack mirroring the id
   });
 });
 
+describe("the heritage lean", () => {
+  it("gives the category its pool AND a real tail", async () => {
+    const rows = await sheets(
+      { role: "k-pop idol", poolTendencies: { heritageLean: "East Asian" } },
+      20,
+      "heritage",
+    );
+    const east = rows.filter((row) =>
+      (row.resolvedIdentity as never as { heritage: { heritage: string }[] }).heritage.some(
+        (component) => component.heritage === "East Asian",
+      ),
+    ).length;
+    const share = east / rows.length;
+    // The founder's bar: majority East Asian.
+    expect(share).toBeGreaterThan(0.55);
+    /*
+      AND THE TAIL IS REAL. Thai and Chinese idols exist; a sheet with no room
+      for them is a stereotype rather than a casting. This is the assertion that
+      fails if the lean is ever tightened into a lock.
+    */
+    expect(share).toBeLessThan(0.85);
+  });
+});
+
 describe("the parser", () => {
   it("drops anything outside the closed vocabularies", () => {
     expect(parsePoolTendencies({ ageLean: "middle-aged", facialHairLean: "stubbly" })).toEqual(
@@ -159,9 +183,23 @@ describe("the parser", () => {
   });
 
   it("keeps values that are in them", () => {
-    expect(parsePoolTendencies({ ageLean: "20s", facialHairLean: "clean" })).toEqual({
+    expect(
+      parsePoolTendencies({ ageLean: "20s", facialHairLean: "clean", heritageLean: "East Asian" }),
+    ).toEqual({
       ageLean: "20s",
       facialHairLean: "clean",
+      heritageLean: "East Asian",
     });
+  });
+
+  it("drops a heritage lean we have no vocabulary for, rather than approximating", () => {
+    /*
+      A lean toward "Southeast Asian" is exactly the honest k-pop tail we cannot
+      express yet — the F6 heritage workstream owns it. Dropping it leaves the
+      general cycle, which is WIDER than the truth rather than narrower: the
+      safe direction, and better than snapping it onto a neighbouring row that
+      would quietly cast the wrong people.
+    */
+    expect(parsePoolTendencies({ heritageLean: "Southeast Asian" }).heritageLean).toBeNull();
   });
 });

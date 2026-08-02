@@ -152,7 +152,7 @@ Reply with a single JSON object and nothing else:
   "reads": [8 short strings] | null,
   "composedDirection": { "thesis": string, "avoid": string } | null,
   "statedHair": { "cutLength": string | null, "colour": string | null, "texture": string | null, "greying": boolean },
-  "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null }
+  "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null, "heritageLean": heritage value | null }
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -259,11 +259,22 @@ WHAT TO EXTRACT
 - "look": only when the brief names a specific casting look. A stated look
   locks across all eight; leave it null and the eight will each take a
   different one.
-- "composedDirection": ONLY when the brief names an aesthetic reference — a
-  fashion house, a director, a film, a scene — that none of the listed
-  "archetype" values fits. Compose a casting direction for it in the same shape
-  the archetype list uses:
-      "thesis": what kind of FACE this casting wants, under 30 words.
+- "composedDirection": when the brief carries a STRONG DOCUMENTED AESTHETIC that
+  none of the listed "archetype" values fits. Two sources qualify:
+      an aesthetic REFERENCE — a fashion house, a director, a film, a scene; or
+      a CASTING CATEGORY with a strong aesthetic of its own — a k-pop idol, a
+      drill sergeant, a monk, a Viking, a biker gang leader.
+  An ORDINARY OCCUPATION never qualifies. A skincare founder, a nurse, an
+  accountant, a teacher have no documented casting aesthetic, and inventing one
+  for them narrows the sheet for no reason — leave this null, as you would any
+  other field the brief did not fill.
+  Compose it in the same shape the archetype list uses:
+      "thesis": what kind of FACE AND BEARING this casting wants, under 30
+                words. Bearing is half of an aesthetic and is usually the half
+                that is missing: a house that commands the lens, a casting that
+                is doe-eyed and slightly awkward, the soft stage-charisma of an
+                idol, the flint of a man who leads a gang. Name how the person
+                HOLDS THEMSELVES, not only how they are built.
       "avoid":  the anti-pattern — what it must not collapse into, under 20.
   ADDITIVE, NEVER A SUBSTITUTE. Keep filling "archetype", "look" and every
   other field exactly as you would have. If a listed archetype fits, use it and
@@ -315,13 +326,24 @@ WHAT TO EXTRACT
   across the eight candidates and can never override anything the brief said.
       "ageLean": the age band this kind of casting centres on, when it clearly
                  centres on one. A Twitch streamer or a university student
-                 leans "20s"; a retirement-community resident leans "70s+". A
-                 lawyer or a teacher leans nothing — leave it null.
+                 leans "20s"; a retirement-community resident leans "70s+".
+                 PHYSICAL TRADES AND PHYSICALLY DEMANDING WORK lean working-age
+                 — a lumberjack, a roofer, a soldier, a deckhand centre on
+                 "30s", because the pool genuinely does. A lawyer or a teacher
+                 spans every working decade and leans nothing — leave it null.
       "facialHairLean": "clean" when the category is conventionally clean-shaven
                  (k-pop idol, cabin crew, competitive swimmer); "beard" when it
                  conventionally is not (lumberjack, biker, craft brewer); "any"
                  when the category genuinely spans both and you want the sheet
                  to show the range. Null when the category implies nothing.
+      "heritageLean": the heritage this casting's real pool predominantly draws
+                 from, when it genuinely does — a k-pop idol leans "East Asian",
+                 a Bollywood casting leans "South Asian", a Nordic folk singer
+                 leans "Nordic". This describes a POOL, never a requirement:
+                 most of the sheet will lean this way and some of it will not,
+                 which is correct, because those castings really do include
+                 people from elsewhere. Leave it null for anything
+                 international or unmarked — a doctor, a model, a streamer.
   Only fill these from the CATEGORY, never from the individual. If the brief
   states an age or facial hair, that is a fact and belongs in its own field —
   putting it here instead would weaken a thing the user actually said.

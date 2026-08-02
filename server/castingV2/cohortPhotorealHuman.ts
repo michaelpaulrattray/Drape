@@ -81,7 +81,7 @@ import {
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import { resolveHairAxes, type HairTiers } from "./hairResolver";
-import { leanAgeWeights } from "./poolTendencies";
+import { HERITAGE_LEAN_FLOOR, HERITAGE_LEAN_SPREAD, leanAgeWeights } from "./poolTendencies";
 import {
   COMPOSED_DIRECTION_ENABLED,
   HAIR_BIAS_PROSE,
@@ -151,7 +151,26 @@ const FRAMING = [
   */
   "EXPRESSION: Eyes looking directly into the lens, engaged and unmistakably alive — someone present in the room, meeting the camera.",
   "Mouth closed, lips together and relaxed. A faint closed-mouth warmth is welcome where the subject's presence calls for it; a broad smile is not.",
-  "Energy reads in the eyes and brow. The default is interested, not neutral — a casting polaroid of someone who wants the job, holding still.",
+  /*
+    THE FLOOR YIELDS ITS CENTRE, and this one clause is the whole "everybody
+    smiles" fix.
+
+    This block is appended LAST with override authority, so nothing above it can
+    outrank it — which meant "the default is interested, someone who wants the
+    job" was the expression centre of every sheet the product has ever cast. A
+    biker gang leader came back eager. The direction block was describing
+    gravity into a prompt that had already decided the person was pleased to be
+    there.
+
+    So the MECHANICS stay absolute — mouth closed, no teeth, no acted moment —
+    because those are the comparability law and a sheet whose subjects are
+    photographed differently cannot be compared. What yields is the CENTRE: a
+    named presence in the DIRECTION block may move it, within the same
+    closed-mouth bounds. Gravity becomes expressible without a mouth ever
+    opening, and the biker's one warm tile still survives, because per-tile
+    disposition varies around whatever centre is set.
+  */
+  "Energy reads in the eyes and brow. Unless the DIRECTION block names a different presence centre, the default is interested rather than neutral — a casting polaroid of someone who wants the job, holding still. Where DIRECTION does name one, that centre governs: it may be cool, grave, flinty or unimpressed, and it is still rendered with the mouth closed and nothing acted.",
   "Never vacant, blank, sedated, grim, sullen or severe. Equally never performing — no mid-laugh, no mid-speech, no acted moment.",
   /*
     BACKDROP: the founder's note was "flat penal grey". Legacy's seamless is
@@ -453,7 +472,34 @@ const BUILD_WEIGHTS: readonly (readonly [Build, number])[] = [
  * exactly the reason that real casting diversity is the desirable outcome.
  * D15's 30% blend chance carries over.
  */
-function varyHeritage(position: number, rollSeed: string): HeritageComponent[] {
+function varyHeritage(
+  position: number,
+  rollSeed: string,
+  lean: Heritage | null = null,
+): HeritageComponent[] {
+  /*
+    THE CATEGORY'S POOL, with a real tail — the heritage lean.
+
+    Applied HERE rather than by re-weighting the cycle below, because the cycle
+    is not a sample: it walks the vocabulary to guarantee eight distinct
+    heritages, and weighting a walk is meaningless. So a majority of positions
+    take the leaned heritage and the REST STILL CYCLE — which is what keeps the
+    tail genuinely varied rather than a second copy of the majority.
+
+    Five or six of eight, chosen per roll so two rolls of the same brief do not
+    lean on the same tiles. The remaining two or three are the ruling made
+    mechanical: a k-pop sheet with no room for a Thai or Chinese idol is a
+    stereotype rather than a casting.
+  */
+  if (lean) {
+    const spread = HERITAGE_LEAN_FLOOR + (hash(`${rollSeed}:heritageLean`) % HERITAGE_LEAN_SPREAD);
+    const offset = hash(`${rollSeed}:heritageLeanOffset`) % 8;
+    if ((position + offset) % 8 < spread) return [{ heritage: lean, pct: 100 }];
+  }
+  return varyHeritageEvenly(position, rollSeed);
+}
+
+function varyHeritageEvenly(position: number, rollSeed: string): HeritageComponent[] {
   /*
     Cycle, do not sample.
 
@@ -920,7 +966,7 @@ export function resolveCandidateIdentity(
       ? intent.heritage
       : anchor
         ? anchoredHeritage(anchor, position, rollSeed)
-        : varyHeritage(position, rollSeed);
+        : varyHeritage(position, rollSeed, intent.poolTendencies?.heritageLean ?? null);
 
   /*
     A SEX-CODED STATED FACT RESOLVES AN UNSTATED SEX.
