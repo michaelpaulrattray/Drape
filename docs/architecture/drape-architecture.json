@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dc32d613059aa47e"
+    "sourceFingerprint": "25500bcc0d9778a6"
   },
   "domains": [
     {
@@ -7319,6 +7319,10 @@
     {
       "id": "test:client/src/features/castingV2/retentionCopy.test.ts",
       "path": "client/src/features/castingV2/retentionCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/roomAnatomy.test.ts",
+      "path": "client/src/features/castingV2/roomAnatomy.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/sheetState.test.ts",

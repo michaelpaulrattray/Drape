@@ -2317,4 +2317,44 @@ tile states and the room — not merely the new diffs.
 
 ---
 
+### D-101 — The UI-drift prevention law: render the drawing, or the reconciliation did not happen *(founder ruling 2026-08-02)*
+
+The room shipped with the right parts list and an invented design. It was built
+from prose descriptions of the prototype's markup — with the styles stripped
+out — so every module was *named* and none was *seen*: an oversized collage, a
+detached identity bar, the refine bar flattened to a paragraph, the Takes
+section absent entirely, the right-hand cards reduced to sentences.
+
+**Descriptions of a drawing are not the drawing.**
+
+The evidence pack did not catch it because the pack had no side-by-sides, which
+is the one thing that makes it a pack rather than a screenshot folder.
+
+**Five gates. Four before the code, one after.**
+
+1. **Render-first.** No UI code is written until the binding prototype screen
+   has been rendered in a browser and screenshotted. The headless-Edge drive
+   renders `docs/specs/Casting-ui-ux-design/design_handoff_studio/` directly.
+2. **Pre-build reconciliation table.** From that render, a per-element table —
+   drawn element → planned build → deviation with its ratified ruling cited —
+   posted for a skim before building. **A deviation without a citation does not
+   get built.** Geometry is measured off the DOM, not estimated by eye.
+3. **Paint before plumbing.** On any new surface, static markup is screenshotted
+   for a founder eyeball before it is wired to anything.
+4. **Anatomy tests.** Every reconciled surface carries a structure assertion
+   that its drawn elements exist, alongside the existing law checks. Existence,
+   not geometry — a whole module quietly not being built is the failure this
+   catches; pixel pinning would only make honest refinement fail.
+5. **The evidence pack remains the exit gate** — prototype-left, build-right,
+   both themes, every screen. That is what "side-by-side" means. No UI batch
+   ships without renders of the binding.
+
+The first four are entry gates, and their purpose is to make the fifth boring.
+
+Recorded artefacts for the room: `docs/specs/CASTING_V2_ROOM_RECONCILIATION.md`
+(the measured table) and `client/src/features/castingV2/roomAnatomy.test.ts`
+(the structure assertion).
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

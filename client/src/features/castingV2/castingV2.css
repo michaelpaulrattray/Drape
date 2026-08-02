@@ -1260,70 +1260,106 @@
 .dpc-dock__thumb.is-selected { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
 .dpc-dock__thumb:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
 
-/* ---- the room, as drawn ------------------------------------------------ */
+/* ---- the room, measured from the drawing -------------------------------
+   Every number here was read off the rendered prototype at 1440x1150 and
+   recorded in docs/specs/CASTING_V2_ROOM_RECONCILIATION.md — not estimated
+   from a description of the markup, which is how the first room went wrong.
+   Ratios rather than fixed pixels wherever the drawing's proportion is the
+   point rather than its absolute size.
+------------------------------------------------------------------------- */
 
 .dpc-room__head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
+.dpc-room__nameline { display: flex; align-items: center; gap: 10px; }
+
+.dpc-room__name {
+  margin: 0;
+  font: 500 24px/1.15 var(--font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
 .dpc-room__kind {
-  padding: 2px 7px;
+  padding: 3px 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
   font: 500 9.5px var(--font-mono);
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   color: var(--meta);
 }
 
-/* A coming-soon action is TEXT, never a button: a control that refuses is
-   worse than a sentence that explains. */
-.dpc-room__soon {
-  font: 400 11.5px var(--font-sans);
-  color: var(--meta);
-  border: 1px solid var(--border);
-  border-radius: var(--r-btn);
-  padding: 6px 10px;
+.dpc-room__read { margin: 0; font: 400 13px/1.5 var(--font-sans); color: var(--metaStrong); }
+
+.dpc-room__actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+/*
+  The drawn weights are kept exactly: one outline, one filled. Neither
+  capability exists yet, so the honest-capability law changes the STATE — both
+  are disabled and say "soon" — never the hierarchy, which is what the drawing
+  is actually asserting.
+*/
+.dpc-room__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--borderInput);
+  background: transparent;
+  color: var(--secondary);
+  font: 400 12px var(--font-sans);
+  cursor: not-allowed;
 }
 
+.dpc-room__cta--primary {
+  padding: 9px 14px;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  font-weight: 500;
+}
+
+.dpc-room__cta:disabled { opacity: 0.55; }
+
+/* 678 / 418 with a 20px gutter, as measured. */
 .dpc-room__columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
+  grid-template-columns: minmax(0, 678fr) minmax(0, 418fr);
   gap: 20px;
   align-items: start;
 }
 
-@media (max-width: 900px) {
+.dpc-room__left, .dpc-room__right { display: flex; flex-direction: column; gap: 14px; }
+
+@media (max-width: 980px) {
   .dpc-room__columns { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* The master block: one large, two stacked, 1px gutters (the drawing). */
+/* ---- master block: media + ATTACHED footer, one card ---- */
+
 .dpc-master {
+  border: 1px solid var(--borderCard);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.dpc-master__media {
   display: flex;
   gap: 1px;
   background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
+  /* 676 x 489 as drawn — landscape, not the portrait collage that was built. */
+  aspect-ratio: 676 / 489;
 }
 
-.dpc-master__main {
-  position: relative;
-  flex: 1 1 58%;
-  aspect-ratio: 4 / 5;
-  background: var(--media);
-}
-
-.dpc-master__side {
-  flex: 1 1 42%;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
+.dpc-master__main { position: relative; flex: 0 0 58%; background: var(--media); }
+.dpc-master__side { flex: 1 1 42%; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .dpc-master__cell {
   position: relative;
   flex: 1;
@@ -1334,67 +1370,196 @@
   justify-content: center;
 }
 
-.dpc-master__main > img,
-.dpc-master__cell > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dpc-master__main > img, .dpc-master__cell > img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+}
 
+/* TOP-LEFT, 11px in. It was bottom-left and blend-moded. */
 .dpc-master__tag {
   position: absolute;
-  left: 10px;
-  bottom: 10px;
-  font: 500 9.5px var(--font-mono);
-  letter-spacing: 0.1em;
-  color: var(--surface);
-  mix-blend-mode: difference;
-}
-
-.dpc-master__empty { opacity: 0.5; }
-
-.dpc-room__underline {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.dpc-room__locked {
-  font: 500 9.5px var(--font-mono);
-  letter-spacing: 0.1em;
-  color: var(--meta);
-  border: 1px solid var(--border);
+  left: 11px;
+  top: 11px;
+  padding: 4px 9px;
   border-radius: 999px;
-  padding: 3px 8px;
+  background: var(--ink);
+  color: var(--surface);
+  font: 500 9.5px var(--font-mono);
+  letter-spacing: 0.09em;
 }
 
-.dpc-room__card {
+/* Attached, inside the card's border. It was a detached line underneath. */
+.dpc-master__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border-top: 1px solid var(--border);
+}
+
+.dpc-master__retention { font: 400 11.5px var(--font-sans); color: var(--metaStrong); }
+
+.dpc-master__locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 11px var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--meta);
+}
+
+.dpc-master__empty {
+  font: 400 11px var(--font-sans);
+  color: var(--faint);
+  padding: 0 10px;
+  text-align: center;
+}
+
+/* ---- the card shape shared by refine / voice / campaigns / siblings ---- */
+
+.dpc-rcard {
+  border: 1px solid var(--borderCard);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 15px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 15px;
-  border: 1px solid var(--borderCard);
-  border-radius: 13px;
-  background: var(--surface);
-  align-items: flex-start;
-}
-
-.dpc-room__cardtitle { font: 500 12.5px var(--font-sans); color: var(--ink); }
-
-/* The package: a quiet strip. Infrastructure, not the show. */
-.dpc-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 10px;
 }
 
-.dpc-strip__item { display: flex; flex-direction: column; gap: 5px; }
+.dpc-rcard--flush { padding: 0; gap: 0; }
+.dpc-rcard__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dpc-rcard__title { font: 500 12.5px var(--font-sans); color: var(--ink); }
+.dpc-rcard__label { font: 500 10.5px var(--font-mono); letter-spacing: 0.09em; color: var(--meta); }
+.dpc-rcard__hint { font: 400 11px var(--font-sans); color: var(--meta); }
+.dpc-rcard__body { font: 400 11.5px/1.5 var(--font-sans); color: var(--metaStrong); margin: 0; }
+.dpc-rcard__quiet { font: 400 11.5px var(--font-sans); color: var(--meta); background: none; border: none; padding: 0; cursor: not-allowed; }
 
+/* ---- refine: input shell + button + chips ---- */
+
+.dpc-refine { gap: 12px; }
+
+.dpc-refine__shell {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--borderInput);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.dpc-refine__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font: 400 12.5px var(--font-sans);
+  color: var(--ink);
+  padding: 1px 2px;
+}
+.dpc-refine__input:disabled { color: var(--faint); cursor: not-allowed; }
+.dpc-refine__input:focus { outline: none; }
+
+.dpc-refine__go {
+  flex: none;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  font: 500 11.5px var(--font-sans);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.dpc-refine__chips { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.dpc-refine__chip {
+  padding: 5px 10px;
+  border: 1px solid var(--borderInput);
+  border-radius: 999px;
+  background: transparent;
+  font: 400 11.5px var(--font-sans);
+  color: var(--secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ---- takes: the drawn placeholder grid ---- */
+
+.dpc-takes { display: flex; flex-direction: column; gap: 11px; }
+.dpc-takes__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.dpc-takes__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px; }
+
+.dpc-takes__tile {
+  aspect-ratio: 105 / 131;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--media);
+  display: flex;
+  align-items: flex-end;
+  padding: 9px;
+}
+
+.dpc-takes__tile--add {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--faint);
+}
+.dpc-takes__caption { font: 400 10.5px/1.35 var(--font-sans); color: var(--faint); }
+
+/* ---- voice: the drawn skeleton, at rest ---- */
+
+.dpc-voice__player { display: flex; align-items: center; gap: 12px; }
+.dpc-voice__play {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--borderInput); background: var(--well);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--faint); flex: none;
+}
+.dpc-voice__wave { flex: 1; display: flex; align-items: center; gap: 2px; height: 34px; min-width: 0; }
+.dpc-voice__wave span { flex: 1; background: var(--dots); border-radius: 1px; }
+.dpc-voice__foot { border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.dpc-voice__name { font: 500 12.5px var(--font-sans); color: var(--ink); }
+
+/* ---- campaigns: flush card, rows own their padding ---- */
+
+.dpc-camp__head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; }
+.dpc-camp__count { font: 400 11px var(--font-sans); color: var(--faint); }
+.dpc-camp__empty { padding: 0 16px 13px; font: 400 11.5px/1.5 var(--font-sans); color: var(--metaStrong); margin: 0; }
+.dpc-camp__add {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--border);
+  font: 400 11.5px var(--font-sans);
+  color: var(--meta);
+  background: transparent;
+  width: 100%;
+  cursor: not-allowed;
+}
+
+/* ---- siblings ---- */
+
+.dpc-sib__tiles { display: flex; gap: 8px; padding-top: 2px; flex-wrap: wrap; }
+.dpc-sib__tile { width: 52px; height: 64px; border: 1px solid var(--border); border-radius: 7px; background: var(--media); }
+.dpc-sib__tile--add {
+  border-style: dashed; background: transparent;
+  display: flex; align-items: center; justify-content: center; color: var(--faint);
+}
+
+/* ---- the package: a quiet strip, not the show ---- */
+
+.dpc-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px; }
+.dpc-strip__item { display: flex; flex-direction: column; gap: 5px; }
 .dpc-strip__frame {
   position: relative;
-  aspect-ratio: 4 / 5;
-  border-radius: 8px;
+  aspect-ratio: 105 / 131;
+  border-radius: 9px;
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--media);
 }
-
 .dpc-strip__frame > img { display: block; width: 100%; height: 100%; object-fit: cover; }
