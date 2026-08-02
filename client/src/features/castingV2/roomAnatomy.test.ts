@@ -101,6 +101,56 @@ describe("the casting room is built to the drawing", () => {
     }
   });
 
+  it("leads the package strip with the Master, and the Master is not generated", async () => {
+    /*
+      Founder ruling: the strip presents SIX things and the first costs nothing.
+      The Master is the signed sheet image itself — presentation-only, never
+      re-rendered — followed by the five views the package actually bought.
+
+      Pinned because it is exactly the kind of rule that decays into a sixth
+      generated slot the next time someone tidies the loop, and that would both
+      charge for a view nobody ordered and re-render the face she chose.
+    */
+    const room = await readFile(ROOM, "utf8");
+    const strip = room.slice(room.indexOf("THE PACKAGE"));
+    expect(strip).toContain("Master");
+    // The Master tile is drawn from the ANCHOR, never from a slot — that is
+    // what makes it free, and what stops it being re-rendered.
+    expect(strip).toContain("data.anchorUrl");
+    /*
+      And the "N of N views" count reads `data.slots`, which the server fills
+      with the five paid views only. Counting the Master would sell six.
+    */
+    const count = strip.slice(strip.indexOf("dpc-rcard__hint"), strip.indexOf("dpc-strip"));
+    expect(count).toContain("data.slots.length");
+    expect(count).not.toContain("anchorUrl");
+  });
+
+  it("names the package v3 slots, and no retired one", async () => {
+    const pkg = await readFile(
+      new URL("../../../../server/castingV2/castViewPackage.ts", import.meta.url),
+      "utf8",
+    );
+    const list = pkg.slice(pkg.indexOf("CAST_PACKAGE_VIEWS"), pkg.indexOf("CAST_PACKAGE_VIEW_PRICE"));
+    for (const angle of ["closeUp", "frontClose", "frontFull", "sideClose", "backFull"]) {
+      expect(list).toContain(angle);
+    }
+    // The walk retired in v2 and the three-quarter in v3. A profile that quietly
+    // regained one would change the price without changing the price constant.
+    expect(list).not.toContain("sideFull");
+    expect(list).not.toContain("threeQuarter");
+  });
+
+  it("says the package never arrived, at the room level, not per slot", async () => {
+    // D-103's confession. Server-authored so the room and the ledger cannot
+    // drift; rendered above the strip, never repeated inside it.
+    const room = await readFile(ROOM, "utf8");
+    expect(room).toContain("data.notice");
+    expect(room).toContain("dpc-room__notice");
+    // Composed on the server, never assembled here out of parts.
+    expect(room).not.toContain("including the Sign itself");
+  });
+
   it("carries no invented numbers from the prototype", async () => {
     /*
       Checked against the RENDERABLE source with comments stripped: the
