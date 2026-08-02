@@ -514,7 +514,9 @@ export default function CastingV2() {
                 is asking yet. It earns its place on the sheet, where you roll
                 again and again and the number is actually moving.
               */}
-              <span className="dpc-hero__cost">{price} credits</span>
+              <span className="dpc-hero__cost">
+                <span className="dpc-signm__tilde">~</span> {price} credits
+              </span>
             </div>
           </div>
 

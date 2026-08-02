@@ -2021,6 +2021,11 @@
   color: var(--metaStrong);
 }
 
+/*
+  The tilde is quieter than the number it qualifies — it is a hedge, not a
+  digit. Shared by all three cost lines (hero, dock, sign modal) so the
+  approximation reads the same wherever a price appears.
+*/
 .dpc-signm__tilde { color: var(--muted); }
 
 .dpc-signm__actions {

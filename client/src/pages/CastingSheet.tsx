@@ -1243,7 +1243,13 @@ export default function CastingSheet() {
             */}
             {price ? (
               <span className="dpc-dock__cost">
-                {price} credits
+                {/*
+                  The tilde carries the same meaning it does in the sign modal:
+                  generation cost varies, and a number presented as exact that
+                  then differs is worse than one that never claimed to be. It
+                  qualifies the COST only — the balance beside it is exact.
+                */}
+                <span className="dpc-signm__tilde">~</span> {price} credits
                 {typeof balance === "number" ? ` · ${balance.toLocaleString()} left` : ""}
               </span>
             ) : null}

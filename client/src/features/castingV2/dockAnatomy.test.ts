@@ -82,6 +82,14 @@ describe("the sheet dock commits to one candidate", () => {
     expect(sheet).toContain("dpc-dock__cost");
     expect(sheet).toContain("credits");
     expect(sheet).toContain("left");
+    /*
+      The tilde, shared with the sign modal. Generation cost varies, and a
+      number presented as exact that then differs is worse than one that never
+      claimed to be — so every cost line in the product hedges the same way.
+    */
+    expect(sheet).toContain("dpc-signm__tilde");
+    const lobby = await readFile(new URL("../../pages/CastingV2.tsx", import.meta.url), "utf8");
+    expect(lobby).toContain("dpc-signm__tilde");
     // No price on any immediate-fire button.
     expect(sheet).not.toMatch(/Roll again[^"`]*\d+\s*(cr|credits)/);
 
