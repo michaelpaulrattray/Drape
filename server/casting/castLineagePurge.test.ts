@@ -97,18 +97,30 @@ async function run(options: {
 }
 
 describe("deletion purges what only the deleted thing owns", () => {
-  it("clears her signed linkage before anything asks whether she is protected", async () => {
+  it("puts her back on a live sheet, ready to be signed again", async () => {
     /*
-      Order is the whole trick. While `signedCastId` still points at this model
-      her candidate reads as "signed" to every protection downstream, including
-      the release statement's own guard — so the linkage must go first, or her
-      own face is the one thing deletion cannot release.
-    */
-    const { journal } = await run({ candidate: { id: 55, sessionId: 7 }, survivor: null });
+      THE FOUNDER'S QUESTION, and it was the right one: why can't deleting a
+      Cast just remove her being signed, so you could go into the same sheet and
+      sign her again?
 
-    expect(journal).toHaveLength(2);
-    expect(journal[0].set).toEqual({ signedCastId: null });
-    expect(journal[1].set).toMatchObject({ status: "expired" });
+      Nothing about the candidate belonged to the Cast. Sign COPIES the chosen
+      image to a Cast-owned object, so deleting the Cast destroys the copy and
+      leaves the sheet's own face untouched. The row, the image and the 20
+      credits that produced it belong to the SHEET — bought with the roll, not
+      with the Sign. Deleting a Cast undoes the Sign; it does not spend the
+      candidate twice.
+    */
+    const { journal } = await run({
+      candidate: { id: 55, sessionId: 7 },
+      survivor: null,
+      sessionStatus: "open",
+    });
+
+    // ONE statement, and it restores rather than releases.
+    expect(journal).toHaveLength(1);
+    expect(journal[0].set).toEqual({
+      signedCastId: null, status: "ready", expiredReason: null,
+    });
   });
 
   it("keeps a surviving Cast's siblings when another Cast shares the sheet", async () => {
@@ -121,13 +133,13 @@ describe("deletion purges what only the deleted thing owns", () => {
     const { result, journal } = await run({
       candidate: { id: 55, sessionId: 7 },
       survivor: { id: 56 },
+      sessionStatus: "open",
     });
 
     expect(result.siblingCastsSurvive).toBe(true);
-    // Still exactly two statements — the linkage clear and one narrowed
-    // release. A survivor never earns the purge a second pass.
-    expect(journal).toHaveLength(2);
-    expect(journal[1].set).toMatchObject({ status: "expired" });
+    // Nothing is released at all: one restore, no expiry.
+    expect(journal).toHaveLength(1);
+    expect(journal[0].set).toMatchObject({ status: "ready" });
   });
 
   it("LEAVES A LIVE SHEET ALONE, even when no Cast survives it", async () => {
@@ -152,9 +164,10 @@ describe("deletion purges what only the deleted thing owns", () => {
     });
 
     expect(result.siblingCastsSurvive).toBe(false);
-    // Two statements, and the second is scoped to HER candidate alone.
-    expect(journal).toHaveLength(2);
-    expect(journal[1].set).toMatchObject({ status: "expired" });
+    // Nothing is expired. She simply becomes available again.
+    expect(journal).toHaveLength(1);
+    expect(journal[0].set).toMatchObject({ status: "ready" });
+    expect(result.candidatesReleased).toBe(0);
   });
 
   it("releases the remainder only when the sheet is dead too", async () => {
@@ -180,13 +193,12 @@ describe("deletion purges what only the deleted thing owns", () => {
       would pass every behavioural test here and still lose the race.
     */
     const source = await readSource();
-    const release = source.slice(source.indexOf("const released = await tx"));
+    const release = source.slice(source.indexOf("const released = releaseWholeSheet"));
     expect(release).toContain("isNull(castingCandidates.signedCastId)");
     expect(release).toContain("eq(castingCandidates.userId, input.userId)");
-    // And the scope is a clause on that same statement: her candidate alone
-    // unless the sheet itself is dead.
+    // And it only runs at all when the sheet is dead — a live sheet never
+    // reaches this statement.
     expect(release).toContain("releaseWholeSheet");
-    expect(release).toContain("eq(castingCandidates.id, candidate.id)");
   });
 
   it("does nothing at all for a Cast with no V2 lineage", async () => {

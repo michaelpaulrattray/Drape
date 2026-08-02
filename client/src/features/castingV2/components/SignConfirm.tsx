@@ -1,74 +1,61 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ArrowRight } from "lucide-react";
 
 /**
- * The Sign confirmation (§H.1, D-15, and F2's ratified Sign law).
+ * The sign-to-roster modal, rebuilt to the prototype (spec, 2026-08-03).
  *
- * A modal, for the same reason the discard confirmation is one: weight should
- * match consequence. Signing spends the largest single amount in the product
- * and it is the only action that creates something permanent — the candidate is
- * spent, the face is locked, and there is no un-signing.
+ * The version it replaces broke four system rules at once, and the first is the
+ * one that made it look foreign:
  *
- * Three things here are rulings rather than preferences:
+ *  - **Accent means STATE — kept, locked, signed, running — never a button
+ *    fill.** A washed-accent CTA reads as disabled, and it collided with the
+ *    kept-ring on the card behind the scrim. Every primary action in this
+ *    product is solid `--ink` with `--surface` text.
+ *  - A four-line paragraph where the house voice is one short line.
+ *  - No mono eyebrow. Every titled surface in the app opens with one, and its
+ *    absence was most of why this read as someone else's dialog.
+ *  - A vertical stack. The modal grew out of a 4:5 candidate card and should
+ *    echo that card rather than become a generic centred box.
  *
- *  - **The price is on the affordance before it fires.** The founder lost 640
- *    credits to Follow reading as a free action; an unpriced button that spends
- *    is that mistake wearing a different hat.
- *  - **It says what the price includes** — the face lock and the complete view
- *    package — because "500 credits" on its own invites the reasonable
- *    assumption that the views cost extra later. They never do: there is no
- *    per-slot purchase anywhere in the product.
- *  - **One candidate per ceremony** (F2). The prototype's multi-select "Sign 3"
- *    is a prototype seam; signing three people is three deliberate ceremonies.
+ * **The scrim mounts at the top of the view, never inside the dock.** The dock
+ * carries `backdrop-filter`, which makes it a containing block — `position:
+ * fixed; inset: 0` would then resolve against the dock rather than the viewport
+ * and the modal would render as an off-screen sliver. Portalling to
+ * `document.body` puts it beyond the reach of any such ancestor, which is the
+ * same reason the viewer is portalled.
  *
- * It reuses the discard dialog's own surface rather than inventing a second
- * modal system — same scrim, same panel, same focus trap. The confirm button is
- * the accent rather than error red: this action is weighty but not destructive.
- *
- * **It leads with HER, not with her coordinates.** It used to open "Sign 02 ·
- * Quiet intensity" — a grid position, which is internal bookkeeping, at the
- * product's most important moment.
- *
- * **The name is required** (founder ruling, 2026-08-02): no Cast is ever born
- * "Unnamed". Focus lands on the field and the Sign button stays disabled until
- * it has content, so Enter can never spend anything by accident — which is the
- * property the drawn focus-on-Cancel default was protecting.
+ * **The name is still required**, which is the one place this departs from the
+ * spec's behaviour notes: naming is part of the ceremony by founder ruling
+ * (2026-08-02) and the server's input schema refuses an absent name outright.
+ * Enabling the button without one would only produce a refusal.
  */
-/*
-  THE THEY-FALLBACK, applied where it is not a fallback but the truth.
-
-  A candidate has no signed record to derive pronouns from — the sex axis is
-  resolved per roll and never persisted on the candidate row — so there is
-  nothing here to be right about. `they` is correct English for a person whose
-  pronouns you do not know, and at this exact moment the customer has not told
-  us who this is: they are about to, by naming them (D-108).
-*/
 export function SignConfirm({
   indexLabel,
   personaLine,
   imageUrl,
   priceCredits,
-  viewCount,
   busy,
   onConfirm,
   onCancel,
 }: {
-  /** Kept for the accessible label only — it never appears on screen. */
+  /** The sheet index — the eyebrow's first half. */
   indexLabel: string;
+  /** Her disposition — the eyebrow's second half, and the placeholder's seed. */
   personaLine: string | null;
   /** Her face, at the size a decision this size deserves. */
   imageUrl: string | null;
   priceCredits: number;
-  viewCount: number;
   busy: boolean;
   onConfirm: (name: string) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState("");
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    inputRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
@@ -76,6 +63,7 @@ export function SignConfirm({
         return;
       }
       if (event.key !== "Tab") return;
+      // Focus stays inside a modal that is about to spend money.
       const focusable = panelRef.current?.querySelectorAll<HTMLElement>("button, input");
       if (!focusable || focusable.length === 0) return;
       const first = focusable[0];
@@ -89,116 +77,101 @@ export function SignConfirm({
       }
     };
     document.addEventListener("keydown", onKeyDown, true);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    /*
-      Focus lands on the NAME, not on Cancel — the drawn safe-default belongs to
-      a destructive dialog, and this one asks for something before it can
-      proceed. The Sign button stays disabled until the field has content, so
-      Enter cannot spend anything by accident.
-    */
-    return () => {
-      document.removeEventListener("keydown", onKeyDown, true);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [busy, onCancel]);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [onCancel, busy]);
+
+  const disposition = personaLine?.trim() || null;
 
   return createPortal(
     <div
-      className="dpc-confirm"
+      className="dpc-signm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sign them to your roster"
       onClick={(event) => {
         if (event.target === event.currentTarget && !busy) onCancel();
       }}
     >
+      {/* Clicks inside never dismiss — only the scrim does. */}
       <div
         ref={panelRef}
-        className="dpc-confirm__panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dpc-sign-title"
-        aria-describedby="dpc-sign-body"
+        className="dpc-signm__card"
+        onClick={(event) => event.stopPropagation()}
       >
-        {/*
-          HER FIRST, not her coordinates.
+        <div className="dpc-signm__portrait">
+          {imageUrl ? <img src={imageUrl} alt="" /> : null}
+        </div>
 
-          This said "Sign 02 · Quiet intensity" — a grid position, which is
-          internal bookkeeping, at the product's most important moment. The
-          number is display metadata on a sheet and means nothing once she is a
-          Cast. So the ceremony shows her face at a size worth deciding on, and
-          the index survives only in the dialog's accessible name.
-        */}
-        {imageUrl ? (
-          <div className="dpc-sign__portrait">
-            <img src={imageUrl} alt="" />
+        <div className="dpc-signm__body">
+          {/*
+            The mono eyebrow, index and disposition. Every titled surface in the
+            app opens with one; this modal was the exception.
+          */}
+          <span className="dpc-signm__eyebrow">
+            CANDIDATE {indexLabel}
+            {disposition ? ` · ${disposition.toUpperCase()}` : ""}
+          </span>
+
+          <h2 className="dpc-signm__title">Sign them to your roster</h2>
+
+          {/*
+            ONE line. The pricing and uniqueness sentences are deliberately not
+            restored: the cost is stated below, and "can only be signed once" is
+            implied by the roster itself.
+          */}
+          <p className="dpc-signm__explainer">
+            Locks this face and builds five canonical views. Nothing else on the
+            sheet changes.
+          </p>
+
+          <label className="dpc-signm__label" htmlFor="dpc-signm-name">
+            THEIR NAME
+          </label>
+          <div className="dpc-signm__field">
+            <input
+              id="dpc-signm-name"
+              ref={inputRef}
+              value={name}
+              maxLength={60}
+              placeholder={disposition ? `e.g. ${disposition}` : "e.g. Grounded"}
+              disabled={busy}
+              autoComplete="off"
+              aria-label={`Name for candidate ${indexLabel}`}
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && name.trim() && !busy) onConfirm(name.trim());
+              }}
+            />
           </div>
-        ) : null}
-        {personaLine ? <span className="dpc-sign__caption">{personaLine}</span> : null}
 
-        <h2 id="dpc-sign-title" className="dpc-confirm__title">
-          Sign them to your roster
-        </h2>
-        <p id="dpc-sign-body" className="dpc-confirm__body">
-          This locks the face and builds the complete package — {viewCount} views of this exact
-          person, included in the price. Nothing else on the sheet changes, and a candidate can
-          only be signed once.
-        </p>
+          {/*
+            Approximate, and the tilde stays: generation cost varies, and a
+            number presented as exact that then differs is worse than one that
+            never claimed to be.
+          */}
+          <span className="dpc-signm__cost">
+            <span className="dpc-signm__tilde">~</span> {priceCredits} credits
+          </span>
 
-        {/*
-          NAMING IS PART OF THE CEREMONY (founder ruling, 2026-08-02). No Cast is
-          ever born "Unnamed": a name is how she is found, referred to and cast
-          later, and deferring it produces a roster of strangers. Required, and
-          the button says so rather than failing silently on submit.
-        */}
-        <label className="dpc-sign__label" htmlFor="dpc-sign-name">
-          Their name
-        </label>
-        <input
-          id="dpc-sign-name"
-          className="dp-input"
-          value={name}
-          maxLength={60}
-          placeholder="Give them a name"
-          disabled={busy}
-          autoFocus
-          onChange={(event) => setName(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && name.trim() && !busy) onConfirm(name.trim());
-          }}
-        />
-
-        {/*
-          THE COST, ABOVE THE BUTTON (founder ruling, 2026-08-03).
-
-          It was ON the button — "Sign to your roster · 450 credits" — which
-          made a long label out of two different things and read as clutter
-          exactly where the design should be calmest.
-
-          D-109 said cost is metadata and never button text, and then carved out
-          confirms as an exception "because confirms keep explicit numbers".
-          Both halves are right and the exception was wrong: the NUMBER stays,
-          because this is the commitment point, but it is still metadata. It
-          belongs beside the button, not inside it. One rule now, no exception.
-        */}
-        <span className="dpc-confirm__cost">{priceCredits} credits</span>
-
-        <div className="dpc-confirm__actions">
-          <button
-            ref={cancelRef}
-            type="button"
-            className="dpc-confirm__keep"
-            onClick={onCancel}
-            disabled={busy}
-          >
-            Not yet
-          </button>
-          <button
-            type="button"
-            className="dpc-confirm__sign"
-            onClick={() => onConfirm(name.trim())}
-            disabled={busy || !name.trim()}
-          >
-            {busy ? "Signing…" : "Sign to your roster"}
-          </button>
+          <div className="dpc-signm__actions">
+            <button
+              type="button"
+              className="dpc-signm__secondary"
+              disabled={busy}
+              onClick={onCancel}
+            >
+              Not yet
+            </button>
+            <button
+              type="button"
+              className="dpc-signm__primary"
+              disabled={busy || !name.trim()}
+              onClick={() => onConfirm(name.trim())}
+            >
+              {busy ? "Signing…" : "Sign to your roster"}
+              {busy ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
+            </button>
+          </div>
         </div>
       </div>
     </div>,

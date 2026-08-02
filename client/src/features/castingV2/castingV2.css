@@ -1888,3 +1888,180 @@
 
 .dpc-room__delete:hover { opacity: 1; text-decoration: underline; }
 .dpc-room__delete:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+
+/* ---- the sign-to-roster modal, to spec (2026-08-03) ---- */
+
+/*
+  The scrim measures the FULL VIEWPORT, which is only true because the component
+  portals to `document.body`. Any ancestor with `backdrop-filter`, `filter`,
+  `transform`, `perspective` or `will-change` becomes a containing block and
+  `inset: 0` would resolve against IT — the dock has `backdrop-filter`, so a
+  modal mounted inside it renders as an off-screen sliver.
+*/
+.dpc-signm {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(10, 10, 11, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  animation: dpc-signm-fade 0.16s ease-out;
+}
+
+@keyframes dpc-signm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dpc-signm-rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+.dpc-signm__card {
+  max-width: 664px;
+  padding: 22px;
+  gap: 22px;
+  border: 1px solid var(--borderCard);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadowCard);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  animation: dpc-signm-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/*
+  `min-width: 0` on BOTH columns, or automatic minimum size floors their bases
+  and forces a premature wrap. The 999 grow factor on the body makes it absorb
+  all the slack so the portrait stays near its basis.
+*/
+.dpc-signm__portrait {
+  flex: 1 1 214px;
+  min-width: 0;
+  max-width: 238px;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--media);
+}
+
+.dpc-signm__portrait > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.dpc-signm__body { flex: 999 1 300px; min-width: 0; }
+
+.dpc-signm__eyebrow {
+  display: block;
+  font: 500 10px var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--meta);
+  text-transform: uppercase;
+}
+
+.dpc-signm__title {
+  margin: 6px 0 0;
+  font: 400 21px/1.35 var(--font-sans);
+  letter-spacing: -0.017em;
+  color: var(--ink);
+}
+
+.dpc-signm__explainer {
+  margin: 0;
+  padding-top: 3px;
+  font: 400 12.5px/1.55 var(--font-sans);
+  color: var(--metaStrong);
+  text-wrap: pretty;
+}
+
+.dpc-signm__label {
+  display: block;
+  margin-top: 16px;
+  font: 500 9.5px var(--font-mono);
+  letter-spacing: 0.11em;
+  color: var(--faint);
+  text-transform: uppercase;
+}
+
+.dpc-signm__field {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--borderInput);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+/* The wrapper draws the box; the input itself is bare (the foundation law). */
+.dpc-signm__field input {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: 400 12.5px var(--font-sans);
+  color: var(--ink);
+}
+
+/*
+  NO `.dp-root` PREFIX HERE, and that is the whole point.
+
+  This modal portals to `document.body`, which puts it OUTSIDE the `.dp-root`
+  wrapper — so `tokens.css`'s blanket `.dp-root :focus-visible` never reaches
+  it, and neither would a reset written to out-specify that blanket. Scoped
+  that way the rule silently does nothing and the browser's own focus ring
+  draws inside the field instead. The wrapper shows focus; the input never does.
+*/
+.dpc-signm__field input:focus,
+.dpc-signm__field input:focus-visible { outline: none; box-shadow: none; }
+.dpc-signm__field:focus-within { border-color: var(--ink); }
+
+.dpc-signm__cost {
+  display: block;
+  padding: 13px 0 11px;
+  text-align: right;
+  font: 400 11.5px var(--font-mono);
+  color: var(--metaStrong);
+}
+
+.dpc-signm__tilde { color: var(--muted); }
+
+.dpc-signm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.dpc-signm__secondary {
+  padding: 10px 15px;
+  border: 1px solid var(--borderInput);
+  border-radius: 9px;
+  background: var(--surface);
+  font: 500 12px var(--font-sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dpc-signm__secondary:hover { border-color: var(--ink); }
+
+/*
+  SOLID `--ink`, never accent. Accent means STATE in this product — kept,
+  locked, signed, running — and a washed-accent fill reads as disabled while
+  colliding with the kept-ring on the card behind the scrim.
+*/
+.dpc-signm__primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--surface);
+  font: 500 12px var(--font-sans);
+  cursor: pointer;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.dpc-signm__primary:hover { opacity: 0.86; }
+.dpc-signm__primary:disabled { opacity: 0.4; cursor: default; }
+
+.dpc-signm__secondary:focus-visible,
+.dpc-signm__primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }

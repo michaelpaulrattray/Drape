@@ -61,10 +61,14 @@ describe("the sheet dock commits to one candidate", () => {
       new URL("./components/SignConfirm.tsx", import.meta.url),
       "utf8",
     );
-    expect(confirm).toContain("dpc-confirm__cost");
+    expect(confirm).toContain("dpc-signm__cost");
     expect(confirm).toContain("{priceCredits} credits");
+    // Approximate, and the tilde stays — generation cost varies, and a number
+    // presented as exact that then differs is worse than one that never
+    // claimed to be.
+    expect(confirm).toContain("dpc-signm__tilde");
     // Never on the button itself.
-    const signButton = confirm.slice(confirm.indexOf('className="dpc-confirm__sign"'));
+    const signButton = confirm.slice(confirm.indexOf('className="dpc-signm__primary"'));
     expect(signButton.slice(0, 300)).not.toContain("priceCredits");
   });
 
@@ -136,9 +140,16 @@ describe("the sheet dock commits to one candidate", () => {
       "utf8",
     );
     expect(confirm).toContain("disabled={busy || !name.trim()}");
-    expect(confirm).toContain("autoFocus");
-    // And it leads with HER: the tile number never reaches the screen.
-    expect(confirm).toContain("dpc-sign__portrait");
+    // Focused on open — the spec's own behaviour note, achieved with a ref
+    // rather than `autoFocus` so the portal has mounted first.
+    expect(confirm).toContain("inputRef.current?.focus()");
+    /*
+      And it leads with HER — a 4:5 portrait column echoing the candidate card
+      the modal grew out of. The index appears only in the mono eyebrow, where
+      it is provenance rather than a name.
+    */
+    expect(confirm).toContain("dpc-signm__portrait");
+    expect(confirm).toContain("CANDIDATE {indexLabel}");
     expect(confirm).not.toContain("Sign {indexLabel}");
 
     const route = await readFile(new URL("../../../../server/routes/castingV2.ts", import.meta.url), "utf8");

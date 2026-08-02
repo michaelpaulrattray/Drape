@@ -1346,7 +1346,6 @@ export default function CastingSheet() {
           imageUrl={signing.imageUrl}
           personaLine={signing.personaLine}
           priceCredits={signPrice}
-          viewCount={config.data?.packageViewCount ?? 0}
           busy={sign.isPending}
           onCancel={() => setSigning(null)}
           onConfirm={(name) => {

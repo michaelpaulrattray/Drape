@@ -14,8 +14,10 @@
  *
  * So the purge is scoped by OWNERSHIP rather than by lineage:
  *
- *   goes    her candidate's signed linkage, and the candidate row itself — it
- *           was spent on her and nothing else claims it
+ *   goes    her signed LINKAGE — and that is all. Her candidate returns to
+ *           `ready` on a live sheet and can be signed again: the face, the row
+ *           and the 20 credits that made it belong to the SHEET, bought with
+ *           the roll rather than with the Sign
  *   stays   every other candidate on a sheet that is STILL OPEN; they belong to
  *           the sheet, not to her, and the sheet is a living thing
  *   stays   the session and its rolls, which are shared history
@@ -111,14 +113,32 @@ export async function purgeCastLineageIn(
   const sheetLive = session?.status === "open";
 
   /*
-    HER LINKAGE GOES FIRST, and the order matters: while `signedCastId` still
-    points at this model the row reads as "signed" to every protection below,
-    including the release statement's own guard. Clearing it is what turns her
-    candidate back into an ordinary unprotected face.
+    SHE GOES BACK ON THE SHEET (founder ruling, 2026-08-03).
+
+    The first version cleared her linkage and then released her with everything
+    else — the candidate was consumed by the deletion. That was wrong, and the
+    founder's question is the argument: *why can't it just remove her being
+    signed, so you could go into the same sheet and sign her again?*
+
+    Nothing about the candidate belonged to the Cast. Sign COPIES the chosen
+    image to a new Cast-owned object (`storageCopyExact`), so deleting the Cast
+    destroys the copy and leaves the sheet's own face untouched. The row, the
+    image and the 20 credits that produced it are the SHEET's — bought with the
+    roll, not with the Sign.
+
+    So on a live sheet she returns to `ready`, keeps her place in the tray if
+    she was kept, and can be signed again. Deleting a Cast undoes the Sign; it
+    does not spend the candidate a second time.
+
+    Order still matters: `signedCastId` must clear in the same statement that
+    restores the status, or a row that is briefly `ready` while still pointing
+    at a tombstoned model would be visible to anything reading in between.
   */
   await tx
     .update(castingCandidates)
-    .set({ signedCastId: null })
+    .set(sheetLive
+      ? { signedCastId: null, status: "ready", expiredReason: null }
+      : { signedCastId: null })
     .where(and(
       eq(castingCandidates.id, candidate.id),
       eq(castingCandidates.userId, input.userId),
@@ -170,21 +190,32 @@ export async function purgeCastLineageIn(
     §G.6 genuinely describes: an expired or abandoned session whose candidates
     survived only because a Cast was keeping them alive, and now she is gone.
   */
+  /*
+    NOTHING IS RELEASED WHILE THE SHEET IS ALIVE — not even her own candidate,
+    which has just gone back to `ready` above.
+
+    The release exists for one case only: a sheet that is ALREADY dead, whose
+    faces survived past their expiry solely because a Cast was keeping them
+    alive under §G.6. When she is deleted, that protection lapses and they
+    become collectable — which is what the retention sweep would have done to
+    them had she never existed.
+  */
   const releaseWholeSheet = !sheetLive && !siblingCastsSurvive;
-  const released = await tx
-    .update(castingCandidates)
-    .set({ status: "expired", expiredReason: "retention" })
-    .where(and(
-      eq(castingCandidates.sessionId, candidate.sessionId),
-      eq(castingCandidates.userId, input.userId),
-      isNull(castingCandidates.signedCastId),
-      inArray(castingCandidates.status, ["queued", "dispatched", "ready", "failed", "discarded"]),
-      ...(releaseWholeSheet ? [] : [eq(castingCandidates.id, candidate.id)]),
-    ));
+  const released = releaseWholeSheet
+    ? await tx
+      .update(castingCandidates)
+      .set({ status: "expired", expiredReason: "retention" })
+      .where(and(
+        eq(castingCandidates.sessionId, candidate.sessionId),
+        eq(castingCandidates.userId, input.userId),
+        isNull(castingCandidates.signedCastId),
+        inArray(castingCandidates.status, ["queued", "dispatched", "ready", "failed", "discarded"]),
+      ))
+    : null;
 
   return {
     sessionId: candidate.sessionId,
     siblingCastsSurvive,
-    candidatesReleased: affected(released),
+    candidatesReleased: released ? affected(released) : 0,
   };
 }
