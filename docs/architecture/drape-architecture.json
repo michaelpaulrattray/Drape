@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f9d530b31914ef84"
+    "sourceFingerprint": "8a5d91a01d9657c6"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 15
+      "moduleCount": 17
     },
     {
       "id": "domain:client-shared",
@@ -1425,6 +1425,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/CastingModal.tsx",
+      "path": "client/src/features/castingV2/components/CastingModal.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
       "path": "client/src/features/castingV2/components/ConfirmDialog.tsx",
       "domain": "castingV2",
@@ -1439,6 +1445,12 @@
     {
       "id": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "path": "client/src/features/castingV2/components/KeptTray.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
+      "path": "client/src/features/castingV2/components/RenameCastDialog.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7385,6 +7397,10 @@
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/modalAnatomy.test.ts",
+      "path": "client/src/features/castingV2/modalAnatomy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/pronounGrammar.test.ts",
       "path": "client/src/features/castingV2/pronounGrammar.test.ts"
     },
@@ -11020,12 +11036,17 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
-      "to": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
+      "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
       "kind": "imports"
     },
     {
@@ -12996,6 +13017,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
       "kind": "imports"
     },
     {

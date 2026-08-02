@@ -144,11 +144,12 @@ describe("the sheet dock commits to one candidate", () => {
     // rather than `autoFocus` so the portal has mounted first.
     expect(confirm).toContain("inputRef.current?.focus()");
     /*
-      And it leads with HER — a 4:5 portrait column echoing the candidate card
-      the modal grew out of. The index appears only in the mono eyebrow, where
-      it is provenance rather than a name.
+      And it leads with HER — the shared shell renders a 4:5 portrait column
+      echoing the candidate card the modal grew out of. The index appears only
+      in the mono eyebrow, where it is provenance rather than a name.
     */
-    expect(confirm).toContain("dpc-signm__portrait");
+    expect(confirm).toContain("<CastingModal");
+    expect(confirm).toContain("portrait={imageUrl}");
     expect(confirm).toContain("CANDIDATE {indexLabel}");
     expect(confirm).not.toContain("Sign {indexLabel}");
 

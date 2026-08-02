@@ -21,6 +21,7 @@ import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/si
 import { ConfirmDialog } from "@/features/castingV2/components/ConfirmDialog";
 import { CardMenu } from "@/features/castingV2/components/CardMenu";
 import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
+import { RenameCastDialog } from "@/features/castingV2/components/RenameCastDialog";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import {
   RETENTION_EMPTY_STATE,
@@ -240,7 +241,11 @@ export default function CastingV2() {
       label: "Rename",
       onSelect: () => {
         setCastMenu(null);
-        setRenaming({ castId: cast.castId, name: cast.name ?? "" });
+        setRenaming({
+          castId: cast.castId,
+          name: cast.name ?? "",
+          imageUrl: cast.imageUrl,
+        });
       },
     },
     ...(deleteDoorOpen && cast.status !== "building"
@@ -259,7 +264,9 @@ export default function CastingV2() {
 
   /** Which roster card has its menu open. One at a time, like the sheet cards. */
   const [castMenu, setCastMenu] = useState<string | null>(null);
-  const [renaming, setRenaming] = useState<{ castId: string; name: string } | null>(null);
+  const [renaming, setRenaming] = useState<
+    { castId: string; name: string; imageUrl: string | null } | null
+  >(null);
   const [deletingCast, setDeletingCast] = useState<
     NonNullable<typeof roster.data>[number] | null
   >(null);
@@ -791,20 +798,27 @@ export default function CastingV2() {
         />
       ) : null}
 
+      {/*
+        THE DIALOG THAT HAD NO FIELD. It said "Rename this cast?" and offered
+        Save name with nothing to type into — the one control it existed for was
+        missing, which is a defect no amount of styling would have fixed.
+      */}
       {renaming ? (
-        <ConfirmDialog
-          title="Rename this cast?"
-          body="This name is how you find them on the roster. Nothing else changes."
-          confirmLabel="Save name"
-          busyLabel="Saving…"
+        <RenameCastDialog
+          currentName={renaming.name || "Unnamed"}
+          imageUrl={renaming.imageUrl}
           busy={renameCast.isPending}
-          onConfirm={async () => {
-            if (!renaming.name.trim()) return;
-            await renameCast.mutateAsync({ castId: renaming.castId, name: renaming.name.trim() });
-            await utils.castingV2.roster.invalidate();
-            setRenaming(null);
-          }}
           onCancel={() => setRenaming(null)}
+          onSave={async (name) => {
+            try {
+              await renameCast.mutateAsync({ castId: renaming.castId, name });
+              await utils.castingV2.roster.invalidate();
+              setRenaming(null);
+              toast("Renamed");
+            } catch (error) {
+              toast(error instanceof Error ? error.message : "That name could not be saved.");
+            }
+          }}
         />
       ) : null}
 
@@ -812,7 +826,6 @@ export default function CastingV2() {
         <DeleteCastConfirm
           name={deletingCast.name ?? "this cast"}
           imageUrl={deletingCast.imageUrl}
-          pronouns={deletingCast.pronouns}
           busy={deleteCast.isPending}
           onCancel={() => setDeletingCast(null)}
           onConfirm={async () => {

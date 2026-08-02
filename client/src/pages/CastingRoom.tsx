@@ -748,7 +748,6 @@ export default function CastingRoom() {
           <DeleteCastConfirm
             name={data.name ?? "this cast"}
             imageUrl={data.anchorUrl}
-            pronouns={data.pronouns}
             busy={deleteCast.isPending}
             onCancel={() => setDeleting(false)}
             onConfirm={async () => {

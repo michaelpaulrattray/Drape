@@ -2065,3 +2065,148 @@
 
 .dpc-signm__secondary:focus-visible,
 .dpc-signm__primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ---- delete: the same shell, four deliberate differences ---- */
+
+/*
+  The portrait is desaturated because she is already half-gone. This does work
+  no warning label can, and it is the detail that makes the dialog read as
+  considered rather than boilerplate.
+*/
+.dpc-signm__muted { display: block; width: 100%; height: 100%; filter: grayscale(1); opacity: 0.62; }
+.dpc-signm__muted > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* The warning is read FIRST, which is what lets the body drop to one line. */
+.dpc-signm__eyebrow--danger { color: var(--accentInk); }
+
+/* Label and field share a row — the height the removed paragraphs were using. */
+.dpc-signm__typerow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.dpc-signm__typerow .dpc-signm__label { margin-top: 0; flex: none; }
+.dpc-signm__typerow .dpc-signm__field { flex: 1; margin-top: 0; display: flex; align-items: center; gap: 8px; }
+
+.dpc-signm__field.is-armed { border-color: var(--accentLine); }
+.dpc-signm__match { color: var(--accentSolid); flex: none; }
+
+/*
+  NEVER solid ink — that is the system's "yes, proceed", the same fill as Sign
+  to your roster, and a destructive action must not look identical to a
+  constructive one. And never a solid coral either: solid accent already means
+  KEPT on a candidate card, so a delete button in the kept colour is a genuine
+  misread. Armed takes the danger-zone treatment — border and wash.
+*/
+.dpc-signm__danger {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--fill);
+  color: var(--muted);
+  font: 500 12px var(--font-sans);
+  cursor: not-allowed;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
+}
+
+.dpc-signm__danger.is-armed {
+  border-color: var(--accentLine);
+  background: var(--accentWash);
+  color: var(--accentInk);
+  cursor: pointer;
+}
+
+.dpc-signm__danger:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+
+/* ---- rename: deliberately lighter than its siblings ---- */
+
+/*
+  428px and single-column, against the 664px two-column shell sign and delete
+  share. Weight tracks stakes: those two are consequential, a rename is a text
+  edit. Do not unify this back into the larger shell.
+*/
+.dpc-renamem {
+  max-width: 428px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+  border: 1px solid var(--borderCard);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadowCard);
+  animation: dpc-signm-rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.dpc-renamem__head { display: flex; align-items: center; gap: 12px; }
+
+/* Enough to confirm who, not a hero. */
+.dpc-renamem__thumb {
+  flex: none;
+  width: 46px;
+  height: 58px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--media);
+  display: block;
+}
+
+.dpc-renamem__thumb > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.dpc-renamem__title {
+  margin: 3px 0 0;
+  font: 400 17px/1.3 var(--font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.dpc-renamem__helper {
+  margin: 7px 0 0;
+  font: 400 11px/1.45 var(--font-sans);
+  color: var(--faint);
+}
+
+.dpc-renamem__secondary {
+  padding: 9px 14px;
+  border: 1px solid var(--borderInput);
+  border-radius: 9px;
+  background: var(--surface);
+  font: 500 12px var(--font-sans);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dpc-renamem__secondary:hover { border-color: var(--ink); }
+
+/*
+  Solid `--ink` when ready, never red. Ink is the constructive commit colour;
+  red on the most reversible action in the app signals danger that is not there,
+  and collides with both the kept coral and the armed-delete coral.
+*/
+.dpc-renamem__primary {
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: var(--fill);
+  color: var(--muted);
+  font: 500 12px var(--font-sans);
+  cursor: not-allowed;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.dpc-renamem__primary.is-ready {
+  background: var(--ink);
+  color: var(--surface);
+  cursor: pointer;
+}
+
+.dpc-renamem__primary.is-ready:hover { opacity: 0.86; }
+
+.dpc-renamem__secondary:focus-visible,
+.dpc-renamem__primary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }

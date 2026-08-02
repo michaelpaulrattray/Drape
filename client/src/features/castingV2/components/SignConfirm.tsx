@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { ArrowRight } from "lucide-react";
+
+import { CastingModal } from "./CastingModal";
 
 /**
  * The sign-to-roster modal, rebuilt to the prototype (spec, 2026-08-03).
@@ -52,57 +53,18 @@ export function SignConfirm({
 }) {
   const [name, setName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        if (!busy) onCancel();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      // Focus stays inside a modal that is about to spend money.
-      const focusable = panelRef.current?.querySelectorAll<HTMLElement>("button, input");
-      if (!focusable || focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [onCancel, busy]);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
   const disposition = personaLine?.trim() || null;
 
-  return createPortal(
-    <div
-      className="dpc-signm"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Sign them to your roster"
-      onClick={(event) => {
-        if (event.target === event.currentTarget && !busy) onCancel();
-      }}
+  return (
+    <CastingModal
+      label="Sign them to your roster"
+      portrait={imageUrl}
+      busy={busy}
+      onDismiss={onCancel}
     >
-      {/* Clicks inside never dismiss — only the scrim does. */}
-      <div
-        ref={panelRef}
-        className="dpc-signm__card"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="dpc-signm__portrait">
-          {imageUrl ? <img src={imageUrl} alt="" /> : null}
-        </div>
-
-        <div className="dpc-signm__body">
           {/*
             The mono eyebrow, index and disposition. Every titled surface in the
             app opens with one; this modal was the exception.
@@ -172,9 +134,6 @@ export function SignConfirm({
               {busy ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
             </button>
           </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
+    </CastingModal>
   );
 }
