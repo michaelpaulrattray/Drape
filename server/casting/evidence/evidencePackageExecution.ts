@@ -1,3 +1,4 @@
+import type { CanonicalViewAngle } from "../../../shared/boardTypes";
 import { createHash, randomUUID } from "node:crypto";
 import type { GenerateContentConfig } from "@google/genai";
 import { TRPCError } from "@trpc/server";
@@ -882,7 +883,7 @@ async function runV2CandidateAttempt(input: {
       buildInkProjectionComposerRequest({
         purpose: "refresh",
         identityText: authority.identity.identityText,
-        sourceAngle: slot.target.viewType,
+        sourceAngle: slot.target.viewType as CanonicalViewAngle,
         targetAngle: slot.angle,
         features: references.features,
         attemptNumber: input.attemptNumber,
@@ -915,7 +916,7 @@ async function runV2CandidateAttempt(input: {
     );
     const probe = await runInkProjectionCandidateProbes({
       purpose: "refresh",
-      sourceAngle: slot.target.viewType,
+      sourceAngle: slot.target.viewType as CanonicalViewAngle,
       targetAngle: slot.angle,
       features: references.features,
       identityAnchor: references.anchor,

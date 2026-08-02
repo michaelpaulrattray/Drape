@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ebff5b29dca75284"
+    "sourceFingerprint": "5e88d509f455ff45"
   },
   "domains": [
     {
@@ -14108,6 +14108,11 @@
     {
       "from": "module:server/casting/evidence/evidencePackageExecution.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/evidencePackageExecution.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {

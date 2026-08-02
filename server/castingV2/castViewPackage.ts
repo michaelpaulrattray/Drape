@@ -28,26 +28,31 @@
 import {
   CANONICAL_VIEW_ANGLES,
   VIEW_ANGLE_LABELS,
-  type CanonicalViewAngle,
+  type CastViewAngle,
 } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 
 /**
- * PACKAGE v2 — five views (founder ruling, 2026-08-02, after the first two real
- * Signs). Policy, not schema: a profile is what a cohort promises, and it is
- * expressed by choosing from the canonical angles rather than by inventing new
- * ones.
+ * PACKAGE v3 — five generated views (founder ruling, 2026-08-02, after the gate
+ * run), presented beneath the Master.
  *
- * What changed and why, because the reasoning is the useful part:
+ * The strip shows SIX things and the first is not generated: **Master**, the
+ * signed sheet image itself, then the close-up, the portrait, the front, the
+ * profile and the back. The Master costs nothing and is never re-rendered — it
+ * is the face that was chosen.
  *
- * - **`frontClose` is now a tight CLOSE-UP**, not a waist-up headshot. The
- *   founder's first Sign proved the old spec merely duplicated the anchor's own
- *   crop — the package contained no view of the face at detail scale, which is
- *   the single most useful reference a downstream generator can be given.
- * - **The walk is gone.** Motion belongs to Takes. It cost a slot that a
- *   reconstruction needs more: nothing else showed hair mass from behind at
- *   detail.
+ * What changed in v3, and why:
+ *
+ * - **A true `closeUp` exists** — a tight face macro at 2K, and the micro-detail
+ *   lead for the character-sheet artifact. v2 asked `frontClose` to do this job
+ *   and it never did: that slot renders head-and-shoulders and always has.
+ * - **`frontClose` is honestly relabelled Portrait.** The label now describes
+ *   what the pixels are rather than what the profile wished they were.
+ * - **The three-quarter retires**, as the walk did in v2. A reconstruction needs
+ *   detail, proportion, bone structure and hair mass; a three-quarter is a
+ *   comp-card nicety and the close-up buys more.
+ * - **The price does not move**: still five generated views, 200 + 5 x 50.
  * - The set a generator actually needs to rebuild a person from three-to-five
  *   references: **close-up** (detail), **front** (proportions), **profile**
  *   (bone structure), **back** (hair mass, and the garment surface VTO works
@@ -57,9 +62,9 @@ import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
  * `modelAssets.viewType` is a fixed enum and a profile that named something
  * outside it would fail at the first insert rather than at review.
  */
-export const CAST_PACKAGE_VIEWS: readonly CanonicalViewAngle[] = [
+export const CAST_PACKAGE_VIEWS: readonly CastViewAngle[] = [
+  "closeUp",
   "frontClose",
-  "threeQuarter",
   "frontFull",
   "sideClose",
   "backFull",
@@ -136,7 +141,7 @@ export type CastPackageViewSpec = {
 };
 
 type CastPackageView = {
-  angle: CanonicalViewAngle;
+  angle: CastViewAngle;
   /**
    * The package's OWN label, not the shared `VIEW_ANGLE_LABELS` entry.
    *
@@ -161,28 +166,49 @@ type CastPackageView = {
 
 const WARDROBE = CAST_PACKAGE_WARDROBE_SPEC;
 
-const VIEWS: Record<CanonicalViewAngle, CastPackageView> = {
-  frontClose: {
-    angle: "frontClose",
+const VIEWS: Record<CastViewAngle, CastPackageView> = {
+  /*
+    THE TRUE CLOSE-UP — v3's new view, and what the character-sheet artifact
+    will lead with. Deliberately tighter than any crop this product has
+    produced: the point is skin, iris and hairline detail a downstream
+    generator can rebuild a face from.
+  */
+  closeUp: {
+    angle: "closeUp",
     label: "Close-up",
     spec: {
-      /*
-        THE SHOWPIECE, and the identity-detail reference. Deliberately tighter
-        than anything the sheet produces: the point is skin, iris, the texture
-        of the hairline — detail a downstream generator can rebuild a face from.
-      */
       framing:
-        "a tight close-up of the face, square to the camera and filling the frame from just "
-        + "above the hairline to just below the chin, both eyes sharp and looking into the lens — "
-        + "close enough to read skin texture and iris detail",
+        "a tight macro of the face, filling the frame from just above the eyebrows to just "
+        + "below the lower lip, square to the camera, both eyes critically sharp — close "
+        + "enough to read skin texture, pores and iris detail",
       wardrobe: CLOSE_UP_WARDROBE,
     },
     directive:
-      "TIGHT FRONT-FACING CLOSE-UP OF THE FACE. The face fills the frame — from just above the "
-      + "hairline to just below the chin, cropping the sides of the hair if it must. Square to "
-      + "camera, head straight, both eyes looking directly into the lens and critically sharp. "
-      + "Skin texture, pores, fine hairs and iris detail are all resolved. Not a headshot: this is "
-      + "closer than a portrait crop.",
+      "EXTREME CLOSE-UP MACRO OF THE FACE. The face fills the entire frame — crop from just "
+      + "above the eyebrows to just below the lower lip, cutting off the top of the head and "
+      + "the sides of the hair. Square to camera, both eyes looking directly into the lens "
+      + "and critically sharp. Skin texture, pores, vellus hair, individual lashes and iris "
+      + "striations are all resolved at full detail. This is a macro, far closer than any "
+      + "portrait crop.",
+  },
+  frontClose: {
+    angle: "frontClose",
+    /*
+      "Portrait" from v3. This slot renders head-and-shoulders and always did —
+      v2's "Close-up" label described an intention the pixels never met, which
+      the founder spotted on his own Cast within a minute.
+    */
+    label: "Portrait",
+    spec: {
+      framing:
+        "a head-and-shoulders portrait, square to the camera, both eyes visible, "
+        + "the whole hair silhouette inside the frame with headroom above it",
+      wardrobe: WARDROBE,
+    },
+    directive:
+      "FRONT-FACING HEAD AND SHOULDERS PORTRAIT. Square to camera, head straight with no tilt, "
+      + "both eyes looking directly into the lens. The entire hair silhouette is inside the frame "
+      + "with clear headroom above it — nothing on the head is clipped.",
   },
   threeQuarter: {
     angle: "threeQuarter",
@@ -269,7 +295,7 @@ const VIEWS: Record<CanonicalViewAngle, CastPackageView> = {
   },
 };
 
-export function castPackageView(angle: CanonicalViewAngle): CastPackageView {
+export function castPackageView(angle: CastViewAngle): CastPackageView {
   return VIEWS[angle];
 }
 
@@ -288,12 +314,24 @@ export function castPackageView(angle: CanonicalViewAngle): CastPackageView {
  * promise is already durable, so no migration is needed to tell them apart.
  */
 export function castPackageLabel(
-  angle: CanonicalViewAngle,
-  promisedAngles: readonly CanonicalViewAngle[],
+  angle: CastViewAngle,
+  promisedAngles: readonly CastViewAngle[],
 ): string {
-  const isLegacySixView = promisedAngles.includes("sideFull");
-  if (isLegacySixView && angle === "frontClose") return VIEW_ANGLE_LABELS.frontClose;
-  return VIEWS[angle].label;
+  /*
+    Two retirements now, so two eras to tell apart — and each is readable from
+    the Cast's own promise:
+
+      v1  contains the walk          -> `frontClose` was "Headshot"
+      v2  no walk, no true close-up  -> `frontClose` was "Close-up"
+      v3  contains a true close-up   -> `frontClose` is "Portrait"
+
+    A fourth composition adds a clause here. Nothing is stored, because the
+    promise is already durable.
+  */
+  if (angle !== "frontClose") return VIEWS[angle].label;
+  if (promisedAngles.includes("sideFull")) return "Headshot";
+  if (!promisedAngles.includes("closeUp")) return "Close-up";
+  return VIEWS.frontClose.label;
 }
 
 /**
@@ -305,7 +343,7 @@ export function castPackageLabel(
  * this text never describes the person, because describing them is how a
  * likeness drifts into a lookalike.
  */
-export function composePackageViewPrompt(angle: CanonicalViewAngle): string {
+export function composePackageViewPrompt(angle: CastViewAngle): string {
   const view = VIEWS[angle];
   return [
     "Keep this exact person unchanged: the same face, bone structure, skin, hair, facial hair and build "
@@ -329,7 +367,7 @@ export function composePackageViewPrompt(angle: CanonicalViewAngle): string {
  * `directive` or a constant block, view conformance silently becomes prompt
  * compliance and the check stops being worth running.
  */
-export function packageViewExpectation(angle: CanonicalViewAngle): CastPackageViewSpec {
+export function packageViewExpectation(angle: CastViewAngle): CastPackageViewSpec {
   const { spec } = VIEWS[angle];
   return { framing: spec.framing, wardrobe: spec.wardrobe };
 }

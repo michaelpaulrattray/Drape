@@ -275,12 +275,23 @@ export const modelAssets = mysqlTable("model_assets", {
   id: int("id").autoincrement().primaryKey(),
   modelId: int("modelId").notNull(),
   viewType: mysqlEnum("viewType", [
-    "frontClose",   // Headshot/portrait
+    "frontClose",   // Head-and-shoulders portrait ("Portrait" from package v3)
     "threeQuarter", // Three-quarter portrait (D-39 face cluster; added R3b)
     "frontFull",    // Full body front
     "sideClose",    // Side profile headshot
     "sideFull",     // Full body side
     "backFull",     // Full body back
+    /*
+      PACKAGE v3 (migration 0019, founder ruling 2026-08-02). A genuinely new
+      view: a tight face macro at 2K, the micro-detail lead for the
+      character-sheet artifact. Appended rather than inserted — MySQL enums are
+      ordered, and appending is the additive form that needs no table rewrite.
+
+      It could not reuse a retired slot. `threeQuarter` holding a close-up would
+      make every legacy row's name disagree with its content, which is the
+      record-that-lies class this program keeps closing.
+    */
+    "closeUp",      // True close-up: tight face macro (package v3)
   ]).notNull(),
   resolution: mysqlEnum("resolution", ["1K", "2K", "4K"]).default("1K").notNull(),
   storageUrl: text("storageUrl").notNull(), // S3 URL
@@ -367,6 +378,9 @@ export const modelPackageSnapshotSlots = mysqlTable("model_package_snapshot_slot
     "sideClose",
     "sideFull",
     "backFull",
+    // Package v3 — the slot ledger must be able to select it, or a close-up
+    // could be an asset the package snapshot cannot record.
+    "closeUp",
   ]).notNull(),
   selectedAssetId: int("selectedAssetId").notNull(),
   compatibility: mysqlEnum("compatibility", PACKAGE_SLOT_COMPATIBILITY).notNull(),

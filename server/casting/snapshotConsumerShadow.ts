@@ -210,7 +210,8 @@ function normalizeSnapshotMintPlan(state: SnapshotShadowState) {
       && !!candidate.storageUrl
     ));
     selectedByAngle.set(
-      slot.viewAngle,
+      // Comp-card six: a v3 close-up shares the column but is not a slot here.
+      slot.viewAngle as CanonicalViewAngle,
       asset
         ? {
             ...asset,

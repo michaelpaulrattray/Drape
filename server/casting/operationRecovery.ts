@@ -565,7 +565,7 @@ export async function recoverEvidencePackageSyncOperation(
     .where(eq(modelPackageSnapshotSlots.packageSnapshotId, snapshot.id));
   const changedSlots = slots.filter(
     (slot) =>
-      uniqueAngles.has(slot.viewAngle)
+      uniqueAngles.has(slot.viewAngle as CanonicalViewAngle)
       && slot.compatibility === "current"
       && slot.selectionReason !== "carried",
   );
@@ -597,7 +597,7 @@ export async function recoverEvidencePackageSyncOperation(
     return (
       !asset?.storageUrl?.trim()
       || asset.viewType !== slot.viewAngle
-      || asset.pointsCost !== slotCost(slot.viewAngle)
+      || asset.pointsCost !== slotCost(slot.viewAngle as CanonicalViewAngle)
       || provenance?.source !== "evidence_package_sync"
       || typeof provenance.acceptedFeatureVersionId !== "string"
       || provenance.acceptedFeatureVersionId.length === 0

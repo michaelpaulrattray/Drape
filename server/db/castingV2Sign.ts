@@ -52,7 +52,7 @@ import {
   type Model,
   type ModelAsset,
 } from "../../drizzle/schema";
-import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
+import { CANONICAL_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
 import { CASTING_SESSION_IDLE_MS } from "./castingV2";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
@@ -453,7 +453,7 @@ export async function commitPackageSlotAsset(input: {
   userId: number;
   operationId: string;
   modelId: number;
-  angle: CanonicalViewAngle;
+  angle: CastViewAngle;
   storageKey: string;
   storageUrl: string;
   identityRevisionId: string;
@@ -532,7 +532,7 @@ export async function recordPackageSlotFailure(input: {
   userId: number;
   operationId: string;
   modelId: number;
-  angle: CanonicalViewAngle;
+  angle: CastViewAngle;
   failure: SlotFailureRecord;
   now?: Date;
 }): Promise<boolean> {
@@ -593,7 +593,7 @@ export async function recordPackageSlotFailure(input: {
 export async function recordRecoveredSlotFailure(input: {
   userId: number;
   modelId: number;
-  angle: CanonicalViewAngle;
+  angle: CastViewAngle;
   failure: SlotFailureRecord;
   now?: Date;
 }): Promise<boolean> {
@@ -663,7 +663,7 @@ export async function listOperationViewSteps(
 export async function listCastPromisedAngles(
   userId: number,
   modelId: number,
-): Promise<CanonicalViewAngle[]> {
+): Promise<CastViewAngle[]> {
   assertPositiveId(userId, "userId");
   assertPositiveId(modelId, "modelId");
   const db = await requireDb();
@@ -696,7 +696,7 @@ export async function listCastAssets(userId: number, modelId: number): Promise<M
 /* -------------------------------------------------------------- activation */
 
 export type ActivationOutcome =
-  | { type: "activated"; modelId: number; packageSnapshotId: string; slots: CanonicalViewAngle[] }
+  | { type: "activated"; modelId: number; packageSnapshotId: string; slots: CastViewAngle[] }
   /** Someone else activated first. Their activation stands. */
   | { type: "already_active"; modelId: number }
   | { type: "unavailable" };
@@ -769,10 +769,10 @@ export async function activateSignedCast(input: {
       it is chosen only when no 2K headshot landed — exactly the fallback the
       comment above describes.
     */
-    const filledByAngle = new Map<CanonicalViewAngle, number>();
+    const filledByAngle = new Map<CastViewAngle, number>();
     for (const asset of assets) {
       if (!asset.storageUrl) continue;
-      const angle = asset.viewType as CanonicalViewAngle;
+      const angle = asset.viewType as CastViewAngle;
       if (!(CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)) continue;
       if (!filledByAngle.has(angle)) filledByAngle.set(angle, asset.id);
     }

@@ -16,7 +16,7 @@
  * never arrive, and both are worse than the sentence.
  */
 import type { Model, ModelAsset } from "../../drizzle/schema";
-import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
+import { CANONICAL_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
@@ -30,7 +30,7 @@ import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 export type CastSlotState = "pending" | "building" | "ready" | "failed-refunded";
 
 export type CastSlotProjection = {
-  angle: CanonicalViewAngle;
+  angle: CastViewAngle;
   label: string;
   state: CastSlotState;
   url: string | null;
@@ -138,10 +138,10 @@ function readFailureMarker(asset: ModelAsset): { reason: string; refunded: numbe
  * rather than simply being "the oldest frontClose": the anchor is identified by
  * its recorded identity role, never by its position in a list.
  */
-function slotEvidence(assets: readonly ModelAsset[]): Map<CanonicalViewAngle, SlotEvidence> {
-  const evidence = new Map<CanonicalViewAngle, SlotEvidence>();
+function slotEvidence(assets: readonly ModelAsset[]): Map<CastViewAngle, SlotEvidence> {
+  const evidence = new Map<CastViewAngle, SlotEvidence>();
   for (const asset of assets) {
-    const angle = asset.viewType as CanonicalViewAngle;
+    const angle = asset.viewType as CastViewAngle;
     if (!(CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle)) continue;
     const entry = evidence.get(angle) ?? {};
     const failure = readFailureMarker(asset);
@@ -180,7 +180,7 @@ export function projectSignedCast(input: {
    * also what lets a slot that produced nothing at all still confess — an
    * asset can be missing, but the promise cannot.
    */
-  promisedAngles?: readonly CanonicalViewAngle[];
+  promisedAngles?: readonly CastViewAngle[];
 }): SignedCastProjection {
   const evidence = slotEvidence(input.assets);
   const building = input.model.status === "provisioning";

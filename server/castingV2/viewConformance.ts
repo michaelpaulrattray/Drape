@@ -29,7 +29,7 @@
  */
 import { z } from "zod";
 
-import type { CanonicalViewAngle } from "../../shared/boardTypes";
+import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
 import { packageViewExpectation } from "./castViewPackage";
@@ -61,7 +61,7 @@ export type ViewConformanceVerdict = {
 };
 
 export type ViewConformanceInput = {
-  angle: CanonicalViewAngle;
+  angle: CastViewAngle;
   /** The signed anchor — the face the customer chose. */
   anchor: ReferenceImage;
   /** The view that wants to land. */
@@ -115,7 +115,7 @@ export type ViewConformanceJudgeConfig = {
    * path run, which is the only way to learn whether the refund, the slot
    * record and the room's confession actually work together.
    */
-  forceFail?: readonly CanonicalViewAngle[] | "all";
+  forceFail?: readonly CastViewAngle[] | "all";
 };
 
 export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): ViewConformanceJudge {
@@ -227,14 +227,14 @@ function tryParse(value: string): unknown {
 /** Parses the server-only forced-fail switch. Unknown angles are ignored loudly. */
 export function forcedFailAnglesFromEnv(
   raw: string | undefined,
-  known: readonly CanonicalViewAngle[],
-): readonly CanonicalViewAngle[] | "all" | undefined {
+  known: readonly CastViewAngle[],
+): readonly CastViewAngle[] | "all" | undefined {
   const value = raw?.trim();
   if (!value) return undefined;
   if (value === "all") return "all";
   const angles = value
     .split(",")
     .map((entry) => entry.trim())
-    .filter((entry): entry is CanonicalViewAngle => (known as readonly string[]).includes(entry));
+    .filter((entry): entry is CastViewAngle => (known as readonly string[]).includes(entry));
   return angles.length > 0 ? angles : undefined;
 }

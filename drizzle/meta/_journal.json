@@ -134,6 +134,13 @@
       "when": 1785636426180,
       "tag": "0018_casting_v2_sign_lineage",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1785664040796,
+      "tag": "0019_casting_v2_close_up_view",
+      "breakpoints": true
     }
   ]
 }

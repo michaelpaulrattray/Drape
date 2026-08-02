@@ -303,10 +303,10 @@ export function compareSnapshotShadowState(input: SnapshotShadowState): Snapshot
   const slotsByAngle = new Map<CanonicalViewAngle, ModelPackageSnapshotSlot>();
   const selectedIds = new Set<number>();
   for (const slot of input.currentSlots) {
-    if (slotsByAngle.has(slot.viewAngle) || selectedIds.has(slot.selectedAssetId)) {
+    if (slotsByAngle.has(slot.viewAngle as CanonicalViewAngle) || selectedIds.has(slot.selectedAssetId)) {
       mismatch.add("snapshot_duplicate_selection");
     }
-    slotsByAngle.set(slot.viewAngle, slot);
+    slotsByAngle.set(slot.viewAngle as CanonicalViewAngle, slot);
     selectedIds.add(slot.selectedAssetId);
     const selected = byAssetId.get(slot.selectedAssetId);
     if (
@@ -379,7 +379,8 @@ export function compareSnapshotShadowState(input: SnapshotShadowState): Snapshot
 
   const legacyRows = derived?.slots ?? [];
   const snapshotRows = input.currentSlots.map((slot) => ({
-    viewAngle: slot.viewAngle,
+    // Comp-card six for the shadow comparison; a v3 close-up is not one.
+    viewAngle: slot.viewAngle as CanonicalViewAngle,
     selectedAssetId: slot.selectedAssetId,
     compatibility: slot.compatibility,
   }));

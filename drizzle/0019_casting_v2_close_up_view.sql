@@ -1,0 +1,2 @@
+ALTER TABLE `model_assets` MODIFY COLUMN `viewType` enum('frontClose','threeQuarter','frontFull','sideClose','sideFull','backFull','closeUp') NOT NULL;--> statement-breakpoint
+ALTER TABLE `model_package_snapshot_slots` MODIFY COLUMN `viewAngle` enum('frontClose','threeQuarter','frontFull','sideClose','sideFull','backFull','closeUp') NOT NULL;

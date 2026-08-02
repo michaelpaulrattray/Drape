@@ -14,6 +14,23 @@ export type CanonicalViewAngle =
   | "sideFull"
   | "backFull";
 
+/**
+ * The Casting V2 package vocabulary: the comp-card six, plus the true close-up
+ * that package v3 added (migration 0019).
+ *
+ * Deliberately NOT folded into `CanonicalViewAngle`. "Canonical" means the
+ * legacy comp card, and six other places — the export filenames, the PDF cells,
+ * the ink projection registry, the iterate crops, the canvas sheet — assert
+ * that it is exactly six, correctly. A close-up is a V2 package view: it is
+ * stored in the same column, and it is not a comp-card slot.
+ */
+export type CastViewAngle = CanonicalViewAngle | "closeUp";
+
+/** Narrow a stored viewType back to the comp-card six. */
+export function isCanonicalViewAngle(angle: string): angle is CanonicalViewAngle {
+  return (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle);
+}
+
 // Const tuple (not a widened array) so zod route inputs can z.enum() it —
 // one list, client/server/validation can never disagree.
 export const CANONICAL_VIEW_ANGLES = [

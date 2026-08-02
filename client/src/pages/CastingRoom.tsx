@@ -56,7 +56,7 @@ const REFINE_CHIPS = ["Softer light", "Plain styling", "Outdoors", "Closer crop"
 const WAVE = [30, 55, 40, 70, 45, 85, 35, 60, 50, 75, 40, 65, 30, 80, 45, 55, 70, 35, 60, 40, 75, 50, 65, 30, 55, 45, 70, 40, 60, 35];
 
 /** What the two companion cells show, before either has landed. */
-const COMPANION_LABELS = ["Close-up", "Three-quarter"];
+const COMPANION_LABELS = ["Close-up", "Side profile"];
 
 /**
  * The quiet actions on a room image: open large, or download.
@@ -152,8 +152,8 @@ export default function CastingRoom() {
   };
 
   /*
-    THE TWO COMPANION SLOTS (founder ruling on hero fill): the close-up and the
-    three-quarter, in that order, whichever of them has actually landed.
+    THE TWO COMPANION SLOTS (founder ruling on hero fill, v3): the close-up and
+    the side profile, in that order, whichever of them has landed.
 
     **The master is always the chest-up image she was signed in** — the face
     chosen on the sheet — and a companion may never be the anchor standing in
@@ -166,7 +166,7 @@ export default function CastingRoom() {
     Until then the package's own best two fill the space rather than leaving a
     drawn block half empty.
   */
-  const companions = ["frontClose", "threeQuarter"].map(
+  const companions = ["closeUp", "sideClose"].map(
     (angle) =>
       data?.slots.find((slot) => slot.angle === angle && slot.url && !slot.standIn) ?? null,
   );
@@ -402,11 +402,37 @@ export default function CastingRoom() {
                   <div className="dpc-takes__head">
                     <span className="dpc-rcard__label">THE PACKAGE</span>
                     <span className="dpc-rcard__hint">
+                      {/* The Master is not counted: it was never a paid view. */}
                       {data.slots.filter((slot) => slot.state === "ready").length} of{" "}
                       {data.slots.length} views
                     </span>
                   </div>
                   <div className="dpc-strip">
+                    {/*
+                      MASTER LEADS THE STRIP, and it is presentation only: the
+                      signed sheet image itself, never generated and never
+                      priced. One word in both places — the chip on the hero and
+                      the label here — so the same picture is called the same
+                      thing wherever it appears.
+                    */}
+                    {data.anchorUrl ? (
+                      <article className="dpc-strip__item">
+                        <div
+                          className="dpc-strip__frame dpc-media"
+                          onDoubleClick={() =>
+                            setViewingImage({ url: data.anchorUrl!, label: "Master" })
+                          }
+                        >
+                          <img src={data.anchorUrl} alt="Master" />
+                          <MediaActions
+                            url={data.anchorUrl}
+                            filename={`${data.name ?? data.castId}-master`}
+                            onOpen={() => setViewingImage({ url: data.anchorUrl!, label: "Master" })}
+                          />
+                        </div>
+                        <span className="dpc-slot__label">Master</span>
+                      </article>
+                    ) : null}
                     {data.slots.map((slot) => (
                       <article className="dpc-strip__item" key={slot.angle}>
                         <div

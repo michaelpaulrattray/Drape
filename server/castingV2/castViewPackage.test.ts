@@ -16,17 +16,35 @@ import {
  * conformance from quietly becoming prompt compliance.
  */
 describe("the canonical view package", () => {
-  it("promises five slots, every one of them a canonical angle", () => {
-    // Package v2 (founder ruling): close-up, three-quarter, front, profile,
-    // back. The walk is retired to Takes. A profile is a CHOICE from the
-    // canonical angles — naming anything outside them would fail at the first
-    // insert, because `modelAssets.viewType` is a fixed enum.
-    expect(CAST_PACKAGE_VIEWS.length).toBe(5);
-    for (const angle of CAST_PACKAGE_VIEWS) {
-      expect(CANONICAL_VIEW_ANGLES).toContain(angle);
-    }
+  it("promises five generated views, in the order the strip reads them", () => {
+    /*
+      Package v3: close-up, portrait, front, profile, back — with the Master
+      leading the strip as presentation only. Both retirements are asserted by
+      name, because a retired view coming back is exactly the kind of change
+      that should have to argue for itself.
+    */
+    expect([...CAST_PACKAGE_VIEWS]).toEqual([
+      "closeUp",
+      "frontClose",
+      "frontFull",
+      "sideClose",
+      "backFull",
+    ]);
     expect(CAST_PACKAGE_VIEWS).not.toContain("sideFull");
+    expect(CAST_PACKAGE_VIEWS).not.toContain("threeQuarter");
     expect(new Set(CAST_PACKAGE_VIEWS).size).toBe(CAST_PACKAGE_VIEWS.length);
+  });
+
+  it("keeps the close-up out of the comp-card six", () => {
+    /*
+      `closeUp` is a Casting V2 package view, not a canonical comp-card angle.
+      Folding it into `CANONICAL_VIEW_ANGLES` broke thirty legacy assertions
+      that correctly say the comp card is six — the export filenames, the PDF
+      cells, the ink registry, the iterate crops. It lives in the same database
+      column and in its own vocabulary.
+    */
+    expect(CANONICAL_VIEW_ANGLES).not.toContain("closeUp");
+    expect(CANONICAL_VIEW_ANGLES.length).toBe(6);
   });
 
   it("still knows the retired walk, because two signed Casts own one", () => {
@@ -35,14 +53,22 @@ describe("the canonical view package", () => {
     expect(castPackageView("sideFull").label).toBe("Walk");
   });
 
-  it("makes the close-up a close-up, not the anchor's crop again", () => {
-    // The defect this ruling fixed: the old `frontClose` spec duplicated the
-    // waist-up crop the anchor already had, so the package contained no view of
-    // the face at detail scale.
-    const closeUp = castPackageView("frontClose");
+  it("makes the close-up a genuine macro, and the portrait honest", () => {
+    /*
+      v2 asked `frontClose` to be the close-up and it never was — that slot
+      renders head-and-shoulders and always has, which the founder saw on his
+      own Cast within a minute. v3 gives the macro its own slot and lets the
+      portrait be called what it is.
+    */
+    const closeUp = castPackageView("closeUp");
     expect(closeUp.label).toBe("Close-up");
-    expect(closeUp.spec.framing).toContain("tight close-up");
-    expect(closeUp.directive).toContain("fills the frame");
+    expect(closeUp.spec.framing).toContain("tight macro");
+    expect(closeUp.directive).toContain("EXTREME CLOSE-UP MACRO");
+    expect(closeUp.directive).toContain("fills the entire frame");
+
+    const portrait = castPackageView("frontClose");
+    expect(portrait.label).toBe("Portrait");
+    expect(portrait.spec.framing).toContain("head-and-shoulders");
   });
 
   it("derives the Sign price from the number of views it actually promises", () => {
@@ -104,7 +130,7 @@ describe("the canonical view package", () => {
   });
 
   it("holds every full view to one wardrobe, and lets the close-up be honest", () => {
-    const full = CAST_PACKAGE_VIEWS.filter((angle) => angle !== "frontClose");
+    const full = CAST_PACKAGE_VIEWS.filter((angle) => angle !== "closeUp");
     const wardrobes = new Set(full.map((angle) => packageViewExpectation(angle).wardrobe));
     // One garment contract across the views that can actually show a garment,
     // or "did the shirt change between the front and the back" is not a
@@ -118,7 +144,7 @@ describe("the canonical view package", () => {
       Its own sentence makes "nothing visible" a stated pass and keeps the axis
       pointed at what a close-up CAN show: things added to the face.
     */
-    const closeUp = packageViewExpectation("frontClose").wardrobe;
+    const closeUp = packageViewExpectation("closeUp").wardrobe;
     expect(closeUp).not.toBe(packageViewExpectation("frontFull").wardrobe);
     expect(closeUp).toContain("passes");
     expect(closeUp).toContain("earrings");

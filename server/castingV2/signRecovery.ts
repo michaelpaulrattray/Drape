@@ -48,7 +48,7 @@ import {
 } from "../db/castingV2Sign";
 import { getDb, withTransaction } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
-import type { CanonicalViewAngle } from "../../shared/boardTypes";
+import type { CastViewAngle } from "../../shared/boardTypes";
 import { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
 import {
   packageSlotChargeReference,
@@ -397,7 +397,7 @@ export async function recoverCastingV2SignOperation(
     await (options.recordSlotFailure ?? recordRecoveredSlotFailure)({
       userId: operation.userId,
       modelId: cast.modelId,
-      angle: angle as CanonicalViewAngle,
+      angle: angle as CastViewAngle,
       failure: {
         reason: "This view didn't arrive",
         refunded: outcome.recorded ? outcome.amount : 0,

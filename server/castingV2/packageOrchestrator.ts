@@ -43,7 +43,7 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storagePut } from "../storage";
 import { ProviderError, type IdentityEngine, type ReferenceImage } from "../providers/types";
-import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
+import { CANONICAL_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import {
   CAST_PACKAGE_VIEWS,
   CAST_PACKAGE_VIEW_PRICE,
@@ -68,7 +68,7 @@ const PACKAGE_KEY_PREFIX = "casting-v2/casts";
  */
 export function packageSlotChargeReference(
   operationId: string,
-  angle: CanonicalViewAngle,
+  angle: CastViewAngle,
 ): string {
   return `${operationChargeReference(operationId)}:slot:${angle}`;
 }
@@ -89,9 +89,9 @@ export type PackageOrchestratorDependencies = {
 };
 
 export type PackageSlotOutcome =
-  | { angle: CanonicalViewAngle; status: "committed"; assetId: number }
+  | { angle: CastViewAngle; status: "committed"; assetId: number }
   | {
-      angle: CanonicalViewAngle;
+      angle: CastViewAngle;
       status: "failed";
       reason: string;
       refundedCredits: number;
@@ -99,8 +99,8 @@ export type PackageSlotOutcome =
     };
 
 export type PackageResult = {
-  committed: CanonicalViewAngle[];
-  failed: CanonicalViewAngle[];
+  committed: CastViewAngle[];
+  failed: CastViewAngle[];
   refundedCredits: number;
   refundUnrecorded: boolean;
   activated: boolean;
@@ -223,7 +223,7 @@ export async function buildCastPackage(
 /** Opens one view's durable audit row — the promise this Sign is paying for. */
 async function openViewAudit(
   input: BuildPackageInput,
-  angle: CanonicalViewAngle,
+  angle: CastViewAngle,
 ): Promise<number | null> {
   const audit = await createGeneration({
     userId: input.userId,
@@ -244,7 +244,7 @@ async function openViewAudit(
 async function buildOneView(
   dependencies: PackageOrchestratorDependencies,
   input: BuildPackageInput,
-  angle: CanonicalViewAngle,
+  angle: CastViewAngle,
   auditId: number | null,
 ): Promise<PackageSlotOutcome> {
   const view = castPackageView(angle);
@@ -424,7 +424,7 @@ function conformanceReason(
 async function failView(
   dependencies: PackageOrchestratorDependencies,
   input: BuildPackageInput,
-  angle: CanonicalViewAngle,
+  angle: CastViewAngle,
   detail: {
     reason: string;
     verdict: ViewConformanceVerdict | null;
@@ -505,11 +505,11 @@ async function failView(
 export async function promisedPackageAngles(input: {
   userId: number;
   operationId: string;
-}): Promise<{ angles: CanonicalViewAngle[]; source: "recorded" | "profile" }> {
+}): Promise<{ angles: CastViewAngle[]; source: "recorded" | "profile" }> {
   const rows = await listOperationViewSteps(input.operationId);
   const angles = rows
     .map((row) => row.viewAngle)
-    .filter((angle): angle is CanonicalViewAngle =>
+    .filter((angle): angle is CastViewAngle =>
       (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle ?? ""));
   const unique = CANONICAL_VIEW_ANGLES.filter((angle) => angles.includes(angle));
   return unique.length > 0
@@ -522,8 +522,8 @@ export async function unsettledPackageAngles(input: {
   userId: number;
   modelId: number;
   /** The promised set. Defaults to today's profile for live callers. */
-  promised?: readonly CanonicalViewAngle[];
-}): Promise<CanonicalViewAngle[]> {
+  promised?: readonly CastViewAngle[];
+}): Promise<CastViewAngle[]> {
   const assets = await listCastAssets(input.userId, input.modelId);
   const settled = new Set<string>();
   for (const asset of assets) {

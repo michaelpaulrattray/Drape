@@ -271,7 +271,7 @@ export async function commitInkCandidateAcceptance(input: {
       }
       const staleAssetIds = Array.from(new Set(
         context.current.slots
-          .filter((slot) => affectedViewSet.has(slot.viewAngle))
+          .filter((slot) => affectedViewSet.has(slot.viewAngle as CanonicalViewAngle))
           .map((slot) => slot.selectedAssetId),
       ));
       if (staleAssetIds.length > 0) {

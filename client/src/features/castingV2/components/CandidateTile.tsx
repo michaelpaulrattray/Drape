@@ -88,9 +88,18 @@ export function CandidateTile({
    */
   paidBusy?: boolean;
   /**
-   * Follow dispatches a paid roll, so it states its price (D-15). The founder
-   * lost 640 credits to Follow reading as a free action; an unpriced button
-   * that spends is the same mistake wearing a different hat.
+   * The roll price. No longer printed on this button — the dock states it once,
+   * persistently, for rolls and follows together (founder ruling, 2026-08-02).
+   *
+   * D-15's intent is no surprise spend, and it was written after Follow reading
+   * as free cost the founder 640 credits. Its literal implementation had become
+   * price-tags-as-wallpaper: "· 160 cr" eight times on one sheet, which is how
+   * a price stops being read at all. This is the TRY-chip mechanism applied to
+   * Follow — the price lives once, adjacent and always visible, so no tap is
+   * ever unpriced and no tap shouts.
+   *
+   * Kept as a prop because the tile still refuses to fire while a paid roll is
+   * in flight, and because a future surface may need to print it again.
    */
   rollPriceCredits?: number;
   onKeep: () => void;
@@ -268,7 +277,7 @@ export function CandidateTile({
         </Button>
         <Button variant="quiet" size="small" disabled={busy || paidBusy} onClick={onFollow}>
           <Sparkles size={11} strokeWidth={1.9} aria-hidden="true" />
-          {rollPriceCredits ? `Follow · ${rollPriceCredits} cr` : "Follow"}
+          Follow
         </Button>
         <Button
           variant="quiet"

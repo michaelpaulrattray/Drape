@@ -298,6 +298,6 @@ describe("what recovery still has to settle", () => {
     ] as never);
 
     const unsettled = await unsettledPackageAngles({ userId: 1, modelId: 901 });
-    expect(unsettled).toEqual(["frontClose", "threeQuarter", "sideClose"]);
+    expect(unsettled).toEqual(["closeUp", "frontClose", "sideClose"]);
   });
 });

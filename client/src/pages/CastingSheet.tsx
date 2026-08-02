@@ -1175,6 +1175,15 @@ export default function CastingSheet() {
             ) : (
               <Instruction>Keep the ones worth a second look</Instruction>
             )}
+            {/*
+              THE PRICE, ONCE (founder ruling, 2026-08-02). Rolls and follows
+              cost the same thing, so they state it in one persistent place
+              adjacent to both rather than on every tile. No tap is unpriced;
+              no tap shouts.
+            */}
+            {price ? (
+              <span className="dpc-dock__price">Rolls and follows · {price} cr</span>
+            ) : null}
             <span style={{ flex: 1 }} />
             {/*
               Undo is offered only on the live roll. The server already refuses

@@ -107,6 +107,7 @@ export interface PreparedInkProjectionCandidateAcceptance {
   packageSnapshotId: string;
   sourceAssetId: number;
   sourceViewAngle: CanonicalViewAngle;
+  // Comp-card six: the ink domain never targets a v3 close-up.
   targetViewAngle: CanonicalViewAngle;
   composerRecipeVersion: string;
   actualImageEngine: string;
@@ -460,7 +461,9 @@ export async function prepareInkCandidateAcceptance(input: {
       identitySnapshotId: candidate.identitySnapshotId,
       packageSnapshotId: candidate.packageSnapshotId,
       sourceAssetId: candidate.sourceAssetId,
-      sourceViewAngle: candidate.targetViewAngle,
+      // The ink domain is the comp-card six; a v3 close-up shares the column
+      // but is never an ink target (migration 0019).
+      sourceViewAngle: candidate.targetViewAngle as CanonicalViewAngle,
       capabilityKey,
       sourceReferencePlateId: sourceReference?.id ?? null,
       ontologyVersion: intent.ontologyVersion,
@@ -776,7 +779,8 @@ export async function prepareInkProjectionCandidateAcceptance(input: {
       identitySnapshotId: candidate.identitySnapshotId,
       packageSnapshotId: candidate.packageSnapshotId,
       sourceAssetId: candidate.sourceAssetId,
-      sourceViewAngle: sourceSlot.viewAngle,
+      // Comp-card six (migration 0019): a close-up is never an ink source.
+      sourceViewAngle: sourceSlot.viewAngle as CanonicalViewAngle,
       targetViewAngle: candidate.targetViewAngle,
       composerRecipeVersion: candidate.composerRecipeVersion,
       actualImageEngine: attempt.actualImageEngine,
