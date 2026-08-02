@@ -34,13 +34,48 @@ describe("the sheet dock commits to one candidate", () => {
     expect(source).not.toMatch(/Sign \$\{[^}]*length[^}]*\} to roster/);
   });
 
-  it("prices the Sign button from the server", async () => {
-    const source = await readFile(SHEET, "utf8");
-    const index = source.indexOf("Sign to roster");
-    expect(source.slice(index - 200, index + 200)).toContain("signPrice");
-    // Never a literal: the price moved 500 → 450 with package v2, and a
-    // hardcoded number is how a paid button starts lying.
-    expect(source).not.toMatch(/Sign to roster[^"`]*·\s*\d+\s*cr/);
+  it("puts no price on the Sign button — the confirm is the commitment", async () => {
+    /*
+      SUPERSEDED BY D-109, deliberately inverted. This used to require a price
+      ON the button; the doctrine now forbids one there.
+
+      Sign is ceremony-gated: the confirm is where the commitment happens, it
+      already states the full price and what it includes, and that is where
+      D-15's letter is satisfied. A price on the button as well is the clutter
+      three pricing iterations were spent removing.
+    */
+    const sheet = await readFile(SHEET, "utf8");
+    const index = sheet.indexOf("Sign to roster");
+    expect(index).toBeGreaterThan(0);
+    const button = sheet.slice(index - 40, index + 60);
+    expect(button).not.toContain("signPrice");
+    expect(button).not.toMatch(/\d+\s*(cr|credits)/);
+
+    // And the confirm keeps its explicit number, derived, forever.
+    const confirm = await readFile(
+      new URL("./components/SignConfirm.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(confirm).toContain("priceCredits");
+  });
+
+  it("states an immediate-fire cost once, as metadata", async () => {
+    /*
+      D-109's other half. Roll again and Follow are immediate-fire, so the
+      buttons go clean and the cost lives once in the adjacent meta line —
+      right-aligned, muted, mono, with the balance because THIS action repeats.
+    */
+    const sheet = await readFile(SHEET, "utf8");
+    expect(sheet).toContain("dpc-dock__cost");
+    expect(sheet).toContain("credits");
+    expect(sheet).toContain("left");
+    // No price on any immediate-fire button.
+    expect(sheet).not.toMatch(/Roll again[^"`]*\d+\s*(cr|credits)/);
+
+    const css = await readFile(CSS, "utf8");
+    const cost = css.slice(css.indexOf(".dpc-dock__cost,"), css.indexOf(".dpc-dock__cost {"));
+    expect(cost).toContain("var(--font-mono)");
+    expect(cost).toContain("var(--meta)");
   });
 
   it("keeps the thumb cluster out of the dock", async () => {
