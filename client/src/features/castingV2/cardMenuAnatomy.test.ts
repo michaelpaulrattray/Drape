@@ -74,6 +74,50 @@ describe("the reveal ladder", () => {
     expect(css).toContain(".dpc-menuhost:focus-within .dpc-cardmenu__trigger");
   });
 
+  it("pins the trigger to the corner it is supposed to be in", async () => {
+    /*
+      The founder found it sitting at the BOTTOM of the sheet card. The
+      positioning rule lived in the block that was deleted when the two old
+      menus were merged, so the trigger fell into normal flow — a layout rule
+      lost to a refactor of something else.
+    */
+    const css = await readFile(CSS, "utf8");
+    const placement = css.slice(
+      css.indexOf(".dpc-sheetmenu,"),
+      css.indexOf(".dpc-cardmenu__trigger {"),
+    );
+    expect(placement).toContain("position: absolute");
+    expect(placement).toContain("top: 8px");
+    expect(placement).toContain("right: 8px");
+  });
+
+  it("lets rung three out-specify rung two", async () => {
+    /*
+      THE SPECIFICITY TRAP, and the second one in this stylesheet in a day.
+
+      `.dpc-menuhost:hover .dpc-cardmenu__trigger` is (0,3,0); a bare
+      `.dpc-cardmenu__trigger:hover` is (0,2,0). The card is ALWAYS hovered
+      while the dots are, so rung two won every time and the solid state was
+      unreachable — the founder reported the dots having no hover effect at all,
+      and he was right.
+
+      A hover state nested inside another hover state has to be written as the
+      nested thing it is.
+    */
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-menuhost:hover .dpc-cardmenu__trigger:hover");
+  });
+
+  it("keeps the card hovered while the pointer is on its dots", async () => {
+    /*
+      The highlight hung off the card BUTTON, and the menu is its sibling — so
+      reaching for the actions dropped the card's own hover, which reads as the
+      card losing interest in you at the moment you reach for it.
+    */
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-castcard__wrap:hover .dpc-castcard__frame");
+  });
+
   it("gives every caller a hover host", async () => {
     /*
       The first rung hangs off `.dpc-menuhost`, so a caller that forgets it

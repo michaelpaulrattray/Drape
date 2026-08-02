@@ -182,7 +182,7 @@ export function SignConfirm({
             onClick={() => onConfirm(name.trim())}
             disabled={busy || !name.trim()}
           >
-            {busy ? "Signing…" : `Sign to your roster · ${priceCredits} cr`}
+            {busy ? "Signing…" : `Sign to your roster · ${priceCredits} credits`}
           </button>
         </div>
       </div>

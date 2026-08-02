@@ -752,6 +752,22 @@
 */
 .dpc-cardmenu { position: relative; display: inline-flex; }
 
+/*
+  WHERE THE TRIGGER SITS. Both card kinds pin it to the top-right corner; the
+  room's header sits it inline beside the name.
+
+  `.dpc-sheetmenu` lost this rule when the two old menus were merged, and the
+  trigger fell to the bottom of the sheet card in normal flow — a positioning
+  rule deleted with the block it happened to live in.
+*/
+.dpc-sheetmenu,
+.dpc-castmenu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
 .dpc-cardmenu__trigger {
   display: flex;
   align-items: center;
@@ -784,6 +800,18 @@
   Rung three: solid. On a card of the same colour the fill alone would vanish,
   so the hairline is what makes it read as a raised control rather than a hole.
 */
+/*
+  Rung three has to OUT-SPECIFY rung two, or it never applies.
+
+  `.dpc-menuhost:hover .dpc-cardmenu__trigger` is (0,3,0) and a bare
+  `.dpc-cardmenu__trigger:hover` is (0,2,0) — and the card is ALWAYS hovered
+  while the dots are, so rung two won every time and the solid state was
+  unreachable. The same specificity trap as the rename ring, in the same
+  stylesheet, a day apart: a hover state nested inside another hover state must
+  be written as the nested thing it is.
+*/
+.dpc-menuhost:hover .dpc-cardmenu__trigger:hover,
+.dpc-menuhost:focus-within .dpc-cardmenu__trigger:hover,
 .dpc-cardmenu__trigger:hover,
 .dpc-cardmenu__trigger:focus-visible,
 .dpc-cardmenu__trigger[aria-expanded="true"] {
@@ -1265,6 +1293,16 @@
 }
 
 .dpc-castcard__frame > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/*
+  The hover belongs to the WHOLE card, dots included.
+
+  It hung off `.dpc-castcard:hover`, and the menu is a sibling of that button
+  rather than a child — so moving the pointer onto the dots left the card and
+  the frame's highlight dropped out, which reads as the card losing interest in
+  you at the exact moment you reach for its actions. The host is the thing the
+  user thinks of as the card, so the host owns the hover.
+*/
+.dpc-castcard__wrap:hover .dpc-castcard__frame,
 .dpc-castcard:hover .dpc-castcard__frame { border-color: var(--lineStrong); }
 .dpc-castcard:focus-visible .dpc-castcard__frame { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
 
