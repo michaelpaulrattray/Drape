@@ -2054,6 +2054,21 @@ export function composeCandidatePrompt(input: {
           all three.
         */
         "The grooming and styling must be in register for this category: the cut, and the way it is worn, has to be something a professional casting director would accept when putting this person forward for it. Within that register the eight must still differ — this governs what is acceptable, never which cut.",
+        /*
+          THE AGE OUTLIER BELONGS TO THE SAME WORLD — founder finding.
+
+          A young-leaning casting still draws the occasional older candidate,
+          and that is the tendencies working: an unusual casting is surprising
+          rather than wrong. But the older tile was arriving styled as an older
+          person IN GENERAL rather than as an older person in THIS world, so the
+          twitch grandpa read as though he had wandered in from another decade.
+
+          The lean decides who is in the room; this decides that everyone in the
+          room shares a present tense. It is deliberately about currency rather
+          than about youth — the point is not to make the sixty-year-old look
+          young, it is to stop him looking like a photograph from 1974.
+        */
+        "Candidates who sit outside this casting's usual age still belong to its world: their grooming, styling and self-presentation are contemporary to this casting, not to a different generation. Age them honestly in the face and the skin — never in the era they appear to be styled from.",
       ].join(" ")
     : "";
 
