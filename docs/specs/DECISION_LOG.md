@@ -2248,4 +2248,73 @@ invariant 7 applied to a dependency rather than to a call site.
 
 ---
 
+### D-99 — Package v2: five views, and what a reconstruction actually needs *(founder ruling 2026-08-02, after the first two real Signs)*
+
+Amends §H.10's price and D-44's walk-as-sixth-slot, for the V2 profile only.
+
+**The package becomes five:** close-up portrait (NEW), three-quarter, full
+front, side profile, full back. **Sign reprices to 200 + 5 × 50 = 450.**
+
+**Why the headshot went.** The founder's first signed Cast proved the old
+`frontClose` spec — a waist-up head-and-shoulders — merely duplicated the
+anchor's own crop. The package contained no view of the face at detail scale,
+which is the single most useful reference a downstream generator can be handed.
+The slot keeps its canonical name and gets a new spec: a tight close-up, framed
+from above the hairline to below the chin, at 2K, where skin texture and iris
+detail resolve. It is both the identity-detail reference and the showpiece.
+
+**Why the walk went.** Motion belongs to Takes. It was costing a slot that a
+reconstruction needs more.
+
+**The reasoning, recorded because it is the reusable part:** a generator
+rebuilding a person from three-to-five references needs **close-up** (detail),
+**front** (proportions), **profile** (bone structure) and **back** (hair mass,
+and the garment surface VTO works on). **Three-quarter** stays for the comp-card
+deliverable rather than for reconstruction.
+
+**No migration.** A profile is policy: it chooses from the canonical angles
+rather than inventing one, so `modelAssets.viewType` is untouched. Three
+consequences were handled rather than discovered:
+
+1. **A package is a historical record.** The two Casts signed under six views
+   keep showing six. The room renders each Cast's OWN slots — its promise and
+   its evidence — never today's profile, or a deploy would have deleted a paid
+   view from someone's room.
+2. **Recovery settles what was BOUGHT.** The refund work-list now comes from
+   the per-view audit rows the Sign opened, written before any generation.
+   Deriving it from the profile constant would have left a six-view Sign, swept
+   by five-view code, with its walk charged and never refunded — silently. Where
+   no rows exist, the promise is cross-checked against `plannedCredits` and a
+   disagreement parks for a human rather than guessing.
+3. **The close-up's wardrobe axis got its own sentence.** At that crop the
+   garment is often out of frame, and the judge is told to fail what it is
+   unsure of — the shared sentence would have refunded views for being hard to
+   see. Its sentence makes "nothing visible" a stated pass and points the axis
+   at what a close-up can really show: earrings, glasses, a collar logo, things
+   added to a face that the reference never had.
+
+### D-100 — A user-visible surface triggers the UI completion contract, whatever the milestone was about *(founder ruling 2026-08-02)*
+
+> *"Any milestone that ships a user-visible surface triggers the UI completion
+> contract — evidence pack, prototype side-by-sides in both themes, copy audit,
+> Fable skim — before founder dogfood, regardless of the milestone's primary
+> character."*
+
+M7 is the case that produced the ruling. It was a money milestone, reviewed
+adversarially as one, and its money passed its gate on the first real Sign. Its
+*surfaces* were never held to the contract at all — so Sign shipped as quiet
+text under a tile the founder could not find on his own product, and a signed
+Cast was reachable from nowhere.
+
+The failure mode is specific and worth naming: a milestone whose primary
+character is not UI will produce UI anyway, and nobody thinks to run the UI
+process on it. "Regardless of the milestone's primary character" is the whole
+ruling.
+
+**M7 owes the pack retroactively**, produced with the package-v2 batch and
+covering the surfaces it already shipped — the Sign affordance, the sheet's
+tile states and the room — not merely the new diffs.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

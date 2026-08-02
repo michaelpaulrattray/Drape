@@ -908,6 +908,7 @@ export async function adjudicateStaleGenerationOperation(
   if (operation.kind === "castingV2.sign") {
     const recovered = await recoverCastingV2SignOperation({
       ...operation,
+      plannedCredits: operation.plannedCredits,
       // Narrowed by the gate above; the row's column type is a bare string.
       status: operation.status === "claimed"
         ? "claimed"

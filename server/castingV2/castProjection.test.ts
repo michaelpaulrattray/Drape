@@ -158,7 +158,7 @@ describe("the signed Cast projection", () => {
       assets: ledger(
         anchor(),
         asset({
-          viewType: "sideFull",
+          viewType: "backFull",
           storageUrl: "",
           storageKey: null,
           // The refund itself failed to record. The room must say 0, not 50.
@@ -167,16 +167,18 @@ describe("the signed Cast projection", () => {
       ),
       lineage,
     });
-    expect(projection.slots.find((entry) => entry.angle === "sideFull")?.refundedCredits).toBe(0);
+    expect(projection.slots.find((entry) => entry.angle === "backFull")?.refundedCredits).toBe(0);
   });
 
   it("confesses a terminal Cast's empty slot rather than shimmering forever", () => {
     // No picture and no marker on a Cast that is done: the marker write is what
-    // failed. A permanently empty tile reads as "still loading" for ever.
+    // failed. A permanently empty tile reads as "still loading" for ever — and
+    // the PROMISE is what proves the slot was bought at all.
     const projection = projectSignedCast({
       model: model(),
       assets: ledger(anchor()),
       lineage,
+      promisedAngles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "backFull"],
     });
     const slot = projection.slots.find((entry) => entry.angle === "sideClose");
     expect(slot?.state).toBe("failed-refunded");
@@ -211,13 +213,14 @@ describe("the signed Cast projection", () => {
       model: model({ status: "provisioning", mintedAt: null, currentPackageSnapshotId: null }),
       assets: ledger(anchor()),
       lineage,
+      promisedAngles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "backFull"],
     });
     expect(projection.status).toBe("building");
     expect(projection.anchorUrl).toBe("https://cdn.example/anchor.png");
     // The headshot already shows the signed face; the rest are honestly pending.
     expect(projection.slots.find((entry) => entry.angle === "frontClose")?.url)
       .toBe("https://cdn.example/anchor.png");
-    expect(projection.slots.filter((entry) => entry.state === "building").length).toBe(6);
+    expect(projection.slots.filter((entry) => entry.state === "building").length).toBe(5);
     // Nothing confesses while there is still a reason to wait.
     expect(projection.slots.some((entry) => entry.state === "failed-refunded")).toBe(false);
   });
@@ -236,6 +239,34 @@ describe("the signed Cast projection", () => {
     expect(projection.capabilities.takes).toBe("unsupported");
     expect(projection.capabilities.voice).toBe("unsupported");
     expect(projection.identityLocked).toBe(true);
+  });
+
+  it("keeps a Cast's own package after the composition changes", () => {
+    /*
+      Package v2 retired the walk. The two Casts that bought one must keep it:
+      an asset exists, the customer paid for it, and a deploy they had nothing
+      to do with must not delete it from their room.
+    */
+    const projection = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor(), asset({ viewType: "sideFull" })),
+      lineage,
+      promisedAngles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "sideFull", "backFull"],
+    });
+    const walk = projection.slots.find((entry) => entry.angle === "sideFull");
+    expect(walk?.state).toBe("ready");
+    expect(walk?.label).toBe("Walk");
+    expect(projection.slots).toHaveLength(6);
+  });
+
+  it("labels this profile's frontClose a close-up, not a headshot", () => {
+    const projection = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor()),
+      lineage,
+      promisedAngles: ["frontClose"],
+    });
+    expect(projection.slots[0].label).toBe("Close-up");
   });
 
   it("names where it came from, in public ids only", () => {

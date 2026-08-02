@@ -39,8 +39,15 @@ import {
   SEXES,
 } from "./castingIntent";
 
-/** §J's exact enum. Internal lifecycle states collapse into these three. */
-export type CandidateProjectionStatus = "casting" | "ready" | "failed-refunded";
+/**
+ * §J's enum, plus `signed` — a deliberate addition, not a drift.
+ *
+ * `signed` used to collapse into `ready`, and the consequence was the founder
+ * losing a Cast he had just paid 500 credits for: the tile looked exactly like
+ * every other candidate, offered to sign her again, and led nowhere. A
+ * permanent purchase has to be reachable from the place it was made.
+ */
+export type CandidateProjectionStatus = "casting" | "ready" | "failed-refunded" | "signed";
 
 export type CandidateProjection = {
   candidateId: string;
@@ -51,6 +58,14 @@ export type CandidateProjection = {
   thumbUrl: string | null;
   personaLine: string | null;
   kept: boolean;
+  /**
+   * The Cast this candidate became, when it became one.
+   *
+   * The public KI id — the only Cast identifier that leaves the server (§J) —
+   * so the tile can link to her room rather than merely showing a badge that
+   * goes nowhere.
+   */
+  castId: string | null;
 };
 
 export type RollProjection = {
@@ -264,8 +279,9 @@ export function projectCandidateStatus(
     case "dispatched":
       return "casting";
     case "ready":
-    case "signed":
       return "ready";
+    case "signed":
+      return "signed";
     case "failed":
     case "cancelled":
     case "expired":
@@ -275,7 +291,10 @@ export function projectCandidateStatus(
   }
 }
 
-export function projectCandidate(candidate: CastingCandidate): CandidateProjection | null {
+export function projectCandidate(
+  candidate: CastingCandidate,
+  castPublicId?: string | null,
+): CandidateProjection | null {
   const status = projectCandidateStatus(candidate.status);
   if (!status) return null;
   return {
@@ -296,6 +315,7 @@ export function projectCandidate(candidate: CastingCandidate): CandidateProjecti
     imageUrl: status === "failed-refunded" || !candidate.imageKey
       ? null
       : storagePublicUrl(candidate.imageKey),
+    castId: castPublicId ?? null,
     thumbUrl: status === "failed-refunded" || !candidate.thumbKey
       ? null
       : storagePublicUrl(candidate.thumbKey),
@@ -324,9 +344,12 @@ export function projectRoll(input: {
   parentCandidatePublicId?: string | null;
   parentCandidatePosition?: number | null;
   parentRollPublicId?: string | null;
+  /** Signed candidates → their Cast's public id, resolved owner-scoped. */
+  castPublicIdByCandidateId?: ReadonlyMap<number, string>;
 }): RollProjection {
   const candidates = input.candidates
-    .map(projectCandidate)
+    .map((candidate) =>
+      projectCandidate(candidate, input.castPublicIdByCandidateId?.get(candidate.id) ?? null))
     .filter((candidate): candidate is CandidateProjection => candidate !== null)
     .sort((left, right) => left.position - right.position);
 
@@ -364,6 +387,8 @@ export type ShortlistEntry = {
   imageUrl: string | null;
   personaLine: string | null;
   sourceRollIndex: number;
+  indexLabel: string;
+  signed: boolean;
 };
 
 export function projectShortlist(
@@ -375,6 +400,12 @@ export function projectShortlist(
     imageUrl: candidate.imageKey ? storagePublicUrl(candidate.imageKey) : null,
     personaLine: candidate.personaLine,
     sourceRollIndex: rollIndex,
+    // The face's own label, so the dock's Sign can NAME who it is about to
+    // spend on rather than saying "sign the selection".
+    indexLabel: String(candidate.position + 1).padStart(2, "0"),
+    // A kept candidate that has already been signed stays in the tray — it is
+    // still part of this sheet's story — but it can never be a Sign target.
+    signed: candidate.status === "signed",
   }));
 }
 

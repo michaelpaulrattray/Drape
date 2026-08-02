@@ -16,10 +16,10 @@
  * never arrive, and both are worse than the sentence.
  */
 import type { Model, ModelAsset } from "../../drizzle/schema";
-import { CANONICAL_VIEW_ANGLES, VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTypes";
+import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
-import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
+import { CAST_PACKAGE_VIEWS, castPackageView } from "./castViewPackage";
 
 /**
  * `pending` — nothing has started on this slot yet.
@@ -72,13 +72,18 @@ export type SignedCastProjection = {
 export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded; repairs come with revisions";
 
 /**
- * The headshot standing in for a 2K re-render that never came.
+ * The signed face standing in for a close-up that never came.
  *
  * Its own sentence rather than the confession above, because the slot is not
  * empty: the customer is looking at the exact face they signed. What they are
  * owed an explanation for is the refund, not the picture.
+ *
+ * It names the FRAMING rather than the resolution (package v2). The stand-in
+ * now differs from what was bought in both, and "shown at the resolution you
+ * signed" was true about the smaller half while quietly omitting that the
+ * close-up crop is missing entirely.
  */
-export const ANCHOR_STANDIN_NOTE = "Shown at the resolution you signed — the larger version didn't arrive; refunded";
+export const ANCHOR_STANDIN_NOTE = "The face you signed, standing in — the close-up didn't arrive; refunded";
 
 type SlotEvidence = {
   /** The newest filled 2K package render, if one landed. */
@@ -134,14 +139,53 @@ export function projectSignedCast(input: {
   model: Model;
   assets: readonly ModelAsset[];
   lineage: CastLineage;
+  /**
+   * The views this Cast's Sign promised, from its own durable audit rows.
+   *
+   * Not today's profile: a package is a historical record, and a Cast that
+   * bought six views keeps showing six after the composition changes. It is
+   * also what lets a slot that produced nothing at all still confess — an
+   * asset can be missing, but the promise cannot.
+   */
+  promisedAngles?: readonly CanonicalViewAngle[];
 }): SignedCastProjection {
   const evidence = slotEvidence(input.assets);
   const building = input.model.status === "provisioning";
   const anchor = evidence.get("frontClose")?.anchor ?? null;
 
-  const slots: CastSlotProjection[] = CAST_PACKAGE_VIEWS.map((angle) => {
+  /*
+    THE SLOTS THIS CAST ACTUALLY HAS, not the slots today's profile sells.
+
+    A package is a historical record. The composition changed with package v2 —
+    the walk retired to Takes — and rendering every Cast against today's profile
+    would silently delete the walk from the two Casts that own one: the asset
+    exists, the slot vanishes, and the customer's paid view disappears from
+    their room after a deploy they had nothing to do with.
+
+    So a finished Cast is rendered from its own evidence, and one still being
+    built is rendered from what is being built for it — today's profile, plus
+    anything already on disk.
+  */
+  const evidenceAngles = CANONICAL_VIEW_ANGLES.filter((angle) => {
+    const entry = evidence.get(angle);
+    return Boolean(entry?.landed || entry?.failure || entry?.anchor);
+  });
+  const promised = input.promisedAngles && input.promisedAngles.length > 0
+    ? input.promisedAngles
+    // No promise on record: a Cast signed before the audit rows existed, or one
+    // whose package has not opened yet. Today's profile is the honest guess for
+    // something being built right now, and the evidence carries a finished one.
+    : building ? CAST_PACKAGE_VIEWS : [];
+  const renderedAngles = CANONICAL_VIEW_ANGLES.filter(
+    (angle) => promised.includes(angle) || evidenceAngles.includes(angle),
+  );
+
+  const slots: CastSlotProjection[] = renderedAngles.map((angle) => {
     const entry = evidence.get(angle) ?? {};
-    const label = VIEW_ANGLE_LABELS[angle];
+    // The PACKAGE's label, not the shared one: this profile's `frontClose` is a
+    // tight close-up, while a legacy asset under that name genuinely is a
+    // head-and-shoulders headshot and its label must keep saying so.
+    const label = castPackageView(angle).label;
 
     if (entry.landed) {
       return {

@@ -50,7 +50,12 @@ import { getDb, withTransaction } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 import type { CanonicalViewAngle } from "../../shared/boardTypes";
 import { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
-import { packageSlotChargeReference, unsettledPackageAngles } from "./packageOrchestrator";
+import {
+  packageSlotChargeReference,
+  promisedPackageAngles,
+  unsettledPackageAngles,
+} from "./packageOrchestrator";
+import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 
 const log = createModuleLogger("castingV2/signRecovery");
 
@@ -68,10 +73,19 @@ export type RecoverableSignOperation = {
   status: "claimed" | "running" | "recovery_required";
   chargedCredits: number;
   refundedCredits: number;
+  /**
+   * What the server planned to charge, written at the running transition.
+   *
+   * The cross-check on the promised view list: if the two disagree, this Sign
+   * was charged under a package this build cannot reconstruct, and guessing
+   * would under-refund silently.
+   */
+  plannedCredits: number;
 };
 
 export type SignRecoveryDependencies = {
   findCast?: typeof findCastBySignOperation;
+  promisedAngles?: typeof promisedPackageAngles;
   park?: typeof parkFencedCastingV2SignOperation;
   parkRunning?: typeof markGenerationOperationRecoveryRequired;
   parkClaimed?: typeof markClaimedGenerationOperationRecoveryRequired;
@@ -308,9 +322,34 @@ export async function recoverCastingV2SignOperation(
     });
   }
 
+  /*
+    WHAT THIS SIGN PAID FOR, not what today's profile sells.
+
+    Read from the operation's own durable audit rows. When there are none — a
+    crash before any view was opened — the fallback is today's profile, and it
+    is only trustworthy if the price agrees with it. It if does not, this Sign
+    was bought under a package composition this build cannot reconstruct, and
+    the honest move is a human rather than a refund of the wrong size.
+  */
+  const promise = await (options.promisedAngles ?? promisedPackageAngles)({
+    userId: operation.userId,
+    operationId: operation.id,
+  });
+  const impliedPrice =
+    CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * promise.angles.length;
+  if (operation.plannedCredits > 0 && impliedPrice !== operation.plannedCredits) {
+    return park(options, operation, {
+      type: "recovery_required",
+      reason: `the promised package (${promise.angles.length} views, ${promise.source}) does not match the ${operation.plannedCredits} planned`,
+      chargedCredits: ledger.charge.credits,
+      refundedCredits: ledger.alreadyRefunded,
+    });
+  }
+
   const unsettled = await (options.unsettledAngles ?? unsettledPackageAngles)({
     userId: operation.userId,
     modelId: cast.modelId,
+    promised: promise.angles,
   });
 
   let refundedCredits = ledger.alreadyRefunded;

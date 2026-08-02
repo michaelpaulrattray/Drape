@@ -21,10 +21,12 @@ export type TileCandidate = {
   candidateId: string;
   position: number;
   indexLabel: string;
-  status: "casting" | "ready" | "failed-refunded";
+  status: "casting" | "ready" | "failed-refunded" | "signed";
   imageUrl: string | null;
   personaLine: string | null;
   kept: boolean;
+  /** Set once this candidate became a Cast — the room's address. */
+  castId: string | null;
 };
 
 export function CandidateTile({
@@ -37,11 +39,10 @@ export function CandidateTile({
   busy,
   paidBusy,
   rollPriceCredits,
-  signPriceCredits,
   onKeep,
   onDiscard,
   onFollow,
-  onSign,
+  onOpenCast,
 }: {
   candidate: TileCandidate;
   /** "FROM 03" — set when this whole roll followed a parent candidate. */
@@ -92,17 +93,11 @@ export function CandidateTile({
    * that spends is the same mistake wearing a different hat.
    */
   rollPriceCredits?: number;
-  /**
-   * Sign spends the largest single amount in the product, so it states its
-   * price like every other paid affordance (H.1/D-15) and it opens a
-   * confirmation rather than firing on the click — this is the one action that
-   * cannot be undone.
-   */
-  signPriceCredits?: number;
   onKeep: () => void;
   onDiscard: () => void;
   onFollow: () => void;
-  onSign: () => void;
+  /** Client-side navigation to a signed candidate's room. */
+  onOpenCast?: (castId: string) => void;
 }) {
   // Declared before any early return — a hook after a conditional return is a
   // hook that sometimes does not run.
@@ -131,6 +126,45 @@ export function CandidateTile({
       <div className={windingDown ? "dp-stack dpc-tile--winding" : "dp-stack"} style={{ gap: 9 }}>
         <Skeleton style={{ aspectRatio: "4 / 5" }} label={`CASTING ${candidate.indexLabel}`} />
         <span className="dp-metadata">{caption}</span>
+      </div>
+    );
+  }
+
+  /*
+    SIGNED — and this state exists because its absence lost a Cast.
+
+    The founder signed a candidate for 500 credits, left the room, and could
+    not find her again: the tile looked exactly like every other ready
+    candidate and offered to sign her a second time. A permanent purchase is
+    reachable from the place it was made, or it may as well not have happened.
+
+    So the tile keeps her picture, says what she became, and is a LINK. Keep,
+    Follow and Discard are gone: none of them mean anything to a spent
+    candidate, and Sign least of all.
+  */
+  if (candidate.status === "signed") {
+    return (
+      <div className="dp-stack dpc-tile" style={{ gap: 9 }}>
+        <a
+          className="dpc-card dpc-card--openable dpc-card--signed"
+          href={candidate.castId ? `/casting/cast/${candidate.castId}` : undefined}
+          onClick={(event) => {
+            if (!candidate.castId || !onOpenCast) return;
+            event.preventDefault();
+            onOpenCast(candidate.castId);
+          }}
+          aria-label={`Open ${candidate.personaLine ?? `candidate ${candidate.indexLabel}`}'s room`}
+        >
+          {candidate.imageUrl ? (
+            <img src={candidate.imageUrl} alt={candidate.personaLine ?? candidate.indexLabel} />
+          ) : null}
+          <span className="dpc-card__signed">SIGNED</span>
+        </a>
+        <div className="dpc-card__caption">
+          <span className="dpc-card__line">{candidate.personaLine ?? candidate.indexLabel}</span>
+          <span className="dp-metadata">{candidate.indexLabel}</span>
+        </div>
+        <span className="dp-metadata">In your roster — open her room</span>
       </div>
     );
   }
@@ -248,27 +282,6 @@ export function CandidateTile({
         </Button>
       </div>
 
-      {/*
-        Sign gets its own line rather than a fourth control in the row above.
-
-        Not for space — for weight. Keep, Follow and Discard are moves within
-        an exploration; Sign ends it, spends the most, and is the only one that
-        creates something permanent. Sitting it beside them at the same size
-        would read as a fourth equivalent option, which is exactly the reading
-        that made Follow feel free.
-
-        Quiet rather than filled, because eight filled buttons down a sheet is a
-        shop, and the priced label already carries the weight.
-      */}
-      <Button
-        variant="quiet"
-        size="small"
-        className="dpc-card__sign"
-        disabled={busy || paidBusy}
-        onClick={onSign}
-      >
-        {signPriceCredits ? `Sign · ${signPriceCredits} cr` : "Sign"}
-      </Button>
     </div>
   );
 }

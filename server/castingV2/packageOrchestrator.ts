@@ -33,6 +33,7 @@ import { randomUUID } from "node:crypto";
 import { recordRefund } from "../casting/atomicCredits";
 import { operationChargeReference } from "../casting/operationContract";
 import { createGeneration, updateGeneration } from "../db/generations";
+import { listOperationViewSteps } from "../db/castingV2Sign";
 import {
   activateSignedCast,
   commitPackageSlotAsset,
@@ -42,7 +43,7 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storagePut } from "../storage";
 import { ProviderError, type IdentityEngine, type ReferenceImage } from "../providers/types";
-import type { CanonicalViewAngle } from "../../shared/boardTypes";
+import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
 import {
   CAST_PACKAGE_VIEWS,
   CAST_PACKAGE_VIEW_PRICE,
@@ -135,15 +136,38 @@ async function defaultStoreImage(input: {
  * Build the whole package, then activate.
  *
  * Views run concurrently under the provider queue's own budget: they are
- * independent, the room streams them in as they land, and gating the sixth on
- * the fifth would only make the customer wait longer for the same result.
+ * independent, the room streams them in as they land, and gating the fifth on
+ * the fourth would only make the customer wait longer for the same result.
  */
 export async function buildCastPackage(
   dependencies: PackageOrchestratorDependencies,
   input: BuildPackageInput,
 ): Promise<PackageResult> {
+  /*
+    THE PROMISE, WRITTEN DOWN BEFORE ANY WORK — and it is a money control, not
+    bookkeeping.
+
+    Recovery has to know which views this Sign PAID FOR, and the profile
+    constant cannot tell it: a Sign charged under a six-view profile, left
+    non-terminal by a deploy, and swept by a five-view build would have its
+    retired slice charged, never generated and never refunded. That is the
+    deploy-collision class the founder dogfoods through, and the constant is
+    process memory — exactly what `activateSignedCast` refuses to trust.
+
+    So the audit rows are created for the whole promised set up front. They are
+    durable, per-angle, already part of the operation's children, and they are
+    what `promisedPackageAngles` reads. One extra statement, one whole class of
+    silent under-refund closed.
+  */
+  const promised = await Promise.all(
+    CAST_PACKAGE_VIEWS.map(async (angle) => ({
+      angle,
+      auditId: await openViewAudit(input, angle),
+    })),
+  );
+
   const outcomes = await Promise.all(
-    CAST_PACKAGE_VIEWS.map((angle) => buildOneView(dependencies, input, angle)),
+    promised.map(({ angle, auditId }) => buildOneView(dependencies, input, angle, auditId)),
   );
 
   const committed = outcomes
@@ -196,18 +220,11 @@ export async function buildCastPackage(
   };
 }
 
-async function buildOneView(
-  dependencies: PackageOrchestratorDependencies,
+/** Opens one view's durable audit row — the promise this Sign is paying for. */
+async function openViewAudit(
   input: BuildPackageInput,
   angle: CanonicalViewAngle,
-): Promise<PackageSlotOutcome> {
-  const view = castPackageView(angle);
-  const engine = (dependencies.identityEngine ?? castingIdentityEngine)();
-  const judge = (dependencies.judge ?? castingViewConformanceJudge)();
-  const store = dependencies.storeImage ?? defaultStoreImage;
-  const commit = dependencies.commitSlot ?? commitPackageSlotAsset;
-  const drop = dependencies.deleteObject ?? storageDelete;
-
+): Promise<number | null> {
   const audit = await createGeneration({
     userId: input.userId,
     modelId: input.modelId,
@@ -221,7 +238,21 @@ async function buildOneView(
     pointsCost: CAST_PACKAGE_VIEW_PRICE,
     metadata: { viewType: angle, source: "castingV2.sign" },
   });
-  const auditId = audit.success ? audit.generationId ?? null : null;
+  return audit.success ? audit.generationId ?? null : null;
+}
+
+async function buildOneView(
+  dependencies: PackageOrchestratorDependencies,
+  input: BuildPackageInput,
+  angle: CanonicalViewAngle,
+  auditId: number | null,
+): Promise<PackageSlotOutcome> {
+  const view = castPackageView(angle);
+  const engine = (dependencies.identityEngine ?? castingIdentityEngine)();
+  const judge = (dependencies.judge ?? castingViewConformanceJudge)();
+  const store = dependencies.storeImage ?? defaultStoreImage;
+  const commit = dependencies.commitSlot ?? commitPackageSlotAsset;
+  const drop = dependencies.deleteObject ?? storageDelete;
 
   let lastReason = "The view could not be generated";
   let lastVerdict: ViewConformanceVerdict | null = null;
@@ -460,10 +491,38 @@ async function failView(
   };
 }
 
+/**
+ * The views this Sign PROMISED, read from its own durable audit rows.
+ *
+ * Never the profile constant: the constant is what a NEW Sign would buy, and
+ * recovery is settling an old one. A Sign charged for six views must be
+ * refunded against six, whatever this deploy happens to promise.
+ *
+ * Falls back to today's profile only when no audit row exists at all — a crash
+ * so early that no view was ever opened. The caller cross-checks that fallback
+ * against `plannedCredits` and refuses to guess if the two disagree.
+ */
+export async function promisedPackageAngles(input: {
+  userId: number;
+  operationId: string;
+}): Promise<{ angles: CanonicalViewAngle[]; source: "recorded" | "profile" }> {
+  const rows = await listOperationViewSteps(input.operationId);
+  const angles = rows
+    .map((row) => row.viewAngle)
+    .filter((angle): angle is CanonicalViewAngle =>
+      (CANONICAL_VIEW_ANGLES as readonly string[]).includes(angle ?? ""));
+  const unique = CANONICAL_VIEW_ANGLES.filter((angle) => angles.includes(angle));
+  return unique.length > 0
+    ? { angles: [...unique], source: "recorded" }
+    : { angles: [...CAST_PACKAGE_VIEWS], source: "profile" };
+}
+
 /** Angles that have neither landed nor been written off — recovery's work list. */
 export async function unsettledPackageAngles(input: {
   userId: number;
   modelId: number;
+  /** The promised set. Defaults to today's profile for live callers. */
+  promised?: readonly CanonicalViewAngle[];
 }): Promise<CanonicalViewAngle[]> {
   const assets = await listCastAssets(input.userId, input.modelId);
   const settled = new Set<string>();
@@ -476,5 +535,5 @@ export async function unsettledPackageAngles(input: {
     if (asset.storageUrl && asset.resolution === "2K") settled.add(asset.viewType);
     if (status?.state === "failed") settled.add(asset.viewType);
   }
-  return CAST_PACKAGE_VIEWS.filter((angle) => !settled.has(angle));
+  return (input.promised ?? CAST_PACKAGE_VIEWS).filter((angle) => !settled.has(angle));
 }

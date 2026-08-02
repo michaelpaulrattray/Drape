@@ -301,12 +301,35 @@ export default function CastingV2() {
     }
   };
 
-  const signedCount = 0; // Sign lands in M7; until then the roster is truly empty.
+  /*
+    THE ROSTER, WHICH USED TO BE A HARDCODED ZERO.
+
+    `const signedCount = 0` was honest while Sign did not exist and became a lie
+    the moment it did: the founder signed a Cast for 500 credits and she
+    appeared nowhere on this page. A count is not a placeholder — it is a claim
+    about someone's property.
+
+    Unsigned stays zero and says so. There is no such thing as an unsigned cast
+    member in V2: an unsigned face is a candidate, and candidates live on their
+    sheet, which is what the Unsigned sheets row above is for.
+  */
+  const roster = trpc.castingV2.roster.useQuery(
+    {},
+    {
+      enabled: config.data?.enabled === true,
+      // A Cast still building its package resolves within a couple of minutes.
+      // Poll only while one is.
+      refetchInterval: (query) =>
+        query.state.data?.some((cast) => cast.status === "building") ? 5_000 : false,
+    },
+  );
+  const casts = roster.data ?? [];
   const scopeCounts: Record<RosterScope, number> = {
-    All: signedCount,
-    Signed: signedCount,
+    All: casts.length,
+    Signed: casts.length,
     Unsigned: 0,
   };
+  const shownCasts = scope === "Unsigned" ? [] : casts;
 
   return (
     <AppShell breadcrumb="Casting" current="casting" width="browse">
@@ -691,13 +714,32 @@ export default function CastingV2() {
             <Plus size={17} strokeWidth={1.7} aria-hidden="true" />
             <span className="dp-secondary">New cast member</span>
           </DropZone>
+          {shownCasts.map((cast) => (
+            <button
+              key={cast.castId}
+              type="button"
+              className="dpc-castcard"
+              onClick={() => navigate(`/casting/cast/${cast.castId}`)}
+            >
+              <span className="dpc-castcard__frame">
+                {cast.imageUrl ? <img src={cast.imageUrl} alt="" /> : null}
+                {cast.status === "building" ? (
+                  <span className="dpc-castcard__building">BUILDING</span>
+                ) : null}
+              </span>
+              <span className="dpc-castcard__name">{cast.name ?? "Unnamed"}</span>
+              <span className="dp-metadata">{cast.personaLine ?? cast.castId}</span>
+            </button>
+          ))}
         </div>
 
         {/* A sentence, so Archivo — mono is for machine facts only. */}
-        <span className="dp-secondary">
-          No one signed yet — cast a sheet, then sign the candidate you want to keep working
-          with.
-        </span>
+        {casts.length === 0 ? (
+          <span className="dp-secondary">
+            No one signed yet — cast a sheet, then sign the candidate you want to keep working
+            with.
+          </span>
+        ) : null}
       </section>
     </AppShell>
   );

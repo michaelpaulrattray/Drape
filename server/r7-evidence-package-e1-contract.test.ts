@@ -99,6 +99,9 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // it. Two more readers of a price, no new dependency on anything.
       "castingV2/castViewPackage.ts",
       "castingV2/rollService.ts",
+      // The Sign adjudicator reads the promotion price to cross-check the
+      // promised package against what was actually charged (package v2).
+      "castingV2/signRecovery.ts",
       "castingV2/signService.ts",
       "db/castingV2.ts",
       "db/inkAddCandidates.ts",

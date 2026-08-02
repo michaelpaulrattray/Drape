@@ -1,7 +1,7 @@
 /**
  * The canonical view package a Sign buys (plan §H.4/§H.10, §I `viewPackageProfile`).
  *
- * Six slots, all rendered at 2K by the identity engine, all held against the
+ * Five slots, all rendered at 2K by the identity engine, all held against the
  * signed anchor. This module owns three things and deliberately nothing else:
  *
  *   1. **The SPEC** — what each slot promises the customer, in plain words.
@@ -34,22 +34,45 @@ import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 
 /**
- * The six canonical slots, in the order the room renders them.
+ * PACKAGE v2 — five views (founder ruling, 2026-08-02, after the first two real
+ * Signs). Policy, not schema: a profile is what a cohort promises, and it is
+ * expressed by choosing from the canonical angles rather than by inventing new
+ * ones.
  *
- * Derived from `CANONICAL_VIEW_ANGLES` rather than re-listed: the `modelAssets`
- * viewType enum, the legacy package and this package must name the same six
- * things, and a second hand-maintained list is how they stop doing that.
+ * What changed and why, because the reasoning is the useful part:
+ *
+ * - **`frontClose` is now a tight CLOSE-UP**, not a waist-up headshot. The
+ *   founder's first Sign proved the old spec merely duplicated the anchor's own
+ *   crop — the package contained no view of the face at detail scale, which is
+ *   the single most useful reference a downstream generator can be given.
+ * - **The walk is gone.** Motion belongs to Takes. It cost a slot that a
+ *   reconstruction needs more: nothing else showed hair mass from behind at
+ *   detail.
+ * - The set a generator actually needs to rebuild a person from three-to-five
+ *   references: **close-up** (detail), **front** (proportions), **profile**
+ *   (bone structure), **back** (hair mass, and the garment surface VTO works
+ *   on). **Three-quarter** stays for the comp-card deliverable.
+ *
+ * Ordered as the room reads them, and every entry must be a canonical angle —
+ * `modelAssets.viewType` is a fixed enum and a profile that named something
+ * outside it would fail at the first insert rather than at review.
  */
-export const CAST_PACKAGE_VIEWS: readonly CanonicalViewAngle[] = CANONICAL_VIEW_ANGLES;
+export const CAST_PACKAGE_VIEWS: readonly CanonicalViewAngle[] = [
+  "frontClose",
+  "threeQuarter",
+  "frontFull",
+  "sideClose",
+  "backFull",
+];
 
 /** The refundable slice, per view. */
 export const CAST_PACKAGE_VIEW_PRICE = CASTING_V2_SIGN_COSTS.view;
 
 /**
- * 200 + 6 × 50 = 500 credits (§H.10).
+ * 200 + 5 × 50 = 450 credits (§H.10, amended by the package-v2 ruling).
  *
- * Derived from the view list's own length, so a cohort that promises five views
- * or seven cannot quote a price for six. The client is served this number; it
+ * Derived from the view list's own length, so a profile that promises five
+ * views cannot quote a price for six. The client is served this number; it
  * never carries a literal (D-15).
  */
 export const CASTING_V2_SIGN_PRICE_CREDITS =
@@ -84,15 +107,44 @@ export const CAST_PACKAGE_WARDROBE_SPEC =
   + "unbranded shoes in a tone that sits with it. "
   + "No jacket, no jewellery, no hat, no bag, no props, no printed text or logos anywhere.";
 
+/**
+ * The close-up's own wardrobe sentence.
+ *
+ * On a tight face crop the garment is barely in frame, so "does the shirt
+ * match" is nearly unanswerable — and the judge is told that an axis it is
+ * unsure about FAILS. Left as the shared sentence, this axis would refund
+ * views for being hard to see, which is refund noise wearing a validator's hat.
+ *
+ * What is genuinely checkable at this crop, and genuinely worth checking, is
+ * ADDITION: earrings, glasses, a collar logo — the things the package forbids
+ * and a generator loves to invent. So the sentence names the collar line where
+ * visible, names the additions as failures, and states plainly that seeing no
+ * garment at all is a PASS. An axis that can fail for a real reason and cannot
+ * fail for a silly one.
+ */
+const CLOSE_UP_WARDROBE =
+  "at this crop the garment may be barely visible, and that is fine — if no clothing is in "
+  + "frame, this passes. Where the collar IS visible it matches the reference's neckline and "
+  + "colour. No earrings, no glasses, no piercings, no hat, no headphones, no visible logo or "
+  + "text — nothing worn that the reference photograph does not show.";
+
 export type CastPackageViewSpec = {
   /** What the customer is looking at. */
   framing: string;
-  /** The garment contract, shared by every slot. */
+  /** The garment contract — shared by every slot except the close-up. */
   wardrobe: string;
 };
 
 type CastPackageView = {
   angle: CanonicalViewAngle;
+  /**
+   * The package's OWN label, not the shared `VIEW_ANGLE_LABELS` entry.
+   *
+   * `frontClose` means "Headshot" everywhere else in the product, and legacy
+   * assets under that name genuinely are head-and-shoulders. This profile's
+   * `frontClose` is a tight close-up, so it says so — while the shared map
+   * keeps telling the truth about everything else.
+   */
   label: string;
   spec: CastPackageViewSpec;
   /**
@@ -112,17 +164,25 @@ const WARDROBE = CAST_PACKAGE_WARDROBE_SPEC;
 const VIEWS: Record<CanonicalViewAngle, CastPackageView> = {
   frontClose: {
     angle: "frontClose",
-    label: VIEW_ANGLE_LABELS.frontClose,
+    label: "Close-up",
     spec: {
+      /*
+        THE SHOWPIECE, and the identity-detail reference. Deliberately tighter
+        than anything the sheet produces: the point is skin, iris, the texture
+        of the hairline — detail a downstream generator can rebuild a face from.
+      */
       framing:
-        "a head-and-shoulders portrait, square to the camera, both eyes visible, "
-        + "the whole hair silhouette inside the frame with headroom above it",
-      wardrobe: WARDROBE,
+        "a tight close-up of the face, square to the camera and filling the frame from just "
+        + "above the hairline to just below the chin, both eyes sharp and looking into the lens — "
+        + "close enough to read skin texture and iris detail",
+      wardrobe: CLOSE_UP_WARDROBE,
     },
     directive:
-      "FRONT-FACING HEAD AND SHOULDERS PORTRAIT. Square to camera, head straight with no tilt, "
-      + "both eyes looking directly into the lens. The entire hair silhouette is inside the frame "
-      + "with clear headroom above it — nothing on the head is clipped.",
+      "TIGHT FRONT-FACING CLOSE-UP OF THE FACE. The face fills the frame — from just above the "
+      + "hairline to just below the chin, cropping the sides of the hair if it must. Square to "
+      + "camera, head straight, both eyes looking directly into the lens and critically sharp. "
+      + "Skin texture, pores, fine hairs and iris detail are all resolved. Not a headshot: this is "
+      + "closer than a portrait crop.",
   },
   threeQuarter: {
     angle: "threeQuarter",
@@ -166,6 +226,15 @@ const VIEWS: Record<CanonicalViewAngle, CastPackageView> = {
       + "toward the RIGHT EDGE OF THE OUTPUT FRAME; show one eye and a true 90-degree profile, never a "
       + "three-quarter view.",
   },
+  /*
+    RETIRED FROM THE PROFILE, kept in the record (package v2).
+
+    The walk is no longer generated — motion belongs to Takes — but two signed
+    Casts already own one, and a package is a historical record rather than a
+    statement about today's policy. Deleting this entry would leave their walk
+    slot rendering with no label. It is simply absent from `CAST_PACKAGE_VIEWS`,
+    which is the only list that decides what a new Sign buys.
+  */
   sideFull: {
     angle: "sideFull",
     label: VIEW_ANGLE_LABELS.sideFull,

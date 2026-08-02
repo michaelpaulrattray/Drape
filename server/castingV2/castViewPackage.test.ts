@@ -16,15 +16,39 @@ import {
  * conformance from quietly becoming prompt compliance.
  */
 describe("the canonical view package", () => {
-  it("promises exactly the six canonical slots, in the ledger's own vocabulary", () => {
-    expect([...CAST_PACKAGE_VIEWS]).toEqual([...CANONICAL_VIEW_ANGLES]);
-    expect(CAST_PACKAGE_VIEWS.length).toBe(6);
+  it("promises five slots, every one of them a canonical angle", () => {
+    // Package v2 (founder ruling): close-up, three-quarter, front, profile,
+    // back. The walk is retired to Takes. A profile is a CHOICE from the
+    // canonical angles — naming anything outside them would fail at the first
+    // insert, because `modelAssets.viewType` is a fixed enum.
+    expect(CAST_PACKAGE_VIEWS.length).toBe(5);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      expect(CANONICAL_VIEW_ANGLES).toContain(angle);
+    }
+    expect(CAST_PACKAGE_VIEWS).not.toContain("sideFull");
+    expect(new Set(CAST_PACKAGE_VIEWS).size).toBe(CAST_PACKAGE_VIEWS.length);
+  });
+
+  it("still knows the retired walk, because two signed Casts own one", () => {
+    // A package is a historical record. Deleting the entry would leave their
+    // walk slot rendering with no label.
+    expect(castPackageView("sideFull").label).toBe("Walk");
+  });
+
+  it("makes the close-up a close-up, not the anchor's crop again", () => {
+    // The defect this ruling fixed: the old `frontClose` spec duplicated the
+    // waist-up crop the anchor already had, so the package contained no view of
+    // the face at detail scale.
+    const closeUp = castPackageView("frontClose");
+    expect(closeUp.label).toBe("Close-up");
+    expect(closeUp.spec.framing).toContain("tight close-up");
+    expect(closeUp.directive).toContain("fills the frame");
   });
 
   it("derives the Sign price from the number of views it actually promises", () => {
-    // §H.10: 200 promotion + 6 × 50. Derived, so a cohort that promises five
-    // views cannot quote a price for six.
-    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(500);
+    // §H.10 as amended: 200 promotion + 5 × 50. Derived, so retiring a view
+    // reprices the product rather than leaving a literal behind.
+    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(450);
     expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(
       CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length,
     );
@@ -79,11 +103,25 @@ describe("the canonical view package", () => {
     expect(prompt.trimEnd().endsWith("it always wins.")).toBe(true);
   });
 
-  it("holds the whole package to one wardrobe", () => {
-    const wardrobes = new Set(CAST_PACKAGE_VIEWS.map((angle) => packageViewExpectation(angle).wardrobe));
-    // One garment contract, or "did the shirt change between the headshot and
-    // the walk" is not a question the judge can answer.
+  it("holds every full view to one wardrobe, and lets the close-up be honest", () => {
+    const full = CAST_PACKAGE_VIEWS.filter((angle) => angle !== "frontClose");
+    const wardrobes = new Set(full.map((angle) => packageViewExpectation(angle).wardrobe));
+    // One garment contract across the views that can actually show a garment,
+    // or "did the shirt change between the front and the back" is not a
+    // question the judge can answer.
     expect(wardrobes.size).toBe(1);
+
+    /*
+      The close-up is deliberately different. At that crop the garment is often
+      not in frame at all, and the judge is told to fail an axis it is unsure
+      about — so the shared sentence would refund views for being hard to see.
+      Its own sentence makes "nothing visible" a stated pass and keeps the axis
+      pointed at what a close-up CAN show: things added to the face.
+    */
+    const closeUp = packageViewExpectation("frontClose").wardrobe;
+    expect(closeUp).not.toBe(packageViewExpectation("frontFull").wardrobe);
+    expect(closeUp).toContain("passes");
+    expect(closeUp).toContain("earrings");
   });
 
   it("names no absolute garment colour — continuity is with the reference", () => {
@@ -94,7 +132,7 @@ describe("the canonical view package", () => {
       customer paid for a contradiction we had authored. A colour word here is
       that defect coming back.
     */
-    const wardrobe = packageViewExpectation("frontClose").wardrobe.toLowerCase();
+    const wardrobe = packageViewExpectation("frontFull").wardrobe.toLowerCase();
     for (const colour of ["mid-grey", "grey", "gray", "off-white", "cream", "black", "white"]) {
       expect(wardrobe).not.toContain(colour);
     }

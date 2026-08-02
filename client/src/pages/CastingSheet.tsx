@@ -107,6 +107,15 @@ export default function CastingSheet() {
   const [signing, setSigning] = useState<
     { candidateId: string; indexLabel: string; personaLine: string | null } | null
   >(null);
+  /*
+    Which kept candidate the dock's Sign acts on.
+
+    Null means "the most recent keep", which is the answer nine times out of
+    ten and costs the user nothing to change. Held here rather than in the sheet
+    store for the same reason the dialog is: it belongs to this screen and must
+    not follow anyone to another sheet.
+  */
+  const [signSelectionId, setSignSelection] = useState<string | null>(null);
 
   const config = trpc.castingV2.config.useQuery({});
   const session = trpc.castingV2.getSession.useQuery(
@@ -608,6 +617,18 @@ export default function CastingSheet() {
 
   const price = config.data?.rollPriceCredits ?? 0;
   const signPrice = config.data?.signPriceCredits ?? 0;
+
+  /*
+    WHO THE DOCK'S SIGN IS ABOUT.
+
+    The kept set, minus anyone already signed — a spent candidate is still part
+    of the sheet's story and stays in the tray, but she can never be a target.
+    Newest keep first, because the last thing you kept is almost always the one
+    you mean.
+  */
+  const keptTiles = [...shortlist].reverse().filter((entry) => !entry.signed);
+  const signTarget =
+    keptTiles.find((entry) => entry.candidateId === signSelectionId) ?? keptTiles[0] ?? null;
   const candidates = roll.data?.candidates ?? [];
   const rollWasCancelled = roll.data?.status === "cancelled";
 
@@ -1015,14 +1036,7 @@ export default function CastingSheet() {
                   }
                   onDiscard={() => onDiscard(candidate.candidateId)}
                   onFollow={() => dispatchRoll("follow", candidate.candidateId)}
-                  signPriceCredits={signPrice}
-                  onSign={() =>
-                    setSigning({
-                      candidateId: candidate.candidateId,
-                      indexLabel: candidate.indexLabel,
-                      personaLine: candidate.personaLine ?? null,
-                    })
-                  }
+                  onOpenCast={(castId) => navigate(`/casting/cast/${castId}`)}
                 />
               ))}
         </div>
@@ -1164,6 +1178,68 @@ export default function CastingSheet() {
             {undoable && !viewingHistory ? (
               <UndoDiscard onUndo={onUndo} busy={undo.isPending} />
             ) : null}
+            {/*
+              SIGN LIVES HERE (founder ruling, 2026-08-02, and it is where the
+              drawing always put it).
+
+              It was a quiet text button under each tile, which the founder
+              could not find on his first look at his own product — a 450-credit
+              action hiding in the same visual weight as "Discard". The drawing
+              puts it bottom-right in the dock, filled, acting on the current
+              selection, and that is where a decision of this size belongs.
+
+              The selection is the KEPT set: keeping is already how you say "this
+              one matters", so the dock does not invent a second idea. The most
+              recent keep is selected; clicking another thumb moves it. F2 rules
+              one candidate per ceremony, so the CTA always names exactly one —
+              the prototype's "Sign 3 to roster" is a confirmed seam.
+            */}
+            {keptTiles.length > 0 ? (
+              <div className="dpc-dock__sign">
+                <div className="dpc-dock__stack" role="radiogroup" aria-label="Choose who to sign">
+                  {keptTiles.slice(0, 3).map((tile) => (
+                    <button
+                      key={tile.candidateId}
+                      type="button"
+                      role="radio"
+                      aria-checked={tile.candidateId === signSelectionId}
+                      aria-label={`Sign ${tile.indexLabel}`}
+                      className={
+                        tile.candidateId === signSelectionId
+                          ? "dpc-dock__thumb is-selected"
+                          : "dpc-dock__thumb"
+                      }
+                      onClick={() => setSignSelection(tile.candidateId)}
+                    >
+                      {tile.imageUrl ? <img src={tile.imageUrl} alt="" /> : null}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="primary"
+                  disabled={!signTarget || sign.isPending}
+                  onClick={() =>
+                    signTarget
+                      ? setSigning({
+                          candidateId: signTarget.candidateId,
+                          indexLabel: signTarget.indexLabel,
+                          personaLine: signTarget.personaLine ?? null,
+                        })
+                      : undefined
+                  }
+                >
+                  {signTarget ? `Sign ${signTarget.indexLabel} to roster` : "Sign to roster"}
+                  {signPrice ? ` · ${signPrice} cr` : ""}
+                </Button>
+              </div>
+            ) : (
+              /*
+                The drawn empty state, kept rather than hiding the affordance.
+                Someone who has not kept anything should learn what Sign wants
+                from them, not wonder where it went.
+              */
+              <span className="dp-metadata">Keep the one you want, then sign her</span>
+            )}
             {/*
               Cancel follows the ACTIVE roll, not the viewed one: reading roll
               2 while roll 5 generates must still let you stop roll 5, and must

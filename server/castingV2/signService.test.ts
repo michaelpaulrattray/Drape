@@ -206,7 +206,7 @@ function packageReturning(result: {
   return vi.fn(async () => {
     journal.push("package");
     return {
-      committed: Array.from({ length: result.committed ?? 6 }, () => "frontFull" as const),
+      committed: Array.from({ length: result.committed ?? 5 }, () => "frontFull" as const),
       failed: Array.from({ length: result.failed ?? 0 }, () => "backFull" as const),
       refundedCredits: result.refundedCredits ?? 0,
       refundUnrecorded: result.refundUnrecorded ?? false,
@@ -279,10 +279,10 @@ describe("Sign's money", () => {
 
     expect(result.chargedCredits).toBe(CASTING_V2_SIGN_PRICE_CREDITS);
     expect(ledger.charges).toHaveLength(1);
-    expect(ledger.charges[0].amount).toBe(500);
+    expect(ledger.charges[0].amount).toBe(450);
     expect(ledger.refunds).toHaveLength(0);
     expect(casts).toHaveLength(1);
-    expect(receipts.at(-1)).toMatchObject({ kind: "success", chargedCredits: 500, refundedCredits: 0 });
+    expect(receipts.at(-1)).toMatchObject({ kind: "success", chargedCredits: 450, refundedCredits: 0 });
   });
 
   it("refuses for free when the balance is short — no claim spent, no candidate spent", async () => {
@@ -308,9 +308,9 @@ describe("Sign's money", () => {
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
     ).rejects.toThrow();
 
-    expect(ledger.charges[0].amount).toBe(500);
+    expect(ledger.charges[0].amount).toBe(450);
     expect(ledger.refunds).toHaveLength(1);
-    expect(ledger.refunds[0].amount).toBe(500);
+    expect(ledger.refunds[0].amount).toBe(450);
     // The candidate is untouched: it can be signed again.
     expect(candidateRow.status).toBe("ready");
     expect(candidateRow.signedCastId).toBeNull();
@@ -340,7 +340,7 @@ describe("Sign's money", () => {
     await expect(
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
     ).rejects.toThrow(/support will restore the balance/);
-    expect(receipts.at(-1)).toMatchObject({ chargedCredits: 500, refundedCredits: 0 });
+    expect(receipts.at(-1)).toMatchObject({ chargedCredits: 450, refundedCredits: 0 });
   });
 });
 
@@ -375,11 +375,11 @@ describe("the double Sign", () => {
     expect(ledger.charges).toHaveLength(2);
     // And exactly one full refund exists: the loser's.
     expect(ledger.refunds).toHaveLength(1);
-    expect(ledger.refunds[0].amount).toBe(500);
+    expect(ledger.refunds[0].amount).toBe(450);
     // Conservation: the money kept equals one Sign.
     const charged = ledger.charges.reduce((sum, entry) => sum + entry.amount, 0);
     const refunded = ledger.refunds.reduce((sum, entry) => sum + entry.amount, 0);
-    expect(charged - refunded).toBe(500);
+    expect(charged - refunded).toBe(450);
   });
 
   it("refuses a candidate that was signed by an earlier ceremony", async () => {
@@ -398,17 +398,17 @@ describe("the package's money, after the boundary", () => {
     await signCandidate(
       {
         schedulePackage: awaitPackage,
-        buildPackage: packageReturning({ committed: 4, failed: 2, refundedCredits: 100 }),
+        buildPackage: packageReturning({ committed: 3, failed: 2, refundedCredits: 100 }),
       },
       input,
     );
 
-    // 500 charged, 2 × 50 back. The promotion is never refunded once the CAS is
+    // 450 charged, 2 × 50 back. The promotion is never refunded once the CAS is
     // set — the customer has the locked face it bought.
-    expect(ledger.charges[0].amount).toBe(500);
+    expect(ledger.charges[0].amount).toBe(450);
     expect(receipts.at(-1)).toMatchObject({
       kind: "success",
-      chargedCredits: 500,
+      chargedCredits: 450,
       refundedCredits: 100,
       terminalStatus: "partial",
     });
@@ -419,14 +419,14 @@ describe("the package's money, after the boundary", () => {
     await signCandidate(
       {
         schedulePackage: awaitPackage,
-        buildPackage: packageReturning({ committed: 0, failed: 6, refundedCredits: 300 }),
+        buildPackage: packageReturning({ committed: 0, failed: 5, refundedCredits: 250 }),
       },
       input,
     );
 
     expect(receipts.at(-1)).toMatchObject({
-      chargedCredits: 500,
-      refundedCredits: 300,
+      chargedCredits: 450,
+      refundedCredits: 250,
       terminalStatus: "partial",
     });
     // 200 kept — the promotion, which is exactly what was delivered.
@@ -437,7 +437,7 @@ describe("the package's money, after the boundary", () => {
     await signCandidate(
       {
         schedulePackage: awaitPackage,
-        buildPackage: packageReturning({ committed: 5, failed: 1, refundedCredits: 0, refundUnrecorded: true }),
+        buildPackage: packageReturning({ committed: 4, failed: 1, refundedCredits: 0, refundUnrecorded: true }),
       },
       input,
     );

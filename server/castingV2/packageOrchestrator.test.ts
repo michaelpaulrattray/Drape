@@ -136,7 +136,7 @@ describe("a package where everything lands", () => {
   it("commits all six views and refunds nothing", async () => {
     const result = await buildCastPackage(deps(), input);
 
-    expect(result.committed).toHaveLength(6);
+    expect(result.committed).toHaveLength(5);
     expect(result.failed).toHaveLength(0);
     expect(result.refundedCredits).toBe(0);
     expect(refunds).toHaveLength(0);
@@ -146,7 +146,7 @@ describe("a package where everything lands", () => {
 
   it("writes one audit row per view, in the shared step vocabulary", async () => {
     await buildCastPackage(deps(), input);
-    expect(generations).toHaveLength(6);
+    expect(generations).toHaveLength(5);
     expect(generations.every((row) => String(row.stepKey).startsWith("view:"))).toBe(true);
   });
 });
@@ -179,15 +179,15 @@ describe("one regeneration, then named-and-refunded", () => {
     });
     expect(result.refundedCredits).toBe(50);
     // Five landed. A failed view never blocks the others.
-    expect(committed).toHaveLength(5);
+    expect(committed).toHaveLength(4);
   });
 
   it("persists the per-axis verdict on the failed slot, so a dispute is answerable", async () => {
     const judge = () => vi.fn(async (request: { angle: string }) =>
-      request.angle === "sideFull" ? fail : pass);
+      request.angle === "sideClose" ? fail : pass);
     await buildCastPackage(deps({ judge }), input);
 
-    const marker = failures.find((entry) => entry.angle === "sideFull");
+    const marker = failures.find((entry) => entry.angle === "sideClose");
     const failure = marker?.failure as { conformance?: { axes: Record<string, { pass: boolean }> } };
     expect(failure.conformance?.axes.identity.pass).toBe(false);
     expect(failure.conformance?.axes.angle.pass).toBe(true);
@@ -210,10 +210,10 @@ describe("generation failures", () => {
     const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
     const result = await buildCastPackage(deps({ identityEngine }), input);
 
-    // Six views, one attempt each.
-    expect(generateView).toHaveBeenCalledTimes(6);
-    expect(result.failed).toHaveLength(6);
-    expect(result.refundedCredits).toBe(300);
+    // Five views, one attempt each.
+    expect(generateView).toHaveBeenCalledTimes(5);
+    expect(result.failed).toHaveLength(5);
+    expect(result.refundedCredits).toBe(250);
   });
 
   it("retries once on an unknown failure before writing the view off", async () => {
@@ -222,7 +222,7 @@ describe("generation failures", () => {
     });
     const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
     await buildCastPackage(deps({ identityEngine }), input);
-    expect(generateView).toHaveBeenCalledTimes(12);
+    expect(generateView).toHaveBeenCalledTimes(10);
   });
 
   it("still activates the Cast when every view fails — the master is usable", async () => {
@@ -236,8 +236,8 @@ describe("generation failures", () => {
     const result = await buildCastPackage(deps({ identityEngine }), input);
 
     expect(result.activated).toBe(true);
-    // 6 × 50 back; the 200 promotion stays, which is what was delivered.
-    expect(result.refundedCredits).toBe(300);
+    // 5 × 50 back; the 200 promotion stays, which is what was delivered.
+    expect(result.refundedCredits).toBe(250);
   });
 });
 
@@ -250,7 +250,7 @@ describe("the judge cannot be trusted to be available", () => {
 
     // Fail closed: "we could not check it" is never "it is fine".
     expect(result.committed).toHaveLength(0);
-    expect(result.refundedCredits).toBe(300);
+    expect(result.refundedCredits).toBe(250);
   });
 });
 
@@ -264,9 +264,9 @@ describe("the fence", () => {
 
     expect(refunds).toHaveLength(0);
     expect(result.refundedCredits).toBe(0);
-    expect(result.failed).toHaveLength(6);
+    expect(result.failed).toHaveLength(5);
     // And every object is deleted, since no row will ever reference them.
-    expect(deletedKeys).toHaveLength(6);
+    expect(deletedKeys).toHaveLength(5);
   });
 });
 
@@ -298,6 +298,6 @@ describe("what recovery still has to settle", () => {
     ] as never);
 
     const unsettled = await unsettledPackageAngles({ userId: 1, modelId: 901 });
-    expect(unsettled).toEqual(["frontClose", "threeQuarter", "sideClose", "sideFull"]);
+    expect(unsettled).toEqual(["frontClose", "threeQuarter", "sideClose"]);
   });
 });

@@ -33,13 +33,14 @@
  * discover it.
  */
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from "drizzle-orm";
 
 import {
   castingCandidates,
   castingRolls,
   castingSessions,
   generationOperations,
+  generations,
   modelAssets,
   modelIdentitySnapshots,
   modelPackageSnapshots,
@@ -631,6 +632,53 @@ export async function recordRecoveredSlotFailure(input: {
   return true;
 }
 
+/**
+ * The per-view audit rows a Sign opened — its durable promise.
+ *
+ * Written before any view is generated, so their existence records what the
+ * customer paid for rather than what this deploy would sell them. Recovery
+ * reads this instead of the profile constant; see `promisedPackageAngles`.
+ */
+export async function listOperationViewSteps(
+  operationId: string,
+): Promise<Array<{ viewAngle: string | null }>> {
+  const db = await requireDb();
+  return db
+    .select({ viewAngle: generations.viewAngle })
+    .from(generations)
+    .where(and(
+      eq(generations.operationId, operationId),
+      like(generations.stepKey, "view:%"),
+    ));
+}
+
+/**
+ * The views a CAST was promised, from the audit rows its Sign opened.
+ *
+ * Same durable source `promisedPackageAngles` reads, keyed by the model rather
+ * than the operation so the room can use it without knowing which Sign built
+ * this Cast. It is what lets a finished Cast confess to a slot that produced
+ * nothing at all: an asset can be missing, but the promise cannot.
+ */
+export async function listCastPromisedAngles(
+  userId: number,
+  modelId: number,
+): Promise<CanonicalViewAngle[]> {
+  assertPositiveId(userId, "userId");
+  assertPositiveId(modelId, "modelId");
+  const db = await requireDb();
+  const rows = await db
+    .select({ viewAngle: generations.viewAngle })
+    .from(generations)
+    .innerJoin(models, and(eq(models.id, generations.modelId), eq(models.userId, userId)))
+    .where(and(
+      eq(generations.modelId, modelId),
+      like(generations.stepKey, "view:%"),
+    ));
+  const seen = new Set(rows.map((row) => row.viewAngle));
+  return CANONICAL_VIEW_ANGLES.filter((angle) => seen.has(angle));
+}
+
 /** Every asset row of an owned Cast, newest first (the ledger's own order). */
 export async function listCastAssets(userId: number, modelId: number): Promise<ModelAsset[]> {
   assertPositiveId(userId, "userId");
@@ -961,6 +1009,109 @@ export async function getCastLineage(
     personaLine: candidate?.personaLine ?? null,
     castFromAt: roll?.createdAt ?? null,
   };
+}
+
+/**
+ * Signed candidates → the public id of the Cast each became.
+ *
+ * Owner-scoped through `models` in the same statement, so a candidate row
+ * carrying a foreign `signedCastId` resolves to nothing rather than leaking
+ * another account's Cast id onto this user's sheet.
+ */
+export async function listCastPublicIdsForCandidates(
+  userId: number,
+  candidates: readonly { id: number; signedCastId: number | null }[],
+): Promise<Map<number, string>> {
+  assertPositiveId(userId, "userId");
+  const signed = candidates.filter((candidate) => candidate.signedCastId !== null);
+  if (signed.length === 0) return new Map();
+  const db = await requireDb();
+  const rows = await db
+    .select({ modelId: models.id, agencyId: models.agencyId })
+    .from(models)
+    .where(and(
+      inArray(models.id, signed.map((candidate) => candidate.signedCastId!)),
+      eq(models.userId, userId),
+      isNull(models.deletedAt),
+    ));
+  const byModelId = new Map(rows.map((row) => [row.modelId, row.agencyId]));
+  const result = new Map<number, string>();
+  for (const candidate of signed) {
+    const agencyId = byModelId.get(candidate.signedCastId!);
+    if (agencyId) result.set(candidate.id, agencyId);
+  }
+  return result;
+}
+
+/**
+ * This account's signed Casts, newest first — the roster read.
+ *
+ * Includes `provisioning`: a Cast whose package is still building has been paid
+ * for and must be reachable, which is the whole point of this query existing.
+ * Legacy surfaces correctly exclude that status; an owner-scoped V2 read does
+ * not (plan §F).
+ */
+export async function listSignedCasts(
+  userId: number,
+  limit = 60,
+): Promise<Array<{
+  model: Model;
+  anchorUrl: string | null;
+  personaLine: string | null;
+}>> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(models)
+    .where(and(
+      eq(models.userId, userId),
+      inArray(models.status, ["provisioning", "active", "locked"]),
+      isNull(models.deletedAt),
+      // V2 Casts only: a Cast made by Sign carries the candidate it came from.
+      isNotNull(models.sourceCandidateId),
+    ))
+    .orderBy(desc(models.id))
+    .limit(limit);
+  if (rows.length === 0) return [];
+
+  const assets = await db
+    .select({ modelId: modelAssets.modelId, storageUrl: modelAssets.storageUrl, id: modelAssets.id })
+    .from(modelAssets)
+    .where(and(
+      inArray(modelAssets.modelId, rows.map((row) => row.id)),
+      eq(modelAssets.viewType, "frontClose"),
+    ))
+    .orderBy(asc(modelAssets.id));
+  const faceByModel = new Map<number, string>();
+  for (const asset of assets) {
+    // Oldest filled frontClose = the anchor: the face they signed, which is
+    // present from the durable boundary onward and never depends on a view
+    // having landed.
+    if (asset.storageUrl && !faceByModel.has(asset.modelId)) {
+      faceByModel.set(asset.modelId, asset.storageUrl);
+    }
+  }
+
+  const candidates = await db
+    .select({ id: castingCandidates.id, personaLine: castingCandidates.personaLine })
+    .from(castingCandidates)
+    .where(and(
+      inArray(
+        castingCandidates.id,
+        rows.map((row) => row.sourceCandidateId!).filter((id): id is number => id !== null),
+      ),
+      eq(castingCandidates.userId, userId),
+    ));
+  const lineByCandidate = new Map(candidates.map((row) => [row.id, row.personaLine]));
+
+  return rows.map((model) => ({
+    model,
+    anchorUrl: faceByModel.get(model.id) ?? null,
+    personaLine: model.sourceCandidateId
+      ? lineByCandidate.get(model.sourceCandidateId) ?? null
+      : null,
+  }));
 }
 
 /** The candidates a Cast can point back to — its own, and its kept siblings. */

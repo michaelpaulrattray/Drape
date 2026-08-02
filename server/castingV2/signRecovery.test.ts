@@ -105,7 +105,19 @@ vi.mock("../casting/atomicCredits", () => ({
 
 const { recoverCastingV2SignOperation } = await import("./signRecovery");
 
-function chargeRow(amount = 500) {
+/**
+ * What the Sign under test promised, as its own durable rows would report.
+ *
+ * Injected rather than left to the profile constant, because the whole point
+ * of the promise is that recovery settles what was BOUGHT — see the skew case
+ * at the bottom of this file.
+ */
+const promised = {
+  angles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "backFull"] as never,
+  source: "recorded" as const,
+};
+
+function chargeRow(amount = 450) {
   return { referenceId: CHARGE_REFERENCE, type: "generation", amount: -amount };
 }
 function refundRow(reference: string, amount: number) {
@@ -132,6 +144,8 @@ const operation = {
   status: "running" as const,
   chargedCredits: 0,
   refundedCredits: 0,
+  // What the server planned to charge — the cross-check on the promised views.
+  plannedCredits: 450,
 };
 
 beforeEach(() => {
@@ -154,9 +168,10 @@ describe("the boundary never committed", () => {
     ledgerRows = [chargeRow()];
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
     });
 
-    expect(outcome).toMatchObject({ type: "paid_failure", chargedCredits: 500, refundedCredits: 500 });
+    expect(outcome).toMatchObject({ type: "paid_failure", chargedCredits: 450, refundedCredits: 450 });
     // The order is the defence. Fence, then locate, then refund, then seal.
     expect(journal).toEqual(["fence", "locate", "refund", "seal"]);
     expect(journal.indexOf("fence")).toBeLessThan(journal.indexOf("refund"));
@@ -164,29 +179,41 @@ describe("the boundary never committed", () => {
 
   it("gives the whole price back — promotion included, because nothing was created", async () => {
     ledgerRows = [chargeRow()];
-    await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
-    expect(refunds).toEqual([{ amount: 500, reference: CHARGE_REFERENCE }]);
+    await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
+    expect(refunds).toEqual([{ amount: 450, reference: CHARGE_REFERENCE }]);
   });
 
   it("owes nothing when the crash landed before the charge", async () => {
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     expect(outcome).toMatchObject({ type: "free_failure" });
     expect(refunds).toHaveLength(0);
     expect(seals.at(-1)).toMatchObject({ chargedCredits: 0, refundedCredits: 0 });
   });
 
   it("does not pay twice when an earlier pass already refunded", async () => {
-    ledgerRows = [chargeRow(), refundRow(CHARGE_REFERENCE, 500)];
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    ledgerRows = [chargeRow(), refundRow(CHARGE_REFERENCE, 450)];
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     // Read, not re-issued: nothing owed, so nothing sent.
     expect(refunds).toHaveLength(0);
-    expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 500 });
+    expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 450 });
   });
 
   it("escalates rather than sealing a lie when the refund will not record", async () => {
     ledgerRows = [chargeRow()];
     refundRecords = false;
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     expect(outcome.type).toBe("recovery_required");
     // No terminal receipt: the operation stays fenced, where support can see it.
     expect(seals).toHaveLength(0);
@@ -200,7 +227,10 @@ describe("sweep versus live", () => {
     // stands, and touching the money now would refund a delivered Cast.
     ledgerRows = [chargeRow()];
     fenceWins = false;
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
 
     expect(outcome).toMatchObject({ type: "free_failure" });
     expect(refunds).toHaveLength(0);
@@ -216,7 +246,7 @@ describe("sweep versus live", () => {
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(
       { ...operation, status: "recovery_required" },
-      { unsettledAngles: async () => [] },
+      { unsettledAngles: async () => [], promisedAngles: async () => promised },
     );
 
     // No second fence — it is already fenced.
@@ -233,6 +263,7 @@ describe("the Cast exists", () => {
 
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () => unsettled as never,
+      promisedAngles: async () => promised,
     });
 
     expect(refunds).toHaveLength(2);
@@ -241,7 +272,7 @@ describe("the Cast exists", () => {
     // would hand back the promotion on a Cast that exists.
     expect(refunds.every((entry) => entry.reference.includes(":slot:"))).toBe(true);
     expect(refunds.some((entry) => entry.reference === CHARGE_REFERENCE)).toBe(false);
-    expect(outcome).toMatchObject({ type: "partial", chargedCredits: 500, refundedCredits: 100 });
+    expect(outcome).toMatchObject({ type: "partial", chargedCredits: 450, refundedCredits: 100 });
   });
 
   it("writes the confession where the ROOM reads it, not only the log", async () => {
@@ -249,6 +280,7 @@ describe("the Cast exists", () => {
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () => ["backFull"] as never,
+      promisedAngles: async () => promised,
     });
 
     // A slot that was refunded but has no marker renders as an empty shimmer
@@ -260,7 +292,10 @@ describe("the Cast exists", () => {
   it("activates the Cast and binds it to the receipt the live process never sealed", async () => {
     ledgerRows = [chargeRow()];
     cast = signedCast;
-    await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
 
     expect(journal).toContain("activate");
     // `bindGenerationOperationModel` gates on `running`, which the fence has
@@ -271,9 +306,12 @@ describe("the Cast exists", () => {
   it("reports a clean success when the live process had finished every view", async () => {
     ledgerRows = [chargeRow()];
     cast = signedCast;
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     expect(outcome).toMatchObject({ type: "durable_success", refundedCredits: 0 });
-    expect(seals.at(-1)).toMatchObject({ chargedCredits: 500, refundedCredits: 0 });
+    expect(seals.at(-1)).toMatchObject({ chargedCredits: 450, refundedCredits: 0 });
   });
 
   it("never refunds more than was charged", async () => {
@@ -287,18 +325,22 @@ describe("the Cast exists", () => {
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () =>
-        ["threeQuarter", "frontFull", "sideClose", "sideFull", "backFull", "frontClose"] as never,
+        ["threeQuarter", "frontFull", "sideClose", "backFull", "frontClose"] as never,
+      promisedAngles: async () => promised,
     });
 
     const paidBack = 250 + refunds.reduce((sum, entry) => sum + entry.amount, 0);
-    expect(paidBack).toBeLessThanOrEqual(500);
+    expect(paidBack).toBeLessThanOrEqual(450);
     expect(outcome.type).toBe("recovery_required");
   });
 
   it("escalates when the Cast and its candidate disagree about the signature", async () => {
     ledgerRows = [chargeRow()];
     cast = { ...signedCast, candidateSignedCastId: 999 };
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     expect(outcome.type).toBe("recovery_required");
     expect(refunds).toHaveLength(0);
   });
@@ -307,7 +349,10 @@ describe("the Cast exists", () => {
     // authority exists ⟹ money was taken. If that is false, the sequence was
     // violated and nothing here should guess which way.
     cast = signedCast;
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     expect(outcome.type).toBe("recovery_required");
     expect(refunds).toHaveLength(0);
   });
@@ -327,6 +372,7 @@ describe("a dead end parks, and stays parked", () => {
     refundRecords = false;
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () => ["backFull"] as never,
+      promisedAngles: async () => promised,
     });
 
     expect(outcome.type).toBe("recovery_required");
@@ -338,14 +384,20 @@ describe("a dead end parks, and stays parked", () => {
   it("parks a Cast whose candidate disagrees with it", async () => {
     ledgerRows = [chargeRow()];
     cast = { ...signedCast, candidateSignedCastId: 999 };
-    await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     expect(journal).toContain("park");
     expect(seals).toHaveLength(0);
   });
 
   it("parks a ledger nobody can read, before the fence", async () => {
     ledgerRows = [chargeRow(), chargeRow()];
-    const outcome = await recoverCastingV2SignOperation(operation, { unsettledAngles: async () => [] });
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+    });
     expect(outcome.type).toBe("recovery_required");
     // Still `running` at that point, so the standard marker owns it.
     expect(journal).toEqual(["park:running"]);
@@ -368,9 +420,58 @@ describe("a refund that was already in the ledger", () => {
 
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () => ["backFull"] as never,
+      promisedAngles: async () => promised,
     });
 
     // 50 back in total, not 100.
+    expect(outcome).toMatchObject({ type: "partial", chargedCredits: 450, refundedCredits: 50 });
+  });
+});
+
+describe("a Sign bought under a different package", () => {
+  /**
+   * THE DEPLOY COLLISION, in the package's clothing.
+   *
+   * A Sign charged 500 for six views, left non-terminal by the deploy that
+   * retired the walk, then swept by five-view code: settle it against today's
+   * profile and the walk's slice is charged, never generated and never
+   * refunded. Silently. The promise is read from the operation's own durable
+   * rows for exactly this reason, and where there are none to read, the price
+   * is the cross-check — a disagreement parks for a human rather than guessing.
+   */
+  it("refuses to settle a six-view Sign against a five-view profile", async () => {
+    ledgerRows = [chargeRow(500)];
+    cast = signedCast;
+    const outcome = await recoverCastingV2SignOperation(
+      { ...operation, plannedCredits: 500 },
+      {
+        unsettledAngles: async () => ["backFull"],
+        // No durable rows: the fallback is today's five-view profile, which
+        // implies 450 and cannot be what a 500-credit Sign bought.
+        promisedAngles: async () => ({ angles: promised.angles, source: "profile" }),
+      },
+    );
+    expect(outcome.type).toBe("recovery_required");
+    expect((outcome as { reason: string }).reason).toContain("does not match");
+    expect(refunds).toHaveLength(0);
+    expect(journal).toContain("park");
+  });
+
+  it("settles a six-view Sign against the six views it actually bought", async () => {
+    ledgerRows = [chargeRow(500)];
+    cast = signedCast;
+    const outcome = await recoverCastingV2SignOperation(
+      { ...operation, plannedCredits: 500 },
+      {
+        unsettledAngles: async () => ["sideFull"],
+        promisedAngles: async () => ({
+          angles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "sideFull", "backFull"],
+          source: "recorded",
+        }),
+      },
+    );
+    // The retired walk still refunds, because that Sign paid for it.
+    expect(refunds).toEqual([{ amount: 50, reference: `${CHARGE_REFERENCE}:slot:sideFull` }]);
     expect(outcome).toMatchObject({ type: "partial", chargedCredits: 500, refundedCredits: 50 });
   });
 });
@@ -379,7 +480,7 @@ describe("a Sign that never started", () => {
   it("closes a claimed operation as a free failure", async () => {
     const outcome = await recoverCastingV2SignOperation(
       { ...operation, status: "claimed" },
-      { unsettledAngles: async () => [] },
+      { unsettledAngles: async () => [], promisedAngles: async () => promised },
     );
     expect(outcome).toMatchObject({ type: "free_failure" });
     expect(journal).toEqual(["seal:claimed"]);
@@ -390,7 +491,7 @@ describe("a Sign that never started", () => {
     ledgerRows = [chargeRow()];
     const outcome = await recoverCastingV2SignOperation(
       { ...operation, status: "claimed" },
-      { unsettledAngles: async () => [] },
+      { unsettledAngles: async () => [], promisedAngles: async () => promised },
     );
     expect(outcome.type).toBe("recovery_required");
     // Parked with the claimed marker, so the sweep stops re-picking it.

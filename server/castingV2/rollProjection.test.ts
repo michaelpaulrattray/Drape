@@ -120,7 +120,18 @@ describe("lifecycle states collapse to the three the client knows", () => {
     expect(projectCandidateStatus("queued")).toBe("casting");
     expect(projectCandidateStatus("dispatched")).toBe("casting");
     expect(projectCandidateStatus("ready")).toBe("ready");
-    expect(projectCandidateStatus("signed")).toBe("ready");
+  });
+
+  it("gives a signed candidate its own state, because collapsing it lost a Cast", () => {
+    /*
+      `signed` used to collapse into `ready`, and the cost was concrete: the
+      founder signed a candidate for 450 credits, left her room, and could not
+      find her again — the tile looked like every other ready candidate and
+      offered to sign her a second time.
+
+      A permanent purchase is reachable from the place it was made.
+    */
+    expect(projectCandidateStatus("signed")).toBe("signed");
   });
 
   it("labels failed and cancelled as refunded, because they were", () => {

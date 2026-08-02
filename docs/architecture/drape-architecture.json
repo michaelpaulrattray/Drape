@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d7513577ddb4750a"
+    "sourceFingerprint": "69dba0eb348a939d"
   },
   "domains": [
     {
@@ -5344,6 +5344,16 @@
       "id": "route:castingV2.openSessions",
       "namespace": "castingV2",
       "name": "openSessions",
+      "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.roster",
+      "namespace": "castingV2",
+      "name": "roster",
       "type": "query",
       "auth": "protected",
       "strictInput": true,
@@ -16716,6 +16726,11 @@
     {
       "from": "module:server/castingV2/signRecovery.ts",
       "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signRecovery.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
       "kind": "imports"
     },
     {

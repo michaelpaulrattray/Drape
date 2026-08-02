@@ -148,9 +148,9 @@ describe("view conformance", () => {
   describe("the forced-fail switch", () => {
     it("fails the named angle without spending a judge call", async () => {
       const engine = engineReturning(allPass);
-      const judge = createViewConformanceJudge({ engine, forceFail: ["sideFull"] });
+      const judge = createViewConformanceJudge({ engine, forceFail: ["sideClose"] });
 
-      const forced = await judge({ angle: "sideFull", anchor, candidate });
+      const forced = await judge({ angle: "sideClose", anchor, candidate });
       expect(forced.pass).toBe(false);
       expect(forced.method).toBe("forced");
       expect(engine.complete).not.toHaveBeenCalled();
@@ -165,13 +165,13 @@ describe("view conformance", () => {
       expect(forcedFailAnglesFromEnv(undefined, CAST_PACKAGE_VIEWS)).toBeUndefined();
       expect(forcedFailAnglesFromEnv("", CAST_PACKAGE_VIEWS)).toBeUndefined();
       expect(forcedFailAnglesFromEnv("all", CAST_PACKAGE_VIEWS)).toBe("all");
-      expect(forcedFailAnglesFromEnv("sideFull, backFull", CAST_PACKAGE_VIEWS)).toEqual([
-        "sideFull",
+      expect(forcedFailAnglesFromEnv("sideClose, backFull", CAST_PACKAGE_VIEWS)).toEqual([
+        "sideClose",
         "backFull",
       ]);
       // A typo must not silently fail every view, and must not silently fail none
       // while looking like it is on.
-      expect(forcedFailAnglesFromEnv("sidefull", CAST_PACKAGE_VIEWS)).toBeUndefined();
+      expect(forcedFailAnglesFromEnv("sideclose", CAST_PACKAGE_VIEWS)).toBeUndefined();
     });
   });
 
@@ -185,7 +185,7 @@ describe("view conformance", () => {
       }),
     };
     const judge = createViewConformanceJudge({ engine });
-    await judge({ angle: "sideFull", anchor, candidate });
+    await judge({ angle: "backFull", anchor, candidate });
 
     expect(seen).not.toBeNull();
     const request = seen as unknown as TextRequest;

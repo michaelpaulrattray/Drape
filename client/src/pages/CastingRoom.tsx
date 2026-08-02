@@ -51,6 +51,19 @@ export default function CastingRoom() {
 
   const data = cast.data;
 
+  /*
+    THE TWO COMPANION SLOTS (founder ruling on hero fill): the close-up and the
+    three-quarter, in that order, whichever of them has actually landed.
+
+    Progressive by design — when Takes exist they replace these, because a Take
+    says more about a Cast than a second angle of the same studio frame does.
+    Until then the package's own best two fill the space rather than leaving a
+    drawn block half empty.
+  */
+  const companions = ["frontClose", "threeQuarter"].map(
+    (angle) => data?.slots.find((slot) => slot.angle === angle && slot.url) ?? null,
+  );
+
   return (
     <AppShell breadcrumb="Casting / Room" current="casting" width="working">
       <div className="dp-stack" style={{ gap: 22 }}>
@@ -89,68 +102,165 @@ export default function CastingRoom() {
 
         {data ? (
           <>
-            <section className="dpc-room__hero">
-              <div className="dpc-room__anchor">
-                {data.anchorUrl ? (
-                  <img src={data.anchorUrl} alt={data.name ? `${data.name}` : "The signed face"} />
-                ) : null}
+            {/*
+              THE HEADER, as drawn: name, kind, one-line read, and the two
+              actions on the right. Both actions are honest coming-soon — the
+              capability projection says `canvas: unsupported`, so they say so
+              rather than being controls that refuse.
+            */}
+            <header className="dpc-room__head">
+              <div className="dp-stack" style={{ gap: 6 }}>
+                <div className="dp-row" style={{ gap: 10, alignItems: "center" }}>
+                  <h1 className="dpc-room__name">{data.name ?? "Unnamed"}</h1>
+                  <span className="dpc-room__kind">PERFORMER</span>
+                </div>
+                <span className="dpc-slot__note">
+                  {[data.personaLine, data.provenance].filter(Boolean).join(". ")}
+                </span>
               </div>
-              <div className="dp-stack" style={{ gap: 8 }}>
-                <h1 className="dpc-room__name">{data.name ?? "Unnamed"}</h1>
-                <span className="dpc-room__id">{data.castId}</span>
-                {data.personaLine ? <p className="dpc-slot__note">{data.personaLine}</p> : null}
-                {data.provenance ? <p className="dpc-slot__note">{data.provenance}</p> : null}
-                <p className="dpc-slot__note">
-                  {data.status === "building"
-                    ? "Identity locked. The rest of the package is being built — views appear as they pass their checks."
-                    : "Identity locked."}
-                </p>
+              <div className="dp-row" style={{ gap: 8, flex: "none" }}>
+                <span className="dpc-room__soon" title="Arrives with the canvas milestone">
+                  Open in canvas · soon
+                </span>
+                <span className="dpc-room__soon" title="Arrives with campaigns">
+                  Cast in a campaign · soon
+                </span>
               </div>
-            </section>
+            </header>
 
-            <section className="dp-stack" style={{ gap: 12 }}>
-              <h2 className="dpc-room__name" style={{ fontSize: 15 }}>
-                The package
-              </h2>
-              <div className="dpc-room__slots">
-                {data.slots.map((slot) => (
-                  <article className="dpc-slot" key={slot.angle}>
-                    <div className="dpc-slot__frame">
-                      {slot.url ? <img src={slot.url} alt={slot.label} /> : null}
-                      {slot.state === "building" && !slot.url ? (
-                        <Skeleton
-                          style={{ position: "absolute", inset: 0, borderRadius: 12 }}
-                          label={slot.label.toUpperCase()}
-                        />
+            <div className="dpc-room__columns">
+              <div className="dp-stack" style={{ gap: 18 }}>
+                {/*
+                  THE MASTER BLOCK — one large, two small, 1px gutters, exactly
+                  as drawn. The founder's fill ruling: master is the signed
+                  image; the two companions are the close-up and the
+                  three-quarter. Progressive by design — takes replace the
+                  companions once takes exist.
+                */}
+                <section className="dp-stack" style={{ gap: 8 }}>
+                  <div className="dpc-master">
+                    <div className="dpc-master__main">
+                      {data.anchorUrl ? (
+                        <img src={data.anchorUrl} alt={data.name ?? "The signed face"} />
                       ) : null}
-                      {slot.state === "failed-refunded" ? (
-                        /*
-                          The confession, in place. Not a toast, not a footnote
-                          at the bottom of the room: the answer belongs where the
-                          person is looking for the thing that is missing.
-                        */
-                        <div className="dpc-slot__confession">
-                          <p>{slot.note}</p>
-                          {typeof slot.refundedCredits === "number" && slot.refundedCredits > 0 ? (
-                            <span className="dpc-slot__refund">
-                              {slot.refundedCredits} CR BACK
+                      <span className="dpc-master__tag">MASTER</span>
+                    </div>
+                    <div className="dpc-master__side">
+                      {companions.map((slot, index) => (
+                        <div className="dpc-master__cell" key={slot?.angle ?? `empty-${index}`}>
+                          {slot?.url ? <img src={slot.url} alt={slot.label} /> : null}
+                          {!slot?.url ? (
+                            <span className="dp-metadata dpc-master__empty">
+                              {slot ? slot.label : ""}
                             </span>
                           ) : null}
                         </div>
-                      ) : null}
+                      ))}
                     </div>
-                    <div className="dpc-slot__caption">
-                      <span className="dpc-slot__label">{slot.label}</span>
-                    </div>
-                    {slot.state !== "failed-refunded" && slot.note ? (
-                      <p className="dpc-slot__note">{slot.note}</p>
-                    ) : null}
-                  </article>
-                ))}
+                  </div>
+                  <div className="dpc-room__underline">
+                    <span className="dpc-slot__note">
+                      {data.status === "building"
+                        ? "The package is being built — views appear as they pass their checks."
+                        : "Every view here was checked against the face you signed."}
+                    </span>
+                    <span className="dpc-room__locked">IDENTITY LOCKED</span>
+                  </div>
+                </section>
+
+                {/*
+                  REFINE — drawn, and honestly not built. The copy names what it
+                  will do and when, rather than presenting an input that would
+                  swallow a sentence and do nothing with it.
+                */}
+                <section className="dpc-room__card">
+                  <div className="dp-stack" style={{ gap: 3 }}>
+                    <span className="dpc-room__cardtitle">Refine without recasting</span>
+                    <span className="dp-metadata">Face stays locked. Everything else is fair game.</span>
+                  </div>
+                  <p className="dpc-slot__note">
+                    Adjusting light, styling and expression on a signed Cast arrives with
+                    refinement. Until then, a new direction means a new sheet.
+                  </p>
+                </section>
+
+                {/*
+                  THE PACKAGE — a quiet strip, deliberately below the fold of
+                  attention (founder ruling): it is infrastructure, not the
+                  show. The confession still renders in place on any slot that
+                  is not coming.
+                */}
+                <section className="dp-stack" style={{ gap: 10 }}>
+                  <span className="dp-label">THE PACKAGE</span>
+                  <div className="dpc-strip">
+                    {data.slots.map((slot) => (
+                      <article className="dpc-strip__item" key={slot.angle}>
+                        <div className="dpc-strip__frame">
+                          {slot.url ? <img src={slot.url} alt={slot.label} /> : null}
+                          {slot.state === "building" && !slot.url ? (
+                            <Skeleton
+                              style={{ position: "absolute", inset: 0, borderRadius: 8 }}
+                              label=""
+                            />
+                          ) : null}
+                          {slot.state === "failed-refunded" ? (
+                            <div className="dpc-slot__confession">
+                              <p>{slot.note}</p>
+                              {typeof slot.refundedCredits === "number" && slot.refundedCredits > 0 ? (
+                                <span className="dpc-slot__refund">{slot.refundedCredits} CR BACK</span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                        <span className="dpc-slot__label">{slot.label}</span>
+                        {slot.state !== "failed-refunded" && slot.note ? (
+                          <span className="dp-metadata">{slot.note}</span>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                </section>
               </div>
-            </section>
+
+              {/* The right column, as drawn. */}
+              <aside className="dp-stack" style={{ gap: 14 }}>
+                <section className="dpc-room__card">
+                  <span className="dp-label">VOICE</span>
+                  <p className="dpc-slot__note">
+                    A designed voice and an audition clip arrive with voice. This Cast doesn't
+                    have one yet.
+                  </p>
+                </section>
+
+                <section className="dpc-room__card">
+                  <span className="dp-label">IN CAMPAIGNS</span>
+                  <p className="dpc-slot__note">
+                    Campaigns aren't built yet. When they are, the ones she appears in are listed
+                    here.
+                  </p>
+                </section>
+
+                <section className="dpc-room__card">
+                  <span className="dp-label">SIBLINGS</span>
+                  <p className="dpc-slot__note">
+                    Variants cast from the same sheet. Useful when a campaign needs a near-miss
+                    rather than a new face.
+                  </p>
+                  {data.lineage.fromSessionPublicId ? (
+                    <Button
+                      variant="quiet"
+                      size="small"
+                      onClick={() => navigate(`/casting/s/${data.lineage.fromSessionPublicId}`)}
+                    >
+                      Open the sheet she came from
+                    </Button>
+                  ) : null}
+                </section>
+              </aside>
+            </div>
           </>
         ) : null}
+
       </div>
     </AppShell>
   );

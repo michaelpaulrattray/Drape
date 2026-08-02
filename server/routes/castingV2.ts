@@ -48,6 +48,9 @@ import {
   getCastLineage,
   getOwnedCastByPublicId,
   listCastAssets,
+  listCastPromisedAngles,
+  listCastPublicIdsForCandidates,
+  listSignedCasts,
 } from "../db/castingV2Sign";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import {
@@ -143,9 +146,15 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
   // affordance built on it — the FROM pill, the "following" chip — is dead on
   // arrival. It was, until M6.
   const lineage = await getRollLineage(userId, roll);
+  /*
+    Signed candidates need their Cast's public id, or the tile can badge but not
+    LINK — which is the half-fix that leaves a 500-credit purchase as decoration.
+  */
+  const castPublicIdByCandidateId = await listCastPublicIdsForCandidates(userId, candidates);
   return projectRoll({
     roll,
     candidates,
+    castPublicIdByCandidateId,
     parentRollPublicId: lineage.parentRollPublicId,
     parentCandidatePublicId: lineage.parentCandidatePublicId,
     parentCandidatePosition: lineage.parentCandidatePosition,
@@ -457,6 +466,34 @@ export const castingV2Router = router({
     }),
 
   /**
+   * The roster: every Cast this account has signed.
+   *
+   * It exists because it was missing, and the absence cost the founder a Cast
+   * he had paid 500 credits for — signed, permanent, and reachable from
+   * nowhere. A purchase this size must be findable from every place it
+   * logically lives.
+   *
+   * Counts and faces only; the room owns the detail.
+   */
+  roster: protectedProcedure
+    .input(z.object({}).strict())
+    .query(async ({ ctx }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      const casts = await listSignedCasts(ctx.user.id);
+      return casts.map(({ model, anchorUrl, personaLine }) => ({
+        castId: model.agencyId ?? "",
+        name: model.name,
+        personaLine,
+        imageUrl: anchorUrl,
+        // A Cast whose package is still building says so rather than looking
+        // finished; it is reachable either way.
+        status: model.status === "provisioning" ? ("building" as const) : ("ready" as const),
+        signedAt: model.mintedAt ? model.mintedAt.toISOString() : null,
+      }));
+    }),
+
+  /**
    * The room's read: one signed Cast, its package, and what each slot is doing.
    *
    * Polled while the package builds, on the same cadence as the sheet. Every
@@ -470,11 +507,12 @@ export const castingV2Router = router({
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-      const [assets, lineage] = await Promise.all([
+      const [assets, lineage, promisedAngles] = await Promise.all([
         listCastAssets(ctx.user.id, model.id),
         getCastLineage(ctx.user.id, model),
+        listCastPromisedAngles(ctx.user.id, model.id),
       ]);
-      return projectSignedCast({ model, assets, lineage });
+      return projectSignedCast({ model, assets, lineage, promisedAngles });
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */
