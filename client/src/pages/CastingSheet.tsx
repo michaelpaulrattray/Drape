@@ -1234,11 +1234,15 @@ export default function CastingSheet() {
               </div>
             ) : (
               /*
-                The drawn empty state, kept rather than hiding the affordance.
-                Someone who has not kept anything should learn what Sign wants
+                The drawn empty state, kept rather than hiding the affordance:
+                someone who has not kept anything should learn what Sign wants
                 from them, not wonder where it went.
+
+                Archivo, not mono — mono is for machine facts and this is a
+                sentence. Caught by the evidence pack's own law assertion rather
+                than by review memory, which is the point of having them.
               */
-              <span className="dp-metadata">Keep the one you want, then sign her</span>
+              <span className="dp-secondary">Keep the one you want, then sign her</span>
             )}
             {/*
               Cancel follows the ACTIVE roll, not the viewed one: reading roll

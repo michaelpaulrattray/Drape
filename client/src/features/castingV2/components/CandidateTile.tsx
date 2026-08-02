@@ -164,7 +164,7 @@ export function CandidateTile({
           <span className="dpc-card__line">{candidate.personaLine ?? candidate.indexLabel}</span>
           <span className="dp-metadata">{candidate.indexLabel}</span>
         </div>
-        <span className="dp-metadata">In your roster — open her room</span>
+        <span className="dp-secondary">In your roster — open her room</span>
       </div>
     );
   }

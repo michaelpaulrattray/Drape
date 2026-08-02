@@ -198,6 +198,26 @@ export default function CastingV2() {
 
   const createSession = trpc.castingV2.createSession.useMutation();
   const createRoll = trpc.castingV2.createRoll.useMutation();
+  /*
+    ABOVE THE EARLY RETURNS, and that is not a style point.
+
+    This page returns early while the config loads and again when casting is not
+    enabled for the account. A hook declared after those returns runs on some
+    renders and not others, and React ends the page with "rendered more hooks
+    than during the previous render" — which is exactly how the roster shipped
+    as a white error screen for a minute. Every hook lives up here with the
+    others.
+  */
+  const roster = trpc.castingV2.roster.useQuery(
+    {},
+    {
+      enabled: config.data?.enabled === true,
+      // A Cast still building its package resolves within a couple of minutes.
+      // Poll only while one is.
+      refetchInterval: (query) =>
+        query.state.data?.some((cast) => cast.status === "building") ? 5_000 : false,
+    },
+  );
 
   if (config.isLoading) {
     return (
@@ -313,16 +333,6 @@ export default function CastingV2() {
     member in V2: an unsigned face is a candidate, and candidates live on their
     sheet, which is what the Unsigned sheets row above is for.
   */
-  const roster = trpc.castingV2.roster.useQuery(
-    {},
-    {
-      enabled: config.data?.enabled === true,
-      // A Cast still building its package resolves within a couple of minutes.
-      // Poll only while one is.
-      refetchInterval: (query) =>
-        query.state.data?.some((cast) => cast.status === "building") ? 5_000 : false,
-    },
-  );
   const casts = roster.data ?? [];
   const scopeCounts: Record<RosterScope, number> = {
     All: casts.length,

@@ -176,7 +176,7 @@ export default function CastingRoom() {
                 <section className="dpc-room__card">
                   <div className="dp-stack" style={{ gap: 3 }}>
                     <span className="dpc-room__cardtitle">Refine without recasting</span>
-                    <span className="dp-metadata">Face stays locked. Everything else is fair game.</span>
+                    <span className="dp-secondary">Face stays locked. Everything else is fair game.</span>
                   </div>
                   <p className="dpc-slot__note">
                     Adjusting light, styling and expression on a signed Cast arrives with
@@ -214,7 +214,8 @@ export default function CastingRoom() {
                         </div>
                         <span className="dpc-slot__label">{slot.label}</span>
                         {slot.state !== "failed-refunded" && slot.note ? (
-                          <span className="dp-metadata">{slot.note}</span>
+                          // A sentence, so Archivo — mono is machine facts only.
+                          <span className="dpc-slot__note">{slot.note}</span>
                         ) : null}
                       </article>
                     ))}
