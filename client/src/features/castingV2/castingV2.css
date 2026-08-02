@@ -732,51 +732,73 @@
 
 /* ---- the sheet card's overflow menu ---- */
 
-.dpc-sheetmenu { position: absolute; top: 8px; right: 8px; }
-
 /*
-  Quiet on card fill, not dark glass.
+  THE ONE OVERFLOW MENU, and its three-rung reveal (founder ruling, 2026-08-03).
 
-  It was wearing  — the foundation's over-media chip, which
-  is deliberately heavy because it has to survive a photograph underneath it.
-  This trigger sits on card fill with nothing behind it, so the same weight
-  reads as a black blob, and worst in light mode where a 62%-opaque near-black
-  square against white is the highest contrast on the card. Over-media styling
-  belongs over media.
+    resting     absent
+    card hover  the dots appear, on a soft fill
+    dots hover  the fill goes solid — `--surface` is white or black per theme
+
+  The middle rung is what was missing. Hovering the CARD is the gesture that
+  means "I am interested in this thing", and that is when its actions should
+  show themselves; hovering the dots is already a decision and only needs
+  confirming. Before this the dots were invisible until pointed at directly,
+  which is a control you can only find by already knowing it is there.
+
+  The first rung hangs off `.dpc-menuhost`, which every caller must put on the
+  element the user thinks of as "the card". Keyboard users get the same reveal
+  through `:focus-within`, or the menu would be reachable by tab and invisible
+  while focused.
 */
-.dpc-sheetmenu__trigger {
+.dpc-cardmenu { position: relative; display: inline-flex; }
+
+.dpc-cardmenu__trigger {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
   padding: 0;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: var(--r-btn);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
+  opacity: 0;
   transition:
+    opacity var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
     color var(--t-fast) var(--ease);
 }
 
-.dpc-sheetmenu__trigger:hover {
+/* Rung two: the card is hovered, so its actions show themselves. */
+.dpc-menuhost:hover .dpc-cardmenu__trigger,
+.dpc-menuhost:focus-within .dpc-cardmenu__trigger {
+  opacity: 1;
   background: var(--fillStrong);
   color: var(--secondary);
 }
 
-.dpc-sheetmenu__trigger[aria-expanded="true"] {
-  background: var(--fillStrong);
+/*
+  Rung three: solid. On a card of the same colour the fill alone would vanish,
+  so the hairline is what makes it read as a raised control rather than a hole.
+*/
+.dpc-cardmenu__trigger:hover,
+.dpc-cardmenu__trigger:focus-visible,
+.dpc-cardmenu__trigger[aria-expanded="true"] {
+  opacity: 1;
+  background: var(--surface);
+  border-color: var(--borderCard);
   color: var(--ink);
 }
 
-.dpc-sheetmenu__trigger:focus-visible {
+.dpc-cardmenu__trigger:focus-visible {
   outline: 2px solid var(--accentSolid);
   outline-offset: 1px;
 }
 
-.dpc-sheetmenu__panel {
+.dpc-cardmenu__panel {
   /* Fixed and portalled to body — see the component for why. */
   position: fixed;
   z-index: 60;
@@ -791,7 +813,7 @@
   box-shadow: var(--shadowCard);
 }
 
-.dpc-sheetmenu__item {
+.dpc-cardmenu__item {
   display: flex;
   align-items: center;
   gap: var(--s-3);
@@ -806,15 +828,15 @@
   cursor: pointer;
 }
 
-.dpc-sheetmenu__item:hover { background: var(--well); }
-.dpc-sheetmenu__item:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
-.dpc-sheetmenu__item:disabled { opacity: 0.6; cursor: default; }
+.dpc-cardmenu__item:hover { background: var(--well); }
+.dpc-cardmenu__item:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: -2px; }
+.dpc-cardmenu__item:disabled { opacity: 0.6; cursor: default; }
 
 /* Destructive reveals itself on hover, per the foundation button law. */
-.dpc-sheetmenu__item--danger { color: var(--metaStrong); }
-.dpc-sheetmenu__item--danger:hover { color: var(--errorInk); background: var(--well); }
+.dpc-cardmenu__item--danger { color: var(--metaStrong); }
+.dpc-cardmenu__item--danger:hover { color: var(--errorInk); background: var(--well); }
 
-.dpc-sheetmenu__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }
+.dpc-cardmenu__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }
 
 .dpc-sheetmenu__ask {
   display: block;
@@ -1746,16 +1768,7 @@
 */
 .dpc-castcard__wrap { position: relative; }
 
-.dpc-castmenu {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.dpc-castcard__wrap:hover .dpc-castmenu,
-.dpc-castcard__wrap:focus-within .dpc-castmenu { opacity: 1; }
+.dpc-castmenu { position: absolute; top: 8px; right: 8px; }
 
 /*
   The confirm's own text field. `.dp-input` is the foundation's INNER element
@@ -1776,3 +1789,9 @@
 }
 
 .dpc-confirm__panel .dp-input:focus-visible { outline: none; border-color: var(--ink); }
+
+/*
+  The room's header menu sits inline beside the name rather than pinned to a
+  corner — the name line IS the card here, so it is the hover host.
+*/
+.dpc-room__nameline .dpc-cardmenu { margin-left: 2px; }

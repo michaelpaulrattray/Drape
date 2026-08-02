@@ -6,11 +6,14 @@ import { AppShell, Button, EmptyState, Skeleton } from "@/foundation";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
+import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import {
   CandidateViewer,
   type ViewerFrame,
 } from "@/features/castingV2/components/CandidateViewer";
+import { CardMenu } from "@/features/castingV2/components/CardMenu";
+import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
 
 /**
  * The casting room (plan §F, §J; handoff chapter 07).
@@ -98,6 +101,17 @@ export default function CastingRoom() {
   const [draftName, setDraftName] = useState<string | null>(null);
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
+  const [headerMenu, setHeaderMenu] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  /*
+    The server owns the door; the client only decides whether to OFFER the
+    control. `castingV2.deleteCast` asserts the same flag itself, so a menu that
+    guessed wrong would be refused rather than obeyed (invariant 7).
+  */
+  const deleteDoorOpen = trpc.models.deleteAvailability.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  }).data?.enabled ?? false;
+  const deleteCast = trpc.castingV2.deleteCast.useMutation();
   /** The sibling face being looked at, if any. */
   const [viewingSibling, setViewingSibling] = useState<
     // Derived from the projection rather than restated, so a field added
@@ -271,7 +285,7 @@ export default function CastingRoom() {
             */}
             <header className="dpc-room__head">
               <div className="dp-stack" style={{ gap: 7 }}>
-                <div className="dpc-room__nameline">
+                <div className="dpc-room__nameline dpc-menuhost">
                   {/*
                     INLINE RENAME (founder ruling, 2026-08-02). A name is display
                     metadata (FR-3B) and changing it never touches identity — so
@@ -309,6 +323,38 @@ export default function CastingRoom() {
                     />
                   )}
                   <span className="dpc-room__kind">PERFORMER</span>
+                  {/*
+                    THE SAME MENU AS THE ROSTER CARD (founder ruling,
+                    2026-08-03). Deleting a Cast from inside her own room is the
+                    place people reach for it — and the ceremony, the gating and
+                    the component are identical, so there is nothing here that
+                    can drift away from the roster's version.
+                  */}
+                  <CardMenu
+                    label={data.name ?? "this cast"}
+                    open={headerMenu}
+                    onToggle={() => setHeaderMenu(!headerMenu)}
+                    onCancel={() => setHeaderMenu(false)}
+                    items={[
+                      {
+                        label: "Rename",
+                        onSelect: () => {
+                          setHeaderMenu(false);
+                          setDraftName(data.name ?? "");
+                        },
+                      },
+                      ...(deleteDoorOpen && data.status !== "building"
+                        ? [{
+                          label: "Delete",
+                          danger: true,
+                          onSelect: () => {
+                            setHeaderMenu(false);
+                            setDeleting(true);
+                          },
+                        }]
+                        : []),
+                    ]}
+                  />
                 </div>
                 <p className="dpc-room__read">
                   {[data.personaLine, data.provenance].filter(Boolean).join(". ")}
@@ -703,6 +749,32 @@ export default function CastingRoom() {
               </div>
             </div>
           </>
+        ) : null}
+
+        {deleting && data ? (
+          <DeleteCastConfirm
+            name={data.name ?? "this cast"}
+            imageUrl={data.anchorUrl}
+            pronouns={data.pronouns}
+            busy={deleteCast.isPending}
+            onCancel={() => setDeleting(false)}
+            onConfirm={async () => {
+              try {
+                await deleteCast.mutateAsync({
+                  clientRequestId: createClientRequestId(),
+                  castId,
+                });
+                toast(`${data.name ?? "That cast"} was deleted.`);
+                // Her room is the page we are standing on, so leaving is part
+                // of the ceremony rather than something to do afterwards.
+                navigate("/casting");
+              } catch (error) {
+                toast(error instanceof Error
+                  ? error.message
+                  : `${data.name ?? "That cast"} could not be deleted.`);
+              }
+            }}
+          />
         ) : null}
 
         {viewingImage ? (

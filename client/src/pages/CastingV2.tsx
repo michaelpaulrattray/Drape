@@ -19,8 +19,7 @@ import { createClientRequestId } from "@shared/clientRequestId";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/features/castingV2/components/ConfirmDialog";
-import { SheetCardMenu } from "@/features/castingV2/components/SheetCardMenu";
-import { CastCardMenu } from "@/features/castingV2/components/CastCardMenu";
+import { CardMenu } from "@/features/castingV2/components/CardMenu";
 import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import {
@@ -227,6 +226,35 @@ export default function CastingV2() {
   };
 
   /** The sheet a delete has been requested for, resolved to its row. */
+  /*
+    WHAT A CAST'S MENU MAY OFFER, in one place — the roster card and the room
+    header show the same thing because they are the same decision.
+
+    Delete is ABSENT rather than disabled on both counts. The deletion authority
+    excludes a `provisioning` model by design, so a Delete on a building tile
+    could only ever refuse; and the door itself is a server flag. A menu item
+    that always refuses is a dead control (D-107).
+  */
+  const castMenuItems = (cast: NonNullable<typeof roster.data>[number]) => [
+    {
+      label: "Rename",
+      onSelect: () => {
+        setCastMenu(null);
+        setRenaming({ castId: cast.castId, name: cast.name ?? "" });
+      },
+    },
+    ...(deleteDoorOpen && cast.status !== "building"
+      ? [{
+        label: "Delete",
+        danger: true,
+        onSelect: () => {
+          setCastMenu(null);
+          setDeletingCast(cast);
+        },
+      }]
+      : []),
+  ];
+
   const armedSheet = openSessions.data?.find((entry) => entry.sessionId === armed) ?? null;
 
   /** Which roster card has its menu open. One at a time, like the sheet cards. */
@@ -579,7 +607,7 @@ export default function CastingV2() {
             tabIndex={0}
           >
             {openSessions.data.map((entry, index) => (
-              <Card key={entry.sessionId} className="dpc-sheetcard">
+              <Card key={entry.sessionId} className="dpc-sheetcard dpc-menuhost">
                 <button
                   type="button"
                   className="dpc-sheetcard__open"
@@ -668,26 +696,40 @@ export default function CastingV2() {
                   disarms on a second thought, which a system dialog's Cancel
                   makes into an event.
                 */}
-                <SheetCardMenu
-                  label={entry.briefText ?? "Untitled sheet"}
-                  open={menuFor === entry.sessionId}
-                  onToggle={() =>
-                    setMenuFor(menuFor === entry.sessionId ? null : entry.sessionId)
-                  }
-                  onOpenSheet={() => navigate(`/casting/s/${entry.sessionId}`)}
-                  onCopyLink={async () => {
-                    await navigator.clipboard.writeText(
-                      `${window.location.origin}/casting/s/${entry.sessionId}`,
-                    );
-                    setMenuFor(null);
-                    toast("Link copied");
-                  }}
-                  onArm={() => {
-                    setMenuFor(null);
-                    setArmed(entry.sessionId);
-                  }}
-                  onCancel={() => setMenuFor(null)}
-                />
+                <span className="dpc-sheetmenu">
+                  <CardMenu
+                    label={`the sheet "${entry.briefText ?? "Untitled sheet"}"`}
+                    open={menuFor === entry.sessionId}
+                    onToggle={() =>
+                      setMenuFor(menuFor === entry.sessionId ? null : entry.sessionId)
+                    }
+                    onCancel={() => setMenuFor(null)}
+                    items={[
+                      {
+                        label: "Open sheet",
+                        onSelect: () => navigate(`/casting/s/${entry.sessionId}`),
+                      },
+                      {
+                        label: "Copy link",
+                        onSelect: async () => {
+                          await navigator.clipboard.writeText(
+                            `${window.location.origin}/casting/s/${entry.sessionId}`,
+                          );
+                          setMenuFor(null);
+                          toast("Link copied");
+                        },
+                      },
+                      {
+                        label: "Delete",
+                        danger: true,
+                        onSelect: () => {
+                          setMenuFor(null);
+                          setArmed(entry.sessionId);
+                        },
+                      },
+                    ]}
+                  />
+                </span>
               </Card>
             ))}
           </div>
@@ -829,7 +871,7 @@ export default function CastingV2() {
             <span className="dp-secondary">New cast member</span>
           </DropZone>
           {shownCasts.map((cast) => (
-            <div className="dpc-castcard__wrap" key={cast.castId}>
+            <div className="dpc-castcard__wrap dpc-menuhost" key={cast.castId}>
             <button
               type="button"
               className="dpc-castcard"
@@ -851,21 +893,15 @@ export default function CastingV2() {
               on a building tile could only ever refuse, and a menu item that
               always refuses is a dead control. It appears when she finishes.
             */}
-            <CastCardMenu
-              name={cast.name ?? "this cast"}
-              open={castMenu === cast.castId}
-              canDelete={deleteDoorOpen && cast.status !== "building"}
-              onToggle={() => setCastMenu(castMenu === cast.castId ? null : cast.castId)}
-              onCancel={() => setCastMenu(null)}
-              onRename={() => {
-                setCastMenu(null);
-                setRenaming({ castId: cast.castId, name: cast.name ?? "" });
-              }}
-              onArmDelete={() => {
-                setCastMenu(null);
-                setDeletingCast(cast);
-              }}
-            />
+            <span className="dpc-castmenu">
+              <CardMenu
+                label={cast.name ?? "this cast"}
+                open={castMenu === cast.castId}
+                onToggle={() => setCastMenu(castMenu === cast.castId ? null : cast.castId)}
+                onCancel={() => setCastMenu(null)}
+                items={castMenuItems(cast)}
+              />
+            </span>
             </div>
           ))}
         </div>

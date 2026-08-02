@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "96705ee5ab0dda84"
+    "sourceFingerprint": "8b62ed36ca76a33d"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 16
+      "moduleCount": 15
     },
     {
       "id": "domain:client-shared",
@@ -1419,8 +1419,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/castingV2/components/CastCardMenu.tsx",
-      "path": "client/src/features/castingV2/components/CastCardMenu.tsx",
+      "id": "module:client/src/features/castingV2/components/CardMenu.tsx",
+      "path": "client/src/features/castingV2/components/CardMenu.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -1439,12 +1439,6 @@
     {
       "id": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "path": "client/src/features/castingV2/components/KeptTray.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/SheetCardMenu.tsx",
-      "path": "client/src/features/castingV2/components/SheetCardMenu.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7371,6 +7365,10 @@
       "path": "client/src/features/castingV2/briefEcho.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/cardMenuAnatomy.test.ts",
+      "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/dispatchFailure.test.ts",
       "path": "client/src/features/castingV2/dispatchFailure.test.ts"
     },
@@ -12897,12 +12895,27 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/components/CardMenu.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:shared/clientRequestId.ts",
       "kind": "imports"
     },
     {
@@ -12972,7 +12985,7 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/CastCardMenu.tsx",
+      "to": "module:client/src/features/castingV2/components/CardMenu.tsx",
       "kind": "imports"
     },
     {
@@ -12983,11 +12996,6 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/SheetCardMenu.tsx",
       "kind": "imports"
     },
     {
