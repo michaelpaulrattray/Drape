@@ -203,6 +203,35 @@ const COILED_FEMALE_STYLES: StyleWeights = [
   [BUZZ, 6],
 ];
 
+export 
+/*
+  NONBINARY COILED — blended, never inherited (founder ruling, section 6).
+
+  The split left nonbinary candidates drawing the female list, which is what
+  they drew before it. The ruling: nonbinary never defaults to reading femme, so
+  this is the UNION of both lists at blended weights, mirroring exactly what
+  NONBINARY_STYLES already does for the non-coiled heritages.
+
+  Share-conserved against the same original totals as both halves — coiled 18,
+  long 34, mid-length 22, cropped 20, shaved 6 — with each weight the mean of
+  the male and female entries, rounded to keep the family totals exact. Entries
+  that exist on only one side (waves, sponge twists, tapered afro; goddess
+  braids) come in at half weight, which is what a blend of "present" and
+  "absent" means.
+*/
+const COILED_NONBINARY_STYLES: StyleWeights = [
+  // coiled — 18
+  [AFRO, 8], [TAPERED_AFRO, 3], [HIGH_PUFF, 3], [PINEAPPLE, 2], [WRAPPED_BUN, 2],
+  // long — 34
+  [BRAIDS, 14], [LOCS, 11], [BRAIDED_UPDO, 7], [GODDESS_BRAIDS, 2],
+  // mid-length — 22
+  [TWIST_OUT, 22],
+  // cropped — 20
+  [CURLY_CROP, 8], [STANDARD_CROP, 7], [WAVES, 4], [SPONGE_TWISTS, 1],
+  // shaved — 6
+  [BUZZ, 6],
+];
+
 export const COILED_HERITAGES = new Set(["West African", "Afro-Caribbean"]);
 
 /**
@@ -235,14 +264,16 @@ function ageAdjust(entries: StyleWeights, ageBand: AgeBand): StyleWeights {
 
 export function stylesFor(sex: Sex, heritage: string, ageBand: AgeBand): StyleWeights {
   /*
-    F2: the coiled lists are sex-split now. Nonbinary candidates draw the female
-    list, which is what they drew before the split - named in the audit as a
-    chosen default rather than an inherited one.
+    F2: the coiled lists are sex-split, and nonbinary draws its own BLEND rather
+    than the female list — founder ruling: nonbinary never defaults to reading
+    femme. Same shape as NONBINARY_STYLES for every other heritage.
   */
   const base = COILED_HERITAGES.has(heritage)
     ? sex === "male"
       ? COILED_MALE_STYLES
-      : COILED_FEMALE_STYLES
+      : sex === "female"
+        ? COILED_FEMALE_STYLES
+        : COILED_NONBINARY_STYLES
     : sex === "male"
       ? MALE_STYLES
       : sex === "female"

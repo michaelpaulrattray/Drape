@@ -48,8 +48,12 @@ export const FACIAL_HAIR = [
   "light stubble",
   "heavy stubble",
   "moustache",
+  /* F5 — ordinary worldwide, and it had no entry at all. */
+  "goatee",
   "short beard",
   "full beard",
+  /* F5 — presence, not default: rare, and only at the oldest band. */
+  "long full beard",
 ] as const;
 export type FacialHair = (typeof FACIAL_HAIR)[number];
 
@@ -65,6 +69,12 @@ export type HairTexture = (typeof HAIR_TEXTURES)[number];
 
 /** Brow CHARACTER. The rendering protocol (A8) is separate and already ported. */
 export const BROW_STYLES = [
+  /*
+    F4 — the wiry, overgrown older male brow, which casting directors genuinely
+    hunt for and the dice could not produce. Age-funded at 70s+ only, on the same
+    presence-not-default footing as the set curls.
+  */
+  "wiry and overgrown",
   "full",
   "straight",
   "softly arched",
@@ -135,7 +145,24 @@ export type RealizedAxes = {
   wornState: WornState | null;
   browStyle: BrowStyle | null;
   skinCharacter: SkinCharacter | null;
+  /**
+   * F5 — the beard greys on its own clock.
+   *
+   * Greying lived only on the hair-colour axis, so the salt-and-pepper beard
+   * under still-dark hair — one of the most recognisable middle-aged male looks
+   * there is — was unsayable. Beards commonly grey first, and independently.
+   *
+   * Null when there is no beard to grey, or when it has not. Deliberately a
+   * nullable STRING rather than a boolean: the sweep's null arm then covers the
+   * not-applicable case for free, where a `false` would have needed an
+   * enumerated silent value to excuse it.
+   */
+  beardGrey: BeardGrey | null;
 };
+
+/** How far along it is. Two steps is enough to read at tile scale. */
+export const BEARD_GREYS = ["salt and pepper", "mostly grey"] as const;
+export type BeardGrey = (typeof BEARD_GREYS)[number];
 
 /**
  * The registry M7's slice-zero enumerates.
@@ -153,6 +180,7 @@ export const REALIZED_AXIS_KEYS = [
   "wornState",
   "browStyle",
   "skinCharacter",
+  "beardGrey",
 ] as const;
 export type RealizedAxisKey = (typeof REALIZED_AXIS_KEYS)[number];
 

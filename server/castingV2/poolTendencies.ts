@@ -200,8 +200,10 @@ const CLEAN_LEAN: Record<FacialHair, number> = {
   "light stubble": 2,
   "heavy stubble": 0.15,
   moustache: 0.15,
+  goatee: 0.15,
   "short beard": 0.15,
   "full beard": 0.15,
+  "long full beard": 0.15,
 };
 
 const BEARD_LEAN: Record<FacialHair, number> = {
@@ -209,8 +211,10 @@ const BEARD_LEAN: Record<FacialHair, number> = {
   "light stubble": 1,
   "heavy stubble": 3,
   moustache: 1,
+  goatee: 2,
   "short beard": 6,
   "full beard": 6,
+  "long full beard": 4,
 };
 
 /**
@@ -226,11 +230,12 @@ const BEARD_LEAN: Record<FacialHair, number> = {
  * plausibility floor, not a lean.
  */
 const ANY_SHELF: readonly (readonly [FacialHair, number])[] = [
-  ["clean-shaven", 20],
-  ["light stubble", 20],
-  ["heavy stubble", 20],
-  ["short beard", 20],
-  ["full beard", 15],
+  ["clean-shaven", 18],
+  ["light stubble", 18],
+  ["heavy stubble", 18],
+  ["short beard", 18],
+  ["full beard", 13],
+  ["goatee", 10],
   ["moustache", 5],
 ];
 

@@ -243,6 +243,7 @@ describe("locks", () => {
         wornState: null,
         browStyle: "full",
         skinCharacter: "plain",
+      beardGrey: null,
       },
     });
     expect(violations.map((violation) => violation.field).sort()).toEqual(["ageBand", "sex"]);

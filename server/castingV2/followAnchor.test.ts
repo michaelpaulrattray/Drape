@@ -66,6 +66,7 @@ const BLONDE_WOMAN: FollowAnchor = {
     wornState: null,
     browStyle: "feathered",
     skinCharacter: "lightly freckled",
+    beardGrey: null,
   },
 };
 

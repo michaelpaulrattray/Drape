@@ -73,6 +73,7 @@ import {
 import type { HairColour } from "../../shared/castingVocabularies";
 import {
   REALIZED_AXIS_KEYS,
+  type BeardGrey,
   type BrowStyle,
   type EyeColour,
   type FacialHair,
@@ -116,14 +117,15 @@ export type AxisValues = {
   energy: EnergyKey;
   look: LookKey | null;
   /* shelf 2 — realized axes (the eight of `RealizedAxes`, plus hair colour) */
-  eyeColour: EyeColour;
+  eyeColour: EyeColour | null;
   hairStyle: HairStyle | null;
   facialHair: FacialHair | null;
   hairTexture: HairTexture | null;
   hairModifiers: HairModifiers | null;
   wornState: WornState | null;
-  browStyle: BrowStyle;
-  skinCharacter: SkinCharacter;
+  browStyle: BrowStyle | null;
+  skinCharacter: SkinCharacter | null;
+  beardGrey: BeardGrey | null;
   hairColour: HairColour | null;
   /* shelf 3 — roll-level treatments */
   archetype: ArchetypeKey;
@@ -904,6 +906,25 @@ export const AXIS_REGISTRY = {
       const prose = bucket == null ? null : BEARD_BIAS_PROSE[bucket];
       return prose != null && has(prompt, prose);
     },
+  },
+  beardGrey: {
+    key: "beardGrey",
+    shelf: "realized",
+    kind: "described",
+    lockable: false,
+    unlockable: false,
+    overridable: false,
+    /*
+      Composed wherever the beard is — including bias tier, where the bucket
+      prose carries it. Greying is not a styling instruction that competes with
+      a casting; it is a fact about the man.
+    */
+    tiers: ALL_TIERS,
+    suppressors: [],
+    silent: [],
+    read: (ctx) => ctx.identity.realized.beardGrey,
+    footprint: (value, prompt) =>
+      value === "mostly grey" ? has(prompt, "mostly grey") : has(prompt, "Salt and pepper"),
   },
   hairColour: {
     key: "hairColour",

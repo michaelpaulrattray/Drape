@@ -131,7 +131,13 @@ describe("salt and pepper — greying is a process, never a shade", () => {
   it("says the greying on all eight", async () => {
     const compiled = await sheet(brief, intent, "salt-on");
     for (const candidate of compiled.candidates) {
-      expect(hairLine(candidate.prompt).toLowerCase()).toContain("greying");
+      /*
+        Asserted on the RENDER rather than the word. The founder's finding was
+        that the bare word rendered too subtly — about two tiles a sheet did not
+        read as greying at all — so the D1-style expansion is the thing that has
+        to reach the prompt, exactly as the iris and finish prose do.
+      */
+      expect(hairLine(candidate.prompt).toLowerCase()).toContain("steel-grey strands");
     }
   });
 

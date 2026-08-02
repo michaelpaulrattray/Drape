@@ -34,6 +34,7 @@ import {
   type BrowStyle,
   type HairPart,
   type EyeColour,
+  type BeardGrey,
   type FacialHair,
   type HairStyle,
   type HairTexture,
@@ -198,20 +199,96 @@ const IRIS_RENDER: Record<EyeColour, string> = {
  * the older bands admit the fuller styles. Women are never assigned facial
  * hair, and androgynous subjects are left alone rather than guessed at.
  */
+/*
+  F5 — the goatee is ordinary worldwide and had no entry, so it is funded from
+  WITHIN the bearded shares at every band that carries it: the clean/stubble
+  split is untouched, and only the shape of "bearded" widens. The 30s+ gate is
+  the audit's; a goatee on a nineteen-year-old reads as a costume.
+
+  The 70s+ long full beard is presence-not-default, funded out of the plain full
+  beard at the same band — the patriarch exists and should be rare.
+*/
 const FACIAL_HAIR_BY_AGE: Record<AgeBand, Weights<FacialHair>> = {
   teens: [["clean-shaven", 66], ["light stubble", 30], ["heavy stubble", 4]],
   "20s": [["clean-shaven", 34], ["light stubble", 28], ["heavy stubble", 18], ["short beard", 14], ["moustache", 3], ["full beard", 3]],
-  "30s": [["clean-shaven", 26], ["light stubble", 24], ["heavy stubble", 20], ["short beard", 18], ["full beard", 8], ["moustache", 4]],
-  "40s": [["clean-shaven", 26], ["light stubble", 20], ["heavy stubble", 18], ["short beard", 20], ["full beard", 12], ["moustache", 4]],
-  "50s": [["clean-shaven", 28], ["light stubble", 16], ["heavy stubble", 14], ["short beard", 22], ["full beard", 14], ["moustache", 6]],
-  "60s": [["clean-shaven", 30], ["light stubble", 14], ["heavy stubble", 10], ["short beard", 22], ["full beard", 16], ["moustache", 8]],
-  "70s+": [["clean-shaven", 34], ["light stubble", 12], ["heavy stubble", 8], ["short beard", 20], ["full beard", 18], ["moustache", 8]],
+  // bearded 50: short 18→15, full 8→6 fund goatee 5
+  "30s": [["clean-shaven", 26], ["light stubble", 24], ["heavy stubble", 20], ["short beard", 15], ["full beard", 6], ["goatee", 5], ["moustache", 4]],
+  // bearded 54: short 20→17, full 12→10 fund goatee 5
+  "40s": [["clean-shaven", 26], ["light stubble", 20], ["heavy stubble", 18], ["short beard", 17], ["full beard", 10], ["goatee", 5], ["moustache", 4]],
+  // bearded 56: short 22→19, full 14→12 fund goatee 5
+  "50s": [["clean-shaven", 28], ["light stubble", 16], ["heavy stubble", 14], ["short beard", 19], ["full beard", 12], ["goatee", 5], ["moustache", 6]],
+  // bearded 56: short 22→20, full 16→14 fund goatee 4
+  "60s": [["clean-shaven", 30], ["light stubble", 14], ["heavy stubble", 10], ["short beard", 20], ["full beard", 14], ["goatee", 4], ["moustache", 8]],
+  // bearded 54: short 20→18, full 18→13 fund goatee 4 + long full beard 3
+  "70s+": [["clean-shaven", 34], ["light stubble", 12], ["heavy stubble", 8], ["short beard", 18], ["full beard", 13], ["goatee", 4], ["long full beard", 3], ["moustache", 8]],
 };
+
+/**
+ * F5 — the beard greys a band AHEAD of the hair, and independently.
+ *
+ * Greying lived only on the hair-colour axis, so a salt-and-pepper beard under
+ * still-dark hair could not be produced. These are the hair-grey chances shifted
+ * one band up, which is the audit's own phrasing and matches how it actually
+ * goes: the beard shows it first.
+ *
+ * Its own named hash, like every other axis here — sharing the hair-grey seed
+ * would chain the two back together and undo the whole point.
+ */
+const BEARD_GREY_CHANCE: Record<AgeBand, number> = {
+  teens: 0,
+  "20s": 0,
+  "30s": 14,
+  "40s": 38,
+  "50s": 58,
+  "60s": 74,
+  "70s+": 85,
+};
+
+/** Past the midpoint of its band, it has gone further than salt and pepper. */
+function resolveBeardGrey(
+  facialHair: FacialHair | null,
+  ageBand: AgeBand,
+  seed: number,
+): BeardGrey | null {
+  // Nothing to grey. Stubble is too short to read as anything but its colour.
+  if (facialHair === null) return null;
+  if (facialHair === "clean-shaven" || facialHair === "light stubble") return null;
+  const roll = seed % 100;
+  const chance = BEARD_GREY_CHANCE[ageBand];
+  if (roll >= chance) return null;
+  return roll < chance / 3 ? "mostly grey" : "salt and pepper";
+}
 
 /* ---------------------------------------------------------- hair texture */
 
 
 /* ------------------------------------------------------------------ brows */
+
+/**
+ * F4 — brows are sex-conditioned but were never age-conditioned.
+ *
+ * Two of the most face-defining brows in casting were unsayable: the wiry,
+ * overgrown 70s+ male brow, and the sparse, faded older-female one. Same
+ * presence-not-default framing as the set curls — a rare-but-possible tail
+ * rather than a new default, funded from within so the mix does not shift.
+ */
+function ageAdjustBrows(entries: Weights<BrowStyle>, sex: Sex, ageBand: AgeBand): Weights<BrowStyle> {
+  if (sex === "male" && ageBand === "70s+") {
+    // full 34→28, feathered 12→10 fund wiry 8.
+    return [
+      ["wiry and overgrown", 8], ["full", 28], ["straight", 26], ["softly arched", 16],
+      ["feathered", 10], ["brushed-up", 8], ["thin", 3], ["high-arched", 1],
+    ];
+  }
+  if (sex === "female" && (ageBand === "60s" || ageBand === "70s+")) {
+    // full 22→18, feathered 14→12 fund thin 8→14 — sparse and faded with age.
+    return [
+      ["softly arched", 26], ["full", 18], ["high-arched", 16], ["thin", 14],
+      ["feathered", 12], ["straight", 12], ["brushed-up", 1], ["bleached", 1],
+    ];
+  }
+  return entries;
+}
 
 const BROW_BY_SEX: Record<Sex, Weights<BrowStyle>> = {
   male: [["full", 34], ["straight", 26], ["softly arched", 16], ["feathered", 12], ["brushed-up", 8], ["thin", 3], ["high-arched", 1]],
@@ -225,6 +302,7 @@ const BROW_BY_SEX: Record<Sex, Weights<BrowStyle>> = {
  * "bleached" comes back painted white.
  */
 const BROW_RENDER: Partial<Record<BrowStyle, string>> = {
+  "wiry and overgrown": "long wiry strands, individual hairs curling past the brow line, unruly rather than groomed",
   "brushed-up": "natural fluffy brushed-up texture, individual hairs visible, not laminated",
   bleached: "bleached blonde to near-invisible, high-fashion editorial",
   thin: "naturally fine and sparse rather than plucked to a line",
@@ -283,6 +361,18 @@ export function realizeAxes(input: {
   const primary = (heritage[0]?.heritage ?? "") as Heritage | "";
   const seedFor = (axis: string) => hash(`${rollSeed}:${axis}:${position}`);
   const hairStyle = pickStyle(sex, primary, ageBand, seedFor("hairStyle"));
+  /*
+    Resolved before the object literal because the beard's greying depends on
+    it: only a real beard can go salt-and-pepper, and stubble is too short to
+    read as anything but its colour.
+  */
+  const facialHair =
+    sex === "male"
+      ? weightedPick(
+          leanFacialHairWeights(FACIAL_HAIR_BY_AGE[ageBand], input.facialHairLean ?? null),
+          seedFor("facialHair"),
+        )
+      : null;
 
   return {
     eyeColour: weightedPick(EYE_BY_HERITAGE[primary] ?? EYE_DEFAULT, seedFor("eyeColour")),
@@ -304,13 +394,7 @@ export function realizeAxes(input: {
       guessed at — the brief said nothing, and inventing a beard would be
       deciding something about them that they did not.
     */
-    facialHair:
-      sex === "male"
-        ? weightedPick(
-            leanFacialHairWeights(FACIAL_HAIR_BY_AGE[ageBand], input.facialHairLean ?? null),
-            seedFor("facialHair"),
-          )
-        : null,
+    facialHair,
     /*
       A cut that dictates its own texture wins. Locs are coiled by definition,
       and a "straight locs" pairing is exactly the kind of impossible
@@ -321,7 +405,9 @@ export function realizeAxes(input: {
       composer never says one. See `resolveTexture`.
     */
     hairTexture: resolveTexture(hairStyle, primary, seedFor("hairTexture")),
-    browStyle: weightedPick(BROW_BY_SEX[sex], seedFor("browStyle")),
+    /* Its own named hash — chaining it to the hair grey is the defect. */
+    beardGrey: resolveBeardGrey(facialHair, ageBand, seedFor("beardGrey")),
+    browStyle: weightedPick(ageAdjustBrows(BROW_BY_SEX[sex], sex, ageBand), seedFor("browStyle")),
     skinCharacter: weightedPick(skinWeights(primary, ageBand), seedFor("skinCharacter")),
   };
 }
@@ -355,12 +441,22 @@ export function describeRealizedAxes(
       belongs to the casting. The twin rule loses nothing: its second axis for
       men was already the two-value bucket, never the six-value enum.
     */
+    /*
+      F5's greying rides the same line rather than getting its own, because it
+      is a property OF the beard: a second sentence would read as a second
+      instruction and invite the model to weigh them against each other.
+    */
+    const greying = axes.beardGrey
+      ? axes.beardGrey === "mostly grey"
+        ? " Gone mostly grey, noticeably lighter than the hair."
+        : " Salt and pepper through it, greyer than the hair on the head."
+      : "";
     parts.push(
       resolution === "bias"
-        ? BEARD_BIAS_PROSE[beardBucket(axes.facialHair)!]
+        ? `${BEARD_BIAS_PROSE[beardBucket(axes.facialHair)!]}${greying}`
         : axes.facialHair === "clean-shaven"
           ? "FACIAL HAIR: clean-shaven, with the faint shadow of real beard growth under the skin rather than a smooth blank jaw."
-          : `FACIAL HAIR: ${axes.facialHair}, grown naturally and unevenly, individual hairs visible at the edges.`,
+          : `FACIAL HAIR: ${axes.facialHair}, grown naturally and unevenly, individual hairs visible at the edges.${greying}`,
     );
   }
   if (axes.browStyle && !stated("brows")) {

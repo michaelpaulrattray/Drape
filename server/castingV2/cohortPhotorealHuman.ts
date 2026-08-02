@@ -1721,7 +1721,7 @@ function describePartialHair(input: {
   const length = spoken.has("cutLength") ? bareTerm(stated.cutLength) : style.name;
 
   const greying = stated.greying
-    ? " Greying naturally at the temples and through the sides, the base colour still visible."
+    ? " Visible steel-grey strands threaded evenly through the base, concentrated at the temples and crown — unmistakable at arm's length, the base colour still clearly present underneath."
     : "";
 
   /*

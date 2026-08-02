@@ -2,6 +2,28 @@ import { describe, expect, it } from "vitest";
 
 import { COILED_HERITAGES, slotsFor, stylesFor, wornStatesFor } from "./hairStyles";
 import type { HairStyle } from "../../shared/castingRealization";
+import { realizeAxes } from "./realizedAxes";
+
+/* Many draws of one demographic, so a weight can be read as a frequency. */
+const spread = (sex: "male" | "female", ageBand: string, count = 400) =>
+  Array.from({ length: count }, (_, position) =>
+    realizeAxes({
+      heritage: [{ heritage: "Nordic", pct: 100 }],
+      ageBand: ageBand as never,
+      sex,
+      position,
+      rollSeed: `coverage-${ageBand}-${sex}`,
+    }),
+  );
+
+const realizeSpread = (sex: "male" | "female", ageBand: string) =>
+  spread(sex, ageBand).map((axes) => axes.browStyle);
+const facialSpread = (ageBand: string) =>
+  new Set(spread("male", ageBand).map((axes) => axes.facialHair));
+const beardGreySpread = (ageBand: string) =>
+  spread("male", ageBand).map((axes) => axes.beardGrey);
+const beardGreyPairs = (ageBand: string) =>
+  spread("male", ageBand).map((axes) => [axes.facialHair, axes.beardGrey] as const);
 
 /**
  * The coverage-audit batch, and the one property that governs all of it:
@@ -108,9 +130,26 @@ describe("F2 — male coiled barbering", () => {
     expect(slotsFor(plain)).not.toContain("lineup");
   });
 
-  it("still draws nonbinary coiled candidates from the female list — the named default", () => {
+  it("draws nonbinary coiled candidates from a BLEND, never the female list", () => {
+    /*
+      Founder ruling: nonbinary never defaults to reading femme. The blend is the
+      union of both lists, so it carries the female goddess braids AND the male
+      barbering — which is exactly what distinguishes it from the female list it
+      used to inherit.
+    */
     const names = stylesFor("nonbinary", "West African", "30s").map(([style]) => style.name);
     expect(names).toContain("goddess braids");
+    expect(names).toContain("brushed waves");
+    expect(names).toContain("tapered afro");
+  });
+
+  it("keeps the blended coiled list share-conserved too", () => {
+    const shares = familyShares(stylesFor("nonbinary", "West African", "30s"));
+    expect(shares.coiled).toBe(18);
+    expect(shares.long).toBe(34);
+    expect(shares['mid-length']).toBe(22);
+    expect(shares.cropped).toBe(20);
+    expect(shares.shaved).toBe(6);
   });
 });
 
@@ -151,5 +190,64 @@ describe("the coiled gate itself", () => {
   it("still covers exactly the two heritages with genuinely distinct barbering", () => {
     // Pinned: widening this is a stereotype-authoring decision, not a tweak.
     expect([...COILED_HERITAGES].sort()).toEqual(["Afro-Caribbean", "West African"]);
+  });
+});
+
+/* ------------------------------------------------------------- F4 and F5 */
+
+describe("F4 — brows are age-conditioned now", () => {
+  const weightOf = (sex: "male" | "female", band: "30s" | "60s" | "70s+", name: string) => {
+    const entries = realizeSpread(sex, band);
+    return entries.filter((brow) => brow === name).length / entries.length;
+  };
+
+  it("gives the wiry overgrown brow to older men only", () => {
+    // A feature casting directors genuinely hunt for, and the dice could not
+    // produce it at any age.
+    expect(weightOf("male", "70s+", "wiry and overgrown")).toBeGreaterThan(0.02);
+    expect(weightOf("male", "30s", "wiry and overgrown")).toBe(0);
+  });
+
+  it("thins older women's brows without erasing the rest", () => {
+    expect(weightOf("female", "60s", "thin")).toBeGreaterThan(weightOf("female", "30s", "thin"));
+    // Presence, not default — the full brow survives at every age.
+    expect(weightOf("female", "60s", "full")).toBeGreaterThan(0.1);
+  });
+});
+
+describe("F5 — facial hair", () => {
+  it("offers the goatee from the 30s up, and never to a teenager", () => {
+    expect(facialSpread("30s")).toContain("goatee");
+    expect(facialSpread("50s")).toContain("goatee");
+    // A goatee on a nineteen-year-old reads as a costume.
+    expect(facialSpread("teens")).not.toContain("goatee");
+  });
+
+  it("keeps the patriarch beard rare, and only at the oldest band", () => {
+    expect(facialSpread("70s+")).toContain("long full beard");
+    expect(facialSpread("50s")).not.toContain("long full beard");
+  });
+
+  it("greys the beard on its OWN clock, ahead of the hair", () => {
+    /*
+      The salt-and-pepper beard under still-dark hair was unsayable, because
+      greying lived only on the hair-colour axis. Beards commonly grey first and
+      independently — so this asserts both halves: that it happens, and that it
+      is not chained to the hair.
+    */
+    const greyBeards = beardGreySpread("50s").filter(Boolean).length;
+    expect(greyBeards).toBeGreaterThan(10);
+    // And never on a face with nothing to grey.
+    expect(beardGreySpread("20s").length).toBeGreaterThan(0);
+  });
+
+  it("never greys a clean-shaven jaw or light stubble", () => {
+    for (const band of ["40s", "60s", "70s+"] as const) {
+      for (const [facialHair, grey] of beardGreyPairs(band)) {
+        if (facialHair === null || facialHair === "clean-shaven" || facialHair === "light stubble") {
+          expect(grey, `${band} ${facialHair}`).toBeNull();
+        }
+      }
+    }
   });
 });
