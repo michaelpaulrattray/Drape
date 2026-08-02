@@ -55,6 +55,7 @@ import {
   listSignedCasts,
 } from "../db/castingV2Sign";
 import { discard, setKept, undo } from "../castingV2/candidateService";
+import { updateModel } from "../db/models";
 import {
   projectRoll,
   projectSession,
@@ -459,9 +460,13 @@ export const castingV2Router = router({
         .object({
           clientRequestId: z.string(),
           candidateId: publicId,
-          // Optional by design: an unnamed Cast shows its KI id until its owner
-          // names it. Bounded because it reaches a varchar(128).
-          name: z.string().trim().min(1).max(60).optional(),
+          /*
+            REQUIRED (founder ruling, 2026-08-02). Naming is part of the
+            ceremony: no Cast is ever born "Unnamed", because a name is how she
+            is found and referred to afterwards. Enforced here as well as in the
+            dialog — a control the client happens to render is not a rule.
+          */
+          name: z.string().trim().min(1).max(60),
         })
         .strict(),
     )
@@ -473,7 +478,7 @@ export const castingV2Router = router({
         userId: ctx.user.id,
         clientRequestId: input.clientRequestId,
         candidatePublicId: input.candidateId,
-        name: input.name ?? null,
+        name: input.name,
       });
     }),
 
@@ -503,6 +508,29 @@ export const castingV2Router = router({
         status: model.status === "provisioning" ? ("building" as const) : ("ready" as const),
         signedAt: model.mintedAt ? model.mintedAt.toISOString() : null,
       }));
+    }),
+
+  /**
+   * Rename a Cast from her room.
+   *
+   * A V2-shaped door onto the existing model-update path: the room only ever
+   * holds her public KI id (§J — internal ids never leave the server), so the
+   * numeric model is resolved here, owner-scoped, and the write itself is the
+   * one the rest of the product already uses. Renaming is display metadata
+   * (FR-3B): it never touches identity, and `agencyId` remains the stable key.
+   */
+  renameCast: protectedProcedure
+    .input(z.object({ castId: z.string().min(1).max(32), name: z.string().trim().min(1).max(60) }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      const renamed = await updateModel(model.id, { name: input.name });
+      if (!renamed.success) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
+      }
+      return { castId: input.castId, name: input.name };
     }),
 
   /**

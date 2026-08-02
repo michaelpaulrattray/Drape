@@ -79,6 +79,48 @@ describe("the sheet dock commits to one candidate", () => {
     expect(viewer).toContain('event.key === "Escape"');
   });
 
+  it("requires a name before anything is spent", async () => {
+    /*
+      Founder ruling: naming is part of the ceremony — no Cast is ever born
+      "Unnamed". Enforced in three places, because a rule that lives only in the
+      dialog is a rule the next caller skips: the button is disabled while the
+      field is empty, the field is focused so the requirement is obvious, and
+      the server's input schema refuses an absent name outright.
+    */
+    const confirm = await readFile(
+      new URL("./components/SignConfirm.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(confirm).toContain("disabled={busy || !name.trim()}");
+    expect(confirm).toContain("autoFocus");
+    // And it leads with HER: the tile number never reaches the screen.
+    expect(confirm).toContain("dpc-sign__portrait");
+    expect(confirm).not.toContain("Sign {indexLabel}");
+
+    const route = await readFile(new URL("../../../../server/routes/castingV2.ts", import.meta.url), "utf8");
+    const signInput = route.slice(route.indexOf("  sign: protectedProcedure"), route.indexOf("  renameCast:"));
+    expect(signInput).toContain("name: z.string().trim().min(1).max(60),");
+    expect(signInput).not.toContain(".max(60).optional()");
+  });
+
+  it("lets a Cast be renamed from her own room", async () => {
+    const room = await readFile(new URL("../../pages/CastingRoom.tsx", import.meta.url), "utf8");
+    expect(room).toContain("renameCast");
+    expect(room).toContain("dpc-room__nameinput");
+    // Escape abandons, Enter saves — the two bindings an inline edit owes.
+    expect(room).toContain('event.key === "Enter"');
+    expect(room).toContain('event.key === "Escape"');
+  });
+
+  it("opens a room image large, and offers it for download", async () => {
+    const room = await readFile(new URL("../../pages/CastingRoom.tsx", import.meta.url), "utf8");
+    expect(room).toContain("onDoubleClick");
+    expect(room).toContain("dpc-media__actions");
+    expect(room).toContain("download=");
+    // The viewer walks the package, master included.
+    expect(room).toContain("onStep");
+  });
+
   it("keeps the kept faces clear of the helper line", async () => {
     const css = await readFile(CSS, "utf8");
     /*

@@ -22,31 +22,37 @@ import { createPortal } from "react-dom";
  *    is a prototype seam; signing three people is three deliberate ceremonies.
  *
  * It reuses the discard dialog's own surface rather than inventing a second
- * modal system — same scrim, same panel, same focus trap. The one deliberate
- * difference is the confirm button: this action is weighty but not destructive,
- * so it is the accent rather than error red, and FOCUS STARTS ON CANCEL for the
- * same reason it does there — Enter should never spend 500 credits because a
- * dialog opened under someone's finger.
+ * modal system — same scrim, same panel, same focus trap. The confirm button is
+ * the accent rather than error red: this action is weighty but not destructive.
  *
- * The name is optional and says so. A Cast with no name shows its Klieg id
- * until its owner gives it one, which is a better first minute than a required
- * field standing between someone and the thing they just decided to buy.
+ * **It leads with HER, not with her coordinates.** It used to open "Sign 02 ·
+ * Quiet intensity" — a grid position, which is internal bookkeeping, at the
+ * product's most important moment.
+ *
+ * **The name is required** (founder ruling, 2026-08-02): no Cast is ever born
+ * "Unnamed". Focus lands on the field and the Sign button stays disabled until
+ * it has content, so Enter can never spend anything by accident — which is the
+ * property the drawn focus-on-Cancel default was protecting.
  */
 export function SignConfirm({
   indexLabel,
   personaLine,
+  imageUrl,
   priceCredits,
   viewCount,
   busy,
   onConfirm,
   onCancel,
 }: {
+  /** Kept for the accessible label only — it never appears on screen. */
   indexLabel: string;
   personaLine: string | null;
+  /** Her face, at the size a decision this size deserves. */
+  imageUrl: string | null;
   priceCredits: number;
   viewCount: number;
   busy: boolean;
-  onConfirm: (name: string | null) => void;
+  onConfirm: (name: string) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState("");
@@ -76,7 +82,12 @@ export function SignConfirm({
     document.addEventListener("keydown", onKeyDown, true);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    cancelRef.current?.focus();
+    /*
+      Focus lands on the NAME, not on Cancel — the drawn safe-default belongs to
+      a destructive dialog, and this one asks for something before it can
+      proceed. The Sign button stays disabled until the field has content, so
+      Enter cannot spend anything by accident.
+    */
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
       document.body.style.overflow = previousOverflow;
@@ -98,27 +109,52 @@ export function SignConfirm({
         aria-labelledby="dpc-sign-title"
         aria-describedby="dpc-sign-body"
       >
+        {/*
+          HER FIRST, not her coordinates.
+
+          This said "Sign 02 · Quiet intensity" — a grid position, which is
+          internal bookkeeping, at the product's most important moment. The
+          number is display metadata on a sheet and means nothing once she is a
+          Cast. So the ceremony shows her face at a size worth deciding on, and
+          the index survives only in the dialog's accessible name.
+        */}
+        {imageUrl ? (
+          <div className="dpc-sign__portrait">
+            <img src={imageUrl} alt="" />
+          </div>
+        ) : null}
+        {personaLine ? <span className="dpc-sign__caption">{personaLine}</span> : null}
+
         <h2 id="dpc-sign-title" className="dpc-confirm__title">
-          Sign {indexLabel}
+          Sign her to your roster
         </h2>
         <p id="dpc-sign-body" className="dpc-confirm__body">
-          {personaLine ? `${personaLine}. ` : ""}
           This locks the face and builds the complete package — {viewCount} views of this exact
           person, included in the price. Nothing else on the sheet changes, and a candidate can
           only be signed once.
         </p>
 
+        {/*
+          NAMING IS PART OF THE CEREMONY (founder ruling, 2026-08-02). No Cast is
+          ever born "Unnamed": a name is how she is found, referred to and cast
+          later, and deferring it produces a roster of strangers. Required, and
+          the button says so rather than failing silently on submit.
+        */}
         <label className="dpc-sign__label" htmlFor="dpc-sign-name">
-          Name — optional, and you can add it later
+          Her name
         </label>
         <input
           id="dpc-sign-name"
           className="dp-input"
           value={name}
           maxLength={60}
-          placeholder="Unnamed"
+          placeholder="Give her a name"
           disabled={busy}
+          autoFocus
           onChange={(event) => setName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && name.trim() && !busy) onConfirm(name.trim());
+          }}
         />
 
         <div className="dpc-confirm__actions">
@@ -134,10 +170,10 @@ export function SignConfirm({
           <button
             type="button"
             className="dpc-confirm__sign"
-            onClick={() => onConfirm(name.trim() || null)}
-            disabled={busy}
+            onClick={() => onConfirm(name.trim())}
+            disabled={busy || !name.trim()}
           >
-            {busy ? "Signing…" : `Sign · ${priceCredits} cr`}
+            {busy ? "Signing…" : `Sign to your roster · ${priceCredits} cr`}
           </button>
         </div>
       </div>

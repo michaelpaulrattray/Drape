@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, Lock, Play, Plus } from "lucide-react";
+import { ArrowLeft, Download, Lock, Maximize2, Play, Plus } from "lucide-react";
 
 import { AppShell, Button, EmptyState, Skeleton } from "@/foundation";
+import { toast } from "sonner";
+
 import { trpc } from "@/lib/trpc";
 import "@/features/castingV2/castingV2.css";
 import { CandidateViewer } from "@/features/castingV2/components/CandidateViewer";
@@ -56,12 +58,55 @@ const WAVE = [30, 55, 40, 70, 45, 85, 35, 60, 50, 75, 40, 65, 30, 80, 45, 55, 70
 /** What the two companion cells show, before either has landed. */
 const COMPANION_LABELS = ["Close-up", "Three-quarter"];
 
+/**
+ * The quiet actions on a room image: open large, or download.
+ *
+ * Hover-revealed rather than permanent, and both are plain affordances over a
+ * public bucket URL — nothing new server-side. Download uses the anchor's own
+ * `download` attribute so the browser saves rather than navigates; the
+ * character-sheet artifact joins this row when it ships.
+ */
+function MediaActions({
+  url,
+  filename,
+  onOpen,
+}: {
+  url: string;
+  filename: string;
+  onOpen: () => void;
+}) {
+  return (
+    <span className="dpc-media__actions">
+      <button type="button" className="dpc-media__action" onClick={onOpen} aria-label="Open larger">
+        <Maximize2 size={12} strokeWidth={2} aria-hidden="true" />
+      </button>
+      <a
+        className="dpc-media__action"
+        href={url}
+        download={`${filename}.png`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Download this image"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Download size={12} strokeWidth={2} aria-hidden="true" />
+      </a>
+    </span>
+  );
+}
+
 export default function CastingRoom() {
   const [, params] = useRoute("/casting/cast/:castId");
   const [, navigate] = useLocation();
   const castId = params?.castId ?? "";
 
   const config = trpc.castingV2.config.useQuery({});
+  const rename = trpc.castingV2.renameCast.useMutation();
+  const utils = trpc.useUtils();
+  /** Inline rename on the title. Null when not editing. */
+  const [draftName, setDraftName] = useState<string | null>(null);
+  /** A package or hero image opened in the viewer. */
+  const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   /** The sibling face being looked at, if any. */
   const [viewingSibling, setViewingSibling] = useState<
     { candidateId: string; imageUrl: string | null; personaLine: string | null; indexLabel: string } | null
@@ -82,6 +127,29 @@ export default function CastingRoom() {
   }, [config.data, navigate]);
 
   const data = cast.data;
+
+  /** Save the inline rename, or abandon it if nothing changed. */
+  const saveName = () => {
+    const next = (draftName ?? "").trim();
+    if (!next || next === (data?.name ?? "") || !data) {
+      setDraftName(null);
+      return;
+    }
+    rename.mutate(
+      { castId: data.castId, name: next },
+      {
+        onSuccess: () => {
+          setDraftName(null);
+          void utils.castingV2.getCast.invalidate({ castId: data.castId });
+          void utils.castingV2.roster.invalidate();
+        },
+        onError: (error) => {
+          setDraftName(null);
+          toast.error(error.message);
+        },
+      },
+    );
+  };
 
   /*
     THE TWO COMPANION SLOTS (founder ruling on hero fill): the close-up and the
@@ -151,7 +219,38 @@ export default function CastingRoom() {
             <header className="dpc-room__head">
               <div className="dp-stack" style={{ gap: 7 }}>
                 <div className="dpc-room__nameline">
-                  <h1 className="dpc-room__name">{data.name ?? "Unnamed"}</h1>
+                  {/*
+                    INLINE RENAME (founder ruling, 2026-08-02). A name is display
+                    metadata (FR-3B) and changing it never touches identity — so
+                    it belongs where the name is, not behind a settings screen.
+                    The write is the product's existing model-update path,
+                    reached through a V2 door that resolves her public id.
+                  */}
+                  {draftName === null ? (
+                    <button
+                      type="button"
+                      className="dpc-room__namebtn"
+                      onClick={() => setDraftName(data.name ?? "")}
+                      aria-label="Rename this Cast"
+                    >
+                      <h1 className="dpc-room__name">{data.name ?? "Unnamed"}</h1>
+                    </button>
+                  ) : (
+                    <input
+                      className="dpc-room__nameinput"
+                      value={draftName}
+                      maxLength={60}
+                      autoFocus
+                      disabled={rename.isPending}
+                      onChange={(event) => setDraftName(event.target.value)}
+                      onBlur={() => saveName()}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") saveName();
+                        if (event.key === "Escape") setDraftName(null);
+                      }}
+                      aria-label="Cast name"
+                    />
+                  )}
                   <span className="dpc-room__kind">PERFORMER</span>
                 </div>
                 <p className="dpc-room__read">
@@ -179,11 +278,30 @@ export default function CastingRoom() {
                 */}
                 <section className="dpc-master">
                   <div className="dpc-master__media">
-                    <div className="dpc-master__main">
+                    <div
+                      className="dpc-master__main dpc-media"
+                      onDoubleClick={() =>
+                        data.anchorUrl
+                          ? setViewingImage({ url: data.anchorUrl, label: "Master" })
+                          : undefined
+                      }
+                    >
                       {data.anchorUrl ? (
                         <img src={data.anchorUrl} alt={data.name ?? "The signed face"} />
                       ) : null}
                       <span className="dpc-master__tag">MASTER</span>
+                      {/*
+                        Quiet on hover, absent otherwise. The room is a place to
+                        look at someone; a permanent row of controls over her
+                        face turns it into a file manager.
+                      */}
+                      {data.anchorUrl ? (
+                        <MediaActions
+                          url={data.anchorUrl}
+                          filename={`${data.name ?? data.castId}-master`}
+                          onOpen={() => setViewingImage({ url: data.anchorUrl!, label: "Master" })}
+                        />
+                      ) : null}
                     </div>
                     <div className="dpc-master__side">
                       {companions.map((slot, index) => (
@@ -291,8 +409,20 @@ export default function CastingRoom() {
                   <div className="dpc-strip">
                     {data.slots.map((slot) => (
                       <article className="dpc-strip__item" key={slot.angle}>
-                        <div className="dpc-strip__frame">
+                        <div
+                          className="dpc-strip__frame dpc-media"
+                          onDoubleClick={() =>
+                            slot.url ? setViewingImage({ url: slot.url, label: slot.label }) : undefined
+                          }
+                        >
                           {slot.url ? <img src={slot.url} alt={slot.label} /> : null}
+                          {slot.url ? (
+                            <MediaActions
+                              url={slot.url}
+                              filename={`${data.name ?? data.castId}-${slot.angle}`}
+                              onOpen={() => setViewingImage({ url: slot.url!, label: slot.label })}
+                            />
+                          ) : null}
                           {slot.state === "building" && !slot.url ? (
                             <Skeleton
                               style={{ position: "absolute", inset: 0, borderRadius: 9 }}
@@ -412,6 +542,31 @@ export default function CastingRoom() {
               </div>
             </div>
           </>
+        ) : null}
+
+        {viewingImage ? (
+          <CandidateViewer
+            imageUrl={viewingImage.url}
+            indexLabel={viewingImage.label}
+            personaLine={data?.name ?? null}
+            onClose={() => setViewingImage(null)}
+            /*
+              The arrows walk the PACKAGE, master included — comparing a view
+              against the face it was held to is the whole reason to open one
+              large.
+            */
+            onStep={(direction) => {
+              const frames = [
+                ...(data?.anchorUrl ? [{ url: data.anchorUrl, label: "Master" }] : []),
+                ...(data?.slots ?? [])
+                  .filter((slot) => slot.url)
+                  .map((slot) => ({ url: slot.url as string, label: slot.label })),
+              ];
+              const index = frames.findIndex((frame) => frame.url === viewingImage.url);
+              const next = frames[(index + direction + frames.length) % frames.length];
+              if (next) setViewingImage(next);
+            }}
+          />
         ) : null}
 
         {viewingSibling?.imageUrl ? (

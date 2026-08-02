@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "625bf37ac7032b3e"
+    "sourceFingerprint": "ebff5b29dca75284"
   },
   "domains": [
     {
@@ -5345,6 +5345,16 @@
       "namespace": "castingV2",
       "name": "openSessions",
       "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.renameCast",
+      "namespace": "castingV2",
+      "name": "renameCast",
+      "type": "mutation",
       "auth": "protected",
       "strictInput": true,
       "rateLimited": true,
@@ -18973,6 +18983,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/models.ts",
       "kind": "imports"
     },
     {

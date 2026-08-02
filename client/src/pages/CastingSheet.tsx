@@ -105,7 +105,12 @@ export default function CastingSheet() {
     paid lock once already.
   */
   const [signing, setSigning] = useState<
-    { candidateId: string; indexLabel: string; personaLine: string | null } | null
+    {
+      candidateId: string;
+      indexLabel: string;
+      personaLine: string | null;
+      imageUrl: string | null;
+    } | null
   >(null);
   /*
     Which kept candidate the dock's Sign acts on.
@@ -1223,6 +1228,7 @@ export default function CastingSheet() {
                         candidateId: signTarget.candidateId,
                         indexLabel: signTarget.indexLabel,
                         personaLine: signTarget.personaLine ?? null,
+                        imageUrl: signTarget.imageUrl ?? signTarget.thumbUrl ?? null,
                       })
                     : undefined
                 }
@@ -1257,6 +1263,7 @@ export default function CastingSheet() {
       {signing ? (
         <SignConfirm
           indexLabel={signing.indexLabel}
+          imageUrl={signing.imageUrl}
           personaLine={signing.personaLine}
           priceCredits={signPrice}
           viewCount={config.data?.packageViewCount ?? 0}
@@ -1276,7 +1283,8 @@ export default function CastingSheet() {
               {
                 clientRequestId: createClientRequestId(),
                 candidateId: signing.candidateId,
-                ...(name ? { name } : {}),
+                // Required now: no Cast is born "Unnamed".
+                name,
               },
               {
                 onSuccess: (result) => {

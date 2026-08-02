@@ -1593,3 +1593,79 @@
 .dpc-sib__tile--face > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .dpc-sib__tile--face:hover { border-color: var(--lineStrong); }
 .dpc-sib__tile--face:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+
+/* ---- the Sign ceremony: her first ---- */
+
+.dpc-sign__portrait {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 340px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--media);
+  border: 1px solid var(--border);
+}
+
+.dpc-sign__portrait > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.dpc-sign__caption {
+  font: 400 11.5px var(--font-sans);
+  color: var(--meta);
+  padding-top: 2px;
+}
+
+/* ---- room: inline rename + quiet media actions ---- */
+
+.dpc-room__namebtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: text;
+  text-align: left;
+}
+.dpc-room__namebtn:hover .dpc-room__name { text-decoration: underline; text-decoration-color: var(--dots); text-underline-offset: 4px; }
+.dpc-room__namebtn:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 3px; border-radius: 4px; }
+
+.dpc-room__nameinput {
+  font: 500 24px/1.15 var(--font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--lineStrong);
+  padding: 0 0 2px;
+  min-width: 220px;
+}
+.dpc-room__nameinput:focus { outline: none; border-bottom-color: var(--accentSolid); }
+
+.dpc-media { position: relative; }
+
+/* Quiet on hover, absent otherwise: a room is for looking at someone. */
+.dpc-media__actions {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.dpc-media:hover .dpc-media__actions,
+.dpc-media:focus-within .dpc-media__actions { opacity: 1; }
+
+.dpc-media__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--borderInput);
+  background: var(--surface);
+  color: var(--secondary);
+  cursor: pointer;
+}
+
+.dpc-media__action:hover { border-color: var(--lineStrong); color: var(--ink); }
+.dpc-media__action:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; opacity: 1; }
