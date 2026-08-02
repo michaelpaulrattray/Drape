@@ -1980,6 +1980,80 @@ answer. The Wes Anderson golden's occasional miss IS the stochastic retry class;
 the Viking's is not, and treating them as one would have produced a fix for the
 wrong thing.
 
+### D-92 — The Sign ceremony's crash-point table, and why its ordering inverts M4's *(Fable design review, 2026-08-02; recorded before the build)*
+
+Written down before signService exists, because the money bugs live in the
+ordering and a table is the only form in which that reasoning survives.
+
+**M4's law, generalised.** The authority-creating write and the charge must be
+ordered so the ambiguous middle state always resolves to *"refund in full"* or
+*"owed nothing"*. For a ROLL, rows are not authority — they are cheap to fail —
+so rows commit first and "rows but no ledger charge" means nothing was taken.
+For SIGN the DB transaction **creates authority**: a Cast, and a consumed
+candidate. An unpaid Cast is unacceptable, and undoing one means un-signing. So
+the charge precedes the durable boundary, and everything between the charge and
+that boundary must be fully compensable — money by refund, the storage copy by
+cleanup. Both orderings serve one invariant: **authority exists ⟹ money was
+taken.**
+
+The adjudicator's fork variable is `casting_candidates.signedCastId`, never the
+operation's still-unbound modelId.
+
+| Crash after | Durable evidence | Verdict | Money |
+|---|---|---|---|
+| claim | claimed op, no charge, CAS null | free failure | none |
+| running | running op, no `op:<id>:charge` row | free failure (with the late-deduct recheck) | none |
+| deduct / copy | charge row, CAS null, no model | paid failure, candidate stays `ready` | **full refund** |
+| mid-transaction | same (the txn is atomic) | same | same |
+| txn commit, mid-package | CAS set, model `provisioning`, some slots committed | committed views stand; claim each uncommitted slot, then refund its slice; activate + bind + seal | promotion never refunded once the CAS is set |
+| package terminal, pre-activation | CAS set, all slots terminal | activate + bind + seal, idempotently | none |
+| activation, pre-receipt | model `active`, op non-terminal | recompute from the ledger, seal | none |
+
+**Two failure modes the plan does not spell out, and they are the dangerous
+ones.**
+
+1. **Sweep-versus-live at the paid-failure point.** The sweep sees a stale
+   `running` operation with the CAS unset, refunds the full Sign price — and
+   then the stalled live process wakes and commits: a Cast created AND fully
+   refunded. This is the claim-before-pay law in Sign's clothing. The defence is
+   `evidenceFork`'s: the Sign transaction re-proves its own operation row
+   `WHERE status='running'` FOR UPDATE and aborts if it is gone, and the sweep
+   finalises the operation FIRST and refunds second, so the finalised status
+   fences the live commit out. The same shape applies per-slot.
+2. **The orphaned storage copy.** The copy can succeed before a crash, and
+   nothing then references the key — the cleanup worker only deletes keys a row
+   hands it. `evidenceFork`'s manifest pattern applies: register the destination
+   key in a cleanup batch BEFORE the copy, delete the manifest inside the commit
+   transaction.
+
+**The double-Sign race charges twice by construction** when two distinct
+`clientRequestId`s race, because idempotency is per request. The CAS loser must
+take the paid-failure exit — full refund plus an honest refusal — and the race
+test must assert **the loser's money**, not merely the winner's Cast.
+
+**Migration 0018 records the REASON, not the refund.** `expiredReason` enum
+(`cancelled_unseen` | `retention`) is written in the same statement as the
+status at both write sites. "Was it refunded" already has an authority — the
+ledger's unique reference index — and a second copy of that fact is a copy that
+can be wrong. `unseenRefundedAt` was rejected for exactly that: it cannot be
+written truthfully in one statement, because at landing time no refund exists
+yet. **NULL means a pre-0018 row and the sweep leaves it alone**, which is the
+fail-closed direction: declining to refund beats risking a double refund on data
+whose meaning cannot be recovered. No backfill.
+
+**View conformance is theatre unless it can fail.** Three independent axes —
+identity against the anchor, angle as requested, wardrobe against the *spec*
+rather than against the generation prompt — with parse failure or refusal
+counting as failure, never as a default pass. It needs negative fixtures proving
+each axis rejects, a forced-fail switch so the refusal path is testable
+end-to-end, and the verdict persisted on the slot so a dispute is answerable
+from the record. Prompt compliance as the sole check is the settled anti-pattern.
+
+**Surfaced for the founder at the gate rather than decided here:** a permanently
+failed view has no repair path until M12 — no per-slot purchase exists and "roll
+again" does not apply to views. That is ratified rather than an oversight, and
+the founder should meet it knowingly during the dogfood.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

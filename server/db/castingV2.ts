@@ -639,6 +639,19 @@ export async function landCandidate(input: {
       status: sql`CASE WHEN (
         SELECT r.status FROM casting_rolls r WHERE r.id = casting_candidates.rollId
       ) = 'cancelled' THEN 'expired' ELSE 'ready' END`,
+      /*
+        WHY it expired, written in the SAME statement as the status — migration
+        0018. The two meanings of `expired` could not be told apart before, so
+        the generosity refund had to fire inline here and the recovery sweep had
+        to keep its hands off entirely, leaving a crash between this CAS and the
+        refund as a slice nobody ever paid back.
+
+        Atomic with the status by construction: one statement, one CASE, so the
+        reason can never disagree with the fact it explains.
+      */
+      expiredReason: sql`CASE WHEN (
+        SELECT r.status FROM casting_rolls r WHERE r.id = casting_candidates.rollId
+      ) = 'cancelled' THEN 'cancelled_unseen' ELSE NULL END`,
       imageKey: input.imageKey,
       thumbKey: input.thumbKey ?? null,
       provider: input.provider,
@@ -1020,7 +1033,13 @@ export async function expireSessionCandidates(input: {
 
     const result = await tx
       .update(castingCandidates)
-      .set({ status: "expired" })
+      /*
+        The OTHER meaning of `expired`, and the one that must never be refunded:
+        the user received these candidates and looked at them for a week. Stamped
+        in the same statement as the status so the sweep can tell them apart from
+        a cancelled-unseen landing (migration 0018).
+      */
+      .set({ status: "expired", expiredReason: "retention" })
       .where(and(
         eq(castingCandidates.sessionId, input.sessionId),
         eq(castingCandidates.userId, input.userId),

@@ -222,6 +222,19 @@ export const models = mysqlTable("models", {
   technicalSchema: json("technicalSchema").notNull(), // JSON object with model specs
   preferences: json("preferences").notNull(), // Original ModelPreferences input
   status: mysqlEnum("status", ["draft", "active", "locked", "archived", "provisioning"]).default("draft").notNull(),
+  /*
+    CASTING V2 LINEAGE — migration 0018, additive.
+
+    A Cast made by Sign records the cohort it was cast under and the candidate
+    and roll it came from. `sourceCandidateId` is what the Sign adjudicator
+    reads to find a model whose operation never got to bind one: the candidate
+    knows its Cast via `signedCastId`, so recovery can always work backwards
+    from the durable row rather than from the operation's unbound modelId.
+  */
+  cohortKey: varchar("cohortKey", { length: 48 }),
+  styleKey: varchar("styleKey", { length: 48 }),
+  sourceCandidateId: int("sourceCandidateId"),
+  sourceRollId: int("sourceRollId"),
   // provisioning = invisible evidence-aware Fork under construction
   // draft = work in progress, mutable
   // active = minted with agencyId, identity locked
@@ -1891,6 +1904,17 @@ export const CASTING_CANDIDATE_STATUSES = [
 export type CastingCandidateStatus = typeof CASTING_CANDIDATE_STATUSES[number];
 
 /**
+ * The two meanings of `expired`, told apart at last.
+ *
+ * `cancelled_unseen` — dispatched before a cancel, landed after it, never shown
+ * to anyone. Refunded under the late-landing generosity ruling.
+ * `retention` — the 7-day sweep aged it out. The user received this candidate
+ * and looked at it; refunding it would undo work that was genuinely delivered.
+ */
+export const CASTING_EXPIRED_REASONS = ["cancelled_unseen", "retention"] as const;
+export type CastingExpiredReason = typeof CASTING_EXPIRED_REASONS[number];
+
+/**
  * The resumable unsigned sheet.
  *
  * A session stays `open` after a Sign — multiple Signs are legal, each its own
@@ -2003,6 +2027,30 @@ export const castingCandidates = mysqlTable("casting_candidates", {
    * purges with its session.
    */
   expiresAt: timestamp("expiresAt"),
+  /**
+   * WHY this candidate expired — migration 0018, and it closes a real money
+   * window rather than tidying a taxonomy.
+   *
+   * `expired` means two different things. A candidate that was already
+   * dispatched when the roll was cancelled lands unseen and is refunded under
+   * the generosity ruling; a candidate the 7-day retention sweep ages out was
+   * delivered and looked at for a week, and must never be refunded. Because the
+   * status could not tell them apart, the refund had to happen inline at the
+   * landing site and the recovery sweep had to keep its hands off entirely —
+   * which left a crash between the landing CAS and the refund as a slice nobody
+   * ever pays back.
+   *
+   * Written in the SAME statement as the status at both write sites, so the
+   * reason can never disagree with the fact. Deliberately records the REASON
+   * rather than whether a refund happened: "was it refunded" already has an
+   * authority — the ledger's unique reference index — and a second copy of that
+   * fact would be a copy that can be wrong.
+   *
+   * NULL means a row written before 0018. The sweep leaves those alone, which
+   * is the fail-closed direction: it declines to refund rather than risking a
+   * double refund on data whose meaning it cannot recover.
+   */
+  expiredReason: mysqlEnum("expiredReason", CASTING_EXPIRED_REASONS),
 }, (table) => ([
   uniqueIndex("uq_casting_candidates_public").on(table.publicId),
   uniqueIndex("uq_casting_candidates_roll_position").on(table.rollId, table.position),
