@@ -208,7 +208,20 @@ export default function CastingRoom() {
     .map((sibling) => ({
       url: sibling.imageUrl as string,
       label: sibling.indexLabel,
-      personaLine: sibling.personaLine,
+      /*
+        THE THIRD-CASE CAPTION (founder ruling). When the viewer is where a
+        sibling goes, it is because there is nowhere else — her sheet has
+        expired or been deleted, and she survives only because this Cast is
+        alive to be her sibling. Saying so is the difference between a dead end
+        and an explanation: §G.6 is the reason she is still here at all.
+      */
+      personaLine: sibling.destination === "viewer"
+        ? [
+          sibling.personaLine,
+          `From a sheet that has expired or was deleted — she remains as a sibling of ${
+            data?.name ?? "this Cast"}.`,
+        ].filter(Boolean).join(" · ")
+        : sibling.personaLine,
       downloadName: `sibling-${sibling.indexLabel}`,
     }));
 

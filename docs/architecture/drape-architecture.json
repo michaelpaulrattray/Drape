@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "74557c3229ef6bd6"
+    "sourceFingerprint": "934f71d491d8af90"
   },
   "domains": [
     {
@@ -33,7 +33,7 @@
     {
       "id": "domain:casting",
       "name": "casting",
-      "moduleCount": 120
+      "moduleCount": 121
     },
     {
       "id": "domain:casting-v2",
@@ -2375,6 +2375,12 @@
     {
       "id": "module:server/casting/backViewGate.ts",
       "path": "server/casting/backViewGate.ts",
+      "domain": "casting",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/casting/castLineagePurge.ts",
+      "path": "server/casting/castLineagePurge.ts",
       "domain": "casting",
       "lifecycle": "active"
     },
@@ -7507,6 +7513,10 @@
     {
       "id": "test:server/casting/backViewGate.test.ts",
       "path": "server/casting/backViewGate.test.ts"
+    },
+    {
+      "id": "test:server/casting/castLineagePurge.test.ts",
+      "path": "server/casting/castLineagePurge.test.ts"
     },
     {
       "id": "test:server/casting/castPublicId.test.ts",
@@ -13449,6 +13459,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/casting/castLineagePurge.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/castLineagePurge.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/casting/composeIdentityPayload.ts",
       "to": "module:server/casting/geminiClient.ts",
       "kind": "imports"
@@ -14836,6 +14856,11 @@
     {
       "from": "module:server/casting/finalCastDeletion.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletion.ts",
+      "to": "module:server/casting/castLineagePurge.ts",
       "kind": "imports"
     },
     {

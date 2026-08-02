@@ -420,8 +420,14 @@ export const castingV2Router = router({
    * Throw a sheet away on purpose.
    *
    * A pure delete of exploratory work — no refund implications, because every
-   * roll on it was delivered. It writes the same `abandoned` status the 7-day
-   * sweep writes, so the object purge that follows is the existing machinery.
+   * roll on it was delivered.
+   *
+   * It marks the sheet `abandoned` AND releases its candidates in the same
+   * transaction, under the §G.6 carve-outs: a signed candidate survives, and so
+   * do the kept siblings of any Cast this sheet produced. The claim this
+   * comment used to make — that the 7-day sweep's machinery took it from here —
+   * was false for two milestones: the sweep only ever selected `open` sessions,
+   * so nothing downstream of an abandon ever ran.
    */
   abandonSession: protectedProcedure
     .input(z.object({ sessionId: publicId }).strict())

@@ -966,29 +966,72 @@ export async function listExpiredSessions(input: {
 /**
  * Abandon a sheet on purpose.
  *
- * The user's own disposal of exploratory work. It writes the same terminal
- * status the 7-day sweep writes, so everything downstream — the object purge,
- * the kept/signed exemptions — is the machinery that already exists rather
- * than a second path that has to agree with the first.
+ * The user's own disposal of exploratory work — and until 2026-08-02 it did
+ * almost nothing.
+ *
+ * **The bug this closes.** It wrote `status = 'abandoned'` and stopped, while
+ * `listExpiredSessions` selected `status = 'open'` past its expiry. So a sheet
+ * the user deleted was never swept: its candidates stayed `ready`, the purge
+ * requires `expired`, and the objects lived in the bucket forever. This comment
+ * previously claimed the opposite — "everything downstream is the machinery
+ * that already exists" — which is how it survived review. The intent was
+ * written down and the wire was never connected: invariant 7, in the one place
+ * that promised it was fine.
+ *
+ * **The release now runs INLINE, in the same transaction as the status change.**
+ * Not by widening the sweep, which looked cheaper and is wrong twice over: an
+ * abandoned sheet's `expiresAt` is whatever the last activity set, so the purge
+ * would be deferred up to seven days after the user asked for it; and
+ * `markSessionExpired` only transitions from `open`, so the sweep would
+ * re-select every abandoned sheet on every 60-second tick, forever, eventually
+ * crowding real expiries out of its own row limit.
+ *
+ * `abandoned` stays a DISTINCT terminal status. That row is the only record of
+ * whether the user deleted this sheet or it aged out, and support answers those
+ * two questions differently.
  *
  * Owner-scoped in the statement (invariant 1), and only from `open`: a sheet
- * that already expired is not abandoned twice.
+ * that already expired is not abandoned twice, and the CAS is what makes the
+ * candidate release run exactly once.
  */
 export async function abandonCastingSession(input: {
   userId: number;
   sessionPublicId: string;
 }): Promise<boolean> {
   assertPositiveId(input.userId, "userId");
-  const db = await requireDb();
-  const result = await db
-    .update(castingSessions)
-    .set({ status: "abandoned" })
-    .where(and(
-      eq(castingSessions.publicId, input.sessionPublicId),
-      eq(castingSessions.userId, input.userId),
-      eq(castingSessions.status, "open"),
-    ));
-  return affectedRows(result) === 1;
+  return withTransaction(async (tx) => {
+    const [session] = await tx
+      .select({ id: castingSessions.id })
+      .from(castingSessions)
+      .where(and(
+        eq(castingSessions.publicId, input.sessionPublicId),
+        eq(castingSessions.userId, input.userId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!session) return false;
+
+    const result = await tx
+      .update(castingSessions)
+      .set({ status: "abandoned" })
+      .where(and(
+        eq(castingSessions.id, session.id),
+        eq(castingSessions.userId, input.userId),
+        eq(castingSessions.status, "open"),
+      ));
+    if (affectedRows(result) !== 1) return false;
+
+    /*
+      The §G.6 carve-outs, verbatim and shared: a signed candidate survives, and
+      so do the kept siblings of a Cast this sheet produced. Everything else is
+      released for the purge feed. The session row is already locked above,
+      which is the same serialization point the Sign ceremony takes — so a Sign
+      cannot land between the status change and the release and have its
+      siblings expired out from under it.
+    */
+    await expireSessionCandidatesIn(tx, { sessionId: session.id, userId: input.userId });
+    return true;
+  });
 }
 
 export async function markSessionExpired(sessionId: number): Promise<boolean> {
@@ -1011,6 +1054,22 @@ export async function expireSessionCandidates(input: {
   sessionId: number;
   userId: number;
 }): Promise<number> {
+  return withTransaction((tx) => expireSessionCandidatesIn(tx, input));
+}
+
+/**
+ * The same release, inside a caller's transaction.
+ *
+ * Split out so **abandoning a sheet can run it inline** rather than hoping a
+ * sweep picks the sheet up later — which it never did (see
+ * `abandonCastingSession`). One body, one set of §G.6 carve-outs, two callers;
+ * a second implementation that had to agree with this one is exactly the shape
+ * the retention law does not survive.
+ */
+export async function expireSessionCandidatesIn(
+  tx: TransactionHandle,
+  input: { sessionId: number; userId: number },
+): Promise<number> {
   assertPositiveId(input.sessionId, "sessionId");
   assertPositiveId(input.userId, "userId");
 
@@ -1026,7 +1085,7 @@ export async function expireSessionCandidates(input: {
     what stops a Sign landing between these two statements and having its kept
     siblings expired out from under it.
   */
-  return withTransaction(async (tx) => {
+  {
     await tx
       .select({ id: castingSessions.id })
       .from(castingSessions)
@@ -1063,7 +1122,7 @@ export async function expireSessionCandidates(input: {
         ...(signed ? [isNull(castingCandidates.keptAt)] : []),
       ));
     return affectedRows(result);
-  });
+  }
 }
 
 /** Deletes candidate rows whose objects the cleanup worker has been handed. */

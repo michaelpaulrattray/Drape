@@ -41,6 +41,7 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { assertOwnedEvidenceStorageKey } from "./evidence/evidenceLifecycle";
 import { parseEvidenceStorageKey } from "./evidence/evidenceDelivery";
+import { purgeCastLineageIn } from "./castLineagePurge";
 import { availableModelWhere } from "./modelAvailability";
 
 const log = createModuleLogger("casting/finalCastDeletion");
@@ -70,6 +71,14 @@ export interface FinalCastDeletionCounts {
   priorOperations: number;
   bugReportsScrubbed: number;
   cleanupObjects: number;
+  /**
+   * Candidate rows released back to the retention purge feed (D-107).
+   *
+   * Counted rather than deleted here: their objects reach the cleanup worker
+   * through the existing purge, so this number is what the deletion RELEASED,
+   * not what it removed. Zero on a legacy Cast, which has no V2 lineage.
+   */
+  lineageCandidatesReleased: number;
 }
 
 export interface FinalCastDeletionResult {
@@ -928,9 +937,38 @@ export async function executeFinalCastDeletion(input: {
     }
     failAt("after_dependencies", input.failurePoint);
 
+    /*
+      THE V2 LINEAGE PURGE (D-107). Read the candidate BEFORE the tombstone —
+      it is the entry point into the sheet she came from, and the tombstone is
+      about to null it.
+
+      Inside this transaction rather than after it, because the founder's ruling
+      is one deletion authority taught the new world; a follow-on step would be
+      the parallel second path, and it would also sit outside the manifest
+      boundary this function enforces.
+    */
+    const [lineageSource] = await tx
+      .select({ sourceCandidateId: models.sourceCandidateId })
+      .from(models)
+      .where(and(eq(models.id, input.modelId), eq(models.userId, input.userId)))
+      .limit(1);
+    const lineage = await purgeCastLineageIn(tx, {
+      userId: input.userId,
+      modelId: input.modelId,
+      sourceCandidateId: lineageSource?.sourceCandidateId ?? null,
+    });
+
     const now = new Date();
     failAt("before_tombstone", input.failurePoint);
     const tombstoned = await tx.update(models).set({
+      /*
+        Her signed linkage goes with her (D-107). `signedCastCount` on the
+        session is deliberately NOT decremented — it is a display counter, and
+        every liveness question here is asked of `casting_candidates.signedCastId`
+        against a living model. Nothing may start trusting the count.
+      */
+      sourceCandidateId: null,
+      sourceRollId: null,
       agencyId: null,
       name: null,
       masterPrompt: "[deleted]",
@@ -977,6 +1015,7 @@ export async function executeFinalCastDeletion(input: {
       priorOperations: priorOperations.length,
       bugReportsScrubbed: affectedRows(scrubbedBugReports),
       cleanupObjects: manifest.expectedCount,
+      lineageCandidatesReleased: lineage.candidatesReleased,
     };
     await tx.insert(auditLogs).values({
       userId: input.userId,

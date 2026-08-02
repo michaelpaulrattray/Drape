@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
@@ -109,5 +111,52 @@ describe("the 7-day retention sweep", () => {
       again, and the cleanup worker only deletes keys a row handed it.
       */
     expect(result.objectsQueued).toBe(3);
+  });
+});
+
+describe("abandoning a sheet releases it, rather than waiting for a sweep", () => {
+  it("expires the candidates in the same transaction as the status change", async () => {
+    /*
+      THE BUG THIS CLOSES, and it is a leak rather than a loss.
+      `abandonCastingSession` wrote `status = 'abandoned'` and stopped, while
+      `listExpiredSessions` selected `open` past its expiry. A sheet the user
+      deleted was therefore never swept: candidates stayed `ready`, the purge
+      requires `expired`, and the objects stayed in the bucket forever. Both the
+      db helper's and the route's doc comments claimed the downstream machinery
+      ran. It never did — invariant 7, in the two places that promised it was
+      fine.
+
+      Asserted at the SOURCE rather than through the sweep, because widening the
+      sweep is the fix that looks cheaper and is wrong: an abandoned sheet's
+      `expiresAt` is whatever the last activity set, so the purge would be
+      deferred up to seven days; and nothing transitions `abandoned`, so the
+      sweep would re-select it every tick forever.
+    */
+    const source = await readFile(
+      new URL("../db/castingV2.ts", import.meta.url),
+      "utf8",
+    );
+    const abandon = source.slice(
+      source.indexOf("export async function abandonCastingSession"),
+      source.indexOf("export async function markSessionExpired"),
+    );
+    // One transaction: the CAS and the release together.
+    expect(abandon).toContain("withTransaction");
+    expect(abandon).toContain('eq(castingSessions.status, "open")');
+    expect(abandon).toContain("expireSessionCandidatesIn(tx,");
+    // The session row is locked, which is the serialization point the Sign
+    // ceremony also takes — so a Sign cannot land mid-release.
+    expect(abandon).toContain('.for("update")');
+    // And the status stays distinct: it is the only record of WHICH happened.
+    expect(abandon).toContain('set({ status: "abandoned" })');
+    expect(abandon).not.toContain('set({ status: "expired" })');
+  });
+
+  it("shares one release body with the sweep, never a second copy", async () => {
+    const source = await readFile(new URL("../db/castingV2.ts", import.meta.url), "utf8");
+    // `expireSessionCandidates` is now a thin wrapper over the `In` variant, so
+    // the §G.6 carve-outs cannot drift between the two callers.
+    expect(source).toContain("return withTransaction((tx) => expireSessionCandidatesIn(tx, input));");
+    expect(source.match(/expiredReason: "retention"/g) ?? []).toHaveLength(1);
   });
 });

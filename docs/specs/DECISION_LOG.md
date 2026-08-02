@@ -2687,4 +2687,91 @@ than the one it closed.
 
 ---
 
+## D-107 — Deletion purges what only the deleted thing owns.
+
+**Founder ruling (2026-08-02).** §G.6 said *"purge source roll lineage"*, and
+that sentence was written when one sheet made one Cast. Two Casts can be signed
+from one sheet, and they share everything behind them: the session, the rolls,
+and each other's kept faces as Siblings-card content.
+
+> **Deletion purges what only the deleted thing owns, and preserves what
+> anything living still owns.**
+
+Applied:
+
+| | |
+|---|---|
+| **goes** | her Cast-owned objects, and her candidate's signed linkage |
+| **goes** | every other candidate on that sheet that no living Cast claims |
+| **stays** | the session and its rolls — shared history |
+| **stays** | any candidate a surviving Cast still claims as a sibling |
+
+**The lineage purge runs only when nothing living references it.**
+
+**Liveness is `deletedAt IS NULL`, never `availableModelWhere()`.** A sibling
+Cast whose package is still building is `provisioning`, which that helper
+excludes — counting her as dead would purge the faces her room is about to show.
+
+**Order matters.** The deleted Cast's `signedCastId` is cleared FIRST. While it
+still points at the model, her candidate reads as "signed" to every protection
+downstream, including the release statement's own guard, so her own face would
+be the one thing deletion could not release.
+
+**Concurrency.** The purge takes the session row `FOR UPDATE` — the same
+serialization point `signCandidateIntoCast` takes. A Sign racing a deletion
+either committed first, and is visible to the liveness test, or waits behind it
+and finds its candidate no longer `ready`, failing cleanly with its money
+refunded.
+
+**One authority, extended — never a second path.** The purge runs INSIDE
+`executeFinalCastDeletion`'s transaction (D-64's manifests, tombstones and
+bounded worker purge). A follow-on step would be the parallel deletion path the
+ruling forbids, and would also sit outside the manifest boundary that function
+enforces. A legacy Cast has no candidate and passes through untouched.
+
+Rows are moved to `expired` and the existing retention purge feed hands their
+keys to the cleanup worker — one vocabulary for "this candidate is releasable",
+not two. `castingSessions.signedCastCount` is deliberately **not** decremented:
+it is a display counter, and every liveness question is asked of
+`casting_candidates.signedCastId` against a living model.
+
+### The bug the audit found first — and it was the opposite of the fear
+
+The founder asked whether sheet deletion hard-deletes signed rows today. **It
+does not, and never could:** signed candidates and kept siblings are protected
+in `expireSessionCandidates`'s `WHERE` *and* again in `deleteCandidateRowsIn`'s
+`WHERE`. There was no data-loss hazard.
+
+**The hazard was inverted — a purge the user asked for that never happened.**
+`abandonCastingSession` wrote `status = 'abandoned'` and stopped; the sweep's
+`listExpiredSessions` selected `status = 'open'` past expiry. So a sheet the
+user deleted was never swept: its candidates stayed `ready`,
+`listPurgeableCandidates` requires `expired`, and the objects lived in the
+bucket forever. **Both the db helper's and the route's doc comments claimed the
+downstream machinery ran.** That is how it survived review — invariant 7, in the
+two places that promised it was fine.
+
+**Fixed by running the release inline**, in the same transaction as the status
+change, sharing `expireSessionCandidatesIn` with the sweep so the §G.6
+carve-outs cannot drift between callers. Deliberately NOT by widening the sweep,
+which is wrong twice: an abandoned sheet's `expiresAt` is whatever the last
+activity set, so the purge would be deferred up to seven days after the user
+asked for it; and nothing transitions `abandoned`, so the sweep would re-select
+every abandoned sheet on every tick forever, eventually crowding real expiries
+out of its own row limit.
+
+`abandoned` stays a **distinct terminal status**: that row is the only record of
+whether the user deleted this sheet or it aged out, and support answers those
+two questions differently.
+
+### The sibling's third destination
+
+Confirmed from the polish round: where a sibling's sheet has expired or been
+deleted, the viewer is her destination and it says why — *"From a sheet that has
+expired or was deleted — she remains as a sibling of [name]."* §G.6 is the
+reason she is still there at all, and saying so is the difference between a dead
+end and an explanation.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
