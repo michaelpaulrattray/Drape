@@ -2068,6 +2068,39 @@ coming, and both are worse than the sentence. **This is a gate condition on M7,
 not a polish item** — the slot ships with its confession or the room is not
 done.
 
+### D-93 — A garbage render is a failure, and nobody is checking *(founder finding 2026-08-02; QUEUED before real invites)*
+
+**The incident, recorded so it is not re-discovered:** on the k-pop verification,
+roll 2 tile 01 came back as a **nine-face grid inside a single tile** — a
+contact sheet where a portrait should be. It landed as a *successful* paid
+candidate: `ready`, an image key, a charge, no refund, no detection, and no way
+for the user to say otherwise short of discarding it and paying again.
+
+**Why it matters more than it looks.** Every failure taxonomy in the roll domain
+answers "did the provider fail". None answers "did the provider succeed at
+producing garbage". A transport error, a content refusal and a capability
+refusal all refund honestly; a returned image that is not a photograph of one
+person refunds nothing, because nothing ever looks at it. That is the only class
+of paid failure the product currently cannot see.
+
+**The queued fix:** a cheap landing heuristic — face count and grid detection —
+classifying a multi-face or tiled render as a **render failure**, routed into the
+same taxonomy the provider classes already use, so it auto-fails and slice-refunds
+with no new money path. Cheap deliberately: this is a smoke alarm, not a quality
+judge, and a quality judge at the landing site would be the prompt-compliance
+anti-pattern wearing a new hat.
+
+**Sequencing: before real invites, after Sign.** The founder is the only user
+today and can see and report one; a stranger cannot, and would simply have paid
+for a contact sheet. Noted manually against that roll in the meantime.
+
+**Also confirmed at the same pass:** glasses and jewelry are correctly absent
+from dice output, per the stated-only rulings. The stated-eyewear check — "a
+model in her 20s wearing chunky glasses" — rides the founder's next wildcard
+roll, and it is a *drop-a-stated-fact* check rather than a feature: if the
+framing constant's anti-prop language eats a stated accessory, that is a bug
+today, not a future tier.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

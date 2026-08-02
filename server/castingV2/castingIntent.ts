@@ -735,7 +735,16 @@ export function parsePoolTendencies(raw: unknown): PoolTendencies {
   const strengthRaw = typeof (wire as { leanStrength?: unknown }).leanStrength === "string"
     ? ((wire as { leanStrength: string }).leanStrength).trim().toLowerCase()
     : null;
+  const familiesRaw = (wire as { avoidFamilies?: unknown }).avoidFamilies;
+  const avoidFamilies = Array.isArray(familiesRaw)
+    ? HAIR_FAMILIES.filter((family) =>
+        familiesRaw.some(
+          (entry) => typeof entry === "string" && entry.trim().toLowerCase() === family,
+        ),
+      )
+    : [];
   return {
+    avoidFamilies,
     heritageLean: heritage,
     leanStrength: (LEAN_STRENGTHS as readonly string[]).includes(strengthRaw ?? "")
       ? (strengthRaw as LeanStrength)

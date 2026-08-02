@@ -226,12 +226,83 @@ describe("lean strength — how hard a pool's edges are", () => {
   });
 });
 
+describe("the styling lean — the last category-blind axis", () => {
+  it("pushes a pool's absent silhouettes down without making them impossible", async () => {
+    /*
+      K-pop sheets kept drawing buzz cuts and shaved heads at ordinary street
+      weight — twice across two rolls — because grooming, age and heritage all
+      had a channel and the family draw did not.
+
+      Floor, not removal: the difference between a lean and a lock is that the
+      tile stays reachable, exactly as the age far-bands do at `defines`.
+    */
+    const leaned = await sheets(
+      { role: "k-pop idol", sex: "male", poolTendencies: { avoidFamilies: ["shaved", "cropped"] } },
+      25,
+      "avoid",
+    );
+    const plain = await sheets({ role: "k-pop idol", sex: "male" }, 25, "avoid-plain");
+    const shavedShare = (rows: typeof leaned) =>
+      rows.filter((row) =>
+        ["shaved", "cropped"].includes(
+          (row.resolvedIdentity as never as { realized: { hairStyle: { family: string } | null } })
+            .realized.hairStyle?.family ?? "",
+        ),
+      ).length / rows.length;
+
+    /*
+      The bar is the ARITHMETIC, not a round number I liked. Six avoided entries
+      held at a floor of one, against roughly sixty parts of everything else,
+      lands near nine percent — under one tile per sheet, which is what "idols
+      do not have buzz cuts" honestly means.
+
+      Both halves asserted: it must drop hard from the unleaned draw, AND it must
+      not reach zero, because the reachable tile is the difference between a lean
+      and a lock.
+    */
+    expect(shavedShare(leaned)).toBeLessThan(shavedShare(plain) / 3);
+    expect(shavedShare(leaned)).toBeLessThan(0.12);
+    expect(shavedShare(leaned)).toBeGreaterThan(0);
+  });
+
+  it("never beats a stated cut — deference outranks every tendency", async () => {
+    /*
+      "A k-pop idol with a shaved head" renders as written, and the pool's
+      opinion about shaved heads is never consulted.
+
+      Note the brief TEXT carries the words, not just the structured field: the
+      code-owned gate is the authority on whether a cut was stated (D-89), so a
+      test that only stubbed `statedHair` would be testing the interpreter's
+      claim rather than the gate's answer.
+    */
+    const compiled = (await castingBriefCompiler({
+      briefText: "a k-pop idol with a shaved head",
+      candidateCount: 8,
+      rollSeed: "avoid-stated",
+      engine: engine({
+        role: "k-pop idol",
+        sex: "male",
+        statedHair: { cutLength: "shaved head" },
+        poolTendencies: { avoidFamilies: ["shaved", "cropped"] },
+      }),
+    } as never)) as unknown as { candidates: Array<{ resolvedIdentity: { realized: { hairStyle: unknown } } }> };
+
+    // Coverage suppresses the authored cut entirely rather than substituting one
+    // the pool prefers — the user's own words carry it to the image.
+    for (const candidate of compiled.candidates) {
+      expect(candidate.resolvedIdentity.realized.hairStyle).toBeNull();
+    }
+  });
+});
+
 describe("the parser", () => {
   it("drops anything outside the closed vocabularies", () => {
     expect(parsePoolTendencies({ ageLean: "middle-aged", facialHairLean: "stubbly" })).toEqual(
       NO_TENDENCIES,
     );
     expect(parsePoolTendencies("young")).toEqual(NO_TENDENCIES);
+    // Families are closed too: an invented silhouette name is dropped.
+    expect(parsePoolTendencies({ avoidFamilies: ["mohawk", "spiky"] }).avoidFamilies).toEqual([]);
     expect(parsePoolTendencies(null)).toEqual(NO_TENDENCIES);
   });
 
@@ -243,6 +314,7 @@ describe("the parser", () => {
       facialHairLean: "clean",
       heritageLean: "East Asian",
       leanStrength: null,
+      avoidFamilies: [],
     });
   });
 

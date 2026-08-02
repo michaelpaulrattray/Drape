@@ -1037,6 +1037,14 @@ export function resolveCandidateIdentity(
         position,
         rollSeed,
         facialHairLean: intent.poolTendencies?.facialHairLean ?? null,
+        /*
+          Only when the brief left the cut open. Deference outranks every
+          tendency, so a stated shaved head renders as written and the pool's
+          opinion about shaved heads is never consulted.
+        */
+        avoidFamilies: deference.spoken.has("cutLength") || deference.coverage
+          ? []
+          : intent.poolTendencies?.avoidFamilies ?? [],
       }),
     realizeColour: () => varyHairColour(heritage, ageBand, position, rollSeed),
   });

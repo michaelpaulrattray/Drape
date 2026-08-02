@@ -116,6 +116,16 @@ export type ReleaseContext = {
   hairStated: boolean;
   /** The brief stated facial hair. Not a rung, but it bounds the signature. */
   facialHairStated: boolean;
+  /**
+   * Silhouette families this casting's pool does not wear.
+   *
+   * The release ladder is the THIRD re-picker of the cut, after resolution and
+   * the taste pass, and it leaked exactly as the other two did: a k-pop sheet
+   * that had avoided shaved cuts twice got them back from the adjacent-cut rung.
+   * Threading it here is the same lesson as the D-87 mirror — a rule has to hold
+   * at every site that writes the axis, not at the first one.
+   */
+  avoidFamilies?: readonly string[];
 };
 
 function hashOf(text: string): number {
@@ -242,7 +252,10 @@ function applyRung(
   }
 
   // adjacent-cut — last, because the drift ruling owns the cut.
-  const pool = adjacentCuts(identity, realized.hairStyle);
+  const avoided = new Set(context.avoidFamilies ?? []);
+  const pool = adjacentCuts(identity, realized.hairStyle).filter(
+    (style) => !avoided.has(style.family),
+  );
   if (pool.length === 0) return null;
   const ordered = [...pool.slice(seed % pool.length), ...pool.slice(0, seed % pool.length)];
   return firstFreeing(ordered, taken, (style) => {

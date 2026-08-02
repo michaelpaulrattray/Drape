@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3d158971a798db94"
+    "sourceFingerprint": "0b810521583e1543"
   },
   "domains": [
     {
@@ -16227,6 +16227,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/poolTendencies.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/properNouns.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -16264,6 +16269,11 @@
     {
       "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {

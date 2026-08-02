@@ -152,7 +152,7 @@ Reply with a single JSON object and nothing else:
   "reads": [8 short strings] | null,
   "composedDirection": { "thesis": string, "avoid": string } | null,
   "statedHair": { "cutLength": string | null, "colour": string | null, "texture": string | null, "greying": boolean },
-  "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null, "heritageLean": heritage value | null, "leanStrength": "centres" | "defines" | null }
+  "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null, "heritageLean": heritage value | null, "leanStrength": "centres" | "defines" | null, "avoidFamilies": [hair family values] }
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -269,12 +269,18 @@ WHAT TO EXTRACT
   for them narrows the sheet for no reason — leave this null, as you would any
   other field the brief did not fill.
   Compose it in the same shape the archetype list uses:
-      "thesis": what kind of FACE AND BEARING this casting wants, under 30
-                words. Bearing is half of an aesthetic and is usually the half
-                that is missing: a house that commands the lens, a casting that
-                is doe-eyed and slightly awkward, the soft stage-charisma of an
+      "thesis": what kind of FACE, BEARING and SILHOUETTE this casting wants,
+                under 30 words. Bearing is half of an aesthetic and usually the
+                missing half: a house that commands the lens, a casting that is
+                doe-eyed and slightly awkward, the soft stage-charisma of an
                 idol, the flint of a man who leads a gang. Name how the person
                 HOLDS THEMSELVES, not only how they are built.
+                You may also name the world's TYPICAL SILHOUETTES — "soft
+                see-through fringes", "a two-block silhouette", "close-barbered
+                and squared off" — because a silhouette is the level this
+                casting is described at. NEVER a named cut, and never one cut
+                for the whole sheet: you are describing the world these people
+                live in, and the engine still varies who each of them is.
       "avoid":  the anti-pattern — what it must not collapse into, under 20.
   ADDITIVE, NEVER A SUBSTITUTE. Keep filling "archetype", "look" and every
   other field exactly as you would have. If a listed archetype fits, use it and
@@ -353,6 +359,14 @@ WHAT TO EXTRACT
                  outsider would read as a mistake rather than as range. Reserve
                  it for industries with genuinely hard edges: a k-pop idol, a
                  sumo wrestler, a Maasai warrior. If you are unsure, "centres".
+      "avoidFamilies": silhouette FAMILIES this casting's pool essentially never
+                 wears, from: shaved, cropped, short, mid-length, long, coiled.
+                 A k-pop idol casting excludes "shaved" and "cropped"; a serving
+                 soldier excludes "long". Families only — never a specific cut,
+                 because naming a cut would decide every tile instead of
+                 describing the pool. Empty for almost everything: most castings
+                 genuinely span the range, and an exclusion you invent removes
+                 faces the user might have wanted.
   Only fill these from the CATEGORY, never from the individual. If the brief
   states an age or facial hair, that is a fact and belongs in its own field —
   putting it here instead would weaken a thing the user actually said.

@@ -633,6 +633,10 @@ function resolveSheet(input: {
           its second axis alone.
         */
         authoredParts,
+        // The pool's absent silhouettes, so a re-pick cannot hand them back.
+        avoidFamilies: authoredParts.has("cutLength")
+          ? intent.poolTendencies?.avoidFamilies ?? []
+          : [],
         biasResolution:
           stylingResolutionFor({ intent, briefStatesHair: briefStatesHair(stated) }) === "bias",
       });
@@ -674,6 +678,9 @@ function resolveSheet(input: {
     // image never saw.
     hairStated: briefStatesHair(stated),
     facialHairStated: statedFacialHairHere,
+    avoidFamilies: authoredParts.has("cutLength")
+      ? intent.poolTendencies?.avoidFamilies ?? []
+      : [],
   });
   const sheet = freed;
 

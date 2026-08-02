@@ -30,6 +30,7 @@
  */
 
 import type { AgeBand, Heritage } from "./castingIntent";
+import type { HairFamily } from "../../shared/castingVocabularies";
 import type { FacialHair } from "../../shared/castingRealization";
 
 /**
@@ -91,6 +92,25 @@ export type PoolTendencies = {
   heritageLean: Heritage | null;
   /** How hard the pool's edges are. Defaults to the softer reading. */
   leanStrength: LeanStrength | null;
+  /**
+   * Silhouette FAMILIES this casting's pool does not wear.
+   *
+   * The last category-blind axis. Grooming, age and heritage all had a channel
+   * and the family draw did not, so k-pop idol sheets kept drawing buzz cuts and
+   * shaved heads at ordinary street weight — twice across two rolls. A pool that
+   * genuinely never wears a silhouette is a fact about the pool, the same kind
+   * of fact as its age or its grooming.
+   *
+   * FAMILIES, never cuts. Naming a cut would be per-tile prescription and would
+   * take the sheet's variety with it; a family is the level the bias tier
+   * already speaks at, so this composes with the existing design rather than
+   * fighting it.
+   *
+   * Down-weighted to a floor rather than removed, and only at `defines`. A
+   * stated cut still wins outright — deference outranks every tendency, so
+   * "a k-pop idol with a shaved head" renders exactly as written.
+   */
+  avoidFamilies: readonly HairFamily[];
 };
 
 export const NO_TENDENCIES: PoolTendencies = {
@@ -98,6 +118,7 @@ export const NO_TENDENCIES: PoolTendencies = {
   facialHairLean: null,
   heritageLean: null,
   leanStrength: null,
+  avoidFamilies: [],
 };
 
 /**
@@ -255,5 +276,29 @@ export function leanFacialHairWeights(
   const multipliers = MULTIPLIERS[lean];
   return base.map(
     ([value, weight]) => [value, Math.max(1, Math.round(weight * multipliers[value]))] as const,
+  );
+}
+
+
+/**
+ * Push a pool's absent silhouettes down, without making them impossible.
+ *
+ * A floor of one rather than zero, exactly as the age far-bands do at
+ * `defines` — the difference between a lean and a lock is that the tile stays
+ * reachable. On a sheet of eight a floor of one is roughly never, which is what
+ * "idols do not have buzz cuts" actually means.
+ *
+ * Only ever called when the brief did NOT state a cut: deference outranks every
+ * tendency, so a stated shaved head is rendered as written and this is not
+ * consulted at all.
+ */
+export function leanStyleWeights<T extends { family: string }>(
+  entries: readonly (readonly [T, number])[],
+  avoid: readonly HairFamily[],
+): readonly (readonly [T, number])[] {
+  if (avoid.length === 0) return entries;
+  const avoided = new Set<string>(avoid);
+  return entries.map(([style, weight]) =>
+    avoided.has(style.family) ? ([style, 1] as const) : ([style, weight] as const),
   );
 }

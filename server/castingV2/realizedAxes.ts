@@ -27,7 +27,8 @@ import {
   stylesFor,
 } from "./hairStyles";
 import { applyTasteWrite, type TasteWrite } from "./axisRegistry";
-import { leanFacialHairWeights, type FacialHairLean } from "./poolTendencies";
+import { leanFacialHairWeights, leanStyleWeights, type FacialHairLean } from "./poolTendencies";
+import type { HairFamily } from "../../shared/castingVocabularies";
 import {
   HAIR_PARTS,
   REALIZED_AXIS_KEYS,
@@ -91,8 +92,14 @@ function fromWeights(entries: ReturnType<typeof stylesFor>, seed: number): HairS
   return entries[entries.length - 1][0];
 }
 
-function pickStyle(sex: Sex, heritage: string, ageBand: AgeBand, seed: number): HairStyle {
-  return fromWeights(stylesFor(sex, heritage, ageBand), seed);
+function pickStyle(
+  sex: Sex,
+  heritage: string,
+  ageBand: AgeBand,
+  seed: number,
+  avoidFamilies: readonly HairFamily[] = [],
+): HairStyle {
+  return fromWeights(leanStyleWeights(stylesFor(sex, heritage, ageBand), avoidFamilies), seed);
 }
 
 function weightedPick<T extends string>(entries: readonly (readonly [T, number])[], seed: number): T {
@@ -356,11 +363,13 @@ export function realizeAxes(input: {
   rollSeed: string;
   /** What the category implies. Re-weights the draw; never decides it. */
   facialHairLean?: FacialHairLean | null;
+  /** Silhouette families this pool does not wear. Down-weighted, never removed. */
+  avoidFamilies?: readonly HairFamily[];
 }): RealizedAxes {
   const { heritage, ageBand, sex, position, rollSeed } = input;
   const primary = (heritage[0]?.heritage ?? "") as Heritage | "";
   const seedFor = (axis: string) => hash(`${rollSeed}:${axis}:${position}`);
-  const hairStyle = pickStyle(sex, primary, ageBand, seedFor("hairStyle"));
+  const hairStyle = pickStyle(sex, primary, ageBand, seedFor("hairStyle"), input.avoidFamilies);
   /*
     Resolved before the object literal because the beard's greying depends on
     it: only a real beard can go salt-and-pepper, and stubble is too short to
@@ -572,6 +581,17 @@ export function applySheetTaste<T extends SheetCandidate>(
      */
     authoredParts?: ReadonlySet<HairPart>;
     /*
+      The pool's absent silhouettes reach the taste pass too.
+
+      They did not at first, and the leak is the shape this milestone keeps
+      paying for: the pass RE-PICKS a style from `stylesFor` when it breaks a
+      statement cap or a twin, so a k-pop sheet that had correctly avoided
+      shaved cuts at resolution got them handed straight back a moment later.
+      A rule applied at one site and not the others is a rule that does not
+      hold.
+    */
+    avoidFamilies?: readonly HairFamily[];
+    /*
       Under creative context the prompt carries the SILHOUETTE, not the cut, so
       distinctness has to be counted at the resolution the image actually
       receives. Counting names there would let a sheet score eight distinct cuts
@@ -615,7 +635,23 @@ export function applySheetTaste<T extends SheetCandidate>(
     if (current === null) return candidate;
 
     const primary = (candidate.heritage[0]?.heritage ?? "") as Heritage | "";
-    const entries = stylesFor(candidate.sex, primary, candidate.ageBand);
+    /*
+      EXCLUDED here, not merely down-weighted — and the difference is the bug.
+
+      The taste pass chooses by FAMILY MEMBERSHIP rather than by weight: its
+      first pool is "silhouettes nobody nearby has", a filter. So a family
+      pushed to weight 1 at resolution still won outright the moment it was the
+      only unused one, and a k-pop sheet got its buzz cuts back from the rule
+      that exists to spread silhouettes.
+
+      Excluding them here does not make the family a lock: the reachability that
+      keeps this a lean lives in the RESOLUTION draw, where the floor of 1
+      survives. This pass only ever re-picks a cut that is ours to choose.
+    */
+    const avoided = new Set<string>(options.avoidFamilies ?? []);
+    const all = stylesFor(candidate.sex, primary, candidate.ageBand);
+    const permitted = all.filter(([style]) => !avoided.has(style.family));
+    const entries = permitted.length > 0 ? permitted : all;
     const ordinary = entries.filter(([style]) => !style.statement);
     const nearby = neighbours(primary);
     const familiesNearby = new Set(nearby.map((entry) => entry.family));
