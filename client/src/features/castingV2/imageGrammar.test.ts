@@ -80,6 +80,33 @@ describe("the one image grammar", () => {
     ).toEqual([]);
   });
 
+  it("uses the pointer, never a magnifier", async () => {
+    /*
+      Founder ruling: `zoom-in` promises a zoom, and the viewer opens the
+      picture rather than magnifying it in place. The pointer is the standard
+      clickability signal — invisible through familiarity, and it makes no claim
+      the surface does not keep. It carries the affordance alone; no hover
+      treatment is needed beside it.
+    */
+    const css = await readFile(CSS, "utf8");
+    expect(css).not.toContain("cursor: zoom-in");
+    expect(css).not.toContain("cursor: zoom-out");
+    const frames = css.slice(css.indexOf(".dpc-master__main,"), css.indexOf(".dpc-viewer__chrome"));
+    expect(frames).toContain("cursor: pointer");
+  });
+
+  it("closes on a click that is neither the picture nor the chrome", async () => {
+    /*
+      `target === currentTarget` only closed on the scrim itself, so the
+      figure's padding and the caption's whitespace counted as inside and
+      swallowed the click — the dialog felt stuck for a reason nothing on screen
+      explained.
+    */
+    const viewer = await readFile(VIEWER, "utf8");
+    expect(viewer).toContain('target.closest("img, .dpc-viewer__chrome")');
+    expect(viewer).not.toContain("event.target === event.currentTarget");
+  });
+
   it("binds all four gestures in one place", async () => {
     const viewer = await readFile(VIEWER, "utf8");
     expect(viewer).toContain('event.key === "Escape"');
@@ -148,9 +175,13 @@ describe("a sibling tile goes where she is", () => {
 
   it("never offers a link to a sheet that is gone", async () => {
     const room = await readFile(ROOM, "utf8");
-    // lastIndexOf: the phrase also appears in the comment explaining why the
-    // room's top-right link was removed, and that mention is not the control.
-    const index = room.lastIndexOf("Open the sheet she came from");
+    /*
+      Matched on the rendered expression, not the prose: the label is now
+      pronoun-derived ("Open the sheet {pronouns.subject} came from"), and the
+      old wording survives only in the comment explaining why the room's
+      top-right link was removed.
+    */
+    const index = room.lastIndexOf("Open the sheet {data.pronouns.subject} came from");
     expect(index).toBeGreaterThan(0);
     expect(room.slice(index - 500, index)).toContain("data.sheetOpen");
   });

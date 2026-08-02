@@ -218,8 +218,9 @@ export default function CastingRoom() {
       personaLine: sibling.destination === "viewer"
         ? [
           sibling.personaLine,
-          `From a sheet that has expired or was deleted — she remains as a sibling of ${
-            data?.name ?? "this Cast"}.`,
+          `From a sheet that has expired or was deleted — ${
+            data?.pronouns.subject ?? "they"} remain${
+            data?.pronouns.plural ? "" : "s"} as a sibling of ${data?.name ?? "this Cast"}.`,
         ].filter(Boolean).join(" · ")
         : sibling.personaLine,
       downloadName: `sibling-${sibling.indexLabel}`,
@@ -599,8 +600,9 @@ export default function CastingRoom() {
                     <span className="dpc-camp__count">0</span>
                   </div>
                   <p className="dpc-camp__empty">
-                    Campaigns aren't built yet. When they are, the ones she appears in are listed
-                    here.
+                    Campaigns aren't built yet. When they are, the ones{" "}
+                    {data.pronouns.subject} appear{data.pronouns.plural ? "" : "s"} in are
+                    listed here.
                   </p>
                   <button type="button" className="dpc-camp__add" disabled>
                     <Plus size={12} strokeWidth={1.9} aria-hidden="true" />
@@ -668,7 +670,7 @@ export default function CastingRoom() {
                             sibling.destination === "cast"
                               ? `Open ${sibling.personaLine ?? sibling.indexLabel}'s room`
                               : sibling.destination === "sheet"
-                                ? `Find ${sibling.personaLine ?? sibling.indexLabel} on her sheet`
+                                ? `Find ${sibling.personaLine ?? sibling.indexLabel} on that sheet`
                                 : `Look at ${sibling.personaLine ?? sibling.indexLabel}`
                           }
                         >
@@ -678,7 +680,7 @@ export default function CastingRoom() {
                     </div>
                   ) : (
                     <p className="dpc-rcard__body">
-                      Nothing else was kept from her sheet.
+                      Nothing else was kept from {data.pronouns.possessive} sheet.
                     </p>
                   )}
                   {/*
@@ -694,7 +696,7 @@ export default function CastingRoom() {
                       size="small"
                       onClick={() => navigate(`/casting/s/${data.lineage.fromSessionPublicId}`)}
                     >
-                      Open the sheet she came from
+                      Open the sheet {data.pronouns.subject} came from
                     </Button>
                   ) : null}
                 </section>

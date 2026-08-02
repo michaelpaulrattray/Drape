@@ -20,6 +20,7 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import { sheetPreviewKeys } from "../castingV2/sheetPreview";
+import { castPronouns } from "../castingV2/castPronouns";
 import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremony";
 import { assertFinalModelDeleteEnabled } from "./models";
 import { storagePublicUrl } from "../storage";
@@ -509,6 +510,9 @@ export const castingV2Router = router({
         name: model.name,
         personaLine,
         imageUrl: anchorUrl,
+        // Derived words, never the schema they came from — the delete ceremony
+        // talks about a specific person and must not call Jericho "she".
+        pronouns: castPronouns(model.technicalSchema),
         // A Cast whose package is still building says so rather than looking
         // finished; it is reachable either way.
         status: model.status === "provisioning" ? ("building" as const) : ("ready" as const),

@@ -3,6 +3,11 @@ import { createPortal } from "react-dom";
 
 import { Button } from "@/foundation";
 
+/** Sentence-initial: "His signed face…" */
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 /**
  * The permanent-deletion ceremony for a signed Cast.
  *
@@ -23,12 +28,15 @@ import { Button } from "@/foundation";
 export function DeleteCastConfirm({
   name,
   imageUrl,
+  pronouns,
   busy,
   onCancel,
   onConfirm,
 }: {
   name: string;
   imageUrl: string | null;
+  /** Server-derived from her own record — `they` when the sex was never stated. */
+  pronouns: { subject: string; object: string; possessive: string; plural: boolean };
   busy: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -60,13 +68,14 @@ export function DeleteCastConfirm({
         <span className="dpc-sign__caption">{name}</span>
         <h2 className="dpc-confirm__title">Delete {name}?</h2>
         <p className="dpc-confirm__body">
-          This is permanent and it is not refundable. Her signed face, her whole
-          package and any takes made with her are removed for good — and the
-          credits her Sign cost do not come back.
+          This is permanent and it is not refundable. {capitalize(pronouns.possessive)} signed
+          face, {pronouns.possessive} whole package and any takes made with{" "}
+          {pronouns.object} are removed for good — and the credits{" "}
+          {pronouns.possessive} Sign cost do not come back.
         </p>
         <p className="dpc-confirm__body">
-          Anything else from the sheet she came from is untouched — other casts
-          you signed from it stay, and so do their siblings.
+          Anything else from the sheet {pronouns.subject} came from is untouched —
+          other casts you signed from it stay, and so do their siblings.
         </p>
 
         <label className="dpc-sign__label" htmlFor="delete-cast-confirm">
@@ -88,7 +97,7 @@ export function DeleteCastConfirm({
 
         <div className="dpc-confirm__actions">
           <Button variant="quiet" size="small" disabled={busy} onClick={onCancel}>
-            Keep her
+            Keep {pronouns.object}
           </Button>
           <Button
             variant="primary"

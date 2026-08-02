@@ -44,9 +44,9 @@ function engineThrowing(error: unknown): TextEngine {
 }
 
 const allPass = JSON.stringify({
-  identity: { pass: true, note: "same person" },
-  angle: { pass: true, note: "as specified" },
-  wardrobe: { pass: true, note: "grey tee" },
+  identity: { verdict: "matches", note: "same person" },
+  angle: { verdict: "matches", note: "as specified" },
+  wardrobe: { verdict: "matches", note: "grey tee" },
 });
 
 describe("view conformance", () => {
@@ -65,11 +65,11 @@ describe("view conformance", () => {
   for (const axis of CONFORMANCE_AXES) {
     it(`fails the view when ${axis} alone fails`, async () => {
       const reply = {
-        identity: { pass: true, note: "" },
-        angle: { pass: true, note: "" },
-        wardrobe: { pass: true, note: "" },
-      } as Record<string, { pass: boolean; note: string }>;
-      reply[axis] = { pass: false, note: "no" };
+        identity: { verdict: "matches", note: "" },
+        angle: { verdict: "matches", note: "" },
+        wardrobe: { verdict: "matches", note: "" },
+      } as Record<string, { verdict: string; note: string }>;
+      reply[axis] = { verdict: "differs", note: "no" };
       const judge = createViewConformanceJudge({ engine: engineReturning(JSON.stringify(reply)) });
 
       const verdict = await judge({ angle: "sideClose", anchor, candidate });
@@ -93,7 +93,10 @@ describe("view conformance", () => {
   it("fails closed when an axis is missing rather than filling it in", async () => {
     // A judge that has to be corrected into agreeing is not a second opinion.
     const judge = createViewConformanceJudge({
-      engine: engineReturning(JSON.stringify({ identity: { pass: true }, angle: { pass: true } })),
+      engine: engineReturning(JSON.stringify({
+        identity: { verdict: "matches" },
+        angle: { verdict: "matches" },
+      })),
     });
     const verdict = await judge({ angle: "threeQuarter", anchor, candidate });
     expect(verdict.pass).toBe(false);
@@ -195,5 +198,99 @@ describe("view conformance", () => {
     expect(request.user).toContain("SPECIFICATION");
     expect(request.user).not.toContain("OUTPUT FRAME");
     expect(request.user).not.toContain("AUTHORITY:");
+  });
+});
+
+describe("one field for one fact — the judge cannot contradict itself", () => {
+  /*
+    THE SPECIMEN, from the package-v3.1 verification Sign. The judge returned
+
+      angle: { pass: false, note: "This is a true side profile with only one eye
+               visible… overall it satisfies the 90-degree side profile
+               requirement." }
+
+    A passing sentence beside a failing boolean. The customer was refunded 50
+    credits for a correct view and the record contained its own contradiction —
+    two fields for one fact, which is the drift class every record-truth fix
+    this month has killed.
+
+    The fix removes the second field rather than arbitrating between them.
+  */
+  const engineReturning = (text: string) => ({
+    id: "test",
+    complete: async () => ({
+      text,
+      truncated: false,
+      latencyMs: 1,
+      provenance: { provider: "test", model: "test" },
+    }),
+  });
+
+  const images = {
+    anchor: { bytes: Buffer.from("a"), contentType: "image/png" },
+    candidate: { bytes: Buffer.from("b"), contentType: "image/png" },
+  };
+
+  it("takes the verdict as the answer, whatever the note argues", async () => {
+    const judge = createViewConformanceJudge({
+      engine: engineReturning(JSON.stringify({
+        identity: { verdict: "matches", note: "same person" },
+        angle: {
+          verdict: "matches",
+          note: "This is a true side profile with only one eye visible, though the "
+            + "second eye's brow is faintly suggested; overall it satisfies the "
+            + "90-degree side profile requirement.",
+        },
+        wardrobe: { verdict: "matches", note: "same grey crew-neck" },
+      })) as never,
+    });
+
+    const verdict = await judge({ angle: "sideClose", ...images });
+
+    // The specimen now lands the way its own sentence reads.
+    expect(verdict.pass).toBe(true);
+    expect(verdict.axes.angle.pass).toBe(true);
+    expect(verdict.axes.angle.verdict).toBe("matches");
+  });
+
+  it("cannot express the old contradiction at all", async () => {
+    /*
+      The structural half. A reply in the OLD shape — a bare boolean — no longer
+      parses, so a model that emits one fails closed rather than being read as
+      an authority. There is nowhere left for a second opinion to live.
+    */
+    const judge = createViewConformanceJudge({
+      engine: engineReturning(JSON.stringify({
+        identity: { pass: true, note: "same person" },
+        angle: { pass: false, note: "overall it satisfies the requirement" },
+        wardrobe: { pass: true, note: "same top" },
+      })) as never,
+    });
+
+    const verdict = await judge({ angle: "sideClose", ...images });
+
+    expect(verdict.pass).toBe(false);
+    expect(verdict.unjudged).toBe(true);
+    expect(verdict.method).toBe("unparsed");
+  });
+
+  it("fails an axis the judge says it cannot tell", async () => {
+    // §I in one place instead of a sentence in a prompt: an axis nobody could
+    // judge is not an axis that passed.
+    const judge = createViewConformanceJudge({
+      engine: engineReturning(JSON.stringify({
+        identity: { verdict: "matches", note: "same person" },
+        angle: { verdict: "matches", note: "as specified" },
+        wardrobe: { verdict: "unsure", note: "the collar is out of frame" },
+      })) as never,
+    });
+
+    const verdict = await judge({ angle: "closeUp", ...images });
+
+    expect(verdict.pass).toBe(false);
+    expect(verdict.axes.wardrobe.pass).toBe(false);
+    expect(verdict.axes.wardrobe.verdict).toBe("unsure");
+    // Not a fail-closed DEFAULT — the judge answered, and said it could not tell.
+    expect(verdict.unjudged).toBeUndefined();
   });
 });

@@ -20,6 +20,7 @@ import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
+import { castPronouns, type CastPronouns } from "./castPronouns";
 
 /**
  * `pending` — nothing has started on this slot yet.
@@ -85,6 +86,14 @@ export type SignedCastProjection = {
    * 404 to a customer who has done nothing wrong.
    */
   sheetOpen: boolean;
+  /**
+   * The three words the product uses to refer to her — or him, or them.
+   *
+   * DERIVED from `technicalSchema` and projected as words, never as the schema:
+   * pronouns are not identity documents, the record they came from is (founder
+   * ruling, 2026-07-25). `they` is the fallback for an unstated sex.
+   */
+  pronouns: CastPronouns;
   lineage: {
     fromRollPublicId: string | null;
     fromRollIndex: number | null;
@@ -434,6 +443,7 @@ export function projectSignedCast(input: {
       ? `Cast from a sheet on ${formatCastDate(input.lineage.castFromAt)}`
       : null,
     sheetOpen: input.sheetLive ?? false,
+    pronouns: castPronouns(input.model.technicalSchema),
     lineage: {
       fromRollPublicId: input.lineage.rollPublicId,
       fromRollIndex: input.lineage.rollIndex,

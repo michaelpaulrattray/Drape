@@ -2774,4 +2774,92 @@ end and an explanation.
 
 ---
 
+## D-108 — Two permanent laws from the v3.1 close, and one field for one fact
+
+**Founder ruling (2026-08-02), closing M7.**
+
+### The landmark law
+
+**A vision judge is asked for landmarks, never for proportions.** It answers
+*"is the chin inside the frame"* and *"are the shoulders in frame"* reliably;
+it answers *"does the face fill 80% of the height"* badly, and a spec written in
+proportions gets a shrug dressed as a verdict.
+
+So a two-sided constraint is written as two landmark predicates and two named
+failure directions — one **cut required landmark** for too-tight, one **present
+forbidden landmark** for too-loose. Both are yes-or-no by looking, which is also
+what makes §I's fail-closed default work for us rather than against us.
+
+### The judged-spec limits law
+
+**An axis told to fail-when-unsure is never pointed at something the reference
+cannot establish.**
+
+Found twice. The maiden voyage lost a view to "mid-grey vs off-white"; the v3.1
+verification lost its full back to *"dark leather dress shoes instead of plain
+neutral shoes"* — against a chest-up anchor that shows no shoes at all. Both
+times the judge was left adjudicating our own adjective against its own taste,
+and the customer paid for the ambiguity.
+
+The judged spec therefore names its own limits, and instructions the judge must
+not police move to the `directive`, which the generator reads and the judge
+never sees. **The trap:** `spec.wardrobe` is read by BOTH, so scoping it for the
+judge alone would quietly stop asking the generator for the garment — a fix
+creating a worse defect than the one it closed.
+
+### One field for one fact — the judge cannot contradict itself
+
+The v3.1 Sign produced the specimen: a side profile came back `pass: false`
+beside the note *"overall it satisfies the 90-degree side profile
+requirement."* A passing sentence attached to a failing boolean. The customer
+was refunded 50 credits for a correct view, and the record contained its own
+contradiction.
+
+**Two fields for one fact is two facts that can disagree** — the drift class
+every record-truth fix this month has killed. Killed the same way: the model now
+answers with a single `verdict` of `matches` / `differs` / `unsure`, and `pass`
+is DERIVED from it. The note explains and has no authority; a note that
+disagrees is a badly-written sentence, not a second opinion the code must
+arbitrate. The old shape no longer parses, so a reply carrying a bare boolean
+fails closed rather than being read as an authority.
+
+`unsure` is explicit rather than inferred, because fail-closed is only honest if
+the judge can SAY it could not tell instead of being forced to pick a side and
+hedge in prose.
+
+### The tripwire
+
+Two dev rows appeared both `signed` to a living Cast and `expired` — a state
+every writer forbids in the WHERE of the statement that writes. Today's code
+provably cannot produce it, and *"it cannot happen any more"* without a tripwire
+is how it happens again silently. `checkCandidateInvariants` runs before each
+retention sweep (before, so it is never checking the sweep's own output),
+alarms in the roll alarm's shape, and **repairs nothing** — a row in a forbidden
+state is evidence, and tidying it away would destroy the only trace of whatever
+wrote it.
+
+### Pronouns come from the record
+
+The room called every Cast "she"; Jericho is male. Derived server-side from
+`technicalSchema` and projected as three words — pronouns are not identity
+documents, the record they came from is (2026-07-25). `they` is the fallback for
+an unstated sex, and the correct English for a person whose pronouns you do not
+know. All three conjugations are tested for all three cases, because the bug was
+not "the wrong word" but "one word everywhere".
+
+### Two smaller grammar corrections
+
+**The magnifier goes.** `zoom-in` promises a zoom the viewer does not perform —
+it opens the picture rather than magnifying in place. `cursor: pointer` is the
+standard clickability signal, invisible through familiarity, and makes no claim
+the surface does not keep. It carries the affordance alone; no hover treatment
+is needed beside it.
+
+**The viewer closes on anything that is not the picture or the chrome.**
+`target === currentTarget` only closed on the scrim itself, so the figure's
+padding and the caption's whitespace swallowed the click and the dialog felt
+stuck for a reason nothing on screen explained.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

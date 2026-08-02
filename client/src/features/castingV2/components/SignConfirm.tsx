@@ -34,6 +34,15 @@ import { createPortal } from "react-dom";
  * it has content, so Enter can never spend anything by accident — which is the
  * property the drawn focus-on-Cancel default was protecting.
  */
+/*
+  THE THEY-FALLBACK, applied where it is not a fallback but the truth.
+
+  A candidate has no signed record to derive pronouns from — the sex axis is
+  resolved per roll and never persisted on the candidate row — so there is
+  nothing here to be right about. `they` is correct English for a person whose
+  pronouns you do not know, and at this exact moment the customer has not told
+  us who this is: they are about to, by naming them (D-108).
+*/
 export function SignConfirm({
   indexLabel,
   personaLine,
@@ -126,7 +135,7 @@ export function SignConfirm({
         {personaLine ? <span className="dpc-sign__caption">{personaLine}</span> : null}
 
         <h2 id="dpc-sign-title" className="dpc-confirm__title">
-          Sign her to your roster
+          Sign them to your roster
         </h2>
         <p id="dpc-sign-body" className="dpc-confirm__body">
           This locks the face and builds the complete package — {viewCount} views of this exact
@@ -141,14 +150,14 @@ export function SignConfirm({
           the button says so rather than failing silently on submit.
         */}
         <label className="dpc-sign__label" htmlFor="dpc-sign-name">
-          Her name
+          Their name
         </label>
         <input
           id="dpc-sign-name"
           className="dp-input"
           value={name}
           maxLength={60}
-          placeholder="Give her a name"
+          placeholder="Give them a name"
           disabled={busy}
           autoFocus
           onChange={(event) => setName(event.target.value)}

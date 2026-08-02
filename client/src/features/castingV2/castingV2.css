@@ -1704,7 +1704,15 @@
   font: inherit;
   color: inherit;
   text-align: inherit;
-  cursor: zoom-in;
+  /*
+    POINTER, not the magnifier (founder ruling, 2026-08-02). `zoom-in` promises
+    a zoom — the viewer opens the picture, it does not magnify in place — and it
+    is a rarer cursor that people have to interpret. The pointer is the standard
+    clickability signal, invisible through familiarity, and it makes no claim
+    the surface does not keep. It carries the affordance on its own; no hover
+    treatment is needed beside it.
+  */
+  cursor: pointer;
 }
 
 .dpc-master__main:disabled,

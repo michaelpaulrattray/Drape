@@ -1298,7 +1298,7 @@ export default function CastingSheet() {
                 Archivo, not mono — mono is for machine facts and this is a
                 sentence.
               */
-              <span className="dp-secondary">Keep the one you want, then sign her</span>
+              <span className="dp-secondary">Keep the one you want, then sign them</span>
             )}
             {/*
               Cancel follows the ACTIVE roll, not the viewed one: reading roll

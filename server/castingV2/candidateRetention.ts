@@ -29,6 +29,7 @@ import {
   markSessionExpired,
 } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
+import { checkCandidateInvariants } from "./candidateInvariants";
 import { captureCastingV2Enabled, parseCastingV2Scope, CASTING_V2_SCOPE_ENV } from "./castingV2Scope";
 
 const log = createModuleLogger("castingV2/candidateRetention");
@@ -49,6 +50,18 @@ export type RetentionSweepResult = {
  * later.
  */
 export async function runCandidateRetentionSweep(now = new Date()): Promise<RetentionSweepResult> {
+  /*
+    The tripwire runs FIRST, before this pass writes anything.
+    
+    It is the sweep's own work that turns candidates into `expired`, so checking
+    afterwards would be checking our own output — and a guard lost inside this
+    function would be reported as a pre-existing condition. Reading before we
+    write means the count belongs to whatever came before.
+  */
+  await checkCandidateInvariants().catch((error: unknown) => {
+    log.warn({ err: error }, "[retention] the candidate invariant check could not run");
+  });
+
   let sessionsExpired = 0;
   for (const session of await listExpiredSessions({ now })) {
     // Candidates first: once the session row flips to `expired` it is no

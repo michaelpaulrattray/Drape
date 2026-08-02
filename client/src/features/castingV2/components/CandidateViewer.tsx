@@ -112,10 +112,22 @@ export function CandidateViewer({
       role="dialog"
       aria-modal="true"
       aria-label={`${frame.label}${frame.personaLine ? ` — ${frame.personaLine}` : ""}`}
-      // Click the scrim to close, but not a click that started on the image:
-      // dragging off the photo should not dismiss what you were looking at.
+      /*
+        CLOSE ON ANYTHING THAT IS NOT THE PICTURE OR THE CHROME.
+
+        The old test was `target === currentTarget`, which only closed on the
+        scrim ITSELF — so the `<figure>`'s padding, the caption row's whitespace
+        and the gap beside the image all counted as "inside" and swallowed the
+        click. The user aims at empty space, nothing happens, and the dialog
+        feels stuck for a reason nothing on screen explains.
+
+        Asking what was hit is the honest question: the image and the chrome are
+        the surface, everything else is out.
+      */
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        const target = event.target as HTMLElement;
+        if (target.closest("img, .dpc-viewer__chrome")) return;
+        onClose();
       }}
     >
       <div className="dpc-viewer__chrome">

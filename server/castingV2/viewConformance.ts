@@ -40,10 +40,31 @@ export const CONFORMANCE_AXES = ["identity", "angle", "wardrobe"] as const;
 export type ConformanceAxis = (typeof CONFORMANCE_AXES)[number];
 
 export type AxisVerdict = {
+  /**
+   * DERIVED from `verdict`. Never written by the model, never read as the
+   * source of truth — it is here so downstream readers keep their shape.
+   */
   pass: boolean;
   /** One short sentence. Internal — persisted on the slot, never projected. */
   note: string;
+  /**
+   * The judge's actual answer, persisted beside the derivation.
+   *
+   * Absent on the fail-closed defaults, where no judge answered at all — which
+   * is itself the distinction between "it said differs" and "we never got a
+   * verdict", and support needs to be able to tell those apart.
+   */
+  verdict?: AxisVerdictWord;
 };
+
+/** One place where a verdict becomes a pass, so there is one rule. */
+function axisFrom(answer: { verdict: AxisVerdictWord; note?: string }): AxisVerdict {
+  return {
+    pass: answer.verdict === "matches",
+    note: answer.note ?? "",
+    verdict: answer.verdict,
+  };
+}
 
 export type ViewConformanceVerdict = {
   /** Every axis passed. A slot lands on this and nothing else. */
@@ -71,8 +92,30 @@ export type ViewConformanceInput = {
 
 export type ViewConformanceJudge = (input: ViewConformanceInput) => Promise<ViewConformanceVerdict>;
 
+/**
+ * The judge's answer per axis — ONE field, and `pass` is derived from it.
+ *
+ * The old shape asked for a boolean AND a sentence, which is two fields for one
+ * fact and therefore two facts that can disagree. They did: a real side profile
+ * came back `pass: false` beside the note *"overall it satisfies the 90-degree
+ * side profile requirement"*. The customer was refunded 50 credits for a
+ * correct view, and the record contained its own contradiction.
+ *
+ * That is the drift class every record-truth fix this month has killed, so it
+ * is killed the same way — by removing the second field. The model chooses a
+ * verdict; the note explains the verdict and has no authority over it. A note
+ * that disagrees is now merely a badly-written sentence rather than a second
+ * opinion the code has to arbitrate.
+ *
+ * `unsure` is explicit rather than inferred, because §I's fail-closed rule is
+ * only honest if the judge can SAY it is unsure instead of being forced to
+ * pick a side and hedge in prose.
+ */
+export const AXIS_VERDICTS = ["matches", "differs", "unsure"] as const;
+export type AxisVerdictWord = (typeof AXIS_VERDICTS)[number];
+
 const axisSchema = z.object({
-  pass: z.boolean(),
+  verdict: z.enum(AXIS_VERDICTS),
   note: z.string().max(400).optional(),
 });
 
@@ -90,8 +133,10 @@ const JUDGE_SYSTEM = [
   "2. angle — does IMAGE 2 show the framing the specification asks for? Judge only what the specification names.",
   "3. wardrobe — does IMAGE 2 show the clothing the specification names, unchanged from IMAGE 1 where both are visible?",
   "Answer ONLY with a JSON object of the form",
-  '{"identity":{"pass":true,"note":"..."},"angle":{"pass":true,"note":"..."},"wardrobe":{"pass":true,"note":"..."}}',
-  "Each note is one short sentence saying what you saw. If you are unsure about an axis, that axis fails.",
+  '{"identity":{"verdict":"matches","note":"..."},"angle":{"verdict":"matches","note":"..."},"wardrobe":{"verdict":"matches","note":"..."}}',
+  'Each verdict is exactly one of "matches", "differs" or "unsure".',
+  'Use "matches" when the image satisfies the specification for that axis, "differs" when it does not, and "unsure" when you genuinely cannot tell from what you can see.',
+  "The note is one short sentence saying what you saw. The VERDICT is your answer — never write a note that argues against your own verdict; if the note would say the image is fine, the verdict is \"matches\".",
 ].join(" ");
 
 /** Fail-closed on every axis, with one honest reason. */
@@ -202,10 +247,19 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       return unjudged("unparsed", "the conformance judge's answer could not be read");
     }
 
+    /*
+      `pass` is DERIVED, never read. It exists so every downstream reader — the
+      slot marker, the room's confession, the receipt — keeps the shape it
+      already has, but it is a projection of the verdict rather than a second
+      field the model can contradict.
+
+      `unsure` fails, which is §I stated in one place instead of relied upon in
+      a prompt: an axis nobody could judge is not an axis that passed.
+    */
     const axes: Record<ConformanceAxis, AxisVerdict> = {
-      identity: { pass: parsed.data.identity.pass, note: parsed.data.identity.note ?? "" },
-      angle: { pass: parsed.data.angle.pass, note: parsed.data.angle.note ?? "" },
-      wardrobe: { pass: parsed.data.wardrobe.pass, note: parsed.data.wardrobe.note ?? "" },
+      identity: axisFrom(parsed.data.identity),
+      angle: axisFrom(parsed.data.angle),
+      wardrobe: axisFrom(parsed.data.wardrobe),
     };
     return {
       pass: CONFORMANCE_AXES.every((axis) => axes[axis].pass),

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "664547439dc81069"
+    "sourceFingerprint": "96705ee5ab0dda84"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 32
+      "moduleCount": 34
     },
     {
       "id": "domain:castingV2",
@@ -3147,6 +3147,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/candidateInvariants.ts",
+      "path": "server/castingV2/candidateInvariants.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/candidateRetention.ts",
       "path": "server/castingV2/candidateRetention.ts",
       "domain": "casting-v2",
@@ -3161,6 +3167,12 @@
     {
       "id": "module:server/castingV2/castProjection.ts",
       "path": "server/castingV2/castProjection.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castPronouns.ts",
+      "path": "server/castingV2/castPronouns.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7375,6 +7387,10 @@
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/pronounGrammar.test.ts",
+      "path": "client/src/features/castingV2/pronounGrammar.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/retentionCopy.test.ts",
       "path": "client/src/features/castingV2/retentionCopy.test.ts"
     },
@@ -7911,12 +7927,20 @@
       "path": "server/castingV2/briefFactsRole.test.ts"
     },
     {
+      "id": "test:server/castingV2/candidateInvariants.test.ts",
+      "path": "server/castingV2/candidateInvariants.test.ts"
+    },
+    {
       "id": "test:server/castingV2/candidateRetention.test.ts",
       "path": "server/castingV2/candidateRetention.test.ts"
     },
     {
       "id": "test:server/castingV2/castProjection.test.ts",
       "path": "server/castingV2/castProjection.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castPronouns.test.ts",
+      "path": "server/castingV2/castPronouns.test.ts"
     },
     {
       "id": "test:server/castingV2/castViewPackage.test.ts",
@@ -16357,6 +16381,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/candidateInvariants.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateInvariants.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateInvariants.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/castingV2/candidateInvariants.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
@@ -16409,6 +16453,11 @@
     {
       "from": "module:server/castingV2/castProjection.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castProjection.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {
@@ -19069,6 +19118,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castProjection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {

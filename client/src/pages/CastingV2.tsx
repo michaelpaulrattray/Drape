@@ -160,8 +160,14 @@ function sheetDeleteCopy(sheet: {
   const names = sheet.signedCastNames.length === 1
     ? sheet.signedCastNames[0]
     : `${sheet.signedCastNames.slice(0, -1).join(", ")} and ${sheet.signedCastNames.at(-1)}`;
+  /*
+    Pronoun-free by construction. The card carries names, not records, so there
+    is nothing here to derive a pronoun FROM — and "she's safe" about a cast the
+    product has never looked at is the same defect as the room's, one surface
+    along. The name does the work instead.
+  */
   const who = sheet.signedCastNames.length === 1
-    ? `${names} came from this sheet — she's safe`
+    ? `${names} came from this sheet and is safe`
     : `${sheet.signedCastNames.length} casts came from this sheet — ${names} are safe`;
   return `${who}. The sheet and its unsigned candidates will be gone. This cannot be undone.`;
 }
@@ -227,7 +233,7 @@ export default function CastingV2() {
   const [castMenu, setCastMenu] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<{ castId: string; name: string } | null>(null);
   const [deletingCast, setDeletingCast] = useState<
-    { castId: string; name: string | null; imageUrl: string | null } | null
+    NonNullable<typeof roster.data>[number] | null
   >(null);
 
   /*
@@ -732,7 +738,7 @@ export default function CastingV2() {
       {renaming ? (
         <ConfirmDialog
           title="Rename this cast?"
-          body="Her name is how you find her on the roster. Nothing else changes."
+          body="This name is how you find them on the roster. Nothing else changes."
           confirmLabel="Save name"
           busyLabel="Saving…"
           busy={renameCast.isPending}
@@ -750,6 +756,7 @@ export default function CastingV2() {
         <DeleteCastConfirm
           name={deletingCast.name ?? "this cast"}
           imageUrl={deletingCast.imageUrl}
+          pronouns={deletingCast.pronouns}
           busy={deleteCast.isPending}
           onCancel={() => setDeletingCast(null)}
           onConfirm={async () => {
@@ -760,10 +767,12 @@ export default function CastingV2() {
               });
               await utils.castingV2.roster.invalidate();
               await utils.castingV2.openSessions.invalidate();
-              toast(`${deletingCast.name ?? "She"} was deleted.`);
+              toast(`${deletingCast.name ?? "That cast"} was deleted.`);
               setDeletingCast(null);
             } catch (error) {
-              toast(error instanceof Error ? error.message : "She could not be deleted.");
+              toast(error instanceof Error
+                ? error.message
+                : `${deletingCast.name ?? "That cast"} could not be deleted.`);
             }
           }}
         />
@@ -854,11 +863,7 @@ export default function CastingV2() {
               }}
               onArmDelete={() => {
                 setCastMenu(null);
-                setDeletingCast({
-                  castId: cast.castId,
-                  name: cast.name,
-                  imageUrl: cast.imageUrl,
-                });
+                setDeletingCast(cast);
               }}
             />
             </div>
