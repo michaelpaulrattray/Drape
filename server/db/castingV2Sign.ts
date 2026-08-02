@@ -679,6 +679,41 @@ export async function listCastPromisedAngles(
   return CAST_VIEW_ANGLES.filter((angle) => seen.has(angle));
 }
 
+/**
+ * The living Casts a sheet produced — names, for the delete confirmation.
+ *
+ * The confirm copy has to say what SURVIVES ("Two casts came from this sheet —
+ * they're safe"), and a count alone would make that a claim the user has to
+ * take on faith about their own work. Names make it checkable.
+ *
+ * Living means `deletedAt IS NULL`, not `availableModelWhere()` — a Cast whose
+ * package is still building is `provisioning`, and she is exactly as safe as a
+ * finished one (D-107).
+ */
+export async function listSessionSignedCastNames(
+  userId: number,
+  sessionId: number,
+): Promise<string[]> {
+  assertPositiveId(userId, "userId");
+  assertPositiveId(sessionId, "sessionId");
+  const db = await requireDb();
+  const rows = await db
+    .select({ name: models.name, agencyId: models.agencyId })
+    .from(castingCandidates)
+    .innerJoin(models, and(
+      eq(models.id, castingCandidates.signedCastId),
+      eq(models.userId, userId),
+      isNull(models.deletedAt),
+    ))
+    .where(and(
+      eq(castingCandidates.sessionId, sessionId),
+      eq(castingCandidates.userId, userId),
+      isNotNull(castingCandidates.signedCastId),
+    ))
+    .orderBy(asc(castingCandidates.id));
+  return rows.map((row) => row.name ?? row.agencyId ?? "Unnamed");
+}
+
 /** Every asset row of an owned Cast, newest first (the ledger's own order). */
 export async function listCastAssets(userId: number, modelId: number): Promise<ModelAsset[]> {
   assertPositiveId(userId, "userId");

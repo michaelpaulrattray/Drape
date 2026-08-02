@@ -20,6 +20,8 @@ import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/features/castingV2/components/ConfirmDialog";
 import { SheetCardMenu } from "@/features/castingV2/components/SheetCardMenu";
+import { CastCardMenu } from "@/features/castingV2/components/CastCardMenu";
+import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import {
   RETENTION_EMPTY_STATE,
@@ -139,6 +141,31 @@ const CASTING_SEEDS: Array<{ label: string; shows: string; requires?: string }> 
 const ROSTER_SCOPES = ["All", "Signed", "Unsigned"] as const;
 type RosterScope = (typeof ROSTER_SCOPES)[number];
 
+/**
+ * What deleting a sheet actually does, said plainly.
+ *
+ * The §G.6 carve-outs are not a technicality the user can be spared: a Cast
+ * signed from this sheet survives, and so do the kept faces her Siblings card
+ * is made of. Names rather than a count — this is a promise about their own
+ * people, and a bare number is not something they can check.
+ */
+function sheetDeleteCopy(sheet: {
+  briefText: string | null;
+  signedCastNames: string[];
+}): string {
+  const label = `"${sheet.briefText ?? "Untitled sheet"}"`;
+  if (sheet.signedCastNames.length === 0) {
+    return `${label} and every candidate on it will be deleted. This cannot be undone.`;
+  }
+  const names = sheet.signedCastNames.length === 1
+    ? sheet.signedCastNames[0]
+    : `${sheet.signedCastNames.slice(0, -1).join(", ")} and ${sheet.signedCastNames.at(-1)}`;
+  const who = sheet.signedCastNames.length === 1
+    ? `${names} came from this sheet — she's safe`
+    : `${sheet.signedCastNames.length} casts came from this sheet — ${names} are safe`;
+  return `${who}. The sheet and its unsigned candidates will be gone. This cannot be undone.`;
+}
+
 export default function CastingV2() {
   const [, navigate] = useLocation();
   const [brief, setBrief] = useState("");
@@ -195,6 +222,26 @@ export default function CastingV2() {
 
   /** The sheet a delete has been requested for, resolved to its row. */
   const armedSheet = openSessions.data?.find((entry) => entry.sessionId === armed) ?? null;
+
+  /** Which roster card has its menu open. One at a time, like the sheet cards. */
+  const [castMenu, setCastMenu] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<{ castId: string; name: string } | null>(null);
+  const [deletingCast, setDeletingCast] = useState<
+    { castId: string; name: string | null; imageUrl: string | null } | null
+  >(null);
+
+  /*
+    THE DOOR THE SERVER OWNS. Permanent deletion sits behind
+    `ENABLE_FINAL_MODEL_DELETE`; the client asks rather than assumes. The
+    ceremony asserts the same flag itself, so this only decides whether to offer
+    a control that would otherwise refuse — never whether deletion is allowed.
+  */
+  const deleteDoorOpen = trpc.models.deleteAvailability.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  }).data?.enabled ?? false;
+
+  const renameCast = trpc.castingV2.renameCast.useMutation();
+  const deleteCast = trpc.castingV2.deleteCast.useMutation();
 
   const createSession = trpc.castingV2.createSession.useMutation();
   const createRoll = trpc.castingV2.createRoll.useMutation();
@@ -662,15 +709,63 @@ export default function CastingV2() {
         conversation, and eight mounted copies waiting in the DOM would be
         eight things to keep in sync for no benefit.
       */}
+      {/*
+        THE CONFIRM NAMES WHO SURVIVES (D-107). "Every candidate on it will be
+        deleted" was true when a sheet made nothing permanent, and became a lie
+        the moment one could be signed - the retention law protects a signed
+        Cast and the siblings her card is made of, so the sentence promised a
+        deletion that does not happen and frightened the user about work that
+        was never at risk.
+      */}
       {armedSheet ? (
         <ConfirmDialog
           title="Delete this sheet?"
-          body={`"${armedSheet.briefText ?? "Untitled sheet"}" and every candidate on it will be deleted. This cannot be undone.`}
+          body={sheetDeleteCopy(armedSheet)}
           confirmLabel="Delete sheet"
           busyLabel="Deleting…"
           busy={abandoning === armedSheet.sessionId}
           onConfirm={() => discardSheet(armedSheet.sessionId)}
           onCancel={() => setArmed(null)}
+        />
+      ) : null}
+
+      {renaming ? (
+        <ConfirmDialog
+          title="Rename this cast?"
+          body="Her name is how you find her on the roster. Nothing else changes."
+          confirmLabel="Save name"
+          busyLabel="Saving…"
+          busy={renameCast.isPending}
+          onConfirm={async () => {
+            if (!renaming.name.trim()) return;
+            await renameCast.mutateAsync({ castId: renaming.castId, name: renaming.name.trim() });
+            await utils.castingV2.roster.invalidate();
+            setRenaming(null);
+          }}
+          onCancel={() => setRenaming(null)}
+        />
+      ) : null}
+
+      {deletingCast ? (
+        <DeleteCastConfirm
+          name={deletingCast.name ?? "this cast"}
+          imageUrl={deletingCast.imageUrl}
+          busy={deleteCast.isPending}
+          onCancel={() => setDeletingCast(null)}
+          onConfirm={async () => {
+            try {
+              await deleteCast.mutateAsync({
+                clientRequestId: createClientRequestId(),
+                castId: deletingCast.castId,
+              });
+              await utils.castingV2.roster.invalidate();
+              await utils.castingV2.openSessions.invalidate();
+              toast(`${deletingCast.name ?? "She"} was deleted.`);
+              setDeletingCast(null);
+            } catch (error) {
+              toast(error instanceof Error ? error.message : "She could not be deleted.");
+            }
+          }}
         />
       ) : null}
 
@@ -725,8 +820,8 @@ export default function CastingV2() {
             <span className="dp-secondary">New cast member</span>
           </DropZone>
           {shownCasts.map((cast) => (
+            <div className="dpc-castcard__wrap" key={cast.castId}>
             <button
-              key={cast.castId}
               type="button"
               className="dpc-castcard"
               onClick={() => navigate(`/casting/cast/${cast.castId}`)}
@@ -740,6 +835,33 @@ export default function CastingV2() {
               <span className="dpc-castcard__name">{cast.name ?? "Unnamed"}</span>
               <span className="dp-metadata">{cast.personaLine ?? cast.castId}</span>
             </button>
+            {/*
+              Delete needs BOTH the server's door open AND her package
+              finished. The second is the founder's ruling: the deletion
+              authority excludes a `provisioning` model by design, so a Delete
+              on a building tile could only ever refuse, and a menu item that
+              always refuses is a dead control. It appears when she finishes.
+            */}
+            <CastCardMenu
+              name={cast.name ?? "this cast"}
+              open={castMenu === cast.castId}
+              canDelete={deleteDoorOpen && cast.status !== "building"}
+              onToggle={() => setCastMenu(castMenu === cast.castId ? null : cast.castId)}
+              onCancel={() => setCastMenu(null)}
+              onRename={() => {
+                setCastMenu(null);
+                setRenaming({ castId: cast.castId, name: cast.name ?? "" });
+              }}
+              onArmDelete={() => {
+                setCastMenu(null);
+                setDeletingCast({
+                  castId: cast.castId,
+                  name: cast.name,
+                  imageUrl: cast.imageUrl,
+                });
+              }}
+            />
+            </div>
           ))}
         </div>
 

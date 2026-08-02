@@ -1730,3 +1730,41 @@
   color: var(--meta);
   white-space: nowrap;
 }
+
+/*
+  The roster card's menu. The card is a button that fills its cell, so the
+  trigger needs a positioned wrapper of its own — putting it inside the button
+  would nest an interactive control in another one.
+*/
+.dpc-castcard__wrap { position: relative; }
+
+.dpc-castmenu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.dpc-castcard__wrap:hover .dpc-castmenu,
+.dpc-castcard__wrap:focus-within .dpc-castmenu { opacity: 1; }
+
+/*
+  The confirm's own text field. `.dp-input` is the foundation's INNER element
+  and expects a `.dp-field` wrapper to draw the box — dropped into a panel bare,
+  it is a transparent, borderless input the user cannot see. The Sign confirm
+  gets away with it because its dialog styles it; this one says so itself rather
+  than inheriting by accident.
+*/
+.dpc-confirm__panel .dp-input {
+  width: 100%;
+  margin: 4px 0 2px;
+  padding: 9px 11px;
+  border: 1px solid var(--borderInput);
+  border-radius: 6px;
+  background: var(--well);
+  color: var(--ink);
+  font: 400 13px var(--font-sans);
+}
+
+.dpc-confirm__panel .dp-input:focus-visible { outline: none; border-color: var(--ink); }

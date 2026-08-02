@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "934f71d491d8af90"
+    "sourceFingerprint": "664547439dc81069"
   },
   "domains": [
     {
@@ -33,7 +33,7 @@
     {
       "id": "domain:casting",
       "name": "casting",
-      "moduleCount": 121
+      "moduleCount": 122
     },
     {
       "id": "domain:casting-v2",
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 14
+      "moduleCount": 16
     },
     {
       "id": "domain:client-shared",
@@ -1419,8 +1419,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/CastCardMenu.tsx",
+      "path": "client/src/features/castingV2/components/CastCardMenu.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
       "path": "client/src/features/castingV2/components/ConfirmDialog.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
+      "path": "client/src/features/castingV2/components/DeleteCastConfirm.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -2765,6 +2777,12 @@
     {
       "id": "module:server/casting/finalCastDeletion.ts",
       "path": "server/casting/finalCastDeletion.ts",
+      "domain": "casting",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/casting/finalCastDeletionCeremony.ts",
+      "path": "server/casting/finalCastDeletionCeremony.ts",
       "domain": "casting",
       "lifecycle": "active"
     },
@@ -5286,6 +5304,16 @@
       "id": "route:castingV2.createSession",
       "namespace": "castingV2",
       "name": "createSession",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.deleteCast",
+      "namespace": "castingV2",
+      "name": "deleteCast",
       "type": "mutation",
       "auth": "protected",
       "strictInput": true,
@@ -10969,6 +10997,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
@@ -12915,7 +12948,17 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/CastCardMenu.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/ConfirmDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
       "kind": "imports"
     },
     {
@@ -14896,6 +14939,26 @@
     {
       "from": "module:server/casting/finalCastDeletion.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletionCeremony.ts",
+      "to": "module:server/casting/directOperation.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletionCeremony.ts",
+      "to": "module:server/casting/finalCastDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletionCeremony.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletionCeremony.ts",
+      "to": "module:server/db/index.ts",
       "kind": "imports"
     },
     {
@@ -18980,6 +19043,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/casting/finalCastDeletionCeremony.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/briefCompiler.ts",
       "kind": "imports"
     },
@@ -19041,6 +19109,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/models.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/routes/models.ts",
       "kind": "imports"
     },
     {
@@ -19936,6 +20009,11 @@
     {
       "from": "module:server/routes/models.ts",
       "to": "module:server/casting/finalCastDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/models.ts",
+      "to": "module:server/casting/finalCastDeletionCeremony.ts",
       "kind": "imports"
     },
     {

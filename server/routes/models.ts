@@ -18,6 +18,7 @@ import {
   requireDirectOperationRecovery,
 } from "../casting/directOperation";
 import { modelOperationLockKey } from "../casting/operationContract";
+import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremony";
 import {
   executeFinalCastDeletion,
   planFinalCastDeletion,
@@ -36,7 +37,7 @@ export function isFinalModelDeleteEnabled(): boolean {
   return process.env.ENABLE_FINAL_MODEL_DELETE === "true";
 }
 
-function assertFinalModelDeleteEnabled(): void {
+export function assertFinalModelDeleteEnabled(): void {
   if (!isFinalModelDeleteEnabled()) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -281,58 +282,14 @@ export const modelsRouter = router({
     .input(z.object({ clientRequestId: z.string().uuid(), modelId: z.number().int().positive() }).strict())
     .mutation(async ({ ctx, input }) => {
       assertFinalModelDeleteEnabled();
-      const lockKey = modelOperationLockKey(input.modelId);
-      const gate = await beginDirectOperation({
+      return runFinalCastDeletionCeremony({
         userId: ctx.user.id,
+        modelId: input.modelId,
         clientRequestId: input.clientRequestId,
-        kind: "model.delete",
-        modelId: input.modelId,
-        payload: { modelId: input.modelId },
-        lockKey,
+        audit: {
+          ipAddress: ctx.req.ip ?? null,
+          userAgent: ctx.req.headers["user-agent"] ?? null,
+        },
       });
-      if (gate.type === "replay") {
-        const counts = summarizeFinalCastDeletion(gate.result);
-        if (!counts) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: `The saved deletion result needs support review. Operation ${gate.operationId}.`,
-          });
-        }
-        return { success: true, counts };
-      }
-      const lockedModel = await getModelById(input.modelId);
-      if (!lockedModel || lockedModel.userId !== ctx.user.id || lockedModel.status === "archived") {
-        const error = !lockedModel || lockedModel.status === "archived"
-          ? new TRPCError({ code: "NOT_FOUND", message: "Model not found" })
-          : new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
-      }
-      await markGenerationOperationRunning({
-        userId: ctx.user.id,
-        operationId: gate.operationId,
-        modelId: input.modelId,
-        expectedIdentityRevisionId: lockedModel.identityRevisionId,
-        plannedCredits: 0,
-        requiredLockKey: lockKey,
-        phase: "finalizing",
-        heartbeat: false,
-      });
-
-      try {
-        const result = await executeFinalCastDeletion({
-          userId: ctx.user.id,
-          modelId: input.modelId,
-          operationId: gate.operationId,
-          audit: {
-            ipAddress: ctx.req.ip ?? null,
-            userAgent: ctx.req.headers["user-agent"] ?? null,
-          },
-        });
-        const counts = summarizeFinalCastDeletion(result);
-        if (!counts) throw new Error("Deletion completed without a valid public summary");
-        return { success: true, counts };
-      } catch (error) {
-        return completeDirectOperationFailure({ userId: ctx.user.id, operationId: gate.operationId, error, chargedCredits: 0, refundedCredits: 0 });
-      }
     }),
 });

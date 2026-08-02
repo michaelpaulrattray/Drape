@@ -20,6 +20,8 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import { sheetPreviewKeys } from "../castingV2/sheetPreview";
+import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremony";
+import { assertFinalModelDeleteEnabled } from "./models";
 import { storagePublicUrl } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
@@ -53,6 +55,7 @@ import {
   listCastPromisedAngles,
   listCastPublicIdsForCandidates,
   listCastSiblings,
+  listSessionSignedCastNames,
   listSignedCasts,
 } from "../db/castingV2Sign";
 import { discard, setKept, undo } from "../castingV2/candidateService";
@@ -275,6 +278,12 @@ export const castingV2Router = router({
             previewUrls,
             rollCount: rolls.length,
             keptCount: kept.length,
+            /*
+              Who SURVIVES this sheet's deletion (D-107). Names rather than a
+              count, because the confirm copy promises the user something about
+              their own work and a bare number is a claim they cannot check.
+            */
+            signedCastNames: await listSessionSignedCastNames(ctx.user.id, session.id),
             lastActivityAt: session.lastActivityAt.toISOString(),
             expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,
           };
@@ -528,6 +537,53 @@ export const castingV2Router = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
       }
       return { castId: input.castId, name: input.name };
+    }),
+
+  /**
+   * Delete a Cast, permanently.
+   *
+   * The V2 door onto the D-64 ceremony — one authority, two doors
+   * (`finalCastDeletionCeremony`). The roster knows her by her public `KI-…`
+   * id and must never be handed a numeric model id to pass back; resolving it
+   * here, owner-scoped, is what keeps that true.
+   *
+   * `deleteAvailability` on the models router is the flag the client reads, and
+   * the ceremony asserts the same flag itself — a control that is not invoked
+   * does not exist, and one enforced only in the UI is worse (invariant 7).
+   */
+  deleteCast: protectedProcedure
+    .input(z.object({
+      clientRequestId: z.string().uuid(),
+      castId: z.string().min(1).max(32),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      assertFinalModelDeleteEnabled();
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      /*
+        A Cast still building refuses, and says why. The deletion authority
+        excludes `provisioning` models by design — her package is mid-flight and
+        a tombstone underneath it would race the slot commits. The roster hides
+        the control while she builds; this is the server saying the same thing
+        to anyone who did not read the UI.
+      */
+      if (model.status === "provisioning") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "She's still building — you can delete her once her package finishes.",
+        });
+      }
+      return runFinalCastDeletionCeremony({
+        userId: ctx.user.id,
+        modelId: model.id,
+        clientRequestId: input.clientRequestId,
+        audit: {
+          ipAddress: ctx.req.ip ?? null,
+          userAgent: ctx.req.headers["user-agent"] ?? null,
+        },
+      });
     }),
 
   /**
