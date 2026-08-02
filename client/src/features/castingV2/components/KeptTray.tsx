@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { CandidateViewer } from "./CandidateViewer";
+import { CandidateViewer, type ViewerFrame } from "./CandidateViewer";
 
 /**
  * The shortlist, at a size that can actually do its job.
@@ -54,19 +54,58 @@ export function KeptTray({
   shortlist,
   selectedId,
   onSelect,
+  focusCandidateId,
 }: {
   shortlist: KeptEntry[];
+  /**
+   * A face someone was sent here to find (`?focus=` on the sheet).
+   *
+   * The tray expands and rings her, rather than opening the viewer: whoever
+   * followed a sibling tile came to look AROUND her sheet — dropping them
+   * straight into a full-screen picture would hide the thing they navigated to.
+   */
+  focusCandidateId?: string | null;
   /** The face the dock's Sign will act on. */
   selectedId?: string | null;
   onSelect?: (candidateId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [viewing, setViewing] = useState<KeptEntry | null>(null);
+  const focusRef = useRef<HTMLButtonElement>(null);
+
+  const focusPresent = Boolean(
+    focusCandidateId && shortlist.some((entry) => entry.candidateId === focusCandidateId),
+  );
+  useEffect(() => {
+    if (!focusPresent) return;
+    // Expand first: she may be past the resting six, and scrolling to a chip
+    // that is not rendered yet scrolls to nothing.
+    setExpanded(true);
+    const timer = window.setTimeout(() => {
+      focusRef.current?.scrollIntoView({ block: "nearest", inline: "center" });
+      focusRef.current?.focus();
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [focusPresent, focusCandidateId]);
 
   if (shortlist.length === 0) return null;
 
   const shown = expanded ? shortlist : shortlist.slice(0, RESTING);
   const hidden = shortlist.length - shown.length;
+
+  /*
+    The WHOLE shortlist is the viewer's set, not the resting six — collapsing
+    the strip is a display decision and must not shorten what the arrows reach.
+  */
+  const viewerFrames: ViewerFrame[] = shortlist
+    .map((entry) => ({ entry, url: entry.imageUrl ?? entry.thumbUrl }))
+    .filter((row): row is { entry: KeptEntry; url: string } => Boolean(row.url))
+    .map(({ entry, url }) => ({
+      url,
+      label: entry.indexLabel,
+      personaLine: entry.personaLine ?? null,
+      downloadName: `${labelFor(entry)}-${entry.indexLabel}`,
+    }));
 
   return (
     <>
@@ -78,6 +117,7 @@ export function KeptTray({
             <button
               key={entry.candidateId}
               type="button"
+              ref={entry.candidateId === focusCandidateId ? focusRef : undefined}
               role={onSelect ? "radio" : undefined}
               aria-checked={onSelect ? selected : undefined}
               className={
@@ -129,21 +169,25 @@ export function KeptTray({
       </span>
 
       {viewing && (viewing.thumbUrl || viewing.imageUrl) ? (
+        /*
+          The arrows walk the shortlist. Comparing is the tray's entire job,
+          and a viewer you have to close and reopen between two faces is a
+          viewer that makes comparing harder than the grid did.
+        */
         <CandidateViewer
-          imageUrl={(viewing.imageUrl ?? viewing.thumbUrl) as string}
-          indexLabel={labelFor(viewing)}
-          personaLine={viewing.personaLine ?? null}
-          onClose={() => setViewing(null)}
-          /*
-            The arrows walk the shortlist. Comparing is the tray's entire job,
-            and a viewer you have to close and reopen between two faces is a
-            viewer that makes comparing harder than the grid did.
-          */
-          onStep={(direction) => {
-            const index = shortlist.findIndex((entry) => entry.candidateId === viewing.candidateId);
-            const next = shortlist[(index + direction + shortlist.length) % shortlist.length];
-            if (next && (next.imageUrl || next.thumbUrl)) setViewing(next);
+          frames={viewerFrames}
+          index={Math.max(
+            0,
+            viewerFrames.findIndex((frame) => frame.url === (viewing.imageUrl ?? viewing.thumbUrl)),
+          )}
+          onIndexChange={(next) => {
+            const target = viewerFrames[next];
+            const entry = shortlist.find(
+              (candidate) => (candidate.imageUrl ?? candidate.thumbUrl) === target?.url,
+            );
+            if (entry) setViewing(entry);
           }}
+          onClose={() => setViewing(null)}
         />
       ) : null}
     </>

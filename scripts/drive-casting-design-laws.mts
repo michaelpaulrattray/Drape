@@ -53,10 +53,21 @@ function check(ok: boolean, law: string, detail: string) {
 
 /** Law 1. Focus a field, let the transition settle, read the inner element. */
 async function assertNoInnerFocusRing(page: Page, where: string) {
-  const fields = await page.$$eval(".dp-input", (els) => els.length);
+  /*
+    EVERY text field, not only the ones wearing `.dp-input`.
+
+    The room's inline rename carried a red focus ring for a whole milestone and
+    this law never saw it, because the law scanned a CLASS and the rename is a
+    bare styled <input>. A law that only inspects the controls that opted in is
+    a law the next control silently opts out of.
+  */
+  const SELECTOR = ".dp-input, input[type=text], input:not([type]), textarea";
+  const fields = await page.$$eval(SELECTOR, (els) => els.length);
   for (let i = 0; i < fields; i += 1) {
     const result = await page.evaluate(async (index) => {
-      const input = document.querySelectorAll<HTMLElement>(".dp-input")[index];
+      const input = document.querySelectorAll<HTMLElement>(
+        ".dp-input, input[type=text], input:not([type]), textarea",
+      )[index];
       input.focus();
       // border-color is transitioned; reading in the same tick returns the
       // pre-transition value and reports a false failure.

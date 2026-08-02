@@ -113,12 +113,26 @@ describe("the sheet dock commits to one candidate", () => {
   });
 
   it("opens a room image large, and offers it for download", async () => {
+    /*
+      SUPERSEDED IN PLACE by the one image grammar (founder ruling,
+      2026-08-02) — this used to pin double-click-to-open and a hover-revealed
+      download row, and both are now defects rather than requirements.
+
+      The grammar itself is enforced in `imageGrammar.test.ts`, which is the
+      right home: it scans every casting source rather than the two files this
+      one happens to know about. What stays here is the promise the DOCK made —
+      that a room image can be opened large and taken away — expressed against
+      the shape that actually delivers it now.
+    */
     const room = await readFile(new URL("../../pages/CastingRoom.tsx", import.meta.url), "utf8");
-    expect(room).toContain("onDoubleClick");
-    expect(room).toContain("dpc-media__actions");
-    expect(room).toContain("download=");
-    // The viewer walks the package, master included.
-    expect(room).toContain("onStep");
+    // Click, not double-click: clicking is expanding.
+    expect(room).not.toContain("onDoubleClick");
+    expect(room).toContain("setViewingImage");
+    // Taking it away is a real control now, not chrome that appears on hover.
+    expect(room).toContain("Download package");
+    expect(room).not.toContain("dpc-media__actions");
+    // The viewer still walks the package, master included.
+    expect(room).toContain("packageFrames");
   });
 
   it("keeps the kept faces clear of the helper line", async () => {

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Check, RotateCcw, Sparkles, X } from "lucide-react";
 
 import { Button, Skeleton } from "@/foundation";
-import { CandidateViewer } from "./CandidateViewer";
 
 /**
  * One candidate, one tile, arriving on its own.
@@ -43,8 +42,19 @@ export function CandidateTile({
   onDiscard,
   onFollow,
   onOpenCast,
+  onOpenViewer,
 }: {
   candidate: TileCandidate;
+  /**
+   * Open the viewer on THIS face — REQUIRED, not optional.
+   *
+   * The viewer itself lives on the sheet, because the sheet is what holds the
+   * set: arrows that walk from one tile to the next cannot be driven by state
+   * that belongs to a single tile. Required so a tile cannot quietly opt out of
+   * the one image grammar (founder ruling, 2026-08-02) — a new caller that
+   * forgets it fails to compile rather than shipping a dead picture.
+   */
+  onOpenViewer: () => void;
   /** "FROM 03" — set when this whole roll followed a parent candidate. */
   lineageLabel?: string | null;
   /** Changes what a refunded tile says: cancelled by them, or failed by us. */
@@ -110,7 +120,6 @@ export function CandidateTile({
 }) {
   // Declared before any early return — a hook after a conditional return is a
   // hook that sometimes does not run.
-  const [viewing, setViewing] = useState(false);
 
   if (candidate.status === "casting") {
     /*
@@ -213,7 +222,7 @@ export function CandidateTile({
             type="button"
             className="dpc-card__open"
             aria-label={`View candidate ${candidate.indexLabel} larger`}
-            onClick={() => setViewing(true)}
+            onClick={onOpenViewer}
           >
             <img
               src={candidate.imageUrl}
@@ -222,14 +231,6 @@ export function CandidateTile({
           </button>
         ) : null}
 
-        {viewing && candidate.imageUrl ? (
-          <CandidateViewer
-            imageUrl={candidate.imageUrl}
-            indexLabel={candidate.indexLabel}
-            personaLine={candidate.personaLine}
-            onClose={() => setViewing(false)}
-          />
-        ) : null}
 
         {lineageLabel ? <span className="dpc-card__lineage">{lineageLabel}</span> : null}
 

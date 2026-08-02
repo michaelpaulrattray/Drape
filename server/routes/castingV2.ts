@@ -19,6 +19,7 @@ import { TRPCError } from "@trpc/server";
 
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
+import { sheetPreviewKeys } from "../castingV2/sheetPreview";
 import { storagePublicUrl } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
@@ -259,24 +260,14 @@ export const castingV2Router = router({
           const projectable = (rows: typeof rollCandidates) =>
             rows.filter((candidate) =>
               candidate.status === "ready" && (candidate.thumbKey || candidate.imageKey));
-          const previewSource = projectable(kept).length > 0 ? kept : rollCandidates;
           /*
-            `thumbKey ?? imageKey`, and the fallback is the whole point.
-
-            The first version filtered on `thumbKey` alone and the strip was
-            empty on every real sheet — nothing writes that column. The
-            thumbnail transform worker is deferred scope (§G.6), so `thumbKey`
-            is null on every candidate in production and always has been. It
-            rendered in a dev check only because the fixture set it by hand.
-
-            Filtering on a field nothing populates is the same mistake as a
-            control that is never called: it looks right, it passes review, and
-            it does nothing. Full images are heavier than thumbs and four of
-            them at 90px is a cost worth paying until the worker exists.
+            Kept faces lead, the latest roll backfills, deduplicated and capped
+            at the strip. The rule and its two past failures live in
+            `castingV2/sheetPreview.ts`, where they are pinned by test — it had
+            been wrong twice in ways that looked right on the card.
           */
-          const previewUrls = projectable(previewSource)
-            .slice(0, 4)
-            .map((candidate) => storagePublicUrl((candidate.thumbKey ?? candidate.imageKey) as string));
+          const previewUrls = sheetPreviewKeys(kept, rollCandidates)
+            .map((key) => storagePublicUrl(key));
 
           return {
             sessionId: session.publicId,
@@ -555,14 +546,34 @@ export const castingV2Router = router({
           ? getCastSessionId(ctx.user.id, model.sourceCandidateId)
           : Promise.resolve(null),
       ]);
-      const siblings = sessionId && model.sourceCandidateId
+      const siblingRows = sessionId && model.sourceCandidateId
         ? await listCastSiblings({
             userId: ctx.user.id,
-            sessionId,
+            sessionId: sessionId.id,
             excludeCandidateId: model.sourceCandidateId,
           })
         : [];
-      return projectSignedCast({ model, assets, lineage, promisedAngles, siblings });
+      /*
+        A sibling's DESTINATION, resolved here rather than guessed on the
+        client: a signed sibling has a room of her own, and the owner-scoped
+        resolver is the only thing that can turn her `signedCastId` into the
+        public KI id that addresses it.
+      */
+      const siblingCastIds = await listCastPublicIdsForCandidates(ctx.user.id, siblingRows);
+      const siblings = siblingRows.map((sibling) => ({
+        ...sibling,
+        castId: siblingCastIds.get(sibling.id) ?? null,
+      }));
+      return projectSignedCast({
+        model,
+        assets,
+        lineage,
+        promisedAngles,
+        siblings,
+        // Whether her sheet is still a place you can go (§G.6 protects the
+        // candidates, not the session).
+        sheetLive: sessionId?.live ?? false,
+      });
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

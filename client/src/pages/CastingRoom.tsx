@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, Download, Lock, Maximize2, Play, Plus } from "lucide-react";
+import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
 
 import { AppShell, Button, EmptyState, Skeleton } from "@/foundation";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
 import "@/features/castingV2/castingV2.css";
-import { CandidateViewer } from "@/features/castingV2/components/CandidateViewer";
+import {
+  CandidateViewer,
+  type ViewerFrame,
+} from "@/features/castingV2/components/CandidateViewer";
 
 /**
  * The casting room (plan §F, §J; handoff chapter 07).
@@ -59,40 +62,28 @@ const WAVE = [30, 55, 40, 70, 45, 85, 35, 60, 50, 75, 40, 65, 30, 80, 45, 55, 70
 const COMPANION_LABELS = ["Close-up", "Side profile"];
 
 /**
- * The quiet actions on a room image: open large, or download.
+ * Save every landed image in the package, one after another.
  *
- * Hover-revealed rather than permanent, and both are plain affordances over a
- * public bucket URL — nothing new server-side. Download uses the anchor's own
- * `download` attribute so the browser saves rather than navigates; the
- * character-sheet artifact joins this row when it ships.
+ * Deliberately not a zip: an archive means a server endpoint, a temp file and a
+ * new way for someone else's Cast to be read out of the wrong scope. These are
+ * the same public URLs the viewer already serves, saved under the same product
+ * filenames, so the control adds an affordance and no attack surface.
+ *
+ * Staggered because browsers throttle or silently drop a burst of simultaneous
+ * downloads, which would look like the button half-working.
  */
-function MediaActions({
-  url,
-  filename,
-  onOpen,
-}: {
-  url: string;
-  filename: string;
-  onOpen: () => void;
-}) {
-  return (
-    <span className="dpc-media__actions">
-      <button type="button" className="dpc-media__action" onClick={onOpen} aria-label="Open larger">
-        <Maximize2 size={12} strokeWidth={2} aria-hidden="true" />
-      </button>
-      <a
-        className="dpc-media__action"
-        href={url}
-        download={`${filename}.png`}
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Download this image"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <Download size={12} strokeWidth={2} aria-hidden="true" />
-      </a>
-    </span>
-  );
+function downloadPackage(frames: readonly ViewerFrame[]) {
+  frames.forEach((frame, index) => {
+    window.setTimeout(() => {
+      const link = document.createElement("a");
+      link.href = frame.url;
+      link.download = `${frame.downloadName}.png`;
+      link.rel = "noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }, index * 400);
+  });
 }
 
 export default function CastingRoom() {
@@ -109,7 +100,9 @@ export default function CastingRoom() {
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   /** The sibling face being looked at, if any. */
   const [viewingSibling, setViewingSibling] = useState<
-    { candidateId: string; imageUrl: string | null; personaLine: string | null; indexLabel: string } | null
+    // Derived from the projection rather than restated, so a field added
+    // server-side cannot silently fail to reach the handler that needs it.
+    NonNullable<typeof cast.data>["siblings"][number] | null
   >(null);
   const cast = trpc.castingV2.getCast.useQuery(
     { castId },
@@ -171,6 +164,43 @@ export default function CastingRoom() {
       data?.slots.find((slot) => slot.angle === angle && slot.url && !slot.standIn) ?? null,
   );
 
+  /*
+    THE PACKAGE AS ONE SET — master first, then the landed views in strip order.
+    Built once here rather than rebuilt at each opening site, which is how the
+    three near-identical walks this replaces came to drift apart.
+
+    `castName` rather than the raw id in the filename: someone saving her own
+    face should get "Nine-close-up.png", never a UUID.
+  */
+  const castName = data?.name ?? data?.castId ?? "cast";
+  const packageFrames: ViewerFrame[] = [
+    ...(data?.anchorUrl
+      ? [{
+        url: data.anchorUrl,
+        label: "Master",
+        personaLine: data.name ?? null,
+        downloadName: `${castName}-master`,
+      }]
+      : []),
+    ...(data?.slots ?? [])
+      .filter((slot) => slot.url)
+      .map((slot) => ({
+        url: slot.url as string,
+        label: slot.label,
+        personaLine: data?.name ?? null,
+        downloadName: `${castName}-${slot.angle}`,
+      })),
+  ];
+
+  const siblingFrames: ViewerFrame[] = (data?.siblings ?? [])
+    .filter((sibling) => sibling.imageUrl)
+    .map((sibling) => ({
+      url: sibling.imageUrl as string,
+      label: sibling.indexLabel,
+      personaLine: sibling.personaLine,
+      downloadName: `sibling-${sibling.indexLabel}`,
+    }));
+
   return (
     <AppShell breadcrumb="Casting / Room" current="casting" width="working">
       <div className="dp-stack" style={{ gap: 22 }}>
@@ -179,15 +209,13 @@ export default function CastingRoom() {
             <ArrowLeft size={12} strokeWidth={2} aria-hidden="true" />
             Casting
           </Button>
-          {data?.lineage.fromSessionPublicId ? (
-            <Button
-              variant="quiet"
-              size="small"
-              onClick={() => navigate(`/casting/s/${data.lineage.fromSessionPublicId}`)}
-            >
-              Back to the sheet
-            </Button>
-          ) : null}
+          {/*
+            No second escape hatch here (founder, 2026-08-02). The drawing does
+            not have one; the breadcrumb to the left already leaves the room;
+            and the Siblings card's "Open the sheet she came from" says the same
+            thing with the context that makes it worth saying. Three doors out
+            of one room is not generosity, it is indecision.
+          */}
         </div>
 
         {cast.isError ? (
@@ -249,6 +277,10 @@ export default function CastingRoom() {
                         if (event.key === "Escape") setDraftName(null);
                       }}
                       aria-label="Cast name"
+                      // Invalid, not merely empty-so-far: a blank name is the
+                      // one thing `saveName` refuses, so it is the one state
+                      // that earns the alarm colour.
+                      aria-invalid={draftName.trim().length === 0}
                     />
                   )}
                   <span className="dpc-room__kind">PERFORMER</span>
@@ -291,9 +323,18 @@ export default function CastingRoom() {
                 */}
                 <section className="dpc-master">
                   <div className="dpc-master__media">
-                    <div
+                    {/*
+                      A BUTTON, not a div with a handler. Clicking IS expanding
+                      (founder ruling, 2026-08-02), so the affordance must be a
+                      real tab stop with a real name — the expand icon that used
+                      to say this out loud has been removed everywhere.
+                    */}
+                    <button
+                      type="button"
                       className="dpc-master__main dpc-media"
-                      onDoubleClick={() =>
+                      disabled={!data.anchorUrl}
+                      aria-label={`View ${data.name ?? "the signed face"} larger`}
+                      onClick={() =>
                         data.anchorUrl
                           ? setViewingImage({ url: data.anchorUrl, label: "Master" })
                           : undefined
@@ -303,22 +344,19 @@ export default function CastingRoom() {
                         <img src={data.anchorUrl} alt={data.name ?? "The signed face"} />
                       ) : null}
                       <span className="dpc-master__tag">MASTER</span>
-                      {/*
-                        Quiet on hover, absent otherwise. The room is a place to
-                        look at someone; a permanent row of controls over her
-                        face turns it into a file manager.
-                      */}
-                      {data.anchorUrl ? (
-                        <MediaActions
-                          url={data.anchorUrl}
-                          filename={`${data.name ?? data.castId}-master`}
-                          onOpen={() => setViewingImage({ url: data.anchorUrl!, label: "Master" })}
-                        />
-                      ) : null}
-                    </div>
+                    </button>
                     <div className="dpc-master__side">
                       {companions.map((slot, index) => (
-                        <div className="dpc-master__cell" key={slot?.angle ?? `companion-${index}`}>
+                        <button
+                          type="button"
+                          className="dpc-master__cell"
+                          key={slot?.angle ?? `companion-${index}`}
+                          disabled={!slot?.url}
+                          aria-label={slot?.url ? `View ${slot.label} larger` : undefined}
+                          onClick={() =>
+                            slot?.url ? setViewingImage({ url: slot.url, label: slot.label }) : undefined
+                          }
+                        >
                           {slot?.url ? (
                             <img src={slot.url} alt={slot.label} />
                           ) : (
@@ -326,7 +364,7 @@ export default function CastingRoom() {
                               {slot ? slot.label : COMPANION_LABELS[index]}
                             </span>
                           )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -414,6 +452,29 @@ export default function CastingRoom() {
                 <section className="dpc-takes">
                   <div className="dpc-takes__head">
                     <span className="dpc-rcard__label">THE PACKAGE</span>
+                    {/*
+                      THE BULK-OWNERSHIP AFFORDANCE (founder ruling,
+                      2026-08-02) — a real control, not hover chrome.
+
+                      Per-image download lives in the viewer, which is right for
+                      "I want that one". This is the other need: everything she
+                      is, in one action. It is a plain sequence of the same
+                      public URLs the viewer serves — no new server surface, no
+                      archive to build — and the character-sheet artifact joins
+                      it here when it ships, as the single-file form of the same
+                      idea.
+                    */}
+                    <span className="dpc-takes__actions">
+                      <Button
+                        variant="quiet"
+                        size="small"
+                        disabled={packageFrames.length === 0}
+                        onClick={() => downloadPackage(packageFrames)}
+                      >
+                        <Download size={12} strokeWidth={1.9} aria-hidden="true" />
+                        Download package
+                      </Button>
+                    </span>
                     <span className="dpc-rcard__hint">
                       {/* The Master is not counted: it was never a paid view. */}
                       {data.slots.filter((slot) => slot.state === "ready").length} of{" "}
@@ -430,38 +491,31 @@ export default function CastingRoom() {
                     */}
                     {data.anchorUrl ? (
                       <article className="dpc-strip__item">
-                        <div
+                        <button
+                          type="button"
                           className="dpc-strip__frame dpc-media"
-                          onDoubleClick={() =>
+                          aria-label="View Master larger"
+                          onClick={() =>
                             setViewingImage({ url: data.anchorUrl!, label: "Master" })
                           }
                         >
                           <img src={data.anchorUrl} alt="Master" />
-                          <MediaActions
-                            url={data.anchorUrl}
-                            filename={`${data.name ?? data.castId}-master`}
-                            onOpen={() => setViewingImage({ url: data.anchorUrl!, label: "Master" })}
-                          />
-                        </div>
+                        </button>
                         <span className="dpc-slot__label">Master</span>
                       </article>
                     ) : null}
                     {data.slots.map((slot) => (
                       <article className="dpc-strip__item" key={slot.angle}>
-                        <div
+                        <button
+                          type="button"
                           className="dpc-strip__frame dpc-media"
-                          onDoubleClick={() =>
+                          disabled={!slot.url}
+                          aria-label={slot.url ? `View ${slot.label} larger` : undefined}
+                          onClick={() =>
                             slot.url ? setViewingImage({ url: slot.url, label: slot.label }) : undefined
                           }
                         >
                           {slot.url ? <img src={slot.url} alt={slot.label} /> : null}
-                          {slot.url ? (
-                            <MediaActions
-                              url={slot.url}
-                              filename={`${data.name ?? data.castId}-${slot.angle}`}
-                              onOpen={() => setViewingImage({ url: slot.url!, label: slot.label })}
-                            />
-                          ) : null}
                           {slot.state === "building" && !slot.url ? (
                             <Skeleton
                               style={{ position: "absolute", inset: 0, borderRadius: 9 }}
@@ -476,7 +530,7 @@ export default function CastingRoom() {
                               ) : null}
                             </div>
                           ) : null}
-                        </div>
+                        </button>
                         <span className="dpc-slot__label">{slot.label}</span>
                         {slot.state !== "failed-refunded" && slot.note ? (
                           <span className="dpc-takes__caption">{slot.note}</span>
@@ -556,8 +610,43 @@ export default function CastingRoom() {
                           key={sibling.candidateId}
                           type="button"
                           className="dpc-sib__tile dpc-sib__tile--face"
-                          onClick={() => setViewingSibling(sibling)}
-                          aria-label={`Look at ${sibling.personaLine ?? sibling.indexLabel}`}
+                          /*
+                            A SIBLING TILE NAVIGATES (founder ruling,
+                            2026-08-02). The viewer stops being their only
+                            destination: a sibling who was signed has a room,
+                            and one who is still a face has a sheet.
+
+                            This is an object card, not a media frame — the
+                            "clicking is expanding" grammar governs pictures of
+                            THIS Cast, and a card that stands for another person
+                            goes to that person. The viewer remains the
+                            destination when there is genuinely nowhere else to
+                            go, which is what an expired sheet leaves behind.
+                          */
+                          onClick={() => {
+                            if (sibling.destination === "cast" && sibling.castId) {
+                              navigate(`/casting/cast/${sibling.castId}`);
+                              return;
+                            }
+                            if (
+                              sibling.destination === "sheet"
+                              && data.lineage.fromSessionPublicId
+                            ) {
+                              navigate(
+                                `/casting/s/${data.lineage.fromSessionPublicId}`
+                                + `?focus=${sibling.candidateId}`,
+                              );
+                              return;
+                            }
+                            setViewingSibling(sibling);
+                          }}
+                          aria-label={
+                            sibling.destination === "cast"
+                              ? `Open ${sibling.personaLine ?? sibling.indexLabel}'s room`
+                              : sibling.destination === "sheet"
+                                ? `Find ${sibling.personaLine ?? sibling.indexLabel} on her sheet`
+                                : `Look at ${sibling.personaLine ?? sibling.indexLabel}`
+                          }
                         >
                           {sibling.imageUrl ? <img src={sibling.imageUrl} alt="" /> : null}
                         </button>
@@ -568,7 +657,14 @@ export default function CastingRoom() {
                       Nothing else was kept from her sheet.
                     </p>
                   )}
-                  {data.lineage.fromSessionPublicId ? (
+                  {/*
+                    Offered only while the sheet still EXISTS. Her siblings'
+                    faces outlive their session by design (§G.6 protects the
+                    candidates, not the page), so this link rots quietly on any
+                    Cast older than her sheet's seven days — a dead end handed
+                    to someone who did nothing wrong.
+                  */}
+                  {data.sheetOpen && data.lineage.fromSessionPublicId ? (
                     <Button
                       variant="quiet"
                       size="small"
@@ -585,41 +681,34 @@ export default function CastingRoom() {
 
         {viewingImage ? (
           <CandidateViewer
-            imageUrl={viewingImage.url}
-            indexLabel={viewingImage.label}
-            personaLine={data?.name ?? null}
-            onClose={() => setViewingImage(null)}
+            frames={packageFrames}
+            index={Math.max(0, packageFrames.findIndex((frame) => frame.url === viewingImage.url))}
             /*
               The arrows walk the PACKAGE, master included — comparing a view
               against the face it was held to is the whole reason to open one
               large.
             */
-            onStep={(direction) => {
-              const frames = [
-                ...(data?.anchorUrl ? [{ url: data.anchorUrl, label: "Master" }] : []),
-                ...(data?.slots ?? [])
-                  .filter((slot) => slot.url)
-                  .map((slot) => ({ url: slot.url as string, label: slot.label })),
-              ];
-              const index = frames.findIndex((frame) => frame.url === viewingImage.url);
-              const next = frames[(index + direction + frames.length) % frames.length];
-              if (next) setViewingImage(next);
+            onIndexChange={(next) => {
+              const frame = packageFrames[next];
+              if (frame) setViewingImage({ url: frame.url, label: frame.label });
             }}
+            onClose={() => setViewingImage(null)}
           />
         ) : null}
 
         {viewingSibling?.imageUrl ? (
           <CandidateViewer
-            imageUrl={viewingSibling.imageUrl}
-            indexLabel={viewingSibling.indexLabel}
-            personaLine={viewingSibling.personaLine}
-            onClose={() => setViewingSibling(null)}
-            onStep={(direction) => {
-              const list = data?.siblings ?? [];
-              const index = list.findIndex((s) => s.candidateId === viewingSibling.candidateId);
-              const next = list[(index + direction + list.length) % list.length];
-              if (next?.imageUrl) setViewingSibling(next);
+            frames={siblingFrames}
+            index={Math.max(
+              0,
+              siblingFrames.findIndex((frame) => frame.url === viewingSibling.imageUrl),
+            )}
+            onIndexChange={(next) => {
+              const frame = siblingFrames[next];
+              const sibling = (data?.siblings ?? []).find((entry) => entry.imageUrl === frame?.url);
+              if (sibling) setViewingSibling(sibling);
             }}
+            onClose={() => setViewingSibling(null)}
           />
         ) : null}
 

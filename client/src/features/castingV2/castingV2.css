@@ -587,10 +587,13 @@
   padding: 40px 24px;
 }
 
-.dpc-viewer__close {
-  position: absolute;
-  top: 18px;
-  right: 18px;
+/*
+  Download and close share one row now. They were absolutely positioned to the
+  same corner before download existed; the chrome wrapper owns the position and
+  these own only their shape, or the two would sit on top of each other.
+*/
+.dpc-viewer__close,
+.dpc-viewer__download {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -598,7 +601,9 @@
   height: 32px;
   padding: 0;
   border: 0;
+  border-radius: 6px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .dpc-viewer__frame {
@@ -1653,39 +1658,70 @@
   padding: 0 0 2px;
   min-width: 220px;
 }
-.dpc-room__nameinput:focus { outline: none; border-bottom-color: var(--accentSolid); }
+/*
+  THE RENAME FIELD FOCUSES LIKE A TEXT FIELD, NOT LIKE AN ERROR.
+
+  Two faults in one line, and the founder saw the second: a bare `:focus`
+  rule loses to `tokens.css`'s blanket `.dp-root :focus-visible { outline: 2px }`
+  on specificity — (0,1,1) against (0,2,0) — so the accent rectangle drew around
+  the text anyway, which is exactly the inner-element outline the foundation law
+  forbids (`foundation.css`, "TEXT FIELDS FOCUS ON THE WRAPPER"). And the accent
+  is the product's alarm colour: renaming a Cast looked like failing to.
+
+  So it is selected specifically enough to actually win, and focus is signalled
+  the way the foundation signals it — the caret, plus the rule shifting to
+  `--ink`. Red is reserved for the one state that IS invalid: an empty name,
+  which the ceremony refuses to save.
+*/
+.dp-root .dpc-room__nameinput:focus,
+.dp-root .dpc-room__nameinput:focus-visible {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+
+.dp-root .dpc-room__nameinput[aria-invalid="true"] {
+  border-bottom-color: var(--errorInk);
+}
 
 .dpc-media { position: relative; }
 
-/* Quiet on hover, absent otherwise: a room is for looking at someone. */
-.dpc-media__actions {
+/* The package head now carries a real control, so it needs a middle slot. */
+.dpc-takes__actions { margin-left: auto; margin-right: 12px; display: inline-flex; }
+
+/*
+  The hover action row is GONE (founder ruling, 2026-08-02). Clicking is
+  expanding, per-image download lives in the viewer, and bulk download is a real
+  button in the package head — so there is nothing left to reveal on hover. A
+  media frame is now simply a button that looks like a picture.
+*/
+.dpc-master__main,
+.dpc-master__cell,
+.dpc-strip__frame {
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: zoom-in;
+}
+
+.dpc-master__main:disabled,
+.dpc-master__cell:disabled,
+.dpc-strip__frame:disabled { cursor: default; }
+
+/* The viewer's chrome: download beside close, top-right, one row. */
+.dpc-viewer__chrome {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  top: 16px;
+  right: 16px;
   display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 120ms ease;
+  gap: 6px;
+  z-index: 1;
 }
 
-.dpc-media:hover .dpc-media__actions,
-.dpc-media:focus-within .dpc-media__actions { opacity: 1; }
-
-.dpc-media__action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  border: 1px solid var(--borderInput);
-  background: var(--surface);
-  color: var(--secondary);
-  cursor: pointer;
-}
-
-.dpc-media__action:hover { border-color: var(--lineStrong); color: var(--ink); }
-.dpc-media__action:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; opacity: 1; }
+.dpc-viewer__count { margin-left: auto; }
 
 /* The price, stated once for every paid tap on the sheet. */
 .dpc-dock__price {

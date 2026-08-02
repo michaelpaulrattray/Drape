@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useRoute } from "wouter";
+import { useLocation, useRoute, useSearch } from "wouter";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +23,10 @@ import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/si
 import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
+import {
+  CandidateViewer,
+  type ViewerFrame,
+} from "@/features/castingV2/components/CandidateViewer";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
 import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 
@@ -46,6 +50,18 @@ const TERMINAL_ROLL_STATUSES = new Set(["complete", "partial", "failed", "cancel
 export default function CastingSheet() {
   const [, params] = useRoute("/casting/s/:sessionId");
   const [, navigate] = useLocation();
+  /*
+    `?focus=<candidatePublicId>` — arriving from a sibling tile in someone's
+    room (founder ruling, 2026-08-02: siblings navigate by state).
+
+    A query param rather than router state, because it has to survive a reload:
+    the whole point of sending someone here is that they can look around, and a
+    focus that evaporates on refresh is a focus that was never really an
+    address. The KEPT TRAY is the target rather than the roll grid — siblings
+    are kept by definition, and the tray is cross-roll, so she is there
+    regardless of which roll she came from.
+  */
+  const focusCandidateId = new URLSearchParams(useSearch()).get("focus");
   const sessionId = params?.sessionId ?? "";
   const utils = trpc.useUtils();
 
@@ -104,6 +120,8 @@ export default function CastingSheet() {
     store's global-singleton bleed is exactly the class of bug that cost a
     paid lock once already.
   */
+  /** Which candidate the viewer is open on. Null when it is closed. */
+  const [viewerCandidateId, setViewerCandidateId] = useState<string | null>(null);
   const [signing, setSigning] = useState<
     {
       candidateId: string;
@@ -638,6 +656,31 @@ export default function CastingSheet() {
   const rollWasCancelled = roll.data?.status === "cancelled";
 
   /*
+    THE VIEWER LIVES HERE, not on the tile (founder ruling, 2026-08-02 — one
+    image grammar, arrows walk the set).
+
+    A tile cannot own it: arrows that step from one face to the next need state
+    that outlives any single tile. The sheet holds the roll, so the sheet holds
+    the viewer, and the tiles just say which face was clicked.
+
+    Built from the VISIBLE tiles so an optimistically discarded face is not
+    something the arrows walk back into.
+  */
+  const viewerFrames: ViewerFrame[] = candidates
+    .filter((candidate) =>
+      !optimisticDiscarded[candidate.candidateId] && candidate.imageUrl)
+    .map((candidate) => ({
+      url: candidate.imageUrl as string,
+      label: candidate.indexLabel,
+      personaLine: candidate.personaLine,
+      downloadName: `candidate-${candidate.indexLabel}`,
+      candidateId: candidate.candidateId,
+    }));
+  const viewerIndex = viewerFrames.findIndex(
+    (frame) => frame.candidateId === viewerCandidateId,
+  );
+
+  /*
     THE CANCEL LINE, derived every render from the projection the tiles are
     drawn from — so it counts down as landings refund, cannot go stale, and
     survives navigating away and back without a stored sentence to age.
@@ -999,6 +1042,7 @@ export default function CastingSheet() {
                 .map((candidate) => (
                 <CandidateTile
                   key={candidate.candidateId}
+                  onOpenViewer={() => setViewerCandidateId(candidate.candidateId)}
                   candidate={{
                     ...candidate,
                     kept: optimisticKept[candidate.candidateId] ?? candidate.kept,
@@ -1124,6 +1168,7 @@ export default function CastingSheet() {
               shortlist={shortlist}
               selectedId={signTarget?.candidateId ?? null}
               onSelect={setSignSelection}
+              focusCandidateId={focusCandidateId}
             />
             {/*
               The eyebrow flips on the click too. "Keep the ones worth a second
@@ -1268,6 +1313,15 @@ export default function CastingSheet() {
           </div>
         </Dock>
       </div>
+
+      {viewerCandidateId && viewerIndex >= 0 ? (
+        <CandidateViewer
+          frames={viewerFrames}
+          index={viewerIndex}
+          onIndexChange={(next) => setViewerCandidateId(viewerFrames[next]?.candidateId ?? null)}
+          onClose={() => setViewerCandidateId(null)}
+        />
+      ) : null}
 
       {signing ? (
         <SignConfirm

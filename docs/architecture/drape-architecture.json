@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "94ebfbb99a9c15ae"
+    "sourceFingerprint": "3b6336046d2872ff"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 31
+      "moduleCount": 32
     },
     {
       "id": "domain:castingV2",
@@ -3245,6 +3245,12 @@
     {
       "id": "module:server/castingV2/rollService.ts",
       "path": "server/castingV2/rollService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/sheetPreview.ts",
+      "path": "server/castingV2/sheetPreview.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7327,6 +7333,10 @@
       "path": "client/src/features/castingV2/dockAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/imageGrammar.test.ts",
+      "path": "client/src/features/castingV2/imageGrammar.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/lostContact.test.ts",
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
@@ -7973,6 +7983,10 @@
     {
       "id": "test:server/castingV2/sexCoding.test.ts",
       "path": "server/castingV2/sexCoding.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/sheetPreview.test.ts",
+      "path": "server/castingV2/sheetPreview.test.ts"
     },
     {
       "id": "test:server/castingV2/signRecovery.test.ts",
@@ -10941,11 +10955,6 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
-      "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -12842,6 +12851,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateTile.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
     },
     {
@@ -18977,6 +18991,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/rollService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/sheetPreview.ts",
       "kind": "imports"
     },
     {

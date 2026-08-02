@@ -76,6 +76,15 @@ export type SignedCastProjection = {
   capabilities: Record<string, CastCapability>;
   /** "Cast from a sheet on 2 August" — provenance in one line. */
   provenance: string | null;
+  /**
+   * Her sheet is still a place you can go.
+   *
+   * FALSE once the session's own seven-day clock runs out — which happens
+   * independently of the §G.6 exemption that keeps her siblings' faces alive.
+   * Anything offering a link to that sheet must read this first, or it offers a
+   * 404 to a customer who has done nothing wrong.
+   */
+  sheetOpen: boolean;
   lineage: {
     fromRollPublicId: string | null;
     fromRollIndex: number | null;
@@ -95,6 +104,19 @@ export type SignedCastProjection = {
     imageUrl: string | null;
     personaLine: string | null;
     indexLabel: string;
+    /**
+     * Where this tile goes, decided by STATE (founder ruling, 2026-08-02).
+     *
+     *   `cast`   — she was signed too; open her room
+     *   `sheet`  — still a face, on a sheet that is still open
+     *   `viewer` — her sheet has expired; the face is all that is left
+     *
+     * Derived on the server because only the server knows the last one. A
+     * client that assumed "unsigned means sheet" would hand out a dead link.
+     */
+    destination: "cast" | "sheet" | "viewer";
+    /** Set only when `destination` is `cast`. */
+    castId: string | null;
   }>;
   signedAt: string | null;
 };
@@ -193,7 +215,19 @@ export function projectSignedCast(input: {
     thumbKey: string | null;
     personaLine: string | null;
     position: number;
+    /** Her own room, when she has been signed too. Null while she is a face. */
+    castId?: string | null;
   }[];
+  /**
+   * Whether the sheet these siblings came from is still open.
+   *
+   * §G.6's retention exemption protects a signed Cast's kept siblings — the
+   * rows and the objects — for as long as she lives. It does NOT hold the
+   * SESSION open, so the faces can outlive the page they lived on. Routing a
+   * sibling to a sheet that has expired is a link that 404s, so the room needs
+   * to know before it offers one.
+   */
+  sheetLive?: boolean;
   /**
    * The views this Cast's Sign promised, from its own durable audit rows.
    *
@@ -363,6 +397,8 @@ export function projectSignedCast(input: {
     },
     siblings: (input.siblings ?? []).map((sibling) => ({
       candidateId: sibling.publicId,
+      destination: sibling.castId ? "cast" : input.sheetLive ? "sheet" : "viewer",
+      castId: sibling.castId ?? null,
       imageUrl: sibling.thumbKey
         ? storagePublicUrl(sibling.thumbKey)
         : sibling.imageKey
@@ -374,6 +410,7 @@ export function projectSignedCast(input: {
     provenance: input.lineage.castFromAt
       ? `Cast from a sheet on ${formatCastDate(input.lineage.castFromAt)}`
       : null,
+    sheetOpen: input.sheetLive ?? false,
     lineage: {
       fromRollPublicId: input.lineage.rollPublicId,
       fromRollIndex: input.lineage.rollIndex,

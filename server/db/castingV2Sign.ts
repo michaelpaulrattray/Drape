@@ -1160,14 +1160,31 @@ export async function listCastSiblings(input: {
 export async function getCastSessionId(
   userId: number,
   candidateId: number,
-): Promise<number | null> {
+): Promise<{ id: number; live: boolean } | null> {
   assertPositiveId(userId, "userId");
   assertPositiveId(candidateId, "candidateId");
   const db = await requireDb();
+  /*
+    LIVENESS, not just the id — and it is the difference between a link and a
+    dead one.
+
+    A signed Cast's kept siblings are protected by the §G.6 retention exemption
+    for as long as she lives, but that exemption covers the CANDIDATE rows and
+    their objects. The SHEET they came from expires on its own seven-day clock.
+    So "open the sheet she came from" is a link that rots quietly: the faces are
+    still there, the page they lived on is not.
+
+    Joined here rather than read separately so a caller cannot forget to ask.
+  */
   const [row] = await db
-    .select({ sessionId: castingCandidates.sessionId })
+    .select({
+      sessionId: castingCandidates.sessionId,
+      status: castingSessions.status,
+    })
     .from(castingCandidates)
+    .innerJoin(castingSessions, eq(castingSessions.id, castingCandidates.sessionId))
     .where(and(eq(castingCandidates.id, candidateId), eq(castingCandidates.userId, userId)))
     .limit(1);
-  return row?.sessionId ?? null;
+  if (!row) return null;
+  return { id: row.sessionId, live: row.status === "open" };
 }

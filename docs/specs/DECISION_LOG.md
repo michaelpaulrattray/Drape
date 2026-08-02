@@ -2483,4 +2483,118 @@ beside the fal case that taught the lesson the first time.
 
 ---
 
+## D-104 — Identity anchors WHO. Takes re-enter as STYLE.
+
+**Founder ruling (2026-08-02), recorded for campaigns / M8.** Nothing is built
+against this yet; it is written down now because it settles a question that will
+otherwise be answered by whoever writes the campaign generator first.
+
+A Cast carries two different kinds of truth and they must not be confused:
+
+- **The identity pack** — the signed anchor and the package views — answers
+  **who she is**. It is the thing the conformance validator guards and the thing
+  M12 revisions change.
+- **A take** answers **how she looked that time**: outfit, styling, light,
+  setting. It is a moment, not a fact about her.
+
+**Campaign generation therefore feeds two inputs: the identity pack, plus a
+SELECTED TAKE used as a style reference** — the take supplies outfit and styling
+continuity across a campaign's images without ever being asked to supply the
+face. That is what makes "the same person, in the same jacket, across nine
+frames" expressible without minting a second identity for the jacket.
+
+**A take is never a permanent change.** If a customer wants the new hair, the
+new wardrobe, the different age to become *what she is*, that is an **M12
+revision** — a change to the identity pack, validated, versioned and paid for as
+such. A take that quietly became canonical would be the record-lies class in its
+most expensive form: the pack says one person and every future generation
+renders another.
+
+**The choice surfaces in the UI when M12 ships**, and not before. Until
+revisions exist there is nothing to choose between, and offering the choice
+early would be an honest-capability violation — a control that names a
+capability the product does not have.
+
+**Consequence for the character-sheet artifact:** it composes from the identity
+pack only. A take must never be composited into it, for the same reason a take
+is not a revision.
+
+---
+
+## D-105 — One interaction grammar for images. Download amends D-52's letter.
+
+**Founder ruling (2026-08-02), product-wide, no exceptions.**
+
+> click opens the viewer · ← → walk the set · Esc closes · download lives in
+> the viewer chrome
+
+Hero and thumbnail alike. **The expand icon is removed everywhere** — an icon
+whose only job is to do what clicking the picture already does is furniture, and
+it was also the only thing announcing that a picture could be opened at all,
+which meant the affordance was hidden behind the icon rather than carried by the
+image. Every media frame is now a real `<button>`: a tab stop with a name.
+
+**No hover-revealed download anywhere.** It failed twice over — a control you
+must hover to discover is a control most people never find, and a permanent row
+of file chrome over someone's face turns a room into a file manager.
+
+**Sheet candidates are included**, by founder ruling: *they own what they
+generated*. "A customer's cast is their work" (2026-07-25) extends to the
+candidates they paid 20 credits a face for. No access control changes — those
+objects already sit at persistently public URLs (`server/storage.ts`) — only the
+product's posture, which was previously silence.
+
+**The room additionally gets an explicit "Download package" button** — a real
+control in the package head, not hover chrome — as the bulk-ownership
+affordance. Deliberately not a server-side archive: it is a staggered sequence
+of the same public URLs the viewer already serves, so the control adds an
+affordance and no attack surface. **The character-sheet artifact joins it there
+when it ships**, as the single-file form of the same idea.
+
+### The D-52 amendment
+
+D-52 made the canvas viewer **view-only** because it exposed EDITING affordances
+outside the edit ceremony. Download neither spends, destroys nor edits — it
+hands the owner bytes they already own and already paid for. So the *reason*
+stands untouched and the *letter* is amended: the viewer may carry download, and
+nothing else. Keep, Discard and Sign stay on the tile, where the surrounding
+context is.
+
+**No retention warning accompanies it.** Download is the REMEDY for the seven-day
+purge, not its victim — handing the owner the bytes is precisely how a face
+outlives §G.6. The retention confession already has one ratified home and tone
+(`retentionCopy.ts`), and repeating it under a download button would be the same
+sentence, off-tone, in the wrong place.
+
+### Enforcement
+
+`client/src/features/castingV2/imageGrammar.test.ts` scans every casting source
+and fails CI on a `download=` attribute outside the viewer (and the room's one
+named bulk helper), on any `Maximize` import, on `onDoubleClick`, and on a
+viewer that has lost any of its four bindings. `CandidateTile` takes a
+**required** `onOpenViewer`, so a tile that forgets the grammar fails to
+compile. The viewer takes the **set**, not a frame — the three call sites had
+grown three near-identical modulo walks, which was the drift already happening.
+
+### Companion: a sibling tile navigates by state
+
+Also founder-ruled the same day. A sibling who was signed opens **her room**; one
+still a face opens **her sheet, focused on her tile** (`?focus=<candidateId>`,
+landing on the kept tray, which is cross-roll and therefore always holds her).
+The viewer stops being their only destination.
+
+**A sibling tile is an object card, not a media frame** — the image grammar
+governs pictures of *this* Cast; a card standing for another person goes to that
+person.
+
+**The third case is the one only the server knows.** §G.6's retention exemption
+protects a signed Cast's kept siblings — the rows and the objects — but it does
+not hold their SESSION open. So the faces can outlive the sheet they lived on,
+and a client assuming "unsigned means sheet" would hand out a dead link. The
+projection therefore derives `destination: "cast" | "sheet" | "viewer"` and a
+top-level `sheetOpen`, and the room's "Open the sheet she came from" is offered
+only while there is a sheet to open.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
