@@ -56,8 +56,8 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
   CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length;
 
 /**
- * The wardrobe the whole package is in — the contemporary world's rest state,
- * the same garment the sheet cast them in.
+ * The wardrobe the whole package is in — **relative to the reference, never an
+ * absolute colour.**
  *
  * One authored sentence, read by the generator and by the judge. It is a
  * *spec*, not a prompt fragment: "did the shirt change between the headshot and
@@ -65,10 +65,23 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
  * without knowing what we asked for. The M3 calibration is why this axis exists
  * at all — the identity held across the package while the wardrobe quietly did
  * not, and nothing in the design would have caught it.
+ *
+ * **Why it names no colour, learned on the first real Sign (2026-08-02):** the
+ * sheet's own framing rule casts candidates in "neutral grey OR off-white", and
+ * this spec used to say "mid-grey". A candidate signed in off-white therefore
+ * had a package that could not satisfy both halves of its own contract — the
+ * generator obeyed the spec, the judge compared against the reference as it is
+ * told to, and the headshot was correctly failed and refunded for a change WE
+ * had specified. The customer paid for our inconsistency.
+ *
+ * The continuity the customer actually cares about is with the face they
+ * signed, so that is what the spec asks for. It is also the only version that
+ * stays true when the sheet's wardrobe latitude widens again.
  */
 export const CAST_PACKAGE_WARDROBE_SPEC =
-  "a plain unbranded mid-grey crew-neck t-shirt, unchanged across every view; "
-  + "on full-length views, plain unbranded mid-grey trousers and plain unbranded shoes. "
+  "the SAME plain unbranded crew-neck top the reference photograph shows, in the same colour, "
+  + "unchanged across every view; on full-length views, plain unbranded neutral trousers and plain "
+  + "unbranded shoes in a tone that sits with it. "
   + "No jacket, no jewellery, no hat, no bag, no props, no printed text or logos anywhere.";
 
 export type CastPackageViewSpec = {

@@ -86,6 +86,22 @@ describe("the canonical view package", () => {
     expect(wardrobes.size).toBe(1);
   });
 
+  it("names no absolute garment colour — continuity is with the reference", () => {
+    /*
+      The first real Sign failed and refunded its headshot because the spec said
+      "mid-grey" while the signed candidate wore off-white: the generator obeyed
+      the spec, the judge compared against the reference as instructed, and the
+      customer paid for a contradiction we had authored. A colour word here is
+      that defect coming back.
+    */
+    const wardrobe = packageViewExpectation("frontClose").wardrobe.toLowerCase();
+    for (const colour of ["mid-grey", "grey", "gray", "off-white", "cream", "black", "white"]) {
+      expect(wardrobe).not.toContain(colour);
+    }
+    expect(wardrobe).toContain("same");
+    expect(wardrobe).toContain("reference");
+  });
+
   it("keeps the sixth slot a walk, which is what the product calls it", () => {
     // D-44: `sideFull` is labelled "Walk" everywhere in the product. A spec
     // describing a standing profile would be judging a different photograph
