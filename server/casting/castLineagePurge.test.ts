@@ -26,6 +26,7 @@ type Journal = { kind: string; set?: Row; where: string }[];
 function fakeTx(state: {
   candidate: Row | null;
   survivor: Row | null;
+  sessionStatus?: string;
   journal: Journal;
 }) {
   const capture = (kind: string, set?: Row) => ({
@@ -39,9 +40,11 @@ function fakeTx(state: {
     select(fields: Row) {
       // The three reads are told apart by the columns they ask for.
       const keys = Object.keys(fields ?? {});
+      // Told apart by the columns each read asks for: the candidate wants its
+      // session, the session read wants its status, the survivor wants an id.
       selectShape = keys.includes("sessionId")
         ? "candidate"
-        : keys.length === 1 && keys[0] === "id" ? "session" : "survivor";
+        : keys.includes("status") ? "session" : "survivor";
       const chain: Record<string, unknown> = {};
       const self = () => chain;
       chain.from = (table: unknown) => {
@@ -54,8 +57,9 @@ function fakeTx(state: {
       chain.limit = () => {
         if (selectShape === "candidate") return Promise.resolve(state.candidate ? [state.candidate] : []);
         if (selectShape === "survivor") return Promise.resolve(state.survivor ? [state.survivor] : []);
-        return Object.assign(Promise.resolve([{ id: 1 }]), {
-          for: () => Promise.resolve([{ id: 1 }]),
+        const session = [{ id: 1, status: state.sessionStatus ?? "open" }];
+        return Object.assign(Promise.resolve(session), {
+          for: () => Promise.resolve(session),
         });
       };
       return chain;
@@ -74,10 +78,16 @@ const readSource = async () => {
 async function run(options: {
   candidate: Row | null;
   survivor: Row | null;
+  sessionStatus?: string;
   sourceCandidateId?: number | null;
 }) {
   const journal: Journal = [];
-  const tx = fakeTx({ candidate: options.candidate, survivor: options.survivor, journal });
+  const tx = fakeTx({
+    candidate: options.candidate,
+    survivor: options.survivor,
+    sessionStatus: options.sessionStatus,
+    journal,
+  });
   const result = await purgeCastLineageIn(tx, {
     userId: 1,
     modelId: 900,
@@ -120,10 +130,44 @@ describe("deletion purges what only the deleted thing owns", () => {
     expect(journal[1].set).toMatchObject({ status: "expired" });
   });
 
-  it("releases the whole unsigned remainder when no Cast survives the sheet", async () => {
-    // A sheet that protects nothing protects nothing — the same rule the
-    // retention sweep applies, asked the same way.
-    const { result } = await run({ candidate: { id: 55, sessionId: 7 }, survivor: null });
+  it("LEAVES A LIVE SHEET ALONE, even when no Cast survives it", async () => {
+    /*
+      THE DEFECT THIS REPLACES, and it reached the founder's own roster.
+
+      The first version released every unsigned candidate on the session
+      whenever no sibling Cast survived — borrowing the rule from
+      `expireSessionCandidates`, which is written for a sheet that is EXPIRING.
+      Applied on Cast deletion it emptied sheets the founder was still working
+      on: seven of eight tiles on one roll flipped to "Didn't arrive ·
+      refunded", which was false twice over. They HAD arrived, and nothing was
+      refunded.
+
+      D-107's own words are the correction: preserve what anything living still
+      owns. An OPEN sheet is a living thing and its candidates belong to it.
+    */
+    const { result, journal } = await run({
+      candidate: { id: 55, sessionId: 7 },
+      survivor: null,
+      sessionStatus: "open",
+    });
+
+    expect(result.siblingCastsSurvive).toBe(false);
+    // Two statements, and the second is scoped to HER candidate alone.
+    expect(journal).toHaveLength(2);
+    expect(journal[1].set).toMatchObject({ status: "expired" });
+  });
+
+  it("releases the remainder only when the sheet is dead too", async () => {
+    /*
+      The genuine §G.6 case: an expired or abandoned session whose candidates
+      survived only because a Cast was keeping them alive. Now she is gone and
+      nothing is left to protect them.
+    */
+    const { result } = await run({
+      candidate: { id: 55, sessionId: 7 },
+      survivor: null,
+      sessionStatus: "expired",
+    });
 
     expect(result.siblingCastsSurvive).toBe(false);
     expect(result.candidatesReleased).toBeGreaterThan(0);
@@ -139,8 +183,10 @@ describe("deletion purges what only the deleted thing owns", () => {
     const release = source.slice(source.indexOf("const released = await tx"));
     expect(release).toContain("isNull(castingCandidates.signedCastId)");
     expect(release).toContain("eq(castingCandidates.userId, input.userId)");
-    // And the kept-sibling protection is a clause on that same statement.
-    expect(release).toContain("keptAt");
+    // And the scope is a clause on that same statement: her candidate alone
+    // unless the sheet itself is dead.
+    expect(release).toContain("releaseWholeSheet");
+    expect(release).toContain("eq(castingCandidates.id, candidate.id)");
   });
 
   it("does nothing at all for a Cast with no V2 lineage", async () => {

@@ -14,11 +14,15 @@
  *
  * So the purge is scoped by OWNERSHIP rather than by lineage:
  *
- *   goes    her candidate's signed linkage, and the candidate row itself once
- *           nothing protects it — it was hers alone
- *   goes    every other candidate on that sheet that no living Cast claims
+ *   goes    her candidate's signed linkage, and the candidate row itself — it
+ *           was spent on her and nothing else claims it
+ *   stays   every other candidate on a sheet that is STILL OPEN; they belong to
+ *           the sheet, not to her, and the sheet is a living thing
  *   stays   the session and its rolls, which are shared history
  *   stays   any candidate a surviving Cast still claims as a sibling
+ *   goes    the remainder ONLY when the sheet is already dead AND no Cast
+ *           survives it — the §G.6 case where her existence was the only thing
+ *           keeping those faces alive
  *
  * **Liveness means `deletedAt IS NULL`, never `availableModelWhere()`** — a
  * sibling Cast whose package is still building is `provisioning`, which that
@@ -90,8 +94,8 @@ export async function purgeCastLineageIn(
     ceremony takes this same row, so after this line no new Cast can appear on
     this sheet until we commit.
   */
-  await tx
-    .select({ id: castingSessions.id })
+  const [session] = await tx
+    .select({ id: castingSessions.id, status: castingSessions.status })
     .from(castingSessions)
     .where(and(
       eq(castingSessions.id, candidate.sessionId),
@@ -99,6 +103,12 @@ export async function purgeCastLineageIn(
     ))
     .limit(1)
     .for("update");
+  /*
+    IS THE SHEET ITSELF STILL ALIVE? This is the question the first version
+    forgot to ask, and it is the whole difference between deleting a Cast and
+    emptying the sheet she came from.
+  */
+  const sheetLive = session?.status === "open";
 
   /*
     HER LINKAGE GOES FIRST, and the order matters: while `signedCastId` still
@@ -140,16 +150,27 @@ export async function purgeCastLineageIn(
   const siblingCastsSurvive = Boolean(survivor);
 
   /*
-    THE RELEASE, in retention's own vocabulary (§G.6) — `expired` plus the
-    reason that is never refunded, because these candidates were delivered and
-    seen. The purge feed picks them up and hands their keys to the cleanup
-    worker; nothing here touches an object.
+    THE RELEASE, and its SCOPE is the thing this function got wrong first time.
 
-    When a sibling Cast survives, the kept faces stay: they are her Siblings
-    card. When none does, the sheet protects nothing and the whole unsigned
-    remainder is releasable — the same rule `expireSessionCandidates` applies,
-    asked the same way.
+    Her own candidate always goes: it was spent on her and nothing else claims
+    it. What must NOT go is the rest of the sheet.
+
+    The first version released every unsigned candidate on the session whenever
+    no sibling Cast survived — borrowing `expireSessionCandidates`'s rule, which
+    is written for a sheet that is EXPIRING. Applied on Cast deletion it emptied
+    a sheet the user was still working on: faces they had rolled, kept and were
+    about to sign, released for the purge feed because one Cast was deleted.
+    The founder saw it as unsigned sheets losing their previews.
+
+    D-107's own words are the correction — *preserve what anything living still
+    owns* — and a sheet that is still open is a living thing. Its candidates
+    belong to it, not to her.
+
+    So the wider release is gated on the sheet ALSO being dead. That is the case
+    §G.6 genuinely describes: an expired or abandoned session whose candidates
+    survived only because a Cast was keeping them alive, and now she is gone.
   */
+  const releaseWholeSheet = !sheetLive && !siblingCastsSurvive;
   const released = await tx
     .update(castingCandidates)
     .set({ status: "expired", expiredReason: "retention" })
@@ -158,9 +179,7 @@ export async function purgeCastLineageIn(
       eq(castingCandidates.userId, input.userId),
       isNull(castingCandidates.signedCastId),
       inArray(castingCandidates.status, ["queued", "dispatched", "ready", "failed", "discarded"]),
-      ...(siblingCastsSurvive
-        ? [sql`${castingCandidates.id} = ${candidate.id} OR ${castingCandidates.keptAt} IS NULL`]
-        : []),
+      ...(releaseWholeSheet ? [] : [eq(castingCandidates.id, candidate.id)]),
     ));
 
   return {
