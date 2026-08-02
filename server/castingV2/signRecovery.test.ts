@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CastViewAngle } from "../../shared/boardTypes";
 
 /**
  * The Sign adjudicator: what a crashed ceremony resolves to, and in what order.
@@ -31,6 +32,12 @@ let cast: Record<string, unknown> | null = null;
 let unsettled: string[] = [];
 let activation: Record<string, unknown> = { type: "activated", modelId: 901, slots: ["frontClose"] };
 let refundRecords = true;
+/*
+  The Cast's own asset rows — what recovery reads to decide whether ANYTHING
+  landed (D-103). Two 2K views by default, so the ordinary partial cases keep
+  their promotion; a total-loss test empties it.
+*/
+let castAssets: Array<Record<string, unknown>> = [];
 
 vi.mock("../db/connection", () => ({
   getDb: vi.fn(async () => ({
@@ -67,6 +74,7 @@ vi.mock("../db/generationOperations", () => ({
 }));
 
 vi.mock("../db/castingV2Sign", () => ({
+  listCastAssets: vi.fn(async () => castAssets),
   findCastBySignOperation: vi.fn(async () => {
     journal.push("locate");
     return cast;
@@ -160,6 +168,10 @@ beforeEach(() => {
   unsettled = [];
   activation = { type: "activated", modelId: 901, slots: ["frontClose", "frontFull"] };
   refundRecords = true;
+  castAssets = [
+    { viewType: "frontClose", resolution: "2K", storageUrl: "https://cdn/1.png", status: null },
+    { viewType: "frontFull", resolution: "2K", storageUrl: "https://cdn/2.png", status: null },
+  ];
   vi.clearAllMocks();
 });
 
@@ -496,5 +508,70 @@ describe("a Sign that never started", () => {
     expect(outcome.type).toBe("recovery_required");
     // Parked with the claimed marker, so the sweep stops re-picking it.
     expect(journal).toEqual(["park:claimed"]);
+  });
+});
+
+describe("zero of N, settled after the crash", () => {
+  it("refunds the promotion when the asset rows show nothing landed", async () => {
+    /*
+      The adjudicator's half of the total-loss ruling (D-103). It cannot ask the
+      process that built the package — that process is dead. It reads the Cast's
+      own asset rows, finds no 2K view, and reaches the same verdict the live
+      path would have reached, under the same derived reference.
+    */
+    cast = { modelId: 901, candidateSignedCastId: 901, candidateStatus: "signed" };
+    ledgerRows = [chargeRow()];
+    castAssets = [
+      // The 1K anchor only: the face she already had. Not a delivered view.
+      { viewType: "frontClose", resolution: "1K", storageUrl: "https://cdn/anchor.png", status: null },
+    ];
+    unsettled = [];
+
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => unsettled as CastViewAngle[],
+      promisedAngles: async () => promised,
+    });
+
+    const base = refunds.filter((entry) => entry.amount === 200);
+    expect(base).toHaveLength(1);
+    expect(outcome).toMatchObject({ refundedCredits: 200 });
+  });
+
+  it("keeps the promotion when one view survived the crash", async () => {
+    cast = { modelId: 901, candidateSignedCastId: 901, candidateStatus: "signed" };
+    ledgerRows = [chargeRow()];
+    castAssets = [
+      { viewType: "frontFull", resolution: "2K", storageUrl: "https://cdn/full.png", status: null },
+    ];
+    unsettled = [];
+
+    await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => unsettled as CastViewAngle[],
+      promisedAngles: async () => promised,
+    });
+
+    expect(refunds.some((entry) => entry.amount === 200)).toBe(false);
+  });
+
+  it("does not pay the base twice when the live process already refunded it", async () => {
+    /*
+      The reason both paths derive the reference from one helper. If the live
+      orchestrator got the promotion refund out before it died, the row is
+      already in the ledger and this pass must read it as settled — not issue a
+      second 200.
+    */
+    cast = { modelId: 901, candidateSignedCastId: 901, candidateStatus: "signed" };
+    ledgerRows = [chargeRow(), refundRow(`${CHARGE_REFERENCE}:promotion`, 200)];
+    castAssets = [];
+    unsettled = [];
+
+    const outcome = await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => unsettled as CastViewAngle[],
+      promisedAngles: async () => promised,
+    });
+
+    // The prior 200 is counted once, from the ledger — never re-issued and
+    // never added on top of itself.
+    expect(outcome).toMatchObject({ refundedCredits: 200 });
   });
 });

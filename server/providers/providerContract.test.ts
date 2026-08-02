@@ -426,6 +426,29 @@ describe("our account failing is not the user's request failing", () => {
     expect(classifyFalHttp(401, "unauthorized")).toBe("provider_account");
   });
 
+  it("classifies an OpenRouter 402 as out of funds, not as unreachable", async () => {
+    /*
+      The same lesson, learned again on the other provider and at a cost. The
+      OpenRouter balance ran out mid-package; every image-bearing judge call
+      came back 402; 402 was unmapped, so it landed in `unknown` and the slot
+      recorded "the conformance judge could not be reached". Five views failed
+      closed and refunded correctly — but the record described a flaky network,
+      and the first hour of the investigation went looking for one.
+
+      402 is the balance, 401/403 the key. All three are OUR account, none is
+      fixable by the customer, and every subsequent call fails identically.
+    */
+    const { classifyOpenRouterTextHttp } = await import("./openrouterText");
+    const { classifyOpenRouterImageHttp } = await import("./openrouterImages");
+    for (const classify of [classifyOpenRouterTextHttp, classifyOpenRouterImageHttp]) {
+      expect(classify(402, '{"error":{"message":"Insufficient credits"}}')).toBe("provider_account");
+      expect(classify(401, "unauthorized")).toBe("provider_account");
+      expect(classify(403, "forbidden")).toBe("provider_account");
+      // And a real bad request is still the request's problem.
+      expect(classify(400, '{"error":{"message":"bad model"}}')).toBe("capability");
+    }
+  });
+
   it("still calls a genuine bad request a capability problem", async () => {
     const { classifyFalHttp } = await import("./falTransport");
     expect(classifyFalHttp(400, '{"detail":"bad size"}')).toBe("capability");

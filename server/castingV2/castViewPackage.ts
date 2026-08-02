@@ -73,6 +73,15 @@ export const CAST_PACKAGE_VIEWS: readonly CastViewAngle[] = [
 export const CAST_PACKAGE_VIEW_PRICE = CASTING_V2_SIGN_COSTS.view;
 
 /**
+ * The base — what promotion itself costs.
+ *
+ * Retained on a partial package, where it buys what it says it buys. Refunded
+ * whole on a total loss, because nothing arrived to be permanent about (founder
+ * ruling, 2026-08-02).
+ */
+export const CASTING_V2_SIGN_PROMOTION_PRICE = CASTING_V2_SIGN_COSTS.promotion;
+
+/**
  * 200 + 5 × 50 = 450 credits (§H.10, amended by the package-v2 ruling).
  *
  * Derived from the view list's own length, so a profile that promises five

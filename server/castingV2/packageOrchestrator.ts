@@ -47,6 +47,7 @@ import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import {
   CAST_PACKAGE_VIEWS,
   CAST_PACKAGE_VIEW_PRICE,
+  CASTING_V2_SIGN_PROMOTION_PRICE,
   castPackageView,
   composePackageViewPrompt,
 } from "./castViewPackage";
@@ -73,6 +74,18 @@ export function packageSlotChargeReference(
   return `${operationChargeReference(operationId)}:slot:${angle}`;
 }
 
+/**
+ * The PROMOTION refund reference — the base, refunded only on a total loss.
+ *
+ * Derived through the same helper for the same reason: the live orchestrator
+ * and the recovery adjudicator both settle a zero-view package, and if their
+ * references differed by a byte the ledger's uniqueness would read the second
+ * one as a fresh refund rather than a repeat of the first.
+ */
+export function packagePromotionChargeReference(operationId: string): string {
+  return `${operationChargeReference(operationId)}:promotion`;
+}
+
 export type PackageOrchestratorDependencies = {
   identityEngine?: () => IdentityEngine;
   judge?: () => ViewConformanceJudge;
@@ -96,6 +109,8 @@ export type PackageSlotOutcome =
       reason: string;
       refundedCredits: number;
       refundUnrecorded: boolean;
+      /** The commit lost the fence — the sweep owns this slot, and its money. */
+      fenced?: boolean;
     };
 
 export type PackageResult = {
@@ -104,6 +119,12 @@ export type PackageResult = {
   refundedCredits: number;
   refundUnrecorded: boolean;
   activated: boolean;
+  /**
+   * TRUE when nothing landed and the base went back too (founder ruling,
+   * 2026-08-02). Distinct from `failed.length === promised.length` at the call
+   * site because the receipt has to say which of the two prices was returned.
+   */
+  totalLoss: boolean;
 };
 
 export type BuildPackageInput = {
@@ -194,10 +215,81 @@ export async function buildCastPackage(
   }
 
   /*
+    ZERO OF N — the base goes back too (founder ruling, 2026-08-02).
+
+    The promotion charge buys permanence: the anchor is rescued from the sheet's
+    purge, the identity is sealed, the Cast is repairable. That story is true and
+    it survives a PARTIAL package, where the customer has views in hand and a
+    Cast to keep them in. It does not survive a total loss — nobody came here to
+    buy the preservation of a face they had already paid for on the sheet.
+
+    Zero-of-N is only reachable through systemic failure: our provider account
+    exhausted, a transport outage, a judge that could not be reached. Never
+    through ordinary stochastic misses. Retaining 200 credits there charges the
+    customer for OUR outage, which is precisely what the confession law forbids.
+
+    The Cast still stands. She keeps the master she chose and the room says
+    plainly what happened — see `TOTAL_LOSS_CONFESSION`. What changes is only
+    the money, and the invariant it lives under: promotion is retained when the
+    candidate CAS is set AND at least one view committed. Recomputable from the
+    asset rows alone, which is what lets recovery reach the same verdict after a
+    crash without trusting anything this process believed.
+  */
+  let totalLoss = false;
+  let baseRefundUnrecorded = false;
+  let baseRefunded = 0;
+  /*
+    A FENCED slot disqualifies the whole judgement, not just its own slice.
+
+    Losing the fence does not mean the view failed — it means this process is no
+    longer the authority on what happened to it. The sweep re-reads the ledger
+    and settles from durable rows, so a fenced package's "nothing committed" is
+    this process's opinion, not a fact. Acting on it would be a fenced writer
+    spending money, which is the one thing the fence exists to stop.
+  */
+  const anyFenced = failures.some((failure) => failure.fenced);
+  if (promised.length > 0 && committed.length === 0 && !anyFenced) {
+    const outcome = await (dependencies.refund ?? recordRefund)(
+      input.userId,
+      CASTING_V2_SIGN_PROMOTION_PRICE,
+      "Cast package: nothing arrived — the Sign refunded in full",
+      packagePromotionChargeReference(input.operationId),
+    );
+    totalLoss = true;
+    baseRefunded = outcome.recorded && !outcome.duplicate ? outcome.amount : 0;
+    baseRefundUnrecorded = !outcome.recorded;
+    /*
+      The provider-account alarm's shape, for the same reason it has one: this
+      is never the customer's brief and no retry fixes it. It says stop and look
+      at the plumbing, not "what was wrong with this Cast".
+    */
+    log.error(
+      {
+        operationId: input.operationId,
+        modelId: input.modelId,
+        promised: promised.length,
+        baseRefunded,
+        refundedCredits: refundedCredits + baseRefunded,
+        recorded: outcome.recorded,
+      },
+      "[packageOrchestrator] TOTAL LOSS — not one view landed; the whole Sign refunded, base included",
+    );
+    if (!outcome.recorded) {
+      log.error(
+        { operationId: input.operationId, reference: outcome.reference },
+        "[packageOrchestrator] the promotion refund did not record — the owner remains charged",
+      );
+    }
+  }
+
+  /*
     Activate even when the package is partial (§F): the Cast is usable from its
     master, the missing views confess in place, and a Cast held in
     `provisioning` because one view failed would be a Cast the owner can never
     reach — invisible to every legacy procedure, by design.
+
+    A TOTAL loss activates too: the ruling keeps the Cast and refunds the money.
+    A Cast she cannot open is not a kinder outcome than one that explains itself.
   */
   const activation = await (dependencies.activate ?? activateSignedCast)({
     userId: input.userId,
@@ -214,8 +306,9 @@ export async function buildCastPackage(
   return {
     committed,
     failed: failures.map((failure) => failure.angle),
-    refundedCredits,
-    refundUnrecorded,
+    refundedCredits: refundedCredits + baseRefunded,
+    refundUnrecorded: refundUnrecorded || baseRefundUnrecorded,
+    totalLoss,
     activated: activation.type === "activated" || activation.type === "already_active",
   };
 }
@@ -343,6 +436,7 @@ async function buildOneView(
           // reference, and counting it here would double it on the receipt.
           refundedCredits: 0,
           refundUnrecorded: false,
+          fenced: true,
         };
       }
 
@@ -524,6 +618,32 @@ export async function promisedPackageAngles(input: {
 }
 
 /** Angles that have neither landed nor been written off — recovery's work list. */
+/**
+ * The views that actually LANDED — a full-resolution picture on disk.
+ *
+ * Recovery's half of the total-loss rule, and it is deliberately read from the
+ * asset rows rather than from anything a process believed. That is the property
+ * that lets the adjudicator reach the same verdict as the live orchestrator
+ * after the process holding the package has been killed mid-flight: promotion
+ * is retained when the candidate CAS is set AND at least one view committed,
+ * and both halves are recomputable from durable rows alone (D-103).
+ *
+ * The 1K anchor is excluded by the same `2K` test the settlement uses. It is
+ * the face she already had; it is not a view the package delivered.
+ */
+export async function committedPackageAngles(input: {
+  userId: number;
+  modelId: number;
+  promised?: readonly CastViewAngle[];
+}): Promise<CastViewAngle[]> {
+  const assets = await listCastAssets(input.userId, input.modelId);
+  const landed = new Set<string>();
+  for (const asset of assets) {
+    if (asset.storageUrl && asset.resolution === "2K") landed.add(asset.viewType);
+  }
+  return (input.promised ?? CAST_PACKAGE_VIEWS).filter((angle) => landed.has(angle));
+}
+
 export async function unsettledPackageAngles(input: {
   userId: number;
   modelId: number;

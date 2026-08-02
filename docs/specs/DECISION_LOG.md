@@ -2412,4 +2412,75 @@ an array never does.
 
 ---
 
+## D-103 — Zero of N refunds everything, base included. The Cast survives.
+
+**Founder ruling (2026-08-02),** after the first paid package-v3 Sign delivered
+nothing because our OpenRouter balance had run out.
+
+Sign charges 200 for promotion plus 50 per view. The promotion buys permanence:
+the anchor is rescued from the sheet's purge, the identity is sealed, the Cast
+is repairable. **That story is true, and it survives a PARTIAL package** — the
+customer has views in hand and a Cast to keep them in. It does not survive a
+total loss. Nobody came here to buy the preservation of a face they had already
+paid for on the sheet.
+
+Zero-of-N is only reachable through systemic failure: an exhausted provider
+account, a transport outage, a judge that cannot be reached. Never through
+ordinary stochastic misses — those lose a view or two, not five. Retaining the
+base there charges the customer for OUR outage, which is exactly what the
+confession law forbids.
+
+**The ruling.**
+
+- **Zero committed views ⟹ the whole price returns, base included.** Under its
+  own derived reference (`<charge>:promotion`), so the live path and the
+  recovery adjudicator produce byte-identical references and a second settlement
+  is a duplicate rather than a second payment.
+- **The Cast survives** as a master-only signed identity. She keeps the face she
+  chose. A Cast she cannot open is not a kinder outcome than one that explains
+  itself.
+- **The room confesses once, at the top** (`TOTAL_LOSS_CONFESSION`), not five
+  times in the strip: nothing arrived, everything came back including the Sign
+  itself, the views are rebuildable when repairs ship. Derived on the server
+  from the Cast's own evidence, so what the room says and what the ledger did
+  cannot drift.
+- **Partial failures are unchanged.** The base stays. Pinned by its own test,
+  because this is the half most likely to drift.
+- **A total loss raises the roll alarm's shape** — "stop, look at the plumbing",
+  not "what was wrong with this Cast".
+
+**What it does to the invariant.** D-92's *authority exists ⟹ money was taken*
+is operationally an anti-race law: it exists so a Cast cannot be created and
+fully refunded by two writers disagreeing. The rule it states becomes
+
+> promotion is retained ⟺ the candidate CAS is set **and at least one view
+> committed**
+
+and both halves are recomputable from durable rows alone — the CAS from the
+candidate, the committed views from the 2K asset rows
+(`committedPackageAngles`). That is the property that matters: the adjudicator
+reaches the same verdict as the live orchestrator after the process that built
+the package is dead. No race is reopened, because the refund is deliberate,
+written at finalization, and idempotent by reference.
+
+**A fenced writer never invokes it.** Losing the fence does not mean the views
+failed — it means this process is no longer the authority on what happened to
+them. Its "nothing committed" is an opinion, not a fact, and acting on it would
+be a fenced writer spending money.
+
+### The companion fix: 402 is out of funds, not unreachable
+
+The outage that produced this ruling recorded itself as *"the conformance judge
+could not be reached"*. It was a 402. `provider_account` already existed for
+precisely this — split out of `capability` when an exhausted fal balance cost
+three rounds of the M5 gate — but the OpenRouter classifiers never mapped 402 at
+all, so it fell through to `unknown`.
+
+402 (balance) and 401/403 (key) now classify as `provider_account` on both
+OpenRouter transports, and the conformance judge records `our judging account is
+out of funds` with the account alarm. Pinned in `providerContract.test.ts`,
+beside the fal case that taught the lesson the first time.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

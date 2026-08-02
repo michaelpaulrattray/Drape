@@ -31,6 +31,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 
 import { creditTransactions } from "../../drizzle/schema";
+import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import { recordRefund, refundReferenceFor } from "../casting/atomicCredits";
 import { operationChargeReference } from "../casting/operationContract";
 import {
@@ -51,6 +52,8 @@ import { createModuleLogger } from "../logging/logger";
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
 import {
+  committedPackageAngles,
+  packagePromotionChargeReference,
   packageSlotChargeReference,
   promisedPackageAngles,
   unsettledPackageAngles,
@@ -90,6 +93,7 @@ export type SignRecoveryDependencies = {
   parkRunning?: typeof markGenerationOperationRecoveryRequired;
   parkClaimed?: typeof markClaimedGenerationOperationRecoveryRequired;
   unsettledAngles?: typeof unsettledPackageAngles;
+  committedAngles?: typeof committedPackageAngles;
   refund?: typeof recordRefund;
   recordSlotFailure?: typeof recordRecoveredSlotFailure;
   activate?: typeof activateSignedCast;
@@ -123,9 +127,19 @@ async function readSignLedger(
   operation: { id: string; userId: number },
 ): Promise<SignLedger> {
   const chargeReference = operationChargeReference(operation.id);
+  /*
+    Every reference this Sign COULD have refunded under, not the ones today's
+    profile would produce. `CAST_VIEW_ANGLES` rather than `CAST_PACKAGE_VIEWS`
+    for the D-102 reason: a Sign bought under a different composition has slot
+    refunds this build does not sell, and missing them here understates
+    `alreadyRefunded` — which is the number the conservation ceiling is measured
+    against. The promotion reference joins them, because a total loss refunds
+    that too and a second sweep must see it (D-103).
+  */
   const refundReferences = [
     refundReferenceFor(chargeReference),
-    ...CAST_PACKAGE_VIEWS.map((angle) =>
+    refundReferenceFor(packagePromotionChargeReference(operation.id)),
+    ...CAST_VIEW_ANGLES.map((angle) =>
       refundReferenceFor(packageSlotChargeReference(operation.id, angle))),
   ];
 
@@ -409,6 +423,61 @@ export async function recoverCastingV2SignOperation(
         "[signRecovery] could not write the failed-slot marker",
       );
     });
+  }
+
+  /*
+    ZERO OF N, decided the way the live orchestrator decides it (founder ruling,
+    2026-08-02) — but recomputed from the asset rows, because by the time this
+    runs the process that built the package is dead and its beliefs are gone.
+
+    The invariant it lives under is no longer "the CAS is set, so the promotion
+    is retained" but "the CAS is set AND at least one view landed". Both halves
+    are durable, so a crash at any point still settles the same way, and the
+    reference is derived by the shared helper — byte-identical to the one the
+    live path would have used, so if that path got the refund out before dying,
+    this one is a no-op rather than a second payment.
+  */
+  const committed = await (options.committedAngles ?? committedPackageAngles)({
+    userId: operation.userId,
+    modelId: cast.modelId,
+    promised: promise.angles,
+  });
+  if (committed.length === 0 && promise.angles.length > 0) {
+    if (refundedCredits + CASTING_V2_SIGN_COSTS.promotion > ledger.charge.credits) {
+      log.error(
+        { operationId: operation.id, refundedCredits, charged: ledger.charge.credits },
+        "[signRecovery] the promotion refund would exceed the recorded charge — stopping",
+      );
+      return park(options, operation, {
+        type: "recovery_required",
+        reason: "the promotion refund would exceed the recorded charge",
+        chargedCredits: ledger.charge.credits,
+        refundedCredits,
+      });
+    }
+    const outcome = await (options.refund ?? recordRefund)(
+      operation.userId,
+      CASTING_V2_SIGN_COSTS.promotion,
+      "Cast package: nothing arrived — the Sign refunded in full",
+      packagePromotionChargeReference(operation.id),
+    );
+    if (outcome.recorded && !outcome.duplicate) refundedCredits += outcome.amount;
+    else if (!outcome.recorded) {
+      unrecorded += 1;
+      log.error(
+        { operationId: operation.id, reference: outcome.reference },
+        "[signRecovery] the promotion refund did not record — the owner remains charged",
+      );
+    }
+    log.error(
+      {
+        operationId: operation.id,
+        modelId: cast.modelId,
+        promised: promise.angles.length,
+        refundedCredits,
+      },
+      "[signRecovery] TOTAL LOSS — not one view landed; the whole Sign refunded, base included",
+    );
   }
 
   const activation = await (options.activate ?? activateSignedCast)({

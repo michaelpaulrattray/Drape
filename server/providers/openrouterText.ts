@@ -42,11 +42,19 @@ const BASE_URL = "https://openrouter.ai/api/v1";
  */
 export const DEFAULT_INTERPRETER_MODEL = "anthropic/claude-sonnet-5";
 
-function classifyHttp(status: number, body: string): ProviderFailureClass {
+export function classifyOpenRouterTextHttp(status: number, body: string): ProviderFailureClass {
   if (status === 429) return "rate_limit";
   if (status >= 500) return "transport";
   if (status === 408 || status === 504) return "timeout";
-  if (status === 401 || status === 403) return "capability";
+  /*
+    OUR account, never the user's request (see `provider_account`). 402 is the
+    balance running out and 401/403 are the key being rejected; all three fail
+    every subsequent call identically and no user action fixes any of them. They
+    were landing in `capability`, so the founder's overdrawn OpenRouter account
+    read as "the conformance judge could not be reached" — an outage dressed as
+    weather, which is the exact confusion the class was split out to end.
+  */
+  if (status === 402 || status === 401 || status === 403) return "provider_account";
   if (status === 400 || status === 422) {
     // Specific phrases only. The M3 report's five lost candidates came from a
     // classifier that read the substring "content" in `content_type` as a
@@ -144,7 +152,7 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
 
             if (!response.ok) {
               const body = await response.text().catch(() => "");
-              const failureClass = classifyHttp(response.status, body);
+              const failureClass = classifyOpenRouterTextHttp(response.status, body);
               log.warn(
                 { status: response.status, failureClass, providerRef },
                 "[OpenRouterText] request failed",

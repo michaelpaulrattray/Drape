@@ -34,6 +34,7 @@ vi.mock("../db/castingV2Sign", () => ({
 
 const {
   buildCastPackage,
+  packagePromotionChargeReference,
   packageSlotChargeReference,
   promisedPackageAngles,
   unsettledPackageAngles,
@@ -218,7 +219,8 @@ describe("generation failures", () => {
     // Five views, one attempt each.
     expect(generateView).toHaveBeenCalledTimes(5);
     expect(result.failed).toHaveLength(5);
-    expect(result.refundedCredits).toBe(250);
+    // Nothing landed, so the base returns with the slices — 450, not 250.
+    expect(result.refundedCredits).toBe(450);
   });
 
   it("retries once on an unknown failure before writing the view off", async () => {
@@ -241,8 +243,15 @@ describe("generation failures", () => {
     const result = await buildCastPackage(deps({ identityEngine }), input);
 
     expect(result.activated).toBe(true);
-    // 5 × 50 back; the 200 promotion stays, which is what was delivered.
-    expect(result.refundedCredits).toBe(250);
+    /*
+      ZERO OF N: the whole 450 goes back, base included (founder ruling,
+      2026-08-02). It was 250 until the first paid v3 Sign hit an overdrawn
+      provider account and delivered nothing — keeping the promotion there
+      charges the customer for our outage. The Cast still stands; only the money
+      moved.
+    */
+    expect(result.refundedCredits).toBe(450);
+    expect(result.totalLoss).toBe(true);
   });
 });
 
@@ -255,7 +264,8 @@ describe("the judge cannot be trusted to be available", () => {
 
     // Fail closed: "we could not check it" is never "it is fine".
     expect(result.committed).toHaveLength(0);
-    expect(result.refundedCredits).toBe(250);
+    // And an unjudgeable package is a total loss, so the base returns too.
+    expect(result.refundedCredits).toBe(450);
   });
 });
 
@@ -270,6 +280,13 @@ describe("the fence", () => {
     expect(refunds).toHaveLength(0);
     expect(result.refundedCredits).toBe(0);
     expect(result.failed).toHaveLength(5);
+    /*
+      And NOT a total loss, though nothing committed. Losing the fence means
+      this process stopped being the authority on what happened — the sweep
+      re-reads the ledger and decides. A fenced writer that refunded the base on
+      its own reading would be spending money it no longer owns.
+    */
+    expect(result.totalLoss).toBe(false);
     // And every object is deleted, since no row will ever reference them.
     expect(deletedKeys).toHaveLength(5);
   });
@@ -337,5 +354,60 @@ describe("the promise a Cast was actually charged against", () => {
     const promise = await promisedPackageAngles({ userId: 1, operationId: "op-empty" });
     expect(promise.source).toBe("profile");
     expect(promise.angles).toEqual([...CAST_PACKAGE_VIEWS]);
+  });
+});
+
+describe("zero of N — the base goes back too", () => {
+  it("refunds the promotion under its own reference when nothing lands", async () => {
+    const identityEngine = () => ({
+      id: "e",
+      editWithReferences: vi.fn(),
+      generateView: vi.fn(async () => {
+        throw new ProviderError("provider_account", "out of funds");
+      }),
+    });
+    const result = await buildCastPackage(deps({ identityEngine }), input);
+
+    expect(result.totalLoss).toBe(true);
+    expect(result.committed).toHaveLength(0);
+    // Five slices plus the base, each under its own idempotent reference — so a
+    // recovery pass that arrives later finds duplicates, not a second payment.
+    expect(refunds.filter((entry) => entry.amount === 50)).toHaveLength(5);
+    const base = refunds.filter((entry) => entry.amount === 200);
+    expect(base).toHaveLength(1);
+    expect(base[0].reference).toBe(packagePromotionChargeReference(input.operationId));
+    expect(result.refundedCredits).toBe(450);
+  });
+
+  it("keeps the base when even one view lands", async () => {
+    /*
+      The other half of the ruling, and the half that must not drift: a PARTIAL
+      package keeps its promotion. The customer has views in hand and a Cast to
+      keep them in — the permanence they bought is real.
+    */
+    let call = 0;
+    const judge = () => vi.fn(async () => {
+      call += 1;
+      return call === 1 ? pass : fail;
+    });
+    const result = await buildCastPackage(deps({ judge }), input);
+
+    expect(result.committed.length).toBeGreaterThan(0);
+    expect(result.totalLoss).toBe(false);
+    expect(refunds.some((entry) => entry.amount === 200)).toBe(false);
+  });
+
+  it("still activates the Cast — she keeps the face she chose", async () => {
+    const identityEngine = () => ({
+      id: "e",
+      editWithReferences: vi.fn(),
+      generateView: vi.fn(async () => {
+        throw new ProviderError("provider_account", "out of funds");
+      }),
+    });
+    const result = await buildCastPackage(deps({ identityEngine }), input);
+    // The ruling refunds the money and KEEPS the Cast. A Cast she cannot open
+    // is not a kinder outcome than one that explains itself.
+    expect(result.activated).toBe(true);
   });
 });

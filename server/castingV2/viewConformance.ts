@@ -168,6 +168,27 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
         // A refusal is a failure, never a pass (D-92).
         return unjudged("refused", "the conformance judge refused to answer");
       }
+      if (error instanceof ProviderError && error.failureClass === "provider_account") {
+        /*
+          OUT OF FUNDS, said as such.
+
+          This is the failure that cost a real package. Our OpenRouter balance
+          ran out, every image-bearing judge call came back 402, all five views
+          fail-closed and refunded — and the record said "the conformance judge
+          could not be reached", which reads like a flaky network and sent the
+          first hour of the investigation somewhere useless.
+
+          Nothing about the request is wrong, every remaining view will fail the
+          same way, and no retry or user action fixes it. It gets the roll
+          alarm's shape and its own persisted reason (founder ruling,
+          2026-08-02).
+        */
+        log.error(
+          { angle: input.angle, engine: config.engine.id },
+          "[viewConformance] JUDGING ACCOUNT UNUSABLE — our key or balance is refusing work, not the customer's Cast",
+        );
+        return unjudged("account", "our judging account is out of funds");
+      }
       log.error({ angle: input.angle, err: error }, "[viewConformance] judge call failed — failing closed");
       return unjudged("unavailable", "the conformance judge could not be reached");
     }

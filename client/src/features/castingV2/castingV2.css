@@ -1323,6 +1323,23 @@
 .dpc-room__actions { display: flex; align-items: center; gap: 8px; flex: none; }
 
 /*
+  The total-loss line. Restrained on purpose: this is bad news the customer has
+  already been made whole for, so it reads as a plain statement of fact, not an
+  error banner. A hairline rule and the surface tint carry it — no red, no icon,
+  no alarm furniture for something the money has already settled.
+*/
+.dpc-room__notice {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  background: var(--surfaceSunken, transparent);
+  font: 400 13px/1.6 var(--font-sans);
+  color: var(--metaStrong);
+  max-width: 72ch;
+}
+
+/*
   The drawn weights are kept exactly: one outline, one filled. Neither
   capability exists yet, so the honest-capability law changes the STATE — both
   are disabled and say "soon" — never the hierarchy, which is what the drawing

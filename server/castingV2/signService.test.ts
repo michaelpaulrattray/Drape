@@ -211,6 +211,7 @@ function packageReturning(result: {
       refundedCredits: result.refundedCredits ?? 0,
       refundUnrecorded: result.refundUnrecorded ?? false,
       activated: true,
+      totalLoss: (result.committed ?? 5) === 0,
     };
   });
 }

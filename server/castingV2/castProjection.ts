@@ -67,6 +67,12 @@ export type SignedCastProjection = {
   anchorUrl: string | null;
   slots: CastSlotProjection[];
   identityLocked: true;
+  /**
+   * A room-level sentence, or null. Today it carries exactly one event — the
+   * total loss — because that is the only fact about a Cast that the strip
+   * cannot state slot by slot without repeating itself into noise.
+   */
+  notice: string | null;
   capabilities: Record<string, CastCapability>;
   /** "Cast from a sheet on 2 August" — provenance in one line. */
   provenance: string | null;
@@ -109,6 +115,22 @@ export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded; rep
  * close-up crop is missing entirely.
  */
 export const ANCHOR_STANDIN_NOTE = "The face you signed, standing in — the close-up didn't arrive; refunded";
+
+/**
+ * ZERO OF N — said once, at the top of the room, not five times in a strip.
+ *
+ * A total loss is a different event from five unlucky views and it deserves a
+ * different sentence. The customer is owed three facts in one line: nothing
+ * arrived, ALL of the money came back including the base (founder ruling,
+ * 2026-08-02), and the Cast they signed is still theirs and still repairable.
+ *
+ * Without it the room reads as an ordinary partial failure — which would be a
+ * quiet lie about the base, the one number that behaves differently here.
+ */
+export const TOTAL_LOSS_CONFESSION =
+  "The package didn't arrive — everything you paid has been refunded, "
+  + "including the Sign itself. The face you chose is still yours; "
+  + "the views can be rebuilt when repairs ship.";
 
 type SlotEvidence = {
   /** The newest filled 2K package render, if one landed. */
@@ -304,6 +326,16 @@ export function projectSignedCast(input: {
     anchorUrl: anchor?.storageUrl ?? null,
     slots,
     identityLocked: true,
+    /*
+      Derived from the slots themselves rather than stored on the Cast, for the
+      same reason everything else here is: a finished room is rendered from its
+      own evidence. A stand-in does not count as arrival — it is the anchor she
+      already had, which is precisely the thing the base failed to add to.
+    */
+    notice: !building && slots.length > 0
+      && slots.every((slot) => slot.state !== "ready" || slot.standIn)
+      ? TOTAL_LOSS_CONFESSION
+      : null,
     /*
       Honest capability truth (§I), not a greyed-out wishlist — and honest
       means MEASURED, not assumed.

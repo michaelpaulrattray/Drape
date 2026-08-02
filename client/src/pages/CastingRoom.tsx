@@ -267,6 +267,19 @@ export default function CastingRoom() {
               </div>
             </header>
 
+            {/*
+              THE TOTAL-LOSS CONFESSION — server-authored, room-level, and shown
+              before the strip rather than inside it.
+
+              The sentence is derived on the server from the Cast's own evidence
+              (`castProjection`), never composed here, so what the room says and
+              what the ledger did cannot drift apart. It appears only when
+              nothing landed; a partial package keeps its base and says nothing.
+            */}
+            {data.notice ? (
+              <p className="dpc-room__notice" role="status">{data.notice}</p>
+            ) : null}
+
             <div className="dpc-room__columns">
               <div className="dpc-room__left">
                 {/*

@@ -5,6 +5,7 @@ import {
   ANCHOR_STANDIN_NOTE,
   FAILED_SLOT_CONFESSION,
   projectSignedCast,
+  TOTAL_LOSS_CONFESSION,
 } from "./castProjection";
 
 /**
@@ -82,6 +83,15 @@ const lineage = {
 function ledger(...assets: ModelAsset[]): ModelAsset[] {
   return [...assets].sort((a, b) => b.id - a.id);
 }
+
+/** A written-off view: the marker the room confesses from. */
+const failed = (viewType: string) =>
+  asset({
+    id: 500 + viewType.length,
+    viewType: viewType as ModelAsset["viewType"],
+    storageUrl: "",
+    status: { state: "failed", reason: "didn't arrive", refunded: 50 },
+  });
 
 const anchor = () =>
   asset({
@@ -303,6 +313,36 @@ describe("the signed Cast projection", () => {
     expect(projection.slots[0].label).toBe("Close-up");
     expect(projection.slots[0].state).toBe("ready");
     expect(projection.slots[1].label).toBe("Portrait");
+  });
+
+  it("says the package never arrived, once, at the top of the room", () => {
+    /*
+      Founder ruling (2026-08-02): a total loss is a different event from five
+      unlucky views and it gets its own sentence. Three facts the customer is
+      owed — nothing arrived, ALL of it came back including the base, and the
+      Cast is still theirs and still repairable. Said once at the room level,
+      because five identical confessions in a strip is noise, and the base is
+      the one number that behaves differently here.
+    */
+    const projection = projectSignedCast({
+      model: model({ status: "active" }),
+      assets: ledger(anchor(), failed("frontFull"), failed("closeUp")),
+      lineage,
+      promisedAngles: ["closeUp", "frontClose", "frontFull"],
+    });
+    expect(projection.notice).toBe(TOTAL_LOSS_CONFESSION);
+    expect(projection.notice).toContain("including the Sign itself");
+  });
+
+  it("stays quiet when even one view landed", () => {
+    // A partial package keeps its base, so the room must not claim otherwise.
+    const projection = projectSignedCast({
+      model: model({ status: "active" }),
+      assets: ledger(anchor(), asset({ id: 93, viewType: "frontFull" }), failed("closeUp")),
+      lineage,
+      promisedAngles: ["closeUp", "frontClose", "frontFull"],
+    });
+    expect(projection.notice).toBeNull();
   });
 
   it("never lets the stand-in pose as a delivered view", () => {

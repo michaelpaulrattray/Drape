@@ -51,7 +51,7 @@ export function estimateCandidateCostUsd(request: CandidateRequest): number {
   return base * 1.055;
 }
 
-function classifyHttp(status: number, body: string): ProviderFailureClass {
+export function classifyOpenRouterImageHttp(status: number, body: string): ProviderFailureClass {
   if (status === 429) return "rate_limit";
   if (status >= 500) return "transport";
   if (status === 408 || status === 504) return "timeout";
@@ -64,7 +64,15 @@ function classifyHttp(status: number, body: string): ProviderFailureClass {
     // the fal path.
     return isContentRefusal(body) ? "content_policy" : "capability";
   }
-  if (status === 401 || status === 403) return "capability";
+  /*
+    OUR account, never the user's request (see `provider_account`). 402 is the
+    balance running out and 401/403 are the key being rejected; all three fail
+    every subsequent call identically and no user action fixes any of them. They
+    were landing in `capability`, so the founder's overdrawn OpenRouter account
+    read as "the conformance judge could not be reached" — an outage dressed as
+    weather, which is the exact confusion the class was split out to end.
+  */
+  if (status === 402 || status === 401 || status === 403) return "provider_account";
   return "unknown";
 }
 
@@ -133,7 +141,7 @@ export function createOpenRouterCreativeEngine(config: OpenRouterConfig): Creati
 
             if (!response.ok) {
               const body = await response.text().catch(() => "");
-              const failureClass = classifyHttp(response.status, body);
+              const failureClass = classifyOpenRouterImageHttp(response.status, body);
               log.warn(
                 { status: response.status, failureClass, providerRef },
                 "[OpenRouter] request failed",
