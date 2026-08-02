@@ -259,6 +259,9 @@ export default function CastingV2() {
 
   /** Which roster card has its menu open. One at a time, like the sheet cards. */
   const [castMenu, setCastMenu] = useState<string | null>(null);
+  const balance = trpc.credits.getBalance.useQuery(undefined, {
+    staleTime: 30_000,
+  }).data?.balance;
   const [renaming, setRenaming] = useState<{ castId: string; name: string } | null>(null);
   const [deletingCast, setDeletingCast] = useState<
     NonNullable<typeof roster.data>[number] | null
@@ -476,10 +479,19 @@ export default function CastingV2() {
                 aria-label="Casting brief"
               />
               <Button variant="primary" size="small" onClick={startCasting} disabled={starting}>
-                {starting ? "Casting…" : `Cast it · ${price} cr`}
+                {starting ? "Casting…" : "Cast it"}
                 {starting ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
               </Button>
             </Field>
+            {/*
+              The hero's cost line — the same doctrine as the sheet's dock:
+              metadata beside the control, mono, right-aligned, with the
+              balance that makes the number answerable.
+            */}
+            <span className="dpc-hero__cost">
+              {price} cr
+              {typeof balance === "number" ? ` · ${balance.toLocaleString()} left` : ""}
+            </span>
 
             {/*
               Nudge chips. One tap fills the box — they do not roll, and they

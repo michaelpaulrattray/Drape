@@ -1754,11 +1754,28 @@
 .dpc-viewer__count { margin-left: auto; }
 
 /* The price, stated once for every paid tap on the sheet. */
-.dpc-dock__price {
-  margin-left: 14px;
-  font: 400 11.5px var(--font-sans);
+/*
+  THE COST LINE. Mono, muted, right-aligned — machine facts in machine type.
+
+  The mono law is doing real work here rather than being observed: "160 cr ·
+  12,450 left" is two numbers and a unit, which is exactly what mono is for, and
+  setting it in the sentence face would make it read as a sentence and demand to
+  be read. This is meant to be glanceable and otherwise ignorable.
+*/
+.dpc-dock__cost,
+.dpc-hero__cost {
+  font: 400 10.5px/1.4 var(--font-mono);
+  letter-spacing: 0.02em;
   color: var(--meta);
   white-space: nowrap;
+}
+
+.dpc-dock__cost { margin-left: 14px; }
+
+.dpc-hero__cost {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
 }
 
 /*
