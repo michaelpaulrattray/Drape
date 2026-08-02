@@ -37,9 +37,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 
-import { users } from "../../drizzle/schema";
 import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
 import { recordRefund, refundTruth } from "../casting/atomicCredits";
 import {
@@ -50,7 +48,7 @@ import {
 } from "../casting/directOperation";
 import { operationChargeReference } from "../casting/operationContract";
 import { deductCredits } from "../db/credits";
-import { getDb } from "../db/connection";
+import { assertNotFrozen } from "./spendGuards";
 import { createGeneration, updateGeneration } from "../db/generations";
 import { markGenerationOperationRunning } from "../db/generationOperations";
 import {
@@ -187,28 +185,6 @@ async function defaultStoreImage(input: { bytes: Buffer; contentType: string }) 
     input.contentType,
   );
   return { key };
-}
-
-/**
- * Frozen accounts cannot spend. Checked before the claim so the refusal is
- * free — the same check `withAtomicCredits` performs, hoisted to where it can
- * refuse without leaving an operation behind.
- */
-async function assertNotFrozen(userId: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-  const [user] = await db
-    .select({ frozenAt: users.frozenAt })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  if (user?.frozenAt) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message:
-        "Your account is currently under review. Generations are temporarily paused while we verify your billing records.",
-    });
-  }
 }
 
 export async function createRoll(

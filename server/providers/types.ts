@@ -157,6 +157,16 @@ export interface CreativeEngine {
 export type TextRequest = {
   system: string;
   user: string;
+  /**
+   * Pictures the model must actually look at, in the order given.
+   *
+   * Present only for the judging calls (§I's cohort validator): "is this the
+   * same person, at the requested angle, in the wardrobe we promised" is a
+   * question about two images, and asking it of a text-only model would produce
+   * a confident answer about nothing. Interpreter calls omit this and stay
+   * exactly as cheap as they were.
+   */
+  images?: readonly ReferenceImage[];
   /** Ask the provider for a JSON object. A hint, never a guarantee. */
   json?: boolean;
   temperature?: number;

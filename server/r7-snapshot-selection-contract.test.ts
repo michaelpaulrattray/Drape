@@ -108,6 +108,16 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "server/casting/evidence/evidenceIdentityRevisionRepair.ts",
       "server/casting/evidence/evidenceWalkCompatibilityRepair.ts",
       "server/casting/evidence/evidenceFork.ts",
+      /*
+        The Sign ceremony (M7). Bounded in the same way `evidenceFork` is: a
+        provisioning-scoped writer that creates a Cast's first identity and
+        package snapshot inside one operation, because the standard fenced
+        writers are gated on available statuses that `provisioning` deliberately
+        is not. It writes exactly one identity snapshot and one package snapshot
+        per Cast, at Sign and at activation, and nothing else in the domain
+        touches these tables.
+      */
+      "server/db/castingV2Sign.ts",
       "server/casting/evidence/inkAcceptanceCommit.ts",
       "server/casting/evidence/referencePlateIngestion.ts",
       "server/casting/modelReadProjections.ts",

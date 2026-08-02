@@ -102,14 +102,17 @@ export function validateEnv(): void {
     scope: process.env[EVIDENCE_PACKAGE_SCOPE_ENV],
     composerScope: process.env[EVIDENCE_COMPOSER_SCOPE_ENV],
   });
-  // Casting V2 is off by default and cannot be switched on without the two
-  // things it silently depends on: a configured image transport (or every
-  // paid roll fails at dispatch) and the cleanup worker (or candidate objects
-  // outlive the sheets that promised to purge them).
+  // Casting V2 is off by default and cannot be switched on without the three
+  // things it silently depends on: a configured image transport (or every paid
+  // roll fails at dispatch), the cleanup worker (or candidate objects outlive
+  // the sheets that promised to purge them), and — since Sign (M7) — the
+  // view-conformance validator, without which every signed package would fail
+  // closed on all six views and refund itself.
   validateCastingV2Environment({
     scope: process.env[CASTING_V2_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
     transportConfigured: Boolean(process.env.FAL_KEY),
+    validatorConfigured: Boolean(process.env.OPENROUTER_API_KEY),
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

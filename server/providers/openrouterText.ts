@@ -56,6 +56,28 @@ function classifyHttp(status: number, body: string): ProviderFailureClass {
   return "unknown";
 }
 
+/**
+ * The user turn: a bare string for text, content parts when there are pictures.
+ *
+ * Kept as a bare string in the text case on purpose — that is the shape every
+ * interpreter call has used since M3, and a needless reshaping of the request
+ * body is the kind of change that alters model behaviour for no stated reason.
+ * Images ride as data URIs, the same way the identity engine sends references,
+ * so nothing about a judged image is ever fetched from a URL we do not control.
+ */
+function userContent(request: TextRequest): unknown {
+  if (!request.images || request.images.length === 0) return request.user;
+  return [
+    { type: "text", text: request.user },
+    ...request.images.map((image) => ({
+      type: "image_url",
+      image_url: {
+        url: `data:${image.contentType};base64,${image.bytes.toString("base64")}`,
+      },
+    })),
+  ];
+}
+
 export type OpenRouterTextConfig = {
   apiKey: string;
   model?: string;
@@ -97,7 +119,7 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
                   model,
                   messages: [
                     { role: "system", content: request.system },
-                    { role: "user", content: request.user },
+                    { role: "user", content: userContent(request) },
                   ],
                   temperature: request.temperature ?? 0.4,
                   max_tokens: request.maxOutputTokens ?? 900,

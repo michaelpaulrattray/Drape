@@ -84,6 +84,17 @@ export function refundReferenceFor(chargeReferenceId: string): string {
 export interface RefundOutcome {
   recorded: boolean;
   amount: number;
+  /**
+   * TRUE when this exact refund was ALREADY in the ledger.
+   *
+   * The idempotent reference makes a repeat harmless to the balance — the
+   * ledger's unique index absorbs it and the customer is paid once. But a
+   * caller that adds `amount` to a running total on a duplicate reports money
+   * moving twice, which overstates a receipt and can trip a conservation
+   * ceiling on a Cast that was perfectly healthy. "Recorded" and "recorded by
+   * me, now" are different facts, and only the second one is a payment.
+   */
+  duplicate: boolean;
   /** The deterministic refund reference — quoted to support for manual
    *  reconciliation when `recorded` is false. */
   reference: string;
@@ -107,7 +118,7 @@ export async function recordRefund(
       "[AtomicCredits] REFUND FAILED TO RECORD — user remains charged; recover manually with the refund reference",
     );
   }
-  return { recorded: result.success, amount, reference };
+  return { recorded: result.success, amount, reference, duplicate: result.duplicate === true };
 }
 
 /** The user-facing sentence for a refund outcome. */

@@ -93,6 +93,11 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // images live in the public bucket, evidence does not, and a manifest
       // that left the backend implicit could delete from the wrong one.
       "server/castingV2/candidateRetention.ts",
+      // The Sign ceremony (M7) registers its anchor copy for deletion BEFORE it
+      // makes the copy, and names `public_r2` for it — a Cast's images live in
+      // the public bucket, evidence does not, and a manifest that left the
+      // backend implicit could delete from the wrong one.
+      "server/castingV2/signService.ts",
       "server/db/accountDeletion.ts",
       "server/db/evidenceCandidates.ts",
       "server/db/evidenceOperations.ts",

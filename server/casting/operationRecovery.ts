@@ -1,5 +1,6 @@
 import { recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
-import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
+import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
+import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import {
   creditTransactions,
   generationOperations,
@@ -15,6 +16,7 @@ import {
 import { addCredits, normalizeCreditReferenceId } from "../db/credits";
 import { getDb, withTransaction } from "../db/connection";
 import {
+  CASTING_V2_SIGN_FENCE_CODE,
   finalizeClaimedGenerationOperationFailure,
   finalizeGenerationOperationFailure,
   finalizeGenerationOperationSuccess,
@@ -90,11 +92,14 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   // The bespoke adjudicator reads the roll's own candidate rows, so there is
   // no generic public result to reconstruct here.
   "castingV2.roll": "not_reconstructable",
+  // Same: the sign adjudicator rebuilds the receipt from the Cast's own rows.
+  "castingV2.sign": "not_reconstructable",
 };
 
 type StaleRecoveryStrategy =
   | "standard"
   | "castingv2_roll"
+  | "castingv2_sign"
   | "ink_evidence"
   | "evidence_fork"
   | "evidence_mint";
@@ -131,6 +136,14 @@ const STALE_RECOVERY_BY_KIND: Readonly<
   // Bespoke: the standard path assumes one output per operation, whereas a
   // roll has eight independently-refundable slices.
   "castingV2.roll": "castingv2_roll",
+  /*
+    Bespoke, and for a stronger reason than the roll's: the standard path reads
+    the operation's own `modelId` to find what it built, and a Sign binds that
+    only at activation — so on exactly the crashes recovery exists for, the
+    generic adjudicator would conclude a Cast that plainly exists was never
+    created. The fork variable is the candidate's CAS (D-92).
+  */
+  "castingV2.sign": "castingv2_sign",
 };
 
 const LANDING_RECOVERY_BY_KIND: Readonly<
@@ -165,6 +178,9 @@ const LANDING_RECOVERY_BY_KIND: Readonly<
   // A roll lands nothing into a board item; the canvas origin is filled at
   // Sign (M10), not by the roll itself.
   "castingV2.roll": null,
+  // Sign creates a Cast, not a board landing. The canvas return destination is
+  // the session's own origin and is handled by the room, not by this receipt.
+  "castingV2.sign": null,
 };
 
 function assertNever(value: never): never {
@@ -814,7 +830,23 @@ export async function adjudicateStaleGenerationOperation(
   operation: GenerationOperation,
   now = new Date(),
 ): Promise<StaleOperationDecision | "skipped"> {
-  if (operation.status !== "claimed" && operation.status !== "running") return "skipped";
+  /*
+    `recovery_required` is normally terminal for the sweep — a human looks at
+    it. A fenced Sign is the one exception, and it is not really an exception:
+    the fence is how the Sign adjudicator stops a live commit BEFORE it settles
+    the money (D-92), so an operation parked there is one whose adjudication was
+    interrupted between the fence and the receipt, not one that needs a human.
+    Re-adjudicating is idempotent — the verdict is a pure function of the
+    candidate CAS and the ledger — and `claimRecoveryAttempt` keeps it from
+    running more than once every few minutes.
+  */
+  const fencedSign =
+    operation.status === "recovery_required"
+    && operation.kind === "castingV2.sign"
+    && operation.errorCode === CASTING_V2_SIGN_FENCE_CODE;
+  if (operation.status !== "claimed" && operation.status !== "running" && !fencedSign) {
+    return "skipped";
+  }
   if (!await claimRecoveryAttempt(operation, now)) return "skipped";
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -873,6 +905,44 @@ export async function adjudicateStaleGenerationOperation(
       return "recovery_required";
     }
   }
+  if (operation.kind === "castingV2.sign") {
+    const recovered = await recoverCastingV2SignOperation({
+      ...operation,
+      // Narrowed by the gate above; the row's column type is a bare string.
+      status: operation.status === "claimed"
+        ? "claimed"
+        : operation.status === "running"
+          ? "running"
+          : "recovery_required",
+    });
+    if (recovered.type === "durable_success") return "durable_success";
+    // Partial and total failure end the same way for the sweep: terminal, with
+    // every owed slice given back. Which one it was lives on the Cast, which is
+    // what the room reads.
+    if (recovered.type === "partial" || recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      /*
+        The adjudicator has already fenced this operation into
+        `recovery_required` and left it there deliberately. Marking it again
+        would fail — the marker gates on `running` — so the fence IS the mark.
+      */
+      log.error(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] a Sign needs support review",
+      );
+      return "recovery_required";
+    }
+  }
+  /*
+    Past this point every path assumes a `claimed` or `running` operation — the
+    generic evidence gathering, the ledger comparison, the standard finalizers.
+    The only operation that can arrive here in any other status is a fenced
+    Sign, and it has already returned above. Refusing rather than falling
+    through is what keeps that true after the next kind is added.
+  */
+  if (operation.status !== "claimed" && operation.status !== "running") return "skipped";
+
   if (operation.kind === "evidence_mint") {
     const recovered = await recoverEvidenceMintOperation(operation);
     if (recovered.type === "durable_success") return "durable_success";
@@ -1188,7 +1258,34 @@ export async function sweepStaleGenerationOperations(input: {
     .where(or(
       and(eq(generationOperations.status, "claimed"), lt(generationOperations.updatedAt, staleClaimBefore)),
       and(eq(generationOperations.status, "running"), lt(generationOperations.leaseExpiresAt, now)),
+      /*
+        Fenced Signs, picked back up. `fenceCastingV2SignOperationIn` moves an
+        operation here on purpose before it touches the money, so a crash in
+        that window would otherwise leave a Cast half-settled forever — nothing
+        else in this sweep looks at `recovery_required`.
+
+        Narrowed by ERROR CODE, not just by kind, and that narrowing is
+        load-bearing: `recovery_required` is also where a Sign is PARKED FOR A
+        HUMAN — an unrecorded refund, a Cast whose candidate disagrees with it.
+        Matching those too would re-adjudicate a genuine support case every few
+        minutes and seal a clean receipt over its message, losing both the
+        money and the trail. Only a fenced row is ours to finish.
+
+        No time predicate: the retry interval inside `claimRecoveryAttempt` is
+        the throttle.
+      */
+      and(
+        eq(generationOperations.status, "recovery_required"),
+        eq(generationOperations.kind, "castingV2.sign"),
+        eq(generationOperations.errorCode, CASTING_V2_SIGN_FENCE_CODE),
+      ),
     ))
+    /*
+      Oldest first. The selection is bounded at 25 and had no order, so a
+      backlog could keep handing back the same arbitrary rows while fresh
+      failures waited behind them. Fairness costs one index-ordered read.
+    */
+    .orderBy(asc(generationOperations.updatedAt))
     .limit(limit);
   let resolved = 0;
   let recoveryRequired = 0;

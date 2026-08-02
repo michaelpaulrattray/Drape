@@ -46,6 +46,10 @@ export const OPERATION_REPLAY_FAMILY_BY_KIND: Readonly<
   // Replay is by operation key returning the existing roll, not by a
   // state-derived route.
   "castingV2.roll": null,
+  // Replay is by operation key returning the Cast that was already signed —
+  // never a state-derived Mint/Refresh route, which would re-drive package work
+  // against a Cast that already has it.
+  "castingV2.sign": null,
 };
 
 export type ReplayKindResolution =

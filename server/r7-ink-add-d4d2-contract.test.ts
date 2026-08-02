@@ -48,6 +48,10 @@ describe("R7-7D D4D2 recovery, feature fences, and privacy contract", () => {
       // Pre-Sign: a roll has no model, so there is no feature state to be
       // aware of or blind to.
       ["castingV2.roll", "not_applicable"],
+      // Sign CREATES the Cast, so there is no prior feature state for it to be
+      // aware of or blind to: a newly signed Cast has no accepted ink evidence
+      // by construction.
+      ["castingV2.sign", "not_applicable"],
     ]);
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("tattoo evidence");
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("unavailable");

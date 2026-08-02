@@ -57,6 +57,25 @@ export class CastingV2TransportConfigurationError extends Error {
   }
 }
 
+/**
+ * The Sign package cannot land a view without a second opinion.
+ *
+ * §I's fail-closed law: where no trustworthy verifier exists, the request
+ * refuses BEFORE the spend. Without the judge transport, every Sign would
+ * charge the promotion plus six views, fail all six conformance checks, and
+ * refund three hundred credits back — a Cast with an empty package, every
+ * single time, and the money technically correct throughout. Refusing to
+ * enable is the only honest posture (invariant 7).
+ */
+export class CastingV2ValidatorConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_V2_SCOPE_ENV} cannot be enabled unless the view-conformance validator (OPENROUTER_API_KEY) is configured`,
+    );
+    this.name = "CastingV2ValidatorConfigurationError";
+  }
+}
+
 export function parseCastingV2Scope(raw: string | undefined): CastingV2Scope {
   if (raw === undefined || raw === "" || raw === "off") return { kind: "off" };
   if (raw === "all") return { kind: "all" };
@@ -98,6 +117,7 @@ export function validateCastingV2Environment(input: {
   scope: string | undefined;
   cleanupWorker: string | undefined;
   transportConfigured?: boolean;
+  validatorConfigured?: boolean;
 }): CastingV2Scope {
   const parsed = parseCastingV2Scope(input.scope);
   if (parsed.kind !== "off" && input.cleanupWorker !== "true") {
@@ -105,6 +125,9 @@ export function validateCastingV2Environment(input: {
   }
   if (parsed.kind !== "off" && input.transportConfigured !== true) {
     throw new CastingV2TransportConfigurationError();
+  }
+  if (parsed.kind !== "off" && input.validatorConfigured !== true) {
+    throw new CastingV2ValidatorConfigurationError();
   }
   return parsed;
 }

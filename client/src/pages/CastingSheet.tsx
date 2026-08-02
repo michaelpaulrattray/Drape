@@ -24,6 +24,7 @@ import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
+import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 
 /**
  * The casting sheet (plan §J, handoff chapter 07).
@@ -95,6 +96,17 @@ export default function CastingSheet() {
     the cancel's sentence.
   */
   const [parentGone, setParentGone] = useState(false);
+  /*
+    The candidate a Sign confirmation is open for.
+
+    Component state rather than the sheet store: it is a dialog, it belongs to
+    this screen, and it must not survive navigating to another sheet — the
+    store's global-singleton bleed is exactly the class of bug that cost a
+    paid lock once already.
+  */
+  const [signing, setSigning] = useState<
+    { candidateId: string; indexLabel: string; personaLine: string | null } | null
+  >(null);
 
   const config = trpc.castingV2.config.useQuery({});
   const session = trpc.castingV2.getSession.useQuery(
@@ -319,6 +331,7 @@ export default function CastingSheet() {
   const cancel = trpc.castingV2.cancel.useMutation();
   const createRoll = trpc.castingV2.createRoll.useMutation();
   const follow = trpc.castingV2.follow.useMutation();
+  const sign = trpc.castingV2.sign.useMutation();
 
   const onKeep = (candidateId: string, kept: boolean) => {
     // Paint first, ask second (D-38). The ring appears on the click, not on
@@ -594,6 +607,7 @@ export default function CastingSheet() {
     !viewingHistory && !followDismissed ? (roll.data?.lineage.fromCandidateId ?? null) : null;
 
   const price = config.data?.rollPriceCredits ?? 0;
+  const signPrice = config.data?.signPriceCredits ?? 0;
   const candidates = roll.data?.candidates ?? [];
   const rollWasCancelled = roll.data?.status === "cancelled";
 
@@ -1001,6 +1015,14 @@ export default function CastingSheet() {
                   }
                   onDiscard={() => onDiscard(candidate.candidateId)}
                   onFollow={() => dispatchRoll("follow", candidate.candidateId)}
+                  signPriceCredits={signPrice}
+                  onSign={() =>
+                    setSigning({
+                      candidateId: candidate.candidateId,
+                      indexLabel: candidate.indexLabel,
+                      personaLine: candidate.personaLine ?? null,
+                    })
+                  }
                 />
               ))}
         </div>
@@ -1155,6 +1177,45 @@ export default function CastingSheet() {
           </div>
         </Dock>
       </div>
+
+      {signing ? (
+        <SignConfirm
+          indexLabel={signing.indexLabel}
+          personaLine={signing.personaLine}
+          priceCredits={signPrice}
+          viewCount={config.data?.packageViewCount ?? 0}
+          busy={sign.isPending}
+          onCancel={() => setSigning(null)}
+          onConfirm={(name) => {
+            /*
+              The room opens on the signed master and the views stream in
+              behind it (§F), so this navigates as soon as the Cast exists
+              rather than waiting out six 2K generations on a spinner.
+
+              One request id per ceremony, minted here: a retry of the SAME
+              ceremony must replay rather than sign a second candidate, and two
+              deliberate Signs are two ids.
+            */
+            sign.mutate(
+              {
+                clientRequestId: createClientRequestId(),
+                candidateId: signing.candidateId,
+                ...(name ? { name } : {}),
+              },
+              {
+                onSuccess: (result) => {
+                  setSigning(null);
+                  navigate(`/casting/cast/${result.castPublicId}`);
+                },
+                onError: (error) => {
+                  setSigning(null);
+                  toast.error(error.message);
+                },
+              },
+            );
+          }}
+        />
+      ) : null}
     </AppShell>
   );
 }

@@ -42,6 +42,12 @@ export const FEATURE_TRANSITION_AUTHORITY:
     // Pre-Sign: a roll has no model, so there is no feature state to be
     // aware of or blind to.
     "castingV2.roll": "not_applicable",
+    /*
+      Sign CREATES the Cast, so there is no prior feature state for it to be
+      aware of or blind to: a newly signed Cast has no accepted ink evidence by
+      construction. Evidence-aware operations start after it exists.
+    */
+    "castingV2.sign": "not_applicable",
   };
 
 export const FEATURE_BLIND_OPERATION_MESSAGE =

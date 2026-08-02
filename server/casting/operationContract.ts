@@ -34,6 +34,13 @@ export const GENERATION_OPERATION_KINDS = [
   // replay family — the type system enforces that, which is why adding one
   // here fails the build until the adjudicator knows about it.
   "castingV2.roll",
+  /*
+    Sign (M7): promotion AND the canonical package under ONE operation, so
+    per-view refund slices reconcile against the same charge reference (§H.4).
+    Splitting them would give the package its own charge and break the receipt's
+    credit-conservation assertion.
+  */
+  "castingV2.sign",
 ] as const;
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];

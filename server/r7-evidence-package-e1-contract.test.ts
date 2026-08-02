@@ -94,7 +94,12 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // rule this test enforces is about what `castingCreditCosts.ts` may
       // depend on, not about who may read a price — and a new consumer of the
       // prices is exactly the kind of change this inventory should surface.
+      // Sign (M7) reads the same declaration-only prices: the package module
+      // derives the Sign total from its own view list, and the service quotes
+      // it. Two more readers of a price, no new dependency on anything.
+      "castingV2/castViewPackage.ts",
       "castingV2/rollService.ts",
+      "castingV2/signService.ts",
       "db/castingV2.ts",
       "db/inkAddCandidates.ts",
       "routes/castingV2.ts",

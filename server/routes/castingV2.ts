@@ -41,6 +41,14 @@ import {
 /** `z.enum` wants a non-empty tuple; these three are derived key arrays. */
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
+import { signCandidate } from "../castingV2/signService";
+import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
+import { projectSignedCast } from "../castingV2/castProjection";
+import {
+  getCastLineage,
+  getOwnedCastByPublicId,
+  listCastAssets,
+} from "../db/castingV2Sign";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import {
   projectRoll,
@@ -153,6 +161,10 @@ export const castingV2Router = router({
     enabled: captureCastingV2Enabled(ctx.user.id),
     rollPriceCredits: CASTING_V2_ROLL_PRICE_CREDITS,
     candidatesPerRoll: CASTING_V2_COSTS.rollCandidateCount,
+    // H.1: the price is on the paid affordance before it fires, and it is
+    // server-derived — the Sign confirm never carries a literal.
+    signPriceCredits: CASTING_V2_SIGN_PRICE_CREDITS,
+    packageViewCount: CAST_PACKAGE_VIEWS.length,
   })),
 
   createSession: protectedProcedure
@@ -409,6 +421,60 @@ export const castingV2Router = router({
       });
       if (!abandoned) throw new TRPCError({ code: "NOT_FOUND", message: "Sheet not found" });
       return { abandoned: true as const };
+    }),
+
+  /**
+   * Sign a candidate into a Cast. The other priced action, and the only one
+   * that creates something permanent.
+   *
+   * `clientRequestId` is the idempotency key: a replay returns the Cast that was
+   * already signed rather than spending a second candidate (§H.7). The mutation
+   * resolves once the Cast exists — its package streams in afterwards, which is
+   * what lets the room open on the signed master (§F).
+   */
+  sign: protectedProcedure
+    .input(
+      z
+        .object({
+          clientRequestId: z.string(),
+          candidateId: publicId,
+          // Optional by design: an unnamed Cast shows its KI id until its owner
+          // names it. Bounded because it reaches a varchar(128).
+          name: z.string().trim().min(1).max(60).optional(),
+        })
+        .strict(),
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      assertClientRequestId(input.clientRequestId);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.generation);
+      return signCandidate({}, {
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        candidatePublicId: input.candidateId,
+        name: input.name ?? null,
+      });
+    }),
+
+  /**
+   * The room's read: one signed Cast, its package, and what each slot is doing.
+   *
+   * Polled while the package builds, on the same cadence as the sheet. Every
+   * field is an explicit allowlist (§J) — the identity documents that would let
+   * someone reproduce this Cast are not in the projection at all.
+   */
+  getCast: protectedProcedure
+    .input(z.object({ castId: z.string().min(1).max(32) }).strict())
+    .query(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      const [assets, lineage] = await Promise.all([
+        listCastAssets(ctx.user.id, model.id),
+        getCastLineage(ctx.user.id, model),
+      ]);
+      return projectSignedCast({ model, assets, lineage });
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

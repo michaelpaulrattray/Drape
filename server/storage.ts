@@ -163,6 +163,25 @@ export async function storagePut(
   return { key, url: buildPublicUrl(config.publicUrl, key) };
 }
 
+/**
+ * Read one owned image object's bytes.
+ *
+ * Added for the Sign package (M7): the identity engine and the conformance
+ * judge both need the signed anchor as BYTES, and the alternative — handing
+ * either of them the object's public URL — would make a provider fetch our
+ * customer's face over the open internet, which is the one thing the
+ * public-bucket compromise is supposed to keep to a minimum. Same bounded,
+ * image-only reader the exact copy uses, so a hostile or corrupt object fails
+ * the same way in both places.
+ */
+export async function storageReadBytes(
+  relKey: string,
+): Promise<{ bytes: Buffer; contentType: string }> {
+  const config = getStorageConfig();
+  const { bytes, contentType } = await readStorageBytesExact(config, normalizeKey(relKey));
+  return { bytes, contentType };
+}
+
 export async function storageGet(
   relKey: string
 ): Promise<{ key: string; url: string }> {

@@ -18,6 +18,7 @@ import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AppLobby from "./pages/AppLobby";
 import CastingFoundation from "./pages/CastingFoundation";
+import CastingRoom from "./pages/CastingRoom";
 import CastingSheet from "./pages/CastingSheet";
 import CastingV2 from "./pages/CastingV2";
 import { BoardPage } from "./features/boards/BoardPage";
@@ -77,6 +78,15 @@ function Router() {
           */}
           <Route path="/casting/s/:sessionId">
             {(params) => <CastingSheet key={params.sessionId} />}
+          </Route>
+          {/*
+            The room a Sign opens onto. Keyed by the Cast's public KI id — the
+            only Cast identifier that ever leaves the server (§J) — and keyed as
+            a route rather than a mode for the same reason the sheet is: a Cast
+            is permanent, so the address should be too.
+          */}
+          <Route path="/casting/cast/:castId">
+            {(params) => <CastingRoom key={params.castId} />}
           </Route>
           <Route path="/casting/foundation" component={CastingFoundation} />
 

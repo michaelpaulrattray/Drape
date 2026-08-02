@@ -1721,6 +1721,197 @@ export async function finalizeGenerationOperationFailure(input: {
   };
 }
 
+/**
+ * Fence a stale `castingV2.sign` operation out of `running` BEFORE its money is
+ * settled — D-92's sweep-versus-live defence, in the one form the receipt
+ * machinery can honestly express.
+ *
+ * D-92 says the sweep must "finalise the operation FIRST and refund second, so
+ * the finalised status fences the live commit out". Taken literally that is
+ * impossible here and would be dishonest if it were possible: every terminal
+ * finalizer takes `chargedCredits`/`refundedCredits` at write time, so sealing
+ * before the refund means sealing a receipt that claims money moved which has
+ * not — and nothing ever revisits a terminal receipt to correct it.
+ *
+ * The intent of the ruling is "leave `running` before touching the money", and
+ * `recovery_required` is exactly that state: non-`running`, so the Sign
+ * transaction's `FOR UPDATE` re-prove finds it gone and aborts; not terminal,
+ * so the sweep can still seal the true totals afterwards; and loud — it is
+ * listed as an active operation and support can see it. A crash between the
+ * fence and the seal parks the operation there, which is why the Sign
+ * adjudicator's selection includes `recovery_required` sign operations: the
+ * verdict is a pure function of (candidate CAS, ledger), so re-adjudicating is
+ * safe and idempotent.
+ *
+ * Transaction-scoped on purpose. The caller reads the fork variable — the
+ * candidate's `signedCastId` — inside the same transaction that takes this
+ * lock, because reading it first and fencing afterwards leaves the window where
+ * the live Sign commits between the two.
+ */
+/**
+ * The error code that means "fenced, not finished".
+ *
+ * `recovery_required` is normally where an operation goes to WAIT FOR A HUMAN,
+ * and the sweep leaves those alone for ever. The Sign fence borrows the same
+ * status for a completely different purpose — a few milliseconds of "no live
+ * process may commit while I settle this" — so the two must be distinguishable
+ * or the sweep re-adjudicates genuine support cases and seals clean receipts
+ * over them. This code is the discriminator: the widened sweep selection and
+ * the fenced finalizer both require it, and an operation that is parked for a
+ * human carries the standard code instead and is never picked up again.
+ */
+export const CASTING_V2_SIGN_FENCE_CODE = "RECOVERY_FENCED";
+
+export async function fenceCastingV2SignOperationIn(
+  tx: TransactionHandle,
+  input: {
+    userId: number;
+    operationId: string;
+    publicMessage: string;
+    chargedCredits: number;
+    refundedCredits: number;
+  },
+): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertCreditConservation(input.chargedCredits, input.refundedCredits);
+  const publicMessage = input.publicMessage.trim();
+  if (!publicMessage) throw new TypeError("Recovery message is required");
+  const fenced = await tx
+    .update(generationOperations)
+    .set({
+      status: "recovery_required",
+      errorCode: CASTING_V2_SIGN_FENCE_CODE,
+      publicMessage,
+      chargedCredits: input.chargedCredits,
+      refundedCredits: input.refundedCredits,
+    })
+    .where(and(
+      eq(generationOperations.id, input.operationId),
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.kind, "castingV2.sign"),
+      eq(generationOperations.status, "running"),
+    ));
+  return affectedRows(fenced) === 1;
+}
+
+/**
+ * Turn a fenced Sign into a genuinely parked one.
+ *
+ * Called when adjudication reaches a dead end — a refund that will not record,
+ * a Cast whose candidate disagrees with it, slices that would exceed the
+ * charge. The operation stays `recovery_required`, which is right: a human has
+ * to look. What changes is the error code, which takes it OUT of the sweep's
+ * fenced selection, so it stops being re-adjudicated every few minutes and its
+ * support message stops being overwritten by the next pass.
+ */
+export async function parkFencedCastingV2SignOperation(input: {
+  userId: number;
+  operationId: string;
+  publicMessage: string;
+  chargedCredits: number;
+  refundedCredits: number;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertCreditConservation(input.chargedCredits, input.refundedCredits);
+  const publicMessage = input.publicMessage.trim();
+  if (!publicMessage) throw new TypeError("Recovery message is required");
+  await stopOperationHeartbeat(input.operationId);
+  await withTransaction(async (tx) => {
+    await tx
+      .update(generationOperations)
+      .set({
+        errorCode: "INTERNAL_SERVER_ERROR",
+        publicMessage,
+        chargedCredits: input.chargedCredits,
+        refundedCredits: input.refundedCredits,
+      })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.kind, "castingV2.sign"),
+        eq(generationOperations.status, "recovery_required"),
+        eq(generationOperations.errorCode, CASTING_V2_SIGN_FENCE_CODE),
+      ));
+  });
+}
+
+/**
+ * Seal a fenced `castingV2.sign` operation with the totals that actually moved.
+ *
+ * Narrow by construction — `status='recovery_required' AND kind='castingV2.sign'`
+ * — because every other finalizer in this module gates on `running`, and
+ * widening one of those to accept a fenced row would let any recovery path in
+ * the repo seal an operation it had not proved anything about.
+ *
+ * It also binds `modelId`, which is why it exists rather than being a call to
+ * `bindGenerationOperationModel` followed by a finalize: that helper gates on
+ * `running` too, so after the fence it would silently do nothing — a control
+ * not on the path. A Sign that crashed mid-package has a Cast whose operation
+ * was never bound, and the receipt is the only place that link can still be
+ * recorded.
+ */
+export async function finalizeFencedCastingV2SignOperation(input: {
+  userId: number;
+  operationId: string;
+  outcome:
+    | { type: "success"; result: unknown; terminalStatus: "partial" | "succeeded" }
+    | { type: "failure"; errorCode: string; publicMessage: string };
+  chargedCredits: number;
+  refundedCredits: number;
+  modelId?: number | null;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertCreditConservation(input.chargedCredits, input.refundedCredits);
+  assertOptionalPositiveId(input.modelId ?? undefined, "modelId");
+  if (input.outcome.type === "success") assertPublicOperationResult(input.outcome.result);
+  else if (!/^[A-Z_]{2,32}$/.test(input.outcome.errorCode)) {
+    throw new TypeError("Invalid public error code");
+  }
+  await stopOperationHeartbeat(input.operationId);
+  await withTransaction(async (tx) => {
+    const sealed = await tx
+      .update(generationOperations)
+      .set({
+        ...(input.outcome.type === "success"
+          ? {
+              status: input.outcome.terminalStatus,
+              result: input.outcome.result,
+              errorCode: null,
+              publicMessage: null,
+            }
+          : {
+              status: "failed" as const,
+              result: null,
+              errorCode: input.outcome.errorCode,
+              publicMessage: input.outcome.publicMessage.trim(),
+            }),
+        chargedCredits: input.chargedCredits,
+        refundedCredits: input.refundedCredits,
+        ...(input.modelId ? { modelId: input.modelId } : {}),
+        completedAt: new Date(),
+      })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.kind, "castingV2.sign"),
+        eq(generationOperations.status, "recovery_required"),
+        // Only a FENCED row may be sealed. A Sign parked for a human carries
+        // the standard code, and sealing a clean receipt over its support
+        // message is exactly the erasure this discriminator prevents.
+        eq(generationOperations.errorCode, CASTING_V2_SIGN_FENCE_CODE),
+      ));
+    if (affectedRows(sealed) !== 1) {
+      throw new Error("Fenced Sign operation seal lost its state race");
+    }
+    await tx.delete(generationOperationLocks).where(
+      eq(generationOperationLocks.operationId, input.operationId),
+    );
+  });
+}
+
 export async function markGenerationOperationRecoveryRequired(input: {
   userId: number;
   operationId: string;

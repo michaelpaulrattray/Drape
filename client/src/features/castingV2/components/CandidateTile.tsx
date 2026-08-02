@@ -37,9 +37,11 @@ export function CandidateTile({
   busy,
   paidBusy,
   rollPriceCredits,
+  signPriceCredits,
   onKeep,
   onDiscard,
   onFollow,
+  onSign,
 }: {
   candidate: TileCandidate;
   /** "FROM 03" — set when this whole roll followed a parent candidate. */
@@ -90,9 +92,17 @@ export function CandidateTile({
    * that spends is the same mistake wearing a different hat.
    */
   rollPriceCredits?: number;
+  /**
+   * Sign spends the largest single amount in the product, so it states its
+   * price like every other paid affordance (H.1/D-15) and it opens a
+   * confirmation rather than firing on the click — this is the one action that
+   * cannot be undone.
+   */
+  signPriceCredits?: number;
   onKeep: () => void;
   onDiscard: () => void;
   onFollow: () => void;
+  onSign: () => void;
 }) {
   // Declared before any early return — a hook after a conditional return is a
   // hook that sometimes does not run.
@@ -237,6 +247,28 @@ export function CandidateTile({
           <X size={11} strokeWidth={2.2} aria-hidden="true" />
         </Button>
       </div>
+
+      {/*
+        Sign gets its own line rather than a fourth control in the row above.
+
+        Not for space — for weight. Keep, Follow and Discard are moves within
+        an exploration; Sign ends it, spends the most, and is the only one that
+        creates something permanent. Sitting it beside them at the same size
+        would read as a fourth equivalent option, which is exactly the reading
+        that made Follow feel free.
+
+        Quiet rather than filled, because eight filled buttons down a sheet is a
+        shop, and the priced label already carries the weight.
+      */}
+      <Button
+        variant="quiet"
+        size="small"
+        className="dpc-card__sign"
+        disabled={busy || paidBusy}
+        onClick={onSign}
+      >
+        {signPriceCredits ? `Sign · ${signPriceCredits} cr` : "Sign"}
+      </Button>
     </div>
   );
 }

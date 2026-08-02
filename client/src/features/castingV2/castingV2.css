@@ -1021,3 +1021,154 @@
   font-size: 13px;
   opacity: 0.62;
 }
+
+/* ---- Sign: the weighty confirmation, and the room it opens ------------- */
+
+.dpc-sign__label {
+  margin-top: 6px;
+  font: 400 11.5px/1.4 var(--font-sans);
+  letter-spacing: 0.02em;
+  color: var(--meta);
+}
+
+/*
+  Accent, not error red. Signing is weighty but it is not destructive — it is
+  the thing the customer came here to do, and dressing it in the delete colour
+  would be the product flinching at its own good news.
+*/
+.dpc-confirm__sign {
+  font: 500 13px var(--font-sans);
+  padding: 8px 15px;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+  background: var(--accentSolid);
+  border: 1px solid var(--accentSolid);
+  color: var(--onAccent, #ffffff);
+}
+
+.dpc-confirm__sign:hover { filter: brightness(0.94); }
+.dpc-confirm__sign:disabled { opacity: 0.6; cursor: default; }
+.dpc-confirm__sign:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+
+/* The sign affordance on a candidate: quiet, full width, always priced. */
+.dpc-card__sign {
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* ---- the casting room -------------------------------------------------- */
+
+.dpc-room__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .dpc-room__hero { grid-template-columns: minmax(0, 1fr); }
+}
+
+.dpc-room__anchor {
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--media);
+}
+
+.dpc-room__anchor > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dpc-room__name {
+  margin: 0;
+  font: 500 22px/1.2 var(--font-sans);
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.dpc-room__id {
+  font: 400 11px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--meta);
+}
+
+.dpc-room__slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.dpc-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dpc-slot__frame {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--media);
+}
+
+.dpc-slot__frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+  The confession (D-92, founder ruling 2026-08-02). A permanently failed slot
+  says so in its own place, in plain type on the surface — never a shimmer,
+  which promises arrival, and never a blank, which promises nothing.
+*/
+.dpc-slot__confession {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 12px;
+  background: var(--well);
+  border-radius: 12px;
+}
+
+.dpc-slot__confession p {
+  margin: 0;
+  font: 400 12px/1.45 var(--font-sans);
+  color: var(--metaStrong);
+}
+
+.dpc-slot__refund {
+  font: 400 10.5px var(--font-mono);
+  letter-spacing: 0.05em;
+  color: var(--meta);
+}
+
+.dpc-slot__caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dpc-slot__label {
+  font: 400 12px var(--font-sans);
+  color: var(--secondary);
+}
+
+.dpc-slot__note {
+  margin: 0;
+  font: 400 11.5px/1.45 var(--font-sans);
+  color: var(--meta);
+}

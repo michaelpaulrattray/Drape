@@ -2163,4 +2163,89 @@ an identity axis, and the echo speaks locks.
 
 ---
 
+### D-96 — Sign's fence: what "finalise first, refund second" has to mean *(executor decision, Fable-reviewed, 2026-08-02; refines D-92)*
+
+D-92 says the recovery sweep must "finalise the operation FIRST and refund
+second, so the finalised status fences the live commit out". Building it exposed
+that the literal reading is impossible AND dishonest, and the honest form is one
+step away.
+
+**Why the literal reading fails.** Every terminal finalizer in
+`server/db/generationOperations.ts` gates on `status='running'` and takes
+`chargedCredits`/`refundedCredits` at write time. Sealing before the refund
+means sealing a receipt that claims 500 credits moved back before they have —
+and nothing ever revisits a terminal receipt to correct it. The roll adjudicator
+avoids this by refunding first and sealing after, which is exactly what Sign
+cannot do: refunding first is how a Cast ends up existing AND fully refunded.
+
+**The resolution.** The ruling's intent is *leave `running` before touching the
+money*, and a non-terminal state that satisfies it already exists.
+`fenceCastingV2SignOperationIn` moves the operation to **`recovery_required`**
+inside the same transaction that reads the fork variable, before a credit is
+touched. From that moment the live Sign transaction's `FOR UPDATE` re-prove
+finds it gone and rolls back. The true totals are sealed afterwards by a new
+narrow finalizer gated on `status='recovery_required' AND kind='castingV2.sign'`
+— narrow because widening an existing finalizer would let any recovery path in
+the repo seal an operation it had proved nothing about.
+
+Three consequences, each of which is a control rather than a note:
+
+1. **The fenced state is swept.** Nothing else in the recovery sweep looks at
+   `recovery_required`, so a crash between the fence and the seal would park a
+   Cast half-settled for ever. The sweep's selection now includes
+   `recovery_required` **for this kind only**; re-adjudication is idempotent
+   because the verdict is a pure function of (candidate CAS, ledger).
+2. **The fenced finalizer binds `modelId` itself.** `bindGenerationOperationModel`
+   gates on `running` too, so after the fence it would silently do nothing — a
+   control not on the path. A Sign that crashed mid-package has a Cast whose
+   operation was never bound, and the receipt is the last place that link can
+   be recorded.
+3. **Per-slot commits re-prove the operation, not just the model.** `models.status
+   = 'provisioning'` is NOT a fence against the sweep: the model stays
+   provisioning throughout recovery. Without the operation predicate, a stalled
+   generation could commit a slot the sweep had already refunded — delivered AND
+   refunded, per view. The provisioning predicate fences post-activation
+   stragglers; the operation predicate fences the sweep.
+
+### D-97 — The headshot slot always fills, and the refund says why *(executor decision, 2026-08-02)*
+
+`buildEffectiveCastState` refuses a package with no `frontClose` selection
+(`displayed_headshot_missing`). The package's six views are generated, so if the
+2K headshot re-render were the only thing that could fill that slot, **one
+provider failure would produce a Cast the snapshot authority cannot read** — an
+invariant broken by weather.
+
+So activation fills `frontClose` from the **1K anchor** when no 2K headshot
+landed. The anchor is a real filled `frontClose` asset — it is the face the
+customer signed — and newest-filled selection means it is chosen only in that
+fallback case.
+
+The money stays honest and the room says so in place: the failed 2K view refunds
+its 50 credits like any other, and the headshot slot carries its own sentence —
+*"Shown at the resolution you signed — the larger version didn't arrive;
+refunded"* — rather than the confession used for a genuinely empty slot. This is
+not "refunded and delivered": what the customer keeps is the candidate image
+they had already paid for on the sheet, and what was refunded is the re-render
+that never happened.
+
+The anchor is stamped `identityRole: 'anchor'` and every generated view
+`display`, so the anchor selector keeps choosing the signed original after the
+2K headshot lands. Without that stamp the newest `frontClose` silently becomes
+the identity anchor and every later identity operation compounds its drift from
+a generated copy.
+
+### D-98 — No validator, no Sign *(executor decision, 2026-08-02)*
+
+`CASTING_V2_SCOPE` already refuses to enable without the cleanup worker and the
+image transport. Sign adds a third dependency with the same shape:
+`OPENROUTER_API_KEY`, which is the view-conformance judge's transport.
+
+Unconfigured, nothing crashes — which is the problem. Every Sign would charge
+500, fail all six views closed (§I: where no trustworthy verifier exists, refuse
+rather than pass), refund 300, and hand the customer an empty package, with the
+money technically correct throughout. The boot guard refuses instead, which is
+invariant 7 applied to a dependency rather than to a call site.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

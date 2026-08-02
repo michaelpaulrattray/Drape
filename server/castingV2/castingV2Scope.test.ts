@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   CASTING_V2_SCOPE_ENV,
+  CastingV2ValidatorConfigurationError,
   CastingV2CleanupWorkerConfigurationError,
   CastingV2ScopeConfigurationError,
   CastingV2TransportConfigurationError,
@@ -48,7 +49,7 @@ describe("grammar", () => {
 });
 
 describe("boot validation", () => {
-  const configured = { cleanupWorker: "true", transportConfigured: true };
+  const configured = { cleanupWorker: "true", transportConfigured: true, validatorConfigured: true };
 
   it("lets the default configuration boot untouched", () => {
     // The whole point of shipping dark: an unset flag imposes no new
@@ -70,8 +71,28 @@ describe("boot validation", () => {
     // Otherwise the first paid roll charges, fails eight times on a missing
     // credential, and refunds — a configuration fault billed to the user.
     expect(() =>
-      validateCastingV2Environment({ scope: "users:3", cleanupWorker: "true", transportConfigured: false }),
+      validateCastingV2Environment({
+        scope: "users:3",
+        cleanupWorker: "true",
+        transportConfigured: false,
+        validatorConfigured: true,
+      }),
     ).toThrow(CastingV2TransportConfigurationError);
+  });
+
+  it("refuses to enable without the view-conformance validator", () => {
+    // Sign (M7) is the other spendable surface, and it cannot land a view
+    // without a second opinion (§I fail-closed). Unconfigured, every Sign
+    // would charge 500, fail all six views closed, and refund 300 — an empty
+    // package every time, with the money technically correct throughout.
+    expect(() =>
+      validateCastingV2Environment({
+        scope: "all",
+        cleanupWorker: "true",
+        transportConfigured: true,
+        validatorConfigured: false,
+      }),
+    ).toThrow(CastingV2ValidatorConfigurationError);
   });
 
   it("accepts a fully configured rollout", () => {

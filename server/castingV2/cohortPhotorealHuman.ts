@@ -448,6 +448,29 @@ const CONSTANT_BLOCKS = [
 
 export const PHOTOREAL_HUMAN_CONSTANT = CONSTANT_BLOCKS.join("\n");
 
+/**
+ * The blocks the SIGNED PACKAGE composes from — one authority, two frames.
+ *
+ * A sheet candidate and a package view are different photographs: the sheet is
+ * a waist-up casting polaroid, the package is a comp card that has to show a
+ * whole body from four sides. So `FRAMING` above is deliberately NOT in here —
+ * the package authors its own per-angle framing (`castViewPackage.ts`).
+ *
+ * Everything else must be identical, and is shared by reference rather than
+ * re-typed: how the picture is captured, what a real face and real skin look
+ * like, what must never appear in the frame, and the paragraph that says the
+ * photograph is not up for negotiation. Two copies of the anti-CGI language
+ * would drift, and the version that drifted would be the one nobody was
+ * grading.
+ */
+export const PHOTOREAL_HUMAN_BLOCKS = {
+  capture: CAPTURE,
+  realism: SKIN_AND_FEATURES,
+  identityIntegrity: IDENTITY_INTEGRITY,
+  negatives: NEGATIVES,
+  authority: OVERRIDE,
+} as const;
+
 /* --------------------------------------------------------- determinism */
 
 /** FNV-1a. A stable number from a string — no randomness anywhere in a roll. */
