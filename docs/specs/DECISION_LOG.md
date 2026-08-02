@@ -2051,8 +2051,22 @@ from the record. Prompt compliance as the sole check is the settled anti-pattern
 
 **Surfaced for the founder at the gate rather than decided here:** a permanently
 failed view has no repair path until M12 — no per-slot purchase exists and "roll
-again" does not apply to views. That is ratified rather than an oversight, and
-the founder should meet it knowingly during the dogfood.
+again" does not apply to views. That is ratified rather than an oversight.
+
+**FOUNDER RULING ON IT (2026-08-02): accepted knowingly, with one UX condition.**
+
+> *"The room must meet it honestly too: a permanently failed slot confesses in
+> place — 'this view didn't arrive — refunded; repairs come with revisions' —
+> rather than shimmering or sitting blank. The confession is the interim repair
+> path."*
+
+Same law as every refund surface since the cancel rework: the honest answer to
+a thing the product cannot yet do is to say so in place, at the moment and in
+the spot where the user is looking for it. A shimmer promises arrival and a
+blank promises nothing; both leave the user waiting for something that is never
+coming, and both are worse than the sentence. **This is a gate condition on M7,
+not a polish item** — the slot ships with its confession or the room is not
+done.
 
 ---
 
