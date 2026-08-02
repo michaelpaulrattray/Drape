@@ -2862,4 +2862,51 @@ stuck for a reason nothing on screen explained.
 
 ---
 
+## D-109 — Where a price lives. D-15's display doctrine.
+
+**Founder ruling (2026-08-03), third and final pricing iteration.**
+
+D-15 says the client never carries a hardcoded price — it is always
+server-derived. That settled where a number comes FROM and left open where it
+GOES, and the answer drifted three times: prices on every tile, then prices on
+every button, then a mix. This is the rule that ends it.
+
+> **The price lives where the commitment happens. Cost is metadata, never button
+> text.**
+
+### Immediate-fire actions — Roll again, Cast it, Follow
+
+**The button goes clean.** The cost lives ONCE per surface, in the adjacent meta
+line: right-aligned, muted, and set in **mono**, because "160 credits · 449,920
+left" is numbers and a unit and that is exactly what the mono law is for.
+Setting it in the sentence face would make it read as a sentence and demand to
+be read; this is meant to be glanceable and otherwise ignorable.
+
+**The balance rides along only where the action REPEATS.** On the sheet you
+roll, look, roll again, and the number is genuinely moving — so
+`160 credits · 449,920 left`. In the lobby, casting happens once, and "how much
+is left" answers a question nobody is asking yet — so `160 credits` alone.
+
+That distinction also fixed a layout fault: the lobby's cost had its own line
+under the brief box, which pushed the seed chips down and left a gap between
+the two. **A price is metadata and metadata should not cost a row.** Folded to
+the end of the TRY row it sits at the same optical distance from the button and
+takes no vertical space at all.
+
+### Ceremony-gated actions — Sign, Delete
+
+**The button carries no price at all.** "Sign to roster", plain. The confirm is
+the commitment point, it already states the full price and what it includes, and
+that is where D-15's letter is satisfied.
+
+**Confirms keep explicit numbers forever.** They are the last thing read before
+money moves.
+
+### The topbar credits chip is unchanged
+
+It is the account's balance, not any action's price, and it was never part of
+this problem.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

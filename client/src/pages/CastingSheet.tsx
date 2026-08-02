@@ -1232,15 +1232,18 @@ export default function CastingSheet() {
               Immediate-fire actions — Roll again, Follow — carry no price;
               this line carries it once for both, right-aligned and in mono
               because it is a machine fact and the mono law says so. The
-              balance rides along, which is the question the price actually
-              raises ("can I?") answered in the same whisper.
+              balance rides along BECAUSE THIS ACTION REPEATS: you roll, look,
+              roll again, and the number is genuinely moving. That is the whole
+              rule for whether it appears — the lobby's Cast it happens once and
+              shows the cost alone, since "how much is left" answers a question
+              nobody is asking yet (founder ruling, 2026-08-03).
 
               Ceremony-gated actions are absent from it: Sign's price belongs
               to its confirm, which is where the commitment happens.
             */}
             {price ? (
               <span className="dpc-dock__cost">
-                {price} cr
+                {price} credits
                 {typeof balance === "number" ? ` · ${balance.toLocaleString()} left` : ""}
               </span>
             ) : null}
