@@ -152,7 +152,7 @@ Reply with a single JSON object and nothing else:
   "reads": [8 short strings] | null,
   "composedDirection": { "thesis": string, "avoid": string } | null,
   "statedHair": { "cutLength": string | null, "colour": string | null, "texture": string | null, "greying": boolean },
-  "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null, "heritageLean": heritage value | null }
+  "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null, "heritageLean": heritage value | null, "leanStrength": "centres" | "defines" | null }
 }
 
 THE ONE RULE THAT MATTERS: null means the brief did not say. Leave every field
@@ -344,6 +344,15 @@ WHAT TO EXTRACT
                  which is correct, because those castings really do include
                  people from elsewhere. Leave it null for anything
                  international or unmarked — a doctor, a model, a streamer.
+      "leanStrength": how HARD this pool's edges are.
+                 "centres" — the pool has a clear centre and real edges. This is
+                 the default and the right answer for almost everything: a
+                 streamer casting genuinely can include a 58-year-old, and a
+                 sheet that cannot show one is a stereotype.
+                 "defines" — the pool's edges are nearly absolute, so an
+                 outsider would read as a mistake rather than as range. Reserve
+                 it for industries with genuinely hard edges: a k-pop idol, a
+                 sumo wrestler, a Maasai warrior. If you are unsure, "centres".
   Only fill these from the CATEGORY, never from the individual. If the brief
   states an age or facial hair, that is a fact and belongs in its own field —
   putting it here instead would weaken a thing the user actually said.

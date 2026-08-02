@@ -49,7 +49,7 @@ for (const brief of BRIEFS) {
         `    role: ${intent.role ?? "null"}   heritage: ${
           intent.heritage.map((component) => component.heritage).join("+") || "—"
         }   age: ${intent.ageBand ?? "null"}\n` +
-        `    tendencies: age=${tendencies?.ageLean ?? "null"} beard=${tendencies?.facialHairLean ?? "null"} heritage=${tendencies?.heritageLean ?? "null"}\n` +
+        `    tendencies: age=${tendencies?.ageLean ?? "null"} beard=${tendencies?.facialHairLean ?? "null"} heritage=${tendencies?.heritageLean ?? "null"} strength=${tendencies?.leanStrength ?? "null"}\n` +
         `    archetype: ${intent.archetype ?? "null"}   look: ${intent.look ?? "null"}\n` +
         `    composedDirection: ${
           intent.composedDirection

@@ -81,7 +81,13 @@ import {
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import { resolveHairAxes, type HairTiers } from "./hairResolver";
-import { HERITAGE_LEAN_FLOOR, HERITAGE_LEAN_SPREAD, leanAgeWeights } from "./poolTendencies";
+import {
+  HERITAGE_DEFINE_FLOOR,
+  HERITAGE_LEAN_FLOOR,
+  HERITAGE_LEAN_SPREAD,
+  leanAgeWeights,
+  type LeanStrength,
+} from "./poolTendencies";
 import {
   COMPOSED_DIRECTION_ENABLED,
   HAIR_BIAS_PROSE,
@@ -476,6 +482,7 @@ function varyHeritage(
   position: number,
   rollSeed: string,
   lean: Heritage | null = null,
+  strength: LeanStrength | null = null,
 ): HeritageComponent[] {
   /*
     THE CATEGORY'S POOL, with a real tail — the heritage lean.
@@ -492,7 +499,10 @@ function varyHeritage(
     stereotype rather than a casting.
   */
   if (lean) {
-    const spread = HERITAGE_LEAN_FLOOR + (hash(`${rollSeed}:heritageLean`) % HERITAGE_LEAN_SPREAD);
+    const spread =
+      strength === "defines"
+        ? HERITAGE_DEFINE_FLOOR
+        : HERITAGE_LEAN_FLOOR + (hash(`${rollSeed}:heritageLean`) % HERITAGE_LEAN_SPREAD);
     const offset = hash(`${rollSeed}:heritageLeanOffset`) % 8;
     if ((position + offset) % 8 < spread) return [{ heritage: lean, pct: 100 }];
   }
@@ -960,13 +970,25 @@ export function resolveCandidateIdentity(
   const ageBand =
     intent.ageBand
     ?? anchor?.ageBand
-    ?? weightedPick(leanAgeWeights(AGE_WEIGHTS, intent.poolTendencies?.ageLean ?? null), seedFor("ageBand"));
+    ?? weightedPick(
+      leanAgeWeights(
+        AGE_WEIGHTS,
+        intent.poolTendencies?.ageLean ?? null,
+        intent.poolTendencies?.leanStrength ?? null,
+      ),
+      seedFor("ageBand"),
+    );
   const heritage =
     intent.heritage.length > 0
       ? intent.heritage
       : anchor
         ? anchoredHeritage(anchor, position, rollSeed)
-        : varyHeritage(position, rollSeed, intent.poolTendencies?.heritageLean ?? null);
+        : varyHeritage(
+            position,
+            rollSeed,
+            intent.poolTendencies?.heritageLean ?? null,
+            intent.poolTendencies?.leanStrength ?? null,
+          );
 
   /*
     A SEX-CODED STATED FACT RESOLVES AN UNSTATED SEX.
@@ -2010,6 +2032,28 @@ export function composeCandidatePrompt(input: {
         "Every candidate must be a genuinely plausible, castable member of that category: the bone structure, proportions, grooming and bearing a professional casting director would require before putting them forward for it.",
         "Vary heritage, features, colouring and energy WITHIN this category. Never cast outside it. A candidate who would not be credible in this role is a failed candidate, however interesting the face.",
         "Keep the user's own words for the category — do not substitute a generic type for the specific one they named.",
+        /*
+          THE GROOMING REGISTER — founder finding, and the third confirmed face
+          of the same wall.
+
+          A skincare-founder sheet split cleanly on POLISH: the groomed tiles
+          were kept and the off-register ones (half-up locs, a man-bun with a
+          goatee) were rejected. Heritage variety was never the issue. Ordinary
+          occupations correctly earn no composed direction, so their only
+          styling authority was the bias line's soft "as this casting wears it",
+          and that sheet proves it too weak to govern.
+
+          The category already owns physique and bearing here; it now owns the
+          register the styling has to clear. Note it governs ACCEPTABILITY, not
+          a particular cut — the cuts must still differ across the eight, which
+          is what stops this becoming the prescription D-80 removed.
+
+          INTERIM, and honestly so: full category-coherent styling is the
+          treatment stage's job. This is the third face of the D-80 wall after
+          subcultural legibility and designed faces, and Path B is the answer to
+          all three.
+        */
+        "The grooming and styling must be in register for this category: the cut, and the way it is worn, has to be something a professional casting director would accept when putting this person forward for it. Within that register the eight must still differ — this governs what is acceptable, never which cut.",
       ].join(" ")
     : "";
 

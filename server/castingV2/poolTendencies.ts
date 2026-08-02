@@ -44,6 +44,29 @@ import type { FacialHair } from "../../shared/castingRealization";
 export const FACIAL_HAIR_LEANS = ["clean", "beard", "any"] as const;
 export type FacialHairLean = (typeof FACIAL_HAIR_LEANS)[number];
 
+/**
+ * HOW HARD a pool's edges are — founder ruling, from the k-pop verification.
+ *
+ * The first version had one strength, and it was right for streamers and wrong
+ * for idols. A 58-year-old streamer is a genuine outlier the sheet should be
+ * able to show; a 45-year-old blond European on a k-pop idol sheet is not the
+ * same kind of outlier at all, because that industry's age and heritage edges
+ * are close to absolute. Treating both pools with one tail width made one of
+ * them dishonest.
+ *
+ *   - `centres` — the pool has a centre and real edges. Today's behaviour, and
+ *     the right default: streamers, physical trades, most occupations.
+ *   - `defines` — the pool's edges are nearly hard. The lean takes seven of
+ *     eight and the age band tightens around its centre.
+ *
+ * **Never a lock, at either strength.** A stated fact still overrides
+ * everything, and one adjacent tile survives even at `defines`, because
+ * non-Korean idols exist and a sheet with no room for one is a stereotype. The
+ * strength changes how wide the tail is; it never closes it.
+ */
+export const LEAN_STRENGTHS = ["centres", "defines"] as const;
+export type LeanStrength = (typeof LEAN_STRENGTHS)[number];
+
 export type PoolTendencies = {
   /** The band this casting centres on. Re-weights; the sheet still spreads. */
   ageLean: AgeBand | null;
@@ -66,12 +89,15 @@ export type PoolTendencies = {
    * rather than a casting. Never a lock.
    */
   heritageLean: Heritage | null;
+  /** How hard the pool's edges are. Defaults to the softer reading. */
+  leanStrength: LeanStrength | null;
 };
 
 export const NO_TENDENCIES: PoolTendencies = {
   ageLean: null,
   facialHairLean: null,
   heritageLean: null,
+  leanStrength: null,
 };
 
 /**
@@ -91,6 +117,14 @@ export const HERITAGE_LEAN_FLOOR = 5;
 export const HERITAGE_LEAN_SPREAD = 2;
 
 /**
+ * At `defines`, seven of eight — and the eighth is not an accident.
+ *
+ * Deliberately not eight. One adjacent tile survives because non-Korean idols
+ * exist, and the difference between a lean and a lock is exactly this tile.
+ */
+export const HERITAGE_DEFINE_FLOOR = 7;
+
+/**
  * How hard an age lean pulls.
  *
  * The leaned band and its immediate neighbours are boosted rather than the band
@@ -104,19 +138,45 @@ export const HERITAGE_LEAN_SPREAD = 2;
 const AGE_LEAN_CENTRE = 9;
 const AGE_LEAN_NEIGHBOUR = 3;
 
+/*
+  At `defines` the band tightens rather than closing. The far bands keep a
+  weight of one apiece, which is the tail the ruling insists on — an idol sheet
+  should be able to show a late-thirties member, and simply never a
+  forty-five-year-old by accident.
+*/
+const AGE_DEFINE_CENTRE = 40;
+const AGE_DEFINE_NEIGHBOUR = 4;
+
 const AGE_ORDER: readonly AgeBand[] = ["teens", "20s", "30s", "40s", "50s", "60s", "70s+"];
 
 export function leanAgeWeights(
   base: readonly (readonly [AgeBand, number])[],
   lean: AgeBand | null,
+  strength: LeanStrength | null = null,
 ): readonly (readonly [AgeBand, number])[] {
   if (!lean) return base;
   const centre = AGE_ORDER.indexOf(lean);
   if (centre < 0) return base;
+  const defines = strength === "defines";
+  const centreWeight = defines ? AGE_DEFINE_CENTRE : AGE_LEAN_CENTRE;
+  const neighbourWeight = defines ? AGE_DEFINE_NEIGHBOUR : AGE_LEAN_NEIGHBOUR;
 
   return base.map(([band, weight]) => {
     const distance = Math.abs(AGE_ORDER.indexOf(band) - centre);
-    const multiplier = distance === 0 ? AGE_LEAN_CENTRE : distance === 1 ? AGE_LEAN_NEIGHBOUR : 1;
+    /*
+      At `defines` the FAR bands collapse to a floor of one rather than keeping
+      their share of the population curve. A k-pop idol pool contains almost no
+      forty-year-olds, and scaling the curve leaves 17 parts of "40s" against
+      1200 of "20s" — about one tile in thirty, which is exactly the misplaced
+      tile the verification caught.
+
+      One is not zero, and the difference matters: the band stays REACHABLE, so
+      this is still a lean. The tail that has to breathe at this strength is the
+      ADJACENT band — a late-twenties or early-thirties idol is ordinary — and
+      the neighbour multiplier keeps it wide.
+    */
+    if (defines && distance >= 2) return [band, 1] as const;
+    const multiplier = distance === 0 ? centreWeight : distance === 1 ? neighbourWeight : 1;
     // Integer weights: `weightedPick` walks a modulo cursor and a fraction
     // would put it between buckets.
     return [band, Math.max(1, Math.round(weight * multiplier))] as const;

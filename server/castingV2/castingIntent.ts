@@ -96,12 +96,14 @@ export type {
 import { z } from "zod";
 import {
   FACIAL_HAIR_LEANS,
+  LEAN_STRENGTHS,
   NO_TENDENCIES,
   type FacialHairLean,
+  type LeanStrength,
   type PoolTendencies,
 } from "./poolTendencies";
-export { FACIAL_HAIR_LEANS, NO_TENDENCIES };
-export type { FacialHairLean, PoolTendencies };
+export { FACIAL_HAIR_LEANS, LEAN_STRENGTHS, NO_TENDENCIES };
+export type { FacialHairLean, LeanStrength, PoolTendencies };
 import { mentionsGarments, scrubBrands } from "./brandScrub";
 
 /* ------------------------------------------------------------ vocabularies */
@@ -730,8 +732,14 @@ export function parsePoolTendencies(raw: unknown): PoolTendencies {
   // Closed to the EXISTING heritage rows. A lean toward a heritage we have no
   // vocabulary for would be dropped rather than approximated onto a neighbour.
   const heritage = HERITAGES.find((option) => option.toLowerCase() === heritageRaw) ?? null;
+  const strengthRaw = typeof (wire as { leanStrength?: unknown }).leanStrength === "string"
+    ? ((wire as { leanStrength: string }).leanStrength).trim().toLowerCase()
+    : null;
   return {
     heritageLean: heritage,
+    leanStrength: (LEAN_STRENGTHS as readonly string[]).includes(strengthRaw ?? "")
+      ? (strengthRaw as LeanStrength)
+      : null,
     ageLean: (AGE_BANDS as readonly string[]).includes(age ?? "") ? (age as AgeBand) : null,
     facialHairLean: (FACIAL_HAIR_LEANS as readonly string[]).includes(beard ?? "")
       ? (beard as FacialHairLean)

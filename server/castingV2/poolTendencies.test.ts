@@ -173,6 +173,59 @@ describe("the heritage lean", () => {
   });
 });
 
+describe("lean strength — how hard a pool's edges are", () => {
+  it("takes seven of eight at 'defines', and still leaves the eighth", async () => {
+    /*
+      The k-pop verification. At `centres` the tail draws wider than a
+      hard-edged pool's truth — a 45-year-old blond European is not this
+      industry's honest outlier the way a 58-year-old streamer is. At `defines`
+      the lean takes seven, and the eighth survives BECAUSE non-Korean idols
+      exist: that one tile is the entire difference between a lean and a lock.
+    */
+    const rows = await sheets(
+      { role: "k-pop idol", poolTendencies: { heritageLean: "East Asian", leanStrength: "defines" } },
+      20,
+      "defines",
+    );
+    const share =
+      rows.filter((row) =>
+        (row.resolvedIdentity as never as { heritage: { heritage: string }[] }).heritage.some(
+          (component) => component.heritage === "East Asian",
+        ),
+      ).length / rows.length;
+    expect(share).toBeGreaterThan(0.85);
+    expect(share).toBeLessThan(1);
+  });
+
+  it("tightens the age band without closing it", async () => {
+    const rows = await sheets(
+      { role: "k-pop idol", poolTendencies: { ageLean: "20s", leanStrength: "defines" } },
+      20,
+      "defines-age",
+    );
+    const inBand = rows.filter((row) => row.resolvedIdentity.ageBand === "20s").length / rows.length;
+    expect(inBand).toBeGreaterThan(0.85);
+    // No 40+ tiles absent a stated age — the founder's raised bar.
+    const old = rows.filter((row) =>
+      ["40s", "50s", "60s", "70s+"].includes(row.resolvedIdentity.ageBand),
+    );
+    expect(old.length / rows.length).toBeLessThan(0.03);
+  });
+
+  it("leaves 'centres' as it was — the softer reading stays the default", async () => {
+    const rows = await sheets(
+      { role: "twitch streamer", poolTendencies: { ageLean: "20s", leanStrength: "centres" } },
+      20,
+      "centres",
+    );
+    const older = rows.filter((row) =>
+      ["40s", "50s", "60s", "70s+"].includes(row.resolvedIdentity.ageBand),
+    );
+    // The grandpa streamer survives, because that outlier is honest.
+    expect(older.length).toBeGreaterThan(3);
+  });
+});
+
 describe("the parser", () => {
   it("drops anything outside the closed vocabularies", () => {
     expect(parsePoolTendencies({ ageLean: "middle-aged", facialHairLean: "stubbly" })).toEqual(
@@ -189,6 +242,7 @@ describe("the parser", () => {
       ageLean: "20s",
       facialHairLean: "clean",
       heritageLean: "East Asian",
+      leanStrength: null,
     });
   });
 

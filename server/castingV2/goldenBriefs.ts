@@ -140,6 +140,12 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
       "THE GROOMING-TENDENCY CASE, and the mirror of the lumberjack. Conventionally clean-shaven, and left to the age curve a sheet of eight returns beards on a third of them. Bar: clean-shaven around seven of eight, with the eighth still reachable — a lean, never a lock. ALSO the heritage bar: the pool is predominantly East Asian and both graded sheets cast roughly one in eight, because grooming had a channel and heritage did not. Bar: majority East Asian, with a real tail — Thai and Chinese idols exist and a sheet with no room for them is a stereotype rather than a casting.",
   },
   {
+    brief: "a biker gang leader",
+    category: true,
+    because:
+      "THE BEARD-LEAN CASE, kept with the constraint that surrounds it. A re-roll showed a flint expression centre (D-91 working) and almost no beards, which looked like the lean failing. It was not: emission is 3/3 and the lean puts beards on ~87% of the MEN. Half the sheet is women, because sex is deliberately never leaned (D-90) — so a beard lean can only ever govern half a sex-open brief. Bar: the lean is emitted, and a majority of the MEN are bearded. A tile majority would need a sexLean, which is refused.",
+  },
+  {
     brief: "a skincare founder in his 40s",
     category: true,
     because:
