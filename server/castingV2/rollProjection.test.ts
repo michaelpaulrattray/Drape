@@ -235,3 +235,90 @@ describe("lineage", () => {
     expect(projected.lineage).toEqual({});
   });
 });
+
+/**
+ * THE JOINT, not the two halves.
+ *
+ * Both ends of these two facts were already tested — the compiler writes
+ * `interpreted`, `statesWardrobe` has its own suite, and `sheetNotice` decides
+ * which line wins. What nothing tested was the middle: `readFellBack` reaches
+ * into untyped JSON by string key, so renaming the field in `briefCompiler`
+ * would kill the confession outright with every one of those suites still
+ * green. That is the invoked-but-inert class this codebase keeps meeting, and
+ * a projection field nobody asserts is a control that does not exist.
+ */
+describe("the sheet's two confessions survive the projection", () => {
+  it("reports a roll that fell back to the raw sentence", () => {
+    const projected = projectRoll({
+      roll: rollRow({ compiledBrief: { compiler: "pathA-v1", interpreted: false } }),
+      candidates: [candidateRow()],
+    });
+    expect(projected.fellBack).toBe(true);
+  });
+
+  it("does not report an interpreted roll", () => {
+    const projected = projectRoll({
+      roll: rollRow({ compiledBrief: { compiler: "pathA-v1", interpreted: true } }),
+      candidates: [candidateRow()],
+    });
+    expect(projected.fellBack).toBe(false);
+  });
+
+  /*
+    Absent is not "it fell back". Rolls compiled before the field existed have
+    no value, and reporting an unknown as a failure would put a confession on
+    sheets that never had anything to confess.
+  */
+  it("stays silent about a roll that predates the field", () => {
+    const projected = projectRoll({ roll: rollRow(), candidates: [candidateRow()] });
+    expect(projected.fellBack).toBe(false);
+  });
+
+  it("reports a brief that stated clothing", () => {
+    const projected = projectRoll({
+      roll: rollRow({ briefText: "a musician in a red leather jacket, late 20s" }),
+      candidates: [candidateRow()],
+    });
+    expect(projected.statedWardrobe).toBe(true);
+  });
+
+  it("stays silent about a brief that stated an accessory the sheet honours", () => {
+    const projected = projectRoll({
+      roll: rollRow({ briefText: "a dad in his 30s wearing chunky glasses" }),
+      candidates: [candidateRow()],
+    });
+    expect(projected.statedWardrobe).toBe(false);
+  });
+});
+
+/**
+ * The producer and the reader, compiled together.
+ *
+ * The cases above would all still pass if `briefCompiler` renamed its field
+ * tomorrow, because they hand-write the JSON the reader expects. This one
+ * drives the REAL compiler with an interpreter that cannot answer, and asserts
+ * the confession comes out the far end — so the two halves cannot drift apart
+ * without something going red.
+ */
+describe("a real failed compile reaches the sheet as a confession", () => {
+  it("projects fellBack from what the compiler actually wrote", async () => {
+    const { castingBriefCompiler } = await import("./briefCompiler");
+
+    const compiled = await castingBriefCompiler({
+      briefText: "an East Asian woman in her 40s, close-cropped silver hair",
+      candidateCount: 8,
+      rollSeed: "11111111-1111-4111-8111-111111111111",
+      unlock: [],
+      // The interpreter is unreachable. Fail-open: the roll still compiles from
+      // the sentence itself, and every stated lock is lost.
+      engine: { complete: async () => { throw new Error("interpreter unreachable"); } } as never,
+    });
+
+    const projected = projectRoll({
+      roll: rollRow({ compiledBrief: compiled.compiledBrief }),
+      candidates: [candidateRow()],
+    });
+
+    expect(projected.fellBack).toBe(true);
+  });
+});

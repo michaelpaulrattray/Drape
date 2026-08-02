@@ -898,7 +898,17 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
   });
 
   return {
-    compiledBrief: { compiler: "deterministic-v1", briefText, intent, archetype },
+    /*
+      `interpreted: false` is literally true here and it matters.
+
+      This compiler never asks the interpreter, so a sheet it produces has lost
+      every fact the brief stated — exactly the condition the sheet's highest
+      confession describes. It is test-only today, and its own doc invites live
+      callers; if one ever arrives, the confession must already be honest rather
+      than depend on somebody remembering to add it. Absent would have projected
+      as "nothing to confess".
+    */
+    compiledBrief: { compiler: "deterministic-v1", interpreted: false, briefText, intent, archetype },
     lockContract: {},
     cohortKey: "photoreal_human",
     styleKey: null,

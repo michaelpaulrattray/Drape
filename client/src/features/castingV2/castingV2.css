@@ -2237,12 +2237,14 @@
   measuring effect, so one place decides the maximum.
 
   `line-height` is stated rather than inherited because the cap is expressed in
-  lines: 4 × 1.45 × 13px, plus nothing else, because the padding belongs to the
-  wrapping field.
+  lines. The cap is in `em`, NOT in a literal pixel size: `em` in `max-height`
+  resolves against the element's own font size, so four lines stays four lines
+  if the field's type ever changes. Restating `13px` here would have silently
+  become a 3.7-line box the day the token moved.
 */
 .dpc-brieffield {
   line-height: 1.45;
-  max-height: calc(4 * 1.45 * 13px);
+  max-height: calc(4 * 1.45em);
   resize: none;
   overflow-y: auto;
   /* A textarea is inline-block by default and sits on the text baseline,

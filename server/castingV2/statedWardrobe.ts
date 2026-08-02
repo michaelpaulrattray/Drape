@@ -42,6 +42,13 @@
  * else. Every word earns its place by being something a user would otherwise
  * wonder about. Materials ("leather", "denim" alone), abstractions
  * ("silhouette", "tailoring") and anything in the accessory carve-out stay out.
+ *
+ * **Headwear is a deliberate omission, not an oversight.** A hat is not in the
+ * carve-out's enumeration and is probably dropped silently today — but
+ * "probably" is not good enough for a line that asserts what happened. Adding
+ * it needs a measurement of what the interpreter actually does with "wearing a
+ * cap" first, because a wrong guess here makes the sentence lie in the other
+ * direction.
  */
 
 /**
@@ -57,8 +64,11 @@ const WORN_CLOTHING_WORDS = [
   "jacket", "jackets", "coat", "coats", "blazer", "hoodie", "hoodies",
   "sweater", "sweaters", "jumper", "cardigan", "shirt", "shirts", "blouse",
   "vest", "waistcoat", "tunic", "sweatshirt",
-  // Lower body
-  "trouser", "trousers", "jeans", "skirt", "shorts", "leggings", "chinos",
+  // Lower body. "pants" is American English for exactly what "trousers"
+  // covers, and leaving it out would make the line fire for half the people
+  // who write the same brief.
+  "trouser", "trousers", "pants", "jeans", "skirt", "shorts", "leggings",
+  "chinos", "sweatpants", "tracksuit",
   // Whole garments
   "dress", "gown", "suit", "overalls", "jumpsuit", "robe", "kimono", "sari",
   "uniform", "costume", "apron",

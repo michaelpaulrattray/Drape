@@ -54,6 +54,20 @@
  *
  * Pure on purpose. The bug lived in page wiring, so the rule lives somewhere a
  * test can drive the exact sequence that produced it.
+ *
+ * # One window this does not cover, recorded rather than fixed
+ *
+ * Rolling from a HISTORY view jumps the sheet back to the latest roll
+ * (`setViewedRollId(null)`), so for the ~66-82s the new roll takes to appear
+ * the box shows the latest roll's sentence while the sentence actually being
+ * cast is the historical one. The invariant still holds literally — the box is
+ * showing the viewed roll's brief — but for that window it is not showing what
+ * is being spent.
+ *
+ * Left alone deliberately. Pinning the dispatched text into the draft would
+ * close it, at the cost of masking every roll the user walks to during the
+ * wait — trading a narrow window nobody has reported for a broader one that
+ * reintroduces the shape of the bug this module exists to delete.
  */
 
 /** The user's unspent typing, or nothing. `""` is a draft; absence is not. */
