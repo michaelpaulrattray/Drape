@@ -1115,7 +1115,11 @@ export default function CastingSheet() {
               unprototyped, and tall enough to push the dock off-screen, which
               is what made Roll again unreachable without scrolling.
             */}
-            <KeptTray shortlist={shortlist} />
+            <KeptTray
+              shortlist={shortlist}
+              selectedId={signTarget?.candidateId ?? null}
+              onSelect={setSignSelection}
+            />
             {/*
               The eyebrow flips on the click too. "Keep the ones worth a second
               look" is an instruction for a sheet you can act on; while eight
@@ -1195,43 +1199,36 @@ export default function CastingSheet() {
               the prototype's "Sign 3 to roster" is a confirmed seam.
             */}
             {keptTiles.length > 0 ? (
-              <div className="dpc-dock__sign">
-                <div className="dpc-dock__stack" role="radiogroup" aria-label="Choose who to sign">
-                  {keptTiles.slice(0, 3).map((tile) => (
-                    <button
-                      key={tile.candidateId}
-                      type="button"
-                      role="radio"
-                      aria-checked={tile.candidateId === signSelectionId}
-                      aria-label={`Sign ${tile.indexLabel}`}
-                      className={
-                        tile.candidateId === signSelectionId
-                          ? "dpc-dock__thumb is-selected"
-                          : "dpc-dock__thumb"
-                      }
-                      onClick={() => setSignSelection(tile.candidateId)}
-                    >
-                      {tile.imageUrl ? <img src={tile.imageUrl} alt="" /> : null}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  variant="primary"
-                  disabled={!signTarget || sign.isPending}
-                  onClick={() =>
-                    signTarget
-                      ? setSigning({
-                          candidateId: signTarget.candidateId,
-                          indexLabel: signTarget.indexLabel,
-                          personaLine: signTarget.personaLine ?? null,
-                        })
-                      : undefined
-                  }
-                >
-                  {signTarget ? `Sign ${signTarget.indexLabel} to roster` : "Sign to roster"}
-                  {signPrice ? ` · ${signPrice} cr` : ""}
-                </Button>
-              </div>
+              /*
+                ONE CEREMONY, ONE SELECTION.
+
+                The dock used to carry its own cluster of kept thumbs beside
+                this button, and that cluster read as multi-sign — an F2
+                violation in the UI's grammar even though the ceremony was
+                always single. The choice now lives on the kept tray, where the
+                faces already are, with an accent ring on the selected one. So
+                the button names no number: the ring says who, and the confirm
+                shows her face before any money moves.
+
+                The prototype draws "Sign N to roster" with a stacked cluster.
+                That is the seam F2 already settled; this is reconciliation, not
+                invention (docs/specs/CASTING_V2_ROOM_RECONCILIATION.md).
+              */
+              <Button
+                variant="primary"
+                disabled={!signTarget || sign.isPending}
+                onClick={() =>
+                  signTarget
+                    ? setSigning({
+                        candidateId: signTarget.candidateId,
+                        indexLabel: signTarget.indexLabel,
+                        personaLine: signTarget.personaLine ?? null,
+                      })
+                    : undefined
+                }
+              >
+                Sign to roster{signPrice ? ` · ${signPrice} cr` : ""}
+              </Button>
             ) : (
               /*
                 The drawn empty state, kept rather than hiding the affordance:
@@ -1239,8 +1236,7 @@ export default function CastingSheet() {
                 from them, not wonder where it went.
 
                 Archivo, not mono — mono is for machine facts and this is a
-                sentence. Caught by the evidence pack's own law assertion rather
-                than by review memory, which is the point of having them.
+                sentence.
               */
               <span className="dp-secondary">Keep the one you want, then sign her</span>
             )}

@@ -1114,23 +1114,60 @@ export async function listSignedCasts(
   }));
 }
 
-/** The candidates a Cast can point back to — its own, and its kept siblings. */
+/**
+ * A Cast's siblings: the faces kept on the same sheet, minus herself.
+ *
+ * "Variants cast from the same sheet. Useful when a campaign needs a near-miss
+ * rather than a new face." Scoped to the SESSION rather than the roll, because
+ * a shortlist crosses rolls — that is what the tray is for — and a sibling from
+ * roll 1 is every bit as near a miss as one from roll 3.
+ *
+ * **Only KEPT candidates**, and that is a retention fact rather than a taste
+ * one: §G.6 protects the kept siblings of a signed Cast from sheet expiry
+ * precisely so this card keeps working for as long as she lives. An unkept
+ * candidate is purged with its session, so listing one would be promising a
+ * face that disappears in seven days.
+ */
 export async function listCastSiblings(input: {
   userId: number;
-  rollId: number;
+  sessionId: number;
+  excludeCandidateId: number;
   limit?: number;
 }): Promise<CastingCandidate[]> {
   assertPositiveId(input.userId, "userId");
-  assertPositiveId(input.rollId, "rollId");
+  assertPositiveId(input.sessionId, "sessionId");
   const db = await requireDb();
   return db
     .select()
     .from(castingCandidates)
     .where(and(
-      eq(castingCandidates.rollId, input.rollId),
+      eq(castingCandidates.sessionId, input.sessionId),
       eq(castingCandidates.userId, input.userId),
+      isNotNull(castingCandidates.keptAt),
+      ne(castingCandidates.id, input.excludeCandidateId),
       inArray(castingCandidates.status, ["ready", "signed"]),
     ))
-    .orderBy(asc(castingCandidates.position))
-    .limit(input.limit ?? 8);
+    .orderBy(asc(castingCandidates.keptAt))
+    .limit(input.limit ?? 6);
+}
+
+/**
+ * The session a Cast was signed from, resolved owner-scoped from her candidate.
+ *
+ * Needed by the siblings read, which is session-scoped; the Cast itself only
+ * records the candidate and the roll.
+ */
+export async function getCastSessionId(
+  userId: number,
+  candidateId: number,
+): Promise<number | null> {
+  assertPositiveId(userId, "userId");
+  assertPositiveId(candidateId, "candidateId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({ sessionId: castingCandidates.sessionId })
+    .from(castingCandidates)
+    .where(and(eq(castingCandidates.id, candidateId), eq(castingCandidates.userId, userId)))
+    .limit(1);
+  return row?.sessionId ?? null;
 }

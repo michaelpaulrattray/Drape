@@ -535,7 +535,20 @@ export async function getOwnedReadyCandidate(
   return candidate ?? null;
 }
 
-/** The cross-roll tray: kept candidates of one session, oldest keep first. */
+/**
+ * The cross-roll tray: kept candidates of one session, oldest keep first.
+ *
+ * **`signed` is excluded, and that is the plan's own law** (§F Shortlist:
+ * "signing removes nothing from the tray except the signed candidate, which
+ * becomes the Cast"). It was never implemented, and the cost was two visible
+ * defects: a spent candidate sat in the tray offering to be signed again, and
+ * the sheet card's preview — which prefers kept faces — went blank after a
+ * Sign, because the only kept face was no longer projectable.
+ *
+ * Her row is NOT deleted: it stays as the Cast's lineage, and her kept siblings
+ * stay protected from retention while the Cast lives (§G.6). She simply stops
+ * being a thing this sheet is still deciding about.
+ */
 export async function listKeptCandidates(userId: number, sessionId: number): Promise<CastingCandidate[]> {
   assertPositiveId(userId, "userId");
   assertPositiveId(sessionId, "sessionId");
@@ -547,7 +560,7 @@ export async function listKeptCandidates(userId: number, sessionId: number): Pro
       eq(castingCandidates.sessionId, sessionId),
       eq(castingCandidates.userId, userId),
       isNotNull(castingCandidates.keptAt),
-      inArray(castingCandidates.status, ["ready", "signed"]),
+      eq(castingCandidates.status, "ready"),
     ))
     .orderBy(asc(castingCandidates.keptAt));
 }

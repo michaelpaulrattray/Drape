@@ -113,3 +113,47 @@ citation does not get built.
 | 8 | Package strip added | Founder ruling 2026-08-02 |
 
 **Geometry deviations: none.** Every deviation above is copy or state.
+
+
+---
+
+# The sheet dock — reconciliation (2026-08-02)
+
+Rendered from the same prototype, sheet screen, **with three candidates kept**
+so the dock shows its committed state. Measured from the DOM.
+
+## What is drawn
+
+| Element | Measured |
+|---|---|
+| Bottom row | h34; NUDGE label 10px/500 + 5 chips h24 r999 pad 5/10 1px solid 11.5px/400, gap 7 |
+| Right group | 196×34, gap 10 |
+| Thumb cluster | three tiles **24×30, r6, 16px stride → 8px overlap**, 48px total |
+| Sign button | **130×34, r9, pad 10/15, 12px/500**, label + 12×12 arrow glyph |
+| Label | **"Sign 3 to roster"** — the count is the number kept |
+
+## What is built, and why it differs
+
+| Drawn | Build | Ruling |
+|---|---|---|
+| Thumb cluster beside the button | **removed** | **F2 — one candidate per ceremony.** A cluster next to "Sign 3" states a ceremony that does not exist. The reconciliation already recorded the multi-sign label as a prototype seam; the cluster is the same seam drawn instead of written |
+| "Sign N to roster" | **"Sign to roster · 450 cr"** | F2 (no count) + D-15 (price on the affordance). No tile number either: the selected tray thumb says who, and the confirm shows her face before money moves |
+| Button geometry, radius, type weight | **match** | — |
+| Selection | not drawn (the prototype signs "all kept") | **selection lives on the kept tray**: single, radio semantics, accent ring on the selected face, most recent keep as default. The ring is the standard selection grammar already used for kept cards in the drawing |
+| Nudge chips | match | — |
+
+## Bugs fixed in the same pass
+
+| Report | Cause | Fix |
+|---|---|---|
+| No way to pick from ten keeps | the tray's click opened the viewer and nothing selected | click selects; double-click and the arrow keys open and walk the viewer |
+| Signed candidate stayed in the tray | `listKeptCandidates` admitted `signed` — §F's law was written and never implemented | tray is `ready` only; her row still anchors the Cast's lineage and her siblings' retention |
+| Sheet card previewed blank after a Sign | the signed face was still "kept" but no longer projectable, so the preview had a source and no images | signed leaves the tray, **and** the fallback now applies to the projectable result rather than to the source — a card always previews |
+| Kept thumbs overlapped the helper line | no clearance on a row that grows | `margin-left` on the tray, pinned by an anatomy assertion |
+
+## Anatomy assertions added
+
+`dockAnatomy.test.ts` — no count in the Sign label, no hardcoded price, no thumb
+cluster classes anywhere, radio semantics and a selection ring on the tray,
+expandable browsing, arrow-key stepping and Escape in the viewer, and the
+helper-line clearance as a rule rather than a screenshot.

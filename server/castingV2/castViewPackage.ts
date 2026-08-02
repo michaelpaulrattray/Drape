@@ -274,6 +274,29 @@ export function castPackageView(angle: CanonicalViewAngle): CastPackageView {
 }
 
 /**
+ * What a slot was CALLED when the Cast bought it (founder ruling, 2026-08-02).
+ *
+ * A label is part of the record, not part of today's policy. `frontClose` meant
+ * a waist-up "Headshot" in the six-view era and means a tight "Close-up" now —
+ * so labelling every Cast from today's profile tells the two existing Casts
+ * that the waist-up image in their package is a close-up, which is simply false
+ * about their own property.
+ *
+ * The era is read from the Cast's own promise rather than stored: a package
+ * containing the walk is a v1 package, because the walk is exactly what v2
+ * retired. When a third composition arrives it adds a clause here — and the
+ * promise is already durable, so no migration is needed to tell them apart.
+ */
+export function castPackageLabel(
+  angle: CanonicalViewAngle,
+  promisedAngles: readonly CanonicalViewAngle[],
+): string {
+  const isLegacySixView = promisedAngles.includes("sideFull");
+  if (isLegacySixView && angle === "frontClose") return VIEW_ANGLE_LABELS.frontClose;
+  return VIEWS[angle].label;
+}
+
+/**
  * The instruction the identity engine receives for one slot.
  *
  * Order matters and mirrors the sheet composer's: the identity instruction and

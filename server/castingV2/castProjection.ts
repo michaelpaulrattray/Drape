@@ -19,7 +19,7 @@ import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
-import { CAST_PACKAGE_VIEWS, castPackageView } from "./castViewPackage";
+import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 
 /**
  * `pending` — nothing has started on this slot yet.
@@ -42,6 +42,17 @@ export type CastSlotProjection = {
   note: string | null;
   /** What actually went back, when something did. Never a promise. */
   refundedCredits: number | null;
+  /**
+   * TRUE when this slot is showing the signed anchor because its own view never
+   * arrived (D-97).
+   *
+   * The hero reads this: the MASTER is always the chest-up image she was signed
+   * in, and a companion cell that fell back to that same image would show her
+   * twice and call one of them a close-up. A stand-in is honest in the package
+   * strip, where the sentence explains it, and dishonest in the hero, where
+   * nothing does.
+   */
+  standIn?: true;
 };
 
 export type CastCapability = "full" | "calibrated" | "unsupported";
@@ -65,6 +76,20 @@ export type SignedCastProjection = {
     fromCandidatePublicId: string | null;
     fromSessionPublicId: string | null;
   };
+  /**
+   * The faces kept beside her on the same sheet — real images, not placeholders
+   * (founder ruling, 2026-08-02).
+   *
+   * Retention protects exactly these while the Cast lives (§G.6), which is why
+   * the card can promise them: an unkept candidate purges with its session, a
+   * kept sibling of a signed Cast does not.
+   */
+  siblings: Array<{
+    candidateId: string;
+    imageUrl: string | null;
+    personaLine: string | null;
+    indexLabel: string;
+  }>;
   signedAt: string | null;
 };
 
@@ -139,6 +164,14 @@ export function projectSignedCast(input: {
   model: Model;
   assets: readonly ModelAsset[];
   lineage: CastLineage;
+  /** Kept faces from the same sheet, minus herself. */
+  siblings?: readonly {
+    publicId: string;
+    imageKey: string | null;
+    thumbKey: string | null;
+    personaLine: string | null;
+    position: number;
+  }[];
   /**
    * The views this Cast's Sign promised, from its own durable audit rows.
    *
@@ -182,10 +215,10 @@ export function projectSignedCast(input: {
 
   const slots: CastSlotProjection[] = renderedAngles.map((angle) => {
     const entry = evidence.get(angle) ?? {};
-    // The PACKAGE's label, not the shared one: this profile's `frontClose` is a
-    // tight close-up, while a legacy asset under that name genuinely is a
-    // head-and-shoulders headshot and its label must keep saying so.
-    const label = castPackageView(angle).label;
+    // The label this CAST bought, not the one today's profile sells. Her
+    // waist-up headshot is not retroactively a close-up because the profile
+    // changed after she was signed.
+    const label = castPackageLabel(angle, renderedAngles);
 
     if (entry.landed) {
       return {
@@ -212,15 +245,22 @@ export function projectSignedCast(input: {
         url: anchor.storageUrl,
         note: ANCHOR_STANDIN_NOTE,
         refundedCredits: entry.failure.refunded,
+        standIn: true,
       };
     }
     if (angle === "frontClose" && anchor && building) {
-      // Something is already there while the 2K version is generated. The
+      // Something is already there while the close-up is generated. The
       // customer is never looking at an empty room.
-      return { angle, label, state: "building", url: anchor.storageUrl, note: null, refundedCredits: null };
+      return {
+        angle, label, state: "building", url: anchor.storageUrl,
+        note: null, refundedCredits: null, standIn: true,
+      };
     }
     if (angle === "frontClose" && anchor) {
-      return { angle, label, state: "ready", url: anchor.storageUrl, note: null, refundedCredits: null };
+      return {
+        angle, label, state: "ready", url: anchor.storageUrl,
+        note: null, refundedCredits: null, standIn: true,
+      };
     }
 
     if (entry.failure) {
@@ -289,6 +329,16 @@ export function projectSignedCast(input: {
       takes: "unsupported",
       voice: "unsupported",
     },
+    siblings: (input.siblings ?? []).map((sibling) => ({
+      candidateId: sibling.publicId,
+      imageUrl: sibling.thumbKey
+        ? storagePublicUrl(sibling.thumbKey)
+        : sibling.imageKey
+          ? storagePublicUrl(sibling.imageKey)
+          : null,
+      personaLine: sibling.personaLine,
+      indexLabel: String(sibling.position + 1).padStart(2, "0"),
+    })),
     provenance: input.lineage.castFromAt
       ? `Cast from a sheet on ${formatCastDate(input.lineage.castFromAt)}`
       : null,

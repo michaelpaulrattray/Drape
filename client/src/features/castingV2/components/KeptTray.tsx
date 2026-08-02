@@ -29,6 +29,7 @@ export type KeptEntry = {
   personaLine: string | null;
   /** Which roll this face came from — the shortlist spans the whole sheet. */
   sourceRollIndex: number;
+  indexLabel: string;
 };
 
 /** "ROLL 02" — the useful label here, since the tray crosses rolls. */
@@ -39,7 +40,26 @@ function labelFor(entry: KeptEntry): string {
 /** Compact enough to sit beside Roll again without crowding it. */
 const RESTING = 4;
 
-export function KeptTray({ shortlist }: { shortlist: KeptEntry[] }) {
+/**
+ * SELECTION LIVES ON THE TRAY (founder ruling, 2026-08-02).
+ *
+ * The dock briefly carried its own cluster of kept thumbs beside the Sign
+ * button, and that cluster read as multi-sign — an F2 violation in the UI's
+ * grammar rather than in its behaviour, since the ceremony was always single.
+ * The fix is not a smaller cluster: it is putting the choice where the faces
+ * already are. One tray, radio semantics, an accent ring on the selected face,
+ * and a Sign button that names no number because the ring already says who.
+ */
+export function KeptTray({
+  shortlist,
+  selectedId,
+  onSelect,
+}: {
+  shortlist: KeptEntry[];
+  /** The face the dock's Sign will act on. */
+  selectedId?: string | null;
+  onSelect?: (candidateId: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [viewing, setViewing] = useState<KeptEntry | null>(null);
 
@@ -53,20 +73,34 @@ export function KeptTray({ shortlist }: { shortlist: KeptEntry[] }) {
       <span className={expanded ? "dpc-keptstack dpc-keptstack--open" : "dpc-keptstack"}>
         {shown.map((entry) => {
           const src = entry.thumbUrl ?? entry.imageUrl ?? null;
+          const selected = entry.candidateId === selectedId;
           return src ? (
             <button
               key={entry.candidateId}
               type="button"
-              className="dpc-keptstack__chip dpc-keptstack__chip--open"
-              onClick={() => setViewing(entry)}
+              role={onSelect ? "radio" : undefined}
+              aria-checked={onSelect ? selected : undefined}
+              className={
+                selected
+                  ? "dpc-keptstack__chip dpc-keptstack__chip--open is-selected"
+                  : "dpc-keptstack__chip dpc-keptstack__chip--open"
+              }
               /*
-                Labelled by its source roll, so the tray is navigable by
-                keyboard and reads as a shortlist rather than as an unlabelled
-                row of images — and a kept face says where it came from.
+                A single click SELECTS — the thing the dock is about to spend
+                on. Opening the viewer moved to a double click and to the
+                keyboard, because with ten keeps there was no way to lock one
+                in at all, and choosing is the more common intent by far.
               */
-              aria-label={`Open kept face from ${labelFor(entry)}`}
+              onClick={() => onSelect?.(entry.candidateId)}
+              onDoubleClick={() => setViewing(entry)}
+              aria-label={
+                onSelect
+                  ? `Sign ${entry.indexLabel} from ${labelFor(entry)}`
+                  : `Open kept face from ${labelFor(entry)}`
+              }
             >
               <img src={src} alt="" />
+              {selected ? <span className="dpc-keptstack__ring" aria-hidden="true" /> : null}
             </button>
           ) : (
             <span key={entry.candidateId} className="dpc-keptstack__chip" />
@@ -100,6 +134,16 @@ export function KeptTray({ shortlist }: { shortlist: KeptEntry[] }) {
           indexLabel={labelFor(viewing)}
           personaLine={viewing.personaLine ?? null}
           onClose={() => setViewing(null)}
+          /*
+            The arrows walk the shortlist. Comparing is the tray's entire job,
+            and a viewer you have to close and reopen between two faces is a
+            viewer that makes comparing harder than the grid did.
+          */
+          onStep={(direction) => {
+            const index = shortlist.findIndex((entry) => entry.candidateId === viewing.candidateId);
+            const next = shortlist[(index + direction + shortlist.length) % shortlist.length];
+            if (next && (next.imageUrl || next.thumbUrl)) setViewing(next);
+          }}
         />
       ) : null}
     </>

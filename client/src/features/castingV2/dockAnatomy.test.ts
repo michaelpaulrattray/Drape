@@ -1,0 +1,93 @@
+import { readFile } from "node:fs/promises";
+import { describe, expect, it } from "vitest";
+
+/**
+ * The sheet dock's anatomy and its SELECTION GRAMMAR.
+ *
+ * D-101's fourth gate, applied to the surface where money is committed. The
+ * defect it pins is not a missing module this time but a *grammar* one: the
+ * dock briefly carried its own cluster of kept thumbs beside the Sign button,
+ * and a cluster next to "Sign 3 to roster" reads as signing three people. The
+ * ceremony was always single (F2); the interface said otherwise, which is its
+ * own kind of untruth.
+ *
+ * So the assertions here are about what the dock may NOT say as much as what it
+ * must contain.
+ */
+
+const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
+const TRAY = new URL("./components/KeptTray.tsx", import.meta.url);
+const VIEWER = new URL("./components/CandidateViewer.tsx", import.meta.url);
+const CSS = new URL("./castingV2.css", import.meta.url);
+
+describe("the sheet dock commits to one candidate", () => {
+  it("names no count on the Sign button", async () => {
+    const source = await readFile(SHEET, "utf8");
+    /*
+      "Sign 3 to roster" and "Sign 04 to roster" are both wrong, for different
+      reasons: the first claims a ceremony that does not exist, the second makes
+      the button say what the selection ring already says. The label is fixed
+      and the price is server-derived (D-15).
+    */
+    expect(source).toContain("Sign to roster");
+    expect(source).not.toMatch(/Sign \$\{[^}]*indexLabel[^}]*\} to roster/);
+    expect(source).not.toMatch(/Sign \$\{[^}]*length[^}]*\} to roster/);
+  });
+
+  it("prices the Sign button from the server", async () => {
+    const source = await readFile(SHEET, "utf8");
+    const index = source.indexOf("Sign to roster");
+    expect(source.slice(index - 200, index + 200)).toContain("signPrice");
+    // Never a literal: the price moved 500 → 450 with package v2, and a
+    // hardcoded number is how a paid button starts lying.
+    expect(source).not.toMatch(/Sign to roster[^"`]*·\s*\d+\s*cr/);
+  });
+
+  it("keeps the thumb cluster out of the dock", async () => {
+    const source = await readFile(SHEET, "utf8");
+    // The cluster's own classes must not exist anywhere: selection lives on the
+    // tray, and a second row of faces beside the button is the multi-sign
+    // grammar coming back.
+    expect(source).not.toContain("dpc-dock__stack");
+    expect(source).not.toContain("dpc-dock__thumb");
+  });
+
+  it("gives the tray radio semantics and a selection ring", async () => {
+    const tray = await readFile(TRAY, "utf8");
+    const css = await readFile(CSS, "utf8");
+    expect(tray).toContain('role={onSelect ? "radio" : undefined}');
+    expect(tray).toContain("aria-checked");
+    expect(tray).toContain("is-selected");
+    // The ring is the standard selection grammar, and it must survive the
+    // stack's overlap — so it is drawn as a shadow rather than an outline.
+    expect(css).toContain(".dpc-keptstack__chip.is-selected");
+    expect(css).toContain("--accentSolid");
+  });
+
+  it("lets a shortlist be browsed at scale", async () => {
+    const tray = await readFile(TRAY, "utf8");
+    // Ten keeps and no way to pick one was the founder's report. Clicking
+    // selects, and the strip expands rather than truncating the choice.
+    expect(tray).toContain("onSelect?.(entry.candidateId)");
+    expect(tray).toContain("setExpanded(true)");
+  });
+
+  it("walks the kept set with the arrow keys and closes on Escape", async () => {
+    const viewer = await readFile(VIEWER, "utf8");
+    expect(viewer).toContain('event.key === "ArrowRight"');
+    expect(viewer).toContain('event.key === "ArrowLeft"');
+    expect(viewer).toContain('event.key === "Escape"');
+  });
+
+  it("keeps the kept faces clear of the helper line", async () => {
+    const css = await readFile(CSS, "utf8");
+    /*
+      The overlap regression: kept thumbs sat on top of "Your words steer this
+      family", so a sentence the founder needed to read was half-covered by
+      faces. Pinned as a rule rather than a screenshot, because the next
+      addition to that row would silently reintroduce it.
+    */
+    const block = css.slice(css.indexOf(".dpc-keptstack {"), css.indexOf(".dpc-keptstack__chip"));
+    expect(block).toMatch(/margin-left:\s*\d+px/);
+  });
+});

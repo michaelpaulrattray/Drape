@@ -24,11 +24,21 @@ export function CandidateViewer({
   indexLabel,
   personaLine,
   onClose,
+  onStep,
 }: {
   imageUrl: string;
   indexLabel: string;
   personaLine: string | null;
   onClose: () => void;
+  /**
+   * Walk the set this face belongs to: -1 back, +1 forward.
+   *
+   * Optional, because a candidate opened from the grid belongs to a roll the
+   * viewer does not hold. Where it IS supplied — the kept tray — comparing is
+   * the entire reason the surface exists, and a viewer you must close and
+   * reopen between two faces makes comparing harder than the grid already did.
+   */
+  onStep?: (direction: 1 | -1) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -37,6 +47,12 @@ export function CandidateViewer({
       if (event.key === "Escape") {
         event.stopPropagation();
         onClose();
+        return;
+      }
+      if (onStep && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
+        event.preventDefault();
+        event.stopPropagation();
+        onStep(event.key === "ArrowRight" ? 1 : -1);
       }
     };
     document.addEventListener("keydown", onKeyDown, true);
@@ -54,7 +70,7 @@ export function CandidateViewer({
       document.removeEventListener("keydown", onKeyDown, true);
       document.body.style.overflow = previousOverflow;
     };
-  }, [onClose]);
+  }, [onClose, onStep]);
 
   return createPortal(
     <div

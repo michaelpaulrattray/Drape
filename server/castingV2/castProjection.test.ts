@@ -269,6 +269,76 @@ describe("the signed Cast projection", () => {
     expect(projection.slots[0].label).toBe("Close-up");
   });
 
+  it("never lets the stand-in pose as a delivered view", () => {
+    /*
+      Founder ruling: the MASTER is always the chest-up image she was signed in,
+      and the close-up is a supporting image. A companion cell that fell back to
+      the anchor would show her twice and label one of them a close-up. The flag
+      is what makes that rule mechanical rather than remembered.
+    */
+    const projection = projectSignedCast({
+      model: model(),
+      assets: ledger(
+        anchor(),
+        asset({
+          viewType: "frontClose",
+          storageUrl: "",
+          storageKey: null,
+          status: { state: "failed", reason: "This view didn't arrive", refunded: 50 },
+        }),
+      ),
+      lineage,
+      promisedAngles: ["frontClose", "threeQuarter"],
+    });
+    const headshot = projection.slots.find((entry) => entry.angle === "frontClose");
+    expect(headshot?.standIn).toBe(true);
+    // A genuinely landed view carries no such flag.
+    const other = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor(), asset({ viewType: "threeQuarter" })),
+      lineage,
+      promisedAngles: ["frontClose", "threeQuarter"],
+    }).slots.find((entry) => entry.angle === "threeQuarter");
+    expect(other?.standIn).toBeUndefined();
+  });
+
+  it("labels a slot the way the CAST bought it, not the way today sells it", () => {
+    // Her waist-up headshot is not retroactively a close-up because the profile
+    // changed after she was signed.
+    const legacy = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor()),
+      lineage,
+      promisedAngles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "sideFull", "backFull"],
+    });
+    expect(legacy.slots.find((entry) => entry.angle === "frontClose")?.label).toBe("Headshot");
+
+    const current = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor()),
+      lineage,
+      promisedAngles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "backFull"],
+    });
+    expect(current.slots.find((entry) => entry.angle === "frontClose")?.label).toBe("Close-up");
+  });
+
+  it("carries her real kept siblings, and an honest absence when there are none", () => {
+    const withSiblings = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor()),
+      lineage,
+      siblings: [
+        { publicId: "sib-1", imageKey: "k/1.png", thumbKey: null, personaLine: "Dry and flat", position: 3 },
+      ],
+    });
+    expect(withSiblings.siblings).toHaveLength(1);
+    expect(withSiblings.siblings[0]).toMatchObject({ candidateId: "sib-1", indexLabel: "04" });
+    expect(withSiblings.siblings[0].imageUrl).toContain("k/1.png");
+
+    const alone = projectSignedCast({ model: model(), assets: ledger(anchor()), lineage });
+    expect(alone.siblings).toEqual([]);
+  });
+
   it("names where it came from, in public ids only", () => {
     const projection = projectSignedCast({ model: model(), assets: ledger(anchor()), lineage });
     expect(projection.provenance).toBe("Cast from a sheet on 2 August");

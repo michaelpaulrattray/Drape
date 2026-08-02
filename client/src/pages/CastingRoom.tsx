@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft, Lock, Play, Plus } from "lucide-react";
 
 import { AppShell, Button, EmptyState, Skeleton } from "@/foundation";
 import { trpc } from "@/lib/trpc";
 import "@/features/castingV2/castingV2.css";
+import { CandidateViewer } from "@/features/castingV2/components/CandidateViewer";
 
 /**
  * The casting room (plan §F, §J; handoff chapter 07).
@@ -61,6 +62,10 @@ export default function CastingRoom() {
   const castId = params?.castId ?? "";
 
   const config = trpc.castingV2.config.useQuery({});
+  /** The sibling face being looked at, if any. */
+  const [viewingSibling, setViewingSibling] = useState<
+    { candidateId: string; imageUrl: string | null; personaLine: string | null; indexLabel: string } | null
+  >(null);
   const cast = trpc.castingV2.getCast.useQuery(
     { castId },
     {
@@ -82,13 +87,20 @@ export default function CastingRoom() {
     THE TWO COMPANION SLOTS (founder ruling on hero fill): the close-up and the
     three-quarter, in that order, whichever of them has actually landed.
 
+    **The master is always the chest-up image she was signed in** — the face
+    chosen on the sheet — and a companion may never be the anchor standing in
+    for a view that failed. That would show her twice and label one of them a
+    close-up, which is the exact ambiguity the ruling kills. `standIn` is what
+    makes the rule mechanical rather than remembered.
+
     Progressive by design — when Takes exist they replace these, because a Take
     says more about a Cast than a second angle of the same studio frame does.
     Until then the package's own best two fill the space rather than leaving a
     drawn block half empty.
   */
   const companions = ["frontClose", "threeQuarter"].map(
-    (angle) => data?.slots.find((slot) => slot.angle === angle && slot.url) ?? null,
+    (angle) =>
+      data?.slots.find((slot) => slot.angle === angle && slot.url && !slot.standIn) ?? null,
   );
 
   return (
@@ -356,14 +368,37 @@ export default function CastingRoom() {
                     Variants cast from the same sheet. Useful when a campaign needs a near-miss
                     rather than a new face.
                   </p>
-                  <div className="dpc-sib__tiles">
-                    <span className="dpc-sib__tile" />
-                    <span className="dpc-sib__tile" />
-                    <span className="dpc-sib__tile" />
-                    <span className="dpc-sib__tile dpc-sib__tile--add">
-                      <Plus size={13} strokeWidth={1.7} aria-hidden="true" />
-                    </span>
-                  </div>
+                  {/*
+                    REAL FACES (founder ruling, 2026-08-02). These are the
+                    candidates kept beside her on the same sheet, and retention
+                    protects exactly them for as long as she lives (§G.6) — so
+                    the card can promise a face without promising something
+                    that disappears in seven days. Verified against the live
+                    sweep predicate, not assumed.
+
+                    A tile opens the viewer, which is the right depth for now: a
+                    near-miss is something you look at before deciding to cast
+                    her too.
+                  */}
+                  {data.siblings.length > 0 ? (
+                    <div className="dpc-sib__tiles">
+                      {data.siblings.map((sibling) => (
+                        <button
+                          key={sibling.candidateId}
+                          type="button"
+                          className="dpc-sib__tile dpc-sib__tile--face"
+                          onClick={() => setViewingSibling(sibling)}
+                          aria-label={`Look at ${sibling.personaLine ?? sibling.indexLabel}`}
+                        >
+                          {sibling.imageUrl ? <img src={sibling.imageUrl} alt="" /> : null}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="dpc-rcard__body">
+                      Nothing else was kept from her sheet.
+                    </p>
+                  )}
                   {data.lineage.fromSessionPublicId ? (
                     <Button
                       variant="quiet"
@@ -377,6 +412,21 @@ export default function CastingRoom() {
               </div>
             </div>
           </>
+        ) : null}
+
+        {viewingSibling?.imageUrl ? (
+          <CandidateViewer
+            imageUrl={viewingSibling.imageUrl}
+            indexLabel={viewingSibling.indexLabel}
+            personaLine={viewingSibling.personaLine}
+            onClose={() => setViewingSibling(null)}
+            onStep={(direction) => {
+              const list = data?.siblings ?? [];
+              const index = list.findIndex((s) => s.candidateId === viewingSibling.candidateId);
+              const next = list[(index + direction + list.length) % list.length];
+              if (next?.imageUrl) setViewingSibling(next);
+            }}
+          />
         ) : null}
 
       </div>

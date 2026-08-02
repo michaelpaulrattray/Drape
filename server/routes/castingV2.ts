@@ -46,10 +46,12 @@ import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/
 import { projectSignedCast } from "../castingV2/castProjection";
 import {
   getCastLineage,
+  getCastSessionId,
   getOwnedCastByPublicId,
   listCastAssets,
   listCastPromisedAngles,
   listCastPublicIdsForCandidates,
+  listCastSiblings,
   listSignedCasts,
 } from "../db/castingV2Sign";
 import { discard, setKept, undo } from "../castingV2/candidateService";
@@ -240,12 +242,23 @@ export const castingV2Router = router({
             what you shortlisted — and the newest roll otherwise. Four, because
             that is what the strip holds.
           */
-          const previewSource =
-            kept.length > 0
-              ? kept
-              : latest
-                ? await listRollCandidates(ctx.user.id, latest.id)
-                : [];
+          /*
+            A SHEET CARD ALWAYS PREVIEWS (founder bug, 2026-08-02).
+
+            After a Sign from this sheet the card went blank — "3 rolls · 1
+            kept" above an empty strip. Two causes, and both are fixed: the
+            signed candidate no longer counts as kept (§F, above), and the
+            fallback is now applied to the RESULT rather than to the source. A
+            kept list that yields no projectable face falls through to the
+            latest roll instead of leaving a hole where the sheet should be.
+          */
+          const rollCandidates = latest
+            ? await listRollCandidates(ctx.user.id, latest.id)
+            : [];
+          const projectable = (rows: typeof rollCandidates) =>
+            rows.filter((candidate) =>
+              candidate.status === "ready" && (candidate.thumbKey || candidate.imageKey));
+          const previewSource = projectable(kept).length > 0 ? kept : rollCandidates;
           /*
             `thumbKey ?? imageKey`, and the fallback is the whole point.
 
@@ -260,8 +273,7 @@ export const castingV2Router = router({
             it does nothing. Full images are heavier than thumbs and four of
             them at 90px is a cost worth paying until the worker exists.
           */
-          const previewUrls = previewSource
-            .filter((candidate) => candidate.status === "ready" && (candidate.thumbKey || candidate.imageKey))
+          const previewUrls = projectable(previewSource)
             .slice(0, 4)
             .map((candidate) => storagePublicUrl((candidate.thumbKey ?? candidate.imageKey) as string));
 
@@ -507,12 +519,22 @@ export const castingV2Router = router({
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-      const [assets, lineage, promisedAngles] = await Promise.all([
+      const [assets, lineage, promisedAngles, sessionId] = await Promise.all([
         listCastAssets(ctx.user.id, model.id),
         getCastLineage(ctx.user.id, model),
         listCastPromisedAngles(ctx.user.id, model.id),
+        model.sourceCandidateId
+          ? getCastSessionId(ctx.user.id, model.sourceCandidateId)
+          : Promise.resolve(null),
       ]);
-      return projectSignedCast({ model, assets, lineage, promisedAngles });
+      const siblings = sessionId && model.sourceCandidateId
+        ? await listCastSiblings({
+            userId: ctx.user.id,
+            sessionId,
+            excludeCandidateId: model.sourceCandidateId,
+          })
+        : [];
+      return projectSignedCast({ model, assets, lineage, promisedAngles, siblings });
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

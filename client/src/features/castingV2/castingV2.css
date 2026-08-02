@@ -327,6 +327,16 @@
   display: flex;
   align-items: center;
   flex: none;
+  /*
+    Clearance from the line to its left. The kept faces were overlapping the
+    "Your words steer this family" helper — two things in the same pixels, one
+    of them a sentence nobody could finish reading (founder bug, 2026-08-02).
+    The margin belongs here rather than on the helper because the tray is the
+    thing that grows.
+  */
+  margin-left: 14px;
+  /* Overlapped chips need room to the right for the last one's negative margin. */
+  padding-right: 12px;
 }
 
 /*
@@ -369,6 +379,20 @@
   z-index: 1;
   position: relative;
 }
+
+/*
+  THE SELECTION RING — the standard grammar, and the thing that lets the Sign
+  button stop naming a number. Drawn on top of the face rather than as an
+  outline so it survives the stack's overlap.
+*/
+.dpc-keptstack__chip.is-selected {
+  transform: translateY(-3px);
+  z-index: 2;
+  position: relative;
+  box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3.5px var(--accentSolid);
+}
+
+.dpc-keptstack__ring { display: none; }
 
 .dpc-keptstack__chip--open:focus-visible {
   outline: 2px solid var(--ink);
@@ -1563,3 +1587,9 @@
   background: var(--media);
 }
 .dpc-strip__frame > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* A sibling tile holding a real face. */
+.dpc-sib__tile--face { padding: 0; overflow: hidden; cursor: pointer; }
+.dpc-sib__tile--face > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dpc-sib__tile--face:hover { border-color: var(--lineStrong); }
+.dpc-sib__tile--face:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
