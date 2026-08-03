@@ -25,6 +25,9 @@ import { and, asc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import {
   castingCandidates,
   castingCandidateVariants,
+  generationOperations,
+  storageCleanupBatches,
+  storageCleanupItems,
   type CastingCandidateVariant,
 } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
@@ -165,17 +168,69 @@ export async function markVariantDispatched(input: {
  * far as the product is concerned. Selecting it is what "the refinement
  * happened" MEANS.
  */
+export class VariantLandingError extends Error {
+  constructor(readonly code: "operation_unavailable" | "not_landable" | "not_selectable") {
+    super(code);
+    this.name = "VariantLandingError";
+  }
+}
+
 export async function landVariant(input: {
   userId: number;
+  operationId: string;
   variantId: number;
   imageKey: string;
+  /**
+   * The manifest holding this object until this transaction discharges it.
+   *
+   * Sign's register-before-write pattern, and the window it closes is real: the
+   * bytes are put to a public key BEFORE any row references them, so a crash —
+   * or the landing refusals above — would strand a paid picture of a person at
+   * a permanent URL with nothing left that knows it exists. The key is handed
+   * to the cleanup worker first; discharging the manifest here, inside the
+   * transaction that makes the object referenced, is what stops the worker
+   * deleting a variant somebody is looking at.
+   */
+  cleanupBatchId: string;
   internalPrompt: unknown;
   provider: string | null;
   providerModel: string | null;
   providerRef: string | null;
-}): Promise<boolean> {
+}): Promise<void> {
   assertPositiveId(input.userId, "userId");
   return withTransaction(async (tx) => {
+    /*
+      THE SWEEP FENCE (D-92's law 2, borrowed from Sign whole).
+
+      A refine has ONE long await after `markRunning` — around 90 seconds — so
+      a single missed heartbeat can let the lease expire while the work is very
+      much alive. The recovery sweep then reads a variant that has not landed
+      yet, decides to refund, and this landing commits in the gap: the user
+      keeps the picture AND gets the 25 back.
+
+      Re-proving the operation `running` FOR UPDATE inside this transaction is
+      what closes it. The sweep moves the operation out of `running` before it
+      touches money, so a landing that starts after that point cannot commit,
+      and a landing already holding this row makes the sweep wait.
+
+      **Every exit from here throws.** `withTransaction` is `db.transaction`,
+      which COMMITS on any non-throw return — so returning a boolean on the
+      pointer-move miss below would commit a `ready` variant that nothing
+      points at, while the caller refunded it. One state, two verdicts.
+    */
+    const [operation] = await tx
+      .select({ id: generationOperations.id })
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.kind, "castingV2.refine"),
+        eq(generationOperations.status, "running"),
+      ))
+      .limit(1)
+      .for("update");
+    if (!operation) throw new VariantLandingError("operation_unavailable");
+
     const landed = await tx
       .update(castingCandidateVariants)
       .set({
@@ -191,7 +246,7 @@ export async function landVariant(input: {
         eq(castingCandidateVariants.userId, input.userId),
         inArray(castingCandidateVariants.status, ["queued", "dispatched"]),
       ));
-    if (affectedRows(landed) !== 1) return false;
+    if (affectedRows(landed) !== 1) throw new VariantLandingError("not_landable");
 
     /*
       The pointer moves through the variant's OWN parent link, read inside this
@@ -217,7 +272,34 @@ export async function landVariant(input: {
           WHERE v.id = ${input.variantId} AND v.userId = ${input.userId}
         )`,
       ));
-    return affectedRows(selected) === 1;
+    /*
+      Throwing rolls the landing back, which is the only correct answer.
+
+      The candidate left `ready` during the ~90 seconds this edit took — a
+      discard in another tab, a session expiry, a Sign that beat us — so there
+      is nothing to point at. Committing the `ready` variant anyway would hand
+      the user a listable, selectable picture that the caller then refunds in
+      full, and would tell the recovery sweep a completely different story than
+      it tells the caller.
+    */
+    if (affectedRows(selected) !== 1) throw new VariantLandingError("not_selectable");
+
+    /*
+      The object is now referenced by a row, so the manifest holding it must go
+      — in this same transaction, or the worker deletes a live variant's image.
+      Both halves asserted: a manifest that does not delete means something else
+      already claimed it, and committing on top of that hands the worker a
+      picture the user just paid for.
+    */
+    await tx.delete(storageCleanupItems)
+      .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+    const removedBatch = await tx.delete(storageCleanupBatches).where(and(
+      eq(storageCleanupBatches.id, input.cleanupBatchId),
+      eq(storageCleanupBatches.userId, input.userId),
+      eq(storageCleanupBatches.operationId, input.operationId),
+      eq(storageCleanupBatches.status, "pending"),
+    ));
+    if (affectedRows(removedBatch) !== 1) throw new VariantLandingError("not_selectable");
   });
 }
 

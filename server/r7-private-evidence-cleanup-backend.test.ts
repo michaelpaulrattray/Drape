@@ -97,6 +97,11 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // makes the copy, and names `public_r2` for it — a Cast's images live in
       // the public bucket, evidence does not, and a manifest that left the
       // backend implicit could delete from the wrong one.
+      // Refine (M8) does the same for the variant image it is about to write:
+      // the key is registered before the bytes exist, so a crash between the
+      // put and the landing cannot strand a paid picture of a person at a
+      // permanent public URL with no row left that knows it exists.
+      "server/castingV2/refineService.ts",
       "server/castingV2/signService.ts",
       "server/db/accountDeletion.ts",
       "server/db/evidenceCandidates.ts",

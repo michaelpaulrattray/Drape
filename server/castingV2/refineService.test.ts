@@ -62,10 +62,10 @@ vi.mock("../db/castingV2Variants", () => ({
     };
   }),
   markVariantDispatched: vi.fn(async () => true),
+  VariantLandingError: class extends Error {},
   landVariant: vi.fn(async (input: Record<string, unknown>) => {
     journal.push("land");
     landedVariant = input;
-    return true;
   }),
   failVariant: vi.fn(async () => {
     journal.push("fail");
@@ -124,6 +124,22 @@ vi.mock("../casting/directOperation", () => ({
 vi.mock("../storage", () => ({
   storageReadBytes: vi.fn(async () => ({ bytes: Buffer.from("base"), contentType: "image/png" })),
   storagePut: vi.fn(async (key: string) => ({ key, url: `https://cdn.example/${key}` })),
+}));
+
+vi.mock("../db/connection", () => ({
+  withTransaction: vi.fn(async (run: (tx: unknown) => Promise<unknown>) => run({})),
+}));
+
+/*
+  The register-before-write manifest. Journalled because its ORDER is the point:
+  the key must be handed to the cleanup worker before the bytes exist, or a
+  crash strands a paid picture of a person at a permanent public URL.
+*/
+vi.mock("../db/storageCleanup", () => ({
+  createStorageCleanupManifestIn: vi.fn(async () => {
+    journal.push("manifest");
+    return { id: "batch-1" };
+  }),
 }));
 
 vi.mock("./renderFault", () => ({
@@ -238,7 +254,7 @@ describe("the order, and the money", () => {
   it("claims, runs, charges, generates, lands — in that order", async () => {
     await refineCandidate(greenEyes, input);
     expect(journal).toEqual([
-      "read", "begin", "claim", "running", "deduct", "generate", "land", "seal:success",
+      "read", "begin", "claim", "running", "deduct", "generate", "manifest", "land", "seal:success",
     ]);
     expect(ledger.charges).toEqual([
       { amount: 25, reference: "op:11111111-1111-4111-8111-111111111111:charge" },
@@ -339,5 +355,55 @@ describe("the record and the picture come from the same place", () => {
     expect(call.instructions).toEqual(["make her eyes green", "hood her eyes a little"]);
     /* Both edits survive, because composition is per-axis. */
     expect(call.deltas).toEqual({ eyeColour: "green", eyeShape: "hooded" });
+  });
+});
+
+/**
+ * The three money holes Fable found, each with the test that would catch it.
+ *
+ * All three were the same shape: a state where the ledger and the row disagree,
+ * or where the receipt and the number beside it disagree. None of them threw.
+ */
+describe("the landing cannot half-commit, and the receipt cannot lie", () => {
+  it("registers the object for cleanup BEFORE the bytes exist", async () => {
+    await refineCandidate(greenEyes, input);
+    /*
+      Order, not presence. A manifest written after the put leaves the window
+      it exists to close — the crash lands between them.
+    */
+    expect(journal.indexOf("manifest")).toBeLessThan(journal.indexOf("land"));
+    expect(journal.indexOf("manifest")).toBeGreaterThan(journal.indexOf("generate"));
+  });
+
+  /*
+    `landVariant` now THROWS rather than returning false, because
+    `withTransaction` commits on any non-throw return: a boolean would have
+    committed a `ready` variant that nothing points at, while the caller
+    refunded it in full. Ready picture plus full refund, and the sweep would
+    read the same row as a durable success and keep the charge.
+  */
+  it("refunds the whole charge when the landing refuses, with nothing half-written", async () => {
+    const { landVariant } = await import("../db/castingV2Variants");
+    vi.mocked(landVariant).mockRejectedValueOnce(new Error("not_selectable"));
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow();
+    expect(ledger.refunds).toEqual([
+      { amount: 25, description: "Refine refunded — the generation failed" },
+    ]);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  /*
+    The receipt is persisted and replayed to whoever asks about the operation
+    later, so a message promising money back beside `refundedCredits: 0` is a
+    receipt claiming money moved when it did not.
+  */
+  it("never promises a refund that did not record", async () => {
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockResolvedValueOnce({ recorded: false } as never);
+    engineThrows = new Error("the provider fell over");
+
+    await expect(refineCandidate(greenEyes, input))
+      .rejects.toThrow(/could not be recorded — quote operation/);
   });
 });
