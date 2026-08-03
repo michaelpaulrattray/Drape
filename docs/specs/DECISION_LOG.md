@@ -3561,6 +3561,40 @@ against `faith-{stated,unstated}.jpg` from the verification that prompted this.
 Driver: `scripts/drive-stated-covering.mts`, which runs both directions or
 neither — the unstated half is the one a future change here will break first.
 
+## D-125 — A schema-dependent change is never flag-dark. Migrate first, always.
+
+Recorded 2026-08-03 after breaking production for about three minutes.
+
+M8's code was pushed to `main` with migration 0020 applied only to dev. It
+deployed, ran SUCCESS, and served a build whose casting reads LEFT JOIN a table
+production did not have. Health stayed 200 the whole time, because `/api/health`
+does not touch casting tables — the "deploy SUCCESS ≡ healthy" lesson, met
+again from a new direction.
+
+**Two separate mistakes, and the second is the one worth the law.**
+
+**The flag was not dark in production, and that was an assumption rather than a
+reading.** `CASTING_V2_SCOPE` is `all` in prod. The standing autonomy grant says
+new V2 code ships dark behind its flag so autonomous deploys never change live
+behaviour — that protection was believed, not verified. **Never infer a
+production flag's value from the dev `.env`. Read it.**
+
+**And even a genuinely dark flag would not have made this safe.** A feature flag
+gates a FEATURE; a migration changes the SQL shape of statements that run for
+anyone the flag admits. The moment a read path names a new column or table, the
+deploy is schema-dependent, and schema must lead code — there is no flag
+position that makes a query against a missing table work.
+
+**The rule, stated so it is checkable:** if a change touches `drizzle/`, the
+production migration happens BEFORE the push, or the push waits. Since
+production migrations are a founder gate (the `MYSQL_PUBLIC_URL` ceremony), that
+means a schema change is a founder-gated release, not an autonomous one —
+however dark the feature behind it looks.
+
+Recovered by reverting all six commits and pushing the revert; production came
+back on the restored build with health 200. The work is intact in history and
+re-lands behind the migration.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
