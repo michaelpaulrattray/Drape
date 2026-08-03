@@ -35,6 +35,7 @@ import {
   type BrowStyle,
   type HairPart,
   type EyeColour,
+  type EyeShape,
   type BeardGrey,
   type FacialHair,
   type HairStyle,
@@ -183,7 +184,7 @@ const EYE_DEFAULT: Weights<EyeColour> = [
  * These COMPOSE with the A5 iris-structure protocol already in the cohort
  * constant: A5 says how any iris is built, this says which one this person has.
  */
-const IRIS_RENDER: Record<EyeColour, string> = {
+export const IRIS_RENDER: Record<EyeColour, string> = {
   "pale blue": "pale ice blue, low saturation with a bright inner ring and a distinct darker limbal ring, fine radial striations clearly visible",
   blue: "clear medium blue with subtle teal shifts, visible radial striations, bright and open",
   grey: "cool neutral grey with a blue-silver undertone, visible darker grey striations through the iris",
@@ -195,6 +196,33 @@ const IRIS_RENDER: Record<EyeColour, string> = {
   brown: "rich chocolate brown with visible depth variation, warmer at the centre, darker at the limbal ring",
   "dark brown": "deep coffee brown, the pupil still distinct against it, warm red-brown micro-texture visible near the centre",
   "near-black": "iris and pupil nearly indistinguishable, extremely dark with faint brown micro-texture only visible at macro distance",
+};
+
+/**
+ * Eye geometry as ANATOMY, never as an adjective (M8, the A9 pattern).
+ *
+ * "Hooded eyes" handed over as a word renders as ordinary wide-open eyes,
+ * because the model's portrait prior is a beauty prior and a single adjective
+ * does not outweigh it — the same failure as the broken nose and the styled-not-
+ * worn hijab (D-124). Each line therefore names what a camera would see: how
+ * much lid is exposed, where the crease sits, which way the outer corner runs,
+ * how far apart the eyes are set.
+ *
+ * Nothing here touches how an eye is BUILT — the lash line, limbal ring and
+ * catchlight belong to the cohort constant's EYES block, and nothing here may
+ * introduce asymmetry between the two eyes, which that constant forbids
+ * outright and for good reason.
+ */
+export const EYE_SHAPE_RENDER: Record<EyeShape, string> = {
+  almond: "the upper lid curving to a slightly tapered outer corner, a clear visible crease, the iris partly covered at the top and the white visible either side",
+  round: "a tall opening with the full circle of the iris visible including a sliver of white above it, the crease high and the outer corner not tapered",
+  hooded: "a fold of upper lid skin resting over the crease and hiding most of it, so little or no lid space shows when the eyes are open, the lash line close under the fold",
+  monolid: "a smooth upper lid with no visible crease at all, the lid running unbroken from lash line to brow bone, the inner corner covered by a soft epicanthic fold",
+  upturned: "the outer corner sitting clearly higher than the inner corner, the lower lash line rising toward it",
+  downturned: "the outer corner sitting clearly lower than the inner corner, the lower lash line dropping away toward it and a little more white visible beneath the iris",
+  "deep-set": "the eyes sitting further back under a prominent brow bone, which casts a soft shadow across the upper lid and shortens the visible lid space",
+  "wide-set": "the gap between the inner corners noticeably wider than the width of one eye, giving an open, broad-featured face",
+  "close-set": "the gap between the inner corners noticeably narrower than the width of one eye, drawing the features toward the centre of the face",
 };
 
 /* ----------------------------------------------------------- facial hair */
@@ -385,6 +413,17 @@ export function realizeAxes(input: {
 
   return {
     eyeColour: weightedPick(EYE_BY_HERITAGE[primary] ?? EYE_DEFAULT, seedFor("eyeColour")),
+    /*
+      ALWAYS NULL, and that is the whole point of how eye shape is filed (M8).
+
+      The sheet does not draw eye geometry. Adding a ninth drawn axis would
+      widen every roll's variance surface and change output on a milestone that
+      is about refining ONE face, so the draw stays exactly as it was and this
+      axis only ever gets a value from a refinement. Pinned by a test over a
+      wide draw, because "we simply never set it" is a convention and the
+      guarantee has to be mechanical.
+    */
+    eyeShape: null,
     hairStyle,
     /*
       The cut's authored components (D10), resolved beside the cut they belong
@@ -443,6 +482,21 @@ export function describeRealizedAxes(
 
   if (axes.eyeColour && !stated("eyes")) {
     parts.push(`EYE COLOUR: ${axes.eyeColour} — ${IRIS_RENDER[axes.eyeColour]}.`);
+  }
+  /*
+    Geometry, on its own line and under its own heading.
+
+    Ships in the SAME change as the registry footprint deliberately: a
+    footprint whose emitter arrives later is invariant 7's inert control — a
+    rule that looks enforced and refuses nothing.
+
+    Not gated on `stated("eyes")` the way colour is. That gate exists because a
+    brief naming an eye COLOUR must not have a drawn colour argue with it; eye
+    shape is never drawn, so a value here came from the user in the first place
+    and there is nothing for it to contradict.
+  */
+  if (axes.eyeShape) {
+    parts.push(`EYE SHAPE: ${axes.eyeShape} — ${EYE_SHAPE_RENDER[axes.eyeShape]}.`);
   }
   if (axes.facialHair && !stated("facialHair")) {
     /*

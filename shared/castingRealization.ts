@@ -42,6 +42,33 @@ export const EYE_COLOURS = [
 ] as const;
 export type EyeColour = (typeof EYE_COLOURS)[number];
 
+/**
+ * Eye GEOMETRY — the refinement tier's second axis (M8, §5).
+ *
+ * Distinct from colour, and distinct again from the cohort constant's EYES
+ * block: A5 says how an eye is BUILT (lash line, limbal ring, catchlight),
+ * this says which shape THIS person's eyes are. The BROW CHARACTER precedent.
+ *
+ * **Closed, because it is written into a paid prompt.** Every value renders as
+ * engineered anatomy rather than the bare adjective — hooded, downturned and
+ * monolid all lose to the model's wide-open beauty prior when handed as a word,
+ * exactly as the broken nose and the hijab did (A9, D-124). The prose names lid
+ * exposure, crease depth, canthal tilt and set, which are things a camera can
+ * actually see.
+ */
+export const EYE_SHAPES = [
+  "almond",
+  "round",
+  "hooded",
+  "monolid",
+  "upturned",
+  "downturned",
+  "deep-set",
+  "wide-set",
+  "close-set",
+] as const;
+export type EyeShape = (typeof EYE_SHAPES)[number];
+
 /** Sex-gated and age-conditioned. Never assigned to women. */
 export const FACIAL_HAIR = [
   "clean-shaven",
@@ -118,6 +145,23 @@ export type RealizedAxes = {
     that lies; now it cannot be written.
   */
   eyeColour: EyeColour | null;
+  /**
+   * Eye geometry — and NULL has a third meaning on this axis (M8).
+   *
+   * Elsewhere on this shelf null means "deference silenced it" or "not
+   * applicable". Here it also means **never drawn**: `realizeAxes` returns null
+   * for every candidate on every sheet, always, so the roll's behaviour is
+   * bit-identical to before this axis existed. Only a refinement ever sets it.
+   *
+   * It lives on the realized shelf anyway because it BEHAVES realized in every
+   * consumer that matters — inherited whole through the follow anchor, composed
+   * by `describeRealizedAxes`, out of the taste pass's reach — and the
+   * `hairColour` filing argument applies: shelving by behaviour rather than by
+   * how a value happens to arrive. Registering it is what makes the D-87 sweep
+   * prove it composes wherever it is read; an axis persisted into a variant and
+   * then dropped on a follow would be unowned-axis instance seven.
+   */
+  eyeShape: EyeShape | null;
   /** The named cut. Carries its own coherent length and, sometimes, texture. */
   /*
     NULL when deference suppressed it. The persisted identity is the M7
@@ -173,6 +217,7 @@ export type BeardGrey = (typeof BEARD_GREYS)[number];
  */
 export const REALIZED_AXIS_KEYS = [
   "eyeColour",
+  "eyeShape",
   "hairStyle",
   "facialHair",
   "hairTexture",

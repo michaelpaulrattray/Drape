@@ -1,4 +1,5 @@
 import { recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
+import { recoverCastingV2RefineOperation } from "../castingV2/refineRecovery";
 import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import {
@@ -94,12 +95,15 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   "castingV2.roll": "not_reconstructable",
   // Same: the sign adjudicator rebuilds the receipt from the Cast's own rows.
   "castingV2.sign": "not_reconstructable",
+  /* A refine is a paid picture, not a public result the sweep can rebuild. */
+  "castingV2.refine": "not_reconstructable",
 };
 
 type StaleRecoveryStrategy =
   | "standard"
   | "castingv2_roll"
   | "castingv2_sign"
+  | "castingv2_refine"
   | "ink_evidence"
   | "evidence_fork"
   | "evidence_mint";
@@ -144,6 +148,15 @@ const STALE_RECOVERY_BY_KIND: Readonly<
     created. The fork variable is the candidate's CAS (D-92).
   */
   "castingV2.sign": "castingv2_sign",
+  /*
+    Bespoke for the same reason as its siblings and none of their complexity.
+    The generic adjudicator reads the operation's `modelId` to decide what was
+    built; a refine builds a VARIANT, which that column has never heard of, so
+    the generic path would call a landed refinement a total loss and refund a
+    picture the user is looking at. The fork variable is the variant's own
+    status — ready means delivered, anything else means refund the one unit.
+  */
+  "castingV2.refine": "castingv2_refine",
 };
 
 const LANDING_RECOVERY_BY_KIND: Readonly<
@@ -181,6 +194,7 @@ const LANDING_RECOVERY_BY_KIND: Readonly<
   // Sign creates a Cast, not a board landing. The canvas return destination is
   // the session's own origin and is handled by the room, not by this receipt.
   "castingV2.sign": null,
+  "castingV2.refine": null,
 };
 
 function assertNever(value: never): never {
@@ -902,6 +916,25 @@ export async function adjudicateStaleGenerationOperation(
         chargedCredits: recovered.chargedCredits,
         refundedCredits: recovered.refundedCredits,
       });
+      return "recovery_required";
+    }
+  }
+  if (operation.kind === "castingV2.refine") {
+    const recovered = await recoverCastingV2RefineOperation({
+      ...operation,
+      // Narrowed by the gate below; the row's column type is a bare string.
+      status: operation.status === "claimed" ? "claimed" : "running",
+    });
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      /* The adjudicator parks its own row — marking it twice would fail, and
+         the park IS the mark. */
+      log.error(
+        { operationId: operation.id, reason: recovered.reason },
+        "[OperationRecovery] a refinement needs support review",
+      );
       return "recovery_required";
     }
   }

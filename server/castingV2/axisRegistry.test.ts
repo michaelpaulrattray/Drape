@@ -386,6 +386,49 @@ describe("the unowned-axis sweep", () => {
   });
 
   /**
+   * THE INSTANCE-SEVEN TEST for eye shape (M8).
+   *
+   * Eye shape is the one realized axis the roll never draws — only a refinement
+   * sets it. That makes it the axis most likely to become unowned-axis instance
+   * seven: it can be persisted into a variant's identity, inherited whole by a
+   * follow, and then composed by nothing, at which point every one of the eight
+   * cousins falls to the same prior and the record quietly describes a face
+   * nobody rendered.
+   *
+   * So the sweep is FED one. This is the test that fails, naming `eyeShape`, if
+   * anybody removes the emitter or persists the axis without composing it.
+   */
+  it("composes an eye shape a refinement put on a follow's identity", async () => {
+    const findings = await sweepBrief({
+      briefText: "a females 23 high fashion editorial casting",
+      rollSeed: "sweep-follow-eyeshape",
+      intent: { role: "high fashion editorial model", sex: "female", ageBand: "20s" },
+      followIdentity: {
+        sex: "female",
+        ageBand: "20s",
+        agePhase: "early",
+        heritage: [{ heritage: "Nordic", pct: 100 }],
+        energy: "warm",
+        hair: { family: "long", colour: "blonde" },
+        look: "severe minimal",
+        realized: {
+          eyeColour: "blue",
+          /* What a refine writes, and what the follow must carry through. */
+          eyeShape: "hooded",
+          hairStyle: { name: "low bun", family: "long", worn: "worn up" },
+          facialHair: null,
+          hairTexture: "straight",
+          hairModifiers: null,
+          wornState: "worn up",
+          browStyle: "feathered",
+          skinCharacter: "plain",
+        },
+      },
+    });
+    expect(findings).toEqual([]);
+  });
+
+  /**
    * SIX SHEETS IS NOT AN INSTRUMENT.
    *
    * Every defect this sweep exists to catch was a rare draw somebody eventually
@@ -593,6 +636,25 @@ describe("the unowned-axis sweep", () => {
     const withoutEyes = subject!.prompt.replace(/ EYE COLOUR: [^.]*\./, " ");
     const eyeCaught = sweepComposedPrompt(withoutEyes, ctx).map((finding) => finding.axis);
     expect(eyeCaught).toEqual(["eyeColour"]);
+
+    /*
+      The same control for eye GEOMETRY, which needs its own because the roll
+      never draws it — the composed prompt above contains no EYE SHAPE line to
+      delete. So one is put on the identity, its sentence composed, then cut.
+      Anything less proves only that a nulled axis is excused, which is exactly
+      the hole an always-null axis could hide in.
+    */
+    const refined = {
+      ...ctx,
+      identity: {
+        ...ctx.identity,
+        realized: { ...ctx.identity.realized, eyeShape: "hooded" as const },
+      },
+    };
+    const shapePrompt = `${subject!.prompt} EYE SHAPE: hooded — a fold of upper lid skin.`;
+    expect(sweepComposedPrompt(shapePrompt, refined)).toEqual([]);
+    const shapeCaught = sweepComposedPrompt(subject!.prompt, refined).map((f) => f.axis);
+    expect(shapeCaught).toEqual(["eyeShape"]);
 
     // And a sex flip in the record is visible — "male" must not pass on "female".
     const flipped = {
