@@ -3642,6 +3642,43 @@ styled-not-worn hijab did (A9, D-124).
 argued there without reopening the design: the list is a vocabulary, and
 swapping a name or dropping a member costs one constant and one prose line.
 
+## D-129 — The structural-features licence does NOT cover ordinary feature shape. Finding, not yet a fix.
+
+Measured 2026-08-03 on the founder's rider, which asked for proof rather than
+presumption. The presumption would have been wrong.
+
+**Both briefs reach every prompt — 8/8 — and neither does so through the
+licence.** They travel as `characterNotes`, the free-text character-detail
+channel, and land as `Character detail: button nose.` That is the *exact* shape
+D-124 named and closed for faith coverings: correct today, correct by accident
+of routing, and guaranteed by nothing.
+
+The licence enumerates *marks and damage* — "a broken or crooked nose, a scar, a
+cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark,
+freckling, active acne or acne scarring, weathered or sun-damaged skin, a shaved
+head, a tattoo". Its opening clause is broader ("a permanent physical feature"),
+but every example is a deviation from an unmarked face.
+
+- **A beauty mark is arguably in**, sitting next to "a birthmark", though the
+  user's actual word is not the listed one.
+- **A button nose is out.** It is a nose SHAPE, not a mark — the licence has no
+  example of ordinary feature geometry, so nothing tells the model that "render
+  it plainly, do not idealise it away, a named feature that fails to appear is
+  a failed candidate" applies to the shape of a nose.
+
+**Why that matters even though both render today.** The licence's teeth are the
+failed-candidate clause. Free text has none. So reaching the prompt is not the
+same as being guaranteed to render, and the idealising prior is strongest
+exactly where feature shape is concerned — a button nose is precisely the sort
+of thing a beauty prior "corrects" toward a conventional one.
+
+**Recorded rather than fixed**, because widening a licence in the cohort
+constant changes every candidate on every sheet, and the honest sequence is the
+one D-124 used: name the gap, get the ruling, then verify on paid renders in
+both directions. The proposed fix is one clause — extending the enumeration to
+ordinary feature geometry (nose, ear, chin and jaw shape) so a stated shape gets
+the same teeth a stated scar already has.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
