@@ -46,8 +46,6 @@ import {
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
-import { refineCandidate } from "../castingV2/refineService";
-import { listCandidateVariants, selectVariant } from "../db/castingV2Variants";
 import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { projectSignedCast } from "../castingV2/castProjection";
@@ -74,7 +72,6 @@ import {
   CastingV2OwnershipError,
   abandonCastingSession,
   createCastingSession,
-  getOwnedCandidateWithSelectedFace,
   getOwnedCastingSession,
   getOwnedRoll,
   getRollLineage,
@@ -494,111 +491,6 @@ export const castingV2Router = router({
         candidatePublicId: input.candidateId,
         name: input.name,
       });
-    }),
-
-  /**
-   * Refine one face — one paid edit, 25 credits (M8, D-121).
-   *
-   * Rate-limited on the generation bucket like every other paid surface. The
-   * instruction is capped at 200 characters because it is ONE adjustment, not a
-   * brief: the brief box is where a paragraph belongs, and a long instruction
-   * here is a sign somebody is trying to re-cast rather than refine.
-   */
-  refine: protectedProcedure
-    .input(
-      z
-        .object({
-          clientRequestId: z.string(),
-          candidateId: publicId,
-          instruction: z.string().trim().min(1).max(200),
-        })
-        .strict(),
-    )
-    .mutation(async ({ ctx, input }) => {
-      requireCastingV2(ctx.user.id);
-      assertClientRequestId(input.clientRequestId);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.generation);
-      return refineCandidate({}, {
-        userId: ctx.user.id,
-        clientRequestId: input.clientRequestId,
-        candidatePublicId: input.candidateId,
-        instruction: input.instruction,
-      });
-    }),
-
-  /**
-   * Choose which refinement of a face is THE face — free, and not a generation.
-   *
-   * `variantId: null` means the original. D-121 draws the line this procedure
-   * sits on: backing up to a variant that already exists is free selection,
-   * while removing a mid-stack instruction is a new combination and therefore a
-   * paid re-render. This one never spends, which is exactly why it must never
-   * be made to look like the paid one on the surface above it.
-   */
-  selectVariant: protectedProcedure
-    .input(
-      z
-        .object({
-          candidateId: publicId,
-          variantId: publicId.nullable(),
-        })
-        .strict(),
-    )
-    .mutation(async ({ ctx, input }) => {
-      requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
-      const selected = await selectVariant({
-        userId: ctx.user.id,
-        candidatePublicId: input.candidateId,
-        variantPublicId: input.variantId,
-      });
-      if (!selected) {
-        /*
-          Refusal rather than a silent no-op. The statement declines when the
-          candidate is not this user's, is not ready, or the variant does not
-          belong to it — and a 200 that changed nothing would leave the client
-          showing a face the server never selected.
-        */
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "That version is no longer available.",
-        });
-      }
-      return { selectedVariantId: input.variantId };
-    }),
-
-  /**
-   * The refinement stack of one face, oldest first.
-   *
-   * An explicit projection (invariant 8), and the field list is the whole point:
-   * the user's OWN instruction text and an image URL. Never `deltas`, never
-   * `internalPrompt`, never provider identity — those are the recipe, and the
-   * recipe never leaves the account that owns it, let alone through a read a
-   * viewer polls.
-   */
-  variants: protectedProcedure
-    .input(z.object({ candidateId: publicId }).strict())
-    .query(async ({ ctx, input }) => {
-      requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
-      const [face, variants] = await Promise.all([
-        getOwnedCandidateWithSelectedFace(ctx.user.id, input.candidateId),
-        listCandidateVariants(ctx.user.id, input.candidateId),
-      ]);
-      if (!face) throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
-      return {
-        selectedVariantId: face.variantPublicId,
-        originalImageUrl: face.candidate.imageKey ? storagePublicUrl(face.candidate.imageKey) : null,
-        variants: variants.map((variant) => ({
-          variantId: variant.publicId,
-          imageUrl: variant.imageKey ? storagePublicUrl(variant.imageKey) : null,
-          /* Their own words, returned to them — the only refinement text that
-             crosses this boundary. */
-          instructions: Array.isArray(variant.instructions)
-            ? variant.instructions.filter((entry): entry is string => typeof entry === "string")
-            : [],
-        })),
-      };
     }),
 
   /**

@@ -38,18 +38,6 @@ vi.mock("../db/connection", () => ({
   withTransaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({}),
 }));
 
-/*
-  The variant purge runs inside the SAME transaction as the candidate delete
-  (D-122), so the sweep's own tests have to know about it. Stubbed to "this
-  candidate had no refinements", which is every case this file was written for
-  — the variant-specific behaviour is proved in `castingV2Variants`'s own
-  statements, not by re-mocking the whole table here.
-*/
-vi.mock("../db/castingV2Variants", () => ({
-  listPurgeableVariantsIn: vi.fn(async () => []),
-  deleteVariantRowsIn: vi.fn(async () => 0),
-}));
-
 vi.mock("../db/storageCleanup", () => ({
   createStorageCleanupManifestIn: (_tx: unknown, ...args: unknown[]) =>
     calls.queueStorageCleanup(...args),
