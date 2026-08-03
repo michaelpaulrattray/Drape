@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1b0601be89951035"
+    "sourceFingerprint": "55ee97d366f5aedb"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 35
+      "moduleCount": 36
     },
     {
       "id": "domain:castingV2",
@@ -3287,6 +3287,12 @@
     {
       "id": "module:server/castingV2/realizedAxes.ts",
       "path": "server/castingV2/realizedAxes.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/renderFault.ts",
+      "path": "server/castingV2/renderFault.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8077,6 +8083,10 @@
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",
       "path": "server/castingV2/realizedAxes.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/renderFault.test.ts",
+      "path": "server/castingV2/renderFault.test.ts"
     },
     {
       "id": "test:server/castingV2/retentionExemption.test.ts",
@@ -16933,6 +16943,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/castingV2/renderFault.ts",
       "kind": "imports"
     },
     {

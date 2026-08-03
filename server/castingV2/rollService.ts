@@ -67,6 +67,7 @@ import {
 } from "../db/castingV2";
 import { storageDelete, storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
+import { detectRenderFault } from "./renderFault";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
@@ -639,6 +640,34 @@ async function dispatchCandidate(input: {
       quality: input.quality,
     });
 
+    /*
+      D-93's smoke alarm, IN SHADOW MODE (founder condition, 2026-08-03).
+
+      It classifies, persists its verdict and alarms. It does NOT auto-fail and
+      does NOT refund — not until its false-positive rate has been measured on
+      real founder traffic. The flip to enforcing is the D-93 gate itself, and
+      the founder ruled it happens on a measured number rather than on a green
+      suite.
+
+      Why shadow rather than straight to enforcing, given it already catches the
+      real specimen and fires on none of 47 real candidates: 47 is a dev corpus
+      of briefs I chose. The rate that matters is on the briefs the founder
+      actually casts, and a control that destroys paid work has to earn its
+      trigger against traffic rather than against a fixture set.
+    */
+    const renderFault = await detectRenderFault(image.bytes);
+    if (renderFault.fault) {
+      log.error(
+        {
+          operationId,
+          candidate: candidate.publicId,
+          detail: renderFault.detail,
+          shadowMode: true,
+        },
+        "[rollService] RENDER FAULT detected — shadow mode, candidate delivered anyway",
+      );
+    }
+
     // Bytes land in OUR storage before anything references them. A provider
     // URL is never persisted and never projected (§E, §J).
     const store = input.dependencies.storeImage ?? defaultStoreImage;
@@ -657,6 +686,26 @@ async function dispatchCandidate(input: {
       await updateGeneration(auditId, {
         status: "completed",
         completedAt: new Date(),
+        /*
+          The verdict rides on the audit row rather than on the candidate.
+
+          Two reasons. It needs no migration, so shadow mode can reach
+          production — which is the only place the rate that matters can be
+          measured — without a schema ceremony. And it is genuinely audit
+          rather than product: the candidate row describes what the customer
+          got, and in shadow mode they got the image either way.
+
+          Every verdict is written, not only the faults. A file that records
+          only fires cannot tell "no faults today" from "the detector stopped
+          running", which is the inert-control failure this program keeps
+          meeting.
+        */
+        metadata: {
+          renderFault: renderFault.fault,
+          renderFaultReason: renderFault.reason,
+          ...(renderFault.detail ? { renderFaultDetail: renderFault.detail } : {}),
+          renderFaultMode: "shadow",
+        },
       });
     }
 

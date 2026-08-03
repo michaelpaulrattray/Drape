@@ -432,3 +432,49 @@ describe("cancel", () => {
     expect(refunds).toHaveLength(0);
   });
 });
+
+/**
+ * D-93's smoke alarm, in the mode the founder ruled it must ship in.
+ *
+ * "The detector classifies, persists its verdict, and alarms — but does NOT
+ * auto-fail or refund — until its false-positive rate is measured on real
+ * founder traffic."
+ *
+ * That is a promise about MONEY, so it is asserted against money: the real
+ * D-93 specimen goes through the paid path and the customer keeps every
+ * candidate and every credit.
+ */
+describe("the render-fault detector in shadow mode", () => {
+  it("delivers and charges normally even when every candidate is a contact sheet", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const specimen = await readFile(
+      new URL("../../docs/specs/references/nine-tile-sheet.png", import.meta.url),
+    );
+
+    // `baseDependencies` is typed `never` for the callers that pass it
+    // straight through; spreading needs a shape.
+    const dependencies = {
+      ...(baseDependencies() as Record<string, unknown>),
+      engine: () => ({
+        id: "fal:test",
+        generateCandidate: vi.fn(async () => ({
+          // The actual failure, not a stand-in. If the detector ever moves to
+          // enforcing without this test being rewritten, this goes red.
+          bytes: specimen,
+          contentType: "image/png",
+          latencyMs: 1,
+          provenance: { provider: "fal" as const, model: "openai/gpt-image-2", providerRef: "req" },
+        })),
+      }),
+    } as never;
+
+    const result = await createRoll(dependencies, INPUT);
+
+    expect(result.ready).toBe(8);
+    expect(result.failed).toBe(0);
+    // The whole point: no slice was taken back, because shadow mode does not
+    // decide anything about money.
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toHaveLength(0);
+  });
+});
