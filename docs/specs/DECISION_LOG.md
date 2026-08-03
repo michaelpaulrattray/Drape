@@ -3719,6 +3719,151 @@ vocabularies are the load-bearing part rather than the registration.
 
 Evidence: `docs/specs/evidence/refine/d129-{stated,unstated}.jpg`.
 
+## D-131 — Refine is OPEN-EXCEPT-WALLS. The catalogue is the guarantee lane, never the gate.
+
+Founder ruling, 2026-08-04. Supersedes the tier-by-tier rollout.
+
+Every person-touching instruction gets an honest attempt — cuts beyond the 36,
+arbitrary colours, brows, lashes, feature shapes, visible marks, ink. The
+engineered catalogue continues underneath as the **guarantee lane**: where a
+value is expressible in an engineered vocabulary it is promoted into it and
+keeps its prose and its failed-candidate teeth. Everything else runs in the
+**free lane**, whose copy is honest that it is an attempt.
+
+**Four absolute walls. A refusal always names which one it hit.**
+
+  (a) **Identity / likeness** — never another person.
+  (b) **Person, never stage** — wardrobe, backdrops and props stay post-Sign.
+  (c) **Every image-text, brand and safety guard rides every instruction.**
+  (d) **Every free-lane ask files into the variant's record, or it refuses.**
+      No render the paperwork did not learn.
+
+**Wall (d) is structural, not disciplinary** (advisor, and it is why the build
+is shaped as it is): the edit prompt composes from the PERSISTED
+`variant.deltas`, re-validated, rather than from the in-memory object that
+happens to match it. Anything filing drops is therefore absent from the prompt
+too, so a failure degrades to filed-but-not-rendered — which the sweep can see
+— and never to rendered-but-not-filed, which nothing can.
+
+**The subject vocabulary is CODE-OWNED; only values are free.** A model-authored
+subject string hands the composition key to the model, which is what D-89
+forbids: "her brows" arrives as brows, brow shape, eyebrows; last-writer-wins
+silently becomes accumulation; and "thin" and "thick" end up in one prompt
+arguing. Closed subjects also ARE wall (b): a red coat has no subject to file
+under, so the wall is a missing slot rather than an instruction.
+
+**The guarantee lane stays guaranteed by promotion, not by prompt.** Guaranteed
+subjects are excluded from the free-lane vocabulary at the type level, and the
+parser re-checks every free entry: expressible in an engineered vocabulary
+becomes a promotion; a guaranteed subject filed free rejects the whole reply. A
+saboteur engine that deliberately routes "green eyes" into the free lane proves
+it cannot land there regardless of what the interpreter does.
+
+## D-132 — Every body-art design gets a document. Words commission it; only pixels render it.
+
+Founder ruling, 2026-08-04.
+
+A reference image supplied: derive a clean flat plate, riding the refine, free.
+Words only: generate the flash FROM the words at the standard 25, and the user
+approves or regenerates the artwork **before it touches the cast**. The accepted
+plate is a cast-lifetime asset in private storage, with the content walls
+applying to it as to anything else — no lettering, no logos.
+
+**The principle, on the record: words commission the document; only pixels
+render. Words are never load-bearing for a design.** A description is not a
+design, it is a request for one, and rendering ink straight from a sentence
+produces a different tattoo in every frame — which is a person who does not
+have one tattoo.
+
+## D-133 — Ink placement law: pixels only, and nothing invisible is ever charged.
+
+Founder ruling, 2026-08-04. Three cases, by what the canonical frames can see.
+
+**(a) Fully in-frame** (face, neck). Apply only, one generation at 25. The
+anchor IS the document, and the conformance judge referees it into every view
+for free.
+
+**(b) Fully covered** (chest, back). Plate only at 25, nothing applied, with an
+honest confession — *recorded; appears when wardrobe reveals it*. The skin-truth
+views render it at Sign, judged against the plate as reference.
+
+**(c) Partially visible** (a sleeve). Plate first at 25, then a **mandatory**
+application from the plate at 25. Mandatory because Sign copies and never
+invents and the judge referees views against the anchor, so the anchor must
+carry every fact the canonical frames will show. **Two steps are always shown as
+two steps.**
+
+**Words-only ink records are dormant notes.** They render nothing, anywhere,
+until a plate is commissioned. There is no drift-disclaimed path.
+
+Ink files as a **permanent identity fact**: Follow inherits it, and the
+conformance judge only judges it where a reference can establish it.
+Bodysuit-scale editorial ink refuses with the worlds-era pointer.
+
+## D-134 — The skin-truth slice: two hidden base-layer views, after the dogfood.
+
+Founder ruling, 2026-08-04. Built after the founder's dogfood, before VTO.
+
+Two views generated at Sign — full front and full back, neutral undergarment —
+under conditions that are all mandatory:
+
+- **judged like real views**: identity axis, D-114's one retry, graceful
+  degradation, so a failed doll view never blocks the Sign;
+- **free to the customer**, absorbed, never on a receipt;
+- **private bucket and an authenticated route only** — never the public bucket,
+  never in the room, the downloads, the character sheet or the view-count copy,
+  and excluded at the projection by construction rather than by omission;
+- a one-page dignified **per-sex base-layer spec**, V1 precedent as the start;
+- two new view names mean a **migration** (founder ceremony) and D-102's
+  widen-or-refuse discipline at every legacy reader.
+
+The production private-bucket configuration is a founder Railway item, requested
+when the slice is ready to land.
+
+## D-135 — The face-completeness sweep, because lips and teeth were about to be nobody's.
+
+Founder ruling, 2026-08-04.
+
+**(a)** Lip shape and teeth character register as never-drawn axes exactly as
+eye shape did — 180-draw null pin, bit-identical sheets, mutation-verified red.
+Teeth and dimples carry **conditional visibility**: rendered when the expression
+shows them, recorded regardless. Engineered vocabularies wait for dogfood
+evidence. (D-130 is early evidence that the vocabularies, not the registration,
+are the load-bearing half.)
+
+**(b)** Vitiligo, albinism and large birthmarks get the **D-124 dignity
+treatment**: stated-only forever, never inferred, engineered respectful
+translations aimed at accuracy rather than the prior's caricature,
+failed-candidate teeth, driver-verified in both directions.
+
+**(c)** Heterochromia files as a **source-contained stated detail**, because the
+single eye-colour field cannot hold per-eye colour. The schema widening is
+recorded as a known registry limit rather than quietly worked around.
+
+**(d)** Stated height files as record metadata, for the comp-card era to read.
+
+**(e)** Then the sweep itself: walk the full inventory of sayable human features
+against the axis registry and file every unowned-but-sayable one as never-drawn.
+
+## D-136 — Expression is presentation state. Follow never inherits it.
+
+Founder ruling, 2026-08-04. Expression joins the free lane — "a warm open
+smile" — under a filing law different from every other free-lane subject, and
+the difference is the whole entry.
+
+**Expression records as the variant's PRESENTATION STATE, not as identity.** A
+follow means "more people like this one", and inheriting a smile would make a
+momentary choice permanent for eight strangers. The destination is a property
+the code owns, not the identity blob — `readResolvedIdentity` passes unknown
+fields through whole, so filing expression into the identity would make it
+heritable by default.
+
+**But features an expression REVEALS file as identity facts at first showing.**
+Teeth character is a fact about the person; the smile that showed it is not.
+
+Sign signs the selected variant, expression included, and the confirm quietly
+reflects it.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
