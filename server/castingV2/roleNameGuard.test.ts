@@ -172,3 +172,70 @@ describe("the guard is invoked on the real compile path", () => {
     }
   });
 });
+
+/**
+ * THE MEASURED DEFECT, and the controls that stop its fix reopening D-82.
+ *
+ * "a twitch streamer" returned `role: null` on 12 of 120 live samples (10.0%,
+ * 95% CI 5.8–16.7%), and 11 of those were this guard firing on a role the
+ * interpreter had written correctly — it capitalizes Twitch, because Twitch is
+ * a proper noun, and the guard could not tell a platform from a person.
+ *
+ * These run on every change. The paid golden harness cannot be the only thing
+ * standing between us and a 10% category loss, because it does not run on every
+ * change and a 10% event hides from a single pass.
+ */
+describe("a platform is not a person", () => {
+  it("keeps the category whichever way the interpreter capitalizes it", () => {
+    // Both casings observed live: "a Twitch streamer" was dropped, the
+    // lowercase forms were kept. They must now agree.
+    for (const role of ["a Twitch streamer", "a twitch streamer", "twitch streamer"]) {
+      expect(namesUnknownProperNoun(role, { mode: "phrase" }), role).toBe(false);
+    }
+  });
+
+  it("keeps the platform and institution categories of the same class", () => {
+    for (const role of [
+      "a YouTube creator",
+      "a TikTok dancer",
+      "an Instagram model",
+      "a K-pop idol",
+      "an Olympic swimmer",
+      "a Michelin-starred chef",
+      "an NBA player",
+    ]) {
+      expect(namesUnknownProperNoun(role, { mode: "phrase" }), role).toBe(false);
+    }
+  });
+
+  /*
+    THE LOOSENING CONTROLS. This change made the guard more permissive, and the
+    thing it must never become permissive about is a person — the D-82 defect
+    cost provider refusals on a paid roll.
+  */
+  it("still nulls the director that D-82 was written for", () => {
+    expect(namesUnknownProperNoun("a Wes Anderson casting, mid 30s", { mode: "phrase" })).toBe(true);
+    expect(namesUnknownProperNoun("Zendaya lookalike", { mode: "phrase" })).toBe(true);
+  });
+
+  /*
+    A vouched word does not vouch for its neighbours. This is the shape a
+    list-based fix fails in: "the platform is fine, therefore the phrase is
+    fine". Every token is tested on its own.
+  */
+  it("still fires when an unknown name stands next to a vouched one", () => {
+    expect(namesUnknownProperNoun("a Twitch streamer called Ninja", { mode: "phrase" })).toBe(true);
+    expect(namesUnknownProperNoun("Pokimane Twitch streamer", { mode: "phrase" })).toBe(true);
+    expect(namesUnknownProperNoun("a YouTube creator like MrBeast", { mode: "phrase" })).toBe(true);
+  });
+
+  it("vouches nothing it was not given — an unlisted platform still fails closed", () => {
+    // Not a regression: this is exactly today's behaviour, and it is the
+    // property that makes the list safe to hold at all.
+    expect(namesUnknownProperNoun("a Kick streamer", { mode: "phrase" })).toBe(true);
+  });
+
+  it("keeps the leading-article and vocabulary over-reaches pinned", () => {
+    expect(namesUnknownProperNoun("An East Asian model", { mode: "phrase" })).toBe(false);
+  });
+});

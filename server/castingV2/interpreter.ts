@@ -482,8 +482,36 @@ export async function interpretBrief(input: {
         carries eight `reads` past the old ceiling. Same lesson as the 500, one
         field later: a truncated reply does not degrade to a missing field, it
         fails the whole parse and drops every lock the brief stated.
+
+        **Raised 1800 → 5000 on 2026-08-03, and this one was MEASURED BEFORE it
+        shipped rather than after a silent loss.** Every previous raise was
+        reactive; `scripts/measure-role-null.mts` was pointed at the ceiling
+        instead, and found it still biting hard on the briefs that produce the
+        most content:
+
+          "a 30 year old heavy metal bogan", n=40 at 1800:
+            truncated on the first attempt  10/40 (25%)
+            compile FELL BACK                2/40 (5%)   <- every lock lost
+            latency p50/p95                  19.5s / 44.0s
+
+          the same brief, n=40 at 5000:
+            truncated on the first attempt   0/40 (0%)
+            compile fell back                0/40 (0%)
+            latency p50/p95                  21.4s / 28.0s
+
+        One in twenty of those rolls was being cast from the raw sentence with
+        every stated fact gone, on a paid roll, silently — D-83's retry was
+        catching the rest and hiding how close the class still was. The screen
+        showed the same bite at 25% on "a Margiela runway face" and 10% on the
+        miu miu brief, and 0% on the six plainer briefs, so it is the
+        content-heavy replies that overrun.
+
+        **p95 latency IMPROVED**, because a retry is a whole second round trip:
+        the tight ceiling was costing time as well as locks. And the ceiling is
+        a CAP, not a reservation — an unused token is not billed — so the
+        headroom is free. There is no reason to keep this number close.
       */
-      maxOutputTokens: 1800,
+      maxOutputTokens: 5000,
       signal: input.signal,
     });
 

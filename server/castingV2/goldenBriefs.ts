@@ -131,7 +131,7 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
     brief: "a twitch streamer",
     category: true,
     because:
-      "THE AGE-TENDENCY CASE. Nothing in the sentence states an age, so the band drew from the general population and the sheet came back with people who do not stream. The category knows something the brief never says. Bar: the sheet centres on the 20s WITHOUT collapsing to it — an older streamer must stay reachable, because an unusual casting is surprising and not wrong.",
+      "THE AGE-TENDENCY CASE. Nothing in the sentence states an age, so the band drew from the general population and the sheet came back with people who do not stream. The category knows something the brief never says. Bar: the sheet centres on the 20s WITHOUT collapsing to it — an older streamer must stay reachable, because an unusual casting is surprising and not wrong. SECOND BAR, added 2026-08-03 after the miss was finally measured: `role` must survive. It was coming back null on 12 of 120 live samples (10.0%, 95% CI 5.8-16.7%) — and 11 of those were OUR OWN proper-noun guard nulling a role the interpreter had written correctly as 'a Twitch streamer', because the guard could not tell a platform from a person. Fixed by vouching non-people in `properNouns.ts`; re-measured 0 of 120 (95% CI 0.0-3.1%), with the twelve capitalised draws in that run all kept. The load-bearing guard is `roleNameGuard.test.ts`, which runs on every change — this harness is paid and cannot be the only thing watching a one-in-ten event.",
   },
   {
     brief: "a k-pop idol",
