@@ -2333,15 +2333,7 @@
   opacity: 1;
 }
 
-/*
-  NOT `dp-chrome`. That class is mono, and mono is for chrome labels — "01",
-  "Roll 2" — never for sentences. What sits here is the user's OWN instruction,
-  which is content, and setting someone's words in 10px letter-spaced monospace
-  makes them harder to read than the thing they are labelling.
-*/
 .dpc-refine__step > span {
-  font-family: var(--font-sans);
-  letter-spacing: normal;
   font-size: 10.5px;
   line-height: 1.25;
   max-width: 64px;
@@ -2382,11 +2374,8 @@
 
 .dpc-refine__field::placeholder { color: color-mix(in srgb, var(--onScrim) 46%, transparent); }
 
-/* A sentence, so it is set as one — same reason as the step labels above. */
 .dpc-refine__note {
   margin: 0;
-  font-family: var(--font-sans);
-  letter-spacing: normal;
   font-size: 11.5px;
   color: var(--onScrim);
   opacity: 0.6;
