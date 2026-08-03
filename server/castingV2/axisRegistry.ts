@@ -119,8 +119,9 @@ export type AxisValues = {
   look: LookKey | null;
   /* shelf 2 — realized axes (the eight of `RealizedAxes`, plus hair colour) */
   eyeColour: EyeColour | null;
-  /* Never drawn by the roll; set only by a refinement (M8). See the row. */
+  /* Never drawn by the roll; set only by a refinement (M8). See the rows. */
   eyeShape: EyeShape | null;
+  makeup: string | null;
   hairStyle: HairStyle | null;
   facialHair: FacialHair | null;
   hairTexture: HairTexture | null;
@@ -772,6 +773,27 @@ export const AXIS_REGISTRY = {
     silent: [],
     read: (ctx) => ctx.identity.realized.eyeShape,
     footprint: (value, prompt) => has(prompt, `EYE SHAPE: ${value}`),
+  },
+  /**
+   * Stated makeup (M8) — free text, and registered anyway.
+   *
+   * The absence of a closed vocabulary is not an excuse to skip registration:
+   * an unregistered axis is one the sweep cannot see, and a makeup string
+   * persisted into a variant and then dropped on a follow would be the unowned
+   * collapse with a different value type.
+   */
+  makeup: {
+    key: "makeup",
+    shelf: "realized",
+    kind: "described",
+    lockable: false,
+    unlockable: false,
+    overridable: false,
+    tiers: ALL_TIERS,
+    suppressors: [],
+    silent: [],
+    read: (ctx) => ctx.identity.realized.makeup,
+    footprint: (value, prompt) => has(prompt, `MAKEUP: ${value}`),
   },
   browStyle: {
     key: "browStyle",

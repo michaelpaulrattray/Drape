@@ -461,6 +461,9 @@ export function realizeAxes(input: {
       guarantee has to be mechanical.
     */
     eyeShape: null,
+    /* Never drawn, for D-116's reason: the dice stay bare and eight unmade
+       faces are the default. Only a stated fact or a refinement sets it. */
+    makeup: null,
     hairStyle,
     /*
       The cut's authored components (D10), resolved beside the cut they belong
@@ -534,6 +537,14 @@ export function describeRealizedAxes(
   */
   if (axes.eyeShape) {
     parts.push(`EYE SHAPE: ${axes.eyeShape} — ${EYE_SHAPE_RENDER[axes.eyeShape]}.`);
+  }
+  /*
+    The user's own words, because there is no enum to translate. The STATED
+    MAKEUP licence in the cohort constant is what gives them teeth — this line
+    only has to put them where that licence can see them.
+  */
+  if (axes.makeup) {
+    parts.push(`MAKEUP: ${axes.makeup}.`);
   }
   if (axes.facialHair && !stated("facialHair")) {
     /*

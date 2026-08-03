@@ -40,6 +40,10 @@ import {
 } from "../../shared/castingRealization";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { HAIR_STYLE_NAMES, hairStyleByName } from "./hairStyles";
+import { scrubBrands } from "./brandScrub";
+
+/** One adjustment, not a paragraph — the brief box is where prose belongs. */
+const MAX_MAKEUP_LENGTH = 80;
 import type { ResolvedIdentity } from "./castingIntent";
 
 /**
@@ -61,6 +65,7 @@ export const REFINABLE_AXES = [
   "hairStyle",
   "hairColour",
   "hairTexture",
+  "makeup",
 ] as const;
 export type RefinableAxis = (typeof REFINABLE_AXES)[number];
 
@@ -71,6 +76,8 @@ export type RefineDelta = {
   hairStyle?: string;
   hairColour?: HairColour;
   hairTexture?: HairTexture;
+  /** Free text, capped and brand-scrubbed — §10's labelled slot. */
+  makeup?: string;
 };
 
 /**
@@ -122,6 +129,20 @@ export function readDelta(value: unknown): RefineDelta | null {
     if (!HAIR_TEXTURES.includes(raw.hairTexture as HairTexture)) return null;
     delta.hairTexture = raw.hairTexture as HairTexture;
   }
+  /*
+    MAKEUP — the one slot with no enum behind it, so the code owns its SHAPE
+    instead of its vocabulary: capped, brand-scrubbed, and rejected outright if
+    scrubbing empties it. A brand name in a paid prompt is the guard every other
+    free-text field in this program already carries, and length is what stops an
+    instruction becoming a second brief.
+  */
+  if (raw.makeup != null) {
+    if (typeof raw.makeup !== "string") return null;
+    const scrubbed = scrubBrands(raw.makeup.trim());
+    const cleaned = scrubbed?.trim() ?? "";
+    if (!cleaned || cleaned.length > MAX_MAKEUP_LENGTH) return null;
+    delta.makeup = cleaned;
+  }
   /* An empty delta is not a delta. Charging for a generation that changes
      nothing is the worst possible outcome of a misread instruction. */
   return Object.keys(delta).length > 0 ? delta : null;
@@ -143,6 +164,7 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
     if (delta.hairStyle != null) composed.hairStyle = delta.hairStyle;
     if (delta.hairColour != null) composed.hairColour = delta.hairColour;
     if (delta.hairTexture != null) composed.hairTexture = delta.hairTexture;
+    if (delta.makeup != null) composed.makeup = delta.makeup;
   }
   return composed;
 }
@@ -190,6 +212,7 @@ export function applyDelta(original: ResolvedIdentity, delta: RefineDelta): Reso
       ...original.realized,
       ...(delta.eyeColour != null ? { eyeColour: delta.eyeColour } : {}),
       ...(delta.eyeShape != null ? { eyeShape: delta.eyeShape } : {}),
+      ...(delta.makeup != null ? { makeup: delta.makeup } : {}),
       ...(style ? { hairStyle: style } : {}),
       /*
         A cut that dictates its own texture WINS over a stated one, because the
@@ -239,6 +262,15 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
     instructions invite the model to weigh them against each other — the same
     reason beard greying rides the facial-hair line rather than getting its own.
   */
+  if (delta.makeup != null) {
+    /*
+      The user's own words, not a translation — there is no enum to translate
+      into, and paraphrasing "a red lip" would be inventing a specificity they
+      did not ask for. The STATED MAKEUP licence in the cohort constant is what
+      gives them teeth.
+    */
+    edits.push(`Apply makeup: ${delta.makeup}. Everything else about the face stays bare.`);
+  }
   const hair: string[] = [];
   if (delta.hairStyle != null) hair.push(`cut into ${prose.hairStyle(delta.hairStyle)}`);
   if (delta.hairColour != null) hair.push(`coloured ${prose.hairColour(delta.hairColour)}`);

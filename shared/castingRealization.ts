@@ -167,6 +167,20 @@ export type RealizedAxes = {
    * then dropped on a follow would be unowned-axis instance seven.
    */
   eyeShape: EyeShape | null;
+  /**
+   * Stated makeup — the one refinable axis with NO closed vocabulary (M8).
+   *
+   * §10 anticipated exactly this: closed vocabularies wherever one exists, plus
+   * a capped labelled free-text slot for the things no enum holds. Makeup is
+   * that slot — "a red lip", "a smoky eye with winged liner", "dewy skin and
+   * bare brows" — and an enum would either be enormous or wrong.
+   *
+   * Free text does NOT mean unowned. It is registered like every other axis, so
+   * the D-87 sweep proves it composes wherever it is read, and it is null on
+   * every candidate the roll draws: the dice stay bare (D-116), and eight
+   * unmade faces remain the default that a stated fact overrides.
+   */
+  makeup: string | null;
   /** The named cut. Carries its own coherent length and, sometimes, texture. */
   /*
     NULL when deference suppressed it. The persisted identity is the M7
@@ -223,6 +237,7 @@ export type BeardGrey = (typeof BEARD_GREYS)[number];
 export const REALIZED_AXIS_KEYS = [
   "eyeColour",
   "eyeShape",
+  "makeup",
   "hairStyle",
   "facialHair",
   "hairTexture",

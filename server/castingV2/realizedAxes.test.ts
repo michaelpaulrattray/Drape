@@ -314,18 +314,23 @@ describe("the registry", () => {
  * "We simply never set it" is a convention, and conventions are what this whole
  * registry exists because of. So it is measured over a wide draw instead.
  */
-describe("the roll never draws an eye shape", () => {
+describe("the roll never draws an eye shape or makeup", () => {
   it("returns null across heritages, ages and sexes", () => {
     const drawn = new Set<unknown>();
+    const makeupDrawn = new Set<unknown>();
     for (const heritageName of ["Nordic", "West African", "East Asian", "South Asian", "Levantine"]) {
       for (const ageBand of ["teens", "20s", "40s", "70s+"] as const) {
         for (const sex of ["male", "female", "nonbinary"] as const) {
           for (const axes of realizeEight({ heritage: heritageName, ageBand, sex, seed: `${heritageName}${ageBand}${sex}` })) {
             drawn.add(axes.eyeShape);
+            makeupDrawn.add(axes.makeup);
           }
         }
       }
     }
     expect([...drawn]).toEqual([null]);
+    /* Makeup rides the same law for D-116's reason: the dice stay bare, and
+       eight unmade faces are the default a stated fact overrides. */
+    expect([...makeupDrawn]).toEqual([null]);
   });
 });

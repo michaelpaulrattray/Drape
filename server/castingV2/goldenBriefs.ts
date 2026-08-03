@@ -205,6 +205,7 @@ export type GoldenRefinement = {
     hairStyle?: string;
     hairColour?: string;
     hairTexture?: string;
+    makeup?: string;
   } | null;
   because: string;
 };
@@ -283,8 +284,26 @@ export const GOLDEN_REFINEMENTS: readonly GoldenRefinement[] = [
   },
   {
     instruction: "give her red lipstick",
+    delta: { makeup: "red lipstick" },
+    because:
+      "THE SECOND ONE THAT MOVED. It was the sharpest refusal on the list while makeup was the next tier — adjacent, plausible, not yet real — and it says so in its own history. The day makeup shipped it became a parse case, exactly as written.",
+  },
+  {
+    instruction: "give her a smoky eye and a nude lip",
+    delta: { makeup: "a smoky eye and a nude lip" },
+    because:
+      "The free-text slot doing what an enum could not. Two makeup facts in one sentence, kept in the user's own words rather than paraphrased into a specificity they did not ask for.",
+  },
+  {
+    instruction: "take her makeup off",
+    delta: { makeup: "none, a completely bare face" },
+    because:
+      "REMOVAL IS STILL AN INSTRUCTION. The tempting wrong answer is a refusal or an empty delta — and an empty delta is refused by construction, so this would land as 'unreadable' and read to the user as a bug rather than an answer.",
+  },
+  {
+    instruction: "put a scar on her cheek",
     delta: null,
     because:
-      "Makeup is the NEXT tier, which makes it the sharpest refusal on the list: it is adjacent, plausible, and not yet real. The day it ships this entry moves rather than disappears.",
+      "The new sharpest refusal, and it is deliberately the one D-129 is about: structural features are real in the BRIEF but are not a refinement axis. Adjacent, plausible, not yet real — the role 'give her red lipstick' used to hold.",
   },
 ] as const;

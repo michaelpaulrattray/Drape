@@ -174,6 +174,7 @@ export async function refineCandidate(
        exception, and the reason "make it lighter" needs it read from there. */
     currentHairColour: currentIdentity?.hair?.colour ?? null,
     currentHairTexture: currentIdentity?.realized?.hairTexture ?? null,
+    currentMakeup: currentIdentity?.realized?.makeup ?? null,
   });
   if (!parsed.ok) {
     // An honest boundary, not a fault — and free, which is the point of §10.

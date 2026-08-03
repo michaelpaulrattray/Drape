@@ -341,6 +341,9 @@ const FOLLOWED_WITH_SHAPE = {
     eyeColour: "blue",
     /* What a refine writes, and what the follow must carry through. */
     eyeShape: "hooded",
+    /* Free text on the same never-drawn footing — registered so the sweep can
+       see it, and set only by a refinement. */
+    makeup: "a red lip",
     hairStyle: { name: "low bun", family: "long", worn: "worn up" },
     facialHair: null,
     hairTexture: "straight",
@@ -446,7 +449,7 @@ describe("the unowned-axis sweep", () => {
    * So the sweep is FED one. This is the test that fails, naming `eyeShape`, if
    * anybody removes the emitter or persists the axis without composing it.
    */
-  it("composes an eye shape a refinement put on a follow's identity", async () => {
+  it("composes the eye shape AND makeup a refinement put on a follow's identity", async () => {
     const findings = await sweepBrief({
       briefText: "a females 23 high fashion editorial casting",
       rollSeed: "sweep-follow-eyeshape",
@@ -471,6 +474,8 @@ describe("the unowned-axis sweep", () => {
     });
     expect(inherited.every((c) => c.resolvedIdentity.realized.eyeShape === "hooded")).toBe(true);
     expect(inherited.every((c) => c.prompt.includes("EYE SHAPE: hooded"))).toBe(true);
+    expect(inherited.every((c) => c.resolvedIdentity.realized.makeup === "a red lip")).toBe(true);
+    expect(inherited.every((c) => c.prompt.includes("MAKEUP: a red lip"))).toBe(true);
   });
 
   /**

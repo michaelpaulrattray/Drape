@@ -240,6 +240,7 @@ describe("locks", () => {
       look: null,
       realized: {
         eyeShape: null,
+    makeup: null,
     eyeColour: "brown",
         hairStyle: { name: "plain short cut", family: "short" },
         facialHair: "clean-shaven",

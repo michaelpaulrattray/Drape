@@ -59,6 +59,7 @@ const BLONDE_WOMAN: FollowAnchor = {
   look: null,
   realized: {
     eyeShape: null,
+    makeup: null,
     eyeColour: "pale blue",
     hairStyle: { name: "simple long hair", family: "long" },
     facialHair: null,

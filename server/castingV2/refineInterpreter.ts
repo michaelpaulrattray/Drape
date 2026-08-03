@@ -46,12 +46,13 @@ const SYSTEM_PROMPT = [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
-  "The ONLY things that can be changed are the eyes and the hair:",
+  "The ONLY things that can be changed are the eyes, the hair and the makeup:",
   `  eyeColour   — one of: ${EYE_COLOURS.join(", ")}`,
   `  eyeShape    — one of: ${EYE_SHAPES.join(", ")}`,
   `  hairColour  — one of: ${HAIR_COLOURS.join(", ")}`,
   `  hairTexture — one of: ${HAIR_TEXTURES.join(", ")}`,
   `  hairStyle   — one of: ${HAIR_STYLE_NAMES.join(", ")}`,
+  "  makeup      — FREE TEXT, under 80 characters, in the user's own terms",
   "",
   "Reply with JSON and nothing else.",
   "",
@@ -64,13 +65,17 @@ const SYSTEM_PROMPT = [
   'A cut name is hairStyle, not hairTexture: "give her a bob" is {"hairStyle": "bob"}. Use',
   "hairTexture only when the ask is about curl pattern rather than about the cut.",
   "",
-  'If the instruction asks for ANYTHING else — age, heritage, sex, build, makeup, expression,',
+  "makeup is the ONLY free-text field. Keep the user's own words — \"a red lip\" stays \"a red lip\"",
+  '— and never name a brand or a product. "take her makeup off" is {"makeup": "none, a completely',
+  'bare face"}, because removing makeup is still a makeup instruction.',
+  "",
+  'If the instruction asks for ANYTHING else — age, heritage, sex, build, expression,',
   'clothing, background, weight, beauty, "make her prettier", a different person — reply',
   '{"outOfTier": "<the thing they want changed, as a short NOUN PHRASE>"}.',
   '',
   'The noun phrase must fit the sentence "Refining can\'t change ___ yet." So:',
   '  "make her older"          → {"outOfTier": "her age"}',
-  '  "give her red lipstick"   → {"outOfTier": "her makeup"}',
+  '  "put a scar on her cheek" → {"outOfTier": "her face structure"}',
   '  "make her prettier"       → {"outOfTier": "how attractive she looks"}',
   '  "put her in a red coat"   → {"outOfTier": "what she is wearing"}',
   'Never echo the instruction back as the noun phrase.',
@@ -86,6 +91,7 @@ export type RefineInterpretInput = {
   currentHairStyle?: string | null;
   currentHairColour?: string | null;
   currentHairTexture?: string | null;
+  currentMakeup?: string | null;
   engine?: TextEngine;
   signal?: AbortSignal;
 };
@@ -111,6 +117,7 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
         `Current hair cut: ${input.currentHairStyle ?? "unknown"}`,
         `Current hair colour: ${input.currentHairColour ?? "unknown"}`,
         `Current hair texture: ${input.currentHairTexture ?? "unknown"}`,
+        `Current makeup: ${input.currentMakeup ?? "none — a bare face"}`,
         `Instruction: ${instruction}`,
       ].join("\n"),
       json: true,
@@ -163,12 +170,12 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
         "only the eyes", the day hair shipped, would have sent people away from
         something the product could do.
       */
-      return `Refining can't change ${refusal.refusal.asked} yet — only the eyes and hair. `
+      return `Refining can't change ${refusal.refusal.asked} yet — only the eyes, hair and makeup. `
         + "Rolling again with that in the brief will get you closer. Nothing was charged.";
     case "empty":
-      return "Say what you'd like changed about the eyes or the hair.";
+      return "Say what you'd like changed about the eyes, the hair or the makeup.";
     case "unreadable":
-      return "That one didn't come through clearly — try naming the eye colour or shape, or the "
-        + "hair colour, cut or texture you want. Nothing was charged.";
+      return "That one didn't come through clearly — try naming the eye colour or shape, the hair "
+        + "colour, cut or texture, or the makeup you want. Nothing was charged.";
   }
 }
