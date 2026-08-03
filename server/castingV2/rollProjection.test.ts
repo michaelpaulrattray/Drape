@@ -17,8 +17,21 @@ const { projectCandidate, projectCandidateStatus, projectRoll, readChips } = awa
  * somebody later adding a field to the row and the projection inheriting it.
  */
 
+/**
+ * A candidate row as the DB layer now hands it over — with its face resolved.
+ *
+ * The face defaults to the candidate's own image, which is the unrefined case
+ * and the one every assertion here was written against. A test that wants a
+ * refined face overrides `faceImageKey` / `selectedVariantPublicId`.
+ */
 function candidateRow(overrides: Record<string, unknown> = {}) {
+  const imageKey = (overrides.imageKey as string | null | undefined) ?? "casting-v2/candidates/abc.png";
+  const thumbKey = (overrides.thumbKey as string | null | undefined) ?? null;
   return {
+    selectedVariantId: null,
+    selectedVariantPublicId: null,
+    faceImageKey: imageKey,
+    faceThumbKey: thumbKey,
     id: 1,
     publicId: "cand-1",
     rollId: 1,
@@ -320,5 +333,45 @@ describe("a real failed compile reaches the sheet as a confession", () => {
     });
 
     expect(projected.fellBack).toBe(true);
+  });
+});
+
+/**
+ * The tile shows the face Sign would spend (M8 §11).
+ *
+ * The failure this forecloses is quiet and nasty: the sheet renders the
+ * original while the Sign button spends the refinement, so the picture the user
+ * is looking at is not the one they are about to pay 450 credits for. Nothing
+ * throws; the surface simply lies about what its own button does.
+ */
+describe("a refined candidate projects its refinement", () => {
+  it("shows the selected variant's image, not the original's", () => {
+    const projected = projectCandidate(candidateRow({
+      selectedVariantId: 5,
+      selectedVariantPublicId: "variant-1",
+      faceImageKey: "casting-v2/variants/refined.png",
+    }));
+    expect(projected?.imageUrl).toContain("casting-v2/variants/refined.png");
+    expect(projected?.imageUrl).not.toContain("abc.png");
+  });
+
+  it("still shows the original when nothing is selected", () => {
+    expect(projectCandidate(candidateRow())?.imageUrl).toContain("abc.png");
+  });
+
+  /*
+    A refunded candidate carries no image, and selecting a variant must not be
+    a way around that — the generosity refund is only defensible because the
+    user never receives the picture.
+  */
+  it("suppresses a refunded candidate's image even when a variant is selected", () => {
+    const projected = projectCandidate(candidateRow({
+      status: "expired",
+      selectedVariantId: 5,
+      selectedVariantPublicId: "variant-1",
+      faceImageKey: "casting-v2/variants/refined.png",
+    }));
+    expect(projected?.imageUrl).toBeNull();
+    expect(projected?.thumbUrl).toBeNull();
   });
 });

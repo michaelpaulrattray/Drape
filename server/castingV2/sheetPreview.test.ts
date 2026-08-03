@@ -14,8 +14,8 @@ let nextId = 1;
 const ready = (key = `img-${nextId}.png`) => ({
   id: nextId++,
   status: "ready",
-  imageKey: key,
-  thumbKey: null,
+  faceImageKey: key,
+  faceThumbKey: null,
 });
 
 describe("a sheet card previews what is on the sheet", () => {
@@ -64,7 +64,7 @@ describe("a sheet card previews what is on the sheet", () => {
       rather than to the result. Concatenation fixes it structurally: an
       unprojectable kept row simply contributes nothing and the roll fills in.
     */
-    const signedKeep = { id: 900, status: "signed", imageKey: "gone.png", thumbKey: null };
+    const signedKeep = { id: 900, status: "signed", faceImageKey: "gone.png", faceThumbKey: null };
     expect(sheetPreviewKeys([signedKeep], [ready("roll.png")])).toEqual(["roll.png"]);
   });
 
@@ -80,12 +80,12 @@ describe("a sheet card previews what is on the sheet", () => {
       null in production and always has been. Filtering on a field nothing
       populates is the same mistake as a control that is never called.
     */
-    expect(previewKeyOf({ id: 1, status: "ready", imageKey: "full.png", thumbKey: "thumb.png" }))
+    expect(previewKeyOf({ id: 1, status: "ready", faceImageKey: "full.png", faceThumbKey: "thumb.png" }))
       .toBe("thumb.png");
-    expect(previewKeyOf({ id: 2, status: "ready", imageKey: "full.png", thumbKey: null }))
+    expect(previewKeyOf({ id: 2, status: "ready", faceImageKey: "full.png", faceThumbKey: null }))
       .toBe("full.png");
     // And a candidate that never landed contributes nothing at all.
-    expect(previewKeyOf({ id: 3, status: "casting", imageKey: "early.png", thumbKey: null }))
+    expect(previewKeyOf({ id: 3, status: "casting", faceImageKey: "early.png", faceThumbKey: null }))
       .toBeNull();
   });
 });
