@@ -13,6 +13,23 @@ import { describe, expect, it } from "vitest";
  *
  * It guards the foundation and V2 trees only. It grows with adoption rather
  * than trying to boil the ~600 lines of legacy utility CSS on day one.
+ *
+ * # A blind spot worth knowing about
+ *
+ * **This catches `#RRGGBB`. It does not catch `rgba(17, 17, 18, 0.22)`** — a
+ * colour written in functional notation is invisible to a hex-shaped net, by
+ * construction. Found while shipping the toast pill (D-110), whose shadow
+ * carries exactly such a literal and passed clean.
+ *
+ * Left as-is deliberately rather than widened. A shadow is a scrim rather than
+ * a semantic colour: it does not flip between themes, so it cannot produce the
+ * looks-right-in-one-theme failure this guard exists to prevent. Widening the
+ * net to all `rgba()` would flag every legitimate scrim, overlay and glass
+ * surface in the system and be carved out until it meant nothing.
+ *
+ * The rule to apply by hand: **if a colour would need a different value in the
+ * other theme, it is semantic and belongs in `tokens.css`** — whatever notation
+ * it is written in. The grep only covers the half it can see.
  */
 
 const clientSrc = path.resolve(__dirname, "..");
