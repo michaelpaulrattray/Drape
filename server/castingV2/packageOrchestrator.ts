@@ -348,7 +348,17 @@ async function buildOneView(
   const drop = dependencies.deleteObject ?? storageDelete;
 
   let lastReason = "The view could not be generated";
-  let lastVerdict: ViewConformanceVerdict | null = null;
+  /*
+    EVERY attempt's verdict, not just the last (D-114).
+
+    This was a single `lastVerdict`, so the second attempt overwrote the first
+    and a slot that failed twice recorded only its final rejection. That is the
+    half of the automatic re-attempt that was genuinely missing: the judge is
+    young, D-115 says it self-measures and never self-modifies, and the thing
+    that makes it improvable is the record of what it rejected — including the
+    draw that was thrown away before the one the customer heard about.
+  */
+  const verdicts: ViewConformanceVerdict[] = [];
 
   // One generation, one regeneration. Then the slot fails named-and-refunded.
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -375,7 +385,7 @@ async function buildOneView(
         anchor: input.anchor,
         candidate: { bytes: image.bytes, contentType: image.contentType },
       });
-      lastVerdict = verdict;
+      verdicts.push(verdict);
 
       if (!verdict.pass) {
         const failedAxes = (Object.keys(verdict.axes) as Array<keyof typeof verdict.axes>)
@@ -468,7 +478,7 @@ async function buildOneView(
 
   return failView(dependencies, input, angle, {
     reason: lastReason,
-    verdict: lastVerdict,
+    verdicts,
     auditId,
     label: view.label,
   });
@@ -521,7 +531,8 @@ async function failView(
   angle: CastViewAngle,
   detail: {
     reason: string;
-    verdict: ViewConformanceVerdict | null;
+    /** Every attempt's verdict, oldest first. Empty when nothing was judged. */
+    verdicts: readonly ViewConformanceVerdict[];
     auditId: number | null;
     label: string;
   },
@@ -570,8 +581,29 @@ async function failView(
       // not.
       refunded: refundedForSlot,
       refundReference: outcome.reference,
-      ...(detail.verdict
-        ? { conformance: { axes: detail.verdict.axes, method: detail.verdict.method } }
+      /*
+        The FINAL verdict stays where it was, under the same key, because the
+        room and any dispute read that shape — widening it would be a projection
+        change for a record nobody asked to see differently.
+
+        The earlier attempts ride alongside it under their own key. A slot that
+        failed twice now says so, and says what the first draw was rejected for.
+      */
+      ...(detail.verdicts.length > 0
+        ? {
+            conformance: {
+              axes: detail.verdicts[detail.verdicts.length - 1].axes,
+              method: detail.verdicts[detail.verdicts.length - 1].method,
+            },
+          }
+        : {}),
+      ...(detail.verdicts.length > 1
+        ? {
+            earlierAttempts: detail.verdicts.slice(0, -1).map((verdict) => ({
+              axes: verdict.axes,
+              method: verdict.method,
+            })),
+          }
         : {}),
     },
   });

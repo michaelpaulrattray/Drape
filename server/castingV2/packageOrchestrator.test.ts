@@ -199,6 +199,41 @@ describe("one regeneration, then named-and-refunded", () => {
     expect(failure.conformance?.axes.angle.pass).toBe(true);
   });
 
+  /*
+    D-114: BOTH attempts' verdicts, not just the last.
+
+    A slot that failed twice used to record only its final rejection, because
+    the second attempt overwrote the first in a single `lastVerdict`. The judge
+    is young and D-115 says it self-measures rather than self-modifies — the
+    thing that makes it improvable is the record of what it threw away, not
+    only what the customer was finally told.
+  */
+  it("keeps the first attempt's verdict beside the last", async () => {
+    let call = 0;
+    const judge = () => vi.fn(async (request: { angle: string }) => {
+      if (request.angle !== "sideClose") return pass;
+      call += 1;
+      // Two different rejections, so the record has to show BOTH to be honest
+      // about what happened.
+      return call === 1
+        ? { ...fail, axes: { ...fail.axes, angle: { pass: false, verdict: "differs", note: "first draw" } } }
+        : fail;
+    });
+    await buildCastPackage(deps({ judge }), input);
+
+    const marker = failures.find((entry) => entry.angle === "sideClose");
+    const failure = marker?.failure as {
+      conformance?: { axes: Record<string, { pass: boolean }> };
+      earlierAttempts?: Array<{ axes: Record<string, { pass: boolean }> }>;
+    };
+
+    // The final verdict stays exactly where the room already reads it.
+    expect(failure.conformance?.axes.angle.pass).toBe(true);
+    // And the draw nobody heard about is beside it.
+    expect(failure.earlierAttempts).toHaveLength(1);
+    expect(failure.earlierAttempts?.[0].axes.angle.pass).toBe(false);
+  });
+
   it("leaves no orphaned object behind a failed view", async () => {
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
@@ -270,6 +305,41 @@ describe("the judge cannot be trusted to be available", () => {
 });
 
 describe("the fence", () => {
+  /*
+    D-114's bar, made explicit: a process that lost its fence retries NOTHING.
+
+    It already held — the fenced branch returns rather than continuing the
+    attempt loop — but it held by reading, and "the code returns there" is the
+    kind of proof that stops being true during a refactor nobody thought was
+    about fences. A post-fence retry would generate against a slot the sweep
+    already owns and bill a customer for a race.
+  */
+  it("never retries after losing the fence", async () => {
+    let generated = 0;
+    const identityEngine = () => ({
+      id: "fal:test",
+      generateView: vi.fn(async () => {
+        generated += 1;
+        return {
+          bytes: Buffer.from("view"),
+          contentType: "image/png",
+          latencyMs: 1,
+          provenance: { provider: "fal" as const, model: "nano-banana-pro", providerRef: "req" },
+        };
+      }),
+    });
+    const commitSlot = vi.fn(async () => null);
+    const result = await buildCastPackage(
+      deps({ commitSlot, identityEngine } as never),
+      input,
+    );
+
+    // Five views, one generation each. A second pass would read 10.
+    expect(generated).toBe(5);
+    expect(result.failed).toHaveLength(5);
+    expect(refunds).toHaveLength(0);
+  });
+
   it("refunds nothing here when a slot commit loses to recovery", async () => {
     // The operation is no longer `running`, so the sweep has taken over and
     // will settle this slice under the same reference. Refunding here as well

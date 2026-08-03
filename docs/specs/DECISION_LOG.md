@@ -3192,6 +3192,45 @@ designed as purchases: price, confirmation, receipt, refusal. This ruling is
 strictly the machine giving itself one more go inside a slot the customer has
 already paid for.
 
+### CORRECTION, on implementing it (2026-08-03)
+
+**The automatic re-attempt already existed, and this ruling does not amend
+D-92.** Both halves of that sentence matter, because a decision log that records
+a softening which never happened is worse than one that records nothing.
+
+`buildOneView` has run `for (attempt = 1; attempt <= 2)` since the Sign ceremony
+first shipped (`dbac7383`), with the comment "one generation, one regeneration.
+Then the slot fails named-and-refunded." A conformance rejection drops the frame
+and continues; a provider error retries unless it is terminal. Four of this
+ruling's five bars were therefore already true when it was written:
+
+- retry before settlement, no new money path — `failView` runs only after the
+  loop;
+- one retry maximum — the loop is bound at two;
+- fenced writers unchanged — the fenced branch RETURNS rather than continuing,
+  so a process that lost its fence has never retried;
+- no double-settlement on a retry — pinned by "keeps a view that passes on the
+  second attempt, and charges nothing extra".
+
+**And D-92 never forbade this.** Its passage reads: *"a permanently failed view
+has no repair path until M12 — no per-slot purchase exists and 'roll again' does
+not apply to views."* That is about the CUSTOMER's repair path for a view that
+has already failed and settled — the same thing this ruling defers to M12 in its
+own "what this is NOT" section. The machine's internal re-attempt before
+settlement is a different mechanism, and D-92 is untouched by permitting it.
+
+**What was genuinely missing was bar three.** Every attempt's verdict is now
+persisted: the loop kept a single `lastVerdict`, so the second attempt
+overwrote the first and a slot that failed twice recorded only its final
+rejection. The final verdict stays under the key the room already reads;
+earlier attempts ride beside it under `earlierAttempts`. That is the half the
+judge's improvability actually depends on (D-115) — the record of what was
+thrown away, not only what the customer was finally told.
+
+Bar five gained its missing half too: the no-double-settlement case was already
+pinned, and **no post-fence retry** is now asserted by counting generations
+rather than by reading the code.
+
 ### Shipping
 
 Ships as **one batch with (0g) rejected-frame retention**, slotted after D-93,
