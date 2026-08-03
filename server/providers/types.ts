@@ -54,6 +54,21 @@ export type ProviderFailureClass =
    * failed and refunded, while the sheet told the founder "didn't arrive".
    */
   | "provider_account"
+  /**
+   * The provider SUCCEEDED, and what it returned is not a photograph of one
+   * person (D-93).
+   *
+   * The odd one out in this union, and deliberately here rather than on an axis
+   * of its own. Every other class answers "did the provider fail"; this one
+   * answers "did it succeed at producing garbage" — the only paid failure the
+   * product could not see, because nothing ever looked at the bytes. D-93 ruled
+   * it routes through this taxonomy precisely so it needs no new money path:
+   * the existing settlement already fails the candidate and refunds its slice.
+   *
+   * Non-retryable. A contact sheet is a verdict about what came back, not a
+   * transport hiccup; re-rolling it is the user's decision and their money.
+   */
+  | "render_fault"
   /** Unmapped. Treated as non-retryable so unknowns fail closed. */
   | "unknown";
 

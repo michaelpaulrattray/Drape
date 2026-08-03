@@ -434,32 +434,31 @@ describe("cancel", () => {
 });
 
 /**
- * D-93's smoke alarm, in the mode the founder ruled it must ship in.
+ * D-93's smoke alarm, ENFORCING.
  *
- * "The detector classifies, persists its verdict, and alarms — but does NOT
- * auto-fail or refund — until its false-positive rate is measured on real
- * founder traffic."
+ * It shipped in shadow mode and was flipped on the number the gate asked for:
+ * a sweep of 1,017 real production candidates fired exactly once, on D-93's own
+ * incident, with zero false positives. The founder ruled the flip happens now
+ * rather than at invites — he is the only affectable user today, so a misfire
+ * costs one self-refund and produces the evidence to fix it, while waiting only
+ * guarantees the first stranger's garbage tile arrives before the alarm is
+ * armed.
  *
- * That is a promise about MONEY, so it is asserted against money: the real
- * D-93 specimen goes through the paid path and the customer keeps every
- * candidate and every credit.
+ * This is a MONEY assertion, so it is made against money.
  */
-describe("the render-fault detector in shadow mode", () => {
-  it("delivers and charges normally even when every candidate is a contact sheet", async () => {
+describe("the render-fault detector, enforcing", () => {
+  it("fails a contact sheet and refunds its slice, through the ordinary taxonomy", async () => {
     const { readFile } = await import("node:fs/promises");
     const specimen = await readFile(
       new URL("../../docs/specs/references/nine-tile-sheet.png", import.meta.url),
     );
 
-    // `baseDependencies` is typed `never` for the callers that pass it
-    // straight through; spreading needs a shape.
     const dependencies = {
       ...(baseDependencies() as Record<string, unknown>),
       engine: () => ({
         id: "fal:test",
         generateCandidate: vi.fn(async () => ({
-          // The actual failure, not a stand-in. If the detector ever moves to
-          // enforcing without this test being rewritten, this goes red.
+          // The actual failure, not a stand-in.
           bytes: specimen,
           contentType: "image/png",
           latencyMs: 1,
@@ -468,12 +467,41 @@ describe("the render-fault detector in shadow mode", () => {
       }),
     } as never;
 
-    const result = await createRoll(dependencies, INPUT);
+    /*
+      Every tile was a contact sheet, so every tile fails — and a roll where
+      nothing arrived throws, exactly as it already did when the PROVIDER failed
+      all eight. That identity is the point of the assertion: a render fault
+      takes the ordinary terminal path rather than a private one, which is what
+      "no new money path" means in practice.
+    */
+    await expect(createRoll(dependencies, INPUT)).rejects.toThrow(
+      /None of the sheet arrived/,
+    );
 
+    // Eight slices out, eight slices back, under the derived references.
+    expect(refunds).toHaveLength(8);
+    expect(refunds.reduce((total, refund) => total + refund.amount, 0)).toBe(160);
+    // Sorted: candidates dispatch concurrently, so refunds land in completion
+    // order. What matters is the SET — every slice, exactly once.
+    expect(refunds.map((refund) => refund.reference).sort()).toEqual(
+      rows.candidates
+        .map((candidate) => candidateChargeReference(OPERATION_ID, candidate.publicId as string))
+        .sort(),
+    );
+  });
+
+  /*
+    FAIL OPEN, asserted at the service rather than only at the detector.
+
+    The unit test proves `detectRenderFault` returns `undetermined` on bytes it
+    cannot read; this proves the SERVICE then delivers and charges normally.
+    Those are different claims, and the one that matters to a customer is this
+    one — a detector that cannot read a PNG must not start destroying paid work.
+  */
+  it("delivers and charges normally when the bytes cannot be read at all", async () => {
+    const result = await createRoll(baseDependencies(), INPUT);
     expect(result.ready).toBe(8);
     expect(result.failed).toBe(0);
-    // The whole point: no slice was taken back, because shadow mode does not
-    // decide anything about money.
     expect(result.refundedCredits).toBe(0);
     expect(refunds).toHaveLength(0);
   });

@@ -3,25 +3,22 @@ import sharp from "sharp";
 /**
  * The smoke alarm for a render that succeeded at producing garbage.
  *
- * # STATUS: SHADOW MODE (founder condition, 2026-08-03)
+ * # STATUS: ENFORCING (founder ruling, 2026-08-03)
  *
- * `rollService` calls this on every landing. It classifies, persists its
- * verdict on the generation audit row and alarms — and **does not auto-fail or
- * refund**. The flip to enforcing is the D-93 gate itself, and the founder
- * ruled it happens on a false-positive rate measured against real founder
- * traffic, never on a green suite.
+ * `rollService` calls this on every landing. A fault throws a `render_fault`
+ * `ProviderError` BEFORE the bytes are stored, which lands in the ordinary
+ * failure catch: the candidate fails and its slice refunds under the derived
+ * charge reference. **No new money path** — the same per-slice settlement a
+ * provider failure already used.
  *
- * **That number now exists — 0 in 1,016** (see below). The flip itself remains
- * the founder's, because enabling it turns this into a control that destroys
- * paid work.
+ * It shipped in shadow mode first and was flipped on the number the gate asked
+ * for. The founder's rationale is on the record: he is the only affectable user
+ * today, so a misfire costs one 20-credit self-refund and produces exactly the
+ * evidence needed to fix it, while waiting until invites would only guarantee
+ * that the first stranger's garbage tile arrives before the alarm is armed.
  *
- * Where it stands, measured (`scripts/measure-render-fault.mts`):
+ * The measurements it was flipped on:
  *
- *   - **the real specimen: CAUGHT.** `docs/specs/references/nine-tile-sheet.png`
- *     is the actual candidate the founder paid for, and the verdict names its
- *     structure exactly — three horizontal seams at the quarters, one vertical
- *     down the middle. It is a 2x4 sheet of eight faces; D-93's prose calls it
- *     nine, written from memory in the moment.
  *   - **0 false positives across 1,017 REAL PRODUCTION CANDIDATES** — the
  *     founder's entire cast history, every brief he has ever run. The detector
  *     fired exactly ONCE in that sweep, on roll index 2 of "a kpop idol", tile
@@ -38,6 +35,10 @@ import sharp from "sharp";
  * The one miss is an edge-to-edge grid with no gutter at all, which has no seam
  * to find. Catching that needs a different signal (repeated blocks); fail-open
  * tolerates it, and the limit is pinned by test rather than left as folklore.
+ *
+ * **The verdict is still persisted on every landing, fault or not** — that
+ * history is D-115's evidence stream, and a record holding only fires cannot
+ * tell "no faults today" from "the detector stopped running".
  *
  * # The incident (D-93)
  *

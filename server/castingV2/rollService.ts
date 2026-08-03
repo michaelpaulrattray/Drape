@@ -132,6 +132,27 @@ function readResolvedIdentity(internalPrompt: unknown): ResolvedIdentity | null 
 /** Objects live under one namespace so cleanup and audit can find them. */
 const CANDIDATE_KEY_PREFIX = "casting-v2/candidates";
 
+/**
+ * The render-fault verdict, in the shape the audit row carries it.
+ *
+ * One helper because it is written from TWO places — the candidate that landed
+ * and the candidate this detector just failed — and a verdict recorded in two
+ * shapes is a history nobody can query. **Every verdict is written, not only
+ * the fires:** a record that only holds faults cannot tell "no faults today"
+ * from "the detector stopped running", which is the inert-control failure this
+ * program keeps meeting. D-115's evidence stream is the whole series.
+ */
+function renderFaultMetadata(
+  verdict: Awaited<ReturnType<typeof detectRenderFault>> | null,
+): Record<string, unknown> | undefined {
+  if (!verdict) return undefined;
+  return {
+    renderFault: verdict.fault,
+    renderFaultReason: verdict.reason,
+    ...(verdict.detail ? { renderFaultDetail: verdict.detail } : {}),
+  };
+}
+
 export type RollServiceDependencies = {
   compileBrief?: BriefCompiler;
   engine?: () => CreativeEngine;
@@ -629,6 +650,14 @@ async function dispatchCandidate(input: {
   });
   const auditId = audit.generationId;
 
+  /*
+    Declared out here so the catch can persist it too. D-115: the judge
+    self-measures and never self-modifies, and a verdict recorded only when the
+    candidate survives would be an evidence stream missing every case anyone
+    would want to review.
+  */
+  let renderFaultVerdict: Awaited<ReturnType<typeof detectRenderFault>> | null = null;
+
   try {
     if (input.accountDown.tripped) {
       // Refuse before spending: our account is already known bad this roll.
@@ -641,31 +670,33 @@ async function dispatchCandidate(input: {
     });
 
     /*
-      D-93's smoke alarm, IN SHADOW MODE (founder condition, 2026-08-03).
+      D-93's smoke alarm, ENFORCING (founder ruling, 2026-08-03).
 
-      It classifies, persists its verdict and alarms. It does NOT auto-fail and
-      does NOT refund — not until its false-positive rate has been measured on
-      real founder traffic. The flip to enforcing is the D-93 gate itself, and
-      the founder ruled it happens on a measured number rather than on a green
-      suite.
+      It shipped in shadow mode and was flipped on the number the gate asked
+      for: a sweep of **1,017 real production candidates — the founder's whole
+      cast history — fired exactly once, on D-93's own incident, with zero false
+      positives.** The founder ruled the flip happens now rather than at
+      invites: he is the only affectable user today, so a misfire costs one
+      20-credit self-refund and produces exactly the evidence needed to fix it,
+      while waiting would only guarantee that the first stranger's garbage tile
+      arrives before the alarm is armed.
 
-      Why shadow rather than straight to enforcing, given it already catches the
-      real specimen and fires on none of 47 real candidates: 47 is a dev corpus
-      of briefs I chose. The rate that matters is on the briefs the founder
-      actually casts, and a control that destroys paid work has to earn its
-      trigger against traffic rather than against a fixture set.
+      It throws BEFORE the bytes are stored, so a contact sheet never becomes an
+      object anybody has to clean up, and the throw lands in the ordinary
+      failure catch below — `failCandidate` plus the per-slice refund, under the
+      derived charge reference. **No new money path**, exactly as D-93 designed.
+
+      Retention of the rejected frame for judge review is D-111's, and arrives
+      with the (0g) batch. Until then the verdict on the audit row is the
+      evidence stream — which is why it is written on BOTH paths, fault or not.
     */
-    const renderFault = await detectRenderFault(image.bytes);
-    if (renderFault.fault) {
+    renderFaultVerdict = await detectRenderFault(image.bytes);
+    if (renderFaultVerdict.fault) {
       log.error(
-        {
-          operationId,
-          candidate: candidate.publicId,
-          detail: renderFault.detail,
-          shadowMode: true,
-        },
-        "[rollService] RENDER FAULT detected — shadow mode, candidate delivered anyway",
+        { operationId, candidate: candidate.publicId, detail: renderFaultVerdict.detail },
+        "[rollService] RENDER FAULT — failing the candidate and refunding its slice",
       );
+      throw new ProviderError("render_fault", renderFaultVerdict.detail);
     }
 
     // Bytes land in OUR storage before anything references them. A provider
@@ -700,12 +731,7 @@ async function dispatchCandidate(input: {
           running", which is the inert-control failure this program keeps
           meeting.
         */
-        metadata: {
-          renderFault: renderFault.fault,
-          renderFaultReason: renderFault.reason,
-          ...(renderFault.detail ? { renderFaultDetail: renderFault.detail } : {}),
-          renderFaultMode: "shadow",
-        },
+        metadata: renderFaultMetadata(renderFaultVerdict),
       });
     }
 
@@ -792,6 +818,8 @@ async function dispatchCandidate(input: {
         status: "failed",
         errorMessage: failureClass,
         completedAt: new Date(),
+        // Written on the failure path too — see the declaration above.
+        metadata: renderFaultMetadata(renderFaultVerdict),
       });
     }
 
@@ -799,7 +827,15 @@ async function dispatchCandidate(input: {
     const refund = await recordRefund(
       userId,
       candidate.pointsCost,
-      "Casting candidate did not arrive",
+      /*
+        A render fault DID arrive — that is the whole point of it. Telling the
+        customer their candidate "did not arrive" would be the ledger describing
+        the wrong event, on the one line they read when they wonder where their
+        credits went.
+      */
+      failureClass === "render_fault"
+        ? "This tile came back as a contact sheet rather than a portrait"
+        : "Casting candidate did not arrive",
       // The same derivation the recovery adjudicator uses. Two call sites, one
       // helper — byte-identical references are what make a retry idempotent
       // rather than a second refund.

@@ -2124,6 +2124,63 @@ anti-pattern wearing a new hat.
 today and can see and report one; a stranger cannot, and would simply have paid
 for a contact sheet. Noted manually against that roll in the meantime.
 
+**BUILT, MEASURED AND FLIPPED TO ENFORCING — 2026-08-03.**
+
+Shipped first in shadow mode (classify, persist, alarm; never fail or refund),
+then flipped on the number this ruling asked for.
+
+**The measurement: a sweep of 1,017 real production candidates — the founder's
+entire cast history, every brief he has ever run — fired exactly ONCE, with zero
+false positives.** The single fire was this incident: roll index 2 of "a kpop
+idol", tile 01. It was found BY the detector rather than by being told where to
+look, after a hand-picked guess at the roll turned out to be the wrong one of two
+sharing that brief. Better evidence than forward shadow traffic would have given,
+because it is the whole back catalogue rather than a sample.
+
+**The founder ruled the flip happens immediately rather than at invites**, and
+the rationale belongs on the record: he is the only affectable user today, so a
+misfire costs one 20-credit self-refund and produces exactly the evidence needed
+to fix it, while waiting gains nothing and would mean the first stranger's
+garbage tile arrives before the alarm is armed.
+
+**Half of this ruling's letter was deliberately not built.** D-93 names "face
+count and grid detection". Face counting means a vision model at the landing
+site, which is the anti-pattern this ruling's own next sentence forbids — a
+quality judge on the paid path, eight calls per roll, latency on every landing.
+The shipped tier is grid detection only, deterministic and offline;
+**multi-face-without-tile-seams is an explicit non-goal**, recorded rather than
+silently dropped.
+
+Two measurement failures on the way, both kept because they generalise:
+
+1. **The detector was inert and looked fine.** It downsampled to 192px before
+   measuring, which turns a 10px gutter into under two pixels and averages it
+   into the faces either side — 0 of 8 synthesised grids. The rule it cost:
+   **never blur the axis you are measuring along.**
+2. **The discriminator excluded the case it was written for.** It asked "is
+   there detail on both sides of this flat line", but these are portraits on
+   seamless paper, so both sides of a gutter are plain backdrop. The real
+   specimen said the signal is a STEP — seam rows at mean 249-251 against
+   neighbours at 195-215.
+
+**The first detector passed every synthetic test and called the real specimen
+clean.** The genuine article is what caught it, and it is now committed as the
+fixture (`docs/specs/references/nine-tile-sheet.png`) so the suite tests the
+failure rather than a reconstruction. Recorded for accuracy: it is a 2x4 sheet
+of EIGHT faces; this entry's prose says nine, written from memory in the moment.
+
+Fail-open throughout and pinned by test: unreadable bytes deliver rather than
+destroy. Invariant 7's refuse-on-missing-dependency posture is deliberately
+inverted here — it governs security controls, where allowing is a breach; a
+false positive here destroys an image the customer paid for, and the refund does
+not give them the face back.
+
+**The specimen's own 20 credits were refunded** under D-113's correction
+precedent, in production, under the standing ceremony (ledger row #474,
+reference `refund:correction:<charge ref>` in its own namespace, because a
+failure refund's reference is the ledger's authority for "this candidate
+failed" — and this one succeeded, at producing garbage).
+
 **Also confirmed at the same pass:** glasses and jewelry are correctly absent
 from dice output, per the stated-only rulings. The stated-eyewear check — "a
 model in her 20s wearing chunky glasses" — rides the founder's next wildcard
