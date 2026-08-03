@@ -281,7 +281,27 @@ const SKIN_AND_FEATURES = [
     its persistence rules (catalog H2/H3) — is scheduled with M12. This clause
     is the narrow part that unblocks briefs today.
   */
-  "STRUCTURAL FEATURES: When the character description names a permanent physical feature — a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, active acne or acne scarring, weathered or sun-damaged skin, a shaved head, a tattoo — render it plainly and accurately as a real, healed, permanent part of this person.",
+  /*
+    WIDENED to ordinary feature GEOMETRY (D-129, founder ruling 2026-08-03).
+
+    The rider proved rather than presumed: "a model with a button nose" and "a
+    model with a beauty mark above her lip" both reached 8 of 8 prompts — and
+    NEITHER did so through this licence. They travelled as `characterNotes`,
+    the free-text character-detail channel, which is exactly the accidental
+    routing D-124 closed for faith coverings.
+
+    The enumeration was marks and damage. Every example was a deviation from an
+    unmarked face, so nothing told the model that "do not idealise it away, a
+    named feature that fails to appear is a failed candidate" applied to the
+    SHAPE of a nose. And shape is precisely where the beauty prior is
+    strongest: a button nose is exactly the sort of thing it "corrects" toward
+    a conventional one.
+
+    So the list now names geometry alongside damage. The teeth were always the
+    point of this clause; they now reach the features people actually describe.
+  */
+  "STRUCTURAL FEATURES: When the character description names a permanent physical feature — the shape of the nose, cheekbones, jaw, chin, lips or teeth, a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, active acne or acne scarring, weathered or sun-damaged skin, a shaved head, a tattoo — render it plainly and accurately as a real, permanent part of this person.",
+  "This covers ORDINARY feature shape as much as damage: a button nose, a strong jaw, high cheekbones, a receding chin, thin lips, gapped or crowded teeth. These are how a face is built, not flaws to be resolved toward a conventional one.",
   "These are casting facts, not blemishes to correct. Do not idealise them away, do not soften them, and do not substitute an unmarked face. A named feature that fails to appear is a failed candidate.",
   "Render only what the description names. Never invent damage, scars or ink that was not asked for.",
   /*

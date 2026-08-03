@@ -3679,6 +3679,46 @@ both directions. The proposed fix is one clause — extending the enumeration to
 ordinary feature geometry (nose, ear, chin and jaw shape) so a stated shape gets
 the same teeth a stated scar already has.
 
+## D-130 — The licence widened, and the paid renders say a clause is not enough.
+
+Founder ruling on D-129, executed 2026-08-04 with D-124's sequence: clause,
+then paid renders both directions. The clause is in — STRUCTURAL FEATURES now
+names the shape of the nose, cheekbones, jaw, chin, lips and teeth alongside
+the damage it always covered, with a second line saying plainly that ordinary
+geometry is how a face is built rather than a flaw to resolve.
+
+**The control is clean.** "a model in her 20s" — eight ordinary faces, nothing
+invented, heritage draw as wide as ever. A widened licence that started adding
+features nobody asked for would be worse than the narrow one it replaced, and
+it does not.
+
+**The stated direction only half worked, and the half that failed is the
+informative one.** "a model with a button nose and high cheekbones":
+
+- **High cheekbones landed** on most of the eight.
+- **Button noses largely did not** — roughly two of eight, the rest straight or
+  aquiline.
+
+The distinction is not random. **The licence works where it agrees with the
+prior and fails where it contradicts it.** High cheekbones are what a model's
+face already looks like, so permission was all that was missing; a button nose
+is a departure from the studio-portrait prior, and permission alone does not
+move it. That is the A9 lesson arriving for the fourth time — the broken nose,
+the hijab, the eye shapes, now feature geometry — and it is now measured rather
+than argued.
+
+**So the clause is necessary and not sufficient.** Feature geometry needs
+engineered prose per value, the way `EYE_SHAPE_RENDER` describes lid exposure
+and canthal tilt rather than saying "hooded". A bare adjective is permission;
+prose is instruction.
+
+This is evidence for the sweep's open question. D-129's siblings — lip shape
+and teeth character — were queued with "engineered vocabularies wait for
+dogfood evidence"; this IS that evidence, one axis early, and it says the
+vocabularies are the load-bearing part rather than the registration.
+
+Evidence: `docs/specs/evidence/refine/d129-{stated,unstated}.jpg`.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
