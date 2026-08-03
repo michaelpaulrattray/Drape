@@ -3268,6 +3268,53 @@ one that breaks. Self-tuning is all three at once.
 Measurement is free and reversible. Modification is neither, so it stays a
 decision somebody makes.
 
+## D-116 — Makeup joins the accessory family: never unbidden, honoured wherever asked.
+
+Founder ruling, 2026-08-03.
+
+Makeup is currently unsayable at three layers at once — the interpreter is told
+"no makeup", the cohort constant carries a bare-lashes clause, and no carve-out
+exists anywhere. **That was never decided. It was a default**, arrived at by
+three independent restraints agreeing, and it has been quietly overruling people
+who asked for something.
+
+It now follows exactly the law eyewear and jewelry follow: **never unbidden,
+honoured wherever asked.** The dice stay bare — that is the unbidden-adornment
+law and it earns its keep, because eight bare faces are comparable *as people*
+and eight variously-made-up ones are comparable as looks.
+
+Three doors, and only the first is scheduled.
+
+### Door 1 — stated in the brief
+
+A carve-out on **D-95's pattern**, which exists for precisely this failure and
+after precisely this evidence: "a model in her 20s wearing chunky glasses"
+rendered zero glasses, because the constant's own no-accessories clause was
+overruling words the user had typed. Same licence shape here, including its
+sharpest clause — **a failure to appear is a failed candidate.** Stated-only is
+worth nothing if stated does not work.
+
+Ships as a stated-channel batch **together with (0c) echo accessories**: both
+are interpreter-prompt changes, so one D-89 golden-driver run covers both.
+Slotted after the character sheet, before Refine.
+
+### Door 2 — Refine vocabulary
+
+"Subtle blush", "gloss the lip", "mascara" are recognised Refine edits, folded
+into Refine's design alongside the barbershop finishes the line-up ruling sent
+there. Refine IS the stated channel at maximum intent — adornment never arrives
+unbidden, and refine is asking, per face.
+
+### Door 3 — world-default glam
+
+Whether a k-pop sheet arrives idol-groomed *unbidden* is a per-world property,
+and therefore an F8 shelf row beside its ground, its garment and its colour
+latitude. Nothing to schedule: it is rows in F8's table when that era comes.
+
+**Nothing here weakens the frame.** The photograph is still a plain studio tee
+on seamless paper; makeup is on the person, which is the side of that line the
+stated channel has always been allowed to touch.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
