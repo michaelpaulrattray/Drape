@@ -180,3 +180,162 @@ twice:
 **Provenance.** Founder feature, ratified 2026-08-01 alongside the post-M7
 ordering (D-86). This document is the spec of record; amend it in place rather
 than writing a delta (P-1).
+
+---
+
+# PART II — THE SETTLED DESIGN (advisor-ruled 2026-08-03, before any code)
+
+Part I proposed. This is what gets built. Where the two differ, this wins.
+
+## 10. Instructions are parsed AT ENTRY, never at render
+
+The crux Part I left ambiguous. "Compose instructions 1..N" is easy to say and
+has at least three meanings, and the wrong one produces "green eyes" and "brown
+eyes" fighting inside a single prompt.
+
+**Each instruction goes through the interpreter ONCE, when it is typed**, with
+the current composed identity as context, and returns an **absolute structured
+delta** — closed vocabularies wherever one exists, plus a capped labelled
+free-text slot for things no enum holds (makeup finishes), which is the same
+doctrine the intent's two free-text fields already live under.
+
+Composition is then **mechanical code**: per-axis last-writer-wins over the
+original's `resolvedIdentity`. No interpreter call at render time, so:
+
+- a re-render is deterministic;
+- removing an instruction is arithmetic, not a re-interpretation;
+- **a refusal happens before any charge**, mirroring the roll's own
+  "compile and admit first" arrow.
+
+### The load-bearing consequence
+
+**The edit prompt AND the variant's `resolvedIdentity` derive from the SAME
+deltas.** The user's raw sentence is kept as provenance and is never sent to the
+image model alongside the parsed deltas as parallel bookkeeping — that is the
+record-lies class rebuilt with extra steps. One source, so the record cannot
+drift from the picture by construction rather than by discipline.
+
+### Recorded, because it is a real edge
+
+Relative instructions ("shorter still") resolve to **absolutes at entry**. So
+removing an earlier instruction leaves a later one holding the value it resolved
+to at the time. That is honest and deterministic, and it is not what a naive
+reader expects, so it is written down rather than discovered.
+
+### Registry, not convention
+
+Any refinement axis with no existing home — eye shape, makeup — is **registered
+in `axisRegistry`**, so the D-87 composed-boundary sweep proves it is composed
+everywhere it is read. A refinement persisted but never composed into Follow's
+prompt would be unowned-axis instance seven.
+
+## 11. The record round-trip, and the two live landmines
+
+A variant owns a **full** `resolvedIdentity` = `apply(original, deltas)`,
+persisted in the same `internalPrompt: { prompt, resolved }` shape the candidate
+already uses.
+
+**Sheet-level taste is NOT re-run.** It balanced eight faces at roll time; a
+per-face edit is the user's deliberate choice, and re-balancing would move faces
+they never touched.
+
+Two places in today's code would quietly betray this, and both read the
+candidate directly rather than through selection:
+
+- **`signService.ts` → `identityDocumentsFor(source.candidate.internalPrompt)`.**
+  If Refine only swaps the image key, **Sign snapshots the ORIGINAL's record
+  under the VARIANT's face** — record-lies at the single most expensive site in
+  the product. The selected variant must supply the key *and* the identity
+  documents, read in one statement.
+- **`rollService.ts` → `readResolvedIdentity(parent.internalPrompt)`.** Follow
+  reads the parent candidate directly, so Part I's own green-eyes/brown-cousins
+  example is live at that line until Follow routes through selection.
+
+`rollProjection` and the echo project the selected variant for the same reason.
+
+## 12. Money — Sign's pattern, not the roll's
+
+A direct-operation kind, **`castingV2.refine`**:
+
+`beginDirectOperation` (with `clientRequestId` as the idempotency gate — a
+replay returns the existing variant rather than buying a second) → `markRunning`
+→ pinned deduct via `operationChargeReference` → generate → land.
+
+**Whole-charge refund on throw**, which `withAtomicCredits` already does. This
+is the one place that is right: a refine is ONE image and one unit, unlike a
+roll's eight independently refundable slices. Do not invent per-slice here.
+
+Riding along, none of it optional:
+
+- **admission against the provider budget before the claim**, the roll's rule;
+- a **recovery-adjudicator rule** for an expired refine operation — variant
+  landed means complete, otherwise refund — in `signRecovery.ts`'s shape, with a
+  `deployCollision`-style test;
+- `assertNotFrozen` and the `CASTING_V2_SCOPE` refusal, like everything else.
+
+**Pricing note for the founder gate:** removing a mid-stack instruction is a
+PAID re-render — new composition, new generation. Backing up to a variant that
+already exists is free selection. D-15 therefore puts a price on the remove
+affordance, and the UI must not make the two look alike.
+
+## 13. Eyes-only: what the copy actually is
+
+The tier is a copy problem by ruling, and the temptation is a banner. Resisted.
+
+- **One sentence at the Sign confirm**, making Sign the upgrade rather than a
+  re-confirmation of something already promised: *Sign locks this exact face as
+  her permanent, reproducible reference.*
+- **Honest refusal copy at the instruction box** for asks outside the tier.
+- **No drift warnings on the viewer or the variant cards.** A standing banner
+  reads as hedging, and the restrained register is the house voice.
+
+`renderFault` is borrowed on variant landings — same landing path, and garbage
+refunds. **An embedding-drift signal is deliberately NOT borrowed:** a measured
+and surfaced drift score is the validator wearing different clothes, and D-115's
+own logic is that accumulated measurement becomes a gate by drift. Evidence for
+later belongs in D-111's private bucket, post-v1.
+
+## 14. Selection — a pointer, not a flag
+
+`casting_candidate_variants`, append-only: the ordered instruction list
+denormalized per variant, the deltas, `internalPrompt`, `imageKey`, a status
+CAS, `operationId`, `pointsCost`, `expiresAt`.
+
+Plus **`selectedVariantId` on the candidate** (null = the original).
+
+**A pointer rather than a `selected` flag, and the reason is mechanical:** MySQL
+has no partial unique index, so "exactly one selected" enforced by flag is a
+race. A pointer holds one value by construction.
+
+**The fence:** `getSignableCandidate` returns the pointer, the variant's key and
+the variant's documents in one read; `signCandidateIntoCast`'s candidate CAS
+gains `AND selectedVariantId = <the value that was read>`. A selection switched
+mid-Sign therefore lands as `commit_conflict` and refunds, exactly like a racing
+discard already does.
+
+**The tree needs no schema.** It is emergent from prefix-sharing of instruction
+lists, and every row stays self-describing — "candidate 04 plus these three
+instructions". v1's UI is a linear stack with "edit from here"; no visualizer.
+
+## 15. Not in v1
+
+No reference images (v1.5). No multi-candidate refine. No post-Sign refine —
+that is M12 revisions. No validator. **No batch instructions** — one
+instruction, one variant, one price. No taste-pass re-run. No tree UI. No
+embedding signals.
+
+Must-ship, not optional: goldens gain refinement instructions (the hard
+condition already requires it), axis registration, and the recovery plus
+deploy-collision tests.
+
+## 16. Founder items — batched, not assumed
+
+1. **The per-edit price.** Proposed separately with rationale; nothing billing
+   is built until it is ruled.
+2. **Retention of unselected variants of a SIGNED candidate.** Recommendation:
+   they follow ordinary candidate retention, because Sign copies its own anchor
+   and the Cast therefore depends on nothing in the variant table. Part I §9.2
+   recorded this as open, so it gets ratified rather than assumed.
+3. **Follow-from-variant lineage** (Part I §9.4). Recommendation: Follow reads
+   the SELECTED variant only, and the roll stamps `parentVariantId`. Cheap now,
+   painful to backfill later.
