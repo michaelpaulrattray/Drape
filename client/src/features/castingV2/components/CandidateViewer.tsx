@@ -61,6 +61,7 @@ export function CandidateViewer({
   index,
   onIndexChange,
   onClose,
+  below,
 }: {
   /** The set being walked. One image is a set of one. */
   frames: readonly ViewerFrame[];
@@ -68,6 +69,15 @@ export function CandidateViewer({
   /** Absent for a single frame: there is nowhere to step to. */
   onIndexChange?: (next: number) => void;
   onClose: () => void;
+  /**
+   * What sits under the picture — the refine panel, where a caller has one.
+   *
+   * Passed in rather than built here so this component stays what it is: the
+   * one image grammar, used by three call sites, only one of which has anything
+   * to refine. A viewer that knew about candidates and variants would be a
+   * viewer the room and the package could no longer use.
+   */
+  below?: React.ReactNode;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const frame = frames[index] ?? frames[0];
@@ -126,7 +136,7 @@ export function CandidateViewer({
       */
       onClick={(event) => {
         const target = event.target as HTMLElement;
-        if (target.closest("img, .dpc-viewer__chrome")) return;
+        if (target.closest("img, .dpc-viewer__chrome, .dpc-refine")) return;
         onClose();
       }}
     >
@@ -170,6 +180,7 @@ export function CandidateViewer({
           ) : null}
         </figcaption>
       </figure>
+      {below}
     </div>,
     document.body,
   );

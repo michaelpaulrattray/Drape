@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "38bd439ad55fd489"
+    "sourceFingerprint": "49721300eaf3e93d"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 20
+      "moduleCount": 21
     },
     {
       "id": "domain:client-shared",
@@ -1457,6 +1457,12 @@
     {
       "id": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "path": "client/src/features/castingV2/components/KeptTray.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "path": "client/src/features/castingV2/components/RefinePanel.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -5499,6 +5505,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.refine",
+      "namespace": "castingV2",
+      "name": "refine",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.renameCast",
       "namespace": "castingV2",
       "name": "renameCast",
@@ -5519,6 +5535,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.selectVariant",
+      "namespace": "castingV2",
+      "name": "selectVariant",
+      "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.sign",
       "namespace": "castingV2",
       "name": "sign",
@@ -5533,6 +5559,16 @@
       "namespace": "castingV2",
       "name": "undo",
       "type": "mutation",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.variants",
+      "namespace": "castingV2",
+      "name": "variants",
+      "type": "query",
       "auth": "protected",
       "strictInput": true,
       "rateLimited": true,
@@ -8149,6 +8185,14 @@
     {
       "id": "test:server/castingV2/refineDelta.test.ts",
       "path": "server/castingV2/refineDelta.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineRecovery.test.ts",
+      "path": "server/castingV2/refineRecovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineService.test.ts",
+      "path": "server/castingV2/refineService.test.ts"
     },
     {
       "id": "test:server/castingV2/renderFault.test.ts",
@@ -11184,6 +11228,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "to": "module:client/src/features/castingV2/components/CastingModal.tsx",
       "kind": "imports"
@@ -13116,6 +13165,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/KeptTray.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "kind": "imports"
     },
     {
@@ -16615,6 +16669,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2Variants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -19560,6 +19619,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/refineService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/rollProjection.ts",
       "kind": "imports"
     },
@@ -19586,6 +19650,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2Variants.ts",
       "kind": "imports"
     },
     {

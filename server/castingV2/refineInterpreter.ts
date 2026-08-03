@@ -57,7 +57,14 @@ const SYSTEM_PROMPT = [
   "",
   'If the instruction asks for ANYTHING else — age, heritage, sex, build, hair, makeup, expression,',
   'clothing, background, weight, beauty, "make her prettier", a different person — reply',
-  '{"outOfTier": "<the thing they asked to change, in two or three of their own words>"}.',
+  '{"outOfTier": "<the thing they want changed, as a short NOUN PHRASE>"}.',
+  '',
+  'The noun phrase must fit the sentence "Refining can\'t change ___ yet." So:',
+  '  "make her older"        → {"outOfTier": "her age"}',
+  '  "give her blonde hair"  → {"outOfTier": "her hair"}',
+  '  "make her prettier"     → {"outOfTier": "how attractive she looks"}',
+  '  "put her in a red coat" → {"outOfTier": "what she is wearing"}',
+  'Never echo the instruction back as the noun phrase.',
   "",
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
 ].join("\n");
@@ -129,8 +136,14 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
 export function refusalMessage(refusal: RefineParse & { ok: false }): string {
   switch (refusal.refusal.reason) {
     case "out_of_tier":
-      return `Refining only changes the eyes for now, so ${refusal.refusal.asked} isn't something `
-        + "it can do. Rolling again with that in the brief will get you closer. Nothing was charged.";
+      /*
+        Names what was asked, so the refusal demonstrates it understood — a
+        refusal that does not reads as a bug rather than as a boundary. Then it
+        names the thing that DOES answer the ask, because a dead end wearing
+        polite words is still a dead end.
+      */
+      return `Refining can't change ${refusal.refusal.asked} yet — only the eyes. `
+        + "Rolling again with that in the brief will get you closer. Nothing was charged.";
     case "empty":
       return "Say what you'd like changed about the eyes.";
     case "unreadable":

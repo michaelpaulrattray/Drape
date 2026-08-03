@@ -175,3 +175,75 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
     because: "The lock validator's permanent fixture — 'her' must hold across all eight.",
   },
 ] as const;
+
+/**
+ * The golden REFINEMENT instructions (M8, §6's hard condition, §15).
+ *
+ * The brief goldens pin what a sentence must produce. These pin what an EDIT
+ * must produce, and they exist for the same reason: an edit that changes the
+ * picture without changing the record is the record-lies class, and the way it
+ * gets shipped is nobody checking that the parse still means what it meant.
+ *
+ * Two halves, and the second is the one that will rot first:
+ *
+ *   `delta` — a real eye ask, which must resolve to exactly these values. Never
+ *     "something in the eyes"; a closed vocabulary is only closed if a test
+ *     names the value it lands on.
+ *   `outOfTier` — a real ask the tier does NOT cover, which must be REFUSED for
+ *     free. These matter more than they look: an interpreter that quietly
+ *     stretches to fit "make her older" charges 25 credits to make a face that
+ *     is not older, and the user is right to be annoyed.
+ */
+export type GoldenRefinement = {
+  instruction: string;
+  /** What the face is now — relative asks resolve against it. */
+  from?: { eyeColour?: string; eyeShape?: string };
+  /** The exact delta expected, or `null` when the ask must be refused. */
+  delta: { eyeColour?: string; eyeShape?: string } | null;
+  because: string;
+};
+
+export const GOLDEN_REFINEMENTS: readonly GoldenRefinement[] = [
+  {
+    instruction: "make her eyes green",
+    delta: { eyeColour: "green" },
+    because: "The plainest possible ask. If this ever stops working, nothing else matters.",
+  },
+  {
+    instruction: "greener",
+    from: { eyeColour: "hazel" },
+    delta: { eyeColour: "green" },
+    because:
+      "A RELATIVE ask, resolved to an absolute AT ENTRY. This is what makes removing an instruction arithmetic rather than a re-interpretation — and it is the case a naive implementation gets wrong by storing the word 'greener'.",
+  },
+  {
+    instruction: "a bit lighter",
+    from: { eyeColour: "dark brown" },
+    delta: { eyeColour: "brown" },
+    because: "Relative on the same axis, in the other direction, with no colour word in the sentence at all.",
+  },
+  {
+    instruction: "give her hooded eyes",
+    delta: { eyeShape: "hooded" },
+    because:
+      "The geometry axis, which the roll never draws. If this parses to nothing, eye shape is unreachable and the tier is colour-only while claiming otherwise.",
+  },
+  {
+    instruction: "make her older",
+    delta: null,
+    because:
+      "THE REFUSAL CASE. Age is a casting decision, and the honest answer is to roll again — not to edit a photograph into a different person. Refused for free.",
+  },
+  {
+    instruction: "give her blonde hair",
+    delta: null,
+    because:
+      "Out of tier and very close to in-tier, which is exactly where an over-eager interpreter reaches. Hair is not eyes.",
+  },
+  {
+    instruction: "make her prettier",
+    delta: null,
+    because:
+      "Vague, subjective, and the kind of thing a model will happily 'do' by regenerating a different face. Refused rather than guessed at.",
+  },
+] as const;

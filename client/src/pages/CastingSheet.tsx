@@ -36,6 +36,7 @@ import {
   CandidateViewer,
   type ViewerFrame,
 } from "@/features/castingV2/components/CandidateViewer";
+import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
 import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 
@@ -381,6 +382,8 @@ export default function CastingSheet() {
   const createRoll = trpc.castingV2.createRoll.useMutation();
   const follow = trpc.castingV2.follow.useMutation();
   const sign = trpc.castingV2.sign.useMutation();
+  const refine = trpc.castingV2.refine.useMutation();
+  const chooseVariant = trpc.castingV2.selectVariant.useMutation();
 
   const onKeep = (candidateId: string, kept: boolean) => {
     // Paint first, ask second (D-38). The ring appears on the click, not on
@@ -676,6 +679,7 @@ export default function CastingSheet() {
 
   const price = config.data?.rollPriceCredits ?? 0;
   const signPrice = config.data?.signPriceCredits ?? 0;
+  const refinePrice = config.data?.refinePriceCredits ?? 0;
 
   /*
     WHO THE DOCK'S SIGN IS ABOUT.
@@ -714,6 +718,25 @@ export default function CastingSheet() {
     }));
   const viewerIndex = viewerFrames.findIndex(
     (frame) => frame.candidateId === viewerCandidateId,
+  );
+
+  /*
+    Only a READY, unsigned candidate of THIS sheet can be refined — the same
+    predicate the server enforces, mirrored here so the panel never appears
+    over a face it could only fail on.
+  */
+  const viewerCandidate = candidates.find(
+    (candidate) => candidate.candidateId === viewerCandidateId,
+  );
+  const viewerRefinable = Boolean(
+    viewerCandidateId && viewerCandidate?.status === "ready",
+  );
+  /* The stack is fetched only while a refinable face is open — there is
+     nothing to show otherwise, and eight idle queries per sheet is a cost
+     nobody sees and everybody pays. */
+  const variants = trpc.castingV2.variants.useQuery(
+    { candidateId: viewerCandidateId ?? "" },
+    { enabled: viewerRefinable },
   );
 
   /*
@@ -1401,6 +1424,49 @@ export default function CastingSheet() {
           index={viewerIndex}
           onIndexChange={(next) => setViewerCandidateId(viewerFrames[next]?.candidateId ?? null)}
           onClose={() => setViewerCandidateId(null)}
+          /*
+            Refining only appears on a READY candidate of this sheet. A tile
+            that is still casting, refunded or already signed has nothing to
+            refine, and a panel offering to spend on one would be a control
+            that can only fail.
+          */
+          below={viewerRefinable ? (
+            <RefinePanel
+              variants={variants.data?.variants ?? []}
+              selectedVariantId={variants.data?.selectedVariantId ?? null}
+              originalImageUrl={variants.data?.originalImageUrl ?? null}
+              priceCredits={refinePrice}
+              busy={refine.isPending}
+              onRefine={(instruction) => {
+                void refine
+                  .mutateAsync({
+                    clientRequestId: crypto.randomUUID(),
+                    candidateId: viewerCandidateId,
+                    instruction,
+                  })
+                  .then(async () => {
+                    await variants.refetch();
+                    await invalidate();
+                  })
+                  /*
+                    The refusal IS the product surface here (§13). It arrives as
+                    a toast because the panel has no other place to say
+                    something — and it says "nothing was charged" itself, which
+                    is the only part a user needs immediately.
+                  */
+                  .catch((error: Error) => toast(error.message));
+              }}
+              onSelect={(variantId) => {
+                void chooseVariant
+                  .mutateAsync({ candidateId: viewerCandidateId, variantId })
+                  .then(async () => {
+                    await variants.refetch();
+                    await invalidate();
+                  })
+                  .catch((error: Error) => toast(error.message));
+              }}
+            />
+          ) : null}
         />
       ) : null}
 

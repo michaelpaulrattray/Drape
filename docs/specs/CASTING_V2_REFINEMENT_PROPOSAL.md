@@ -360,3 +360,103 @@ deploy-collision tests.
 3. **Follow-from-variant lineage** (Part I §9.4). Recommendation: Follow reads
    the SELECTED variant only, and the roll stamps `parentVariantId`. Cheap now,
    painful to backfill later.
+
+---
+
+# PART III — WHAT THE BUILD CHANGED (2026-08-03, as shipped)
+
+Part II settled the design. This records where building it moved the design,
+and it is short on purpose — the plan held. Every item here is a thing the code
+knows that the plan did not.
+
+## 17. Eye shape is a realized axis the roll never draws
+
+§5's tier is "colour, shape". Colour had a home; shape had none anywhere, and
+§10 required one. The resolution is a realized-shelf axis whose draw returns
+**null for every candidate on every sheet, always** — so sheet output is
+bit-identical to before it existed, and only a refinement ever sets one.
+
+Filed on the realized shelf rather than in a new fourth shelf because it
+*behaves* realized in every consumer that matters: inherited whole through the
+follow anchor, composed by `describeRealizedAxes`, out of the taste pass's
+reach. Same argument that files `hairColour` there.
+
+**Three conditions hold together, and all three shipped in one commit:**
+
+1. the emitter ships WITH the footprint — a footprint whose emitter arrives
+   later is invariant 7's inert control;
+2. `hairRegion`'s terminator list gains the new heading, or a deference-nulled
+   eye colour lets hair footprints read on through the eye sentence;
+3. the D-87 sweep is FED a shape on a follow, so *that* test fails — naming
+   `eyeShape` — if anybody later persists the axis without composing it.
+
+"The roll never draws it" is measured over 180 draws rather than asserted in a
+comment, because that sentence is exactly the kind of convention this registry
+exists on account of.
+
+**Open for the founder:** the vocabulary itself — almond, round, hooded,
+monolid, upturned, downturned, deep-set, wide-set, close-set — is product
+taste, and it is proposed rather than decided.
+
+## 18. The refinement interpreter fails CLOSED
+
+`interpretBrief` fails open: an outage must not lose someone their roll, so it
+compiles from the raw sentence. **This one must not**, and the reason is that
+there is no honest fallback for "which axis did they mean". The alternatives
+are guessing at a paid edit of a face, or sending raw text to the image model
+while persisting parsed deltas beside it — the record-lies class rebuilt with
+extra steps. An outage refuses, and nobody is charged.
+
+## 19. A refinement extends the SELECTED variant, not the newest one
+
+Found while building the stack, and it is the difference between a working tree
+and a repeating list. Every row already stores its own full composed delta and
+its own full instruction list, so the new variant reads exactly ONE predecessor
+— accumulating across all of them repeats every earlier instruction once per
+variant.
+
+Reading the *selected* predecessor is also what makes §14's "edit from here"
+branch: back up to variant 1, refine again, and the new one descends from 1
+rather than from 3.
+
+## 20. The thumb question dissolved
+
+§14 gave the variant row an `imageKey` and no thumb, which looked like a
+decision waiting. It is not: `thumbKey` is a column **nothing populates** —
+the thumbnail worker is deferred scope — so variants inherit the same
+`thumbKey ?? imageKey` fallback candidates already live under. No pipeline was
+built for a problem that does not exist yet.
+
+Recorded because the projection does enforce one real rule: the face's keys move
+**together or not at all**. A variant's picture must never be shown under the
+original's thumbnail.
+
+## 21. Two mechanical traps, both money
+
+**The selection fence is null-safe.** `selectedVariantId` is NULL for every
+candidate nobody has refined, and `x = NULL` is never true in SQL — so a fence
+written as ordinary equality would have failed EVERY Sign in the product and
+refunded it. `<=>` is null-equals-null, and the null case has its own test
+because it is the case that looks least like it needs one.
+
+**`projectCandidate` REQUIRES the face fields.** It would have compiled fine
+taking a plain candidate and reading `imageKey`, rendering the ORIGINAL while
+Sign spent the refinement — a surface lying about what its own button does,
+with nothing failing to say so.
+
+## 22. Verified on a real paid refine
+
+"make her eyes green" against a live candidate: 91 seconds, one 25-credit
+charge, eyes green, and everything else held — same person, same hair, same
+shirt, same lighting, same framing, same backdrop. The out-of-tier refusal
+("make her older") returned free, before any claim.
+
+Evidence: `docs/specs/evidence/refine/refine-eyes-green-ab.jpg`.
+
+**One honest observation, not a defect and not yet a decision:** the refined
+frame sits very slightly tighter in the crop than the original. It is a known
+artifact of base-anchored identity edits, it is invisible unless the two are
+laid side by side, and it does NOT compound across a stack — every variant is
+one edit of the original, so variant ten has taken exactly one crop step, the
+same as variant one. Recorded so the founder sees it at the gate rather than
+discovering it later.
