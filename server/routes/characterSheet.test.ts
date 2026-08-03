@@ -116,14 +116,14 @@ describe("who may download a character sheet", () => {
 });
 
 describe("what comes back", () => {
-  it("serves a PNG the browser will save rather than render", async () => {
+  it("serves a JPEG the browser will save rather than render", async () => {
     const response = await get({}, "/api/cast/KI-TEST/sheet");
     expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toContain("image/png");
+    expect(response.headers.get("content-type")).toContain("image/jpeg");
     expect(response.headers.get("content-disposition")).toContain("attachment");
     expect(response.headers.get("content-disposition")).toContain("Jericho");
     const meta = await sharp(response.body).metadata();
-    expect(meta.format).toBe("png");
+    expect(meta.format).toBe("jpeg");
   });
 
   it("never lets a shared cache hold one owner's face", async () => {

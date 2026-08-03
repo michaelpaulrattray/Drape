@@ -35,10 +35,15 @@ export const CHARACTER_SHEET_RATE_LIMIT = {
  * `getOwnedCastByPublicId` excludes deleted and archived rows, so a deleted
  * Cast's sheet stops existing the moment she does.
  *
- * **This is the EXPORT rendering** — labelled, for a person. The unlabelled
- * reference rendering is never served over HTTP: it is composed in-process and
- * handed to an engine as bytes, because a URL is not something an image model
- * can eat and a lettered reference is something it would draw.
+ * **This is the EXPORT rendering** — bounded to 4096px and under 10MB so it is
+ * accepted by every tool people paste it into. It carries no text: labels never
+ * bake into pixels anywhere, because the export is exactly what gets fed to
+ * external engines and those reproduce whatever letters they see. Labels are
+ * page-rendered UI in the room, over the image.
+ *
+ * The full-native reference rendering is never served over HTTP — it is
+ * composed in-process and handed to an engine as bytes, because a URL is not
+ * something an image model can eat.
  */
 
 export type CharacterSheetRouteDependencies = {
@@ -103,8 +108,13 @@ export function createCharacterSheetRouter(
         return;
       }
       const name = (cast.name ?? "cast").replace(/[^A-Za-z0-9-_]+/g, "-").slice(0, 40);
-      res.setHeader("Content-Type", "image/png");
-      res.setHeader("Content-Disposition", `attachment; filename="${name}-character-sheet.png"`);
+      /*
+        JPEG, because the export is sized to the strictest envelope of the tools
+        people paste it into — 4096px long side, under 10MB. See the composer
+        for why that particular envelope.
+      */
+      res.setHeader("Content-Type", "image/jpeg");
+      res.setHeader("Content-Disposition", `attachment; filename="${name}-character-sheet.jpg"`);
       // Never cached by a shared cache: this is one owner's face behind an
       // authenticated route.
       res.setHeader("Cache-Control", "private, no-store");

@@ -39,18 +39,28 @@ import type { CastViewAngle } from "../../shared/boardTypes";
  * keys plus a composer version — a cache entry readers verify against the live
  * ledger, never an authority.
  *
- * # Two renderings, one geometry
+ * # NO TEXT IS EVER BAKED IN. Not in either rendering.
  *
- * `reference` is what an image model is handed. `export` is what a person
- * downloads. Same composer, same layout, one parameter — because the moment
- * they are two functions they start drifting.
+ * Image models reproduce what they see in a reference — labels, captions and
+ * watermarks come back out in the render — and our own framing constant forbids
+ * letters in the picture. That law was first applied to the engine-facing
+ * rendering only, and the founder corrected it: **the export is exactly what
+ * users feed into external tools**, so a label burned into it is the same
+ * hazard one step removed. Labels are page-rendered UI in the room, over the
+ * image, never in it.
  *
- * **The reference rendering carries NO TEXT AT ALL**, and that is not
- * fastidiousness. Image models reproduce what they see in a reference: labels,
- * captions and watermarks come back out in the render. Our own framing constant
- * forbids letters in the picture, so a lettered reference would manufacture the
- * conformance failures we then refund. Labels exist only in the export, which
- * never approaches a model.
+ * # Two renderings, one geometry — and now they differ only by ENVELOPE
+ *
+ * `reference` is what our own engines are handed: composed at the pack's native
+ * resolution, PNG, unbounded, because we control every consumer.
+ *
+ * `export` is what leaves the building, and it is sized to the strictest common
+ * envelope of the tools people actually paste it into — **4096px long side,
+ * JPEG, under 10MB.** That is Kling's limit; GPT Image (50MB), Seedance (~20MB
+ * practical) and Gemini (~20MB payload) are all looser, so meeting the tightest
+ * one means the file works everywhere without asking anybody which tool they
+ * use. At 4096 wide a three-column sheet gives ~1350px cells — near-native
+ * detail inside universal acceptance.
  *
  * # A missing view leaves a gap. Nothing stands in for it.
  *
@@ -110,11 +120,26 @@ export function orderCells(cells: readonly SheetCell[]): SheetCell[] {
   });
 }
 
-/** Cell geometry. Portrait cells, because every view in the pack is portrait. */
-const CELL_WIDTH = 512;
-const CELL_HEIGHT = 768;
-const GUTTER = 8;
-const LABEL_BAND = 44;
+/**
+ * The cell is the pack's own resolution, not a number chosen here.
+ *
+ * Views land at 1696x2528 and the signed anchor at 1024x1536 — both 2:3, so a
+ * single cell shape fits everything without cropping anybody. Composing at the
+ * largest native size means the engine-facing rendering throws away nothing;
+ * the export's downscale happens once, at the end, on the finished sheet.
+ */
+const DEFAULT_CELL_WIDTH = 1696;
+const CELL_ASPECT = 3 / 2;
+/** Proportional, so the gutter looks the same at any cell size. */
+const GUTTER_RATIO = 0.012;
+
+/**
+ * The export envelope: the strictest common limit across the tools people
+ * paste this into. Asserted by test, so a future cell-size change cannot
+ * silently breach it.
+ */
+export const EXPORT_MAX_LONG_SIDE = 4096;
+export const EXPORT_MAX_BYTES = 10 * 1024 * 1024;
 
 /**
  * How many columns for N cells.
@@ -134,7 +159,16 @@ export type SheetGeometry = {
   rows: number;
   width: number;
   height: number;
-  cells: Array<{ slot: SheetCell["slot"]; left: number; top: number }>;
+  cellWidth: number;
+  cellHeight: number;
+  /**
+   * Where each cell sits, and what it is called.
+   *
+   * The label rides along even though nothing draws it into the picture: the
+   * room renders labels as page UI over the image, and it needs to know which
+   * cell is which to place them.
+   */
+  cells: Array<{ slot: SheetCell["slot"]; label: string; left: number; top: number }>;
 };
 
 /**
@@ -145,56 +179,40 @@ export type SheetGeometry = {
  */
 export function sheetGeometry(
   cells: readonly SheetCell[],
-  variant: SheetVariant,
+  cellWidth: number = DEFAULT_CELL_WIDTH,
 ): SheetGeometry {
   const ordered = orderCells(cells);
   const columns = columnsFor(ordered.length);
   const rows = Math.ceil(ordered.length / columns);
-  const band = variant === "export" ? LABEL_BAND : 0;
-  const cellBox = CELL_HEIGHT + band;
+  const cellHeight = Math.round(cellWidth * CELL_ASPECT);
+  const gutter = Math.max(2, Math.round(cellWidth * GUTTER_RATIO));
 
   return {
     columns,
     rows,
-    width: columns * CELL_WIDTH + (columns + 1) * GUTTER,
-    height: rows * cellBox + (rows + 1) * GUTTER,
+    cellWidth,
+    cellHeight,
+    width: columns * cellWidth + (columns + 1) * gutter,
+    height: rows * cellHeight + (rows + 1) * gutter,
     cells: ordered.map((cell, index) => ({
       slot: cell.slot,
-      left: GUTTER + (index % columns) * (CELL_WIDTH + GUTTER),
-      top: GUTTER + Math.floor(index / columns) * (cellBox + GUTTER),
+      label: cell.label,
+      left: gutter + (index % columns) * (cellWidth + gutter),
+      top: gutter + Math.floor(index / columns) * (cellHeight + gutter),
     })),
   };
-}
-
-/** The label strip under a cell, as an SVG buffer. Export rendering only. */
-function labelStrip(label: string): Buffer {
-  /*
-    Escaped, because a Cast's name reaches the export rendering and a name with
-    an ampersand in it would otherwise produce invalid SVG and a failed
-    download. Nothing here is user-controlled in the reference rendering — that
-    one has no text at all.
-  */
-  const safe = label
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .slice(0, 40);
-  return Buffer.from(
-    `<svg width="${CELL_WIDTH}" height="${LABEL_BAND}" xmlns="http://www.w3.org/2000/svg">`
-      + `<rect width="100%" height="100%" fill="#EBEBEB"/>`
-      + `<text x="${CELL_WIDTH / 2}" y="28" text-anchor="middle" `
-      + `font-family="Inter, Helvetica, Arial, sans-serif" font-size="19" fill="#0A0A0A">`
-      + `${safe}</text></svg>`,
-  );
 }
 
 /**
  * Compose the sheet.
  *
- * Returns PNG bytes. Never throws for an empty pack — a Cast with nothing in it
- * yields null, and the caller decides what that means, because "there is no
- * sheet yet" is a different sentence in the export route than in the engine
- * path.
+ * `reference` returns full-native PNG bytes for our own engines. `export`
+ * returns a JPEG inside the universal envelope — 4096px long side, under 10MB.
+ * Neither carries a single letter.
+ *
+ * Never throws for an empty pack: a Cast with nothing in it yields null, and
+ * the caller decides what that means, because "there is no sheet yet" is a
+ * different sentence in the export route than in the engine path.
  */
 export async function composeCharacterSheet(
   cells: readonly SheetCell[],
@@ -203,26 +221,19 @@ export async function composeCharacterSheet(
   if (cells.length === 0) return null;
 
   const ordered = orderCells(cells);
-  const geometry = sheetGeometry(cells, variant);
+  const geometry = sheetGeometry(cells);
   const composites: sharp.OverlayOptions[] = [];
 
   for (let index = 0; index < ordered.length; index += 1) {
     const cell = ordered[index];
     const box = geometry.cells[index];
     const image = await sharp(cell.bytes, { failOn: "none" })
-      .resize(CELL_WIDTH, CELL_HEIGHT, { fit: "cover", position: "top" })
+      .resize(geometry.cellWidth, geometry.cellHeight, { fit: "cover", position: "top" })
       .toBuffer();
     composites.push({ input: image, left: box.left, top: box.top });
-    if (variant === "export") {
-      composites.push({
-        input: labelStrip(cell.label),
-        left: box.left,
-        top: box.top + CELL_HEIGHT,
-      });
-    }
   }
 
-  return sharp({
+  const sheet = sharp({
     create: {
       width: geometry.width,
       height: geometry.height,
@@ -231,8 +242,43 @@ export async function composeCharacterSheet(
       // than like a screenshot with white edges.
       background: "#EBEBEB",
     },
-  })
-    .composite(composites)
-    .png()
-    .toBuffer();
+  }).composite(composites);
+
+  if (variant === "reference") return sheet.png().toBuffer();
+  return boundedExport(await sheet.png().toBuffer());
+}
+
+/**
+ * Squeeze the finished sheet into the envelope everything accepts.
+ *
+ * Two constraints, applied in the order that matters: the long side first
+ * (geometry is not negotiable once a tool refuses the pixels), then quality
+ * until the bytes fit. Quality steps DOWN rather than being guessed once,
+ * because the size of a JPEG depends on the picture — a busy sheet of six faces
+ * is not the same file as a sparse one, and a fixed quality that fits today
+ * would breach the cap the first time somebody signs a Cast with more hair.
+ */
+async function boundedExport(png: Buffer): Promise<Buffer> {
+  const meta = await sharp(png).metadata();
+  const longSide = Math.max(meta.width ?? 0, meta.height ?? 0);
+  const scaled = longSide > EXPORT_MAX_LONG_SIDE
+    ? sharp(png).resize({
+        width: (meta.width ?? 0) >= (meta.height ?? 0) ? EXPORT_MAX_LONG_SIDE : undefined,
+        height: (meta.height ?? 0) > (meta.width ?? 0) ? EXPORT_MAX_LONG_SIDE : undefined,
+        fit: "inside",
+      })
+    : sharp(png);
+  const base = await scaled.toBuffer();
+
+  for (const quality of [90, 82, 74, 66, 58, 50]) {
+    const jpeg = await sharp(base).jpeg({ quality, mozjpeg: true }).toBuffer();
+    if (jpeg.length <= EXPORT_MAX_BYTES) return jpeg;
+  }
+  /*
+    Nothing in this product produces a sheet that survives quality 50 and still
+    exceeds ten megabytes — but returning the smallest attempt beats returning
+    something that will be refused at the far end, and the test pins the bound
+    so a future cell size cannot reach here quietly.
+  */
+  return sharp(base).jpeg({ quality: 45, mozjpeg: true }).toBuffer();
 }

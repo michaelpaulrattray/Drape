@@ -2,6 +2,8 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import {
+  EXPORT_MAX_BYTES,
+  EXPORT_MAX_LONG_SIDE,
   columnsFor,
   composeCharacterSheet,
   orderCells,
@@ -79,8 +81,8 @@ describe("the layout", () => {
     that angle.
   */
   it("omits a missing view and reflows, never substituting", async () => {
-    const full = sheetGeometry(await cells(["anchor", "closeUp", "frontFull", "sideClose"]), "reference");
-    const short = sheetGeometry(await cells(["anchor", "closeUp", "frontFull"]), "reference");
+    const full = sheetGeometry(await cells(["anchor", "closeUp", "frontFull", "sideClose"]));
+    const short = sheetGeometry(await cells(["anchor", "closeUp", "frontFull"]));
 
     expect(full.cells).toHaveLength(4);
     expect(short.cells).toHaveLength(3);
@@ -89,16 +91,22 @@ describe("the layout", () => {
     expect(short.cells.map((cell) => cell.slot)).not.toContain("sideClose");
   });
 
-  it("gives the export rendering room for its labels and the reference none", async () => {
+  it("uses one geometry — the renderings differ only by envelope", async () => {
     const pack = await cells(["anchor", "closeUp"]);
-    const reference = sheetGeometry(pack, "reference");
-    const exported = sheetGeometry(pack, "export");
-    expect(exported.height).toBeGreaterThan(reference.height);
-    expect(reference.width).toBe(exported.width);
+    const geometry = sheetGeometry(pack);
+    // No label band anywhere: the founder's correction is that labels never
+    // bake into pixels, in EITHER rendering. They are page UI in the room.
+    expect(geometry.height).toBe(geometry.rows * geometry.cellHeight
+      + (geometry.rows + 1) * Math.max(2, Math.round(geometry.cellWidth * 0.012)));
+  });
+
+  it("carries each cell's label for the room to render over the image", async () => {
+    const geometry = sheetGeometry(await cells(["anchor", "closeUp"]));
+    expect(geometry.cells.map((cell) => cell.label)).toEqual(["anchor", "closeUp"]);
   });
 
   it("never overlaps two cells", async () => {
-    const geometry = sheetGeometry(await cells(["anchor", "closeUp", "frontFull", "sideClose", "backFull"]), "export");
+    const geometry = sheetGeometry(await cells(["anchor", "closeUp", "frontFull", "sideClose", "backFull"]));
     for (const [i, a] of geometry.cells.entries()) {
       for (const b of geometry.cells.slice(i + 1)) {
         const apart = Math.abs(a.left - b.left) > 0 || Math.abs(a.top - b.top) > 0;
@@ -114,29 +122,40 @@ describe("what the picture actually contains", () => {
     const bytes = await composeCharacterSheet(pack, "reference");
     expect(bytes).not.toBeNull();
     const meta = await sharp(bytes!).metadata();
-    const geometry = sheetGeometry(pack, "reference");
+    const geometry = sheetGeometry(pack);
     expect(meta.width).toBe(geometry.width);
     expect(meta.height).toBe(geometry.height);
   });
 
   /*
-    THE REFERENCE CARRIES NO TEXT, and this is a money assertion wearing a
-    layout costume. Image models reproduce what they see in a reference —
-    labels, captions and watermarks come back out in the render — and our own
-    framing constant forbids letters in the picture. A lettered reference would
-    manufacture the conformance failures we then refund.
-
-    Asserted by SIZE rather than by reading pixels: the export reserves a label
-    band per row and the reference reserves none, so an identical pack differing
-    only in variant proves the band is absent.
+    THE EXPORT ENVELOPE, asserted so a future cell-size change cannot breach it
+    silently. 4096px long side and under 10MB is the strictest common limit
+    across the tools people paste this into — meeting the tightest one means the
+    file works everywhere without asking anybody which tool they use.
   */
-  it("reserves no label space at all in the engine-facing rendering", async () => {
-    const pack = await cells(["anchor", "closeUp"]);
-    const reference = await composeCharacterSheet(pack, "reference");
+  it("keeps the export inside the envelope every tool accepts", async () => {
+    const pack = await cells(["anchor", "closeUp", "frontFull", "sideClose", "backFull", "frontClose"]);
     const exported = await composeCharacterSheet(pack, "export");
-    const referenceMeta = await sharp(reference!).metadata();
-    const exportMeta = await sharp(exported!).metadata();
-    expect(exportMeta.height! - referenceMeta.height!).toBe(44);
+    const meta = await sharp(exported!).metadata();
+
+    expect(meta.format).toBe("jpeg");
+    expect(Math.max(meta.width!, meta.height!)).toBeLessThanOrEqual(EXPORT_MAX_LONG_SIDE);
+    expect(exported!.length).toBeLessThanOrEqual(EXPORT_MAX_BYTES);
+  });
+
+  /*
+    The engine-facing rendering is deliberately NOT bounded — we control every
+    consumer, and throwing detail away for a limit nobody here imposes would be
+    the export's constraint leaking into the reference.
+  */
+  it("leaves the engine-facing rendering at full native size", async () => {
+    const pack = await cells(["anchor", "closeUp", "frontFull"]);
+    const reference = await composeCharacterSheet(pack, "reference");
+    const meta = await sharp(reference!).metadata();
+    const geometry = sheetGeometry(pack);
+    expect(meta.format).toBe("png");
+    expect(meta.width).toBe(geometry.width);
+    expect(Math.max(meta.width!, meta.height!)).toBeGreaterThan(EXPORT_MAX_LONG_SIDE);
   });
 
   it("returns nothing for a Cast with nothing in her pack", async () => {
@@ -144,12 +163,19 @@ describe("what the picture actually contains", () => {
   });
 
   /*
-    A name reaches the export rendering, and a name with an ampersand in it
-    would otherwise produce invalid SVG and a failed download.
+    A label can be anything a customer typed, and it never reaches the pixels —
+    so a name that would once have broken the SVG label markup is now simply
+    carried alongside for the room to render. Kept as a case because the hazard
+    it guarded moved rather than disappeared.
   */
-  it("survives a name that would break the label markup", async () => {
+  it("never draws a label, whatever the label says", async () => {
+    const nasty = `Ren & "Q" <script>`;
+    const geometry = sheetGeometry([
+      { slot: "anchor", bytes: await swatch("#808080"), label: nasty },
+    ]);
+    expect(geometry.cells[0].label).toBe(nasty);
     const bytes = await composeCharacterSheet(
-      [{ slot: "anchor", bytes: await swatch("#808080"), label: `Ren & "Q" <script>` }],
+      [{ slot: "anchor", bytes: await swatch("#808080"), label: nasty }],
       "export",
     );
     expect(bytes).not.toBeNull();

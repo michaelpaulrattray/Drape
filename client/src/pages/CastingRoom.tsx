@@ -90,14 +90,15 @@ function downloadPackage(frames: readonly ViewerFrame[], castId: string) {
     exactly like the others.
   */
   const files = [
-    { url: `/api/cast/${encodeURIComponent(castId)}/sheet`, name: "character-sheet" },
-    ...frames.map((frame) => ({ url: frame.url, name: frame.downloadName })),
+    // JPEG: the sheet is bounded to the envelope external tools accept.
+    { url: `/api/cast/${encodeURIComponent(castId)}/sheet`, name: "character-sheet.jpg" },
+    ...frames.map((frame) => ({ url: frame.url, name: `${frame.downloadName}.png` })),
   ];
   files.forEach((file, index) => {
     window.setTimeout(() => {
       const link = document.createElement("a");
       link.href = file.url;
-      link.download = `${file.name}.png`;
+      link.download = file.name;
       link.rel = "noreferrer";
       document.body.appendChild(link);
       link.click();
