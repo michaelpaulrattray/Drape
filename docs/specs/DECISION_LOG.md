@@ -2933,6 +2933,132 @@ actions have nowhere else to live. A page has room to say what it means.
 It is the account's balance, not any action's price, and it was never part of
 this problem.
 
+## D-110 — A toast is the fallback channel. It is never a second copy.
+
+Founder ruling, 2026-08-03, resolving what looked like two of the founder's own
+rulings contradicting each other and was actually one rule nobody had written
+down.
+
+The apparent conflict: the prototype's toast law is an ink pill, bottom-centre,
+`z-index: 80`, ~2.1s, accent dot. The app-wide sonner was restyled flat-white by
+a founder directive (2026-07-11) whose own note says *"never restyle
+per-surface."* Both are founder rulings. Both are still in force.
+
+**They resolve by OWNERSHIP, not by precedence.**
+
+- **D-40 governs wherever a live surface owns the action.** Feedback renders in
+  place. Never as a toast. The casting sheet polls itself and every outcome
+  already has a surface on it — the failure banner, the per-tile captions, the
+  cancel line that counts refunds down as they land, and now the notice slot.
+- **The foundation toast law governs actions with NO live surface** — which is
+  the `GenerationOperationBridge`'s entire reason to exist: unwatched work
+  landing somewhere the user has navigated away from.
+
+So the bridge keeps toasting for unwatched work, in the toast law's FORM.
+Anything a casting surface can say in place, the surface says.
+
+**And the load-bearing half: no toast may duplicate an owned notice.** Toasts
+are the fallback channel, never a second telling. This is the rule the
+`castingV2.roll` exclusion (2026-08-01) was already an instance of — the founder
+watched *"That roll was cancelled. 160 credits were refunded"* arrive
+bottom-right while they were doing something else entirely, describing something
+they had chosen on purpose and had already watched resolve. That exclusion was
+correct and was reasoned from the specific case; this is the general law it
+belongs to.
+
+"Never restyle per-surface" is unharmed and now means what it always meant: one
+toast form everywhere, not one toast form and a separate casting toast form.
+What changed is which form that is.
+
+## D-111 — A rejected frame is QC evidence, and evidence never goes in the public bucket.
+
+Founder ruling, 2026-08-03. Two conformance verdicts have been confirmed wrong
+(the grey-vs-cream wardrobe rejection, and the judge failing a change on one
+view while passing it on four). A judge whose mistakes vanish cannot be
+improved, and today a conformance-rejected frame is deleted the moment it is
+rejected — so the evidence for a wrong judgment is gone before anyone can look
+at it.
+
+**Retained in the PRIVATE evidence bucket, never the public one.** The reasoning
+is not that the frame is more sensitive than a delivered view — it is that a
+rejected frame is *a near-identity of a customer's face that they never bought
+and never saw*, and `storage.ts` writes URLs that are permanent by design
+because they are persisted in database records. Permanence is exactly the wrong
+property for QC evidence. Product imagery lives in the public bucket; evidence
+does not.
+
+**Short retention (~14 days), through the cleanup worker's manifests** — the
+same machinery that already discharges the Sign path's orphaned-copy risk, not
+a second disposal path.
+
+**If the private evidence adapter is not configured in an environment, retain
+nothing there. Fail toward privacy.** Note the configuration gap; never fall
+back to the public bucket. A retention feature that silently downgrades its
+storage guarantee when unconfigured is the invoked-but-inert class with the
+blast radius pointing at the customer.
+
+## D-112 — The timestamp fix belongs at the connection, and is reached with instrument discipline.
+
+Founder ruling, 2026-08-03, on a defect that twice nearly produced a false
+timeline conclusion during incident work.
+
+**The mechanism, measured rather than inferred:** mysql2 serialises a JS `Date`
+into a LOCAL wall-clock string, while SQL `NOW()` / `defaultNow()` writes the
+server's UTC. On a development machine at UTC+10 the two writers therefore land
+**ten hours apart in the same column**. Reads compound it — a typed drizzle
+`select()` returns a `Date` parsed as local (ten hours early), while
+`db.execute()` returns the raw string. Production is unaffected: Railway runs
+UTC, so the offset is zero and the two conventions coincide.
+
+**A shared read-path helper was REJECTED as the fix.** It is the opted-out law
+waiting to happen: every future reader must remember to use it, and the one that
+forgets is silently wrong in a way that looks right. One source of truth at the
+pool is the destination.
+
+**But changing timezone semantics under a live product is the risky class**, so
+the route matters as much as the destination:
+
+1. **Inventory the readers.** Every site that compares, formats or persists a
+   timestamp.
+2. **Prove the connection fix behaviour-preserving against real persisted rows
+   in dev** — not against fixtures, which cannot carry the mixed convention that
+   is the whole problem.
+3. **Fix any reader that depended on the broken behaviour IN THE SAME CHANGE.**
+   A reader that silently compensated for the skew becomes wrong the moment the
+   skew is removed.
+4. Then ship.
+
+**Measure, then move it once.**
+
+## D-113 — A fallback roll is charged. The confession is the product, not a refund.
+
+Founder ruling, 2026-08-03, arising from the sweep that made the fallback
+visible for the first time.
+
+When the interpreter cannot be read, the compile falls back to the raw sentence
+and every fact the brief stated is lost — on a roll that still runs and is still
+charged. The sheet now says so (the highest line in the notice slot). The
+question that opened was whether it should also refund.
+
+**It should not.** Eight real images were delivered from an honest degraded
+compile. What was owed was *saying so*, and that is now paid. A roll that
+produced eight faces is not a roll that produced nothing.
+
+**The refund line stays exactly where the existing laws already put it:**
+
+- **Nothing dispatched → nothing charged.** Structurally true rather than
+  policed, because compile precedes the charge: a compile that fails outright
+  throws before the claim, so there is no money to return.
+- **Zero usable delivered → everything back**, base included — the D-103 family,
+  unchanged.
+- **A fallback roll that provably dropped a stated fact remains the
+  support-correction precedent** (`refund:correction`), case by case.
+
+**Never an automatic.** An automatic refund on fallback turns every interpreter
+outage into a free-roll festival, and it would price our bad day as the
+customer's windfall rather than as what it is — a degraded delivery we now
+declare.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
