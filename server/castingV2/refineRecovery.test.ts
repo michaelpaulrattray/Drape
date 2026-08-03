@@ -248,3 +248,26 @@ describe("a live refine that lands mid-sweep", () => {
     expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 25 });
   });
 });
+
+/*
+  The impossible state gets ONE verdict, not two. Both arms that can see a
+  delivered-but-unpaid refinement park it — unreachable by construction, but
+  two arms disagreeing about an impossible state is how an impossible state
+  eventually gets a wrong answer.
+*/
+describe("a delivered refinement with no charge parks from either arm", () => {
+  it("parks from the race arm, not just the primary one", async () => {
+    ledger.charge = 0;
+    variantRow = { id: 500, publicId: "variant-1", status: "dispatched" };
+    const { failVariant, findVariantByOperation } = await import("../db/castingV2Variants");
+    vi.mocked(failVariant).mockResolvedValueOnce(false);
+    vi.mocked(findVariantByOperation).mockResolvedValueOnce(
+      { id: 500, publicId: "variant-1", status: "ready" } as never,
+    );
+
+    const outcome = await recoverCastingV2RefineOperation(operation);
+    expect(outcome).toMatchObject({ type: "recovery_required" });
+    expect(parked).toContain("33333333-3333-4333-8333-333333333333");
+    expect(ledger.refunds).toHaveLength(0);
+  });
+});
