@@ -1590,6 +1590,36 @@ the original defect wearing the fix's clothes.
 Verified live, not stubbed: goldens 12 briefs x 3 runs green with Margiela
 still capturing, and 0 of 64 candidate prompts carrying a name.
 
+**RATIFIED AND SCOPED BY THE FOUNDER, 2026-08-03.** The listlessness rule reads
+**listless about PEOPLE; lists of non-people are allowed.** This entry's header
+says executor/advisor, and the program's notes had come to attribute the
+listlessness to the founder — so the scope is now settled rather than inferred.
+
+The occasion was the twitch role-null miss, measured at 12 of 120 live samples
+(10.0%) and traced to this very guard: eleven of the twelve were `guardRole`
+discarding a role the interpreter had written correctly as "a Twitch streamer".
+The interpreter normalizes to correct English because Twitch IS a proper noun,
+and a shape test cannot tell a platform from a person — "Twitch" and "Zendaya"
+are the same shape.
+
+The remedy is `VOUCHED_NON_PEOPLE` in `properNouns.ts`, and the founder ratified
+its doctrine as written:
+
+- **Platforms, institutions and industries only.** Never a person, never a
+  stage name, never a house, never a character.
+- **Every gap fails closed** — an unlisted "Kick streamer" still nulls, which is
+  the pre-existing behaviour and not a regression. That asymmetry is the entire
+  licence for the list existing.
+- **A new row is reviewed like a new public endpoint**, not treated as a
+  convenience.
+
+This does not loosen D-82. `VOCABULARY_WORDS` and `scrubBrands` were always
+lists; what the ruling forbids is a list of PEOPLE, the thing nobody can
+enumerate or defend the edges of. Re-measured after the fix: 0 of 120
+(95% CI 0.0–3.1%), with negative controls pinned in `roleNameGuard.test.ts` —
+Wes Anderson and Zendaya still null, and a vouched word never vouches for its
+neighbours.
+
 ### D-83 — A reply cut off at the ceiling is transport, not a verdict *(founder ruling 2026-08-01)*
 
 > *"Close the class, not just the ceiling. 500 ate locks, then 1200, now 1800 —
@@ -3058,6 +3088,89 @@ produced eight faces is not a roll that produced nothing.
 outage into a free-roll festival, and it would price our bad day as the
 customer's windfall rather than as what it is — a degraded delivery we now
 declare.
+
+## D-114 — A package view gets one automatic re-attempt. It knowingly amends D-92.
+
+Founder ruling, 2026-08-03. **This amends a ratified design**, so the amendment
+is stated rather than slipped in: D-92 gave the Sign package no repair path at
+all — a view that failed conformance was refunded and the slot confessed. That
+was the right shape for a machine nobody had watched work yet. The maiden
+voyage and the closes since have shown the judge rejecting frames that a second
+draw would have satisfied, and paying the customer back for a coin toss is not
+the same as trying twice.
+
+**One automatic re-attempt, before the slot is declared failed.**
+
+### The line that keeps this from becoming a money path
+
+**The retry runs BEFORE settlement.** That is the whole safety argument, and it
+is why this needs no new billing anything: the original 50 credits already
+covers the slot, and a refund only comes into existence after the *second* miss.
+There is no second charge, no second reference, no new reconciliation. The
+receipt arithmetic D-92 and D-103 established is untouched, because the retry
+happens entirely inside the window where the slot has not yet settled.
+
+### The bars, all five
+
+- **Retry before settlement.** No new money path. One charge, one possible
+  refund, unchanged references.
+- **One retry maximum.** Not a loop, not a budget, not "until it passes". A
+  second miss settles as a failure exactly as today.
+- **Both attempts' verdicts persist on the slot.** The judge is young and this
+  is the record that lets it be improved — a slot that passed on the second draw
+  should say what the first draw was rejected for.
+- **Fenced writers are unchanged. A process that lost its fence retries
+  nothing.** Losing the fence means this process stopped being the authority for
+  this operation; a fenced writer that "helpfully" retried would be a second
+  process generating against a slot the sweep already owns.
+- **A test proves no double-settlement and no post-fence retry.** Both are
+  silent failures — the first pays or seals twice, the second races recovery —
+  so neither may rest on reading the code.
+
+### What this is NOT
+
+**Per-slot user retry with money attached waits for M12.** A button that spends
+credits to redraw a view is a purchase surface, and purchase surfaces get
+designed as purchases: price, confirmation, receipt, refusal. This ruling is
+strictly the machine giving itself one more go inside a slot the customer has
+already paid for.
+
+### Shipping
+
+Ships as **one batch with (0g) rejected-frame retention**, slotted after D-93,
+because they are the same pipeline lines:
+
+    generate → judge → retain the rejected frame (0g, private bucket) → retry once → settle
+
+Doing them separately would mean touching the same four lines twice and writing
+the retention of a rejected frame without the second attempt that makes a
+rejected frame interesting.
+
+## D-115 — The judge self-measures. It never self-modifies.
+
+Founder ruling, 2026-08-03, recorded alongside D-114 because the retry is what
+makes it urgent: a machine that retries is a machine generating evidence about
+its own judgments, and the tempting next step is to let it act on that.
+
+**It does not.**
+
+- **Evidence accumulates automatically.** Retained rejected frames (D-111),
+  both attempts' verdicts on a slot (D-114), the disagreement between a first
+  and second draw — all of it collects without anybody deciding to collect it.
+- **Judge improvements ship as reviewed changes, with fixtures.** A threshold, a
+  prompt, an axis, a landmark — each one is a diff somebody read, pinned by
+  fixtures drawn from the accumulated evidence.
+
+The thing being refused is a judge that tunes itself from its own outcomes.
+That machine has no negative control: it would drift toward whatever it already
+believes, its own record would agree with it at every step, and the first sign
+of trouble would be customers paying for views a quietly-loosened judge stopped
+catching. The program has met the general shape before — a control that is
+invoked but inert, evidence tidied away, a suite that proves the layer above the
+one that breaks. Self-tuning is all three at once.
+
+Measurement is free and reversible. Modification is neither, so it stays a
+decision somebody makes.
 
 ---
 
