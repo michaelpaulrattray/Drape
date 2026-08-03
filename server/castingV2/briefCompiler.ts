@@ -286,6 +286,9 @@ function fallbackIntent(briefText: string): CastingIntent {
       interpreter to have worked (D-89).
     */
     statedHair: EMPTY_STATED_HAIR,
+    // The fallback compiles from the raw sentence, so nothing was interpreted
+    // and there is nothing to say back.
+    statedAccessories: [],
     // No interpreter ran, so no category was read and nothing is implied.
     poolTendencies: NO_TENDENCIES,
   };

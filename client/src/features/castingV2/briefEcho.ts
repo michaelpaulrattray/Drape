@@ -39,6 +39,8 @@ export type BriefFacts = {
   };
   open: string[];
   variationAxis: "look" | "disposition" | null;
+  /** Worn things the brief named, in the user's own words. */
+  statedAccessories?: string[];
 };
 
 /** Which lock a span adjusts. Matches the server's overridable vocabulary. */
@@ -58,6 +60,12 @@ export type EchoSpan =
   | { kind: "text"; text: string }
   /** The casting category: full ink, not adjustable — free text has no picker. */
   | { kind: "role"; text: string }
+  /**
+   * Something the brief said they are wearing. Full ink, and not adjustable
+   * for the same reason the category is not: it is the user's own free text,
+   * and underlining it would promise a picker that cannot exist.
+   */
+  | { kind: "stated"; text: string }
   | { kind: "fact"; text: string; field: EchoField }
   | { kind: "open"; text: string; field: EchoField };
 
@@ -232,6 +240,29 @@ function composeSpans(
   if (locks.look) {
     spans.push(connector(spans, "Everyone on this sheet is held to ", ", held to "));
     spans.push({ kind: "fact", text: locks.look, field: "look" });
+  }
+
+  /*
+    STATED ACCESSORIES, said before the sentence closes.
+
+    The echo's contract is that it says what the brief said. It used to say
+    only what the brief LOCKED, and a stated accessory is neither a lock nor a
+    varying axis — so it fell through the gap and the sentence was quietly
+    incomplete about a fact the user had typed and paid to have rendered.
+
+    A stated fact is never dropped by the terse form. Terse exists to shed the
+    latitude clause, which a returning user has already read; shedding something
+    they said themselves would be the opposite trade.
+  */
+  const stated = facts.statedAccessories ?? [];
+  if (stated.length > 0) {
+    spans.push(connector(spans, "Everyone on this sheet is wearing ", ", wearing "));
+    stated.forEach((accessory, index) => {
+      if (index > 0) {
+        spans.push({ kind: "text", text: index === stated.length - 1 ? " and " : ", " });
+      }
+      spans.push({ kind: "stated", text: accessory });
+    });
   }
 
   const pinnedAnything = spans.length > 0;

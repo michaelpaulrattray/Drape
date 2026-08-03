@@ -170,9 +170,10 @@ describe("the spans carry the two-layer typography", () => {
     );
     const OVERRIDABLE = new Set(["sex", "ageBand", "agePhase", "heritage", "build", "energy", "look"]);
     for (const span of spans) {
-      // "role" spans carry no field — a category is free text and has no
-      // picker, which is exactly why it is not adjustable.
-      if (span.kind === "text" || span.kind === "role") continue;
+      // "role" and "stated" spans carry no field — both are the user's own
+      // free text and have no picker, which is exactly why neither is
+      // adjustable.
+      if (span.kind === "text" || span.kind === "role" || span.kind === "stated") continue;
       expect(OVERRIDABLE.has(span.field)).toBe(true);
     }
   });
@@ -384,5 +385,72 @@ describe("no clause may open the sentence with a comma", () => {
       expect(text[0], text).toMatch(/[A-Z]/);
       expect(text, text).not.toContain(" ,");
     }
+  });
+});
+
+/**
+ * Stated accessories, and the sentence's own contract.
+ *
+ * The echo claims to say what the brief said. It used to say only what the
+ * brief LOCKED — and a stated accessory is neither a lock nor a varying axis,
+ * so it fell through the gap: "wearing chunky glasses" was rendered, charged
+ * for, and never mentioned by the one line that claims to report the brief.
+ */
+describe("what the brief said they are wearing", () => {
+  const base = { role: null, locks: {}, open: [] as string[], variationAxis: null };
+
+  it("says it, in the user's own words", () => {
+    const text = echoText(composeEcho({ ...base, statedAccessories: ["chunky glasses"] }));
+    expect(text).toContain("wearing chunky glasses");
+  });
+
+  it("joins several the way English does", () => {
+    const text = echoText(composeEcho({
+      ...base,
+      statedAccessories: ["a nose stud", "a wedding ring"],
+    }));
+    expect(text).toContain("wearing a nose stud and a wedding ring");
+  });
+
+  it("continues the sentence rather than opening a second one", () => {
+    const text = echoText(composeEcho({
+      ...base,
+      role: "a model",
+      locks: { sex: "female", ageBand: "20s" },
+      statedAccessories: ["chunky glasses"],
+    }));
+    // One sentence, one full stop before the latitude clause.
+    expect(text).toContain(", wearing chunky glasses");
+    expect(text).not.toContain(". Everyone on this sheet is wearing");
+  });
+
+  /*
+    A STATED FACT IS NEVER DROPPED BY THE TERSE FORM. Terse exists to shed the
+    latitude clause, which a returning user has already read; shedding something
+    they said themselves would be the opposite trade.
+  */
+  it("survives the terse form", () => {
+    const text = echoText(composeEcho(
+      { ...base, role: "a model", statedAccessories: ["chunky glasses"] },
+      { terse: true },
+    ));
+    expect(text).toContain("chunky glasses");
+  });
+
+  it("is silent when the brief named nothing worn", () => {
+    const text = echoText(composeEcho({ ...base, role: "a dad", statedAccessories: [] }));
+    expect(text).not.toContain("wearing");
+  });
+
+  /*
+    Not adjustable, and for the same reason the category is not: it is the
+    user's own free text, and an underline would promise a picker that cannot
+    exist. The brief box is where a stated fact changes.
+  */
+  it("carries no field, because there is no picker for free text", () => {
+    const spans = composeEcho({ ...base, statedAccessories: ["chunky glasses"] });
+    const stated = spans.filter((span) => span.kind === "stated");
+    expect(stated).toHaveLength(1);
+    expect(stated[0]).not.toHaveProperty("field");
   });
 });

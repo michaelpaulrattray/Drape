@@ -82,10 +82,11 @@ export function isExpiryWarning(line: string | null): boolean {
  * One sentence, once, at the top of the sheet it concerns. It names the
  * deadline and the action, and nothing else.
  *
- * "Keep what's worth holding" — NOT "keep or sign". Sign does not exist yet;
- * it lands in M7. Copy that offers it would be promising a capability the
- * product does not have, which is the one thing the honest-capability law
- * forbids outright. The sentence gains "or sign" the day the button does.
+ * **The sentence gained "or sign" the day the button did**, which is what its
+ * own comment promised when Sign was still M7 work. It read "keep what's worth
+ * holding" for a while after Sign shipped — an honest sentence describing a
+ * narrower product than the one in front of the user, which is the same class
+ * of stale as a capability claimed too early, just pointing the other way.
  */
 export function sheetExpiryNotice(expiresAt: string | null, now = Date.now()): string | null {
   if (!expiresAt) return null;
@@ -95,7 +96,7 @@ export function sheetExpiryNotice(expiresAt: string | null, now = Date.now()): s
   const left = at - now;
   if (left <= 0 || left >= EXPIRY_NOTICE_MS) return null;
   const when = left < DAY ? "today" : "tomorrow";
-  return `This sheet expires ${when} — keep what's worth holding.`;
+  return `This sheet expires ${when} — keep or sign what's worth holding.`;
 }
 
 /**

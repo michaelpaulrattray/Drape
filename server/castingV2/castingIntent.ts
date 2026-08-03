@@ -405,6 +405,8 @@ export type CastingIntent = {
    * code-owned gate's job (D-89). See `StatedHair`.
    */
   statedHair: StatedHair;
+  /** Worn things the brief named, in the user's own words. Echo-only. */
+  statedAccessories: string[];
   /**
    * What the CATEGORY implies about axes the brief never stated.
    *
@@ -534,6 +536,7 @@ const wireSchema = z.object({
   reads: z.array(z.unknown()).nullable().optional(),
   composedDirection: z.unknown().nullable().optional(),
   statedHair: z.unknown().nullable().optional(),
+  statedAccessories: z.unknown().nullable().optional(),
   poolTendencies: z.unknown().nullable().optional(),
   /*
     `.nullable()` matters as much as `.optional()` here, and the difference
@@ -714,6 +717,44 @@ export function parseStatedHair(raw: unknown, briefText: string): StatedHair {
   };
 }
 
+/** Kept short: this is a phrase the user typed, not a description. */
+const STATED_ACCESSORY_MAX = 40;
+/** Three is already more than any real brief names, and it bounds the echo. */
+const STATED_ACCESSORY_LIMIT = 3;
+
+/**
+ * The worn things the brief named, in the user's own words.
+ *
+ * Mirrors `parseStatedHair` deliberately, down to the containment: every phrase
+ * is scrubbed, refused if it carries a digit or a garment word, and then
+ * checked TOKEN BY TOKEN against the user's own sentence. A phrase containing a
+ * word they did not type is dropped rather than repaired — the closed-SOURCE
+ * rule (D-89), which is what makes a free-text field safe to read back without
+ * a closed vocabulary. "Chunky glasses" is in no enum and never will be.
+ *
+ * **This never reaches the image model.** `characterNotes` is what the picture
+ * is composed from; this exists so the sentence above the sheet can say what it
+ * was told, and it is read only there.
+ */
+export function parseStatedAccessories(raw: unknown, briefText: string): string[] {
+  if (!Array.isArray(raw)) return [];
+  const kept: string[] = [];
+  for (const entry of raw) {
+    const cleaned = scrubBrands(cleanFreeText(entry, STATED_ACCESSORY_MAX));
+    if (!cleaned) continue;
+    // Same three refusals as stated hair, for the same three reasons: digits
+    // become text artefacts, a garment word means the model answered about
+    // clothes, and a word the user never typed is an invention.
+    if (/[0-9]/.test(cleaned)) continue;
+    if (mentionsGarments(cleaned)) continue;
+    if (!tokensComeFromBrief(cleaned, briefText)) continue;
+    if (kept.some((existing) => existing.toLowerCase() === cleaned.toLowerCase())) continue;
+    kept.push(cleaned);
+    if (kept.length >= STATED_ACCESSORY_LIMIT) break;
+  }
+  return kept;
+}
+
 /**
  * Closed vocabularies both, so a bad reply degrades to "no tendency".
  *
@@ -809,6 +850,7 @@ export function parseCastingIntent(raw: unknown, briefText = ""): IntentParseRes
       reads: parseReads(wire.reads),
       composedDirection: parseComposedDirection(wire.composedDirection),
       statedHair: parseStatedHair(wire.statedHair, briefText),
+      statedAccessories: parseStatedAccessories(wire.statedAccessories, briefText),
       poolTendencies: parsePoolTendencies(wire.poolTendencies),
     },
   };

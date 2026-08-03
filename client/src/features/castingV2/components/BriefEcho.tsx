@@ -145,6 +145,13 @@ function EchoSpanView({
     the brief box is where a category changes.
   */
   if (span.kind === "role") return <span className="dpc-echo__role">{span.text}</span>;
+  /*
+    A stated accessory reads at full ink like the category, and for the same
+    reason it is not clickable: it is the user's own free text, and an
+    underline would promise a picker that cannot exist. The brief box is where
+    a stated fact changes.
+  */
+  if (span.kind === "stated") return <span className="dpc-echo__role">{span.text}</span>;
 
   const { field } = span;
   const current = currentValue(facts, field);

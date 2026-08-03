@@ -258,7 +258,7 @@ const SKIN_AND_FEATURES = [
     That half is the craft: a lash line of identical strands and a brow of one
     flat colour are the two tells that survive an otherwise convincing face.
   */
-  "LASHES: individual strands clumping in irregular groups, with varying length and slight curl variation, each catching light on its own and casting micro-shadows on the skin below. Bare and natural, never a solid dark mass, never mascara-heavy uniformity.",
+  "LASHES: individual strands clumping in irregular groups, with varying length and slight curl variation, each catching light on its own and casting micro-shadows on the skin below. Unless the description states otherwise, bare and natural — never a solid dark mass, never uniform.",
   "LIPS: vertical plicae and a natural moisture gradient, glossier at the centre and drier toward the edges, with natural colour variation from the vermillion border inward. Lips have topography, never a flat matte fill. The border is organic and slightly irregular, never a vector-sharp line.",
   "BROWS: individual hairs with visible growth direction — upward near the nose, arching laterally, tapering at the tail — with natural gaps, overlapping strands and subtle colour variation from root to tip. Never a solid drawn-on block.",
   "Vellus fuzz is translucent and near-invisible, catching light only at extreme angles — it is NOT terminal hair, NOT stubble, NOT dark and NOT pigmented.",
@@ -306,12 +306,36 @@ const SKIN_AND_FEATURES = [
     the scene — those stay banned, and the clause says so rather than leaving it
     to be inferred.
 
-    Nothing enters the echo. An accessory is not a lock: it neither varies
-    across the eight nor pins an identity axis, so the echo — which speaks
-    locks — has nothing to say about it.
+    The echo DOES speak these now, and that changed after this comment was
+    written. An accessory is still not a lock — it neither varies across the
+    eight nor pins an identity axis — but the echo claims to say what the brief
+    said, and staying silent about a stated fact made it quietly incomplete. It
+    reads them back as the user's own words, never as an adjustable chip.
   */
   "STATED ACCESSORIES: When the character description names something WORN on the face or body — glasses, a nose stud, a named earring, a chain, a wedding ring — render it plainly and accurately as this person's own, exactly as described. A named accessory that fails to appear is a failed candidate.",
   "This licenses only what the description names. It does NOT permit props, objects held in the hands, headwear, or anything in the scene: those remain forbidden, and an accessory the description did not name must never be invented.",
+  /*
+    STATED MAKEUP — the same licence again, and the third time this exact shape
+    has been needed (D-116, founder ruling 2026-08-03).
+
+    Makeup was unsayable at three layers at once: this constant's LASHES clause
+    calling for bare, un-mascaraed strands; the interpreter told never to write
+    makeup into a composed direction; and no carve-out anywhere. **None of that
+    was decided.** Three independent restraints happened to agree, and the
+    result quietly overruled anybody who asked for something.
+
+    The dice stay bare, and that half is deliberate: eight bare faces are
+    comparable AS PEOPLE, eight variously made-up ones are comparable as looks.
+    What changes is that a stated fact now outranks the default, exactly as it
+    does for a scar and for a pair of glasses.
+
+    Narrow in the same way as its two siblings: it licenses what the description
+    NAMES, on the face, and it does not become permission to glamorise. The
+    failure clause is the one that gives the licence teeth — without it this is
+    a sentence the prior can ignore, which is precisely what happened before.
+  */
+  "STATED MAKEUP: When the character description names makeup — mascara, a red lip, gloss, blush, liner, a smoky eye, bold brows — render it plainly and accurately as worn by this person, exactly as described. Named makeup that fails to appear is a failed candidate.",
+  "This licenses only what the description names. Makeup is never added to a face the description left unmade: the default is a bare, unmade face, and it stays that way unless the words ask otherwise.",
 ].join(" ");
 
 /**

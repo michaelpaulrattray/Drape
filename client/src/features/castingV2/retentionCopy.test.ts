@@ -75,25 +75,31 @@ describe("the sheet's own line", () => {
 
   it("names the day and the action, and nothing else", () => {
     expect(sheetExpiryNotice(inFuture(30 * HOUR), NOW)).toBe(
-      "This sheet expires tomorrow — keep what's worth holding.",
+      "This sheet expires tomorrow — keep or sign what's worth holding.",
     );
     expect(sheetExpiryNotice(inFuture(3 * HOUR), NOW)).toBe(
-      "This sheet expires today — keep what's worth holding.",
+      "This sheet expires today — keep or sign what's worth holding.",
     );
   });
 
-  it("does NOT offer to sign, because signing does not exist yet", () => {
+  it("DOES offer to sign, now that the button exists", () => {
     /*
-      The honest-capability law, and the one place this batch would have broken
-      it. The founder's draft read "keep or sign what's worth holding" — but
-      Sign lands in M7: there is no `sign` procedure and no button. Copy that
-      offers it would promise a capability the product does not have.
+      The inverse of the assertion that stood here, and the inversion is the
+      point rather than a rewrite.
 
-      This assertion is the reminder to add the words the day the button ships,
-      and the guard against adding them a day earlier.
+      This test used to pin the opposite: the founder's draft read "keep or sign"
+      while Sign was still M7 work, and offering a capability the product did not
+      have is the one thing the honest-capability law forbids outright. So the
+      words were removed and this stood as the reminder to add them the day the
+      button shipped.
+
+      Sign shipped in M7. The sentence went on saying "keep what's worth
+      holding" for a while afterwards — honest, and describing a narrower
+      product than the one in front of the user, which is the same staleness
+      pointing the other way.
     */
     for (const hours of [1, 6, 20, 30, 46]) {
-      expect(sheetExpiryNotice(inFuture(hours * HOUR), NOW)).not.toMatch(/sign/i);
+      expect(sheetExpiryNotice(inFuture(hours * HOUR), NOW)).toMatch(/sign/i);
     }
   });
 

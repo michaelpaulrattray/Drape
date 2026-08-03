@@ -152,6 +152,7 @@ Reply with a single JSON object and nothing else:
   "reads": [8 short strings] | null,
   "composedDirection": { "thesis": string, "avoid": string } | null,
   "statedHair": { "cutLength": string | null, "colour": string | null, "texture": string | null, "greying": boolean },
+  "statedAccessories": string[],
   "poolTendencies": { "ageLean": ageBand value | null, "facialHairLean": "clean" | "beard" | "any" | null, "heritageLean": heritage value | null, "leanStrength": "centres" | "defines" | null, "avoidFamilies": [hair family values] }
 }
 
@@ -192,8 +193,8 @@ WHAT TO EXTRACT
   Leave it null only when the brief names no category at all — "someone with
   kind eyes", "a person in their 40s".
 - "characterNotes": short character-side detail the brief gave — bearing,
-  demeanour, hair, distinguishing features, and any accessory the brief says
-  they are WEARING. Under 25 words.
+  demeanour, hair, distinguishing features, any accessory the brief says they
+  are WEARING, and any makeup it names. Under 25 words.
   This field and "role" are the only text that reaches the image model, and the
   image model is literal. Write only what can be SEEN. "Wide-set almond eyes
   with monolids" produces exactly that; "editorially magnetic" produces
@@ -328,6 +329,18 @@ WHAT TO EXTRACT
   brief says "a redhead in her 30s", "redhead" belongs in the hair colour AND
   the sentence still gets whatever role and character detail it would otherwise
   have had. Filling this field is never a reason to leave another one empty.
+- "statedAccessories": the worn things the brief NAMED, in the user's own words,
+  as short phrases — ["chunky glasses"], ["a nose stud", "a wedding ring"],
+  ["a red lip"]. Makeup counts.
+  This exists so the sheet can say back what it was told. It does not change
+  the picture: "characterNotes" is what reaches the image model, and this is
+  read only by the sentence shown above the sheet.
+  USE ONLY WORDS THAT APPEAR IN THE BRIEF, the same rule as "statedHair" —
+  anything containing a word the user did not type is dropped, so a paraphrase
+  is worse than an empty list.
+  Empty when the brief names nothing worn. Never invent, never infer from an
+  occupation, and never list clothing: a jacket is wardrobe and the sheet does
+  not render it.
 - "poolTendencies": what the CASTING CATEGORY typically implies about axes the
   brief did not state. This is a TENDENCY, never a fact: it nudges the odds
   across the eight candidates and can never override anything the brief said.
@@ -403,6 +416,10 @@ them is discarded before it reaches the image model:
   about this person and belong in "characterNotes" in the user's own words
   ("wearing chunky glasses"). Dropping one is losing an instruction the user
   typed. Never invent an accessory the brief did not name.
+- Makeup, on the SAME terms as accessories. A face is bare unless the brief
+  says otherwise — never add makeup nobody asked for — but when the brief names
+  it ("a red lip", "heavy mascara", "bold brows"), that is a stated fact and it
+  belongs in "characterNotes" in the user's own words.
 - Mood words that are not castable ("magnetic", "stunning", "iconic").
 - Celebrity likeness. "Looks like Zendaya" gives you sex and maybe age. Stop
   there.

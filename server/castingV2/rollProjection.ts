@@ -30,6 +30,7 @@ import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzl
 import { storagePublicUrl } from "../storage";
 import { UNLOCKABLE_FIELDS, type CastingChip, type UnlockableField } from "./briefCompiler";
 import { statesWardrobe } from "./statedWardrobe";
+import { tokensComeFromBrief } from "./castingIntent";
 import {
   AGE_BANDS,
   AGE_PHASES,
@@ -162,6 +163,15 @@ export type BriefFacts = {
   open: string[];
   /** Which axis the eight differ along, when the compiler recorded one. */
   variationAxis: "look" | "disposition" | null;
+  /**
+   * Worn things the brief named, in the user's own words.
+   *
+   * NOT a lock — an accessory neither varies across the eight nor pins an
+   * identity axis — which is why the echo renders it at full ink with no
+   * picker. It is here because the sentence claims to say what the brief said,
+   * and staying silent about a stated fact made that claim quietly incomplete.
+   */
+  statedAccessories: string[];
 };
 
 /** Closed lists, so a compiler-side surprise cannot reach the client. */
@@ -177,7 +187,11 @@ const FACT_VOCABULARIES: Record<string, readonly string[]> = {
 /** Everything the echo can name as varying, in the order it reads best. */
 const OPEN_AXES = ["sex", "ageBand", "heritage", "build", "energy", "look"] as const;
 
-export function readBriefFacts(lockContract: unknown, compiledBrief: unknown): BriefFacts {
+export function readBriefFacts(
+  lockContract: unknown,
+  compiledBrief: unknown,
+  briefText = "",
+): BriefFacts {
   const raw = (lockContract ?? {}) as Record<string, unknown>;
   const locks: BriefFacts["locks"] = {};
 
@@ -215,7 +229,28 @@ export function readBriefFacts(lockContract: unknown, compiledBrief: unknown): B
       ? rawRole.replace(/\s+/g, " ").trim().slice(0, 60)
       : null;
 
-  return { role, locks, open, variationAxis };
+  /*
+    CHECKED AGAIN, HERE, against the user's own sentence.
+
+    The interpreter already refuses a phrase carrying a word the brief does not
+    contain, and this asks the same question a second time at the boundary the
+    text actually crosses — the same reason `readVarianceHeld` re-validates a
+    stored JSON column rather than forwarding it. The compiled brief is written
+    by a model behind a seam, and a projection that trusted it would be an
+    injection path to the client (invariant 8).
+
+    Every word rendered in the echo is therefore provably the user's own.
+  */
+  const rawAccessories = intent?.statedAccessories;
+  const statedAccessories = Array.isArray(rawAccessories)
+    ? rawAccessories
+        .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+        .map((entry) => entry.replace(/\s+/g, " ").trim().slice(0, 40))
+        .filter((entry) => tokensComeFromBrief(entry, briefText))
+        .slice(0, 3)
+    : [];
+
+  return { role, locks, open, variationAxis, statedAccessories };
 }
 
 const CHIP_KINDS = new Set<CastingChip["kind"]>(["subject", "style", "direction", "lineage"]);
@@ -408,7 +443,7 @@ export function projectRoll(input: {
       cannot drift from the sentence it describes.
     */
     statedWardrobe: statesWardrobe(input.roll.briefText),
-    facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief),
+    facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief, input.roll.briefText),
     lineage: {
       ...(input.parentCandidatePublicId ? { fromCandidateId: input.parentCandidatePublicId } : {}),
       ...(typeof input.parentCandidatePosition === "number"

@@ -30,6 +30,7 @@ const BASE_INTENT: CastingIntent = {
   cohort: "photoreal_human",
   role: "a dad in his 30s",
   statedHair: EMPTY_STATED_HAIR,
+  statedAccessories: [],
   poolTendencies: NO_TENDENCIES,
   characterNotes: null,
   sex: null,
@@ -91,6 +92,9 @@ describe("the precedence fix", () => {
       "reads",
       "role",
       "sex",
+      // D-116/(0c): the worn things the brief NAMED, in the user's own words.
+      // Echo-only — it never reaches the image model.
+      "statedAccessories",
       // D-79's re-ship: WHAT the brief said about each part of hair. The
       // interpreter never decides WHETHER — that is the code-owned gate.
       "statedHair",

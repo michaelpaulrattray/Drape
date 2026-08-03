@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f5c976f147d3bd0e"
+    "sourceFingerprint": "1dd70daefc2e80cd"
   },
   "domains": [
     {
@@ -8149,6 +8149,10 @@
     {
       "id": "test:server/castingV2/signService.test.ts",
       "path": "server/castingV2/signService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/statedAccessories.test.ts",
+      "path": "server/castingV2/statedAccessories.test.ts"
     },
     {
       "id": "test:server/castingV2/statedWardrobe.test.ts",
