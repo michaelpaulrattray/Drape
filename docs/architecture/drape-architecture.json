@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "38bd439ad55fd489"
+    "sourceFingerprint": "4e85a9562406fa77"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 43
+      "moduleCount": 39
     },
     {
       "id": "domain:castingV2",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 44
+      "moduleCount": 43
     },
     {
       "id": "domain:evidence",
@@ -3303,30 +3303,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/refineDelta.ts",
-      "path": "server/castingV2/refineDelta.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/refineInterpreter.ts",
-      "path": "server/castingV2/refineInterpreter.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/refineRecovery.ts",
-      "path": "server/castingV2/refineRecovery.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/refineService.ts",
-      "path": "server/castingV2/refineService.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/castingV2/renderFault.ts",
       "path": "server/castingV2/renderFault.ts",
       "domain": "casting-v2",
@@ -3479,12 +3455,6 @@
     {
       "id": "module:server/db/castingV2Sign.ts",
       "path": "server/db/castingV2Sign.ts",
-      "domain": "data",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/db/castingV2Variants.ts",
-      "path": "server/db/castingV2Variants.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -8145,10 +8115,6 @@
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",
       "path": "server/castingV2/realizedAxes.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/refineDelta.test.ts",
-      "path": "server/castingV2/refineDelta.test.ts"
     },
     {
       "id": "test:server/castingV2/renderFault.test.ts",
@@ -15845,11 +15811,6 @@
     },
     {
       "from": "module:server/casting/operationRecovery.ts",
-      "to": "module:server/castingV2/refineRecovery.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/casting/operationRecovery.ts",
       "to": "module:server/castingV2/rollRecovery.ts",
       "kind": "imports"
     },
@@ -16974,166 +16935,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/refineDelta.ts",
-      "to": "module:server/castingV2/castingIntent.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineDelta.ts",
-      "to": "module:shared/castingRealization.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineInterpreter.ts",
-      "to": "module:server/castingV2/interpreter.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineInterpreter.ts",
-      "to": "module:server/castingV2/refineDelta.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineInterpreter.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineInterpreter.ts",
-      "to": "module:server/providers/types.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineInterpreter.ts",
-      "to": "module:shared/castingRealization.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineRecovery.ts",
-      "to": "module:drizzle/schema.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineRecovery.ts",
-      "to": "module:server/casting/atomicCredits.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineRecovery.ts",
-      "to": "module:server/casting/operationContract.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineRecovery.ts",
-      "to": "module:server/db/castingV2Variants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineRecovery.ts",
-      "to": "module:server/db/connection.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineRecovery.ts",
-      "to": "module:server/db/generationOperations.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineRecovery.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/casting/atomicCredits.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/casting/castingCreditCosts.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/casting/directOperation.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/casting/operationContract.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/realizedAxes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/refineDelta.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/refineInterpreter.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/renderFault.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/rollService.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/signEngine.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/spendGuards.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/db/castingV2.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/db/castingV2Variants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/db/credits.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/db/generationOperations.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/providers/types.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/storage.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/providers/falImages.ts",
       "kind": "imports"
@@ -17716,16 +17517,6 @@
     {
       "from": "module:server/db/castingV2Sign.ts",
       "to": "module:shared/boardTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/db/castingV2Variants.ts",
-      "to": "module:drizzle/schema.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/db/castingV2Variants.ts",
-      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {

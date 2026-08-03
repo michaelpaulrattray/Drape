@@ -37,29 +37,6 @@ export const CASTING_V2_ROLL_PRICE_CREDITS =
   CASTING_V2_COSTS.rollCandidate * CASTING_V2_COSTS.rollCandidateCount;
 
 /**
- * One refinement of one candidate (D-121, founder ruling 2026-08-03).
- *
- * **Priced on behaviour more than on margin**, though both point the same way.
- * A refine runs on the identity engine — dearer than the roll engine behind a
- * 20-credit sheet candidate, cheaper than the 2K package view at 50 — so the
- * number sits where the cost sits.
- *
- * The stronger half is what it does to exploring. Refine is the path to a
- * 450-credit Sign: every refine is a deposit toward one, and it cuts post-Sign
- * revision churn because identity decisions get made against one cheap image
- * instead of a whole package. At package-view parity, three variants would cost
- * 150 — a third of a Sign — and people stop exploring exactly where the product
- * wants them to continue. At 25, three variants cost 75: visible, and not a
- * decision of its own.
- *
- * **One unit, not eight slices.** A refine is a single image, so the whole
- * charge refunds on any failure. Per-slice accounting exists because a roll has
- * eight things that can fail independently; inventing it for one would be
- * ceremony with nothing to reconcile.
- */
-export const CASTING_V2_REFINE_PRICE_CREDITS = 25;
-
-/**
  * Sign (§H.4/H.10, founder-decided 2026-07-30): one price, one operation,
  * **decomposed** — because a failed view has to refund its exact slice under
  * the same charge reference, and a slice you cannot name is a slice you cannot

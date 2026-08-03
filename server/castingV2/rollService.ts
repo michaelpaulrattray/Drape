@@ -92,7 +92,7 @@ const log = createModuleLogger("castingV2/rollService");
  * whatever it happens to contain is one migration away from being an injection
  * path into the next roll's prompt.
  */
-export function readResolvedIdentity(internalPrompt: unknown): ResolvedIdentity | null {
+function readResolvedIdentity(internalPrompt: unknown): ResolvedIdentity | null {
   if (!internalPrompt || typeof internalPrompt !== "object") return null;
   const resolved = (internalPrompt as { resolved?: unknown }).resolved;
   if (!resolved || typeof resolved !== "object") return null;

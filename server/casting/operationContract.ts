@@ -41,14 +41,6 @@ export const GENERATION_OPERATION_KINDS = [
     credit-conservation assertion.
   */
   "castingV2.sign",
-  /*
-    Refine (M8): ONE image, one unit, whole charge refunded on throw — Sign's
-    money pattern rather than the roll's. A roll is eight independently
-    refundable slices because eight things can fail separately; a refine is a
-    single generation, and inventing per-slice accounting for one slice would
-    be ceremony with nothing to reconcile.
-  */
-  "castingV2.refine",
 ] as const;
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];

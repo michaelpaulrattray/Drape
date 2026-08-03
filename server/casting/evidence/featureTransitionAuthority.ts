@@ -48,7 +48,6 @@ export const FEATURE_TRANSITION_AUTHORITY:
       construction. Evidence-aware operations start after it exists.
     */
     "castingV2.sign": "not_applicable",
-    "castingV2.refine": "not_applicable",
   };
 
 export const FEATURE_BLIND_OPERATION_MESSAGE =

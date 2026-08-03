@@ -98,11 +98,6 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // derives the Sign total from its own view list, and the service quotes
       // it. Two more readers of a price, no new dependency on anything.
       "castingV2/castViewPackage.ts",
-      // Refine (M8) quotes its one-unit price the same way. The adjudicator is
-      // deliberately NOT here: it reads the charge back off the ledger rather
-      // than re-deriving it from today's price, so a price change can never
-      // retroactively alter what an old operation is owed.
-      "castingV2/refineService.ts",
       "castingV2/rollService.ts",
       // The Sign adjudicator reads the promotion price to cross-check the
       // promised package against what was actually charged (package v2).

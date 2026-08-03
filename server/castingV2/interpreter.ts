@@ -434,12 +434,7 @@ export type InterpretOutcome =
 
 let engine: TextEngine | null = null;
 
-/**
- * The shared text transport. Exported because the refinement interpreter
- * (M8) needs the SAME one: two engines would mean two credentials, two
- * queues, and a config change that silently applies to one of them.
- */
-export function interpreterEngine(): TextEngine | null {
+function interpreterEngine(): TextEngine | null {
   if (engine) return engine;
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return null;

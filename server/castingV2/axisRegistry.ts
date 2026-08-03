@@ -76,7 +76,6 @@ import {
   type BeardGrey,
   type BrowStyle,
   type EyeColour,
-  type EyeShape,
   type FacialHair,
   type HairModifiers,
   type HairStyle,
@@ -119,8 +118,6 @@ export type AxisValues = {
   look: LookKey | null;
   /* shelf 2 — realized axes (the eight of `RealizedAxes`, plus hair colour) */
   eyeColour: EyeColour | null;
-  /* Never drawn by the roll; set only by a refinement (M8). See the row. */
-  eyeShape: EyeShape | null;
   hairStyle: HairStyle | null;
   facialHair: FacialHair | null;
   hairTexture: HairTexture | null;
@@ -578,15 +575,7 @@ export function hairRegion(prompt: string): string {
   if (!match) return "";
   const start = match.index + match[1].length;
   const rest = prompt.slice(start + 1);
-  /*
-    EYE SHAPE joins the terminator list (M8), and leaving it out would have
-    been a real defect rather than an omission: when eye colour is
-    deference-nulled its heading is absent, so a hair footprint would search a
-    region that ran on through the eye-geometry sentence.
-  */
-  const end = rest.search(
-    /\n| EYE COLOUR:| EYE SHAPE:| FACIAL HAIR:| BROW CHARACTER:| SKIN CHARACTER:/,
-  );
+  const end = rest.search(/\n| EYE COLOUR:| FACIAL HAIR:| BROW CHARACTER:| SKIN CHARACTER:/);
   return end < 0 ? rest : rest.slice(0, end);
 }
 
@@ -750,28 +739,6 @@ export const AXIS_REGISTRY = {
     silent: [],
     read: (ctx) => ctx.identity.realized.eyeColour,
     footprint: (value, prompt) => has(prompt, `EYE COLOUR: ${value}`),
-  },
-  /**
-   * Eye geometry (M8) — the refinement tier's second axis.
-   *
-   * Registered even though `realizeAxes` never draws it, because registration
-   * is what makes the D-87 sweep prove it composes wherever it is read. A
-   * follow inherits a variant's realized shelf WHOLE, so an eye shape that
-   * persisted and then failed to compose would be unowned-axis instance seven
-   * — identical faces on every tile, falling to the loudest prior.
-   */
-  eyeShape: {
-    key: "eyeShape",
-    shelf: "realized",
-    kind: "described",
-    lockable: false,
-    unlockable: false,
-    overridable: false,
-    tiers: ALL_TIERS,
-    suppressors: [],
-    silent: [],
-    read: (ctx) => ctx.identity.realized.eyeShape,
-    footprint: (value, prompt) => has(prompt, `EYE SHAPE: ${value}`),
   },
   browStyle: {
     key: "browStyle",

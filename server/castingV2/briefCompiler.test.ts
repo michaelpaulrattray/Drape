@@ -239,8 +239,7 @@ describe("locks", () => {
       hair: { family: "short", colour: "dark brown" },
       look: null,
       realized: {
-        eyeShape: null,
-    eyeColour: "brown",
+        eyeColour: "brown",
         hairStyle: { name: "plain short cut", family: "short" },
         facialHair: "clean-shaven",
         hairTexture: "straight",

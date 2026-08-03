@@ -50,7 +50,6 @@ export const OPERATION_REPLAY_FAMILY_BY_KIND: Readonly<
   // never a state-derived Mint/Refresh route, which would re-drive package work
   // against a Cast that already has it.
   "castingV2.sign": null,
-  "castingV2.refine": null,
 };
 
 export type ReplayKindResolution =

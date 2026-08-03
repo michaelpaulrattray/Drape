@@ -47,7 +47,6 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
 import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
-import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { projectSignedCast } from "../castingV2/castProjection";
 import {
   getCastLineage,
@@ -182,9 +181,6 @@ export const castingV2Router = router({
     // H.1: the price is on the paid affordance before it fires, and it is
     // server-derived — the Sign confirm never carries a literal.
     signPriceCredits: CASTING_V2_SIGN_PRICE_CREDITS,
-    // Same law, one surface down: the refine box states its price before the
-    // button fires, from here rather than from a literal in the client.
-    refinePriceCredits: CASTING_V2_REFINE_PRICE_CREDITS,
     packageViewCount: CAST_PACKAGE_VIEWS.length,
   })),
 
