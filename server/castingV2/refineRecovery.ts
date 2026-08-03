@@ -1,0 +1,268 @@
+/**
+ * The recovery adjudicator for `castingV2.refine` (M8 §12).
+ *
+ * The Sign adjudicator is long because a Sign creates authority — a Cast, a
+ * spent candidate, six view slots — and each of those needs its own answer.
+ * This one is short for the opposite reason, and the shortness is the design
+ * rather than an omission:
+ *
+ *   **Did the variant land?**
+ *
+ * Ready means the user has the picture they paid for, and the operation
+ * completes with the charge kept. Anything else means they have nothing, and
+ * the whole 25 goes back — one image, one unit, no partial state to reason
+ * about.
+ *
+ * # Why it cannot use the generic path
+ *
+ * The standard adjudicator reads the operation's own `modelId` to find what was
+ * built. A refine builds a VARIANT, which that column has never heard of, so
+ * the generic path would call a landed refinement a total loss — and refund a
+ * picture the user is looking at, which is the one direction that costs the
+ * business rather than the customer. The variant's own status is the fork.
+ *
+ * # Read prior refunds; never re-issue one to find out
+ *
+ * Idempotent references make a duplicate refund a no-op, which works right up
+ * until the day one of them is not a duplicate. The ledger is read.
+ */
+import { and, eq, inArray } from "drizzle-orm";
+
+import { creditTransactions } from "../../drizzle/schema";
+import { recordRefund, refundReferenceFor } from "../casting/atomicCredits";
+import { operationChargeReference } from "../casting/operationContract";
+import {
+  finalizeClaimedGenerationOperationFailure,
+  finalizeGenerationOperationFailure,
+  finalizeGenerationOperationSuccess,
+  markGenerationOperationRecoveryRequired,
+} from "../db/generationOperations";
+import { failVariant, findVariantByOperation } from "../db/castingV2Variants";
+import { getDb } from "../db/connection";
+import { createModuleLogger } from "../logging/logger";
+
+const log = createModuleLogger("castingV2/refineRecovery");
+
+export type RefineRecoveryOutcome =
+  | { type: "durable_success"; chargedCredits: number; refundedCredits: number }
+  | { type: "paid_failure"; chargedCredits: number; refundedCredits: number }
+  /** Terminal, and nothing was taken — "paid" is what accounting reads. */
+  | { type: "free_failure"; reason: string }
+  | { type: "recovery_required"; reason: string; chargedCredits: number; refundedCredits: number };
+
+export type RecoverableRefineOperation = {
+  id: string;
+  userId: number;
+  status: "claimed" | "running";
+  chargedCredits: number;
+  refundedCredits: number;
+};
+
+export type RefineRecoveryDependencies = {
+  findVariant?: typeof findVariantByOperation;
+  refund?: typeof recordRefund;
+  failVariantRow?: typeof failVariant;
+  finalizeSuccess?: typeof finalizeGenerationOperationSuccess;
+  finalizeFailure?: typeof finalizeGenerationOperationFailure;
+  finalizeClaimedFailure?: typeof finalizeClaimedGenerationOperationFailure;
+  park?: typeof markGenerationOperationRecoveryRequired;
+};
+
+type ChargeTruth =
+  | { kind: "charged"; credits: number }
+  | { kind: "not_charged" }
+  | { kind: "ambiguous"; reason: string };
+
+async function readLedger(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  operation: { id: string; userId: number },
+): Promise<{ charge: ChargeTruth; alreadyRefunded: number }> {
+  const chargeReference = operationChargeReference(operation.id);
+  const refundReference = refundReferenceFor(chargeReference);
+  const rows = await db
+    .select()
+    .from(creditTransactions)
+    .where(and(
+      eq(creditTransactions.userId, operation.userId),
+      inArray(creditTransactions.referenceId, [chargeReference, refundReference]),
+    ));
+
+  const chargeRows = rows.filter((row) => row.referenceId === chargeReference);
+  const alreadyRefunded = rows
+    .filter((row) => row.referenceId === refundReference && row.type === "refund" && row.amount > 0)
+    .reduce((sum, row) => sum + row.amount, 0);
+
+  if (chargeRows.length === 0) return { charge: { kind: "not_charged" }, alreadyRefunded };
+  if (chargeRows.length > 1) {
+    return {
+      charge: { kind: "ambiguous", reason: "duplicate charge rows for one refine" },
+      alreadyRefunded,
+    };
+  }
+  return { charge: { kind: "charged", credits: Math.abs(chargeRows[0].amount) }, alreadyRefunded };
+}
+
+export async function recoverCastingV2RefineOperation(
+  operation: RecoverableRefineOperation,
+  options: RefineRecoveryDependencies = {},
+): Promise<RefineRecoveryOutcome> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      type: "recovery_required",
+      reason: "database unavailable during recovery",
+      chargedCredits: operation.chargedCredits,
+      refundedCredits: operation.refundedCredits,
+    };
+  }
+
+  const ledger = await readLedger(db, operation);
+  if (ledger.charge.kind === "ambiguous") {
+    await (options.park ?? markGenerationOperationRecoveryRequired)({
+      userId: operation.userId,
+      operationId: operation.id,
+      publicMessage: `This refinement needs support review. Operation ${operation.id}.`,
+      chargedCredits: operation.chargedCredits,
+      refundedCredits: operation.refundedCredits,
+    }).catch((error) => {
+      log.error({ operationId: operation.id, err: error }, "[refineRecovery] could not park");
+    });
+    return {
+      type: "recovery_required",
+      reason: ledger.charge.reason,
+      chargedCredits: operation.chargedCredits,
+      refundedCredits: operation.refundedCredits,
+    };
+  }
+
+  const variant = await (options.findVariant ?? findVariantByOperation)(
+    operation.userId,
+    operation.id,
+  );
+
+  /*
+    THE FORK. A ready variant means the picture exists and is selected — the
+    landing writes both in one transaction — so the user has what they bought
+    and the charge stands. Everything else is a total loss.
+  */
+  if (variant?.status === "ready") {
+    if (ledger.charge.kind === "not_charged") {
+      /*
+        A delivered refinement nobody was charged for. Rare, and it must not be
+        silently kept: it means the charge and the landing disagree, which is
+        exactly the class this sweep exists to surface rather than paper over.
+      */
+      await (options.park ?? markGenerationOperationRecoveryRequired)({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage: `This refinement needs support review. Operation ${operation.id}.`,
+        chargedCredits: 0,
+        refundedCredits: ledger.alreadyRefunded,
+      }).catch(() => undefined);
+      return {
+        type: "recovery_required",
+        reason: "a landed refinement carries no charge",
+        chargedCredits: 0,
+        refundedCredits: ledger.alreadyRefunded,
+      };
+    }
+    await (options.finalizeSuccess ?? finalizeGenerationOperationSuccess)({
+      userId: operation.userId,
+      operationId: operation.id,
+      result: { variantId: variant.publicId } as never,
+      chargedCredits: ledger.charge.credits,
+      refundedCredits: ledger.alreadyRefunded,
+    });
+    return {
+      type: "durable_success",
+      chargedCredits: ledger.charge.credits,
+      refundedCredits: ledger.alreadyRefunded,
+    };
+  }
+
+  /* ---- nothing was delivered ---- */
+
+  if (variant) {
+    // Terminal, so a later sweep cannot pick this row up and refund it twice.
+    await (options.failVariantRow ?? failVariant)({
+      userId: operation.userId,
+      variantId: variant.id,
+      failureClass: "recovered",
+    });
+  }
+
+  if (ledger.charge.kind === "not_charged") {
+    /*
+      The crash landed before the deduct. Terminal, and NOT a paid failure —
+      "paid" is what downstream accounting reads to decide money moved, and
+      saying it here would invent a charge that never happened.
+    */
+    const finalize = operation.status === "claimed"
+      ? (options.finalizeClaimedFailure ?? finalizeClaimedGenerationOperationFailure)
+      : null;
+    if (finalize) {
+      await finalize({
+        userId: operation.userId,
+        operationId: operation.id,
+        errorCode: "PRECONDITION_FAILED",
+        publicMessage: "That refinement didn't run. You were not charged.",
+      });
+    } else {
+      await (options.finalizeFailure ?? finalizeGenerationOperationFailure)({
+        userId: operation.userId,
+        operationId: operation.id,
+        errorCode: "PRECONDITION_FAILED",
+        publicMessage: "That refinement didn't run. You were not charged.",
+        chargedCredits: 0,
+        refundedCredits: 0,
+      });
+    }
+    return { type: "free_failure", reason: "no charge was taken" };
+  }
+
+  const owed = ledger.charge.credits - ledger.alreadyRefunded;
+  let refunded = ledger.alreadyRefunded;
+  if (owed > 0) {
+    const refund = await (options.refund ?? recordRefund)(
+      operation.userId,
+      owed,
+      "Refine refunded — the generation was interrupted",
+      operationChargeReference(operation.id),
+    );
+    if (!refund.recorded) {
+      /*
+        The refund did not record. Parking rather than reporting a clean
+        failure is the only honest move: the receipt would otherwise claim
+        money came back that did not.
+      */
+      await (options.park ?? markGenerationOperationRecoveryRequired)({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage: `This refinement needs support review. Operation ${operation.id}.`,
+        chargedCredits: ledger.charge.credits,
+        refundedCredits: ledger.alreadyRefunded,
+      }).catch(() => undefined);
+      return {
+        type: "recovery_required",
+        reason: "the refund did not record",
+        chargedCredits: ledger.charge.credits,
+        refundedCredits: ledger.alreadyRefunded,
+      };
+    }
+    refunded += owed;
+  }
+
+  await (options.finalizeFailure ?? finalizeGenerationOperationFailure)({
+    userId: operation.userId,
+    operationId: operation.id,
+    errorCode: "INTERNAL_SERVER_ERROR",
+    publicMessage: "That refinement didn't come through. Your credits have been returned.",
+    chargedCredits: ledger.charge.credits,
+    refundedCredits: refunded,
+  });
+  return {
+    type: "paid_failure",
+    chargedCredits: ledger.charge.credits,
+    refundedCredits: refunded,
+  };
+}
