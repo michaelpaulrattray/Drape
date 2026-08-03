@@ -11,6 +11,10 @@ import sharp from "sharp";
  * ruled it happens on a false-positive rate measured against real founder
  * traffic, never on a green suite.
  *
+ * **That number now exists — 0 in 1,016** (see below). The flip itself remains
+ * the founder's, because enabling it turns this into a control that destroys
+ * paid work.
+ *
  * Where it stands, measured (`scripts/measure-render-fault.mts`):
  *
  *   - **the real specimen: CAUGHT.** `docs/specs/references/nine-tile-sheet.png`
@@ -18,7 +22,12 @@ import sharp from "sharp";
  *     structure exactly — three horizontal seams at the quarters, one vertical
  *     down the middle. It is a 2x4 sheet of eight faces; D-93's prose calls it
  *     nine, written from memory in the moment.
- *   - **false positives: 0 of 47** real landed candidates, including four
+ *   - **0 false positives across 1,017 REAL PRODUCTION CANDIDATES** — the
+ *     founder's entire cast history, every brief he has ever run. The detector
+ *     fired exactly ONCE in that sweep, on roll index 2 of "a kpop idol", tile
+ *     01: D-93's incident itself, found by the detector rather than by being
+ *     told where to look. One fire, and it was the right one.
+ *   - **false positives: 0 of 47** dev candidates as well, including four
  *     adversarial sheets cast for this purpose (stated glasses, a wool beanie,
  *     West African heritage, and an East Asian idol — the last being the
  *     closest thing to the conditions that produced the failure).
