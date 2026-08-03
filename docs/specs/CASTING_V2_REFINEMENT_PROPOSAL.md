@@ -460,3 +460,33 @@ laid side by side, and it does NOT compound across a stack — every variant is
 one edit of the original, so variant ten has taken exactly one crop step, the
 same as variant one. Recorded so the founder sees it at the gate rather than
 discovering it later.
+
+## 23. What the review found, and the one thing still resting on precedent
+
+Four defects, all the same shape — a state where the row and the ledger tell
+different stories, and nothing throws. Recorded because the shape will recur:
+
+- **`landVariant` committed half its transaction.** `withTransaction` is
+  `db.transaction`, which commits on any non-throw return, so returning `false`
+  on the pointer-move miss committed a `ready` variant the caller then refunded
+  in full — and told the recovery sweep a different story than it told the
+  caller. Every exit now throws.
+- **No sweep-vs-live fence.** Sign re-proves its operation `running` FOR UPDATE
+  inside the boundary; refine had nothing, so a lease-outliving landing could
+  commit in the gap while the sweep refunded it. Borrowed whole, plus the
+  adjudicator now reads `failVariant`'s return as the race detector.
+- **The receipt promised a refund that might not have recorded.**
+- **The viewer ate the instruction field's arrow keys**, so a half-typed
+  instruction could walk to another face and be spent there.
+
+**The one caveat, stated rather than buried:** no refine test exercises the
+transaction rollback against a real database — the unit tests mock the DB layer,
+so the guarantee rests on drizzle's documented semantics plus the fact that
+every production Sign since M7 has depended on exactly the same behaviour (the
+double-Sign defence only works because the loser's inserts vanish with the
+throw). That is strong precedent, not a proof, and a disposable-database test
+is the honest way to close it.
+
+**Also for the gate, and it is not a defect:** Sign copies the SELECTED face as
+the Cast's permanent anchor, so the single crop step in §22 becomes that Cast's
+canonical framing. Worth saying out loud rather than leaving as an inference.

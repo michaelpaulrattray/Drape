@@ -169,7 +169,17 @@ export async function markVariantDispatched(input: {
  * happened" MEANS.
  */
 export class VariantLandingError extends Error {
-  constructor(readonly code: "operation_unavailable" | "not_landable" | "not_selectable") {
+  constructor(
+    readonly code:
+      | "operation_unavailable"
+      | "not_landable"
+      | "not_selectable"
+      /* Its own code, not a reused one: a manifest contention sends whoever
+         reads the log to the cleanup batch, and "not_selectable" would send
+         them to the candidate pointer instead. This taxonomy exists for
+         incident legibility, so a borrowed label is a wrong signpost. */
+      | "manifest_claimed",
+  ) {
     super(code);
     this.name = "VariantLandingError";
   }
@@ -299,7 +309,7 @@ export async function landVariant(input: {
       eq(storageCleanupBatches.operationId, input.operationId),
       eq(storageCleanupBatches.status, "pending"),
     ));
-    if (affectedRows(removedBatch) !== 1) throw new VariantLandingError("not_selectable");
+    if (affectedRows(removedBatch) !== 1) throw new VariantLandingError("manifest_claimed");
   });
 }
 
