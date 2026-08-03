@@ -57,6 +57,8 @@ import { getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError } from "../providers/types";
 import { storagePut, storageReadBytes } from "../storage";
+import { withTransaction } from "../db/connection";
+import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import { EYE_SHAPE_RENDER, IRIS_RENDER } from "./realizedAxes";
 import { readResolvedIdentity } from "./rollService";
 import {
@@ -100,12 +102,13 @@ export type RefineServiceDependencies = {
   interpret?: typeof interpretRefinement;
   admit?: () => boolean;
   readBytes?: typeof storageReadBytes;
-  storeImage?: (input: { bytes: Buffer; contentType: string }) => Promise<{ key: string; url: string }>;
+  storeImage?: (
+    input: { key: string; bytes: Buffer; contentType: string },
+  ) => Promise<{ key: string; url: string }>;
 };
 
-async function defaultStoreImage(input: { bytes: Buffer; contentType: string }) {
-  const extension = input.contentType.includes("jpeg") ? "jpg" : "png";
-  return storagePut(`${VARIANT_KEY_PREFIX}/${randomUUID()}.${extension}`, input.bytes, input.contentType);
+async function defaultStoreImage(input: { key: string; bytes: Buffer; contentType: string }) {
+  return storagePut(input.key, input.bytes, input.contentType);
 }
 
 export async function refineCandidate(
@@ -313,7 +316,30 @@ export async function refineCandidate(
       throw new ProviderError("render_fault", verdict.detail);
     }
 
+    /*
+      MANIFEST BEFORE WRITE (Sign's D-92 defence, one surface down).
+
+      The bytes go to a permanently public key, and nothing references them
+      until the landing commits. A crash in between — or either of the landing's
+      own refusals — would leave a paid picture of a person at a URL with no row
+      that knows it exists, so it could never be purged. The key is handed to
+      the cleanup worker BEFORE it exists, in its own committed transaction so
+      the failure it guards against cannot roll it back; the landing deletes the
+      manifest as its last act.
+    */
+    const cleanupBatchId = randomUUID();
+    const extension = image.contentType.includes("jpeg") ? "jpg" : "png";
+    const destinationKey = `${VARIANT_KEY_PREFIX}/${randomUUID()}.${extension}`;
+    await withTransaction((tx) => createStorageCleanupManifestIn(tx, {
+      id: cleanupBatchId,
+      userId: input.userId,
+      operationId,
+      kind: "casting_candidate_cleanup",
+      storageItems: [{ storageKey: destinationKey, storageBackend: "public_r2" }],
+    }));
+
     const stored = await (dependencies.storeImage ?? defaultStoreImage)({
+      key: destinationKey,
       bytes: image.bytes,
       contentType: image.contentType,
     });
@@ -324,8 +350,12 @@ export async function refineCandidate(
       class rebuilt with extra steps.
     */
     const baseIdentity = readResolvedIdentity(variant.baseInternalPrompt);
-    const landed = await landVariant({
+    await landVariant({
       userId: input.userId,
+      cleanupBatchId,
+      // The sweep fence's subject: this landing only commits while the
+      // operation it belongs to is still `running`.
+      operationId,
       variantId: variant.id,
       imageKey: stored.key,
       internalPrompt: {
@@ -336,7 +366,6 @@ export async function refineCandidate(
       providerModel: image.provenance?.model ?? null,
       providerRef: image.provenance?.providerRef ?? null,
     });
-    if (!landed) throw new Error("the refinement could not be recorded");
 
     const result: RefineResult = {
       variantId: variant.publicId,
@@ -368,9 +397,22 @@ export async function refineCandidate(
     return completeDirectOperationFailure({
       userId: input.userId,
       operationId,
+      /*
+        The message must MATCH the number beside it.
+
+        This publicMessage is persisted on the receipt and replayed to whoever
+        asks about the operation later, so "your credits have been returned"
+        beside `refundedCredits: 0` is a receipt claiming money moved when it
+        did not — the exact thing this program keeps auditing for. Sign already
+        solved it; the shape is borrowed, including quoting the operation so
+        support can act on it rather than re-deriving it.
+      */
       error: new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "That refinement didn't come through. Your credits have been returned.",
+        message: refund.recorded
+          ? "That refinement didn't come through. Your credits have been returned."
+          : "That refinement didn't come through, and the refund could not be recorded — "
+            + `quote operation ${operationId} and support will restore the balance.`,
       }),
       chargedCredits: price,
       refundedCredits: refund.recorded ? price : 0,

@@ -205,3 +205,46 @@ describe("money is conserved, and said honestly", () => {
     expect(parked).toContain("33333333-3333-4333-8333-333333333333");
   });
 });
+
+/**
+ * The sweep racing a live refine that outlived its lease (D-92's law 2).
+ *
+ * A refine has ONE long await after `markRunning` — about 90 seconds — so a
+ * single missed heartbeat lets the lease expire while the work is very much
+ * alive. Without a fence the sweep reads "not landed", the live process lands
+ * and finalizes success, and the sweep then refunds: the user keeps the picture
+ * AND the 25.
+ *
+ * `failVariant` returning false is the detector. Its predicate is
+ * `queued/dispatched`, so false means the row moved underneath this sweep.
+ */
+describe("a live refine that lands mid-sweep", () => {
+  it("keeps the charge instead of refunding a picture the user has", async () => {
+    variantRow = { id: 500, publicId: "variant-1", status: "dispatched" };
+
+    const { failVariant, findVariantByOperation } = await import("../db/castingV2Variants");
+    /* The row moved: the live process landed it between the read and this write. */
+    vi.mocked(failVariant).mockResolvedValueOnce(false);
+    vi.mocked(findVariantByOperation).mockResolvedValueOnce(
+      { id: 500, publicId: "variant-1", status: "ready" } as never,
+    );
+
+    const outcome = await recoverCastingV2RefineOperation(operation);
+
+    expect(outcome).toMatchObject({ type: "durable_success", chargedCredits: 25 });
+    expect(ledger.refunds).toHaveLength(0);
+    expect(receipts.at(-1)).toMatchObject({ kind: "success" });
+  });
+
+  it("still refunds when the row moved but nothing landed", async () => {
+    variantRow = { id: 500, publicId: "variant-1", status: "dispatched" };
+    const { failVariant, findVariantByOperation } = await import("../db/castingV2Variants");
+    vi.mocked(failVariant).mockResolvedValueOnce(false);
+    vi.mocked(findVariantByOperation).mockResolvedValueOnce(
+      { id: 500, publicId: "variant-1", status: "failed" } as never,
+    );
+
+    const outcome = await recoverCastingV2RefineOperation(operation);
+    expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 25 });
+  });
+});
