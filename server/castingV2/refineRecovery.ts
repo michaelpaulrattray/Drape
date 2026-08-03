@@ -209,32 +209,7 @@ export async function recoverCastingV2RefineOperation(
           { operationId: operation.id },
           "[refineRecovery] a live refine landed mid-sweep — keeping the charge",
         );
-        if (ledger.charge.kind !== "charged") {
-          /*
-            A delivered refinement with no charge behind it — the SAME anomaly
-            the primary ready arm parks, so it gets the same verdict here.
-
-            Unreachable by construction (the charge strictly precedes dispatch),
-            but two arms reaching two different conclusions about one impossible
-            state is how an impossible state eventually gets a wrong answer.
-            Falling through would have told this user "you were not charged"
-            about a picture they are looking at.
-          */
-          await (options.park ?? markGenerationOperationRecoveryRequired)({
-            userId: operation.userId,
-            operationId: operation.id,
-            publicMessage: `This refinement needs support review. Operation ${operation.id}.`,
-            chargedCredits: 0,
-            refundedCredits: ledger.alreadyRefunded,
-          }).catch(() => undefined);
-          return {
-            type: "recovery_required",
-            reason: "a landed refinement carries no charge",
-            chargedCredits: 0,
-            refundedCredits: ledger.alreadyRefunded,
-          };
-        }
-        {
+        if (ledger.charge.kind === "charged") {
           await (options.finalizeSuccess ?? finalizeGenerationOperationSuccess)({
             userId: operation.userId,
             operationId: operation.id,
