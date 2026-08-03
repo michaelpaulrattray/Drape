@@ -3361,6 +3361,108 @@ latitude. Nothing to schedule: it is rows in F8's table when that era comes.
 on seamless paper; makeup is on the person, which is the side of that line the
 stated channel has always been allowed to touch.
 
+## D-117 — The reference form is decided by ablation, not by taste. The prior has flipped.
+
+Founder ruling, 2026-08-03, on the back of commissioned research now living at
+`docs/specs/research/`. **Recorded, not built** — nothing wires a conditioning
+default until the gate below runs.
+
+The character sheet was designed as "the default single-image identity reference
+for all downstream generation". The research moves that from a decision to a
+hypothesis, and the prior now points the other way:
+
+- **Luma's own guidance (Grade A) warns that multi-angle sheets can hallucinate
+  details and leak artifacts, and recommends one angle per image.**
+- Kling builds a character Element from a main image plus one to three
+  supplemental SINGLE-view images; Runway supports three separate references.
+- The cell-fidelity arithmetic points the same way: a face occupying a third of
+  a bounded sheet carries less usable detail than the same face filling its own
+  frame.
+
+**So the likely default is a small shot-matched subset of individual views**,
+with the sheet remaining the human-facing export and a candidate reference only
+for models that accept one image.
+
+### The gate, redesigned
+
+It was three fixed forms judged against each other. That would have answered
+"which of these three" rather than "how many, and of what" — so it is now
+ablation arms:
+
+- **reference count** — 1, 2, 3, and the most the endpoint coherently accepts;
+- **form** — separate views against the composed sheet;
+- **selection** — shot-matched against a fixed subset.
+
+Scored by the conformance judge plus founder eyes, and reporting **marginal
+identity gain per added reference**, because "more is better" and "more is
+free" are different claims and only the second one is obviously false.
+
+**It stays an entry gate BEFORE Takes wires any conditioning default.** A
+default chosen by intuition and then measured is a default nobody removes.
+
+## D-118 — The runtime reference selector. One authority, calibrated by the gate.
+
+**Recorded, not built.** Belongs to the Takes/canvas wiring era and inherits
+D-117's gate.
+
+There will be exactly one server-side component that decides which references a
+generation is handed: what shot is being made, what the target model accepts,
+and the fewest references that cover it — per the selection table in the
+research's `character_reference_asset_specification.md` §8.
+
+**Its rules are calibrated by the gate's results and never hand-authored.** The
+failure it exists to prevent is the one this program keeps meeting in other
+clothes: a rule of thumb written once, spread across three call sites, and never
+measured again. One authority means one place to correct when the next model
+changes what it accepts.
+
+## D-119 — Two Casts may share a frame only when one account owns both.
+
+Founder ruling, 2026-08-03, **effective immediately** even though
+multi-character generation is not built.
+
+Multi-character generation — two or more Casts in one frame — is a named
+Takes/canvas-era problem. The shape of it is recorded so it is not re-derived:
+per-person reference bundles via model-native person binding where available;
+the conformance judge extends to **per-face assignment scoring** (the research
+framework's §3.2 — a similarity matrix plus a constrained one-to-one
+assignment, so two output faces matching one Cast, or a swapped assignment, are
+FAILURES rather than near-misses); and the A/B gains multi-character scenarios.
+
+**The consistency claim covers solo generations until group shots pass their own
+gate.**
+
+The law that binds now, ahead of any of it:
+
+> **Two Casts may co-star in one generation only when the same account owns
+> both.**
+
+Anything else is the steal-a-customer's-cast shape the founder ruled on
+2026-07-25 — *"if a marketing team or content creator comes on the platform and
+makes a model that's theirs, no one should be able to steal or copy that
+work"* — arriving through a side door marked "collaboration". A generation is a
+place two identities can be combined; the ownership predicate belongs in the
+statement that assembles the reference bundle, not in a check somebody
+remembers to run.
+
+## D-120 — We promise the process, never the outcome.
+
+Founder ruling, 2026-08-03. For whenever marketing copy gets written, and for
+every product surface that describes what a Cast is.
+
+**The product promises the PROCESS** — reference-anchored, drift-tested,
+checked and refunded. It never promises "zero drift", "100% consistent", or
+"identical every time".
+
+The research grades this A: **no current model supports an unconditional
+consistency guarantee.** An absolute claim is therefore two things at once — a
+statement that is not true, and a refund generator, because every customer who
+finds the one frame that drifted is holding our own sentence.
+
+This is the honest-capability law the product already applies to its own UI
+("the sentence gains 'or sign' the day the button does") pointed at the thing
+most likely to be written by somebody who was not in these conversations.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

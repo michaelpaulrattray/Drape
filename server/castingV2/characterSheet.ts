@@ -49,18 +49,32 @@ import type { CastViewAngle } from "../../shared/boardTypes";
  * hazard one step removed. Labels are page-rendered UI in the room, over the
  * image, never in it.
  *
- * # Two renderings, one geometry — and now they differ only by ENVELOPE
+ * # ONE bounded artifact, everywhere
  *
- * `reference` is what our own engines are handed: composed at the pack's native
- * resolution, PNG, unbounded, because we control every consumer.
+ * There is no separate full-native rendering. It existed briefly for our own
+ * engines, on the reasoning that we control those consumers and should not
+ * throw detail away — and the founder retired it, because the consumers throw
+ * it away themselves:
  *
- * `export` is what leaves the building, and it is sized to the strictest common
- * envelope of the tools people actually paste it into — **4096px long side,
- * JPEG, under 10MB.** That is Kling's limit; GPT Image (50MB), Seedance (~20MB
- * practical) and Gemini (~20MB payload) are all looser, so meeting the tightest
- * one means the file works everywhere without asking anybody which tool they
- * use. At 4096 wide a three-column sheet gives ~1350px cells — near-native
- * detail inside universal acceptance.
+ *   - **Gemini-family models downscale every input to 3072x3072 and perceive
+ *     via 768px tiles** (vendor-documented). Pixels above that are discarded by
+ *     the model, not preserved by us.
+ *   - **Intake budgets are often request-TOTAL** (~20MB). A 47MB reference does
+ *     not merely waste bandwidth; it crowds out or refuses the companion
+ *     references sent alongside it.
+ *
+ * So one envelope serves everything: **4096px long side, JPEG, under 10MB** —
+ * the strictest common limit of the tools this gets pasted into. That is
+ * Kling's; GPT Image (50MB), Seedance (~20MB practical) and Gemini (~20MB
+ * payload) are all looser, so meeting the tightest means the file works
+ * everywhere without asking anybody which tool they use. At 4096 wide a
+ * three-column sheet gives ~1350px cells.
+ *
+ * **Composition still happens at native resolution internally**, so nothing is
+ * pre-blurred and a larger form can be re-derived the day a consumer proves it
+ * needs one by measurement. `maxLongSide` exists for exactly that: a
+ * Gemini-family caller may derive a 3072 variant at call time rather than
+ * sending pixels that will be resampled anyway.
  *
  * # A missing view leaves a gap. Nothing stands in for it.
  *
@@ -80,8 +94,6 @@ export type SheetCell = {
   /** Shown in the export rendering only. Never drawn on the reference. */
   label: string;
 };
-
-export type SheetVariant = "reference" | "export";
 
 /**
  * The order cells appear in, widest identity signal first.
@@ -206,9 +218,7 @@ export function sheetGeometry(
 /**
  * Compose the sheet.
  *
- * `reference` returns full-native PNG bytes for our own engines. `export`
- * returns a JPEG inside the universal envelope — 4096px long side, under 10MB.
- * Neither carries a single letter.
+ * Always returns JPEG bytes inside the envelope. It carries no text.
  *
  * Never throws for an empty pack: a Cast with nothing in it yields null, and
  * the caller decides what that means, because "there is no sheet yet" is a
@@ -216,7 +226,7 @@ export function sheetGeometry(
  */
 export async function composeCharacterSheet(
   cells: readonly SheetCell[],
-  variant: SheetVariant = "reference",
+  options: { maxLongSide?: number } = {},
 ): Promise<Buffer | null> {
   if (cells.length === 0) return null;
 
@@ -244,8 +254,7 @@ export async function composeCharacterSheet(
     },
   }).composite(composites);
 
-  if (variant === "reference") return sheet.png().toBuffer();
-  return boundedExport(await sheet.png().toBuffer());
+  return boundedExport(await sheet.png().toBuffer(), options.maxLongSide ?? EXPORT_MAX_LONG_SIDE);
 }
 
 /**
@@ -258,13 +267,13 @@ export async function composeCharacterSheet(
  * is not the same file as a sparse one, and a fixed quality that fits today
  * would breach the cap the first time somebody signs a Cast with more hair.
  */
-async function boundedExport(png: Buffer): Promise<Buffer> {
+async function boundedExport(png: Buffer, maxLongSide: number): Promise<Buffer> {
   const meta = await sharp(png).metadata();
   const longSide = Math.max(meta.width ?? 0, meta.height ?? 0);
-  const scaled = longSide > EXPORT_MAX_LONG_SIDE
+  const scaled = longSide > maxLongSide
     ? sharp(png).resize({
-        width: (meta.width ?? 0) >= (meta.height ?? 0) ? EXPORT_MAX_LONG_SIDE : undefined,
-        height: (meta.height ?? 0) > (meta.width ?? 0) ? EXPORT_MAX_LONG_SIDE : undefined,
+        width: (meta.width ?? 0) >= (meta.height ?? 0) ? maxLongSide : undefined,
+        height: (meta.height ?? 0) > (meta.width ?? 0) ? maxLongSide : undefined,
         fit: "inside",
       })
     : sharp(png);

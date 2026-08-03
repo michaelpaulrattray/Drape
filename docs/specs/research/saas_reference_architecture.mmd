@@ -1,0 +1,67 @@
+flowchart LR
+  subgraph Client[Customer and operator plane]
+    U[Reference upload]
+    G[Generation request]
+    H[Human review]
+  end
+
+  subgraph Ingest[Secure ingestion]
+    Q[Quarantine]
+    S[Malware, format and safety scan]
+    N[Normalize: sRGB, orientation, derivatives]
+    E[View, quality and identity enrichment]
+  end
+
+  subgraph Core[Character control plane]
+    R[(Canonical character registry)]
+    C[Consent and rights policy]
+    P[Provider capability and terms registry]
+    X[Shot-aware reference selector]
+    O[Routing policy]
+  end
+
+  subgraph Vaults[Protected storage zones]
+    V1[(Original vault)]
+    V2[(Normalized assets)]
+    V3[(Feature and embedding vault)]
+    V4[(Provider adapters: IDs, LoRAs, uploads)]
+  end
+
+  subgraph Vendors[External model plane]
+    A[Secure provider adapter]
+    M[Image, video and audio APIs]
+  end
+
+  subgraph Quality[Output qualification]
+    Z[Output quarantine]
+    K[Safety and identity scoring]
+    D{Pass gates?}
+    L[(Approved output library)]
+    F[Repair, reroute or reject]
+  end
+
+  T[(Immutable lineage and audit log)]
+  B[Versioned benchmark and release gate]
+
+  U --> Q --> S --> N --> E --> R
+  N --> V1
+  N --> V2
+  E --> V3
+  R --> C
+  G --> C
+  C --> P --> O --> X
+  R --> X
+  V2 --> X
+  V3 --> X
+  V4 --> X
+  X --> A --> M --> Z --> K --> D
+  D -- Yes --> H --> L
+  D -- No --> F --> X
+  M --> V4
+  R --> B
+  P --> B
+  B --> O
+  A --> T
+  K --> T
+  H --> T
+  C --> T

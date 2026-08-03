@@ -100,7 +100,7 @@ export function createCharacterSheetRouter(
 
     try {
       const cells = await loadSheetCells(await dependencies.loadAssets(user.id, cast.id));
-      const sheet = await composeCharacterSheet(cells, "export");
+      const sheet = await composeCharacterSheet(cells);
       if (!sheet) {
         // She exists but has nothing in her pack yet — a building Cast. Not an
         // error, and not a blank image pretending to be one.

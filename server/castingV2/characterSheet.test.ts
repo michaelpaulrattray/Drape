@@ -117,14 +117,20 @@ describe("the layout", () => {
 });
 
 describe("what the picture actually contains", () => {
-  it("composes a real PNG at the geometry it promised", async () => {
+  it("composes a real image whose shape matches the geometry it promised", async () => {
     const pack = await cells(["anchor", "closeUp", "frontFull"]);
-    const bytes = await composeCharacterSheet(pack, "reference");
+    const bytes = await composeCharacterSheet(pack);
     expect(bytes).not.toBeNull();
     const meta = await sharp(bytes!).metadata();
     const geometry = sheetGeometry(pack);
-    expect(meta.width).toBe(geometry.width);
-    expect(meta.height).toBe(geometry.height);
+    /*
+      Aspect rather than exact pixels: the composite is built at native size and
+      then bounded, so the promise the geometry makes is about SHAPE. A layout
+      bug moves the ratio; a downscale does not.
+    */
+    const composed = geometry.width / geometry.height;
+    const rendered = meta.width! / meta.height!;
+    expect(Math.abs(composed - rendered)).toBeLessThan(0.01);
   });
 
   /*
@@ -135,7 +141,7 @@ describe("what the picture actually contains", () => {
   */
   it("keeps the export inside the envelope every tool accepts", async () => {
     const pack = await cells(["anchor", "closeUp", "frontFull", "sideClose", "backFull", "frontClose"]);
-    const exported = await composeCharacterSheet(pack, "export");
+    const exported = await composeCharacterSheet(pack);
     const meta = await sharp(exported!).metadata();
 
     expect(meta.format).toBe("jpeg");
@@ -144,22 +150,36 @@ describe("what the picture actually contains", () => {
   });
 
   /*
-    The engine-facing rendering is deliberately NOT bounded — we control every
-    consumer, and throwing detail away for a limit nobody here imposes would be
-    the export's constraint leaking into the reference.
+    THE UNBOUNDED RENDERING IS RETIRED, and this pins that it stays retired.
+
+    A full-native PNG existed briefly for our own engines, on the reasoning that
+    we control those consumers. The consumers discard it themselves: Gemini-family
+    models downscale every input to 3072 and perceive via 768px tiles, and intake
+    budgets are often request-TOTAL, so a 47MB reference crowds out the companion
+    references sent with it. One envelope now serves everything.
   */
-  it("leaves the engine-facing rendering at full native size", async () => {
+  it("has no unbounded form left to hand anybody", async () => {
     const pack = await cells(["anchor", "closeUp", "frontFull"]);
-    const reference = await composeCharacterSheet(pack, "reference");
-    const meta = await sharp(reference!).metadata();
-    const geometry = sheetGeometry(pack);
-    expect(meta.format).toBe("png");
-    expect(meta.width).toBe(geometry.width);
-    expect(Math.max(meta.width!, meta.height!)).toBeGreaterThan(EXPORT_MAX_LONG_SIDE);
+    const only = await composeCharacterSheet(pack);
+    const meta = await sharp(only!).metadata();
+    expect(meta.format).toBe("jpeg");
+    expect(Math.max(meta.width!, meta.height!)).toBeLessThanOrEqual(EXPORT_MAX_LONG_SIDE);
+  });
+
+  /*
+    Composition still happens at NATIVE resolution internally, so nothing is
+    pre-blurred — a caller that needs a different envelope gets it derived from
+    the full-detail composite rather than from an already-shrunk one.
+  */
+  it("derives a smaller variant for a consumer that resamples anyway", async () => {
+    const pack = await cells(["anchor", "closeUp", "frontFull"]);
+    const gemini = await composeCharacterSheet(pack, { maxLongSide: 3072 });
+    const meta = await sharp(gemini!).metadata();
+    expect(Math.max(meta.width!, meta.height!)).toBeLessThanOrEqual(3072);
   });
 
   it("returns nothing for a Cast with nothing in her pack", async () => {
-    expect(await composeCharacterSheet([], "reference")).toBeNull();
+    expect(await composeCharacterSheet([])).toBeNull();
   });
 
   /*
@@ -176,7 +196,6 @@ describe("what the picture actually contains", () => {
     expect(geometry.cells[0].label).toBe(nasty);
     const bytes = await composeCharacterSheet(
       [{ slot: "anchor", bytes: await swatch("#808080"), label: nasty }],
-      "export",
     );
     expect(bytes).not.toBeNull();
   });
