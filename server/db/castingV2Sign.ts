@@ -37,7 +37,6 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from "d
 
 import {
   castingCandidates,
-  castingCandidateVariants,
   castingRolls,
   castingSessions,
   generationOperations,
@@ -130,25 +129,6 @@ export async function requireRunningSignOperationIn(
 
 export type SignableCandidate = {
   candidate: CastingCandidate;
-  /**
-   * THE FACE this Sign would spend — the selected variant, or the original.
-   *
-   * Not a convenience. Sign takes the image key AND the identity documents from
-   * here, read in the same statement, because taking them from two places is
-   * how the record comes to describe a different face than the picture: the
-   * variant's image under the original's recipe. §11's first landmine.
-   *
-   * `variantId` is the value the CAS fence is armed with, and it is NULL for
-   * every candidate that has never been refined — which is all of them until
-   * a user refines one, and most of them afterwards.
-   */
-  face: {
-    variantId: number | null;
-    variantPublicId: string | null;
-    imageKey: string | null;
-    thumbKey: string | null;
-    internalPrompt: unknown;
-  };
   roll: {
     id: number;
     publicId: string;
@@ -178,11 +158,6 @@ export async function getSignableCandidate(
   const [row] = await db
     .select({
       candidate: castingCandidates,
-      variantId: castingCandidateVariants.id,
-      variantPublicId: castingCandidateVariants.publicId,
-      variantImageKey: castingCandidateVariants.imageKey,
-      variantThumbKey: castingCandidateVariants.thumbKey,
-      variantInternalPrompt: castingCandidateVariants.internalPrompt,
       rollId: castingRolls.id,
       rollPublicId: castingRolls.publicId,
       briefText: castingRolls.briefText,
@@ -205,22 +180,6 @@ export async function getSignableCandidate(
       eq(castingSessions.id, castingCandidates.sessionId),
       eq(castingSessions.userId, userId),
     ))
-    /*
-      The selected refinement, if there is one — LEFT, because most candidates
-      have never been refined and a candidate with no variant is signable.
-
-      Owner-scoped in the JOIN rather than trusted from the pointer. The pointer
-      is written by an owner-scoped statement, so a foreign id cannot get in
-      there — but a join that reads it without saying so is a join whose safety
-      depends on a fact stated somewhere else, and that is the shape invariant 1
-      exists to refuse.
-    */
-    .leftJoin(castingCandidateVariants, and(
-      eq(castingCandidateVariants.id, castingCandidates.selectedVariantId),
-      eq(castingCandidateVariants.userId, userId),
-      eq(castingCandidateVariants.candidateId, castingCandidates.id),
-      eq(castingCandidateVariants.status, "ready"),
-    ))
     .where(and(
       eq(castingCandidates.publicId, candidatePublicId),
       eq(castingCandidates.userId, userId),
@@ -231,27 +190,6 @@ export async function getSignableCandidate(
   if (!row) return null;
   return {
     candidate: row.candidate,
-    /*
-      The variant wins where it exists, and the ORIGINAL is the fallback for
-      every field together — never field by field. A variant that landed
-      without a thumb must not borrow the original's thumb: that would show one
-      face at tile size and a different one full size.
-    */
-    face: row.variantId
-      ? {
-        variantId: row.variantId,
-        variantPublicId: row.variantPublicId,
-        imageKey: row.variantImageKey,
-        thumbKey: row.variantThumbKey,
-        internalPrompt: row.variantInternalPrompt,
-      }
-      : {
-        variantId: null,
-        variantPublicId: null,
-        imageKey: row.candidate.imageKey,
-        thumbKey: row.candidate.thumbKey,
-        internalPrompt: row.candidate.internalPrompt,
-      },
     roll: {
       id: row.rollId,
       publicId: row.rollPublicId,
@@ -285,17 +223,6 @@ export type SignCandidateInput = {
   identityRevisionId: string;
   /** Allocated under `withUniqueCastPublicId` by the caller. */
   agencyId: string;
-  /**
-   * The selection this Sign was quoted against — the CAS fence's second arm.
-   *
-   * NULL means "the original was selected when we read it", which is the case
-   * for every candidate that has never been refined. Passing the value that was
-   * READ, rather than re-reading it here, is the whole point: a selection
-   * switched between the quote and the commit lands as `commit_conflict` and
-   * refunds, exactly as a racing discard already does. Without it, a Sign could
-   * snapshot one face's documents and copy another face's pixels.
-   */
-  selectedVariantId: number | null;
   /** The candidate image, already copied to a key this Cast owns. */
   anchor: { storageKey: string; storageUrl: string; provenance?: Record<string, unknown> };
   /** The manifest that owns that copy until this transaction discharges it. */
@@ -455,18 +382,6 @@ export async function signCandidateIntoCast(
         eq(castingCandidates.userId, input.userId),
         eq(castingCandidates.status, "ready"),
         isNull(castingCandidates.signedCastId),
-        /*
-          The SELECTION FENCE — and it is written null-safe on purpose.
-
-          `selectedVariantId` is NULL for every candidate nobody has refined,
-          and in SQL `x = NULL` is never true. Written as an ordinary equality
-          this predicate would match nothing, so EVERY Sign in the product
-          would fail `candidate_unavailable` and refund — a total outage that
-          the happy-path tests would still catch, but only after the shape had
-          been reasoned about wrongly. `<=>` is NULL-equals-NULL, so "nothing
-          was selected then and nothing is selected now" passes.
-        */
-        sql`${castingCandidates.selectedVariantId} <=> ${input.selectedVariantId}`,
       ));
     if (affectedRows(claimed) !== 1) throw new SignPersistenceError("candidate_unavailable");
 

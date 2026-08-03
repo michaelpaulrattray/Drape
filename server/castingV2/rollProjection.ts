@@ -339,24 +339,8 @@ export function projectCandidateStatus(
   }
 }
 
-/**
- * What a candidate looks like RIGHT NOW — the row, plus the face it shows.
- *
- * The face fields are REQUIRED, and that is the design rather than pedantry.
- * `CandidateWithFace` extends `CastingCandidate`, so a projection that took a
- * plain candidate would still compile when handed the richer row and would
- * quietly render the ORIGINAL while Sign spent the refinement — a surface
- * lying about what its own button does, with nothing failing to say so.
- * Requiring the fields makes that a compile error at every call site.
- */
-export type ProjectableCandidate = CastingCandidate & {
-  selectedVariantPublicId: string | null;
-  faceImageKey: string | null;
-  faceThumbKey: string | null;
-};
-
 export function projectCandidate(
-  candidate: ProjectableCandidate,
+  candidate: CastingCandidate,
   castPublicId?: string | null,
 ): CandidateProjection | null {
   const status = projectCandidateStatus(candidate.status);
@@ -376,13 +360,13 @@ export function projectCandidate(
       here rather than left to the tile, so the rule holds for every caller
       including ones that do not exist yet.
     */
-    imageUrl: status === "failed-refunded" || !candidate.faceImageKey
+    imageUrl: status === "failed-refunded" || !candidate.imageKey
       ? null
-      : storagePublicUrl(candidate.faceImageKey),
+      : storagePublicUrl(candidate.imageKey),
     castId: castPublicId ?? null,
-    thumbUrl: status === "failed-refunded" || !candidate.faceThumbKey
+    thumbUrl: status === "failed-refunded" || !candidate.thumbKey
       ? null
-      : storagePublicUrl(candidate.faceThumbKey),
+      : storagePublicUrl(candidate.thumbKey),
     personaLine: candidate.personaLine,
     kept: candidate.keptAt !== null,
   };
@@ -427,7 +411,7 @@ function readFellBack(compiledBrief: unknown): boolean {
 
 export function projectRoll(input: {
   roll: CastingRoll;
-  candidates: readonly ProjectableCandidate[];
+  candidates: readonly CastingCandidate[];
   parentCandidatePublicId?: string | null;
   parentCandidatePosition?: number | null;
   parentRollPublicId?: string | null;
@@ -490,14 +474,12 @@ export type ShortlistEntry = {
 };
 
 export function projectShortlist(
-  entries: readonly { candidate: ProjectableCandidate; rollIndex: number }[],
+  entries: readonly { candidate: CastingCandidate; rollIndex: number }[],
 ): ShortlistEntry[] {
   return entries.map(({ candidate, rollIndex }) => ({
     candidateId: candidate.publicId,
-    // The face, for the same reason the tile shows it: the dock's Sign spends
-    // the selected refinement, and the tray is where that Sign is aimed.
-    thumbUrl: candidate.faceThumbKey ? storagePublicUrl(candidate.faceThumbKey) : null,
-    imageUrl: candidate.faceImageKey ? storagePublicUrl(candidate.faceImageKey) : null,
+    thumbUrl: candidate.thumbKey ? storagePublicUrl(candidate.thumbKey) : null,
+    imageUrl: candidate.imageKey ? storagePublicUrl(candidate.imageKey) : null,
     personaLine: candidate.personaLine,
     sourceRollIndex: rollIndex,
     // The face's own label, so the dock's Sign can NAME who it is about to

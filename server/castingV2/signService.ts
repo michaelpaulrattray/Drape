@@ -132,21 +132,7 @@ function identityDocumentsFor(source: SignableCandidate): {
   preferences: unknown;
   identityText: string;
 } {
-  /*
-    THE FACE's record, not the candidate's — §11's first landmine.
-
-    If a user refines a face and signs it, the Cast's masterPrompt,
-    technicalSchema and identityText must describe the face they are looking at.
-    Reading `source.candidate.internalPrompt` here while copying the variant's
-    pixels below would snapshot the ORIGINAL's recipe under the VARIANT's
-    picture — the record-lies class at the most expensive site in the product,
-    and permanent, because a Cast's identity documents are what every later
-    generation is reproduced from.
-
-    `face` is resolved in the same statement that proved the candidate, so the
-    key and the documents cannot come from two different reads.
-  */
-  const internal = source.face.internalPrompt as
+  const internal = source.candidate.internalPrompt as
     | { prompt?: unknown; resolved?: unknown }
     | null;
   const masterPrompt = typeof internal?.prompt === "string" && internal.prompt.trim()
@@ -167,14 +153,6 @@ function identityDocumentsFor(source: SignableCandidate): {
     position: source.candidate.position,
     sourceRollPublicId: source.roll.publicId,
     sourceCandidatePublicId: source.candidate.publicId,
-    /*
-      Which refinement this Cast was signed from — null for an unrefined face.
-
-      Lineage that names the candidate alone would name the original for a Cast
-      that is not the original, which is the same lie as the documents one, told
-      quietly in the provenance instead of loudly in the recipe.
-    */
-    sourceVariantPublicId: source.face.variantPublicId,
   };
   const identityText = [
     "IDENTITY — THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY:",
@@ -184,18 +162,18 @@ function identityDocumentsFor(source: SignableCandidate): {
   return { masterPrompt, technicalSchema, preferences, identityText };
 }
 
-/*
-  The M7 seam `selectedCandidateImageKey` is GONE, and deleting it was the
-  point rather than a tidy-up.
-
-  It was written to be the one place M8 would change, and its signature took
-  `{ imageKey }` — a candidate-shaped argument that structurally could not see
-  a variant. Widening it would have meant Sign reading its key from this
-  function and its identity documents from `getSignableCandidate`: two reads,
-  which is exactly the split that lets the picture and the record describe
-  different faces. The selected face now arrives from ONE statement as
-  `source.face`, and there is nothing left for an accessor to indirect.
-*/
+/**
+ * The candidate's SELECTED image key.
+ *
+ * One accessor, on purpose. Today a candidate has exactly one image and this is
+ * a field read; at M8 a refined candidate has a stack of variants and the
+ * selected one is its face — what Sign signs. Reading `imageKey` inline at the
+ * copy site would make that a change to the money ceremony instead of a change
+ * to this function (D-86).
+ */
+export function selectedCandidateImageKey(candidate: { imageKey: string | null }): string | null {
+  return candidate.imageKey;
+}
 
 export async function signCandidate(
   dependencies: SignServiceDependencies,
@@ -212,7 +190,7 @@ export async function signCandidate(
       message: "That candidate can't be signed — it may have been discarded, expired, or already signed.",
     });
   }
-  const imageKey = source.face.imageKey;
+  const imageKey = selectedCandidateImageKey(source.candidate);
   if (!imageKey) {
     // A `ready` row without bytes is a torn write. Refusing here costs the user
     // nothing; charging and then discovering it would cost them a refund.
@@ -322,8 +300,6 @@ export async function signCandidate(
       candidateId: source.candidate.id,
       rollId: source.roll.id,
       sessionId: source.session.id,
-      // The selection this Sign was quoted against; the CAS refuses if it moved.
-      selectedVariantId: source.face.variantId,
       name: input.name?.trim() || null,
       cohortKey: source.roll.cohortKey,
       styleKey: source.roll.styleKey,

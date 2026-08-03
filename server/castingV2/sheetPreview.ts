@@ -20,11 +20,8 @@
 export type SheetPreviewCandidate = {
   id: number;
   status: string;
-  /* The FACE's keys — the selected refinement's where there is one (M8). A
-     card strip showing pre-refinement faces would misdescribe the sheet it is
-     a preview OF. */
-  faceImageKey: string | null;
-  faceThumbKey: string | null;
+  imageKey: string | null;
+  thumbKey: string | null;
 };
 
 /** How many faces the card's strip holds. */
@@ -40,7 +37,7 @@ export const SHEET_PREVIEW_LIMIT = 4;
  */
 export function previewKeyOf(candidate: SheetPreviewCandidate): string | null {
   if (candidate.status !== "ready") return null;
-  return candidate.faceThumbKey ?? candidate.faceImageKey ?? null;
+  return candidate.thumbKey ?? candidate.imageKey ?? null;
 }
 
 /**

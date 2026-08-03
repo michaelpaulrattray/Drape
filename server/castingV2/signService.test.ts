@@ -35,30 +35,10 @@ const candidateRow = {
   status: "ready" as string,
   signedCastId: null as number | null,
   imageKey: "casting-v2/candidates/abc.png",
-  thumbKey: "casting-v2/candidates/abc-thumb.png",
   personaLine: "Dry and flat",
   position: 3,
   internalPrompt: { prompt: "the composed casting instruction", resolved: { sex: "female" } },
 };
-
-/**
- * The selected refinement, when the test sets one (M8 §11/§14).
- *
- * Null in every test that predates Refine, which is the parity these suites
- * prove: with nothing selected, Sign must behave exactly as it did.
- */
-let selectedVariant: {
-  id: number;
-  publicId: string;
-  imageKey: string;
-  thumbKey: string | null;
-  internalPrompt: unknown;
-} | null = null;
-
-/** What the durable boundary was actually handed, for the record-lies checks. */
-const boundaryInputs: Array<Record<string, unknown>> = [];
-/** Which object the anchor was copied FROM. */
-const copiedFrom: string[] = [];
 
 const casts: Array<{ modelId: number; agencyId: string; candidateId: number }> = [];
 let nextModelId = 900;
@@ -84,21 +64,6 @@ vi.mock("../db/castingV2Sign", () => ({
     if (candidateRow.status !== "ready") return null;
     return {
       candidate: candidateRow,
-      face: selectedVariant
-        ? {
-          variantId: selectedVariant.id,
-          variantPublicId: selectedVariant.publicId,
-          imageKey: selectedVariant.imageKey,
-          thumbKey: selectedVariant.thumbKey,
-          internalPrompt: selectedVariant.internalPrompt,
-        }
-        : {
-          variantId: null,
-          variantPublicId: null,
-          imageKey: candidateRow.imageKey,
-          thumbKey: candidateRow.thumbKey,
-          internalPrompt: candidateRow.internalPrompt,
-        },
       roll: {
         id: 22,
         publicId: "roll-public",
@@ -113,17 +78,8 @@ vi.mock("../db/castingV2Sign", () => ({
   }),
   signCandidateIntoCast: vi.fn(async (input: Record<string, unknown>) => {
     journal.push("boundary");
-    boundaryInputs.push(input);
-    /*
-      The CAS, for real: `status='ready' AND signedCastId IS NULL`, plus the
-      selection fence. Null-safe on both sides, mirroring the `<=>` in the
-      statement — a JS `===` between two nulls is true, which is precisely the
-      behaviour SQL needed `<=>` to get.
-    */
+    // The CAS, for real: `status='ready' AND signedCastId IS NULL`.
     if (candidateRow.status !== "ready" || candidateRow.signedCastId !== null) {
-      throw new TestSignPersistenceError("candidate_unavailable");
-    }
-    if ((input.selectedVariantId ?? null) !== (selectedVariant?.id ?? null)) {
       throw new TestSignPersistenceError("candidate_unavailable");
     }
     nextModelId += 1;
@@ -222,7 +178,6 @@ vi.mock("../db/connection", () => ({
 vi.mock("../storage", () => ({
   storageCopyExact: vi.fn(async (input: { sourceKey: string; destinationKey: string }) => {
     journal.push("copy");
-    copiedFrom.push(input.sourceKey);
     if (copyThrows) throw new Error("copy failed");
     return {
       key: input.destinationKey,
@@ -270,8 +225,6 @@ beforeEach(() => {
   ledger.refunds.length = 0;
   receipts.length = 0;
   cleanupBatches.length = 0;
-  boundaryInputs.length = 0;
-  copiedFrom.length = 0;
   casts.length = 0;
   chargeSucceeds = true;
   refundRecords = true;
@@ -279,7 +232,6 @@ beforeEach(() => {
   manifestThrows = false;
   candidateRow.status = "ready";
   candidateRow.signedCastId = null;
-  selectedVariant = null;
   vi.clearAllMocks();
 });
 
@@ -509,117 +461,5 @@ describe("the package's money, after the boundary", () => {
     expect(casts).toHaveLength(1);
     expect(journal).not.toContain("seal:success");
     expect(ledger.refunds).toHaveLength(0);
-  });
-});
-
-/**
- * Signing a REFINED face — §11's first landmine, and the fence that guards it.
- *
- * The whole reason Refine touches Sign at all. A refined candidate has two
- * faces on file: the original the sheet rolled, and the variant the user asked
- * for and is looking at. Sign must take BOTH the pixels and the identity
- * documents from the second one, and it must take them from the same read —
- * because a Cast's masterPrompt and technicalSchema are what every future
- * generation of that person is reproduced from, and a Cast whose record
- * describes a face it does not have is wrong permanently and silently.
- */
-describe("Sign reads the selected face, not the candidate", () => {
-  const REFINED = {
-    id: 77,
-    publicId: "variant-public",
-    imageKey: "casting-v2/variants/refined.png",
-    thumbKey: null,
-    internalPrompt: {
-      prompt: "the composed casting instruction, with green eyes",
-      resolved: { sex: "female", eyeColour: "green" },
-    },
-  };
-
-  it("copies the VARIANT's pixels and snapshots the VARIANT's record", async () => {
-    selectedVariant = REFINED;
-    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
-
-    expect(copiedFrom).toEqual([REFINED.imageKey]);
-    const boundary = boundaryInputs.at(-1)!;
-    expect(boundary.masterPrompt).toBe(REFINED.internalPrompt.prompt);
-    expect(boundary.technicalSchema).toMatchObject({ subject: { eyeColour: "green" } });
-    expect(boundary.identityText).toContain("green");
-    /* Lineage names the refinement, so the record does not credit the original. */
-    expect(boundary.preferences).toMatchObject({ sourceVariantPublicId: REFINED.publicId });
-  });
-
-  it("still signs the original when nothing is selected, and says so in lineage", async () => {
-    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
-
-    expect(copiedFrom).toEqual([candidateRow.imageKey]);
-    expect(boundaryInputs.at(-1)!.masterPrompt).toBe("the composed casting instruction");
-    expect(boundaryInputs.at(-1)!.preferences).toMatchObject({ sourceVariantPublicId: null });
-  });
-
-  /*
-    THE NULL FENCE. `selectedVariantId` is NULL for every candidate nobody has
-    refined, and SQL's `x = NULL` is never true — so a fence written as ordinary
-    equality would fail EVERY Sign in the product, not just the racing ones.
-    The statement uses `<=>`; this is the case that would have caught it.
-  */
-  it("passes the fence when nothing was selected and nothing is selected", async () => {
-    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
-
-    expect(boundaryInputs.at(-1)!.selectedVariantId).toBeNull();
-    expect(casts).toHaveLength(1);
-    expect(ledger.refunds).toHaveLength(0);
-  });
-
-  it("arms the fence with the value it QUOTED, so a switch mid-Sign refunds", async () => {
-    selectedVariant = REFINED;
-    await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
-    expect(boundaryInputs.at(-1)!.selectedVariantId).toBe(REFINED.id);
-
-    /*
-      Now the user switches selection between the quote and the commit. The CAS
-      finds a different pointer and refuses; the money comes back whole, exactly
-      as it does for a candidate discarded mid-Sign.
-    */
-    candidateRow.status = "ready";
-    candidateRow.signedCastId = null;
-    ledger.charges.length = 0;
-    ledger.refunds.length = 0;
-    const stale = { ...REFINED };
-    selectedVariant = stale;
-    (
-      vi.mocked(await import("../db/castingV2Sign")).getSignableCandidate as unknown as {
-        mockImplementationOnce: (fn: () => Promise<unknown>) => void;
-      }
-    ).mockImplementationOnce(async () => {
-      /* Quoted against the old variant… */
-      const quoted = {
-        candidate: candidateRow,
-        face: {
-          variantId: stale.id,
-          variantPublicId: stale.publicId,
-          imageKey: stale.imageKey,
-          thumbKey: stale.thumbKey,
-          internalPrompt: stale.internalPrompt,
-        },
-        roll: {
-          id: 22,
-          publicId: "roll-public",
-          briefText: "a redhead in her 30s",
-          cohortKey: "photoreal-human",
-          styleKey: null,
-          styleProfile: null,
-          createdAt: new Date("2026-08-02T10:00:00Z"),
-        },
-        session: { id: 10, publicId: "session-public" },
-      };
-      /* …and the selection moves before the boundary runs. */
-      selectedVariant = { ...REFINED, id: 78, publicId: "variant-public-2" };
-      return quoted;
-    });
-
-    await expect(
-      signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
-    ).rejects.toThrow();
-    expect(ledger.refunds.at(-1)?.amount).toBe(ledger.charges.at(-1)?.amount);
   });
 });

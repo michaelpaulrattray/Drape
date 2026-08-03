@@ -23,7 +23,6 @@ import {
   boardItems,
   boards,
   castingCandidates,
-  castingCandidateVariants,
   castingRolls,
   castingSessions,
   models,
@@ -271,18 +270,13 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
 
     let parentRollId: number | null = null;
     let parentCandidateId: number | null = null;
-    let parentVariantId: number | null = null;
     if (input.parentCandidatePublicId) {
       // Follow lineage (§G): the parent candidate is resolved through this
       // user's own rows. A client-supplied lineage id can therefore never
       // reference a foreign candidate — the worst it can do is fail to
       // resolve, which is a refusal, not a leak.
       const [parent] = await tx
-        .select({
-          id: castingCandidates.id,
-          rollId: castingCandidates.rollId,
-          selectedVariantId: castingCandidates.selectedVariantId,
-        })
+        .select({ id: castingCandidates.id, rollId: castingCandidates.rollId })
         .from(castingCandidates)
         .where(and(
           eq(castingCandidates.publicId, input.parentCandidatePublicId),
@@ -294,15 +288,6 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
       if (!parent) throw new CastingV2OwnershipError("candidate");
       parentCandidateId = parent.id;
       parentRollId = parent.rollId;
-      /*
-        WHICH face this family descends from (D-123). Read from the parent row
-        that was just re-anchored to this user, never taken from the caller —
-        so the lineage cannot name a variant the follower does not own.
-
-        NULL when the parent is showing its original, which is every roll
-        written before M8.
-      */
-      parentVariantId = parent.selectedVariantId;
     }
 
     const [highest] = await tx
@@ -326,7 +311,6 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
       lockContract: input.lockContract ?? null,
       parentRollId,
       parentCandidateId,
-      parentVariantId,
       status: "pending",
       priceCredits: CASTING_V2_COSTS.rollCandidate * input.candidates.length,
       operationId: input.operationId,
@@ -453,54 +437,15 @@ export async function getRollByOperation(userId: number, operationId: string): P
   return roll ?? null;
 }
 
-/**
- * A candidate row plus THE FACE IT SHOWS — what every display path wants.
- *
- * The tile, the viewer and the echo must show the refinement the user selected,
- * for the plainest possible reason: a surface that shows the original while
- * Sign would spend the variant is a surface that lies about what the button
- * does. `variantId` is null for an unrefined candidate, which is the ordinary
- * case and the shape everything already handles.
- */
-export type CandidateWithFace = CastingCandidate & {
-  selectedVariantPublicId: string | null;
-  faceImageKey: string | null;
-  faceThumbKey: string | null;
-};
-
-export async function listRollCandidates(
-  userId: number,
-  rollId: number,
-): Promise<CandidateWithFace[]> {
+export async function listRollCandidates(userId: number, rollId: number): Promise<CastingCandidate[]> {
   assertPositiveId(userId, "userId");
   assertPositiveId(rollId, "rollId");
   const db = await requireDb();
-  const rows = await db
-    .select({
-      candidate: castingCandidates,
-      variantPublicId: castingCandidateVariants.publicId,
-      variantImageKey: castingCandidateVariants.imageKey,
-      variantThumbKey: castingCandidateVariants.thumbKey,
-    })
+  return db
+    .select()
     .from(castingCandidates)
-    // Owner-scoped in the join, not inherited from the pointer — see
-    // `getOwnedCandidateWithSelectedFace` for why the pointer is not enough.
-    .leftJoin(castingCandidateVariants, and(
-      eq(castingCandidateVariants.id, castingCandidates.selectedVariantId),
-      eq(castingCandidateVariants.userId, userId),
-      eq(castingCandidateVariants.candidateId, castingCandidates.id),
-      eq(castingCandidateVariants.status, "ready"),
-    ))
     .where(and(eq(castingCandidates.rollId, rollId), eq(castingCandidates.userId, userId)))
     .orderBy(asc(castingCandidates.position));
-  return rows.map((row) => ({
-    ...row.candidate,
-    selectedVariantPublicId: row.variantPublicId,
-    /* Both keys move together or neither does — a variant's picture must never
-       be shown under the original's thumbnail. */
-    faceImageKey: row.variantPublicId ? row.variantImageKey : row.candidate.imageKey,
-    faceThumbKey: row.variantPublicId ? row.variantThumbKey : row.candidate.thumbKey,
-  }));
 }
 
 export async function listSessionRolls(userId: number, sessionId: number): Promise<CastingRoll[]> {
@@ -577,90 +522,34 @@ export async function listOpenCastingSessions(
     .limit(limit);
 }
 
-/*
-  `getOwnedReadyCandidate` is GONE (M8), and it was deleted rather than left
-  unused on purpose.
-
-  It returned the candidate ROW, which stopped being the same thing as the
-  candidate's FACE the moment refinements existed. Its one caller — Follow —
-  now reads through selection below, and an unused helper that quietly answers
-  the wrong question is worse than no helper at all: it is precisely what the
-  next person writing a follow-shaped path would reach for.
-*/
-
 /**
- * An owned, ready candidate AND the face it currently shows (M8 §11).
+ * One ready candidate of this user's, by public id.
  *
- * The read every caller wants once refinements exist, and the reason
- * `getOwnedReadyCandidate` is not enough: a candidate row holds the face the
- * SHEET rolled, which stops being the face the USER is looking at the moment
- * they refine it. Follow reading the row directly is §11's second landmine —
- * refine her eyes green, follow her, and get eight brown-eyed cousins.
- *
- * **A variant is addressable only THROUGH its owned parent.** There is
- * deliberately no `getVariant(publicId)` anywhere in this module: the join
- * re-proves the variant's user and its parent candidate in the same statement
- * that finds it, so no caller can hold a variant id and ask for it directly.
- * That is invariant 1 applied to a child of a child.
+ * Read before a follow roll compiles, so the new sheet can be conditioned on
+ * who the parent actually was rather than starting from the sentence again.
+ * The ownership predicate is in this statement, not checked beforehand
+ * (invariant 1) — but this read is *not* the authority for the lineage link.
+ * `createRollWithCandidates` re-resolves the same candidate inside its
+ * transaction, scoped to the session it is writing into, and that is what the
+ * stored `parentCandidateId` comes from. A foreign id fails here and fails
+ * there; it cannot be laundered by passing through this function.
  */
-export type OwnedCandidateFace = {
-  candidate: CastingCandidate;
-  /** The selected refinement, or null when the original is the face. */
-  variantId: number | null;
-  variantPublicId: string | null;
-  imageKey: string | null;
-  thumbKey: string | null;
-  internalPrompt: unknown;
-};
-
-export async function getOwnedCandidateWithSelectedFace(
+export async function getOwnedReadyCandidate(
   userId: number,
   candidatePublicId: string,
-): Promise<OwnedCandidateFace | null> {
+): Promise<CastingCandidate | null> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();
-  const [row] = await db
-    .select({
-      candidate: castingCandidates,
-      variantId: castingCandidateVariants.id,
-      variantPublicId: castingCandidateVariants.publicId,
-      variantImageKey: castingCandidateVariants.imageKey,
-      variantThumbKey: castingCandidateVariants.thumbKey,
-      variantInternalPrompt: castingCandidateVariants.internalPrompt,
-    })
+  const [candidate] = await db
+    .select()
     .from(castingCandidates)
-    .leftJoin(castingCandidateVariants, and(
-      eq(castingCandidateVariants.id, castingCandidates.selectedVariantId),
-      eq(castingCandidateVariants.userId, userId),
-      eq(castingCandidateVariants.candidateId, castingCandidates.id),
-      eq(castingCandidateVariants.status, "ready"),
-    ))
     .where(and(
       eq(castingCandidates.publicId, candidatePublicId),
       eq(castingCandidates.userId, userId),
       eq(castingCandidates.status, "ready"),
     ))
     .limit(1);
-  if (!row) return null;
-  /* All of the face or none of it — never a variant's image with the
-     original's record, which is the mix that makes a record lie. */
-  return row.variantId
-    ? {
-      candidate: row.candidate,
-      variantId: row.variantId,
-      variantPublicId: row.variantPublicId,
-      imageKey: row.variantImageKey,
-      thumbKey: row.variantThumbKey,
-      internalPrompt: row.variantInternalPrompt,
-    }
-    : {
-      candidate: row.candidate,
-      variantId: null,
-      variantPublicId: null,
-      imageKey: row.candidate.imageKey,
-      thumbKey: row.candidate.thumbKey,
-      internalPrompt: row.candidate.internalPrompt,
-    };
+  return candidate ?? null;
 }
 
 /**
@@ -677,29 +566,13 @@ export async function getOwnedCandidateWithSelectedFace(
  * stay protected from retention while the Cast lives (§G.6). She simply stops
  * being a thing this sheet is still deciding about.
  */
-export async function listKeptCandidates(
-  userId: number,
-  sessionId: number,
-): Promise<CandidateWithFace[]> {
+export async function listKeptCandidates(userId: number, sessionId: number): Promise<CastingCandidate[]> {
   assertPositiveId(userId, "userId");
   assertPositiveId(sessionId, "sessionId");
   const db = await requireDb();
-  const rows = await db
-    .select({
-      candidate: castingCandidates,
-      variantPublicId: castingCandidateVariants.publicId,
-      variantImageKey: castingCandidateVariants.imageKey,
-      variantThumbKey: castingCandidateVariants.thumbKey,
-    })
+  return db
+    .select()
     .from(castingCandidates)
-    // The tray shows faces, and a face is the selected one — same join, same
-    // owner scoping, same reason as `listRollCandidates`.
-    .leftJoin(castingCandidateVariants, and(
-      eq(castingCandidateVariants.id, castingCandidates.selectedVariantId),
-      eq(castingCandidateVariants.userId, userId),
-      eq(castingCandidateVariants.candidateId, castingCandidates.id),
-      eq(castingCandidateVariants.status, "ready"),
-    ))
     .where(and(
       eq(castingCandidates.sessionId, sessionId),
       eq(castingCandidates.userId, userId),
@@ -707,12 +580,6 @@ export async function listKeptCandidates(
       eq(castingCandidates.status, "ready"),
     ))
     .orderBy(asc(castingCandidates.keptAt));
-  return rows.map((row) => ({
-    ...row.candidate,
-    selectedVariantPublicId: row.variantPublicId,
-    faceImageKey: row.variantPublicId ? row.variantImageKey : row.candidate.imageKey,
-    faceThumbKey: row.variantPublicId ? row.variantThumbKey : row.candidate.thumbKey,
-  }));
 }
 
 /**
