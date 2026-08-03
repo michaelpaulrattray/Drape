@@ -18,6 +18,7 @@
  */
 import { randomUUID } from "node:crypto";
 
+import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { withTransaction } from "../db/connection";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import type { PurgeableCandidate } from "../db/castingV2";
@@ -89,6 +90,7 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
   let objectsQueued = 0;
 
   for (const [userId, candidates] of Array.from(byUser.entries())) {
+    const candidateIds = candidates.map((candidate) => candidate.id);
     const storageItems = candidates.flatMap((candidate) =>
       [candidate.imageKey, candidate.thumbKey]
         .filter((key): key is string => Boolean(key))
@@ -96,6 +98,28 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
     );
 
     await withTransaction(async (tx) => {
+      /*
+        A candidate's REFINEMENTS purge with it (D-122, §G.6).
+
+        Ordinary candidate retention, ruled rather than assumed: Sign copies its
+        own anchor, so a Cast depends on nothing in the variant table and a
+        signed candidate's unselected variants are ordinary sheet debris. Read
+        inside the same transaction as the delete so a refinement written
+        between the two cannot slip through and outlive the face it belonged to.
+
+        The same sweep rather than a second retention path, deliberately: two
+        schedules for one lifetime is two things to keep in step, and the one
+        that falls behind leaves paid pictures of people at public URLs after
+        their sheet is gone.
+      */
+      const variants = await listPurgeableVariantsIn(tx, candidateIds);
+      for (const variant of variants) {
+        for (const key of [variant.imageKey, variant.thumbKey]) {
+          if (key) storageItems.push({ storageKey: key, storageBackend: "public_r2" as const });
+        }
+      }
+      await deleteVariantRowsIn(tx, candidateIds);
+
       if (storageItems.length > 0) {
         await createStorageCleanupManifestIn(tx, {
           userId,
@@ -107,10 +131,7 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
       // Rows go only after their objects are handed over, and the delete is
       // itself owner-scoped and refuses signed or kept rows — belt and braces
       // against a selection bug ever reaching a protected candidate.
-      const deleted = await deleteCandidateRowsIn(tx, {
-        userId,
-        candidateIds: candidates.map((candidate) => candidate.id),
-      });
+      const deleted = await deleteCandidateRowsIn(tx, { userId, candidateIds });
       candidatesPurged += deleted;
       objectsQueued += storageItems.length;
     });
