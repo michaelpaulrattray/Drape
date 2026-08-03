@@ -17,6 +17,33 @@ export async function getDb() {
       _db = drizzle({
         connection: {
           uri: process.env.DATABASE_URL,
+          /*
+            ONE TIME FRAME, STATED (D-112).
+
+            Every DATETIME in this database is UTC, and this makes the driver
+            say so out loud instead of leaving it to be inferred.
+
+            **Measured before it was set, and the measurement corrected what was
+            believed:** the app's own path was already right. Drizzle's typed
+            column mapper writes and reads UTC, so a JS `Date` and a
+            `defaultNow()` on the same row have always landed in the same frame
+            — the earlier claim that "the two writers land ten hours apart" was
+            wrong, and came from probing `db.execute()` with a raw parameter,
+            which is a path the product does not use for typed columns.
+
+            What IS wrong is the RAW driver default. `mysql.createConnection`
+            with no `timezone` parses a DATETIME as LOCAL, so on a machine at
+            UTC+10 every timestamp read that way is ten hours early. That is the
+            investigation tooling, and it is where the two near-miss false
+            timelines came from.
+
+            Setting it here was measured for harm as well as for cure: with
+            `timezone: "Z"` the typed round-trip stays correct (no double
+            application), the bytes on disk stay UTC, and a raw read through the
+            same setting becomes correct. Nothing re-interprets, because nothing
+            was ever written in local time.
+          */
+          timezone: "Z",
           connectionLimit: 20,    // Max concurrent connections
           queueLimit: 50,         // Max queued connection requests before rejection
           waitForConnections: true,

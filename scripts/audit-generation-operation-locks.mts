@@ -4,6 +4,7 @@
  */
 import "dotenv/config";
 import mysql, { type RowDataPacket } from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 interface StaleLock extends RowDataPacket {
   lockKey: string;
@@ -25,7 +26,7 @@ async function main() {
   if (!url) throw new Error("No database URL. Pass --database-url or set DATABASE_URL.");
   const parsed = new URL(url);
   console.log(`[generation-lock-audit] READ ONLY against ${parsed.host}`);
-  const connection = await mysql.createConnection(url);
+  const connection = await openDatabase(url);
   try {
     const [rows] = await connection.query<StaleLock[]>(`
       SELECT

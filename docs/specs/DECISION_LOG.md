@@ -3117,6 +3117,52 @@ the route matters as much as the destination:
 
 **Measure, then move it once.**
 
+### CORRECTION, on measuring it (2026-08-03)
+
+**The mechanism recorded above is wrong, and the route it prescribed is what
+caught it.** "Measure first" was written to protect a risky change; what it
+actually did was disprove the premise.
+
+**The application was never broken.** Drizzle's typed column mapper writes and
+reads UTC, so a JS `Date` and a `defaultNow()` on the same row have always
+landed in the same frame. Measured against 43 real rows carrying both an
+SQL-written `createdAt` and an app-written `leaseExpiresAt`: the gaps run 5.6 to
+16.6 minutes — the lease itself — and **zero rows are more than two hours
+apart.** There are no mixed conventions on disk, and the sentence "the two
+writers land ten hours apart in the same column" describes something that has
+never happened here.
+
+That claim came from probing `db.execute()` with a raw parameter — a path the
+product does not use for typed columns — and generalising from it. The lesson is
+the ordinary one: an instrument pointed at the wrong path measures that path
+faithfully and tells you nothing about the product.
+
+**What IS broken is the raw driver default**, and only there.
+`mysql.createConnection` with no `timezone` parses a DATETIME as LOCAL, so on a
+machine at UTC+10 every timestamp read that way is **ten hours early** —
+silently, producing a Date that looks entirely reasonable. That is the
+investigation tooling, and it is exactly where the two near-miss false timelines
+came from. The founder's original framing — "one shared timestamp read-path so
+it can't recur per-investigation" — had the location right.
+
+**The destination stands; the reasoning changes.** `timezone: "Z"` is now set on
+the pool, and it was measured for harm as well as for cure: the typed round-trip
+stays correct (no double application), the bytes on disk stay UTC, and a raw
+read through the same setting becomes correct. Nothing is re-interpreted,
+because nothing was ever written in local time.
+
+The rejected shape stays rejected. `scripts/lib/dbConnection.mts` is a
+CONNECTION factory, not a read-path helper — one obvious thing to import,
+shorter than the thing it replaces. The instrument is kept as
+`scripts/measure-timestamp-frame.mts` so this is re-runnable rather than
+believed.
+
+**Named rather than left implicit:** 43 scripts still open a bare connection,
+and about a dozen of those read a timestamp without `CAST(... AS CHAR)`. The
+incident-work ones are migrated; the remaining test drivers are exposed and
+should move when touched. Until then the exposure is real and it is written
+down.
+
 ## D-113 — A fallback roll is charged. The confession is the product, not a refund.
 
 Founder ruling, 2026-08-03, arising from the sweep that made the fallback

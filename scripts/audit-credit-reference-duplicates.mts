@@ -12,6 +12,7 @@
  */
 import "dotenv/config";
 import mysql, { type RowDataPacket } from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 interface DuplicateGroup extends RowDataPacket {
   userId: number;
@@ -48,7 +49,7 @@ async function main() {
 
   const parsed = new URL(url);
   console.log(`[credit-reference-audit] READ ONLY against ${parsed.host}`);
-  const connection = await mysql.createConnection(url);
+  const connection = await openDatabase(url);
   try {
     const [groups] = await connection.query<DuplicateGroup[]>(`
       SELECT
