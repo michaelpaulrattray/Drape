@@ -1986,6 +1986,18 @@ export const castingRolls = mysqlTable("casting_rolls", {
   // client-supplied id can never reference a foreign candidate.
   parentRollId: int("parentRollId"),
   parentCandidateId: int("parentCandidateId"),
+  /**
+   * WHICH refinement of the parent this family descends from (D-123).
+   *
+   * NULL means the parent's original face, which is every roll written before
+   * M8. Stamped in the same insert-select that re-anchors the parent candidate
+   * to `ctx.user.id`, so a client-supplied id can never name a foreign variant.
+   *
+   * Recorded from day one because lineage is cheap to write while the row is
+   * being created and painful to backfill once rolls exist without it — the
+   * derivation would have to guess which variant was selected at the time.
+   */
+  parentVariantId: int("parentVariantId"),
   status: mysqlEnum("status", CASTING_ROLL_STATUSES).default("pending").notNull(),
   // = 8 × perCandidateCredits. Integer by construction: the ledger is
   // integer-only and refund slices come from each candidate's own row.
@@ -2033,6 +2045,21 @@ export const castingCandidates = mysqlTable("casting_candidates", {
   // Set only by the Sign CAS (M7). The unique index is a backstop preventing
   // two candidates claiming one Cast; the CAS is the double-Sign defence.
   signedCastId: int("signedCastId"),
+  /**
+   * Which refinement of this face is the one — NULL means the original (M8).
+   *
+   * **A pointer, not a `selected` flag on the variant rows, and the reason is
+   * mechanical rather than stylistic.** MySQL has no partial unique index, so
+   * "exactly one variant selected" enforced by flag is two UPDATEs racing and
+   * a state where zero or two are selected is reachable. A pointer holds one
+   * value by construction; there is no state to get out of step.
+   *
+   * Everything that reads a candidate's FACE reads through this — Sign,
+   * Follow, the tile projection, the echo. Reading the candidate's own
+   * `imageKey` while a variant is selected is the record-lies class: Sign would
+   * snapshot the original's identity documents under the variant's face.
+   */
+  selectedVariantId: int("selectedVariantId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   /**
    * Stamped on discard, not at insert. A candidate's expiry is unknowable when
@@ -2077,3 +2104,87 @@ export const castingCandidates = mysqlTable("casting_candidates", {
 
 export type CastingCandidate = typeof castingCandidates.$inferSelect;
 export type InsertCastingCandidate = typeof castingCandidates.$inferInsert;
+
+export const CASTING_VARIANT_STATUSES = [
+  "queued",
+  "dispatched",
+  "ready",
+  "failed",
+  "expired",
+] as const;
+export type CastingVariantStatus = typeof CASTING_VARIANT_STATUSES[number];
+
+/**
+ * One refinement of one candidate — the Refine surface's record (M8, §14).
+ *
+ * **Append-only.** A variant is never edited; a changed mind produces another
+ * variant, which is what makes the stack navigable and what makes "back up to
+ * the previous one" free selection rather than a paid re-render (D-121).
+ *
+ * **Every variant is one edit of the ORIGINAL, never an edit of an edit.** The
+ * whole instruction list is re-composed against the candidate's own resolved
+ * identity and rendered from the candidate's own image, so there is no chain
+ * for error to compound along: the tenth variant is exactly as close to the
+ * signed face as the first. `instructions` is denormalized per row for the same
+ * reason — the row says what it IS, without walking a parent chain to find out.
+ *
+ * **`userId`, `candidateId` and `sessionId` are denormalized** exactly as
+ * `casting_candidates` denormalizes them, and for the same reason: a variant is
+ * a child of a child, and every read or write must be able to prove ownership
+ * in the single statement that does the work rather than in a SELECT before it.
+ */
+export const castingCandidateVariants = mysqlTable("casting_candidate_variants", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  sessionId: int("sessionId").notNull(), // denormalized — retention is session-scoped
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  status: mysqlEnum("status", CASTING_VARIANT_STATUSES).default("queued").notNull(),
+  /**
+   * The user's OWN sentences, in order, oldest first.
+   *
+   * Provenance and the only refinement text a projection may return. The
+   * parsed deltas are the thing the prompt is built from; this is what the
+   * person actually typed, kept so the stack can be read back in their words.
+   */
+  instructions: json("instructions").notNull(),
+  /**
+   * The composed absolute deltas — INTERNAL, never projected (§10).
+   *
+   * Parsed once at entry, never re-interpreted at render, so a re-render is
+   * deterministic and removing an instruction is arithmetic.
+   */
+  deltas: json("deltas"),
+  // INTERNAL — the composed instruction and the FULL resolved identity of this
+  // variant. Sign reads its identity documents from here when it is selected,
+  // which is why it must be written from the same deltas the prompt was.
+  internalPrompt: json("internalPrompt"),
+  imageKey: varchar("imageKey", { length: 512 }),
+  thumbKey: varchar("thumbKey", { length: 512 }),
+  // INTERNAL provenance (D-12). Never projected.
+  provider: varchar("provider", { length: 32 }),
+  providerModel: varchar("providerModel", { length: 96 }),
+  providerRef: varchar("providerRef", { length: 96 }),
+  pointsCost: int("pointsCost").default(0).notNull(),
+  failureClass: varchar("failureClass", { length: 24 }),
+  operationId: varchar("operationId", { length: 36 }).notNull(), // →generation_operations
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  /**
+   * Ordinary candidate retention, ruled rather than assumed (D-122).
+   *
+   * Sign copies its own anchor, so a Cast depends on nothing in this table — a
+   * signed candidate's unselected variants are ordinary sheet debris and age
+   * out on the ordinary schedule. No second retention path to keep in step.
+   */
+  expiresAt: timestamp("expiresAt"),
+}, (table) => ([
+  uniqueIndex("uq_casting_variants_public").on(table.publicId),
+  // Idempotency: a replayed refine returns the existing variant rather than
+  // buying a second one — the roll's clientRequestId gate, one image wide.
+  uniqueIndex("uq_casting_variants_operation").on(table.operationId),
+  index("idx_casting_variants_candidate").on(table.candidateId),
+  index("idx_casting_variants_expires").on(table.expiresAt),
+]));
+
+export type CastingCandidateVariant = typeof castingCandidateVariants.$inferSelect;
+export type InsertCastingCandidateVariant = typeof castingCandidateVariants.$inferInsert;

@@ -56,7 +56,7 @@ import {
   cancelQueuedCandidate,
   createRollWithCandidates,
   failCandidate,
-  getOwnedReadyCandidate,
+  getOwnedCandidateWithSelectedFace,
   getOwnedRoll,
   getRollByOperation,
   landCandidate,
@@ -243,7 +243,20 @@ export async function createRoll(
   let followPersonaLine: string | null = null;
   let followIdentity: ResolvedIdentity | null = null;
   if (input.followCandidatePublicId) {
-    const parent = await getOwnedReadyCandidate(input.userId, input.followCandidatePublicId);
+    /*
+      Read through SELECTION — §11's second landmine (D-123).
+
+      "More faces like this one" has to mean the face they are looking at. If
+      she has been refined, her family descends from the refinement: reading the
+      candidate row directly is how you refine her eyes green, follow her, and
+      get eight brown-eyed cousins. The helper resolves the variant through the
+      owned parent in one statement, so a face cannot be borrowed across
+      accounts.
+    */
+    const parent = await getOwnedCandidateWithSelectedFace(
+      input.userId,
+      input.followCandidatePublicId,
+    );
     if (!parent) {
       throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
     }
@@ -253,7 +266,7 @@ export async function createRoll(
       the face the user pointed at — rather than a persona label that could sit
       under any of the eight.
     */
-    followPersonaLine = String(parent.position + 1).padStart(2, "0");
+    followPersonaLine = String(parent.candidate.position + 1).padStart(2, "0");
     followIdentity = readResolvedIdentity(parent.internalPrompt);
   }
 
