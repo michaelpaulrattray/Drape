@@ -756,6 +756,20 @@ export default function CastingRoom() {
                   clientRequestId: createClientRequestId(),
                   castId,
                 });
+                /*
+                  KEPT, and the one destructive success in the product that
+                  still toasts (D-110).
+
+                  The rule elsewhere is that the surface acknowledges: a card
+                  vanishing from a strip in front of you is a transition you
+                  SEE. This action has no such surface — it destroys the page
+                  that would have done the acknowledging, and lands the user on
+                  a lobby where she is merely absent. An absence is a state you
+                  would have to audit, not an answer to what you just did.
+
+                  So this is D-110's fallback case rather than an exception to
+                  it: work whose own surface is gone.
+                */
                 toast(`${data.name ?? "That cast"} was deleted.`);
                 // Her room is the page we are standing on, so leaving is part
                 // of the ceremony rather than something to do afterwards.

@@ -386,10 +386,19 @@ export default function CastingSheet() {
     // Paint first, ask second (D-38). The ring appears on the click, not on
     // the round trip.
     setOptimisticKept(candidateId, kept);
+    /*
+      No success toast (D-110). The ring appears on the click, the face moves
+      into or out of the tray, and the kept count changes — three in-place
+      acknowledgements of one action, all of them on the thing the user just
+      clicked. A fourth, in a pill at the bottom of the screen, is the second
+      copy the ruling forbids.
+
+      The FAILURE keeps its toast: the optimistic ring snaps back, which shows
+      that something was refused but never why.
+    */
     void guardedMutation((input: { candidateId: string; kept: boolean }) =>
       keep
         .mutateAsync(input)
-        .then(() => toast(input.kept ? "Kept" : "Removed from kept"))
         .catch((error: Error) => {
           // The server said no. Drop the optimistic paint rather than leaving
           // the screen claiming something that did not happen.
@@ -409,11 +418,17 @@ export default function CastingSheet() {
           refuse. Say that instead of setting an undo the user cannot spend.
         */
         if (viewingHistory) {
+          /*
+            KEPT, and not a duplicate: this explains an ABSENCE. The card
+            leaving says "discarded"; nothing on the screen says why no Undo
+            appeared beside it, and a missing affordance cannot explain itself.
+          */
           toast("Discarded — undo is only available on the latest roll");
           return;
         }
+        // No success toast (D-110): the card leaves the grid on the click and
+        // the Undo affordance appears in its place. Both are the answer.
         setUndoable(input.candidateId);
-        toast("Discarded");
       })
       .catch((error: Error) => {
         clearOptimistic(input.candidateId);
@@ -436,9 +451,13 @@ export default function CastingSheet() {
     // than waiting for the poll to contradict it.
     clearOptimistic(undoable);
     setUndoable(null);
-    // Undo restores the candidate, not its kept state — a discard clears kept
-    // and this deliberately does not put it back. Say so rather than let the
-    // user discover it.
+    /*
+      KEPT, and not a duplicate. The card returning is the "restored" half and
+      the toast does not need to repeat it — but "not kept" is a fact nothing
+      on screen states: a discard clears kept, undo deliberately does not put it
+      back, and the only in-place evidence is the ABSENCE of a ring, which is
+      indistinguishable from a card that was never kept.
+    */
     toast("Restored — not kept");
     await invalidate();
   };
@@ -974,20 +993,27 @@ export default function CastingSheet() {
             // show, because rolls are immutable.
             pending={{ overrides, unlocked }}
             onAdjust={(adjustment) => {
+              /*
+                NONE OF THESE TOAST ANY MORE (D-110), and this is the clearest
+                case in the product: the echo renders the queued change in
+                place, in the sentence it belongs to — "20s → 50s · next roll"
+                for a set, "→ varying · next roll" for an unpin, and the span
+                reverting to an ordinary fact for an undo.
+
+                The toasts were saying the same words a few inches lower.
+                "20s → 50s · next roll" and "50s — applies to your next roll"
+                are one sentence twice, and only one of them is attached to the
+                fact it describes.
+              */
               if (adjustment.kind === "undo") {
                 undoOverride(adjustment.field);
-                toast("Change undone");
                 return;
               }
               if (adjustment.kind === "vary") {
                 unlock(adjustment.field as UnlockableField);
-                // Rolls are immutable: this cannot change the sheet in front of
-                // them, only the next one. The copy says which.
-                toast(`${adjustment.field === "energy" ? "presence" : adjustment.field} unpinned — applies to your next roll`);
                 return;
               }
               setOverride(adjustment.field, adjustment.value as never);
-              toast(`${adjustment.value} — applies to your next roll`);
             }}
           />
         ) : null}
@@ -1153,10 +1179,11 @@ export default function CastingSheet() {
                     disagree about whether the brief had been rewritten.
                   */
                   const diverged = !sameBrief(next, shownBrief);
-                  if (diverged && Object.keys(overrides).length > 0) {
-                    clearOverrides();
-                    toast("Brief edited — your adjustments were cleared");
-                  }
+                  // Silent by design (D-110). The comment above is the whole
+                  // reason: the user WATCHES the adjustments fall out of the
+                  // echo as they type. A toast announcing it is a caption on
+                  // something already happening in front of them.
+                  if (diverged && Object.keys(overrides).length > 0) clearOverrides();
                 }}
                 /*
                   THE BRIEF BOX STILL STEERS DURING A FOLLOW, and the founder

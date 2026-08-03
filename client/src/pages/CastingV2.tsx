@@ -218,6 +218,23 @@ export default function CastingV2() {
       await utils.castingV2.openSessions.invalidate();
       setArmed(null);
       setMenuFor(null);
+      /*
+        KEPT, and it was very nearly removed.
+
+        The D-110 pass took this out on the reasoning that the card leaves the
+        strip in front of the user. Then it was MEASURED: **the card takes 7.1
+        seconds to go.** `openSessions` runs four queries per sheet, so a lobby
+        with two dozen sheets refetches about a hundred times against a remote
+        database before anything on screen changes.
+
+        Seven seconds of nothing after a destructive action is worse than a
+        redundant pill. The surface does not own this notice yet — it will when
+        the removal is optimistic or the projection is one query — and until
+        then the toast is the only thing that answers.
+
+        The rule held; the assumption about the surface did not, and only
+        driving it found that out.
+      */
       toast("Sheet deleted");
     } catch (error) {
       toast(error instanceof Error ? error.message : "That sheet could not be discarded.");
@@ -816,6 +833,13 @@ export default function CastingV2() {
               await renameCast.mutateAsync({ castId: renaming.castId, name });
               await utils.castingV2.roster.invalidate();
               setRenaming(null);
+              /*
+                KEPT, conservatively. This one waits on `roster` rather than
+                `openSessions`, so it may well be fast — but it was not
+                measured, and the sheet delete on this same page proved that
+                assuming a surface refreshes promptly is exactly the mistake
+                this pass exists to stop making. It goes when somebody times it.
+              */
               toast("Renamed");
             } catch (error) {
               toast(error instanceof Error ? error.message : "That name could not be saved.");
@@ -838,6 +862,12 @@ export default function CastingV2() {
               });
               await utils.castingV2.roster.invalidate();
               await utils.castingV2.openSessions.invalidate();
+              /*
+                KEPT for the same measured reason as the sheet delete above:
+                this awaits `openSessions.invalidate()` too, so it inherits the
+                same seven-second refresh before anything visibly changes.
+                Removing it would have traded a duplicate for a silence.
+              */
               toast(`${deletingCast.name ?? "That cast"} was deleted.`);
               setDeletingCast(null);
             } catch (error) {
