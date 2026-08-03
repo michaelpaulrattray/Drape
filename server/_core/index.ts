@@ -14,6 +14,7 @@ import { configureTrustedProxy } from "../security/rateLimit";
 import heroProxyRouter from "../heroProxy";
 import imageProxyRouter from "../routes/imageProxy";
 import evidenceDeliveryRouter from "../routes/evidenceDelivery";
+import { createCharacterSheetRouter } from "../routes/characterSheet";
 import { healthHandler } from "../health";
 import { validateEnv } from "./env";
 import { assertPrivateEvidenceCleanupSchema } from "../casting/evidence/privateEvidenceSchema";
@@ -236,6 +237,14 @@ async function startServer() {
 
   // Authenticated owner-only private evidence images.
   app.use(evidenceDeliveryRouter);
+
+  /*
+    The character sheet, composed on demand and served as bytes. Beside the
+    evidence route because it answers the same shape of question — an
+    authenticated image for one owner — and it re-proves ownership and liveness
+    in the statement that loads the Cast rather than trusting the URL.
+  */
+  app.use(createCharacterSheetRouter());
 
   // tRPC API with centralized error logging
   app.use(

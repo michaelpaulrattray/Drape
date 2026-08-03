@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cd83d7daf7131132"
+    "sourceFingerprint": "e386373f78b391c1"
   },
   "domains": [
     {
@@ -18,7 +18,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 37
+      "moduleCount": 38
     },
     {
       "id": "domain:billing",
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 36
+      "moduleCount": 38
     },
     {
       "id": "domain:castingV2",
@@ -3225,6 +3225,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/characterSheet.ts",
+      "path": "server/castingV2/characterSheet.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/characterSheetPack.ts",
+      "path": "server/castingV2/characterSheetPack.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/cohortPhotorealHuman.ts",
       "path": "server/castingV2/cohortPhotorealHuman.ts",
       "domain": "casting-v2",
@@ -3869,6 +3881,12 @@
     {
       "id": "module:server/routes/castingV2.ts",
       "path": "server/routes/castingV2.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/characterSheet.ts",
+      "path": "server/routes/characterSheet.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -8017,6 +8035,14 @@
       "path": "server/castingV2/categorySurvival.test.ts"
     },
     {
+      "id": "test:server/castingV2/characterSheet.test.ts",
+      "path": "server/castingV2/characterSheet.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/characterSheetPack.test.ts",
+      "path": "server/castingV2/characterSheetPack.test.ts"
+    },
+    {
       "id": "test:server/castingV2/composedDirection.test.ts",
       "path": "server/castingV2/composedDirection.test.ts"
     },
@@ -8615,6 +8641,10 @@
     {
       "id": "test:server/roleManagement.test.ts",
       "path": "server/roleManagement.test.ts"
+    },
+    {
+      "id": "test:server/routes/characterSheet.test.ts",
+      "path": "server/routes/characterSheet.test.ts"
     },
     {
       "id": "test:server/routes/emailAuth.test.ts",
@@ -13452,6 +13482,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/characterSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/routes/evidenceDelivery.ts",
       "kind": "imports"
     },
@@ -16611,6 +16646,46 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/characterSheet.ts",
+      "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/characterSheetPack.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/characterSheetPack.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/characterSheetPack.ts",
+      "to": "module:server/castingV2/characterSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/characterSheetPack.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/characterSheetPack.ts",
+      "to": "module:server/security/trustedImageFetch.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/characterSheetPack.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/characterSheetPack.ts",
+      "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -19308,6 +19383,36 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/clientRequestId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/characterSheet.ts",
+      "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/characterSheet.ts",
+      "to": "module:server/castingV2/characterSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/characterSheet.ts",
+      "to": "module:server/castingV2/characterSheetPack.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/characterSheet.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/characterSheet.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/characterSheet.ts",
+      "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
     {

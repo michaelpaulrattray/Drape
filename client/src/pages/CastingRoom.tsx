@@ -75,12 +75,29 @@ const COMPANION_LABELS = ["Three-quarter", "Side profile"];
  * Staggered because browsers throttle or silently drop a burst of simultaneous
  * downloads, which would look like the button half-working.
  */
-function downloadPackage(frames: readonly ViewerFrame[]) {
-  frames.forEach((frame, index) => {
+function downloadPackage(frames: readonly ViewerFrame[], castId: string) {
+  /*
+    THE CHARACTER SHEET LEADS (D-104).
+
+    It is the one file that answers "who is she" on its own — the whole pack
+    composed into a single labelled turnaround — and it is what a real workflow
+    conditions on. Saved first so it is the first thing in the downloads folder
+    rather than the last.
+
+    It comes from an authenticated route rather than a public URL, because
+    unlike the views it is composed on demand for this owner. The browser sends
+    the session cookie with a same-origin navigation, so the anchor works
+    exactly like the others.
+  */
+  const files = [
+    { url: `/api/cast/${encodeURIComponent(castId)}/sheet`, name: "character-sheet" },
+    ...frames.map((frame) => ({ url: frame.url, name: frame.downloadName })),
+  ];
+  files.forEach((file, index) => {
     window.setTimeout(() => {
       const link = document.createElement("a");
-      link.href = frame.url;
-      link.download = `${frame.downloadName}.png`;
+      link.href = file.url;
+      link.download = `${file.name}.png`;
       link.rel = "noreferrer";
       document.body.appendChild(link);
       link.click();
@@ -507,7 +524,7 @@ export default function CastingRoom() {
                         variant="quiet"
                         size="small"
                         disabled={packageFrames.length === 0}
-                        onClick={() => downloadPackage(packageFrames)}
+                        onClick={() => downloadPackage(packageFrames, castId)}
                       >
                         <Download size={12} strokeWidth={1.9} aria-hidden="true" />
                         Download package
