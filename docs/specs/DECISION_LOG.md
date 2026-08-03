@@ -3595,6 +3595,53 @@ Recovered by reverting all six commits and pushing the revert; production came
 back on the restored build with health 200. The work is intact in history and
 re-lands behind the migration.
 
+## D-126 — A reviewer clears the DIFF, never a precondition.
+
+Founder ruling, 2026-08-03, from the same wreckage as D-125.
+
+Fable reviewed the M8 diff and returned "CLEAR to push". I pushed. The diff was
+genuinely clear; what was not clear was migration 0020, which sat unanswered on
+my own founder checklist — named in two consecutive reports as something the
+founder had to do, and then pushed past anyway.
+
+**A review verdict speaks only about the code it read.** It cannot clear a
+deploy precondition, because the reviewer was not asked about one and does not
+hold the gate. Treating "clear to push" as permission to push is reading a
+narrow answer as a broad one.
+
+**The rule: no push while any founder item on your own checklist is
+unanswered.** If you wrote it down as needing the founder, it needs the founder
+— a reviewer saying yes to something else does not convert it.
+
+## D-127 — `CASTING_V2_SCOPE` stays `all` in production, deliberately.
+
+Founder ruling, 2026-08-03. Recorded so nobody later "fixes" it.
+
+Every production account is the founder's, so there is no third party to
+protect from a flag that is wide open, and Refine went live for all of them on
+the M8 re-land. **This is a decision, not an oversight**, and the next person
+who reads D-125 — which turns on the flag having been open when it was assumed
+dark — must not conclude that tightening it is the fix. The fix was reading the
+flag and leading with the migration; the scope itself is correct.
+
+What D-125 still requires, unchanged and independent of scope: a change touching
+`drizzle/` is founder-gated regardless of flag position, because no flag makes a
+query against a missing table work.
+
+## D-128 — The eye-shape vocabulary, approved.
+
+Founder ruling, 2026-08-03. All nine as proposed: almond, round, hooded,
+monolid, upturned, downturned, deep-set, wide-set, close-set.
+
+Each renders as engineered anatomy rather than the bare adjective — lid
+exposure, crease depth, canthal tilt, inter-eye set — because a single word
+loses to the model's portrait prior exactly as the broken nose and the
+styled-not-worn hijab did (A9, D-124).
+
+**Final taste check rides the founder's dogfood.** Single words can still be
+argued there without reopening the design: the list is a vocabulary, and
+swapping a name or dropping a member costs one constant and one prose line.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
