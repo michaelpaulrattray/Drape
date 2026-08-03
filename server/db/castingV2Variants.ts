@@ -79,6 +79,14 @@ export type ClaimedVariant = {
   /** The face this refinement was rendered FROM — always the ORIGINAL. */
   baseImageKey: string;
   baseInternalPrompt: unknown;
+  /**
+   * What was ACTUALLY written to the row — read back, not echoed.
+   *
+   * Wall (d) composes the prompt from this rather than from the caller's own
+   * object, so a filing failure can never produce a render. Echoing the input
+   * here would rebuild exactly the coupling that defeats.
+   */
+  deltas: unknown;
 };
 
 /**
@@ -130,6 +138,12 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
       .$returningId();
     if (!inserted?.id) throw new VariantOwnershipError("variant");
 
+    const [written] = await tx
+      .select({ deltas: castingCandidateVariants.deltas })
+      .from(castingCandidateVariants)
+      .where(eq(castingCandidateVariants.id, inserted.id))
+      .limit(1);
+
     return {
       id: inserted.id,
       publicId,
@@ -137,6 +151,7 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
       sessionId: candidate.sessionId,
       baseImageKey: candidate.imageKey,
       baseInternalPrompt: candidate.internalPrompt,
+      deltas: written?.deltas ?? null,
     };
   });
 }

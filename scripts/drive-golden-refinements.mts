@@ -51,7 +51,7 @@ for (const golden of GOLDEN_REFINEMENTS) {
         });
         continue;
       }
-      if (parsed.refusal.reason !== "out_of_tier") {
+      if (!parsed.refusal.reason.startsWith("wall_")) {
         /*
           A refusal for the wrong reason is still a bug worth seeing. "Unreadable"
           on a perfectly clear out-of-tier ask means the interpreter did not
@@ -61,7 +61,7 @@ for (const golden of GOLDEN_REFINEMENTS) {
         failures.push({
           instruction: golden.instruction,
           run,
-          problem: `refused as "${parsed.refusal.reason}" rather than out_of_tier`,
+          problem: `refused as "${parsed.refusal.reason}" rather than a named wall`,
         });
         continue;
       }
@@ -83,11 +83,44 @@ for (const golden of GOLDEN_REFINEMENTS) {
       a harness bug that reads exactly like a product bug, which is the worst
       kind to leave in an instrument.
     */
+    /*
+      FREE TEXT is matched by CONTAINMENT, not equality. "a smoky eye and a
+      nude lip" and "smoky eye and a nude lip" are the same answer, and a golden
+      that fails on a dropped article is an instrument that cries wolf — which
+      is how a suite stops being read.
+    */
+    const freeish = (want: Record<string, unknown>, got: Record<string, unknown>) => {
+      for (const [key, wanted] of Object.entries(want)) {
+        if (key !== "makeup" && key !== "free") continue;
+        const gotValue = JSON.stringify(got[key] ?? "").toLowerCase();
+        /*
+          ANY of the markers, not all of them. Free text is genuinely two-valued
+          run to run — "none" and "a bare face" both mean the makeup is off — and
+          a golden that demands one exact phrasing flaps, which is how an
+          instrument stops being believed. What must be TRUE is that the right
+          subject was addressed; the wording is the model's to choose.
+        */
+        const words = JSON.stringify(wanted).toLowerCase().replace(/[^a-z ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
+        if (words.length > 0 && !words.some((w) => gotValue.includes(w))) return false;
+      }
+      return true;
+    };
     const canonical = (value: Record<string, unknown>) =>
       JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))));
     const got = canonical(parsed.delta as Record<string, unknown>);
     const want = canonical(golden.delta as Record<string, unknown>);
-    if (got !== want) {
+    const wantObj = golden.delta as Record<string, unknown>;
+    const gotObj = parsed.delta as Record<string, unknown>;
+    const structural = Object.keys(wantObj).filter((k) => k !== "makeup" && k !== "free");
+    /*
+      The GUARANTEED fields must match exactly — that is the whole point of a
+      guarantee. Extra free-lane entries alongside them are allowed, because a
+      near-match legitimately lands there ("a dark bob" gives an exact cut and
+      an inexact colour), and forbidding that would pin a variance the design
+      deliberately permits.
+    */
+    const structuralMatch = structural.every((k) => gotObj[k] === wantObj[k]);
+    if (!structuralMatch || !freeish(wantObj, gotObj)) {
       failures.push({ instruction: golden.instruction, run, problem: `expected ${want}, got ${got}` });
       continue;
     }

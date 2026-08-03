@@ -71,6 +71,8 @@ import {
   applyDelta,
   composeDeltas,
   composeEditPrompt,
+  presentationOf,
+  readDelta,
   type RefineDelta,
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
@@ -303,7 +305,22 @@ export async function refineCandidate(
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
     const engine = (dependencies.engine ?? castingIdentityEngine)();
-    const prompt = composeEditPrompt(composed, {
+    /*
+      WALL (d), STRUCTURALLY (D-131).
+
+      The prompt is composed from what was PERSISTED, re-validated, never from
+      the in-memory object that happens to match it. That turns "no render the
+      paperwork did not learn" into dataflow rather than discipline: anything
+      the filing dropped is absent from the prompt too, so a failure degrades
+      to filed-but-not-rendered — which the sweep can see — and never to
+      rendered-but-not-filed, which nothing can.
+
+      It refuses rather than falling back, because a fallback here would be the
+      exact discipline this replaces.
+    */
+    const filed = readDelta(variant.deltas);
+    if (!filed) throw new Error("the refinement was not recorded in a readable shape");
+    const prompt = composeEditPrompt(filed, {
       eyeColour: (value) => IRIS_RENDER[value],
       eyeShape: (value) => EYE_SHAPE_RENDER[value],
       /* The cut's own name plus the silhouette it implies, so "bob" cannot
@@ -380,7 +397,9 @@ export async function refineCandidate(
       imageKey: stored.key,
       internalPrompt: {
         prompt,
-        resolved: baseIdentity ? applyDelta(baseIdentity, composed) : null,
+        /* Same source as the prompt, for the same reason. */
+        resolved: baseIdentity ? applyDelta(baseIdentity, filed) : null,
+        ...(presentationOf(filed) ? { presentation: presentationOf(filed) } : {}),
       },
       provider: image.provenance?.provider ?? null,
       providerModel: image.provenance?.model ?? null,

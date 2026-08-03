@@ -4,7 +4,10 @@ import {
   applyDelta,
   composeDeltas,
   composeEditPrompt,
+  identityDetailsOf,
+  presentationOf,
   readDelta,
+  type FreeLaneCheck,
 } from "./refineDelta";
 import {
   EYE_SHAPE_RENDER,
@@ -147,5 +150,110 @@ describe("the edit prompt", () => {
     expect(prompt).toContain(IRIS_RENDER.green);
     expect(record.realized.eyeColour).toBe("green");
     expect(record.realized.eyeShape).toBe("almond");
+  });
+});
+
+/**
+ * THE FREE LANE, and the four walls (D-131).
+ *
+ * The lane exists so every person-touching instruction gets an honest attempt.
+ * These are the things that must remain impossible while it does.
+ */
+describe("the free lane files, or it refuses", () => {
+  const check = (instruction: string): FreeLaneCheck => ({ instruction });
+
+  it("files a free subject in the user's own words", () => {
+    const delta = readDelta({ free: { brows: "thick and straight" } }, check("thick and straight brows"));
+    expect(delta?.free).toEqual({ brows: "thick and straight" });
+  });
+
+  /*
+    WALL (b), primary form. A subject the code does not own cannot be filed, and
+    wall (d) says an ask that cannot be filed refuses. This is also what stops a
+    model-authored key from becoming a composition key.
+  */
+  it("refuses a subject the code does not own", () => {
+    expect(readDelta({ free: { coat: "red" } }, check("put her in a red coat"))).toBeNull();
+    expect(readDelta({ free: { backdrop: "blue" } }, check("blue backdrop"))).toBeNull();
+  });
+
+  it("refuses scenery smuggled into a person subject", () => {
+    const c = check("photograph her skin against a red backdrop");
+    expect(readDelta({ free: { skin: "against a red backdrop" } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("wall_stage");
+  });
+
+  /*
+    SOURCE CONTAINMENT — wall (d)'s teeth. A model elaborating a scar into a
+    knife-fight scar is inventing biography, and the record would then carry a
+    fact the user never gave. Refusing is the only honest answer.
+  */
+  it("refuses a value the user did not actually say", () => {
+    const c = check("give her a scar on her cheek");
+    expect(readDelta({ free: { marks: "a long knife scar from a bar fight" } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("wall_unfileable");
+  });
+
+  it("refuses a likeness ask", () => {
+    const c = check("make her look like Scarlett Johansson");
+    expect(readDelta({ free: { nose: "like Scarlett Johansson" } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("wall_likeness");
+  });
+
+  /*
+    THE SABOTEUR. An over-eager interpreter routing a guaranteed value into the
+    free lane would silently cost it its engineered prose and its
+    failed-candidate teeth — a regression nothing would report, because the edit
+    still happens and still looks reasonable. Promotion is mechanical, so it
+    holds regardless of what the interpreter was told.
+  */
+  it("promotes a guaranteed value out of the free lane rather than losing it", () => {
+    const delta = readDelta({ free: { skin: "auburn" } }, check("auburn"));
+    /* `skin` is a person subject, so this one legitimately stays free. */
+    expect(delta?.free?.skin).toBe("auburn");
+
+    const promoted = readDelta({ free: { marks: "auburn" } }, check("auburn"));
+    expect(promoted?.hairColour).toBe("auburn");
+    expect(promoted?.free?.marks).toBeUndefined();
+  });
+
+  it("caps a free value, so an instruction cannot become a second brief", () => {
+    const long = "a ".repeat(200);
+    expect(readDelta({ free: { brows: long } }, check(long))).toBeNull();
+  });
+});
+
+describe("free-lane filing keeps expression out of identity (D-136)", () => {
+  it("files ordinary subjects as identity and expression as presentation", () => {
+    const delta = { free: { brows: "thick", expression: "a warm open smile" } };
+    expect(identityDetailsOf(delta)).toEqual({ brows: "thick" });
+    expect(presentationOf(delta)).toEqual({ expression: "a warm open smile" });
+  });
+
+  /*
+    The whole reason expression is separated. `readResolvedIdentity` passes
+    unknown fields through whole, so a smile filed into the identity would be
+    inherited by every follow — a momentary choice made permanent for eight
+    strangers.
+  */
+  it("never writes expression into the identity record", () => {
+    const refined = applyDelta(ORIGINAL, { free: { expression: "a warm open smile" } });
+    expect(JSON.stringify(refined)).not.toContain("smile");
+  });
+
+  it("writes the other subjects into the identity record, under their subject", () => {
+    const refined = applyDelta(ORIGINAL, { free: { brows: "thick and straight" } });
+    expect(refined.realized.statedDetails).toEqual({ brows: "thick and straight" });
+  });
+});
+
+describe("the free lane composes under its registered headings", () => {
+  it("emits each subject under the heading the sweep looks for", () => {
+    const prompt = composeEditPrompt(
+      { free: { brows: "thick and straight", ink: "a small rose on her neck" } },
+      prose,
+    );
+    expect(prompt).toContain("BROWS: thick and straight.");
+    expect(prompt).toContain("INK: a small rose on her neck.");
   });
 });

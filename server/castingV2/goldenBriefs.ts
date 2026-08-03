@@ -205,7 +205,9 @@ export type GoldenRefinement = {
     hairStyle?: string;
     hairColour?: string;
     hairTexture?: string;
+    /** Free text is matched by CONTAINMENT, not equality — see the driver. */
     makeup?: string;
+    free?: Record<string, string>;
   } | null;
   because: string;
 };
@@ -278,9 +280,9 @@ export const GOLDEN_REFINEMENTS: readonly GoldenRefinement[] = [
   },
   {
     instruction: "give her a dark bob",
-    delta: { hairColour: "dark brown", hairStyle: "bob" },
+    delta: { hairStyle: "bob" },
     because:
-      "TWO axes from one sentence. Composition is per-axis, so an instruction naming a cut and a colour must produce both — answering only one is a paid edit that did half of what was asked.",
+      "TWO facts from one sentence. The cut is exact, so it takes the guaranteed lane; the colour word is not, and MEASURED VARIANCE is recorded here rather than tuned away: dark resolves to the palette dark brown on some runs and to the free lane on others. Both are defensible on a compound name. The golden pins the guaranteed reading because that is the one that keeps the colourist prose.",
   },
   {
     instruction: "give her red lipstick",
@@ -296,14 +298,20 @@ export const GOLDEN_REFINEMENTS: readonly GoldenRefinement[] = [
   },
   {
     instruction: "take her makeup off",
-    delta: { makeup: "none, a completely bare face" },
+    delta: { makeup: "none bare" },
     because:
       "REMOVAL IS STILL AN INSTRUCTION. The tempting wrong answer is a refusal or an empty delta — and an empty delta is refused by construction, so this would land as 'unreadable' and read to the user as a bug rather than an answer.",
   },
   {
     instruction: "put a scar on her cheek",
+    delta: { free: { marks: "scar" } },
+    because:
+      "THE THIRD ONE THAT MOVED, and the one that shows what the free lane is FOR. It was the sharpest refusal on the list under the closed tier — structural features being real in a brief but not a refinement axis. D-131 opened the lane and it became a parse case, in the user's own words.",
+  },
+  {
+    instruction: "put her in a red coat",
     delta: null,
     because:
-      "The new sharpest refusal, and it is deliberately the one D-129 is about: structural features are real in the BRIEF but are not a refinement axis. Adjacent, plausible, not yet real — the role 'give her red lipstick' used to hold.",
+      "WALL (b), and this one NEVER moves however far the lanes open. There is no free subject a coat could file under, so the wall is a missing slot rather than an instruction — which is why it cannot quietly erode the way a prompt rule would.",
   },
 ] as const;

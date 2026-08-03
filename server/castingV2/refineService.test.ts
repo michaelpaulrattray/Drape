@@ -59,6 +59,8 @@ vi.mock("../db/castingV2Variants", () => ({
       baseInternalPrompt: candidateRow.internalPrompt,
       claimedInstructions: input.instructions,
       claimedDeltas: input.deltas,
+      /* Read back from the row, which is what wall (d) composes from. */
+      deltas: input.deltas,
     };
   }),
   markVariantDispatched: vi.fn(async () => true),
@@ -217,9 +219,9 @@ describe("refusals land before anything is claimed", () => {
   */
   it("refuses an out-of-tier instruction for free", async () => {
     await expect(refineCandidate(
-      { interpret: async () => ({ ok: false, refusal: { reason: "out_of_tier", asked: "her age" } }) },
+      { interpret: async () => ({ ok: false, refusal: { reason: "wall_stage", asked: "her age" } }) },
       { ...input, instruction: "make her older" },
-    )).rejects.toThrow(/can't change her age yet/);
+    )).rejects.toThrow(/not the shoot/);
 
     expect(journal).not.toContain("begin");
     expect(journal).not.toContain("deduct");
@@ -405,5 +407,53 @@ describe("the landing cannot half-commit, and the receipt cannot lie", () => {
 
     await expect(refineCandidate(greenEyes, input))
       .rejects.toThrow(/could not be recorded — quote operation/);
+  });
+});
+
+/**
+ * WALL (d), the structural half (D-131).
+ *
+ * "No render the paperwork did not learn" is dataflow, not discipline: the
+ * prompt is composed from what the row actually holds, so a filing failure
+ * degrades to filed-but-not-rendered — which the sweep can see — and never to
+ * rendered-but-not-filed, which nothing can.
+ */
+describe("the prompt is composed from the persisted row", () => {
+  it("renders what the ROW holds, not what the caller had in hand", async () => {
+    const { claimVariant } = await import("../db/castingV2Variants");
+    /* The row came back holding LESS than the service composed — a filing
+       failure, simulated. The render must follow the row. */
+    vi.mocked(claimVariant).mockImplementationOnce(async () => ({
+      id: 501,
+      publicId: "variant-1",
+      candidateId: 1,
+      sessionId: 1,
+      baseImageKey: candidateRow.imageKey as string,
+      baseInternalPrompt: candidateRow.internalPrompt,
+      deltas: { eyeColour: "blue" },
+    }));
+
+    await refineCandidate(greenEyes, input);
+    const internal = landedVariant?.internalPrompt as { prompt: string };
+    expect(internal.prompt).toContain("blue");
+    expect(internal.prompt).not.toContain("green");
+  });
+
+  it("refuses rather than falling back when the row is unreadable", async () => {
+    const { claimVariant } = await import("../db/castingV2Variants");
+    vi.mocked(claimVariant).mockImplementationOnce(async () => ({
+      id: 502,
+      publicId: "variant-2",
+      candidateId: 1,
+      sessionId: 1,
+      baseImageKey: candidateRow.imageKey as string,
+      baseInternalPrompt: candidateRow.internalPrompt,
+      deltas: { eyeColour: "violet" },
+    }));
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow();
+    /* And the whole charge came back, because a refusal past the deduct is
+       still a failure the user must not pay for. */
+    expect(ledger.refunds.at(-1)?.amount).toBe(25);
   });
 });

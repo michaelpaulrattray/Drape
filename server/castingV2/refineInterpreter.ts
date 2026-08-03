@@ -31,9 +31,20 @@ import { HAIR_STYLE_NAMES } from "./hairStyles";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
-import { readDelta, type RefineParse } from "./refineDelta";
+import { readDelta, type FreeLaneCheck, type RefineParse } from "./refineDelta";
+import { freeSubjectGuidance } from "./refineSubjects";
 
 const log = createModuleLogger("castingV2/refineInterpreter");
+
+/** Unwrap a markdown-fenced reply. Returns the text unchanged when unfenced. */
+function stripFence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  return trimmed
+    .replace(/^`{3}[a-zA-Z]*\s*/, "")
+    .replace(/`{3}\s*$/, "")
+    .trim();
+}
 
 /**
  * The one hard instruction: say what they meant, or say you cannot.
@@ -46,39 +57,48 @@ const SYSTEM_PROMPT = [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
-  "The ONLY things that can be changed are the eyes, the hair and the makeup:",
+  "You can change ANYTHING ABOUT THE PERSON THEMSELVES. Some things have exact vocabularies",
+  "and must use them; everything else about the person goes in the free lane.",
+  "",
+  "EXACT VOCABULARIES — use the listed word, never a near miss, never free text:",
   `  eyeColour   — one of: ${EYE_COLOURS.join(", ")}`,
   `  eyeShape    — one of: ${EYE_SHAPES.join(", ")}`,
   `  hairColour  — one of: ${HAIR_COLOURS.join(", ")}`,
   `  hairTexture — one of: ${HAIR_TEXTURES.join(", ")}`,
   `  hairStyle   — one of: ${HAIR_STYLE_NAMES.join(", ")}`,
-  "  makeup      — FREE TEXT, under 80 characters, in the user's own terms",
+  "  makeup      — free text, in the user's own terms",
+  "",
+  "THE FREE LANE — anything else about the person, keyed by subject:",
+  `  free: { "<subject>": "<their words>" }, subject one of: ${freeSubjectGuidance()}`,
   "",
   "Reply with JSON and nothing else.",
   "",
-  'Reply with any of {"eyeColour": "..."}, {"eyeShape": "..."}, {"hairColour": "..."},',
-  '{"hairTexture": "..."}, {"hairStyle": "..."} — as many as the instruction actually asks for,',
-  "using ONLY the exact words listed above. Pick the closest listed value; never invent one.",
-  "Relative asks resolve against the CURRENT value you are given: 'greener' from hazel is green,",
-  "'a bit lighter' from dark brown is brown, 'shorter' from a bob is a pixie.",
+  "Use an exact vocabulary ONLY when the user names something IN it. A near miss is not a",
+  "match: a mullet is not a wolf cut, cornrows are not braids, seafoam is not green-grey. If",
+  "their word is not on the list, put THEIR WORD in the free lane — that is what it is for, and",
+  "substituting the nearest listed value silently gives them something they did not ask for.",
+  "A cut is hairStyle, not hairTexture;",
+  "hairTexture is curl pattern only. Relative asks resolve against the CURRENT values you are",
+  "given: 'greener' from hazel is green, 'shorter' from a bob is a pixie.",
   "",
-  'A cut name is hairStyle, not hairTexture: "give her a bob" is {"hairStyle": "bob"}. Use',
-  "hairTexture only when the ask is about curl pattern rather than about the cut.",
+  "FREE-LANE RULES, and they are strict:",
+  "  - Use the user's OWN WORDS. Never elaborate, never add detail they did not give.",
+  '    "a scar on her cheek" stays that. It does NOT become "a long knife scar".',
+  "  - One entry per subject, holding the WHOLE current answer for that subject.",
+  "  - marks and ink hold a set: restate all of them, not just the new one.",
+  "  - Never name a brand, a product, or a real person.",
   "",
-  "makeup is the ONLY free-text field. Keep the user's own words — \"a red lip\" stays \"a red lip\"",
-  '— and never name a brand or a product. "take her makeup off" is {"makeup": "none, a completely',
-  'bare face"}, because removing makeup is still a makeup instruction.',
+  "WALLS — four things that are never possible. Reply with the wall, not an attempt:",
+  '  likeness: making them look like a specific real person -> {"wall": "likeness"}',
+  '  stage: clothing, backdrop, props, the shoot -> {"wall": "stage", "asked": "<what, briefly>"}',
+  '  content: anything unsafe or explicit -> {"wall": "content"}',
   "",
-  'If the instruction asks for ANYTHING else — age, heritage, sex, build, expression,',
-  'clothing, background, weight, beauty, "make her prettier", a different person — reply',
-  '{"outOfTier": "<the thing they want changed, as a short NOUN PHRASE>"}.',
-  '',
-  'The noun phrase must fit the sentence "Refining can\'t change ___ yet." So:',
-  '  "make her older"          → {"outOfTier": "her age"}',
-  '  "put a scar on her cheek" → {"outOfTier": "her face structure"}',
-  '  "make her prettier"       → {"outOfTier": "how attractive she looks"}',
-  '  "put her in a red coat"   → {"outOfTier": "what she is wearing"}',
-  'Never echo the instruction back as the noun phrase.',
+  "SUBJECTIVE asks are a wall too — prettier, hotter, better looking, more attractive. They name",
+  'a judgement rather than a feature, so reply {"wall": "stage", "asked": "how attractive they look"}.',
+  "",
+  "Casting decisions are NOT refinements: age, heritage, sex and build are who was cast rather",
+  'than how they look today. Reply {"wall": "stage", "asked": "her age"} and the like — rolling',
+  "again is the honest answer to those.",
   "",
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
 ].join("\n");
@@ -107,6 +127,30 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     return { ok: false, refusal: { reason: "unreadable" } };
   }
 
+  /*
+    ONE RE-SAMPLE on an unreadable reply, mirroring `interpretBrief`.
+
+    Measured: "make her eyes seafoam" came back EMPTY from the provider on two
+    of three runs — not a parse failure, an empty completion — and the user saw
+    "that did not come through clearly" for an instruction that was perfectly
+    clear. A transport hiccup was being reported as their mistake on a paid
+    surface. The ceiling went up for D-83's reason at the same time: a truncated
+    reply does not degrade gracefully, it parses to nothing.
+  */
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const parsed = await runOnce(engine, input, instruction);
+    if (parsed) return parsed;
+    if (attempt === 1) log.warn({}, "[refineInterpreter] empty reply — re-sampling once");
+  }
+  return { ok: false, refusal: { reason: "unreadable" } };
+}
+
+/** One sampling. Returns null when the reply was unusable, so the caller retries. */
+async function runOnce(
+  engine: TextEngine,
+  input: RefineInterpretInput,
+  instruction: string,
+): Promise<RefineParse | null> {
   let raw: unknown;
   try {
     const reply = await engine.complete({
@@ -123,27 +167,46 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
       json: true,
       // Extraction, not creativity — the same reason the brief interpreter runs low.
       temperature: 0.1,
-      maxOutputTokens: 200,
+      maxOutputTokens: 600,
       signal: input.signal,
     });
-    raw = JSON.parse(reply.text);
+    /*
+      Strip code fences before parsing.
+      
+      The model sometimes wraps its JSON in a markdown fence even under
+      json mode, and a bare JSON.parse then throws — which surfaced to the user
+      as "that did not come through clearly" for instructions it had in fact
+      read perfectly. A presentation habit was being reported as their mistake.
+    */
+    raw = JSON.parse(stripFence(reply.text));
   } catch (error) {
-    log.warn({ err: error }, "[refineInterpreter] unreadable reply — refusing");
-    return { ok: false, refusal: { reason: "unreadable" } };
+    log.warn({ err: error }, "[refineInterpreter] unreadable reply");
+    return null;
   }
 
   const reply = (raw ?? {}) as Record<string, unknown>;
-  if (typeof reply.outOfTier === "string" && reply.outOfTier.trim()) {
-    return {
-      ok: false,
-      /* Capped: this string is echoed back to the user, and an unbounded model
-         string on a user-facing surface is a rendering problem waiting. */
-      refusal: { reason: "out_of_tier", asked: reply.outOfTier.trim().slice(0, 60) },
-    };
+  if (typeof reply.wall === "string" && reply.wall.trim()) {
+    /*
+      The model believes it hit a wall. It is TOLD which walls exist, so this is
+      a report rather than a judgement — and the code re-checks every wall it
+      can check itself in `readDelta`, because a wall enforced only by asking
+      nicely is not a wall.
+    */
+    const asked = typeof reply.asked === "string" ? reply.asked.trim().slice(0, 60) : "";
+    if (reply.wall === "likeness") return { ok: false, refusal: { reason: "wall_likeness" } };
+    if (reply.wall === "content") return { ok: false, refusal: { reason: "wall_content" } };
+    return { ok: false, refusal: { reason: "wall_stage", asked: asked || "that" } };
   }
 
-  const delta = readDelta(reply);
-  if (!delta) return { ok: false, refusal: { reason: "unreadable" } };
+  /*
+    The instruction goes in so SOURCE CONTAINMENT can run: every content word of
+    a free value must appear in the sentence the user typed. `check.wall` comes
+    back set when a wall was hit, so the refusal can name it.
+  */
+  const check: FreeLaneCheck = { instruction };
+  const delta = readDelta(reply, check);
+  /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
+  if (!delta) return check.wall ? { ok: false, refusal: check.wall } : null;
   return { ok: true, delta };
 }
 
@@ -157,25 +220,34 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
  */
 export function refusalMessage(refusal: RefineParse & { ok: false }): string {
   switch (refusal.refusal.reason) {
-    case "out_of_tier":
+    /*
+      Each wall says WHICH wall, because "that isn't supported" tells someone
+      nothing about whether to rephrase, roll again, or stop. These four are
+      absolute — they are not tiers waiting to open — so the copy does not
+      promise a someday.
+    */
+    case "wall_likeness":
+      return "Refining can't make someone look like a specific real person. "
+        + "Nothing was charged.";
+    case "wall_stage":
+      return `Refining changes the person, not the shoot — ${refusal.refusal.asked} is `
+        + "wardrobe or set, which comes after Sign. Nothing was charged.";
+    case "wall_content":
+      return "That one can't be rendered. Nothing was charged.";
+    case "wall_unfileable":
       /*
-        Names what was asked, so the refusal demonstrates it understood — a
-        refusal that does not reads as a bug rather than as a boundary. Then it
-        names the thing that DOES answer the ask, because a dead end wearing
-        polite words is still a dead end.
+        The honest version of wall (d): we will not render what we cannot write
+        down, and the reason it could not be written down is that the words
+        were not the user's own.
       */
-      /*
-        The copy names EXACTLY what is real, and it moves with the tier. A
-        refusal that under-claims is as dishonest as one that over-claims —
-        "only the eyes", the day hair shipped, would have sent people away from
-        something the product could do.
-      */
-      return `Refining can't change ${refusal.refusal.asked} yet — only the eyes, hair and makeup. `
-        + "Rolling again with that in the brief will get you closer. Nothing was charged.";
+      return "That came back with more detail than you asked for, so it wasn't recorded — "
+        + "and nothing is rendered that isn't recorded. Try saying it in your own words. "
+        + "Nothing was charged.";
     case "empty":
-      return "Say what you'd like changed about the eyes, the hair or the makeup.";
+      return "Say what you'd like changed — anything about the person themselves.";
     case "unreadable":
-      return "That one didn't come through clearly — try naming the eye colour or shape, the hair "
-        + "colour, cut or texture, or the makeup you want. Nothing was charged.";
+      return "That one didn't come through clearly. Try naming what you want changed about "
+        + "them. Nothing was charged.";
   }
 }
+

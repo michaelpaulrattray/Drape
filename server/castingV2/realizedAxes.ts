@@ -27,6 +27,7 @@ import {
   stylesFor,
 } from "./hairStyles";
 import { applyTasteWrite, type TasteWrite } from "./axisRegistry";
+import { FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
 import { leanFacialHairWeights, leanStyleWeights, type FacialHairLean } from "./poolTendencies";
 import type { HairFamily } from "../../shared/castingVocabularies";
 import {
@@ -464,6 +465,8 @@ export function realizeAxes(input: {
     /* Never drawn, for D-116's reason: the dice stay bare and eight unmade
        faces are the default. Only a stated fact or a refinement sets it. */
     makeup: null,
+    /* Never drawn — a refinement is the only writer (D-131). */
+    statedDetails: null,
     hairStyle,
     /*
       The cut's authored components (D10), resolved beside the cut they belong
@@ -545,6 +548,15 @@ export function describeRealizedAxes(
   */
   if (axes.makeup) {
     parts.push(`MAKEUP: ${axes.makeup}.`);
+  }
+  /*
+    The free lane's filed facts, each under the heading it was filed with. This
+    is what makes a followed variant's brow survive into all eight cousins —
+    without it, a filed fact would be inherited by the record and rendered by
+    nothing: unowned-axis instance eight.
+  */
+  for (const [subject, value] of Object.entries(axes.statedDetails ?? {})) {
+    if (value) parts.push(`${FREE_SUBJECTS[subject as FreeSubject] ?? subject.toUpperCase()}: ${value}.`);
   }
   if (axes.facialHair && !stated("facialHair")) {
     /*

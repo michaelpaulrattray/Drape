@@ -122,6 +122,7 @@ export type AxisValues = {
   /* Never drawn by the roll; set only by a refinement (M8). See the rows. */
   eyeShape: EyeShape | null;
   makeup: string | null;
+  statedDetails: Record<string, string> | null;
   hairStyle: HairStyle | null;
   facialHair: FacialHair | null;
   hairTexture: HairTexture | null;
@@ -794,6 +795,29 @@ export const AXIS_REGISTRY = {
     silent: [],
     read: (ctx) => ctx.identity.realized.makeup,
     footprint: (value, prompt) => has(prompt, `MAKEUP: ${value}`),
+  },
+  /**
+   * The free lane's filed facts (D-131) — one axis, many subjects.
+   *
+   * Its footprint asserts EVERY entry appears under its own heading, so a
+   * filed detail that stops composing is caught per-subject rather than as a
+   * single opaque miss.
+   */
+  statedDetails: {
+    key: "statedDetails",
+    shelf: "realized",
+    kind: "described",
+    lockable: false,
+    unlockable: false,
+    overridable: false,
+    tiers: ALL_TIERS,
+    suppressors: [],
+    silent: [],
+    read: (ctx) => ctx.identity.realized.statedDetails,
+    footprint: (value, prompt) => {
+      const entries = Object.entries((value ?? {}) as Record<string, string>);
+      return entries.every(([, text]) => has(prompt, text));
+    },
   },
   browStyle: {
     key: "browStyle",

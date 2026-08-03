@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ae3c3db3086d0dba"
+    "sourceFingerprint": "091d0b61f9deebb3"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 43
+      "moduleCount": 44
     },
     {
       "id": "domain:castingV2",
@@ -3329,6 +3329,12 @@
     {
       "id": "module:server/castingV2/refineService.ts",
       "path": "server/castingV2/refineService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineSubjects.ts",
+      "path": "server/castingV2/refineSubjects.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -17019,6 +17025,11 @@
     },
     {
       "from": "module:server/castingV2/realizedAxes.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:server/castingV2/stylingResolution.ts",
       "kind": "imports"
     },
@@ -17049,6 +17060,16 @@
     },
     {
       "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/properNouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
@@ -17070,6 +17091,11 @@
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
     {
@@ -17230,6 +17256,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineSubjects.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
     {

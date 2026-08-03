@@ -181,6 +181,20 @@ export type RealizedAxes = {
    * unmade faces remain the default that a stated fact overrides.
    */
   makeup: string | null;
+  /**
+   * The FREE LANE's filed facts, by subject (D-131 wall (d)).
+   *
+   * ONE registered axis rather than a field per subject, because the subjects
+   * are code-owned and bounded but the registry should not need a new row every
+   * time one is added. Never drawn: only a refinement writes it.
+   *
+   * Registered rather than filed as loose metadata for the reason six axes were
+   * caught the hard way — a described fact the registry has never heard of is a
+   * fact the D-87 sweep cannot see, and a follow inherits the identity whole.
+   * Excluding these as "metadata" would be the lie: they are described facts,
+   * and they compose into the prompt under their own headings.
+   */
+  statedDetails: Record<string, string> | null;
   /** The named cut. Carries its own coherent length and, sometimes, texture. */
   /*
     NULL when deference suppressed it. The persisted identity is the M7
@@ -238,6 +252,7 @@ export const REALIZED_AXIS_KEYS = [
   "eyeColour",
   "eyeShape",
   "makeup",
+  "statedDetails",
   "hairStyle",
   "facialHair",
   "hairTexture",
