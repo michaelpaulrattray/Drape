@@ -68,7 +68,7 @@ export function RefinePanel({
             onClick={() => onSelect(null)}
           >
             {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
-            <span className="dp-chrome">Original</span>
+            <span>Original</span>
           </button>
           {variants.map((variant, position) => (
             <button
@@ -82,7 +82,7 @@ export function RefinePanel({
               onClick={() => onSelect(variant.variantId)}
             >
               {variant.imageUrl ? <img src={variant.imageUrl} alt="" /> : null}
-              <span className="dp-chrome">{variant.instructions.at(-1)}</span>
+              <span>{variant.instructions.at(-1)}</span>
             </button>
           ))}
         </div>
@@ -116,7 +116,7 @@ export function RefinePanel({
         something it cannot, which is worth more than a refusal after the fact —
         and it carries the price where a price belongs.
       */}
-      <p className="dpc-refine__note dp-chrome">
+      <p className="dpc-refine__note">
         Eye colour and shape · {priceCredits} credits each
       </p>
     </div>
