@@ -59,7 +59,13 @@ import { ProviderError } from "../providers/types";
 import { storagePut, storageReadBytes } from "../storage";
 import { withTransaction } from "../db/connection";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
-import { EYE_SHAPE_RENDER, IRIS_RENDER } from "./realizedAxes";
+import {
+  EYE_SHAPE_RENDER,
+  HAIR_COLOUR_RENDER,
+  HAIR_TEXTURE_RENDER,
+  IRIS_RENDER,
+} from "./realizedAxes";
+import { hairStyleByName } from "./hairStyles";
 import { readResolvedIdentity } from "./rollService";
 import {
   applyDelta,
@@ -163,6 +169,11 @@ export async function refineCandidate(
     instruction: input.instruction,
     currentEyeColour: currentIdentity?.realized?.eyeColour ?? null,
     currentEyeShape: currentIdentity?.realized?.eyeShape ?? null,
+    currentHairStyle: currentIdentity?.realized?.hairStyle?.name ?? null,
+    /* Colour lives on `hair`, not `realized` — the registry's one filing
+       exception, and the reason "make it lighter" needs it read from there. */
+    currentHairColour: currentIdentity?.hair?.colour ?? null,
+    currentHairTexture: currentIdentity?.realized?.hairTexture ?? null,
   });
   if (!parsed.ok) {
     // An honest boundary, not a fault — and free, which is the point of §10.
@@ -294,6 +305,14 @@ export async function refineCandidate(
     const prompt = composeEditPrompt(composed, {
       eyeColour: (value) => IRIS_RENDER[value],
       eyeShape: (value) => EYE_SHAPE_RENDER[value],
+      /* The cut's own name plus the silhouette it implies, so "bob" cannot
+         arrive as a length the family disagrees with. */
+      hairStyle: (value) => {
+        const style = hairStyleByName(value);
+        return style ? `a ${style.name} (${style.family})` : `a ${value}`;
+      },
+      hairColour: (value) => `${value} — ${HAIR_COLOUR_RENDER[value]}`,
+      hairTexture: (value) => `${value} hair — ${HAIR_TEXTURE_RENDER[value]}`,
     });
     const image = await engine.editWithReferences({
       prompt,

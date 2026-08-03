@@ -197,9 +197,15 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
 export type GoldenRefinement = {
   instruction: string;
   /** What the face is now — relative asks resolve against it. */
-  from?: { eyeColour?: string; eyeShape?: string };
+  from?: { eyeColour?: string; eyeShape?: string; hairStyle?: string; hairColour?: string };
   /** The exact delta expected, or `null` when the ask must be refused. */
-  delta: { eyeColour?: string; eyeShape?: string } | null;
+  delta: {
+    eyeColour?: string;
+    eyeShape?: string;
+    hairStyle?: string;
+    hairColour?: string;
+    hairTexture?: string;
+  } | null;
   because: string;
 };
 
@@ -236,14 +242,49 @@ export const GOLDEN_REFINEMENTS: readonly GoldenRefinement[] = [
   },
   {
     instruction: "give her blonde hair",
-    delta: null,
+    delta: { hairColour: "blonde" },
     because:
-      "Out of tier and very close to in-tier, which is exactly where an over-eager interpreter reaches. Hair is not eyes.",
+      "IT MOVED RATHER THAN DISAPPEARED. This was the out-of-tier counter-case while the tier was eyes-only — 'hair is not eyes' — and the day hair shipped it became a parse case. Kept, with its history, because a golden that is deleted when the answer changes stops being a record of what the product does.",
   },
   {
     instruction: "make her prettier",
     delta: null,
     because:
       "Vague, subjective, and the kind of thing a model will happily 'do' by regenerating a different face. Refused rather than guessed at.",
+  },
+  /* ---- the hair tier ---- */
+  {
+    instruction: "make her hair blonde",
+    delta: { hairColour: "blonde" },
+    because: "The plainest hair ask, and the one that was OUT OF TIER the day before hair shipped — kept as the proof the refusal copy moved with the tier rather than being left behind.",
+  },
+  {
+    instruction: "give her a bob",
+    delta: { hairStyle: "bob" },
+    because:
+      "A CUT is hairStyle, not hairTexture. The nearest miss an eager interpreter makes is answering a cut with a curl pattern, which would persist a texture nobody asked for and leave the length untouched.",
+  },
+  {
+    instruction: "shorter",
+    from: { hairStyle: "bob" },
+    delta: { hairStyle: "pixie" },
+    because: "Relative, on an axis whose vocabulary is 36 named cuts rather than a scale — the interpreter has to know which way is shorter.",
+  },
+  {
+    instruction: "make her hair curly",
+    delta: { hairTexture: "curly" },
+    because: "The texture axis on its own, so the cut/texture line is exercised from both sides.",
+  },
+  {
+    instruction: "give her a dark bob",
+    delta: { hairColour: "dark brown", hairStyle: "bob" },
+    because:
+      "TWO axes from one sentence. Composition is per-axis, so an instruction naming a cut and a colour must produce both — answering only one is a paid edit that did half of what was asked.",
+  },
+  {
+    instruction: "give her red lipstick",
+    delta: null,
+    because:
+      "Makeup is the NEXT tier, which makes it the sharpest refusal on the list: it is adjacent, plausible, and not yet real. The day it ships this entry moves rather than disappears.",
   },
 ] as const;

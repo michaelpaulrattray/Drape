@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c460539e9686d936"
+    "sourceFingerprint": "95d7d66ea4011658"
   },
   "domains": [
     {
@@ -17039,7 +17039,22 @@
     },
     {
       "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
       "kind": "imports"
     },
     {
@@ -17065,6 +17080,11 @@
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -17120,6 +17140,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
       "kind": "imports"
     },
     {

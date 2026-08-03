@@ -101,10 +101,10 @@ export function RefinePanel({
           className="dpc-refine__field"
           value={instruction}
           onChange={(event) => setInstruction(event.target.value)}
-          placeholder="Change the eyes…"
+          placeholder="Change the eyes or hair…"
           maxLength={200}
           disabled={busy}
-          aria-label="What to change about the eyes"
+          aria-label="What to change about the eyes or hair"
         />
         <Button type="submit" size="small" disabled={!trimmed || busy}>
           {busy ? "Refining…" : "Refine"}
@@ -117,7 +117,7 @@ export function RefinePanel({
         and it carries the price where a price belongs.
       */}
       <p className="dpc-refine__note">
-        Eye colour and shape · {priceCredits} credits each
+        Eyes and hair · {priceCredits} credits each
       </p>
     </div>
   );

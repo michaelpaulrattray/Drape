@@ -232,6 +232,38 @@ const COILED_NONBINARY_STYLES: StyleWeights = [
   [BUZZ, 6],
 ];
 
+/**
+ * Every cut the roll can draw, in one flat list — the refinement vocabulary.
+ *
+ * DERIVED from the weight tables rather than hand-listed, and that is the whole
+ * point: a hand-kept list is the parallel-list failure this program has already
+ * paid for six times. A refinement can only ask for a cut the sheet itself
+ * could have produced, and adding a cut to any table adds it here for free.
+ *
+ * Names are unique across the tables by construction — each cut is one const
+ * referenced by several — so the map collapses to one entry per cut.
+ */
+const ALL_STYLE_TABLES: readonly StyleWeights[] = [
+  MALE_STYLES,
+  FEMALE_STYLES,
+  NONBINARY_STYLES,
+  COILED_MALE_STYLES,
+  COILED_FEMALE_STYLES,
+  COILED_NONBINARY_STYLES,
+];
+
+const STYLE_BY_NAME: ReadonlyMap<string, HairStyle> = new Map(
+  ALL_STYLE_TABLES.flat().map(([style]) => [style.name, style]),
+);
+
+/** The cut names a refinement may name, sorted for a stable prompt. */
+export const HAIR_STYLE_NAMES: readonly string[] = Array.from(STYLE_BY_NAME.keys()).sort();
+
+/** A cut by name, or null when the name is not one this build can render. */
+export function hairStyleByName(name: string): HairStyle | null {
+  return STYLE_BY_NAME.get(name) ?? null;
+}
+
 export const COILED_HERITAGES = new Set(["West African", "Afro-Caribbean"]);
 
 /**

@@ -35,6 +35,11 @@ for (const golden of GOLDEN_REFINEMENTS) {
       instruction: golden.instruction,
       currentEyeColour: golden.from?.eyeColour ?? "brown",
       currentEyeShape: golden.from?.eyeShape ?? null,
+      /* A relative ask needs something to be relative TO. Omitting these is
+         what made "shorter" refuse: with no current cut it is not an
+         under-specified hair instruction, it is a meaningless one. */
+      currentHairStyle: golden.from?.hairStyle ?? null,
+      currentHairColour: golden.from?.hairColour ?? null,
     });
 
     if (golden.delta === null) {
@@ -72,8 +77,16 @@ for (const golden of GOLDEN_REFINEMENTS) {
       });
       continue;
     }
-    const got = JSON.stringify(parsed.delta);
-    const want = JSON.stringify(golden.delta);
+    /*
+      Key ORDER is not meaning. Comparing raw JSON strings failed a correct
+      two-axis parse purely because the model named the cut before the colour —
+      a harness bug that reads exactly like a product bug, which is the worst
+      kind to leave in an instrument.
+    */
+    const canonical = (value: Record<string, unknown>) =>
+      JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))));
+    const got = canonical(parsed.delta as Record<string, unknown>);
+    const want = canonical(golden.delta as Record<string, unknown>);
     if (got !== want) {
       failures.push({ instruction: golden.instruction, run, problem: `expected ${want}, got ${got}` });
       continue;

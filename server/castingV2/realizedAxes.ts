@@ -225,6 +225,43 @@ export const EYE_SHAPE_RENDER: Record<EyeShape, string> = {
   "close-set": "the gap between the inner corners noticeably narrower than the width of one eye, drawing the features toward the centre of the face",
 };
 
+/**
+ * Hair COLOUR as a colourist would call it — the refinement tier's prose (M8).
+ *
+ * "Blonde" is four different heads of hair, and handing the bare word to an
+ * edit gets whichever one the prior likes. Each line names tone, depth and
+ * where the light sits, which is what makes two blondes different.
+ */
+export const HAIR_COLOUR_RENDER: Record<HairColour, string> = {
+  black: "true black with a cool blue-black sheen where the light catches it",
+  "dark brown": "deep espresso brown, warm rather than black, with lighter brown showing at the ends",
+  brown: "mid brown with a neutral tone, slightly warmer through the lengths",
+  chestnut: "warm red-brown with visible golden-red lights through the mid-lengths",
+  auburn: "deep red-brown, richer and redder than chestnut, with copper lights at the surface",
+  copper: "bright orange-red with real saturation, brightest where the light hits the crown",
+  "strawberry blonde": "pale blonde with a distinct warm pink-gold cast, delicate rather than orange",
+  blonde: "mid blonde, neither ash nor gold — a neutral wheat tone with slightly deeper roots",
+  "golden blonde": "warm honey blonde with strong yellow-gold lights and deeper gold underneath",
+  "ash blonde": "cool blonde with a grey-beige cast and no warmth at all",
+  "platinum blonde": "very pale near-white blonde, cool and even, with the roots only slightly deeper",
+  red: "saturated natural red, more crimson than copper, deepest at the roots",
+  grey: "salt-and-pepper grey, individual white and dark strands visible rather than a flat tone",
+  white: "soft true white with a faint silver cast, fine and light-catching",
+};
+
+/**
+ * Hair TEXTURE as a pattern, not a label.
+ *
+ * The four words name curl families that a model renders very differently
+ * depending on what it decides they mean; the prose says the pattern.
+ */
+export const HAIR_TEXTURE_RENDER: Record<HairTexture, string> = {
+  straight: "a straight pattern with no wave, falling flat from the root and catching light along the length",
+  wavy: "a soft S-wave pattern that begins below the ear rather than at the root",
+  curly: "defined spiral curls with visible individual curl clumps and real separation between them",
+  coiled: "a tight coil pattern with dense springy definition close to the head",
+};
+
 /* ----------------------------------------------------------- facial hair */
 
 /**

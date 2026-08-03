@@ -55,6 +55,11 @@ export type EyeColour = (typeof EYE_COLOURS)[number];
  * exactly as the broken nose and the hijab did (A9, D-124). The prose names lid
  * exposure, crease depth, canthal tilt and set, which are things a camera can
  * actually see.
+ *
+ * **All nine approved by the founder (D-128), with the final taste check riding
+ * the dogfood** — a name can still be argued there without reopening the
+ * design, because swapping or dropping one costs this constant and one prose
+ * line and nothing else.
  */
 export const EYE_SHAPES = [
   "almond",

@@ -25,7 +25,9 @@
  * values this build knows how to render. A model that invents "violet" gets an
  * unreadable reply and a refusal, not a persisted axis nothing composes.
  */
-import { EYE_COLOURS, EYE_SHAPES } from "../../shared/castingRealization";
+import { EYE_COLOURS, EYE_SHAPES, HAIR_TEXTURES } from "../../shared/castingRealization";
+import { HAIR_COLOURS } from "../../shared/castingVocabularies";
+import { HAIR_STYLE_NAMES } from "./hairStyles";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
@@ -44,26 +46,33 @@ const SYSTEM_PROMPT = [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
-  "The ONLY things that can be changed are the eyes:",
-  `  eyeColour — one of: ${EYE_COLOURS.join(", ")}`,
-  `  eyeShape  — one of: ${EYE_SHAPES.join(", ")}`,
+  "The ONLY things that can be changed are the eyes and the hair:",
+  `  eyeColour   — one of: ${EYE_COLOURS.join(", ")}`,
+  `  eyeShape    — one of: ${EYE_SHAPES.join(", ")}`,
+  `  hairColour  — one of: ${HAIR_COLOURS.join(", ")}`,
+  `  hairTexture — one of: ${HAIR_TEXTURES.join(", ")}`,
+  `  hairStyle   — one of: ${HAIR_STYLE_NAMES.join(", ")}`,
   "",
   "Reply with JSON and nothing else.",
   "",
-  'If the instruction asks for an eye change, reply {"eyeColour": "..."} and/or {"eyeShape": "..."}',
+  'Reply with any of {"eyeColour": "..."}, {"eyeShape": "..."}, {"hairColour": "..."},',
+  '{"hairTexture": "..."}, {"hairStyle": "..."} — as many as the instruction actually asks for,',
   "using ONLY the exact words listed above. Pick the closest listed value; never invent one.",
   "Relative asks resolve against the CURRENT value you are given: 'greener' from hazel is green,",
-  "'a bit lighter' from dark brown is brown.",
+  "'a bit lighter' from dark brown is brown, 'shorter' from a bob is a pixie.",
   "",
-  'If the instruction asks for ANYTHING else — age, heritage, sex, build, hair, makeup, expression,',
+  'A cut name is hairStyle, not hairTexture: "give her a bob" is {"hairStyle": "bob"}. Use',
+  "hairTexture only when the ask is about curl pattern rather than about the cut.",
+  "",
+  'If the instruction asks for ANYTHING else — age, heritage, sex, build, makeup, expression,',
   'clothing, background, weight, beauty, "make her prettier", a different person — reply',
   '{"outOfTier": "<the thing they want changed, as a short NOUN PHRASE>"}.',
   '',
   'The noun phrase must fit the sentence "Refining can\'t change ___ yet." So:',
-  '  "make her older"        → {"outOfTier": "her age"}',
-  '  "give her blonde hair"  → {"outOfTier": "her hair"}',
-  '  "make her prettier"     → {"outOfTier": "how attractive she looks"}',
-  '  "put her in a red coat" → {"outOfTier": "what she is wearing"}',
+  '  "make her older"          → {"outOfTier": "her age"}',
+  '  "give her red lipstick"   → {"outOfTier": "her makeup"}',
+  '  "make her prettier"       → {"outOfTier": "how attractive she looks"}',
+  '  "put her in a red coat"   → {"outOfTier": "what she is wearing"}',
   'Never echo the instruction back as the noun phrase.',
   "",
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
@@ -74,6 +83,9 @@ export type RefineInterpretInput = {
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
+  currentHairStyle?: string | null;
+  currentHairColour?: string | null;
+  currentHairTexture?: string | null;
   engine?: TextEngine;
   signal?: AbortSignal;
 };
@@ -96,6 +108,9 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
         `Current eye shape: ${input.currentEyeShape ?? "unknown"}`,
+        `Current hair cut: ${input.currentHairStyle ?? "unknown"}`,
+        `Current hair colour: ${input.currentHairColour ?? "unknown"}`,
+        `Current hair texture: ${input.currentHairTexture ?? "unknown"}`,
         `Instruction: ${instruction}`,
       ].join("\n"),
       json: true,
@@ -142,12 +157,18 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
         names the thing that DOES answer the ask, because a dead end wearing
         polite words is still a dead end.
       */
-      return `Refining can't change ${refusal.refusal.asked} yet — only the eyes. `
+      /*
+        The copy names EXACTLY what is real, and it moves with the tier. A
+        refusal that under-claims is as dishonest as one that over-claims —
+        "only the eyes", the day hair shipped, would have sent people away from
+        something the product could do.
+      */
+      return `Refining can't change ${refusal.refusal.asked} yet — only the eyes and hair. `
         + "Rolling again with that in the brief will get you closer. Nothing was charged.";
     case "empty":
-      return "Say what you'd like changed about the eyes.";
+      return "Say what you'd like changed about the eyes or the hair.";
     case "unreadable":
-      return "That one didn't come through clearly — try naming the eye colour or shape you want. "
-        + "Nothing was charged.";
+      return "That one didn't come through clearly — try naming the eye colour or shape, or the "
+        + "hair colour, cut or texture you want. Nothing was charged.";
   }
 }

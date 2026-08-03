@@ -30,7 +30,16 @@
  * the time. That is honest and deterministic, and it is not what a naive reader
  * expects, which is why it is written down here rather than discovered.
  */
-import { EYE_COLOURS, EYE_SHAPES, type EyeColour, type EyeShape } from "../../shared/castingRealization";
+import {
+  EYE_COLOURS,
+  EYE_SHAPES,
+  HAIR_TEXTURES,
+  type EyeColour,
+  type EyeShape,
+  type HairTexture,
+} from "../../shared/castingRealization";
+import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
+import { HAIR_STYLE_NAMES, hairStyleByName } from "./hairStyles";
 import type { ResolvedIdentity } from "./castingIntent";
 
 /**
@@ -46,12 +55,22 @@ import type { ResolvedIdentity } from "./castingIntent";
  * and then rendered by nothing is the unowned-axis collapse, and it has already
  * happened six times in this program.
  */
-export const REFINABLE_AXES = ["eyeColour", "eyeShape"] as const;
+export const REFINABLE_AXES = [
+  "eyeColour",
+  "eyeShape",
+  "hairStyle",
+  "hairColour",
+  "hairTexture",
+] as const;
 export type RefinableAxis = (typeof REFINABLE_AXES)[number];
 
 export type RefineDelta = {
   eyeColour?: EyeColour;
   eyeShape?: EyeShape;
+  /** A cut BY NAME, and only one the roll itself could have drawn. */
+  hairStyle?: string;
+  hairColour?: HairColour;
+  hairTexture?: HairTexture;
 };
 
 /**
@@ -85,6 +104,24 @@ export function readDelta(value: unknown): RefineDelta | null {
     if (!EYE_SHAPES.includes(raw.eyeShape as EyeShape)) return null;
     delta.eyeShape = raw.eyeShape as EyeShape;
   }
+  /*
+    THE HAIR TIER. Every value is checked against the vocabulary the ROLL draws
+    from — `HAIR_STYLE_NAMES` is derived from the weight tables, so a refinement
+    can only ask for a cut a sheet could itself have produced. An invented cut
+    would be an axis value nothing knows how to render.
+  */
+  if (raw.hairStyle != null) {
+    if (!HAIR_STYLE_NAMES.includes(raw.hairStyle as string)) return null;
+    delta.hairStyle = raw.hairStyle as string;
+  }
+  if (raw.hairColour != null) {
+    if (!HAIR_COLOURS.includes(raw.hairColour as HairColour)) return null;
+    delta.hairColour = raw.hairColour as HairColour;
+  }
+  if (raw.hairTexture != null) {
+    if (!HAIR_TEXTURES.includes(raw.hairTexture as HairTexture)) return null;
+    delta.hairTexture = raw.hairTexture as HairTexture;
+  }
   /* An empty delta is not a delta. Charging for a generation that changes
      nothing is the worst possible outcome of a misread instruction. */
   return Object.keys(delta).length > 0 ? delta : null;
@@ -103,6 +140,9 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
   for (const delta of deltas) {
     if (delta.eyeColour != null) composed.eyeColour = delta.eyeColour;
     if (delta.eyeShape != null) composed.eyeShape = delta.eyeShape;
+    if (delta.hairStyle != null) composed.hairStyle = delta.hairStyle;
+    if (delta.hairColour != null) composed.hairColour = delta.hairColour;
+    if (delta.hairTexture != null) composed.hairTexture = delta.hairTexture;
   }
   return composed;
 }
@@ -120,14 +160,51 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
  * them, and re-balancing would move faces they never touched.
  */
 export function applyDelta(original: ResolvedIdentity, delta: RefineDelta): ResolvedIdentity {
+  const style = delta.hairStyle != null ? hairStyleByName(delta.hairStyle) : null;
   return {
     ...original,
+    /*
+      HAIR COLOUR LIVES OUTSIDE `realized`, and forgetting that is how this
+      record would quietly lie.
+
+      It is a realized-shelf AXIS stored at `identity.hair.colour` for
+      historical reasons — the registry documents the exception. Writing it into
+      `realized` would persist a field the composer never reads, so the picture
+      would change and the record would still say the old colour: the
+      unowned-axis collapse and the record-lies class in one move.
+
+      A cut also carries its own family, and sometimes its own texture and worn
+      state, so the whole `HairStyle` object is written rather than the name —
+      a name beside a stale family is a silhouette nobody asked for.
+    */
+    ...(delta.hairColour != null || style
+      ? {
+        hair: {
+          ...(original.hair ?? {}),
+          ...(style ? { family: style.family } : {}),
+          ...(delta.hairColour != null ? { colour: delta.hairColour } : {}),
+        },
+      }
+      : {}),
     realized: {
       ...original.realized,
       ...(delta.eyeColour != null ? { eyeColour: delta.eyeColour } : {}),
       ...(delta.eyeShape != null ? { eyeShape: delta.eyeShape } : {}),
+      ...(style ? { hairStyle: style } : {}),
+      /*
+        A cut that dictates its own texture WINS over a stated one, because the
+        cut is the more specific fact: a twist-out is coiled by definition, and
+        honouring "make it straight" alongside it would persist a combination
+        that cannot exist. Same precedence the roll already uses.
+      */
+      ...(style?.texture
+        ? { hairTexture: style.texture }
+        : delta.hairTexture != null
+          ? { hairTexture: delta.hairTexture }
+          : {}),
+      ...(style?.worn ? { wornState: style.worn } : {}),
     },
-  };
+  } as ResolvedIdentity;
 }
 
 /**
@@ -145,6 +222,9 @@ export function applyDelta(original: ResolvedIdentity, delta: RefineDelta): Reso
 export function composeEditPrompt(delta: RefineDelta, prose: {
   eyeColour: (value: EyeColour) => string;
   eyeShape: (value: EyeShape) => string;
+  hairStyle: (value: string) => string;
+  hairColour: (value: HairColour) => string;
+  hairTexture: (value: HairTexture) => string;
 }): string {
   const edits: string[] = [];
   if (delta.eyeColour != null) {
@@ -152,6 +232,22 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
   }
   if (delta.eyeShape != null) {
     edits.push(`Change the eye shape to ${delta.eyeShape} — ${prose.eyeShape(delta.eyeShape)}.`);
+  }
+  /*
+    Hair is described as CUT, COLOUR and TEXTURE in one sentence where more than
+    one changed, because they are one visible thing and three separate
+    instructions invite the model to weigh them against each other — the same
+    reason beard greying rides the facial-hair line rather than getting its own.
+  */
+  const hair: string[] = [];
+  if (delta.hairStyle != null) hair.push(`cut into ${prose.hairStyle(delta.hairStyle)}`);
+  if (delta.hairColour != null) hair.push(`coloured ${prose.hairColour(delta.hairColour)}`);
+  if (delta.hairTexture != null) hair.push(`with ${prose.hairTexture(delta.hairTexture)}`);
+  if (hair.length > 0) {
+    edits.push(
+      `Change the hair: ${hair.join(", ")}. Keep the hairline and the density the same — `
+      + "this is the same person's hair restyled, not a wig and not a different head of hair.",
+    );
   }
   return [
     "Edit this photograph of this exact person, changing ONLY what is listed below.",

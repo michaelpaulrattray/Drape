@@ -6,12 +6,20 @@ import {
   composeEditPrompt,
   readDelta,
 } from "./refineDelta";
-import { EYE_SHAPE_RENDER, IRIS_RENDER } from "./realizedAxes";
+import {
+  EYE_SHAPE_RENDER,
+  HAIR_COLOUR_RENDER,
+  HAIR_TEXTURE_RENDER,
+  IRIS_RENDER,
+} from "./realizedAxes";
 import type { ResolvedIdentity } from "./castingIntent";
 
 const prose = {
   eyeColour: (value: keyof typeof IRIS_RENDER) => IRIS_RENDER[value],
   eyeShape: (value: keyof typeof EYE_SHAPE_RENDER) => EYE_SHAPE_RENDER[value],
+  hairStyle: (value: string) => `a ${value}`,
+  hairColour: (value: keyof typeof HAIR_COLOUR_RENDER) => HAIR_COLOUR_RENDER[value],
+  hairTexture: (value: keyof typeof HAIR_TEXTURE_RENDER) => HAIR_TEXTURE_RENDER[value],
 };
 
 describe("the vocabulary is closed, and something checks", () => {
