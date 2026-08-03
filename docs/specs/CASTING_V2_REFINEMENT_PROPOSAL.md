@@ -280,6 +280,27 @@ affordance, and the UI must not make the two look alike.
 
 ## 13. Eyes-only: what the copy actually is
 
+### Why there is no drift to gate in the first place
+
+The obvious worry about an unvalidated tier is that a refined face wanders off
+the person the user picked, and Sign then signs the wanderer — the identity
+guarantee arriving after the thing it should have guarded.
+
+**Base-anchoring is what bounds that, and it is structural rather than
+hopeful.** Every variant is one edit of the ORIGINAL, never an edit of an edit:
+variant N is `edit(original, composed instructions 1..N)`. So drift cannot
+accumulate across a stack — there is no chain for error to compound along, and
+the tenth variant is exactly as close to the signed face as the first. The
+failure mode a validator would exist to catch is generational drift, and this
+shape does not have generations.
+
+What remains is single-hop distance, which is bounded by the edit instruction
+itself and is the thing the user is looking at when they choose. That is a
+judgement they are making with their eyes, on one image, before spending —
+which is precisely what "eyes-only" names.
+
+### The copy
+
 The tier is a copy problem by ruling, and the temptation is a banner. Resisted.
 
 - **One sentence at the Sign confirm**, making Sign the upgrade rather than a

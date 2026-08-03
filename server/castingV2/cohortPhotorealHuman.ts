@@ -81,6 +81,7 @@ import {
 } from "./castingIntent";
 import { describeRealizedAxes, realizeAxes } from "./realizedAxes";
 import { resolveHairAxes, type HairTiers } from "./hairResolver";
+import { coveringDirective, statedCovering } from "./statedCovering";
 import {
   HERITAGE_DEFINE_FLOOR,
   HERITAGE_LEAN_FLOOR,
@@ -336,6 +337,27 @@ const SKIN_AND_FEATURES = [
   */
   "STATED MAKEUP: When the character description names makeup — mascara, a red lip, gloss, blush, liner, a smoky eye, bold brows — render it plainly and accurately as worn by this person, exactly as described. Named makeup that fails to appear is a failed candidate.",
   "This licenses only what the description names. Makeup is never added to a face the description left unmade: the default is a bare, unmade face, and it stays that way unless the words ask otherwise.",
+  /*
+    STATED COVERINGS — the fourth door, and the one that had been standing open
+    by accident (D-124, founder ruling 2026-08-03).
+
+    A faith covering DID render — eight of eight on a paid verification — but it
+    rendered only because it rode the free-text character-detail channel. The
+    accessories licence directly above **excludes headwear**, and the framing
+    block forbids hats outright. Both are correct about UNSTATED headwear and
+    neither was ever aimed at a person's own faith garment; the correct
+    behaviour was correct by routing rather than by law, and a future tightening
+    of the headwear exclusion would have taken faith presentation with it in
+    silence.
+
+    So the exception is named. What it does NOT do is infer: no covering ever
+    follows from a heritage, a name, or a faith the user mentioned — that is
+    stereotype authoring, and the unstated case verified at zero of eight and
+    stays there. The code decides only WHETHER the user said it; the STATED
+    COVERING block above says how it sits.
+  */
+  "STATED COVERINGS are the ONE exception to the headwear and hat exclusions above: where a STATED COVERING block appears, that garment is this person's own and is rendered exactly as that block describes. It overrules every no-hats and no-headwear line in these instructions.",
+  "This exception is narrow and never inferred. No head covering is added to a person the description left uncovered — not from their heritage, their name, their occupation, or any faith the description mentions. Absent a STATED COVERING block, the head is bare and the exclusions above hold in full.",
 ].join(" ");
 
 /**
@@ -2062,6 +2084,20 @@ function describeHeritage(components: HeritageComponent[]): string {
 }
 
 /**
+ * The covering directive, or nothing.
+ *
+ * Reads `statedText` — the user's own words — which is the code-owned gate
+ * D-89 established: the code owns WHETHER a thing was said, and the interpreter
+ * only ever owns what. It reads the same union every other deference check
+ * reads, so a covering cannot fall off a follow, which inherits the notes
+ * without the original sentence.
+ */
+function coveringFor(statedText: string): string {
+  const covering = statedCovering(statedText);
+  return covering ? coveringDirective(covering) : "";
+}
+
+/**
  * The final per-candidate prompt.
  *
  * Order is the contract. Character first, direction second, the code-owned
@@ -2159,6 +2195,21 @@ export function composeCandidatePrompt(input: {
   const subject = [
     `SUBJECT: A ${resolved.build ? `${resolved.build} ` : ""}${resolved.sex === "nonbinary" ? "androgynous person" : resolved.sex}, ${describeAge(resolved.ageBand, resolved.agePhase)}, ${describeHeritage(resolved.heritage)}.${describeBuild(resolved.build, intent.role)}${describeHair(resolved.hair, hairDeferenceFor({ briefText: input.briefText, intent }), resolved.realized.hairTexture, resolved.realized.hairStyle, resolution, resolved.realized.hairModifiers, resolved.realized.wornState)}${describeRealizedAxes(resolved.realized, (axis) => statedAxis(axis, statedText), resolution)}`,
     intent.characterNotes ? `Character detail: ${intent.characterNotes}.` : "",
+    /*
+      A STATED FAITH COVERING, as the garment rather than as a noun (D-124).
+
+      It already rendered — 8 of 8 on a paid verification — but it rendered as a
+      draped scarf with hair showing at the front, which is a different garment
+      from the one that was asked for. A loose noun in character detail gets
+      whatever the model's prior does with the word; the A9 / broken-nose
+      pattern says describe it plainly instead.
+
+      Placed AFTER character detail so it qualifies the user's own words rather
+      than competing with them, and it renders nothing at all unless the brief
+      itself names a covering — nothing is ever inferred from a faith, a name or
+      a heritage.
+    */
+    coveringFor(statedText),
     /*
       A LOCKED look still needs presence to vary. This is the sameness bug.
 

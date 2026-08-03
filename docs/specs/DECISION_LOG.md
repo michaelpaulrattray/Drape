@@ -3463,6 +3463,104 @@ This is the honest-capability law the product already applies to its own UI
 ("the sentence gains 'or sign' the day the button does") pointed at the thing
 most likely to be written by somebody who was not in these conversations.
 
+## D-121 — A refine costs 25 credits.
+
+Founder ruling, 2026-08-03. The Refine pricing gate, answered.
+
+Two arguments, and they point the same way.
+
+**Margin.** A refine runs on the identity engine, which is dearer than the roll
+engine behind a 20-credit sheet candidate, and cheaper than the 2K package view
+at 50. The number sits where the cost sits.
+
+**Behaviour, which is the stronger half.** Refine is the conversion path to a
+450-credit Sign: every refine is a deposit toward one, and it reduces post-Sign
+revision churn because identity decisions get made against one cheap image
+instead of a whole package. Priced at package-view parity, exploring three
+variants costs 150 — a third of a Sign — and people stop exploring exactly where
+the product wants them to continue. At 25, three variants cost 75: visible, and
+not a decision of its own.
+
+**Confirmed with it:** removing a mid-stack instruction is a **paid re-render**,
+because a new combination is a new generation. Backing up to a variant that
+already exists is **free selection**. Per D-109 the UI must never let those two
+look alike, and the price lives in the quiet meta line — never in button text.
+
+## D-122 — Unselected variants follow ordinary candidate retention.
+
+Founder ruling, 2026-08-03. Ratified rather than assumed, because the
+refinement proposal recorded it as an open question and an assumption in this
+area is how an artifact quietly outlives the thing it belonged to.
+
+Sign copies its own anchor, so **the Cast depends on nothing in the variant
+table.** A signed candidate's unselected variants are therefore ordinary
+candidate debris and age out on the ordinary candidate schedule — no special
+case, no second retention path, nothing to keep in step with anything.
+
+## D-123 — Follow reads the SELECTED variant, and the roll records which one.
+
+Founder ruling, 2026-08-03. The see-what-the-system-uses law applied to Follow.
+
+If a user refines a face and then follows it, the family must descend from the
+face **they are looking at** — not from the original the variant was derived
+from. Reading the parent candidate directly is how the proposal's own
+green-eyes/brown-cousins example happens: you refine her eyes green, follow her,
+and get eight brown-eyed cousins.
+
+**And the roll stamps which variant it descended from, from day one.** Lineage
+is cheap to record while the row is being written and painful to backfill once
+there are rolls in the world without it.
+
+## D-124 — A stated faith covering is a rendering channel, not a loose word.
+
+Founder ruling, 2026-08-03, after looking at the verification renders.
+
+Both halves of the presentation-is-intent law verified: unstated "a Muslim woman
+in her 30s" produced **zero coverings across eight** with a wide heritage draw
+(founder-confirmed as demographically true), and "wearing a hijab" produced
+**eight of eight**. The law works.
+
+**What the pictures showed is that the covering was styled rather than worn.**
+The founder's words: *"desert scarf like rather than faith based"* — and the
+tell is hair visible at the front. A draped scarf and a hijab are not the same
+garment, and rendering the first when the second was asked for is the
+drop-a-stated-fact class arriving as a near-miss rather than an absence.
+
+**The fix is the A9 / broken-nose pattern**: a stated covering translates to
+**engineered prose** rather than travelling as a loose noun — covers the hair
+and neck fully, neatly framed around the face, worn as the faith garment and
+never as fashion styling. Golden-driver verified.
+
+**And it closes a latent fragility recorded the same day, which is the second
+bird rather than a rider.** Today the covering renders only because it rides the
+free-text character-detail channel: the STATED ACCESSORIES licence explicitly
+excludes headwear and the framing block bans hats, so the behaviour is correct
+by accident of routing. A future tightening of the headwear exclusion would
+have taken faith presentation with it silently. Formalising the channel means
+the law now holds because something guarantees it.
+
+**Unstated behaviour does not change at all.** No covering is ever inferred from
+a faith, a name, or a heritage — that is stereotype authoring, and the zero of
+eight stands.
+
+**Built and verified, 2026-08-03.** `server/castingV2/statedCovering.ts` reads
+the user's own stated words for a closed, short list of coverings and emits a
+STATED COVERING block; the cohort constant gains the matching carve-out naming
+it the ONE exception to the no-hats and no-headwear lines, so the law now holds
+by construction rather than by routing. Sixteen paid images, both directions:
+
+- **"a woman in her 30s wearing a hijab" — 8 of 8, correctly worn.** Hair
+  covered to the hairline with no fringe or loose strands, the fabric framing
+  the face and covering the ears, neck and shoulders. The founder's complaint
+  — *"desert scarf like rather than faith based"* — does not survive the change.
+- **"a Muslim woman in her 30s" — 0 of 8, and 0 of 8 prompts carried the
+  block.** Nothing inferred, and the heritage draw stayed as wide as before.
+
+Evidence: `docs/specs/evidence/faith-presentation/covering-{stated,unstated}.jpg`,
+against `faith-{stated,unstated}.jpg` from the verification that prompted this.
+Driver: `scripts/drive-stated-covering.mts`, which runs both directions or
+neither — the unstated half is the one a future change here will break first.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1dd70daefc2e80cd"
+    "sourceFingerprint": "802f57d7e99ef0d7"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 38
+      "moduleCount": 39
     },
     {
       "id": "domain:castingV2",
@@ -3359,6 +3359,12 @@
     {
       "id": "module:server/castingV2/spendGuards.ts",
       "path": "server/castingV2/spendGuards.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/statedCovering.ts",
+      "path": "server/castingV2/statedCovering.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8153,6 +8159,10 @@
     {
       "id": "test:server/castingV2/statedAccessories.test.ts",
       "path": "server/castingV2/statedAccessories.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/statedCovering.test.ts",
+      "path": "server/castingV2/statedCovering.test.ts"
     },
     {
       "id": "test:server/castingV2/statedWardrobe.test.ts",
@@ -16712,6 +16722,11 @@
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:server/castingV2/realizedAxes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "to": "module:server/castingV2/statedCovering.ts",
       "kind": "imports"
     },
     {
