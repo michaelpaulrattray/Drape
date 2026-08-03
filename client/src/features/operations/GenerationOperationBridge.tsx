@@ -14,6 +14,7 @@ import {
   type GenerationOperationDto,
 } from "./generationOperationProjection";
 import { subscribeCastDeleted } from "./castDeletionSync";
+import { ownsItsOwnSurface } from "./surfaceOwnership";
 import {
   publishCastProjectionChanged,
   subscribeCastProjectionChanged,
@@ -233,33 +234,19 @@ export function GenerationOperationBridge() {
               const locallyNotifiedFailure = localRequest?.status === "failure"
                 && (!localRequest.background || localRequest.notifyFailure === false);
               /*
-                CASTING V2 REPORTS ITS OWN OUTCOMES, IN PLACE.
+                D-110: A TOAST IS THE FALLBACK CHANNEL, NEVER A SECOND COPY.
 
-                This bridge exists for work that finishes while nobody is
-                looking at it — a canvas draft landing on a board the user has
-                navigated away from. A casting sheet is not that: it polls
-                itself, and every outcome already has a live surface on it —
-                the failure banner, the per-tile captions, the cancel line that
-                counts refunds down as they land.
-
-                So a `castingV2.roll` failure toasted here is always a SECOND
-                telling, and D-40 says feedback renders where the action
-                happened. The founder hit the worst version of that: cancelling
-                a roll makes `createRoll` reject a minute or two later, and
-                "That roll was cancelled. 160 credits were refunded." arrived
-                bottom-right while they were doing something else entirely —
-                describing something they had chosen on purpose and had already
-                watched resolve.
-
-                Their money is unaffected either way; this is only about who
-                gets to tell the story, and the sheet tells it better.
+                The reasoning, the kinds and the founder's own report of what
+                goes wrong live in `surfaceOwnership.ts`. It was one literal
+                here; it is a named list there because every Casting V2 surface
+                built so far confesses in place, and the next kind added should
+                have to decide rather than inherit a toast by default.
               */
-              const ownsItsOwnSurface = settled.operation.kind === "castingV2.roll";
               if (
                 settled.operation.status === "failed"
                 && settled.operation.publicMessage
                 && !locallyNotifiedFailure
-                && !ownsItsOwnSurface
+                && !ownsItsOwnSurface(settled.operation.kind)
               ) {
                 toast.error(settled.operation.publicMessage);
               }

@@ -1,40 +1,54 @@
 import { describe, expect, it } from "vitest";
 
+import { ownsItsOwnSurface, selfReportingKinds } from "./surfaceOwnership";
+
 /**
  * Who gets to tell the user what happened.
  *
  * `GenerationOperationBridge` polls every generation operation and toasts a
  * failed one's `publicMessage` from wherever the user happens to be. That is
  * right for work nobody is watching — a canvas draft landing on a board the
- * user has navigated away from.
+ * user has navigated away from. It is wrong for a Casting V2 surface, which
+ * reports every outcome in place.
  *
- * It is wrong for a casting sheet, which polls itself and already reports
- * every outcome in place. The founder hit the worst version: cancelling a roll
- * makes `createRoll` reject a minute or two later, so "That roll was
- * cancelled. 160 credits were refunded." appeared bottom-right while they were
- * doing something else — describing a thing they chose on purpose and had
- * already watched resolve, live, on the sheet.
+ * D-110: a toast is the fallback channel, never a second copy.
  *
- * D-40: feedback renders where the action happened.
+ * **This file used to carry its own copy of the predicate**, which meant it
+ * described the bridge rather than testing it — it would have stayed green
+ * through any change to the real rule, including a wrong one. It now imports
+ * the thing the bridge actually calls.
  */
 
-/** Exactly the predicate the bridge applies, kept somewhere it can be tested. */
+/**
+ * The bridge's condition, with the real predicate inside it.
+ *
+ * The surrounding clauses are restated because they are three booleans read off
+ * a DTO; the part that carries a ruling is imported.
+ */
 function shouldToastFailure(operation: {
   kind: string;
   status: string;
   publicMessage: string | null;
   locallyNotified?: boolean;
 }): boolean {
-  const ownsItsOwnSurface = operation.kind === "castingV2.roll";
   return (
     operation.status === "failed"
     && Boolean(operation.publicMessage)
     && !operation.locallyNotified
-    && !ownsItsOwnSurface
+    && !ownsItsOwnSurface(operation.kind)
   );
 }
 
-describe("the bridge does not double-report casting V2", () => {
+describe("the bridge does not double-report a surface that speaks for itself", () => {
+  /*
+    The list is pinned, not merely exercised. Both failure directions are
+    silent: a kind wrongly added here goes quiet with nothing on screen, and a
+    kind wrongly missing duplicates a notice the user is already reading.
+  */
+  it("names exactly the kinds that confess in place", () => {
+    expect(selfReportingKinds()).toEqual(["castingV2.roll", "castingV2.sign"]);
+  });
+
   it("stays silent on the cancelled roll the founder saw", () => {
     expect(
       shouldToastFailure({
@@ -61,16 +75,42 @@ describe("the bridge does not double-report casting V2", () => {
     ).toBe(false);
   });
 
+  /*
+    Sign joined when the room shipped. A permanently failed slot confesses in
+    place ("this view didn't arrive — refunded") and a total loss says so at the
+    top, both server-authored — so a toast would talk over the room.
+  */
+  it("leaves the Sign to the room", () => {
+    expect(
+      shouldToastFailure({
+        kind: "castingV2.sign",
+        status: "failed",
+        publicMessage: "The package could not be built. 500 credits were refunded.",
+      }),
+    ).toBe(false);
+  });
+
   it("STILL reports work that has no surface of its own", () => {
     // The negative control, and the reason this is scoped by kind rather than
     // switched off. A canvas draft failing while the user is elsewhere has
     // nowhere else to be told.
+    for (const kind of ["canvas.cast", "canvas.recast", "canvas.variations", "casting.mint"]) {
+      expect(
+        shouldToastFailure({
+          kind,
+          status: "failed",
+          publicMessage: "The generation failed and the charged credits were refunded.",
+        }),
+        kind,
+      ).toBe(true);
+    }
+  });
+
+  it("treats an unknown kind as needing the fallback", () => {
+    // Fail toward being told: a kind this build has never heard of has no
+    // surface here by definition.
     expect(
-      shouldToastFailure({
-        kind: "canvas.cast",
-        status: "failed",
-        publicMessage: "The generation failed and the charged credits were refunded.",
-      }),
+      shouldToastFailure({ kind: "something.new", status: "failed", publicMessage: "x" }),
     ).toBe(true);
   });
 

@@ -1040,3 +1040,48 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 @media (prefers-reduced-motion: reduce) {
   .dp-pop__trigger { transition: none; }
 }
+
+/* ---------------------------------------------------------------- the toast */
+
+/*
+  THE ACCENT DOT, drawn rather than rendered.
+
+  The foundation's toast is an ink pill with one small accent dot before the
+  sentence. Sonner draws an icon only for TYPED toasts (`toast.success`,
+  `toast.error`) — and nearly every call site in the product is a bare
+  `toast("…")`, which renders no icon node at all. Measured: the toast's DOM was
+  `<li><div data-content><div data-title>` with nothing before it.
+
+  So the dot is a pseudo-element on the pill itself, which is the one place that
+  is true of every toast regardless of type. D-110 explains what a toast is for.
+*/
+[data-sonner-toast]::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accentSolid);
+}
+
+/*
+  The one red mark (D-8) survives the reskin. Losing the only colour that
+  distinguishes a failure would be a legibility regression wearing a design
+  change's clothes.
+*/
+[data-sonner-toast][data-type="error"]::before {
+  background: var(--errorInk);
+}
+
+/*
+  Sonner's own icon slot stays empty and hidden.
+
+  There was briefly a React `<Dot/>` passed through sonner's `icons` prop AND
+  this pseudo-element, which is two mechanisms for one mark — the typed toasts
+  would have carried both. The pseudo-element is the one that survives because
+  it is the only one that reaches an untyped `toast("…")`, and those are nearly
+  all of them.
+*/
+[data-sonner-toast] [data-icon] {
+  display: none;
+}

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dc199c7e4b1e0270"
+    "sourceFingerprint": "38df726f650d828a"
   },
   "domains": [
     {
@@ -88,7 +88,7 @@
     {
       "id": "domain:operations",
       "name": "operations",
-      "moduleCount": 4
+      "moduleCount": 5
     },
     {
       "id": "domain:pages",
@@ -1769,6 +1769,12 @@
     {
       "id": "module:client/src/features/operations/generationOperationProjection.ts",
       "path": "client/src/features/operations/generationOperationProjection.ts",
+      "domain": "operations",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/operations/surfaceOwnership.ts",
+      "path": "client/src/features/operations/surfaceOwnership.ts",
       "domain": "operations",
       "lifecycle": "active"
     },
@@ -11698,6 +11704,11 @@
     {
       "from": "module:client/src/features/operations/GenerationOperationBridge.tsx",
       "to": "module:client/src/features/operations/generationOperationProjection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/operations/GenerationOperationBridge.tsx",
+      "to": "module:client/src/features/operations/surfaceOwnership.ts",
       "kind": "imports"
     },
     {
