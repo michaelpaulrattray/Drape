@@ -90,16 +90,6 @@ export function CandidateViewer({
         onClose();
         return;
       }
-      /*
-        A FIELD OWNS ITS OWN ARROW KEYS, and here that is a money rule.
-
-        This listener is capture-phase, so it used to eat ←/→ before the refine
-        input saw them: the caret could not be moved, and the viewer silently
-        walked to the next face while a half-typed instruction stayed on screen.
-        Enter then fired a 25-credit refine at somebody else.
-      */
-      const typing = (event.target as HTMLElement | null)?.closest("input, textarea");
-      if (typing) return;
       if (canStep && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
         event.preventDefault();
         event.stopPropagation();

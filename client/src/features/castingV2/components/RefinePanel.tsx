@@ -101,7 +101,7 @@ export function RefinePanel({
           className="dpc-refine__field"
           value={instruction}
           onChange={(event) => setInstruction(event.target.value)}
-          placeholder="Change the eyes…"
+          placeholder="Change her eyes…"
           maxLength={200}
           disabled={busy}
           aria-label="What to change about the eyes"

@@ -1432,12 +1432,6 @@ export default function CastingSheet() {
           */
           below={viewerRefinable ? (
             <RefinePanel
-              /*
-                Keyed by the face. Without it, walking the viewer with ←/→
-                carries a half-typed instruction from one candidate to the next,
-                and the box then spends 25 credits on whoever you landed on.
-              */
-              key={viewerCandidateId}
               variants={variants.data?.variants ?? []}
               selectedVariantId={variants.data?.selectedVariantId ?? null}
               originalImageUrl={variants.data?.originalImageUrl ?? null}

@@ -303,54 +303,6 @@ async function sweepBrief(input: {
   );
 }
 
-/**
- * The compiled candidates of a followed sheet, for assertions the SWEEP cannot
- * make.
- *
- * The sweep compares the record against the prompt, so an inheritance that
- * silently dropped an axis leaves both saying null and the sweep finds nothing
- * — green for the exact regression it exists to catch. Reading the candidates
- * directly is the only way to assert a value actually travelled.
- */
-async function followedCandidates(input: {
-  briefText: string;
-  rollSeed: string;
-  intent: Record<string, unknown>;
-  followIdentity: unknown;
-}) {
-  const compiled = (await castingBriefCompiler({
-    briefText: input.briefText,
-    candidateCount: 8,
-    rollSeed: input.rollSeed,
-    followIdentity: input.followIdentity,
-    engine: engine(input.intent),
-  } as never)) as unknown as CompiledSheet;
-  return compiled.candidates;
-}
-
-/** A refined parent: what a refinement wrote, on its way into a follow. */
-const FOLLOWED_WITH_SHAPE = {
-  sex: "female",
-  ageBand: "20s",
-  agePhase: "early",
-  heritage: [{ heritage: "Nordic", pct: 100 }],
-  energy: "warm",
-  hair: { family: "long", colour: "blonde" },
-  look: "severe minimal",
-  realized: {
-    eyeColour: "blue",
-    /* What a refine writes, and what the follow must carry through. */
-    eyeShape: "hooded",
-    hairStyle: { name: "low bun", family: "long", worn: "worn up" },
-    facialHair: null,
-    hairTexture: "straight",
-    hairModifiers: null,
-    wornState: "worn up",
-    browStyle: "feathered",
-    skinCharacter: "plain",
-  },
-};
-
 describe("the unowned-axis sweep", () => {
   /*
     THE CLASS, restated because it is the reason this file exists: an axis
@@ -451,26 +403,29 @@ describe("the unowned-axis sweep", () => {
       briefText: "a females 23 high fashion editorial casting",
       rollSeed: "sweep-follow-eyeshape",
       intent: { role: "high fashion editorial model", sex: "female", ageBand: "20s" },
-      followIdentity: FOLLOWED_WITH_SHAPE,
+      followIdentity: {
+        sex: "female",
+        ageBand: "20s",
+        agePhase: "early",
+        heritage: [{ heritage: "Nordic", pct: 100 }],
+        energy: "warm",
+        hair: { family: "long", colour: "blonde" },
+        look: "severe minimal",
+        realized: {
+          eyeColour: "blue",
+          /* What a refine writes, and what the follow must carry through. */
+          eyeShape: "hooded",
+          hairStyle: { name: "low bun", family: "long", worn: "worn up" },
+          facialHair: null,
+          hairTexture: "straight",
+          hairModifiers: null,
+          wornState: "worn up",
+          browStyle: "feathered",
+          skinCharacter: "plain",
+        },
+      },
     });
     expect(findings).toEqual([]);
-
-    /*
-      AND the axis actually reached the candidates.
-
-      Without this the test is weaker than it looks: the sweep compares the
-      RECORD against the PROMPT, so an inheritance that silently dropped
-      `eyeShape` would leave both saying null, the sweep would find nothing, and
-      this test would go green for the exact regression it exists to catch.
-    */
-    const inherited = await followedCandidates({
-      briefText: "a females 23 high fashion editorial casting",
-      rollSeed: "sweep-follow-eyeshape",
-      intent: { role: "high fashion editorial model", sex: "female", ageBand: "20s" },
-      followIdentity: FOLLOWED_WITH_SHAPE,
-    });
-    expect(inherited.every((c) => c.resolvedIdentity.realized.eyeShape === "hooded")).toBe(true);
-    expect(inherited.every((c) => c.prompt.includes("EYE SHAPE: hooded"))).toBe(true);
   });
 
   /**

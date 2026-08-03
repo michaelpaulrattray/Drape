@@ -183,48 +183,12 @@ export async function recoverCastingV2RefineOperation(
   /* ---- nothing was delivered ---- */
 
   if (variant) {
-    /*
-      Terminal, so a later sweep cannot pick this row up and refund it twice —
-      AND the return value is the race detector, not a formality.
-
-      `failVariant`'s predicate is `queued/dispatched`. It returning false means
-      the row moved while this sweep was deciding, which in practice means a
-      live process that outlived its lease landed the refinement between the
-      read above and this write. Refunding now would hand the user the picture
-      AND the 25 back. So the row is re-read and, if it landed, this becomes
-      the success arm it should have been.
-    */
-    const fenced = await (options.failVariantRow ?? failVariant)({
+    // Terminal, so a later sweep cannot pick this row up and refund it twice.
+    await (options.failVariantRow ?? failVariant)({
       userId: operation.userId,
       variantId: variant.id,
       failureClass: "recovered",
     });
-    if (!fenced) {
-      const current = await (options.findVariant ?? findVariantByOperation)(
-        operation.userId,
-        operation.id,
-      );
-      if (current?.status === "ready") {
-        log.warn(
-          { operationId: operation.id },
-          "[refineRecovery] a live refine landed mid-sweep — keeping the charge",
-        );
-        if (ledger.charge.kind === "charged") {
-          await (options.finalizeSuccess ?? finalizeGenerationOperationSuccess)({
-            userId: operation.userId,
-            operationId: operation.id,
-            result: { variantId: current.publicId } as never,
-            chargedCredits: ledger.charge.credits,
-            refundedCredits: ledger.alreadyRefunded,
-          });
-          return {
-            type: "durable_success",
-            chargedCredits: ledger.charge.credits,
-            refundedCredits: ledger.alreadyRefunded,
-          };
-        }
-      }
-    }
   }
 
   if (ledger.charge.kind === "not_charged") {
