@@ -5042,6 +5042,54 @@ The four events are wired at their real sites: **selected**, **backed up**,
 rows**, not the code path that writes them.
 
 
+## D-176 — "Hair" in a colour phrase owns the hair drawer.
+
+**Founder ruling, 2026-08-05 — the bare-term ownership class gains a row.**
+
+*"Pastel pink hair color"* filed as **makeup**. That is not an ambiguity the
+bare-term defaults were written to arbitrate — it is a misfile of an
+unambiguous phrase, because **the word "hair" in the instruction IS the owner
+declaration.**
+
+D-89's bare-term ownership exists for words that genuinely overload: "fox eyes"
+is a shape or a liner, "contoured cheekbones" is makeup and "high cheekbones" is
+structure. A colour phrase that says *hair* is not overloaded. It says which
+drawer it belongs in, in the user's own words, and filing it anywhere else
+discards the one piece of disambiguation they supplied.
+
+**The rule cuts both ways, and the driver proves both edges:** "pastel pink hair
+color" is HAIR COLOUR; "pink blush" and "pink lip" are makeup, because those
+name a cosmetic rather than the hair. The colour word alone decides nothing —
+what it is attached to decides everything.
+
+## D-172, amended — the fork is closed. The record keeps the user's words.
+
+**Founder ruling, 2026-08-05, answering the fork raised at D-172.**
+
+The design left one question open: under "only the user's words are ever filed",
+the interpreter's specification never reaches the record, so someone who types
+"pink" is filed as "pink".
+
+Ruled, and it needs no code change because it is what already ships:
+
+> **The record keeps the USER's words, full stop.**
+
+The two layers already divide the work correctly, and the division is the point:
+
+- **Words file INTENT.** What the person asked for, in the language they asked
+  for it in — which is what a Follow inherits and what a later instruction
+  overwrites.
+- **Captions remember REALIZATION** (D-159). After a render lands, the vision
+  pass reads back what actually appeared, per facet, and *that* is where the
+  specificity lives — earned from the pixels rather than invented before them.
+
+**Model-authored specification never enters the filed record.** If the render
+came back a particular pink, the caption says so because it saw it; the recipe
+still says what they typed. That keeps D-166's law intact from both directions:
+the record cannot drift from the person, and the prompt cannot argue with the
+instruction.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

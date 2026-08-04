@@ -313,6 +313,22 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     const cleaned = scrubbed?.trim() ?? "";
     if (!cleaned || cleaned.length > MAX_MAKEUP_LENGTH) return null;
     /*
+      "HAIR" IN THE VALUE MEANS IT IS NOT MAKEUP (D-176).
+
+      "Pastel pink hair color" filed as makeup, and that is not an ambiguity the
+      bare-term defaults arbitrate — the word *hair* IS the owner declaration,
+      supplied by the user, and filing it elsewhere throws away the one piece of
+      disambiguation they gave.
+
+      A word boundary is what keeps this narrow: "hairline contouring" says
+      hairline and stays makeup. And it routes rather than refuses, so the ask
+      still lands — in the drawer it named. The prompt says this too; a rule
+      enforced only by asking nicely is not a rule.
+    */
+    if (/\bhair\b/i.test(cleaned)) {
+      demoted.hairShade = cleaned;
+    } else {
+    /*
       MAKEUP IS FREE TEXT AND HAD NO CONTAINMENT AT ALL.
 
       Found while driving D-172: a reply came back with
@@ -332,6 +348,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       }
     }
     delta.makeup = cleaned;
+    }
   }
   /* ---- the free lane (D-131) ---- */
   if (raw.free != null && (typeof raw.free !== "object" || Array.isArray(raw.free))) return null;

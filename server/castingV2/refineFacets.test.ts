@@ -131,6 +131,48 @@ describe("one facet, one answer — across both lanes", () => {
     expect(check?.wall?.reason).toBe("wall_unfileable");
   });
 
+  /*
+    "HAIR" IS THE OWNER DECLARATION (D-176).
+
+    "Pastel pink hair color" filed as makeup — not an ambiguity the bare-term
+    defaults arbitrate, but a misfile of an unambiguous phrase. The user said
+    which drawer it belongs in.
+  */
+  it("routes a colour phrase that says hair into the hair drawer", () => {
+    const check = { instruction: "pastel pink hair color" };
+    const parsed = readDelta({ makeup: "pastel pink hair color" }, check);
+    expect(parsed?.makeup).toBeUndefined();
+    expect(parsed?.free?.hairShade).toBe("pastel pink hair color");
+  });
+
+  /* And the boundary cuts both ways — a colour attached to a COSMETIC stays
+     makeup, because the colour word alone decides nothing. */
+  it("leaves a cosmetic colour phrase as makeup", () => {
+    for (const value of ["pink blush", "pink lip"]) {
+      const parsed = readDelta({ makeup: value }, { instruction: value });
+      expect(parsed?.makeup, value).toBe(value);
+      expect(parsed?.free?.hairShade, value).toBeUndefined();
+    }
+  });
+
+  /* A word boundary is what keeps it narrow: hairLINE contouring is makeup. */
+  it("does not capture a word that merely contains hair", () => {
+    const value = "soft hairline contouring";
+    const parsed = readDelta({ makeup: value }, { instruction: value });
+    expect(parsed?.makeup).toBe(value);
+  });
+
+  /*
+    MAKEUP HAD NO CONTAINMENT AT ALL, found while driving D-172: a reply came
+    back carrying the CONTEXT LINE from the user message — "none — a bare face"
+    — on its way into a paid prompt as an instruction.
+  */
+  it("refuses makeup the user never said", () => {
+    const check = { instruction: "give her green eyes" } as Parameters<typeof readDelta>[1];
+    expect(readDelta({ makeup: "none — a bare face" }, check)).toBeNull();
+    expect(check?.wall?.reason).toBe("wall_unfileable");
+  });
+
   it("still promotes a free value the vocabulary CAN hold", () => {
     const parsed = readDelta({ free: { hairShade: "copper" } });
     expect(parsed?.hairColour).toBe("copper");

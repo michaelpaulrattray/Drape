@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1c29478ba5e31ded"
+    "sourceFingerprint": "9fec55c39114d63a"
   },
   "domains": [
     {
@@ -7553,6 +7553,10 @@
     {
       "id": "test:client/src/features/castingV2/dockAnatomy.test.ts",
       "path": "client/src/features/castingV2/dockAnatomy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/heroBox.test.ts",
+      "path": "client/src/features/castingV2/heroBox.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/imageGrammar.test.ts",

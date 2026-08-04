@@ -24,6 +24,9 @@ type Case = {
   /** Words that must NOT appear in anything filed — invented content. */
   forbid?: string[];
   prior?: Record<string, string[]>;
+  /** D-176: which drawer the phrase must land in. */
+  hair?: boolean;
+  makeup?: boolean;
 };
 
 const CASES: Case[] = [
@@ -46,6 +49,13 @@ const CASES: Case[] = [
     want: "files",
     forbid: ["knife", "bar", "fight", "surgery", "accident"],
   },
+  /*
+    D-176 — "hair" in a colour phrase owns the hair drawer, and the boundary
+    cuts both ways. The founder's exact phrase, then two that must stay makeup.
+  */
+  { ask: "pastel pink hair color", want: "files", hair: true },
+  { ask: "pink blush", want: "files", makeup: true },
+  { ask: "pink lip", want: "files", makeup: true },
   /* Short, casual, underspecified — the shape the founder says to protect. */
   { ask: "green eyes", want: "files" },
   { ask: "thicker brows", want: "files" },
@@ -69,6 +79,16 @@ for (const testCase of CASES) {
     : `refused:${parsed.refusal.reason}`;
   check(`"${testCase.ask}" -> ${testCase.want}`,
     testCase.want === "files" ? filed : !filed, shown);
+  if (filed && (testCase.hair || testCase.makeup)) {
+    const delta = (parsed as { delta: Record<string, unknown> }).delta;
+    const free = (delta.free ?? {}) as Record<string, unknown>;
+    if (testCase.hair) {
+      check("  …and it is HAIR, not makeup",
+        Boolean(free.hairShade || delta.hairColour) && !delta.makeup, shown);
+    } else {
+      check("  …and it stays MAKEUP", Boolean(delta.makeup) && !free.hairShade, shown);
+    }
+  }
   if (filed && testCase.forbid) {
     const text = JSON.stringify((parsed as { delta: unknown }).delta).toLowerCase();
     const invented = testCase.forbid.filter((word) => text.includes(word));
