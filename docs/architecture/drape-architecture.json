@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6bfc0c94f5e2478e"
+    "sourceFingerprint": "b92f94f283e44c8c"
   },
   "domains": [
     {
@@ -19712,6 +19712,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
       "kind": "imports"
     },
     {

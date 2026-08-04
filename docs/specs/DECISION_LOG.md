@@ -4092,6 +4092,99 @@ pass, and the fox-eyes stack that must STILL pass. Keeping both is the point —
 fix that made the mullet pass by loosening what the fox-eyes stack depended on
 would look like success against one and be a regression against the other.
 
+## D-148 — "Fox eyes" joins the eye-shape vocabulary, stated-only forever.
+
+Founder ruling, 2026-08-04, earned by verified demand rather than by guessing.
+
+The tenth eye shape, and the first with a **trend-name key** rather than an
+anatomical one: the word people actually type is "fox eyes", so that is the key,
+with the anatomy behind it — lifted outer canthus, elongated palpebral fissure,
+high canthal tilt.
+
+**Two riders, and both generalise past this word.**
+
+**(1) The registry gains value-level metadata: rollable vs stated-only.** Fox
+eyes is **stated-only forever** — a styled, of-the-moment look that the dice
+must never deal unbidden, which is the faith-covering filing (D-124) applied to
+aesthetics rather than to belief. The distinction has never existed at value
+level before: axes were rollable or not, but a single axis can hold both kinds
+and now says which is which.
+
+**(2) Bare-term ownership.** "Fox eyes" alone files as SHAPE. "Fox eye liner"
+and "fox eye makeup" reach the makeup reading. The founder had to type *"not
+makeup"* to get the structural read — **that workaround is the defect**, not a
+usage note. A term that needs a correction phrase to reach its commonest meaning
+is a term filed wrong by default.
+
+## D-149 — The ambiguity class: every promoted word declares its bare-term owner.
+
+Founder ruling, 2026-08-04, generalising D-148's second rider.
+
+Beauty language systematically overloads across **structure | makeup | styling |
+temporary state**: contoured cheekbones, fuller lips, arched brows, freckles,
+glowy skin, a beauty mark, tired or kind eyes. Each can be a fact about a face,
+a thing painted on it, a way it is worn today, or a mood — and the parser has to
+pick one before it can file anything.
+
+**The rulings:**
+
+- **Every promoted word declares bare-term ownership at promotion**, per word,
+  on evidence rather than on intuition.
+- **A bare colour word means born-with**, and gets the colourist prose. A dye is
+  reachable by SAYING it is a dye, and files as styling — consistent with
+  D-146's finding that an edit reads a colour word as a dye job unless told.
+- **The variant chip displays the filed subject** for every instruction.
+  **Filing decides Follow inheritance**, so a misfile corrupts the RECORD and
+  not merely the render — which makes the filing a thing the user must be able
+  to see and correct.
+- **Correction phrases always work.** Owning the bare term never removes the
+  ability to say which reading was meant.
+
+## D-150 — Vocabulary priority: effort goes where the prior fights.
+
+Founder observation, 2026-08-04, from two dogfood sessions.
+
+Lip geometry MOVES — "more defined cupid's bow" landed. Nose does not, three
+times measured now. **The prior resists unevenly**, so the engineered-vocabulary
+queue is ordered by resistance rather than by how sayable a feature is.
+
+Nose keeps first place and gets the full anatomical treatment. Lips likely need
+only light touches. Writing elaborate prose for a feature the model already
+honours is effort spent where nothing was wrong.
+
+## D-151 — The Refine self-improvement loop: self-measuring, never self-modifying.
+
+Founder design, 2026-08-04. D-115 applied to taste.
+
+**(a) The satisfaction ledger ships early.** Per-instruction outcome signals —
+selected, backed-up, rephrased, corrected — because **a signal not collected is
+lost forever**, and the dogfood era is the richest labelling this product will
+ever get.
+
+**(b) The delivery judge.** An async vision pass per render: parent versus
+variant versus instruction, answering delivered / not / unsure in D-108's
+one-field shape, persisted on the variant. **Shadow-only, never money.**
+Calibrated against the dogfood's own labelled fixtures — mullet, rose and fox
+eyes delivered; button nose not — before any verdict of its own is believed.
+
+**(c) The word report lives in the ADMIN DASHBOARD**: a term table (asks,
+delivery rate, corrections), the delivery × satisfaction 2×2 that separates
+needs-vocabulary from needs-taste from misfiled, and a READY queue carrying
+driver evidence, with a badge on the admin nav.
+
+**The boundary is built in from birth**: aggregates only, never an individual
+user's instructions in context, never customer render thumbnails — the
+staff-image-boundary family. Proposer test renders use **system fixtures, never
+customer casts**.
+
+**(d) The shadow proposer** drafts and driver-tests candidate prose for
+resistant terms and files READY reports. **Proposals are never deployments**:
+the founder ratifies with one word, D-89's goldens gate every ship, and the next
+report shows the production delta.
+
+Sequencing: the ledger rides near-term; judge, report and proposer queue after
+the Body-Art Studio.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

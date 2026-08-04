@@ -4,7 +4,7 @@ import { realizeAxes } from "./realizedAxes";
 import { resolveCandidateIdentity, type FollowAnchor } from "./cohortPhotorealHuman";
 import { castingBriefCompiler } from "./briefCompiler";
 import type { CastingIntent, HeritageComponent, ResolvedIdentity } from "./castingIntent";
-import { REALIZED_AXIS_KEYS } from "../../shared/castingRealization";
+import { STATED_ONLY_EYE_SHAPES, REALIZED_AXIS_KEYS } from "../../shared/castingRealization";
 import type { TextEngine } from "../providers/types";
 
 /**
@@ -332,5 +332,32 @@ describe("the roll never draws an eye shape or makeup", () => {
     /* Makeup rides the same law for D-116's reason: the dice stay bare, and
        eight unmade faces are the default a stated fact overrides. */
     expect([...makeupDrawn]).toEqual([null]);
+  });
+});
+
+/**
+ * STATED-ONLY values are never dealt (D-148).
+ *
+ * Eye shape is never drawn at all today, so this looks redundant — and it is
+ * not, because the day the roll DOES draw eye shapes is exactly the day a
+ * styled trend look could start arriving on sheets nobody asked it of. The
+ * guard is written now, while the answer is easy, rather than after the first
+ * eight unbidden fox-eyed candidates.
+ */
+describe("the dice never deal a stated-only value", () => {
+  it("keeps fox eyes out of every draw", () => {
+    const drawn = new Set<unknown>();
+    for (const heritageName of ["Nordic", "West African", "East Asian", "South Asian"]) {
+      for (const ageBand of ["20s", "40s"] as const) {
+        for (const sex of ["male", "female", "nonbinary"] as const) {
+          for (const axes of realizeEight({ heritage: heritageName, ageBand, sex, seed: heritageName + ageBand + sex })) {
+            drawn.add(axes.eyeShape);
+          }
+        }
+      }
+    }
+    for (const stated of STATED_ONLY_EYE_SHAPES) {
+      expect(drawn.has(stated), stated).toBe(false);
+    }
   });
 });

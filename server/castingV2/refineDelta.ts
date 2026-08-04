@@ -446,6 +446,30 @@ export function applyDelta(original: ResolvedIdentity, delta: RefineDelta): Reso
 }
 
 /**
+ * The human-readable SUBJECTS an instruction was filed under (D-149).
+ *
+ * Headings only — "HAIR CUT", "EYE SHAPE" — never the values, which are the
+ * recipe and stay internal. What the user needs to see is WHERE their words
+ * landed, because that is what Follow will inherit and what a later instruction
+ * will overwrite.
+ */
+export function filedSubjectsOf(deltas: unknown): string[] {
+  const delta = readDelta(deltas);
+  if (!delta) return [];
+  const subjects: string[] = [];
+  if (delta.eyeColour) subjects.push("EYE COLOUR");
+  if (delta.eyeShape) subjects.push("EYE SHAPE");
+  if (delta.hairStyle) subjects.push("HAIR CUT");
+  if (delta.hairColour) subjects.push("HAIR COLOUR");
+  if (delta.hairTexture) subjects.push("HAIR TEXTURE");
+  if (delta.makeup) subjects.push("MAKEUP");
+  for (const subject of Object.keys(delta.free ?? {})) {
+    subjects.push(FREE_SUBJECTS[subject as FreeSubject]);
+  }
+  return Array.from(new Set(subjects));
+}
+
+/**
  * COMPOSE-COMPLETENESS — every filed fact must reach the prompt (D-143).
  *
  * The design's promise was that a filing failure degrades to

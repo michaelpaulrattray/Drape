@@ -48,6 +48,7 @@ import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
 import { refineCandidate } from "../castingV2/refineService";
 import { listCandidateVariants, selectVariant } from "../db/castingV2Variants";
+import { filedSubjectsOf } from "../castingV2/refineDelta";
 import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { projectSignedCast } from "../castingV2/castProjection";
@@ -597,6 +598,17 @@ export const castingV2Router = router({
           instructions: Array.isArray(variant.instructions)
             ? variant.instructions.filter((entry): entry is string => typeof entry === "string")
             : [],
+          /*
+            WHERE each instruction was FILED (D-149) — subject headings only,
+            never the deltas themselves.
+
+            Filing decides Follow inheritance, so a misfile corrupts the record
+            and not merely one render. That makes it a thing the user has to be
+            able to see; showing it is what turns a silent misfile into a
+            correctable one. Headings are labels, not the recipe: the values
+            stay internal.
+          */
+          filedAs: filedSubjectsOf(variant.deltas),
         })),
       };
     }),

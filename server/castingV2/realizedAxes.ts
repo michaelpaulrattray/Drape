@@ -224,6 +224,13 @@ export const EYE_SHAPE_RENDER: Record<EyeShape, string> = {
   "deep-set": "the eyes sitting further back under a prominent brow bone, which casts a soft shadow across the upper lid and shortens the visible lid space",
   "wide-set": "the gap between the inner corners noticeably wider than the width of one eye, giving an open, broad-featured face",
   "close-set": "the gap between the inner corners noticeably narrower than the width of one eye, drawing the features toward the centre of the face",
+  /*
+    Anatomy, not the trend photo. "Fox eyes" names a look people recognise; what
+    makes it render is where the outer corner sits and how long the opening is,
+    which is what a camera can see. Deliberately says STRUCTURE so the prose
+    itself resists the makeup reading (D-148's bare-term rule).
+  */
+  "fox eyes": "the outer corner lifted distinctly higher than the inner corner with a strong upward canthal tilt, the eye opening long and narrow rather than round, the whole eye reading as elongated toward the temple — this is the bone and lid STRUCTURE of the eye itself, not liner, shadow or any makeup effect",
 };
 
 /**

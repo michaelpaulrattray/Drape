@@ -71,8 +71,28 @@ export const EYE_SHAPES = [
   "deep-set",
   "wide-set",
   "close-set",
+  /*
+    THE TENTH, and the first with a TREND NAME rather than an anatomical one
+    (D-148). The word people type is "fox eyes", so that is the key — the
+    anatomy lives in the prose behind it.
+  */
+  "fox eyes",
 ] as const;
 export type EyeShape = (typeof EYE_SHAPES)[number];
+
+/**
+ * Which values the DICE may deal, and which are stated-only forever (D-148).
+ *
+ * New at value level. An axis was rollable or it was not; but one axis can hold
+ * both kinds, and "fox eyes" is the case that proves it: a styled, of-the-moment
+ * look that must never arrive unbidden on a sheet nobody asked it of. That is
+ * the faith-covering filing (D-124) applied to aesthetics rather than belief —
+ * the code owns WHETHER it was asked for, and never invents that it was.
+ *
+ * Listed as the exception rather than the rule, so a new shape is rollable by
+ * default and being stated-only is a deliberate entry.
+ */
+export const STATED_ONLY_EYE_SHAPES: readonly EyeShape[] = ["fox eyes"];
 
 /** Sex-gated and age-conditioned. Never assigned to women. */
 export const FACIAL_HAIR = [

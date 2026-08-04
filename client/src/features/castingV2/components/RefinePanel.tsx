@@ -26,6 +26,8 @@ export type RefineVariant = {
   variantId: string;
   imageUrl: string | null;
   instructions: string[];
+  /** Where each instruction was FILED — subject headings only (D-149). */
+  filedAs?: string[];
 };
 
 export function RefinePanel({
@@ -83,6 +85,15 @@ export function RefinePanel({
             >
               {variant.imageUrl ? <img src={variant.imageUrl} alt="" /> : null}
               <span>{variant.instructions.at(-1)}</span>
+              {/*
+                WHERE it was filed, shown quietly under the words (D-149).
+                Filing decides what a Follow inherits, so a misfile corrupts the
+                record and not just one picture — which makes it something the
+                user has to be able to see before they can correct it.
+              */}
+              {variant.filedAs?.length ? (
+                <span className="dpc-refine__filed">{variant.filedAs.join(" · ")}</span>
+              ) : null}
             </button>
           ))}
         </div>

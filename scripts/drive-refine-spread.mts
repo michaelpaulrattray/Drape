@@ -20,6 +20,12 @@ const SPREAD = [
   { instruction: "a small rose tattoo on her neck", expect: "parse" },
   /* D-137: everything the anchor cannot document waits for the studio. */
   { instruction: "a full sleeve tattoo on her left arm", expect: "gate" },
+  /* D-148 bare-term ownership: the word alone must reach the SHAPE, and the
+     correction phrases must still reach makeup in both directions. */
+  { instruction: "fox eyes", expect: "guaranteed" },
+  { instruction: "surgical fox eyes not makeup", expect: "guaranteed" },
+  { instruction: "fox eye liner", expect: "parse" },
+  { instruction: "fox eye makeup", expect: "parse" },
   /* The walls, which do not move. */
   { instruction: "make her look like Scarlett Johansson", expect: "wall_likeness" },
   { instruction: "put her in a red coat", expect: "wall" },

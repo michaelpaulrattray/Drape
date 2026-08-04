@@ -2391,3 +2391,15 @@
   color: var(--onScrim);
   opacity: 0.6;
 }
+
+/* Where an instruction was FILED (D-149) — quieter than their own words,
+   because it is the system explaining itself rather than their sentence. */
+.dpc-refine__filed {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  opacity: 0.45;
+  max-width: 64px;
+  text-align: center;
+  line-height: 1.2;
+}
