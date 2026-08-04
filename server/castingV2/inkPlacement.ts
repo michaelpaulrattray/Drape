@@ -44,8 +44,35 @@ export type InkPlacement =
   /** Needs a design document. Gated until the body-art studio ships (D-137). */
   | { kind: "needs_document" };
 
+/**
+ * Head-words that are NOT front-visible — checked FIRST, and they win (D-152).
+ *
+ * The classifier was asking "is this a head word?" when the question D-133
+ * actually turns on is "can the ANCHOR see it?". Behind an ear, the nape, the
+ * scalp under hair — every one is on the head and none appears in a chest-up
+ * frontal frame. The side profile could show them; the anchor cannot document
+ * them, and the anchor is what the whole rule is about.
+ *
+ * They GATE rather than refuse forever: the head template joins the studio
+ * (D-153), and that is where they will live.
+ */
+const NOT_FRONT_VISIBLE = [
+  "behind the ear", "behind her ear", "behind his ear", "behind their ear",
+  "behind the ears", "behind her ears", "behind his ears", "behind their ears",
+  "nape", "back of the neck", "back of her neck", "back of his neck",
+  "scalp", "under her hair", "under his hair", "under the hair",
+  "back of the head", "back of her head", "back of his head",
+];
+
 export function classifyInkPlacement(text: string): InkPlacement {
   const lowered = text.toLowerCase();
+  /*
+    VISIBILITY BEATS REGION, and checking it first is the whole fix: it is what
+    stops "behind her ear" from matching on "ear".
+  */
+  for (const hidden of NOT_FRONT_VISIBLE) {
+    if (lowered.includes(hidden)) return { kind: "needs_document" };
+  }
   for (const place of IN_FRAME_PLACES) {
     if (new RegExp(`\\b${place}\\b`).test(lowered)) return { kind: "in_frame", place };
   }

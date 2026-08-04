@@ -38,6 +38,9 @@ export function RefinePanel({
   busy,
   onRefine,
   onSelect,
+  onRemove,
+  outcome,
+  onDismissOutcome,
 }: {
   variants: readonly RefineVariant[];
   /** Null means the original is the face. */
@@ -48,6 +51,26 @@ export function RefinePanel({
   busy: boolean;
   onRefine: (instruction: string) => void;
   onSelect: (variantId: string | null) => void;
+  /**
+   * Remove one instruction from the middle of the stack — a PAID re-render.
+   *
+   * D-121 requires that this and backing-up never look alike, and the founder
+   * could not find it at all: back-up is free navigation between pictures that
+   * already exist, while removing a mid-stack instruction is a new combination
+   * and therefore a new generation. Two different things must look like two
+   * different things, and the price is what says which is which.
+   */
+  onRemove?: (variantId: string) => void;
+  /**
+   * The last failure or refusal, owned BY THIS PANEL (D-154).
+   *
+   * D-110's own law applied here: a live surface owns its outcomes. The
+   * founder's first failed refine arrived as a long unreadable toast and was
+   * gone before it could be read — and refusal copy that carefully names its
+   * wall is worthless at 2.1 seconds. This stays until dismissed.
+   */
+  outcome?: string | null;
+  onDismissOutcome?: () => void;
 }) {
   const [instruction, setInstruction] = useState("");
   const trimmed = instruction.trim();
@@ -94,8 +117,41 @@ export function RefinePanel({
               {variant.filedAs?.length ? (
                 <span className="dpc-refine__filed">{variant.filedAs.join(" · ")}</span>
               ) : null}
+              {/* The PAID sibling of backing up, carrying its price so the two
+                  can never be mistaken for one another (D-121). */}
+              {onRemove ? (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="dpc-refine__remove"
+                  title={`Remove this instruction and re-render — ${priceCredits} credits`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemove(variant.variantId);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") onRemove(variant.variantId);
+                  }}
+                >
+                  Remove · {priceCredits}
+                </span>
+              ) : null}
             </button>
           ))}
+        </div>
+      ) : null}
+
+      {outcome ? (
+        <div className="dpc-refine__outcome" role="status">
+          <span>{outcome}</span>
+          <button
+            type="button"
+            className="dpc-refine__dismiss"
+            aria-label="Dismiss"
+            onClick={onDismissOutcome}
+          >
+            ×
+          </button>
         </div>
       ) : null}
 

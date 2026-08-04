@@ -137,6 +137,8 @@ export default function CastingSheet() {
   */
   /** Which candidate the viewer is open on. Null when it is closed. */
   const [viewerCandidateId, setViewerCandidateId] = useState<string | null>(null);
+  /* The refine panel owns its own outcomes (D-154) — never a toast. */
+  const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
   /* Balance context for the cost line — the question a price actually raises. */
   const balance = trpc.credits.getBalance.useQuery(undefined, {
     staleTime: 30_000,
@@ -1443,6 +1445,8 @@ export default function CastingSheet() {
               originalImageUrl={variants.data?.originalImageUrl ?? null}
               priceCredits={refinePrice}
               busy={refine.isPending}
+              outcome={refineOutcome}
+              onDismissOutcome={() => setRefineOutcome(null)}
               onRefine={(instruction) => {
                 void refine
                   .mutateAsync({
@@ -1460,7 +1464,13 @@ export default function CastingSheet() {
                     something — and it says "nothing was charged" itself, which
                     is the only part a user needs immediately.
                   */
-                  .catch((error: Error) => toast(error.message));
+                  /*
+                    IN THE PANEL, not a toast (D-154). The founder's first
+                    failure was a long unreadable pill that vanished before it
+                    could be read, and a refusal that names its wall is
+                    worthless at 2.1 seconds.
+                  */
+                  .catch((error: Error) => setRefineOutcome(error.message));
               }}
               onSelect={(variantId) => {
                 void chooseVariant
@@ -1469,7 +1479,7 @@ export default function CastingSheet() {
                     await variants.refetch();
                     await invalidate();
                   })
-                  .catch((error: Error) => toast(error.message));
+                  .catch((error: Error) => setRefineOutcome(error.message));
               }}
             />
           ) : null}

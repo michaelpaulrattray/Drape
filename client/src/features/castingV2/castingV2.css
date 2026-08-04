@@ -2403,3 +2403,50 @@
   text-align: center;
   line-height: 1.2;
 }
+
+/*
+  THE PANEL OWNS ITS OUTCOMES (D-154). Persistent until dismissed, because a
+  refusal that carefully names its wall is worthless at 2.1 seconds — and the
+  failure the founder met was long, unreadable, and gone.
+*/
+.dpc-refine__outcome {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--onScrim) 22%, transparent);
+  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
+  color: var(--onScrim);
+  font-size: 12px;
+  line-height: 1.4;
+  /* Selectable, because a support conversation starts with copying it. */
+  user-select: text;
+}
+
+.dpc-refine__dismiss {
+  flex: none;
+  margin-left: auto;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--onScrim);
+  opacity: 0.6;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Remove is PAID and says so; backing up is free navigation and says nothing. */
+.dpc-refine__remove {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--onScrim);
+  opacity: 0.55;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dpc-refine__remove:hover { opacity: 0.9; }

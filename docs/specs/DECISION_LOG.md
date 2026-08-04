@@ -4185,6 +4185,98 @@ report shows the production delta.
 Sequencing: the ledger rides near-term; judge, report and proposer queue after
 the Body-Art Studio.
 
+## D-152 — Recipe v3: pixels teach, words remember.
+
+Founder dogfood round 2, stop-the-line, 2026-08-04.
+
+Six edits deep the gauntlet is **visibly blurred** while every facet is
+perfectly intact. v2's realization pin worked and cost quality: conditioning on
+the selected parent inherits its softness, its tone-crush and its vignette once
+per generation. **Photocopy loss through the pin.**
+
+**The caption pattern.** A realization is a FACT about how something looked, and
+a fact keeps better in words than in a re-photograph of a photograph. After a
+render lands, a vision pass reads it back in precise language — the specific
+mullet, the exact blue-black — and every later render returns to **ONE step from
+the sharp original**, carrying captions instead of parent pixels.
+
+Quality anchors to the original forever, because there is no chain of pixels for
+softness to accumulate along.
+
+**Two named driver cases**, both required:
+
+**(a) The six-edit gauntlet replayed** — facets AND quality both held. The
+driver gains a **quality axis**: sharpness and tone scored mechanically against
+the original per render. D-147 extended, and for the same reason it existed:
+degradation was invisible to a facet-survival-only instrument.
+
+**(b) Restatement is idempotent.** Under v2, copper conditioned on
+already-copper parent pixels brightened — re-dyeing dyed hair. Under v3 the
+parent is not in the frame, so **copper on copper renders the same copper**.
+
+**Interim, while v3 lands:** a deep-stacked variant should not be Signed, because
+the Master would seal the blur. Recorded here at minimum, and quietly noted near
+Sign where it can be seen.
+
+Captions are captured only for the facets an instruction TOUCHED. Captioning an
+untouched facet restates what the original already establishes as though it were
+a change, and a few rounds of that has the words quietly replacing the
+reference.
+
+## D-153 — Ink placement classifies by VISIBILITY, not by region word.
+
+Founder ruling, 2026-08-04, and it was a live bug.
+
+The classifier asked *"is this a head word?"* when the question D-133 turns on is
+*"can the ANCHOR see it?"*. Behind an ear, the nape, the scalp under hair: all on
+the head, none in a chest-up frontal frame. Confirmed live — "a tiny star behind
+her ear" passed as in-frame by matching on "ear".
+
+Visibility is now checked FIRST and wins, which is what stops the substring
+match. Verified: *behind her ear* gates, *on her cheekbone* renders.
+
+**The head template joins the studio** (D-138 amendment): left profile, right
+profile and back-of-head panels, tone-laddered like the rest — the home for
+behind-ear, nape and scalp designs. **No apply step exists for them**, because
+nothing is front-visible; their reveal is the side-profile canonical view at
+Sign, conditioned on the document per the Gap-3 requirement and judged on design
+identity. The confession copy is honest that worn-down hair may occlude the spot.
+
+## D-154 — The refine panel owns its outcomes. Never a toast.
+
+Founder ruling, 2026-08-04. D-110's own law, applied to Refine.
+
+The founder's first failed refine arrived as a long, unreadable, uncopyable
+toast, and wall refusals vanish before they can be read. **The surface is live
+and owns the action**, so failures and refusals render IN THE PANEL and stay
+until dismissed — and they are selectable, because a support conversation starts
+with copying the text.
+
+Refusal copy that carefully names its wall is worthless at 2.1 seconds.
+
+## D-155 — Remove is paid and says so; backing up is free and says nothing.
+
+Founder ruling, 2026-08-04.
+
+D-121 required that removing a mid-stack instruction and backing up never look
+alike. In practice remove barely looked like anything and the founder could not
+find it. **Two different things must look like two different things** — so
+remove is visible on the instruction chips carrying its price, while backing up
+stays free navigation between pictures that already exist.
+
+## D-156 — D-146 CLOSES: colour rendering exonerated.
+
+Founder finding, 2026-08-04.
+
+The vividness was isolated to **same-facet stacking under recipe v2** — copper
+conditioned on already-copper pixels. On clean branches from the original, both
+bare "copper hair" and "natural copper hair, dark roots" render well. **No prose
+iteration is needed**, and the guard is permanent: D-152's idempotence driver
+case is this finding's regression test.
+
+A reminder worth keeping: the prose was suspected for a day and was never the
+problem. The recipe was.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

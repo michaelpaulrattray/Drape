@@ -79,6 +79,11 @@ import {
   type RefineDelta,
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
+import {
+  captionClause,
+  captionRealization,
+  type RealizationCaptions,
+} from "./realizationCaption";
 import { detectRenderFault } from "./renderFault";
 import { castingIdentityEngine } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
@@ -241,6 +246,14 @@ export async function refineCandidate(
     ...readInstructions(predecessor?.instructions),
     input.instruction.trim(),
   ];
+  /*
+    The realizations this stack has already established, IN WORDS (D-152).
+
+    Carried from the predecessor and extended once this render lands, which is
+    what lets every render start one step from the sharp original — nothing is
+    re-photographed, so nothing accumulates softness.
+  */
+  const inheritedCaptions: RealizationCaptions = readCaptions(predecessor?.internalPrompt);
 
   /*
     COMPOSE-COMPLETENESS, checked BEFORE anything is claimed (D-143).
@@ -271,14 +284,6 @@ export async function refineCandidate(
       message: "Casting is busy right now. Try that again in a moment — nothing was charged.",
     });
   }
-
-  /* ---- the stack, composed mechanically ---- */
-
-  /*
-  const instructions = [
-    ...readInstructions(predecessor?.instructions),
-    input.instruction.trim(),
-  ];
 
   /* ---- the claim ---- */
 
@@ -365,49 +370,34 @@ export async function refineCandidate(
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
     /*
-      RENDER RECIPE v2 (D-144) — two references, not one.
+      RENDER RECIPE v3 (D-152) — ONE step from the sharp original, always.
 
-      The ORIGINAL stays the identity base, so degradation still never compounds
-      and the tenth variant is as close to the signed face as the first. But
-      words persist and PICTURES OF THEM RE-ROLL: the founder's mullet shortened
-      under a later "seafoam eyes" edit, with no hair instruction anywhere in
-      between. "A mullet" is a description, and every render was drawing a new
-      one.
+      v2 carried the selected PARENT as a realization pin, which held the facets
+      and quietly cost quality: conditioning on a parent inherits its softness,
+      tone-crush and vignette once per generation, so six edits deep the picture
+      is visibly blurred while every facet is perfectly intact. Photocopy loss.
 
-      So the SELECTED PARENT rides along as a realization pin — not as an
-      identity source, but as the picture of the choices already made. Keep
-      everything exactly as this shows; change only the delta.
+      So realizations travel as WORDS now. The parent's pixels are not in the
+      frame at all, which means there is no chain for softness to accumulate
+      along — and it makes restatement idempotent, because copper is no longer
+      being re-dyed onto already-copper pixels.
     */
-    const parentKey = source.imageKey && source.variantPublicId ? source.imageKey : null;
-    const parent = parentKey
-      ? await (dependencies.readBytes ?? storageReadBytes)(parentKey)
-      : null;
-    const engine = (dependencies.engine ?? castingIdentityEngine)();
     /*
-      WALL (d), STRUCTURALLY (D-131).
-
-      The prompt is composed from what was PERSISTED, re-validated, never from
-      the in-memory object that happens to match it. That turns "no render the
-      paperwork did not learn" into dataflow rather than discipline: anything
-      the filing dropped is absent from the prompt too, so a failure degrades
-      to filed-but-not-rendered — which the sweep can see — and never to
-      rendered-but-not-filed, which nothing can.
-
-      It refuses rather than falling back, because a fallback here would be the
-      exact discipline this replaces.
+      WALL (d), STRUCTURALLY (D-131). The prompt is composed from what was
+      PERSISTED, re-validated, never from the in-memory object that happens to
+      match it — so a filing failure degrades to filed-but-not-rendered, which
+      the sweep can see, and never to rendered-but-not-filed, which nothing can.
     */
     const filed = readDelta(variant.deltas);
     if (!filed) throw new Error("the refinement was not recorded in a readable shape");
-    const prompt = composeEditPrompt(filed, EDIT_PROSE, parent !== null);
+    const engine = (dependencies.engine ?? castingIdentityEngine)();
+    const prompt = composeEditPrompt(filed, EDIT_PROSE, false)
+      + captionClause(inheritedCaptions);
 
     const image = await engine.editWithReferences({
       prompt,
-      references: parent
-        ? [
-          { bytes: base.bytes, contentType: base.contentType },
-          { bytes: parent.bytes, contentType: parent.contentType },
-        ]
-        : [{ bytes: base.bytes, contentType: base.contentType }],
+      /* ONE reference, forever: the sharp original. */
+      references: [{ bytes: base.bytes, contentType: base.contentType }],
       // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
       resolution: "1K",
     });
@@ -459,6 +449,25 @@ export async function refineCandidate(
       §10's load-bearing consequence. Two derivations would be the record-lies
       class rebuilt with extra steps.
     */
+    /*
+      READ THE RENDER BACK, for the facets this instruction touched (D-152).
+
+      Only the touched ones. A caption for a facet this edit did not change
+      would be describing something the ORIGINAL already establishes, and
+      restating that as a fact is how a description slowly replaces the
+      reference. Fails soft — a missing caption costs later precision, never
+      this render, which is already correct and already paid for.
+    */
+    const capturedCaptions: RealizationCaptions = { ...inheritedCaptions };
+    for (const subject of touchedSubjects(parsed.delta)) {
+      const caption = await captionRealization({
+        subject,
+        bytes: image.bytes,
+        contentType: image.contentType,
+      });
+      if (caption) capturedCaptions[subject] = caption;
+    }
+
     const baseIdentity = readResolvedIdentity(variant.baseInternalPrompt);
     await landVariant({
       userId: input.userId,
@@ -544,6 +553,36 @@ function refundDescriptionFor(error: unknown): string {
     return "Refine refunded — the image came back damaged";
   }
   return "Refine refunded — the generation failed";
+}
+
+/**
+ * Which facets THIS instruction touched — the only ones worth captioning.
+ *
+ * Captioning an untouched facet would restate what the ORIGINAL already shows,
+ * as though it were an established change; do that a few times and the words
+ * have quietly replaced the reference.
+ */
+function touchedSubjects(delta: RefineDelta): string[] {
+  const subjects: string[] = [];
+  if (delta.eyeColour || delta.eyeShape) subjects.push("eyeColourFree");
+  if (delta.hairStyle) subjects.push("hairCut");
+  if (delta.hairColour) subjects.push("hairShade");
+  if (delta.hairTexture) subjects.push("hairPattern");
+  if (delta.makeup) subjects.push("makeup");
+  for (const subject of Object.keys(delta.free ?? {})) subjects.push(subject);
+  return Array.from(new Set(subjects));
+}
+
+/** The captions a predecessor variant recorded, validated like any json column. */
+function readCaptions(internalPrompt: unknown): RealizationCaptions {
+  if (!internalPrompt || typeof internalPrompt !== "object") return {};
+  const raw = (internalPrompt as { captions?: unknown }).captions;
+  if (!raw || typeof raw !== "object") return {};
+  const captions: RealizationCaptions = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof value === "string" && value.trim()) captions[key] = value.trim().slice(0, 200);
+  }
+  return captions;
 }
 
 /** Instructions are a json column, so they are validated rather than trusted. */
