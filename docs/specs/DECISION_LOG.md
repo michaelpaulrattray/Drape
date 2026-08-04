@@ -4611,6 +4611,165 @@ argument the program already makes for compiling before charging: the expensive
 thing should not be the first place a decision gets made.
 
 
+## D-166 — The preservation clause is composed per render, or it is a contradiction.
+
+**Founder finding, 2026-08-04, round 4 — code-read confirmed, and the two
+serious defects turned out to be ONE mechanism.**
+
+`composeEditPrompt` appended the same tail to every render:
+
+> *"Everything else must be identical to the reference: the same person, the
+> same bone structure, the same skin, the same hair, the same expression, the
+> same clothing, the same lighting, the same framing and the same background."*
+
+**It contradicts the edits.** "Change the hair: coloured pastel pink" and "the
+same hair" arrive in one prompt, and the model sided with the tail. Measured on
+production rows before the fix: **19 of the 25 most recent variants protect the
+hair while the edits change it.** That is why pastel pink stayed copper on two
+different faces and why the idol's style wobbled on a colour edit.
+
+The disease is D-142's, and this time **we authored it ourselves**. Every
+earlier instance was one drawer overwriting another; this one is the template
+arguing with the instruction, which no amount of facet discipline in the
+instruction lane could reach.
+
+**It omits accessories.** The protected list never named eyewear, so
+brief-stated glasses survived one removal render and died on the next. **An
+unnamed protection is a coin flip** — which is the same law the STATED
+ACCESSORIES licence already states on the roll side, unlearned on this one.
+
+### The rule
+
+The preservation clause is **composed per render and facet-aware**:
+
+- it enumerates the protected categories **minus the facets this render edits** —
+  a hair-colour edit yields "the same haircut" and never "the same hair";
+- it **explicitly names the record's stated facts** — "her glasses stay on and
+  unchanged" — instead of trusting "everything else" to cover them;
+- and **D-143 extends here mechanically**: a tail clause naming a facet the
+  edits also name is a composed contradiction, and must be **unrepresentable**
+  rather than merely unlikely. Checked at composition, not hoped about at render.
+
+### The instrument note, and it is the sharpest one yet
+
+**This round's failures passed their drivers again.** The pink driver asserted
+the instruction lane — which was correct — while the boilerplate lane lost the
+argument, and **no driver read the tail clause at all**. D-147's file gains its
+fourth entry, and this is the general form of all of them:
+
+> **When a driver passes and the founder's hands fail, the instrument is
+> pointed at the wrong layer.**
+
+### Two more causes, found by pointing the instrument at the right layer
+
+Building the tail fix and then DRIVING it turned up two further reasons pink
+stayed copper. Both are upstream of the tail, and neither had ever been visible.
+
+**The interpreter echoes the current value.** It is told the current values so
+relative asks can resolve ("greener", "shorter"), and it restates them:
+"pastel pink hair" came back as
+`{hairColour: "copper", free: {hairShade: "pastel pink"}}` — the CURRENT colour
+in the guaranteed slot beside the NEW one in the free slot. D-159's
+guaranteed-wins convention, written for legacy rows where the engineered prose
+is what the pixels actually followed, then did its job and kept the copper.
+
+So within ONE freshly parsed delta the **free lane wins**. Promotion has already
+run, so anything still in the free lane is the ask the closed vocabulary could
+not hold — the new information, in the user's own words — and the guaranteed
+value beside it can only be an echo. Across deltas, guaranteed-wins is unchanged;
+that is a different question with a different answer.
+
+**A value in the wrong lane is not an invented value.** On a clean face,
+"pastel pink hair" came back as `{hairColour: "pastel pink"}`: the right ask in
+the slot whose closed vocabulary cannot hold it. The whole reply was discarded
+and the user was told their perfectly clear instruction *"didn't come through
+clearly."* **It never worked as a first instruction**, which is most of why the
+founder saw it behave differently on different faces — it only ever succeeded
+when the model happened to file it free.
+
+An out-of-vocabulary guaranteed value is now DEMOTED into the free lane, the
+mirror of D-158's hoist for the opposite slip. The vocabulary stays closed: the
+value cannot pretend to be an enum, it earns no engineered prose, and it still
+faces scrub, both walls and source containment. Demotion requires the user's
+sentence, because containment is the only thing separating an honest ask from a
+hallucination — without it, "violet" is still refused.
+
+**Three defects, one symptom.** Each alone was enough to keep pink copper, and
+each was invisible to an instrument aimed at the other two.
+
+## D-167 — Absent everywhere confesses. Free.
+
+**Founder finding, 2026-08-04, round 4.**
+
+"Remove her freckles" on a face that has none did two wrong things in a row. It
+first threw a **long, leaky error toast** — a path D-154's panel-owns-outcomes
+law does not yet cover, and it is folded in here. On retry it **rendered a
+full-face smoothing**: the beautify prior, invited by the ordinary-instruction
+fallback, arriving as an identity-adjacent over-edit nobody asked for and
+somebody paid for.
+
+D-163's rule 3 sent an unmatched negation to the face as an ordinary content
+edit. That is right when the face HAS the thing — the feature came from the dice
+rather than from an instruction. It is wrong when the thing exists nowhere, and
+the resolution order gains an honest third step:
+
+1. **recipe match** → surgery, as D-163 rules;
+2. **record or face match** → an ordinary content edit;
+3. **absent everywhere** → *"She doesn't have freckles."* In the panel, **free,
+   no render, nothing charged.**
+
+Saying so costs nothing and is true. Rendering a beautify pass costs 25 credits
+and changes a face nobody asked to change.
+
+## D-168 — Typed undo stays. Investment stops.
+
+**Founder taste ruling, 2026-08-04.**
+
+The typed navigation and free-selection machinery (D-163) **stays** — it is
+built, proven and costs nothing to keep. But **thumbnail clicking is the primary
+navigation and is already intuitive**, so the single hint line is the whole of
+the surface. Nothing further gets built on this: no discoverability pass, no
+affordance, no second control.
+
+A capability that works and is quietly available does not need to be sold.
+
+## D-169 — The refine loading state gets a designed treatment.
+
+**Founder taste ruling, 2026-08-04.**
+
+The current loader is flat. The reference is Grok's blurred-preview-with-
+progress — **as inspiration, never as template**: the treatment is Drape's own
+monochrome editorial language, with **the variant being edited as the blurred
+field**, honest progress, and the ink-pill register.
+
+**D-101 discipline applies**: mock first, founder eyeball, then wire. A loading
+state is a design object like any other and does not get built directly into the
+product on an executor's taste.
+
+## D-170 — Recipe v3 confirmed in production. The pinned branch is deleted.
+
+**Founder question, 2026-08-04, answered with the artifact per D-164.**
+
+The prompt builder still carried two-image language — *"Keep the SECOND image
+exactly as it is in every respect"* — which reads like recipe v2's parent-pixel
+conditioning surviving into v3. It is not live, and both halves of that were
+checked rather than asserted:
+
+- **In code:** `composeEditPrompt`'s `pinned` parameter has exactly one
+  production call site and it passes `false`; the engine is handed exactly ONE
+  reference, the sharp original.
+- **In the artifact:** of the 25 most recent production variants, **24 carry the
+  one-image opener**. The single two-image row is the OLDEST of them, written
+  before v3 shipped. (Absolute timestamps in that probe are subject to the D-112
+  skew — it used a throwaway connection — so the ORDERING is what the finding
+  rests on, and the ordering is unambiguous.)
+
+**D-152's no-pixel-chain law holds in production.** The dead branch is deleted
+rather than left in place, because dead code that reads like a live path is
+exactly what made the question necessary — and the next person to read it would
+have had to run this same investigation to find out.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

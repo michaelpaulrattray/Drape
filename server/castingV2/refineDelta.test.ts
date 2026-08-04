@@ -6,6 +6,8 @@ import {
   applyDelta,
   composeDeltas,
   composeEditPrompt,
+  composeRenderPrompt,
+  contradictedFacets,
   identityDetailsOf,
   presentationOf,
   readDelta,
@@ -136,13 +138,32 @@ describe("the edit prompt", () => {
     expect(prompt).toContain("hooded");
   });
 
-  it("names what must NOT change, which is most of the picture", () => {
+  /*
+    The preservation clause LEFT this function (D-166). It was static, so it
+    said "the same hair" on a prompt that changed the hair — measured at 19 of
+    the 25 most recent production variants — and the model sided with the tail.
+    It is now composed per render by subtraction, and `refinePreservation.test`
+    is where it is proved. What stays here is that the edits lane is edits only,
+    which is what lets `missingFromPrompt` run against it without finding a
+    filed value in the protection and rubber-stamping the prompt.
+  */
+  it("keeps the edits lane free of the preservation clause", () => {
     const prompt = composeEditPrompt({ eyeColour: "green" }, prose);
     expect(prompt).toContain("changing ONLY what is listed");
-    for (const preserved of ["bone", "skin", "hair", "expression", "clothing", "lighting", "framing", "background"]) {
-      expect(prompt, preserved).toContain(preserved);
+    expect(prompt).toContain(IRIS_RENDER.green);
+    expect(prompt).not.toContain("must be identical to the reference");
+  });
+
+  it("names what must NOT change, minus what it changes", () => {
+    const composed = composeRenderPrompt({ eyeColour: "green" }, prose, "");
+    for (const preserved of ["bone", "skin", "hair", "clothing", "lighting", "framing", "background"]) {
+      expect(composed.full, preserved).toContain(preserved);
     }
-    expect(prompt).toContain("not a new photograph of a similar person");
+    expect(composed.full).toContain("not a new photograph of a similar person");
+    /* The eye colour is the one thing it must NOT promise to keep. */
+    expect(composed.full).not.toContain("the same eye colour");
+    expect(composed.full).not.toContain("the same eyes");
+    expect(contradictedFacets(composed, { eyeColour: "green" })).toEqual([]);
   });
 
   it("is built from the same deltas as the record, so the two cannot disagree", () => {

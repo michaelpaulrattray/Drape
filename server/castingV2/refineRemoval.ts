@@ -58,7 +58,7 @@ export function readRemovalSubject(value: unknown): FreeSubject | RefinableAxis 
   return null;
 }
 
-function facetOf(subject: FreeSubject | RefinableAxis): Facet {
+export function facetOf(subject: FreeSubject | RefinableAxis): Facet {
   return (REFINABLE_AXES as readonly string[]).includes(subject)
     ? facetOfAxis(subject as RefinableAxis)
     : facetOfSubject(subject as FreeSubject);
@@ -145,6 +145,31 @@ export function matchSteps(
     return words.every((word) => have.has(word));
   });
   return narrowed.map(({ index }) => index);
+}
+
+/**
+ * Does this recorded value mention what they named? (D-167.)
+ *
+ * The third resolution step needs to ask the RECORD the same question
+ * `matchSteps` asks the recipe, with the same tolerance for word endings —
+ * "freckles" must find "lightly freckled". A stricter comparison here would
+ * confess "she doesn't have freckles" about a visibly freckled face, which is
+ * the one outcome worse than the over-edit this step exists to prevent.
+ */
+export function textMentions(text: string | null, words: string | null): boolean {
+  if (!text) return false;
+  if (!words) return true;
+  const have = new Set(
+    text.toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean).map(stem),
+  );
+  const wanted = words
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length > 2)
+    .map(stem);
+  if (wanted.length === 0) return true;
+  return wanted.every((word) => have.has(word));
 }
 
 /** The chain with those steps gone — what the face becomes. */

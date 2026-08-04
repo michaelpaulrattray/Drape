@@ -573,8 +573,24 @@ describe("removal is typed, and most of it is free", () => {
     RULE 3 — THE FACE SECOND. Nothing in the recipe matches, so the ask is an
     ordinary content edit and is re-read with the removal vocabulary withheld.
   */
-  it("falls through to a content edit when no step matches", async () => {
+  it("falls through to a content edit when the FACE has it but the recipe does not", async () => {
     twoStep();
+    /*
+      D-167: rule 3 only fires when the thing actually exists. Freckles from
+      the dice live at `realized.skinCharacter`, so the selected face has to
+      carry them or the honest answer is the confession below, not an edit.
+    */
+    variantRows[1]!.internalPrompt = {
+      resolved: {
+        /* readResolvedIdentity requires these four, or it discards the whole
+           identity — so a partial fixture would silently mean "no record". */
+        sex: "female",
+        ageBand: "30s",
+        energy: "warm",
+        heritage: [{ heritage: "Nordic", pct: 100 }],
+        realized: { skinCharacter: "freckled" },
+      },
+    };
     const modes: Array<string | undefined> = [];
     const result = await refineCandidate(
       {
@@ -592,6 +608,22 @@ describe("removal is typed, and most of it is free", () => {
     const call = vi.mocked(claimVariant).mock.calls[0]![0];
     /* Appended like any other edit — the chain GREW. */
     expect(call.instructions).toEqual(["a smokey eye", "small gold hoops", "remove her freckles"]);
+  });
+
+  /*
+    THE HONEST THIRD STEP (D-167). Absent from the recipe AND from the record,
+    so there is nothing to remove — and saying so is free. Before this, the ask
+    fell through to the face and bought a full-face smoothing: the beautify
+    prior arriving as an identity-adjacent over-edit nobody asked for.
+  */
+  it("confesses for free when the thing exists nowhere", async () => {
+    twoStep();
+    await expect(refineCandidate(
+      asks({ ok: true, intent: "remove", subject: "marks", match: "freckles" }),
+      { ...input, instruction: "remove her freckles" },
+    )).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(ledger.charges).toEqual([]);
+    expect(journal).not.toContain("claim");
   });
 
   it("refuses on a variant that predates the step chain, rather than guessing", async () => {

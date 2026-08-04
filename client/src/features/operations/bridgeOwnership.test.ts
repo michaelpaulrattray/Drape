@@ -46,7 +46,8 @@ describe("the bridge does not double-report a surface that speaks for itself", (
     kind wrongly missing duplicates a notice the user is already reading.
   */
   it("names exactly the kinds that confess in place", () => {
-    expect(selfReportingKinds()).toEqual(["castingV2.roll", "castingV2.sign"]);
+    expect(selfReportingKinds())
+      .toEqual(["castingV2.refine", "castingV2.roll", "castingV2.sign"]);
   });
 
   it("stays silent on the cancelled roll the founder saw", () => {

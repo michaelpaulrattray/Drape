@@ -5,6 +5,7 @@ import {
   composeEditPrompt,
   currentValueOfFacet,
   facetsWrittenBy,
+  readDelta,
   type RefineDelta,
 } from "./refineDelta";
 import { allFacets, facetOfAxis, facetOfSubject, facetHeading } from "./refineFacets";
@@ -90,6 +91,52 @@ describe("one facet, one answer — across both lanes", () => {
     what the pixels did — the engineered prose beat the bare clause in every
     such render, so the convention agrees with the picture the user kept.
   */
+  /*
+    A FRESH PARSE resolves the other way, and this is the bug that kept pink
+    copper (D-166). The interpreter echoes the CURRENT value into the guaranteed
+    slot beside the new one in the free slot; promotion has already moved
+    anything the vocabulary can hold, so what remains in the free lane is the
+    new ask and the guaranteed value beside it is an echo.
+  */
+  it("lets the free lane win when ONE reply answers a facet twice", () => {
+    const parsed = readDelta({ hairColour: "copper", free: { hairShade: "pastel pink" } });
+    expect(parsed?.hairColour).toBeUndefined();
+    expect(parsed?.free?.hairShade).toBe("pastel pink");
+  });
+
+  /*
+    THE WRONG LANE IS NOT AN INVENTION (D-166).
+
+    "Pastel pink hair" came back as `{hairColour: "pastel pink"}` — the right
+    ask in a slot whose closed vocabulary cannot hold it — and the whole reply
+    was discarded, so a perfectly clear instruction was reported as unclear. It
+    never worked as a first instruction, which is most of why it behaved
+    differently on different faces.
+  */
+  it("demotes an out-of-vocabulary guaranteed value into the free lane", () => {
+    const parsed = readDelta({ hairColour: "pastel pink" }, { instruction: "pastel pink hair" });
+    expect(parsed?.hairColour).toBeUndefined();
+    expect(parsed?.free?.hairShade).toBe("pastel pink");
+  });
+
+  /* And the vocabulary stays CLOSED: without the user's sentence there is no
+     way to tell an honest ask from a hallucination, so the answer stays no. */
+  it("still rejects an invented value when it cannot check the words", () => {
+    expect(readDelta({ eyeColour: "violet" })).toBeNull();
+  });
+
+  it("still refuses a demoted value the user never said", () => {
+    const check = { instruction: "make her eyes nicer" } as Parameters<typeof readDelta>[1];
+    expect(readDelta({ eyeColour: "violet" }, check)).toBeNull();
+    expect(check?.wall?.reason).toBe("wall_unfileable");
+  });
+
+  it("still promotes a free value the vocabulary CAN hold", () => {
+    const parsed = readDelta({ free: { hairShade: "copper" } });
+    expect(parsed?.hairColour).toBe("copper");
+    expect(parsed?.free?.hairShade).toBeUndefined();
+  });
+
   it("resolves a legacy row that answers one facet twice", () => {
     const composed = composeDeltas([
       { hairColour: "copper", free: { hairShade: "pastel pink" } },

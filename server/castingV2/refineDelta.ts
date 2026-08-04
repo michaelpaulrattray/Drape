@@ -46,6 +46,7 @@ import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
 import { FREE_SUBJECT_KEYS, FREE_SUBJECTS, isPresentationSubject, type FreeSubject } from "./refineSubjects";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
+import { composePreservation } from "./refinePreservation";
 
 /** One adjustment, not a paragraph — the brief box is where prose belongs. */
 const MAX_MAKEUP_LENGTH = 80;
@@ -185,14 +186,44 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   const delta: RefineDelta = {};
-  if (raw.eyeColour != null) {
-    if (!EYE_COLOURS.includes(raw.eyeColour as EyeColour)) return null;
-    delta.eyeColour = raw.eyeColour as EyeColour;
-  }
-  if (raw.eyeShape != null) {
-    if (!EYE_SHAPES.includes(raw.eyeShape as EyeShape)) return null;
-    delta.eyeShape = raw.eyeShape as EyeShape;
-  }
+  /*
+    A VALUE IN THE WRONG LANE IS NOT AN INVENTED VALUE (D-166's third finding).
+
+    "Pastel pink hair" came back as `{hairColour: "pastel pink"}` — the right
+    ask in the guaranteed slot, where the closed vocabulary cannot hold it. The
+    whole reply was then discarded, and the user was told their perfectly clear
+    instruction "didn't come through clearly". **It never worked as a first
+    instruction**, which is most of why the founder saw it behave differently on
+    different faces: it only ever succeeded when the model happened to file it
+    free.
+
+    So an out-of-vocabulary guaranteed value is DEMOTED to the free lane rather
+    than rejected — the mirror of the hoist added for the opposite slip. The
+    vocabulary stays closed: the value cannot pretend to be an enum, it gets no
+    engineered prose, and it must still pass scrub, both walls and source
+    containment down in the free lane.
+
+    Demotion needs `check`, because containment is what separates the user's own
+    words from a model invention. Without it there is no way to tell "violet"
+    the honest ask from "violet" the hallucination, and the answer stays no.
+  */
+  const demoted: Record<string, unknown> = {};
+  const guaranteed = <T extends string>(
+    key: keyof RefineDelta, value: unknown, vocabulary: readonly T[], subject: FreeSubject,
+  ): boolean => {
+    if (vocabulary.includes(value as T)) {
+      (delta as Record<string, unknown>)[key] = value;
+      return true;
+    }
+    if (!check || typeof value !== "string") return false;
+    demoted[subject] = value;
+    return true;
+  };
+
+  if (raw.eyeColour != null
+    && !guaranteed("eyeColour", raw.eyeColour, EYE_COLOURS, "eyeColourFree")) return null;
+  if (raw.eyeShape != null
+    && !guaranteed("eyeShape", raw.eyeShape, EYE_SHAPES, "eyeShapeFree")) return null;
   /*
     THE HAIR TIER. Every value is checked against the vocabulary the ROLL draws
     from — `HAIR_STYLE_NAMES` is derived from the weight tables, so a refinement
@@ -205,17 +236,12 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       stored contradiction waiting for a worn instruction to disagree with it —
       which is exactly how "hair tied up" wrote a CUT and then reverted.
     */
-    if (!REFINABLE_CUT_NAMES.includes(raw.hairStyle as string)) return null;
-    delta.hairStyle = raw.hairStyle as string;
+    if (!guaranteed("hairStyle", raw.hairStyle, REFINABLE_CUT_NAMES, "hairCut")) return null;
   }
-  if (raw.hairColour != null) {
-    if (!HAIR_COLOURS.includes(raw.hairColour as HairColour)) return null;
-    delta.hairColour = raw.hairColour as HairColour;
-  }
-  if (raw.hairTexture != null) {
-    if (!HAIR_TEXTURES.includes(raw.hairTexture as HairTexture)) return null;
-    delta.hairTexture = raw.hairTexture as HairTexture;
-  }
+  if (raw.hairColour != null
+    && !guaranteed("hairColour", raw.hairColour, HAIR_COLOURS, "hairShade")) return null;
+  if (raw.hairTexture != null
+    && !guaranteed("hairTexture", raw.hairTexture, HAIR_TEXTURES, "hairPattern")) return null;
   /*
     MAKEUP — the one slot with no enum behind it, so the code owns its SHAPE
     instead of its vocabulary: capped, brand-scrubbed, and rejected outright if
@@ -247,7 +273,10 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     this forgives the SHAPE and nothing else. Free subjects and guaranteed axes
     cannot collide, because the type-level carve-out forbids it.
   */
-  const stated: Record<string, unknown> = { ...(raw.free as Record<string, unknown> | undefined ?? {}) };
+  const stated: Record<string, unknown> = {
+    ...demoted,
+    ...(raw.free as Record<string, unknown> | undefined ?? {}),
+  };
   for (const key of FREE_SUBJECT_KEYS) {
     if (raw[key] != null && stated[key] == null) stated[key] = raw[key];
   }
@@ -352,6 +381,37 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       free[subject as FreeSubject] = scrubbed;
     }
     if (Object.keys(free).length > 0) delta.free = free;
+    /*
+      ONE INSTRUCTION MAY NOT ANSWER ONE FACET TWICE — and here the FREE lane
+      wins (D-166's second finding).
+
+      The interpreter is told the current values so relative asks can resolve
+      against them, and it turns out to ECHO them: "pastel pink hair" came back
+      as `{hairColour: "copper", free: {hairShade: "pastel pink"}}` — the
+      current colour restated in the guaranteed slot beside the new one in the
+      free slot. D-159's guaranteed-wins convention then did exactly what it was
+      written to do for LEGACY rows, and kept the copper.
+
+      **That is why pink stayed copper**, on a path entirely upstream of the
+      preservation tail. Two defects wearing one symptom.
+
+      Free wins because promotion has already run: a value expressible in the
+      closed vocabulary was moved INTO the guaranteed lane and never reaches
+      here, so anything still in the free lane is the ask the vocabulary could
+      not hold — the new information, in the user's own words. The guaranteed
+      value beside it can only be an echo of what the face already was.
+
+      `composeDeltas` keeps guaranteed-wins for collisions ACROSS deltas, which
+      is a different question with a different answer: those rows were written
+      before facets existed, and there the engineered prose is what the pixels
+      actually followed.
+    */
+    for (const subject of Object.keys(free) as FreeSubject[]) {
+      const facet = facetOfSubject(subject);
+      for (const axis of REFINABLE_AXES) {
+        if (delta[axis] != null && facetOfAxis(axis) === facet) delete delta[axis];
+      }
+    }
   }
 
   /* An empty delta is not a delta. Charging for a generation that changes
@@ -556,6 +616,21 @@ export function currentValueOfFacet(
     case "hair.colour": return asText((identity.hair as { colour?: unknown })?.colour);
     case "hair.texture": return asText(realized.hairTexture);
     case "makeup": return asText(realized.makeup);
+    /*
+      MARKS HAVE A SECOND HOME, and it is the one the DICE write (D-167).
+
+      Freckles a person was rolled with are not a refinement — they are
+      `realized.skinCharacter`, from the roll's own weights. Reading only the
+      free lane would say "she has no freckles" about a visibly freckled face,
+      which is the false confession this whole step exists to avoid.
+
+      "Plain" is the registry's own silent value: it means nothing distinguishing,
+      so it reads as absence rather than as a fact.
+    */
+    case "marks": {
+      const skin = asText(realized.skinCharacter);
+      return skin && skin !== "plain" ? skin : null;
+    }
     default: return null;
   }
 }
@@ -792,7 +867,7 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
   hairStyle: (value: string) => string;
   hairColour: (value: HairColour) => string;
   hairTexture: (value: HairTexture) => string;
-}, pinned = false): string {
+}): string {
   const edits: string[] = [];
   if (delta.eyeColour != null) {
     edits.push(`Change the iris colour to ${delta.eyeColour} — ${prose.eyeColour(delta.eyeColour)}.`);
@@ -838,19 +913,75 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
       : `${heading}: ${value}${qualifierFor(subject as FreeSubject)}.`);
   }
   return [
-    pinned
-      ? "You are given TWO images of the same person. The FIRST is the identity "
-        + "reference — that is who she is. The SECOND is how she currently looks, "
-        + "including every earlier change already made to her. Keep the SECOND "
-        + "image exactly as it is in every respect, and change only what is "
-        + "listed below. Do not redraw, restyle or reinterpret anything else — "
-        + "a haircut, a colour or a mark already present must come through "
-        + "unchanged and identical."
-      : "Edit this photograph of this exact person, changing ONLY what is listed below.",
+    "Edit this photograph of this exact person, changing ONLY what is listed below.",
     ...edits,
-    "Everything else must be identical to the reference: the same person, the same bone "
-    + "structure, the same skin, the same hair, the same expression, the same clothing, the "
-    + "same lighting, the same framing and the same background. This is a retouch of one "
-    + "photograph, not a new photograph of a similar person.",
   ].join(" ");
+}
+
+/**
+ * The whole render prompt, in LANES — one composition, checked and sent (D-166).
+ *
+ * # Why the lanes are separate, and why that is not cosmetic
+ *
+ * The pre-claim check and the render used to build DIFFERENT strings: the
+ * preview was `composeEditPrompt` alone, while the render sent that plus the
+ * caption clause. So D-143's completeness guard was verifying a prompt the model
+ * never saw — the exact shape D-143 exists to forbid, inside D-143's own
+ * implementation.
+ *
+ * Worse, `missingFromPrompt` is a substring check. Once the tail names facets,
+ * a filed value could be "found" in the PROTECTION rather than in the
+ * instruction, and the guard would rubber-stamp a prompt that never asked for
+ * the thing. Running it against the `edits` lane alone makes that impossible
+ * rather than unlikely.
+ *
+ * So there is one composer. It returns the lanes for the checks that need to be
+ * narrow, and `full` for the render — which is sent verbatim, never rebuilt.
+ */
+export type RenderPrompt = {
+  /** The instructions alone — what D-143's completeness check may look at. */
+  edits: string;
+  /** Realizations carried in words (D-152). */
+  captions: string;
+  /** What must not change, minus what this render changes (D-166). */
+  tail: string;
+  /** Exactly what the model is sent. */
+  full: string;
+  /** Facets the tail protects — asserted disjoint from the edited ones. */
+  protectedFacets: Facet[];
+};
+
+export function composeRenderPrompt(
+  delta: RefineDelta,
+  prose: Parameters<typeof composeEditPrompt>[1],
+  captionsClause: string,
+): RenderPrompt {
+  const edits = composeEditPrompt(delta, prose);
+  /*
+    THE COMPOSED delta, not one step of it. Subtracting a single step would
+    leave every earlier edit protected against the ORIGINAL, which is a quiet
+    instruction to undo the stack once per render.
+  */
+  const preservation = composePreservation(facetsWrittenBy(delta));
+  return {
+    edits,
+    captions: captionsClause,
+    tail: preservation.clause,
+    full: `${edits}${captionsClause} ${preservation.clause}`,
+    protectedFacets: preservation.protectedFacets,
+  };
+}
+
+/**
+ * A tail clause naming a facet the edits also name — D-143, pointed at the
+ * template that was doing the contradicting (D-166).
+ *
+ * Empty by construction, because the tail is built by subtraction. Asserted
+ * anyway: the category table is hand-authored prose, and the whole lesson of
+ * this round is that a hand-authored string quietly disagreed with the machine
+ * for days.
+ */
+export function contradictedFacets(prompt: RenderPrompt, delta: RefineDelta): Facet[] {
+  const edited = facetsWrittenBy(delta);
+  return prompt.protectedFacets.filter((facet) => edited.has(facet));
 }

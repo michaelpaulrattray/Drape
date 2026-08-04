@@ -39,6 +39,18 @@ const SELF_REPORTING_KINDS = new Set<string>([
   // arrive — refunded"), and a total loss says so at the top, server-authored
   // so the room and the ledger cannot drift.
   "castingV2.sign",
+  /*
+    The refine panel owns its outcomes (D-154), and this entry is what makes
+    that true — it was missing, so the bridge toasted refine failures too.
+
+    The founder met it as a long, leaky error pill beside a panel that was
+    already saying the same thing better. The comment above had called this
+    exact omission "almost certainly a mistake" before the kind existed; the
+    kind arrived in M8 and the entry never followed, which is the call-site-
+    never-added shape this program keeps finding, wearing a list instead of a
+    function.
+  */
+  "castingV2.refine",
 ]);
 
 /** True when this operation's outcome already has somewhere better to appear. */

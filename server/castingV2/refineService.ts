@@ -69,11 +69,13 @@ import {
   IRIS_RENDER,
 } from "./realizedAxes";
 import { hairStyleByName } from "./hairStyles";
+import { FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
 import { readResolvedIdentity } from "./rollService";
 import {
   applyDelta,
   composeDeltas,
-  composeEditPrompt,
+  composeRenderPrompt,
+  contradictedFacets,
   currentValueOfFacet,
   facetsWrittenBy,
   missingFromPrompt,
@@ -85,10 +87,12 @@ import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import {
   chainWithout,
   composeChain,
+  facetOf,
   matchSteps,
   readChain,
   readRemovalSubject,
   sameChain,
+  textMentions,
   type ChainStep,
 } from "./refineRemoval";
 import type { Facet } from "./refineFacets";
@@ -371,8 +375,39 @@ export async function refineCandidate(
     });
     if (matched.length === 0) {
       /*
-        RULE 3 — THE FACE SECOND. Nothing in the recipe matches, so the feature
-        came from the dice rather than from an instruction, and this is an
+        THE HONEST THIRD STEP, BEFORE THE FACE (D-167).
+
+        Nothing in the recipe matches. Rule 3 sends that to the face as an
+        ordinary content edit, which is right when the face HAS the thing — the
+        feature came from the dice rather than from an instruction. It is wrong
+        when the thing exists nowhere: "remove her freckles" on a face with none
+        rendered a FULL-FACE SMOOTHING, the beautify prior arriving as an
+        identity-adjacent over-edit nobody asked for and somebody paid for.
+
+        So the RECORD is asked first. Freckles from the dice live at
+        `realized.skinCharacter`, which `currentValueOfFacet` reads for the marks
+        facet — the record is authoritative here, which is what makes the
+        confession safe rather than a guess.
+
+        Saying so costs nothing and is true. Rendering a beautify pass costs 25
+        credits and changes a face nobody asked to change.
+      */
+      const subject = readRemovalSubject(parsed.subject);
+      const recorded = subject
+        ? currentValueOfFacet(currentIdentity, facetOf(subject))
+        : null;
+      if (!textMentions(recorded, parsed.match)) {
+        const named = parsed.match
+          ?? (subject ? FREE_SUBJECTS[subject as FreeSubject]?.toLowerCase() : null)
+          ?? "that";
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `This face doesn't have ${named} — there's nothing to take off. `
+            + "Nothing was charged.",
+        });
+      }
+      /*
+        RULE 3 — THE FACE SECOND. The record says it IS there, so this is an
         ordinary content edit. Re-read with the removal vocabulary withheld, or
         the same sentence classifies as a removal forever.
       */
@@ -525,8 +560,21 @@ export async function refineCandidate(
     survive composition costs the user nothing — the roll's compile-and-admit-
     first arrow, applied to the defect that let a colour edit annihilate a cut.
   */
-  const preview = composeEditPrompt(composed, EDIT_PROSE);
-  const dropped = missingFromPrompt(composed, preview);
+  /*
+    ONE COMPOSITION, CHECKED AND SENT (D-166).
+
+    The preview used to be `composeEditPrompt` alone while the render sent that
+    plus the caption clause, so D-143's guard was verifying a string the model
+    never saw — D-143's own failure mode, inside D-143's implementation.
+
+    And `missingFromPrompt` is a SUBSTRING check, so now that the tail names
+    facets it could "find" a filed value in the PROTECTION rather than in the
+    instruction and rubber-stamp a prompt that never asked for the thing. It
+    runs against the edits lane alone, which makes that impossible rather than
+    unlikely.
+  */
+  const preview = composeRenderPrompt(composed, EDIT_PROSE, captionClause(carriedCaptions));
+  const dropped = missingFromPrompt(composed, preview.edits);
   if (dropped.length > 0) {
     log.error({ dropped }, "[refineService] composition would drop filed facts — refusing");
     throw new TRPCError({
@@ -552,6 +600,23 @@ export async function refineCandidate(
       code: "INTERNAL_SERVER_ERROR",
       message: "That edit would have argued with one of your earlier changes, so it was "
         + "refused rather than rendered. Nothing was charged.",
+    });
+  }
+  /*
+    AND THE TEMPLATE MUST NOT ARGUE WITH THE INSTRUCTION (D-166).
+
+    Empty by construction — the tail is built by subtracting the edited facets.
+    Asserted anyway, because the category table is hand-authored prose and the
+    entire finding this round was a hand-authored string quietly disagreeing
+    with the machine for days while every driver stayed green.
+  */
+  const contradicted = contradictedFacets(preview, composed);
+  if (contradicted.length > 0) {
+    log.error({ contradicted }, "[refineService] the tail would protect an edited facet — refusing");
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "That edit would have asked for a change and forbidden it in the same breath, "
+        + "so it was refused rather than rendered. Nothing was charged.",
     });
   }
 
@@ -683,8 +748,32 @@ export async function refineCandidate(
     const filed = readDelta(variant.deltas);
     if (!filed) throw new Error("the refinement was not recorded in a readable shape");
     const engine = (dependencies.engine ?? castingIdentityEngine)();
-    const prompt = composeEditPrompt(filed, EDIT_PROSE, false)
-      + captionClause(carriedCaptions);
+    /*
+      Composed from the PERSISTED row — wall (d) — with the SAME builder the
+      pre-claim check used, so the check and the render can no longer disagree
+      about the shape of the string.
+
+      They used to. The preview was the edits alone while the render sent edits
+      plus captions, which meant D-143's completeness guard was verifying a
+      prompt the model never saw — D-143's own failure mode, inside D-143's
+      implementation.
+
+      Equality with the preview is deliberately NOT asserted. Wall (d) exists
+      precisely so that the ROW wins when the two differ: a filing failure must
+      degrade to filed-but-not-rendered, which something can see, rather than to
+      rendered-but-not-filed, which nothing can. What IS re-asserted is the
+      property that matters on the string actually being sent.
+    */
+    const composedPrompt = composeRenderPrompt(filed, EDIT_PROSE, captionClause(carriedCaptions));
+    const filedContradictions = contradictedFacets(composedPrompt, filed);
+    if (filedContradictions.length > 0) {
+      log.error(
+        { operationId, variant: variant.publicId, filedContradictions },
+        "[refineService] the filed row composes a self-contradicting prompt — refusing",
+      );
+      throw new Error("the filed refinement would forbid the change it asks for");
+    }
+    const prompt = composedPrompt.full;
 
     const image = await engine.editWithReferences({
       prompt,
