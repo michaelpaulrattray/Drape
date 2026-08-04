@@ -73,6 +73,12 @@ vi.mock("../db/castingV2Variants", () => ({
     journal.push("fail");
     return true;
   }),
+  /* The free half of D-163: navigation and re-selection move a pointer and
+     open no operation, so they are journalled but never charged. */
+  selectVariant: vi.fn(async () => {
+    journal.push("select");
+    return true;
+  }),
 }));
 
 vi.mock("../db/credits", () => ({
@@ -126,6 +132,9 @@ vi.mock("../casting/directOperation", () => ({
 vi.mock("../storage", () => ({
   storageReadBytes: vi.fn(async () => ({ bytes: Buffer.from("base"), contentType: "image/png" })),
   storagePut: vi.fn(async (key: string) => ({ key, url: `https://cdn.example/${key}` })),
+  /* Typed removal answers some asks by SELECTING an existing picture, which
+     needs the public URL of a row rather than a fresh upload (D-163). */
+  storagePublicUrl: vi.fn((key: string) => `https://cdn.example/${key}`),
 }));
 
 vi.mock("../db/connection", () => ({
@@ -172,6 +181,7 @@ vi.mock("./signEngine", () => ({
 }));
 
 const { refineCandidate } = await import("./refineService");
+const { claimVariant } = await import("../db/castingV2Variants");
 
 beforeEach(() => {
   journal.length = 0;
@@ -455,5 +465,150 @@ describe("the prompt is composed from the persisted row", () => {
     /* And the whole charge came back, because a refusal past the deduct is
        still a failure the user must not pay for. */
     expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+});
+
+/**
+ * TYPED REMOVAL, AND ITS MONEY (D-163).
+ *
+ * The whole point of the ruling is that two of the three intents cost nothing.
+ * So these assert on the LEDGER and on the journal: a free outcome must not
+ * charge, must not claim, and must not even open an operation — an operation
+ * carrying zero credits and no image is a phantom for the recovery sweep to
+ * adjudicate forever.
+ */
+describe("removal is typed, and most of it is free", () => {
+  const twoStep = () => {
+    variantRows = [
+      {
+        id: 501,
+        publicId: "variant-1",
+        imageKey: "casting-v2/variants/one.png",
+        instructions: ["a smokey eye"],
+        stepDeltas: [{ makeup: "a smokey eye" }],
+        deltas: { makeup: "a smokey eye" },
+        internalPrompt: {},
+      },
+      {
+        id: 502,
+        publicId: "variant-2",
+        imageKey: "casting-v2/variants/two.png",
+        instructions: ["a smokey eye", "small gold hoops"],
+        stepDeltas: [{ makeup: "a smokey eye" }, { free: { statedAccessories: "small gold hoops" } }],
+        deltas: { makeup: "a smokey eye", free: { statedAccessories: "small gold hoops" } },
+        internalPrompt: {},
+      },
+    ];
+    candidateRow.selectedVariantPublicId = "variant-2";
+  };
+
+  const asks = (parse: Record<string, unknown>) => ({ interpret: async () => parse as never });
+
+  it("walks back a step for free on a bare undo", async () => {
+    twoStep();
+    const result = await refineCandidate(
+      asks({ ok: true, intent: "navigate" }),
+      { ...input, instruction: "undo" },
+    );
+    expect(result.kind).toBe("selected");
+    expect(result.variantId).toBe("variant-1");
+    expect(ledger.charges).toEqual([]);
+    /* No claim and no operation — nothing for the sweep to adjudicate. */
+    expect(journal).not.toContain("claim");
+    expect(journal).not.toContain("deduct");
+  });
+
+  /*
+    RULE 4. Taking the last step off lands on a chain that already exists as a
+    picture, so it is backing up wearing different words — and charging 25 for
+    the phrasing is the defect the rule exists to prevent.
+  */
+  it("selects an existing version for free when removal lands on one", async () => {
+    twoStep();
+    const result = await refineCandidate(
+      asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }),
+      { ...input, instruction: "take the hoops off" },
+    );
+    expect(result.kind).toBe("selected");
+    expect(result.variantId).toBe("variant-1");
+    expect(result.note).toMatch(/already have that version/i);
+    expect(ledger.charges).toEqual([]);
+    expect(journal).not.toContain("claim");
+  });
+
+  it("returns to the ORIGINAL for free when every step is removed", async () => {
+    twoStep();
+    const result = await refineCandidate(
+      asks({ ok: true, intent: "remove", subject: "makeup", match: null }),
+      { ...input, instruction: "remove the makeup" },
+    );
+    /* Both the smokey eye and the hoops? No — only makeup matches, so the
+       remaining chain is the hoops alone, which is not an existing variant. */
+    expect(result.kind).toBe("rendered");
+    expect(ledger.charges[0]?.amount).toBe(25);
+  });
+
+  /*
+    A MID-CHAIN REMOVAL IS A NEW COMBINATION, so it renders and charges — and
+    the row it claims carries the SHORTENED recipe, which is the receipt the
+    chips read back.
+  */
+  it("renders chain-minus-step, and files the shortened recipe", async () => {
+    twoStep();
+    await refineCandidate(
+      asks({ ok: true, intent: "remove", subject: "makeup", match: "smokey" }),
+      { ...input, instruction: "get rid of the smokey eye" },
+    );
+    const call = vi.mocked(claimVariant).mock.calls[0]![0];
+    expect(call.instructions).toEqual(["small gold hoops"]);
+    expect(call.stepDeltas).toEqual([{ free: { statedAccessories: "small gold hoops" } }]);
+    expect(call.deltas).toEqual({ free: { statedAccessories: "small gold hoops" } });
+    /* What they TYPED is kept apart from the recipe, or the in-flight chip
+       would name the last surviving sentence instead (D-161). */
+    expect(call.requestText).toBe("get rid of the smokey eye");
+    expect(ledger.charges[0]?.amount).toBe(25);
+  });
+
+  /*
+    RULE 3 — THE FACE SECOND. Nothing in the recipe matches, so the ask is an
+    ordinary content edit and is re-read with the removal vocabulary withheld.
+  */
+  it("falls through to a content edit when no step matches", async () => {
+    twoStep();
+    const modes: Array<string | undefined> = [];
+    const result = await refineCandidate(
+      {
+        interpret: async (request: { mode?: string }) => {
+          modes.push(request.mode);
+          return modes.length === 1
+            ? { ok: true, intent: "remove", subject: "marks", match: "freckles" } as never
+            : { ok: true, delta: { free: { marks: "no freckles" } } } as never;
+        },
+      },
+      { ...input, instruction: "remove her freckles" },
+    );
+    expect(modes).toEqual([undefined, "edit"]);
+    expect(result.kind).toBe("rendered");
+    const call = vi.mocked(claimVariant).mock.calls[0]![0];
+    /* Appended like any other edit — the chain GREW. */
+    expect(call.instructions).toEqual(["a smokey eye", "small gold hoops", "remove her freckles"]);
+  });
+
+  it("refuses on a variant that predates the step chain, rather than guessing", async () => {
+    variantRows = [{
+      id: 501,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["a smokey eye"],
+      /* No stepDeltas — a row from before the column existed. */
+      deltas: { makeup: "a smokey eye" },
+      internalPrompt: {},
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+    await expect(refineCandidate(
+      asks({ ok: true, intent: "remove", subject: "makeup", match: null }),
+      { ...input, instruction: "remove the makeup" },
+    )).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(ledger.charges).toEqual([]);
   });
 });

@@ -113,8 +113,28 @@ export type RefineRefusal =
   | { reason: "unreadable" }
   | { reason: "empty" };
 
+/**
+ * What the box was asked to DO — classified once, at entry (D-163).
+ *
+ * Removal is typed rather than clicked, so the same free text carries three
+ * different intents and the parser is what tells them apart. Two of the three
+ * cost nothing, which is exactly why classification lives here: before the
+ * claim, before the charge, in the step that was already free.
+ *
+ * `intent` is optional on an edit so that every existing caller and every test
+ * mock which returns `{ ok: true, delta }` still means what it always meant.
+ */
 export type RefineParse =
-  | { ok: true; delta: RefineDelta }
+  | { ok: true; intent?: "edit"; delta: RefineDelta }
+  /** Bare "undo" / "go back" — free navigation, never a render. */
+  | { ok: true; intent: "navigate" }
+  /**
+   * "Take the earrings off" — resolved against the RECIPE by the code.
+   *
+   * The model names the subject and hands back the user's own words; it does
+   * not decide which steps go, and it never sees the chain.
+   */
+  | { ok: true; intent: "remove"; subject: string | null; match: string | null }
   | { ok: false; refusal: RefineRefusal };
 
 /**

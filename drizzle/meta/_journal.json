@@ -155,6 +155,20 @@
       "when": 1785812016956,
       "tag": "0021_casting_v2_satisfaction_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1785821737242,
+      "tag": "0022_casting_v2_step_deltas",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1785821944421,
+      "tag": "0023_casting_v2_request_text",
+      "breakpoints": true
     }
   ]
 }

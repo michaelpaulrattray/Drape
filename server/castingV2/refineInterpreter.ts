@@ -34,6 +34,7 @@ import { interpreterEngine } from "./interpreter";
 import { readDelta, type FreeLaneCheck, type RefineParse } from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
 import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
+import { readRemovalSubject } from "./refineRemoval";
 
 const log = createModuleLogger("castingV2/refineInterpreter");
 
@@ -54,7 +55,7 @@ function stripFence(text: string): string {
  * was asked rather than saying "unsupported" — a refusal that does not
  * demonstrate it understood reads as a bug rather than as a boundary.
  */
-const SYSTEM_PROMPT = [
+const BASE_PROMPT = [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
@@ -125,8 +126,48 @@ const SYSTEM_PROMPT = [
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
 ].join("\n");
 
+/*
+  THE REMOVAL SECTION, WITHHELD ON THE FALL-THROUGH PASS (D-163 rule 3).
+
+  When a removal names something no earlier step matches, the feature came from
+  the dice rather than from an instruction, and the ask is an ordinary content
+  edit. Asking the same prompt again would classify it as a removal again — so
+  the second pass is given a prompt that has never heard of removal, and reads
+  "remove her freckles" as the edit it now is.
+*/
+const REMOVAL_PROMPT = [
+  "",
+  "TAKING SOMETHING BACK — two shapes, and you only classify them. You never decide what to",
+  "delete, and you are not shown what has been asked for so far.",
+  '  Bare "undo", "go back", "revert", "previous", "nevermind" with NOTHING named ->',
+  '    {"navigate": true}',
+  '  Naming what should go — "remove the hoops", "get rid of the earrings", "take those off",',
+  '    "lose the lipstick", "undo the fringe", "no more freckles" ->',
+  '    {"remove": {"subject": "<the subject it belongs to>", "match": "<their own words for the',
+  "    thing, or empty if they named the whole subject>\"}}",
+  '  subject uses the SAME names as everything above: a free-lane subject, or one of',
+  "    eyeColour, eyeShape, hairColour, hairTexture, hairStyle, makeup.",
+  '  "remove the makeup" is the whole subject -> match empty. "remove the smokey eye" names one',
+  '    thing -> match "smokey eye". Put THEIR words in match, never yours.',
+  '  If they clearly want something taken away but only POINT at it — "take those off", "get rid',
+  '    of that", "lose it" — you cannot know what "those" is, and neither can anyone who has not',
+  '    seen the list. Reply {"navigate": true}: taking away the thing just added is going back a',
+  "    step, which is what they mean and it is free.",
+].join("\n");
+
+const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
+
 export type RefineInterpretInput = {
   instruction: string;
+  /**
+   * `"edit"` withholds the removal vocabulary — D-163's rule-3 second pass.
+   *
+   * A removal that matched no step is an ordinary content instruction, and the
+   * only way to get one out of the same model is to ask it a prompt that has
+   * never heard of removal. Otherwise it classifies the same sentence the same
+   * way forever and rule 3 becomes "that didn't come through clearly".
+   */
+  mode?: "classify" | "edit";
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -176,7 +217,7 @@ async function runOnce(
   let raw: unknown;
   try {
     const reply = await engine.complete({
-      system: SYSTEM_PROMPT,
+      system: input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT,
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
         `Current eye shape: ${input.currentEyeShape ?? "unknown"}`,
@@ -207,6 +248,37 @@ async function runOnce(
   }
 
   const reply = (raw ?? {}) as Record<string, unknown>;
+
+  /*
+    TAKING SOMETHING BACK, classified BEFORE the walls (D-163).
+
+    Ahead of them deliberately: "get rid of the earrings" contains a garment-
+    adjacent noun and a negation, and a model asked to police the stage wall
+    first can read a removal as an attempt to change the wardrobe. The intent
+    comes first, then the content is judged on its own terms.
+  */
+  if (reply.navigate === true) return { ok: true, intent: "navigate" };
+  if (input.mode !== "edit" && reply.remove && typeof reply.remove === "object") {
+    const target = reply.remove as Record<string, unknown>;
+    const subject = readRemovalSubject(target.subject);
+    const match = typeof target.match === "string" ? target.match.trim().slice(0, 80) : "";
+    /*
+      A REMOVAL THAT POINTS AT NOTHING IS NAVIGATION, structurally.
+
+      "Take those off" is anaphoric, and the interpreter is deliberately never
+      shown the chain — the code owns matching, so the model genuinely cannot
+      resolve "those". A target with neither a subject nor words identifies
+      every step equally, and removing everything because someone said "those"
+      would be the worst possible reading of an ordinary sentence.
+
+      Going back a step is what they mean, and it is free. The prompt says this
+      too; this is the backstop, because a rule enforced only by asking nicely
+      is not a rule.
+    */
+    if (!subject && !match) return { ok: true, intent: "navigate" };
+    return { ok: true, intent: "remove", subject, match: match || null };
+  }
+
   if (typeof reply.wall === "string" && reply.wall.trim()) {
     /*
       The model believes it hit a wall. It is TOLD which walls exist, so this is

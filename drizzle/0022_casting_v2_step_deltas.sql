@@ -1,0 +1,1 @@
+ALTER TABLE `casting_candidate_variants` ADD `stepDeltas` json;

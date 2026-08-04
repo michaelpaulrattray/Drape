@@ -1515,6 +1515,16 @@ export default function CastingSheet() {
                   .then(async (result) => {
                     /* Bought HERE, so its arrival is not a late lander (D-161). */
                     if (result?.variantId) boughtHere.current.add(result.variantId);
+                    /*
+                      A FREE OUTCOME SAYS SO (D-163 rule 4).
+
+                      Undoing, and removing a step that lands back on a picture
+                      they already have, cost nothing — and silence would leave
+                      someone assuming they had just spent 25 credits on a face
+                      they were already looking at. The panel owns it, like
+                      every other outcome here (D-154).
+                    */
+                    if (result?.kind === "selected" && result.note) setRefineOutcome(result.note);
                     await variants.refetch();
                     await invalidate();
                   })

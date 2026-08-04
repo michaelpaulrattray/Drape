@@ -603,10 +603,22 @@ export const castingV2Router = router({
         */
         pending: pending.map((variant) => ({
           variantId: variant.publicId,
-          /* The last sentence is the one this refinement added. */
-          instruction: (Array.isArray(variant.instructions)
-            ? variant.instructions.filter((entry): entry is string => typeof entry === "string")
-            : []).at(-1) ?? "",
+          /*
+            WHAT THEY TYPED, not the last thing in the recipe (D-163).
+
+            For an edit these agree. For a REMOVAL they do not: the removal
+            sentence is deliberately absent from the instruction list, because
+            removal deletes steps rather than appending one — so reading
+            `instructions.at(-1)` would show the user the last SURVIVING
+            sentence while they waited on "remove the earrings". Falls back to
+            the list for rows written before the column, every one of which was
+            an edit.
+          */
+          instruction: variant.requestText
+            ?? (Array.isArray(variant.instructions)
+              ? variant.instructions.filter((entry): entry is string => typeof entry === "string")
+              : []).at(-1)
+            ?? "",
           startedAt: variant.createdAt,
         })),
         variants: variants.map((variant) => ({

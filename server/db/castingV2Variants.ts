@@ -68,6 +68,22 @@ export type ClaimVariantInput = {
   instructions: string[];
   /** The composed absolute deltas. INTERNAL. */
   deltas: unknown;
+  /**
+   * Each instruction's OWN delta, in order — INTERNAL (D-163).
+   *
+   * Index i lines up with `instructions[i]`. Without it, removal is not
+   * arithmetic: the composed delta cannot be un-composed, because a step that
+   * restated a value the chain already held leaves no trace to subtract.
+   */
+  stepDeltas: unknown;
+  /**
+   * What the user TYPED — which differs from the last instruction on a removal.
+   *
+   * Removal deletes steps rather than appending one, so its sentence is
+   * deliberately absent from the recipe. Kept here because the in-flight ghost
+   * chip (D-161) has to name the thing the person is actually waiting on.
+   */
+  requestText?: string | null;
   now?: Date;
 };
 
@@ -131,6 +147,8 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
         status: "queued",
         instructions: input.instructions,
         deltas: input.deltas,
+        stepDeltas: input.stepDeltas,
+        requestText: input.requestText ?? null,
         pointsCost: input.pointsCost,
         operationId: input.operationId,
         createdAt: input.now ?? new Date(),
@@ -448,13 +466,20 @@ export async function listCandidateVariants(
 export async function listPendingVariants(
   userId: number,
   candidatePublicId: string,
-): Promise<Array<{ publicId: string; instructions: unknown; createdAt: Date }>> {
+): Promise<Array<{
+  publicId: string;
+  instructions: unknown;
+  requestText: string | null;
+  createdAt: Date;
+}>> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();
   const rows = await db
     .select({
       publicId: castingCandidateVariants.publicId,
       instructions: castingCandidateVariants.instructions,
+      /* What they TYPED — a removal's sentence is not in the recipe (D-163). */
+      requestText: castingCandidateVariants.requestText,
       createdAt: castingCandidateVariants.createdAt,
     })
     .from(castingCandidateVariants)

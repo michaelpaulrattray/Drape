@@ -4512,6 +4512,105 @@ an ancestor of the selected face is the open question, and guessing at it would
 ship a paid control with ambiguous semantics.
 
 
+## D-163 — Remove is TYPED, not clicked. The box is the only interface.
+
+**Founder ruling, 2026-08-04, round 4 — and it is a better design than the
+control it replaces.**
+
+D-121 and D-155 ruled how a Remove *button* should look. D-162 found that no
+such button had ever been built, and asked what removing a chip means once the
+stack branches. The answer is that the question was wrong: **there is no chip to
+remove, because there is no button.** The instruction box is the only interface,
+and removal is an INTENT the parser classifies like any other.
+
+**Never a phrasing list.** Three phrasing-list failures in one week make this
+law rather than preference: the ink gate's eighteen literal strings that "behind
+ear" walked straight through (D-158), `tie`/`tied` refused as an invention
+(D-157), and the cupid's-bow apostrophe (D-152). A list of surface forms is a
+guard that proves the implementation matches itself. The model reads intent; the
+code owns the vocabulary and does the matching.
+
+### The resolution order
+
+1. **Bare "undo" / "go back" is NAVIGATION.** Free. It must classify as
+   navigation and never as a paid render — this is the same line D-121 drew
+   between backing up and re-rendering, arriving through the box instead of
+   through two controls.
+
+2. **Targeted negation resolves against the RECIPE first.** "Remove the hoops",
+   "get rid of the earrings", "take those off", "undo the earrings" — the
+   matching steps are DELETED FROM THE CHAIN. Memory surgery, not a counter-
+   instruction, and the difference is the whole ruling: a counter-instruction
+   leaves the original ask in the record arguing with its own retraction, which
+   is the contradiction class D-159 just closed one layer down.
+
+   **Matching is by facet and by content.** "Remove the makeup" takes every
+   makeup step; "remove the smokey eye" takes that one. The chips are the
+   receipt — the removed chip disappears, so the record shows what the person
+   now has rather than what they once asked for.
+
+3. **The face second.** No matching step — the feature came from the dice rather
+   than from an instruction — so it is an ordinary content instruction, appended
+   like any other edit. "Remove her freckles" on a face that was rolled freckled
+   is a real edit, and it costs what an edit costs.
+
+4. **Materialization is honest about money.** If the resolved chain ALREADY
+   EXISTS as a variant on the stack, it is SELECTED — free, and the panel says
+   so. Only a genuinely new combination renders and charges the standard 25.
+   **"Remove the last step" is backing up wearing different words, and must cost
+   nothing.** A product that charges for the same picture twice because the user
+   reached it by typing rather than clicking is charging for the phrasing.
+
+5. **History is immutable throughout.** Removal produces a new variant or selects
+   an existing one. Nothing is ever destroyed — the same law the append-only
+   variant table has carried since M8 opened.
+
+### What it needs underneath
+
+Removal-is-arithmetic has been promised in the schema comment since the table
+was written, and was never implementable: rows store the COMPOSED delta and the
+full instruction list, but not each instruction's own delta. Recovering it by
+diffing ancestors is inexact — a step that restates an existing value diffs to
+nothing — so the per-step deltas are denormalized per row exactly as
+`instructions` already is. Additive column, and **Remove is unavailable on
+pre-column variants**, which is honest rather than approximate.
+
+## D-164 — The report-proof law: show the artifact, not the code path.
+
+**Founder ruling, 2026-08-04, from round 3's stop-the-line.**
+
+> **A ship report may claim a feature works only with evidence the feature RAN.**
+> For anything with a persistence or an invocation step, that means **the stored
+> artifact shown** — the row, the record — never the code path described.
+
+The v3 report asserted that realizations travelled as captions while the captions
+were being built and dropped on the floor (D-159). Every sentence in it was true
+about the code and false about the product. The gauntlet was green because it
+measured pictures, and the pictures were right for a different reason.
+
+This is the **reporting corollary of the invoked-but-inert class** that CLAUDE.md
+already names: a helper written, docs written, todo ticked, call site never added.
+That list now has a second half — a report written, evidence described,
+artifact never looked at.
+
+In practice: read the row back. `drive-caption-lifecycle.mts` is the shape —
+it asserts on what the database holds, and the composed strip is for the eye
+rather than for the claim.
+
+## D-165 — A D-number is allocated by writing the log entry FIRST.
+
+**Founder ruling, 2026-08-04.**
+
+Code may only cite a ruling that exists. D-157 shipped as a **phantom citation**:
+`refineDelta.ts` referenced it twice, the log stopped at D-156, and the code was
+standing on a law nobody could read until the round-3 advisor pass caught it.
+
+Writing the entry first makes that catch structural instead of lucky. It also
+forces the ruling to be stated before it is implemented, which is the same
+argument the program already makes for compiling before charging: the expensive
+thing should not be the first place a decision gets made.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

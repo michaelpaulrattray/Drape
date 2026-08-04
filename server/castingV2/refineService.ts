@@ -53,12 +53,13 @@ import {
   landVariant,
   listCandidateVariants,
   markVariantDispatched,
+  selectVariant,
   VariantOwnershipError,
 } from "../db/castingV2Variants";
 import { getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError } from "../providers/types";
-import { storagePut, storageReadBytes } from "../storage";
+import { storagePublicUrl, storagePut, storageReadBytes } from "../storage";
 import { withTransaction } from "../db/connection";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import {
@@ -81,6 +82,16 @@ import {
   type RefineDelta,
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
+import {
+  chainWithout,
+  composeChain,
+  matchSteps,
+  readChain,
+  readRemovalSubject,
+  sameChain,
+  type ChainStep,
+} from "./refineRemoval";
+import type { Facet } from "./refineFacets";
 import {
   captionClause,
   captionRealization,
@@ -140,10 +151,21 @@ export type RefineInput = {
 };
 
 export type RefineResult = {
-  variantId: string;
+  /**
+   * Whether this cost anything (D-163 rule 4).
+   *
+   * `"selected"` means the recipe they described already existed as a picture,
+   * so they were given it and charged nothing. Absent on the rows replayed from
+   * operations written before typed removal, which were all renders.
+   */
+  kind?: "rendered" | "selected";
+  /** Null when the answer is the ORIGINAL face. */
+  variantId: string | null;
   candidateId: string;
   imageUrl: string;
   instructions: string[];
+  /** What happened, for the panel to say — set only on a free outcome. */
+  note?: string;
 };
 
 export type RefineServiceDependencies = {
@@ -199,12 +221,6 @@ export async function refineCandidate(
   }
 
   const existing = await listCandidateVariants(input.userId, input.candidatePublicId);
-  if (existing.length >= MAX_INSTRUCTIONS) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: "That face has as many refinements as it can carry. Nothing was charged.",
-    });
-  }
 
   /*
     The composed identity SO FAR — what a relative instruction resolves against.
@@ -253,12 +269,199 @@ export async function refineCandidate(
   const predecessor = source.variantPublicId
     ? existing.find((variant) => variant.publicId === source.variantPublicId) ?? null
     : null;
-  const priorDelta = (predecessor?.deltas as RefineDelta | null) ?? {};
-  const composed = composeDeltas([priorDelta, parsed.delta]);
-  const instructions = [
-    ...readInstructions(predecessor?.instructions),
-    input.instruction.trim(),
-  ];
+
+  /* ---- the FREE outcomes, resolved before anything is claimed (D-163) ---- */
+
+  /*
+    NO OPERATION FOR FREE WORK.
+
+    Navigation and a free re-selection move no money and produce no artifact, so
+    they open no operation: an operation row carrying zero credits and no image
+    is noise in the ledger and a phantom for the recovery sweep to adjudicate.
+    `selectVariant` has always been a gate-less free procedure; this is the same
+    act reached by typing instead of clicking, and it costs the same nothing.
+  */
+  const selectAndReport = async (
+    target: { publicId: string | null; imageUrl: string; instructions: string[] },
+    note: string,
+  ): Promise<RefineResult> => {
+    const moved = await selectVariant({
+      userId: input.userId,
+      candidatePublicId: input.candidatePublicId,
+      variantPublicId: target.publicId,
+    });
+    if (!moved) {
+      /* The face moved under us — expired, discarded, signed in another tab.
+         Say so rather than reporting a selection that did not happen. */
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "That version isn't available any more. Nothing was charged.",
+      });
+    }
+    return {
+      kind: "selected",
+      variantId: target.publicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: target.imageUrl,
+      instructions: target.instructions,
+      note,
+    };
+  };
+
+  const originalTarget = {
+    publicId: null,
+    imageUrl: storagePublicUrl(source.candidate.imageKey),
+    instructions: [] as string[],
+  };
+  const asTarget = (variant: typeof existing[number]) => ({
+    publicId: variant.publicId,
+    imageUrl: variant.imageKey ? storagePublicUrl(variant.imageKey) : originalTarget.imageUrl,
+    instructions: readInstructions(variant.instructions),
+  });
+
+  if (parsed.intent === "navigate") {
+    if (!predecessor) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "You're already looking at the original. Nothing was charged.",
+      });
+    }
+    const back = readInstructions(predecessor.instructions).slice(0, -1);
+    const target = back.length === 0
+      ? originalTarget
+      : asTarget(
+        existing.find((variant) => sameInstructions(readInstructions(variant.instructions), back))
+        ?? predecessor,
+      );
+    return selectAndReport(target, "Went back a step — nothing charged.");
+  }
+
+  const predecessorChain = predecessor
+    ? readChain(readInstructions(predecessor.instructions), readStepDeltas(predecessor.stepDeltas))
+    : [];
+
+  /*
+    THE REMOVAL, resolved against the RECIPE and not against the picture.
+
+    `editDelta` is what the paid path ends up composing. It is `parsed.delta` for
+    an ordinary edit, and for a removal it stays null — removal is subtraction,
+    so there is nothing to add.
+  */
+  let editDelta: RefineDelta | null = "delta" in parsed ? parsed.delta : null;
+  let chain: ChainStep[] = predecessorChain ?? [];
+  let removedFacets = new Set<Facet>();
+
+  if (parsed.intent === "remove") {
+    if (predecessorChain === null) {
+      /*
+        A row from before the chain column, or one whose two lists disagree.
+        Refuse rather than approximate: reconstructing the missing steps by
+        diffing ancestors is right most of the time and silently drops an
+        earlier edit the rest, which is the annihilation class by another road.
+      */
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "This face was refined before undoing by name existed, so its steps can't be "
+          + "taken apart. Backing up to an earlier version still works. Nothing was charged.",
+      });
+    }
+    const matched = matchSteps(predecessorChain, {
+      subject: readRemovalSubject(parsed.subject),
+      match: parsed.match,
+    });
+    if (matched.length === 0) {
+      /*
+        RULE 3 — THE FACE SECOND. Nothing in the recipe matches, so the feature
+        came from the dice rather than from an instruction, and this is an
+        ordinary content edit. Re-read with the removal vocabulary withheld, or
+        the same sentence classifies as a removal forever.
+      */
+      const asEdit = await (dependencies.interpret ?? interpretRefinement)({
+        instruction: input.instruction,
+        mode: "edit",
+        currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
+        currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
+        currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
+        currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
+        currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
+        currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
+      });
+      if (!asEdit.ok) throw new TRPCError({ code: "BAD_REQUEST", message: refusalMessage(asEdit) });
+      if (!("delta" in asEdit)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "There's nothing like that in what you've asked for so far, and it isn't "
+            + "something I can change directly. Nothing was charged.",
+        });
+      }
+      editDelta = asEdit.delta;
+    } else {
+      for (const index of matched) {
+        for (const facet of Array.from(facetsWrittenBy(predecessorChain[index]!.delta))) {
+          removedFacets.add(facet);
+        }
+      }
+      chain = chainWithout(predecessorChain, matched);
+    }
+  }
+
+  /*
+    What the face BECOMES.
+
+    **An edit never depends on the chain being readable, and a removal does.**
+    That asymmetry is the whole reason these are two branches rather than one
+    tidy `nextChain`: composing an edit through the chain made an ordinary
+    refinement of a PRE-COLUMN variant silently drop every earlier instruction,
+    because an unreadable chain resolves to empty. That is the annihilation
+    class — the exact defect this program has now closed twice — reintroduced by
+    the machinery meant to allow undoing it.
+
+    So an edit appends to the instruction list and composes over the
+    predecessor's stored composed delta, exactly as it did before typed removal
+    existed. The step chain rides along and simply stays short on a legacy row,
+    which is honest: removal refuses there, and nothing else notices.
+  */
+  const priorInstructions = readInstructions(predecessor?.instructions);
+  const instructions = editDelta
+    ? [...priorInstructions, input.instruction.trim()]
+    : chain.map((step) => step.instruction);
+  const stepDeltas = editDelta
+    ? [...readStepDeltas(predecessor?.stepDeltas), editDelta]
+    : chain.map((step) => step.delta);
+  const composed = editDelta
+    ? composeDeltas([readDelta(predecessor?.deltas) ?? {}, editDelta])
+    : composeChain(chain);
+
+  /*
+    MATERIALIZATION IS HONEST ABOUT MONEY (D-163 rule 4).
+
+    If the recipe they just described already exists as a picture, they get that
+    picture and pay nothing. "Remove the last step" is backing up wearing
+    different words, and charging 25 for it would be charging for the phrasing.
+
+    The comparison is BOTH lists — same sentences and same composed values.
+    Sentences alone would hand back a variant whose relative steps ("greener
+    still") resolved against a different starting point: the same words, a
+    different face. Values alone would collapse two different histories whose
+    ends happen to agree, which is a record that lies about how it got there.
+  */
+  if (!editDelta) {
+    if (instructions.length === 0) {
+      return selectAndReport(originalTarget, "That takes it back to the original — nothing charged.");
+    }
+    const already = existing
+      .filter((variant) => Boolean(variant.imageKey))
+      .find((variant) => sameChain(
+        { instructions, delta: composed },
+        {
+          instructions: readInstructions(variant.instructions),
+          delta: (readDelta(variant.deltas) ?? {}),
+        },
+      ));
+    if (already) {
+      return selectAndReport(asTarget(already), "You already have that version — nothing charged.");
+    }
+  }
   /*
     The realizations this stack has already established, IN WORDS (D-152).
 
@@ -272,11 +475,48 @@ export async function refineCandidate(
     which the fact-shaped half wins. Dropped here, before anything is composed,
     so no later step can forget to.
   */
-  const writtenFacets = facetsWrittenBy(parsed.delta);
+  /*
+    THE CEILING GATES THE RENDER, NOT THE BOX (D-163).
+
+    It used to fire before the instruction was even read, so a face carrying its
+    twelfth refinement could not be UNDONE — the one thing someone at the
+    ceiling is most likely to want, refused for being a refinement it is not.
+    Only a chain that grows is capped.
+  */
+  if (existing.length >= MAX_INSTRUCTIONS && instructions.length > priorInstructions.length) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "That face has as many refinements as it can carry. You can still undo or take "
+        + "one out. Nothing was charged.",
+    });
+  }
+
+  /*
+    A REMOVAL REWRITES FACETS TOO — the ones it took away (D-163).
+
+    The removed step's facets either revert to the original or fall to a
+    surviving step, and either way the caption describing what they looked like
+    with that step in place is no longer true. Same law as an edit's: a caption
+    that outlives its facet is a contradiction stated as fact.
+  */
+  const writtenFacets = editDelta ? facetsWrittenBy(editDelta) : removedFacets;
   const carriedCaptions: RealizationCaptions = dropFacets(
     readCaptions(predecessor?.internalPrompt),
     writtenFacets,
   );
+  /*
+    WHICH FACETS THE NEW RENDER SHOULD BE READ BACK FOR.
+
+    For an edit, the ones it wrote. For a removal, only those a SURVIVING step
+    still writes — a copper that outlives a removed pink is being re-rendered
+    and deserves a fresh caption, while a facet no survivor writes has reverted
+    to the original and must not be captioned at all (D-152: captioning what the
+    original already establishes is how the words quietly replace the reference).
+  */
+  const composedFacets = facetsWrittenBy(composed);
+  const captionFacets = editDelta
+    ? writtenFacets
+    : new Set(Array.from(removedFacets).filter((facet) => composedFacets.has(facet)));
 
   /*
     COMPOSE-COMPLETENESS, checked BEFORE anything is claimed (D-143).
@@ -354,6 +594,16 @@ export async function refineCandidate(
       pointsCost: price,
       instructions,
       deltas: composed,
+      stepDeltas,
+      /*
+        WHAT THEY TYPED, kept apart from the recipe (D-163).
+
+        For an edit these agree. For a REMOVAL they must not: the removal
+        sentence is deliberately absent from `instructions`, because removal is
+        memory surgery — so without this the in-flight ghost chip would show the
+        last SURVIVING sentence while the user waited on "remove the earrings".
+      */
+      requestText: input.instruction.trim().slice(0, 220),
     });
   } catch (error) {
     if (error instanceof VariantOwnershipError) {
@@ -510,7 +760,7 @@ export async function refineCandidate(
       one is not.
     */
     const capturedCaptions: RealizationCaptions = { ...carriedCaptions };
-    for (const facet of Array.from(writtenFacets)) {
+    for (const facet of Array.from(captionFacets)) {
       const caption = await captionRealization({
         facet,
         bytes: image.bytes,
@@ -554,6 +804,7 @@ export async function refineCandidate(
     });
 
     const result: RefineResult = {
+      kind: "rendered",
       variantId: variant.publicId,
       candidateId: input.candidatePublicId,
       imageUrl: stored.url,
@@ -641,8 +892,36 @@ function readCaptions(internalPrompt: unknown): RealizationCaptions {
   return captions;
 }
 
+/** Two chains are the same sentences in the same order, or they are not. */
+function sameInstructions(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((line, index) => line === b[index]);
+}
+
 /** Instructions are a json column, so they are validated rather than trusted. */
 function readInstructions(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+/**
+ * The per-step chain, validated like any json column (D-163).
+ *
+ * Returns `[]` for the pre-column rows, which is what makes removal REFUSE on
+ * them rather than silently operate on a chain it cannot see: the caller
+ * compares the length against the instruction list and declines when they
+ * disagree. An honest "not on this one" beats a reconstruction that is right
+ * most of the time.
+ */
+export function readStepDeltas(value: unknown): RefineDelta[] {
+  if (!Array.isArray(value)) return [];
+  const steps: RefineDelta[] = [];
+  for (const entry of value) {
+    const delta = readDelta(entry);
+    /* A step that will not re-read is a hole in the chain, and a chain with a
+       hole cannot be recomposed — so the whole chain is unusable, not just
+       the step. Refusing beats quietly dropping somebody's earlier edit. */
+    if (!delta) return [];
+    steps.push(delta);
+  }
+  return steps;
 }

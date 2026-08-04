@@ -266,8 +266,17 @@ export function RefinePanel({
         </p>
       ) : null}
 
+      {/*
+        It says what the box can do BEFORE someone types something it cannot,
+        which is worth more than a refusal after the fact — and taking something
+        back belongs here, because Remove has no other home (D-163). Undoing is
+        free and the line says so, or nobody types it.
+      */}
       <p className="dpc-refine__note">
         Anything about them — not their clothes or the room · {priceCredits} credits each
+      </p>
+      <p className="dpc-refine__note">
+        Or take something back — "undo", "remove the earrings" · free when you already have it
       </p>
     </div>
   );

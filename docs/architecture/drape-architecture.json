@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c87c4135c4b54a57"
+    "sourceFingerprint": "8a7d7113935995aa"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:castingV2",
@@ -3341,6 +3341,12 @@
     {
       "id": "module:server/castingV2/refineRecovery.ts",
       "path": "server/castingV2/refineRecovery.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineRemoval.ts",
+      "path": "server/castingV2/refineRemoval.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8217,6 +8223,10 @@
     {
       "id": "test:server/castingV2/refineRecovery.test.ts",
       "path": "server/castingV2/refineRecovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineRemoval.test.ts",
+      "path": "server/castingV2/refineRemoval.test.ts"
     },
     {
       "id": "test:server/castingV2/refineService.test.ts",
@@ -17167,6 +17177,11 @@
     },
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/refineRemoval.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
@@ -17226,6 +17241,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineRemoval.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineRemoval.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineRemoval.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/casting/atomicCredits.ts",
       "kind": "imports"
@@ -17267,7 +17297,17 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/refineInterpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/refineRemoval.ts",
       "kind": "imports"
     },
     {

@@ -2175,6 +2175,40 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
    * deterministic and removing an instruction is arithmetic.
    */
   deltas: json("deltas"),
+  /**
+   * Each instruction's OWN delta, in order — INTERNAL (D-163).
+   *
+   * Index i lines up with `instructions[i]`, denormalized per row for the same
+   * reason the instruction list is: every row stays self-describing, so removal
+   * is local arithmetic rather than a walk back through ancestor rows.
+   *
+   * **The composed delta cannot be un-composed.** "Removing an instruction is
+   * arithmetic" has been promised in the comment above since this table was
+   * written, and was never implementable without this column: recovering a
+   * step's delta by diffing a row against its predecessor is inexact, because a
+   * step that restates a value the chain already holds diffs to nothing and
+   * would vanish silently.
+   *
+   * NULL on rows written before typed removal existed. Those refuse rather than
+   * approximate — an honest "not on this one" beats a reconstruction that is
+   * right most of the time.
+   */
+  stepDeltas: json("stepDeltas"),
+  /**
+   * What the user actually TYPED to produce this variant (D-163).
+   *
+   * For an edit it is the last entry of `instructions`. For a REMOVAL the two
+   * differ and the difference matters: removal is memory surgery, so the
+   * removal sentence is deliberately absent from the recipe — which left the
+   * in-flight ghost chip (D-161) reading `instructions.at(-1)` and showing the
+   * last SURVIVING sentence while the user waited on "remove the earrings".
+   * A pending row that names someone else's instruction is the lost-contact
+   * defect wearing a new hat.
+   *
+   * NULL on rows written before this column; the projection falls back to the
+   * instruction list, which was correct for every one of them.
+   */
+  requestText: varchar("requestText", { length: 220 }),
   // INTERNAL — the composed instruction and the FULL resolved identity of this
   // variant. Sign reads its identity documents from here when it is selected,
   // which is why it must be written from the same deltas the prompt was.
