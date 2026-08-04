@@ -35,24 +35,39 @@ import type { RefinableAxis } from "./refineDelta";
  * the sweep cannot see.
  */
 export const FREE_SUBJECTS = {
-  /**
-   * Hair that the 36-cut catalogue cannot name — a mullet, a specific fade.
-   *
-   * Deliberately NOT called `hairStyle`: that name belongs to the guaranteed
-   * lane and the type-level carve-out below would reject it. A value the
-   * catalogue DOES know is promoted out of here into `hairStyle`, so naming a
-   * real cut still buys its family, its worn state and its teeth.
-   */
-  hair: "HAIR",
-  /**
-   * Eyes the palettes cannot name — "seafoam", "the colour of weak tea".
-   *
-   * Named `eyes` rather than `eyeColour` for the same reason `hair` is not
-   * `hairStyle`: the guaranteed names are reserved, and the type carve-out
-   * below would reject a collision. A value the palette DOES hold is promoted
-   * back out into `eyeColour`, so "green" never loses its iris prose.
-   */
-  eyes: "EYES",
+  /*
+    HAIR IS FOUR FACETS, NOT ONE (D-142).
+
+    It shipped as a single `hair` slot and the founder's first real stack broke
+    on it: "change hair to mullet", then "copper hair", then "actually black
+    hair" — every instruction kept in the record, and NO mullet in the picture,
+    because last-writer-wins on one coarse slot let a colour edit annihilate a
+    cut. The eyes were already right ("seafoam" and "hooded" coexist), and the
+    difference was only that eyes had been split and hair had not.
+
+    A subject is one FACET a person can change independently. Two things that
+    can be true at once need two slots, or the second silently deletes the
+    first.
+  */
+  hairCut: "HAIR CUT",
+  hairShade: "HAIR COLOUR",
+  hairPattern: "HAIR TEXTURE",
+  hairFinish: "HAIR FINISH",
+  /*
+    HOW it is worn, which is not WHAT it is cut into. "Hair worn down" has
+    nothing to do with the cut and everything to do with the styling, and with
+    no slot for it the instruction had nowhere to land at all — the third time
+    a real facet turned out to be nobody's.
+  */
+  hairWorn: "HAIR WORN",
+  /*
+    Eyes were ALREADY split, and that is why they worked: "seafoam" and
+    "hooded" coexisted on the founder's stack while the mullet died. Kept split
+    here, named apart from the guaranteed `eyeColour`/`eyeShape` so the
+    type-level carve-out still holds.
+  */
+  eyeColourFree: "EYE COLOUR",
+  eyeShapeFree: "EYE SHAPE",
   brows: "BROWS",
   lashes: "LASHES",
   nose: "NOSE",
@@ -62,7 +77,8 @@ export const FREE_SUBJECTS = {
   jaw: "JAW",
   chin: "CHIN",
   ears: "EARS",
-  skin: "SKIN",
+  skinTone: "SKIN TONE",
+  skinCharacter: "SKIN CHARACTER",
   /** Visible marks: scars, freckling, birthmarks, vitiligo. NOT ink. */
   marks: "MARKS",
   /** Ink is its own subject because D-133 gives it its own law. */

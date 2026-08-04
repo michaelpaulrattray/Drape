@@ -41,7 +41,7 @@ import {
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { HAIR_STYLE_NAMES, hairStyleByName } from "./hairStyles";
 import { scrubBrands } from "./brandScrub";
-import { classifyInkPlacement } from "./inkPlacement";
+import { classifyInkPlacement, placementClause } from "./inkPlacement";
 import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
 import { FREE_SUBJECT_KEYS, FREE_SUBJECTS, isPresentationSubject, type FreeSubject } from "./refineSubjects";
@@ -253,7 +253,18 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           vocabulary to constrain it. A model elaborating "a scar" into "a long
           knife scar from a bar fight" is inventing biography.
         */
-        if (!tokensComeFromBrief(scrubbed, check.instruction)) {
+        /*
+          Apostrophes are normalised on BOTH sides before the check.
+
+          The founder's fox-eyes stack regressed on this: they typed "cupids
+          bow", the model wrote "cupid's bow", and containment split that into
+          "cupid" + "s" and refused an entirely honest value. Source containment
+          exists to stop INVENTED CONTENT, not to police punctuation, and a
+          guard that refuses the user's own words with an apostrophe added is a
+          guard doing the opposite of its job.
+        */
+        const strip = (text: string) => text.replace(/['’]/g, "");
+        if (!tokensComeFromBrief(strip(scrubbed), strip(check.instruction))) {
           check.wall = { reason: "wall_unfileable", asked: subject };
           return null;
         }
@@ -283,20 +294,22 @@ function promoteToGuaranteedLane(
   delta: RefineDelta,
 ): boolean {
   const lowered = value.toLowerCase();
-  if (subject === "lips" || subject === "teeth" || subject === "nose") return false;
+
   /*
     A cut the catalogue KNOWS keeps its guaranteed home even when the
     interpreter files it free — so "give her a bob" still buys the family, the
     worn state and the failed-candidate teeth, while "give her a mullet" (not in
     the 36) stays in the free lane and gets an honest attempt.
   */
-  if (subject === "eyes") {
+  if (subject === "eyeColourFree") {
     for (const colour of EYE_COLOURS) {
       if (lowered === colour) {
         delta.eyeColour = colour;
         return true;
       }
     }
+  }
+  if (subject === "eyeShapeFree") {
     for (const shape of EYE_SHAPES) {
       if (lowered === shape) {
         delta.eyeShape = shape;
@@ -304,26 +317,30 @@ function promoteToGuaranteedLane(
       }
     }
   }
-  if (subject === "hair") {
+  /*
+    Promotion matches on the SUBJECT WORD too, not just the whole value.
+    "copper hair" filed under hairShade is still copper; requiring an exact
+    whole-string match was too narrow, and a value that failed to promote used
+    to overwrite the cut, which is how the mullet died.
+  */
+  if (subject === "hairCut") {
     const cut = HAIR_STYLE_NAMES.find((name) => name.toLowerCase() === lowered);
     if (cut) {
       delta.hairStyle = cut;
       return true;
     }
-    for (const texture of HAIR_TEXTURES) {
-      if (lowered === texture) {
-        delta.hairTexture = texture;
-        return true;
-      }
+  }
+  if (subject === "hairShade") {
+    const colour = HAIR_COLOURS.find((c) => lowered === c || lowered === `${c} hair`);
+    if (colour) {
+      delta.hairColour = colour;
+      return true;
     }
   }
-  /* Nothing else promotes yet — the guaranteed subjects are excluded from
-     `FREE_SUBJECTS` by type, so a guaranteed value can only arrive here by
-     being SPELLED into a free subject, which the vocabularies below catch. */
-  for (const colour of HAIR_COLOURS) {
-    if (subject === "skin") break;
-    if (lowered === colour) {
-      delta.hairColour = colour;
+  if (subject === "hairPattern") {
+    const texture = HAIR_TEXTURES.find((t) => lowered === t || lowered === `${t} hair`);
+    if (texture) {
+      delta.hairTexture = texture;
       return true;
     }
   }
@@ -429,6 +446,61 @@ export function applyDelta(original: ResolvedIdentity, delta: RefineDelta): Reso
 }
 
 /**
+ * COMPOSE-COMPLETENESS — every filed fact must reach the prompt (D-143).
+ *
+ * The design's promise was that a filing failure degrades to
+ * filed-but-not-rendered "which the sweep can see". Nothing saw it. The
+ * founder's stack kept a mullet in the record and rendered no mullet, and the
+ * only witness was a chip tooltip he happened to hover.
+ *
+ * So the promise gets mechanical teeth: composition is CHECKED against the
+ * delta it came from, and a fact that did not make it stops the render instead
+ * of being quietly dropped. Annihilation becomes unrepresentable rather than
+ * detectable — which is the difference between a law and a hope.
+ */
+export function missingFromPrompt(delta: RefineDelta, prompt: string): string[] {
+  const lowered = prompt.toLowerCase();
+  const missing: string[] = [];
+  const wants: Array<[string, string | undefined]> = [
+    ["eyeColour", delta.eyeColour],
+    ["eyeShape", delta.eyeShape],
+    ["hairStyle", delta.hairStyle],
+    ["hairColour", delta.hairColour],
+    ["hairTexture", delta.hairTexture],
+    ["makeup", delta.makeup],
+    ...Object.entries(delta.free ?? {}).map(([k, v]) => [k, v] as [string, string]),
+  ];
+  for (const [key, value] of wants) {
+    if (!value) continue;
+    if (!lowered.includes(value.toLowerCase())) missing.push(key);
+  }
+  return missing;
+}
+
+/**
+ * Per-subject qualifiers — the modifiers a bare word needs to render honestly.
+ *
+ * "Copper" alone came back saturated traffic-cone orange and "black" came back
+ * faintly dyed: the model reads a colour word as a DYE JOB rather than as hair.
+ * The roll pipeline never had this problem because its colourist palette always
+ * carried tone, depth and where the light sits — so free colours get the same
+ * treatment, in the one place a free value can be qualified without inventing
+ * a fact the user did not state.
+ */
+function qualifierFor(subject: FreeSubject): string {
+  if (subject === "hairShade") {
+    return ", rendered as natural hair — dimensional rather than flat, with a "
+      + "slightly deeper root shadow and the tone reading as grown rather than dyed";
+  }
+  if (subject === "ink") return "";
+  if (subject === "hairCut") {
+    return ", cut and dressed as a real haircut on this person's own hair density "
+      + "and hairline";
+  }
+  return "";
+}
+
+/**
  * The free-lane entries that are IDENTITY, keyed by subject.
  *
  * Expression is excluded here and only here (D-136): it is the variant's
@@ -475,7 +547,7 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
   hairStyle: (value: string) => string;
   hairColour: (value: HairColour) => string;
   hairTexture: (value: HairTexture) => string;
-}): string {
+}, pinned = false): string {
   const edits: string[] = [];
   if (delta.eyeColour != null) {
     edits.push(`Change the iris colour to ${delta.eyeColour} — ${prose.eyeColour(delta.eyeColour)}.`);
@@ -515,10 +587,21 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
   */
   for (const [subject, value] of Object.entries(delta.free ?? {})) {
     if (!value) continue;
-    edits.push(`${FREE_SUBJECTS[subject as FreeSubject]}: ${value}.`);
+    const heading = FREE_SUBJECTS[subject as FreeSubject];
+    edits.push(subject === "ink"
+      ? `${heading}: ${value}.${placementClause(value)}`
+      : `${heading}: ${value}${qualifierFor(subject as FreeSubject)}.`);
   }
   return [
-    "Edit this photograph of this exact person, changing ONLY what is listed below.",
+    pinned
+      ? "You are given TWO images of the same person. The FIRST is the identity "
+        + "reference — that is who she is. The SECOND is how she currently looks, "
+        + "including every earlier change already made to her. Keep the SECOND "
+        + "image exactly as it is in every respect, and change only what is "
+        + "listed below. Do not redraw, restyle or reinterpret anything else — "
+        + "a haircut, a colour or a mark already present must come through "
+        + "unchanged and identical."
+      : "Edit this photograph of this exact person, changing ONLY what is listed below.",
     ...edits,
     "Everything else must be identical to the reference: the same person, the same bone "
     + "structure, the same skin, the same hair, the same expression, the same clothing, the "

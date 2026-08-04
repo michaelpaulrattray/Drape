@@ -181,7 +181,7 @@ describe("the free lane files, or it refuses", () => {
 
   it("refuses scenery smuggled into a person subject", () => {
     const c = check("photograph her skin against a red backdrop");
-    expect(readDelta({ free: { skin: "against a red backdrop" } }, c)).toBeNull();
+    expect(readDelta({ free: { skinTone: "against a red backdrop" } }, c)).toBeNull();
     expect(c.wall?.reason).toBe("wall_stage");
   });
 
@@ -210,13 +210,24 @@ describe("the free lane files, or it refuses", () => {
     holds regardless of what the interpreter was told.
   */
   it("promotes a guaranteed value out of the free lane rather than losing it", () => {
-    const delta = readDelta({ free: { skin: "auburn" } }, check("auburn"));
-    /* `skin` is a person subject, so this one legitimately stays free. */
-    expect(delta?.free?.skin).toBe("auburn");
-
-    const promoted = readDelta({ free: { marks: "auburn" } }, check("auburn"));
+    const promoted = readDelta({ free: { hairShade: "auburn" } }, check("auburn"));
     expect(promoted?.hairColour).toBe("auburn");
-    expect(promoted?.free?.marks).toBeUndefined();
+    expect(promoted?.free?.hairShade).toBeUndefined();
+  });
+
+  /*
+    THE MULLET DEFECT (D-142). A cut and a colour are two facets, so a colour
+    edit must not be able to overwrite a cut. It could, when both lived in one
+    coarse  slot, and the record kept every instruction while the picture
+    kept none of the first.
+  */
+  it("never lets a hair colour annihilate a hair cut", () => {
+    const cut = readDelta({ free: { hairCut: "a mullet" } }, check("change hair to a mullet"))!;
+    const copper = readDelta({ hairColour: "copper" }, check("copper hair"))!;
+    const black = readDelta({ hairColour: "black" }, check("actually black hair"))!;
+    const composed = composeDeltas([cut, copper, black]);
+    expect(composed.free?.hairCut).toBe("a mullet");
+    expect(composed.hairColour).toBe("black");
   });
 
   it("caps a free value, so an instruction cannot become a second brief", () => {
@@ -307,7 +318,10 @@ describe("ink renders only where the anchor is the document", () => {
   });
 
   it("names what DOES work, so the refusal points somewhere", () => {
-    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("face or neck");
+    /* It INVITES the missing fact rather than only closing a door (D-137 as
+       amended): the user's next move is to say where. */
+    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Tell me where");
+    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("face and neck");
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("body-art studio is coming");
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Nothing was charged");
   });

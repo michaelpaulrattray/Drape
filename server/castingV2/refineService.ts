@@ -32,6 +32,8 @@
  * be got wrong by a later caller passing something else.
  */
 import { TRPCError } from "@trpc/server";
+import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingRealization";
+import type { HairColour } from "../../shared/castingVocabularies";
 import { randomUUID } from "node:crypto";
 
 import { recordRefund } from "../casting/atomicCredits";
@@ -71,6 +73,7 @@ import {
   applyDelta,
   composeDeltas,
   composeEditPrompt,
+  missingFromPrompt,
   presentationOf,
   readDelta,
   type RefineDelta,
@@ -83,6 +86,39 @@ import { assertNotFrozen } from "./spendGuards";
 const log = createModuleLogger("castingV2/refineService");
 
 const VARIANT_KEY_PREFIX = "casting-v2/variants";
+
+/**
+ * The prose every render is composed with — ONE object, used by the pre-claim
+ * completeness check and by the render itself.
+ *
+ * Two copies would let the check pass on a prompt the render never builds,
+ * which is the same shape as the defect the check exists to catch.
+ */
+const EDIT_PROSE = {
+  eyeColour: (value: EyeColour) => IRIS_RENDER[value],
+  eyeShape: (value: EyeShape) => EYE_SHAPE_RENDER[value],
+  hairStyle: (value: string) => {
+    const style = hairStyleByName(value);
+    return style ? `a ${style.name} (${style.family})` : `a ${value}`;
+  },
+  /*
+    THE DYE-JOB QUALIFIER, and it belongs on the GUARANTEED lane too (D-146).
+
+    The palette prose is written for an ORIGINAL generation, where "copper" on a
+    fresh head reads as hair. Used as an EDIT on existing dark hair, the same
+    words came back saturated traffic-cone orange — the model rendered a dye job
+    because that is what recolouring dark hair literally is.
+
+    So the refine adds what the roll never needed to say: this is her hair, not
+    a colour laid over it. Applied here rather than in the palette, because the
+    palette is right for the sheet and only wrong for the edit.
+  */
+  hairColour: (value: HairColour) => `${value} — ${HAIR_COLOUR_RENDER[value]}. Rendered as `
+    + "NATURAL hair rather than a dye job: dimensional rather than flat, softer and "
+    + "deeper at the roots, with the tone reading as grown rather than freshly "
+    + "coloured, and never poster-bright or uniformly saturated",
+  hairTexture: (value: HairTexture) => `${value} hair — ${HAIR_TEXTURE_RENDER[value]}`,
+};
 
 /** How many refinements one candidate may carry. */
 const MAX_INSTRUCTIONS = 12;
@@ -183,20 +219,6 @@ export async function refineCandidate(
     throw new TRPCError({ code: "BAD_REQUEST", message: refusalMessage(parsed) });
   }
 
-  if (dependencies.admit && !dependencies.admit()) {
-    /*
-      A real TOO_MANY_REQUESTS, never a 200 carrying an error field (invariant
-      6), and before the claim so nobody is charged for a queue they could not
-      get into.
-    */
-    throw new TRPCError({
-      code: "TOO_MANY_REQUESTS",
-      message: "Casting is busy right now. Try that again in a moment — nothing was charged.",
-    });
-  }
-
-  /* ---- the stack, composed mechanically ---- */
-
   /*
     The new refinement extends the SELECTED one, not the newest one.
 
@@ -215,6 +237,44 @@ export async function refineCandidate(
     : null;
   const priorDelta = (predecessor?.deltas as RefineDelta | null) ?? {};
   const composed = composeDeltas([priorDelta, parsed.delta]);
+  const instructions = [
+    ...readInstructions(predecessor?.instructions),
+    input.instruction.trim(),
+  ];
+
+  /*
+    COMPOSE-COMPLETENESS, checked BEFORE anything is claimed (D-143).
+
+    Running it here rather than at render time means an instruction that cannot
+    survive composition costs the user nothing — the roll's compile-and-admit-
+    first arrow, applied to the defect that let a colour edit annihilate a cut.
+  */
+  const preview = composeEditPrompt(composed, EDIT_PROSE);
+  const dropped = missingFromPrompt(composed, preview);
+  if (dropped.length > 0) {
+    log.error({ dropped }, "[refineService] composition would drop filed facts — refusing");
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "That edit would have quietly dropped one of your earlier changes, so it was "
+        + "refused rather than rendered. Nothing was charged.",
+    });
+  }
+
+  if (dependencies.admit && !dependencies.admit()) {
+    /*
+      A real TOO_MANY_REQUESTS, never a 200 carrying an error field (invariant
+      6), and before the claim so nobody is charged for a queue they could not
+      get into.
+    */
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Casting is busy right now. Try that again in a moment — nothing was charged.",
+    });
+  }
+
+  /* ---- the stack, composed mechanically ---- */
+
+  /*
   const instructions = [
     ...readInstructions(predecessor?.instructions),
     input.instruction.trim(),
@@ -304,6 +364,24 @@ export async function refineCandidate(
     await markVariantDispatched({ userId: input.userId, variantId: variant.id });
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
+    /*
+      RENDER RECIPE v2 (D-144) — two references, not one.
+
+      The ORIGINAL stays the identity base, so degradation still never compounds
+      and the tenth variant is as close to the signed face as the first. But
+      words persist and PICTURES OF THEM RE-ROLL: the founder's mullet shortened
+      under a later "seafoam eyes" edit, with no hair instruction anywhere in
+      between. "A mullet" is a description, and every render was drawing a new
+      one.
+
+      So the SELECTED PARENT rides along as a realization pin — not as an
+      identity source, but as the picture of the choices already made. Keep
+      everything exactly as this shows; change only the delta.
+    */
+    const parentKey = source.imageKey && source.variantPublicId ? source.imageKey : null;
+    const parent = parentKey
+      ? await (dependencies.readBytes ?? storageReadBytes)(parentKey)
+      : null;
     const engine = (dependencies.engine ?? castingIdentityEngine)();
     /*
       WALL (d), STRUCTURALLY (D-131).
@@ -320,21 +398,16 @@ export async function refineCandidate(
     */
     const filed = readDelta(variant.deltas);
     if (!filed) throw new Error("the refinement was not recorded in a readable shape");
-    const prompt = composeEditPrompt(filed, {
-      eyeColour: (value) => IRIS_RENDER[value],
-      eyeShape: (value) => EYE_SHAPE_RENDER[value],
-      /* The cut's own name plus the silhouette it implies, so "bob" cannot
-         arrive as a length the family disagrees with. */
-      hairStyle: (value) => {
-        const style = hairStyleByName(value);
-        return style ? `a ${style.name} (${style.family})` : `a ${value}`;
-      },
-      hairColour: (value) => `${value} — ${HAIR_COLOUR_RENDER[value]}`,
-      hairTexture: (value) => `${value} hair — ${HAIR_TEXTURE_RENDER[value]}`,
-    });
+    const prompt = composeEditPrompt(filed, EDIT_PROSE, parent !== null);
+
     const image = await engine.editWithReferences({
       prompt,
-      references: [{ bytes: base.bytes, contentType: base.contentType }],
+      references: parent
+        ? [
+          { bytes: base.bytes, contentType: base.contentType },
+          { bytes: parent.bytes, contentType: parent.contentType },
+        ]
+        : [{ bytes: base.bytes, contentType: base.contentType }],
       // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
       resolution: "1K",
     });

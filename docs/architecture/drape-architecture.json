@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "09b6b22cce8e0321"
+    "sourceFingerprint": "6bfc0c94f5e2478e"
   },
   "domains": [
     {
@@ -17272,6 +17272,16 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {

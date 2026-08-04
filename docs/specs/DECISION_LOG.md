@@ -3980,6 +3980,118 @@ Founder ruling, 2026-08-04. Not a follow-up list; part of the same slice.
 - **Region documents and doll views join D-107's deletion manifests.**
 - **D-101 discipline on the tab UI**: mock, founder eyeball, build, evidence pack.
 
+## D-142 — A subject is one FACET. Coarse filing let a colour annihilate a cut.
+
+Founder dogfood defect A, 2026-08-04. Deterministic, and the tooltip was the
+smoking gun.
+
+The stack was *"change hair to mullet"*, *"copper hair"*, *"actually black
+hair"*. Every instruction survived in the record — visible in the chip tooltip —
+and the picture had **no mullet**. All three had filed into one coarse `hair`
+subject, so last-writer-wins did exactly what it says and a colour edit deleted
+a cut.
+
+**The eyes were already right, and that is the whole diagnosis.** "Seafoam" and
+"hooded" coexisted on the same session because eye colour and eye shape were
+separate subjects. The only difference was that eyes had been split and hair
+had not.
+
+**So: a subject is one facet a person can change independently.** Two things
+that can be true at once need two slots, or the second silently deletes the
+first. Hair becomes cut / colour / texture / finish / worn; skin becomes tone
+and character; eyes stay split.
+
+## D-143 — Compose-completeness: every filed fact reaches the prompt, or the render refuses.
+
+Founder ruling, 2026-08-04, and it is the half that matters more than the fix.
+
+D-131 promised that a filing failure would degrade to filed-but-not-rendered
+"which the sweep can see". **Nothing saw this.** The mullet was in the record
+and absent from the picture, and the only witness was a chip tooltip the founder
+happened to hover.
+
+So the promise gets mechanical teeth: composition is CHECKED against the delta
+it came from, and a fact that did not make it stops the render. **Annihilation
+becomes unrepresentable rather than detectable** — which is the difference
+between a law and a hope.
+
+Checked BEFORE the claim, so an instruction that cannot survive composition
+costs nothing: the roll's compile-and-admit-first arrow, applied to the defect.
+The check and the render share ONE prose object, because two copies would let
+the check pass on a prompt the render never builds — the same shape as the
+defect it exists to catch.
+
+## D-144 — Render recipe v2: the original for identity, the parent for realization.
+
+Founder dogfood defect B, 2026-08-04. Stochastic, and invisible to every
+instrument we had.
+
+The mullet **shortened** under a later "seafoam eyes" edit, with no hair
+instruction anywhere between. The cause: words persist and the PICTURES OF THEM
+RE-ROLL. "A mullet" is a description, and base-anchoring meant every render
+drew a brand-new one from the original.
+
+**Two references now.** The ORIGINAL stays the identity base, so degradation
+still never compounds and the tenth variant is as close to the signed face as
+the first. The SELECTED PARENT rides along as a **realization pin** — not an
+identity source, but the picture of the choices already made: *keep everything
+exactly as this shows; change only the delta.*
+
+## D-145 — A stated placement is never relocated.
+
+Founder ruling, 2026-08-04.
+
+Pre-gate, *"chest tattoo of two swallows"* rendered on the **collarbones**. That
+is silent substitution in space — the mullet-becomes-wolf-cut disease, one
+dimension over: the user named a thing, the model produced something adjacent,
+and nothing said so.
+
+The gate refuses that class now, but the law generalises to placements that DO
+render: *"a rose on her left cheek"* must never land right. The placement is
+carried into the prompt as an explicit, non-negotiable clause with
+failed-candidate teeth, rather than left inside a sentence the model may
+paraphrase.
+
+**Render where stated, or refuse naming the wall.**
+
+## D-146 — In an edit, a colour word is a dye job unless told otherwise.
+
+Measured 2026-08-04. "Copper" came back saturated traffic-cone orange; "black"
+came back faintly dyed.
+
+The colourist palette is right for the ROLL, where the colour is drawn on a
+fresh head and reads as hair. Used as an EDIT on existing dark hair, the same
+words render a dye job — because recolouring dark hair is literally what that
+is. So the refine adds what the roll never needed to say: *natural hair rather
+than a dye job, dimensional rather than flat, deeper at the roots, grown rather
+than freshly coloured, never poster-bright.*
+
+Applied at the refine's prose rather than in the palette, because the palette is
+correct for the sheet and only wrong for the edit.
+
+**Partially resolved, honestly.** Copper is visibly more dimensional than
+before and still reads vivid; black reads blue-black. Recorded rather than
+iterated on, because this is now a taste conversation the founder is one look
+away from being able to have.
+
+## D-147 — Stack the real thing and compare. The instrument lesson.
+
+Recorded 2026-08-04, and it is why both defects shipped.
+
+Every driver tested ONE edit against a fresh candidate. **Both defects only
+exist in a stack** — a facet collision needs two instructions about one thing,
+and a realization re-roll needs an unrelated edit to happen afterwards. A
+single-edit harness cannot see either, however many times it runs.
+
+`drive-refine-stack.mts` scores prior-edit survival: after edit N, is edit 1
+still visibly there? That is the question a user asks and the one no previous
+instrument could answer.
+
+**It carries a FIXED PAIR**, founder-supplied: the mullet stack that must NOW
+pass, and the fox-eyes stack that must STILL pass. Keeping both is the point — a
+fix that made the mullet pass by loosening what the fox-eyes stack depended on
+would look like success against one and be a regression against the other.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

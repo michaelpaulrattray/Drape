@@ -59,5 +59,32 @@ export function classifyInkPlacement(text: string): InkPlacement {
  * wait, or give up. This one says which of the three.
  */
 export const INK_NEEDS_DOCUMENT_MESSAGE =
-  "Ink that isn't on the face or neck needs a design document first — the body-art "
-  + "studio is coming, and face and neck ink work today. Nothing was charged.";
+  "Tell me where it goes — face and neck ink works today. Anywhere else needs a "
+  + "design document first, and the body-art studio is coming. Nothing was charged.";
+
+/**
+ * A STATED PLACEMENT IS NEVER RELOCATED (D-145).
+ *
+ * Pre-gate, "chest tattoo of two swallows" rendered on the COLLARBONES. That is
+ * silent substitution in space — the same disease as the mullet coming back as
+ * a wolf cut, one dimension over: the user named a thing, the model produced
+ * something adjacent, and nothing said so.
+ *
+ * The gate now refuses that whole class, but the law generalises and applies to
+ * the ink that DOES render: "a rose on her left cheek" must never land right.
+ * So the placement words are carried into the prompt as an explicit,
+ * non-negotiable clause rather than left inside a sentence the model may
+ * paraphrase.
+ */
+const SIDES = ["left", "right"];
+
+export function placementClause(text: string): string {
+  const lowered = text.toLowerCase();
+  const place = IN_FRAME_PLACES.find((p) => new RegExp(`\\b${p}\\b`).test(lowered));
+  if (!place) return "";
+  const side = SIDES.find((s) => new RegExp(`\\b${s}\\b`).test(lowered));
+  const where = side ? `the ${side} ${place}` : `the ${place}`;
+  return ` It sits on ${where} and nowhere else — do not move it to a nearby `
+    + `part of the body, and do not mirror it to the other side. Ink rendered `
+    + `somewhere other than ${where} is a failed candidate.`;
+}
