@@ -33,6 +33,7 @@ import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { readDelta, type FreeLaneCheck, type RefineParse } from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
+import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
 
 const log = createModuleLogger("castingV2/refineInterpreter");
 
@@ -243,6 +244,8 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
       return "That came back with more detail than you asked for, so it wasn't recorded — "
         + "and nothing is rendered that isn't recorded. Try saying it in your own words. "
         + "Nothing was charged.";
+    case "gate_ink_document":
+      return INK_NEEDS_DOCUMENT_MESSAGE;
     case "empty":
       return "Say what you'd like changed — anything about the person themselves.";
     case "unreadable":

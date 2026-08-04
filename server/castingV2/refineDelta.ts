@@ -41,6 +41,7 @@ import {
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { HAIR_STYLE_NAMES, hairStyleByName } from "./hairStyles";
 import { scrubBrands } from "./brandScrub";
+import { classifyInkPlacement } from "./inkPlacement";
 import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
 import { FREE_SUBJECT_KEYS, FREE_SUBJECTS, isPresentationSubject, type FreeSubject } from "./refineSubjects";
@@ -106,6 +107,8 @@ export type RefineRefusal =
   | { reason: "wall_stage"; asked: string }
   | { reason: "wall_content" }
   | { reason: "wall_unfileable"; asked: string }
+  /** Not a wall — a GATE. It names what does work and what is coming (D-137). */
+  | { reason: "gate_ink_document" }
   | { reason: "unreadable" }
   | { reason: "empty" };
 
@@ -216,6 +219,19 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       */
       const promoted = promoteToGuaranteedLane(subject as FreeSubject, scrubbed, delta);
       if (promoted) continue;
+
+      /*
+        THE INK GATE (D-137). Only pixels render a design, and the one case
+        where words suffice is ink the anchor itself documents — face and neck.
+        Everything else waits for the body-art studio rather than being rendered
+        from a sentence, which would be a different tattoo in every frame.
+      */
+      if (subject === "ink" && check) {
+        if (classifyInkPlacement(scrubbed).kind !== "in_frame") {
+          check.wall = { reason: "gate_ink_document" };
+          return null;
+        }
+      }
 
       if (check) {
         /* WALL (a): never another person. The listless proper-noun guard,

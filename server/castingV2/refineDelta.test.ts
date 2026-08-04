@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
+
 import {
   applyDelta,
   composeDeltas,
@@ -255,5 +257,58 @@ describe("the free lane composes under its registered headings", () => {
     );
     expect(prompt).toContain("BROWS: thick and straight.");
     expect(prompt).toContain("INK: a small rose on her neck.");
+  });
+});
+
+/**
+ * THE INK GATE (D-137).
+ *
+ * Only pixels render a design (D-132), and the single case where words suffice
+ * is ink the anchor itself documents. Everything else waits for the body-art
+ * studio rather than being rendered from a sentence — which would be a
+ * different tattoo in every frame, which is a person who does not have one.
+ */
+describe("ink renders only where the anchor is the document", () => {
+  const check = (instruction: string): FreeLaneCheck => ({ instruction });
+
+  it("lets face and neck ink through — D-133(a)", () => {
+    for (const ask of [
+      "a small rose tattoo on her neck",
+      "a tiny star tattoo under her eye",
+      "a line tattoo along her jaw",
+    ]) {
+      const delta = readDelta({ free: { ink: ask } }, check(ask));
+      expect(delta?.free?.ink, ask).toBe(ask);
+    }
+  });
+
+  it("gates a sleeve, a chest piece and a back piece", () => {
+    for (const ask of [
+      "a full sleeve tattoo on her left arm",
+      "a chest tattoo",
+      "a large back piece",
+      "a tattoo on her hand",
+    ]) {
+      const c = check(ask);
+      expect(readDelta({ free: { ink: ask } }, c), ask).toBeNull();
+      expect(c.wall?.reason, ask).toBe("gate_ink_document");
+    }
+  });
+
+  /*
+    Unplaced ink gates too, and deliberately: "a small rose tattoo" could land
+    anywhere, and rendering it somewhere and hoping is the drift the law exists
+    to prevent.
+  */
+  it("gates ink with no placement at all", () => {
+    const c = check("give her a rose tattoo");
+    expect(readDelta({ free: { ink: "a rose tattoo" } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("gate_ink_document");
+  });
+
+  it("names what DOES work, so the refusal points somewhere", () => {
+    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("face or neck");
+    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("body-art studio is coming");
+    expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Nothing was charged");
   });
 });

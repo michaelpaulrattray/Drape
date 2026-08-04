@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "091d0b61f9deebb3"
+    "sourceFingerprint": "09b6b22cce8e0321"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:castingV2",
@@ -3275,6 +3275,12 @@
     {
       "id": "module:server/castingV2/heritagePromotion.ts",
       "path": "server/castingV2/heritagePromotion.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inkPlacement.ts",
+      "path": "server/castingV2/inkPlacement.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -17060,6 +17066,11 @@
     },
     {
       "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/inkPlacement.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/castingV2/properNouns.ts",
       "kind": "imports"
     },
@@ -17081,6 +17092,11 @@
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/inkPlacement.ts",
       "kind": "imports"
     },
     {

@@ -3864,6 +3864,122 @@ Teeth character is a fact about the person; the smile that showed it is not.
 Sign signs the selected variant, expression included, and the confirm quietly
 reflects it.
 
+## D-137 — Non-face ink is gated until the studio exists.
+
+Founder ruling, 2026-08-04, acting on the recommendation raised at the wide-open
+gate.
+
+Face and neck ink stays live under D-133(a): fully in-frame, the anchor is the
+document, one generation is the whole of it. **Everything else refuses**, with
+the honest sentence — *needs a design document; the body-art studio is coming,
+and face and neck ink work today.*
+
+The alternative was rendering a sleeve from words, which D-132 already forbids
+and which produces a different tattoo in every frame — a person who does not
+have one tattoo. A gate that says "not yet, and here is what does work" is the
+honest shape of a missing feature; silently rendering something is not.
+
+The dogfood proceeds on the wide build with this gate in place.
+
+## D-138 — The Body-Art Studio. Supersedes D-132's flat plates.
+
+Founder-designed, adversarially tested, adopted 2026-08-04. Built after the
+dogfood, together with the skin-truth slice (D-134).
+
+**Templates are code-owned static assets, never generated.** Neutral mannequin
+sheets: M/F × (torso front+back as ONE multi-panel sheet / arm multi-view /
+leg), plus a composite upper-body sheet (torso, neck and both arms) for pieces
+that cross regions.
+
+**A one-time tone ladder — about ten skin tones per sheet, curated at build.**
+Opening a tab selects the template nearest the candidate's recorded skin tone.
+Never a per-use generation, never credits, and **dignity-critical**: an ink
+preview that only exists on pale skin misrepresents the purchase for exactly the
+customers this product renders truthfully. Template selection covers the
+nonbinary case with a **visible toggle, never a silent guess**.
+
+**Aesthetic law.** Limbs and torsos terminate in **fades, never cuts**. Matte,
+low-contrast skin. One relaxed canonical pose per template, held identical
+across the whole tone ladder. Background tone — near-white against studio grey —
+is decided at the founder's one-time template taste gate, with grey the safer
+default for the pale rungs; the founder supplies a reference image at curation.
+**Templates carry no text, ever.**
+
+**Tabs.** Browser-style tabs in the viewer, one per artwork, **derived from the
+record and never parallel state**. Inactive on ink-free variants. A design
+renders at the standard 25 and iterates freely; left/right placement is a
+defaulted, visible toggle.
+
+**One sheet per region, multi-view within the sheet.** A neck wrap renders
+across the torso sheet's front and back panels in ONE generation — consistent by
+composition rather than by hoping two generations agree.
+
+**Scope promotion.** Extending a piece inside its tab past its region re-plates
+onto the composite sheet at 25; the user approves the migration and it is
+supersession-versioned. **One artwork, one document, always.** A separate new
+tattoo is a separate tab and a separate document. Full-body pieces refuse with
+the worlds-era pointer. Region seams are defined once, in the template spec page.
+
+**The apply law, unchanged and load-bearing:** every visible portion is
+mandatorily applied to her. The anchor must carry everything the frames can see,
+because Sign copies and never invents and the judge referees views against the
+anchor. A **staleness marker** derives from document-version against
+applied-version, and the **Sign currency gate** refuses on stale visible ink,
+names the region, and offers the one-click re-apply at 25.
+
+## D-139 — Three gap rulings: inheritance, tone, and conditioning.
+
+Founder rulings, 2026-08-04.
+
+**(1) Ink does NOT inherit on Follow.** A sleeve is a possession, not a family
+trait — the follow sheet carries the honest note, and applying her documents to
+a cousin is an ordinary two-click apply. **Words-rendered ink never exists
+anywhere**, on a follow or otherwise.
+
+**(2) The tone ladder** is as D-138 states, and it is a dignity requirement
+rather than a nicety.
+
+**(3) Sign, package and doll-view generation take region documents as
+conditioning references** — a named spec requirement with its own test. Without
+it, drift returns at the durable boundary, which is the one place it cannot be
+undone.
+
+## D-140 — Lettered ink: system-invented text never, user-stated text legal.
+
+Founder ruling, 2026-08-04. **Supersedes the blanket no-lettering ban** in
+D-132.
+
+Phrases are **typed by the user**, or **OCR-extracted from their reference and
+explicitly confirmed** — *this design contains "MEMENTO MORI"; keep the
+lettering?* Every phrase passes text moderation and the brand scrub before any
+render, and refusals name their wall. Scripts we cannot verify refuse honestly:
+*can't verify this script yet.*
+
+**Plate-time verification is mandatory.** The rendered design's lettering is read
+back and must match the stated phrase exactly; a mismatch is a failed render and
+regenerates. This is the difference between permitting text and shipping
+gibberish that looks like text.
+
+The product's no-letters output guards gain a **named, test-held carve-out** for
+recorded lettered-ink regions — the D-124 exception pattern, so the guard holds
+everywhere it should and yields only where a record says it must.
+
+If a user asks for "some script" without supplying words, **ask for the words**.
+The system never invents them.
+
+## D-141 — The studio's hardening, shipped inside the slice.
+
+Founder ruling, 2026-08-04. Not a follow-up list; part of the same slice.
+
+- **Ink conformance judges design identity, never placement-exactness.**
+  Mannequin anatomy is not hers, and the judged-spec limits law applies.
+- **Region-document version CAS** against concurrent edits — the state-bleed
+  class, which this program has already paid for once.
+- **The third-party-character refusal extends to plate derivation.** A dragged-in
+  protected character is the same wall as a typed one.
+- **Region documents and doll views join D-107's deletion manifests.**
+- **D-101 discipline on the tab UI**: mock, founder eyeball, build, evidence pack.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

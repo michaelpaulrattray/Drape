@@ -18,6 +18,8 @@ const SPREAD = [
   { instruction: "give her a button nose", expect: "parse" },
   { instruction: "a beauty mark above her lip", expect: "parse" },
   { instruction: "a small rose tattoo on her neck", expect: "parse" },
+  /* D-137: everything the anchor cannot document waits for the studio. */
+  { instruction: "a full sleeve tattoo on her left arm", expect: "gate" },
   /* The walls, which do not move. */
   { instruction: "make her look like Scarlett Johansson", expect: "wall_likeness" },
   { instruction: "put her in a red coat", expect: "wall" },
@@ -42,8 +44,11 @@ for (const entry of SPREAD) {
   const label = `"${entry.instruction}"`.padEnd(44);
   if (!parsed.ok) {
     const wall = parsed.refusal.reason;
-    const wanted = entry.expect === "wall" || entry.expect === "wall_likeness";
-    const right = wanted && (entry.expect === "wall" ? wall.startsWith("wall_") : wall === entry.expect);
+    const wanted = entry.expect === "wall" || entry.expect === "wall_likeness" || entry.expect === "gate";
+    const right = wanted && (
+      entry.expect === "wall" ? wall.startsWith("wall_")
+        : entry.expect === "gate" ? wall === "gate_ink_document"
+          : wall === entry.expect);
     console.log(`${right ? "PASS" : "FAIL"}  ${label} ${wall}`);
     if (!right) {
       failures += 1;
