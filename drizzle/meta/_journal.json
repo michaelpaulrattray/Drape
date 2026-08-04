@@ -148,6 +148,13 @@
       "when": 1785749670379,
       "tag": "0020_casting_v2_candidate_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1785812016956,
+      "tag": "0021_casting_v2_satisfaction_ledger",
+      "breakpoints": true
     }
   ]
 }

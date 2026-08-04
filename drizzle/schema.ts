@@ -2105,6 +2105,26 @@ export const castingCandidates = mysqlTable("casting_candidates", {
 export type CastingCandidate = typeof castingCandidates.$inferSelect;
 export type InsertCastingCandidate = typeof castingCandidates.$inferInsert;
 
+/**
+ * What a user did with a refinement (D-151a).
+ *
+ * `selected` — kept as the face. `backed_up` — abandoned by choosing an earlier
+ * version. `rephrased` — followed immediately by another instruction on the
+ * SAME facet, which is the signal that the words did not land. `corrected` —
+ * followed by an instruction naming the reading they actually meant.
+ *
+ * Rephrased and corrected are the two that matter most: they are the product
+ * telling us a term is resistant or mis-owned, in the user's own behaviour
+ * rather than in a survey.
+ */
+export const CASTING_VARIANT_OUTCOMES = [
+  "selected",
+  "backed_up",
+  "rephrased",
+  "corrected",
+] as const;
+export type CastingVariantOutcome = typeof CASTING_VARIANT_OUTCOMES[number];
+
 export const CASTING_VARIANT_STATUSES = [
   "queued",
   "dispatched",
@@ -2177,6 +2197,20 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
    * out on the ordinary schedule. No second retention path to keep in step.
    */
   expiresAt: timestamp("expiresAt"),
+  /**
+   * What became of this refinement — the satisfaction ledger (D-151a).
+   *
+   * Written as the user acts rather than derived later, because **a signal not
+   * collected is lost forever** and the dogfood era is the richest labelling
+   * this product will ever get. Which variant was selected at a given moment is
+   * genuinely unrecoverable after the fact; the rest is derivable, and is
+   * derived rather than duplicated.
+   *
+   * NULL means nothing has happened to it yet, which is the honest state for a
+   * refinement the user has not responded to.
+   */
+  outcome: mysqlEnum("outcome", CASTING_VARIANT_OUTCOMES),
+  outcomeAt: timestamp("outcomeAt"),
 }, (table) => ([
   uniqueIndex("uq_casting_variants_public").on(table.publicId),
   // Idempotency: a replayed refine returns the existing variant rather than
