@@ -102,8 +102,14 @@ describe("the one image grammar", () => {
       swallowed the click — the dialog felt stuck for a reason nothing on screen
       explained.
     */
+    /*
+      `.dpc-refine` joined the list when the refine panel moved into the viewer,
+      and this expectation was not updated — so it has been red since M8 landed.
+      The CODE is right: clicking inside the panel you are typing into must not
+      close the picture you are editing. The test was quoting a stale selector.
+    */
     const viewer = await readFile(VIEWER, "utf8");
-    expect(viewer).toContain('target.closest("img, .dpc-viewer__chrome")');
+    expect(viewer).toContain('target.closest("img, .dpc-viewer__chrome, .dpc-refine")');
     expect(viewer).not.toContain("event.target === event.currentTarget");
   });
 

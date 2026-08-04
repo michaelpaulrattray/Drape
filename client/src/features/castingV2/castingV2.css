@@ -2291,22 +2291,37 @@
   flex: none;
 }
 
+/*
+  IT WRAPS RATHER THAN SCROLLS (D-162).
+
+  Twelve is the ceiling on refinements, so the whole stack is at most two rows
+  at panel width — and a second row of thumbnails is better than a first row
+  with the rest hidden behind a scroll nobody sees.
+*/
 .dpc-refine__stack {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   align-items: flex-start;
-  overflow-x: auto;
   max-width: 100%;
-  padding-bottom: 2px;
 }
 
 .dpc-refine__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 64px;
+  flex: none;
+}
+
+.dpc-refine__pick {
   display: flex;
   flex-direction: column;
   gap: 4px;
   align-items: center;
   width: 64px;
-  flex: none;
   padding: 0;
   border: 0;
   background: none;
@@ -2314,7 +2329,7 @@
   color: var(--onScrim);
 }
 
-.dpc-refine__step > img {
+.dpc-refine__pick > img {
   width: 64px;
   height: 84px;
   object-fit: cover;
@@ -2328,9 +2343,25 @@
   transition: opacity 120ms ease, outline-color 120ms ease;
 }
 
-.dpc-refine__step[aria-pressed="true"] > img {
+.dpc-refine__pick[aria-pressed="true"] > img {
   outline-color: var(--onScrim);
   opacity: 1;
+}
+
+/* A refinement that is RUNNING (D-161) — the same silhouette as a real one, so
+   the stack reads as continuous, but plainly not yet a picture. */
+.dpc-refine__pick--ghost { cursor: default; }
+
+.dpc-refine__ghost {
+  width: 64px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--media);
+  border: 1px dashed color-mix(in srgb, var(--onScrim) 30%, transparent);
+  font-size: 8.5px;
+  opacity: 0.75;
 }
 
 /*
@@ -2339,7 +2370,7 @@
   which is content, and setting someone's words in 10px letter-spaced monospace
   makes them harder to read than the thing they are labelling.
 */
-.dpc-refine__step > span {
+.dpc-refine__pick > span {
   font-family: var(--font-sans);
   letter-spacing: normal;
   font-size: 10.5px;
@@ -2382,6 +2413,9 @@
 
 .dpc-refine__field::placeholder { color: color-mix(in srgb, var(--onScrim) 46%, transparent); }
 
+/* The about-to-buy-it-twice warning (D-161) — it warns, it never blocks. */
+.dpc-refine__note--warn { opacity: 0.95; }
+
 /* A sentence, so it is set as one — same reason as the step labels above. */
 .dpc-refine__note {
   margin: 0;
@@ -2392,17 +2426,12 @@
   opacity: 0.6;
 }
 
-/* Where an instruction was FILED (D-149) — quieter than their own words,
-   because it is the system explaining itself rather than their sentence. */
-.dpc-refine__filed {
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.06em;
-  opacity: 0.45;
-  max-width: 64px;
-  text-align: center;
-  line-height: 1.2;
-}
+/*
+  Where an instruction was FILED used to print here, under every chip (D-149).
+  D-162 moved it into the chip's hover tooltip: it is the system explaining
+  itself, and a permanent mono row competing with the user's own sentence is
+  furniture for a job nobody does daily. Still inspectable, no longer shouting.
+*/
 
 /*
   THE PANEL OWNS ITS OUTCOMES (D-154). Persistent until dismissed, because a
@@ -2438,15 +2467,12 @@
   cursor: pointer;
 }
 
-/* Remove is PAID and says so; backing up is free navigation and says nothing. */
-.dpc-refine__remove {
-  font-size: 9px;
-  letter-spacing: 0.04em;
-  color: var(--onScrim);
-  opacity: 0.55;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
+/*
+  REMOVE'S HOME IS DESIGNED AND NOT YET BUILT (D-162).
 
-.dpc-refine__remove:hover { opacity: 0.9; }
+  D-121 and D-155 both ruled how removing a mid-stack instruction should look,
+  and the founder could not find it because it was never implemented. When it is,
+  it belongs in the shared `CardMenu` — `cardMenuAnatomy.test` enforces exactly
+  one overflow menu in casting — and it arrives with the action it opens. A
+  visible control that does nothing is worse than the one nobody found.
+*/

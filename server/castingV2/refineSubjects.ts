@@ -81,6 +81,21 @@ export const FREE_SUBJECTS = {
   skinCharacter: "SKIN CHARACTER",
   /** Visible marks: scars, freckling, birthmarks, vitiligo. NOT ink. */
   marks: "MARKS",
+  /*
+    ADORNMENT IS THE PERSON, NOT THE STAGE (D-160).
+
+    "Small gold hoops" was refused as "wardrobe or set", which contradicts a
+    standing founder ruling: earrings, glasses and piercings are legitimate
+    refine instructions, because adornment never arrives unbidden and Refine is
+    the stated channel for asking. The roll pipeline has honoured exactly this
+    since the D-116 family — `statedAccessories` is already an intent axis and
+    the cohort constant already gives it failure-to-appear teeth — so the wall
+    was refusing on one surface what the other surface promised.
+
+    The wall narrows rather than falls: garments, headwear, the backdrop, props
+    and the scene are still the stage, and still refuse.
+  */
+  statedAccessories: "ACCESSORIES",
   /** Ink is its own subject because D-133 gives it its own law. */
   ink: "INK",
   facialHair: "FACIAL HAIR",

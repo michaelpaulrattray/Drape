@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4aa716caeae1efbf"
+    "sourceFingerprint": "c87c4135c4b54a57"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 46
+      "moduleCount": 47
     },
     {
       "id": "domain:castingV2",
@@ -3323,6 +3323,12 @@
     {
       "id": "module:server/castingV2/refineDelta.ts",
       "path": "server/castingV2/refineDelta.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineFacets.ts",
+      "path": "server/castingV2/refineFacets.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8203,6 +8209,10 @@
     {
       "id": "test:server/castingV2/refineDelta.test.ts",
       "path": "server/castingV2/refineDelta.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineFacets.test.ts",
+      "path": "server/castingV2/refineFacets.test.ts"
     },
     {
       "id": "test:server/castingV2/refineRecovery.test.ts",
@@ -17012,12 +17022,17 @@
     },
     {
       "from": "module:server/castingV2/realizationCaption.ts",
+      "to": "module:server/castingV2/brandScrub.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizationCaption.ts",
       "to": "module:server/castingV2/interpreter.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/realizationCaption.ts",
-      "to": "module:server/castingV2/refineSubjects.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
     {
@@ -17102,6 +17117,11 @@
     },
     {
       "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
@@ -17113,6 +17133,16 @@
     {
       "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineFacets.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineFacets.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
     {

@@ -47,7 +47,7 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
 import { refineCandidate } from "../castingV2/refineService";
-import { listCandidateVariants, selectVariant } from "../db/castingV2Variants";
+import { listCandidateVariants, listPendingVariants, selectVariant } from "../db/castingV2Variants";
 import { filedSubjectsOf } from "../castingV2/refineDelta";
 import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
@@ -582,14 +582,33 @@ export const castingV2Router = router({
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
-      const [face, variants] = await Promise.all([
+      const [face, variants, pending] = await Promise.all([
         getOwnedCandidateWithSelectedFace(ctx.user.id, input.candidateId),
         listCandidateVariants(ctx.user.id, input.candidateId),
+        listPendingVariants(ctx.user.id, input.candidateId),
       ]);
       if (!face) throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
       return {
         selectedVariantId: face.variantPublicId,
         originalImageUrl: face.candidate.imageKey ? storagePublicUrl(face.candidate.imageKey) : null,
+        /*
+          WHAT IS STILL RUNNING, from the database rather than from the client's
+          own mutation state (D-161).
+
+          A refine that outlives the panel used to become invisible: the founder
+          closed the sheet on a slow "copper hair", reopened it, saw nothing in
+          flight and bought the edit again. In-flight state has to come from the
+          place that actually knows, or "I can't see it" and "it isn't happening"
+          look identical.
+        */
+        pending: pending.map((variant) => ({
+          variantId: variant.publicId,
+          /* The last sentence is the one this refinement added. */
+          instruction: (Array.isArray(variant.instructions)
+            ? variant.instructions.filter((entry): entry is string => typeof entry === "string")
+            : []).at(-1) ?? "",
+          startedAt: variant.createdAt,
+        })),
         variants: variants.map((variant) => ({
           variantId: variant.publicId,
           imageUrl: variant.imageKey ? storagePublicUrl(variant.imageKey) : null,

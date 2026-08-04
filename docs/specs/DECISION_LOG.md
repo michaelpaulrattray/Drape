@@ -4277,6 +4277,241 @@ case is this finding's regression test.
 A reminder worth keeping: the prose was suspected for a day and was never the
 problem. The recipe was.
 
+## D-157 — Facet bleed: one instruction, two drawers.
+
+**Founder finding, 2026-08-04, round 2 — written up retroactively on 2026-08-04.**
+
+*This entry was missing. `refineDelta.ts` cited D-157 twice for behaviour that
+shipped, and the log stopped at D-156 — so the code was standing on a law nobody
+could read. Caught in the round-3 advisor pass. The log is the authority; code
+citing an entry that does not exist is the same defect class as a helper with no
+call site, pointed the other way.*
+
+"Hair worn up" was filed as a **cut** — `hairStyle: "hair tied back"` — because
+the catalogue contains cuts that carry their own worn state. A later "wear it
+down" then argued with a stored contradiction rather than overwriting a value.
+
+**A refinable cut is worn-neutral.** `REFINABLE_CUT_NAMES` is derived from the
+six weight tables with the worn-carrying entries filtered out, so a styling
+instruction cannot write a cut and a cut cannot dictate how it is worn.
+
+The second half is a recurrence, and the third instance of one shape: **source
+containment refusing the user's own words.** "Tie her hair up" came back as
+"tied up" and was refused because "tied" is not the token "tie". Containment
+exists to stop INVENTED CONTENT; a guard that fires on a verb tense is doing the
+opposite of its job. Both sides are now stemmed, as both sides already had
+apostrophes stripped for the same reason (D-152's cupid's-bow regression).
+
+**The pattern, now at three instances and worth naming:** every guard-too-strict
+failure so far has been a containment check treating a MORPHOLOGICAL variant of
+the user's own word as an invention. The next one will be too.
+
+## D-158 — Ink visibility is a RULE, not a list of phrasings.
+
+**Founder finding, 2026-08-04, round 3, item 4 — verify or re-fix.**
+
+Verdict: **not a regression. An incomplete fix, live at HEAD the whole time.**
+
+D-153 established the right principle — the question is "can the ANCHOR see it?",
+not "is this a head word?" — and then implemented it as eighteen literal
+strings: "behind the ear", "behind her ear", "behind his ear". The founder typed
+**"behind ear"**, which is on no list, so nothing matched, `\bear\b` matched, and
+a star rendered on the ear with the hair disturbed on the way.
+
+Measured at HEAD before any change:
+
+```
+needs_document   <- "a tiny star behind her ear"     (the driver case: gated)
+in_frame/ear     <- "a tiny star behind ear"         (the founder's: rendered)
+in_frame/ear     <- "a tiny star behind the left ear"
+in_frame/ear     <- "a tiny star behind one ear"
+```
+
+So the driver case passed and the product failed, because the driver was written
+from the same list as the fix. **A test that quotes the implementation's own
+vocabulary proves the implementation matches itself.**
+
+The classifier now expresses relations: anything described as BEHIND something
+is behind it however the sentence is worded; "back of" likewise; "under" stays
+narrow to hair, because under-the-eye ink is front-visible and renders today.
+Nine cases, none of which a phrase list would have contained.
+
+## D-159 — The FACET is the unit. Captions inherit its lifecycle.
+
+**Founder finding, 2026-08-04, round 3, item 1 — stop-the-line. Prescription
+theirs; the mechanism underneath it was not what anyone thought.**
+
+The founder's report: captions lack facet discipline, the annihilation class
+reborn one layer down. Two branches of evidence — a worn-down state lost across
+a branch, and a pastel-pink instruction that rendered copper while the chip said
+pink.
+
+**What was actually there, verified before any fix:**
+
+**One. Captions were never persisted at all.** `refineService` built
+`capturedCaptions` — one vision call per touched facet, real latency and real
+tokens — and then wrote an `internalPrompt` with no `captions` key.
+`readCaptions` read a field with no writer. `captionClause` returned empty on
+every render that has ever run. **Recipe v3's memory half has been inert since
+the day it shipped**, and it passed its own gauntlet because the quality half is
+real and the facets were being carried by the deltas. An instrument measuring a
+genuine improvement and a dead feature at once, unable to tell them apart.
+
+**Two. The lanes collided.** `hairColour` (guaranteed) and `free.hairShade`
+(free) are the same fact about the same head, and composition was
+last-writer-wins per KEY — so "copper hair" (promotes) followed by "pastel pink
+hair" (cannot promote) left BOTH in the composed delta and both reached the
+prompt:
+
+```
+Change the hair: coloured copper — <a paragraph of colourist prose>.
+HAIR COLOUR: pastel pink, rendered as natural hair…
+```
+
+Two colours, one head; the heavier prose won. That is the founder's evidence (b)
+exactly, and it had nothing to do with captions. **D-143's completeness check
+could not see it**: it asks whether every filed fact REACHED the prompt, and both
+of these did.
+
+**Three.** `touchedSubjects` mapped both eye axes onto the colour subject, so an
+eye-SHAPE edit captioned the eye COLOUR.
+
+**The detail that decided the shape of the fix:** the founder diagnosed a bug
+that did not exist yet and *would have existed the moment persistence was fixed*.
+A copper caption surviving a pink instruction produces precisely the failure they
+described. Their prescription is prophylactic, and it had to land in the same
+change as persistence, never after it.
+
+### The law
+
+**A facet is the unit a refinement supersedes.** Every delta key, in either
+lane, declares its facet in one shared table, and composition supersedes by
+facet: a later free `hairShade` clears an earlier guaranteed `hairColour` and
+vice versa. A prompt with two answers to one question becomes unrepresentable
+rather than merely detectable — which is D-143's own standard, applied to the
+defect D-143 could not see.
+
+This is **D-142 read in the other direction**. That ruling said two things that
+can be true at once need two slots; the converse is that two things that cannot
+both be true must share one, or last-writer-wins has nothing to arbitrate.
+
+**Captions are keyed by facet and die with it.** A caption is stated to the
+image model as ALREADY TRUE, so one that outlives its facet is not stale
+information — it is a contradiction in which the fact-shaped half wins. Dropped
+before composition, and **compose-completeness now runs in both directions**: a
+superseded caption reaching the prompt refuses the render exactly as a dropped
+instruction does, pre-claim and therefore free (the founder's own framing).
+
+Three consequences, each of which was a live hazard:
+
+- **The interpreter's context reads by facet, not by field.** "Make it lighter"
+  resolves against the current colour; once a free shade supersedes the
+  guaranteed one, `identity.hair.colour` reverts to the ORIGINAL while the face
+  on screen is pastel pink. Reading the field would buy a paid edit relative to a
+  colour the person cannot see.
+- **Legacy rows resolve guaranteed-wins.** Deltas persisted before this law can
+  hold both lanes with no ordering left to recover. Guaranteed wins because that
+  is what the PIXELS did — the engineered prose beat the bare clause in every
+  such render — so the convention agrees with the picture the user kept, and the
+  row heals the next time anything writes that facet.
+- **Fresh captions are built from the dropped set, never the inherited one.**
+  `captionRealization` fails soft, so spreading the inherited captions would let
+  a failed read leave the SUPERSEDED caption in place: a soft failure quietly
+  becoming a stored lie that then rides into every later render as fact.
+
+Captions are also brand-scrubbed. They are the only MODEL-authored text entering
+a paid prompt, which makes them the likeliest place for a brand name to arrive
+unasked.
+
+**The lesson, and it is the session's:** the founder's evidence was right, their
+mechanism was a hypothesis, and the true state was worse and stranger than the
+diagnosis. A driver that scored facets and a gauntlet that scored quality both
+passed while the feature under test did nothing at all.
+
+## D-160 — Adornment is the person, not the stage.
+
+**Founder ruling, 2026-08-04, round 3, item 2 — a law conflict, resolved in
+favour of the standing ruling.**
+
+"Small gold hoops" was refused as "wardrobe or set". That contradicts the D-116
+family: earrings, glasses and piercings are legitimate refine instructions,
+because adornment never arrives unbidden and **Refine is the stated channel for
+asking**. The roll pipeline had honoured exactly this for weeks — `statedAccessories`
+is an intent axis and the cohort constant already carries its failure-to-appear
+licence — so one surface was refusing what the other promised.
+
+Accessories join the free lane under `statedAccessories`, carrying that same
+licence into the edit prompt: an accessory that fails to appear is a failed
+candidate, and nothing else is added.
+
+**The wall narrows; it does not fall.** Garments, headwear, the backdrop, props
+and the scene are still the stage and still refuse — the same headwear carve-out
+the cohort's own accessories licence already makes. The word "wearing" stops
+being a stage word for this one subject, because it is how anyone describes an
+earring; every garment noun still fires, so "wearing a red coat" still refuses.
+
+The refusal copy changes with the wall. "Wardrobe or set" was the whole sentence,
+so an earring refused under it read as a product that does not do jewellery. It
+now names what does work.
+
+## D-161 — A pending refine outlives the panel that started it.
+
+**Founder finding, 2026-08-04, round 3, item 3 — the lost-contact family.**
+
+A slow "copper hair" hung. The founder closed the sheet, reopened it, saw nothing
+in flight, and bought the edit again. The late lander then appended silently, so
+two copper chips sit in the lineage with no account of where the second came
+from.
+
+**Both renders were delivered, so both charges stand.** The money is correct and
+this is not a refund case. The defect is the false belief, and the fix is
+visibility.
+
+In-flight state now comes from the database rather than from the client's own
+mutation state — a **ghost chip** that survives closing and reopening, because
+"I can't see it" and "it isn't happening" must not look identical. Busy is server
+truth for the same reason. A **duplicate warning** speaks up while the same
+instruction is still running, and it warns rather than blocks: asking for the
+same thing twice is a legitimate thing to want. A **late lander announces
+itself** instead of appearing in the lineage unexplained.
+
+Past about two minutes the wait says so and names the outcome — the roll's own
+law, and the credits genuinely do come back.
+
+## D-162 — Chips carry the user's words. Filing goes to the tooltip.
+
+**Founder ruling, 2026-08-04, round 3, item 5.**
+
+**(a)** D-149 put the filed subject under every chip, and the founder's reaction
+settled what that costs: filing is the SYSTEM explaining itself, and a permanent
+mono row under someone's own sentence competes with the sentence for a job nobody
+does daily. It is **kept** — a misfile corrupts the record and not merely one
+picture, so it must stay inspectable — and **moved to the hover tooltip**.
+Visible when someone goes looking, absent when they are not. This amends D-149's
+display clause only; what is recorded and why is unchanged.
+
+**(b)** Remove was a 9px underlined word stacked as a third line inside a 64px
+column, and the founder hunted for it and failed. D-109 permits a menu on "a
+small repeated object in a grid, where the actions have nowhere else to live",
+which is exactly a variant chip — so the affordance is a **⋮ that is always
+visible**, never revealed on hover, with the price as metadata inside the card
+rather than in button text. The stack wraps instead of scrolling, because an
+ancestor with `overflow` clips any popover a chip opens.
+
+**And the finding underneath the ruling: Remove has never existed.** There is no
+server procedure, and `onRemove` has never been passed to the panel by the page.
+D-121 and D-155 both ruled its behaviour; neither was ever implemented. The
+founder could not find it because it was not there.
+
+The affordance above is built and inert (it renders only when a handler is
+supplied). Building the action needs one product decision first, recorded as a
+founder item: **once a stack branches, "remove instruction k" is only defined
+along one chain**, and the panel currently shows every ready variant of a face as
+a flat row rather than a single line. What removing a chip means when it is not
+an ancestor of the selected face is the open question, and guessing at it would
+ship a paid control with ambiguous semantics.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

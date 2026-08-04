@@ -73,6 +73,8 @@ import {
   applyDelta,
   composeDeltas,
   composeEditPrompt,
+  currentValueOfFacet,
+  facetsWrittenBy,
   missingFromPrompt,
   presentationOf,
   readDelta,
@@ -82,6 +84,8 @@ import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import {
   captionClause,
   captionRealization,
+  dropFacets,
+  staleCaptions,
   type RealizationCaptions,
 } from "./realizationCaption";
 import { detectRenderFault } from "./renderFault";
@@ -208,16 +212,25 @@ export async function refineCandidate(
     they are looking at, not greener than the sheet's original.
   */
   const currentIdentity = readResolvedIdentity(source.internalPrompt);
+  /*
+    READ BY FACET, NOT BY FIELD (D-159).
+
+    These are what a relative ask resolves against — "make it lighter", "shorter"
+    — so reading the wrong one buys a paid edit relative to a colour the face
+    does not have. Before facet supersession the guaranteed field was always
+    populated when a colour had ever been set, so `identity.hair.colour` happened
+    to be right. It no longer is: once a free `hairShade` supersedes the
+    guaranteed `hairColour`, that field falls back to the ORIGINAL colour while
+    the face on screen is pastel pink. `currentValueOfFacet` follows the facet.
+  */
   const parsed = await (dependencies.interpret ?? interpretRefinement)({
     instruction: input.instruction,
-    currentEyeColour: currentIdentity?.realized?.eyeColour ?? null,
-    currentEyeShape: currentIdentity?.realized?.eyeShape ?? null,
-    currentHairStyle: currentIdentity?.realized?.hairStyle?.name ?? null,
-    /* Colour lives on `hair`, not `realized` — the registry's one filing
-       exception, and the reason "make it lighter" needs it read from there. */
-    currentHairColour: currentIdentity?.hair?.colour ?? null,
-    currentHairTexture: currentIdentity?.realized?.hairTexture ?? null,
-    currentMakeup: currentIdentity?.realized?.makeup ?? null,
+    currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
+    currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
+    currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
+    currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
+    currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
+    currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
   });
   if (!parsed.ok) {
     // An honest boundary, not a fault — and free, which is the point of §10.
@@ -252,8 +265,18 @@ export async function refineCandidate(
     Carried from the predecessor and extended once this render lands, which is
     what lets every render start one step from the sharp original — nothing is
     re-photographed, so nothing accumulates softness.
+
+    **Minus every facet this instruction rewrites** (D-159). A caption is stated
+    to the model as ALREADY TRUE, so a copper caption riding alongside a
+    pastel-pink instruction is not stale information — it is a contradiction in
+    which the fact-shaped half wins. Dropped here, before anything is composed,
+    so no later step can forget to.
   */
-  const inheritedCaptions: RealizationCaptions = readCaptions(predecessor?.internalPrompt);
+  const writtenFacets = facetsWrittenBy(parsed.delta);
+  const carriedCaptions: RealizationCaptions = dropFacets(
+    readCaptions(predecessor?.internalPrompt),
+    writtenFacets,
+  );
 
   /*
     COMPOSE-COMPLETENESS, checked BEFORE anything is claimed (D-143).
@@ -269,6 +292,25 @@ export async function refineCandidate(
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: "That edit would have quietly dropped one of your earlier changes, so it was "
+        + "refused rather than rendered. Nothing was charged.",
+    });
+  }
+  /*
+    THE SAME CHECK, POINTED THE OTHER WAY (D-159).
+
+    D-143 proves every filed fact REACHES the prompt. This proves nothing that
+    stopped being true reaches it — the founder's own framing, that a superseded
+    caption is the same crime as a dropped instruction. It is a construction
+    check rather than a plausible failure: `dropFacets` above already removed
+    these. That is the point. The whole reason recipe v3's memory sat dead for a
+    day is that nothing asserted the thing everyone assumed.
+  */
+  const stale = staleCaptions(carriedCaptions, writtenFacets);
+  if (stale.length > 0) {
+    log.error({ stale }, "[refineService] a superseded caption survived — refusing");
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "That edit would have argued with one of your earlier changes, so it was "
         + "refused rather than rendered. Nothing was charged.",
     });
   }
@@ -392,7 +434,7 @@ export async function refineCandidate(
     if (!filed) throw new Error("the refinement was not recorded in a readable shape");
     const engine = (dependencies.engine ?? castingIdentityEngine)();
     const prompt = composeEditPrompt(filed, EDIT_PROSE, false)
-      + captionClause(inheritedCaptions);
+      + captionClause(carriedCaptions);
 
     const image = await engine.editWithReferences({
       prompt,
@@ -458,14 +500,23 @@ export async function refineCandidate(
       reference. Fails soft — a missing caption costs later precision, never
       this render, which is already correct and already paid for.
     */
-    const capturedCaptions: RealizationCaptions = { ...inheritedCaptions };
-    for (const subject of touchedSubjects(parsed.delta)) {
+    /*
+      Built from the ALREADY-DROPPED set, never from the raw inherited one.
+
+      `captionRealization` fails soft, so spreading the inherited captions here
+      would let a failed read leave the SUPERSEDED caption in place — a soft
+      failure quietly becoming a stored lie, and one that then rides into every
+      later render as fact. No caption for a facet is an honest state; a wrong
+      one is not.
+    */
+    const capturedCaptions: RealizationCaptions = { ...carriedCaptions };
+    for (const facet of Array.from(writtenFacets)) {
       const caption = await captionRealization({
-        subject,
+        facet,
         bytes: image.bytes,
         contentType: image.contentType,
       });
-      if (caption) capturedCaptions[subject] = caption;
+      if (caption) capturedCaptions[facet] = caption;
     }
 
     const baseIdentity = readResolvedIdentity(variant.baseInternalPrompt);
@@ -482,6 +533,20 @@ export async function refineCandidate(
         /* Same source as the prompt, for the same reason. */
         resolved: baseIdentity ? applyDelta(baseIdentity, filed) : null,
         ...(presentationOf(filed) ? { presentation: presentationOf(filed) } : {}),
+        /*
+          THE CAPTIONS, WRITTEN DOWN — and until now they never were.
+
+          Recipe v3 shipped complete except for this key. `capturedCaptions` was
+          built, paid for in vision calls, and dropped on the floor; `readCaptions`
+          read a field with no writer, so `captionClause` was empty on every
+          render and the whole memory half of v3 was inert from the day it landed.
+          It passed its own gauntlet because the quality half is real and the
+          facets were being carried by the deltas — an instrument measuring a
+          genuine improvement and a dead feature at once, unable to tell them
+          apart. Persisting them is the fix; keying them by facet is what stops
+          the fix becoming the bug the founder described.
+        */
+        captions: capturedCaptions,
       },
       provider: image.provenance?.provider ?? null,
       providerModel: image.provenance?.model ?? null,
@@ -555,23 +620,12 @@ function refundDescriptionFor(error: unknown): string {
   return "Refine refunded — the generation failed";
 }
 
-/**
- * Which facets THIS instruction touched — the only ones worth captioning.
- *
- * Captioning an untouched facet would restate what the ORIGINAL already shows,
- * as though it were an established change; do that a few times and the words
- * have quietly replaced the reference.
- */
-function touchedSubjects(delta: RefineDelta): string[] {
-  const subjects: string[] = [];
-  if (delta.eyeColour || delta.eyeShape) subjects.push("eyeColourFree");
-  if (delta.hairStyle) subjects.push("hairCut");
-  if (delta.hairColour) subjects.push("hairShade");
-  if (delta.hairTexture) subjects.push("hairPattern");
-  if (delta.makeup) subjects.push("makeup");
-  for (const subject of Object.keys(delta.free ?? {})) subjects.push(subject);
-  return Array.from(new Set(subjects));
-}
+/*
+  `touchedSubjects` lived here and mapped BOTH eye axes onto "eyeColourFree", so
+  an eye-SHAPE edit captioned the eye COLOUR. `facetsWrittenBy` replaces it: the
+  facet is derived from one table shared with composition, so the caption and the
+  supersession can no longer disagree about what an instruction was about.
+*/
 
 /** The captions a predecessor variant recorded, validated like any json column. */
 function readCaptions(internalPrompt: unknown): RealizationCaptions {
@@ -580,7 +634,9 @@ function readCaptions(internalPrompt: unknown): RealizationCaptions {
   if (!raw || typeof raw !== "object") return {};
   const captions: RealizationCaptions = {};
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof value === "string" && value.trim()) captions[key] = value.trim().slice(0, 200);
+    /* Trimmed, not re-capped — `captionRealization` owns the length, and a
+       second cap here was how the writer and reader disagreed. */
+    if (typeof value === "string" && value.trim()) captions[key] = value.trim();
   }
   return captions;
 }

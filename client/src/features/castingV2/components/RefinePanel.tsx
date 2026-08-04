@@ -26,12 +26,47 @@ export type RefineVariant = {
   variantId: string;
   imageUrl: string | null;
   instructions: string[];
-  /** Where each instruction was FILED — subject headings only (D-149). */
+  /**
+   * Where each instruction was FILED — subject headings only (D-149, as amended
+   * by D-162).
+   *
+   * It shipped printed under every chip and the founder's own reaction settled
+   * it: filing is the SYSTEM explaining itself, and a permanent row of
+   * "HAIR COLOUR · HAIR WORN" under someone's own sentence competes with the
+   * sentence for a job nobody does daily. Kept — a misfile corrupts the record
+   * and not just one picture, so it has to stay inspectable — but moved to the
+   * hover tooltip, where it is there when someone goes looking and absent when
+   * they are not.
+   */
   filedAs?: string[];
 };
 
+/**
+ * A refinement that is still running, read from the SERVER (D-161).
+ *
+ * The panel used to know this only from its own mutation state, so closing the
+ * sheet erased it — and the founder, seeing nothing in flight, bought the same
+ * edit again. Both renders arrived and both charges stand; the defect was the
+ * false belief, so the fix is that the fact outlives the component.
+ */
+export type PendingRefine = {
+  variantId: string;
+  instruction: string;
+  startedAt: string | Date;
+};
+
+/**
+ * When a wait stops being ordinary and starts needing a sentence.
+ *
+ * The roll's own number, and the same reasoning: past this point the honest
+ * thing is to say the wait is long and name the outcome, so it reads as
+ * supervised rather than broken.
+ */
+const LONG_WAIT_MS = 2 * 60 * 1000;
+
 export function RefinePanel({
   variants,
+  pending = [],
   selectedVariantId,
   originalImageUrl,
   priceCredits,
@@ -43,6 +78,8 @@ export function RefinePanel({
   onDismissOutcome,
 }: {
   variants: readonly RefineVariant[];
+  /** Refinements still running, from server truth — survives remount (D-161). */
+  pending?: readonly PendingRefine[];
   /** Null means the original is the face. */
   selectedVariantId: string | null;
   originalImageUrl: string | null;
@@ -74,7 +111,18 @@ export function RefinePanel({
 }) {
   const [instruction, setInstruction] = useState("");
   const trimmed = instruction.trim();
+  /*
+    ARE THEY ABOUT TO BUY THE SAME EDIT TWICE? (D-161)
 
+    This is exactly what happened: a slow "copper hair", a closed sheet, no
+    visible pending state, and the founder typed it again. The ghost chip is the
+    main fix; this is the one that speaks up at the moment the money would move.
+    It WARNS and never blocks — asking for the same thing twice is a legitimate
+    thing to want, and a product that refuses it is guessing at intent.
+  */
+  const duplicateOf = pending.find(
+    (entry) => entry.instruction.trim().toLowerCase() === trimmed.toLowerCase() && trimmed,
+  );
   return (
     <div className="dpc-refine" onClick={(event) => event.stopPropagation()}>
       {/*
@@ -83,62 +131,90 @@ export function RefinePanel({
         another 25 credits — and D-121 is explicit that the two must not be
         made to look alike.
       */}
-      {variants.length > 0 ? (
-        <div className="dpc-refine__stack" role="group" aria-label="Versions of this face">
-          <button
-            type="button"
-            className="dpc-refine__step"
-            aria-pressed={selectedVariantId === null}
-            aria-label="The original"
-            onClick={() => onSelect(null)}
-          >
-            {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
-            <span>Original</span>
-          </button>
-          {variants.map((variant, position) => (
+      {variants.length > 0 || pending.length > 0 ? (
+        <div
+          className="dpc-refine__stack"
+          role="group"
+          aria-label="Versions of this face"
+        >
+          <div className="dpc-refine__step">
             <button
-              key={variant.variantId}
               type="button"
-              className="dpc-refine__step"
-              aria-pressed={selectedVariantId === variant.variantId}
-              /* Their own words are the label — the record read back as theirs. */
-              aria-label={variant.instructions.at(-1) ?? `Version ${position + 1}`}
-              title={variant.instructions.join(" · ")}
-              onClick={() => onSelect(variant.variantId)}
+              className="dpc-refine__pick"
+              aria-pressed={selectedVariantId === null}
+              aria-label="The original"
+              onClick={() => onSelect(null)}
             >
-              {variant.imageUrl ? <img src={variant.imageUrl} alt="" /> : null}
-              <span>{variant.instructions.at(-1)}</span>
-              {/*
-                WHERE it was filed, shown quietly under the words (D-149).
-                Filing decides what a Follow inherits, so a misfile corrupts the
-                record and not just one picture — which makes it something the
-                user has to be able to see before they can correct it.
-              */}
-              {variant.filedAs?.length ? (
-                <span className="dpc-refine__filed">{variant.filedAs.join(" · ")}</span>
-              ) : null}
-              {/* The PAID sibling of backing up, carrying its price so the two
-                  can never be mistaken for one another (D-121). */}
-              {onRemove ? (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="dpc-refine__remove"
-                  title={`Remove this instruction and re-render — ${priceCredits} credits`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onRemove(variant.variantId);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") onRemove(variant.variantId);
-                  }}
-                >
-                  Remove · {priceCredits}
-                </span>
-              ) : null}
+              {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
+              <span>Original</span>
             </button>
+          </div>
+          {variants.map((variant, position) => (
+            <div className="dpc-refine__step" key={variant.variantId}>
+              <button
+                type="button"
+                className="dpc-refine__pick"
+                aria-pressed={selectedVariantId === variant.variantId}
+                /* Their own words are the label — the record read back as theirs. */
+                aria-label={variant.instructions.at(-1) ?? `Version ${position + 1}`}
+                /*
+                  The whole stack, and WHERE it was filed, on hover (D-162).
+                  Filing decides what a Follow inherits, so a misfile corrupts
+                  the record and not just one picture — it stays inspectable,
+                  and stops competing with the user's own words for the eye.
+                */
+                title={variant.filedAs?.length
+                  ? `${variant.instructions.join(" · ")}\nFiled as: ${variant.filedAs.join(" · ")}`
+                  : variant.instructions.join(" · ")}
+                onClick={() => onSelect(variant.variantId)}
+              >
+                {variant.imageUrl ? <img src={variant.imageUrl} alt="" /> : null}
+                <span>{variant.instructions.at(-1)}</span>
+              </button>
+              {/*
+                REMOVE'S HOME IS DESIGNED AND NOT YET BUILT (D-162).
+
+                D-121 and D-155 both ruled how removing a mid-stack instruction
+                should look, and the founder could not find it in the product
+                because it was never implemented — there is no server procedure
+                and this handler has never been passed. The affordance belongs
+                in the shared `CardMenu`, not in a second hand-rolled menu
+                (`cardMenuAnatomy.test` enforces exactly one), and it should
+                arrive with the action it opens rather than before it: a visible
+                control that does nothing is worse than the one nobody found.
+              */}
+            </div>
+          ))}
+          {/*
+            THE GHOST CHIPS (D-161) — a refinement that is running, drawn from
+            server truth so it survives closing and reopening the sheet. Not
+            selectable, because there is nothing yet to select.
+          */}
+          {pending.map((entry) => (
+            <div className="dpc-refine__step" key={entry.variantId}>
+              <div className="dpc-refine__pick dpc-refine__pick--ghost" aria-live="polite">
+                <div className="dpc-refine__ghost">
+                  <span className="dp-chrome">Refining…</span>
+                </div>
+                <span>{entry.instruction}</span>
+              </div>
+            </div>
           ))}
         </div>
+      ) : null}
+
+      {/*
+        A LONG WAIT SAYS SO, AND NAMES THE OUTCOME.
+
+        The roll's own law: past about two minutes the honest thing is to admit
+        the wait is unusual and say what happens if it never lands, so it reads
+        as supervised rather than broken. Credits genuinely do come back.
+      */}
+      {pending.some((entry) => Date.now() - new Date(entry.startedAt).getTime() > LONG_WAIT_MS) ? (
+        <p className="dpc-refine__note">
+          This one is taking longer than usual. It'll appear here when it lands, and if it
+          doesn't arrive your credits come back on their own.
+        </p>
       ) : null}
 
       {outcome ? (
@@ -183,6 +259,13 @@ export function RefinePanel({
         something it cannot, which is worth more than a refusal after the fact —
         and it carries the price where a price belongs.
       */}
+      {/* Said BEFORE the money moves, not after — the one moment it helps. */}
+      {duplicateOf ? (
+        <p className="dpc-refine__note dpc-refine__note--warn">
+          You already have this one running. Refining again buys a second version of it.
+        </p>
+      ) : null}
+
       <p className="dpc-refine__note">
         Anything about them — not their clothes or the room · {priceCredits} credits each
       </p>

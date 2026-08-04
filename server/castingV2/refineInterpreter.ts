@@ -92,6 +92,9 @@ const SYSTEM_PROMPT = [
   '  A bare colour word is the colour they were BORN with. A dye is reachable by',
   '  saying so — "dyed", "bleached", "box colour" — and that files as makeup/styling.',
   '  "freckles", "a beauty mark", "a scar" are marks on the skin, not drawn on.',
+  '  A SHAPE is ink even when they do not say "tattoo": a star, a heart, a rose, initials,',
+  '  a word, a symbol. Marks are what skin does by itself — freckles, moles, scars,',
+  '  birthmarks, vitiligo. Anything DRAWN on the skin belongs to the free-lane subject "ink".',
   '  "contoured cheekbones" is makeup; "high cheekbones" is structure.',
   "Correction phrases ALWAYS win over the default, in either direction.",
   "",
@@ -102,9 +105,14 @@ const SYSTEM_PROMPT = [
   "  - marks and ink hold a set: restate all of them, not just the new one.",
   "  - Never name a brand, a product, or a real person.",
   "",
+  "ADORNMENT IS THE PERSON, NOT THE STAGE. Earrings, hoops, studs, a nose ring, a septum ring,",
+  "glasses, a chain, a wedding ring, any piercing — things worn ON them — are ordinary refinements",
+  "and file under statedAccessories in their own words. Only GARMENTS, HEADWEAR, the backdrop,",
+  "props and the scene are the stage.",
+  "",
   "WALLS — four things that are never possible. Reply with the wall, not an attempt:",
   '  likeness: making them look like a specific real person -> {"wall": "likeness"}',
-  '  stage: clothing, backdrop, props, the shoot -> {"wall": "stage", "asked": "<what, briefly>"}',
+  '  stage: garments, headwear, the backdrop, props, the scene -> {"wall": "stage", "asked": "<what, briefly>"}',
   '  content: anything unsafe or explicit -> {"wall": "content"}',
   "",
   "SUBJECTIVE asks are a wall too — prettier, hotter, better looking, more attractive. They name",
@@ -244,8 +252,16 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
       return "Refining can't make someone look like a specific real person. "
         + "Nothing was charged.";
     case "wall_stage":
+      /*
+        It names what DOES work, because the wall narrowed and the old copy was
+        the reason the founder believed it had not (D-160). "Wardrobe or set"
+        was the whole sentence, so an earring refused under it read as a product
+        that does not do jewellery — when jewellery is exactly what Refine is
+        the stated channel for.
+      */
       return `Refining changes the person, not the shoot — ${refusal.refusal.asked} is `
-        + "wardrobe or set, which comes after Sign. Nothing was charged.";
+        + "a garment, a prop or the set, which comes after Sign. Jewellery, glasses and "
+        + "piercings do work here. Nothing was charged.";
     case "wall_content":
       return "That one can't be rendered. Nothing was charged.";
     case "wall_unfileable":

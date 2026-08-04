@@ -738,8 +738,60 @@ export default function CastingSheet() {
      nobody sees and everybody pays. */
   const variants = trpc.castingV2.variants.useQuery(
     { candidateId: viewerCandidateId ?? "" },
-    { enabled: viewerRefinable },
+    {
+      enabled: viewerRefinable,
+      /*
+        POLL ONLY WHILE SOMETHING IS RUNNING (D-161).
+
+        The ghost chip is read from the server, so something has to ask again
+        for it to ever resolve — but a permanent interval on eight faces is a
+        cost nobody sees and everybody pays, which is why this query is already
+        gated on the viewer being open. It polls when there is news coming and
+        stops the moment there isn't.
+      */
+      refetchInterval: (query) => (query.state.data?.pending?.length ? 4000 : false),
+    },
   );
+
+  /*
+    THE LATE LANDER ANNOUNCES ITSELF (D-161).
+
+    A refine the founder had given up on landed and appended silently, so two
+    copper chips appeared in the lineage with no explanation of where the second
+    came from. A variant that arrives without this panel having just bought it
+    says so.
+  */
+  const knownVariantIds = useRef<Set<string> | null>(null);
+  const boughtHere = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const rows = variants.data?.variants;
+    if (!rows) return;
+    const ids = new Set(rows.map((row) => row.variantId));
+    /* The first read after opening a face is the baseline, never an arrival. */
+    if (!knownVariantIds.current) {
+      knownVariantIds.current = ids;
+      return;
+    }
+    const arrived = rows.filter(
+      (row) => !knownVariantIds.current?.has(row.variantId) && !boughtHere.current.has(row.variantId),
+    );
+    knownVariantIds.current = ids;
+    const last = arrived.at(-1);
+    if (last) {
+      const words = last.instructions.at(-1);
+      setRefineOutcome(
+        words
+          ? `The edit you started earlier — "${words}" — just arrived and was added to this face.`
+          : "An edit you started earlier just arrived and was added to this face.",
+      );
+    }
+  }, [variants.data]);
+
+  /* Opening a different face starts a new baseline. */
+  useEffect(() => {
+    knownVariantIds.current = null;
+    boughtHere.current = new Set();
+  }, [viewerCandidateId]);
 
   /*
     THE CANCEL LINE, derived every render from the projection the tiles are
@@ -1441,10 +1493,16 @@ export default function CastingSheet() {
               */
               key={viewerCandidateId}
               variants={variants.data?.variants ?? []}
+              pending={variants.data?.pending ?? []}
               selectedVariantId={variants.data?.selectedVariantId ?? null}
               originalImageUrl={variants.data?.originalImageUrl ?? null}
               priceCredits={refinePrice}
-              busy={refine.isPending}
+              /*
+                BUSY IS SERVER TRUTH TOO (D-161). `refine.isPending` alone dies
+                with the component, which is how a running edit became invisible
+                and got bought twice.
+              */
+              busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
               outcome={refineOutcome}
               onDismissOutcome={() => setRefineOutcome(null)}
               onRefine={(instruction) => {
@@ -1454,7 +1512,9 @@ export default function CastingSheet() {
                     candidateId: viewerCandidateId,
                     instruction,
                   })
-                  .then(async () => {
+                  .then(async (result) => {
+                    /* Bought HERE, so its arrival is not a late lander (D-161). */
+                    if (result?.variantId) boughtHere.current.add(result.variantId);
                     await variants.refetch();
                     await invalidate();
                   })

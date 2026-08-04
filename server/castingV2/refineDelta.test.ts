@@ -260,6 +260,47 @@ describe("free-lane filing keeps expression out of identity (D-136)", () => {
   });
 });
 
+/**
+ * ADORNMENT IS THE PERSON, NOT THE STAGE (D-160).
+ *
+ * "Small gold hoops" was refused as wardrobe or set, contradicting a standing
+ * founder ruling and the roll pipeline's own behaviour — `statedAccessories` has
+ * been an intent axis with failure-to-appear teeth since the D-116 family.
+ */
+describe("accessories are refinable; garments and headwear are not", () => {
+  const check = (instruction: string): FreeLaneCheck => ({ instruction });
+
+  it("files worn adornment, including when it is described as worn", () => {
+    for (const ask of [
+      "small gold hoops",
+      "wearing small gold hoops",
+      "a thin silver chain",
+      "a tiny nose stud",
+    ]) {
+      const c = check(ask);
+      const delta = readDelta({ free: { statedAccessories: ask } }, c);
+      expect(delta?.free?.statedAccessories, ask).toBe(ask);
+      expect(c.wall, ask).toBeUndefined();
+    }
+  });
+
+  /* The wall NARROWED — it did not fall. A garment smuggled into the
+     accessories subject still hits it, and so does headwear. */
+  it("still refuses a garment or headwear routed through accessories", () => {
+    for (const ask of ["wearing a red coat", "a wide brimmed hat"]) {
+      const c = check(ask);
+      expect(readDelta({ free: { statedAccessories: ask } }, c), ask).toBeNull();
+      expect(c.wall?.reason, ask).toBe("wall_stage");
+    }
+  });
+
+  it("carries the failure-to-appear licence into the prompt", () => {
+    const prompt = composeEditPrompt({ free: { statedAccessories: "small gold hoops" } }, prose);
+    expect(prompt).toContain("ACCESSORIES: small gold hoops");
+    expect(prompt).toContain("failed candidate");
+  });
+});
+
 describe("the free lane composes under its registered headings", () => {
   it("emits each subject under the heading the sweep looks for", () => {
     const prompt = composeEditPrompt(
@@ -304,6 +345,82 @@ describe("ink renders only where the anchor is the document", () => {
       expect(readDelta({ free: { ink: ask } }, c), ask).toBeNull();
       expect(c.wall?.reason, ask).toBe("gate_ink_document");
     }
+  });
+
+  /*
+    D-158: the visibility rule is about the RELATION, not about a phrasing.
+
+    D-153 shipped it as a list of hidden phrases and the founder's very next
+    tattoo went through it — they typed "behind ear" rather than "behind her
+    ear", so nothing matched and `\bear\b` let it render. Every one of these
+    must gate, and the point of the row is that no list of surface forms would
+    have contained all of them.
+  */
+  it("gates ink that is BEHIND something, however it is phrased", () => {
+    for (const ask of [
+      "a tiny star behind her ear",
+      "a tiny star behind ear",
+      "a tiny star behind the left ear",
+      "a tiny star behind one ear",
+      "a small design behind both ears",
+      "a word tattooed on the back of her neck",
+      "a small moon on the nape",
+      "a tiny cross under her hair",
+    ]) {
+      const c = check(ask);
+      expect(readDelta({ free: { ink: ask } }, c), ask).toBeNull();
+      expect(c.wall?.reason, ask).toBe("gate_ink_document");
+    }
+  });
+
+  /*
+    THE GATE FOLLOWS THE DESIGN, NOT THE DRAWER (D-158).
+
+    Found by driving the real interpreter, which the unit tests structurally
+    could not: "a small star behind her ear" carries no word "tattoo", so it came
+    back filed as a MARK — and marks have no placement law, so it rendered. The
+    gate was bypassed by filing.
+  */
+  it("gates a design filed as a mark", () => {
+    const ask = "a small star behind her ear";
+    const c = check(ask);
+    expect(readDelta({ free: { marks: ask } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("gate_ink_document");
+  });
+
+  /* Skin's own marks are not designs and keep their own rules. */
+  it("leaves real marks alone", () => {
+    for (const ask of ["freckles across her nose", "a small scar through her eyebrow"]) {
+      const c = check(ask);
+      expect(readDelta({ free: { marks: ask } }, c)?.free?.marks, ask).toBe(ask);
+    }
+  });
+
+  /*
+    A KNOWN SUBJECT AT THE TOP LEVEL IS A SHAPE SLIP, NOT A REFUSAL.
+
+    The guaranteed axes are top-level and the free ones are nested, so the
+    interpreter replied `{"ink": "…"}` — which left an empty delta with no wall
+    and surfaced to the user as "that didn't come through clearly". Its own habit,
+    reported as their mistake, which is what `stripFence` already exists to stop.
+  */
+  it("hoists a free subject the interpreter put at the top level", () => {
+    const ask = "a small rose tattoo on her cheekbone";
+    expect(readDelta({ ink: ask }, check(ask))?.free?.ink).toBe(ask);
+  });
+
+  it("still applies every guard to a hoisted value", () => {
+    const ask = "a small star behind her ear";
+    const c = check(ask);
+    expect(readDelta({ ink: ask }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("gate_ink_document");
+  });
+
+  /* And the narrowness is load-bearing in the other direction: "under" hides
+     things only when hair is what is over them. An eye is still front-visible. */
+  it("keeps under-the-eye ink renderable", () => {
+    const ask = "a tiny star tattoo under her eye";
+    expect(readDelta({ free: { ink: ask } }, check(ask))?.free?.ink).toBe(ask);
   });
 
   /*

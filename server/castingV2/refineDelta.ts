@@ -41,10 +41,11 @@ import {
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { REFINABLE_CUT_NAMES, hairStyleByName } from "./hairStyles";
 import { scrubBrands } from "./brandScrub";
-import { classifyInkPlacement, placementClause } from "./inkPlacement";
+import { classifyInkPlacement, namesDesign, placementClause } from "./inkPlacement";
 import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
 import { FREE_SUBJECT_KEYS, FREE_SUBJECTS, isPresentationSubject, type FreeSubject } from "./refineSubjects";
+import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
 
 /** One adjustment, not a paragraph — the brief box is where prose belongs. */
 const MAX_MAKEUP_LENGTH = 80;
@@ -148,6 +149,16 @@ const STAGE_WORDS = [
   "holding", "prop", "chair", "table",
 ];
 
+/**
+ * Words the ACCESSORIES subject is allowed to use (D-160).
+ *
+ * "Wearing" is how anyone describes an earring, so the stage guard was refusing
+ * the subject the founder opened by the only verb it has. Every garment noun
+ * still fires — "wearing a red coat" is still a garment — and headwear stays
+ * out, which is the same carve-out the cohort's own accessories licence makes.
+ */
+const ACCESSORY_ALLOWED = new Set(["wearing"]);
+
 /** Runtime validation of the interpreter's reply — a closed vocabulary is only
     closed if something checks. */
 export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | null {
@@ -200,10 +211,29 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     delta.makeup = cleaned;
   }
   /* ---- the free lane (D-131) ---- */
-  if (raw.free != null) {
-    if (typeof raw.free !== "object" || Array.isArray(raw.free)) return null;
+  if (raw.free != null && (typeof raw.free !== "object" || Array.isArray(raw.free))) return null;
+  /*
+    A KNOWN SUBJECT AT THE TOP LEVEL IS A SHAPE SLIP, NOT A DIFFERENT MEANING.
+
+    The guaranteed axes are top-level fields and the free ones are nested, so a
+    prompt line that reads like "this files under ink" gets replies of
+    `{"ink": "…"}` rather than `{"free": {"ink": "…"}}`. That used to leave an
+    empty delta with no wall set, which surfaces as "that didn't come through
+    clearly" — the interpreter's own habit reported to the user as their
+    mistake, which is the exact failure `stripFence` was added for.
+
+    Hoisting is safe in the only way that matters: the value still passes every
+    guard below — scrub, both walls, source containment and the ink gate — so
+    this forgives the SHAPE and nothing else. Free subjects and guaranteed axes
+    cannot collide, because the type-level carve-out forbids it.
+  */
+  const stated: Record<string, unknown> = { ...(raw.free as Record<string, unknown> | undefined ?? {}) };
+  for (const key of FREE_SUBJECT_KEYS) {
+    if (raw[key] != null && stated[key] == null) stated[key] = raw[key];
+  }
+  if (Object.keys(stated).length > 0) {
     const free: Partial<Record<FreeSubject, string>> = {};
-    for (const [subject, entry] of Object.entries(raw.free as Record<string, unknown>)) {
+    for (const [subject, entry] of Object.entries(stated)) {
       /*
         WALL (b), primary form: a subject the code does not own cannot be
         filed, and wall (d) says an ask that cannot be filed refuses. This is
@@ -231,7 +261,20 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         Everything else waits for the body-art studio rather than being rendered
         from a sentence, which would be a different tattoo in every frame.
       */
-      if (subject === "ink" && check) {
+      /*
+        AND IT FOLLOWS THE DESIGN, NOT THE DRAWER (D-158).
+
+        The gate was on the `ink` subject alone, so it was bypassed by filing:
+        "a small star behind her ear" carries no word "tattoo", came back as a
+        MARK, and marks have no placement law — so it rendered. A star is a
+        design wherever it is filed. Marks that name a design are held to the
+        same visibility rule; freckles, scars and birthmarks are not, because
+        they are things skin does rather than things drawn on it.
+
+        Found by driving the real interpreter, not by the unit tests, which
+        could only ever ask the question with the subject already chosen.
+      */
+      if (check && (subject === "ink" || (subject === "marks" && namesDesign(scrubbed)))) {
         if (classifyInkPlacement(scrubbed).kind !== "in_frame") {
           check.wall = { reason: "gate_ink_document" };
           return null;
@@ -247,7 +290,10 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         }
         /* WALL (b), secondary: scenery smuggled into a person subject. */
         const lowered = scrubbed.toLowerCase();
-        const stage = STAGE_WORDS.find((word) => new RegExp(`\\b${word}\\b`).test(lowered));
+        const stage = STAGE_WORDS.find((word) => (
+          !(subject === "statedAccessories" && ACCESSORY_ALLOWED.has(word))
+          && new RegExp(`\\b${word}\\b`).test(lowered)
+        ));
         if (stage) {
           check.wall = { reason: "wall_stage", asked: stage };
           return null;
@@ -361,17 +407,87 @@ function promoteToGuaranteedLane(
   return false;
 }
 
+/** Which FACETS one delta writes — the unit composition supersedes on (D-159). */
+export function facetsWrittenBy(delta: RefineDelta): Set<Facet> {
+  const facets = new Set<Facet>();
+  for (const axis of REFINABLE_AXES) {
+    if (delta[axis] != null) facets.add(facetOfAxis(axis));
+  }
+  for (const [subject, value] of Object.entries(delta.free ?? {})) {
+    if (value) facets.add(facetOfSubject(subject as FreeSubject));
+  }
+  return facets;
+}
+
+/** Clear every key — either lane — that answers one of these facets. */
+function clearFacets(composed: RefineDelta, facets: ReadonlySet<Facet>): void {
+  for (const axis of REFINABLE_AXES) {
+    if (facets.has(facetOfAxis(axis))) delete composed[axis];
+  }
+  if (!composed.free) return;
+  for (const subject of Object.keys(composed.free) as FreeSubject[]) {
+    if (facets.has(facetOfSubject(subject))) delete composed.free[subject];
+  }
+  if (Object.keys(composed.free).length === 0) delete composed.free;
+}
+
+/**
+ * ONE delta answering one facet twice — the legacy shape, resolved GUARANTEED-WINS.
+ *
+ * A freshly parsed instruction cannot do this: promotion moves a value into the
+ * guaranteed lane and `continue`s rather than filing it twice. But composed
+ * deltas persisted BEFORE facet supersession existed can hold both, with no
+ * ordering left to recover, and those rows are read back as the predecessor of
+ * every new refinement.
+ *
+ * Guaranteed wins because that is what the PIXELS did: in every such row the
+ * engineered prose beat the bare free clause, so the convention agrees with the
+ * picture the user kept and is looking at. The row heals itself the next time
+ * anything writes that facet.
+ */
+function collapseWithinDelta(delta: RefineDelta): RefineDelta {
+  if (!delta.free) return delta;
+  const guaranteed = new Set<Facet>();
+  for (const axis of REFINABLE_AXES) {
+    if (delta[axis] != null) guaranteed.add(facetOfAxis(axis));
+  }
+  const free: Partial<Record<FreeSubject, string>> = {};
+  let collided = false;
+  for (const [subject, value] of Object.entries(delta.free)) {
+    if (guaranteed.has(facetOfSubject(subject as FreeSubject))) {
+      collided = true;
+      continue;
+    }
+    if (value) free[subject as FreeSubject] = value;
+  }
+  if (!collided) return delta;
+  const next: RefineDelta = { ...delta };
+  if (Object.keys(free).length > 0) next.free = free;
+  else delete next.free;
+  return next;
+}
+
 /**
  * Compose a stack of deltas over the original identity — mechanical, no model.
  *
- * Per-axis last-writer-wins, in order. This is the ONLY composition rule, and
+ * Per-FACET last-writer-wins, in order. This is the ONLY composition rule, and
  * its plainness is the feature: whatever the interpreter did at entry, what
  * ends up in the prompt and in the record is something a person can work out on
  * paper from the instruction list.
+ *
+ * **Per facet, not per key** (D-159). It was per key, and the two lanes give one
+ * facet two of them — so "copper hair" and then "pastel pink hair" both survived
+ * into a single prompt and fought, and the heavier engineered prose won while
+ * the record said pink. Superseding by facet makes a prompt with two answers to
+ * one question unrepresentable rather than merely detectable.
  */
 export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
   const composed: RefineDelta = {};
-  for (const delta of deltas) {
+  for (const raw of deltas) {
+    const delta = collapseWithinDelta(raw);
+    /* Everything this delta is about loses its previous answer FIRST, in either
+       lane, so the assignments below are the only surviving writers. */
+    clearFacets(composed, facetsWrittenBy(delta));
     if (delta.eyeColour != null) composed.eyeColour = delta.eyeColour;
     if (delta.eyeShape != null) composed.eyeShape = delta.eyeShape;
     if (delta.hairStyle != null) composed.hairStyle = delta.hairStyle;
@@ -388,6 +504,44 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
     if (delta.free) composed.free = { ...(composed.free ?? {}), ...delta.free };
   }
   return composed;
+}
+
+/**
+ * What a facet's value IS right now, read from the composed identity.
+ *
+ * The interpreter resolves relative asks — "make it lighter", "shorter" —
+ * against these, so reading the wrong one buys a paid edit relative to a value
+ * the face does not have. Facet supersession makes that a live hazard rather
+ * than a theoretical one: once a free `hairShade` clears the guaranteed
+ * `hairColour`, `identity.hair.colour` falls back to the ORIGINAL colour while
+ * the face on screen is pastel pink. So the read follows the facet, not the
+ * field — the stated detail first, the guaranteed home only if no stated one
+ * currently owns it.
+ */
+export function currentValueOfFacet(
+  identity: ResolvedIdentity | null | undefined,
+  facet: Facet,
+): string | null {
+  if (!identity) return null;
+  const realized = (identity.realized ?? {}) as Record<string, unknown>;
+  const stated = (realized.statedDetails ?? {}) as Record<string, unknown>;
+  for (const subject of subjectsOfFacet(facet)) {
+    const value = stated[subject];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  switch (facet) {
+    case "eye.colour": return asText(realized.eyeColour);
+    case "eye.shape": return asText(realized.eyeShape);
+    case "hair.cut": return asText((realized.hairStyle as { name?: unknown })?.name);
+    case "hair.colour": return asText((identity.hair as { colour?: unknown })?.colour);
+    case "hair.texture": return asText(realized.hairTexture);
+    case "makeup": return asText(realized.makeup);
+    default: return null;
+  }
+}
+
+function asText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
 }
 
 /**
@@ -552,6 +706,18 @@ function qualifierFor(subject: FreeSubject): string {
       + "slightly deeper root shadow and the tone reading as grown rather than dyed";
   }
   if (subject === "ink") return "";
+  /*
+    THE LICENCE, CARRIED (D-160). The cohort constant gives stated accessories
+    failure-to-appear teeth on the ROLL; the edit prompt has to say it too, or
+    the one surface where a person deliberately asks for an earring is the one
+    surface where it can quietly not appear.
+  */
+  if (subject === "statedAccessories") {
+    return ", worn by this person and plainly visible, rendered accurately as "
+      + "described and as their own — an accessory that fails to appear is a "
+      + "failed candidate. Nothing else is added: no other jewellery, no "
+      + "headwear, no props";
+  }
   if (subject === "hairCut") {
     return ", cut and dressed as a real haircut on this person's own hair density "
       + "and hairline";

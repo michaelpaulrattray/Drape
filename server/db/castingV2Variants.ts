@@ -433,6 +433,45 @@ export async function listCandidateVariants(
 }
 
 /**
+ * The refinements of one owned candidate that are still IN FLIGHT (D-161).
+ *
+ * The panel used to know a refine was running only from its own mutation state,
+ * so closing the sheet and reopening it erased the fact — and the founder,
+ * seeing nothing, bought the same edit a second time. Both renders arrived, both
+ * charges stand, and the defect was never the money: it was that the product
+ * knew something the person could not see.
+ *
+ * Owner-scoped and parent-scoped in the one statement, like every other read
+ * here. Returns the user's own sentences and a timestamp, nothing else — a
+ * pending row's `deltas` are as internal as a landed one's.
+ */
+export async function listPendingVariants(
+  userId: number,
+  candidatePublicId: string,
+): Promise<Array<{ publicId: string; instructions: unknown; createdAt: Date }>> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const rows = await db
+    .select({
+      publicId: castingCandidateVariants.publicId,
+      instructions: castingCandidateVariants.instructions,
+      createdAt: castingCandidateVariants.createdAt,
+    })
+    .from(castingCandidateVariants)
+    .innerJoin(castingCandidates, and(
+      eq(castingCandidates.id, castingCandidateVariants.candidateId),
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+    ))
+    .where(and(
+      eq(castingCandidateVariants.userId, userId),
+      inArray(castingCandidateVariants.status, ["queued", "dispatched"]),
+    ))
+    .orderBy(asc(castingCandidateVariants.id));
+  return rows;
+}
+
+/**
  * The variant a given operation created — the recovery adjudicator's fork.
  *
  * `generation_operations` has no payload column, so a crashed refine cannot be

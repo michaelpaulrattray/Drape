@@ -32,16 +32,48 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { scrubBrands } from "./brandScrub";
 import { interpreterEngine } from "./interpreter";
-import { FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
+import { facetHeading, type Facet } from "./refineFacets";
 
 const log = createModuleLogger("castingV2/realizationCaption");
 
-/** Captions by subject — one per facet, the same keys the deltas use. */
-export type RealizationCaptions = Partial<Record<string, string>>;
+/**
+ * Captions BY FACET, and the key is the whole of D-159 applied here.
+ *
+ * A caption is the answer to "what did this facet actually look like when it
+ * rendered". Key it by anything coarser and a colour instruction inherits a
+ * colour caption from before it — which is not stale information but a WRONG
+ * one, stated to the image model as already true. Keyed by facet, it dies with
+ * the facet it describes.
+ */
+export type RealizationCaptions = Partial<Record<Facet, string>>;
 
-/** Long enough to be specific, short enough not to become a second brief. */
-const MAX_CAPTION = 160;
+/**
+ * Long enough to be specific, short enough not to become a second brief.
+ *
+ * Raised from 160 and matched to the reader's cap, which was already 200 — the
+ * mismatch meant the writer truncated and the reader did not, so nothing ever
+ * enforced one length. The mullet caption hit the old ceiling and stored
+ * "…falling past the jawline in front and to the shoulders at", a fact that
+ * trails off mid-clause and is then stated to the image model as ALREADY TRUE.
+ */
+const MAX_CAPTION = 200;
+
+/**
+ * Cut at a boundary, never mid-phrase, and never with trailing whitespace.
+ *
+ * A caption is a FACT handed to the next render. Half a clause is a fact that
+ * stops making a claim partway through, and a trailing space made two identical
+ * captions compare unequal — which showed up as a driver failure that looked
+ * like a lost caption and was punctuation.
+ */
+function tidy(caption: string): string {
+  if (caption.length <= MAX_CAPTION) return caption.trim();
+  const cut = caption.slice(0, MAX_CAPTION);
+  const boundary = Math.max(cut.lastIndexOf(", "), cut.lastIndexOf(" "));
+  return (boundary > MAX_CAPTION / 2 ? cut.slice(0, boundary) : cut).trim().replace(/[,;]$/, "");
+}
 
 const SYSTEM_PROMPT = [
   "You look at a photograph of a person and describe ONE named feature of it with the",
@@ -65,7 +97,7 @@ const SYSTEM_PROMPT = [
  * already paid for, and the render in hand is already correct.
  */
 export async function captionRealization(input: {
-  subject: string;
+  facet: Facet;
   bytes: Buffer;
   contentType: string;
   engine?: TextEngine;
@@ -73,11 +105,11 @@ export async function captionRealization(input: {
 }): Promise<string | null> {
   const engine = input.engine ?? interpreterEngine();
   if (!engine) return null;
-  const heading = FREE_SUBJECTS[input.subject as FreeSubject] ?? input.subject;
+  const heading = facetHeading(input.facet);
   try {
     const reply = await engine.complete({
       system: SYSTEM_PROMPT,
-      user: `Describe this person's ${heading.toLowerCase()}.`,
+      user: `Describe this person's ${heading.toLowerCase()}.${extraAsk(input.facet)}`,
       images: [{ bytes: input.bytes, contentType: input.contentType }],
       json: true,
       temperature: 0.1,
@@ -87,11 +119,68 @@ export async function captionRealization(input: {
     const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
     const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
     if (!caption) return null;
-    return caption.slice(0, MAX_CAPTION);
+    /*
+      Scrubbed like every other free text that enters a paid prompt. This one is
+      MODEL-authored rather than user-authored, which makes it the likeliest
+      place in the whole surface for a brand name to arrive unasked.
+    */
+    const cleaned = scrubBrands(caption)?.trim() ?? "";
+    if (!cleaned) return null;
+    return tidy(cleaned) || null;
   } catch (error) {
-    log.warn({ err: error, subject: input.subject }, "[realizationCaption] could not read the render back");
+    log.warn({ err: error, facet: input.facet }, "[realizationCaption] could not read the render back");
     return null;
   }
+}
+
+/**
+ * Ink is asked WHERE, not just what.
+ *
+ * D-145 says a stated placement is never relocated, and a caption that
+ * faithfully describes two swallows without saying "on the chest" hands the
+ * next render a design with no address — which is an invitation to move it.
+ */
+function extraAsk(facet: Facet): string {
+  if (facet === "ink" || facet === "marks") {
+    return " Say exactly where on the body it sits, as part of the description.";
+  }
+  return "";
+}
+
+/**
+ * Forget what these facets looked like — they are being rewritten (D-159).
+ *
+ * The founder's evidence: a copper caption surviving a pastel-pink instruction
+ * tells the model copper is already true while the instruction asks for pink,
+ * and the caption wins because it is phrased as fact. Dropping is not tidiness;
+ * it is the difference between a memory and a contradiction.
+ */
+export function dropFacets(
+  captions: RealizationCaptions,
+  facets: ReadonlySet<Facet>,
+): RealizationCaptions {
+  const kept: RealizationCaptions = {};
+  for (const [facet, caption] of Object.entries(captions)) {
+    if (facets.has(facet)) continue;
+    if (caption) kept[facet] = caption;
+  }
+  return kept;
+}
+
+/**
+ * Any caption that survived a facet it had no right to survive.
+ *
+ * COMPOSE-COMPLETENESS, EXTENDED TO THE CAPTION LAYER (D-159, per the founder:
+ * "a superseded caption reaching the prompt is the same crime as a dropped
+ * instruction"). D-143 put teeth on the promise that a filed fact reaches the
+ * prompt; this is the same promise pointing the other way — a fact that is no
+ * longer true must not.
+ */
+export function staleCaptions(
+  captions: RealizationCaptions,
+  written: ReadonlySet<Facet>,
+): Facet[] {
+  return Object.keys(captions).filter((facet) => written.has(facet));
 }
 
 /**
@@ -105,10 +194,7 @@ export async function captionRealization(input: {
 export function captionClause(captions: RealizationCaptions): string {
   const lines = Object.entries(captions)
     .filter(([, caption]) => Boolean(caption))
-    .map(([subject, caption]) => {
-      const heading = FREE_SUBJECTS[subject as FreeSubject] ?? subject.toUpperCase();
-      return `${heading}: ${caption}`;
-    });
+    .map(([facet, caption]) => `${facetHeading(facet)}: ${caption}`);
   if (lines.length === 0) return "";
   return " These are ALREADY TRUE of this person and must be reproduced exactly as described, "
     + `not approximated and not re-interpreted: ${lines.join(" | ")}.`;
