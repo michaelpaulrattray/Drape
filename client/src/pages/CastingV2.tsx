@@ -544,26 +544,20 @@ export default function CastingV2() {
             bordered boxes side by side would read as two cards; this reads as
             one pane, split.
 
-            The art is platform-owned synthetic output from the M3 identity run
-            — one anchor held across views, which is precisely the claim the
-            pair makes: the same person, framed twice. No pills: SIGNED would
-            be false until M7 signs someone, and the prototype's "212 FRAMES"
-            is invented. Structure ships, claims do not (F5).
+            The art is platform-owned synthetic output (founder-directed
+            2026-08-05, generated via the codex-imagegen pipeline against the
+            founder's own references): LEFT the authentic UGC creator, RIGHT
+            the doll-glam creator — who our users are beside what they cast.
+            Both clean frames edge to edge, so the old `--trim-bottom`
+            overscale hack is retired with the art that needed it. No pills:
+            structure ships, claims do not (F5).
           */}
           <div className="dpc-hero__pair">
             <div className="dpc-hero__slot">
               <img src="/casting-hero/hero-left.png" alt="" />
             </div>
-            {/*
-              The right frame carries a faint pseudo-text artifact along its
-              bottom edge. `--trim-bottom` overscales the image inside the
-              clipped slot so that edge is always outside the frame — which
-              `object-position` alone cannot guarantee, because at a slot
-              narrower than 3:4 cover-fit shows the image's full height and the
-              artifact would come back.
-            */}
             <div className="dpc-hero__slot">
-              <img className="dpc-hero__img--trim-bottom" src="/casting-hero/hero-right.png" alt="" />
+              <img src="/casting-hero/hero-right.png" alt="" />
             </div>
           </div>
         </div>
