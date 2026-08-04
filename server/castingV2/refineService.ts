@@ -53,6 +53,7 @@ import {
   landVariant,
   listCandidateVariants,
   markVariantDispatched,
+  recordVariantOutcome,
   selectVariant,
   VariantOwnershipError,
 } from "../db/castingV2Variants";
@@ -69,7 +70,7 @@ import {
   IRIS_RENDER,
 } from "./realizedAxes";
 import { hairStyleByName } from "./hairStyles";
-import { FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
+import { FREE_SUBJECT_KEYS, FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
 import { readResolvedIdentity } from "./rollService";
 import {
   applyDelta,
@@ -259,6 +260,23 @@ export async function refineCandidate(
   for (const [subject, value] of Object.entries(readDelta(predecessorForParse?.deltas)?.free ?? {})) {
     priorItems[subject as FreeSubject] = itemsOf(value);
   }
+  /*
+    THE RECORD IS SHOWN TOO, not only the recipe (D-173, parent C).
+
+    D-167's confession asks whether the face HAS the thing, and it asked with
+    the same every-word comparison the chain used — so a record holding "small
+    gold hoops" answered no to "hoop earrings", and the confession fired on a
+    face visibly wearing them. Referent resolution has to serve this step as
+    well, or fixing the chain leaves the lie intact one branch over.
+  */
+  for (const subject of FREE_SUBJECT_KEYS) {
+    const recorded = currentValueOfFacet(readResolvedIdentity(source.internalPrompt), facetOf(subject));
+    if (!recorded) continue;
+    const seen = priorItems[subject] ?? [];
+    if (!seen.some((item) => item.toLowerCase() === recorded.toLowerCase())) {
+      priorItems[subject] = [...seen, recorded];
+    }
+  }
 
   const parsed = await (dependencies.interpret ?? interpretRefinement)({
     instruction: input.instruction,
@@ -412,7 +430,17 @@ export async function refineCandidate(
       const recorded = subject
         ? currentValueOfFacet(currentIdentity, facetOf(subject))
         : null;
-      if (!textMentions(recorded, parsed.match)) {
+      /*
+        AN ECHO IS PROOF THE THING EXISTS (D-173, parent C).
+
+        The parser was shown the recipe AND the record, and every echo it
+        returned has been verified verbatim against one of them. So an echo
+        settles the question that `textMentions` used to answer badly: the face
+        HAS this, and the honest branch is a content edit rather than a
+        confession that the record itself contradicts.
+      */
+      const echoedSomething = (parsed.items?.length ?? 0) > 0;
+      if (!echoedSomething && !textMentions(recorded, parsed.match)) {
         const named = parsed.match
           ?? (subject ? FREE_SUBJECTS[subject as FreeSubject]?.toLowerCase() : null)
           ?? "that";
@@ -921,6 +949,48 @@ export async function refineCandidate(
       providerModel: image.provenance?.model ?? null,
       providerRef: image.provenance?.providerRef ?? null,
     });
+
+    /*
+      THE LEDGER'S OTHER TWO EVENTS (D-175), written once the render has landed.
+
+      A removal says the face it came from was CORRECTED — the user paid for
+      something and then took part of it back. An edit that rewrites a facet its
+      predecessor's own last step wrote says that step was REPHRASED: same
+      ground, second attempt, which is the clearest signal in the product that a
+      paid edit did not say what they meant.
+
+      After the landing on purpose. Labelling a refinement that then failed
+      would put a satisfaction verdict on a picture nobody ever saw.
+    */
+    try {
+      if (predecessor) {
+        const previousStep = readStepDeltas(predecessor.stepDeltas).at(-1);
+        const rephrased = Boolean(
+          editDelta
+          && previousStep
+          && Array.from(facetsWrittenBy(editDelta))
+            .some((facet) => facetsWrittenBy(previousStep).has(facet)),
+        );
+        if (!editDelta || rephrased) {
+          await recordVariantOutcome({
+            userId: input.userId,
+            variantId: predecessor.id,
+            outcome: editDelta ? "rephrased" : "corrected",
+          });
+        }
+      }
+    } catch (error) {
+      /*
+        A LOST LABEL MUST NEVER COST A DELIVERED PICTURE.
+
+        The whole try/catch, not a `.catch()` on the promise: a synchronous
+        throw walks straight past that and lands in the outer handler, which
+        refunds — so a bookkeeping failure would have taken back a render the
+        user already has. The ledger is the least important thing in this
+        function and must fail like it.
+      */
+      log.warn({ err: error }, "[refineService] could not record the satisfaction outcome");
+    }
 
     const result: RefineResult = {
       kind: "rendered",

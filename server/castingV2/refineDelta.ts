@@ -166,7 +166,23 @@ export type RefineParse =
    * The model names the subject and hands back the user's own words; it does
    * not decide which steps go, and it never sees the chain.
    */
-  | { ok: true; intent: "remove"; subject: string | null; match: string | null }
+  | {
+    ok: true;
+    intent: "remove";
+    subject: string | null;
+    match: string | null;
+    /**
+     * The stored items this removal means, echoed VERBATIM (D-173).
+     *
+     * Referent resolution lives in the parser because it needs language:
+     * "remove the earrings" has to find "small gold hoops", and knowing that
+     * hoops ARE earrings is grammar, not string comparison. Every entry here
+     * has already been proved to be exactly a stored item, so the code is
+     * matching on identity rather than on word overlap — which is what stops a
+     * user ever having to speak the machine's own tag.
+     */
+    items?: string[];
+  }
   | { ok: false; refusal: RefineRefusal };
 
 /**
@@ -296,6 +312,25 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     const scrubbed = scrubBrands(raw.makeup.trim());
     const cleaned = scrubbed?.trim() ?? "";
     if (!cleaned || cleaned.length > MAX_MAKEUP_LENGTH) return null;
+    /*
+      MAKEUP IS FREE TEXT AND HAD NO CONTAINMENT AT ALL.
+
+      Found while driving D-172: a reply came back with
+      `makeup: "none — a bare face"` — the CONTEXT LINE from the user message,
+      copied into the field. Nothing stopped it, because this slot is checked
+      for length and brands and never for provenance, so any sentence the model
+      produced would have gone into a paid prompt as an instruction.
+
+      It is user-authored text like every other free value, so it faces the same
+      question every other free value faces: did they say it?
+    */
+    if (check) {
+      const strip = (text: string) => text.replace(/['’]/g, "");
+      if (!stemmedContainment(strip(cleaned), strip(check.instruction))) {
+        check.wall = { reason: "wall_unfileable", asked: "makeup" };
+        return null;
+      }
+    }
     delta.makeup = cleaned;
   }
   /* ---- the free lane (D-131) ---- */

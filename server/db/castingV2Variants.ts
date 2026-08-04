@@ -28,6 +28,7 @@ import {
   generationOperations,
   storageCleanupBatches,
   storageCleanupItems,
+  CASTING_VARIANT_OUTCOMES,
   type CastingCandidateVariant,
 } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
@@ -360,6 +361,36 @@ export async function failVariant(input: {
       eq(castingCandidateVariants.id, input.variantId),
       eq(castingCandidateVariants.userId, input.userId),
       inArray(castingCandidateVariants.status, ["queued", "dispatched"]),
+    ));
+  return affectedRows(result) === 1;
+}
+
+/**
+ * What became of a refinement — the satisfaction ledger's WRITER (D-175).
+ *
+ * The columns were designed, migrated to production in a ceremony and verified
+ * by direct query — "37 variants, 0 labelled" — and nothing anywhere could ever
+ * write one. The zero read as "none yet" when it meant "none possible", which
+ * is the invoked-but-inert class wearing a migration.
+ *
+ * Owner-scoped in the statement that writes, like everything else here. Last
+ * writer wins: a variant that was selected, then backed away from, then
+ * selected again ends as `selected`, which is the honest present tense.
+ */
+export async function recordVariantOutcome(input: {
+  userId: number;
+  variantId: number;
+  outcome: (typeof CASTING_VARIANT_OUTCOMES)[number];
+  now?: Date;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  const db = await requireDb();
+  const result = await db
+    .update(castingCandidateVariants)
+    .set({ outcome: input.outcome, outcomeAt: input.now ?? new Date() })
+    .where(and(
+      eq(castingCandidateVariants.id, input.variantId),
+      eq(castingCandidateVariants.userId, input.userId),
     ));
   return affectedRows(result) === 1;
 }

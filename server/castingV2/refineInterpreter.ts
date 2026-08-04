@@ -156,6 +156,12 @@ const REMOVAL_PROMPT = [
   "    eyeColour, eyeShape, hairColour, hairTexture, hairStyle, makeup.",
   '  "remove the makeup" is the whole subject -> match empty. "remove the smokey eye" names one',
   '    thing -> match "smokey eye". Put THEIR words in match, never yours.',
+  '  WHEN SOMETHING IS ALREADY FILED, name it by ECHOING the stored text EXACTLY, in an',
+  '    "items" array: {"remove": {"subject": "statedAccessories", "items": ["small gold hoops"]}}.',
+  '    Copy the stored string character for character — do not rephrase it, do not shorten it.',
+  '    "Remove the earrings" against ["small gold hoops"] echoes ["small gold hoops"], because',
+  '    hoops ARE earrings. Naming a CATEGORY echoes every filed item in it; naming ONE thing',
+  '    echoes only that one. If nothing filed is what they mean, send no items.',
   '  A PRONOUN with no noun is pointing, not naming: "take those off", "get rid of that",',
   '    "lose it", "undo that". Nobody who has not seen the list can know what "those" is, so',
   '    reply {"navigate": true} — taking away the thing just added is going back a step, which',
@@ -166,6 +172,24 @@ const REMOVAL_PROMPT = [
 ].join("\n");
 
 const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
+
+/**
+ * The echo pass's one extra line (D-172).
+ *
+ * Deliberately narrow: it constrains the VOCABULARY of the answer and changes
+ * nothing about what may be filed or which walls apply. Specification is not
+ * the model's job — that is `qualifierFor`, code-owned, which is where the
+ * copper dye-job problem was solved and where a bare colour belongs.
+ */
+const ECHO_CONSTRAINT = [
+  "",
+  "",
+  "THIS TIME, USE ONLY THEIR WORDS. Every word of every free-lane value must appear in the",
+  "instruction itself, or be an item you were shown as already filed, restated character for",
+  "character. Do not specify, do not elaborate, do not improve. If they wrote \"pink\", write",
+  '"pink" — not "pastel pink". If they wrote "a scar", write "a scar" — never what kind, never',
+  "how it got there. Saying less than they meant is correct here; saying more is not.",
+].join("\n");
 
 export type RefineInterpretInput = {
   instruction: string;
@@ -180,6 +204,14 @@ export type RefineInterpretInput = {
   mode?: "classify" | "edit";
   /** What each subject already held — containment's second source (D-171). */
   prior?: Partial<Record<string, string[]>>;
+  /**
+   * This is the ECHO PASS — say it in their words only (D-172).
+   *
+   * Set by `interpretRefinement` after a containment failure, never by a
+   * caller. It adds one constraint line and nothing else, so the second reading
+   * faces every guard the first did.
+   */
+  echoed?: boolean;
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -214,7 +246,42 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
   */
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const parsed = await runOnce(engine, input, instruction);
-    if (parsed) return parsed;
+    if (parsed) {
+      /*
+        THE ECHO PASS (D-172) — only the user's words are ever filed.
+
+        Four honest instructions have now been refused because the INTERPRETER
+        did the specification: "pastel" for their "pink", "tied" for their
+        "tie", a set restated from an earlier sentence. Each was patched at the
+        comparison — strip apostrophes, stem, widen the source — and the fourth
+        proved the comparison is the wrong place to work.
+
+        So a containment failure is not a refusal yet. The model is re-asked
+        ONCE with its vocabulary constrained to the sentence, and the reply goes
+        through the FULL parse again — every wall, containment unchanged. "A
+        long knife scar from a bar fight" comes back "a scar" and files as a
+        scar: invention becomes unrepresentable rather than merely detected.
+
+        A second failure falls through to the ordinary refusal, so the worst
+        case is exactly what shipped before this existed.
+      */
+      if (!parsed.ok && parsed.refusal.reason === "wall_unfileable" && !input.echoed) {
+        log.warn({ asked: parsed.refusal.asked }, "[refineInterpreter] echo pass — re-asking in their words");
+        /*
+          TWICE, because once is not reliable. Measured on "hair color pink":
+          the model specifies to "pastel pink" often enough that a single
+          re-ask still refused roughly one attempt in three — and a casual,
+          correctly-typed instruction failing a third of the time is the defect
+          this pass exists to end, not a smaller version of it.
+        */
+        for (let echo = 1; echo <= 2; echo += 1) {
+          const echoed = await runOnce(engine, { ...input, echoed: true }, instruction);
+          if (echoed?.ok) return echoed;
+          if (echo === 2 && echoed) return echoed;
+        }
+      }
+      return parsed;
+    }
     if (attempt === 1) log.warn({}, "[refineInterpreter] empty reply — re-sampling once");
   }
   return { ok: false, refusal: { reason: "unreadable" } };
@@ -229,7 +296,8 @@ async function runOnce(
   let raw: unknown;
   try {
     const reply = await engine.complete({
-      system: input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT,
+      system: (input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT)
+        + (input.echoed ? ECHO_CONSTRAINT : ""),
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
         `Current eye shape: ${input.currentEyeShape ?? "unknown"}`,
@@ -237,6 +305,19 @@ async function runOnce(
         `Current hair colour: ${input.currentHairColour ?? "unknown"}`,
         `Current hair texture: ${input.currentHairTexture ?? "unknown"}`,
         `Current makeup: ${input.currentMakeup ?? "none — a bare face"}`,
+        /*
+          WHAT IS CURRENTLY FILED, verbatim (D-173).
+
+          Referent resolution belongs here, not in a word matcher: "remove the
+          earrings" has to find "small gold hoops", and no amount of string
+          comparison knows that hoops ARE earrings. The model does. It is shown
+          the stored text and asked to echo it back exactly; the code then
+          verifies the echo IS a stored item, so understanding is the model's
+          and authority stays with the code.
+        */
+        ...(Object.entries(input.prior ?? {})
+          .filter(([, items]) => (items?.length ?? 0) > 0)
+          .map(([subject, items]) => `Currently filed under ${subject}: ${JSON.stringify(items)}`)),
         `Instruction: ${instruction}`,
       ].join("\n"),
       json: true,
@@ -275,6 +356,28 @@ async function runOnce(
     const subject = readRemovalSubject(target.subject);
     const match = typeof target.match === "string" ? target.match.trim().slice(0, 80) : "";
     /*
+      THE ECHOES ARE AUTHORIZED HERE, not trusted (D-173).
+
+      The model is shown what is filed and asked to copy back the exact stored
+      text it means — that is how "remove the earrings" finds "small gold
+      hoops", which no word matcher can do because it requires knowing that
+      hoops ARE earrings. What the model contributes is understanding; what the
+      code contributes is authority, so an echo that is not verbatim a stored
+      item is dropped rather than acted on.
+    */
+    const filed = new Set(
+      Object.values(input.prior ?? {})
+        .flat()
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.toLowerCase()),
+    );
+    const echoed = Array.isArray(target.items)
+      ? (target.items as unknown[])
+        .filter((item): item is string => typeof item === "string")
+        .filter((item) => filed.has(item.trim().toLowerCase()))
+        .map((item) => item.trim())
+      : [];
+    /*
       A REMOVAL THAT POINTS AT NOTHING IS NAVIGATION, structurally.
 
       "Take those off" is anaphoric, and the interpreter is deliberately never
@@ -287,8 +390,8 @@ async function runOnce(
       too; this is the backstop, because a rule enforced only by asking nicely
       is not a rule.
     */
-    if (!subject && !match) return { ok: true, intent: "navigate" };
-    return { ok: true, intent: "remove", subject, match: match || null };
+    if (!subject && !match && echoed.length === 0) return { ok: true, intent: "navigate" };
+    return { ok: true, intent: "remove", subject, match: match || null, items: echoed };
   }
 
   if (typeof reply.wall === "string" && reply.wall.trim()) {

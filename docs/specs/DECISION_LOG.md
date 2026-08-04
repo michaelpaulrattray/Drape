@@ -4842,6 +4842,206 @@ the PROMPT keeps their own order, because reordering someone's words to suit a
 comparison is the record drifting from the person.
 
 
+## D-173 — The false confession had two parents. Both die.
+
+**Founder finding, 2026-08-04 — mechanisms isolated by hand.**
+
+*"Remove hoop earrings"* on a face **visibly wearing hoops**, whose chain
+literally contains "small gold hoops", answered **"This face doesn't have hoop
+earrings."** Only the exact stored tag text worked. Two independent causes, and
+either alone was enough.
+
+### Parent A — unreadable was treated as absent
+
+Plural values written before D-171 are strings. The item reader saw no items,
+the step looked empty, and the ask fell through to D-167's confession — which
+then asserted, confidently, something the record plainly contradicted.
+
+**A confession may only assert what the record can actually SEE.** D-167 gains
+that clause. The read becomes shape-versioned: an old string is migrated to
+items on read where the parse is safe — containment already proved those are the
+user's own words — and where it is not, the row is classified **unreadable** and
+gets the legacy-honest refusal ("removal isn't available on this face"), never a
+confession.
+
+The general form is worth keeping, because this program has now met it twice:
+**"I cannot read it" and "it is not there" are different answers, and collapsing
+them produces a confident lie.**
+
+### Parent B — English was treated as non-matching
+
+The matcher required every query word to appear in the step's words. "Earrings"
+does not appear in "small gold hoops", so plain English failed and only the
+machine's own label worked.
+
+**A user must never have to speak the tag.** Referent resolution moves to the
+PARSER, which already receives the current item values: it names the targeted
+item by **echoing that item's stored words verbatim**, and the code verifies the
+echo IS exactly a stored item. The containment pattern, reused — *the model
+understands, the code authorizes.*
+
+Category semantics then come free, because they live in the model's grammar
+rather than in a table we would have to maintain: **hoops ARE earrings.** Naming
+the category takes the category — "remove the earrings" with hoops and studs
+filed takes both — and naming one item takes one.
+
+### Parent C — the record step matches the same broken way
+
+Found in the mid-flight code sweep. D-167's confession asks the RECORD whether
+the thing exists, and it asks with the same every-word comparison: her record
+holds the hoops, "earrings" is not among its words, so the record said no. The
+content-edit branch should have fired long before any confession was reachable.
+
+**So the parser's referent resolution has to serve the record step too**, not
+only the chain — or the confession keeps lying after the chain is fixed. The
+parser is shown what the RECORD holds alongside what the recipe holds, and an
+echo of either is proof the thing exists.
+
+Three parents, one sentence. Each alone was enough, which is why fixing the
+first two would have looked like a fix and shipped the same lie.
+
+### Drivers
+
+"remove the earrings" / "remove the hoops" / "remove hoop earrings" / the exact
+stored tag — all four remove "small gold hoops". "Remove the necklace" against a
+face wearing none → the fixed confession. Hoops plus studs: "the earrings" takes
+both, "the studs" takes one. And the founder's own pre-D-171 strip: removes
+correctly or refuses honestly, **never confesses**.
+
+## D-174 — Self-dogfood every fix batch. "Works on the driver" is not a claim.
+
+**Founder ruling, 2026-08-04, effective immediately.**
+
+After each fix batch, and BEFORE reporting it, the executor drives the real
+production UI through the founder's checklist for that batch — the exact cases
+ruled on, plus a couple of the executor's own paraphrases the drivers did not
+script — captures the panel states, and includes that evidence in the report.
+
+> **The founder verifies only what the executor's own hands have already passed.**
+
+This is D-164's spirit one layer out. That law says a report may claim a feature
+works only with evidence it RAN; this one says **the driver tests the layer and
+the UI walk tests the product.** Three rounds in a row now, a driver has passed
+green while the founder's hands failed on the same behaviour — because the
+driver called the service and the founder used the box.
+
+Standing paid approval covers it, capped per run. This is the **manual precursor
+of the queued standing automation**: same budget discipline, per-batch instead of
+scheduled, and it stops being manual when that machine is built.
+
+The founder's own role narrows accordingly: first touch on new surfaces, the
+taste verdicts the reports flag, and the gates. **The love test stays human.**
+
+
+## D-172 — Only the user's words are ever filed. The echo pass.
+
+**Founder finding, 2026-08-04 — the FOURTH honest-input casualty ends the patch
+era. Design taken to the advisor at the founder's instruction.**
+
+*"Hair color pink"* was refused — *"that came back with more detail than you
+asked for"* — while *"hair color pastel pink"* worked. The interpreter specifies
+underspecified input, which is good behaviour, and containment punished the
+specification.
+
+> **Fewer words must never fail where more words succeed.** Casual users type
+> less, not more.
+
+The four casualties, and they are one story: **apostrophe** (cupids → cupid's),
+**verb tense** (tie → tied), **plural restatement** (a word typed last time),
+and now **specification** (pink → pastel pink). Each fix loosened the comparison
+— strip apostrophes, stem, extend the source set. The fourth says the comparison
+is the wrong instrument.
+
+### The design: fix it upstream, not at the check
+
+Every casualty has ONE cause: **the interpreter does the code's specification job
+in the model's own words**, and a strict check correctly observes those words are
+not the user's. So the fix is not a better comparison. It is:
+
+> **Only the user's words are ever filed.**
+
+When a free value fails containment, it is not refused yet. The interpreter is
+re-asked ONCE, with a constraint: *use only words from the instruction; restate
+prior items verbatim.* The reply goes through the **full** `readDelta` again —
+every wall, containment unchanged and unweakened.
+
+"Pastel pink" comes back "pink" and files. "A long knife scar from a bar fight"
+comes back "a scar" and files **as a scar**. Invention becomes
+**unrepresentable rather than detected**, because uncontained words cannot
+survive the pass. A pass-2 failure falls back to today's refusal, so fail-closed
+is preserved and the worst case is exactly current behaviour.
+
+This is the ratified echo-verbatim pattern generalised — *the model understands,
+the code authorizes* — and it leaves D-89 untouched: the code's authority does
+not move, only the model's output vocabulary is constrained.
+
+### Where specification lives instead
+
+**In `qualifierFor`** — code-owned, per-subject, already built, already the place
+the copper dye-job problem was solved. If bare "pink" renders traffic-cone, the
+answer is to extend the qualifier, not to let the interpreter write biography
+into the record.
+
+### The founder's stated rule-shape has a hole, and it is not implemented
+
+The ruling asked for *"modifiers are contained, new unstated nouns are refused"*.
+Two problems, and the advisor is right on both:
+
+- The prompt ALREADY says "never elaborate" and the model elaborates anyway, so
+  a self-declared "I added no new nouns" is a rule enforced by asking nicely —
+  which this program has repeatedly found is not a rule.
+- **Modifier-versus-noun is not the real line even with a parser.** Adjectives
+  invent biography perfectly well: *self-harm* scars, *gang* ink.
+
+The founder's INTENT — fewer words never fail, invented facts refused — is fully
+satisfied by the echo pass. The letter is not implemented, deliberately.
+
+### A founder fork, flagged rather than decided
+
+Under this design **the interpreter's specification never reaches the record.**
+Someone who types "pink" is filed as "pink", and whether it renders pastel or hot
+is the image model's honest underspecification, or a code-owned qualifier
+default. If the founder wants model-authored specification IN THE RECORD, that is
+a different product — and it runs against their own repeated law that the record
+must not drift from the person. Raised, not decided.
+
+### And the fifth casualty, closed before it is met
+
+`alreadyStated` is an exact whole-item match, so a prior item restated with any
+variation — "scar" against a stored "a scar on her cheek" — would be the next
+refusal. The echo pass's verbatim-restatement clause closes it, deliberately and
+with a driver, rather than after a founder finds it.
+
+### Drivers
+
+All four historical casualties pass, plus bare "hair color pink". The bar-fight
+scar still refuses — or rather files as the scar the user actually typed, which
+is the better outcome and the one the pass produces. Verified against the REAL
+interpreter and asserted on the FILED ROW, because every prior round's drivers
+passed on stubs while the founder's hands failed.
+
+## D-175 — The satisfaction ledger had no writer. D-164, applied to ourselves.
+
+**Fable code sweep, 2026-08-04.**
+
+`outcome` and `outcomeAt` are touched by **zero code** outside the schema
+definition. The columns were designed (D-151a), migrated to production in a
+ceremony, verified by direct query — *"37 variants, 0 labelled"* — and the zero
+was read as "none yet" rather than as **"nothing can ever write one"**.
+
+Every label since the ceremony is lost, and the loss is silent by construction:
+a column nobody writes looks exactly like a column nobody has reached yet.
+
+This is the **invoked-but-inert class** that CLAUDE.md already names, wearing a
+migration instead of a helper — and it is a direct instance of what D-164 was
+written for, one week after D-164 was written. The verification I ran proved the
+SHAPE existed. It never asked whether anything filled it.
+
+The four events are wired at their real sites: **selected**, **backed up**,
+**rephrased**, **corrected**. And per D-164 the report shows **the first written
+rows**, not the code path that writes them.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

@@ -138,8 +138,54 @@ export type StepMatch = {
 
 export function matchSteps(
   chain: readonly ChainStep[],
-  target: { subject: FreeSubject | RefinableAxis | null; match: string | null },
+  target: {
+    subject: FreeSubject | RefinableAxis | null;
+    match: string | null;
+    /** Stored items this removal means, already proved verbatim (D-173). */
+    items?: readonly string[];
+  },
 ): StepMatch[] {
+  /*
+    IDENTITY FIRST, WORDS ONLY AS A FALLBACK (D-173).
+
+    The word matcher required every query word to appear in the step's own
+    words, so "remove the earrings" could not find "small gold hoops" —
+    "earrings" is nowhere in it. Only the machine's own tag worked, which meant
+    a user had to speak the label to reach their own edit.
+
+    The parser has already resolved the referent and echoed the stored text
+    back, and the code has already proved that echo IS a stored item. So when
+    echoes are present the match is by identity, and language never has to be
+    guessed at by comparing strings.
+  */
+  if (target.items && target.items.length > 0) {
+    const wanted = new Set(target.items.map((item) => item.toLowerCase()));
+    const matches: StepMatch[] = [];
+    chain.forEach((step, index) => {
+      for (const [subject, value] of Object.entries(step.delta.free ?? {})) {
+        const items = itemsOf(value);
+        const survivors = items.filter((item) => !wanted.has(item.toLowerCase()));
+        if (survivors.length === items.length) continue;
+        matches.push({
+          index,
+          keep: survivors.length > 0 && isPluralSubject(subject as FreeSubject)
+            ? survivors
+            : null,
+        });
+        return;
+      }
+      /* A guaranteed-lane step is one value, so an echo of it deletes it. */
+      for (const axis of REFINABLE_AXES) {
+        const value = step.delta[axis];
+        if (typeof value === "string" && wanted.has(value.toLowerCase())) {
+          matches.push({ index, keep: null });
+          return;
+        }
+      }
+    });
+    if (matches.length > 0) return matches;
+  }
+
   const facet = target.subject ? facetOf(target.subject) : null;
   const byFacet = chain
     .map((step, index) => ({ step, index }))

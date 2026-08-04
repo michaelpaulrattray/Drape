@@ -79,6 +79,12 @@ vi.mock("../db/castingV2Variants", () => ({
     journal.push("select");
     return true;
   }),
+  /* The satisfaction ledger's writer (D-175) — journalled so the tests can see
+     that a label is written, and that a label failing never costs a render. */
+  recordVariantOutcome: vi.fn(async () => {
+    journal.push("outcome");
+    return true;
+  }),
 }));
 
 vi.mock("../db/credits", () => ({

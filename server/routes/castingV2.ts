@@ -47,7 +47,12 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { signCandidate } from "../castingV2/signService";
 import { refineCandidate } from "../castingV2/refineService";
-import { listCandidateVariants, listPendingVariants, selectVariant } from "../db/castingV2Variants";
+import {
+  listCandidateVariants,
+  listPendingVariants,
+  recordVariantOutcome,
+  selectVariant,
+} from "../db/castingV2Variants";
 import { filedSubjectsOf } from "../castingV2/refineDelta";
 import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
@@ -548,11 +553,43 @@ export const castingV2Router = router({
     .mutation(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      /*
+        THE SATISFACTION LEDGER'S TWO LIVE EVENTS (D-175).
+
+        Which variant was selected at a given moment is the one thing that is
+        genuinely unrecoverable after the fact — everything else about a
+        refinement can be derived from the rows. So it is written as the user
+        acts: the face they moved TO is `selected`, and the face they moved AWAY
+        from is `backed_up`, which is the signal that a paid edit did not land.
+
+        Read BEFORE the pointer moves, or the previous selection is already gone.
+      */
+      const before = await getOwnedCandidateWithSelectedFace(ctx.user.id, input.candidateId);
       const selected = await selectVariant({
         userId: ctx.user.id,
         candidatePublicId: input.candidateId,
         variantPublicId: input.variantId,
       });
+      if (selected) {
+        if (before?.variantId && before.variantPublicId !== input.variantId) {
+          await recordVariantOutcome({
+            userId: ctx.user.id,
+            variantId: before.variantId,
+            outcome: "backed_up",
+          });
+        }
+        const landed = input.variantId
+          ? (await listCandidateVariants(ctx.user.id, input.candidateId))
+            .find((variant) => variant.publicId === input.variantId)
+          : null;
+        if (landed) {
+          await recordVariantOutcome({
+            userId: ctx.user.id,
+            variantId: landed.id,
+            outcome: "selected",
+          });
+        }
+      }
       if (!selected) {
         /*
           Refusal rather than a silent no-op. The statement declines when the
