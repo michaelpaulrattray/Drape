@@ -1506,6 +1506,17 @@ export default function CastingSheet() {
               outcome={refineOutcome}
               onDismissOutcome={() => setRefineOutcome(null)}
               onRefine={(instruction) => {
+                /*
+                  THE LAST OUTCOME GOES WHEN A NEW ONE IS ASKED FOR.
+
+                  D-154 keeps an outcome until it is dismissed, which is right
+                  for reading a refusal — and wrong the moment the next
+                  instruction is submitted: the walk found a refusal about a
+                  necklace sitting above a live "Refining…" for something else
+                  entirely, so the panel was describing the wrong request. Until
+                  dismissed means until superseded, too.
+                */
+                setRefineOutcome(null);
                 void refine
                   .mutateAsync({
                     clientRequestId: crypto.randomUUID(),

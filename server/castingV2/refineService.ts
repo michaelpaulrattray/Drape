@@ -444,9 +444,18 @@ export async function refineCandidate(
         const named = parsed.match
           ?? (subject ? FREE_SUBJECTS[subject as FreeSubject]?.toLowerCase() : null)
           ?? "that";
+        /*
+          "ANY" CARRIES THE ARTICLE, and the walk is what caught it.
+
+          It read "This face doesn't have necklace" — the user typed "remove
+          the necklace", the match is the bare noun, and the frame supplied no
+          article. No driver could see it: they assert which BRANCH fired, and
+          this is a sentence. "Any" is the one word that works for a singular
+          noun, a plural one and a mass one alike, without guessing which.
+        */
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `This face doesn't have ${named} — there's nothing to take off. `
+          message: `I can't find any ${named} on this face — there's nothing to take off. `
             + "Nothing was charged.",
         });
       }
