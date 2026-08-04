@@ -73,13 +73,21 @@
   overflow: hidden;
 }
 
+/*
+  The image can NEVER dictate the box. `height: 100%` on a flex-sized slot is
+  circular — with no definite height it resolves as auto, and the art's
+  intrinsic ratio balloons the card (learned 2026-08-05, when a tall frame
+  did exactly that in production). Absolute-fill breaks the cycle: the pair's
+  own min-height and the copy column size the card; the art crops to fit.
+*/
 .dpc-hero__slot > img {
-  display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   /* Brand art, not a cast — decorative, so it carries no alt text and no pill. */
-  object-position: center;
+  object-position: center 22%;
 }
 
 /* ---- the two entry cards ---- */
