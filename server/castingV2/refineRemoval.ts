@@ -183,7 +183,16 @@ export function matchSteps(
         }
       }
     });
-    if (matches.length > 0) return matches;
+    /*
+      AN ECHO THAT MATCHED NOTHING IS "NO MATCHING STEP" — never "take the lot".
+
+      Falling through to the word path here was the second half of the same
+      defect: with no narrowing words, that path deletes every step on the
+      facet. So a resolution that identified something and then failed to find
+      it would remove more than a resolution that identified nothing. Rule 3 is
+      the correct answer, and D-167's confession is behind it.
+    */
+    return matches;
   }
 
   const facet = target.subject ? facetOf(target.subject) : null;

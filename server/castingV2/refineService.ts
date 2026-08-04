@@ -270,12 +270,22 @@ export async function refineCandidate(
     well, or fixing the chain leaves the lie intact one branch over.
   */
   for (const subject of FREE_SUBJECT_KEYS) {
+    /*
+      ONLY WHERE THE RECIPE IS SILENT — and getting this wrong cost a real
+      removal on the founder's own walk.
+
+      `statedDetails` stores a plural subject JOINED ("small gold hoops, thin
+      wire glasses"), so adding it beside the items it was joined from offered
+      the model a third, phantom option. It echoed the joined pair, that echo
+      matched no single item, the identity pass found nothing, and the fall-
+      through deleted the whole subject — taking the glasses after all.
+
+      The record is here to answer for facts the recipe never held. Where the
+      recipe holds items, the items ARE the answer.
+    */
+    if ((priorItems[subject]?.length ?? 0) > 0) continue;
     const recorded = currentValueOfFacet(readResolvedIdentity(source.internalPrompt), facetOf(subject));
-    if (!recorded) continue;
-    const seen = priorItems[subject] ?? [];
-    if (!seen.some((item) => item.toLowerCase() === recorded.toLowerCase())) {
-      priorItems[subject] = [...seen, recorded];
-    }
+    if (recorded) priorItems[subject] = [recorded];
   }
 
   const parsed = await (dependencies.interpret ?? interpretRefinement)({
@@ -406,6 +416,13 @@ export async function refineCandidate(
     const matched = matchSteps(predecessorChain, {
       subject: readRemovalSubject(parsed.subject),
       match: parsed.match,
+      /*
+        Identity beats word overlap — the parser resolved the referent and the
+        code already proved the echo is a stored item (D-173). Without this the
+        matcher falls to the word path with no narrowing words, which deletes
+        EVERY step on the facet: "remove the earrings" took the glasses too.
+      */
+      items: parsed.items,
     });
     if (matched.length === 0) {
       /*

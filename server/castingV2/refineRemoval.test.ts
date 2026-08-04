@@ -109,6 +109,35 @@ describe("removing one item out of a step that holds several", () => {
     expect(composeChain(left)).toEqual({ free: { statedAccessories: ["thin wire glasses"] } });
   });
 
+  /*
+    THE ECHO PATH, which had no test and shipped broken (D-173).
+
+    The parser resolves "remove the earrings" to the stored item and the code
+    matches by identity. Every test here exercised the WORD path, so the
+    production walk was the first thing to run this branch — and it found the
+    echoes never reached the matcher at all, which dropped it to the word path
+    with no narrowing words and deleted every step on the facet. The glasses
+    went with the hoops.
+  */
+  it("prunes by identity when the parser echoed a stored item", () => {
+    const matches = matchSteps(worn, {
+      subject: "statedAccessories",
+      match: null,
+      items: ["small gold hoops"],
+    });
+    expect(matches).toEqual([{ index: 0, keep: ["thin wire glasses"] }]);
+  });
+
+  /* An echo that identifies nothing is "no matching step" — never "take the
+     lot", which is what falling through to the wordless path would do. */
+  it("takes nothing when the echo matches no stored item", () => {
+    expect(matchSteps(worn, {
+      subject: "statedAccessories",
+      match: null,
+      items: ["a silver necklace"],
+    })).toEqual([]);
+  });
+
   it("deletes the step only when nothing survives", () => {
     const matches = matchSteps(worn, { subject: "statedAccessories", match: null });
     expect(matches).toEqual([{ index: 0, keep: null }]);
