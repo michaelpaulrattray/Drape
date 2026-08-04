@@ -561,8 +561,10 @@ describe("removal is typed, and most of it is free", () => {
     );
     const call = vi.mocked(claimVariant).mock.calls[0]![0];
     expect(call.instructions).toEqual(["small gold hoops"]);
-    expect(call.stepDeltas).toEqual([{ free: { statedAccessories: "small gold hoops" } }]);
-    expect(call.deltas).toEqual({ free: { statedAccessories: "small gold hoops" } });
+    /* Plural subjects hold ITEMS now (D-171) — the parse normalizes to a list
+       so removal can prune one without deleting the step. */
+    expect(call.stepDeltas).toEqual([{ free: { statedAccessories: ["small gold hoops"] } }]);
+    expect(call.deltas).toEqual({ free: { statedAccessories: ["small gold hoops"] } });
     /* What they TYPED is kept apart from the recipe, or the in-flight chip
        would name the last surviving sentence instead (D-161). */
     expect(call.requestText).toBe("get rid of the smokey eye");

@@ -44,7 +44,13 @@ import { scrubBrands } from "./brandScrub";
 import { classifyInkPlacement, namesDesign, placementClause } from "./inkPlacement";
 import { namesUnknownProperNoun } from "./properNouns";
 import { tokensComeFromBrief } from "./castingIntent";
-import { FREE_SUBJECT_KEYS, FREE_SUBJECTS, isPresentationSubject, type FreeSubject } from "./refineSubjects";
+import {
+  FREE_SUBJECT_KEYS,
+  FREE_SUBJECTS,
+  isPluralSubject,
+  isPresentationSubject,
+  type FreeSubject,
+} from "./refineSubjects";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
 import { composePreservation } from "./refinePreservation";
 
@@ -92,8 +98,33 @@ export type RefineDelta = {
    * of an object spread and two instructions about brows cannot accumulate into
    * a prompt that argues with itself.
    */
-  free?: Partial<Record<FreeSubject, string>>;
+  free?: Partial<Record<FreeSubject, FreeValue>>;
 };
+
+/**
+ * A free value is one thing, or SEVERAL (D-171).
+ *
+ * Plural subjects — marks, ink, accessories — hold their items structurally, so
+ * removal can delete an ITEM rather than the whole step. A step reading "small
+ * gold hoops and thin wire glasses" used to be deleted entirely by "remove the
+ * hoops", and the glasses went with them.
+ *
+ * Rows written before this hold plain strings, so both shapes are read forever;
+ * there is no migration, because this is a json column and a string is still a
+ * perfectly good answer for a singular subject.
+ */
+export type FreeValue = string | string[];
+
+/** Read either shape as a list — the form every guard now works in. */
+export function itemsOf(value: FreeValue | undefined): string[] {
+  if (value == null) return [];
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string" && item.trim()) : [value];
+}
+
+/** And back to prose, for a prompt or a record. Their order, never sorted. */
+export function joinItems(value: FreeValue | undefined): string {
+  return itemsOf(value).join(", ");
+}
 
 /**
  * Why an instruction was refused — the copy is the caller's, the reason is ours.
@@ -149,12 +180,23 @@ export type RefineParse =
  */
 export type FreeLaneCheck = {
   instruction: string;
+  /**
+   * What this subject already held — the second half of containment (D-171).
+   *
+   * A plural subject restates its whole set every time, so an honest
+   * restatement carries words from EARLIER sentences. Without this the guard
+   * refuses the very shape the interpreter is instructed to produce.
+   */
+  prior?: Partial<Record<FreeSubject, string[]>>;
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
 };
 
 /** One adjustment per subject, not a paragraph. */
 const MAX_FREE_LENGTH = 120;
+
+/** And a set is a handful, not a second brief arriving as a list (D-171). */
+const MAX_ITEMS = 8;
 
 /**
  * Words that are about the STAGE, not the person — wall (b)'s second half.
@@ -281,7 +323,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     if (raw[key] != null && stated[key] == null) stated[key] = raw[key];
   }
   if (Object.keys(stated).length > 0) {
-    const free: Partial<Record<FreeSubject, string>> = {};
+    const free: Partial<Record<FreeSubject, FreeValue>> = {};
     for (const [subject, entry] of Object.entries(stated)) {
       /*
         WALL (b), primary form: a subject the code does not own cannot be
@@ -290,9 +332,23 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         composition key — D-89's gate on the free lane.
       */
       if (!FREE_SUBJECT_KEYS.includes(subject as FreeSubject)) return null;
-      if (typeof entry !== "string") return null;
+      /*
+        A PLURAL SUBJECT MAY ARRIVE AS A LIST (D-171), and the ITEMS are what
+        every guard below runs against. The interpreter splits, because a code
+        split on "and" is a phrasing list by another name and D-163 outlaws
+        that class; the code validates each piece.
+      */
+      const plural = isPluralSubject(subject as FreeSubject);
+      const rawItems = Array.isArray(entry) ? entry : [entry];
+      if (!plural && rawItems.length > 1) return null;
+      if (rawItems.length > MAX_ITEMS) return null;
+      const kept: string[] = [];
+      let promotedAway = false;
 
-      const scrubbed = scrubBrands(entry.trim())?.trim() ?? "";
+      for (const rawItem of rawItems) {
+      if (typeof rawItem !== "string") return null;
+
+      const scrubbed = scrubBrands(rawItem.trim())?.trim() ?? "";
       if (!scrubbed || scrubbed.length > MAX_FREE_LENGTH) return null;
 
       /*
@@ -302,7 +358,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         failed-candidate teeth rather than as bare free text.
       */
       const promoted = promoteToGuaranteedLane(subject as FreeSubject, scrubbed, delta);
-      if (promoted) continue;
+      if (promoted) { promotedAway = true; continue; }
 
       /*
         THE INK GATE (D-137). Only pixels render a design, and the one case
@@ -373,12 +429,42 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           CONTENT must not fire on a verb tense. The second time this exact
           shape has cost an honest instruction (D-157).
         */
-        if (!stemmedContainment(strip(scrubbed), strip(check.instruction))) {
+        /*
+          THE SOURCE IS THEIR SENTENCE **OR** SOMETHING THEY ALREADY STATED
+          (D-171), and without the second half this guard has been refusing the
+          product's own instruction to the model.
+
+          Plural subjects are told to "restate all of them", so "add freckles"
+          comes back as "a scar and freckles" — and containment refused it on
+          the word *scar*, which they did not type THIS time because they typed
+          it last time. The plural class has been refuse-or-annihilate on every
+          second instruction, and both halves were invisible.
+
+          Invention is still impossible: a model cannot introduce a fact that is
+          in neither the sentence nor the prior items. Fourth instance of the
+          guard-too-strict shape, and the first where the guard was refusing
+          something we ourselves asked for.
+        */
+        const alreadyStated = (check.prior?.[subject as FreeSubject] ?? [])
+          .some((item) => strip(item).toLowerCase() === strip(scrubbed).toLowerCase());
+        if (!alreadyStated
+          && !stemmedContainment(strip(scrubbed), strip(check.instruction))) {
           check.wall = { reason: "wall_unfileable", asked: subject };
           return null;
         }
       }
-      free[subject as FreeSubject] = scrubbed;
+      kept.push(scrubbed);
+      }
+
+      if (kept.length === 0) {
+        /* Everything here was promoted into the guaranteed lane, which is a
+           success rather than an empty subject. */
+        if (promotedAway) continue;
+        return null;
+      }
+      /* An empty list is not "a subject with no items" — it is no subject, and
+         `[]` being truthy would otherwise reach every reader downstream. */
+      free[subject as FreeSubject] = plural ? kept : kept[0]!;
     }
     if (Object.keys(free).length > 0) delta.free = free;
     /*
@@ -531,14 +617,14 @@ function collapseWithinDelta(delta: RefineDelta): RefineDelta {
   for (const axis of REFINABLE_AXES) {
     if (delta[axis] != null) guaranteed.add(facetOfAxis(axis));
   }
-  const free: Partial<Record<FreeSubject, string>> = {};
+  const free: Partial<Record<FreeSubject, FreeValue>> = {};
   let collided = false;
   for (const [subject, value] of Object.entries(delta.free)) {
     if (guaranteed.has(facetOfSubject(subject as FreeSubject))) {
       collided = true;
       continue;
     }
-    if (value) free[subject as FreeSubject] = value;
+    if (itemsOf(value).length > 0) free[subject as FreeSubject] = value;
   }
   if (!collided) return delta;
   const next: RefineDelta = { ...delta };
@@ -748,15 +834,24 @@ export function filedSubjectsOf(deltas: unknown): string[] {
 export function missingFromPrompt(delta: RefineDelta, prompt: string): string[] {
   const lowered = prompt.toLowerCase();
   const missing: string[] = [];
-  const wants: Array<[string, string | undefined]> = [
+  /*
+    EVERY ITEM, not the value (D-171). A plural subject holds a list, and this
+    used to call `.toLowerCase()` on it — a runtime throw inside the money path,
+    on a check whose whole job is to be the thing that never fails silently.
+    Flattening to items also makes the check STRICTER: each fact has to reach
+    the prompt on its own.
+  */
+  const wants: Array<[string, string]> = [
     ["eyeColour", delta.eyeColour],
     ["eyeShape", delta.eyeShape],
     ["hairStyle", delta.hairStyle],
     ["hairColour", delta.hairColour],
     ["hairTexture", delta.hairTexture],
     ["makeup", delta.makeup],
-    ...Object.entries(delta.free ?? {}).map(([k, v]) => [k, v] as [string, string]),
-  ];
+  ].filter((entry): entry is [string, string] => typeof entry[1] === "string");
+  for (const [subject, value] of Object.entries(delta.free ?? {})) {
+    for (const item of itemsOf(value)) wants.push([subject, item]);
+  }
   for (const [key, value] of wants) {
     if (!value) continue;
     if (!lowered.includes(value.toLowerCase())) missing.push(key);
@@ -833,7 +928,15 @@ export function identityDetailsOf(delta: RefineDelta): Record<string, string> | 
   const details: Record<string, string> = {};
   for (const [subject, value] of Object.entries(delta.free)) {
     if (isPresentationSubject(subject as FreeSubject)) continue;
-    if (value) details[subject] = value;
+    /*
+      JOINED, not the array (D-171). `statedDetails` is read as prose by
+      `currentValueOfFacet`, by D-167's confession and by the interpreter's
+      current-values line. The CHAIN is where the structure lives, and the
+      chain is what removal operates on — so this stays a string and no
+      existing reader has to learn a new shape.
+    */
+    const joined = joinItems(value);
+    if (joined) details[subject] = joined;
   }
   return Object.keys(details).length > 0 ? details : null;
 }
@@ -844,7 +947,8 @@ export function presentationOf(delta: RefineDelta): Record<string, string> | nul
   const state: Record<string, string> = {};
   for (const [subject, value] of Object.entries(delta.free)) {
     if (!isPresentationSubject(subject as FreeSubject)) continue;
-    if (value) state[subject] = value;
+    const joined = joinItems(value);
+    if (joined) state[subject] = joined;
   }
   return Object.keys(state).length > 0 ? state : null;
 }
@@ -906,11 +1010,20 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
     Composed from the same object that was filed, never from the raw sentence.
   */
   for (const [subject, value] of Object.entries(delta.free ?? {})) {
-    if (!value) continue;
+    const items = itemsOf(value);
+    if (items.length === 0) continue;
     const heading = FREE_SUBJECTS[subject as FreeSubject];
-    edits.push(subject === "ink"
-      ? `${heading}: ${value}.${placementClause(value)}`
-      : `${heading}: ${value}${qualifierFor(subject as FreeSubject)}.`);
+    if (subject === "ink") {
+      /*
+        ONE CLAUSE PER ITEM (D-171). `placementClause` finds the FIRST place
+        word in a value, so a two-item ink value with two placements has been
+        getting one clause covering both — the second design's address quietly
+        borrowed from the first.
+      */
+      edits.push(`${heading}: ${items.map((item) => `${item}.${placementClause(item)}`).join(" ")}`);
+      continue;
+    }
+    edits.push(`${heading}: ${items.join(", ")}${qualifierFor(subject as FreeSubject)}.`);
   }
   return [
     "Edit this photograph of this exact person, changing ONLY what is listed below.",

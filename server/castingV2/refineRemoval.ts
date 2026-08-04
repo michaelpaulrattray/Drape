@@ -19,9 +19,9 @@
  * preference. A list of surface forms is a guard that proves the implementation
  * matches itself.
  */
-import { composeDeltas, type RefineDelta } from "./refineDelta";
+import { composeDeltas, itemsOf, type RefineDelta } from "./refineDelta";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
-import { FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
+import { FREE_SUBJECT_KEYS, isPluralSubject, type FreeSubject } from "./refineSubjects";
 import { REFINABLE_AXES, type RefinableAxis } from "./refineDelta";
 
 /** One step of a variant's history — a sentence and the delta it produced. */
@@ -71,7 +71,9 @@ function facetsOfStep(step: ChainStep): Set<Facet> {
     if (step.delta[axis] != null) facets.add(facetOfAxis(axis));
   }
   for (const [subject, value] of Object.entries(step.delta.free ?? {})) {
-    if (value) facets.add(facetOfSubject(subject as FreeSubject));
+    /* `[]` is truthy, so an emptied plural subject would otherwise still claim
+       its facet and keep matching forever (D-171). */
+    if (itemsOf(value).length > 0) facets.add(facetOfSubject(subject as FreeSubject));
   }
   return facets;
 }
@@ -91,7 +93,7 @@ function wordsOfStep(step: ChainStep): Set<string> {
     if (typeof value === "string") parts.push(value);
   }
   for (const value of Object.values(step.delta.free ?? {})) {
-    if (value) parts.push(value);
+    parts.push(...itemsOf(value));
   }
   return new Set(parts.join(" ").toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean).map(stem));
 }
@@ -122,10 +124,22 @@ function stem(word: string): string {
  * step ARE no matching step. Taking every makeup step because the person named
  * one that is not there would destroy something they never asked to remove.
  */
+export type StepMatch = {
+  index: number;
+  /**
+   * Items to KEEP, or null to delete the whole step (D-171).
+   *
+   * A plural subject holds several facts in one step, so "remove the hoops"
+   * against "small gold hoops and thin wire glasses" must prune rather than
+   * delete — the glasses were never named.
+   */
+  keep: string[] | null;
+};
+
 export function matchSteps(
   chain: readonly ChainStep[],
   target: { subject: FreeSubject | RefinableAxis | null; match: string | null },
-): number[] {
+): StepMatch[] {
   const facet = target.subject ? facetOf(target.subject) : null;
   const byFacet = chain
     .map((step, index) => ({ step, index }))
@@ -138,13 +152,43 @@ export function matchSteps(
     .split(/[^a-z0-9]+/)
     .filter((word) => word.length > 2)
     .map(stem);
-  if (words.length === 0) return byFacet.map(({ index }) => index);
+  if (words.length === 0) return byFacet.map(({ index }) => ({ index, keep: null }));
 
-  const narrowed = byFacet.filter(({ step }) => {
+  const subject = target.subject as FreeSubject;
+  const plural = target.subject != null
+    && !(REFINABLE_AXES as readonly string[]).includes(target.subject)
+    && isPluralSubject(subject);
+
+  const matches: StepMatch[] = [];
+  for (const { step, index } of byFacet) {
+    if (plural) {
+      /*
+        MATCHED ON ITEMS, NEVER ON THE SENTENCE (D-171).
+
+        The stored sentence still reads "hoops and glasses" after the hoops are
+        pruned, so matching it would make the step match "remove the hoops"
+        forever — and each later attempt would find no items and delete the
+        whole step, taking the glasses after all. The items are the truth; the
+        sentence is provenance.
+      */
+      const items = itemsOf(step.delta.free?.[subject]);
+      const survivors = items.filter((item) => !itemMatches(item, words));
+      if (survivors.length === items.length) continue;
+      matches.push({ index, keep: survivors.length > 0 ? survivors : null });
+      continue;
+    }
     const have = wordsOfStep(step);
-    return words.every((word) => have.has(word));
-  });
-  return narrowed.map(({ index }) => index);
+    if (words.every((word) => have.has(word))) matches.push({ index, keep: null });
+  }
+  return matches;
+}
+
+/** One item answers to the words they named, with the usual ending tolerance. */
+function itemMatches(item: string, words: readonly string[]): boolean {
+  const have = new Set(
+    item.toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean).map(stem),
+  );
+  return words.every((word) => have.has(word));
 }
 
 /**
@@ -172,13 +216,41 @@ export function textMentions(text: string | null, words: string | null): boolean
   return wanted.every((word) => have.has(word));
 }
 
-/** The chain with those steps gone — what the face becomes. */
-export function chainWithout(
+/**
+ * The chain after surgery — steps deleted, or pruned to their survivors (D-171).
+ *
+ * A pruned step KEEPS ITS SENTENCE. That is provenance: they typed "small gold
+ * hoops and thin wire glasses" and they did, and rewriting history to match the
+ * outcome is the record drifting from the person. The chip reads back from the
+ * surviving ITEMS instead, which are also their own words.
+ */
+export function chainAfterRemoval(
   chain: readonly ChainStep[],
-  removed: readonly number[],
+  matches: readonly StepMatch[],
+  subject: FreeSubject | null,
 ): ChainStep[] {
-  const drop = new Set(removed);
-  return chain.filter((_, index) => !drop.has(index));
+  const byIndex = new Map(matches.map((match) => [match.index, match]));
+  const next: ChainStep[] = [];
+  chain.forEach((step, index) => {
+    const match = byIndex.get(index);
+    if (!match) {
+      next.push(step);
+      return;
+    }
+    if (match.keep === null || !subject) return;
+    next.push({
+      instruction: step.instruction,
+      delta: { ...step.delta, free: { ...step.delta.free, [subject]: match.keep } },
+    });
+  });
+  return next;
+}
+
+/** What a step should SAY it did, after items were taken out of it (D-171). */
+export function stepLabel(step: ChainStep, subject?: FreeSubject | null): string {
+  if (!subject) return step.instruction;
+  const items = itemsOf(step.delta.free?.[subject]);
+  return items.length > 0 ? items.join(", ") : step.instruction;
 }
 
 /**
@@ -197,7 +269,23 @@ export function fingerprintDelta(delta: RefineDelta): string {
     if (typeof value === "string") flat.push([axis, value]);
   }
   for (const [subject, value] of Object.entries(delta.free ?? {})) {
-    if (value) flat.push([`free.${subject}`, value]);
+    const items = itemsOf(value);
+    if (items.length === 0) continue;
+    /*
+      ITEMS SORTED, and serialized as JSON rather than joined (D-171).
+
+      Sorted because "hoops, glasses" and "glasses, hoops" are the same recipe,
+      and rule 4 says an existing recipe is SELECTED free — a fingerprint that
+      disagreed on order would charge 25 credits for a picture they already
+      have. Sorted HERE ONLY: the prompt keeps their own order, because
+      reordering somebody's words to suit a comparison is the record drifting
+      from the person.
+
+      JSON rather than a join because items can contain commas, and `"a,b"`
+      plus `"c"` colliding with `"a"` plus `"b,c"` is a free-select of a recipe
+      that is not theirs.
+    */
+    flat.push([`free.${subject}`, JSON.stringify([...items].sort())]);
   }
   flat.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return flat.map(([key, value]) => `${key}=${value}`).join("");

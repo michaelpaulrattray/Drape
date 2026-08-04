@@ -4770,6 +4770,78 @@ exactly what made the question necessary — and the next person to read it woul
 have had to run this same investigation to find out.
 
 
+## D-171 — A plural subject holds ITEMS. Removal deletes items, not steps.
+
+**Founder ruling, 2026-08-04 — extends D-163.**
+
+D-163 made removal memory surgery: the matching steps are deleted from the
+chain. That is right when a step is one fact. It is wrong when a step holds
+several, and `statedAccessories` always does — the subject holds the WHOLE
+current answer, so a step reading *"small gold hoops and thin wire glasses"* was
+deleted entirely by *"remove the hoops"*, and the glasses went with them.
+
+The same shape as the founder's round-4 report, arriving through the recipe
+rather than through the preservation tail.
+
+### The rule
+
+**The value becomes a list.** A plural subject holds its items structurally
+rather than as one sentence, and:
+
+- **removal surgery deletes ITEMS, not steps**;
+- **a step whose list empties is deleted**, which is the old behaviour surviving
+  as the special case it always was;
+- **remainders are the user's own words** — source containment holds per item,
+  so what survives a removal is still something they typed.
+
+### Scope: the whole plural class, and accessories were never in it
+
+`PLURAL_SUBJECTS` names `marks` and `ink` as "one slot holding a whole set" —
+and **`statedAccessories` was never added to it**, which is its own small
+instance of the same recurring shape. So the change is: complete the constant,
+then build the list mechanism for all three. They carry the identical defect —
+*"a scar and freckles"* then *"remove the scar"* — and fixing one member of a
+class the code already declares is the mistake this program keeps cataloguing.
+
+**Ink gains a fix nobody had noticed.** `placementClause` finds the FIRST place
+word in a value, so a two-item ink value with two placements has been getting
+one clause for both. Per-item classification ends that. One rule holds: an item
+that is not front-visible refuses the WHOLE instruction, as wall (d) requires —
+never silently drop an item and render the rest.
+
+### And the guard that has been refusing honest restatements
+
+The interpreter is told *"marks and ink hold a set: restate all of them"*, while
+source containment checks every content word against **the current sentence
+only**. An obedient restatement therefore fails: "add freckles" comes back as
+"a scar and freckles" and is refused on the word *scar*, which the user did not
+type this time — because they typed it last time.
+
+**So the plural class has been refuse-or-annihilate on every second
+instruction**, and both halves were invisible: the refusal reads as "that came
+back with more detail than you asked for", and the annihilation was the defect
+this ruling is about.
+
+Composition stays restate-absolutely — merge-append would break "make the hoops
+silver". What changes is the SOURCE containment measures against, per item:
+
+> **the sentence they just typed, OR an item they had already stated verbatim.**
+
+Provenance holds either way, and invention is still impossible: a model cannot
+introduce a fact that is in neither place. This is the fourth instance of the
+guard-too-strict shape, and the first where the guard was refusing the product's
+own instruction to the model.
+
+### What it must not break
+
+The materialization rule is money (D-163 rule 4: a chain that already exists is
+SELECTED free; only a genuinely new combination charges 25). Two lists holding
+the same items in different orders are the same recipe and must fingerprint
+identically, or the user pays 25 credits for a picture they already have — while
+the PROMPT keeps their own order, because reordering someone's words to suit a
+comparison is the record drifting from the person.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

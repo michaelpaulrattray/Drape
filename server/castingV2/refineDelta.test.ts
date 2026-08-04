@@ -300,7 +300,7 @@ describe("accessories are refinable; garments and headwear are not", () => {
     ]) {
       const c = check(ask);
       const delta = readDelta({ free: { statedAccessories: ask } }, c);
-      expect(delta?.free?.statedAccessories, ask).toBe(ask);
+      expect(delta?.free?.statedAccessories, ask).toEqual([ask]);
       expect(c.wall, ask).toBeUndefined();
     }
   });
@@ -351,7 +351,7 @@ describe("ink renders only where the anchor is the document", () => {
       "a line tattoo along her jaw",
     ]) {
       const delta = readDelta({ free: { ink: ask } }, check(ask));
-      expect(delta?.free?.ink, ask).toBe(ask);
+      expect(delta?.free?.ink, ask).toEqual([ask]);
     }
   });
 
@@ -413,7 +413,7 @@ describe("ink renders only where the anchor is the document", () => {
   it("leaves real marks alone", () => {
     for (const ask of ["freckles across her nose", "a small scar through her eyebrow"]) {
       const c = check(ask);
-      expect(readDelta({ free: { marks: ask } }, c)?.free?.marks, ask).toBe(ask);
+      expect(readDelta({ free: { marks: ask } }, c)?.free?.marks, ask).toEqual([ask]);
     }
   });
 
@@ -427,7 +427,7 @@ describe("ink renders only where the anchor is the document", () => {
   */
   it("hoists a free subject the interpreter put at the top level", () => {
     const ask = "a small rose tattoo on her cheekbone";
-    expect(readDelta({ ink: ask }, check(ask))?.free?.ink).toBe(ask);
+    expect(readDelta({ ink: ask }, check(ask))?.free?.ink).toEqual([ask]);
   });
 
   it("still applies every guard to a hoisted value", () => {
@@ -441,7 +441,7 @@ describe("ink renders only where the anchor is the document", () => {
      things only when hair is what is over them. An eye is still front-visible. */
   it("keeps under-the-eye ink renderable", () => {
     const ask = "a tiny star tattoo under her eye";
-    expect(readDelta({ free: { ink: ask } }, check(ask))?.free?.ink).toBe(ask);
+    expect(readDelta({ free: { ink: ask } }, check(ask))?.free?.ink).toEqual([ask]);
   });
 
   /*

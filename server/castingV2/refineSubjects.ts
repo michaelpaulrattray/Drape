@@ -132,7 +132,11 @@ export function isPresentationSubject(subject: FreeSubject): boolean {
  * to it. That keeps last-writer-wins honest: removal stays arithmetic, because
  * the value is always the complete current answer rather than an increment.
  */
-export const PLURAL_SUBJECTS: readonly FreeSubject[] = ["marks", "ink"];
+export const PLURAL_SUBJECTS: readonly FreeSubject[] = ["marks", "ink", "statedAccessories"];
+
+export function isPluralSubject(subject: FreeSubject): boolean {
+  return PLURAL_SUBJECTS.includes(subject);
+}
 
 /*
   THE GUARANTEE-LANE CARVE-OUT, at compile time.

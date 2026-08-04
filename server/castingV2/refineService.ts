@@ -78,14 +78,16 @@ import {
   contradictedFacets,
   currentValueOfFacet,
   facetsWrittenBy,
+  itemsOf,
   missingFromPrompt,
   presentationOf,
   readDelta,
+  REFINABLE_AXES,
   type RefineDelta,
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import {
-  chainWithout,
+  chainAfterRemoval,
   composeChain,
   facetOf,
   matchSteps,
@@ -243,8 +245,24 @@ export async function refineCandidate(
     guaranteed `hairColour`, that field falls back to the ORIGINAL colour while
     the face on screen is pastel pink. `currentValueOfFacet` follows the facet.
   */
+  /*
+    THE PREDECESSOR IS READ BEFORE THE PARSE, because source containment needs
+    it (D-171). A plural subject restates its whole set, so an honest
+    restatement carries words from EARLIER sentences — and without the prior
+    items to measure against, the guard refuses the very shape the interpreter
+    is instructed to produce.
+  */
+  const predecessorForParse = source.variantPublicId
+    ? existing.find((variant) => variant.publicId === source.variantPublicId) ?? null
+    : null;
+  const priorItems: Partial<Record<FreeSubject, string[]>> = {};
+  for (const [subject, value] of Object.entries(readDelta(predecessorForParse?.deltas)?.free ?? {})) {
+    priorItems[subject as FreeSubject] = itemsOf(value);
+  }
+
   const parsed = await (dependencies.interpret ?? interpretRefinement)({
     instruction: input.instruction,
+    prior: priorItems,
     currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
     currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
     currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
@@ -270,9 +288,7 @@ export async function refineCandidate(
     rather than off 3. That is the whole tree, and it needs no schema — it is
     emergent from prefix-sharing, and every row stays self-describing.
   */
-  const predecessor = source.variantPublicId
-    ? existing.find((variant) => variant.publicId === source.variantPublicId) ?? null
-    : null;
+  const predecessor = predecessorForParse;
 
   /* ---- the FREE outcomes, resolved before anything is claimed (D-163) ---- */
 
@@ -414,6 +430,7 @@ export async function refineCandidate(
       const asEdit = await (dependencies.interpret ?? interpretRefinement)({
         instruction: input.instruction,
         mode: "edit",
+        prior: priorItems,
         currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
         currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
         currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
@@ -431,12 +448,25 @@ export async function refineCandidate(
       }
       editDelta = asEdit.delta;
     } else {
-      for (const index of matched) {
-        for (const facet of Array.from(facetsWrittenBy(predecessorChain[index]!.delta))) {
+      for (const match of matched) {
+        for (const facet of Array.from(facetsWrittenBy(predecessorChain[match.index]!.delta))) {
           removedFacets.add(facet);
         }
       }
-      chain = chainWithout(predecessorChain, matched);
+      /*
+        ITEMS, NOT STEPS (D-171). A plural subject holds several facts in one
+        step, so "remove the hoops" against "small gold hoops and thin wire
+        glasses" prunes to the survivors — the glasses were never named, and
+        deleting the step would have taken them too.
+      */
+      const removalSubject = readRemovalSubject(parsed.subject);
+      chain = chainAfterRemoval(
+        predecessorChain,
+        matched,
+        removalSubject && !(REFINABLE_AXES as readonly string[]).includes(removalSubject)
+          ? removalSubject as FreeSubject
+          : null,
+      );
     }
   }
 

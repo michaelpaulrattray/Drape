@@ -107,7 +107,10 @@ const BASE_PROMPT = [
   "  - Use the user's OWN WORDS. Never elaborate, never add detail they did not give.",
   '    "a scar on her cheek" stays that. It does NOT become "a long knife scar".',
   "  - One entry per subject, holding the WHOLE current answer for that subject.",
-  "  - marks and ink hold a set: restate all of them, not just the new one.",
+  "  - marks, ink and statedAccessories hold a SET. Give them as a JSON ARRAY of separate",
+  '    items — ["small gold hoops", "thin wire glasses"] — never one run-on sentence, and',
+  "    restate ALL of them including ones stated earlier, not only the new one. Each item is",
+  "    one thing, in their words, so it can be taken back on its own later.",
   "  - Never name a brand, a product, or a real person.",
   "",
   "ADORNMENT IS THE PERSON, NOT THE STAGE. Earrings, hoops, studs, a nose ring, a septum ring,",
@@ -153,10 +156,13 @@ const REMOVAL_PROMPT = [
   "    eyeColour, eyeShape, hairColour, hairTexture, hairStyle, makeup.",
   '  "remove the makeup" is the whole subject -> match empty. "remove the smokey eye" names one',
   '    thing -> match "smokey eye". Put THEIR words in match, never yours.',
-  '  If they clearly want something taken away but only POINT at it — "take those off", "get rid',
-  '    of that", "lose it" — you cannot know what "those" is, and neither can anyone who has not',
-  '    seen the list. Reply {"navigate": true}: taking away the thing just added is going back a',
-  "    step, which is what they mean and it is free.",
+  '  A PRONOUN with no noun is pointing, not naming: "take those off", "get rid of that",',
+  '    "lose it", "undo that". Nobody who has not seen the list can know what "those" is, so',
+  '    reply {"navigate": true} — taking away the thing just added is going back a step, which',
+  "    is what they mean and it is free.",
+  '  But "take the HOOPS off" NAMES the thing, and so does "lose the lipstick" and "get rid of',
+  '    the fringe". A named thing is always a remove, whatever the sentence is shaped like.',
+  "    Only the bare pronoun navigates.",
 ].join("\n");
 
 const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
@@ -172,6 +178,8 @@ export type RefineInterpretInput = {
    * way forever and rule 3 becomes "that didn't come through clearly".
    */
   mode?: "classify" | "edit";
+  /** What each subject already held — containment's second source (D-171). */
+  prior?: Partial<Record<string, string[]>>;
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -301,7 +309,7 @@ async function runOnce(
     a free value must appear in the sentence the user typed. `check.wall` comes
     back set when a wall was hit, so the refusal can name it.
   */
-  const check: FreeLaneCheck = { instruction };
+  const check: FreeLaneCheck = { instruction, prior: input.prior as FreeLaneCheck["prior"] };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
   if (!delta) return check.wall ? { ok: false, refusal: check.wall } : null;
