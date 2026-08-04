@@ -256,8 +256,28 @@ const STYLE_BY_NAME: ReadonlyMap<string, HairStyle> = new Map(
   ALL_STYLE_TABLES.flat().map(([style]) => [style.name, style]),
 );
 
-/** The cut names a refinement may name, sorted for a stable prompt. */
+/** Every cut name, including the ones that carry their own worn state. */
 export const HAIR_STYLE_NAMES: readonly string[] = Array.from(STYLE_BY_NAME.keys()).sort();
+
+/**
+ * The cuts a REFINEMENT may name — worn-neutral only (D-157).
+ *
+ * Several catalogue entries are a cut AND a way of wearing it: "hair tied
+ * back", "ponytail", "low bun". That is correct for the ROLL, which draws one
+ * coherent look per candidate. It is wrong for a refinement, because the cut
+ * facet and the worn facet are separate slots — and offering a worn-implying
+ * name in the cut slot is what let "hair tied up" write `hairStyle: hair tied
+ * back`, storing a contradiction that the next worn instruction then argued
+ * with.
+ *
+ * **A cut value must be worn-neutral**, or it is a stored fact waiting to
+ * disagree with one the user actually stated. The worn-implying looks stay
+ * reachable — through `hairWorn`, which is where they always belonged.
+ */
+export const REFINABLE_CUT_NAMES: readonly string[] = Array.from(STYLE_BY_NAME.entries())
+  .filter(([, style]) => !style.worn)
+  .map(([name]) => name)
+  .sort();
 
 /** A cut by name, or null when the name is not one this build can render. */
 export function hairStyleByName(name: string): HairStyle | null {

@@ -27,7 +27,7 @@
  */
 import { EYE_COLOURS, EYE_SHAPES, HAIR_TEXTURES } from "../../shared/castingRealization";
 import { HAIR_COLOURS } from "../../shared/castingVocabularies";
-import { HAIR_STYLE_NAMES } from "./hairStyles";
+import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
@@ -66,7 +66,7 @@ const SYSTEM_PROMPT = [
   `  eyeShape    — one of: ${EYE_SHAPES.join(", ")}`,
   `  hairColour  — one of: ${HAIR_COLOURS.join(", ")}`,
   `  hairTexture — one of: ${HAIR_TEXTURES.join(", ")}`,
-  `  hairStyle   — one of: ${HAIR_STYLE_NAMES.join(", ")}`,
+  `  hairStyle   — one of: ${REFINABLE_CUT_NAMES.join(", ")}`,
   "  makeup      — free text, in the user's own terms",
   "",
   "THE FREE LANE — anything else about the person, keyed by subject:",
@@ -81,6 +81,10 @@ const SYSTEM_PROMPT = [
   "A cut is hairStyle, not hairTexture;",
   "hairTexture is curl pattern only. Relative asks resolve against the CURRENT values you are",
   "given: 'greener' from hazel is green, 'shorter' from a bob is a pixie.",
+  "",
+  "ONE INSTRUCTION WRITES ONLY THE FACETS ITS WORDS STATE. 'Tied up' states how the hair is",
+  "WORN and nothing else — it is not a cut, so hairStyle must stay untouched. Never fill a",
+  "facet the sentence did not mention; a fact they did not state will contradict one they do.",
   "",
   "BARE-TERM OWNERSHIP — beauty words overload, so each one has ONE default:",
   '  "fox eyes" alone is the eye SHAPE (eyeShape: \"fox eyes\"). Only "fox eye liner",',

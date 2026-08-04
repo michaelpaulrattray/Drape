@@ -39,7 +39,7 @@ import {
   type HairTexture,
 } from "../../shared/castingRealization";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
-import { HAIR_STYLE_NAMES, hairStyleByName } from "./hairStyles";
+import { REFINABLE_CUT_NAMES, hairStyleByName } from "./hairStyles";
 import { scrubBrands } from "./brandScrub";
 import { classifyInkPlacement, placementClause } from "./inkPlacement";
 import { namesUnknownProperNoun } from "./properNouns";
@@ -169,7 +169,12 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     would be an axis value nothing knows how to render.
   */
   if (raw.hairStyle != null) {
-    if (!HAIR_STYLE_NAMES.includes(raw.hairStyle as string)) return null;
+    /*
+      WORN-NEUTRAL ONLY (D-157). A cut that carries its own worn state is a
+      stored contradiction waiting for a worn instruction to disagree with it —
+      which is exactly how "hair tied up" wrote a CUT and then reverted.
+    */
+    if (!REFINABLE_CUT_NAMES.includes(raw.hairStyle as string)) return null;
     delta.hairStyle = raw.hairStyle as string;
   }
   if (raw.hairColour != null) {
@@ -264,7 +269,16 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           guard doing the opposite of its job.
         */
         const strip = (text: string) => text.replace(/['’]/g, "");
-        if (!tokensComeFromBrief(strip(scrubbed), strip(check.instruction))) {
+        /*
+          And STEMMED, for the same reason the apostrophe is stripped.
+
+          "Tie her hair up" came back as "tied up" and was refused, because
+          "tied" is not the token "tie". That is a morphological variant of the
+          user's own word, not an invention — and a guard built to stop INVENTED
+          CONTENT must not fire on a verb tense. The second time this exact
+          shape has cost an honest instruction (D-157).
+        */
+        if (!stemmedContainment(strip(scrubbed), strip(check.instruction))) {
           check.wall = { reason: "wall_unfileable", asked: subject };
           return null;
         }
@@ -324,7 +338,7 @@ function promoteToGuaranteedLane(
     to overwrite the cut, which is how the mullet died.
   */
   if (subject === "hairCut") {
-    const cut = HAIR_STYLE_NAMES.find((name) => name.toLowerCase() === lowered);
+    const cut = REFINABLE_CUT_NAMES.find((name) => name.toLowerCase() === lowered);
     if (cut) {
       delta.hairStyle = cut;
       return true;
@@ -499,6 +513,27 @@ export function missingFromPrompt(delta: RefineDelta, prompt: string): string[] 
     if (!lowered.includes(value.toLowerCase())) missing.push(key);
   }
   return missing;
+}
+
+/**
+ * Source containment, tolerant of ordinary word endings.
+ *
+ * Stems both sides by dropping the common English suffixes before comparing, so
+ * tie/tied/tying and freckle/freckles are the same word. Deliberately crude:
+ * the job is to catch a model INVENTING a fact, and no stemmer is needed to
+ * notice "a long knife scar from a bar fight" when the user said "a scar".
+ */
+function stemmedContainment(value: string, instruction: string): boolean {
+  const stem = (word: string) => word
+    .replace(/(ing|ed|es|s)$/i, "")
+    /* And a trailing "e", so tie and tied both reduce to "ti". */
+    .replace(/e$/i, "");
+  const source = new Set(
+    instruction.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map(stem),
+  );
+  const tokens = value.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+  return tokens.every((token) => token.length <= 2 || source.has(stem(token)));
 }
 
 /**
