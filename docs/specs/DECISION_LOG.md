@@ -5090,6 +5090,107 @@ the record cannot drift from the person, and the prompt cannot argue with the
 instruction.
 
 
+## D-177 — A dye word owns the hair drawer. Always.
+
+**Founder ruling, 2026-08-05 — closing the corpus's first open annotation.**
+
+"Dyed pink", "bleached blonde" and "box colour red" landed in three different
+drawers: makeup, the guaranteed hair colour, and a free hair shade. They are
+**one class, not three.**
+
+Dyeing is a thing done to hair. So the dye word is the owner declaration,
+exactly as the word "hair" is in D-176 — and the earlier reading (D-89's "a
+stated dye files as makeup/styling") is superseded now that hair has a drawer of
+its own to be declared for.
+
+Same discipline as D-176's ship: **prompt AND backstop**, and the driver proves
+both directions — a dye word lands in hair, and a cosmetic colour still stays
+makeup.
+
+## D-178 — An unqualified colour follows the last-edited colour-bearing facet.
+
+**Founder ruling, 2026-08-05.**
+
+"Pinker" after a hair edit means the hair. It has been defaulting to **makeup**,
+which is a guess wearing the clothes of a rule.
+
+**History wins, silently.** The parser is told which facet the last
+colour-bearing edit touched, and an unqualified or relative colour ask follows
+it. No question is asked, because there is nothing to ask: the person just
+edited that facet and is still talking about it.
+
+**Cold start is the only case that asks.** With no colour-bearing edit in the
+session there is genuinely no referent, and the honest move is neither a guess
+nor a silent default: a **constrained re-ask in the user's own words** —
+*"pinker — the hair, or the lips?"*
+
+This also closes the corpus's fourth annotation. Relative asks resolved to an
+absolute only *sometimes*; they now resolve against the facet this rule selects,
+which is what gives the resolution something stable to resolve against.
+
+## D-179 — A typo near a known word gets a free re-ask before money moves.
+
+**Founder ruling, 2026-08-05.**
+
+"Piink hair" files verbatim and then costs 25 credits to render something nobody
+asked for. Refusing outright is honest but unhelpful; correcting it silently
+would be the model authoring the record, which D-172 forbids.
+
+The third answer: **ask, for free.** *"Did you mean pink?"* — one tap.
+
+**The confirmation is what keeps D-172 intact.** Nothing model-authored is
+filed, because the user chose the word. A recognised near-miss never rides a
+paid render verbatim.
+
+An unrecognised token that is near nothing known keeps its current honest
+handling — it files as their word, or refuses, exactly as today.
+
+## D-180 — Every re-ask is an inline sentence with chips. Never a modal.
+
+**Founder ruling, 2026-08-05, ratified after a direct challenge on immersion.**
+
+The re-asks D-178 and D-179 introduce are **spoken in the same conversational
+frame the refusals and confessions already use** — an inline sentence in the
+panel, with tappable chips for the answers. Never a modal, never a dialog, never
+an error state.
+
+**It fires rarely by construction**, which is what makes it bearable: history
+wins silently, so the question only appears at cold start and on a typo
+near-miss. A product that asks often is a product that has not decided.
+
+**The re-ask states join the D-169 loading mock** — the founder judges the feel
+on pixels, in one eyeball pass, before anything is wired.
+
+## D-181 — A hybrid likeness ask serves the honest half and confesses the rest.
+
+**Founder ruling, 2026-08-05, from a seat probe — and the finding is the shape
+of the defect, not the defect itself.**
+
+*"Make her eyes green like Margot Robbie's"* was run nine times against the real
+interpreter. **The name never survived into parsed output in any run** — the
+structural promise holds, and that is the half that protects the product.
+
+The UX was **7 of 9 refuse, 2 of 9 silently file `{eyeColour: "green"}`.** Same
+input, different outcome: **a coin-flip wall**, which the corpus's own standard
+calls blocking. A guard that holds for one sampling and yields on the next is
+not a guard, it is a probability.
+
+**The ruling:** when an extractable honest value rides a likeness comparison,
+**the value files and the outcome sentence confesses** that the reference was
+set aside, naming the rule. That is D-172's invention shape applied to likeness —
+*the scar files, the knife fight does not* — and it is the same instinct: serve
+what the person actually asked for, refuse only what cannot be served, and say
+which is which.
+
+**Pure likeness asks with no honest half refuse exactly as today.** "More
+Rihanna" and "give her Zendaya's face" carry no extractable value; there is
+nothing to serve.
+
+Prompt AND backstop. The driver proves both halves **and the determinism** — run
+the hybrid probes enough times to catch a coin flip, because once is what let
+this ship.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

@@ -157,7 +157,19 @@ export type RefineRefusal =
  * mock which returns `{ ok: true, delta }` still means what it always meant.
  */
 export type RefineParse =
-  | { ok: true; intent?: "edit"; delta: RefineDelta }
+  | {
+    ok: true;
+    intent?: "edit";
+    delta: RefineDelta;
+    /**
+     * A likeness comparison rode this ask and was set aside (D-181).
+     *
+     * The value files; the reference does not, and the outcome sentence says
+     * so. D-172's invention shape applied to likeness — the scar files, the
+     * knife fight does not.
+     */
+    droppedReference?: boolean;
+  }
   /** Bare "undo" / "go back" — free navigation, never a render. */
   | { ok: true; intent: "navigate" }
   /**
@@ -210,6 +222,20 @@ export type FreeLaneCheck = {
 
 /** One adjustment per subject, not a paragraph. */
 const MAX_FREE_LENGTH = 120;
+
+/**
+ * Words that mean somebody coloured hair on purpose (D-177).
+ *
+ * Not a phrasing list in D-163's sense — it is a closed set of VERBS for one
+ * act, the way `namesDesign` is a closed set of nouns for one kind of thing.
+ * The rule is "a dye word owns the hair drawer"; these are the dye words.
+ */
+const DYE_WORDS = ["dye", "dyed", "dyeing", "bleach", "bleached", "box colour", "box color", "highlights", "balayage", "ombre", "toner", "tinted"];
+
+function namesDye(text: string): boolean {
+  const lowered = text.toLowerCase();
+  return DYE_WORDS.some((word) => new RegExp(`\b${word}\b`).test(lowered));
+}
 
 /** And a set is a handful, not a second brief arriving as a list (D-171). */
 const MAX_ITEMS = 8;
@@ -325,7 +351,17 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       still lands — in the drawer it named. The prompt says this too; a rule
       enforced only by asking nicely is not a rule.
     */
-    if (/\bhair\b/i.test(cleaned)) {
+    /*
+      AND A DYE WORD OWNS IT TOO (D-177).
+
+      "Dyed pink", "bleached blonde" and "box colour red" were landing in three
+      different drawers — makeup, the guaranteed colour, and a free shade — and
+      they are one class. Dyeing is a thing done to HAIR, so the dye word is the
+      owner declaration exactly as "hair" is, and D-89's older reading (a stated
+      dye files as makeup/styling) is superseded now that hair has a drawer of
+      its own to be declared for.
+    */
+    if (/\bhair\b/i.test(cleaned) || namesDye(cleaned)) {
       demoted.hairShade = cleaned;
     } else {
     /*

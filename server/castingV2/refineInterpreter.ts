@@ -35,6 +35,7 @@ import { readDelta, type FreeLaneCheck, type RefineParse } from "./refineDelta";
 import { freeSubjectGuidance } from "./refineSubjects";
 import { INK_NEEDS_DOCUMENT_MESSAGE } from "./inkPlacement";
 import { readRemovalSubject } from "./refineRemoval";
+import { namesUnknownProperNoun } from "./properNouns";
 
 const log = createModuleLogger("castingV2/refineInterpreter");
 
@@ -94,8 +95,10 @@ const BASE_PROMPT = [
   "BARE-TERM OWNERSHIP — beauty words overload, so each one has ONE default:",
   '  "fox eyes" alone is the eye SHAPE (eyeShape: \"fox eyes\"). Only "fox eye liner",',
   '  "fox eye makeup" or "fox eye look" mean makeup.',
-  '  A bare colour word is the colour they were BORN with. A dye is reachable by',
-  '  saying so — "dyed", "bleached", "box colour" — and that files as makeup/styling.',
+  '  A bare colour word is the colour they were BORN with.',
+  '  A DYE WORD OWNS THE HAIR DRAWER (D-177): "dyed pink", "bleached blonde", "box colour',
+  '  red", highlights, balayage, ombre. Dyeing is a thing done to HAIR, so the dye word',
+  '  names the drawer just as "hair" does — never makeup.',
   '  "freckles", "a beauty mark", "a scar" are marks on the skin, not drawn on.',
   '  A SHAPE is ink even when they do not say "tattoo": a star, a heart, a rose, initials,',
   '  a word, a symbol. Marks are what skin does by itself — freckles, moles, scars,',
@@ -124,8 +127,16 @@ const BASE_PROMPT = [
   "",
   "WALLS — four things that are never possible. Reply with the wall, not an attempt:",
   '  likeness: making them look like a specific real person -> {"wall": "likeness"}',
+  "    BUT A HYBRID ASK SERVES ITS HONEST HALF. Make her eyes green LIKE a named person",
+  "    carries a real value — green — riding a comparison. File the VALUE and set",
+  '    "droppedReference": true beside it; never put the name anywhere. Only a PURE',
+  "    likeness ask with no extractable value (more Rihanna, give her that actress's face)",
+  "    is the wall. Serve what they asked for; refuse only what cannot be served.",
   '  stage: garments, headwear, the backdrop, props, the scene -> {"wall": "stage", "asked": "<what, briefly>"}',
   '  content: anything unsafe or explicit -> {"wall": "content"}',
+  "    A BODY TATTOO IS NEVER THIS WALL. A chest piece, a back piece, a sleeve — those are",
+  "    ink placements, so they go to the ink subject and the gate answers them. Sending them",
+  "    here tells the user it can never be rendered when the body-art studio is coming.",
   "",
   "SUBJECTIVE asks are a wall too — prettier, hotter, better looking, more attractive. They name",
   'a judgement rather than a feature, so reply {"wall": "stage", "asked": "how attractive they look"}.',
@@ -178,6 +189,25 @@ const REMOVAL_PROMPT = [
 const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
 
 /**
+ * The hybrid-likeness pass's one extra line (D-181).
+ *
+ * The measured behaviour was 7-of-9 refuse and 2-of-9 file for the SAME input.
+ * The model was deciding whether to serve or refuse, and it decided differently
+ * each time — a coin-flip wall. So the CODE decides, and this pass is how the
+ * decision is carried out: the comparison is already gone, tell it so, and ask
+ * only for the value the person actually named.
+ */
+const HYBRID_CONSTRAINT = [
+  "",
+  "",
+  "THE COMPARISON IS NOT AVAILABLE, and that part is already settled — do not refuse over it",
+  "again. If the instruction names a real person only as a COMPARISON for some feature, file",
+  "the feature they named and nothing else. Never write the name, never describe the person,",
+  "never approximate their face. If the instruction carries no feature at all — only the",
+  'person — then it is a pure likeness ask and you reply {"wall": "likeness"}.',
+].join("\n");
+
+/**
  * The echo pass's one extra line (D-172).
  *
  * Deliberately narrow: it constrains the VOCABULARY of the answer and changes
@@ -216,6 +246,8 @@ export type RefineInterpretInput = {
    * faces every guard the first did.
    */
   echoed?: boolean;
+  /** The hybrid-likeness pass — the comparison is already settled (D-181). */
+  hybrid?: boolean;
   /** What the face is NOW — relative asks resolve against this. */
   currentEyeColour: string | null;
   currentEyeShape: string | null;
@@ -301,7 +333,8 @@ async function runOnce(
   try {
     const reply = await engine.complete({
       system: (input.mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT)
-        + (input.echoed ? ECHO_CONSTRAINT : ""),
+        + (input.echoed ? ECHO_CONSTRAINT : "")
+        + (input.hybrid ? HYBRID_CONSTRAINT : ""),
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
         `Current eye shape: ${input.currentEyeShape ?? "unknown"}`,
@@ -406,7 +439,22 @@ async function runOnce(
       nicely is not a wall.
     */
     const asked = typeof reply.asked === "string" ? reply.asked.trim().slice(0, 60) : "";
-    if (reply.wall === "likeness") return { ok: false, refusal: { reason: "wall_likeness" } };
+    if (reply.wall === "likeness") {
+      /*
+        SERVE THE HONEST HALF, DETERMINISTICALLY (D-181).
+
+        A refusal here is right for a PURE likeness ask and wrong for
+        "make her eyes green like <someone>", which carries a real value. The
+        model answered that inconsistently, so the code asks once more with the
+        comparison declared already-settled. A second refusal means there was no
+        honest half to serve, and the wall stands.
+      */
+      if (!input.hybrid) {
+        const served = await runOnce(engine, { ...input, hybrid: true }, instruction);
+        if (served?.ok && "delta" in served) return { ...served, droppedReference: true };
+      }
+      return { ok: false, refusal: { reason: "wall_likeness" } };
+    }
     if (reply.wall === "content") return { ok: false, refusal: { reason: "wall_content" } };
     return { ok: false, refusal: { reason: "wall_stage", asked: asked || "that" } };
   }
@@ -420,7 +468,22 @@ async function runOnce(
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
   if (!delta) return check.wall ? { ok: false, refusal: check.wall } : null;
-  return { ok: true, delta };
+  /*
+    THE BACKSTOP FOR A HYBRID LIKENESS ASK (D-181).
+
+    The probe measured 7-of-9 refuse and 2-of-9 silent file for the SAME input —
+    a coin-flip wall, which the corpus calls blocking. The model deciding
+    whether to serve or refuse is exactly the kind of judgement this program
+    keeps taking back into code.
+
+    So the CODE decides: the instruction names an unknown person AND a value
+    came out of it, therefore the value files and the reference is confessed.
+    The name itself was never in the parsed output in any of the nine runs —
+    `readDelta`'s proper-noun guard is what makes that structural — so this
+    changes only whether the honest half is served, never what is filed.
+  */
+  const droppedReference = namesUnknownProperNoun(instruction, { mode: "phrase" });
+  return droppedReference ? { ok: true, delta, droppedReference } : { ok: true, delta };
 }
 
 /**

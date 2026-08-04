@@ -76,18 +76,14 @@ const CLASSES: Klass[] = [
     asks: ["dye it pink", "colour her hair pink", "turn the hair pink"],
   },
   {
-    name: "dye-is-makeup",
-    why: "RATIFIED, not a defect: D-89 rules a bare colour is the one they were "
-      + "BORN with, and a STATED dye files as makeup/styling. These must keep "
-      + "landing there — the corpus pins the ruling as well as the fixes",
-    expect: { drawer: "makeup" },
+    name: "dye-owns-hair",
+    why: "ASSERTED as of D-177 — the annotation was open and is now a law. A dye "
+      + "word owns the HAIR drawer, because dyeing is a thing done to hair, so "
+      + "the dye word is the owner declaration exactly as \"hair\" is (D-176). "
+      + "D-89's older reading, that a stated dye files as makeup/styling, is "
+      + "superseded now that hair has a drawer of its own to be declared for",
+    expect: { drawer: "free.hairShade" },
     asks: ["dyed pink", "bleached blonde", "box colour red"],
-    open: "the ratified dye rule is applied INCONSISTENTLY. \"Dyed pink\" lands "
-      + "in makeup as D-89 says; \"bleached blonde\" promotes to the guaranteed "
-      + "hairColour and \"box colour red\" files as a free hair shade. All three "
-      + "are stated dyes. Either the rule is right and two phrasings escape it, "
-      + "or the rule itself wants revisiting now that hair has its own drawer "
-      + "(D-176) — a founder call either way.",
   },
   {
     name: "typos",

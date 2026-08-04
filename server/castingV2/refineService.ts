@@ -396,6 +396,8 @@ export async function refineCandidate(
     so there is nothing to add.
   */
   let editDelta: RefineDelta | null = "delta" in parsed ? parsed.delta : null;
+  /* A likeness comparison rode this ask and was set aside (D-181). */
+  const droppedReference = "droppedReference" in parsed && parsed.droppedReference === true;
   let chain: ChainStep[] = predecessorChain ?? [];
   let removedFacets = new Set<Facet>();
 
@@ -1020,6 +1022,20 @@ export async function refineCandidate(
 
     const result: RefineResult = {
       kind: "rendered",
+      /*
+        THE REFERENCE IS CONFESSED, not silently dropped (D-181).
+
+        They asked for green eyes LIKE someone. The green is theirs and it
+        files; the comparison cannot be served and never reaches the record. A
+        product that quietly serves half an instruction and says nothing has
+        decided something on the user's behalf without telling them.
+      */
+      ...(droppedReference
+        ? {
+          note: "Made the eyes as you described. Refining can't copy a real "
+            + "person's features, so that part of the comparison was set aside.",
+        }
+        : {}),
       variantId: variant.publicId,
       candidateId: input.candidatePublicId,
       imageUrl: stored.url,
