@@ -6812,6 +6812,100 @@ check cannot compile.** That is invariant 7 solved by the type system rather tha
 by discipline, and it is the strongest form it has taken here. A
 `@ts-expect-error` pins the door against a later refactor widening it back.
 
+---
+
+## D-214 — A model's answer arrives in a shape. Prove the shape before measuring it.
+
+**Shop round two, 2026-08-06. D-210's rule, extended from our own rasters to
+other people's replies.**
+
+D-210 says prove the stride on raster code we write. This is the same failure
+arriving from outside: **SAM 3 answers a segmentation request with an RGBA
+cut-out — the mask is the ALPHA channel, and RGB carries picture content.** The
+shop converted the reply to greyscale and measured that, so its first run
+measured *the darkness of the subject's hair* and reported it as coverage. Every
+SAM 3 figure was wrong by a factor of two to seven.
+
+`.toColourspace("b-w")` cannot catch it, because it *converts* four channels to
+one — so the single-channel guard standing next to it could never fire. **A check
+whose passing state required it to have read nothing is not a check**, which is
+the general form and the thing to look for.
+
+The tell was `fully-opaque 0.00%` on every row: a mask where no pixel is fully
+opaque is not a mask. Proven rather than inferred — the alpha channel's non-zero
+count and fully-opaque count are identical, so the real mask is exactly binary.
+
+Rule: where a reply carries an alpha channel, the alpha IS the segmentation;
+where it is already single-channel, the image is. **Which branch ran is recorded
+in the row**, so a wrong choice cannot be silent. And the same session hit the
+class a third time — `sharp` promotes a raw one-channel buffer to three through
+`.resize()` — which drew a striped wedge that would have passed for a mask if six
+panels that must differ had not looked identical.
+
+Corollary, learned by nearly getting it wrong: **an empty result and an
+unreadable one are different events.** SAM 3 returns `masks: []` for a thing that
+is not there. Collapsing that into "no mask located" files the correct answer to
+a negative control as a broken reader.
+
+## D-215 — "Softness" is not a measure of softness. A matte needs a ramp, and a ramp needs two controls.
+
+**Shop round two, 2026-08-06. D-203 applied to mattes.**
+
+The shop scored softness as *any byte strictly between 0 and 255*. BiRefNet's
+matte interior sits at 250–254, so **the solid middle of a subject counted as
+edge** and the endpoint read "46% soft" for a mask whose actual blend is a
+hairline.
+
+This retroactively corrects a ratified figure: round one's **"birefnet/v2
+Matting = a TRUE matte (61% soft)"**. The verdict survives — it *is* a true matte
+— but the number that justified it was measuring quantisation, and a verdict
+resting on a number nobody re-derived is how D-203 got written in the first
+place.
+
+Replaced with the share of a mask's own extent carrying genuinely intermediate
+values (26–229), and **given both controls before use**: the FLOOR is SAM 3's
+provably binary region, which must read ~0 (it reads 0.0%); the CEILING is that
+same region through the real `featherMask`, which must read clearly non-zero (it
+reads 32.4%). The script throws rather than reporting if either fails. Without
+the ceiling, a metric that returned zero for everything would look like a strict
+instrument instead of a dead one.
+
+## D-216 — The hair row is a COMPOSITION, not a model. Region from one, edge from the other.
+
+**Shop round two, 2026-08-06. Proposed, not ratified — the founder's eye first.**
+
+fal has **no dedicated face-parsing model and no hair-specific matting model**;
+the catalogue search for face parsing returns zero rows. That is a finding, not a
+failed search, and it makes the hair row a design question rather than a
+shopping one.
+
+The two halves each fail alone, in opposite directions. SAM 3 knows exactly where
+the hair is (3.69%, confidence 0.93) and its mask is **100% binary** — a cut-out
+boundary, which D-212's rider forbids on a soft edge. BiRefNet Matting has a real
+ramp and knows only the **whole subject** — it cannot tell hair from shoulder.
+
+Intersecting them makes what neither is: `min(region, matte)` turns a 0%-ramp
+cut-out into a 15%-ramp matte, and the wisps survive. A small dilation first —
+`min(dilate(region, 4), matte)`, 17.4% — matters because **SAM 3's hard boundary
+otherwise sits inside the matte's flyaway zone and `min` clips the very wisps the
+matte was brought in for.** Growth lets the matte decide where the hair ends,
+which is the only reason to have a matte.
+
+At r=16 the mask **visibly bleeds onto the forehead**, which is D-211's
+face-carve-out law earning itself on a picture rather than in the abstract. r≈4
+is the working value and is **provisional on one specimen** — the fixture now
+owns 24 bespectacled faces and the constant waits for them.
+
+`maskGeometry` has union and subtract but **no intersection**. `intersectMask` =
+`min(a, b)` is the operation this row needs when it is built; it was computed
+inside the probe rather than added, because product code is not being touched
+before the founder's face wall.
+
+**And the eyeglasses row has a verdict the controls earned.** Asked for glasses
+on a face wearing none, SAM 3 returns an empty set while EVF-SAM returns **her
+eyes** — not noise, the nearest thing it could find. That is the concrete form of
+D-213: an open question to a segmenter does not get a refusal, it gets the
+closest available answer.
 
 ---
 
