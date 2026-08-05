@@ -35,6 +35,8 @@ type Expect = {
   current?: Partial<Record<"eyeColour" | "hairColour" | "hairStyle" | "makeup", string>>;
   /** A second drawer that must ALSO be filled — multi-facet sentences. */
   also?: string;
+  /** An equally correct drawer — the ruling names an outcome, not a slot. */
+  orDrawer?: string;
 };
 
 type Klass = {
@@ -84,6 +86,21 @@ const CLASSES: Klass[] = [
       + "superseded now that hair has a drawer of its own to be declared for",
     expect: { drawer: "free.hairShade" },
     asks: ["dyed pink", "bleached blonde", "box colour red"],
+  },
+  {
+    name: "dye-carve-out",
+    why: "and the carve-out the ROLL side already paid sixteen tiles for: a dye "
+      + "word names the ACT, a named feature names what it was done to, and the "
+      + "feature wins. Bleached brows are makeup",
+    /*
+      The ruling says these "stay makeup", and its INTENT is that they never
+      become hair. "Bleached brows" actually lands in the BROWS drawer, which
+      serves that intent better than makeup does — brows have a subject of
+      their own, so filing there is more specific, not less. Both are accepted;
+      hair is not.
+    */
+    expect: { drawer: "makeup", orDrawer: "free.brows" },
+    asks: ["bleached brows", "tinted moisturizer", "tinted lip"],
   },
   {
     name: "typos",
@@ -182,6 +199,7 @@ for (const klass of CLASSES) {
     }
     const delta = parsed.delta;
     const value = drawerValue(delta, klass.expect.drawer)
+      ?? (klass.expect.orDrawer ? drawerValue(delta, klass.expect.orDrawer) : null)
       /* A colour the closed vocabulary CAN hold is promoted, and that is the
          same drawer by another name — the facet is the unit (D-159). */
       ?? (klass.expect.drawer === "free.hairShade" ? drawerValue(delta, "hairColour") : null);

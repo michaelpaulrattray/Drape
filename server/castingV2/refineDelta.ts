@@ -232,9 +232,56 @@ const MAX_FREE_LENGTH = 120;
  */
 const DYE_WORDS = ["dye", "dyed", "dyeing", "bleach", "bleached", "box colour", "box color", "highlights", "balayage", "ombre", "toner", "tinted"];
 
-function namesDye(text: string): boolean {
+/**
+ * Features that are NOT hair, even when a dye word is standing next to them.
+ *
+ * The roll side learned this once at a cost of sixteen tiles, and it is pinned
+ * in `heritageNeighbourhoods.test` and `partialDeference.test`: **bleached brows
+ * are makeup.** So are tinted moisturiser and a tinted lip. The dye word names
+ * the ACT; this list names the thing the act was done to, and the named feature
+ * wins — the same shape as D-176's "hairline contouring".
+ *
+ * It grows when a casualty is found, and each addition should name the casualty.
+ */
+const NOT_HAIR_FEATURES = [
+  "brow", "brows", "eyebrow", "eyebrows",
+  "lash", "lashes", "eyelash", "eyelashes",
+  "moisturizer", "moisturiser", "skin",
+  "lip", "lips", "nail", "nails",
+];
+
+/**
+ * `\b` INSIDE A TEMPLATE LITERAL IS A BACKSPACE, NOT A WORD BOUNDARY.
+ *
+ * This shipped as ``new RegExp(`\b${word}\b`)``, which builds `\x08dyed\x08`
+ * and matches nothing — so the D-177 backstop was **structurally inert from the
+ * moment it landed**. The driver passed because the PROMPT obeyed, and a
+ * backstop exists precisely for when the prompt does not: invariant 7's nastier
+ * variant, in brand-new code.
+ *
+ * The log lied about it too — printing the regex renders the backspace as `\b`,
+ * so it looked correct in every diagnostic.
+ *
+ * The lesson generalises and is now the standard: **if the only test for a
+ * backstop goes through the interpreter, the backstop is untested.** Its tests
+ * call `readDelta` directly, where no model can rescue it.
+ */
+const boundary = (word: string) => new RegExp(`\\b${word}\\b`);
+
+/**
+ * Does this makeup value actually belong in the HAIR drawer? (D-176, D-177.)
+ *
+ * Two owner declarations, one carve-out. The word "hair" names the drawer;
+ * a dye word names an act only done to hair. Either is enough — unless the
+ * value names a feature that is NOT hair, in which case the feature wins,
+ * because "bleached brows" and "tinted moisturiser" are cosmetics whatever
+ * verb sits beside them.
+ */
+export function namesHairColour(text: string): boolean {
   const lowered = text.toLowerCase();
-  return DYE_WORDS.some((word) => new RegExp(`\b${word}\b`).test(lowered));
+  if (NOT_HAIR_FEATURES.some((feature) => boundary(feature).test(lowered))) return false;
+  if (boundary("hair").test(lowered)) return true;
+  return DYE_WORDS.some((word) => boundary(word).test(lowered));
 }
 
 /** And a set is a handful, not a second brief arriving as a list (D-171). */
@@ -361,7 +408,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       dye files as makeup/styling) is superseded now that hair has a drawer of
       its own to be declared for.
     */
-    if (/\bhair\b/i.test(cleaned) || namesDye(cleaned)) {
+    if (namesHairColour(cleaned)) {
       demoted.hairShade = cleaned;
     } else {
     /*

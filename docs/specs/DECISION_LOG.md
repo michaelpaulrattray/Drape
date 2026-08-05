@@ -5107,6 +5107,30 @@ Same discipline as D-176's ship: **prompt AND backstop**, and the driver proves
 both directions — a dye word lands in hair, and a cosmetic colour still stays
 makeup.
 
+### Amended twice on landing, and both amendments matter
+
+**The carve-out the roll side already paid for.** A dye word owns hair **unless
+the value names another feature**: "bleached brows", "tinted moisturiser" and
+"tinted lip" are makeup. The dye word names the ACT; the feature names the thing
+it was done to, and the feature wins. Bleached brows cost sixteen tiles once and
+are pinned in `heritageNeighbourhoods.test` and `partialDeference.test` — the
+same lesson, arriving on the refine side, and the same shape as D-176's
+"hairline contouring".
+
+**The backstop shipped INERT, and the standard it sets is the bigger half.**
+``new RegExp(`${word}`)`` inside a template literal builds `word`
+— a backspace, not a word boundary — so it matched nothing from the moment it
+landed. The driver passed because the PROMPT obeyed, and a backstop exists
+precisely for when the prompt does not: invariant 7's nastier variant, in code
+written the same day. The diagnostic lied too, because printing the regex
+renders backspace as ``.
+
+> **If the only test for a backstop goes through the interpreter, the backstop
+> is untested.**
+
+Every backstop from here is proved by a test that calls the parser DIRECTLY,
+where no model can rescue it.
+
 ## D-178 — An unqualified colour follows the last-edited colour-bearing facet.
 
 **Founder ruling, 2026-08-05.**

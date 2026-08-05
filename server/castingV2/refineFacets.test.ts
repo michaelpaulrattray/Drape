@@ -145,6 +145,41 @@ describe("one facet, one answer — across both lanes", () => {
     expect(parsed?.free?.hairShade).toBe("pastel pink hair color");
   });
 
+  /*
+    THE BACKSTOP, PROVED WITHOUT A MODEL (D-177).
+
+    It shipped inert: ``new RegExp(`\b${word}\b`)`` inside a template literal
+    builds `\x08dyed\x08` — a backspace, not a word boundary — so it matched
+    nothing. The driver passed because the PROMPT obeyed, and a backstop exists
+    for exactly when the prompt does not. The diagnostic lied too: printing the
+    regex renders backspace as `\b`.
+
+    So these call `readDelta` DIRECTLY. **If the only test for a backstop goes
+    through the interpreter, the backstop is untested** — the model rescues it
+    and the test proves the model, not the guard.
+  */
+  it("routes a DYE WORD into the hair drawer with no model involved", () => {
+    for (const value of ["dyed pink", "bleached blonde", "box colour red", "balayage"]) {
+      const parsed = readDelta({ makeup: value }, { instruction: value });
+      expect(parsed?.makeup, value).toBeUndefined();
+      expect(parsed?.free?.hairShade, value).toBe(value);
+    }
+  });
+
+  /*
+    AND THE CARVE-OUT THE ROLL SIDE ALREADY PAID FOR. "Bleached brows" cost
+    sixteen tiles once and is pinned in `heritageNeighbourhoods.test` and
+    `partialDeference.test`. The dye word names the ACT; a named feature names
+    the thing it was done to, and the feature wins.
+  */
+  it("leaves a dye word alone when the value names another feature", () => {
+    for (const value of ["bleached brows", "tinted moisturizer", "tinted lip"]) {
+      const parsed = readDelta({ makeup: value }, { instruction: value });
+      expect(parsed?.makeup, value).toBe(value);
+      expect(parsed?.free?.hairShade, value).toBeUndefined();
+    }
+  });
+
   /* And the boundary cuts both ways — a colour attached to a COSMETIC stays
      makeup, because the colour word alone decides nothing. */
   it("leaves a cosmetic colour phrase as makeup", () => {
