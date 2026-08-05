@@ -5717,7 +5717,10 @@ was vacuous and is reported as such rather than counted. Scored with a direct
 absence check, because a removal is subtraction and the fact list cannot see it.
 
 **Probe B: zero identity failures** in either arm at every heavy-styling
-position.
+position — **and D-199 later showed this instrument was blind.** Read this line
+as *not measured*, never as *passed*: the same reader, given a specimen whose
+face had visibly changed, called it the same person and cited freckles that had
+arrived mid-chain as its evidence.
 
 **Recommendation: leave the architecture alone.** The second reference buys
 nothing measurable, and base-anchoring's guarantee — the tenth refinement as
@@ -5952,6 +5955,97 @@ the original was barely perceptible.
 what experiment (iii) was already designed to do, and it is now the load-bearing
 half rather than the safety check. A restorer that repaints is worse than blur,
 and only a reader looking at both pictures can tell.
+
+
+## D-198 — The v2 sharpness lesson was provider-relative. D-192 is the timeless one.
+
+**Founder rider, 2026-08-05, and it prevents a future session reasoning from an
+expired fact.**
+
+Four chain-anchored generations on the current provider, each render seeing only
+the previous one: **93% -> 91% -> 91% -> 96%** of the base's sharpness. **Flat.**
+The sharpness compounding that killed chain-anchoring under recipe v2 **does not
+reproduce today.**
+
+D-191 does not weaken. **What compounds changed, not whether.** The timeless law
+is D-192 — fixed references anchor, self-updating references compound — and
+sharpness was only its first costume. A future reader finding "chaining rots
+sharpness" in this log and treating it as a standing property of image models
+would be quoting a fact that expired with a provider generation.
+
+**Three quantities filmed now:** sharpness (v2 era), realization (the trial's
+dissolving bob), and identity (D-199's specimen).
+
+## D-199 — Identity rot is silent, and the instrument meant to catch it was blind.
+
+**The quality unit's most important artifact.**
+
+The same four chain-anchored generations that held their sharpness produced a
+**different woman**: narrower jaw, shorter face, a nose that changed shape,
+freckles that arrived at step 2 and deepened, skin lightening. Every frame
+crisp. **Sharpness rot announced itself; identity rot does not.** A user grooming
+a face they love would not notice a slow morph until the model they sign is not
+the person they chose.
+
+**Identity joins the watched quantities wherever a chain exists.** The shipped
+path is structurally immune — base anchoring re-derives identity from the
+original on every render — but every chain-shaped candidate on the board (arm d,
+arm e, any detail-lock sequence that ever chains) carries identity-to-base as a
+scored column, never an assumption.
+
+### And the instrument failed its positive control
+
+Probe B's question — *"are these the same person, ignoring styling?"* — was run
+against this specimen as a positive control. **It said yes.** Its stated reason:
+the freckle pattern was *"consistent between the two images"* — freckles that
+**arrived during the chain**. The base has none.
+
+So **every identity number this program has published was taken with a blind
+instrument**, including the trial's "zero identity failures in either arm"
+(D-190). That line should be read as *not measured*, not as *passed*.
+
+**The fix is the question, not the reader.** Asked for one overall judgement a
+vision reader is charitable; asked to name what it sees per feature — jaw width,
+face length, nose, lips, eye spacing, freckling, skin tone — and to judge each,
+it is honest. The rewrite passes the control **six features to one**.
+
+*Measure the ruler before measuring with it.* The calibration the founder
+ordered paid for itself on its first use.
+
+## D-200 — The hybrid refresh does not pull the face back. Arm (e) is dead.
+
+**Experiment (iv), scored against its pre-registered outcomes.**
+
+The refresh: the drifted chain image as styling truth (*reproduce every part of
+it exactly; nothing re-decided here*), the base as the identity and
+photographic-quality reference (*restore its fidelity*).
+
+| score | result |
+|---|---|
+| sharpness recovery | 96% -> 97% — **nothing to recover** |
+| **identity-to-base** | **FAILED** — differs on jaw width, face length, nose, lips, eye spacing, freckling, skin tone |
+| styling steadiness | **4/4 held** |
+
+**Not a repaint — a failed pull-back.** The styling reference dominated
+completely: the refreshed frame is the drifted woman, unchanged, with her
+styling intact. In hindsight the prompt asks for exactly that. Hand a model a
+complete photograph of a person and instruct it to reproduce that styling
+exactly, and it reproduces that photograph — the base cannot compete as an
+"identity reference" against a second image that already shows a whole,
+coherent, plausible person.
+
+**Arm (e) is dead, with the side-by-sides.** No eulogy.
+
+The theory's premise also dissolved under measurement: the refresh existed to
+repair damage that accumulates through chaining, and on the current provider the
+damage that accumulates is not the kind a refresh restores. Sharpness did not
+degrade (D-198), and identity is not recoverable by pointing at the original
+while a drifted photograph is in the frame.
+
+**What survives is worth keeping:** the styling reference held 4/4 realizations
+perfectly. A self-updating reference is superb at carrying styling forward and
+catastrophic at carrying a person forward — which is D-192 stated once more,
+from the other end.
 
 
 ---
