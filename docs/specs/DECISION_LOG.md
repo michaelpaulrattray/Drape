@@ -6048,6 +6048,46 @@ catastrophic at carrying a person forward — which is D-192 stated once more,
 from the other end.
 
 
+## D-201 — A model asked to restore a photograph repaints it. Salvage is dead.
+
+**Experiment (iii), scored on its two pre-registered axes, 2026-08-05.**
+
+Three degraded specimens, each given the strictest clarity-only instruction the
+surface allows — restore the detail, change nothing about the person, the
+styling, the framing; do not beautify, do not smooth skin, do not restyle — and
+one reference only, because a second image is what let arm (e) reproduce a
+photograph instead of repairing one.
+
+| specimen | sharpness | unchanged? | what it repainted |
+|---|---|---|---|
+| recovered-1 | 70% -> 72% | **no** | skin freckling |
+| recovered-2 | 71% -> 76% | **no** | skin tone, hair colour |
+| built-step4 | 96% -> 105% | **no** | jaw width, face length, nose, lips, freckling, skin tone, hair colour, expression |
+
+**Every attempt repainted, and the gains are trivial.** Two and five points of
+clarity on the genuinely soft frames, bought with changed features. The third is
+the argument in miniature: the biggest "improvement" in the set, +9 points and
+past the original's own sharpness, and it arrived with a new jaw, a new nose and
+a different mouth.
+
+**A restorer that repaints is worse than blur** — the founder's own bar, and
+this fails it three times out of three. Salvage is dead, with the side-by-sides.
+
+**Why it was never likely.** A generative model has no operation called *make
+this crisper*. It renders a picture that satisfies the description, and "the
+same photograph but sharper" is a description of a picture it must invent from
+scratch. Sharpening is a signal-processing operation; asking a renderer for it
+gets a re-render, and D-197 already showed that a real signal-processing
+sharpen — which changes nothing at all — beats the metric anyway.
+
+**What this closes.** Restoration is not a lever this program has. The answer to
+a soft render is not to repair it afterwards but to not produce it: the render
+stays base-anchored (D-191), the recipe stays as short as it honestly can be —
+and D-196 says even that buys nothing. Depth-softness stands where D-195 left
+it: real, measured at 12 points across six edits, and below the threshold of
+perception by the founder's own eye.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
