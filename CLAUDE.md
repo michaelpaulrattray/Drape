@@ -27,6 +27,27 @@ founder's "not just blocks and squares?" caught it mid-build). When you
 notice you are about to approximate, name the tradeoff out loud and let
 it be challenged before it ships, not after.
 
+## Working laws (founder-ratified, each from a real incident)
+
+1. **Reports are claims; artifacts are facts.** Never assert what a
+   file, image, log, or database row contains from memory or from
+   another report — open the artifact itself, at the resolution the
+   claim needs. A deploy reporting SUCCESS is a claim; the health check
+   and the changed bytes are the fact. (D-164, D-202.)
+2. **Verify the instrument before believing its finding.** A new
+   metric, reader, or checker gets a negative control and a positive
+   control before its verdicts count for anything. A green suite proves
+   nothing if the checker cannot fail. (D-147, D-203.)
+3. **A backstop needs a test the model cannot rescue.** If the only
+   test of a guard runs through an LLM that usually behaves, the guard
+   is untested. Drive it directly.
+4. **Derive, never mirror.** A second list shadowing a source of truth
+   always drifts from it. Build derived views, not parallel copies.
+5. **Assert at the wire.** Contracts about what gets sent are proven on
+   the outgoing request, not on a constant near it.
+6. **Render before shipping anything visual.** No visual change ships
+   without being looked at in the running app first. (D-101.)
+
 ## Advisor protocol
 
 This protocol applies only to the top-level primary executor. The advisor and other subagents never invoke or spawn another advisor.
