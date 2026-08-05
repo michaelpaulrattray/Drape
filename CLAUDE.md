@@ -8,6 +8,25 @@ Drape is a commercial product heading for public launch. Billing, credits, and a
 
 Design taste: restrained, editorial, monochrome. Prefer simple, human-feeling solutions over clever or busy ones; avoid generic templated UI patterns. When in doubt on design decisions, less is more.
 
+## The fidelity law (founder ruling, 2026-08-06)
+
+Never take the path of least resistance on quality. When a capability
+exists as a dedicated, proven tool — a segmentation model instead of
+hand-drawn shapes, a matting model instead of a binary outline, a real
+library instead of an approximation — use the dedicated one, even when
+the approximation is nearer to hand. The convenient substitute silently
+caps the ceiling of everything built on top of it.
+
+Shortcuts are permitted only when **declared**: scaffolding-first is
+legitimate engineering, but the report must say "this is scaffolding,
+the real source lands next," and the real source must be on the board.
+A lesser path taken *silently* — shipped as if it were the real thing —
+is the violation. Origin: the maskGeometry incident (masks built from
+authored shapes when segmentation models were the obvious source; the
+founder's "not just blocks and squares?" caught it mid-build). When you
+notice you are about to approximate, name the tradeoff out loud and let
+it be challenged before it ships, not after.
+
 ## Advisor protocol
 
 This protocol applies only to the top-level primary executor. The advisor and other subagents never invoke or spawn another advisor.

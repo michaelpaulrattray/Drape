@@ -5,15 +5,20 @@ import {
   assertUsable,
   browRegion,
   coverage,
+  dilateMask,
+  eyeMaskFrom,
   eyeRegion,
   eyewearRegion,
+  hairMaskFrom,
   hairRegion,
   mergeRegions,
   rasterise,
+  subtractMask,
+  unionMasks,
   type FaceGeometry,
   type Shape,
 } from "./maskGeometry";
-import { compositeMasked, outsideMaskUnchanged, type Raster } from "./maskedComposite";
+import { compositeMasked, outsideMaskUnchanged, type Mask, type Raster } from "./maskedComposite";
 
 /**
  * The product laws of WHERE an edit may happen, proved without a provider.
@@ -198,6 +203,94 @@ describe("a mask that cannot do its job is refused before the money", () => {
     const mask = rasterise(hairRegion(GEOMETRY), W, H);
     expect(() => assertUsable(mask, "hair")).not.toThrow();
     expect(coverage(mask)).toBeGreaterThan(0.01);
+  });
+});
+
+/*
+  THE SAME LAWS, ON REAL MATTES (founder rider, 2026-08-05).
+
+  Production masks come from face parsing, alpha matting and SAM-class
+  segmentation — never from the shapes above, which exist to make these tests
+  free. What must hold is that the LAWS survive the change of source, and that a
+  soft matte stays soft: a carve-out done by thresholding would put a binary edge
+  back exactly where the matte was protecting one.
+*/
+describe("the laws run on mattes, not outlines", () => {
+  const flat = (value: number): Mask => ({
+    data: Buffer.alloc(4 * 4, value),
+    width: 4,
+    height: 4,
+  });
+  const ramp = (values: number[]): Mask => ({
+    data: Buffer.from(values),
+    width: values.length,
+    height: 1,
+  });
+
+  it("unions by max, so two soft mattes stay soft", () => {
+    const merged = unionMasks(ramp([0, 40, 200, 255]), ramp([10, 90, 20, 0]));
+    expect([...merged.data]).toEqual([10, 90, 200, 255]);
+  });
+
+  it("subtracts softly, so a carved jawline does not become an outline", () => {
+    /* A half-transparent face matte must halve the hair that overlaps it, not
+       delete it — that gradient IS the jawline. */
+    const carved = subtractMask(ramp([255, 255, 255, 255]), ramp([0, 64, 128, 255]));
+    expect([...carved.data]).toEqual([255, 191, 127, 0]);
+  });
+
+  it("keeps the binary behaviour when both sides are hard", () => {
+    expect([...subtractMask(ramp([255, 255]), ramp([0, 255])).data]).toEqual([255, 0]);
+    expect([...unionMasks(ramp([255, 0]), ramp([0, 0])).data]).toEqual([255, 0]);
+  });
+
+  it("carves the face out of a hair matte from segmentation", () => {
+    const hair = flat(255);
+    const face: Mask = { data: Buffer.alloc(16, 0), width: 4, height: 4 };
+    face.data[5] = 255;
+    const mask = hairMaskFrom({ hair, face });
+    expect(mask.data[5]).toBe(0);
+    expect(mask.data[0]).toBe(255);
+  });
+
+  it("protects frames while letting lens interiors regenerate", () => {
+    const eyes: Mask = { data: Buffer.alloc(16, 0), width: 4, height: 4 };
+    eyes.data[5] = 255;
+    const lenses: Mask = { data: Buffer.alloc(16, 0), width: 4, height: 4 };
+    lenses.data[6] = 255;
+    const frames: Mask = { data: Buffer.alloc(16, 0), width: 4, height: 4 };
+    frames.data[6] = 128;
+
+    const mask = eyeMaskFrom({ eyes, lenses, frames });
+    expect(mask.data[5]).toBe(255);
+    /* Half-opaque frame edge lets half the lens through — a wire rim is thin and
+       partly transparent, and a binary cut would leave a halo of old frame. */
+    expect(mask.data[6]).toBe(127);
+  });
+
+  it("refuses a multi-channel matte instead of walking off it (D-210)", () => {
+    const threeChannel: Mask = { data: Buffer.alloc(4 * 4 * 3, 255), width: 4, height: 4 };
+    expect(() => unionMasks(threeChannel, flat(0))).toThrow(/single-channel/);
+    expect(() => subtractMask(threeChannel, flat(0))).toThrow(/single-channel/);
+  });
+
+  it("refuses to resize a matte to fit the master", () => {
+    const other: Mask = { data: Buffer.alloc(9, 255), width: 3, height: 3 };
+    expect(() => unionMasks(flat(255), other)).toThrow(/never resize/);
+  });
+
+  it("dilates a destination zone outward as paint-allowance", async () => {
+    const seed: Mask = { data: Buffer.alloc(16 * 16, 0), width: 16, height: 16 };
+    seed.data[8 * 16 + 8] = 255;
+    const grown = await dilateMask(seed, 2);
+    expect(grown.data[8 * 16 + 8]).toBe(255);
+    expect(grown.data[8 * 16 + 9]).toBe(255);
+    expect(grown.data.length).toBe(16 * 16);
+  });
+
+  it("weights coverage by alpha, so a faint halo is not solid area", () => {
+    expect(coverage(flat(255))).toBeCloseTo(1);
+    expect(coverage(flat(128))).toBeCloseTo(128 / 255, 2);
   });
 });
 

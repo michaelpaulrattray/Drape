@@ -6694,6 +6694,59 @@ to be safe, which is worse than not masking at all — a false guarantee is the
 D-210 family again. Ceiling: 60%.
 
 
+## D-212 — Masks come from segmentation models. Geometry composes them; it never draws them.
+
+**Founder rider, 2026-08-05, landing on D-211 the same day it shipped.**
+
+A production mask is **never hand-authored**. Named facial regions come from a
+**face-parsing** model; hair and every other soft boundary comes from an
+**alpha-matting** model — a matte, not a binary outline; arbitrary objects come
+from **SAM-class** point/box segmentation. fal's catalogue is where we shop,
+since the keys already exist.
+
+**The reason is the reason the vision judge died.** An ellipse over a face is a
+GUESS at where the face is, and a guess dressed as a boundary is D-210's family:
+it does not fail loudly. It produces a slightly wrong edit with a hard edge, and
+the seam is the only symptom — which is why **mask quality is scored by the seam
+gate like everything else**, and why the segmentation model is a **routing-table
+row**. If a mask reads crude in the side-by-sides, **swap the model and re-run.
+Never tune around it.**
+
+**Only the input was wrong; the operations were right.** D-211's laws — the face
+carved out of every hair mask, the destination union, frames protected while lens
+interiors regenerate, brows as their own sub-mask, merge-by-region, the two
+refusals — are the **operations layer over model-sourced mattes**. Segmentation
+produces the regions; this composes them. So the module keeps its laws and
+changes what they run on:
+
+- **Union is `max`, subtraction is `min(a, 255 - b)`.** Both reduce to the binary
+  behaviour when the inputs are hard, which is what lets one law serve a face
+  parser and a test fixture alike.
+- **A soft carve-out stays soft.** Thresholding a matte to subtract it puts a
+  binary edge back exactly where the matte was protecting one — a parser's
+  jawline is soft *on purpose*, and that gradient IS the jawline. Same for a wire
+  frame, which is thin and partly transparent at its edges: a binary cut either
+  eats the eye around it or leaves a halo of old frame.
+- **Coverage is weighted by alpha.** Counting non-zero bytes would score a broad,
+  mostly-transparent halo as solid area, and the two money refusals depend on
+  measuring how much paint actually lands.
+- **Dilation is paint-allowance, and only where it is buried.** A destination
+  zone may be coarse — nobody can segment hair that does not exist yet — but
+  **every visible blend edge uses a fine matte.** Coarse under new paint;
+  never as the boundary the composite feathers against.
+
+**The honest cost of mattes.** A soft mask puts more of the frame in the blend
+band, so the region that is *provably* byte-identical is smaller than it was with
+hard shapes. It is still exact where the matte is zero, and the band is still
+measured rather than assumed (D-209). Stating that plainly is the point: the
+guarantee did not get weaker, its boundary got honest.
+
+**The shape rasteriser stays, labelled.** It builds fixtures so the laws can be
+tested for free — an ellipse is a fine stand-in for a face when what you are
+proving is that the face gets carved out. It is documented as fixtures-only, and
+it is not how a paying user's mask is made.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
