@@ -6790,6 +6790,18 @@ With the gate in place, guards two and three are belt-and-braces for the
 a bad day rather than a model being asked an impossible question. All three are
 free.
 
+### The guard ate its first meal in its own suite
+
+The test written to show all three guards SATISFIED used an 8x8 patch. It scored
+**6.25%** against the frames band's 6% ceiling and was refused.
+
+**The fixture shrank; the band did not widen.** That direction is the whole
+difference between a guard and a decoration — the reflex that produces inert
+controls is the other one, where a constant quietly moves until the test goes
+green and nobody records that it moved. The bands stay labelled provisional
+because they are seeded from one specimen, and they tighten as the fixture
+population grows; a band that loosens needs a reason written next to it.
+
 ### And the smaller lesson, from the same batch
 
 **A test proving a function throws proves only that a function throws.** The two
