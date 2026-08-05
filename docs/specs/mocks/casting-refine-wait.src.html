@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>The refining wait — casting sheet</title>
 
 <!--
@@ -11,6 +12,17 @@
 
   The faces are a real refine from production: the candidate, and the
   variant that "pinker — the hair" actually produced.
+
+  To rebuild, substitute the five placeholders below (named here without their
+  underscores so this comment is not itself a substitution target): the three
+  font slots take base64 of archivo-latin-400, archivo-latin-500 and
+  jetbrains-mono-latin-400 from dist/public/assets; the two face slots take
+  data-URI JPEGs (460px, q72) of casting-v2/candidates/87c6a48e… and
+  casting-v2/variants/e8be9421….
+
+  CHARSET FIRST, ALWAYS. Without the meta above, a file:// open falls back to
+  windows-1252 and every em dash becomes three characters — which is exactly
+  how the founder first saw this page.
 -->
 
 <style>
@@ -144,26 +156,83 @@ em{color:var(--ink); font-style:italic}
 }
 .frame[data-wait="true"] .frame__grain{opacity:1}
 
-/* ---- the ink pill: the register D-169 names, bottom-centre over the frame ---- */
+/* ---- the dot field: the wait made visible without claiming anything ----
+
+   A grid of dots over the softened picture, with a slow diagonal wave passing
+   through it. It is uniform and full-frame on purpose: a moving highlight over
+   a face would read as the model working a region, and a dot field reads as
+   what it is — a surface laid over the picture while the picture is not ready.
+   Aligned to the 4px grid, like everything else.
+*/
+.frame__dots{
+  position:absolute; inset:0; pointer-events:none; opacity:0;
+  transition:opacity 700ms var(--ease);
+}
+.frame[data-wait="true"] .frame__dots{opacity:1}
+.frame__dots::before,
+.frame__dots::after{
+  content:""; position:absolute; inset:-8px;
+  background-image:radial-gradient(circle, rgba(255,255,255,.85) 1px, transparent 1.4px);
+  background-size:12px 12px;
+}
+/* The resting field — always there, barely. */
+.frame__dots::before{opacity:.16}
+/* The wave — the same field, brighter, seen through a moving window. */
+.frame__dots::after{
+  opacity:.6;
+  -webkit-mask-image:linear-gradient(112deg, transparent 34%, #000 50%, transparent 66%);
+  mask-image:linear-gradient(112deg, transparent 34%, #000 50%, transparent 66%);
+  -webkit-mask-size:300% 300%; mask-size:300% 300%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  animation:wave 6s linear infinite;
+}
+@keyframes wave{
+  from{-webkit-mask-position:135% 50%; mask-position:135% 50%}
+  to  {-webkit-mask-position:-35% 50%; mask-position:-35% 50%}
+}
+
+/* ---- the status block: the ink-pill register, centred like a thought ---- */
 .pill{
-  position:absolute; z-index:2; left:50%; bottom:14px; transform:translateX(-50%);
-  display:flex; align-items:center; gap:8px; max-width:calc(100% - 24px);
-  padding:7px 13px 7px 11px; border-radius:var(--r-pill);
-  background:rgba(11,11,12,.82); backdrop-filter:blur(6px);
-  border:1px solid rgba(255,255,255,.14);
-  color:var(--onScrim); font-size:12px; line-height:1.35;
-  opacity:0; transform-origin:bottom center;
-  transition:opacity 320ms var(--ease);
+  position:absolute; z-index:2; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  max-width:calc(100% - 32px); padding:11px 18px 12px;
+  border-radius:var(--r-lg);
+  background:rgba(11,11,12,.72); backdrop-filter:blur(10px) saturate(1.2);
+  border:1px solid rgba(255,255,255,.16);
+  color:var(--onScrim);
+  opacity:0; transition:opacity 320ms var(--ease);
 }
 .frame[data-wait="true"] .pill{opacity:1}
+/* Their own words, in the type everything else is set in. */
+.pill__said{
+  font-size:14px; font-weight:500; line-height:1.3; text-align:center;
+  max-width:26ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.pill__meta{display:flex; align-items:center; gap:6px}
 .pill__dot{
-  flex:none; width:5px; height:5px; border-radius:50%; background:var(--accentSolid);
+  flex:none; width:4px; height:4px; border-radius:50%; background:var(--accentSolid);
   animation:pulse 2.4s ease-in-out infinite;
 }
-@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
-.pill__said{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.pill__stage{color:rgba(255,255,255,.62); white-space:nowrap}
-.pill__stage::before{content:"·"; margin:0 6px; color:rgba(255,255,255,.34)}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+/* A STATE, not a sentence — so mono is the right register here and nowhere
+   else on this surface. */
+.pill__stage{
+  font-family:var(--font-mono); font-size:9.5px; letter-spacing:.09em;
+  text-transform:uppercase; color:rgba(255,255,255,.66);
+}
+
+/* THE EXPECTATION (variant B) — measured, and stated in words rather than drawn.
+
+   A bar was built here first and cut. Its endpoint was real (the median of 64
+   production refines) but the SHAPE of the fill was invented, and worse, a bar
+   inside this pill reads as a measurement of THIS job when it is a statistic
+   about other people's. A sentence can carry "usually" honestly. A bar cannot.
+*/
+.pill__typical{
+  font-size:11px; color:rgba(255,255,255,.5); margin-top:1px;
+  text-align:center; white-space:nowrap;
+}
+.stage[data-bar="off"] .pill__typical{display:none}
 
 /* ---- the version stack, exactly as it is today ---- */
 .stack{display:flex; flex-wrap:wrap; justify-content:center; gap:8px; max-width:100%}
@@ -329,15 +398,19 @@ li::marker{color:var(--muted)}
       question, the refusal and the outcome all speak in one frame.
     </p>
 
-    <div class="stage">
+    <div class="stage" id="stage" data-bar="on">
       <div class="viewer">
         <div class="frame" id="frame" data-wait="false">
           <img class="frame__img" id="face" alt="" src="__BASE__">
           <span class="frame__grain"></span>
+          <span class="frame__dots"></span>
           <span class="pill">
-            <span class="pill__dot"></span>
             <span class="pill__said" id="pillSaid">pinker — the hair</span>
-            <span class="pill__stage" id="pillStage">in line</span>
+            <span class="pill__meta">
+              <span class="pill__dot"></span>
+              <span class="pill__stage" id="pillStage">in line</span>
+            </span>
+            <span class="pill__typical">usually about half a minute</span>
           </span>
         </div>
 
@@ -368,6 +441,11 @@ li::marker{color:var(--muted)}
         <button class="stepbtn" type="button" data-state="5"><span class="stepbtn__n">05</span>Which part?</button>
         <button class="stepbtn" type="button" data-state="6"><span class="stepbtn__n">06</span>Did you mean?</button>
         <button class="stepbtn" type="button" data-state="7"><span class="stepbtn__n">07</span>Refused</button>
+
+        <span class="steps__cap" style="padding-top:18px">The time question</span>
+        <button class="stepbtn" type="button" data-bar="off"><span class="stepbtn__n">A</span>Say nothing</button>
+        <button class="stepbtn" type="button" data-bar="on"><span class="stepbtn__n">B</span>Say "usually"</button>
+
         <p class="steps__note" id="stepNote"></p>
       </div>
     </div>
@@ -383,13 +461,18 @@ li::marker{color:var(--muted)}
       worked on, it is not finished.</em>
     </p>
     <p>
-      <strong>What the treatment deliberately does not do.</strong> It never sweeps a
-      band across the face — a travelling highlight over a picture captioned
-      "the hair" claims the model is working that region, which is not how any of
-      this works. It never speeds up, because between the moment the job is sent
-      and the moment the picture lands <strong>we receive nothing at all</strong> —
-      motion that appeared to react would be inventing a signal. It breathes, slowly,
-      the same way whether the answer is four seconds or four minutes away.
+      <strong>The dots are the aliveness, and they are deliberately dumb.</strong> A
+      grid of them lies over the whole frame and a slow wave passes through, on the same
+      4px grid everything else sits on. Full-frame and uniform on purpose: a highlight
+      travelling over a picture captioned "the hair" would claim the model is working
+      that region, which is not how any of this works. A field of dots claims only that
+      something is laid over the picture until it is ready.
+    </p>
+    <p>
+      <strong>Nothing here ever speeds up.</strong> Between the moment the job is sent
+      and the moment it lands <strong>we receive nothing at all</strong> — so motion
+      that appeared to react would be inventing a signal. It moves the same way whether
+      the answer is four seconds or four minutes away.
     </p>
     <p>
       Colour drains while it waits and returns when it lands. That is the whole
@@ -437,18 +520,49 @@ li::marker{color:var(--muted)}
       </table>
     </div>
     <p>
-      <strong>There is no percentage, and there is no estimate.</strong> Not withheld —
-      absent. A bar filling at a rate we invented is a lie told slowly, and the one
-      thing worse than a wait is a wait that turns out to have been lying about
-      itself. So the honest progress is a two-word change of state, once, and then
-      the picture. If that reduction is not enough, the answer is not a nicer bar;
-      it is a real signal from the provider, which we do not have.
+      <strong>There is no percentage available, and there never will be.</strong> Not
+      withheld — absent. The provider tells us nothing between sending and landing, so
+      a bar tracking "how much of the picture is done" would be a lie told slowly, and
+      the one thing worse than a wait is a wait that turns out to have been lying.
     </p>
     <p>
-      The one number that is real is <strong>elapsed time</strong>, and it stays off
-      screen too: a counter climbing past a minute makes an ordinary wait feel like a
-      fault. It earns its place only at the two-minute mark, as a sentence, which is
-      state 03.
+      <strong>But there is a real number, and it is a good one.</strong> The last 64
+      refines on production:
+    </p>
+    <div class="grid">
+      <table>
+        <thead><tr><th>Fastest</th><th>A quarter by</th><th>Half by</th><th>Three quarters by</th><th>Nine in ten by</th><th>Slowest</th></tr></thead>
+        <tbody>
+          <tr><td>19s</td><td>25s</td><td><strong>31s</strong></td><td>41s</td><td>60s</td><td>328s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      That is tight enough to say something true and useful. What it is not tight
+      enough for is a <em>bar</em>. I built one — filling toward 31 seconds, holding near
+      the end, never completing — and cut it, for a reason that survives its own
+      cleverness: the endpoint was measured but <strong>the shape of the fill was
+      invented</strong>, and a bar sitting inside that pill is read as a measurement of
+      <em>this</em> job when it is a statistic about other people's. A sentence can carry
+      "usually" honestly. A bar cannot carry it at all.
+    </p>
+    <p>
+      So the <strong>A / B</strong> switch beside the state list is about words:
+    </p>
+    <ul>
+      <li><strong>A — say nothing.</strong> The dots and the two state words carry the whole wait. Nothing on screen can be mistaken for a measurement, because nothing is measuring.</li>
+      <li><strong>B — say "usually about half a minute."</strong> One quiet line under the state. It is true, it is what you actually want to know at second five, and it is the same register as every other honest line in this product — including the two-minute one, which is this sentence's other half.</li>
+    </ul>
+    <p>
+      <strong>My recommendation is B.</strong> A wait with no shape at all is the thing
+      you called flat, and "about half a minute" gives it a shape without pretending to
+      watch it. If it turns out to over-promise on a slow day, the two-minute sentence is
+      already there to take it back, and it says the credits come home.
+    </p>
+    <p>
+      Elapsed time stays off screen either way: a counter climbing past a minute makes an
+      ordinary wait feel like a fault. Time earns a place at the two-minute mark, as the
+      sentence in state 03.
     </p>
   </section>
 
@@ -667,6 +781,7 @@ li::marker{color:var(--muted)}
       ? "Anything about them — not their clothes or the room · 25 credits each"
       : "Anything about them — not their clothes or the room · 25 credits each";
     stepNote.textContent = state.note;
+    if (state.wait) restartBar();
     for (const button of buttons) {
       button.setAttribute("aria-current", String(Number(button.dataset.state) === n));
     }
@@ -675,6 +790,25 @@ li::marker{color:var(--muted)}
   for (const button of buttons) {
     button.addEventListener("click", function () { show(Number(button.dataset.state)); });
   }
+
+  /* The one open decision, flippable in place — because it is a judgement about
+     feel, and feel does not survive being described. */
+  const stage = document.getElementById("stage");
+  const bars = Array.from(document.querySelectorAll(".stepbtn[data-bar]"));
+  for (const button of bars) {
+    button.addEventListener("click", function () {
+      stage.dataset.bar = button.dataset.bar;
+      for (const other of bars) {
+        other.setAttribute("aria-current", String(other === button));
+      }
+      restartBar();
+    });
+  }
+  bars[1].setAttribute("aria-current", "true");
+
+  /* Nothing animates in the expectation line, so there is nothing to restart —
+     which is itself the argument for words over a bar. */
+  function restartBar() {}
   document.addEventListener("keydown", function (event) {
     const current = buttons.findIndex(function (b) { return b.getAttribute("aria-current") === "true"; });
     if (event.key === "ArrowDown" || event.key === "ArrowRight") {
