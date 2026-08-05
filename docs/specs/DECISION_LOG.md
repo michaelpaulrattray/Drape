@@ -5652,6 +5652,101 @@ class. All eight mislabelled rows were the dev bot's, which is throwaway trial
 material. The reader it misled was ours.
 
 
+## D-189 — A removal has to say so.
+
+**Found by the calibration trial, 2026-08-05.** It asked for `"small gold hoop
+earrings"` — a plain addition, the same words that had worked on the chain
+before it — and the product answered:
+
+> *"I can't find any earrings on this face — there's nothing to take off."*
+
+One sampling classified an ADD as a REMOVE, and D-167's absent-everywhere
+confession then worked perfectly on a false premise. It cost nothing; it is
+still the product saying something untrue about what it was asked, on a paid
+surface, to someone trying to put earrings ON.
+
+**Measured before fixing:** twelve samplings of that sentence all returned
+`edit`. So it is a rare mis-sampling rather than a rule — which is exactly the
+class a backstop exists for, because a prompt is an instruction to a sampler and
+a sampler is wrong sometimes. (D-177's lesson, one surface along: the prompt
+carries the law and the code carries the floor.)
+
+**The rule: subtraction is stated.** Every legitimate removal this program has
+ever seen carries a word for going away — remove, take off, lose, drop, get rid
+of, no, without, undo. A bare noun phrase is somebody naming a thing they want.
+A removal classified with no such word is re-read with the removal vocabulary
+withheld, through the same door the service already opens when a removal fails
+to hold up. The parse stays the model's; the classification gets a floor.
+
+**A word list is crude, and it is the right kind of crude.** It can only ever
+reclassify a removal DOWN to an edit, and an edit is what an unadorned noun
+phrase means everywhere else on this surface. Its own failure mode — a removal
+phrased with no removal word — degrades to "the product added what you named"
+rather than to a false confession, and the test pins every removal phrasing the
+drivers, the corpora and the founder's walks have actually produced, because
+breaking typed removal would be far worse than the defect being fixed.
+
+## D-190 — The two-reference trial: no measurable advantage, and the compounding fear is dead.
+
+**Measured, 2026-08-05, 15 of 18 positions.** Three were lost — one to a genuine
+verification refusal, one to the D-189 mis-sampling, and one to the cascade that
+followed it (a removal probe with nothing to remove).
+
+| | fact retention | **realization steady** | mean sharpness | at depth (5–6) | identity failures |
+|---|---|---|---|---|---|
+| (a) base-only | 65% | **49%** | 88% | 81% | 0 |
+| (b) two-reference | 67% | **51%** | 85% | **85%** | 0 |
+
+**On the column the ruling rides on, the arms are level.** The founder's
+hypothesis — that a level presence score could be hiding a decisive stability
+win — is answered: it is not hiding one. 49% against 51% across ~50 paired
+judgements is noise.
+
+**And steadiness is LOW IN BOTH ARMS.** Around half of persisting facts get
+re-realized differently from one render to the next. The drift the founder saw
+is real and large, and the second reference does not fix it.
+
+**The compounding objection is dead.** Arm (b) held 85% sharpness at depth while
+arm (a) *fell* to 81%. Adding the previous render as a styling reference
+softened nothing. If a second reference is ever wanted for another reason,
+quality is not what stands in the way.
+
+**Probe A: one genuine trial, passed.** Only chain 3's state image was actually
+wearing the earrings the instruction removed; both arms removed them. Chain 1's
+was vacuous and is reported as such rather than counted. Scored with a direct
+absence check, because a removal is subtraction and the fact list cannot see it.
+
+**Probe B: zero identity failures** in either arm at every heavy-styling
+position.
+
+**Recommendation: leave the architecture alone.** The second reference buys
+nothing measurable, and base-anchoring's guarantee — the tenth refinement as
+close to the chosen face as the first — is worth keeping for free. Drift stays a
+words-and-pins problem, which is where D-183, D-185, D-186 and D-187 were
+already aiming.
+
+### The instrument got an error bar, and it is 21%
+
+Every arm-(a) position was verified twice by the same reader with the same
+prompt: once by the service before delivering, once by the harness re-reading
+the delivered image. **33 paired judgements, 7 reversals — 21% disagreement.**
+
+Five of the seven were one facet on one chain, all in the same direction, which
+makes it a facet-specific unreliability rather than fair noise.
+
+**This vindicates D-187's binding/advisory split retroactively.** Every one of
+those five misses was recorded as advisory, because the value was free-lane text
+rather than a vocabulary cut name. Had they been binding, that chain would have
+been refused and refunded five times over for a bob a second reading of the same
+picture says was plainly there.
+
+**Proposal, not a change:** a refusal currently needs two failed renders, each
+judged once. At 21% reader disagreement there is a real false-refusal floor.
+Reading the second attempt twice and requiring both to fail would cut it
+materially, for one extra vision call on the only path that was already about to
+refund 25 credits. It is a money-rule change and it is the founder's.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

@@ -88,6 +88,7 @@ import {
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
+import { namesRemoval } from "./removalWords";
 import {
   colourFacetLabel,
   colourFacetOf,
@@ -393,7 +394,8 @@ export async function refineCandidate(
     };
   }
 
-  const parsed = await (dependencies.interpret ?? interpretRefinement)({
+  /* `let` because a wordless removal is re-read as an edit below (D-189). */
+  let parsed = await (dependencies.interpret ?? interpretRefinement)({
     instruction,
     prior: priorItems,
     lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
@@ -515,6 +517,43 @@ export async function refineCandidate(
   const droppedReference = "droppedReference" in parsed && parsed.droppedReference === true;
   let chain: ChainStep[] = predecessorChain ?? [];
   let removedFacets = new Set<Facet>();
+
+  /*
+    A REMOVAL HAS TO SAY SO (D-189).
+
+    The trial asked for "small gold hoop earrings" — a plain addition — and got
+    "I can't find any earrings on this face — there's nothing to take off",
+    because one sampling classified an ADD as a REMOVE and D-167's confession
+    then worked perfectly on a false premise. Twelve later samplings of the same
+    sentence all said edit, so this is a mis-sampling rather than a rule, which
+    is exactly what a backstop is for.
+
+    Re-read with the removal vocabulary withheld — the same door the service
+    already opens when a removal fails to hold up — rather than guessing at a
+    delta here. The parse stays the model's; the CLASSIFICATION gets a floor.
+  */
+  if (parsed.intent === "remove" && !namesRemoval(instruction)) {
+    log.warn(
+      { instruction },
+      "[refineService] a removal with no removal word — re-reading as an edit",
+    );
+    const asEdit = await (dependencies.interpret ?? interpretRefinement)({
+      instruction,
+      mode: "edit",
+      prior: priorItems,
+      lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
+      currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
+      currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
+      currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
+      currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
+      currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
+      currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
+    });
+    if (asEdit.ok && "delta" in asEdit) {
+      parsed = asEdit;
+      editDelta = asEdit.delta;
+    }
+  }
 
   if (parsed.intent === "remove") {
     if (predecessorChain === null) {
