@@ -88,6 +88,18 @@ import {
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import {
+  colourFacetLabel,
+  colourFacetOf,
+  didYouMeanReask,
+  nearMiss,
+  needsColourReferent,
+  pendingReaskFor,
+  redirectColourTo,
+  resolveAnswer,
+  whichFacetReask,
+  type Reask,
+} from "./refineReask";
+import {
   chainAfterRemoval,
   composeChain,
   facetOf,
@@ -155,6 +167,15 @@ export type RefineInput = {
   clientRequestId: string;
   candidatePublicId: string;
   instruction: string;
+  /**
+   * The instruction an outstanding question was about (D-180).
+   *
+   * Present when the last submission came back as a question and this one may
+   * be the answer. The question itself is NOT sent — it is re-derived from this
+   * sentence, so the options a typed answer can resolve into are the ones the
+   * user was actually shown.
+   */
+  answering?: string;
 };
 
 export type RefineResult = {
@@ -165,7 +186,16 @@ export type RefineResult = {
    * so they were given it and charged nothing. Absent on the rows replayed from
    * operations written before typed removal, which were all renders.
    */
-  kind?: "rendered" | "selected";
+  kind?: "rendered" | "selected" | "asked";
+  /**
+   * A question, not an outcome (D-178/D-179/D-180).
+   *
+   * Free, and it never reaches the claim: a cold-start colour ask with no
+   * referent, or a typo one slip from a word the product knows. The options are
+   * chips; typing the answer must work identically, because the box is the
+   * interface and a question that can only be tapped is a dead end.
+   */
+  reask?: Reask;
   /** Null when the answer is the ORIGINAL face. */
   variantId: string | null;
   candidateId: string;
@@ -288,9 +318,71 @@ export async function refineCandidate(
     if (recorded) priorItems[subject] = [recorded];
   }
 
+  /*
+    THE TWO FREE QUESTIONS, BEFORE THE PARSE AND LONG BEFORE THE CLAIM.
+
+    Asking is a failure mode rather than a feature, so both fire rarely by
+    construction: history answers an unqualified colour silently, and only a
+    genuine cold start or a genuine near-miss produces a question. Neither
+    costs anything — §10's arrow, one surface further back.
+  */
+  /*
+    HISTORY WINS SILENTLY (D-178). The facet the last colour-bearing edit
+    touched is handed to the parser as context, so "pinker" after a hair edit
+    means the hair and nobody is asked anything. Only a session with no colour
+    edit at all reaches the question.
+  */
+  const lastColourFacet = colourFacetOf(readDelta(predecessorForParse?.deltas));
+
+  /*
+    THE ANSWER ARRIVES THE SAME WAY THE QUESTION WAS ASKED — through the box.
+
+    The founder's condition on shipping the sentence form: it must never dead
+    end. So a reply to an outstanding question is resolved into the instruction
+    it stands for, and then run as if they had typed that in the first place —
+    the chips, when they land, will call exactly this. An unrecognised reply
+    resolves to nothing and simply runs as a new instruction, which is the other
+    half of not dead-ending.
+  */
+  const outstanding = input.answering
+    ? pendingReaskFor(input.answering, lastColourFacet != null)
+    : null;
+  const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
+  const instruction = answered ?? input.instruction;
+
+  /*
+    THE TWO FREE QUESTIONS, BEFORE THE PARSE AND LONG BEFORE THE CLAIM.
+
+    Skipped once something has been answered: "no, piink is right" is still one
+    slip from a known word, and asking again would be the loop a question is
+    supposed to end.
+  */
+  const miss = answered ? null : nearMiss(instruction);
+  if (miss) {
+    return {
+      kind: "asked",
+      reask: didYouMeanReask(instruction, miss),
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
+  if (!answered && !lastColourFacet && needsColourReferent(instruction)) {
+    return {
+      kind: "asked",
+      reask: whichFacetReask(instruction),
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
+
   const parsed = await (dependencies.interpret ?? interpretRefinement)({
-    instruction: input.instruction,
+    instruction,
     prior: priorItems,
+    lastColourFacet: lastColourFacet ? colourFacetLabel(lastColourFacet) : null,
     currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
     currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
     currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
@@ -396,6 +488,15 @@ export async function refineCandidate(
     so there is nothing to add.
   */
   let editDelta: RefineDelta | null = "delta" in parsed ? parsed.delta : null;
+  /*
+    D-178 ENFORCED, not just instructed. An unqualified colour follows the last
+    colour-bearing facet — and the prompt obeyed that on one run and filed
+    makeup on the next, so the drawer is corrected here rather than left to the
+    sampler.
+  */
+  if (editDelta && lastColourFacet && needsColourReferent(instruction)) {
+    editDelta = redirectColourTo(editDelta, lastColourFacet);
+  }
   /* A likeness comparison rode this ask and was set aside (D-181). */
   const droppedReference = "droppedReference" in parsed && parsed.droppedReference === true;
   let chain: ChainStep[] = predecessorChain ?? [];
@@ -484,7 +585,7 @@ export async function refineCandidate(
         the same sentence classifies as a removal forever.
       */
       const asEdit = await (dependencies.interpret ?? interpretRefinement)({
-        instruction: input.instruction,
+        instruction,
         mode: "edit",
         prior: priorItems,
         currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
@@ -544,7 +645,7 @@ export async function refineCandidate(
   */
   const priorInstructions = readInstructions(predecessor?.instructions);
   const instructions = editDelta
-    ? [...priorInstructions, input.instruction.trim()]
+    ? [...priorInstructions, instruction.trim()]
     : chain.map((step) => step.instruction);
   const stepDeltas = editDelta
     ? [...readStepDeltas(predecessor?.stepDeltas), editDelta]
@@ -726,7 +827,7 @@ export async function refineCandidate(
     kind: "castingV2.refine",
     payload: {
       candidatePublicId: input.candidatePublicId,
-      instruction: input.instruction.trim(),
+      instruction: instruction.trim(),
     },
   });
   if (gate.type === "replay") {
@@ -754,7 +855,7 @@ export async function refineCandidate(
         memory surgery — so without this the in-flight ghost chip would show the
         last SURVIVING sentence while the user waited on "remove the earrings".
       */
-      requestText: input.instruction.trim().slice(0, 220),
+      requestText: instruction.trim().slice(0, 220),
     });
   } catch (error) {
     if (error instanceof VariantOwnershipError) {

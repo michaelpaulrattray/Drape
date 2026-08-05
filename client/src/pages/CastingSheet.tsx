@@ -139,6 +139,13 @@ export default function CastingSheet() {
   const [viewerCandidateId, setViewerCandidateId] = useState<string | null>(null);
   /* The refine panel owns its own outcomes (D-154) — never a toast. */
   const [refineOutcome, setRefineOutcome] = useState<string | null>(null);
+  /*
+    The instruction a question is still waiting on (D-180).
+
+    A ref rather than state: nothing renders from it — the question itself is
+    the outcome sentence — and it must not schedule a paint of its own.
+  */
+  const pendingReask = useRef<string | null>(null);
   /* Balance context for the cost line — the question a price actually raises. */
   const balance = trpc.credits.getBalance.useQuery(undefined, {
     staleTime: 30_000,
@@ -1504,7 +1511,13 @@ export default function CastingSheet() {
               */
               busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
               outcome={refineOutcome}
-              onDismissOutcome={() => setRefineOutcome(null)}
+              onDismissOutcome={() => {
+                // Dismissing the question withdraws it. The next sentence is a
+                // fresh instruction, not a late answer to something gone from
+                // the screen.
+                pendingReask.current = null;
+                setRefineOutcome(null);
+              }}
               onRefine={(instruction) => {
                 /*
                   THE LAST OUTCOME GOES WHEN A NEW ONE IS ASKED FOR.
@@ -1517,13 +1530,38 @@ export default function CastingSheet() {
                   dismissed means until superseded, too.
                 */
                 setRefineOutcome(null);
+                /*
+                  THE ANSWER GOES BACK THROUGH THE BOX (D-180).
+
+                  The outstanding question travels as the sentence that raised
+                  it, and the server re-derives what was asked. Cleared here
+                  whatever happens next: if this submission is not an answer it
+                  is a new instruction, and one question cannot stay open across
+                  two of them.
+                */
+                const answering = pendingReask.current;
+                pendingReask.current = null;
                 void refine
                   .mutateAsync({
                     clientRequestId: crypto.randomUUID(),
                     candidateId: viewerCandidateId,
                     instruction,
+                    ...(answering ? { answering } : {}),
                   })
                   .then(async (result) => {
+                    /*
+                      A QUESTION, NOT AN OUTCOME — and it costs nothing.
+
+                      Rendered as a plain sentence in the panel that already
+                      carries refusals and confessions (D-180): same voice, same
+                      place, no modal. Answering it is typing, because the box
+                      is the interface.
+                    */
+                    if (result?.kind === "asked" && result.reask) {
+                      pendingReask.current = instruction;
+                      setRefineOutcome(result.reask.question);
+                      return;
+                    }
                     /* Bought HERE, so its arrival is not a late lander (D-161). */
                     if (result?.variantId) boughtHere.current.add(result.variantId);
                     /*

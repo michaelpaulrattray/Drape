@@ -50,6 +50,40 @@ function stripFence(text: string): string {
 }
 
 /**
+ * The first complete JSON object in a reply, ignoring anything after it.
+ *
+ * Same argument as the fence stripper, one habit along: the model occasionally
+ * writes its object and then a sentence of commentary, and a bare `JSON.parse`
+ * then throws — which the user reads as "that did not come through clearly"
+ * about an instruction that was in fact understood perfectly. The corpus caught
+ * it on "green eyes, pink hair": a two-facet ask, correctly parsed, lost to a
+ * trailing remark.
+ *
+ * Balanced scan rather than a greedy slice to the last brace, and string-aware,
+ * so a `}` inside a value cannot truncate the object.
+ */
+function firstObject(text: string): string {
+  const start = text.indexOf("{");
+  if (start < 0) return text;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i += 1) {
+    const char = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (char === "\\") { escaped = true; continue; }
+    if (char === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return text;
+}
+
+/**
  * The one hard instruction: say what they meant, or say you cannot.
  *
  * `outOfTier` carries the user's own subject back, so the refusal can name what
@@ -242,6 +276,14 @@ export type RefineInterpretInput = {
   /** What each subject already held — containment's second source (D-171). */
   prior?: Partial<Record<string, string[]>>;
   /**
+   * The facet the last colour-bearing edit touched (D-178).
+   *
+   * "Pinker" after a hair edit means the hair. History wins silently, so this
+   * is context rather than a question — the question only exists for a session
+   * with no colour edit at all.
+   */
+  lastColourFacet?: string | null;
+  /**
    * This is the ECHO PASS — say it in their words only (D-172).
    *
    * Set by `interpretRefinement` after a containment failure, never by a
@@ -283,7 +325,15 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     surface. The ceiling went up for D-83's reason at the same time: a truncated
     reply does not degrade gracefully, it parses to nothing.
   */
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  /*
+    THREE, not two — measured again on "softer colour" (2026-08-05).
+
+    The paraphrase corpus failed it on roughly half its runs with two EMPTY
+    completions in a row, so a single re-sample is not the ceiling the comment
+    above assumed. Each retry is a free text call on a path that would otherwise
+    tell someone their perfectly clear instruction did not come through.
+  */
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
     const parsed = await runOnce(engine, input, instruction);
     if (parsed) {
       /*
@@ -321,7 +371,7 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
       }
       return parsed;
     }
-    if (attempt === 1) log.warn({}, "[refineInterpreter] empty reply — re-sampling once");
+    if (attempt < 3) log.warn({ attempt }, "[refineInterpreter] empty reply — re-sampling");
   }
   return { ok: false, refusal: { reason: "unreadable" } };
 }
@@ -358,6 +408,10 @@ async function runOnce(
         ...(Object.entries(input.prior ?? {})
           .filter(([, items]) => (items?.length ?? 0) > 0)
           .map(([subject, items]) => `Currently filed under ${subject}: ${JSON.stringify(items)}`)),
+        ...(input.lastColourFacet
+          ? [`The last colour they changed was ${input.lastColourFacet} — an unqualified or `
+            + "relative colour ask means THAT, unless this sentence names something else."]
+          : []),
         `Instruction: ${instruction}`,
       ].join("\n"),
       json: true,
@@ -374,7 +428,7 @@ async function runOnce(
       as "that did not come through clearly" for instructions it had in fact
       read perfectly. A presentation habit was being reported as their mistake.
     */
-    raw = JSON.parse(stripFence(reply.text));
+    raw = JSON.parse(firstObject(stripFence(reply.text)));
   } catch (error) {
     log.warn({ err: error }, "[refineInterpreter] unreadable reply");
     return null;

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8786e6cd4c7b90b8"
+    "sourceFingerprint": "371cb4140450a571"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 49
+      "moduleCount": 50
     },
     {
       "id": "domain:castingV2",
@@ -3341,6 +3341,12 @@
     {
       "id": "module:server/castingV2/refinePreservation.ts",
       "path": "server/castingV2/refinePreservation.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineReask.ts",
+      "path": "server/castingV2/refineReask.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8233,6 +8239,10 @@
     {
       "id": "test:server/castingV2/refinePreservation.test.ts",
       "path": "server/castingV2/refinePreservation.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineReask.test.ts",
+      "path": "server/castingV2/refineReask.test.ts"
     },
     {
       "id": "test:server/castingV2/refineRecovery.test.ts",
@@ -17235,6 +17245,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refineRecovery.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -17332,6 +17362,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/refineInterpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/refineReask.ts",
       "kind": "imports"
     },
     {

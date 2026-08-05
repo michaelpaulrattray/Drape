@@ -268,6 +268,88 @@ describe("refusals land before anything is claimed", () => {
   });
 });
 
+/*
+  THE QUESTIONS ARE FREE, AND THEY ARE FREE STRUCTURALLY (D-178, D-179, D-180).
+
+  They fire before the parse, so they cost nothing at all — not a claim, not a
+  charge, not even the interpreter call. `interpret` here THROWS: if any of
+  these ever reached it, the test would fail rather than quietly passing on a
+  free-but-slower path.
+*/
+describe("the questions cost nothing, and never dead-end", () => {
+  const explodes = {
+    interpret: async () => {
+      throw new Error("the interpreter must never be reached by a question");
+    },
+  };
+
+  it("asks which part a bare colour ask means, with nothing claimed", async () => {
+    const result = await refineCandidate(explodes, { ...input, instruction: "pinker" });
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.kind).toBe("which-facet");
+    expect(result.reask?.options.map((option) => option.label))
+      .toEqual(["the hair", "the eyes", "makeup"]);
+    expect(journal).toEqual(["read"]);
+    expect(ledger.charges).toHaveLength(0);
+  });
+
+  it("asks about a near-miss typo before the money moves", async () => {
+    const result = await refineCandidate(explodes, { ...input, instruction: "piink hair" });
+    expect(result.kind).toBe("asked");
+    expect(result.reask?.question).toBe("Did you mean pink?");
+    expect(journal).not.toContain("begin");
+    expect(ledger.charges).toHaveLength(0);
+  });
+
+  it("runs the answer as the instruction it stands for, and charges once", async () => {
+    let seen = "";
+    await refineCandidate(
+      {
+        interpret: async (parse: { instruction: string }) => {
+          seen = parse.instruction;
+          return { ok: true as const, delta: { hairColour: "copper" as const } };
+        },
+      },
+      { ...input, instruction: "yes", answering: "piink hair" },
+    );
+    /* THEIR word, chosen by them — the confirmation is what keeps D-172 intact. */
+    expect(seen).toBe("pink hair");
+    expect(ledger.charges).toHaveLength(1);
+  });
+
+  it("treats an unrecognised reply as a new instruction rather than a dead end", async () => {
+    let seen = "";
+    await refineCandidate(
+      {
+        interpret: async (parse: { instruction: string }) => {
+          seen = parse.instruction;
+          return { ok: true as const, delta: { hairColour: "copper" as const } };
+        },
+      },
+      { ...input, instruction: "actually give her a fringe", answering: "pinker" },
+    );
+    expect(seen).toBe("actually give her a fringe");
+    expect(ledger.charges).toHaveLength(1);
+  });
+
+  it("does not ask twice — an answer is never re-questioned", async () => {
+    let seen = "";
+    await refineCandidate(
+      {
+        interpret: async (parse: { instruction: string }) => {
+          seen = parse.instruction;
+          return { ok: true as const, delta: { free: { hairShade: "piink" } } };
+        },
+      },
+      { ...input, instruction: "no", answering: "piink hair" },
+    );
+    /* Still one slip from a known word, and asking again would be the loop the
+       question exists to end. */
+    expect(seen).toContain("piink hair");
+    expect(ledger.charges).toHaveLength(1);
+  });
+});
+
 describe("the order, and the money", () => {
   it("claims, runs, charges, generates, lands — in that order", async () => {
     await refineCandidate(greenEyes, input);

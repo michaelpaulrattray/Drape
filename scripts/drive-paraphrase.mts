@@ -23,6 +23,7 @@
 import "dotenv/config";
 import { interpretRefinement } from "../server/castingV2/refineInterpreter";
 import { itemsOf, type RefineDelta } from "../server/castingV2/refineDelta";
+import { pendingReaskFor, resolveAnswer } from "../server/castingV2/refineReask";
 
 type Expect = {
   /** Which drawer it must land in — a delta key, or `free.<subject>`. */
@@ -53,6 +54,21 @@ type Klass = {
    * honest about being undecided.
    */
   open?: string;
+  /**
+   * The facet the last colour edit touched (D-178).
+   *
+   * History answers an unqualified colour silently, so the classes that test
+   * that behaviour have to supply the history — a relative ask with none is a
+   * different case, and it is asserted as a QUESTION below rather than a parse.
+   */
+  lastColour?: string;
+  /**
+   * This class never reaches the model at all (D-178, D-179).
+   *
+   * The question fires before the parse and costs nothing, so the assertion is
+   * on the question and on the answer resolving — not on a delta.
+   */
+  reask?: { kind: "which-facet" | "did-you-mean"; answer: string; resolvesTo: string };
 };
 
 const CLASSES: Klass[] = [
@@ -104,8 +120,10 @@ const CLASSES: Klass[] = [
   },
   {
     name: "typos",
-    why: "typos a real person makes. A polite refusal is acceptable here; "
-      + "filing garbage or inventing a correction is a finding",
+    why: "typos a real person makes — ASSERTED as of D-179. Neither answer the "
+      + "annotation weighed up survived: filing verbatim buys a render nobody "
+      + "asked for, and refusing politely is a wall where a question belongs. "
+      + "It asks, for free, and THEY choose the word",
     /*
       The bar is NOT that the typo gets corrected — D-172 says only the user's
       words are filed, so inventing "pink" out of "piink" would be the model
@@ -114,9 +132,9 @@ const CLASSES: Klass[] = [
     */
     expect: { drawer: "free.hairShade", forbid: ["blonde", "brown", "black", "auburn"] },
     asks: ["pinl hair", "piink hair", "pink hiar"],
-    open: "a typo files verbatim and then costs a render. Honest, and backing "
-      + "out is free — but refusing politely is the other reasonable answer, "
-      + "and that is a founder call rather than an executor one.",
+    /* ANSWERED (D-179): neither file-and-charge nor refuse — ask, for free, and
+       let THEM choose the word. The confirmation is what keeps D-172 intact. */
+    reask: { kind: "did-you-mean", answer: "yes", resolvesTo: "pink" },
   },
   {
     name: "relative",
@@ -128,10 +146,9 @@ const CLASSES: Klass[] = [
       forbid: ["copper"],
     },
     asks: ["lighter", "less copper", "softer colour"],
-    open: "relative asks resolve to an absolute only SOMETIMES — the same "
-      + "instruction gave {hairColour: auburn} on one run and a verbatim "
-      + "{hairShade: \"less copper\"} on the next, which is not renderable as a "
-      + "colour. Resolution is instructed in the prompt and nothing enforces it.",
+    /* ANSWERED (D-178): the last colour-bearing edit is handed to the parser as
+       context, so a relative ask has something to be relative TO. */
+    lastColour: "the hair",
   },
   {
     name: "unqualified-colour",
@@ -139,11 +156,18 @@ const CLASSES: Klass[] = [
       + "word 'hair' was there to name the drawer and here nothing is",
     expect: { drawer: "free.hairShade", current: { hairColour: "copper" } },
     asks: ["a bit more pink", "more pink", "pinker"],
-    open: "an unqualified colour currently defaults to MAKEUP. On a face whose "
-      + "last instruction was about hair it almost certainly means the hair — "
-      + "but 'the facet we were just discussing' is not something the parser is "
-      + "told, and defaulting to hair would be a new bare-term ruling (D-89 "
-      + "family). A founder decision, not an executor guess.",
+    lastColour: "the hair",
+  },
+  {
+    name: "cold-colour",
+    why: "the SAME asks with no colour history — nothing to be relative to, so "
+      + "the product asks instead of guessing, and the answer runs as an edit",
+    expect: { drawer: "free.hairShade" },
+    asks: ["a bit more pink", "more pink", "pinker"],
+    /* ANSWERED (D-178/D-180): a cold start is the one case that earns a
+       question, and typing the answer must resolve it — the box is the
+       interface. */
+    reask: { kind: "which-facet", answer: "the hair", resolvesTo: "the hair" },
   },
   {
     name: "multi",
@@ -177,8 +201,34 @@ for (const klass of CLASSES) {
   if (only && only !== klass.name) continue;
   console.log(`\n=== ${klass.name} — ${klass.why} ===`);
   for (const ask of klass.asks) {
+    /*
+      THE QUESTION CLASSES NEVER REACH THE MODEL.
+
+      Both fire before the parse and cost nothing, so asserting them through the
+      interpreter would be asserting the wrong thing entirely.
+    */
+    if (klass.reask) {
+      const question = pendingReaskFor(ask, false);
+      const resolved = question ? resolveAnswer(question, klass.reask.answer) : null;
+      const problems: string[] = [];
+      if (!question) problems.push("no question was raised");
+      else if (question.kind !== klass.reask.kind) problems.push(`asked ${question.kind}`);
+      if (!resolved) problems.push(`"${klass.reask.answer}" did not resolve — a dead end`);
+      else if (!holds(resolved, klass.reask.resolvesTo)) {
+        problems.push(`resolved to "${resolved}"`);
+      }
+      const wellAsked = problems.length === 0;
+      if (!wellAsked) {
+        failures += 1;
+        findings.push(`${klass.name}: "${ask}" -> ${problems.join("; ")}`);
+      }
+      console.log(`  ${wellAsked ? "PASS" : "FAIL"}  ${(question?.question ?? "no question").slice(0, 70).padEnd(72)} "${ask}"`);
+      if (!wellAsked) console.log(`        ${problems.join(" | ")}`);
+      continue;
+    }
     const parsed = await interpretRefinement({
       instruction: ask,
+      lastColourFacet: klass.lastColour ?? null,
       currentEyeColour: klass.expect.current?.eyeColour ?? "brown",
       currentEyeShape: "almond",
       currentHairStyle: klass.expect.current?.hairStyle ?? "a blunt bob",

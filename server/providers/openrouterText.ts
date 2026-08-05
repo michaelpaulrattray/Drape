@@ -164,13 +164,35 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
             }
 
             const payload = (await response.json()) as {
-              choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+              choices?: Array<{
+                message?: { content?: string; reasoning?: string };
+                finish_reason?: string;
+                native_finish_reason?: string;
+              }>;
               model?: string;
+              usage?: Record<string, unknown>;
             };
             const text = payload.choices?.[0]?.message?.content ?? "";
             if (!text.trim()) {
-              // A 200 with no completion is not success. Fail closed so the
-              // caller falls back rather than compiling from an empty string.
+              /*
+                A 200 with no completion is not success. Fail closed so the
+                caller falls back rather than compiling from an empty string.
+
+                Logged with the provider's own reasons, because the retry above
+                it hides how often this happens and WHY it happened is not
+                guessable after the fact — a ceiling hit, a stop sequence and a
+                silent upstream refusal all look identical from here.
+              */
+              log.warn(
+                {
+                  providerRef,
+                  finishReason: payload.choices?.[0]?.finish_reason,
+                  nativeFinishReason: payload.choices?.[0]?.native_finish_reason,
+                  reasoningChars: (payload.choices?.[0]?.message?.reasoning ?? "").length,
+                  usage: payload.usage,
+                },
+                "[OpenRouterText] empty completion on a 200",
+              );
               throw new ProviderError("unknown", "The interpreter returned nothing", {
                 providerRef,
               });

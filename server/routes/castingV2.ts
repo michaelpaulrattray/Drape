@@ -517,6 +517,12 @@ export const castingV2Router = router({
           clientRequestId: z.string(),
           candidateId: publicId,
           instruction: z.string().trim().min(1).max(200),
+          /*
+            The outstanding question's SENTENCE, not the question (D-180). The
+            server re-derives what was asked from it, so a client cannot invent
+            an option and have a typed "yes" resolve into an edit nobody offered.
+          */
+          answering: z.string().trim().min(1).max(200).optional(),
         })
         .strict(),
     )
@@ -529,6 +535,7 @@ export const castingV2Router = router({
         clientRequestId: input.clientRequestId,
         candidatePublicId: input.candidateId,
         instruction: input.instruction,
+        answering: input.answering,
       });
     }),
 
