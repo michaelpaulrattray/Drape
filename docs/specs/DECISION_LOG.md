@@ -6538,7 +6538,7 @@ like. Against a completely different frame, the composite still comes back
 byte-identical outside the mask. Ten PNG round-trips leave the master unchanged
 to the byte, which one round-trip cannot prove.
 
-### And the guarantee nearly passed by reading nothing
+### And the guarantee nearly passed by reading nothing — see D-210
 
 `sharp` returned the blurred mask as **three channels**. Every loop here walks
 the mask one byte per pixel and indexes the raster at `pixel * 3`, so it ran
@@ -6566,6 +6566,132 @@ the reason: the constraint that matters is **the area the model must
 reinterpret**, not the number of things asked for. "Fox eyes, green, and thicker
 brows" does not widen the patch beyond the eye region; "change the jacket and fix
 the hand" does. Batch by REGION, never by count.
+
+
+## D-210 — A loop that reads past its buffer reports success. Prove the stride.
+
+**Promoted out of D-209 at Fable's request, because the audience is anyone who
+touches raster code, not only the masked workstream.**
+
+### The mechanism, spelled out
+
+A mask is one byte per pixel. An RGB raster is three. Every loop that walks a
+mask and indexes its image therefore looks like this:
+
+```ts
+for (let pixel = 0; pixel < mask.data.length; pixel += 1) {
+  const at = pixel * 3;
+  if (composite.data[at] !== master.data[at]) changed += 1;   // ...
+}
+```
+
+`sharp` returned the **blurred** mask as three channels rather than one. Nothing
+threw. The loop bound became three times the pixel count, `at` ran to three times
+the raster's length, and `composite.data[at]` returned **`undefined`**.
+
+And here is the part that makes this a class rather than a bug:
+
+> **`undefined !== undefined` is `false`.**
+
+So every out-of-range comparison silently voted *"unchanged"*. The check reported
+**byte-identity for two thirds of an image it had never examined** — on the exact
+property the entire workstream rests on. The suite was green. It was found
+sideways, through a `NaN` in an unrelated seam figure.
+
+### Why it is D-202's class, in code
+
+D-202 named a claim that looked verified and verified nothing — a corroborating
+detail asserted from memory instead of read from the file. This is the same
+shape with a loop instead of a sentence: **a verification that passes because it
+never looked.** A guarantee that can be satisfied by reading nothing is worse
+than no guarantee, because the absent guarantee at least announces itself.
+
+The family is broader than masks. Anything with a **stride** — a byte count per
+element that must agree between two buffers — fails this way and fails quiet:
+RGB versus RGBA, greyscale versus colour, a stereo audio buffer read as mono, a
+row-padded bitmap. In JavaScript there is no bounds error to catch you; typed
+reads give `undefined` or `0`, and both are falsy, and falsy usually means *no
+problem found*.
+
+### The rule
+
+**Prove the stride at the boundary, and never infer it from a library's
+behaviour.** Concretely, and all three, because each closes a different door:
+
+1. **Force it at the source** — `.toColourspace("b-w")` on the feather, so the
+   library cannot decide for us.
+2. **Assert it at the consumer** — `mask.data.length === width * height`, and
+   `master.data.length === width * height * 3`, before any loop runs. A shape
+   that disagrees is a thrown error, not a silent pass.
+3. **Pin both with tests that would have caught it** — one asserting the feather
+   returns exactly one byte per pixel, one feeding a three-channel mask in and
+   requiring a refusal.
+
+**And the general lesson for any verification**: ask what its PASSING state
+requires it to have actually read. If a check can return "all clear" without
+touching the data — because the loop ended early, the collection was empty, the
+comparison was against `undefined`, or the reader was unreachable — then a green
+result carries no information, and something must make the empty case loud.
+
+
+## D-211 — The face is carved out of every hair mask, and other laws you cannot forget.
+
+**`server/castingV2/maskGeometry.ts` — where an edit is ALLOWED to happen.**
+`maskedComposite` enforces a mask; this decides what the mask is. The split
+matters because the laws here are product laws, and product laws are the kind
+that get remembered at three call sites and forgotten at the fourth.
+
+**They are structural instead.** You cannot ask this module for a hair mask that
+includes the face, because there is no argument for it — the exclusion is
+subtracted last, so adding includes cannot talk it open.
+
+Deliberately provider-independent: region boxes arrive from a landmark model or
+a segmenter, every one of which costs money and behaves differently per vendor.
+The geometry, the carve-outs and the refusals do not, so they are pinned before
+a credit is spent. Eighteen tests, no provider.
+
+### The laws, and the defect behind each
+
+**The face is carved out of every hair mask.** A hair instruction that may write
+on the face is how *"make her hair copper"* comes back with a different jaw — the
+whole of D-199's specimen. Not a parameter, no flag to disable it: hair edits
+paint hair, and the face is not hair.
+
+**Growing and shrinking hair need the DESTINATION zone, and it is a union.**
+Longer hair must paint into space that is currently background; shorter hair must
+paint background over space that is currently hair. A mask covering only the
+current hair can lengthen nothing; one covering only the destination cannot clear
+what it leaves behind. So the writable zone is *where it is* ∪ *where it is
+going*, always.
+
+**An eye edit does not delete her glasses, and the split is physical rather than
+stylistic.** Frames are opaque — nothing behind them changed, so they are
+excluded from the writable region entirely and composited back from the master
+verbatim. That is the founder's walk defect answered in geometry. **Lens
+interiors are the one place pixels can never be copied back**: they contain the
+OLD eye seen through glass, so preserving them would preserve the very thing
+being changed. They regenerate, inside frame-edge anchors — which is precisely
+why the *frames* are excluded rather than the whole eyewear.
+
+**Brows are their own sub-mask.** "Thicker brows" and "green eyes" are different
+demands that happen to be neighbours, and proximity is not a region.
+
+**Same-region demands share one patch — and merging takes the union of includes
+with the SUM of excludes.** An exclusion only one member asked for must still
+hold, or merging two safe regions produces an unsafe one: merge a brow edit with
+an eye edit on a bespectacled face and the frames must stay protected by both.
+
+### And two refusals that protect the money
+
+**A mask that selects nothing is a paid render that changes nothing.** The
+composite would faithfully return the master, the net would find the fact
+missing, and the user would be charged for the picture they already had.
+Refusing costs nothing; discovering it after dispatch costs 25 credits.
+
+**A "local" edit covering most of the frame is a re-render wearing a mask's
+clothes.** It would carry all the drift the mask exists to prevent while claiming
+to be safe, which is worse than not masking at all — a false guarantee is the
+D-210 family again. Ceiling: 60%.
 
 
 ---
