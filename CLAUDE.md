@@ -88,8 +88,6 @@ Single Express server serves both the tRPC API and the client (Vite middleware i
 - `client/src/` — React 19, wouter routing (patched via `patches/`), TanStack Query + tRPC v11 client (`lib/trpc.ts`), Zustand stores, Tailwind v4, framer-motion, React Flow (`@xyflow/react`) canvas, three.js hero
   - `pages/` — route components (routes defined in `App.tsx`)
   - `features/<domain>/` — feature modules (casting, wardrobe, boards, studio, admin, moderator, billing…) with `hooks/`, `stores/` (Zustand, named `useXxxStore`), `components/`
-  - `components/ui/` — shadcn/ui primitives (new-york style, see `components.json`)
-  - `components/design-system/` — Drape design-system components (marketing/home pages)
 - `server/` — Express + tRPC
   - `_core/` — bootstrap (`index.ts`), env access (`env.ts`), session cookies (`cookies.ts`), JWT session sign/verify (`sdk.ts`), Vite integration (`vite.ts`), tRPC setup (`trpc.ts`, `context.ts`)
   - `routers.ts` — combines feature routers from `routes/` (admin sub-routers in `routes/admin/`)
@@ -98,10 +96,6 @@ Single Express server serves both the tRPC API and the client (Vite middleware i
   - `casting/` — Gemini image-generation pipeline (queue, circuit breaker, prompts)
   - `wardrobe/` — garment digitization / VTO pipeline
   - `storage.ts` — file storage on Cloudflare R2 via the S3 SDK (`storagePut`/`storageGet`/`storageDelete`; callers pass relative keys). Served URLs are public bucket URLs (`R2_PUBLIC_URL`), **not** presigned — they are persisted in DB records, so they must never expire. Static app assets (logos, swatches) live under `assets/` in the bucket, referenced via `ASSETS_BASE_URL` in `shared/const.ts`.
-  - `stripe/`, `slack/`, `security/`, `logging/` (pino), `monitoring/`
-- `shared/` — constants and types shared client/server
-- `drizzle/` — schema (`schema.ts`) + migrations
-- Path aliases: `@` → `client/src`, `@shared` → `shared`, `@assets` → `attached_assets` (in vite.config.ts, vitest.config.ts, tsconfig.json)
 
 Tests live next to server code as `*.test.ts` and run with vitest against a node environment. `vitest.setup.ts` loads `.env` for tests but **strips `DATABASE_URL`** so unit tests can never touch the live Railway database — suites that need a DB skip unless a disposable `TEST_DATABASE_URL` is provided. Suites that hit a running server over HTTP are named `*.integration.test.ts`, excluded from `pnpm test`, and run via `pnpm test:integration` (config: `vitest.integration.config.ts`).
 
@@ -227,49 +221,7 @@ Most of these followed the same path: helper or rule written, docs written, todo
 - The dev script uses `cross-env` so `NODE_ENV=development` works under cmd/PowerShell.
 - Shell is PowerShell; prefer `pnpm` scripts over raw shell one-liners from docs.
 
-## Deployment (Railway production)
-
-Production runs in the Railway project **drape-production** (deployed 2026-07-10), fully isolated from dev: its own MySQL, its own R2 bucket, fresh secrets. Live at https://drape-production-0232.up.railway.app.
-
-### Services
-
-- **MySQL** — Railway-managed MySQL. The app reaches it over Railway's private network via the reference variable `${{MySQL.MYSQL_URL}}` (resolves to `mysql://…@mysql.railway.internal:3306/railway`). The service also exposes `MYSQL_PUBLIC_URL` (proxy) — that's what you use to run migrations from a dev machine.
-- **Drape** — app service connected to the GitHub repo (`michaelpaulrattray/Drape`), branch **`local-migration`**. Build command `pnpm build`; start command `node dist/index.js` (NOT `pnpm start` — the start script needs `cross-env`, a devDependency; `NODE_ENV=production` is set as a service variable instead). Public domain targets port 3000, pinned via `PORT=3000`.
-
-### How deploys trigger
-
-Every push to `local-migration` triggers a Railway build + deploy. Changing a service variable also redeploys. Current convention: `local-migration` is kept in sync with `main` (`git push origin main:local-migration`).
-
-### Rollback
-
-Railway → Drape service → Deployments → pick the last good deployment → ⋮ → **Redeploy**. That reuses the old build image; no git revert needed. For a bad variable change, fix the variable (auto-redeploys). DB migrations are append-only (drizzle journal) — never rolled back automatically; treat schema changes as forward-only.
-
-### Production env vars (meanings, not values — secrets live only in Railway)
-
-Everything in "Required .env vars" above, plus the production-specific notes:
-
-- `DATABASE_URL` = `${{MySQL.MYSQL_URL}}` (internal URL, no proxy hop)
-- `JWT_SECRET` — production-only random secret, distinct from dev (dev sessions can't be replayed against prod)
-- `VITE_APP_ID` = `drape-production` (distinct from dev's `drape-local`, same reason)
-- `R2_BUCKET` = `drape-production`, `R2_PUBLIC_URL` = that bucket's public r2.dev URL; same account endpoint + API token as dev (token covers both buckets)
-- `VITE_ASSETS_BASE_URL` = `<prod R2_PUBLIC_URL>/assets` — overrides the dev-bucket fallback in `shared/const.ts`; must match `R2_PUBLIC_URL`'s origin or the CSP `img-src` blocks the assets. The `assets/` tree was copied from `drape-dev` on 2026-07-10.
-- `STRIPE_WEBHOOK_SECRET` — signing secret of the Stripe (test-mode) webhook endpoint `https://<domain>/api/webhooks/stripe`, subscribed to the 8 event types handled in `server/stripe/webhooks.ts`
-- `NODE_ENV=production`, `PORT=3000`
-- Gemini/Stripe/Resend/Google OAuth keys are currently shared with dev (Stripe in test mode)
-
-Vite inlines `VITE_*` vars into the client bundle at build time, so they must be present as Railway variables (they are available during build), and changing them requires a rebuild, not just a restart.
-
-### Migrations & one-off SQL against production
-
-`pnpm db:push` (drizzle generate + migrate) from a dev machine, with `DATABASE_URL` overridden to the **MYSQL_PUBLIC_URL** for that one command — never put the prod URL in `.env`. Initial data was seeded with one-off SQL (single-use invite code, then `UPDATE users SET role='admin'` after first signup); `seed.ts` refuses production by design.
-
-### External-service registrations tied to the domain
-
-- **Google OAuth**: the Railway domain's `/api/auth/google/callback` is an authorized redirect URI on the shared OAuth client. A new domain (custom domain later) needs the same registration.
-- **Stripe**: webhook endpoint per environment; the raw-body route must stay registered before `express.json()` in `server/_core/index.ts` or signature verification breaks (learned in production).
-- **Resend**: no verified sending domain yet — emails send from `onboarding@resend.dev`, which only delivers to the Resend account owner. Email/password signup verification is therefore broken for everyone else until a domain is verified in Resend and the `from:` in `server/routes/emailVerification.ts` is updated. Google OAuth signups are unaffected.
-
-### Deploying while a paid roll is in flight
+## Deploying while a paid roll is in flight
 
 Every push to `main` deploys, and the founder dogfoods paid rolls while that
 happens. A deploy that lands mid-roll kills the process holding its candidates.
@@ -298,10 +250,7 @@ During the window the money is safe and the recovery is correct — it is the
 WAIT that is visible. Past ~2 minutes a still-casting tile says so and names
 the outcome, so the wait reads as supervised rather than broken.
 
-### Known gaps at deploy time
-
-- `hero/*` keys (home-page hero media, served via `server/heroProxy.ts`) were never re-hosted to R2 — the hero 502s in dev and prod alike. Needs source files + `scripts/upload-hero-v3.mjs`.
-- `VITE_STRIPE_PUBLISHABLE_KEY` unset in prod — client-side checkout UI unavailable (server warns at boot).
+Full deployment procedure (services, rollback, production env vars, migrations, external registrations, known gaps): see the `deploy-railway` skill.
 
 ## Manus legacy
 
