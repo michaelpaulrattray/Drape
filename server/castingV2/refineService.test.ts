@@ -296,7 +296,7 @@ describe("the questions cost nothing, and never dead-end", () => {
   it("asks about a near-miss typo before the money moves", async () => {
     const result = await refineCandidate(explodes, { ...input, instruction: "piink hair" });
     expect(result.kind).toBe("asked");
-    expect(result.reask?.question).toBe("Did you mean pink?");
+    expect(result.reask?.question).toContain("Did you mean pink?");
     expect(journal).not.toContain("begin");
     expect(ledger.charges).toHaveLength(0);
   });

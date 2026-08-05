@@ -5185,6 +5185,31 @@ near-miss. A product that asks often is a product that has not decided.
 **The re-ask states join the D-169 loading mock** — the founder judges the feel
 on pixels, in one eyeball pass, before anything is wired.
 
+### Shipped 2026-08-05, and walked on production (D-164, D-174)
+
+The behaviour landed first with the question as a plain sentence in the outcome
+panel, per the founder's green light; the chips follow the mock. The evidence is
+a walk of the real UI on the founder's own account, not a driver:
+
+| typed | what the panel said | cost |
+|---|---|---|
+| `pinker` | *"pinker — which part? Nothing's been coloured yet, so I don't want to guess."* | nothing, nothing filed |
+| `the hair` | resolved and rendered — the stack now reads `Original` → `pinker — the hair` | 25 credits, one picture, pink hair |
+| `piink hair` | *"Did you mean pink?"* | nothing |
+| *(dismiss)* | cleared | nothing |
+
+**And the walk found what no test could.** Both questions ended without naming a
+way to answer — true sentences that left the box looking like the wrong place to
+reply. The answers now live IN the sentence ("Say the hair, the eyes, makeup" /
+"Say yes, or type it again your way"), which is the sentence-form equivalent of
+the chips until the chips land. D-174 earning its place twice in two batches.
+
+**D-178 got a backstop, because the prompt alone was a coin toss.** The
+interpreter was told which facet was last coloured and obeyed on one run,
+filing `{makeup: "pinker"}` on the next — the same shape as D-176 and D-177.
+`redirectColourTo` moves the colour into the remembered drawer, and is proved by
+a test that never touches the model.
+
 ## D-181 — A hybrid likeness ask serves the honest half and confesses the rest.
 
 **Founder ruling, 2026-08-05, from a seat probe — and the finding is the shape

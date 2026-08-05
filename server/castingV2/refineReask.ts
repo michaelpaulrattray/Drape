@@ -184,7 +184,16 @@ export function whichFacetReask(instruction: string): Reask {
   const asked = instruction.trim().replace(/[.!?]+$/, "");
   return {
     kind: "which-facet",
-    question: `${asked} — which part? Nothing's been coloured yet, so I don't want to guess.`,
+    /*
+      THE ANSWERS ARE IN THE SENTENCE, and the walk is why.
+
+      On production the question read "…so I don't want to guess" and stopped —
+      true, and it left the box looking like the wrong place to reply. Until the
+      chips land, naming the three answers IS the affordance: a sentence that
+      says what to say is not a dead end.
+    */
+    question: `${asked} — which part? Nothing's been coloured yet, so I don't want to guess. `
+      + `Say ${COLOUR_BEARING.map((entry) => entry.label).join(", ")}.`,
     options: COLOUR_BEARING.map((entry) => ({
       label: entry.label,
       resolves: `${asked} — ${entry.label}`,
@@ -337,7 +346,10 @@ export function didYouMeanReask(instruction: string, miss: { typed: string; mean
   const corrected = instruction.replace(new RegExp(miss.typed, "i"), miss.meant);
   return {
     kind: "did-you-mean",
-    question: `Did you mean ${miss.meant}?`,
+    /* Same reason as the sentence above: the reply has to be obvious without a
+       chip to press, and "yes" is the whole cost of not buying a render of a
+       misspelling. */
+    question: `Did you mean ${miss.meant}? Say yes, or type it again your way.`,
     options: [
       { label: `Yes — ${miss.meant}`, resolves: corrected },
       /* Their word, unchanged, is always an answer. A question that can only be

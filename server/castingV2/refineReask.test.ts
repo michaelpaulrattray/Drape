@@ -166,7 +166,10 @@ describe("resolveAnswer — the sentence never dead-ends (D-180)", () => {
   it("takes yes and no on the typo question, and keeps their word on no", () => {
     const miss = nearMiss("piink hair")!;
     const typo = didYouMeanReask("piink hair", miss);
-    expect(typo.question).toBe("Did you mean pink?");
+    expect(typo.question).toContain("Did you mean pink?");
+    /* The reply is named in the sentence — the walk found a question with no
+       visible way to answer it. */
+    expect(typo.question).toContain("yes");
     expect(resolveAnswer(typo, "yes")).toBe("pink hair");
     expect(resolveAnswer(typo, "yeah")).toBe("pink hair");
     expect(resolveAnswer(typo, "pink")).toBe("pink hair");
