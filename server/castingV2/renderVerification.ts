@@ -51,6 +51,20 @@ export type FacetCheck = {
   verified: boolean;
   /** What the reader says it sees instead — only when it disagrees. */
   saw?: string;
+  /**
+   * Whether this fact is one the product may REFUSE over (D-187).
+   *
+   * A closed-vocabulary value has a shared meaning: "green" is a value this
+   * program defines and the reader can be held to. A free-text value like
+   * "seafoam green" is the user's own words, and asking a reader to adjudicate
+   * whether greenish-hazel is *distinctly* seafoam is asking it to arbitrate a
+   * shade name nobody has defined — six legitimate renders were refunded that
+   * way on the net's first live outing.
+   *
+   * Both kinds are checked and both are recorded, because the record is the
+   * instrument. Only the binding kind spends a refusal.
+   */
+  binding: boolean;
 };
 
 export type RenderVerdict = {
@@ -75,6 +89,11 @@ const SYSTEM_PROMPT = [
   "Be generous about DEGREE. A relative ask like 'pinker' or 'lighter' is satisfied by a",
   "visible move in that direction; it does not have to be extreme.",
   "",
+  "Be generous about SHADE NAMES too. Someone's own words for a colour — 'seafoam green',",
+  "'the colour of rosé', 'dusty pink' — are satisfied by a colour plainly in that family.",
+  "You are not judging whether it is the exact shade they imagined; you are judging whether",
+  "the colour changed to the thing they named.",
+  "",
   'Reply with JSON: {"results":[{"id":1,"present":true|false,"saw":"..."}]} and nothing',
   "else. Include `saw` only where present is false, under 90 characters.",
 ].join("\n");
@@ -90,7 +109,8 @@ const SYSTEM_PROMPT = [
 export async function verifyRender(input: {
   bytes: Buffer;
   contentType: string;
-  facts: ReadonlyArray<{ facet: Facet; asked: string }>;
+  /** `binding` false means checked and recorded, never refunded (D-187). */
+  facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean }>;
   engine?: TextEngine;
   signal?: AbortSignal;
 }): Promise<RenderVerdict> {
@@ -129,16 +149,28 @@ export async function verifyRender(input: {
          omission is the reader's silence, and silence never spends a refusal. */
       const verified = row ? row.present === true : true;
       const saw = typeof row?.saw === "string" ? row.saw.trim().slice(0, 90) : undefined;
-      return { facet: fact.facet, asked: fact.asked, verified, ...(verified ? {} : { saw }) };
+      return {
+        facet: fact.facet,
+        asked: fact.asked,
+        verified,
+        binding: fact.binding !== false,
+        ...(verified ? {} : { saw }),
+      };
     });
-    return { ok: checks.every((check) => check.verified), checks };
+    /* Everything is recorded; only a BINDING failure spends the user's refusal. */
+    return { ok: checks.every((check) => check.verified || !check.binding), checks };
   } catch (error) {
     log.warn({ err: error }, "[renderVerification] the reader could not be reached — delivering");
     return { ok: true, checks: [], unavailable: true };
   }
 }
 
-/** The facets that failed, for a sentence a person can act on. */
+/** The facets that failed and are worth acting on. */
 export function missingFacts(verdict: RenderVerdict): string[] {
-  return verdict.checks.filter((check) => !check.verified).map((check) => check.asked);
+  return verdict.checks.filter((check) => !check.verified && check.binding).map((check) => check.asked);
+}
+
+/** Failures the product will NOT refuse over — the reader-defect watch list. */
+export function advisoryMisses(verdict: RenderVerdict): FacetCheck[] {
+  return verdict.checks.filter((check) => !check.verified && !check.binding);
 }

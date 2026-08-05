@@ -105,3 +105,25 @@ export async function capturePresentation(input: {
 
 /** The facets this module is allowed to pin — the net checks exactly these. */
 export const PRESENTATION_FACETS: readonly Facet[] = PRESENTATION.map((entry) => entry.facet);
+
+/**
+ * A PIN DIES WHEN THE THING IT DESCRIBES IS RE-MADE (D-187).
+ *
+ * The first live trial refused two renders because "change her hair to a blunt
+ * bob" was measured against a pin reading "tied back, up". A bob is a short cut
+ * — hair that was tied up in the base cannot still be tied up after it is cut
+ * off — so the pin was demanding an arrangement the instruction had just made
+ * impossible, and the render was refused for obeying.
+ *
+ * Superseding by the SAME facet is not enough. A presentation fact is about a
+ * thing, and re-making the thing retires the fact.
+ */
+const INVALIDATED_BY: Partial<Record<Facet, readonly Facet[]>> = {
+  [facetOfSubject("hairWorn")]: [facetOfSubject("hairCut")],
+};
+
+/** Presentation pins that a delta writing these facets has just made false. */
+export function presentationInvalidatedBy(written: ReadonlySet<Facet>): Facet[] {
+  return PRESENTATION_FACETS.filter((pinned) =>
+    (INVALIDATED_BY[pinned] ?? []).some((facet) => written.has(facet)));
+}

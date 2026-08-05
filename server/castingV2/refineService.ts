@@ -111,7 +111,7 @@ import {
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
-import type { Facet } from "./refineFacets";
+import { facetOfAxis, type Facet } from "./refineFacets";
 import {
   captionClause,
   captionRealization,
@@ -120,8 +120,17 @@ import {
   type RealizationCaptions,
 } from "./realizationCaption";
 import { detectRenderFault } from "./renderFault";
-import { missingFacts, verifyRender, type RenderVerdict } from "./renderVerification";
-import { capturePresentation, PRESENTATION_FACETS } from "./presentationState";
+import {
+  advisoryMisses,
+  missingFacts,
+  verifyRender,
+  type RenderVerdict,
+} from "./renderVerification";
+import {
+  capturePresentation,
+  presentationInvalidatedBy,
+  PRESENTATION_FACETS,
+} from "./presentationState";
 import { castingIdentityEngine } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
 
@@ -772,6 +781,15 @@ export async function refineCandidate(
     a candidate rather than one per render. Skipped entirely once the chain has
     a pin, and skipped for a facet this instruction is about to write.
   */
+  /*
+    A PIN THE INSTRUCTION HAS JUST MADE FALSE GOES FIRST (D-187).
+
+    "Change her hair to a blunt bob" was refused twice in the first live trial
+    because the render was measured against "hair tied back, up" — a fact the
+    cut had just retired. Superseding by the same facet is not enough.
+  */
+  for (const stale of presentationInvalidatedBy(writtenFacets)) delete carriedCaptions[stale];
+
   const baseKeyForPresentation = source.candidate.imageKey;
   if (
     baseKeyForPresentation
@@ -1047,11 +1065,27 @@ export async function refineCandidate(
       written a step earlier and was merely being carried, so a check scoped to
       "what changed" could never have seen it.
     */
+    /*
+      BINDING vs ADVISORY (D-187), and the first live trial is why.
+
+      A GUARANTEED value — "green", "copper", a named cut — is a word this
+      program defines, so the reader can be held to it and a failure is worth a
+      refusal. A FREE-LANE value is the user's own words: asking a reader
+      whether greenish-hazel is *distinctly* "seafoam green" is asking it to
+      arbitrate a shade nobody has defined, and it refunded six legitimate
+      renders that way in eighteen attempts.
+
+      Both are checked and both are recorded — the record is the instrument for
+      exactly this kind of finding. Only the defined kind spends a refusal.
+    */
+    const guaranteedFacets = new Set(
+      REFINABLE_AXES.filter((axis) => composed[axis] != null).map((axis) => facetOfAxis(axis)),
+    );
     const facts = Array.from(facetsWrittenBy(composed)).flatMap((facet) => {
       const asked = currentIdentity
         ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
         : null;
-      return asked ? [{ facet, asked }] : [];
+      return asked ? [{ facet, asked, binding: guaranteedFacets.has(facet) }] : [];
     });
     /*
       AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
@@ -1064,7 +1098,9 @@ export async function refineCandidate(
     for (const facet of PRESENTATION_FACETS) {
       const pinned = carriedCaptions[facet];
       if (pinned && !facts.some((fact) => fact.facet === facet)) {
-        facts.push({ facet, asked: pinned });
+        /* Read from a photograph rather than chosen from a vocabulary, so it is
+           watched rather than enforced — same reasoning as the free lane. */
+        facts.push({ facet, asked: pinned, binding: false });
       }
     }
 
@@ -1111,6 +1147,22 @@ export async function refineCandidate(
       );
       ({ rendered: image, verification } = await attemptRender());
       attempts = 2;
+    }
+
+    /*
+      THE READER-DEFECT WATCH LIST (D-187), logged on every delivered render.
+
+      A failure the product will not refuse over is still evidence. Repeated
+      advisory misses on one facet class whose renders look right is a reading
+      problem, and the founder's rider is explicit that it must be surfaced
+      rather than quietly refunded.
+    */
+    const advisory = advisoryMisses(verification);
+    if (advisory.length > 0) {
+      log.warn(
+        { operationId, variant: variant.publicId, advisory },
+        "[refineService] delivered with advisory misses — watch this facet class",
+      );
     }
 
     if (!verification.ok) {

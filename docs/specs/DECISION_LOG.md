@@ -5554,6 +5554,61 @@ and it costs precision. A wrong pin argues with the picture in every render, and
 that is the mistake D-183 already paid for once.
 
 
+## D-187 — The net's first blood, and what it refused: mostly nothing wrong.
+
+**Measured, 2026-08-05, on the first live outing of D-185.** The two-reference
+trial ran 18 chain positions through the real paid path. **The net refused and
+refunded 8 of them.** The founder's watched event, arriving in the first hour —
+and the stored verdicts say most of those renders were fine.
+
+| what was asked | what the reader said | count |
+|---|---|---|
+| `eye.colour: seafoam green` | *"light greenish-hazel, not distinctly seafoam"* | **6** |
+| `hairWorn: tied back, up` | *"hair worn down, loose around shoulders"* | **2** |
+
+Both are reader defects, and the founder's rider is explicit that a reader
+defect is to be surfaced rather than refunded. Two fixes, both conservative —
+they can only reduce false refusals, never increase them.
+
+### The pin was fighting the instruction
+
+Both `hairWorn` failures happened on **"change her hair to a blunt bob"**. A bob
+is a short cut: hair that was tied up in the base cannot still be tied up after
+it is cut off. D-186's pin was demanding an arrangement the instruction had just
+made impossible, and the render was **refused for obeying**.
+
+Superseding by the same facet is not enough. **A presentation fact is about a
+thing, and re-making the thing retires the fact** — a `hairWorn` pin now dies
+when `hair.cut` is written.
+
+### And the reader was asked to arbitrate a shade nobody has defined
+
+Six refusals were `"seafoam green"`. The renders had plainly moved the eyes
+green; the reader refused because they were not *distinctly* seafoam. That is
+not a compliance question — it is a reader being asked whether someone's own
+words for a colour have been honoured to a standard that exists nowhere.
+
+**So facts are now BINDING or ADVISORY.** A guaranteed-vocabulary value —
+"green", "copper", a named cut — is a word this program defines, the reader can
+be held to it, and a failure is worth a refusal. A free-lane value is the user's
+own words, and a presentation pin is read from a photograph rather than chosen
+from a vocabulary: both are checked, both are recorded, **neither spends a
+refusal**. Advisory misses are logged as a watch list on every delivered render.
+
+**Nothing about the ruling changed** — a render missing a fact the product
+defines still costs the house a re-render and then the whole 25. What changed is
+that the product stopped holding renders to standards it cannot state, which is
+the same principle as refusing to caption what it cannot corroborate (D-183).
+
+### The number that made this urgent
+
+**8 refusals in 18 paid attempts.** Live, in production, on the path customers
+use. A control that refuses 44% of legitimate work is worse than the defect it
+was built for, and it had been shipped for two hours. The two production walks
+that preceded it both passed, which is exactly why a control needs a corpus and
+not a demo.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

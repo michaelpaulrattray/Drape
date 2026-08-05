@@ -485,6 +485,35 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds).toHaveLength(0);
   });
 
+  /*
+    THE FIRST LIVE TRIAL'S LESSON (D-187). Six of eight refusals were the reader
+    adjudicating "seafoam green" — the user's own words for a shade nobody has
+    defined — against renders whose eyes had plainly gone green.
+  */
+  it("never refuses over the user's own words, and still records the miss", async () => {
+    /* A free-lane value: checked, recorded, not binding. */
+    const freeLane = {
+      interpret: async () => ({ ok: true as const, delta: { free: { eyeColourFree: "seafoam green" } } }),
+      verifier: verifierSaying(false, false),
+    };
+    await refineCandidate(freeLane, input);
+    /* Delivered on the first attempt: an advisory miss buys nothing and costs
+       nothing — no retry, no refund. */
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+    const landed = JSON.stringify(landedVariant ?? {});
+    expect(landed).toContain("seafoam green");
+    expect(landed).toContain('"binding":false');
+  });
+
+  it("still refuses over a value the vocabulary defines", async () => {
+    /* "green" is a word this program owns, so the reader can be held to it. */
+    await expect(
+      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false) }, input),
+    ).rejects.toThrow();
+    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+
   it("records the verdict on the row, because it is the measuring instrument", async () => {
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true) }, input);
     const landed = JSON.stringify(landedVariant ?? {});
