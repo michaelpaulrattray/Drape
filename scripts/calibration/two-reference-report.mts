@@ -18,6 +18,8 @@ type Cell = {
   facts: Array<{ facet: string; asked: string }>;
   a: { verified: number; total: number; sharpness: number; identity: boolean | null };
   b: { verified: number; total: number; sharpness: number; identity: boolean | null };
+  aSteady?: { same: number; total: number };
+  bSteady?: { same: number; total: number };
 };
 
 const cells: Cell[] = JSON.parse(readFileSync(`${OUT}/results.json`, "utf8"));
@@ -26,15 +28,20 @@ if (cells.length === 0) throw new Error("no results yet");
 /* ---------------------------------------------------------------- the table */
 const pct = (value: number) => `${Math.round(value * 100)}%`;
 const rows: string[] = [
-  "| chain | # | instruction | facts | (a) base-only | (b) two-reference |",
-  "|---|---|---|---|---|---|",
+  "| chain | # | instruction | facts | (a) base-only | (a) steady | (b) two-reference | (b) steady |",
+  "|---|---|---|---|---|---|---|---|",
 ];
 for (const cell of cells) {
   const a = `${cell.a.verified}/${cell.a.total} · sharp ${pct(cell.a.sharpness)}`
     + (cell.a.identity === null ? "" : ` · same person ${cell.a.identity ? "yes" : "NO"}`);
   const b = `${cell.b.verified}/${cell.b.total} · sharp ${pct(cell.b.sharpness)}`
     + (cell.b.identity === null ? "" : ` · same person ${cell.b.identity ? "yes" : "NO"}`);
-  rows.push(`| ${cell.chain} | ${cell.position} | ${cell.instruction} | ${cell.facts.length} | ${a} | ${b} |`);
+  const steady = (arm: "aSteady" | "bSteady") =>
+    cell[arm] ? `${cell[arm]!.same}/${cell[arm]!.total}` : "—";
+  rows.push(
+    `| ${cell.chain} | ${cell.position} | ${cell.instruction} | ${cell.facts.length} | ${a} | `
+    + `${steady("aSteady")} | ${b} | ${steady("bSteady")} |`,
+  );
 }
 
 const sum = (list: number[]) => list.reduce((total, value) => total + value, 0);
@@ -53,6 +60,15 @@ const probeA = cells.filter((cell) => cell.instruction.startsWith("remove"));
 const probeALine = probeA.map((cell) =>
   `chain ${cell.chain}: (a) ${cell.a.verified}/${cell.a.total} · (b) ${cell.b.verified}/${cell.b.total}`);
 
+/* THE COLUMN THE RULING RIDES ON. Presence cannot see "different earrings every
+   render"; this can. */
+const steadiness = (arm: "aSteady" | "bSteady") => {
+  const scored = cells.filter((cell) => cell[arm]);
+  const same = sum(scored.map((cell) => cell[arm]!.same));
+  const total = sum(scored.map((cell) => cell[arm]!.total));
+  return total > 0 ? same / total : NaN;
+};
+
 const summary = [
   "# Two-reference calibration trial",
   "",
@@ -60,10 +76,16 @@ const summary = [
   "",
   "## Headline",
   "",
-  "| | fact retention | mean sharpness | sharpness at depth (5–6) | identity failures |",
-  "|---|---|---|---|---|",
-  `| (a) base-only | ${pct(retention("a"))} | ${pct(meanSharp("a"))} | ${pct(deepSharp("a"))} | ${identityFails("a")} |`,
-  `| (b) two-reference | ${pct(retention("b"))} | ${pct(meanSharp("b"))} | ${pct(deepSharp("b"))} | ${identityFails("b")} |`,
+  "| | fact retention | **realization steady** | mean sharpness | sharpness at depth (5–6) | identity failures |",
+  "|---|---|---|---|---|---|",
+  `| (a) base-only | ${pct(retention("a"))} | **${pct(steadiness("aSteady"))}** | ${pct(meanSharp("a"))} | ${pct(deepSharp("a"))} | ${identityFails("a")} |`,
+  `| (b) two-reference | ${pct(retention("b"))} | **${pct(steadiness("bSteady"))}** | ${pct(meanSharp("b"))} | ${pct(deepSharp("b"))} | ${identityFails("b")} |`,
+  "",
+  "**Realization steady** is the column the ruling rides on. Fact retention asks",
+  "whether the earrings are *present*; steadiness asks whether they are the *same*",
+  "earrings as the position before — same object, same shade — which is what",
+  "\"different ones every render\" actually meant. Only facts that persisted",
+  "unchanged are scored; a fact the instruction just rewrote is supposed to differ.",
   "",
   "Sharpness is a ratio to the original candidate at the same chain position, so",
   "**compounding shows up as a falling number with depth** — the failure that killed",

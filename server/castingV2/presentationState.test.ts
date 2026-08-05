@@ -9,7 +9,11 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { capturePresentation, PRESENTATION_FACETS } from "./presentationState";
+import {
+  capturePresentation,
+  presentationInvalidatedBy,
+  PRESENTATION_FACETS,
+} from "./presentationState";
 import { facetOfSubject } from "./refineFacets";
 
 const HAIR_WORN = facetOfSubject("hairWorn");
@@ -77,6 +81,21 @@ describe("the base's presentation gets a name", () => {
        how a description replaces the photograph (D-152). */
     expect(seen.system).toContain("never about the cut" .slice(0, 0) + "");
     expect(seen.system).toMatch(/never|no judgement/i);
+  });
+
+  /*
+    A CUT RETIRES THE ARRANGEMENT (D-187). Hair tied up in the base cannot still
+    be tied up after it is cut into a bob, so a `hair.cut` edit both retires an
+    existing worn pin and forbids a new one being captured in the same breath.
+  */
+  it("retires the worn pin when the cut is re-made", () => {
+    expect(presentationInvalidatedBy(new Set([facetOfSubject("hairCut")])))
+      .toEqual([HAIR_WORN]);
+  });
+
+  it("leaves the worn pin alone for an edit that does not re-make the hair", () => {
+    expect(presentationInvalidatedBy(new Set([facetOfSubject("hairShade")]))).toEqual([]);
+    expect(presentationInvalidatedBy(new Set([facetOfSubject("nose")]))).toEqual([]);
   });
 
   it("declares exactly the facets the net is allowed to check", () => {

@@ -147,11 +147,75 @@ async function identityHolds(original: Buffer, rendered: Buffer): Promise<boolea
   }
 }
 
+/**
+ * THE MEASURE THE HYPOTHESIS ACTUALLY NEEDS (founder addendum, 2026-08-05).
+ *
+ * Presence cannot see the complaint. "Gold hoop earrings present" scores the
+ * same whether they are the SAME hoops as last render or a different pair the
+ * model invented — and "different ones every render" was the original finding.
+ * A dead-level presence score is therefore perfectly consistent with the second
+ * reference winning decisively on the thing it exists to fix.
+ *
+ * So every fact that PERSISTS unchanged across consecutive positions is judged
+ * across the pair: same object, same shade, not merely present again.
+ *
+ * Advisory by construction — this is cross-render judgement, not a defined
+ * vocabulary, so it spends no refusals anywhere. It feeds the table.
+ */
+async function consistencyAcross(input: {
+  previous: Buffer;
+  current: Buffer;
+  facts: ReadonlyArray<{ facet: Facet; asked: string }>;
+}): Promise<{ same: number; total: number; detail: Array<{ asked: string; same: boolean; why?: string }> }> {
+  if (input.facts.length === 0) return { same: 0, total: 0, detail: [] };
+  const { interpreterEngine } = await import("../../server/castingV2/interpreter");
+  const engine = interpreterEngine();
+  if (!engine) return { same: 0, total: 0, detail: [] };
+  try {
+    const reply = await engine.complete({
+      system: [
+        "You are shown two photographs of the same person, taken one edit apart.",
+        "",
+        "For each listed feature, answer whether it is the SAME REALIZATION in both — the same",
+        "specific object, the same specific shade — not merely present in both. Different",
+        "earrings in the same style are NOT the same earrings. A different pink is not the",
+        "same pink. Judge the thing itself, not whether the category is occupied.",
+        "",
+        'Reply with JSON: {"results":[{"id":1,"same":true|false,"why":"..."}]} and nothing else.',
+        "Include `why` only where same is false, under 80 characters.",
+      ].join("\n"),
+      user: input.facts.map((fact, index) => `${index + 1}. ${fact.asked}`).join("\n"),
+      images: [
+        { bytes: input.previous, contentType: "image/png" },
+        { bytes: input.current, contentType: "image/png" },
+      ],
+      json: true,
+      temperature: 0,
+      maxOutputTokens: 600,
+    });
+    const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
+    const results = Array.isArray(parsed?.results) ? parsed.results : [];
+    const detail = input.facts.map((fact, index) => {
+      const row = results.find((entry: { id?: unknown }) => Number(entry?.id) === index + 1);
+      const same = row ? row.same === true : true;
+      return { asked: fact.asked, same, ...(same ? {} : { why: String(row?.why ?? "").slice(0, 80) }) };
+    });
+    return { same: detail.filter((entry) => entry.same).length, total: detail.length, detail };
+  } catch {
+    return { same: 0, total: 0, detail: [] };
+  }
+}
+
 type Cell = {
   chain: number;
   position: number;
   instruction: string;
   facts: Array<{ facet: Facet; asked: string }>;
+  aChecks: unknown;
+  bChecks: unknown;
+  /** Facts that persisted from the previous position, judged across the pair. */
+  aSteady?: { same: number; total: number; detail: unknown };
+  bSteady?: { same: number; total: number; detail: unknown };
   a: { verified: number; total: number; sharpness: number; identity: boolean | null };
   b: { verified: number; total: number; sharpness: number; identity: boolean | null };
 };
@@ -195,6 +259,11 @@ for (const [chainIndex, candidate] of usable.entries()) {
 
   /* Arm (b) walks its own history; arm (a) is the product's. */
   let previousB = original;
+  /* The image the previous position ACCEPTED, per arm, plus the facts that were
+     true then — the pair the consistency reader is shown. */
+  let previousA: Buffer | null = null;
+  let previousBAccepted: Buffer | null = null;
+  let previousFacts: Array<{ facet: Facet; asked: string }> = [];
 
   for (const [step, instruction] of EDITS.entries()) {
     /* ---------- arm (a): the real product path ---------- */
@@ -225,12 +294,17 @@ for (const [chainIndex, candidate] of usable.entries()) {
       .limit(1);
     const stored = row?.internalPrompt as {
       prompt?: string;
-      verification?: { checks?: Array<{ facet: Facet; asked: string; verified: boolean }> };
+      verification?: {
+        checks?: Array<{ facet: Facet; asked: string; verified: boolean; binding?: boolean }>;
+      };
     } | null;
     const prompt = stored?.prompt ?? "";
+    /* `binding` travels, or the table cannot tell a refusable miss from a
+       watched one — which is the distinction D-187 exists to draw. */
     const facts = (stored?.verification?.checks ?? []).map((check) => ({
       facet: check.facet,
       asked: check.asked,
+      binding: check.binding !== false,
     }));
 
     const aBytes = await fetchBytes(storagePublicUrl(row!.imageKey!));
@@ -244,6 +318,7 @@ for (const [chainIndex, candidate] of usable.entries()) {
       ],
       resolution: "1K",
     });
+    previousBAccepted = previousB;
     previousB = bRendered.bytes;
 
     /* ---------- measured identically ---------- */
@@ -252,6 +327,22 @@ for (const [chainIndex, candidate] of usable.entries()) {
       verifyRender({ bytes: bRendered.bytes, contentType: bRendered.contentType, facts }),
     ]);
     const [aQuality, bQuality] = await Promise.all([quality(aBytes), quality(bRendered.bytes)]);
+
+    /*
+      THE CONSISTENCY COLUMN — the hypothesis's actual test.
+
+      Only facts that PERSISTED unchanged from the previous position are judged:
+      a fact this instruction just rewrote is supposed to look different. Same
+      reader, same pairs, both arms, so the comparison stays clean.
+    */
+    const persisted = previousFacts.filter((earlier) =>
+      facts.some((fact) => fact.facet === earlier.facet && fact.asked === earlier.asked));
+    const [aSteady, bSteady] = previousA && previousBAccepted && persisted.length > 0
+      ? await Promise.all([
+        consistencyAcross({ previous: previousA, current: aBytes, facts: persisted }),
+        consistencyAcross({ previous: previousBAccepted, current: bRendered.bytes, facts: persisted }),
+      ])
+      : [undefined, undefined];
     /* Identity is only interesting once the styling is heavy — probe B. */
     const heavy = step >= 3;
     const [aIdentity, bIdentity] = heavy
@@ -266,6 +357,10 @@ for (const [chainIndex, candidate] of usable.entries()) {
       position: step + 1,
       instruction,
       facts,
+      aChecks: aVerdict.checks,
+      bChecks: bVerdict.checks,
+      ...(aSteady ? { aSteady } : {}),
+      ...(bSteady ? { bSteady } : {}),
       a: {
         verified: aVerdict.checks.filter((check) => check.verified).length,
         total: aVerdict.checks.length,
@@ -280,9 +375,16 @@ for (const [chainIndex, candidate] of usable.entries()) {
       },
     };
     cells.push(cell);
+    previousA = aBytes;
+    previousFacts = facts;
+    /* The advisory watch list travels with the table (D-187): a miss the
+       product will not refuse over is still the reader-defect instrument. */
     console.log(
       `  ${step + 1}. "${instruction}"  a ${cell.a.verified}/${cell.a.total} sharp ${(cell.a.sharpness * 100).toFixed(0)}%`
       + `   |   b ${cell.b.verified}/${cell.b.total} sharp ${(cell.b.sharpness * 100).toFixed(0)}%`
+      + (aSteady && bSteady
+        ? `   steady a ${aSteady.same}/${aSteady.total} b ${bSteady.same}/${bSteady.total}`
+        : "")
       + (heavy ? `   identity a=${cell.a.identity} b=${cell.b.identity}` : ""),
     );
     writeFileSync(`${OUT}/results.json`, JSON.stringify(cells, null, 2));

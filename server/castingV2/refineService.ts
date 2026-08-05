@@ -790,10 +790,21 @@ export async function refineCandidate(
   */
   for (const stale of presentationInvalidatedBy(writtenFacets)) delete carriedCaptions[stale];
 
+  /*
+    AND IT IS NOT RE-CAPTURED EITHER (D-187, completing the fix).
+
+    Retiring the pin was half of it. On the FIRST edit of a chain there is no
+    pin to retire, so "change her hair to a blunt bob" read the base, captured
+    "up, in bun", and handed the render an ALREADY TRUE clause contradicting the
+    instruction in the same prompt — D-183's lying pin, arriving by a different
+    door. A fact this edit is about to invalidate must not be born.
+  */
+  const invalidated = new Set(presentationInvalidatedBy(writtenFacets));
   const baseKeyForPresentation = source.candidate.imageKey;
   if (
     baseKeyForPresentation
-    && PRESENTATION_FACETS.some((facet) => !carriedCaptions[facet] && !writtenFacets.has(facet))
+    && PRESENTATION_FACETS.some((facet) =>
+      !carriedCaptions[facet] && !writtenFacets.has(facet) && !invalidated.has(facet))
   ) {
     try {
       const baseBytes = await (dependencies.readBytes ?? storageReadBytes)(baseKeyForPresentation);
@@ -803,7 +814,10 @@ export async function refineCandidate(
         engine: dependencies.verifier,
       });
       for (const [facet, value] of Object.entries(captured)) {
-        if (!writtenFacets.has(facet as Facet)) carriedCaptions[facet as Facet] = value;
+        const target = facet as Facet;
+        if (!writtenFacets.has(target) && !invalidated.has(target)) {
+          carriedCaptions[target] = value;
+        }
       }
     } catch (error) {
       /* Fails soft, like every other realization read: no pin is the state this
