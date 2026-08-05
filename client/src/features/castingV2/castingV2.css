@@ -90,6 +90,15 @@
   object-position: center 22%;
 }
 
+/*
+  The art is ONE split-face composition carried as two halves, and the CSS seam
+  is its dividing line — so each half anchors to its seam edge. Centering would
+  shave the faces at the seam on narrow slots and break the reconstruction;
+  anchored, any crop comes from the blurred outer margin instead.
+*/
+.dpc-hero__slot:first-child > img { object-position: right 22%; }
+.dpc-hero__slot:last-child > img { object-position: left 22%; }
+
 /* ---- the two entry cards ---- */
 
 .dpc-entries {
