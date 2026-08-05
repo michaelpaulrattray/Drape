@@ -123,6 +123,7 @@ import {
 import { detectRenderFault } from "./renderFault";
 import {
   advisoryMisses,
+  confirmBindingMisses,
   missingFacts,
   verifyRender,
   type RenderVerdict,
@@ -1179,14 +1180,23 @@ export async function refineCandidate(
         );
         throw new ProviderError("render_fault", fault.detail);
       }
+      const read = () => verifyRender({
+        bytes: rendered.bytes,
+        contentType: rendered.contentType,
+        facts,
+        engine: dependencies.verifier,
+      });
       return {
         rendered,
-        verification: await verifyRender({
-          bytes: rendered.bytes,
-          contentType: rendered.contentType,
-          facts,
-          engine: dependencies.verifier,
-        }),
+        /*
+          A BINDING MISS IS RE-READ BEFORE IT COUNTS (D-194).
+
+          The reader disagrees with itself 21% of the time, measured on the
+          trial's own data, so one reading cannot be evidence enough to spend a
+          refusal. The extra calls land only on a render already headed for a
+          re-render or a refund.
+        */
+        verification: await confirmBindingMisses(await read(), read),
       };
     };
 
@@ -1356,6 +1366,9 @@ export async function refineCandidate(
         */
         verification: {
           attempts,
+          /* How many readings the verdict took — 1 clean, 2 confirmed, 3 split
+             (D-194). The reader's own reliability, recorded per render. */
+          readings: verification.readings ?? 1,
           checks: verification.checks,
           ...(verification.unavailable ? { unavailable: true } : {}),
         },

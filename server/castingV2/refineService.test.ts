@@ -456,7 +456,8 @@ describe("the render is checked against the record before it is delivered", () =
   });
 
   it("re-renders once, free, when the first attempt is missing a fact", async () => {
-    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true) }, input);
+    /* Two readings agreeing it is missing (D-194), then a clean second attempt. */
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
     /* Two renders, ONE charge — the retry is absorbed. */
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
     expect(ledger.charges).toHaveLength(1);
@@ -464,8 +465,9 @@ describe("the render is checked against the record before it is delivered", () =
   });
 
   it("refuses and refunds the whole 25 when the retry fails too", async () => {
+    /* Confirmed missing on both attempts: two readings each. */
     await expect(
-      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false) }, input),
+      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, false, false) }, input),
     ).rejects.toThrow();
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
     expect(ledger.charges.at(-1)?.amount).toBe(25);
@@ -518,10 +520,92 @@ describe("the render is checked against the record before it is delivered", () =
   });
 
   it("records the verdict on the row, because it is the measuring instrument", async () => {
-    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true) }, input);
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
     const landed = JSON.stringify(landedVariant ?? {});
     expect(landed).toContain("verification");
     expect(landed).toContain('"attempts":2');
+    /* How many readings the verdict took, recorded — the reader's own
+       reliability, per render (D-194). */
+    expect(landed).toContain('"readings"');
+  });
+
+  /*
+    THE SECOND OPINION (D-194), and the trial is why.
+
+    The same reader disagreed with itself on 21% of judgements about the same
+    image. Chain 3 position 1: the service passed a render an independent
+    re-read said was missing the fact. One reading cannot spend a refusal.
+  */
+  it("does not re-render when a second reading disagrees with the first", async () => {
+    /* miss, then hit, then hit — the majority says it is there. */
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true, true) }, input);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("breaks a split with a third reading, and refuses only on a majority", async () => {
+    /* Attempt 1: miss, hit, miss → majority missing → re-render.
+       Attempt 2: miss, miss → confirmed → refuse and refund. */
+    await expect(
+      refineCandidate(
+        { ...greenEyes, verifier: verifierSaying(false, true, false, false, false) },
+        input,
+      ),
+    ).rejects.toThrow();
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+});
+
+/*
+  THE CHAIN-2 MISREAD (D-189), reproduced at the service.
+
+  The trial asked for "small gold hoop earrings" — an addition — and one
+  sampling classified it as a removal, so D-167's confession told the user there
+  was nothing to take off something they were trying to put on. The word list
+  cannot prevent the mis-sampling; it stops it reaching the confession.
+*/
+describe("a removal with no removal word is re-read as an edit", () => {
+  const misreads = (asEdit: unknown) => {
+    let call = 0;
+    return async () => {
+      call += 1;
+      /* First read: the flake. Second read (mode: edit): the truth. */
+      return call === 1
+        ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories", match: "earrings" }
+        : asEdit;
+    };
+  };
+
+  it("does not confess about taking off something being put on", async () => {
+    const result = await refineCandidate(
+      {
+        interpret: misreads({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["small gold hoop earrings"] } },
+        }) as never,
+      },
+      { ...input, instruction: "small gold hoop earrings" },
+    );
+    /* It rendered the addition instead of confessing. */
+    expect(result.variantId).toBeTruthy();
+    expect(JSON.stringify(landedVariant ?? {})).toContain("small gold hoop earrings");
+  });
+
+  it("still lets a real removal through", async () => {
+    /* "remove the earrings" carries a removal word, so the parse stands and the
+       honest confession is reached when the face has none. */
+    await expect(refineCandidate(
+      {
+        interpret: async () => ({
+          ok: true as const,
+          intent: "remove" as const,
+          subject: "statedAccessories",
+          match: "earrings",
+        }),
+      } as never,
+      { ...input, instruction: "remove the earrings" },
+    )).rejects.toThrow(/nothing to take off/);
   });
 });
 

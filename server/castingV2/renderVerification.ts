@@ -72,6 +72,8 @@ export type RenderVerdict = {
   checks: FacetCheck[];
   /** True when the reader could not be reached at all — delivered, not refused. */
   unavailable?: boolean;
+  /** How many readings were taken. Two on a binding failure, three on a split. */
+  readings?: number;
 };
 
 const SYSTEM_PROMPT = [
@@ -163,6 +165,72 @@ export async function verifyRender(input: {
     log.warn({ err: error }, "[renderVerification] the reader could not be reached — delivering");
     return { ok: true, checks: [], unavailable: true };
   }
+}
+
+/**
+ * A BINDING FAILURE NEEDS TWO READERS TO AGREE (D-194).
+ *
+ * Measured on the trial's own data: the same reader, given the same prompt and
+ * the same image twice, **disagreed with itself on 21% of judgements** — 7
+ * reversals in 33 pairs, five of them on one facet in one direction. Chain 3
+ * position 1 is the exhibit the founder named: a render the service passed, and
+ * an independent re-read of that same picture said the fact was missing.
+ *
+ * A single reading is therefore not evidence enough to spend somebody's refusal
+ * on. So a binding miss is re-read before it counts:
+ *
+ *   - agree it is missing → it is missing;
+ *   - disagree → a third reading breaks the tie;
+ *   - anything that does not reach a majority stays DELIVERED.
+ *
+ * The cost is bounded and lands only where it is already expensive: extra
+ * readings happen exclusively on a render that is about to be re-rendered or
+ * refunded, never on the happy path. One or two more vision calls against a 25
+ * credit refund and a wasted image.
+ */
+export async function confirmBindingMisses(
+  first: RenderVerdict,
+  reread: () => Promise<RenderVerdict>,
+): Promise<RenderVerdict> {
+  const contested = first.checks.filter((check) => !check.verified && check.binding);
+  if (contested.length === 0 || first.unavailable) return { ...first, readings: 1 };
+
+  const second = await reread();
+  if (second.unavailable) {
+    /* No second opinion available. One reading never refuses on its own. */
+    log.warn({}, "[renderVerification] no second opinion — delivering rather than refusing");
+    return { ...first, ok: true, readings: 1 };
+  }
+
+  const verdicts = new Map(second.checks.map((check) => [`${check.facet}|${check.asked}`, check]));
+  const needsTieBreak = contested.some((check) => {
+    const other = verdicts.get(`${check.facet}|${check.asked}`);
+    return other ? other.verified : true;
+  });
+  if (!needsTieBreak) {
+    /* Both readings say the same thing. That is what a refusal is made of. */
+    return { ...first, readings: 2 };
+  }
+
+  const third = await reread();
+  if (third.unavailable) return { ...first, ok: true, readings: 2 };
+  const tie = new Map(third.checks.map((check) => [`${check.facet}|${check.asked}`, check]));
+
+  /* Majority of three, per fact. A fact only one reader doubted is not missing. */
+  const checks = first.checks.map((check) => {
+    if (check.verified || !check.binding) return check;
+    const key = `${check.facet}|${check.asked}`;
+    const votes = [check, verdicts.get(key), tie.get(key)]
+      .filter(Boolean)
+      .filter((vote) => vote!.verified === false).length;
+    return votes >= 2 ? check : { ...check, verified: true, saw: undefined };
+  });
+  return {
+    ...first,
+    checks,
+    ok: checks.every((check) => check.verified || !check.binding),
+    readings: 3,
+  };
 }
 
 /** The facets that failed and are worth acting on. */

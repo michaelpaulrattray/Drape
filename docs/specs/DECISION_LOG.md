@@ -5843,6 +5843,59 @@ complaint, quantified for the first time.
 founder's judgement of one face, not on a percentage.
 
 
+## D-194 — A refusal needs two readers to agree.
+
+**Founder ruling, 2026-08-05, on the number the trial produced.**
+
+The same reader, given the same prompt and the same image twice, **disagreed
+with itself on 21% of judgements** — 7 reversals in 33 pairs, five of them on
+one facet in one direction. The founder's named exhibit: chain 3 position 1, a
+render the service passed and an independent re-read of that same picture said
+was missing the fact.
+
+**One reading is not evidence enough to spend somebody's refusal on.**
+
+- A **binding** miss is re-read before it counts.
+- Both readings agree it is missing → it is missing.
+- They disagree → a third reading breaks the tie, majority of three per fact.
+- No majority, or no second opinion available → the render is **delivered**.
+
+**Cost, per render.** Zero on the happy path — a clean verdict is one call, as
+before. Extra readings land only on a render already headed for a re-render or a
+refund: one more call to confirm, two on a split. Against a 25-credit refund and
+a discarded image, that is the cheapest place in the whole path to spend a
+fraction of a cent.
+
+**And `readings` is recorded on every landed row** beside `attempts`, so the
+reader's reliability keeps measuring itself in production rather than only in a
+trial. D-193's lever one, shipped.
+
+## D-195 — Depth softens renders, and the flag is conservative.
+
+**Measured from the trial, within-chain, on the SHIPPED arm (base-only):**
+
+| | positions 1–2 | positions 5–6 | drop |
+|---|---|---|---|
+| base-only sharpness | **94%** | **82%** | **−12 points** |
+
+Every render is `edit(the sharp original, recipe)`, so this is not compounding —
+there is no chain of pixels to accumulate along. **A longer recipe softens the
+render.** Prompt length is doing it, in the product as it ships today, and the
+two-reference arm showed the same shape.
+
+**Founder's perception calibration, recorded because it governs urgency:**
+eyeballing the position-6 render (70% of the original's sharpness) against its
+original, *the difference is barely perceptible*. **The 0.75 flag is
+conservative relative to human perception** — it fires well before anybody would
+call a picture soft.
+
+So depth-softness is real, measured, and **not urgent**. It feeds the parked cap
+ruling: if the cap exists to protect quality, the quality it protects degrades
+gently and invisibly for at least six edits. It also sets the first experiment
+of the quality unit — whether a condensed recipe renders sharper than an
+accumulated one — because if length is the cause, length is the lever.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
