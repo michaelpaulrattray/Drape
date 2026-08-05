@@ -5896,6 +5896,64 @@ of the quality unit — whether a condensed recipe renders sharper than an
 accumulated one — because if length is the cause, length is the lever.
 
 
+## D-196 — Prompt length is not what softens a deep render.
+
+**Experiment (i), 2026-08-05, three deep recipes rendered twice each.**
+
+D-195 measured a 12-point sharpness drop between chain positions 1–2 and 5–6
+under base anchoring, where compounding is impossible, and named prompt LENGTH
+as the suspect. So each deep recipe was rendered twice from the same original:
+once with the accumulated prompt the product actually built, once with a
+condensed canonical form carrying the identical facts, verified lossless against
+the fact list before the render was allowed to run.
+
+| recipe | length | sharpness | facts held |
+|---|---|---|---|
+| #135 | 1266 → 437 chars | 94% → **80%** | 1/4 → 3/4 |
+| #136 | 1854 → 458 chars | 81% → **79%** | 4/5 → 4/5 |
+| #137 | 1713 → 413 chars | 90% → **85%** | 2/4 → 2/4 |
+
+**Cutting the prompt by two thirds made every render softer, not sharper.** The
+condensation lever is dead, and it died for nine renders rather than for a
+shipped change that would have cost fact retention and bought nothing.
+
+The likelier cause of depth-softness is now the obvious one: **a deeper recipe
+repaints more of the picture.** Six facets changed is six regions regenerated,
+and the untouched pixels are the ones that stay sharp. That is not a prompt
+problem and it has no prompt fix.
+
+## D-197 — The sharpness metric cannot score a restorer. It rewards sharpening.
+
+**Experiment (ii) invalidated itself on its first line, and the finding is
+bigger than the experiment.**
+
+A plain non-semantic sharpen was applied to three soft renders:
+
+| render | before | after |
+|---|---|---|
+| #135 | 95% | **183%** |
+| #136 | 87% | **174%** |
+| #137 | 92% | **182%** |
+
+**Nearly double the ORIGINAL's sharpness.** Nothing was restored — the filter
+manufactures high-frequency edge energy, and high-frequency edge energy is
+precisely what a Laplacian variance measures. Any restoration contest scored
+this way is won by whoever sharpens hardest, artefacts included.
+
+**What this does and does not invalidate.** Every comparison this program has
+made with the metric compares renders produced the same way — trial arm against
+trial arm, position against position — and those stand. What it cannot do is
+score a picture that has been *post-processed*, or stand in for how good a
+picture looks. It is a proxy for detail, and the founder's own perception
+calibration says the same thing from the other side: at 70% the difference from
+the original was barely perceptible.
+
+**So restoration has to be judged by sameness, not by sharpness** — which is
+what experiment (iii) was already designed to do, and it is now the load-bearing
+half rather than the safety check. A restorer that repaints is worse than blur,
+and only a reader looking at both pictures can tell.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
