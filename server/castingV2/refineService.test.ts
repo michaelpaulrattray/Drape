@@ -24,6 +24,7 @@ let chargeSucceeds = true;
 let candidateRow: Record<string, unknown>;
 let variantRows: Array<Record<string, unknown>>;
 let landedVariant: Record<string, unknown> | null = null;
+let failedVariant: Record<string, unknown> | null = null;
 let engineThrows: Error | null = null;
 let renderFault = false;
 
@@ -69,8 +70,9 @@ vi.mock("../db/castingV2Variants", () => ({
     journal.push("land");
     landedVariant = input;
   }),
-  failVariant: vi.fn(async () => {
+  failVariant: vi.fn(async (input: Record<string, unknown>) => {
     journal.push("fail");
+    failedVariant = input;
     return true;
   }),
   /* The free half of D-163: navigation and re-selection move a pointer and
@@ -197,6 +199,7 @@ beforeEach(() => {
   engineThrows = null;
   renderFault = false;
   landedVariant = null;
+  failedVariant = null;
   variantRows = [];
   candidateRow = {
     id: 1,
@@ -563,6 +566,50 @@ describe("the order, and the money", () => {
     expect(ledger.refunds).toEqual([
       { amount: 25, description: "Refine refunded — the image came back damaged" },
     ]);
+  });
+
+  /*
+    THE SAME HONESTY, ONE CLASS OVER (D-188).
+
+    A verification refusal is not damage — the detector passed the picture
+    twice. Wearing the damage class, it wrote "the image came back damaged" on
+    eight real ledger rows and the first person to read them reported provider
+    damage to the founder. The receipt is the record, and it must name what
+    actually happened.
+  */
+  it("refunds a fact-short render under its own name, and says which fact", async () => {
+    const verifier = {
+      id: "verifier",
+      complete: async (request: { system: string }) => ({
+        text: request.system.includes("how they")
+          ? JSON.stringify({ hairWorn: "unclear" })
+          : JSON.stringify({ results: [{ id: 1, present: false, saw: "brown" }] }),
+        truncated: false,
+        latencyMs: 1,
+      }),
+    } as never;
+
+    await expect(refineCandidate({ ...greenEyes, verifier }, input)).rejects.toThrow(/without green/);
+    expect(ledger.refunds).toEqual([
+      { amount: 25, description: "Refine refunded — the render was missing green" },
+    ]);
+  });
+
+  it("files the fact-short refusal under its own failure class, never as damage", async () => {
+    const verifier = {
+      id: "verifier",
+      complete: async (request: { system: string }) => ({
+        text: request.system.includes("how they")
+          ? JSON.stringify({ hairWorn: "unclear" })
+          : JSON.stringify({ results: [{ id: 1, present: false }] }),
+        truncated: false,
+        latencyMs: 1,
+      }),
+    } as never;
+    await expect(refineCandidate({ ...greenEyes, verifier }, input)).rejects.toThrow();
+    /* The variant row carries the same class the ledger line describes, or the
+       two halves of the record disagree about one event. */
+    expect(failedVariant?.failureClass).toBe("facts_missing");
   });
 });
 

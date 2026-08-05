@@ -1183,8 +1183,18 @@ export async function refineCandidate(
         "[refineService] VERIFICATION FAILED TWICE — refusing and refunding",
       );
       throw new ProviderError(
-        "render_fault",
-        `the render did not include ${missingFacts(verification).join(", ")}`,
+        /*
+          ITS OWN CLASS, because the receipt is the record (D-188).
+
+          This picture is HEALTHY — the damage detector passed it twice. Throwing
+          it as `render_fault` wrote "the image came back damaged" on eight
+          ledger rows for renders that were nothing of the kind, and the first
+          person to read those rows reported them to the founder as provider
+          damage. A refund line that misdescribes what happened is a support
+          conversation nobody can resolve from the record.
+        */
+        "facts_missing",
+        missingFacts(verification).join(", "),
       );
     }
 
@@ -1401,8 +1411,16 @@ export async function refineCandidate(
       */
       error: new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
+        /*
+          AND THE PERSON IS TOLD THE SAME THING THE LEDGER IS.
+
+          "Didn't come through" is right for a failure; it is wrong for a
+          picture that arrived twice without the thing they asked for, and it
+          would leave them retyping an instruction the product already knows it
+          cannot currently render.
+        */
         message: refund.recorded
-          ? "That refinement didn't come through. Your credits have been returned."
+          ? failedFactsMessage(error) ?? "That refinement didn't come through. Your credits have been returned."
           : "That refinement didn't come through, and the refund could not be recorded — "
             + `quote operation ${operationId} and support will restore the balance.`,
       }),
@@ -1410,6 +1428,21 @@ export async function refineCandidate(
       refundedCredits: refund.recorded ? price : 0,
     });
   }
+}
+
+/**
+ * The sentence for a render that arrived healthy and short of a fact.
+ *
+ * Null for every other failure, so the generic line keeps its job.
+ */
+function failedFactsMessage(error: unknown): string | null {
+  if (!(error instanceof ProviderError) || error.failureClass !== "facts_missing") return null;
+  const missing = error.message.trim();
+  return missing
+    ? `That one came back twice without ${missing}, so it wasn't delivered and your credits `
+      + "have been returned. Try saying it a different way."
+    : "That one came back without what you asked for, twice, so it wasn't delivered and your "
+      + "credits have been returned.";
 }
 
 /**
@@ -1422,6 +1455,16 @@ export async function refineCandidate(
 function refundDescriptionFor(error: unknown): string {
   if (error instanceof ProviderError && error.failureClass === "render_fault") {
     return "Refine refunded — the image came back damaged";
+  }
+  /*
+    NAMES WHAT WAS MISSING. The throw carries the facts, so the receipt can say
+    which ones rather than making support re-derive them from a log.
+  */
+  if (error instanceof ProviderError && error.failureClass === "facts_missing") {
+    const missing = error.message.trim();
+    return missing
+      ? `Refine refunded — the render was missing ${missing}`
+      : "Refine refunded — the render was missing what you asked for";
   }
   return "Refine refunded — the generation failed";
 }

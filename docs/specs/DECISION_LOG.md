@@ -5609,6 +5609,44 @@ that preceded it both passed, which is exactly why a control needs a corpus and
 not a demo.
 
 
+## D-188 — A verification refusal is not damage. The receipt is the record.
+
+**Audit finding, 2026-08-05, and it had already claimed a victim.**
+
+D-185's double-verification failure threw `ProviderError("render_fault", …)`,
+which is the class the D-93 damage detector uses. So the refund line on eight
+real ledger rows read **"Refine refunded — the image came back damaged"** for
+renders that were not damaged at all — the detector had passed every one of them
+twice. They were healthy pictures missing a fact.
+
+**The first person to read those rows reported them to the founder as provider
+damage.** That is the whole argument: a receipt is not decoration, it is the
+record somebody reasons from later, and one that misdescribes the event turns
+into a support conversation nobody can resolve from the ledger.
+
+So the verification refusal has its own class, `facts_missing`, and it reaches
+every place the damage class reaches:
+
+- **the ledger line** names what was missing — *"Refine refunded — the render
+  was missing green"* — because the throw already carries the facts, so support
+  never has to re-derive them from a log;
+- **the variant row** files the same class, or the two halves of the record
+  disagree about one event;
+- **the person** is told the same thing the ledger is: *"That one came back
+  twice without green, so it wasn't delivered and your credits have been
+  returned."* "Didn't come through" is right for a failure and wrong for a
+  picture that arrived — it would leave someone retyping an instruction the
+  product already knows it cannot currently render.
+
+Both classes still refuse and still refund the whole 25. Nothing about the money
+changed; what changed is that the record stopped saying the wrong thing about
+why.
+
+**Pinned by the same receipt-honesty test shape the damage path already had** —
+one for the ledger sentence, one for the filed class, because it was the
+agreement between those two that broke.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

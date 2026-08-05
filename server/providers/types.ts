@@ -69,6 +69,22 @@ export type ProviderFailureClass =
    * transport hiccup; re-rolling it is the user's decision and their money.
    */
   | "render_fault"
+  /**
+   * The provider succeeded, the picture is HEALTHY, and a fact the record
+   * states is not in it (D-188).
+   *
+   * Split from `render_fault` because the receipt is the record. Both refuse
+   * and both refund, but a verification refusal wearing the damage class wrote
+   * *"the image came back damaged"* on eight ledger rows for renders that were
+   * not damaged at all — and the first person to read those rows reported them
+   * to the founder as provider damage. A refund line that misdescribes what
+   * happened is a support conversation nobody can resolve from the record.
+   *
+   * Non-retryable at the provider layer: the retry that mattered already
+   * happened, and a third attempt at the same prompt is not a different
+   * request.
+   */
+  | "facts_missing"
   /** Unmapped. Treated as non-retryable so unknowns fail closed. */
   | "unknown";
 
