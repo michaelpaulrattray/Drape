@@ -1,0 +1,51 @@
+{
+  "condensation": [
+    {
+      "variant": 135,
+      "facts": 4,
+      "longChars": 1266,
+      "shortChars": 437,
+      "longSharp": 0.9352483662735203,
+      "shortSharp": 0.7984330329410455,
+      "longVerified": 1,
+      "shortVerified": 3
+    },
+    {
+      "variant": 136,
+      "facts": 5,
+      "longChars": 1854,
+      "shortChars": 458,
+      "longSharp": 0.806185925521821,
+      "shortSharp": 0.7927481304220859,
+      "longVerified": 4,
+      "shortVerified": 4
+    },
+    {
+      "variant": 137,
+      "facts": 4,
+      "longChars": 1713,
+      "shortChars": 413,
+      "longSharp": 0.9026592559408178,
+      "shortSharp": 0.8548172499217751,
+      "longVerified": 2,
+      "shortVerified": 2
+    }
+  ],
+  "restoration": [
+    {
+      "variant": 135,
+      "before": 0.9510783289282794,
+      "after": 1.8318492351075883
+    },
+    {
+      "variant": 136,
+      "before": 0.86837769110513,
+      "after": 1.737709468464554
+    },
+    {
+      "variant": 137,
+      "before": 0.923270303955902,
+      "after": 1.8176640874015095
+    }
+  ]
+}

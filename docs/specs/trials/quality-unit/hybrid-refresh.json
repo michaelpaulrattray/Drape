@@ -1,0 +1,40 @@
+{
+  "control": {
+    "same": false,
+    "why": "differs on jaw width, face length/shape, nose shape"
+  },
+  "sharpness": {
+    "driftedRatio": 0.9620706324283386,
+    "refreshedRatio": 0.9687667294822079
+  },
+  "identityToBase": {
+    "same": false,
+    "why": "differs on jaw width, face length/shape, nose shape, lip fullness, eye spacing, skin freckling, skin tone"
+  },
+  "stylingHeld": {
+    "same": 4,
+    "total": 4,
+    "detail": [
+      {
+        "fact": "a blunt bob",
+        "same": true,
+        "why": "Identical blunt bob length, shape, and center part in both images."
+      },
+      {
+        "fact": "seafoam green eyes",
+        "same": true,
+        "why": "Same seafoam green eye color and iris pattern in both photos."
+      },
+      {
+        "fact": "small gold hoop earrings",
+        "same": true,
+        "why": "Same small gold hoop earrings visible in both images."
+      },
+      {
+        "fact": "copper hair",
+        "same": true,
+        "why": "Same copper/orange hair shade and tone in both photos."
+      }
+    ]
+  }
+}

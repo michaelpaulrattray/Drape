@@ -1,0 +1,59 @@
+{
+  "instructions": [
+    "Give her a blunt bob.",
+    "Make her eyes seafoam green.",
+    "Add small gold hoop earrings.",
+    "Make her hair copper."
+  ],
+  "holistic": {
+    "samePerson": false,
+    "why": "Different eye shape and color (dark brown deep-set eyes vs lighter green/hazel eyes with different shape), differing nose width and shape, jawline structure appears wider/rounder in the second image, and freckle patterns differ significantly, suggesting distinct individuals despite similar skin tone and general facial layout."
+  },
+  "perFeature": {
+    "features": [
+      {
+        "name": "jaw width",
+        "first": "Moderate, tapering jaw with defined chin",
+        "second": "Slightly wider, squarer jawline",
+        "matches": false
+      },
+      {
+        "name": "face length/shape",
+        "first": "Elongated oval face",
+        "second": "Shorter, more rounded face shape",
+        "matches": false
+      },
+      {
+        "name": "nose shape",
+        "first": "Narrow, straight nose with slightly rounded tip",
+        "second": "Broader nose with wider nostrils",
+        "matches": false
+      },
+      {
+        "name": "lip fullness",
+        "first": "Medium fullness, well-defined",
+        "second": "Slightly thinner lips",
+        "matches": false
+      },
+      {
+        "name": "eye spacing",
+        "first": "Average spacing, dark brown eyes",
+        "second": "Similar spacing but eyes appear green/hazel (likely colored contacts)",
+        "matches": true
+      },
+      {
+        "name": "skin freckling",
+        "first": "Freckles present across nose and cheeks",
+        "second": "Freckles present across nose and cheeks, slightly more pronounced",
+        "matches": true
+      },
+      {
+        "name": "skin tone",
+        "first": "Medium-brown, warm undertone",
+        "second": "Lighter brown/tan tone, slightly more reddish undertone",
+        "matches": false
+      }
+    ],
+    "samePerson": false
+  }
+}

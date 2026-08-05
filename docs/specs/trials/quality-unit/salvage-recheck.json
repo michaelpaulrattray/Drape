@@ -1,0 +1,241 @@
+[
+  {
+    "label": "negative (self vs self)",
+    "counts": [
+      0,
+      0,
+      0
+    ],
+    "union": [],
+    "always": [],
+    "runs": [
+      {
+        "identical": true,
+        "differs": []
+      },
+      {
+        "identical": true,
+        "differs": []
+      },
+      {
+        "identical": true,
+        "differs": []
+      }
+    ]
+  },
+  {
+    "label": "positive (unsharp mask)",
+    "counts": [
+      6,
+      8,
+      7
+    ],
+    "union": [
+      "expression",
+      "eye spacing",
+      "face length/shape",
+      "hair colour",
+      "jaw width",
+      "lip fullness",
+      "nose shape",
+      "skin freckling",
+      "skin tone"
+    ],
+    "always": [
+      "face length/shape",
+      "hair colour",
+      "lip fullness",
+      "skin freckling",
+      "skin tone"
+    ],
+    "runs": [
+      {
+        "identical": false,
+        "differs": [
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "skin freckling",
+          "skin tone",
+          "hair colour"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "skin freckling",
+          "skin tone",
+          "hair colour",
+          "expression"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "jaw width",
+          "face length/shape",
+          "lip fullness",
+          "eye spacing",
+          "skin freckling",
+          "skin tone",
+          "hair colour"
+        ]
+      }
+    ]
+  },
+  {
+    "label": "recovered-1",
+    "counts": [
+      1,
+      2,
+      1
+    ],
+    "union": [
+      "hair colour",
+      "skin tone"
+    ],
+    "always": [
+      "skin tone"
+    ],
+    "runs": [
+      {
+        "identical": false,
+        "differs": [
+          "skin tone"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "skin tone",
+          "hair colour"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "skin tone"
+        ]
+      }
+    ]
+  },
+  {
+    "label": "recovered-2",
+    "counts": [
+      3,
+      3,
+      1
+    ],
+    "union": [
+      "hair colour",
+      "skin freckling",
+      "skin tone"
+    ],
+    "always": [
+      "skin tone"
+    ],
+    "runs": [
+      {
+        "identical": false,
+        "differs": [
+          "skin freckling",
+          "skin tone",
+          "hair colour"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "skin freckling",
+          "skin tone",
+          "hair colour"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "skin tone"
+        ]
+      }
+    ]
+  },
+  {
+    "label": "built-step4",
+    "counts": [
+      10,
+      9,
+      9
+    ],
+    "union": [
+      "expression",
+      "eye spacing",
+      "face length/shape",
+      "hair colour",
+      "hair shape",
+      "jaw width",
+      "lip fullness",
+      "nose shape",
+      "skin freckling",
+      "skin tone"
+    ],
+    "always": [
+      "expression",
+      "face length/shape",
+      "hair colour",
+      "jaw width",
+      "lip fullness",
+      "nose shape",
+      "skin freckling",
+      "skin tone"
+    ],
+    "runs": [
+      {
+        "identical": false,
+        "differs": [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "eye spacing",
+          "skin freckling",
+          "skin tone",
+          "hair shape",
+          "hair colour",
+          "expression"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "eye spacing",
+          "skin freckling",
+          "skin tone",
+          "hair colour",
+          "expression"
+        ]
+      },
+      {
+        "identical": false,
+        "differs": [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "skin freckling",
+          "skin tone",
+          "hair shape",
+          "hair colour",
+          "expression"
+        ]
+      }
+    ]
+  }
+]

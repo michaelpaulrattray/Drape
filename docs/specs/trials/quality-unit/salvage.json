@@ -1,0 +1,37 @@
+[
+  {
+    "name": "recovered-1",
+    "sharpnessBefore": 0.7034911989301801,
+    "sharpnessAfter": 0.7225518180801633,
+    "identical": false,
+    "differsOn": [
+      "skin freckling"
+    ]
+  },
+  {
+    "name": "recovered-2",
+    "sharpnessBefore": 0.7120723756598694,
+    "sharpnessAfter": 0.7561204860752593,
+    "identical": false,
+    "differsOn": [
+      "skin tone",
+      "hair colour"
+    ]
+  },
+  {
+    "name": "built-step4",
+    "sharpnessBefore": 0.9620706324283386,
+    "sharpnessAfter": 1.051945109443346,
+    "identical": false,
+    "differsOn": [
+      "jaw width",
+      "face length/shape",
+      "nose shape",
+      "lip fullness",
+      "skin freckling",
+      "skin tone",
+      "hair colour",
+      "expression"
+    ]
+  }
+]

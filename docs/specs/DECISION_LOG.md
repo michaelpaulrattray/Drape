@@ -5717,10 +5717,10 @@ was vacuous and is reported as such rather than counted. Scored with a direct
 absence check, because a removal is subtraction and the fact list cannot see it.
 
 **Probe B: zero identity failures** in either arm at every heavy-styling
-position — **and D-199 later showed this instrument was blind.** Read this line
-as *not measured*, never as *passed*: the same reader, given a specimen whose
-face had visibly changed, called it the same person and cited freckles that had
-arrived mid-chain as its evidence.
+position — **and D-199 showed the instrument is inconsistent.** Read this line
+as *measured with an unreliable reader*, never as *passed*: asked three times
+about one pair whose face had visibly changed, the same reader answered "same
+person" twice and "not the same person" once.
 
 **Recommendation: leave the architecture alone.** The second reference buys
 nothing measurable, and base-anchoring's guarantee — the tenth refinement as
@@ -5976,14 +5976,14 @@ would be quoting a fact that expired with a provider generation.
 **Three quantities filmed now:** sharpness (v2 era), realization (the trial's
 dissolving bob), and identity (D-199's specimen).
 
-## D-199 — Identity rot is silent, and the instrument meant to catch it was blind.
+## D-199 — Identity rot is silent, and the instrument meant to catch it is unreliable.
 
-**The quality unit's most important artifact.**
+**The quality unit's most important artifact.** *(Exhibit corrected 2026-08-05 —
+see the correction below before quoting anything in this entry.)*
 
 The same four chain-anchored generations that held their sharpness produced a
 **different woman**: narrower jaw, shorter face, a nose that changed shape,
-freckles that arrived at step 2 and deepened, skin lightening. Every frame
-crisp. **Sharpness rot announced itself; identity rot does not.** A user grooming
+fuller-to-thinner lips, skin lightening. Every frame crisp. **Sharpness rot announced itself; identity rot does not.** A user grooming
 a face they love would not notice a slow morph until the model they sign is not
 the person they chose.
 
@@ -5993,24 +5993,84 @@ original on every render — but every chain-shaped candidate on the board (arm 
 arm e, any detail-lock sequence that ever chains) carries identity-to-base as a
 scored column, never an assumption.
 
-### And the instrument failed its positive control
+### CORRECTED 2026-08-05 — the exhibit was wrong, and the error was mine
 
-Probe B's question — *"are these the same person, ignoring styling?"* — was run
-against this specimen as a positive control. **It said yes.** Its stated reason:
-the freckle pattern was *"consistent between the two images"* — freckles that
-**arrived during the chain**. The base has none.
+**What this section originally claimed:** that the holistic reader called the
+drifted woman the same person and cited *"freckles consistent between the two
+images"* — freckles that **"arrived during the chain"**, against a base that
+**"has none"**.
 
-So **every identity number this program has published was taken with a blind
-instrument**, including the trial's "zero identity failures in either arm"
-(D-190). That line should be read as *not measured*, not as *passed*.
+**The founder checked the file. The base is heavily freckled** across both
+cheeks and the nose bridge. So the reader's observation was **correct**, and the
+detail used to make it look absurd was **false**.
 
-**The fix is the question, not the reader.** Asked for one overall judgement a
-vision reader is charitable; asked to name what it sees per feature — jaw width,
-face length, nose, lips, eye spacing, freckling, skin tone — and to judge each,
-it is honest. The rewrite passes the control **six features to one**.
+Re-run on the real artifacts, both readers, transcripts kept
+(`output/quality-unit/identity-control.json`):
 
-*Measure the ruler before measuring with it.* The calibration the founder
-ordered paid for itself on its first use.
+- **The holistic reader returned `samePerson: false`** this time, naming eye
+  shape, nose width, jawline and freckle pattern. It had returned `true` on two
+  earlier runs of the same pair. It is **inconsistent, not blind** — the same
+  finding as the 21% self-disagreement measured in D-194, on a second surface.
+- **The per-feature reader returned `samePerson: false`**, with **five** of
+  seven features differing — jaw width, face length, nose shape, lip fullness,
+  skin tone — and **two matching**: eye spacing and **freckling**, which match
+  because they genuinely do. The earlier "six features to one" was one run's
+  sampling, reported as a property.
+
+**What survives.** The specimen's identity drift is real: both readers, asked
+today, say it is not the same woman, and both name jaw, face shape and nose.
+D-199's headline holds — **identity rot happens while sharpness stays flat, and
+nothing announces it.**
+
+**What does not.** The freckle claim, the word "blind", and "six features to
+one" are withdrawn. The per-feature rewrite may still be the better instrument —
+it is more specific and its answers are inspectable — but it is now an
+unproven preference rather than a demonstrated fix, and D-190's identity line
+should read *measured with an inconsistent instrument*, not *measured with a
+blind one*.
+
+**The chain's instructions, verbatim, since the drift inventory depends on
+them:** *"Give her a blunt bob." / "Make her eyes seafoam green." / "Add small
+gold hoop earrings." / "Make her hair copper."* **Seafoam eyes were instructed**,
+so the green eyes in step 4 are styling and were never drift. The honest drift
+inventory is jaw width, face length, nose shape, lip fullness and skin tone.
+
+## D-202 — A corroborating detail asserted from memory is a fabrication. Look at the file.
+
+**The integrity class D-199's correction names, because this program had not yet
+had to name it.**
+
+The false claim was not a mistaken inference from evidence. It was a **detail
+invented to corroborate a conclusion I had already reached**: I looked at a
+contact sheet at 420 pixels per tile, saw the freckling in the last frame read
+as more pronounced, and wrote *"freckles arrived at step 2"* into the decision
+log as an observed fact. I never opened the base image. The claim then did the
+heaviest rhetorical work in the entry — it is what made the reader look absurd
+rather than merely unreliable — and it was the one thing in the entry nobody had
+verified.
+
+**D-164 already governs this and I applied it too narrowly.** The report-proof
+law says a ship report may claim a feature works only with evidence it RAN. The
+same law governs **observations**: a claim about what is in a picture is a claim
+about an artifact, and the artifact is right there. *If a detail is doing
+argumentative work, open the file.*
+
+**Two things make this class dangerous rather than embarrassing.** It is
+invisible to tests, because no test asserts on prose. And it is
+self-reinforcing: a detail invented to support a conclusion makes the conclusion
+look better evidenced than it is, so it survives review precisely because it is
+persuasive.
+
+**The rule, stated so it can be applied:** a specific factual claim about a
+stored artifact — *this image has no freckles*, *this row was empty*, *this
+prompt did not contain X* — is a claim requiring the artifact to be opened at
+the resolution the claim depends on. A thumbnail does not license a statement
+about skin. Where the check has not happened, the sentence says what it actually
+is: an impression.
+
+**Caught by the founder reading the exhibit rather than the argument** — which
+is the same reason D-190's Probe B line was corrected, and the same reason the
+trial exhibits were archived. Keep the pictures; somebody will need to check.
 
 ## D-200 — The hybrid refresh does not pull the face back. Arm (e) is dead.
 
@@ -6047,8 +6107,46 @@ perfectly. A self-updating reference is superb at carrying styling forward and
 catastrophic at carrying a person forward — which is D-192 stated once more,
 from the other end.
 
+**The identity verdict survives D-203's floor.** Five of the seven features it
+named — jaw width, face length, nose, lips, eye spacing — are geometry, which no
+contrast change can move. Only freckling and skin tone sit inside the floor and
+they carry none of the weight here.
 
-## D-201 — A model asked to restore a photograph repaints it. Salvage is dead.
+### AMENDED 2026-08-05 — the dominance is provider-specific, and the idea reopens as arm (e′)
+
+The founder ran the pull-back ten times outside the program, and **it works on
+GPT Image 2 where it refuses on Nano Banana Pro.** So the paragraph above is
+right about what happened and wrong about why: *"hand a model a whole photograph
+and it reproduces that photograph"* is **one provider's behaviour**, not a law of
+the medium. It joins D-198's sharpness lesson on the shelf of facts that expired
+with a provider generation — and it is the second one inside a week, which is
+itself the lesson. **When a negative result is explained by how models behave,
+the explanation is a hypothesis until a second provider agrees.**
+
+What the founder's runs show, and where they stop:
+
+- **Batch A, a minimal role-split prompt: 6/6 reliable.** The pull-back lands.
+- **Batch B, a full enumeration of what to preserve: 5/5 corrected the eyes —
+  and the earrings vanished**, with fidelity down. Enumerating everything makes
+  the model re-decide everything; the longer the list, the more it treats the
+  frame as a brief rather than a photograph. That is D-196's shape again, on a
+  new surface.
+- Both batches land around **75–85% fidelity** to the original — a real pull-back,
+  not a restoration.
+
+**So arm (e′) is not arm (e) on a different provider — it is two-pass**, and the
+second pass is the part arm (e) never had. The minimal role-split does the
+restore; **the verification net (D-185) then reads the result and every miss is
+reasserted as an ordinary scoped edit** on the anchored base. Nothing is trusted
+to the restore that the net can check, which is precisely what the 75–85% figure
+says is needed and what Batch B's vanished earrings say cannot be bought by
+asking harder.
+
+Arm (e) stays dead as tested. **(e′) is a live question**, scoped and sequenced
+below.
+
+
+## D-201 — Restoration buys two points of clarity or a new face. Salvage is dead.
 
 **Experiment (iii), scored on its two pre-registered axes, 2026-08-05.**
 
@@ -6064,14 +6162,49 @@ photograph instead of repairing one.
 | recovered-2 | 71% -> 76% | **no** | skin tone, hair colour |
 | built-step4 | 96% -> 105% | **no** | jaw width, face length, nose, lips, freckling, skin tone, hair colour, expression |
 
-**Every attempt repainted, and the gains are trivial.** Two and five points of
-clarity on the genuinely soft frames, bought with changed features. The third is
-the argument in miniature: the biggest "improvement" in the set, +9 points and
-past the original's own sharpness, and it arrived with a new jaw, a new nose and
-a different mouth.
+### RE-CONFIRMED 2026-08-05 under D-202, and two of the three rows did not hold
 
-**A restorer that repaints is worse than blur** — the founder's own bar, and
-this fails it three times out of three. Salvage is dead, with the side-by-sides.
+The verdicts above were read off the same instrument D-199 misreported, so they
+were re-scored with the two controls the experiment should have had. No new
+renders — the pictures were fine; the reading was not
+(`output/quality-unit/salvage-recheck.json`, three readings per cell).
+
+| control | differs on | agreed every time |
+|---|---|---|
+| **negative** — the image against itself | 0 / 0 / 0 | — |
+| **positive** — the image against a real unsharp mask of itself | 6 / 8 / 7 | face length/shape, lip fullness, freckling, skin tone, hair colour |
+
+**The negative control is clean: the reader invents nothing.** The positive
+control is the finding. A filter that provably alters no geometry — it only
+raises local contrast — is reported as changing **five features every time**,
+including face length and lip fullness. So *"it reads differently"* is what the
+reader was asked and what it honestly answers, and on this question **a
+successful clarity pass and a repaint score the same**.
+
+That gives the experiment the floor it lacked, and the rows re-read:
+
+| specimen | differs on | above the floor | verdict |
+|---|---|---|---|
+| recovered-1 | 1 / 2 / 1 | **nothing** | repaint **not established** |
+| recovered-2 | 3 / 3 / 1 | **nothing** | repaint **not established** |
+| built-step4 | 10 / 9 / 9 | **jaw width, nose shape, expression** | **repaint proven** |
+
+Two of three specimens scored *below* what a pure sharpen produces — their
+"repainted" verdicts are withdrawn. The third stands, and stands harder than
+before: jaw, nose and expression are geometry and pose, and no contrast filter
+can touch them. That is a genuinely new face, not a crisper one.
+
+**So the conclusion changes its grounds.** The published version killed salvage
+on safety — *it repaints, three for three*. One of those three is proven. The
+honest death is **on value**: the two frames that were actually soft bought
+**two and five points** of clarity, and D-195 measured **twelve** points as
+already below the founder's own eye. The one case that gained meaningfully
+(+9, past the original's own sharpness) is the one that came back as a different
+woman.
+
+**A restorer that repaints is worse than blur** — the founder's bar. Salvage
+fails a second one too: *a restorer that does not repaint is not worth paying
+for.* Dead either way, but now for a reason the evidence supports.
 
 **Why it was never likely.** A generative model has no operation called *make
 this crisper*. It renders a picture that satisfies the description, and "the
@@ -6080,12 +6213,62 @@ scratch. Sharpening is a signal-processing operation; asking a renderer for it
 gets a re-render, and D-197 already showed that a real signal-processing
 sharpen — which changes nothing at all — beats the metric anyway.
 
-**What this closes.** Restoration is not a lever this program has. The answer to
-a soft render is not to repair it afterwards but to not produce it: the render
-stays base-anchored (D-191), the recipe stays as short as it honestly can be —
-and D-196 says even that buys nothing. Depth-softness stands where D-195 left
-it: real, measured at 12 points across six edits, and below the threshold of
-perception by the founder's own eye.
+**What this closes — narrowed 2026-08-05.** **Unanchored** restoration is not a
+lever this program has. That is the whole of it, and the qualifier is
+load-bearing: what died here is handing a model a soft picture and asking it to
+make that picture better, with nothing to check the answer against. It is blind
+in both senses — no reference for who she is, and no reading of what came back.
+
+**Anchored restoration is a different question and it is open.** Arm (e′)
+(D-200, amended) keeps the original in the frame as the identity truth and puts
+the verification net behind the result, so a miss is caught and reasserted
+rather than shipped. The founder's outside runs say the first half works on a
+provider this program had not tried. Whether the pair is worth a credit is what
+the dose-response probe is for.
+
+For a soft render with nothing behind it, the answer remains: do not produce it.
+The render stays base-anchored (D-191), the recipe stays as short as it honestly
+can be — and D-196 says even that buys nothing. Depth-softness stands where
+D-195 left it: real, measured at 12 points across six edits, and below the
+threshold of perception by the founder's own eye.
+
+
+## D-203 — A sameness reader is worthless without a floor. Measure a change that provably changes nothing.
+
+**The methodological law D-201's re-confirmation forced, and it generalises past
+that experiment.**
+
+Ask a vision reader *"did this change?"* and it answers honestly — which is the
+problem. **Every** real edit changes how a picture reads, so an unbounded
+"differs on N features" score has no zero. D-201 read 1, 3 and 10 differences as
+three failures; against a floor of 6–8 produced by a filter that alters no
+geometry at all, two of them were **quieter than success**.
+
+**The floor is not a nicety, it is the unit.** A sameness score means nothing
+until you know what an ideal outcome scores on the same instrument, so an
+experiment that asks "is it still the same person / the same photograph" ships
+with both controls or it does not ship:
+
+- **negative** — the artifact against itself. Anything found here is invented,
+  and the whole column is noise. (This one passed, 0/0/0, which is why the rest
+  of the analysis is worth anything.)
+- **positive** — the artifact against a change that is *provably* structural-free
+  and is *exactly what success looks like*. An unsharp mask for a clarity pass;
+  a crop or an exposure nudge elsewhere. Its score is the floor.
+
+**Then subtract, and prefer the features a filter cannot fake.** The signal in
+D-201 was not the count, it was *which* features cleared the floor: jaw width,
+nose shape, expression — geometry and pose. Appearance attributes (tone,
+saturation, how pronounced freckles read) move under any contrast change and are
+worth little. **Score geometry; treat appearance as advisory.** That is the same
+binding/advisory split D-187 drew for the verification net, arrived at from the
+measurement end.
+
+**Scope.** This governs sameness and identity questions, not the shipped
+verification net — the net asks *"is her hair copper"*, a presence question with
+a real answer, not a comparison. Nothing in production changes. What changes is
+that no future trial reports an identity or sameness column without its floor
+printed beside it.
 
 
 ---
