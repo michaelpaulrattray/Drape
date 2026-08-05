@@ -5476,6 +5476,84 @@ rather than a wrong picture. That asymmetry is why retry comes before refusal.
 **Awaiting the founder's ruling.** Not built.
 
 
+## D-185 — The verification net. A refine no longer ships sight-unseen.
+
+**Founder ruling, 2026-08-05: BUILD IT.** D-184's proposal, ruled and shipped.
+
+**A roll is judged before delivery; a refine was not.** The only post-render
+check was `detectRenderFault` — damage, not compliance — so `EYE COLOUR: pinker`
+could sit verbatim in three consecutive prompts while the pixels went pink irises
+→ pink eyeshadow → nothing, and nobody ever looked.
+
+After the image lands and before it is delivered, one vision pass asks whether
+every **named facet of the composed recipe** is visibly true. Not only the
+facets this edit wrote: the fact that went missing had been written a step
+earlier and was merely being carried, so a check scoped to "what changed" could
+never see the defect it exists for.
+
+- **pass** → deliver;
+- **fail** → one automatic re-render, absorbed by the house;
+- **fail twice** → refuse and refund the whole 25, automatically.
+
+**The compliance risk moves off the customer permanently.**
+
+### Three things it is deliberately not
+
+**Not a quality judge.** "Is the pink there" is answerable without taste; "is
+this good" is not, and only the first is asked.
+
+**Not fail-closed.** Invariant 7 refuses when a dependency is missing, and it
+governs *security* controls where allowing is a breach. Here a refusal on an
+unreachable reader destroys a render that is probably fine and hands back
+credits instead of the face — D-114 inverted the same way for the same reason.
+An outage delivers, loudly.
+
+**Not trusted absolutely.** The reader that misread pink-through-glasses irises
+as "deep brown" (D-183) is this reader. A verdict is evidence, so it buys a free
+re-render before it ever spends the user's refusal.
+
+### The verdicts are recorded, because they are an instrument
+
+Every landed variant carries `verification: { attempts, checks[] }` beside its
+captions — facet asked, verified, and what the reader saw instead. Two jobs:
+the measuring instrument for the two-reference trial, and the only way a READER
+defect becomes visible. Repeated failures on one facet class whose renders look
+correct is a reading problem, not a rendering one, and it must be surfaced
+rather than refunded.
+
+**Cost:** one vision call per render (~2–4s, a fraction of a cent) plus, only on
+failure, one extra image render. The failure rate is itself a number worth
+watching.
+
+## D-186 — The base's presentation gets a name, so the net can check it.
+
+**Founder ruling, 2026-08-05, riding D-185.**
+
+Three of the four drift symptoms are facts the prompt states and the render
+ignores; the net catches those. The fourth was different: the hair was pinned up
+in the base and came back worn down, and **nothing anywhere ever said it was
+up**. Captions describe facets an INSTRUCTION touched, and the preservation tail
+asks for "the hair worn the same way" — which names no value for the model to
+reproduce or the net to check.
+
+So the chain now begins by reading the base once and naming what it finds. The
+base never changes, so this is one vision call for the life of a candidate. What
+it captures behaves like any other realization: stated as already true, dropped
+the moment an instruction writes that facet, and — because it is a short
+categorical value rather than a paragraph — **checkable by the net**. Four of
+four.
+
+**Deliberately small.** Presentation only: how the person is arranged for the
+photograph, which is the class that drifts because nobody thinks to state it.
+Never the face — the face is what the reference image is FOR, and re-describing
+it in words is how a description quietly replaces the photograph (D-152).
+
+**And it will not pin a guess.** "Unclear" is an answer and it is not a fact; a
+paragraph is refused too. No pin is the state this shipped in for a milestone,
+and it costs precision. A wrong pin argues with the picture in every render, and
+that is the mistake D-183 already paid for once.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

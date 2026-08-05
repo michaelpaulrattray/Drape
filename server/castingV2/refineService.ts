@@ -120,6 +120,8 @@ import {
   type RealizationCaptions,
 } from "./realizationCaption";
 import { detectRenderFault } from "./renderFault";
+import { missingFacts, verifyRender, type RenderVerdict } from "./renderVerification";
+import { capturePresentation, PRESENTATION_FACETS } from "./presentationState";
 import { castingIdentityEngine } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
 
@@ -213,6 +215,8 @@ export type RefineServiceDependencies = {
   refund?: typeof recordRefund;
   engine?: () => ReturnType<typeof castingIdentityEngine>;
   interpret?: typeof interpretRefinement;
+  /** The reader that checks the picture against the record (D-185). */
+  verifier?: Parameters<typeof verifyRender>[0]["engine"];
   admit?: () => boolean;
   readBytes?: typeof storageReadBytes;
   storeImage?: (
@@ -757,6 +761,39 @@ export async function refineCandidate(
     writtenFacets,
   );
   /*
+    THE BASE'S OWN PRESENTATION, NAMED ONCE (D-186).
+
+    Her hair was pinned up in the base and came back worn down, because nothing
+    anywhere ever said it was up — captions describe facets an INSTRUCTION
+    touched, and the tail's "worn the same way" names no value for the model to
+    reproduce or the net to check.
+
+    Read from the BASE, which never changes, so this is one call for the life of
+    a candidate rather than one per render. Skipped entirely once the chain has
+    a pin, and skipped for a facet this instruction is about to write.
+  */
+  const baseKeyForPresentation = source.candidate.imageKey;
+  if (
+    baseKeyForPresentation
+    && PRESENTATION_FACETS.some((facet) => !carriedCaptions[facet] && !writtenFacets.has(facet))
+  ) {
+    try {
+      const baseBytes = await (dependencies.readBytes ?? storageReadBytes)(baseKeyForPresentation);
+      const captured = await capturePresentation({
+        bytes: baseBytes.bytes,
+        contentType: baseBytes.contentType,
+        engine: dependencies.verifier,
+      });
+      for (const [facet, value] of Object.entries(captured)) {
+        if (!writtenFacets.has(facet as Facet)) carriedCaptions[facet as Facet] = value;
+      }
+    } catch (error) {
+      /* Fails soft, like every other realization read: no pin is the state this
+         shipped in for a milestone, and it costs precision rather than money. */
+      log.warn({ err: error }, "[refineService] could not pin the base's presentation");
+    }
+  }
+  /*
     WHICH FACETS THE NEW RENDER SHOULD BE READ BACK FOR.
 
     For an edit, the ones it wrote. For a removal, only those a SURVIVING step
@@ -992,7 +1029,9 @@ export async function refineCandidate(
     }
     const prompt = composedPrompt.full;
 
-    const image = await engine.editWithReferences({
+    /* ONE definition of "render this", so a retry cannot quietly differ from
+       the attempt it is retrying. */
+    const renderOnce = () => engine.editWithReferences({
       prompt,
       /* ONE reference, forever: the sharp original. */
       references: [{ bytes: base.bytes, contentType: base.contentType }],
@@ -1001,17 +1040,100 @@ export async function refineCandidate(
     });
 
     /*
-      The landing smoke alarm, borrowed as-is (D-93). Same landing path, same
-      failure mode, and garbage refunds — a seamed or duplicated frame is not
-      something the user should pay 25 credits to receive.
+      THE FACTS THIS PICTURE HAS TO CONTAIN (D-185).
+
+      Every named facet of the COMPOSED recipe, not only the ones this edit
+      wrote — the eye colour that went missing on the founder's chain had been
+      written a step earlier and was merely being carried, so a check scoped to
+      "what changed" could never have seen it.
     */
-    const verdict = await detectRenderFault(image.bytes);
-    if (verdict.fault) {
-      log.error(
-        { operationId, variant: variant.publicId, detail: verdict.detail },
-        "[refineService] RENDER FAULT — failing the refinement and refunding",
+    const facts = Array.from(facetsWrittenBy(composed)).flatMap((facet) => {
+      const asked = currentIdentity
+        ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
+        : null;
+      return asked ? [{ facet, asked }] : [];
+    });
+    /*
+      AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
+
+      Hair worn up drifted to worn down because no named value existed for the
+      net to check. It has one now, so the net checks it — these are short
+      categorical values, unlike the descriptive captions, which is exactly why
+      only this class is verifiable without inviting false failures.
+    */
+    for (const facet of PRESENTATION_FACETS) {
+      const pinned = carriedCaptions[facet];
+      if (pinned && !facts.some((fact) => fact.facet === facet)) {
+        facts.push({ facet, asked: pinned });
+      }
+    }
+
+    /*
+      RENDER, CHECK, AND ONE FREE RETRY.
+
+      The verdict is evidence rather than proof — the same reader misread
+      pink-through-glasses irises as "deep brown" (D-183) — so a failure buys a
+      re-render at the house's expense before it ever spends the user's refusal.
+    */
+    const attemptRender = async () => {
+      const rendered = await renderOnce();
+      /*
+        The landing smoke alarm stays exactly where it was (D-93). Damage is a
+        different question from compliance and it is not worth a retry: a seamed
+        or duplicated frame is a provider failure, and the refund is the answer.
+      */
+      const fault = await detectRenderFault(rendered.bytes);
+      if (fault.fault) {
+        log.error(
+          { operationId, variant: variant.publicId, detail: fault.detail },
+          "[refineService] RENDER FAULT — failing the refinement and refunding",
+        );
+        throw new ProviderError("render_fault", fault.detail);
+      }
+      return {
+        rendered,
+        verification: await verifyRender({
+          bytes: rendered.bytes,
+          contentType: rendered.contentType,
+          facts,
+          engine: dependencies.verifier,
+        }),
+      };
+    };
+
+    let { rendered: image, verification } = await attemptRender();
+    let attempts = 1;
+
+    if (!verification.ok) {
+      log.warn(
+        { operationId, variant: variant.publicId, missing: missingFacts(verification) },
+        "[refineService] the render is missing filed facts — re-rendering once, free",
       );
-      throw new ProviderError("render_fault", verdict.detail);
+      ({ rendered: image, verification } = await attemptRender());
+      attempts = 2;
+    }
+
+    if (!verification.ok) {
+      /*
+        TWICE IS THE PRODUCT'S PROBLEM, NOT THE CUSTOMER'S.
+
+        Thrown past the charge, so the ordinary refund path gives back the whole
+        25 — the compliance risk moves off the customer permanently, which is
+        the entire point of the ruling.
+      */
+      log.error(
+        {
+          operationId,
+          variant: variant.publicId,
+          attempts,
+          verification: verification.checks,
+        },
+        "[refineService] VERIFICATION FAILED TWICE — refusing and refunding",
+      );
+      throw new ProviderError(
+        "render_fault",
+        `the render did not include ${missingFacts(verification).join(", ")}`,
+      );
     }
 
     /*
@@ -1108,6 +1230,20 @@ export async function refineCandidate(
           the fix becoming the bug the founder described.
         */
         captions: capturedCaptions,
+        /*
+          THE NET'S VERDICT, RECORDED (D-185).
+
+          Telemetry is part of the build rather than an afterthought: these rows
+          are the measuring instrument for the two-reference trial, and they are
+          also how a READER defect becomes visible — repeated failures on one
+          facet class whose renders look correct is a reading problem, not a
+          rendering one.
+        */
+        verification: {
+          attempts,
+          checks: verification.checks,
+          ...(verification.unavailable ? { unavailable: true } : {}),
+        },
       },
       provider: image.provenance?.provider ?? null,
       providerModel: image.provenance?.model ?? null,

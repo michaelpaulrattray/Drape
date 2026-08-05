@@ -411,6 +411,88 @@ describe("an unreadable history stops the money", () => {
   });
 });
 
+/*
+  THE VERIFICATION NET (D-185).
+
+  A roll is judged before delivery; a refine shipped sight-unseen, and the
+  founder's chain lost an eye colour that was present in every prompt. The net
+  looks at the picture, retries once at the house's expense, and refuses with a
+  full refund rather than charging for a render that is missing a filed fact.
+*/
+describe("the render is checked against the record before it is delivered", () => {
+  /*
+    Keyed on WHICH question is being asked, not on call order — the same reader
+    also pins the base's presentation (D-186), and counting its call as a
+    verdict made the retry test pass for the wrong reason.
+  */
+  const verifierSaying = (...verdicts: boolean[]) => {
+    let call = 0;
+    return {
+      id: "verifier",
+      complete: async (request: { system: string }) => {
+        if (request.system.includes("how they")) {
+          /* The presentation read. No pin, so the net's fact list is unchanged. */
+          return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+        }
+        const present = verdicts[Math.min(call, verdicts.length - 1)];
+        call += 1;
+        return {
+          text: JSON.stringify({ results: [{ id: 1, present, saw: present ? undefined : "brown" }] }),
+          truncated: false,
+          latencyMs: 1,
+        };
+      },
+    } as never;
+  };
+
+  it("delivers when the picture contains what was asked for", async () => {
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(true) }, input);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(ledger.charges).toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("re-renders once, free, when the first attempt is missing a fact", async () => {
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true) }, input);
+    /* Two renders, ONE charge — the retry is absorbed. */
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(ledger.charges).toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("refuses and refunds the whole 25 when the retry fails too", async () => {
+    await expect(
+      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false) }, input),
+    ).rejects.toThrow();
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+
+  /*
+    FAIL OPEN ON AN OUTAGE. Invariant 7 governs security controls, where
+    allowing is a breach. Here refusing on an unreachable reader destroys a
+    render that is probably fine and hands back credits instead of the face —
+    D-114 inverted the same way for the same reason.
+  */
+  it("delivers when the reader cannot be reached at all", async () => {
+    const broken = {
+      id: "broken",
+      complete: async () => { throw new Error("reader down"); },
+    } as never;
+    await refineCandidate({ ...greenEyes, verifier: broken }, input);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("records the verdict on the row, because it is the measuring instrument", async () => {
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true) }, input);
+    const landed = JSON.stringify(landedVariant ?? {});
+    expect(landed).toContain("verification");
+    expect(landed).toContain('"attempts":2');
+  });
+});
+
 describe("the order, and the money", () => {
   it("claims, runs, charges, generates, lands — in that order", async () => {
     await refineCandidate(greenEyes, input);
