@@ -158,6 +158,26 @@ describe("the answer chips are the typed path, not a second one", () => {
     expect(beforeMutation).toContain("setReaskOptions(null)");
   });
 
+  /*
+    THE POLL MUST NOT DEADLOCK ON ITSELF — found by the production walk, not by
+    any test that existed.
+
+    The wait is read from the server, and the query that reads it was gated on
+    `pending` alone: pending is empty when a refine is submitted, so nothing
+    re-asked, so pending never became non-empty, so the loader never appeared
+    for the one person actually waiting. It only showed up after a remount.
+  */
+  it("keeps polling while a refine is in flight, not only once one is known", async () => {
+    const sheet = await readFile(SHEET, "utf8");
+    /* The VARIANTS query's interval — the session query has one too, and it is
+       not the one this law is about. */
+    const query = sheet.slice(sheet.indexOf("trpc.castingV2.variants.useQuery"));
+    const options = query.slice(query.indexOf("refetchInterval:"));
+    const interval = options.slice(0, options.indexOf("),") + 2);
+    expect(interval).toContain("pending?.length");
+    expect(interval).toContain("refine.isPending");
+  });
+
   it("withdraws the question when it is dismissed", async () => {
     const sheet = await readFile(SHEET, "utf8");
     const dismiss = sheet.slice(sheet.indexOf("onDismissOutcome={"));

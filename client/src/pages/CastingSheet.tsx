@@ -752,15 +752,24 @@ export default function CastingSheet() {
     {
       enabled: viewerRefinable,
       /*
-        POLL ONLY WHILE SOMETHING IS RUNNING (D-161).
+        POLL WHILE SOMETHING IS RUNNING — AND WHILE ONE IS BEING STARTED.
 
-        The ghost chip is read from the server, so something has to ask again
-        for it to ever resolve — but a permanent interval on eight faces is a
-        cost nobody sees and everybody pays, which is why this query is already
-        gated on the viewer being open. It polls when there is news coming and
-        stops the moment there isn't.
+        The ghost chip and the wait treatment are both read from the SERVER, so
+        something has to ask again for either to appear; a permanent interval on
+        eight faces is a cost nobody sees and everybody pays, which is why this
+        is gated on the viewer being open.
+
+        THE SECOND CLAUSE IS NOT AN OPTIMISATION, it is the bug the production
+        walk found. Gated on `pending` alone this deadlocks on itself: pending
+        is empty when a refine is submitted, so the query never re-asks, so
+        pending never becomes non-empty, so the loader never appears for the
+        one person who is actually waiting — the person who pressed the button.
+        `refine.isPending` is the client's own knowledge that a request is out,
+        and it is the only thing available before the first refetch.
       */
-      refetchInterval: (query) => (query.state.data?.pending?.length ? 4000 : false),
+      refetchInterval: (query) => (
+        query.state.data?.pending?.length || refine.isPending ? 4000 : false
+      ),
     },
   );
 
