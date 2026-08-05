@@ -144,15 +144,20 @@ em{color:var(--ink); font-style:italic}
   animation:settle 7.5s ease-in-out infinite;
 }
 @keyframes settle{
-  0%,100%{filter:blur(12px) saturate(.34) brightness(.96)}
-  50%    {filter:blur(16px) saturate(.34) brightness(.9)}
+  0%,100%{filter:blur(12px) saturate(.32) brightness(.72)}
+  50%    {filter:blur(16px) saturate(.32) brightness(.66)}
 }
 /* Just enough shade at the foot for the pill to sit on. Not a vignette —
    a picture that is arriving, not a picture that is being hidden. */
 .frame__grain{
   position:absolute; inset:0; pointer-events:none;
   opacity:0; transition:opacity 700ms var(--ease);
-  background:linear-gradient(to top, rgba(11,11,12,.55) 0%, rgba(11,11,12,0) 34%);
+  /* A soft falloff where the type sits, with no edge anywhere — the minimum
+     that lets two lines read over a dot field, and the maximum that can be
+     added without a panel creeping back in. */
+  background:
+    radial-gradient(58% 34% at 50% 47%, rgba(11,11,12,.5) 0%, rgba(11,11,12,0) 100%),
+    linear-gradient(to top, rgba(11,11,12,.45) 0%, rgba(11,11,12,0) 30%);
 }
 .frame[data-wait="true"] .frame__grain{opacity:1}
 
@@ -191,47 +196,44 @@ em{color:var(--ink); font-style:italic}
   to  {-webkit-mask-position:-35% 50%; mask-position:-35% 50%}
 }
 
-/* ---- the status block: the ink-pill register, centred like a thought ---- */
+/* ---- the status: type on the picture, and nothing else ----
+
+   No card, no border, no backdrop panel. A container here is furniture around
+   four words, and it was the thing that made the wait look busy while claiming
+   to be restrained. The field is darkened a little further while it waits so
+   white type always reads on it — one property doing the job a box was doing.
+*/
 .pill{
   position:absolute; z-index:2; left:50%; top:50%; transform:translate(-50%,-50%);
-  display:flex; flex-direction:column; align-items:center; gap:5px;
-  max-width:calc(100% - 32px); padding:11px 18px 12px;
-  border-radius:var(--r-lg);
-  background:rgba(11,11,12,.72); backdrop-filter:blur(10px) saturate(1.2);
-  border:1px solid rgba(255,255,255,.16);
-  color:var(--onScrim);
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  max-width:calc(100% - 24px); text-align:center;
+  color:var(--onScrim); text-shadow:0 1px 14px rgba(0,0,0,.5);
   opacity:0; transition:opacity 320ms var(--ease);
+  pointer-events:none;
 }
 .frame[data-wait="true"] .pill{opacity:1}
 /* Their own words, in the type everything else is set in. */
 .pill__said{
-  font-size:14px; font-weight:500; line-height:1.3; text-align:center;
-  max-width:26ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:14.5px; font-weight:500; line-height:1.35;
+  max-width:24ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.pill__meta{display:flex; align-items:center; gap:6px}
-.pill__dot{
-  flex:none; width:4px; height:4px; border-radius:50%; background:var(--accentSolid);
-  animation:pulse 2.4s ease-in-out infinite;
+/* The state, and the expectation, on one quiet line under it. */
+.pill__meta{
+  display:flex; align-items:baseline; gap:6px; white-space:nowrap;
+  font-size:11px; color:rgba(255,255,255,.6);
 }
-@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
-/* A STATE, not a sentence — so mono is the right register here and nowhere
-   else on this surface. */
-.pill__stage{
-  font-family:var(--font-mono); font-size:9.5px; letter-spacing:.09em;
-  text-transform:uppercase; color:rgba(255,255,255,.66);
-}
+.pill__stage{}
+.pill__dot{display:none}
 
 /* THE EXPECTATION (variant B) — measured, and stated in words rather than drawn.
 
    A bar was built here first and cut. Its endpoint was real (the median of 64
    production refines) but the SHAPE of the fill was invented, and worse, a bar
-   inside this pill reads as a measurement of THIS job when it is a statistic
+   inside this block reads as a measurement of THIS job when it is a statistic
    about other people's. A sentence can carry "usually" honestly. A bar cannot.
 */
-.pill__typical{
-  font-size:11px; color:rgba(255,255,255,.5); margin-top:1px;
-  text-align:center; white-space:nowrap;
-}
+.pill__typical{white-space:nowrap}
+.pill__typical::before{content:"·"; margin-right:6px; color:rgba(255,255,255,.4)}
 .stage[data-bar="off"] .pill__typical{display:none}
 
 /* ---- the version stack, exactly as it is today ---- */
@@ -407,10 +409,9 @@ li::marker{color:var(--muted)}
           <span class="pill">
             <span class="pill__said" id="pillSaid">pinker — the hair</span>
             <span class="pill__meta">
-              <span class="pill__dot"></span>
               <span class="pill__stage" id="pillStage">in line</span>
+              <span class="pill__typical">usually about half a minute</span>
             </span>
-            <span class="pill__typical">usually about half a minute</span>
           </span>
         </div>
 
@@ -459,6 +460,13 @@ li::marker{color:var(--muted)}
       picture is not decoration during the wait. It is the input, and softening it
       says the only true thing there is to say: <em>this is the material, it is being
       worked on, it is not finished.</em>
+    </p>
+    <p>
+      <strong>Nothing sits in a box.</strong> The status was a panel with a border, a
+      dot and three lines in it, and it made the wait look busy while claiming to be
+      restrained — furniture around four words. It is type on the picture now: your
+      sentence, and one quiet line under it. The field darkens a little further while it
+      waits, which is the one property doing the job the box was doing.
     </p>
     <p>
       <strong>The dots are the aliveness, and they are deliberately dumb.</strong> A
