@@ -306,6 +306,126 @@ const MAX_COVERAGE = 0.6;
  */
 export type UsableMask = Mask & { readonly __checked: unique symbol };
 
+/**
+ * PLAUSIBLE SIZE PER REGION CLASS — guard two of three (D-213).
+ *
+ * One global floor cannot tell a 0.1% blob that is a reasonable pair of brows
+ * from a 0.1% blob that is a hallucinated pair of glasses. A glasses mask has a
+ * size range; so does hair; so do brows. Outside its own class's band, a mask is
+ * refused as malformed rather than accepted for clearing a global minimum.
+ *
+ * **Provisional, and honestly so.** Seeded from the first shop's measurements on
+ * one specimen (hair 4.4%, face 10.6%, brows 1.5%) with generous margins, which
+ * is a starting point rather than a calibration. They tighten when the fixture
+ * has more than one face in it, and the numbers live here so that tightening is
+ * one edit rather than a hunt.
+ */
+export const COVERAGE_BANDS: Record<RegionKind, { min: number; max: number }> = {
+  hair: { min: 0.01, max: 0.35 },
+  eyes: { min: 0.0008, max: 0.03 },
+  brows: { min: 0.0005, max: 0.02 },
+  eyewearFrames: { min: 0.004, max: 0.06 },
+  eyewearLenses: { min: 0.004, max: 0.08 },
+  skin: { min: 0.02, max: 0.4 },
+  mouth: { min: 0.001, max: 0.03 },
+  ears: { min: 0.001, max: 0.04 },
+};
+
+/** How much of `mask` lands inside `prior`, 0..1 — guard three's measure. */
+export function overlapWith(mask: Mask, prior: Mask): number {
+  assertStride(mask, "mask");
+  assertStride(prior, "prior");
+  assertSameSize(mask, prior);
+  let inside = 0;
+  let total = 0;
+  for (let index = 0; index < mask.data.length; index += 1) {
+    const alpha = mask.data[index];
+    if (!alpha) continue;
+    total += alpha;
+    if (prior.data[index]) inside += alpha;
+  }
+  return total ? inside / total : 0;
+}
+
+/** A mask must land mostly where its own anatomy says it can. */
+const MIN_PRIOR_OVERLAP = 0.5;
+
+export type MatteRequest = {
+  image: Buffer;
+  region: RegionKind;
+  width: number;
+  height: number;
+  /**
+   * THE RECORD GATE — guard one, and the only structural one.
+   *
+   * Does the record say this face HAS one? Base-worn inventory, the
+   * presentation pin, the recipe. We never ask a segmentation model an open
+   * question, because the first shop asked one — *"where are her eyeglasses?"* on
+   * a woman wearing none — and got a confident little blob back that would have
+   * cleared the empty-mask floor and landed an edit on nothing.
+   *
+   * With this gate the phantom cannot arise: the model is never asked the
+   * question it hallucinated an answer to. Same shape as the removal fix in
+   * D-206 — **consult the record before acting on the world.**
+   *
+   * An ADD of an absent feature does not come through here at all. It uses a
+   * destination zone derived from anatomy, because segmenting a thing that does
+   * not exist yet is the request that has no honest answer.
+   */
+  present: boolean;
+  /** Where this region can anatomically be. Optional only where none exists. */
+  prior?: Mask;
+};
+
+/**
+ * The one way to get a mask from a model — with all three guards in the
+ * contract rather than in the callers, per the founder's ruling.
+ *
+ * Callers forget. This cannot: it returns `UsableMask`, which the paid render
+ * path demands and which nothing else produces.
+ */
+export async function requestMatte(
+  source: SegmentationSource,
+  request: MatteRequest,
+): Promise<UsableMask> {
+  if (!request.present) {
+    throw new MaskError(
+      `the record says this face has no ${request.region} — refusing to ask a `
+      + "segmentation model where it is",
+    );
+  }
+  const mask = await source.matte({
+    image: request.image,
+    region: request.region,
+    width: request.width,
+    height: request.height,
+  });
+  assertStride(mask, `${request.region} matte from ${source.id}`);
+  if (mask.width !== request.width || mask.height !== request.height) {
+    /* Never resize a mask to fit — that is a resample inside the one path that
+       promises not to have one (§5), and it moves every edge it touches. */
+    throw new MaskError(
+      `${source.id} returned a ${mask.width}x${mask.height} ${request.region} matte for a `
+      + `${request.width}x${request.height} master`,
+    );
+  }
+  const band = COVERAGE_BANDS[request.region];
+  const area = coverage(mask);
+  if (area < band.min || area > band.max) {
+    throw new MaskError(
+      `${source.id} returned a ${request.region} matte covering ${(area * 100).toFixed(2)}% — `
+      + `outside the ${(band.min * 100).toFixed(2)}–${(band.max * 100).toFixed(2)}% this region `
+      + "can plausibly be",
+    );
+  }
+  if (request.prior && overlapWith(mask, request.prior) < MIN_PRIOR_OVERLAP) {
+    throw new MaskError(
+      `${source.id} put most of its ${request.region} matte outside the anatomy — malformed`,
+    );
+  }
+  return assertUsable(mask, request.region);
+}
+
 export function assertUsable(mask: Mask, kind: RegionKind): UsableMask {
   const area = coverage(mask);
   if (area < MIN_COVERAGE) {

@@ -6747,6 +6747,60 @@ proving is that the face gets carved out. It is documented as fixtures-only, and
 it is not how a paying user's mask is made.
 
 
+## D-213 — Never ask a segmentation model an open question. Consult the record first.
+
+**The shop's negative control failed, and this is the answer. Founder ruling,
+2026-08-05.**
+
+Asked *"where are her eyeglasses?"* on a woman wearing none, a real segmenter
+returned a confident little blob — 0.1% of the frame. Our empty-mask refusal has
+a 0.05% floor, so **the invented mask sailed through the guard meant to catch a
+useless one.** They are different failures: an empty mask edits nothing, an
+invented mask **lands an edit somewhere nothing was.**
+
+Three stacked guards, and per the ruling they live in `SegmentationSource`'s
+contract — `requestMatte` — rather than in callers. Callers forget; a contract
+that returns `UsableMask`, which nothing else produces and which the paid path
+demands, cannot be skipped.
+
+**1. The record gate, and it is the only structural one.** The system already
+knows what this face wears: base-worn inventory, the presentation pin, the
+recipe. A segmentation request for eyewear is issued **only when the record says
+eyewear exists.** Under that gate the phantom cannot arise in production at all —
+the model is never asked the question it hallucinated an answer to. This is
+D-206's shape exactly: *consult the record before acting on the world.*
+
+An **add** of an absent feature never comes through here. It uses a destination
+zone derived from anatomy, because *"segment the glasses she isn't wearing"* is a
+request with no honest answer, and asking it is the bug.
+
+**2. Per-class coverage bands, not one global floor.** A global minimum cannot
+tell a 0.1% blob that is a plausible pair of brows from a 0.1% blob that is a
+hallucinated pair of glasses. Each region class carries the size range it can
+plausibly be, and outside it a mask is malformed. Seeded from the first shop's
+measurements with generous margins and **labelled provisional** — one specimen is
+a starting point, not a calibration.
+
+**3. Prior overlap.** A named-region mask must land mostly inside its own
+anatomy: glasses overlap the eye region, brows sit above the eyes. A mask that
+violates its own prior is refused as malformed.
+
+With the gate in place, guards two and three are belt-and-braces for the
+**degraded** segmentation case rather than the hallucinated one — a model having
+a bad day rather than a model being asked an impossible question. All three are
+free.
+
+### And the smaller lesson, from the same batch
+
+**A test proving a function throws proves only that a function throws.** The two
+money refusals had drivers and no call site, which is the shape of every inert
+control this program has catalogued. `assertUsable` is now the sole producer of
+`UsableMask`; the paid render path will demand one; **a caller who skips the
+check cannot compile.** That is invariant 7 solved by the type system rather than
+by discipline, and it is the strongest form it has taken here. A
+`@ts-expect-error` pins the door against a later refactor widening it back.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

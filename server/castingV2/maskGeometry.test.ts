@@ -16,6 +16,10 @@ import {
   subtractMask,
   unionMasks,
   type FaceGeometry,
+  overlapWith,
+  requestMatte,
+  type MatteRequest,
+  type SegmentationSource,
   type UsableMask,
   type Shape,
 } from "./maskGeometry";
@@ -337,5 +341,83 @@ describe("the geometry composes with the arithmetic", () => {
   it("hands the composite a mask of exactly one byte per pixel (D-210)", () => {
     const mask = rasterise(hairRegion(GEOMETRY), W, H);
     expect(mask.data.length).toBe(W * H);
+  });
+});
+
+/*
+  THE INVENTED-MASK GAP (D-213) — the shop's negative control, closed.
+
+  Asked for "eyeglasses" on a woman wearing none, a real segmenter returned a
+  confident 0.1% blob. That cleared the empty-mask floor, so the refusal that
+  catches an EMPTY mask would have passed an INVENTED one — and an invented mask
+  means an edit lands somewhere nothing was.
+
+  Three stacked guards, all in the contract rather than in callers.
+*/
+describe("a mask that was invented rather than found", () => {
+  const SIZE = 32;
+  const blank = () => Buffer.alloc(SIZE * SIZE, 0);
+  const patch = (fill: number, from: number, to: number): Mask => {
+    const data = blank();
+    for (let y = from; y < to; y += 1) for (let x = from; x < to; x += 1) data[y * SIZE + x] = fill;
+    return { data, width: SIZE, height: SIZE };
+  };
+  const sourceReturning = (mask: Mask): SegmentationSource => ({
+    id: "test-segmenter",
+    matte: async () => mask,
+  });
+  const request = (over: Partial<MatteRequest> = {}): MatteRequest => ({
+    image: Buffer.from("png"),
+    region: "eyewearFrames",
+    width: SIZE,
+    height: SIZE,
+    present: true,
+    ...over,
+  });
+
+  it("never asks where a thing is when the record says it is not there", async () => {
+    /* Guard one, and the only structural one: the phantom cannot arise because
+       the question is never put. */
+    let asked = false;
+    const source: SegmentationSource = {
+      id: "test-segmenter",
+      matte: async () => { asked = true; return patch(255, 8, 16); },
+    };
+    await expect(requestMatte(source, request({ present: false })))
+      .rejects.toThrow(/refusing to ask a segmentation model/);
+    expect(asked, "the model must not be called at all").toBe(false);
+  });
+
+  it("refuses a blob too small for its own class, though it clears the global floor", async () => {
+    /* The shop's exact failure: 0.1% coverage — above MIN_COVERAGE (0.05%) and
+       far below what a pair of glasses can plausibly be. */
+    const tiny = patch(255, 15, 16);
+    expect(coverage(tiny)).toBeGreaterThan(0.0005);
+    await expect(requestMatte(sourceReturning(tiny), request()))
+      .rejects.toThrow(/outside the .* this region can plausibly be/);
+  });
+
+  it("refuses a mask that ignores its own anatomy", async () => {
+    const elsewhere = patch(255, 2, 8);
+    const prior = patch(255, 20, 30);
+    await expect(requestMatte(sourceReturning(elsewhere), request({ prior })))
+      .rejects.toThrow(/outside the anatomy/);
+  });
+
+  it("refuses a matte at the wrong resolution rather than resizing it", async () => {
+    const wrong: Mask = { data: Buffer.alloc(16 * 16, 255), width: 16, height: 16 };
+    await expect(requestMatte(sourceReturning(wrong), request()))
+      .rejects.toThrow(/for a 32x32 master/);
+  });
+
+  it("returns a UsableMask when all three guards are satisfied", async () => {
+    /* 7x7 of 32x32 = 4.8%, inside the frames band of 0.4-6%. The first draft
+       used 8x8 and was refused at 6.25% — the guard catching the test's own
+       fixture is the guard working. */
+    const good = patch(255, 12, 19);
+    const prior = patch(255, 10, 24);
+    const mask: UsableMask = await requestMatte(sourceReturning(good), request({ prior }));
+    expect(mask.data.length).toBe(SIZE * SIZE);
+    expect(overlapWith(good, prior)).toBe(1);
   });
 });
