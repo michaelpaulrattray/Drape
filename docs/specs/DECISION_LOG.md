@@ -5646,6 +5646,11 @@ why.
 one for the ledger sentence, one for the filed class, because it was the
 agreement between those two that broke.
 
+**It never reached a customer.** Checked rather than assumed: production holds
+no refund row with the damage sentence and no variant filed under either fault
+class. All eight mislabelled rows were the dev bot's, which is throwaway trial
+material. The reader it misled was ours.
+
 
 ---
 
