@@ -6907,6 +6907,44 @@ eyes** — not noise, the nearest thing it could find. That is the concrete form
 D-213: an open question to a segmenter does not get a refusal, it gets the
 closest available answer.
 
+## D-217 — Frames and lens interiors: ask for the split, don't derive it.
+
+**2026-08-06. The glasses fixture's first problem, and it turned out to have a
+dedicated answer.**
+
+SAM 3 returns eyeglasses as ONE region — frames and lens interiors filled
+together. D-211 needs them apart and gives them opposite treatment: **frames are
+composited back verbatim** (the one part of a bespectacled face that must survive
+an eye edit byte-for-byte), while **lens interiors can never be copied**, because
+those pixels hold the old eye seen through glass, so they regenerate inside
+fixed frame-edge anchors.
+
+Two ways to get the split: ask the segmenter for the lenses alone and take
+`frames = union − lenses`, or derive the interiors geometrically as the holes
+enclosed by the rim. **Asking was tried first on purpose** — a derived hole-fill
+is an approximation standing in for a segmentation, which the fidelity law
+forbids while a real source is still on the board.
+
+Asking works, on both frame weights:
+
+| specimen | union | lenses | frames | lenses ⊂ union | eye ⊂ lenses |
+|---|---|---|---|---|---|
+| chunky rims | 1.37% @ 0.964 | 1.01% @ 0.942 | **0.36%** | 100.0% | 100.0% |
+| fine wire | 1.37% @ 0.963 | 1.23% @ 0.943 | **0.14%** | 100.0% | 99.8% |
+
+Three things had to hold at once, and the third is the one no coverage figure
+would have told us: the lens mask sits **entirely inside** the union, so both
+prompts describe the same object; the frames survive as a **connected rim** of
+plausible area rather than a halo of leftovers; and the **eye is inside the lens
+region**, which is the whole reason for the split, since eye edits have to land
+there.
+
+The frame areas are the evidence that the split is physical rather than
+arithmetic: **0.36% for thick rims against 0.14% for fine wire**, on masks whose
+unions are identical to two decimal places. The numbers track the glasses.
+
+Exhibit: `docs/specs/masked-editing/shop/evidence/EXHIBIT-4-frames-vs-lenses.jpg`.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

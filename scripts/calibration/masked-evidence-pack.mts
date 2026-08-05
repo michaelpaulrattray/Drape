@@ -115,4 +115,21 @@ await grid(
 );
 console.log("    SAM 3 region (no edge) | BiRefNet matte (whole subject) | composed r=4 | r=16 (bleeding onto the forehead)");
 
+/* --------------------------------------------- exhibit 4: frames vs lenses */
+const SPLIT = "output/masked/glasses-split";
+console.log("glasses — the split D-211 needs, asked for rather than derived");
+await grid(
+  [
+    await tinted(BESPECTACLED, `${SPLIT}/chunky-union.png`, CW, CH),
+    await tinted(BESPECTACLED, `${SPLIT}/chunky-lenses.png`, CW, CH),
+    await tinted(BESPECTACLED, `${SPLIT}/chunky-frames.png`, CW, CH),
+    await tinted(`${SPECIMENS}/wire-04.png`, `${SPLIT}/wire-union.png`, CW, CH),
+    await tinted(`${SPECIMENS}/wire-04.png`, `${SPLIT}/wire-lenses.png`, CW, CH),
+    await tinted(`${SPECIMENS}/wire-04.png`, `${SPLIT}/wire-frames.png`, CW, CH),
+  ],
+  3, CW, CH, `${OUT}/EXHIBIT-4-frames-vs-lenses.jpg`,
+);
+console.log("    per row: everything SAM 3 calls eyeglasses | lenses alone | frames = union − lenses");
+console.log("    row 1 chunky rims, row 2 fine wire");
+
 console.log(`\nevidence pack written to ${OUT}`);
