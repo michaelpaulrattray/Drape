@@ -72,4 +72,35 @@ dismissal.
 
 ## Production walk (D-174)
 
-Recorded after deploy — see the batch report.
+The founder's own account, production, one paid render — and it found a defect
+nothing else could have.
+
+**Walk 1, before the fix.** Typed `pinker` on an unrefined face → the question
+came back free with its three chips and nothing filed (`versions: 0`). **Tapped
+the chip** "the hair" → the render ran and landed in 40 seconds with the stack
+reading `Original` → `pinker — the hair`. The chip path works end to end.
+
+But: `stages observed: []`. **The wait treatment never appeared at all.**
+
+The cause was a deadlock in the query that feeds it. It polled only while
+`pending` was non-empty; pending is empty at the moment a refine is submitted,
+so nothing re-asked, so pending never became non-empty, so the loader never
+appeared — for the one person who is actually waiting. It would have shown only
+after a remount, which is the D-161 path and not the common one. Every test
+passed, both before and after, because the whole thing reads as correct in a
+diff. Fixed by also polling on `refine.isPending`, and pinned by an assertion.
+
+**Walk 2, after the fix and a deploy.** Same shape, and this time:
+
+```
+asked "pinker" -> chips ["the hair","the eyes","makeup"], versions 0
+tapped the chip: the hair
+  18s · "pinker — the hair" · being drawn · usually about half a minute · dots=true
+LANDED after 48s — stack: ["Original","pinker — the hair"]
+```
+
+Screenshot: `scratchpad/prod/02-wait-1.png` — the face soft and desaturated
+under the dot field, the two lines of type on it, the ghost slot beside the
+original holding the same treatment in miniature.
+
+Cost: two paid renders, 50 credits, inside the standing approval.
