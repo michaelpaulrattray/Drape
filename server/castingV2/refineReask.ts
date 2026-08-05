@@ -185,15 +185,14 @@ export function whichFacetReask(instruction: string): Reask {
   return {
     kind: "which-facet",
     /*
-      THE ANSWERS ARE IN THE SENTENCE, and the walk is why.
+      THE ANSWERS LEFT THE SENTENCE WHEN THE CHIPS ARRIVED.
 
-      On production the question read "…so I don't want to guess" and stopped —
-      true, and it left the box looking like the wrong place to reply. Until the
-      chips land, naming the three answers IS the affordance: a sentence that
-      says what to say is not a dead end.
+      It ended "Say the hair, the eyes, makeup" for exactly as long as there
+      were no chips — a stopgap by its own definition. With the options rendered
+      under it, naming them again is the sentence repeating the interface.
+      Typing still answers it; the box being live is what says so.
     */
-    question: `${asked} — which part? Nothing's been coloured yet, so I don't want to guess. `
-      + `Say ${COLOUR_BEARING.map((entry) => entry.label).join(", ")}.`,
+    question: `${asked} — which part? Nothing's been coloured yet, so I don't want to guess.`,
     options: COLOUR_BEARING.map((entry) => ({
       label: entry.label,
       resolves: `${asked} — ${entry.label}`,
@@ -346,10 +345,8 @@ export function didYouMeanReask(instruction: string, miss: { typed: string; mean
   const corrected = instruction.replace(new RegExp(miss.typed, "i"), miss.meant);
   return {
     kind: "did-you-mean",
-    /* Same reason as the sentence above: the reply has to be obvious without a
-       chip to press, and "yes" is the whole cost of not buying a render of a
-       misspelling. */
-    question: `Did you mean ${miss.meant}? Say yes, or type it again your way.`,
+    /* The chips carry the two answers now (D-180). "Yes" still works typed. */
+    question: `Did you mean ${miss.meant}?`,
     options: [
       { label: `Yes — ${miss.meant}`, resolves: corrected },
       /* Their word, unchanged, is always an answer. A question that can only be

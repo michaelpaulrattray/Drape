@@ -53,6 +53,25 @@ export type PendingRefine = {
   variantId: string;
   instruction: string;
   startedAt: string | Date;
+  /**
+   * How far along it is, from the row rather than from a guess (D-169).
+   *
+   * Two states and no third: `queued` is claimed-not-yet-sent, `dispatched` is
+   * the image model has it. After that there is silence until the picture
+   * lands, which is the whole reason this surface shows no percentage.
+   */
+  stage?: "queued" | "dispatched";
+};
+
+/**
+ * A question the panel is waiting on an answer to (D-178/179/180).
+ *
+ * The chips are the fast path and never the only one: each carries the exact
+ * label the server resolves, so tapping one and typing it are the same request.
+ */
+export type RefineReask = {
+  question: string;
+  options: ReadonlyArray<{ label: string; resolves: string }>;
 };
 
 /**
@@ -75,6 +94,7 @@ export function RefinePanel({
   onSelect,
   onRemove,
   outcome,
+  reask,
   onDismissOutcome,
 }: {
   variants: readonly RefineVariant[];
@@ -107,6 +127,14 @@ export function RefinePanel({
    * wall is worthless at 2.1 seconds. This stays until dismissed.
    */
   outcome?: string | null;
+  /**
+   * The answers to the outstanding question, as chips (D-180).
+   *
+   * Present only while a question is open. The sentence itself arrives through
+   * `outcome`, because a question is an outcome that happens to end in a
+   * question mark — same frame, same voice, same dismiss.
+   */
+  reask?: RefineReask | null;
   onDismissOutcome?: () => void;
 }) {
   const [instruction, setInstruction] = useState("");
@@ -193,8 +221,15 @@ export function RefinePanel({
           {pending.map((entry) => (
             <div className="dpc-refine__step" key={entry.variantId}>
               <div className="dpc-refine__pick dpc-refine__pick--ghost" aria-live="polite">
-                <div className="dpc-refine__ghost">
-                  <span className="dp-chrome">Refining…</span>
+  <div className="dpc-refine__ghost">
+                  {/*
+                    NOT AN EMPTY SLOT (D-169). It holds the base under the same
+                    treatment the picture above is wearing — small and dim — so
+                    the stack reads as continuous and the version being made has
+                    somewhere it obviously belongs. The word "Refining…" left
+                    with the box: the picture is narrating now.
+                  */}
+                  {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
                 </div>
                 <span>{entry.instruction}</span>
               </div>
@@ -228,6 +263,30 @@ export function RefinePanel({
           >
             ×
           </button>
+        </div>
+      ) : null}
+
+      {/*
+        THE ANSWERS, AND THEY ARE THE TYPED PATH (D-180).
+
+        A chip submits its own LABEL, which is exactly what someone typing the
+        answer would send — so the two routes are one code path on the server
+        and neither can drift from the other. The box stays live beside them:
+        chips are the fast way to answer, never the only way.
+      */}
+      {reask && reask.options.length > 0 ? (
+        <div className="dpc-refine__answers">
+          {reask.options.map((option) => (
+            <button
+              key={option.label}
+              type="button"
+              className="dpc-refine__answer"
+              disabled={busy}
+              onClick={() => onRefine(option.label)}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
       ) : null}
 

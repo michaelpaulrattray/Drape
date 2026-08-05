@@ -146,6 +146,10 @@ export default function CastingSheet() {
     the outcome sentence — and it must not schedule a paint of its own.
   */
   const pendingReask = useRef<string | null>(null);
+  /* The answers, which DO render: chips under the sentence (D-180). */
+  const [reaskOptions, setReaskOptions] = useState<
+    ReadonlyArray<{ label: string; resolves: string }> | null
+  >(null);
   /* Balance context for the cost line — the question a price actually raises. */
   const balance = trpc.credits.getBalance.useQuery(undefined, {
     staleTime: 30_000,
@@ -759,6 +763,24 @@ export default function CastingSheet() {
       refetchInterval: (query) => (query.state.data?.pending?.length ? 4000 : false),
     },
   );
+
+  /*
+    The refinement the picture narrates while it runs (D-169).
+
+    Newest first, because the newest is the one they just asked for; the others
+    are counted rather than listed, since a picture cannot narrate two things
+    and pretending otherwise would be the overclaim this whole treatment avoids.
+  */
+  const pendingForViewer = variants.data?.pending ?? [];
+  const narrating = pendingForViewer.at(-1) ?? null;
+  const viewerWait = narrating
+    ? {
+      instruction: narrating.instruction,
+      stage: narrating.stage ?? ("queued" as const),
+      extra: pendingForViewer.length - 1,
+    }
+    : null;
+
 
   /*
     THE LATE LANDER ANNOUNCES ITSELF (D-161).
@@ -1483,6 +1505,19 @@ export default function CastingSheet() {
         <CandidateViewer
           frames={viewerFrames}
           index={viewerIndex}
+          /*
+            THE PICTURE BECOMES THE LOADER (D-169), from SERVER truth.
+
+            Drawn from the same `pending` list the ghost chips are, so it
+            survives closing and reopening the sheet exactly as they do (D-161)
+            — a wait that vanished when the panel unmounted is the defect that
+            got one edit bought twice.
+
+            The newest one narrates. The picture can only be one thing at a
+            time, so with more than one running it means "this face has work
+            out" and the count says the rest.
+          */
+          wait={viewerWait}
           onIndexChange={(next) => setViewerCandidateId(viewerFrames[next]?.candidateId ?? null)}
           onClose={() => setViewerCandidateId(null)}
           /*
@@ -1511,11 +1546,13 @@ export default function CastingSheet() {
               */
               busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
               outcome={refineOutcome}
+              reask={reaskOptions ? { question: refineOutcome ?? "", options: reaskOptions } : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a
                 // fresh instruction, not a late answer to something gone from
                 // the screen.
                 pendingReask.current = null;
+                setReaskOptions(null);
                 setRefineOutcome(null);
               }}
               onRefine={(instruction) => {
@@ -1530,6 +1567,7 @@ export default function CastingSheet() {
                   dismissed means until superseded, too.
                 */
                 setRefineOutcome(null);
+                setReaskOptions(null);
                 /*
                   THE ANSWER GOES BACK THROUGH THE BOX (D-180).
 
@@ -1560,6 +1598,7 @@ export default function CastingSheet() {
                     if (result?.kind === "asked" && result.reask) {
                       pendingReask.current = instruction;
                       setRefineOutcome(result.reask.question);
+                      setReaskOptions(result.reask.options);
                       return;
                     }
                     /* Bought HERE, so its arrival is not a late lander (D-161). */

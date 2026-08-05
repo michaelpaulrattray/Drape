@@ -664,6 +664,15 @@ export const castingV2Router = router({
               : []).at(-1)
             ?? "",
           startedAt: variant.createdAt,
+          /*
+            THE ONLY PROGRESS THERE IS (D-169).
+
+            Two real states, so the wait can say "in line" and then "being
+            drawn" and be telling the truth. Everything after dispatch is
+            silence until the picture lands, which is why there is no third
+            state and no percentage.
+          */
+          stage: variant.status,
         })),
         variants: variants.map((variant) => ({
           variantId: variant.publicId,

@@ -56,12 +56,51 @@ export type ViewerFrame = {
   candidateId?: string;
 };
 
+/**
+ * A refinement running on the face being shown (D-169).
+ *
+ * The picture IS the loader, because every refinement is `edit(this picture,
+ * these words)` — it is the input, not decoration, and softening it says the
+ * only true thing there is to say while nothing else is known.
+ *
+ * `stage` is the row's own state, never a guess. There is no percentage here
+ * and there is no elapsed counter: between dispatch and landing the client
+ * receives nothing at all, so anything that appeared to measure would be
+ * measuring nothing.
+ */
+export type ViewerWait = {
+  /** Their words, verbatim — the record's own text (D-172). */
+  instruction: string;
+  stage: "queued" | "dispatched";
+  /** How many are running, when more than one is (the picture narrates none). */
+  extra?: number;
+};
+
+/** The two states, in words a person uses. */
+const STAGE_WORDS: Record<ViewerWait["stage"], string> = {
+  queued: "in line",
+  dispatched: "being drawn",
+};
+
+/**
+ * How long a refine usually takes — MEASURED, and a copy constant on purpose.
+ *
+ * From the last 64 successful refines on production, 2026-08-05: median 31s,
+ * a quarter inside 25s, nine in ten inside 60s. It is written here rather than
+ * queried because a number that moves on its own is a number nobody has
+ * checked; if real latency drifts, re-measuring and editing this line is a
+ * deliberate act. The two-minute supervised-wait sentence in the panel is what
+ * takes it back on a slow day.
+ */
+const TYPICAL_WAIT = "usually about half a minute";
+
 export function CandidateViewer({
   frames,
   index,
   onIndexChange,
   onClose,
   below,
+  wait,
 }: {
   /** The set being walked. One image is a set of one. */
   frames: readonly ViewerFrame[];
@@ -78,6 +117,8 @@ export function CandidateViewer({
    * viewer the room and the package could no longer use.
    */
   below?: React.ReactNode;
+  /** A refinement running on this face — the picture becomes its loader. */
+  wait?: ViewerWait | null;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const frame = frames[index] ?? frames[0];
@@ -178,8 +219,34 @@ export function CandidateViewer({
         </button>
       </div>
 
-      <figure className="dpc-viewer__frame">
-        <img src={frame.url} alt={frame.personaLine ?? frame.label} />
+      <figure className="dpc-viewer__frame" data-wait={wait ? "true" : "false"}>
+        {/*
+          The picture and everything laid over it share one box, so the dots and
+          the type land on the IMAGE rather than on the letterboxing beside it.
+          An overlay measured against the figure would drift the moment a
+          portrait and a landscape frame sat in the same viewer.
+        */}
+        <span className="dpc-viewer__plate">
+          <img src={frame.url} alt={frame.personaLine ?? frame.label} />
+          {wait ? (
+            <>
+              <span className="dpc-viewer__dots" aria-hidden="true" />
+              <span className="dpc-viewer__falloff" aria-hidden="true" />
+              <span className="dpc-viewer__wait" role="status">
+                <span className="dpc-viewer__waitSaid">{wait.instruction}</span>
+                <span className="dpc-viewer__waitMeta">
+                  <span>{STAGE_WORDS[wait.stage]}</span>
+                  <span className="dpc-viewer__waitTypical">{TYPICAL_WAIT}</span>
+                  {wait.extra ? (
+                    <span className="dpc-viewer__waitTypical">
+                      {`and ${wait.extra} more running`}
+                    </span>
+                  ) : null}
+                </span>
+              </span>
+            </>
+          ) : null}
+        </span>
         <figcaption className="dpc-viewer__caption">
           <span className="dp-chrome">{frame.label}</span>
           {frame.personaLine ? <span>{frame.personaLine}</span> : null}

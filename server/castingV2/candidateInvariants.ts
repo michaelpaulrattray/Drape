@@ -18,6 +18,30 @@
  * The alarm takes the roll alarm's shape (`rollService`'s
  * PROVIDER ACCOUNT UNUSABLE) for the same reason that one does — it says *stop
  * and look at the plumbing*, not "something was wrong with this Cast".
+ *
+ * # The two rows, diagnosed and cleared — 2026-08-05
+ *
+ * Candidates 236 and 237 (one roll, one session, one batch), signed to living
+ * Casts 247 and 246, `expired` with reason `retention`. **Legacy, not a live
+ * defect**, and the evidence is a demonstration rather than archaeology:
+ *
+ *   - **Both writers refuse, run against the real schema.** The sweep's own
+ *     UPDATE, predicates and all, touched **0 rows**; the Sign claim's UPDATE
+ *     claimed **0 rows**. Neither order is producible today.
+ *   - **The guard that was missing is the Sign claim's `status = 'ready'`
+ *     fence**, added 2026-08-02 15:22 (`dbac7383`) — inside the window these
+ *     rows come from. The sweep's `signedCastId IS NULL` exemption is older
+ *     than both rows (2026-07-31, `37eed80b`) and was already present in the
+ *     revision that introduced `expiredReason`.
+ *   - **Their timestamps cannot order the two writes.** Every one predates the
+ *     D-112 skew fix (2026-08-03), so a story built from them would be a story.
+ *   - **Production has never held the state**, checked the same day.
+ *   - **Blast radius nil.** Both objects were still live in the bucket and the
+ *     cleanup queue had never named them — `expired` never got as far as
+ *     costing anything.
+ *
+ * The rows were corrected to `signed` with no expiry reason, which is what they
+ * actually are. The tripwire reads 0 on both databases.
  */
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 

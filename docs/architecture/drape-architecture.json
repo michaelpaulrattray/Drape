@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "371cb4140450a571"
+    "sourceFingerprint": "7c58860277f4bfa9"
   },
   "domains": [
     {
@@ -7579,6 +7579,10 @@
     {
       "id": "test:client/src/features/castingV2/pronounGrammar.test.ts",
       "path": "client/src/features/castingV2/pronounGrammar.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/refineWait.test.ts",
+      "path": "client/src/features/castingV2/refineWait.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/retentionCopy.test.ts",

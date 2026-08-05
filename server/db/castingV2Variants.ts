@@ -502,6 +502,14 @@ export async function listPendingVariants(
   instructions: unknown;
   requestText: string | null;
   createdAt: Date;
+  /**
+   * How far along it actually is — the only progress this pipeline has.
+   *
+   * `queued` means claimed and not yet handed to the image model; `dispatched`
+   * means the model has it. There is nothing after that until the picture
+   * lands, which is exactly why the surface says two words and no percentage.
+   */
+  status: "queued" | "dispatched";
 }>> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();
@@ -512,6 +520,7 @@ export async function listPendingVariants(
       /* What they TYPED — a removal's sentence is not in the recipe (D-163). */
       requestText: castingCandidateVariants.requestText,
       createdAt: castingCandidateVariants.createdAt,
+      status: castingCandidateVariants.status,
     })
     .from(castingCandidateVariants)
     .innerJoin(castingCandidates, and(
@@ -524,7 +533,12 @@ export async function listPendingVariants(
       inArray(castingCandidateVariants.status, ["queued", "dispatched"]),
     ))
     .orderBy(asc(castingCandidateVariants.id));
-  return rows;
+  return rows.map((row) => ({
+    ...row,
+    /* The column is the whole variant enum; this read is fenced to two of them
+       in the WHERE, so the narrowing is a fact rather than a cast. */
+    status: row.status === "dispatched" ? ("dispatched" as const) : ("queued" as const),
+  }));
 }
 
 /**
