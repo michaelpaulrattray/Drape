@@ -123,8 +123,22 @@ const CATEGORIES: Category[] = [
       never assert an absent thing. Flagged to the founder as a one-line choice
       rather than decided quietly.
     */
-    whole: "anything worn in the reference — glasses, earrings, studs, a chain — still worn "
-      + "and unchanged",
+    /*
+      AND THE EXAMPLES CAME OUT (D-183).
+
+      The clause used to read "anything worn in the reference — glasses,
+      earrings, studs, a chain — still worn and unchanged", and the note above
+      had already identified the risk without spotting that the example list IS
+      the risk. On the founder's bare-eared candidate, "remove earrings"
+      produced a prompt whose ONLY mention of earrings was this list — removal
+      is subtraction, so the edits lane says nothing about them at all — and the
+      render came back wearing a hoop and a stud that were never in the base.
+
+      Naming a category invites it. The clause keeps its whole intent by
+      pointing at the photograph and naming nothing.
+    */
+    whole: "anything worn in the reference photograph still worn and unchanged, and nothing "
+      + "worn that is not in it",
     siblings: { [f("statedAccessories")]: "anything else worn in the reference unchanged" },
   },
 ];

@@ -69,19 +69,25 @@ describe("the preservation clause names everything except what changes", () => {
   });
 
   /*
-    ACCESSORIES ARE PIXEL-CONDITIONAL (D-166 as amended).
+    ACCESSORIES ARE PIXEL-CONDITIONAL (D-166 as amended), AND THE EXAMPLES CAME
+    OUT (D-183).
 
     It cannot name "her glasses" — brief-stated accessories never reach the
     candidate's resolved identity, and the licence is failure-to-appear, so
-    naming them against a face that has none would invite the model to ADD
-    them. Phrasing it against what the REFERENCE shows achieves the intent and
-    can never assert an absent thing.
+    naming them against a face that has none would invite the model to ADD them.
+
+    The first version of this test asserted the clause CONTAINED "glasses",
+    which is the same mistake one level down: on the founder's bare-eared
+    candidate, "remove earrings" produced a prompt whose only mention of
+    earrings was this clause's example list, and the render came back wearing a
+    hoop and a stud that were never in the base. Naming a category invites it.
   */
-  it("protects worn things by pointing at the reference, never by naming them", () => {
+  it("protects worn things by pointing at the reference, never by naming any", () => {
     const { clause } = of({ eyeColour: "green" });
-    expect(clause).toContain("anything worn in the reference");
-    expect(clause).toContain("glasses");
-    expect(clause).not.toContain("her glasses");
+    expect(clause).toContain("anything worn in the reference photograph");
+    /* Not one example. A removal's prompt must not contain the word for the
+       thing being removed anywhere except where it is being removed. */
+    expect(clause).not.toMatch(/glasses|earrings|studs|a chain/);
   });
 
   /*

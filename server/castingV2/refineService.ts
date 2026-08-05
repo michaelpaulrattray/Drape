@@ -1071,6 +1071,11 @@ export async function refineCandidate(
         facet,
         bytes: image.bytes,
         contentType: image.contentType,
+        /* What this render was told to produce, so the read-back can be
+           checked against it rather than describing whatever turned up. */
+        asked: currentIdentity
+          ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
+          : null,
       });
       if (caption) capturedCaptions[facet] = caption;
     }

@@ -86,7 +86,27 @@ const SYSTEM_PROMPT = [
   "the crown and fringe, length falling past the collar at the back'. Not 'dark hair' —",
   "'blue-black, cool-toned, slightly deeper at the roots'.",
   "",
-  'Reply with JSON: {"caption": "..."} and nothing else. Under 160 characters.',
+  "",
+  /*
+    THE CORROBORATION (D-183), and it is the difference between a memory and a
+    lie repeated forever.
+
+    A caption is pinned into every later render as ALREADY TRUE. So a caption
+    written after an edit that did NOT take pins the failure: the founder's face
+    carried "EYE COLOUR: pinker" in the edits lane and "ALREADY TRUE … Deep
+    brown irises" in the pins, in one prompt, and the model resolved that
+    contradiction differently on every render — pink eyeshadow once, nothing the
+    next time.
+
+    So the reader is asked the second question too. Not to judge quality: only
+    whether the thing it was told to look for is visibly there.
+  */
+  "You are also told what the edit ASKED for. Answer honestly whether that ask is visibly",
+  "true in this photograph. If the asked-for change is not there, say so — a description of",
+  "what is there instead would be recorded as if it had been wanted.",
+  "",
+  'Reply with JSON: {"caption": "...", "matches": true|false} and nothing else.',
+  "The caption is under 160 characters.",
 ].join("\n");
 
 /**
@@ -100,6 +120,13 @@ export async function captionRealization(input: {
   facet: Facet;
   bytes: Buffer;
   contentType: string;
+  /**
+   * What the edit asked for, so the read-back can be checked against it.
+   *
+   * Absent means there is nothing to corroborate, and the caption is taken as
+   * written — right for a facet that was not the subject of an instruction.
+   */
+  asked?: string | null;
   engine?: TextEngine;
   signal?: AbortSignal;
 }): Promise<string | null> {
@@ -109,7 +136,10 @@ export async function captionRealization(input: {
   try {
     const reply = await engine.complete({
       system: SYSTEM_PROMPT,
-      user: `Describe this person's ${heading.toLowerCase()}.${extraAsk(input.facet)}`,
+      user: [
+        `Describe this person's ${heading.toLowerCase()}.${extraAsk(input.facet)}`,
+        ...(input.asked ? [`The edit asked for: ${input.asked}`] : []),
+      ].join("\n"),
       images: [{ bytes: input.bytes, contentType: input.contentType }],
       json: true,
       temperature: 0.1,
@@ -119,6 +149,21 @@ export async function captionRealization(input: {
     const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
     const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
     if (!caption) return null;
+    /*
+      NO PIN UNLESS IT CORROBORATES (D-183).
+
+      Conservative on purpose. An unconfirmed caption is simply not written, and
+      the cost of that is the drift this mechanism exists to reduce — real, but
+      it decays. The cost of the other default is a prompt that argues with
+      itself in every render from here on, and that one does not decay.
+    */
+    if (input.asked && parsed?.matches !== true) {
+      log.warn(
+        { facet: input.facet, asked: input.asked, saw: caption },
+        "[realizationCaption] the edit is not visible in the render — refusing to pin what is there instead",
+      );
+      return null;
+    }
     /*
       Scrubbed like every other free text that enters a paid prompt. This one is
       MODEL-authored rather than user-authored, which makes it the likeliest

@@ -5313,6 +5313,88 @@ program has run verified a fresh candidate, and a fresh candidate is the one
 shape that cannot exhibit this defect.
 
 
+## D-183 — Realization drift: the pin that lies, and the clause that invites.
+
+**Founder finding, 2026-08-05, verification pass round 2.** Successive renders
+re-realized details nobody had edited: different earrings each time, pink irises
+that became pink eyeshadow and then vanished, hair pinned up in the base coming
+back worn down, sparkle appearing on jewellery during an eye edit.
+
+**The first question — are captions read, or written and never read? They are
+read.** `refineService` carries the predecessor's captions forward, drops the
+ones whose facet this edit rewrites, and composes them into the prompt as
+*"These are ALREADY TRUE of this person and must be reproduced exactly as
+described."* D-159's memory is live. The drift has two other parents.
+
+### Class A — the pin that lies
+
+The stored prompt of the founder's own render, in one string:
+
+> Edit this photograph … **EYE COLOUR: pinker.** … These are ALREADY TRUE of
+> this person and must be reproduced exactly as described, not approximated and
+> not re-interpreted: **EYE COLOUR: Deep brown irises with a slight reddish
+> glare visible behind the glasses lenses.**
+
+The read-back after *"pinker — the eyes"* described **deep brown irises** —
+because the edit had not taken. That description was pinned, and from then on
+every render was told to make the eyes pinker *and* that the eyes are already
+deep brown. The model resolved the contradiction differently each time; pink
+eyeshadow was it choosing somewhere the pink was still allowed.
+
+**A caption is a fact handed to the future, so it may only record a render that
+CORROBORATES its instruction.** The read-back is now told what was asked and
+answers whether it is visibly true; an unconfirmed realization is not pinned.
+Conservative on purpose — a missing caption costs precision on the next render
+and decays, while a wrong one argues with the instruction in every render from
+here on and does not.
+
+### Class B — the clause that invites
+
+The preservation tail read *"anything worn in the reference — glasses,
+earrings, studs, a chain — still worn and unchanged"*. D-166's own note had
+already worried that naming a thing invites the model to add it, and then named
+four.
+
+On the founder's **bare-eared** candidate, *"remove earrings"* produced a prompt
+whose only mention of earrings anywhere was that example list — removal is
+subtraction, so the edits lane says nothing about them at all — and the render
+came back wearing a hoop and a stud that are not in the base. **Verified against
+the base image**, so this is invention on a removal, not an honest revert.
+
+The clause now points at the photograph and names nothing.
+
+### Class C — the unpinned base, still open
+
+Realizations the BASE established but no instruction ever wrote — the hair worn
+up, the exact glasses, how the ears sit — have no caption, because captions are
+captured only for facets an edit touched. The tail asks for them in words
+(*"the hair worn the same way"*), and words lose to a strong instruction. This
+is the founder's own proposal — capture the accepted predecessor's realization
+for unedited-but-visible axes and pin those too — and it is the right shape, but
+it is a read-back of the whole face rather than of one facet, so it costs a
+vision call per render and wants its own pass. **Queued, not shipped.**
+
+### And full chain-referencing stays rejected — with the tradeoff written down
+
+The founder's instinct, arrived at independently: give every render the previous
+image as well, so the pixels carry themselves forward.
+
+**The reason it stays rejected is quality compounding.** Recipe v3's whole
+argument is that every variant is `edit(the sharp original, instructions 1..N)`,
+so there is no chain of pixels for softness, drift or artefacts to accumulate
+along — the tenth refinement is exactly as close to the face the user chose as
+the first. Under v2, conditioning on the parent's pixels made "copper" on
+already-copper hair brighten each time: re-dyeing dyed hair. Chain-referencing
+buys detail preservation at the price of a face that degrades the more you work
+on it, which is precisely backwards for a surface whose job is grooming someone
+toward Sign.
+
+**What the words cost instead:** a caption is 160 characters describing a facet,
+and a facet nobody captioned is re-realized. So the honest trade is *pixels
+compound error, words lose detail* — and this program buys the loss of detail
+and pays it down with better captions (Class A, and Class C when it ships).
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

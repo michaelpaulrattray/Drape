@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "428952dec4b5cc89"
+    "sourceFingerprint": "969fd87abcc6ec62"
   },
   "domains": [
     {
@@ -8233,6 +8233,10 @@
     {
       "id": "test:server/castingV2/promptGuards.test.ts",
       "path": "server/castingV2/promptGuards.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/realizationCaption.test.ts",
+      "path": "server/castingV2/realizationCaption.test.ts"
     },
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",
