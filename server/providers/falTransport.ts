@@ -51,8 +51,32 @@ export function classifyFalHttp(status: number, body: string): ProviderFailureCl
   return "unknown";
 }
 
+/**
+ * HOW LONG A GENERATED FACE SITS ON SOMEONE ELSE'S CDN (D-208).
+ *
+ * fal keeps generated media for **at least 7 days** by default. We do not need
+ * seven days: the transport downloads the bytes into our own R2 within the same
+ * job, so the CDN copy is transient convenience and every second past that is a
+ * picture of a person living somewhere we do not control.
+ *
+ * An hour, not a minute, and the margin is deliberate — the job's own deadline
+ * is 300s, the queue path polls for a result after that, and a retry re-reads
+ * the same URL. A lifetime shorter than the work that consumes it would turn a
+ * privacy setting into an intermittent download failure.
+ *
+ * Format verified against fal's published header documentation rather than
+ * assumed (D-202): the value is a JSON **string**, not an object.
+ */
+const CDN_LIFETIME_SECONDS = 3600;
+
 export function falHeaders(apiKey: string) {
-  return { Authorization: `Key ${apiKey}`, "Content-Type": "application/json" };
+  return {
+    Authorization: `Key ${apiKey}`,
+    "Content-Type": "application/json",
+    "X-Fal-Object-Lifecycle-Preference": JSON.stringify({
+      expiration_duration_seconds: CDN_LIFETIME_SECONDS,
+    }),
+  };
 }
 
 /**

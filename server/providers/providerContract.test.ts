@@ -148,6 +148,40 @@ describe("Fal identity engine", () => {
     expect(called, "the ceiling must be enforced before paying to discover it").toBe(false);
   });
 
+  /*
+    A CONTROL THAT IS NOT INVOKED DOES NOT EXIST (invariant 7, and D-208).
+
+    The retention setting is one header on one request, which is exactly the
+    shape of protection this program has repeatedly written, documented, ticked
+    off and never called. So the assertion is on the SUBMIT itself — that the
+    header goes out, and that its value parses to the short lifetime rather than
+    to whatever a later edit leaves behind.
+  */
+  it("asks fal to expire the generated face within the hour", async () => {
+    let submitInit: RequestInit | undefined;
+    stubFetch((url, init) => {
+      if (url.endsWith("/status")) {
+        return new Response(JSON.stringify({ status: "COMPLETED" }), { status: 200 });
+      }
+      if (url.includes("/requests/") && !url.endsWith("/cancel")) {
+        return new Response(
+          JSON.stringify({ images: [{ url: "https://fal.example/out.png", content_type: "image/png" }] }),
+          { status: 200 },
+        );
+      }
+      if (url.startsWith("https://fal.example")) return new Response(PNG_BYTES, { status: 200 });
+      submitInit = init;
+      return new Response(JSON.stringify({ request_id: "req-lifecycle" }), { status: 200 });
+    });
+
+    await engine().editWithReferences(request);
+
+    const sent = (submitInit?.headers ?? {}) as Record<string, string>;
+    const preference = sent["X-Fal-Object-Lifecycle-Preference"];
+    expect(preference, "the retention header must actually be sent").toBeTruthy();
+    expect(JSON.parse(preference).expiration_duration_seconds).toBe(3600);
+  });
+
   it("walks submit → status → result and downloads the bytes itself", async () => {
     const seen: string[] = [];
     stubFetch((url) => {

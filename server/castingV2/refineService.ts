@@ -174,8 +174,22 @@ const EDIT_PROSE = {
   hairTexture: (value: HairTexture) => `${value} hair — ${HAIR_TEXTURE_RENDER[value]}`,
 };
 
-/** How many refinements one candidate may carry. */
-const MAX_INSTRUCTIONS = 12;
+/**
+ * How many refinements one candidate may carry (D-207, founder ruling).
+ *
+ * **Twenty-four, and the completeness guard is the real limit.** Twelve was a
+ * guess at where a recipe stops being coherent, and it turned into a wall a
+ * paying user hit while grooming a face they meant to sign — at which point the
+ * only advice the product had was *undo something to make room*, which is not an
+ * answer to give someone who has paid for every step.
+ *
+ * Weighed before raising it: D-195 measured depth-softness as real but
+ * imperceptible at these depths, and D-191 keeps every render anchored to the
+ * sharp original rather than to its predecessor, so length costs recipe
+ * coherence rather than picture quality. The masked workstream weakens the
+ * argument further — a masked edit does not grow the full-frame recipe at all.
+ */
+const MAX_INSTRUCTIONS = 24;
 
 export type RefineInput = {
   userId: number;
@@ -837,10 +851,10 @@ export async function refineCandidate(
   /*
     THE CEILING GATES THE RENDER, NOT THE BOX (D-163).
 
-    It used to fire before the instruction was even read, so a face carrying its
-    twelfth refinement could not be UNDONE — the one thing someone at the
-    ceiling is most likely to want, refused for being a refinement it is not.
-    Only a chain that grows is capped.
+    It used to fire before the instruction was even read, so a face at the
+    ceiling could not be UNDONE — the one thing someone at the ceiling is most
+    likely to want, refused for being a refinement it is not. Only a chain that
+    grows is capped.
   */
   if (existing.length >= MAX_INSTRUCTIONS && instructions.length > priorInstructions.length) {
     throw new TRPCError({

@@ -696,6 +696,55 @@ describe("a removal with no removal word is re-read as an edit", () => {
   });
 });
 
+/*
+  THE CEILING (D-207, founder ruling 2026-08-05: twelve became twenty-four).
+
+  There was no driver at all before this, which is how a number nobody had
+  re-examined stayed a wall for a paying user. Three things are pinned: where it
+  now sits, that it still gates a chain that GROWS rather than the box, and that
+  hitting it costs nothing.
+*/
+describe("how many refinements one face can carry", () => {
+  /* A real chain: each step adds one accessory, so the history is readable and
+     nothing is dropped — the cap is what must fire, not the containment guard. */
+  const chainOf = (length: number) => Array.from({ length }, (_, index) => {
+    const steps = Array.from({ length: index + 1 }, (_, step) => `add charm ${step + 1}`);
+    const stepDeltas = steps.map((_, step) => ({
+      free: { statedAccessories: `charm ${step + 1}` },
+    }));
+    return {
+      id: 100 + index,
+      publicId: `variant-${index + 1}`,
+      status: "ready",
+      imageKey: `casting-v2/variants/v${index + 1}.png`,
+      instructions: steps,
+      stepDeltas,
+      deltas: { free: { statedAccessories: `charm ${index + 1}` } },
+      internalPrompt: {},
+    };
+  });
+
+  it("accepts a twenty-fourth refinement, which twelve used to refuse", async () => {
+    variantRows = chainOf(23);
+    candidateRow.selectedVariantPublicId = "variant-23";
+    const result = await refineCandidate(
+      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
+      { ...input, instruction: "make her eyes green" },
+    );
+    expect(result.variantId).toBeTruthy();
+  });
+
+  it("refuses the twenty-fifth, for free", async () => {
+    variantRows = chainOf(24);
+    candidateRow.selectedVariantPublicId = "variant-24";
+    await expect(refineCandidate(
+      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
+      { ...input, instruction: "make her eyes green" },
+    )).rejects.toThrow(/as many refinements as it can carry/);
+    expect(ledger.charges).toHaveLength(0);
+  });
+});
+
 describe("the order, and the money", () => {
   it("claims, runs, charges, generates, lands — in that order", async () => {
     await refineCandidate(greenEyes, input);

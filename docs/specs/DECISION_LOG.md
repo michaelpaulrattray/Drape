@@ -6339,8 +6339,14 @@ inconsistent; it is used here with a floor and a majority-of-three, which is the
 best this program currently has, not a guarantee.
 
 **Cost, honestly.** Two renders per refine instead of one, plus whatever the
-reasserted misses cost. Whether that is worth a credit is a product question,
-not a measurement, and it is the founder's.
+reasserted misses cost.
+
+**PRICING DEFERRED — founder ruling, 2026-08-05.** Not a queue item and not a
+blocker: masks may turn the refresh into a rare maintenance event rather than a
+routine one, and pricing a routine cost for something that happens twice a month
+would be answering the wrong question. **It gets priced if and when it ships,
+with real frequency data.** This is the open product call attached to (e′), and
+it stays attached to (e′) rather than sitting in a queue.
 
 **Specimens handed over before anything moves** (standing rider):
 `output/quality-unit/arm-e-prime/faces.png` — base | drifted | restored, four
@@ -6417,6 +6423,76 @@ interim.** The masked workstream answers it properly by *looking* — a
 segmentation pass knows whether there are glasses on the face without asking
 anyone's memory. When that lands, this consultation becomes a fallback rather
 than the answer.
+
+
+## D-207 — The refinement ceiling is 24. The completeness guard is the real limit.
+
+**Founder ruling, 2026-08-05, closing the cap question parked since D-195.**
+
+Twelve was a guess at where a recipe stops being coherent, and it became a wall
+a paying user hit while grooming a face they meant to sign. The only advice the
+product had at that wall was *undo something to make room*, **which is not an
+answer to give someone who has paid for every step.**
+
+**Weighed before raising it**, because the reason for a low ceiling was picture
+quality and that reason had been measured away:
+
+- **D-195** — depth-softness is real and imperceptible at these depths: twelve
+  points across six edits, below the founder's own eye.
+- **D-191** — every render is anchored to the sharp original, not to its
+  predecessor, so length costs recipe *coherence* rather than picture quality.
+- **The masked workstream weakens it further.** A masked edit does not grow the
+  full-frame recipe at all, so in the world being built now the ceiling governs
+  a quantity that has stopped accumulating.
+
+What remains is completeness: a recipe long enough that the composer cannot
+state all of it clearly. That guard is real, it is content-shaped rather than
+count-shaped, and it should be the thing that stops someone — not an integer.
+
+**Shipped with the driver it never had.** There was no test on the ceiling at
+all, which is how a number nobody had re-examined stayed a wall. Three things
+are now pinned: where it sits, that it still gates a chain that GROWS rather
+than the box (an undo at the ceiling must always work — D-163), and that hitting
+it costs nothing.
+
+## D-208 — A generated face expires from fal's CDN in an hour, not a week.
+
+**Founder ruling on the fal retention answer, closing M3 §9.**
+
+fal's answer was concrete rather than a Trust-Center gesture: generated media is
+retained **at least 7 days** by default; lifetime is controllable per request via
+`X-Fal-Object-Lifecycle-Preference`; stored payloads and CDN outputs are
+deletable through the Platform API; and `X-Fal-Store-IO: 0` avoids storing
+request IO at all.
+
+**(a) Every image request now asks for a one-hour lifetime.** The transport
+downloads the bytes into our own R2 inside the same job, so the CDN copy is
+transient convenience — and every second past that is a picture of a person
+living somewhere we do not control. An hour rather than a minute is deliberate
+margin: the job deadline is 300s, the queue path polls for a result after that,
+and a retry re-reads the same URL. A lifetime shorter than the work consuming it
+would turn a privacy setting into an intermittent download failure.
+
+**The header's format was verified against fal's published documentation, not
+recalled** (D-202) — the value is a JSON *string*, and a guessed shape would have
+been accepted silently and done nothing, which is this program's most familiar
+failure. The driver asserts on the **outgoing submit request**, because a
+control that is not invoked does not exist (invariant 7).
+
+**(b) `X-Fal-Store-IO: 0` is evaluated and NOT enabled.** Our transport retrieves
+results through the queue's own result endpoint — which is the stored-output
+path the flag switches off. Turning it on without proving each call path still
+completes would trade a retention gain for silent job failures on the money path.
+It stays available, and enabling it needs a live experiment per transport, which
+is exactly the order the founder asked for.
+
+**(c) No purge-to-fal wiring is needed, and that is the stronger outcome.** A
+one-hour lifetime is enforced by fal on every object whether or not our code
+ever runs again; a purge is a promise that depends on a worker, a queue and a
+deploy staying healthy. Expiry cannot be forgotten. §G.6's promises are now met
+on the fal side by the object's own lifetime rather than by our diligence, and
+the Platform API deletion route remains for the exceptional case of needing
+something gone *before* the hour is up.
 
 
 ---
