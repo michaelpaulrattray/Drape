@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "12487ba61c01984b"
+    "sourceFingerprint": "428952dec4b5cc89"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 50
+      "moduleCount": 51
     },
     {
       "id": "domain:castingV2",
@@ -3335,6 +3335,12 @@
     {
       "id": "module:server/castingV2/refineInterpreter.ts",
       "path": "server/castingV2/refineInterpreter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/refineLegacy.ts",
+      "path": "server/castingV2/refineLegacy.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8239,6 +8245,10 @@
     {
       "id": "test:server/castingV2/refineFacets.test.ts",
       "path": "server/castingV2/refineFacets.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineLegacy.test.ts",
+      "path": "server/castingV2/refineLegacy.test.ts"
     },
     {
       "id": "test:server/castingV2/refinePreservation.test.ts",
@@ -17244,6 +17254,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refineLegacy.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineLegacy.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineLegacy.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refinePreservation.ts",
       "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
@@ -17366,6 +17391,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/refineInterpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/refineLegacy.ts",
       "kind": "imports"
     },
     {

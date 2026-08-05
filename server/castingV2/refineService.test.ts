@@ -350,6 +350,67 @@ describe("the questions cost nothing, and never dead-end", () => {
   });
 });
 
+/*
+  THE HISTORY IS PART OF THE INPUT (D-182).
+
+  The founder's eleven-instruction chain rendered as the original plus pink
+  hair, because the stored recipe could not be read and `?? {}` turned that into
+  "there was nothing". Nine facts left the prompt and the money moved anyway.
+*/
+describe("an unreadable history stops the money", () => {
+  it("refuses rather than composing from nothing, and charges nothing", async () => {
+    variantRows = [{
+      id: 501,
+      publicId: "variant-legacy",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/legacy.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["change hair to mullet"],
+      /* A shape no reader can make sense of — not legacy, just broken. */
+      deltas: { free: { unknowable: { nested: true } } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-legacy";
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/won't guess at it/);
+    expect(journal).not.toContain("begin");
+    expect(journal).not.toContain("deduct");
+    expect(ledger.charges).toHaveLength(0);
+  });
+
+  it("still allows the FIRST refinement, which has no history at all", async () => {
+    /* Nothing stored is legitimate; stored-but-unreadable is the fault. */
+    await refineCandidate(greenEyes, input);
+    expect(ledger.charges).toHaveLength(1);
+  });
+
+  it("reads a legacy chain and carries it forward", async () => {
+    variantRows = [{
+      id: 502,
+      publicId: "variant-old",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/old.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["change hair to mullet", "seafoam green eyes"],
+      /* The founder's own pre-split row shape. */
+      deltas: { free: { hair: "mullet", eyes: "seafoam green" } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-old";
+
+    await refineCandidate(
+      { interpret: async () => ({ ok: true as const, delta: { free: { hairShade: "pink" } } }) },
+      input,
+    );
+    const claimed = JSON.stringify(landedVariant ?? {});
+    expect(claimed).toContain("mullet");
+    expect(claimed).toContain("seafoam green");
+    expect(claimed).toContain("pink");
+  });
+});
+
 describe("the order, and the money", () => {
   it("claims, runs, charges, generates, lands — in that order", async () => {
     await refineCandidate(greenEyes, input);

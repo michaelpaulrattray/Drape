@@ -87,6 +87,7 @@ import {
   type RefineDelta,
 } from "./refineDelta";
 import { interpretRefinement, refusalMessage } from "./refineInterpreter";
+import { readStoredDelta } from "./refineLegacy";
 import {
   colourFacetLabel,
   colourFacetOf,
@@ -287,7 +288,7 @@ export async function refineCandidate(
     ? existing.find((variant) => variant.publicId === source.variantPublicId) ?? null
     : null;
   const priorItems: Partial<Record<FreeSubject, string[]>> = {};
-  for (const [subject, value] of Object.entries(readDelta(predecessorForParse?.deltas)?.free ?? {})) {
+  for (const [subject, value] of Object.entries(readStoredDelta(predecessorForParse?.deltas)?.free ?? {})) {
     priorItems[subject as FreeSubject] = itemsOf(value);
   }
   /*
@@ -332,7 +333,7 @@ export async function refineCandidate(
     means the hair and nobody is asked anything. Only a session with no colour
     edit at all reaches the question.
   */
-  const lastColourFacet = colourFacetOf(readDelta(predecessorForParse?.deltas));
+  const lastColourFacet = colourFacetOf(readStoredDelta(predecessorForParse?.deltas));
 
   /*
     THE ANSWER ARRIVES THE SAME WAY THE QUESTION WAS ASKED — through the box.
@@ -650,8 +651,35 @@ export async function refineCandidate(
   const stepDeltas = editDelta
     ? [...readStepDeltas(predecessor?.stepDeltas), editDelta]
     : chain.map((step) => step.delta);
+  /*
+    AN UNREADABLE PREDECESSOR STOPS THE MONEY (D-182).
+
+    This was `readDelta(predecessor?.deltas) ?? {}`, and that one fallback is
+    how the founder's eleven-instruction chain rendered as the original plus
+    pink hair: the stored recipe could not be read, `?? {}` turned that into
+    "there was nothing", and the render proceeded on a recipe the code had
+    already decided it could not parse. The picture was exactly what the prompt
+    asked for. The prompt was missing ten facts.
+
+    So the two cases are told apart. NOTHING STORED is legitimate — the first
+    refinement of a face has no predecessor. STORED BUT UNREADABLE is a fault,
+    and it refuses before the claim, for free, rather than buying a picture that
+    silently drops what somebody already paid for.
+  */
+  const priorDelta = predecessor?.deltas != null ? readStoredDelta(predecessor.deltas) : {};
+  if (priorDelta === null) {
+    log.error(
+      { candidate: input.candidatePublicId, variant: predecessor?.publicId },
+      "[refineService] UNREADABLE PREDECESSOR — refusing rather than composing from nothing",
+    );
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Something's wrong with this face's history and I won't guess at it — "
+        + "the edit would have dropped what you already asked for. Nothing was charged.",
+    });
+  }
   const composed = editDelta
-    ? composeDeltas([readDelta(predecessor?.deltas) ?? {}, editDelta])
+    ? composeDeltas([priorDelta, editDelta])
     : composeChain(chain);
 
   /*
@@ -677,7 +705,9 @@ export async function refineCandidate(
         { instructions, delta: composed },
         {
           instructions: readInstructions(variant.instructions),
-          delta: (readDelta(variant.deltas) ?? {}),
+          /* Stored, so it reads through the legacy shim — otherwise an old
+             variant can never match a recipe and gets re-bought (D-182). */
+          delta: (readStoredDelta(variant.deltas) ?? {}),
         },
       ));
     if (already) {
@@ -1248,7 +1278,7 @@ export function readStepDeltas(value: unknown): RefineDelta[] {
   if (!Array.isArray(value)) return [];
   const steps: RefineDelta[] = [];
   for (const entry of value) {
-    const delta = readDelta(entry);
+    const delta = readStoredDelta(entry);
     /* A step that will not re-read is a hole in the chain, and a chain with a
        hole cannot be recomposed — so the whole chain is unusable, not just
        the step. Refusing beats quietly dropping somebody's earlier edit. */

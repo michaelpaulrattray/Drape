@@ -5240,6 +5240,79 @@ the hybrid probes enough times to catch a coin flip, because once is what let
 this ship.
 
 
+## D-182 — Our own history reads through a shim. An unreadable one stops the money.
+
+**Founder finding, 2026-08-05, verification pass — and it is the record-lies
+class in the paid path.**
+
+An eleven-instruction chain rendered as *the original plus pink hair*. The
+tooltip listed every instruction and filed pink correctly as HAIR COLOUR; the
+picture had the base cut, brown eyes, no smokey eye, the base smile. The record
+and the pixels disagreed.
+
+**The pixels were right about the prompt.** The stored prompt asked for exactly
+one thing — "HAIR COLOUR: pink … everything else identical to the reference" —
+and the reference is the original, because every variant is
+`edit(original, instructions 1..N)`. The composed delta was
+`{free: {hairShade: "pink"}}`. Nine facts never reached it.
+
+**Two parents, and the second is the one that matters.**
+
+1. **The reader.** Old rows file the free lane under `hair` and `eyes`, the
+   single slots that existed before hair split into cut/shade/pattern/worn and
+   eyes into colour/shape. `readDelta` answers an unknown subject by returning
+   **null for the whole delta** — correct for a model reply, where an invented
+   key means the reply cannot be trusted at all; catastrophic on a stored row,
+   where one retired key erases eleven instructions.
+2. **The swallow.** `composeDeltas([readDelta(predecessor) ?? {}, …])`. That
+   `?? {}` made "unreadable" and "there was nothing" the same value, so the
+   render proceeded on a recipe the code had already decided it could not parse.
+   **The money moved on an input the code knew was incomplete.** This is the
+   invariant-7 shape one layer in: the control existed, ran, and degraded
+   silently into a wrong answer instead of refusing.
+
+**The ruling, both halves:**
+
+- **Stored deltas read through `readStoredDelta`**, which translates retired
+  subjects into today's vocabulary before the strict reader sees them. A model
+  reply still goes through the strict reader, unchanged — those are two
+  different questions and they keep two different answers. The legacy slots held
+  whatever the facet meant that day, so values are **classified**, not renamed,
+  against the same vocabularies the roll draws from. Read-time, not a migration:
+  a migration would classify every historical row in one irreversible pass with
+  no way to check the result against the picture it produced.
+- **A stored-but-unreadable predecessor refuses**, before the claim, for free.
+  Nothing stored is legitimate — a first refinement has no predecessor. Stored
+  and unreadable is a fault, and it is never worth a picture.
+
+### What was actually lost, per fact
+
+Re-composed against the real rows (candidate 1569 on production):
+
+- **Nine facts dropped by this render**, all present in the stored predecessor:
+  seafoam eyes, hooded lids, smokey eye + glossy lip, the warm open smile, the
+  button nose, the chest swallows — plus the three superseded hair colours
+  correctly clearing for pink.
+- **The mullet was already gone**, and not by this render's doing. It died at
+  variant #5 on 2026-08-04, when *"hair the colour of rosé"* overwrote
+  *"mullet"* in the one slot they shared. That loss is the reason hair was split
+  at all; with the slots separate both survive, and the fixture proves it.
+- **The fine-line rose was never in this chain.** Variant #4 branched from #2,
+  not #3 — the instruction lists prove it — so the rose lives on an abandoned
+  branch. Selecting an earlier version and refining branches from there; that is
+  the documented behaviour working, not a loss.
+
+**25 credits refunded** on the founder's row under D-113's correction precedent,
+reference in the `refund:correction:` namespace, because a failure refund's
+reference is the ledger's authority for "this render failed" — and this one
+succeeded, at producing a picture missing nine things somebody paid for.
+
+**The guard is a fixture, not a memory.** `refineLegacy.test.ts` is built from
+this chain's actual row shapes across three storage eras. Every walk this
+program has run verified a fresh candidate, and a fresh candidate is the one
+shape that cannot exhibit this defect.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
