@@ -6945,6 +6945,83 @@ unions are identical to two decimal places. The numbers track the glasses.
 
 Exhibit: `docs/specs/masked-editing/shop/evidence/EXHIBIT-4-frames-vs-lenses.jpg`.
 
+## D-218 — Non-convergence under expansion is the routing trigger. The 60% ceiling fires far too late.
+
+**The glasses fixture, 2026-08-06. The first renders in the workstream, and they
+produced a detector nobody designed.**
+
+Six runs — two scenarios × three engines. **The guarantee held every time:
+outside the feathered mask, byte-identical to the master.** That is the
+architecture's central claim, settled arithmetically, no reader involved.
+
+Then the compound scenario broke in a useful way. Where the glasses themselves
+change shape, FLUX.2 Pro rendered **doubled, ghosting frames** — the old rim
+showing through the new one — while NBP and GPT Image 2 did not. The cause is
+structural, not a bad model day: **the mask was segmented from the OLD glasses**,
+so an engine drawing a larger frame paints outside that footprint, gets clipped,
+and leaves the new frame's interior sitting inside the old frame's edges.
+
+**A same-region edit that changes an object's SILHOUETTE cannot use a tight
+segmentation of the object as it currently is.** That is a destination-zone case
+wearing a same-region case's clothes.
+
+### The rider ranked them before anyone looked
+
+| engine | contact@2 | result |
+|---|---|---|
+| flux | 93.3% | visibly broken |
+| nbp | 76.5% | coherent |
+| gpt2 | 70.5% | coherent |
+
+**And the precondition the rider does not state:** on a tight object mask,
+absolute contact is high for everything, because the glasses go right up to where
+the glasses are. Contact is read as a **comparison** — against the same zone's
+other candidates, or against the same edit at a larger zone — never as an
+absolute threshold. A tight segmentation is painted to its own edge by
+definition.
+
+### Expansion separates an edit from a re-render, and it does it for free
+
+Re-compositing the *same saved renders* against grown zones, no new spend:
+
+| engine | r=0 | r=8 | r=16 | r=32 | seam r=0 → r=16 |
+|---|---|---|---|---|---|
+| gpt2 | 70.5% | **17.6%** | 18.0% | 27.4% | 16.4 → **2.7** |
+| nbp | 76.5% | **32.9%** | 27.6% | 38.2% | 19.3 → **3.7** |
+| flux | 93.3% | 80.6% | 85.0% | 80.9% | 35.9 → 30.8 |
+
+**For a genuine local edit, expansion CONVERGES** — contact collapses and the
+seam falls four to five-fold, because the clipped paint finally lands and the
+patch meets the master naturally. **For FLUX it never converges at any radius**,
+and the pictures say why: at r=32 it has not improved, it has recomposed the
+region wholesale — different eye size, different brows, different facial
+proportions. More room simply means more difference.
+
+So the ruling: **non-convergence under expansion is the routing trigger, and it
+fires at 3% coverage where the 60% ceiling would never fire at all.** The 60%
+rule catches an edit that is *large*; this catches an edit that is not local,
+which is the failure the masked pivot exists to prevent — the founder's
+freckles-replaced-the-hairstyle walk, detected by arithmetic instead of by a
+judge. It costs nothing and needs no model.
+
+The expansion loop therefore terminates on **two** conditions, not one: coverage
+past 60%, or **contact that stops falling**. The second is cheaper and earlier.
+
+### Bake-off, first evidence
+
+GPT Image 2 leads on seam in both scenarios (16.4 and 10.3 mean, against NBP's
+19.3 and 15.1 and FLUX's 35.9 and 21.1) and is the most restrained
+photographically. NBP oversaturates the iris on a colour instruction. FLUX
+over-styles — it added heavy lashes nobody asked for — and fails the
+silhouette-changing case outright. **Not yet a routing row**: one specimen, one
+prompt pair, and taste is the founder's.
+
+**Scenario (b) worked exactly as D-211 designed.** Frames excluded from the mask
+means they are composited back verbatim *by construction* rather than by asking a
+model to leave them alone — and all three engines' frames are pixel-unchanged,
+including FLUX's, which failed the other scenario. An exclusion that subtracts
+last cannot be talked open by a prompt.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
