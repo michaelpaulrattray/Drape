@@ -1,0 +1,65 @@
+{
+  "prompt": "Image 1 is the reference for WHO this person is: her face, bone structure, skin and\nfeatures.\n\nImage 2 is the reference for EVERYTHING ELSE: hair, clothing, jewellery, expression,\npose, lighting, framing and background.\n\nProduce image 2's photograph with image 1's face.",
+  "rows": [
+    {
+      "step": 1,
+      "identityBefore": [],
+      "identityAfter": [],
+      "geometryBefore": [],
+      "geometryAfter": [],
+      "stylingHeld": "1/1",
+      "stylingChecks": {
+        "a blunt bob haircut": true
+      },
+      "sharpnessRatio": 1.1364550526255326,
+      "providerRef": "019fd1a6-654e-7061-87d0-9095d30f1167"
+    },
+    {
+      "step": 2,
+      "identityBefore": [],
+      "identityAfter": [],
+      "geometryBefore": [],
+      "geometryAfter": [],
+      "stylingHeld": "1/2",
+      "stylingChecks": {
+        "a blunt bob haircut": true,
+        "seafoam green eyes": false
+      },
+      "sharpnessRatio": 1.0089882805044859,
+      "providerRef": "019fd1a8-166e-7873-8938-a39e033c6388"
+    },
+    {
+      "step": 3,
+      "identityBefore": [],
+      "identityAfter": [],
+      "geometryBefore": [],
+      "geometryAfter": [],
+      "stylingHeld": "2/3",
+      "stylingChecks": {
+        "a blunt bob haircut": true,
+        "seafoam green eyes": false,
+        "small gold hoop earrings": true
+      },
+      "sharpnessRatio": 0.9774863907446851,
+      "providerRef": "019fd1a9-d2ef-7d73-89ce-27c61d76d68e"
+    },
+    {
+      "step": 4,
+      "identityBefore": [
+        "skin tone"
+      ],
+      "identityAfter": [],
+      "geometryBefore": [],
+      "geometryAfter": [],
+      "stylingHeld": "3/4",
+      "stylingChecks": {
+        "a blunt bob haircut": true,
+        "seafoam green eyes": false,
+        "small gold hoop earrings": true,
+        "copper hair colour": true
+      },
+      "sharpnessRatio": 1.06890782891039,
+      "providerRef": "019fd1ab-6bfc-7ff1-8a9b-f2d4c0e5fe6f"
+    }
+  ]
+}

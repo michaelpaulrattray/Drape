@@ -1,0 +1,217 @@
+[
+  {
+    "step": 1,
+    "before": {
+      "agreed": [
+        "jaw width",
+        "face length/shape",
+        "eye spacing",
+        "nose shape",
+        "lip fullness"
+      ],
+      "geometry": [
+        "jaw width",
+        "face length/shape",
+        "eye spacing",
+        "nose shape",
+        "lip fullness"
+      ],
+      "runs": [
+        [
+          "jaw width",
+          "face length/shape",
+          "eye spacing"
+        ],
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness"
+        ],
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "eye spacing"
+        ]
+      ]
+    },
+    "after": {
+      "agreed": [],
+      "geometry": [],
+      "runs": [
+        [],
+        [],
+        []
+      ]
+    }
+  },
+  {
+    "step": 2,
+    "before": {
+      "agreed": [
+        "jaw width",
+        "face length/shape",
+        "nose shape",
+        "lip fullness",
+        "eye spacing"
+      ],
+      "geometry": [
+        "jaw width",
+        "face length/shape",
+        "nose shape",
+        "lip fullness",
+        "eye spacing"
+      ],
+      "runs": [
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "eye spacing",
+          "skin freckling"
+        ],
+        [
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "eye spacing"
+        ],
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "eye spacing"
+        ]
+      ]
+    },
+    "after": {
+      "agreed": [],
+      "geometry": [],
+      "runs": [
+        [],
+        [],
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "skin freckling",
+          "skin tone"
+        ]
+      ]
+    }
+  },
+  {
+    "step": 3,
+    "before": {
+      "agreed": [
+        "jaw width",
+        "face length/shape",
+        "nose shape",
+        "eye spacing"
+      ],
+      "geometry": [
+        "jaw width",
+        "face length/shape",
+        "nose shape",
+        "eye spacing"
+      ],
+      "runs": [
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "eye spacing",
+          "skin tone"
+        ],
+        [
+          "lip fullness",
+          "eye spacing"
+        ],
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "eye spacing"
+        ]
+      ]
+    },
+    "after": {
+      "agreed": [
+        "face length/shape"
+      ],
+      "geometry": [
+        "face length/shape"
+      ],
+      "runs": [
+        [],
+        [
+          "face length/shape"
+        ],
+        [
+          "face length/shape",
+          "eye spacing"
+        ]
+      ]
+    }
+  },
+  {
+    "step": 4,
+    "before": {
+      "agreed": [
+        "jaw width",
+        "face length/shape",
+        "nose shape",
+        "eye spacing",
+        "skin freckling",
+        "skin tone",
+        "lip fullness"
+      ],
+      "geometry": [
+        "jaw width",
+        "face length/shape",
+        "nose shape",
+        "eye spacing",
+        "lip fullness"
+      ],
+      "runs": [
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "eye spacing",
+          "skin freckling",
+          "skin tone"
+        ],
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "skin freckling",
+          "skin tone"
+        ],
+        [
+          "jaw width",
+          "face length/shape",
+          "nose shape",
+          "lip fullness",
+          "eye spacing",
+          "skin tone"
+        ]
+      ]
+    },
+    "after": {
+      "agreed": [],
+      "geometry": [],
+      "runs": [
+        [],
+        [],
+        []
+      ]
+    }
+  }
+]

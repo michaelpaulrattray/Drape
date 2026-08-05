@@ -6271,6 +6271,83 @@ that no future trial reports an identity or sameness column without its floor
 printed beside it.
 
 
+## D-204 — The pull-back lands, at every depth, and it always costs the eyes.
+
+**Arm (e′)'s dose-response probe, 2026-08-05. Measurement only — nothing built,
+nothing shipped, specimens to the founder first.**
+
+Four paid edits on **GPT Image 2** (~$0.40 at the measured rate), the base as
+identity truth and each drifted step as styling truth, with the founder's
+minimal Batch-A role split and nothing enumerated:
+
+> *Image 1 is the reference for WHO this person is: her face, bone structure,
+> skin and features. Image 2 is the reference for EVERYTHING ELSE: hair,
+> clothing, jewellery, expression, pose, lighting, framing and background.
+> Produce image 2's photograph with image 1's face.*
+
+| step | geometry off, drifted | geometry off, restored | styling held | sharpness |
+|---|---|---|---|---|
+| 1 (bob) | 5 | **0** | 1/1 | 114% |
+| 2 (+ seafoam eyes) | 5 | **0** | **1/2** | 101% |
+| 3 (+ gold hoops) | 4 | **1** (face length) | **2/3** | 98% |
+| 4 (+ copper hair) | 5 | **0** | **3/4** | 107% |
+
+Read against a floor, per D-203, and scored on geometry only — jaw, face length,
+nose, lips, eye spacing, the things no contrast change can move.
+
+**1. It works, and the pictures say so as loudly as the numbers.** I opened them
+before writing this (D-202). At step 4 the drifted frame is a visibly different
+woman — lighter, ruddier, a narrower nose, a changed jaw. The restored frame is
+**unmistakably the original woman wearing the copper bob and the gold hoops**:
+her skin tone, her freckles in her pattern, her nose, her mouth. This is the
+strongest result the quality unit has produced.
+
+**2. There is no dose-response.** Recovery is complete at step 1 and complete at
+step 4. Depth does not weaken it, which makes the design simpler than expected:
+no "restore before it is too late" threshold to find, no staleness rule. *(The
+floor at step 1 is inflated — a bob genuinely changes how jaw and face length
+read, and to my eye step 1's drift is mild. But the restored frame carries the
+same bob and the same reader, so the confound sits on both sides and cancels.)*
+
+**3. The role split cuts through eye colour, three times out of three.** Every
+instructed eye change was reverted — step 4's restored frame has the base's
+**brown** eyes, not the seafoam the user asked for. This is not flakiness, it is
+the cut line: eye colour is part of *who this person is*, so it rides with the
+identity reference by construction. **Any restore will undo it.**
+
+**4. Nothing else was lost — bob, hoops and copper held at every depth.** The
+founder's Batch B lost the earrings while enumerating what to preserve; the
+minimal prompt did not lose them once in four attempts. That is one more reading
+for D-196: **the enumeration is what breaks things, not the task.**
+
+### What this means for arm (e′)
+
+**Pass two stops being a safety net and becomes the mechanism.** The probe says
+pass one reliably returns the person and reliably surrenders one predictable
+facet. So the pair is: restore, then let the verification net (D-185) read the
+result and reassert every miss as an ordinary scoped edit on the anchored base.
+The net already does exactly this and needs no new concept — the misses it will
+find here are *named facets of the composed recipe*, which is the only thing it
+checks.
+
+**What is NOT established, and must not be quoted as if it were.** One chain,
+one woman, one styling family, four renders. Fidelity to the drifted styling's
+*fine* detail is unmeasured — the styling column is four coarse presence checks,
+not the founder's 75–85% figure, and the two are not the same measurement. And
+the identity reader that produced the headline is the one D-199 caught being
+inconsistent; it is used here with a floor and a majority-of-three, which is the
+best this program currently has, not a guarantee.
+
+**Cost, honestly.** Two renders per refine instead of one, plus whatever the
+reasserted misses cost. Whether that is worth a credit is a product question,
+not a measurement, and it is the founder's.
+
+**Specimens handed over before anything moves** (standing rider):
+`output/quality-unit/arm-e-prime/faces.png` — base | drifted | restored, four
+rows — with the full-body sheet, the per-step renders and both readers' JSON
+beside it.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
