@@ -10,6 +10,7 @@
 import { describe, expect, it } from "vitest";
 
 import { readDelta } from "./refineDelta";
+import { FREE_SUBJECTS, FREE_SUBJECT_KEYS } from "./refineSubjects";
 import {
   colourFacetLabel,
   colourFacetOf,
@@ -103,6 +104,103 @@ describe("nearMiss — one slip, never two (D-179)", () => {
        this exists to avoid. */
     expect(nearMiss("give her a scarf")).toBeNull();
     expect(nearMiss("remove the earrings")).toBeNull();
+  });
+
+  /*
+    THE FOUNDER'S WALK, AS A TEST (D-205).
+
+    "Add light freckles around her nose" came back asking "did you mean rose?"
+    on a correctly spelled word, in production, while they were trying to sign.
+    The rule is absolute and this is the direction that enforces it: erring
+    toward a missed typo costs a free correction; erring this way calls the user
+    illiterate and stops the work.
+  */
+  describe("never fires on a word that is valid in context", () => {
+    it("leaves the walk's own sentence alone", () => {
+      expect(nearMiss("add light freckles around her nose")).toBeNull();
+    });
+
+    it.each([
+      ["nose", "add freckles across her nose"],
+      ["brow", "raise her left brow slightly"],
+      ["lash", "give her one lash extension"],
+      ["glasses", "give her thin wire glasses"],
+      ["frames", "give her darker frames"],
+      ["wider", "make her jaw wider"],
+      ["cooper", "her surname is cooper"],
+      ["reach", "let her hair reach her collarbone"],
+      ["team", "she is on a swim team"],
+    ])("does not call %s a typo", (_word, sentence) => {
+      expect(nearMiss(sentence)).toBeNull();
+    });
+
+    it("treats every word it can name as spelled correctly", () => {
+      /* The list is derived from the vocabulary now, so drift is impossible
+         rather than merely unlikely — this is what proves the derivation. */
+      for (const subject of FREE_SUBJECT_KEYS) {
+        for (const word of FREE_SUBJECTS[subject].toLowerCase().split(" ")) {
+          if (word.length <= 3) continue;
+          expect(nearMiss(`change her ${word} please`)).toBeNull();
+        }
+      }
+    });
+
+    /*
+      A CORPUS, because one example fixes one example.
+
+      The founder hit "nose"; sweeping 46 ordinary refine sentences found
+      "thin" (→ chin) and "hairs" (→ hair) waiting behind it. Both were live
+      before this ran. The list is the regression net for the whole class, and
+      new entries belong here rather than in a scratch script.
+    */
+    it.each([
+      "add light freckles around her nose",
+      "give her thin wire glasses",
+      "make her eyes seafoam green",
+      "give her a blunt bob",
+      "add small gold hoop earrings",
+      "make her hair copper",
+      "remove her glasses",
+      "give her fox eyes",
+      "raise her left brow a little",
+      "make her brows fuller and darker",
+      "soften her jaw",
+      "make her lips slightly fuller",
+      "add a small scar above her right eyebrow",
+      "make her skin tone warmer",
+      "give her longer lashes",
+      "make her hair shorter and straighter",
+      "give her a middle parting",
+      "make her nose a little narrower",
+      "give her tortoiseshell frames",
+      "remove the freckles on her cheeks",
+      "add a thin gold chain",
+      "give her tousled waves",
+      "make her cheekbones sharper",
+      "give her a fringe that covers her forehead",
+      "make her teeth slightly less even",
+      "give her silver studs in both ears",
+      "make her hair a warm chestnut",
+      "add stubble along her jaw",
+      "make the lenses clear rather than tinted",
+      "give her hazel eyes with a green ring",
+      "make her hairline a little higher",
+      "add a few grey hairs at the temples",
+      "give her a sharper chin",
+      "soften the shadows under her eyes",
+    ])("stays silent on %s", (sentence) => {
+      expect(nearMiss(sentence)).toBeNull();
+    });
+
+    it("still catches a real slip in the same sentence", () => {
+      /* Both directions, per the founder's brief: the guard must not have been
+         bought by switching the question off. */
+      expect(nearMiss("add light freckles around her nsoe")).toEqual({
+        typed: "nsoe",
+        meant: "nose",
+      });
+      expect(nearMiss("make her hair coppr")).toEqual({ typed: "coppr", meant: "copper" });
+    });
   });
 });
 

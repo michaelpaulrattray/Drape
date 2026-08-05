@@ -6348,6 +6348,77 @@ rows — with the full-body sheet, the per-step renders and both readers' JSON
 beside it.
 
 
+## D-205 — "Nose" is not a typo of "rose". A word valid in context is never questioned.
+
+**Founder walk defect (a), 2026-08-05 — production, mid-session, trying to sign.**
+
+*"Add light freckles around her nose"* came back asking **"did you mean rose?"**
+on a correctly spelled word.
+
+**The mechanism was a second list that drifted from the first.** The near-miss
+check measured every typed token against a hand-written vocabulary of things the
+product knows — and that hand-written list omitted `nose`, which is a **free
+subject of this very product**. Anything one slip from a known word and absent
+from the list was assumed to be a slip.
+
+**The feature half is now derived from `FREE_SUBJECTS` rather than re-typed.**
+A list that mirrors a vocabulary will drift from it; the fix is to not have a
+second list. Anything nameable is spelled correctly by definition.
+
+**And a word valid in context is never a typo, whatever it is near.** `brow` is
+one slip from `brown`, `thin` from `chin`, `hairs` from `hair`. The founder's
+rule is absolute and the asymmetry is why: **missing a typo costs a free
+correction; questioning a real word calls the user illiterate and stops the
+work.** Inflections come off before the check, so listing every plural is not the
+hand-maintained mistake a third time.
+
+**A corpus is the regression net, because one example fixes one example.** The
+founder found `nose`; sweeping 46 ordinary refine sentences found **`thin`
+("give her thin wire glasses") and `hairs` ("a few grey hairs at the temples")
+already waiting.** Both would have reached a user. The corpus lives in
+`refineReask.test.ts`, both directions asserted — real slips still get their free
+question.
+
+## D-206 — A removal must consult what she was DRAWN wearing, not only what a refine added.
+
+**Founder walk defect (b), and the purest form of the record-versus-pixels
+absurdity this program has produced.**
+
+*"Remove her glasses"* — typed at a face **visibly wearing glasses** — was
+answered **"I can't find any glasses on this face."**
+
+**Three origins, and the check knew two.** A feature can arrive from the refine
+recipe, from the dice that rolled her, or **from the brief**. The founder's brief
+asked for a woman in glasses, so every face on that sheet was drawn wearing them
+and the recipe had never had an opinion about glasses, because nobody had ever
+refined them. The matcher consulted the recipe and the realized axes, found
+nothing, and denied what the user was looking at.
+
+**The brief is now consulted, joined through the owned candidate** so the roll is
+re-proved to belong to this user in the statement that finds it (invariant 1). It
+is the same evidence the sheet's own echo already shows them, and the composer
+treats a stated accessory that fails to appear as a **failed candidate** — so a
+brief naming glasses is a strong claim that this face wears them.
+
+**The confession survives, narrowed, and stops overclaiming.** It is still right
+to refuse when nothing named the thing — the composer forbids inventing an
+accessory the description never named, so a silent brief and a silent recipe
+really is the whole story. But the old sentence said *"I can't find any glasses
+on this face"* when it had not looked at her face; it had read a record. A worn
+subject now gets its own sentence, naming what was actually consulted and the way
+forward:
+
+> *"Her brief didn't ask for glasses, and nothing since has added any, so there's
+> nothing on record to take off. If she's wearing glasses in the picture, tell me
+> what to change instead and I'll edit it. Nothing was charged."*
+
+**This is a record-side fix to a pixel-side question, and it is explicitly
+interim.** The masked workstream answers it properly by *looking* — a
+segmentation pass knows whether there are glasses on the face without asking
+anyone's memory. When that lands, this consultation becomes a fallback rather
+than the answer.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

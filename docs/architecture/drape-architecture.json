@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b4ab5b5514bf256f"
+    "sourceFingerprint": "136221a020f84853"
   },
   "domains": [
     {
@@ -17346,6 +17346,11 @@
     },
     {
       "from": "module:server/castingV2/refineReask.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineReask.ts",
       "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
@@ -17492,6 +17497,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/renderVerification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/rollProjection.ts",
       "kind": "imports"
     },
     {

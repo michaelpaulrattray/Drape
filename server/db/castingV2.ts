@@ -664,6 +664,57 @@ export async function getOwnedCandidateWithSelectedFace(
 }
 
 /**
+ * WHAT THE BRIEF SAID SHE WEARS — the base-worn inventory (D-206).
+ *
+ * The founder typed "remove her glasses" at a face visibly wearing glasses and
+ * was told *"I can't find any glasses on this face"*. The removal matcher was
+ * consulting the refine recipe, and her glasses came from the BRIEF — so the
+ * record it asked was authoritative about everything except the thing being
+ * asked about.
+ *
+ * The roll's compiled brief is the record that knows. It is joined here rather
+ * than passed in, and joined **through the owned candidate** so the roll is
+ * re-proved to belong to this user in the same statement that finds it
+ * (invariant 1) — a caller holding a candidate id cannot reach a stranger's
+ * brief through this.
+ */
+export type BaseWornSource = {
+  compiledBrief: unknown;
+  lockContract: unknown;
+  briefText: string;
+};
+
+export async function getBriefForOwnedCandidate(
+  userId: number,
+  candidatePublicId: string,
+): Promise<BaseWornSource | null> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      compiledBrief: castingRolls.compiledBrief,
+      lockContract: castingRolls.lockContract,
+      briefText: castingRolls.briefText,
+    })
+    .from(castingCandidates)
+    .innerJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
+    ))
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+    ))
+    .limit(1);
+  if (!row) return null;
+  return {
+    compiledBrief: row.compiledBrief,
+    lockContract: row.lockContract,
+    briefText: typeof row.briefText === "string" ? row.briefText : "",
+  };
+}
+
+/**
  * The cross-roll tray: kept candidates of one session, oldest keep first.
  *
  * **`signed` is excluded, and that is the plan's own law** (§F Shortlist:

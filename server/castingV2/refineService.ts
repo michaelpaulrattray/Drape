@@ -57,7 +57,8 @@ import {
   selectVariant,
   VariantOwnershipError,
 } from "../db/castingV2Variants";
-import { getOwnedCandidateWithSelectedFace } from "../db/castingV2";
+import { getBriefForOwnedCandidate, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
+import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError } from "../providers/types";
 import { storagePublicUrl, storagePut, storageReadBytes } from "../storage";
@@ -229,6 +230,8 @@ export type RefineServiceDependencies = {
   /** The reader that checks the picture against the record (D-185). */
   verifier?: Parameters<typeof verifyRender>[0]["engine"];
   admit?: () => boolean;
+  /** The brief that knows what she was drawn wearing (D-206). */
+  readBaseWorn?: typeof getBriefForOwnedCandidate;
   readBytes?: typeof storageReadBytes;
   storeImage?: (
     input: { key: string; bytes: Buffer; contentType: string },
@@ -614,10 +617,61 @@ export async function refineCandidate(
         confession that the record itself contradicts.
       */
       const echoedSomething = (parsed.items?.length ?? 0) > 0;
-      if (!echoedSomething && !textMentions(recorded, parsed.match)) {
+      /*
+        THE BASE-WORN INVENTORY — the third place a thing can come from (D-206).
+
+        The record above knows two origins: the refine recipe, and the axes the
+        dice wrote. It does not know the third, and the third is what the
+        founder was standing on. Their brief asked for a woman in glasses; every
+        face on that sheet was drawn wearing them; the recipe has never had an
+        opinion about glasses, because nobody ever refined them.
+
+        So "remove her glasses" met an empty recipe and the code said the
+        glasses do not exist — to a person looking straight at them. That is the
+        record-versus-pixels absurdity at its purest, and it stopped a sale.
+
+        The roll's compiled brief is asked as well. It is the same evidence the
+        echo already shows the user on the sheet, and the composer treats a
+        stated accessory as a failed candidate if it does not appear, so a
+        brief that names glasses is a strong claim that this face wears them.
+      */
+      const briefWorn = await (dependencies.readBaseWorn ?? getBriefForOwnedCandidate)(
+        input.userId,
+        input.candidatePublicId,
+      );
+      const baseWorn = briefWorn
+        ? readBriefFacts(briefWorn.lockContract, briefWorn.compiledBrief, briefWorn.briefText)
+          .statedAccessories
+        : null;
+      const briefNamesIt = baseWorn?.some((worn) => textMentions(worn, parsed.match)) ?? false;
+      if (!echoedSomething && !textMentions(recorded, parsed.match) && !briefNamesIt) {
         const named = parsed.match
           ?? (subject ? FREE_SUBJECTS[subject as FreeSubject]?.toLowerCase() : null)
           ?? "that";
+        /*
+          A WORN THING GETS ITS OWN SENTENCE, because it has its own evidence.
+
+          The confession still stands here — the composer forbids inventing an
+          accessory the description never named, so a brief that is silent and a
+          recipe that is silent really is the whole story. But the old sentence
+          claimed to have looked at her FACE, and it had not: it had read a
+          recipe. Saying "I can't find any glasses on this face" to someone
+          looking at her glasses is what made tonight's refusal feel like being
+          called a liar, on top of being wrong.
+
+          So this one says what was actually consulted, and it names the way
+          out. If the brief did ask for them, the branch above has already let
+          the removal through and this never runs.
+        */
+        if (subject === "statedAccessories") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Her brief didn't ask for ${named}, and nothing since has added any, `
+              + `so there's nothing on record to take off. If she's wearing ${named} `
+              + "in the picture, tell me what to change instead and I'll edit it. "
+              + "Nothing was charged.",
+          });
+        }
         /*
           "ANY" CARRIES THE ARTICLE, and the walk is what caught it.
 

@@ -24,6 +24,8 @@ let chargeSucceeds = true;
 let candidateRow: Record<string, unknown>;
 let variantRows: Array<Record<string, unknown>>;
 let landedVariant: Record<string, unknown> | null = null;
+/** What the BRIEF said she wears — the base-worn inventory (D-206). */
+let briefWorn: string[] | null = null;
 let failedVariant: Record<string, unknown> | null = null;
 let engineThrows: Error | null = null;
 let renderFault = false;
@@ -31,6 +33,18 @@ let renderFault = false;
 vi.mock("./spendGuards", () => ({ assertNotFrozen: vi.fn(async () => undefined) }));
 
 vi.mock("../db/castingV2", () => ({
+  /*
+    THE BRIEF THE REMOVAL NOW CONSULTS (D-206). `briefWorn` is what each test
+    sets when it wants a face that was DRAWN wearing something — the origin the
+    recipe has never known about.
+  */
+  getBriefForOwnedCandidate: vi.fn(async () => (briefWorn
+    ? {
+      compiledBrief: { intent: { statedAccessories: briefWorn } },
+      lockContract: {},
+      briefText: briefWorn.join(" "),
+    }
+    : null)),
   getOwnedCandidateWithSelectedFace: vi.fn(async () => {
     journal.push("read");
     if (!candidateRow) return null;
@@ -200,6 +214,7 @@ beforeEach(() => {
   renderFault = false;
   landedVariant = null;
   failedVariant = null;
+  briefWorn = null;
   variantRows = [];
   candidateRow = {
     id: 1,
@@ -592,9 +607,81 @@ describe("a removal with no removal word is re-read as an edit", () => {
     expect(JSON.stringify(landedVariant ?? {})).toContain("small gold hoop earrings");
   });
 
+  /*
+    THE FOUNDER'S WALK, AS A TEST (D-206).
+
+    Production, their own account, a face visibly wearing glasses that their
+    BRIEF asked for: "remove her glasses" came back "I can't find any glasses on
+    this face". The recipe was the only record consulted, and the recipe has
+    never had an opinion about glasses, because nobody ever refined them.
+  */
+  describe("a base-worn thing is not invisible just because no refine added it", () => {
+    it("removes glasses the brief asked for", async () => {
+      briefWorn = ["wire-framed glasses"];
+      let call = 0;
+      const result = await refineCandidate(
+        {
+          /* Rule 3: the record says it IS there, so the sentence is re-read as
+             an ordinary content edit with the removal vocabulary withheld. */
+          interpret: (async () => {
+            call += 1;
+            return call === 1
+              ? {
+                ok: true as const,
+                intent: "remove" as const,
+                subject: "statedAccessories",
+                match: "glasses",
+              }
+              : { ok: true as const, delta: { free: { statedAccessories: ["no glasses"] } } };
+          }) as never,
+        },
+        { ...input, instruction: "remove her glasses" },
+      );
+      /* It did the work rather than denying what she is wearing. */
+      expect(result.variantId).toBeTruthy();
+    });
+
+    it("says what it actually checked when the brief is silent too", async () => {
+      /* The confession still stands — the composer forbids inventing an
+         accessory nobody named — but it no longer claims to have looked at her
+         face when all it read was a record. */
+      briefWorn = null;
+      await expect(refineCandidate(
+        {
+          interpret: async () => ({
+            ok: true as const,
+            intent: "remove" as const,
+            subject: "statedAccessories",
+            match: "glasses",
+          }),
+        } as never,
+        { ...input, instruction: "remove her glasses" },
+      )).rejects.toThrow(/brief didn't ask for glasses/);
+    });
+
+    it("charges nothing either way", async () => {
+      briefWorn = null;
+      await expect(refineCandidate(
+        {
+          interpret: async () => ({
+            ok: true as const,
+            intent: "remove" as const,
+            subject: "statedAccessories",
+            match: "glasses",
+          }),
+        } as never,
+        { ...input, instruction: "remove her glasses" },
+      )).rejects.toThrow();
+      expect(ledger.charges).toHaveLength(0);
+      expect(journal).not.toContain("claim");
+    });
+  });
+
   it("still lets a real removal through", async () => {
     /* "remove the earrings" carries a removal word, so the parse stands and the
-       honest confession is reached when the face has none. */
+       honest confession is reached when the face has none. Since D-206 that
+       confession names what it consulted — the brief and the recipe — rather
+       than claiming to have looked at her face. */
     await expect(refineCandidate(
       {
         interpret: async () => ({
@@ -605,7 +692,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
         }),
       } as never,
       { ...input, instruction: "remove the earrings" },
-    )).rejects.toThrow(/nothing to take off/);
+    )).rejects.toThrow(/brief didn.t ask for earrings/);
   });
 });
 

@@ -32,6 +32,7 @@
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { EYE_COLOURS, type EyeColour } from "../../shared/castingRealization";
 import { facetOfSubject, type Facet } from "./refineFacets";
+import { FREE_SUBJECTS, FREE_SUBJECT_KEYS } from "./refineSubjects";
 import { itemsOf, type RefineDelta } from "./refineDelta";
 import { REFINABLE_AXES } from "./refineDelta";
 import { facetOfAxis } from "./refineFacets";
@@ -220,12 +221,110 @@ const KNOWN_COLOUR_WORDS = [
  * "Pink hiar" is the same defect as "piink hair" and deserves the same free
  * question: the slip is in the word that names the DRAWER rather than the
  * value, and the render it would otherwise buy is exactly as wrong.
+ *
+ * **The feature half is DERIVED, and the founder's walk is why.** It used to be
+ * hand-listed, the hand-list omitted `nose` — a word that is a free subject of
+ * this very product — and "add light freckles around her nose" came back asking
+ * *"did you mean rose?"* on a correctly spelled word. A second list that is
+ * supposed to mirror a vocabulary will drift from it; the fix is to stop having
+ * a second list. Anything nameable is spelled correctly by definition.
  */
 const KNOWN_WORDS: readonly string[] = [
   ...KNOWN_COLOUR_WORDS,
+  ...FREE_SUBJECT_KEYS.flatMap((subject) => FREE_SUBJECTS[subject].toLowerCase().split(" ")),
   "hair", "eyes", "lips", "brows", "lashes", "skin", "nails", "makeup",
   "cheeks", "beard", "freckles", "hairline",
 ];
+
+/**
+ * ORDINARY WORDS THAT LIVE ONE SLIP FROM SOMETHING THE PRODUCT KNOWS.
+ *
+ * The derived list above closes the case where the typed word is a thing we can
+ * name. It does not close the general one: `brow` is a slip from `brown`, `lash`
+ * from `hash`, `wider` from `wilder`. Every one of those is a correctly spelled
+ * English word doing its job in a refine instruction, and asking "did you mean
+ * brown?" about it is the same insult in a different costume.
+ *
+ * **The founder's rule, and it is absolute: the question never fires on a word
+ * that is valid in context.** Erring the other way costs a typo its free
+ * correction; erring this way calls the user illiterate and stops the work.
+ *
+ * This is a curated list, not a dictionary, and it is honest about that: it was
+ * built by walking the one-slip neighbourhood of every known word and writing
+ * down the real words found there. When a new colour or subject joins the
+ * vocabulary, walk its neighbourhood too — `refineReask.test.ts` fails if any
+ * word here is treated as a typo, which is the only reason this stays true.
+ */
+const VALID_IN_CONTEXT: readonly string[] = [
+  // Face and body, singular and plural, whether or not we can edit them.
+  "brow", "lash", "nose", "chin", "jaws", "ear", "neck", "face", "head",
+  "cheek", "temple", "temples", "forehead", "mouth", "tooth", "eyelid",
+  "eyelids", "nostril", "nostrils", "lobe", "lobes", "hand", "hands",
+  // Worn things, since accessories are a legitimate refine subject.
+  "hoop", "hoops", "stud", "studs", "glass", "glasses", "frame", "frames",
+  "lens", "lenses", "chain", "chains", "band", "bands", "ring", "rings",
+  // The shape words people actually type next to a feature.
+  "wider", "wilder", "older", "boldest", "bolder", "thicker", "thinner",
+  "fuller", "paler", "darker", "lighter", "softer", "sharper", "rounder",
+  "shorter", "longer", "straighter", "curlier", "waves", "wavier", "curl",
+  "curls", "coils", "parted", "parting", "swept", "tousled", "cropped",
+  "less", "more", "same", "slight", "light", "heavy", "clear", "clean",
+  // Verbs and connectives long enough to reach the length filter.
+  "make", "give", "keep", "take", "turn", "leave", "remove", "delete",
+  "lose", "drop", "raise", "lower", "across", "around", "under", "over",
+  "near", "onto", "with", "without", "them", "their", "hers", "them",
+  // Words that sit one slip from a colour and mean something else entirely.
+  "reach", "beach", "peace", "real", "deal", "heal", "team", "pine",
+  "line", "link", "pin", "grew", "prey", "crew", "block", "blank", "blue",
+  "blur", "glue", "greed", "alive", "live", "haze", "ember", "cooper",
+  "rows", "hose", "rise", "rest", "west", "best", "wide", "side", "hide",
+  /*
+    Common English, because the neighbourhood is bigger than it looks.
+    "Thin" is one slip from "chin" — and "give her thin wire glasses" is a
+    sentence a user types every day. This test caught that before a user did;
+    the previous instance reached production.
+  */
+  "thin", "thick", "than", "that", "this", "then", "there", "these", "those",
+  "when", "what", "which", "whole", "were", "will", "would", "could", "should",
+  "shape", "shade", "share", "sharp", "short", "shine", "shiny", "skin",
+  "hair", "have", "half", "hard", "high", "help", "hold", "home", "hour",
+  "back", "bald", "bare", "base", "bind", "bone", "both", "bright", "bring",
+  "call", "calm", "cast", "come", "cool", "cover", "cute", "dark", "deep",
+  "does", "done", "down", "draw", "dyed", "each", "edge", "else", "even",
+  "ever", "eyes", "fade", "fair", "fine", "firm", "flat", "from", "full",
+  "glow", "gold", "gone", "good", "here", "into", "just", "keep", "kind",
+  "know", "last", "left", "like", "long", "look", "made", "many", "mark",
+  "mask", "much", "must", "need", "nice", "none", "note", "only", "open",
+  "pale", "part", "pick", "plain", "pull", "push", "quite", "read", "ready",
+  "right", "rough", "same", "seen", "sets", "show", "size", "slim", "small",
+  "smile", "some", "soft", "sort", "stay", "still", "stop", "such", "sure",
+  "take", "tall", "text", "they", "thing", "time", "tiny", "tone", "tint",
+  "tidy", "very", "want", "warm", "wash", "wear", "well", "were", "went",
+  "were", "wave", "weak", "wear", "well", "wire", "wispy", "work", "your",
+];
+
+/** A word we can name, or an ordinary word — either way, not a typo. */
+const NEVER_A_TYPO = new Set<string>([...KNOWN_WORDS, ...VALID_IN_CONTEXT]);
+
+/**
+ * Valid, including the shapes English puts a word into.
+ *
+ * The corpus sweep found "a few grey **hairs** at the temples" asking whether
+ * they meant "hair" — a plural of a word we ourselves know. Listing every
+ * inflection would be the hand-maintained-list mistake a third time, so the
+ * suffixes come off instead. A genuine typo survives it: "hiars" reduces to
+ * "hiar", which is still nothing we know, and still gets its free question.
+ */
+const INFLECTIONS = ["s", "es", "ed", "ing", "er", "ers", "y", "ier", "iest"];
+
+function validInContext(token: string): boolean {
+  if (NEVER_A_TYPO.has(token)) return true;
+  return INFLECTIONS.some((suffix) => {
+    if (!token.endsWith(suffix) || token.length - suffix.length < 3) return false;
+    const stem = token.slice(0, -suffix.length);
+    return NEVER_A_TYPO.has(stem) || NEVER_A_TYPO.has(`${stem}e`);
+  });
+}
 
 /**
  * Levenshtein, capped — near-miss means ONE slip, not a different word.
@@ -271,7 +370,8 @@ function withinOne(a: string, b: string): boolean {
 export function nearMiss(instruction: string): { typed: string; meant: string } | null {
   const tokens = instruction.toLowerCase().split(/[^a-z]+/).filter((word) => word.length > 3);
   for (const token of tokens) {
-    if (KNOWN_WORDS.includes(token)) continue;
+    /* A word that is valid in context is not a typo of anything (D-205). */
+    if (validInContext(token)) continue;
     const meant = KNOWN_WORDS.find((word) => withinOne(token, word));
     if (meant) return { typed: token, meant };
   }
