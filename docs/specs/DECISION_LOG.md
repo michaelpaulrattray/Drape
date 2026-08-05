@@ -5747,6 +5747,102 @@ materially, for one extra vision call on the only path that was already about to
 refund 25 credits. It is a money-rule change and it is the founder's.
 
 
+## D-191 — Base-anchoring stays. The two-reference scheme is SHELVED, not refuted.
+
+**Founder ruling, 2026-08-05, made on the face walls rather than the table.**
+
+Chain 3's bottom row is the exhibit. Arm (b) delivers the blunt bob at position
+1 and then loses it frame by frame — slicked by 2, curling by 4, gone by 6 —
+because each render's styling reference is **its own previous output**. Every
+drift becomes the next render's truth. *Realization* error compounds through a
+self-updating reference exactly as *sharpness* compounded through the old
+chain-anchored scheme, and no wording fixes a reference that has itself gone
+wrong.
+
+**Arm (c) is cancelled.** Base-anchoring stays.
+
+### Shelved with a revisit trigger, because the trial was not a fair fight
+
+The founder challenged the trial's fairness and was right to. Three asymmetries
+are real and belong in the record, or this entry becomes a false precedent:
+
+1. **Arm (b) ran a GRAFTED prompt.** It reused arm (a)'s stored prompt string
+   with a role preamble bolted on, chosen so the arms differed in exactly two
+   things. A native two-reference prompt would have been written differently.
+2. **It auto-accepted every render.** There was no human gate. The chain-3
+   position-2 drift was visible — exactly the kind a person grooming a face
+   toward Sign would have rejected before it became the next reference.
+3. **It ran OUTSIDE the net.** Unverified renders became references. A shipped
+   version would never allow that; the whole point of D-185 is that a render
+   missing a filed fact does not get delivered, let alone promoted to truth.
+
+**Proven:** the minimal version buys nothing measurable, and it demonstrates
+compounding on camera.
+**Not proven:** that the full version — native prompt, references gated to
+*verified* renders, human acceptance — fails.
+
+**Trigger:** if steadiness plateaus painfully after the pins + second-opinion
+programme lands, the full version runs through this same harness as **arm (d)**.
+
+Exhibits archived at `docs/specs/trials/two-reference/` — report, per-position
+records, both probe scorings, the reader self-consistency analysis and all
+thirty-six faces — because a ruling made on pictures needs the pictures to
+survive the retention sweep.
+
+## D-192 — Fixed references anchor. Self-updating references compound.
+
+**The principle D-191 established, written once so it is never re-derived.**
+
+A reference that never changes is an anchor: every render is the same distance
+from it, and the tenth is as close to the chosen face as the first. A reference
+that is replaced by each render's own output is a feedback loop, and whatever
+went slightly wrong last time is stated as fact this time. Sharpness proved it
+under recipe v2; realization proved it under arm (b). **Same mechanism, two
+different quantities, ten months apart.**
+
+**The corollary matters more than the finding.** A reference the USER supplies —
+a tattoo design, a photograph of the hair they want, a swatch — is **frozen at
+introduction**. It never updates from a render. So it has the anchoring property
+of the base, not the compounding property of the chain, and D-191 is no argument
+against it whatsoever.
+
+That is the formal justification for the **Body-Art Studio's flash-sheet
+design**: a supplied reference is promoted to an immutable asset, attached to
+every subsequent render, named in words alongside the picture, verifiable by the
+net, and costing one reference-budget slot each. Immutability is what makes it
+safe; the budget is what keeps it bounded.
+
+## D-193 — Steadiness is a tracked metric with teeth.
+
+**Founder ruling, 2026-08-05:** *"Steadiness at 50% is rolling the dice — I
+can't have that."*
+
+The trial measured realization steadiness at **49% (base-only) and 51%
+(two-reference)**: about half of the facts that persist from one render to the
+next are re-realized as something different. That is the founder's original
+complaint, quantified for the first time.
+
+**The bar:**
+
+- **90% on pinned facts — the public-launch gate.**
+- **75% — the interim milestone.**
+- Measured by the double-read reader once it ships, reported by the standing bot
+  on every run, with the trial harness as the measuring stick.
+
+**Lever order, and the order is the ruling:**
+
+1. **Honest measurement first** — the second-opinion threshold. A metric read by
+   an instrument with a 21% self-disagreement rate cannot be improved against,
+   because you cannot tell a gain from a sampling.
+2. **Then pin specificity** — corroborated captions that describe realizations
+   exactly, so "the same hoops" has a written referent rather than a category.
+3. **Then widen the binding vocabulary** — only once the reader is trustworthy
+   enough for a refusal to be fair.
+
+**The bar governs launch, not the finale walk.** M8's dogfood closes on the
+founder's judgement of one face, not on a percentage.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

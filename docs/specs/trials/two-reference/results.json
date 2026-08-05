@@ -1,0 +1,1655 @@
+[
+  {
+    "chain": 1,
+    "position": 1,
+    "instruction": "change her hair to a blunt bob",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "a": {
+      "verified": 1,
+      "total": 1,
+      "sharpness": 0.8512619378067017,
+      "identity": null
+    },
+    "b": {
+      "verified": 1,
+      "total": 1,
+      "sharpness": 0.8199959691262546,
+      "identity": null
+    }
+  },
+  {
+    "chain": 1,
+    "position": 2,
+    "instruction": "seafoam green eyes",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "aSteady": {
+      "same": 1,
+      "total": 1,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 1,
+      "total": 1,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        }
+      ]
+    },
+    "a": {
+      "verified": 3,
+      "total": 3,
+      "sharpness": 0.7493705297726053,
+      "identity": null
+    },
+    "b": {
+      "verified": 3,
+      "total": 3,
+      "sharpness": 0.8265834785216476,
+      "identity": null
+    }
+  },
+  {
+    "chain": 1,
+    "position": 3,
+    "instruction": "small gold hoop earrings",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": false,
+        "binding": false,
+        "saw": "eyes appear light green/hazel, not distinctly seafoam"
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": false,
+        "binding": false,
+        "saw": "Eyes appear light greenish-gray, not seafoam green"
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "aSteady": {
+      "same": 2,
+      "total": 3,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "No seafoam green present in either image"
+        },
+        {
+          "asked": "down, slicked back",
+          "same": true
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 1,
+      "total": 3,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "No seafoam green visible in either image"
+        },
+        {
+          "asked": "down, slicked back",
+          "same": false,
+          "why": "First is wet-slicked back, second is dry and down"
+        }
+      ]
+    },
+    "a": {
+      "verified": 3,
+      "total": 4,
+      "sharpness": 0.76394776992634,
+      "identity": null
+    },
+    "b": {
+      "verified": 3,
+      "total": 4,
+      "sharpness": 0.7594184514371115,
+      "identity": null
+    }
+  },
+  {
+    "chain": 1,
+    "position": 4,
+    "instruction": "a warm open smile",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": false,
+        "binding": false,
+        "saw": "Eyes appear a light gray-green, not distinctly seafoam"
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "aSteady": {
+      "same": 2,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "No seafoam green element visible in either image"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "down, slicked back",
+          "same": false,
+          "why": "Second image hair is wet-look slicked back, not simply down"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 3,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "No seafoam green present in either image"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "down, slicked back",
+          "same": true
+        }
+      ]
+    },
+    "a": {
+      "verified": 4,
+      "total": 4,
+      "sharpness": 0.7962102980215595,
+      "identity": true
+    },
+    "b": {
+      "verified": 3,
+      "total": 4,
+      "sharpness": 0.7276664803439534,
+      "identity": true
+    }
+  },
+  {
+    "chain": 1,
+    "position": 5,
+    "instruction": "copper hair",
+    "facts": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": false,
+        "binding": false,
+        "saw": "eyes appear light hazel/grey, not seafoam green"
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": false,
+        "binding": false,
+        "saw": "no earrings visible"
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair is down but center-parted, not slicked back"
+      }
+    ],
+    "aSteady": {
+      "same": 2,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "No seafoam green present in either image"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "down, slicked back",
+          "same": false,
+          "why": "Hair color/style shifted from slicked back to side-parted, not identical realiza"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 3,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "Hair is orange, not seafoam green"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "down, slicked back",
+          "same": true
+        }
+      ]
+    },
+    "a": {
+      "verified": 4,
+      "total": 5,
+      "sharpness": 0.7034911989301801,
+      "identity": true
+    },
+    "b": {
+      "verified": 3,
+      "total": 5,
+      "sharpness": 0.7145522320402474,
+      "identity": true
+    }
+  },
+  {
+    "chain": 1,
+    "position": 6,
+    "instruction": "remove the earrings",
+    "facts": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": false,
+        "binding": false,
+        "saw": "eyes appear green/hazel, not seafoam"
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam green",
+        "verified": false,
+        "binding": false,
+        "saw": "eyes appear brown, not seafoam green"
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "down, slicked back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair is down but parted center, not slicked back"
+      }
+    ],
+    "aSteady": {
+      "same": 1,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "copper",
+          "same": false,
+          "why": "hair is more vivid orange, not copper, in second photo"
+        },
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "no seafoam green visible in either image"
+        },
+        {
+          "asked": "down, slicked back",
+          "same": false,
+          "why": "second photo lacks earrings and hair is flatter, no visible slick-back"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 3,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "copper",
+          "same": true
+        },
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam green",
+          "same": false,
+          "why": "No seafoam green element visible in either photo"
+        },
+        {
+          "asked": "down, slicked back",
+          "same": true
+        }
+      ]
+    },
+    "a": {
+      "verified": 3,
+      "total": 4,
+      "sharpness": 0.7120723756598694,
+      "identity": true
+    },
+    "b": {
+      "verified": 2,
+      "total": 4,
+      "sharpness": 0.7099576975546428,
+      "identity": true
+    }
+  },
+  {
+    "chain": 2,
+    "position": 1,
+    "instruction": "change her hair to a blunt bob",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "binding": true
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "verified": true,
+        "binding": true
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "verified": true,
+        "binding": true
+      }
+    ],
+    "a": {
+      "verified": 1,
+      "total": 1,
+      "sharpness": 1.0480156337520485,
+      "identity": null
+    },
+    "b": {
+      "verified": 1,
+      "total": 1,
+      "sharpness": 1.0233856758246234,
+      "identity": null
+    }
+  },
+  {
+    "chain": 2,
+    "position": 4,
+    "instruction": "a warm open smile",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "binding": true
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "worn up, natural curls",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "worn up, natural curls",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down, not up"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "worn up, natural curls",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down, not up"
+      }
+    ],
+    "aSteady": {
+      "same": 1,
+      "total": 1,
+      "detail": [
+        {
+          "asked": "bob",
+          "same": true
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 1,
+      "total": 1,
+      "detail": [
+        {
+          "asked": "bob",
+          "same": true
+        }
+      ]
+    },
+    "a": {
+      "verified": 1,
+      "total": 2,
+      "sharpness": 1.0020571554075925,
+      "identity": true
+    },
+    "b": {
+      "verified": 1,
+      "total": 2,
+      "sharpness": 1.0379478978678096,
+      "identity": true
+    }
+  },
+  {
+    "chain": 2,
+    "position": 5,
+    "instruction": "copper hair",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "binding": true
+      },
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "binding": true
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "worn up, natural curls",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "worn up, natural curls",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down, natural curls visible"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "bob",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "worn up, natural curls",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down, natural curls visible"
+      }
+    ],
+    "aSteady": {
+      "same": 0,
+      "total": 2,
+      "detail": [
+        {
+          "asked": "bob",
+          "same": false,
+          "why": "Hair color changed from gray to red; different bob styling"
+        },
+        {
+          "asked": "worn up, natural curls",
+          "same": false,
+          "why": "Hair is down, not worn up, in both images"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 1,
+      "total": 2,
+      "detail": [
+        {
+          "asked": "bob",
+          "same": true
+        },
+        {
+          "asked": "worn up, natural curls",
+          "same": false,
+          "why": "Hair is down/loose in both, not worn up"
+        }
+      ]
+    },
+    "a": {
+      "verified": 2,
+      "total": 3,
+      "sharpness": 0.8530456739043653,
+      "identity": true
+    },
+    "b": {
+      "verified": 2,
+      "total": 3,
+      "sharpness": 0.9649141285528968,
+      "identity": true
+    }
+  },
+  {
+    "chain": 3,
+    "position": 1,
+    "instruction": "change her hair to a blunt bob",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "curly bob, not blunt-cut straight edges"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "a": {
+      "verified": 0,
+      "total": 1,
+      "sharpness": 0.9520953425861376,
+      "identity": null
+    },
+    "b": {
+      "verified": 1,
+      "total": 1,
+      "sharpness": 0.8479434618382248,
+      "identity": null
+    }
+  },
+  {
+    "chain": 3,
+    "position": 2,
+    "instruction": "seafoam green eyes",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "Hair is curly, not a blunt bob"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "Hair is worn down, not tied back"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "Hair is slicked back, not a blunt bob cut"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "aSteady": {
+      "same": 1,
+      "total": 1,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 0,
+      "total": 1,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": false,
+          "why": "Hair is now pulled back, not a loose blunt bob"
+        }
+      ]
+    },
+    "a": {
+      "verified": 1,
+      "total": 3,
+      "sharpness": 0.9771290281914439,
+      "identity": null
+    },
+    "b": {
+      "verified": 2,
+      "total": 3,
+      "sharpness": 0.7870979465256042,
+      "identity": null
+    }
+  },
+  {
+    "chain": 3,
+    "position": 3,
+    "instruction": "small gold hoop earrings",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "curly bob, not a blunt straight cut"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down/loose, not tied back"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "hair is pulled back, not cut as a blunt bob"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": true,
+        "binding": false
+      }
+    ],
+    "aSteady": {
+      "same": 1,
+      "total": 3,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "No seafoam color present in either image"
+        },
+        {
+          "asked": "tied back",
+          "same": false,
+          "why": "Hair is loose/curly in both, not tied back"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 1,
+      "total": 3,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": false,
+          "why": "Hair isn't in a blunt bob in either image; not applicable"
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "No seafoam color present in either image"
+        },
+        {
+          "asked": "tied back",
+          "same": true
+        }
+      ]
+    },
+    "a": {
+      "verified": 2,
+      "total": 4,
+      "sharpness": 0.9780213436547179,
+      "identity": null
+    },
+    "b": {
+      "verified": 3,
+      "total": 4,
+      "sharpness": 0.8222358175271232,
+      "identity": null
+    }
+  },
+  {
+    "chain": 3,
+    "position": 4,
+    "instruction": "a warm open smile",
+    "facts": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "curly bob, not blunt-cut"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": false,
+        "binding": false,
+        "saw": "eyes appear light green/hazel, not seafoam"
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down, not tied back"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "short curly hair, not a blunt bob"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn short and loose, not tied back"
+      }
+    ],
+    "aSteady": {
+      "same": 2,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "No seafoam color present in either image"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "tied back",
+          "same": false,
+          "why": "Hair is loose/down in both, not tied back"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 1,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": false,
+          "why": "Hair changed from tied back to loose curly style"
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "No seafoam color visible in either image"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "tied back",
+          "same": false,
+          "why": "Hair is loose and curly in second image, not tied back"
+        }
+      ]
+    },
+    "a": {
+      "verified": 1,
+      "total": 4,
+      "sharpness": 0.9510783289282794,
+      "identity": true
+    },
+    "b": {
+      "verified": 2,
+      "total": 4,
+      "sharpness": 0.8773192540494275,
+      "identity": true
+    }
+  },
+  {
+    "chain": 3,
+    "position": 5,
+    "instruction": "copper hair",
+    "facts": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "curly bob, not a blunt straight-edged cut"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down, not tied back"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "short curly hair, not a blunt bob"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "statedAccessories",
+        "asked": "small gold hoop earrings",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down/loose, not tied back"
+      }
+    ],
+    "aSteady": {
+      "same": 2,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "Seafoam not present; hair is orange/red, not seafoam"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "tied back",
+          "same": false,
+          "why": "Hair is worn down, loose curls, not tied back"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 2,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "blunt bob",
+          "same": false,
+          "why": "Not a bob style in either; short curly hair not a blunt bob"
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "No seafoam color present in either image"
+        },
+        {
+          "asked": "small gold hoop earrings",
+          "same": true
+        },
+        {
+          "asked": "tied back",
+          "same": true
+        }
+      ]
+    },
+    "a": {
+      "verified": 3,
+      "total": 5,
+      "sharpness": 0.86837769110513,
+      "identity": true
+    },
+    "b": {
+      "verified": 3,
+      "total": 5,
+      "sharpness": 0.8573477669622084,
+      "identity": true
+    }
+  },
+  {
+    "chain": 3,
+    "position": 6,
+    "instruction": "remove the earrings",
+    "facts": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "binding": false
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "binding": false
+      }
+    ],
+    "aChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "curly voluminous bob, not blunt-cut"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down, loose curls, not tied back"
+      }
+    ],
+    "bChecks": [
+      {
+        "facet": "hair.colour",
+        "asked": "copper",
+        "verified": true,
+        "binding": true
+      },
+      {
+        "facet": "hair.cut",
+        "asked": "blunt bob",
+        "verified": false,
+        "binding": false,
+        "saw": "curly hair, not a blunt bob"
+      },
+      {
+        "facet": "eye.colour",
+        "asked": "seafoam",
+        "verified": true,
+        "binding": false
+      },
+      {
+        "facet": "hairWorn",
+        "asked": "tied back",
+        "verified": false,
+        "binding": false,
+        "saw": "hair worn down/loose, not tied back"
+      }
+    ],
+    "aSteady": {
+      "same": 2,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "copper",
+          "same": true
+        },
+        {
+          "asked": "blunt bob",
+          "same": true
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "No seafoam element present in either image"
+        },
+        {
+          "asked": "tied back",
+          "same": false,
+          "why": "Hair is loose/down in both, not tied back"
+        }
+      ]
+    },
+    "bSteady": {
+      "same": 1,
+      "total": 4,
+      "detail": [
+        {
+          "asked": "copper",
+          "same": true
+        },
+        {
+          "asked": "blunt bob",
+          "same": false,
+          "why": "Second image hair is longer, full curly bob, not tucked back"
+        },
+        {
+          "asked": "seafoam",
+          "same": false,
+          "why": "No seafoam color present in either image"
+        },
+        {
+          "asked": "tied back",
+          "same": false,
+          "why": "Hair is tied/tucked back in first, loose in second"
+        }
+      ]
+    },
+    "a": {
+      "verified": 2,
+      "total": 4,
+      "sharpness": 0.923270303955902,
+      "identity": true
+    },
+    "b": {
+      "verified": 2,
+      "total": 4,
+      "sharpness": 0.9908387948171156,
+      "identity": true
+    }
+  }
+]

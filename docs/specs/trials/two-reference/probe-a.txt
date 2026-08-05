@@ -1,0 +1,2 @@
+chain 1: before(b) false · after(a) false · after(b) false → BOTH ARMS OBEYED
+chain 3: before(b) true · after(a) false · after(b) false → BOTH ARMS OBEYED
