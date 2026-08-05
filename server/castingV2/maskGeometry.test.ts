@@ -16,6 +16,7 @@ import {
   subtractMask,
   unionMasks,
   type FaceGeometry,
+  type UsableMask,
   type Shape,
 } from "./maskGeometry";
 import { compositeMasked, outsideMaskUnchanged, type Mask, type Raster } from "./maskedComposite";
@@ -203,6 +204,30 @@ describe("a mask that cannot do its job is refused before the money", () => {
     const mask = rasterise(hairRegion(GEOMETRY), W, H);
     expect(() => assertUsable(mask, "hair")).not.toThrow();
     expect(coverage(mask)).toBeGreaterThan(0.01);
+  });
+
+  /*
+    INVARIANT 7, AND THE HONEST LIMIT OF THESE DRIVERS.
+
+    The three tests above prove `assertUsable` THROWS. They cannot prove it
+    BLOCKS, because the masked render path does not exist yet — so at the moment
+    of writing these are controls with no call site, which is the exact shape of
+    every inert protection this program has catalogued.
+
+    A driver cannot close that gap. The type does: `assertUsable` is the only
+    producer of `UsableMask`, and the paid render path will demand one, so a
+    caller who skips the check cannot compile. This test pins the producer
+    relationship so a later refactor cannot quietly widen the type back to `Mask`
+    and re-open the door.
+  */
+  it("is the only way to obtain a mask the render path will accept", () => {
+    const checked: UsableMask = assertUsable(rasterise(hairRegion(GEOMETRY), W, H), "hair");
+    expect(checked.data.length).toBe(W * H);
+
+    const raw: Mask = rasterise(hairRegion(GEOMETRY), W, H);
+    // @ts-expect-error an unchecked mask is not a UsableMask, and must never be
+    const smuggled: UsableMask = raw;
+    expect(smuggled).toBeTruthy();
   });
 });
 

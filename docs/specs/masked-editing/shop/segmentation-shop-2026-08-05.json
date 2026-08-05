@@ -1,0 +1,65 @@
+{
+  "specimen": "output/quality-unit/specimens/built-base.png",
+  "rows": [
+    {
+      "name": "evf-sam · hair",
+      "endpoint": "fal-ai/evf-sam",
+      "ok": true,
+      "dims": "1024x1536",
+      "matchesMaster": true,
+      "coverage": 0.04416720072428385,
+      "softness": 0,
+      "ms": 33030
+    },
+    {
+      "name": "evf-sam · eyebrows",
+      "endpoint": "fal-ai/evf-sam",
+      "ok": true,
+      "dims": "1024x1536",
+      "matchesMaster": true,
+      "coverage": 0.015232721964518229,
+      "softness": 0,
+      "ms": 5801
+    },
+    {
+      "name": "evf-sam · eyes",
+      "endpoint": "fal-ai/evf-sam",
+      "ok": true,
+      "dims": "1024x1536",
+      "matchesMaster": true,
+      "coverage": 0.04708544413248698,
+      "softness": 0,
+      "ms": 8096
+    },
+    {
+      "name": "evf-sam · face (carve-out)",
+      "endpoint": "fal-ai/evf-sam",
+      "ok": true,
+      "dims": "1024x1536",
+      "matchesMaster": true,
+      "coverage": 0.10628763834635417,
+      "softness": 0,
+      "ms": 4715
+    },
+    {
+      "name": "evf-sam · eyeglasses (NEGATIVE CONTROL — she wears none)",
+      "endpoint": "fal-ai/evf-sam",
+      "ok": true,
+      "dims": "1024x1536",
+      "matchesMaster": true,
+      "coverage": 0.0008672078450520834,
+      "softness": 0,
+      "ms": 5332
+    },
+    {
+      "name": "birefnet/v2 · matting (whole subject)",
+      "endpoint": "fal-ai/birefnet/v2",
+      "ok": true,
+      "dims": "1024x1536",
+      "matchesMaster": true,
+      "coverage": 0.6081124174828623,
+      "softness": 0.6105562845865885,
+      "ms": 5659
+    }
+  ]
+}

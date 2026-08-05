@@ -289,7 +289,24 @@ export function coverage(mask: Mask): number {
 const MIN_COVERAGE = 0.0005;
 const MAX_COVERAGE = 0.6;
 
-export function assertUsable(mask: Mask, kind: RegionKind): void {
+/**
+ * A mask that has PASSED the refusals. The only way to get one is to be checked.
+ *
+ * **Invariant 7, enforced by the type system instead of by memory.** Both
+ * refusals below were, at the moment they were written, controls with no call
+ * site — the masked render path does not exist yet, so a test proving
+ * `assertUsable` throws proved only that a function throws. That is the exact
+ * shape of every inert control this program has catalogued: helper written, docs
+ * written, todo ticked, call site never added.
+ *
+ * A driver cannot close that, because there is nothing yet to drive. So the
+ * guarantee is moved to where forgetting is impossible: **the paid render path
+ * will take a `UsableMask`, and the only function that produces one is the one
+ * that runs the checks.** A caller who skips the check cannot compile.
+ */
+export type UsableMask = Mask & { readonly __checked: unique symbol };
+
+export function assertUsable(mask: Mask, kind: RegionKind): UsableMask {
   const area = coverage(mask);
   if (area < MIN_COVERAGE) {
     throw new MaskError(`the ${kind} region selects nothing — nothing would change`);
@@ -300,6 +317,7 @@ export function assertUsable(mask: Mask, kind: RegionKind): void {
       + "re-render, not a local edit",
     );
   }
+  return mask as UsableMask;
 }
 
 export type FaceGeometry = {
