@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "db604e666b6a6a36"
+    "sourceFingerprint": "5aea12b32e46134c"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 21
+      "moduleCount": 22
     },
     {
       "id": "domain:client-shared",
@@ -1451,6 +1451,12 @@
     {
       "id": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
       "path": "client/src/features/castingV2/components/DeleteCastConfirm.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/HeroMotion.tsx",
+      "path": "client/src/features/castingV2/components/HeroMotion.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -13326,6 +13332,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/DeleteCastConfirm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/HeroMotion.tsx",
       "kind": "imports"
     },
     {

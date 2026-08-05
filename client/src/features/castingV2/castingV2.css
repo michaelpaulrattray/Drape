@@ -88,6 +88,19 @@
   object-fit: cover;
   /* Brand art, not a cast — decorative, so it carries no alt text and no pill. */
   object-position: center 22%;
+  /*
+    The motion layers (HeroMotion). A frame starts transparent and the ACTIVE
+    one fades in over 90ms — a softened film cut. The engine raises the
+    incoming frame's z-index and only drops covered frames with the transition
+    suppressed, so the slot never dips toward the background mid-swap and no
+    two faces ever visibly blend.
+  */
+  opacity: 0;
+  transition: opacity 90ms linear;
+}
+
+.dpc-hero__slot > img.dpc-hero__frame--on {
+  opacity: 1;
 }
 
 /*

@@ -19,6 +19,7 @@ import { createClientRequestId } from "@shared/clientRequestId";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/features/castingV2/components/ConfirmDialog";
+import { HeroMotion } from "@/features/castingV2/components/HeroMotion";
 import { CardMenu } from "@/features/castingV2/components/CardMenu";
 import { DeleteCastConfirm } from "@/features/castingV2/components/DeleteCastConfirm";
 import { RenameCastDialog } from "@/features/castingV2/components/RenameCastDialog";
@@ -544,21 +545,16 @@ export default function CastingV2() {
             bordered boxes side by side would read as two cards; this reads as
             one pane, split.
 
-            The art is platform-owned synthetic output (founder-directed
-            2026-08-05, generated via the codex-imagegen pipeline against the
-            founder's own references): LEFT the authentic UGC creator, RIGHT
-            the doll-glam creator — who our users are beside what they cast.
-            Both clean frames edge to edge, so the old `--trim-bottom`
-            overscale hack is retired with the art that needed it. No pills:
+            The art is the founder's split-face series (2026-08-05): one
+            composition, four looks, an identical studio background — carried
+            as seam-anchored halves so the CSS seam IS the art's dividing
+            line. HeroMotion flicks the faces through the looks while the set
+            never moves, which is the product told as a picture: same shoot,
+            take after take. Motion laws live in the component. No pills:
             structure ships, claims do not (F5).
           */}
           <div className="dpc-hero__pair">
-            <div className="dpc-hero__slot">
-              <img src="/casting-hero/hero-left.png" alt="" />
-            </div>
-            <div className="dpc-hero__slot">
-              <img src="/casting-hero/hero-right.png" alt="" />
-            </div>
+            <HeroMotion />
           </div>
         </div>
 
