@@ -5335,11 +5335,19 @@ The stored prompt of the founder's own render, in one string:
 > not re-interpreted: **EYE COLOUR: Deep brown irises with a slight reddish
 > glare visible behind the glasses lenses.**
 
-The read-back after *"pinker — the eyes"* described **deep brown irises** —
-because the edit had not taken. That description was pinned, and from then on
-every render was told to make the eyes pinker *and* that the eyes are already
-deep brown. The model resolved the contradiction differently each time; pink
-eyeshadow was it choosing somewhere the pink was still allowed.
+The read-back after *"pinker — the eyes"* described **deep brown irises**. **It
+was wrong.** That render has pink-lilac irises — checked against the stored
+image, not against the caption — so the reader misread a SUCCESSFUL edit,
+probably through the glasses lenses it mentions. The misreading was then pinned,
+and from that point every render was told to make the eyes pinker *and* that the
+eyes are already deep brown. The model resolved the contradiction differently
+each time; the pink eyeshadow was it choosing somewhere the pink was still
+allowed.
+
+**Which makes this worse than a wasted caption: the product induced the
+non-compliance it then failed to catch.** The corroboration rule below removes
+the contradiction — a caption that cannot confirm its own instruction is not
+written — but it does not, on its own, make the render comply. See D-184.
 
 **A caption is a fact handed to the future, so it may only record a render that
 CORROBORATES its instruction.** The read-back is now told what was asked and
@@ -5393,6 +5401,79 @@ toward Sign.
 and a facet nobody captioned is re-realized. So the honest trade is *pixels
 compound error, words lose detail* — and this program buys the loss of detail
 and pays it down with better captions (Class A, and Class C when it ships).
+
+
+## D-184 — A refine ships sight-unseen. That is the hole. (Proposal, awaiting a ruling.)
+
+**Founder finding, 2026-08-05 — and the reframing is his: this is not drift, it
+is recorded facts DISAPPEARING from renders on a chain built today.**
+
+### The evidence: the fact never left the prompt
+
+Three consecutive renders on the Sharp-eyed candidate, composed prompts side by
+side, edits lane only:
+
+| # | asked | the edits lane contained | the pixels |
+|---|---|---|---|
+| 73 | "pinker — the eyes" | `EYE COLOUR: pinker` | **pink-lilac irises** ✓ |
+| 74 | "pink hair" | `HAIR COLOUR: pink. EYE COLOUR: pinker.` | brown irises, pink **eyeshadow** ✗ |
+| 75 | "remove earrings" | `HAIR COLOUR: pink. EYE COLOUR: pinker.` | brown irises, no pink anywhere ✗ |
+
+**`EYE COLOUR: pinker` is present, verbatim, in all three.** This is not
+composition loss and it is not a sibling of D-182. It is **model non-compliance
+on an output path nobody verifies.**
+
+D-183 found the aggravating factor — from #74 onward the same prompt also said
+*"ALREADY TRUE … deep brown irises"*, a misread pin arguing with the
+instruction — and removing it is necessary. It is not sufficient. #74 would
+still be free to put the pink on the eyelids.
+
+### The asymmetry that allowed it
+
+**A roll is judged before delivery. A refine ships sight-unseen.** The roll
+compiles, renders, and checks its candidates against what was asked; refine
+renders and lands. The only post-render check on this path is `detectRenderFault`
+(D-93), which looks for damage — seams, duplication — and has nothing to say
+about whether the thing the user asked for is actually there.
+
+### Classifying the founder's whole set
+
+| what he saw | in the prompt? | what it is | would a check catch it? |
+|---|---|---|---|
+| pink irises → eyeshadow → gone | **yes**, `EYE COLOUR: pinker` | non-compliance | **yes** |
+| earrings restyled between renders | **yes** — the ask *and* a pinned caption describing them | non-compliance | **yes** |
+| unrequested sparkle on the earrings | **yes**, same clause | non-compliance (re-realization) | **yes** |
+| hair pinned up → worn down | **no** — only the generic *"the hair worn the same way"* | D-183 Class C, the unpinned base | **no**: there is no named value to check against |
+
+**Three of four are catchable by verification. The fourth needs the base pinned
+first**, which is why Class C stays queued rather than closed.
+
+### The proposal, costed per render
+
+After the image lands and before it is delivered, one vision pass asks whether
+every **named facet of the composed delta** is visibly true — not only the
+facets this edit wrote, which is exactly why #74 lost an eye colour written one
+step earlier.
+
+- **on pass** → deliver, as now.
+- **on failure** → one automatic re-render, free to the user.
+- **on second failure** → refuse and refund the whole 25. *The compliance risk
+  moves off the customer permanently.*
+
+**Cost.** The verification call is one vision request per render — the caption
+pass already makes one per edited facet, so this is the same order of latency
+(~2–4s) and a fraction of a cent. The real cost is the retry: one extra image
+render, ~30s and provider money, **only on failure**. At the observed failure
+rate on this chain (2 of 4) that is expensive; on a healthy chain it is rare, and
+the rate itself is the number worth watching.
+
+**Two things it is not.** It is not a quality judge — "is the pink there" is a
+different question from "is this good", and only the first is answerable without
+taste. And it is not free of false positives: the reader that misread pink irises
+as brown in D-183 is the same reader, so a wrong failure costs a free re-render
+rather than a wrong picture. That asymmetry is why retry comes before refusal.
+
+**Awaiting the founder's ruling.** Not built.
 
 
 ---
