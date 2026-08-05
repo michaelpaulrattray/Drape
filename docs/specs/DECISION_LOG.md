@@ -6495,6 +6495,79 @@ the Platform API deletion route remains for the exceptional case of needing
 something gone *before* the hour is up.
 
 
+## D-209 — The composite is ours. Outside the mask, consistency is subtraction.
+
+**The masked workstream's foundation, built first because everything else rests
+on it.** `server/castingV2/maskedComposite.ts` — no provider, no credit, no
+reader.
+
+Everything this program has fought for a week — drift, unreliable judges,
+retries, second opinions, majorities of three — exists because we could only ever
+**ask** whether the picture changed outside the region we meant to edit. D-199
+and D-203 measured what that instrument is worth: it disagrees with itself, and
+it cannot tell a clarity pass from a repaint.
+
+**Once our code owns the composite, that question stops being a judgement.** The
+model returns a whole frame; we take only the pixels inside the mask and place
+them into an otherwise untouched master. What happened outside is then not a
+question for a reader — it is a byte comparison, and it answers in milliseconds
+for free, every time.
+
+**The model's own mask is not a boundary and was never going to be.** OpenAI's
+documentation, quoted in the founder's research:
+
+> *"Masking with GPT Image is entirely prompt-based. The model uses the mask as
+> guidance, but may not follow its exact shape with complete precision."*
+
+A boundary the other side may cross is not a boundary. Building on one would be
+invariant 7 in a new costume — a control that looks invoked and is not. The mask
+is still sent, to shape the model's attention; it is **enforced here**, where it
+is arithmetic.
+
+**The guarantee is stated precisely, because the feather makes a looser
+statement false.** A hard edge reads as a cut-out, so the mask is feathered — and
+inside that band the output is a blend, which is by definition not identical to
+the master. So: *where the feathered mask is fully zero, the output is
+byte-identical to the master.* The band is measured (`seamBand`: how many levels
+the blend had to move) rather than waved at. Calling the whole frame "unchanged"
+while a blend band exists would be D-202's overclaim in a new place.
+
+**The adversary in every test is the founder's own walk** — a patch that redrew
+everything, which is exactly what a freckles edit that replaced a hairstyle looks
+like. Against a completely different frame, the composite still comes back
+byte-identical outside the mask. Ten PNG round-trips leave the master unchanged
+to the byte, which one round-trip cannot prove.
+
+### And the guarantee nearly passed by reading nothing
+
+`sharp` returned the blurred mask as **three channels**. Every loop here walks
+the mask one byte per pixel and indexes the raster at `pixel * 3`, so it ran
+three times too far, read `undefined` past the end — and because every comparison
+against `undefined` is false, **reported byte-identity for two thirds of a buffer
+it had never looked at.** The suite was green. It was found by a `NaN` in an
+unrelated seam figure.
+
+**A guarantee that passes by reading nothing is worse than no guarantee**, and it
+is D-202's class in code rather than in prose: a claim that looked verified and
+was not. Closed three ways — the feather is forced to one channel, the composite
+refuses a mask whose byte count is not exactly one per pixel, and both the
+channel count and the refusal are pinned by tests that would have caught it.
+
+**What this changes downstream.** The verification net keeps its vision reader
+for the half a reader is good at — *did the edit happen*, a presence question
+with a real answer (D-203's scope note). Whether anything ELSE moved leaves the
+reader's jurisdiction entirely. That is the founder's *"we can't keep relying on
+AI judges"*, answered for the half that can be answered.
+
+**Reconciling the research with the founder's ruling on batching.** §3 of the
+research says *one semantic change per pass*; the founder ruled that same-region
+demands share one mask and one pass. Both are right, and the reconciliation is
+the reason: the constraint that matters is **the area the model must
+reinterpret**, not the number of things asked for. "Fox eyes, green, and thicker
+brows" does not widen the patch beyond the eye region; "change the jacket and fix
+the hand" does. Batch by REGION, never by count.
+
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

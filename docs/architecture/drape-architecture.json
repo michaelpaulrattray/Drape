@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d9812aed11978b65"
+    "sourceFingerprint": "f16222efeddc9eb9"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 54
+      "moduleCount": 55
     },
     {
       "id": "domain:castingV2",
@@ -3293,6 +3293,12 @@
     {
       "id": "module:server/castingV2/interpreter.ts",
       "path": "server/castingV2/interpreter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/maskedComposite.ts",
+      "path": "server/castingV2/maskedComposite.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8233,6 +8239,10 @@
     {
       "id": "test:server/castingV2/likenessRefusal.test.ts",
       "path": "server/castingV2/likenessRefusal.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/maskedComposite.test.ts",
+      "path": "server/castingV2/maskedComposite.test.ts"
     },
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
