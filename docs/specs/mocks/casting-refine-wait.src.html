@@ -1,0 +1,689 @@
+<title>The refining wait — casting sheet</title>
+
+<!--
+  SOURCE. The reviewable copy: three font placeholders and two face
+  placeholders, so the diff is readable.
+
+  `casting-refine-wait.html` beside this is the same file with Archivo,
+  JetBrains Mono and a real before/after pair inlined as data URIs — that
+  is the one to open, because a mock judged on feel has to be in the
+  product's own typeface, and it has to work with no network.
+
+  The faces are a real refine from production: the candidate, and the
+  variant that "pinker — the hair" actually produced.
+-->
+
+<style>
+@font-face{font-family:Archivo;font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,__A400__) format("woff2")}
+@font-face{font-family:Archivo;font-style:normal;font-weight:500;font-display:swap;src:url(data:font/woff2;base64,__A500__) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url(data:font/woff2;base64,__M400__) format("woff2")}
+
+/* Drape foundation tokens, verbatim from client/src/foundation/tokens.css.
+   Nothing is invented here — the mock has to be judgeable as the real
+   surface, not as a nicer drawing of it. */
+:root{
+  --surface:#FFFFFF; --raised:#FAFAFB; --page:#FCFCFD; --well:#F6F6F8;
+  --fill:#F4F4F6; --fillStrong:#F2F2F4;
+  --rule:#F0F0F2; --border:#ECECEE; --borderInput:#E6E6E9; --borderCard:#E4E4E7;
+  --dashed:#D6D6DA; --lineStrong:#C8C8CC;
+  --muted:#B4B4BA; --faint:#A0A0A6; --meta:#8E8E94; --metaStrong:#6B6B70;
+  --secondary:#3E3E42; --ink:#111112; --inkDeep:#0A0A0B;
+  --accentSolid:#E2685A; --accentInk:#A23E33; --accentWash:#FEF2F0; --accentLine:#F1CDC6;
+  --shadowCard:0 12px 34px rgba(17,17,18,.14);
+  --r-pill:999px; --r-btn:8px; --r-sm:10px; --r-md:11px; --r-lg:12px; --r-2xl:14px;
+  --font-sans:Archivo,system-ui,-apple-system,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.61,.36,1); --t-fast:120ms;
+  /* The lightbox is dark in both themes — it is a viewer, not a page. */
+  --onScrim:#FFFFFF; --scrim:#0B0B0C;
+}
+@media (prefers-color-scheme:dark){:root{
+  --surface:#1C1C1F; --raised:#1A1A1D; --page:#141416; --well:#202024;
+  --fill:#232326; --fillStrong:#26262A;
+  --rule:#2A2A2E; --border:#2C2C30; --borderInput:#33333A; --borderCard:#33333A;
+  --dashed:#44444C; --lineStrong:#55555E;
+  --muted:#6E6E77; --faint:#8A8A92; --meta:#9A9AA2; --metaStrong:#9A9AA2;
+  --secondary:#B4B4BA; --ink:#EDEDEF; --inkDeep:#F5F5F7;
+  --accentInk:#E88778; --accentWash:rgba(226,104,90,.14); --accentLine:rgba(226,104,90,.32);
+  --shadowCard:0 12px 34px rgba(0,0,0,.5);
+}}
+:root[data-theme="dark"]{
+  --surface:#1C1C1F; --raised:#1A1A1D; --page:#141416; --well:#202024;
+  --fill:#232326; --fillStrong:#26262A;
+  --rule:#2A2A2E; --border:#2C2C30; --borderInput:#33333A; --borderCard:#33333A;
+  --dashed:#44444C; --lineStrong:#55555E;
+  --muted:#6E6E77; --faint:#8A8A92; --meta:#9A9AA2; --metaStrong:#9A9AA2;
+  --secondary:#B4B4BA; --ink:#EDEDEF; --inkDeep:#F5F5F7;
+  --accentInk:#E88778; --accentWash:rgba(226,104,90,.14); --accentLine:rgba(226,104,90,.32);
+  --shadowCard:0 12px 34px rgba(0,0,0,.5);
+}
+:root[data-theme="light"]{
+  --surface:#FFFFFF; --raised:#FAFAFB; --page:#FCFCFD; --well:#F6F6F8;
+  --fill:#F4F4F6; --fillStrong:#F2F2F4;
+  --rule:#F0F0F2; --border:#ECECEE; --borderInput:#E6E6E9; --borderCard:#E4E4E7;
+  --dashed:#D6D6DA; --lineStrong:#C8C8CC;
+  --muted:#B4B4BA; --faint:#A0A0A6; --meta:#8E8E94; --metaStrong:#6B6B70;
+  --secondary:#3E3E42; --ink:#111112; --inkDeep:#0A0A0B;
+  --accentInk:#A23E33; --accentWash:#FEF2F0; --accentLine:#F1CDC6;
+  --shadowCard:0 12px 34px rgba(17,17,18,.14);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:var(--font-sans); font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:56px 28px 96px; display:flex; flex-direction:column; gap:52px}
+
+.head{display:flex; flex-direction:column; gap:10px; max-width:64ch}
+.eyebrow{
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--faint);
+}
+h1{margin:0; font-size:25px; font-weight:500; letter-spacing:-.015em; line-height:1.25; text-wrap:balance}
+.lede{margin:0; color:var(--metaStrong); font-size:14.5px; max-width:62ch}
+
+section{display:flex; flex-direction:column; gap:20px}
+h2{
+  margin:0; font-size:12.5px; font-weight:500; letter-spacing:.02em;
+  padding-bottom:10px; border-bottom:1px solid var(--border);
+}
+h2 .n{font-family:var(--font-mono); font-size:10.5px; color:var(--faint); margin-right:10px}
+p{margin:0; color:var(--metaStrong); max-width:64ch}
+p strong{color:var(--ink); font-weight:500}
+em{color:var(--ink); font-style:italic}
+
+/* ======================================================================
+   THE STAGE — a fragment of the viewer at real size, on the real scrim.
+   ====================================================================== */
+.stage{
+  display:grid; grid-template-columns:minmax(0,1fr) 232px; gap:28px; align-items:start;
+}
+@media (max-width:860px){.stage{grid-template-columns:1fr}}
+
+.viewer{
+  background:var(--scrim); border:1px solid var(--borderCard); border-radius:var(--r-2xl);
+  padding:26px 22px 20px;
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  color:var(--onScrim);
+}
+
+/* ---- the picture, and the wait that happens ON it ---- */
+.frame{
+  position:relative; width:300px; height:375px; flex:none;
+  border-radius:var(--r-lg); background:#17171A;
+  /* THE BLUR IS CLIPPED. Unclipped, `filter: blur()` feathers past the corner
+     radius and the picture reads as a light leak rather than as a photograph
+     going soft — which is the difference between "working" and "broken". */
+  overflow:hidden;
+}
+.frame__img{
+  display:block; width:100%; height:100%; object-fit:cover;
+  /* Scaled a hair so the blur has material to feather INTO and the edges stay
+     opaque instead of dissolving into the scrim. */
+  transform:scale(1.04); transform-origin:center;
+  /* One property animates, slowly, and never reacts to anything — because
+     there is nothing to react to between dispatch and landing. */
+  transition:filter 900ms var(--ease), transform 900ms var(--ease);
+}
+.frame[data-wait="true"] .frame__img{
+  transform:scale(1.08);
+  animation:settle 7.5s ease-in-out infinite;
+}
+@keyframes settle{
+  0%,100%{filter:blur(12px) saturate(.34) brightness(.96)}
+  50%    {filter:blur(16px) saturate(.34) brightness(.9)}
+}
+/* Just enough shade at the foot for the pill to sit on. Not a vignette —
+   a picture that is arriving, not a picture that is being hidden. */
+.frame__grain{
+  position:absolute; inset:0; pointer-events:none;
+  opacity:0; transition:opacity 700ms var(--ease);
+  background:linear-gradient(to top, rgba(11,11,12,.55) 0%, rgba(11,11,12,0) 34%);
+}
+.frame[data-wait="true"] .frame__grain{opacity:1}
+
+/* ---- the ink pill: the register D-169 names, bottom-centre over the frame ---- */
+.pill{
+  position:absolute; z-index:2; left:50%; bottom:14px; transform:translateX(-50%);
+  display:flex; align-items:center; gap:8px; max-width:calc(100% - 24px);
+  padding:7px 13px 7px 11px; border-radius:var(--r-pill);
+  background:rgba(11,11,12,.82); backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.14);
+  color:var(--onScrim); font-size:12px; line-height:1.35;
+  opacity:0; transform-origin:bottom center;
+  transition:opacity 320ms var(--ease);
+}
+.frame[data-wait="true"] .pill{opacity:1}
+.pill__dot{
+  flex:none; width:5px; height:5px; border-radius:50%; background:var(--accentSolid);
+  animation:pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+.pill__said{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pill__stage{color:rgba(255,255,255,.62); white-space:nowrap}
+.pill__stage::before{content:"·"; margin:0 6px; color:rgba(255,255,255,.34)}
+
+/* ---- the version stack, exactly as it is today ---- */
+.stack{display:flex; flex-wrap:wrap; justify-content:center; gap:8px; max-width:100%}
+.step{display:flex; flex-direction:column; align-items:center; width:64px; flex:none}
+.pick{
+  display:flex; flex-direction:column; gap:4px; align-items:center; width:64px;
+  padding:0; border:0; background:none; cursor:pointer; color:var(--onScrim);
+  font:inherit;
+}
+.pick > img{
+  width:64px; height:84px; object-fit:cover; border-radius:var(--r-sm); background:#232326;
+  outline:2px solid transparent; outline-offset:2px; opacity:.6;
+  transition:opacity 120ms ease, outline-color 120ms ease;
+}
+.pick[aria-pressed="true"] > img{outline-color:var(--onScrim); opacity:1}
+.pick > span{
+  font-size:10.5px; line-height:1.25; max-width:64px; text-align:center; opacity:.72;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.pick:focus-visible{outline:2px solid var(--onScrim); outline-offset:3px; border-radius:var(--r-sm)}
+/* The ghost keeps its place in the stack and stops performing — the picture
+   above is doing the narrating now. It is not an empty slot: it holds the same
+   base under the same treatment, small and dim, so the stack reads as
+   continuous and the coming version has somewhere it obviously belongs. */
+.ghost{
+  width:64px; height:84px; border-radius:var(--r-sm); background:#1A1A1D;
+  overflow:hidden; position:relative; opacity:.55;
+}
+.ghost > img{
+  display:block; width:100%; height:100%; object-fit:cover;
+  transform:scale(1.1); filter:blur(5px) saturate(.3) brightness(.8);
+}
+
+/* ---- the conversational frame: outcome, question and refusal, one voice ---- */
+.said{
+  display:flex; align-items:flex-start; gap:8px; width:100%;
+  padding:9px 11px; border-radius:var(--r-sm);
+  border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.08);
+  color:var(--onScrim); font-size:12.5px; line-height:1.45;
+}
+.said__x{
+  flex:none; margin-left:auto; padding:0 2px; border:0; background:none;
+  color:var(--onScrim); opacity:.6; font-size:15px; line-height:1; cursor:pointer;
+}
+.said__x:focus-visible{outline:2px solid var(--onScrim); outline-offset:2px; border-radius:4px}
+.chips{display:flex; flex-wrap:wrap; gap:6px; width:100%; margin-top:-2px}
+.chip{
+  font:inherit; font-size:12px; color:var(--onScrim); cursor:pointer;
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.26);
+  border-radius:var(--r-pill); padding:4px 12px;
+  transition:background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.chip:hover{background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.44)}
+.chip:focus-visible{outline:2px solid var(--onScrim); outline-offset:2px}
+
+/* ---- the box, unchanged ---- */
+.ask{display:flex; gap:8px; width:100%; align-items:center}
+.field{
+  flex:1 1 auto; min-width:0; height:34px; padding:0 12px; border-radius:var(--r-sm);
+  border:1px solid rgba(255,255,255,.24); background:rgba(255,255,255,.08);
+  color:var(--onScrim); font:inherit; font-size:13px;
+}
+/* No inner focus ring on a text field — the border carries the state. */
+.field:focus{outline:none; border-color:rgba(255,255,255,.52)}
+.field::placeholder{color:rgba(255,255,255,.46)}
+.field:disabled{color:rgba(255,255,255,.5)}
+.go{
+  font:inherit; font-size:12.5px; height:34px; padding:0 14px; border-radius:var(--r-sm);
+  border:1px solid rgba(255,255,255,.24); background:rgba(255,255,255,.10);
+  color:var(--onScrim); cursor:pointer; flex:none;
+}
+.go[disabled]{opacity:.5; cursor:default}
+.go:focus-visible{outline:2px solid var(--onScrim); outline-offset:2px}
+.note{margin:0; font-size:11.5px; color:var(--onScrim); opacity:.6; text-align:center; max-width:56ch}
+
+/* ---- the stepper beside the stage ---- */
+.steps{display:flex; flex-direction:column; gap:2px; position:sticky; top:24px}
+.steps__cap{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--faint); padding:0 0 8px;
+}
+.stepbtn{
+  display:flex; align-items:baseline; gap:9px; text-align:left; width:100%;
+  font:inherit; font-size:12.5px; color:var(--metaStrong);
+  background:none; border:0; border-radius:var(--r-btn); padding:7px 9px; cursor:pointer;
+}
+.stepbtn:hover{background:var(--well); color:var(--ink)}
+.stepbtn:focus-visible{outline:2px solid var(--accentSolid); outline-offset:-2px}
+.stepbtn[aria-current="true"]{background:var(--well); color:var(--ink)}
+.stepbtn__n{font-family:var(--font-mono); font-size:10px; color:var(--faint); flex:none; width:14px}
+.stepbtn[aria-current="true"] .stepbtn__n{color:var(--accentSolid)}
+.steps__note{
+  font-size:11.5px; color:var(--meta); line-height:1.5; padding:12px 9px 0; margin:0;
+  border-top:1px solid var(--rule); margin-top:10px;
+}
+
+/* ---- side-by-side voice comparison ---- */
+.voices{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px}
+@media (max-width:860px){.voices{grid-template-columns:1fr}}
+.voice{
+  background:var(--scrim); border:1px solid var(--borderCard); border-radius:var(--r-lg);
+  padding:14px; display:flex; flex-direction:column; gap:8px; color:var(--onScrim);
+}
+.voice__cap{
+  font-family:var(--font-mono); font-size:9.5px; letter-spacing:.07em;
+  text-transform:uppercase; color:rgba(255,255,255,.42);
+}
+
+/* ---- the small second specimen: two at once ---- */
+.aside{
+  display:grid; grid-template-columns:170px minmax(0,1fr); gap:22px; align-items:start;
+}
+@media (max-width:720px){.aside{grid-template-columns:1fr; gap:10px}}
+.aside__label{display:flex; flex-direction:column; gap:3px; padding-top:2px}
+.aside__name{font-size:12.5px; font-weight:500; color:var(--ink)}
+.aside__note{font-size:11.5px; color:var(--meta); line-height:1.5}
+
+.grid{overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:13px}
+th,td{text-align:left; padding:9px 14px 9px 0; border-bottom:1px solid var(--rule); vertical-align:top}
+th{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--faint); font-weight:400;
+}
+td:first-child{white-space:nowrap; color:var(--metaStrong)}
+td code{font-family:var(--font-mono); font-size:11.5px; color:var(--metaStrong)}
+
+.askbox{
+  border:1px solid var(--accentLine); background:var(--accentWash);
+  border-radius:var(--r-lg); padding:16px 18px;
+  display:flex; flex-direction:column; gap:8px; max-width:66ch;
+}
+.askbox h3{margin:0; font-size:13px; font-weight:500; color:var(--accentInk)}
+
+ul{margin:0; padding-left:18px; color:var(--metaStrong); display:flex; flex-direction:column; gap:6px; max-width:64ch}
+li::marker{color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important}
+  .frame[data-wait="true"] .frame__img{animation:none; filter:blur(15px) saturate(.42) brightness(.9)}
+  .pill__dot{animation:none; opacity:.8}
+}
+</style>
+
+<div class="wrap">
+
+  <div class="head">
+    <span class="eyebrow">Casting V2 · M8 · D-169 · mock for review</span>
+    <h1>The refining wait</h1>
+    <p class="lede">
+      Twenty-five credits, forty to ninety seconds, and a face you have already
+      decided you like. The wait's job is to feel supervised — and the material for
+      that is sitting right there: the picture being edited is on the screen, and
+      it is literally what the edit is anchored to.
+    </p>
+  </div>
+
+  <section>
+    <h2><span class="n">01</span>The whole arc, one state at a time</h2>
+    <p>
+      Step through it. Everything below the picture is the panel as it is today;
+      what is new is that the <strong>picture becomes the loader</strong> and the
+      question, the refusal and the outcome all speak in one frame.
+    </p>
+
+    <div class="stage">
+      <div class="viewer">
+        <div class="frame" id="frame" data-wait="false">
+          <img class="frame__img" id="face" alt="" src="__BASE__">
+          <span class="frame__grain"></span>
+          <span class="pill">
+            <span class="pill__dot"></span>
+            <span class="pill__said" id="pillSaid">pinker — the hair</span>
+            <span class="pill__stage" id="pillStage">in line</span>
+          </span>
+        </div>
+
+        <div class="stack" id="stack">
+          <div class="step">
+            <button class="pick" type="button" aria-pressed="true">
+              <img alt="" src="__BASE__">
+              <span>Original</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="frames" style="display:flex;flex-direction:column;gap:8px;width:100%;align-items:center"></div>
+
+        <form class="ask" onsubmit="return false">
+          <input class="field" id="field" placeholder="Change something about them…" aria-label="What to change about this person">
+          <button class="go" id="go" type="submit">Refine</button>
+        </form>
+        <p class="note" id="hint">Anything about them — not their clothes or the room · 25 credits each</p>
+      </div>
+
+      <div class="steps">
+        <span class="steps__cap">States</span>
+        <button class="stepbtn" type="button" data-state="1"><span class="stepbtn__n">01</span>Submitted</button>
+        <button class="stepbtn" type="button" data-state="2"><span class="stepbtn__n">02</span>Refining</button>
+        <button class="stepbtn" type="button" data-state="3"><span class="stepbtn__n">03</span>The long wait</button>
+        <button class="stepbtn" type="button" data-state="4"><span class="stepbtn__n">04</span>Resolved</button>
+        <button class="stepbtn" type="button" data-state="5"><span class="stepbtn__n">05</span>Which part?</button>
+        <button class="stepbtn" type="button" data-state="6"><span class="stepbtn__n">06</span>Did you mean?</button>
+        <button class="stepbtn" type="button" data-state="7"><span class="stepbtn__n">07</span>Refused</button>
+        <p class="steps__note" id="stepNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>Why the picture, and why blur</h2>
+    <p>
+      A refinement is <code>edit(the original, your instructions)</code> — every version
+      is made from the face you are looking at, never from the last version. So the
+      picture is not decoration during the wait. It is the input, and softening it
+      says the only true thing there is to say: <em>this is the material, it is being
+      worked on, it is not finished.</em>
+    </p>
+    <p>
+      <strong>What the treatment deliberately does not do.</strong> It never sweeps a
+      band across the face — a travelling highlight over a picture captioned
+      "the hair" claims the model is working that region, which is not how any of
+      this works. It never speeds up, because between the moment the job is sent
+      and the moment the picture lands <strong>we receive nothing at all</strong> —
+      motion that appeared to react would be inventing a signal. It breathes, slowly,
+      the same way whether the answer is four seconds or four minutes away.
+    </p>
+    <p>
+      Colour drains while it waits and returns when it lands. That is the whole
+      arrival moment, and it costs nothing to be honest about: an unfinished thing
+      is grey, a finished one is not.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>"Honest progress", and what honest leaves us</h2>
+    <p>
+      D-169 asks for honest progress. Here is everything the pipeline actually knows,
+      end to end:
+    </p>
+    <div class="grid">
+      <table>
+        <thead><tr><th>What we know</th><th>When</th><th>Shown as</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Your words</td>
+            <td>Immediately — the record keeps them verbatim</td>
+            <td>The pill's first half</td>
+          </tr>
+          <tr>
+            <td>Which drawer it was filed in</td>
+            <td>Immediately — the instruction is read before anything is charged</td>
+            <td>Available; currently held back (see below)</td>
+          </tr>
+          <tr>
+            <td><code>queued</code> → <code>dispatched</code></td>
+            <td>Once, when the job reaches the image model</td>
+            <td>"in line" → "being drawn"</td>
+          </tr>
+          <tr>
+            <td>The picture</td>
+            <td>When it lands</td>
+            <td>The picture</td>
+          </tr>
+          <tr>
+            <td>Anything else</td>
+            <td>Never</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <strong>There is no percentage, and there is no estimate.</strong> Not withheld —
+      absent. A bar filling at a rate we invented is a lie told slowly, and the one
+      thing worse than a wait is a wait that turns out to have been lying about
+      itself. So the honest progress is a two-word change of state, once, and then
+      the picture. If that reduction is not enough, the answer is not a nicer bar;
+      it is a real signal from the provider, which we do not have.
+    </p>
+    <p>
+      The one number that is real is <strong>elapsed time</strong>, and it stays off
+      screen too: a counter climbing past a minute makes an ordinary wait feel like a
+      fault. It earns its place only at the two-minute mark, as a sentence, which is
+      state 03.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>One voice, three jobs</h2>
+    <p>
+      A question, a refusal and an outcome are the same surface saying different
+      things — so they are the same shape, the same size, the same distance from the
+      box. Nothing here is a modal, an alert, or a red box: the product is not
+      scolding anybody, it is talking.
+    </p>
+    <div class="voices">
+      <div class="voice">
+        <span class="voice__cap">Outcome</span>
+        <div class="said"><span>You already have that version — nothing charged.</span><button class="said__x" type="button" aria-label="Dismiss">×</button></div>
+      </div>
+      <div class="voice">
+        <span class="voice__cap">Question</span>
+        <div class="said"><span>pinker — which part? Nothing's been coloured yet, so I don't want to guess.</span><button class="said__x" type="button" aria-label="Dismiss">×</button></div>
+        <div class="chips">
+          <button class="chip" type="button">the hair</button>
+          <button class="chip" type="button">the eyes</button>
+          <button class="chip" type="button">makeup</button>
+        </div>
+      </div>
+      <div class="voice">
+        <span class="voice__cap">Refusal</span>
+        <div class="said"><span>Refining changes the person, not the shoot — a silk slip dress is a garment, a prop or the set, which comes after Sign. Jewellery, glasses and piercings do work here. Nothing was charged.</span><button class="said__x" type="button" aria-label="Dismiss">×</button></div>
+      </div>
+    </div>
+    <p>
+      <strong>The chips retire a sentence.</strong> Both questions currently end by
+      naming their own answers — <em>"Say the hair, the eyes, makeup"</em> — which was
+      the stopgap for having no chips. With chips it is repetition, so it goes. Typing
+      the answer keeps working exactly as it does now; the box being live is what says
+      so, not a clause advertising it.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">05</span>Two at once</h2>
+    <div class="aside">
+      <div class="aside__label">
+        <span class="aside__name">More than one running</span>
+        <span class="aside__note">Legal today — nothing stops a second refine while the first is out.</span>
+      </div>
+      <div class="viewer" style="align-items:stretch;padding:16px">
+        <div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap">
+          <span class="pill" style="position:static;transform:none;opacity:1">
+            <span class="pill__dot"></span>
+            <span class="pill__said">pinker — the hair</span>
+            <span class="pill__stage">being drawn</span>
+          </span>
+          <span class="pill" style="position:static;transform:none;opacity:1">
+            <span class="pill__dot"></span>
+            <span class="pill__said">small gold hoops</span>
+            <span class="pill__stage">in line</span>
+          </span>
+        </div>
+      </div>
+    </div>
+    <p>
+      The picture can only be one thing at a time, so it does not try: it softens
+      once and means <em>this face has work out</em>, not <em>this particular edit is
+      happening</em>. The pills stack, newest on the left, one per job. Each one is a
+      separate 25 credits and a separate picture, and two pills is the cheapest way to
+      say that before both land at once.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">06</span>What this costs to build</h2>
+    <p>
+      The treatment itself is client-only. Two small server additions carry the rest,
+      and both are facts the row already holds:
+    </p>
+    <ul>
+      <li><strong>The stage.</strong> <code>status</code> is already <code>queued</code> then <code>dispatched</code> on the variant row; the pending projection just doesn't return it. One field.</li>
+      <li><strong>The drawer.</strong> The instruction is read before the charge, so the claimed row holds where it filed. <code>filedSubjectsOf</code> already exists and is already returned for finished versions — the same call, one line up. It is what would let the pill read "pinker — the hair · hair colour · being drawn", and it is the one piece I would not ship without your eye on it: it is the system explaining itself, and D-162 already moved that kind of talk out of the way once.</li>
+    </ul>
+    <p>
+      Nothing here needs a new table, a new poll, or a provider we do not have.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="n">07</span>What I want you to decide</h2>
+    <div class="askbox">
+      <h3>Is the blur enough, or does the wait want one more thing?</h3>
+      <p>
+        The whole design rests on a picture going soft and a two-word status. It is
+        restrained on purpose — but "restrained" and "still lame" are one bad judgement
+        apart, and you are the one who called the current one flat.
+      </p>
+      <p>
+        <strong>My recommendation: ship it as it stands here.</strong> The thing that
+        makes Grok's wait feel alive is that it is about <em>your</em> request, and
+        this is too — your words, your face, going soft and coming back in colour. If
+        it needs more after you have watched a real ninety-second one, the next honest
+        increment is the drawer line, not motion.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  const BASE = document.getElementById("face").src;
+  const RESULT = "__RESULT__";
+
+  const frame = document.getElementById("frame");
+  const face = document.getElementById("face");
+  const pillSaid = document.getElementById("pillSaid");
+  const pillStage = document.getElementById("pillStage");
+  const stack = document.getElementById("stack");
+  const frames = document.getElementById("frames");
+  const field = document.getElementById("field");
+  const go = document.getElementById("go");
+  const hint = document.getElementById("hint");
+  const stepNote = document.getElementById("stepNote");
+  const buttons = Array.from(document.querySelectorAll(".stepbtn"));
+
+  function chip(label) {
+    return '<button class="chip" type="button">' + label + "</button>";
+  }
+  function said(text) {
+    return '<div class="said"><span>' + text
+      + '</span><button class="said__x" type="button" aria-label="Dismiss">×</button></div>';
+  }
+  function original(pressed) {
+    return '<div class="step"><button class="pick" type="button" aria-pressed="' + pressed
+      + '"><img alt="" src="' + BASE + '"><span>Original</span></button></div>';
+  }
+  function ghost() {
+    return '<div class="step"><div class="pick"><span class="ghost">'
+      + '<img alt="" src="' + BASE + '"></span>'
+      + '<span>pinker — the hair</span></div></div>';
+  }
+  function landed() {
+    return '<div class="step"><button class="pick" type="button" aria-pressed="true">'
+      + '<img alt="" src="' + RESULT + '"><span>pinker — the hair</span></button></div>';
+  }
+
+  const STATES = {
+    1: {
+      note: "The box empties the moment you press Refine. The picture softens, the pill "
+        + "arrives with your own words, and a place for the new version appears in the stack.",
+      wait: true, img: BASE, said: "pinker — the hair", stage: "in line",
+      stack: original(true) + ghost(), frames: "", busy: true,
+    },
+    2: {
+      note: "The job reached the image model. One word changes; nothing else moves. This is "
+        + "the whole of what we honestly know, and it lasts most of the wait.",
+      wait: true, img: BASE, said: "pinker — the hair", stage: "being drawn",
+      stack: original(true) + ghost(), frames: "", busy: true,
+    },
+    3: {
+      note: "Past two minutes. Nothing about the picture changes — it never learned anything "
+        + "new — so the escalation is a sentence, not a new animation. It degrades by adding "
+        + "a line, which is why it does not jar.",
+      wait: true, img: BASE, said: "pinker — the hair", stage: "being drawn",
+      stack: original(true) + ghost(),
+      frames: '<p class="note">This one is taking longer than usual. It\'ll appear here when it '
+        + 'lands, and if it doesn\'t arrive your credits come back on their own.</p>',
+      busy: true,
+    },
+    4: {
+      note: "It lands sharp and in colour, already selected, with your sentence under it. "
+        + "No sentence appears, on purpose: a paid render announces itself by being the "
+        + "picture. Sentences are for the outcomes you cannot see — the free ones.",
+      wait: false, img: RESULT, said: "", stage: "",
+      stack: original(false) + landed(), frames: "", busy: false,
+    },
+    5: {
+      note: "Cold start: a colour with nothing to attach it to. Free, and nothing is filed "
+        + "until you answer. Tapping a chip and typing the answer are the same thing.",
+      wait: false, img: BASE, said: "", stage: "",
+      stack: original(true),
+      frames: said("pinker — which part? Nothing's been coloured yet, so I don't want to guess.")
+        + '<div class="chips">' + chip("the hair") + chip("the eyes") + chip("makeup") + "</div>",
+      busy: false,
+    },
+    6: {
+      note: "One slip from a word we know. Also free — the point is to ask before 25 credits "
+        + "buys a picture of a typo. Your word stays yours if you say no.",
+      wait: false, img: BASE, said: "", stage: "",
+      stack: original(true),
+      frames: said("Did you mean pink?")
+        + '<div class="chips">' + chip("Yes — pink") + chip("No, piink is right") + "</div>",
+      busy: false,
+    },
+    7: {
+      note: "A wall, in the same frame as everything else. It names what it will not do and "
+        + "says the money did not move — and it stays until you dismiss it.",
+      wait: false, img: BASE, said: "", stage: "",
+      stack: original(true),
+      frames: said("Refining changes the person, not the shoot — a silk slip dress is a garment, a prop or the set, which comes after Sign. Jewellery, glasses and piercings do work here. Nothing was charged."),
+      busy: false,
+    },
+  };
+
+  function show(n) {
+    const state = STATES[n];
+    frame.dataset.wait = String(state.wait);
+    if (face.getAttribute("src") !== state.img) face.setAttribute("src", state.img);
+    pillSaid.textContent = state.said;
+    pillStage.textContent = state.stage;
+    stack.innerHTML = state.stack;
+    frames.innerHTML = state.frames;
+    field.disabled = state.busy;
+    field.value = "";
+    go.disabled = state.busy;
+    go.textContent = state.busy ? "Refining…" : "Refine";
+    hint.textContent = state.busy
+      ? "Anything about them — not their clothes or the room · 25 credits each"
+      : "Anything about them — not their clothes or the room · 25 credits each";
+    stepNote.textContent = state.note;
+    for (const button of buttons) {
+      button.setAttribute("aria-current", String(Number(button.dataset.state) === n));
+    }
+  }
+
+  for (const button of buttons) {
+    button.addEventListener("click", function () { show(Number(button.dataset.state)); });
+  }
+  document.addEventListener("keydown", function (event) {
+    const current = buttons.findIndex(function (b) { return b.getAttribute("aria-current") === "true"; });
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      show(Math.min(7, current + 2));
+    } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      show(Math.max(1, current));
+    }
+  });
+
+  show(2);
+})();
+</script>
