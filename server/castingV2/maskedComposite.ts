@@ -235,6 +235,34 @@ export function harmonizeSeam(input: {
  *
  * Deterministic by pixel index, so the same edit twice produces the same bytes —
  * a composite that varies run to run would make byte-identity untestable.
+ *
+ * # NOT ON THE CRITICAL PATH — measured off it, 2026-08-06
+ *
+ * **This function lays visible 64px tiles into textured content, and it is off
+ * the finish path for that reason.** Reserve, not default.
+ *
+ * The finish ladder (`scripts/calibration/ear-routing.mts`) composited one
+ * routed zone three ways — bare, tone, tone-and-grain — and the seam did not
+ * move: 2.92, 2.91, 2.92 levels across the whole boundary. Neither step bought
+ * anything, because the two changes UPSTREAM of them had already removed the
+ * seam they were written for: the placement law took the boundary off open skin,
+ * and the harvest matte took the visible edge from the paint rather than from a
+ * geometric construct. A fix earns its place against the defect as it stands
+ * now, not as it stood when the fix was written.
+ *
+ * Grain was worse than neutral. It moved **7.19% of the frame, up to 30 levels**,
+ * and what that bought was a straight-edged rectangle inside a head of hair —
+ * neighbouring tiles resolving to different amplitudes, with the tile boundary
+ * showing as a hard line in a region that contains no hard lines
+ * (`CROP-grain-in-hair.png`). Localising the amplitude fixed the speckled-skin
+ * defect and minted a tiling one; the local version is not the global version
+ * with the flaw removed, it is a different flaw.
+ *
+ * **If a genuine seam ever needs grain, the approach of record is the NOISE-PLATE
+ * TRANSPLANT** — master minus blurred master, sampled from the same surface and
+ * laid down as real grain — not another round of synthesis. Three rounds of
+ * synthesis have now failed in three different ways, which indicts the approach
+ * rather than the tuning.
  */
 export function matchGrain(input: {
   master: Raster;

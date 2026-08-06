@@ -31,6 +31,20 @@
  *
  * One BiRefNet call mattes the patch. Nothing else is spent.
  *
+ * # SUPERSEDED ON THE FINISH STEPS — `scripts/calibration/ear-routing.mts`
+ *
+ * This script is kept because it is the fixture that produced exhibit 11 and the
+ * honest miss recorded against it, and re-running it must still reproduce those.
+ * **It is no longer the authority on how a patch is finished.**
+ *
+ * Two things moved underneath it. The `edgeMatte` here was a SUBJECT matte,
+ * which enforced no wall at all — fixed, and measured in `harvest-gate.mts`.
+ * And the `harmonizeSeam` + `matchGrain` calls below have since been measured
+ * off the critical path: with placement and the harvest matte both in force
+ * they buy 0.01 levels of seam between them, and grain actively lays visible
+ * 64px tiles into hair. The shipped finish is **placement + harvest matte, no
+ * grain**; the ladder that decided it is in `ear-routing.mts`.
+ *
  *   npx tsx scripts/calibration/finish-pass.mts
  */
 import "dotenv/config";
