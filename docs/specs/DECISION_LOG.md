@@ -7070,6 +7070,73 @@ mask, three engines. Nothing else measured so far depends on the cross-zone
 reading, which is why this is a caveat rather than a correction. Same family as
 D-215: ask what a number actually had to read.
 
+## D-220 — Within-region anchoring: base-anchored wins, but not for the predicted reason. And the relative case is NOT settled.
+
+**Founder question, measured on the hair fixture 2026-08-06.** Same five
+instructions, same face, same fixed zone, composited onto the same base either
+way — one variable: where round N's pixels came from.
+
+### Sharpness did not discriminate. The v2 finding does not reproduce at this scale.
+
+| rule | round 1 | 2 | 3 | 4 | 5 | worst |
+|---|---|---|---|---|---|---|
+| chain | 104% | 137% | 148% | 174% | 105% | **104%** |
+| anchored | 130% | 114% | 101% | 122% | 100% | **100%** |
+
+**Neither rule ever fell below 100% of the base region's sharpness.** D-152's
+whole-image photocopy loss — visibly blurred six deep — **does not happen at
+region scale over five rounds.** The mask bounding the damage does enough work
+that the argument which settled this at whole-image scale simply does not apply
+here. That was the genuinely open question and the answer is no.
+
+**Caveat on the number, in D-215's family:** a RISING Laplacian is added texture,
+not added sharpness — waves and length put more edges in the region. So the
+figures above should not be read as "the edits got sharper". The only meaningful
+reading is the one that matters: **neither rule fell.**
+
+### Tone discriminated, and one round is the whole case
+
+| rule | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| chain | 114% | 104% | 104% | 150% | **195%** |
+| anchored | 119% | 124% | 116% | 156% | **145%** |
+
+**Round five's instruction is "swept over to one side" — purely structural. It
+should not move colour at all.** Under the chain it moved tone **+45 points**
+(150 → 195). Under base-anchoring it moved **−11** (156 → 145, i.e. held).
+
+The picture says it plainly (`EXHIBIT-9`): by round five the chain has washed the
+copper out entirely to a pale ashy blonde, while the anchored run still carries
+the warm strawberry-copper it was asked for, swept to one side.
+
+**That is the founder's walk defect in miniature** — an instruction about one
+facet changing another — arriving not from a bad prompt but from the sourcing
+rule itself. Each chained round re-interprets an already-lightened image and
+lightens again; the recipe is never restated, so nothing pulls it back.
+
+### Verdict, and the part of it that is not yet earned
+
+**Base-anchored is the default.** The evidence supports it — but *for a different
+reason than the one predicted*, and that difference matters for how much weight
+the row can bear. It does not win on quality; it wins on **facet containment
+across rounds**. Anyone citing "photocopy loss" as the reason at region scale
+would be citing something this fixture looked for and did not find.
+
+**The carve-out for relative edits is UNTESTED and must not be written into the
+row.** Instruction 3 was relative ("a little longer than this") specifically to
+probe it, and **the fixture could not divide the two rules there**: rounds 1 and
+2 changed colour and wave, not length, so "this" and the base were the same
+length and both rules had the same referent. The exception may be real — under
+base-anchoring "this" points at the ORIGINAL while the user means the image in
+front of them — but this run does not demonstrate it either way. Settling it
+needs a sequence where the relative instruction follows a change to **the same
+facet it is relative to**.
+
+Recommendation held from before the numbers, and unchanged by them: base-anchored
+as default is also the rule whose failure mode is recoverable. A chain that has
+drifted has no way back to the original; an anchored render that misreads a
+relative instruction is one re-ask away from right.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
