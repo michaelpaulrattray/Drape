@@ -595,6 +595,23 @@ const DEFAULT_HARVEST_GROWTH = 4;
  *
  * Neither alone is the harvest matte: the first has no blendable edge, the
  * second has no opinion about what the pixels are.
+ *
+ * # NAMED LIMIT — the gate is exactly as good as `content`
+ *
+ * Everything above is arithmetic and cannot be argued with. What CAN be wrong is
+ * the segmentation feeding it, and it has been: asked for "hair" on a patch
+ * where the painter had turned her glasses into dark sunglasses, SAM 3 returned
+ * the LENSES as hair — dark, adjacent to dark hair, high contrast against skin —
+ * and the harvest faithfully harvested them
+ * (`output/masked/anchoring-relative/LOOK-anchored-3.png`).
+ *
+ * So the wall does not fail open in the sense of leaking everything; it fails
+ * exactly where the segmenter is confused, and a dark accessory beside dark hair
+ * is a known confusion. The module's own standing rule is the answer and it is
+ * not tuning: **if a mask reads wrong in the side-by-sides, swap the model and
+ * re-run.** A second, independent confirmation — asking a different segmenter
+ * for the accessory and subtracting it — is the shape of the fix if this recurs,
+ * and it composes with `occludedBy` rather than needing new machinery.
  */
 export async function harvestMatteFrom(input: {
   /** Segmentation of the overlay content, on the PATCH — never on the master. */
