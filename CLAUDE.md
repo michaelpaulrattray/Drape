@@ -47,6 +47,19 @@ it be challenged before it ships, not after.
    the outgoing request, not on a constant near it.
 6. **Render before shipping anything visual.** No visual change ships
    without being looked at in the running app first. (D-101.)
+7. **This is a visual studio, not a maths class.** (Founder, 2026-08-06.)
+   The user's ontology governs design: edits are scoped and named the
+   way a stylist, photographer, or casting director thinks — a fringe
+   is part of a haircut, a tan covers all visible skin, earrings come
+   in matching pairs. Pixel deltas, masks, and metrics are the
+   implementation and verification layer — they serve the stylist's
+   promise and never frame the product. Origin: the fringe was built as
+   strands painted onto a forehead patch (the minimal-diff framing)
+   when it was always a cut change (the user's framing) — the founder
+   had assumed the obvious ontology while engineering optimized the
+   mathematical one, and nobody put the two in one room. When scoping
+   any edit, ask first: how would the user describe what changes? That
+   description is the spec; the math proves it happened.
 
 ## Advisor protocol
 
