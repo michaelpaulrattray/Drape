@@ -5,6 +5,7 @@ import {
   INSTRUCTION_MAY_OVERRIDE,
   OPEN_QUESTIONS,
   ZONE_SCOPE,
+  hasRegion,
   isBilateral,
   isDistributed,
   zoneScopeOf,
@@ -68,18 +69,35 @@ describe("the classes the fringe post-mortem produced", () => {
   });
 });
 
-describe("what the audit could not answer, kept as questions rather than guesses", () => {
-  it("names the facets whose class is genuinely ambiguous", () => {
-    /* The audit's own instruction: an ambiguous facet comes back as a question.
-       This pins the list so an answer has to REMOVE an entry deliberately. */
-    expect(Object.keys(OPEN_QUESTIONS).sort()).toEqual(["expression", "jaw", "makeup"]);
+describe("the three the audit sent back, now ruled", () => {
+  it("has no open questions left", () => {
+    /* Pinned so a new ambiguity has to be added deliberately rather than
+       accumulating quietly. */
+    expect(Object.keys(OPEN_QUESTIONS)).toEqual([]);
   });
 
-  it("every open question is about a facet that exists and still has a working default", () => {
-    for (const facet of Object.keys(OPEN_QUESTIONS)) {
-      expect(allFacets(), `${facet} must be a real facet`).toContain(facet);
-      expect(() => zoneScopeOf(facet), "an unanswered question still needs a scope to run on").not.toThrow();
-    }
+  it("makeup composes from LOCAL facets — a lip edit never repaints her face", () => {
+    /* "A smoky eye and a nude lip" is two renders, and that is the point: they
+       are independently retryable. */
+    expect(zoneScopeOf("makeup")).toBe("localFacet");
+  });
+
+  it("expression has no region at all and routes full-frame", () => {
+    /* A smile moves cheeks, eyes, jaw and brow at once. Any zone drawn for it
+       would be a lie about what changes. */
+    expect(zoneScopeOf("expression")).toBe("fullFrame");
+    expect(hasRegion("expression"), "the masked path is the wrong path for it").toBe(false);
+  });
+
+  it("every other facet DOES have a region — the control", () => {
+    /* Without this, `hasRegion` could be false everywhere and the assertion
+       above would still pass. */
+    const regionless = allFacets().filter((facet) => !hasRegion(facet));
+    expect(regionless).toEqual(["expression"]);
+  });
+
+  it("jaw is one local contour, not a bilateral pair", () => {
+    expect(zoneScopeOf("jaw")).toBe("localFacet");
   });
 
   it("records the two facets whose scope the INSTRUCTION decides, not the slot", () => {

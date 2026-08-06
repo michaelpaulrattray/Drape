@@ -69,7 +69,18 @@ export type ZoneScope =
    * manufactures a body mismatch, so these take the full-skin region or route
    * full-frame.
    */
-  | "allSkin";
+  | "allSkin"
+  /**
+   * NOT A REGION EDIT AT ALL — routed to the anchored full-frame path.
+   *
+   * A smile moves cheeks, eyes, jaw, brow and mouth at once; there is no zone
+   * that contains it, and any zone drawn for it would be a lie about what
+   * changes. Founder ruling: **remove it from the region world entirely.** Its
+   * home is the base-anchored full-frame path with identity anchored and the
+   * verification net doing the checking — which is where "a warm open smile"
+   * already worked in practice.
+   */
+  | "fullFrame";
 
 /**
  * Facets whose scope the INSTRUCTION can override, and why that is not a defect
@@ -94,14 +105,9 @@ export const INSTRUCTION_MAY_OVERRIDE: Partial<Record<Facet, { to: ZoneScope; wh
  * rather than guesses — the audit's own instruction.
  */
 export const OPEN_QUESTIONS: Partial<Record<Facet, string>> = {
-  makeup: "spans eyes, lips and cheeks at once — one distributed face-wide facet, "
-    + "or several local ones that happen to be asked together? Affects whether "
-    + "'a smoky eye and a nude lip' is one render or two.",
-  expression: "not a region edit at all — the whole face re-poses. Probably routes "
-    + "full-frame with the identity anchored, but that is arm (e') territory rather "
-    + "than a zone, and it should be ruled rather than assumed.",
-  jaw: "one continuous region, but it is also symmetrical. Local or bilateral? "
-    + "It matters only if a one-sided jaw instruction is a thing anyone asks for.",
+  /* All three ruled by the founder, 2026-08-06. Kept as an empty map rather than
+     deleted: the audit's discipline is that an ambiguous facet comes back as a
+     question, and the next one added has somewhere to go. */
 };
 
 /**
@@ -133,7 +139,16 @@ export const ZONE_SCOPE: Record<Facet, ZoneScope> = {
   lips: "localFacet",
   teeth: "localFacet",
   chin: "localFacet",
+  /* FOUNDER RULING: a single local contour. The jawline is one connected
+     symmetric feature, so it is one region — a genuinely one-sided jaw ask is
+     re-ask territory, not a scope class. */
   jaw: "localFacet",
+  /* FOUNDER RULING: several LOCAL facets asked together, never one face-wide
+     one. A face-wide makeup render would repaint her whole face to change a lip.
+     "A smoky eye and a nude lip" is two renders, composed by the existing
+     multi-patch machinery — and that is correct, because they are then
+     independently retryable. Cross-region coherence (left blush matching right)
+     rides the sameness reader as advisory. */
   makeup: "localFacet",
 
   /* ---- additions, scoped by what the instruction says the thing is ---- */
@@ -145,7 +160,7 @@ export const ZONE_SCOPE: Record<Facet, ZoneScope> = {
   skinCharacter: "allSkin",
 
   /* ---- not a zone at all ---- */
-  expression: "localFacet",
+  expression: "fullFrame",
 };
 
 export function zoneScopeOf(facet: Facet): ZoneScope {
@@ -167,6 +182,17 @@ export function isDistributed(facet: Facet): boolean {
 /** Facets rendered on both sides, with cross-side sameness asserted. */
 export function isBilateral(facet: Facet): boolean {
   return zoneScopeOf(facet) === "bilateralPair";
+}
+
+/**
+ * Does this facet have a region at all?
+ *
+ * `false` means the masked path is the wrong path — do not build a zone, route
+ * to the anchored full-frame arm. Asking a zone builder for a smile's mask is
+ * the fringe error at maximum scale.
+ */
+export function hasRegion(facet: Facet): boolean {
+  return zoneScopeOf(facet) !== "fullFrame";
 }
 
 /** Every facet the vocabulary can produce, for the completeness test. */

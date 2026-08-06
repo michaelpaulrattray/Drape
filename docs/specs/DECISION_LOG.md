@@ -7716,4 +7716,85 @@ before the claim went out rather than after.
 
 ---
 
+## D-233 — A fringe is a haircut. The zone follows the FACET, never the delta.
+
+**Founder redesign, ratified 2026-08-06.** Three rounds of gating were chasing a
+symptom of the framing — working law #7 in one artifact.
+
+Every previous fringe attempt scoped the zone to the FOREHEAD PATCH and asked the
+painter to conjure strands into a canvas of skin. That is the minimal-diff
+framing: the pixels that change are on the forehead, so put the zone there. It is
+appliqué by construction, and it produced exactly what appliqué produces — sparse
+wisps on repainted forehead, then a pale veil nobody could gate away.
+
+The founder's correction: *"select the whole hair and change the cut — same cut,
+but add a fringe."* Zone = the full hair composition plus the forehead allowance;
+instruction = the complete style described whole. **Both engines then produced a
+genuine haircut** — density, fall, texture and light belonging to one mass — and
+the wash question is largely mooted, because a fringe with real coverage is not
+sitting on repainted skin. (`EXHIBIT-29`.)
+
+### The audit, so no other facet ships fringe-scoped
+
+`server/castingV2/zoneScope.ts` — a table over the WHOLE facet vocabulary,
+derived from `allFacets()` rather than restated (law #4), failing the build from
+both directions: a facet without a scope, and an entry for a facet that no longer
+exists.
+
+| class | facets |
+|---|---|
+| `distributedFacet` | hair.cut, hair.colour, hair.texture, hairFinish, hairWorn, facialHair, marks |
+| `bilateralPair` | eye.colour, eye.shape, brows, lashes, ears, cheekbones |
+| `localFacet` | nose, lips, teeth, chin, jaw, makeup |
+| `object` | statedAccessories, ink |
+| `allSkin` | skinTone, skinCharacter |
+| `fullFrame` | expression |
+
+**Finding: scope is a property of the facet AND the instruction.** *"A scar on
+her cheek"* is an object; *"freckles across her nose"* is a pattern through a
+region — same facet, two scopes. Same for ink: one placement versus a sleeve. A
+table keyed only by facet would have been wrong for both, so
+`INSTRUCTION_MAY_OVERRIDE` names the default and the override rather than letting
+a caller pick silently.
+
+### The three the audit sent back, ruled by the founder
+
+- **makeup → several LOCAL facets asked together.** A face-wide makeup render
+  would repaint her whole face to change a lip. *"A smoky eye and a nude lip"* is
+  two renders, composed by the multi-patch machinery — and that is correct,
+  because they are then independently retryable. Cross-region coherence rides the
+  sameness reader as advisory.
+- **expression → NOT a region edit. Route FULL-FRAME.** A smile moves cheeks,
+  eyes, jaw and brow at once; any zone drawn for it lies about what changes.
+  Removed from the region world entirely — `hasRegion` returns false, and a
+  control test proves it is the only facet that does.
+- **jaw → one local contour.** Connected and symmetric, but one region. A
+  genuinely one-sided jaw ask is re-ask territory, not a scope class.
+
+### Routing: GPT Image 2 takes the hair row, provisionally
+
+Marginally better skin compliance (**6,571 vs 7,729** repainted pixels of face
+both engines were told not to touch), nearer the styling ask, and consistent with
+its face-region row. **NBP stays the documented alternate for fuller, denser
+styles** — that difference is nearly a feature, weight as an engine choice, and
+worth remembering rather than erasing.
+
+**Neither engine complied** with "leave her skin untouched", which is the routing
+data the instruction test bought even though it failed as a fix.
+
+### Two things deliberately not built
+
+**The hair-matting shop is SHELVED WITH A TRIGGER**, not run: the redesign mooted
+the wash it was queued for. Trigger — strand-gap artifacts visible to the
+founder's eye in a real case; then it runs with its privacy gate as specified.
+*Half this program's best outcomes are shelved-with-a-trigger rather than
+built-on-momentum.*
+
+**Degree adherence is a known soft spot.** Both engines rendered heavier than
+"wispy". The verification net checks PRESENCE, not INTENSITY — "wispy", "subtle",
+"slight" are unverified today. An advisory degree check by the reader is future
+work, noted and not built.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
