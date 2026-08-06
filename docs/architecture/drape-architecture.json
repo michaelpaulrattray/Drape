@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c89cc4ede934b4f9"
+    "sourceFingerprint": "fcb6d067c45da10a"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 56
+      "moduleCount": 57
     },
     {
       "id": "domain:castingV2",
@@ -3503,6 +3503,12 @@
     {
       "id": "module:server/castingV2/viewConformance.ts",
       "path": "server/castingV2/viewConformance.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/zoneScope.ts",
+      "path": "server/castingV2/zoneScope.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8409,6 +8415,10 @@
     {
       "id": "test:server/castingV2/vocabularyParity.test.ts",
       "path": "server/castingV2/vocabularyParity.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/zoneScope.test.ts",
+      "path": "server/castingV2/zoneScope.test.ts"
     },
     {
       "id": "test:server/changeRequests.test.ts",
@@ -18002,6 +18012,11 @@
     {
       "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/zoneScope.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
     {
