@@ -7184,4 +7184,268 @@ different cost shape from an anchored one.
 
 ---
 
+## D-223 — The harvest gate: the wall looked enforced because nothing had ever tested it.
+
+**Founder generalisation, 2026-08-06: hair is a LAYER OVER THE MASTER WORLD.** The
+destination zone may cover any territory the style plausibly reaches — face,
+ears, shoulders, clothing, background — because the composite keeps **only
+matte-confirmed content** and every other pixel inside the zone reverts to the
+master. A 30%-alpha strand is 30% new hair over 70% of her actual cheek.
+
+That generalisation exposed a defect in shipped code. `finish-pass.mts` passed
+BiRefNet's **subject** matte as `edgeMatte`. The mechanism was right — take the
+visible edge from the paint rather than from a geometric construct — and the
+input was wrong: a subject matte is opaque across the whole person, so it
+confirms the painter's repainted CLOTHING exactly as readily as her hair.
+
+**It only looked enforced because every fixture until then ran hair against a
+plain wall**, where no clothing sat inside the zone to fail on. Measured on a
+zone grown until it genuinely crosses her t-shirt:
+
+| | pixels of HER OWN SHIRT that moved |
+|---|---|
+| the shipped behaviour (subject matte) | **60,783** of 64,291 |
+| the harvest gate | **0** |
+
+`harvestMatteFrom({content, matte, growPx, occludedBy})` = `intersect(dilate(SAM 3
+content, 4), BiRefNet)`, minus whatever sits in front. The growth is not
+optional: a hard segmentation's edge sits INSIDE the matte's flyaway zone, so
+intersecting directly clips exactly the wisps the matte was brought in for
+(D-216). The sweep gives r=4 a second, independent justification — best ramp
+(12.7%) at zero leakage, where r=16 leaks 43 px and r=32 leaks 966.
+
+**Corollary, and the reason this is a law rather than a finish trick: it enforces
+person-never-stage BY CONSTRUCTION.** On the specimen it was measured against,
+the painter moved 99.6% of the frame and visibly displaced her sleeves and
+neckline. None of it can reach the customer, because none of it is hair.
+
+### Two disciplines this run depended on
+
+**The test territory is segmented from the MASTER, never from the matte under
+test.** Asking "did the pixels the harvest matte called non-hair revert?" is a
+tautology. Asking "did HER SHIRT survive?" is not — a harvest matte with stray
+confirmations on the shoulder would fail it.
+
+**The old behaviour is kept as a permanent negative control rather than deleted.**
+A wall nobody has watched fail is not a wall. The three wall assertions were
+additionally watched going red under a sabotaged `harvestMatteFrom`.
+
+### NAMED LIMIT, accepted rather than fixed: the gate is exactly as good as `content`
+
+The arithmetic cannot be argued with; the segmentation feeding it can be wrong,
+and has been. On one render the painter turned her glasses into dark sunglasses,
+SAM 3 returned the **lenses** as "hair", and the gate faithfully harvested them.
+
+It does not fail open in general — it fails where the segmenter is confused, and
+a dark accessory beside dark hair is a known confusion. **The standing answer
+applies and is not tuning: if a mask reads wrong in the side-by-sides, swap the
+model and re-run.** A second, independent confirmation (ask a different segmenter
+for the accessory and subtract it) is the shape of the fix if it recurs, and it
+composes with `occludedBy` rather than needing new machinery. Joins the watch
+list the verification layer already covers.
+
+### And a second, quieter finding
+
+**A geometric carve-out composites HARDER than no carve-out at all.** The face
+exclusion left a visible straight seam down both sides of her face, because a
+subtracted mask's boundary is a hard geometric edge while the harvest's boundary
+follows real content. The fringe fixture, run with NO carve-out whatsoever, looks
+better than the one with one. The founder's generalisation earning itself twice.
+
+---
+
+## D-224 — The finish completes with zero grain machinery, and grain was worse than neutral.
+
+**A fix earns its place against the defect as it stands now, not as it stood when
+the fix was written.** `harmonizeSeam` and `matchGrain` were built for the
+founder's forehead line, before the placement law moved the boundary off open
+skin and before the harvest matte took the visible edge from the paint. Two fixes
+for a seam those two changes had already removed.
+
+One routed zone, three composites of the same painted pixels:
+
+| rung | seam across the whole boundary |
+|---|---|
+| bare | 2.92 levels |
+| tone | 2.91 |
+| tone + grain | 2.92 |
+
+Neither step buys anything. **The founder's success condition — the finish
+completes with zero grain machinery on the critical path — is met.**
+
+**Grain is worse than neutral.** It moved 7.19% of the frame, up to 30 levels,
+and what that bought is a straight-edged rectangle inside a head of hair:
+neighbouring 64px tiles resolving to different amplitudes, the tile boundary
+showing as a hard line in a region containing none. Localising the amplitude
+fixed the speckled-skin defect and minted a tiling one — **the local version is
+not the global version with the flaw removed, it is a different flaw.** Third
+failed round of synthesis; the **noise-plate transplant** (master minus blurred
+master, sampled same-surface, laid as real grain) remains the approach of record,
+and the landmine is documented at `matchGrain` itself.
+
+**Ear routing is real and is a PLACEMENT effect.** Ears and glasses arms carved
+out beside the face drop the ear's residual disturbance mean 10.38 → 6.75 levels,
+max 128 → 89 — and identically under both mattes (10.42 → 6.78), which is what
+the two-matte sweep exists to distinguish. A sweep showing no difference anywhere
+would have meant a broken bench, not a redundant fix.
+
+**Criterion status: MET on this specimen, my read, pending the founder's eye.**
+No visible boundary line on skin at 100% at the temples and the ear; the ear is
+composited back verbatim and does not read as pasted.
+
+---
+
+## D-225 — A bilateral region is TWO QUESTIONS. And a lesson in prose does not hold; a thrown error does.
+
+Asked for "ear", SAM 3 returns exactly **one** instance — and the wording picks
+which: "ear" came back with her left, "ears" with her right, each at ~0.16% and
+each perfectly good. The metadata gives it away (`index: 1` against `index: 0`):
+the model found both and hands back one. Taking either would have routed around
+one ear, measured a real improvement, and reported the seam closed while it was
+still there on the other side of her head.
+
+Sides resolve **anatomically** — her left ear is on the viewer's right — and that
+is proven by centroid rather than trusted. The instrument check is now **"two,
+disjoint, opposite sides"**, never "two returned", because two calls always
+return two.
+
+### The general note, and it is the working laws' own thesis self-demonstrated
+
+**The lesson was written down in prose, and recurred two commits later.** Having
+documented it for ears, the walk fixture then asked for "earring" in a single
+call and shipped a composite delivering ONE earring while the painter had drawn
+two — a wall that held perfectly and still produced a wrong picture.
+
+**It only stuck when it became a thrown error.** Both fixtures now refuse if the
+two masks land on the same side. Prose in a comment is a note to someone who is
+already looking; a guard is a note to someone who is not. Every inert-control
+finding this program has catalogued is the same shape from the other end — the
+rule existed, the call site did not.
+
+---
+
+## D-226 — D-213 has a sibling: you cannot segment a thing that is not VISIBLE.
+
+*You cannot segment a thing that is not there* — and you cannot segment a thing
+that is hidden either. Asked for "left ear" on a face whose afro covers it, SAM 3
+returns **nothing at all**: not a low-scoring blob to filter, an empty mask set.
+
+The consequence reasoning did not reach: **the destination of an ADD can never be
+located by segmenting the thing itself**, because the very cases the visibility
+gate exists for are the cases where the thing is hidden. It comes from a
+**LANDMARK model**, which answers "where is the ear on this face" from the face
+and still answers when the ear is covered (`moondream3-preview/point`, negative
+control on every call). Segmentation supplies only the OCCLUDER, which by
+definition is the thing you can see.
+
+**The first calibration could not have said anything else.** Deriving the lobe
+from a segmented ear scored occlusion at 0.0% on all seven faces that had one,
+including two with hair to the chest — because if the segmenter can outline the
+ear, the hair is by definition not covering it. An instrument whose passing state
+required it to have read nothing; this program's most-repeated failure shape, and
+its third appearance in this workstream.
+
+### The visibility gate: built, wired, watched failing — and NOT calibrated
+
+It is the third refuse-before-dispatch guard beside `present: false` (D-213) and
+`changesSilhouette: true` (D-218), all three derived from what we already hold,
+costing nothing, answering before a credit moves. **The matte decides; the pin
+suggests** — occlusion is a question about current pixels and we possess the
+current pixels.
+
+Re-measured through landmarks the score separates properly: studs 0.0%–64.2%,
+drops 0.0%–83.2%. **The bar at 98% fires on nobody in the set, and it is not
+being lowered to make an instrument go off.** 64% hidden leaves a third of a stud
+showing, and refusing that is the false refusal that killed the founder's walk.
+Stated as it is — reasoned, not calibrated — until a real occlusion case exists.
+
+**One rider assumption is backwards on real faces.** A drop does not reliably
+escape hair that hides a stud: on `fresh-03` the lobe is 17.9% covered and the
+DROP is 83.2%, because hair worn down is what a drop hangs *into*. So an
+alternative is now **scored before it is offered** and named in the re-ask only
+if it passes. Never offer a chip whose outcome you have not measured.
+
+---
+
+## D-227 — THE FOX-EYES EXONERATION. It was engine non-compliance, not reader blindness. Changes a past record.
+
+**This corrects the record on one of the walk defects.** The finale was suspended
+partly on "fox eyes" being refused twice, and the working reading was that the
+reader could not judge eye shape behind lenses — a false-refusal class the masked
+path would close by handing the reader a region crop instead of a whole portrait.
+
+Measured, the reading was wrong.
+
+The cropped-region fixture grades against **arithmetic** rather than opinion, and
+its own first ground truth was mis-specified: it labelled "has the eye shape
+changed" as YES because 24,192 pixels moved inside the mask, then scored the
+reader 0/6 for saying no, twice, in both framings. One look at the crop settled
+it — what moved was eye **colour** (brown to green), the brows, and the frames.
+**The "fox eyes" clause simply did not render.** D-202 inside the instrument
+built to avoid D-202.
+
+Relabelled against what the picture supports, the reader scores **18/18**:
+
+| question | truth | full-frame | region-crop |
+|---|---|---|---|
+| iris colour changed | yes | 6/6 | 6/6 |
+| eye shape changed | no | 6/6 | 6/6 |
+| mouth changed | no | 6/6 | 6/6 |
+
+**So the reader was telling the truth the whole time.** When the studio said "fox
+eyes" and the reader said no, it was reporting a generation failure accurately.
+The behind-glasses false-refusal class closes **not with a fix but with an
+exoneration**, and the real remedy for what actually failed is the routing table
+— GPT Image 2 as the provisional default for face-region edits (D-218's founder
+ruling), chosen on compliance and restraint.
+
+**The crop bought nothing here**, because the full-frame reader was already at
+ceiling. One pair at temperature 0 is not a claim about readers in general, so
+the cropped-region hypothesis is **untested rather than disproven** and stays
+available for a genuinely hard question.
+
+---
+
+## D-228 — The relative carve-out, re-measured unclipped: 2.5pp, SMALLER than the floor it was meant to confirm.
+
+**Supersedes D-222's magnitude; its direction stands.** D-222's 3.9pp was the
+zone saturating — a 90px dilation of a bob reaches about 56.3%, and the figure
+repeated to the decimal across three separate renders, which is what saturation
+looks like.
+
+The zone now grows in passes to a floor of **98.8%** — free, because the harvest
+gate protects everything inside it — and **saturation is DETECTED per reading**
+rather than reasoned about afterwards.
+
+| step | instruction | chain | anchored | gap |
+|---|---|---|---|---|
+| 1 | "much longer, well past her shoulders" | 90.9% | 97.5% (clipped at the FRAME) | — |
+| 2 | **"a bit shorter than this"** | 81.1% | 83.6% | **2.5pp** |
+| 3 | "shorter again" | 58.6% | 48.9% | 9.7pp, contaminated |
+
+**The clean number is 2.5pp, and it is smaller than the figure it was meant to
+confirm.** Step 3's 9.7pp does not count: the anchored render there is incoherent
+(the painter produced sunglasses and a different bob under the concatenated
+three-clause recipe), so it measures a confused model rather than the anchoring
+rule.
+
+**Direction holds; magnitude still may not reach pricing or copy.** The verdict is
+now per STEP rather than per run — step 1 touching the floor is the absolute
+instruction reaching the bottom of the FRAME, and refusing the whole run for that
+was too blunt.
+
+**An instrument that cannot tell you it has hit its ceiling will let you publish
+the ceiling as a finding.** That is what happened, and the saturation check is the
+guard rather than the memory of it.
+
+### NAMED LIMIT, queued not buried: fine strand tips over skin are clipped
+
+fal has no hair-matting model (D-216), so the harvest matte is composed from a
+binary segmentation and a subject matte. That composition recovers strand
+territory at the silhouette but not the finest tips lying over skin, so a fringe
+composites slightly shorter and cleaner than the painter drew it. **A cosmetic
+ceiling and a future shop round, not a launch item.**
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
