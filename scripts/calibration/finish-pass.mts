@@ -37,7 +37,12 @@ import "dotenv/config";
 import sharp from "sharp";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import { coverage, placeDestinationZone, unionMasks, type Mask } from "../../server/castingV2/maskGeometry";
+import {
+  coverage,
+  harvestMatteFrom,
+  placeDestinationZone,
+  unionMasks,
+} from "../../server/castingV2/maskGeometry";
 import {
   compositeMasked,
   harmonizeSeam,
@@ -45,11 +50,10 @@ import {
   outsideMaskUnchanged,
   readRaster,
   writePng,
+  type Mask,
   type Raster,
 } from "../../server/castingV2/maskedComposite";
-
-const apiKey = process.env.FAL_KEY;
-if (!apiKey) throw new Error("FAL_KEY required");
+import { birefnetMatte, sam3, toMask } from "./lib/segment.mts";
 
 const OUT = "output/masked/finish-pass";
 mkdirSync(OUT, { recursive: true });
@@ -59,62 +63,9 @@ const RAW = "output/masked/max-delta/grow-raw.png";
 const ZONE = "output/masked/max-delta/grow-zone.png";
 const FEATHER_BEFORE = 4;
 
-async function toMask(bytes: Buffer): Promise<Mask> {
-  const meta = await sharp(bytes).metadata();
-  const pipeline = meta.hasAlpha ? sharp(bytes).extractChannel(3) : sharp(bytes).toColourspace("b-w");
-  const { data, info } = await pipeline.raw().toBuffer({ resolveWithObject: true });
-  if (data.length !== info.width * info.height) throw new Error("mask not single-channel");
-  return { data, width: info.width, height: info.height };
-}
-
-/**
- * Matte the PAINTED RESULT. BiRefNet Matting, ratified in round one for exactly
- * this — whole-subject work with a real edge ramp.
- */
-async function matteOf(bytes: Buffer): Promise<Mask> {
-  const response = await fetch("https://fal.run/fal-ai/birefnet/v2", {
-    method: "POST",
-    headers: {
-      Authorization: `Key ${apiKey}`,
-      "Content-Type": "application/json",
-      "X-Fal-Object-Lifecycle-Preference": JSON.stringify({ expiration_duration_seconds: 3600 }),
-    },
-    body: JSON.stringify({
-      image_url: `data:image/png;base64,${bytes.toString("base64")}`,
-      mask_only: true, model: "Matting", output_format: "png",
-    }),
-  });
-  if (!response.ok) throw new Error(`birefnet: ${(await response.text()).slice(0, 160)}`);
-  const json = await response.json() as any;
-  const url = json?.mask_image?.url ?? json?.image?.url;
-  const raw = url.startsWith("data:")
-    ? Buffer.from(url.split(",")[1], "base64")
-    : Buffer.from(await (await fetch(url)).arrayBuffer());
-  return toMask(raw);
-}
-
 /** One named region from SAM 3 — the ratified source for region geometry. */
 async function segment(bytes: Buffer, prompt: string): Promise<Mask> {
-  const response = await fetch("https://fal.run/fal-ai/sam-3/image", {
-    method: "POST",
-    headers: {
-      Authorization: `Key ${apiKey}`,
-      "Content-Type": "application/json",
-      "X-Fal-Object-Lifecycle-Preference": JSON.stringify({ expiration_duration_seconds: 3600 }),
-    },
-    body: JSON.stringify({
-      image_url: `data:image/png;base64,${bytes.toString("base64")}`,
-      prompt, include_scores: true, output_format: "png",
-    }),
-  });
-  if (!response.ok) throw new Error(`${prompt}: ${(await response.text()).slice(0, 160)}`);
-  const json = await response.json() as any;
-  if (!Array.isArray(json.masks) || json.masks.length === 0) throw new Error(`"${prompt}" returned nothing`);
-  const url = json.masks[0]?.url ?? json.masks[0];
-  const raw = url.startsWith("data:")
-    ? Buffer.from(url.split(",")[1], "base64")
-    : Buffer.from(await (await fetch(url)).arrayBuffer());
-  return toMask(raw);
+  return (await sam3(bytes, prompt)).all;
 }
 
 /** Share of a mask's own extent carrying a genuine blend value (D-215). */
@@ -181,7 +132,7 @@ console.log(`master ${master.width}x${master.height}  zone ${(coverage(zone) * 1
   background and barely onto skin, so the lower boundary hugs the hairline where
   texture hides a seam for free.
 */
-const masterSubject = await matteOf(masterBytes);
+const masterSubject = await birefnetMatte(masterBytes);
 const masterHair = await segment(masterBytes, "hair");
 const masterFace = await segment(masterBytes, "face skin");
 const placedZone = await placeDestinationZone({
@@ -205,10 +156,31 @@ console.log(`  applied-alpha ramp share ${(rampShare(before.applied) * 100).toFi
 console.log(`  tonal step across skin    ${beforeStep.meanStep.toFixed(2)} levels over ${beforeStep.pixels} px`);
 writeFileSync(`${OUT}/before.png`, await writePng(before.composite));
 
-/* ---- AFTER: tone harmonised, grain matched, edge from the paint's matte ---- */
-console.log("\nmatting the painted result…");
-const paintMatte = await matteOf(sized);
-console.log(`  patch matte coverage ${(coverage(paintMatte) * 100).toFixed(2)}%  ramp ${(rampShare(paintMatte) * 100).toFixed(1)}%`);
+/* ---- AFTER: tone harmonised, grain matched, edge from the paint's HAIR ---- */
+console.log("\nharvesting the painted result…");
+/*
+  THE HARVEST GATE, and the correction to what this script shipped first.
+
+  The first version passed BiRefNet's SUBJECT matte here. The mechanism was
+  right — take the visible edge from the paint rather than from the zone's
+  geometry — but the input was wrong: a subject matte is opaque across the whole
+  person, so it confirms the painter's repainted CLOTHING exactly as readily as
+  her hair. The person-never-stage wall was not enforced; it only looked
+  enforced, because this fixture's zone never crosses her t-shirt and so had
+  nothing to fail on.
+
+  `harvest-gate.mts` measured what that costs on a zone that DOES cross it:
+  60,783 pixels of her own shirt repainted and kept, against 0 under the fix.
+  The matte the gate needs is a hair matte OF THE PATCH — SAM 3 for the
+  territory, BiRefNet for the edge ramp, composed (D-216, because fal has
+  neither a face-parsing nor a hair-matting model to ask directly).
+*/
+const patchSubject = await birefnetMatte(sized);
+const patchHair = await sam3(sized, "hair");
+const paintMatte = await harvestMatteFrom({ content: patchHair.all, matte: patchSubject });
+console.log(`  patch subject   ${(coverage(patchSubject) * 100).toFixed(2)}%  ramp ${(rampShare(patchSubject) * 100).toFixed(1)}%`);
+console.log(`  patch hair      ${(coverage(patchHair.all) * 100).toFixed(2)}%  scores ${patchHair.scores.join(", ")}`);
+console.log(`  HARVEST matte   ${(coverage(paintMatte) * 100).toFixed(2)}%  ramp ${(rampShare(paintMatte) * 100).toFixed(1)}%`);
 
 const harmonised = harmonizeSeam({ master, patch, mask: placedZone, bandPx: 14 });
 const grained = matchGrain({ master, patch: harmonised, mask: placedZone, ringPx: 6 });
@@ -253,6 +225,7 @@ writeFileSync(`${OUT}/results.json`, `${JSON.stringify({
   master: MASTER, raw: RAW,
   before: { rampShare: rampShare(before.applied), skinStep: beforeStep, outsideIdentical: outsideBefore.identical },
   after: { rampShare: rampShare(after.applied), skinStep: afterStep, outsideIdentical: outsideAfter.identical },
-  patchMatte: { coverage: coverage(paintMatte), rampShare: rampShare(paintMatte) },
+  harvestMatte: { coverage: coverage(paintMatte), rampShare: rampShare(paintMatte) },
+  patchSubjectMatte: { coverage: coverage(patchSubject), rampShare: rampShare(patchSubject) },
 }, null, 2)}\n`);
 console.log(`\nwritten to ${OUT}`);

@@ -496,6 +496,76 @@ export function intersectMask(a: Mask, b: Mask): Mask {
   return { data, width: a.width, height: a.height };
 }
 
+/**
+ * How far the content segmentation is grown before it meets the matte.
+ *
+ * D-216 measured why this cannot be zero: a SAM-class segmenter draws a HARD
+ * edge, and on hair that edge sits INSIDE the matte's flyaway zone. Intersecting
+ * the two directly therefore clips off exactly the wisps the matte was brought in
+ * for — ramp share 0%. Growing the hard region a few pixels first lets the
+ * matte's own soft edge govern: ramp 17.4%, wisps survive.
+ *
+ * Provisional at 4 on one specimen. r=16 visibly bleeds onto the forehead, so
+ * the useful band is narrow and the number lives here rather than at call sites.
+ */
+const DEFAULT_HARVEST_GROWTH = 4;
+
+/**
+ * THE HARVEST GATE — founder law, 2026-08-06. **Hair is a layer over the master
+ * world**, and this is the arithmetic that makes that true.
+ *
+ * A destination zone may cover ANY territory the style plausibly reaches: face,
+ * ears, shoulders, clothing, background. That generosity is safe — and only safe
+ * — because of what happens on the way out: **only matte-confirmed content
+ * survives the composite, and every other pixel inside the zone reverts to the
+ * master.** Forehead skin, t-shirt fabric and wall alike. A 30%-alpha strand is
+ * 30% new hair over 70% of her actual cheek.
+ *
+ * It is the glasses doctrine in reverse — there the master composites over the
+ * paint, here the painted strands composite over the master — and in both **the
+ * skin in the sandwich is always hers.** Geometric carve-outs govern where the
+ * two agree; harvest-gating governs where they conflict.
+ *
+ * **Corollary, and the reason this is a law rather than a finish trick: it
+ * enforces person-never-stage BY CONSTRUCTION.** The painter returns a whole
+ * frame and repaints all of it — on the specimen this was measured against,
+ * 99.6% of pixels moved and the sleeves and neckline were visibly displaced.
+ * None of that can reach the customer, because none of it is hair.
+ *
+ * # The defect this exists to prevent, which shipped once
+ *
+ * The first version passed BiRefNet's **subject** matte here. A subject matte is
+ * opaque across the whole person, so it confirms the painter's repainted
+ * CLOTHING as readily as the hair, and the wall silently did nothing. It looked
+ * enforced only because the fixtures ran hair against a plain wall, where there
+ * was no clothing inside the zone for it to fail on. **The mechanism was right;
+ * the input was wrong** — which is why this function takes the two masks
+ * separately and names what each one is for.
+ *
+ *   `content`   WHERE the overlay content is — a SAM-class segmentation of the
+ *               region kind being edited, run on the PATCH. Binary, and that is
+ *               fine; it is not the visible edge.
+ *   `matte`     the soft edge ramp on that same patch. It supplies strand
+ *               texture, not territory.
+ *
+ * Neither alone is the harvest matte: the first has no blendable edge, the
+ * second has no opinion about what the pixels are.
+ */
+export async function harvestMatteFrom(input: {
+  /** Segmentation of the overlay content, on the PATCH — never on the master. */
+  content: Mask;
+  /** Soft matte on the same patch, for the edge ramp only. */
+  matte: Mask;
+  /** How far to grow `content` before intersecting. See `DEFAULT_HARVEST_GROWTH`. */
+  growPx?: number;
+}): Promise<Mask> {
+  assertStride(input.content, "content segmentation");
+  assertStride(input.matte, "edge matte");
+  assertSameSize(input.content, input.matte);
+  const grown = await dilateMask(input.content, input.growPx ?? DEFAULT_HARVEST_GROWTH);
+  return intersectMask(grown, input.matte);
+}
+
 /** How far a destination zone may reach onto skin. See `placeDestinationZone`. */
 const DEFAULT_SKIN_MARGIN = 8;
 

@@ -11,6 +11,7 @@ import {
   eyewearRegion,
   hairMaskFrom,
   hairRegion,
+  harvestMatteFrom,
   mergeRegions,
   rasterise,
   subtractMask,
@@ -501,5 +502,126 @@ describe("placeDestinationZone — a boundary is not allowed to sit on open skin
     const face = box({ x: 24, y: 24 }, { x: 40, y: 40 });
     const zone = await placeDestinationZone({ region: hair, subject, reach: 12, skinMargin: 6, exclude: face });
     expect(zone.data[30 * SIZE + 32], "the exclusion wins over the skin margin").toBe(0);
+  });
+});
+
+describe("the harvest gate — only confirmed content survives, everything else is hers", () => {
+  const SIZE = 64;
+  const blank = () => Buffer.alloc(SIZE * SIZE, 0);
+  const paint = (
+    data: Buffer,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    value: number,
+  ) => {
+    for (let y = from.y; y < to.y; y += 1) {
+      for (let x = from.x; x < to.x; x += 1) data[y * SIZE + x] = value;
+    }
+  };
+
+  /*
+    A person, as two masks a real pipeline would actually hold.
+
+    `content` is what a SAM-class segmenter says the HAIR is on the patch: hard
+    edged, and stopping short of the flyaway strands. `subject` is what BiRefNet
+    says the PERSON is: soft at the outer silhouette, opaque across hair, skin
+    and shirt alike — because a subject matte has no opinion about which is
+    which. That indifference is the whole defect.
+  */
+  const content = (() => {
+    const data = blank();
+    paint(data, { x: 18, y: 6 }, { x: 46, y: 22 }, 255);
+    return { data, width: SIZE, height: SIZE };
+  })();
+
+  const subject = (() => {
+    const data = blank();
+    /* head, torso and shirt — one opaque person */
+    paint(data, { x: 16, y: 6 }, { x: 48, y: 64 }, 255);
+    /* flyaway strands above the hard hair edge: soft, and OUTSIDE `content` */
+    paint(data, { x: 18, y: 3 }, { x: 46, y: 6 }, 100);
+    return { data, width: SIZE, height: SIZE };
+  })();
+
+  const HAIR = { x: 32, y: 14 };
+  const FLYAWAY = { x: 32, y: 4 };
+  const SHIRT = { x: 32, y: 52 };
+  const at = (mask: Mask, point: { x: number; y: number }) => mask.data[point.y * SIZE + point.x];
+
+  it("keeps the hair", async () => {
+    const harvest = await harvestMatteFrom({ content, matte: subject });
+    expect(at(harvest, HAIR), "confirmed hair survives the harvest").toBe(255);
+  });
+
+  it("drops the shirt — the painter's clothing never reaches the customer", async () => {
+    const harvest = await harvestMatteFrom({ content, matte: subject });
+    expect(at(harvest, SHIRT), "clothing is not hair, so it does not survive").toBe(0);
+  });
+
+  it("the subject matte DOES confirm that shirt — the control that makes the wall mean something", () => {
+    /*
+      Without this the assertion above could pass because the shirt happened to
+      be outside every mask in the fixture. It is not: a subject matte claims it
+      at full opacity, which is exactly what shipped, and exactly why the wall
+      looked enforced while doing nothing.
+    */
+    expect(at(subject, SHIRT), "the wrong matte would hand the shirt straight through").toBe(255);
+  });
+
+  it("grows the hard edge first, or the wisps it was brought in for are clipped off (D-216)", async () => {
+    const clipped = await harvestMatteFrom({ content, matte: subject, growPx: 0 });
+    const grown = await harvestMatteFrom({ content, matte: subject });
+    expect(at(clipped, FLYAWAY), "a hard segmentation cuts the flyaway strands to nothing").toBe(0);
+    expect(at(grown, FLYAWAY), "grown first, the matte's own soft edge governs").toBeGreaterThan(0);
+  });
+
+  it("takes its content from the patch and its edge from the matte, never one mask twice", async () => {
+    /* Passing the subject as BOTH is the shipped defect written out in one line:
+       the harvest matte becomes the subject matte and the wall disappears. */
+    const degenerate = await harvestMatteFrom({ content: subject, matte: subject });
+    expect(at(degenerate, SHIRT), "one mask twice is no wall at all").toBe(255);
+  });
+
+  it("reverts every non-hair pixel in a generous zone to the master, byte for byte", async () => {
+    /*
+      The founder-facing form, end to end. The zone is deliberately generous —
+      it covers the shirt, which the harvest law explicitly permits — and the
+      patch redrew the entire frame, which is what the painter actually does.
+    */
+    const master = solid([120, 120, 120]);
+    const patch = solid([20, 200, 40]);
+    const zone = (() => {
+      const data = blank();
+      paint(data, { x: 10, y: 0 }, { x: 54, y: 64 }, 255);
+      return { data, width: SIZE, height: SIZE };
+    })();
+
+    const harvest = await harvestMatteFrom({ content, matte: subject });
+    const walled = await compositeMasked({ master, patch, mask: zone, edgeMatte: harvest });
+    const shirtAt = (SHIRT.y * SIZE + SHIRT.x) * 3;
+    expect(
+      [walled.composite.data[shirtAt], walled.composite.data[shirtAt + 1], walled.composite.data[shirtAt + 2]],
+      "her own shirt, unchanged, inside a zone that was allowed to cover it",
+    ).toEqual([120, 120, 120]);
+    /* And the hair genuinely did change, or the wall is just a broken composite. */
+    const hairAt = (HAIR.y * SIZE + HAIR.x) * 3;
+    expect(walled.composite.data[hairAt + 1], "the hair still took the paint").toBe(200);
+  });
+
+  it("and the subject matte hands that same shirt through — the end-to-end control", async () => {
+    const master = solid([120, 120, 120]);
+    const patch = solid([20, 200, 40]);
+    const zone = (() => {
+      const data = blank();
+      paint(data, { x: 10, y: 0 }, { x: 54, y: 64 }, 255);
+      return { data, width: SIZE, height: SIZE };
+    })();
+
+    const leaky = await compositeMasked({ master, patch, mask: zone, edgeMatte: subject });
+    const shirtAt = (SHIRT.y * SIZE + SHIRT.x) * 3;
+    expect(
+      leaky.composite.data[shirtAt + 1],
+      "the defect, reproduced: the painter's clothing survives on a subject matte",
+    ).toBe(200);
   });
 });
