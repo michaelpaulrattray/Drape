@@ -3,11 +3,81 @@
 **For the founder's eye, 2026-08-06.** Everything below is a picture on disk with
 a number beside it. Nothing here has touched the product path.
 
+> **PASS 1 VERDICT: HELD, on the sticker effect.** The founder's eye caught what
+> every measurement here had missed — the edits are *correct* and they do not
+> *belong*. That is answered in the section immediately below; the rest of the
+> wall stands as it was, and the exhibits it references are the before-side of
+> the comparison.
+
 Exhibits live in `docs/specs/masked-editing/shop/evidence/`. **Every before/after
 pair carries a DIFFERENCE VIEW**, because a pair on its own is what sent this
 work chasing a seam that was not there for three rounds. A difference panel is
 black where nothing moved and bright where something did; the panels are
 amplified, and each says by how much.
+
+---
+
+## PASS 1'S FINDING, ANSWERED — the sticker effect
+
+`EXHIBIT-22a-sticker-fringe.png`, `EXHIBIT-22b-sticker-hair-down.png`,
+`EXHIBIT-22c-sticker-afro.png` — each one is **master / A / B / C at 100%**.
+
+Three observations, one cause. The fringe floats; the afro edge reads
+smoothed-out; the ends cut off straight and lie on the shirt with no shadow.
+**A strict substance harvest keeps only pixels a segmenter confirms ARE the
+object — and a contact shadow is not the object.** Neither is occlusion
+darkening, or a translucent taper, or spill. Those are precisely the pixels that
+make a thing belong to a photograph rather than sit on top of one, and the
+harvest was discarding every one of them. The result is a correct cut-out of the
+right shape, floating.
+
+The founder's phrasing was the brief: **allow room for the model to actually
+blend.**
+
+| mode | what it does |
+|---|---|
+| **A — substance** | what shipped. The baseline, kept in the comparison rather than assumed to lose |
+| **B — interaction** | + painter-delta pixels within a bounded band of confirmed content. Shadows, tapers and spill arrive — and so does any colour the painter felt like adding |
+| **C — shadow** | the same band, adopting **only darkening**, as a multiply from the painter's luminance. Contact shadows without letting it tint her |
+
+**The tip taper is in all three**, because it answers a separate observation: a
+segmenter stops where its confidence does, so the matte knew a strand end was 20%
+there and the harvest multiplied it by zero. Now 20% confident renders at 20%.
+Between 7,533 and 12,765 strand-tip pixels per case were being clipped.
+
+### My read, and the founder's call
+
+**C.** It gets the belonging on all three observations — root shading under the
+fringe, a cast shadow on the wall behind the afro, contact where the hair lies on
+the shirt — and it gets there on a *narrower permission* than B. Under C the
+band can only make her darker; her hue survives by construction, because every
+channel is scaled by one factor. B reaches the same place and carries the
+painter's colour with it, and every complaint in this program's history is about
+something arriving unbidden.
+
+B and C are close on the pictures. The difference is what they *allow*, not what
+they produced here, and that is the thing worth choosing on.
+
+### What it costs, stated rather than absorbed
+
+| case | band | C adopted | what C adds over A |
+|---|---|---|---|
+| afro | 43,554 px | 20,893 | 0.02% of the frame, max 34 levels |
+| fringe | 22,843 px | 7,588 | 0.38%, max 124 levels |
+| hair-down | 68,372 px | 42,444 | 2.04%, max 222 levels |
+
+The byte-identical territory shrinks by exactly that band. **Beyond the
+destination zone nothing moves at all — 0 pixels, on all nine composites.** That
+half of the guarantee is untouched and always will be; this is the boundary
+becoming accurate about where it actually sits.
+
+Adoption is a **comparison against the painter's own drift, measured per render**,
+not a threshold — the painter repaints 99% of the frame, so "it differs here" is
+true everywhere and selects nothing. What a contact shadow does is differ far
+more than the painter's background noise does.
+
+**Nothing here relaxes the face.** Fox-eyes-class strictness is untouched:
+features, eyes and glasses are exactly as strict as they were.
 
 ---
 
@@ -220,9 +290,14 @@ cleaner than the painter drew it. Named limit, visible in `EXHIBIT-17`.
 
 ## What this wall is asking for
 
-A walk. The same sequence that blocked the sale — freckles, earrings, a removal —
-on the masked path, in the founder's own hands. **That walk is what ends in a
-Sign.**
+**Pass 2: one call, then a walk.**
 
-Nothing here has touched the product path, and nothing should until the walk
-passes.
+The call is **A, B or C** — `EXHIBIT-22a/b/c`, master and all three modes at
+100%. My recommendation is C, for the permission it withholds rather than the
+pixels it produced.
+
+Then the walk: the same sequence that blocked the sale — freckles, earrings, a
+removal — on the masked path, in the founder's own hands. **That walk is what
+ends in a Sign.**
+
+Nothing here has touched the product path, and nothing should until both land.

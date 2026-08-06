@@ -7448,4 +7448,83 @@ ceiling and a future shop round, not a launch item.**
 
 ---
 
+## D-229 — THE STICKER EFFECT. A substance harvest discards exactly the pixels that make a thing belong.
+
+**Founder's formal pass on the face wall, 2026-08-06: HELD, on one class.** Three
+observations — the fringe floats with no root shading; the afro edge reads
+smoothed-out with no cast shadow on the wall; the long hair's ends cut off
+straight and lie on the shirt with zero shadowing.
+
+**One cause, and it is structural rather than a tuning miss.** The harvest gate
+keeps only pixels a segmenter confirms ARE the object. A contact shadow is not
+the object. Neither is occlusion darkening, a translucent taper, or spill — and
+those are precisely the pixels that make something belong to a photograph rather
+than sit on top of one. **A perfectly correct cut-out of the right shape is a
+sticker.** The founder's phrasing is the design brief: *allow room for the model
+to actually blend.*
+
+This is the fidelity law arriving from an unfamiliar direction. Every previous
+instance was about not substituting a lesser source; this one is about a
+*correct* source, applied so strictly that it removes the very thing being
+reached for. Strictness has a cost and it is not always zero.
+
+### The three modes, and what separates them
+
+|  | keeps | permits |
+|---|---|---|
+| **A substance** | confirmed object only | nothing else — what shipped |
+| **B interaction** | + painter delta in a bounded band | shadows, tapers, spill **and any colour the painter chose** |
+| **C shadow** | + darkening only, as a luminance multiply | contact shadows; **hue cannot change, by construction** |
+
+**Adoption is a COMPARISON against the painter's own drift, measured per render**
+(D-218's form). A threshold adopts the whole band, because the painter repaints
+essentially every pixel — 99.6% of the frame on the specimen this was measured
+against. What a contact shadow does is differ *far more than the painter's
+background noise does*, and the noise floor is measured from pixels well outside
+the band on every render.
+
+**Recommendation: C.** It reaches the same place as B on the pictures and gets
+there on a narrower permission — every channel scaled by one factor, so nothing
+in the band can change what colour she is. Every complaint in this program's
+history is about something arriving unbidden. **The founder's eye decides.**
+
+### The tip taper, a separate fix for a separate observation
+
+A SAM-class segmentation is binary and stops where its confidence does — short of
+the finest strand ends. `intersect` then multiplies a tip the matte knew was 20%
+there by zero: a straight cut where a taper belongs. The matte's own value is now
+adopted just outside confirmed content, **so 20% confident renders at 20%.**
+Between 7,533 and 12,765 pixels per case were being clipped.
+
+Bounded two ways, because the unbounded version is exactly D-216's r=16 forehead
+bleed: by DISTANCE, and by RAMP-NESS — adopted only where the matte carries a
+genuine edge value, reusing **D-215's already-ratified ramp band** rather than
+inventing a threshold. Opaque interior scores zero ramp-ness and is never
+adopted, which is what distinguishes a strand end from a cheek.
+
+### The guarantee, restated rather than broken
+
+The byte-identical territory shrinks by exactly the measured band, and the band
+is reported per case rather than absorbed. **Beyond the destination zone nothing
+moves at all — 0 pixels, on all nine composites.** That half never bends. This is
+the promise becoming accurate about where its boundary sits, which is the
+opposite of weakening it.
+
+**Nothing here relaxes the face.** Fox-eyes-class strictness on features, eyes
+and glasses is untouched.
+
+### And a third go at one boundary, worth recording
+
+Asserting "beyond the zone" took three attempts, and **both wrong ones fired on
+MODE A — which changes nothing — which is how the guard was known to be wrong
+rather than the composite.** First against the hard zone: the same mistake as
+`cropped-region-read.mts`, calling a designed blend a broken promise. Then
+against `dilate(zone, 6)`: still wrong, because **a gaussian's support is far
+wider than its radius**, leaving a ring of legitimately blended pixels outside
+the boundary being asserted against. It is now COMPUTED as the feathered zone's
+own nonzero set. *Estimating a boundary you can calculate* is the approximation
+habit this program keeps catching, in its smallest costume yet.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
