@@ -557,6 +557,79 @@ export function differenceMatte(input: {
 }
 
 /**
+ * SKIN-AWARE WASH SUPPRESSION — the founder's D ruling, and the last thing
+ * standing between the two modes.
+ *
+ * The ruling: *the band of forehead under the fringe reads a shade lighter and
+ * flatter than her real skin, with a findable soft edge — subtle and
+ * hairline-hugging in C, wider and following the strands down in D.* Neither
+ * mode ships until it is gone.
+ *
+ * # What it actually is, measured rather than assumed
+ *
+ * The first reading was that the painter renders her forehead lighter and a film
+ * of it comes through. **The measurement says the painter made 42,163 forehead
+ * pixels DARKER and only 1,799 lighter**, and the composite lightens 179. So the
+ * veil is not a lightening, and gating on that sign would have suppressed
+ * nothing.
+ *
+ * What it IS shows up the moment adoption is split by strength. On her forehead:
+ *
+ *   mode C   24,678 px touched, of which **2,961 sit below half alpha**
+ *   mode D   31,137 px touched, of which **9,855 sit below half alpha**
+ *
+ * A 3.3× larger faint population, which is precisely the founder's "subtle and
+ * hairline-hugging in C, wider in D". **The veil is the low-alpha tail**: a
+ * translucent film of painter-forehead — mostly darker, and flatter, because a
+ * generated surface has less texture than her skin — laid across open skin at
+ * strengths too weak to be a strand and too broad to be a shadow.
+ *
+ * # The rule, which is the grain work's principle moved to adoption
+ *
+ * **Keep what is a strand, and what touches a strand. Refuse broad low-intensity
+ * claims on open skin.** A contact shadow AT the strand is exactly the thing
+ * mode C was ratified for and stays; a faint wash spreading across a forehead
+ * with no strand in it has nothing casting it.
+ *
+ * Skin-aware on purpose (`where`): the rule applies only where a wash is a
+ * defect. Over background or inside the hair mass a faint claim is ordinary
+ * blending, and a gate that swept those would undo the strand recovery it is
+ * meant to protect.
+ */
+export function suppressWash(input: {
+  alpha: Mask;
+  /** Where a wash is a defect — her skin. Elsewhere the gate does not apply. */
+  where: Mask;
+  /** At or above this, a claim is a strand and is never touched. */
+  coreAt?: number;
+  /** How far a faint claim may sit from a strand and still count as touching it. */
+  reachPx?: number;
+}): { alpha: Mask; suppressedPixels: number } {
+  const coreAt = input.coreAt ?? 200;
+  const reachPx = input.reachPx ?? 6;
+  const { width, height } = input.alpha;
+
+  const core: Mask = {
+    data: Buffer.from(input.alpha.data.map((value) => (value >= coreAt ? 255 : 0))),
+    width,
+    height,
+  };
+  const near = distanceOutside(core, reachPx);
+  const data = Buffer.from(input.alpha.data);
+  let suppressedPixels = 0;
+  for (let pixel = 0; pixel < data.length; pixel += 1) {
+    if (data[pixel] === 0 || data[pixel] >= coreAt) continue;
+    if (input.where.data[pixel] === 0) continue;
+    /* `near` is 0 inside the core and a positive distance outward; -1 means the
+       nearest strand is further away than a contact shadow could reach. */
+    if (near[pixel] >= 0) continue;
+    data[pixel] = 0;
+    suppressedPixels += 1;
+  }
+  return { alpha: { data, width, height }, suppressedPixels };
+}
+
+/**
  * THE INTERACTION BAND — the sticker effect, and the founder's brief verbatim:
  * *allow room for the model to actually blend.*
  *

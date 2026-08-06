@@ -4,6 +4,7 @@ import {
   CompositeError,
   adoptInteraction,
   differenceMatte,
+  suppressWash,
   compositeMasked,
   featherMask,
   harmonizeSeam,
@@ -650,5 +651,61 @@ describe("difference matting — the strand alpha we already own the background 
        reference toward the plate and bias every alpha downstream. */
     const { strandColour } = differenceMatte({ master, patch: withTip(0.5), confirmed, reachPx: 10 });
     expect(strandColour[0]).toBeLessThan(GREY / 2);
+  });
+});
+
+describe("skin-aware wash suppression — a film with nothing casting it", () => {
+  const SIZE = 64;
+  const blank = () => Buffer.alloc(SIZE * SIZE, 0);
+  const box = (from: { x: number; y: number }, to: { x: number; y: number }, fill: number): Mask => {
+    const data = blank();
+    for (let y = from.y; y < to.y; y += 1) for (let x = from.x; x < to.x; x += 1) data[y * SIZE + x] = fill;
+    return { data, width: SIZE, height: SIZE };
+  };
+  const merge = (...masks: Mask[]): Mask => {
+    const data = blank();
+    for (const mask of masks) for (let i = 0; i < data.length; i += 1) if (mask.data[i] > data[i]) data[i] = mask.data[i];
+    return { data, width: SIZE, height: SIZE };
+  };
+
+  /* Her forehead, and three claims on it: a strand, the shadow beside that
+     strand, and a faint wash off on its own with nothing casting it. */
+  const skin = box({ x: 4, y: 4 }, { x: 60, y: 60 }, 255);
+  const strand = box({ x: 20, y: 10 }, { x: 24, y: 40 }, 255);
+  const shadowAtStrand = box({ x: 24, y: 10 }, { x: 28, y: 40 }, 90);
+  const wash = box({ x: 40, y: 20 }, { x: 56, y: 44 }, 60);
+
+  it("keeps the strand", () => {
+    const { alpha } = suppressWash({ alpha: merge(strand, shadowAtStrand, wash), where: skin });
+    expect(alpha.data[20 * SIZE + 22], "a strand is never touched").toBe(255);
+  });
+
+  it("keeps the shadow that touches the strand — the ratified behaviour survives", () => {
+    const { alpha } = suppressWash({ alpha: merge(strand, shadowAtStrand, wash), where: skin });
+    expect(alpha.data[20 * SIZE + 25], "a contact shadow at the strand stays").toBe(90);
+  });
+
+  it("refuses the broad faint claim with nothing casting it", () => {
+    const { alpha, suppressedPixels } = suppressWash({ alpha: merge(strand, shadowAtStrand, wash), where: skin });
+    expect(alpha.data[30 * SIZE + 48], "a wash on open skin goes").toBe(0);
+    expect(suppressedPixels).toBeGreaterThan(0);
+  });
+
+  it("leaves the same faint claim alone OFF skin — the gate is skin-aware", () => {
+    /* The control that stops this being a blanket faint-claim killer. Over
+       background a soft claim is ordinary blending, and sweeping those would
+       undo the strand recovery this exists to protect. */
+    const noSkin = box({ x: 0, y: 0 }, { x: 8, y: 8 }, 255);
+    const { alpha, suppressedPixels } = suppressWash({ alpha: merge(strand, shadowAtStrand, wash), where: noSkin });
+    expect(alpha.data[30 * SIZE + 48], "off skin it is left alone").toBe(60);
+    expect(suppressedPixels).toBe(0);
+  });
+
+  it("does not quietly become a no-op — the wash really was reachable", () => {
+    /* Without this, "refuses the wash" could pass because the wash was already
+       zero or already outside `where`. It is neither. */
+    const before = merge(strand, shadowAtStrand, wash);
+    expect(before.data[30 * SIZE + 48]).toBe(60);
+    expect(skin.data[30 * SIZE + 48]).toBe(255);
   });
 });
