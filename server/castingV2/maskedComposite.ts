@@ -557,6 +557,118 @@ export function differenceMatte(input: {
 }
 
 /**
+ * THE HARVEST GATE — one defect, two costumes, closed from the inside.
+ *
+ * A SAM-class mask fills an object's SILHOUETTE. Outside the fringe that
+ * boundary became a haircut (D-230); inside it, the enclosed gaps between
+ * strands are her own forehead, claimed at FULL alpha and filled with the
+ * painter's version of it. Measured: of 21,767 pixels the harvest claims at full
+ * strength outside her existing hair, **4,201 — 19.3% — are not strand-coloured**,
+ * and the mean strand projection across the whole claim is 0.58. That is the
+ * founder's pale veil, and the afro's edge-gaps leak painter-wall by the same
+ * mechanism.
+ *
+ * So the gate is GLOBAL, because the defect is. It is also a **pure narrowing**:
+ * it can only ever revert more pixels to her, never admit one. That is the safe
+ * direction to widen — nothing new is let in anywhere.
+ *
+ * # The hazard, and why the criterion is not the obvious one
+ *
+ * The obvious gate is the strand PROJECTION: keep what moved toward the strand
+ * colour. It has a named hazard — **specular shine is real hair content that is
+ * not strand-coloured.** A highlight moves toward white, away from a dark strand,
+ * so a naive projection gate punches holes in glossy hair.
+ *
+ * `novelty` is the criterion that survives it. The question it asks is not *is
+ * this the strand* but **is this HER SURFACE**: a veil of painter-forehead sits
+ * close to the master, because it is her forehead rendered slightly differently;
+ * a strand and a highlight both sit far from it. Scaled against the painter's own
+ * baseline drift, measured per render, so a painter having a wild day raises its
+ * own bar (the same comparison D-218 asks for).
+ *
+ * Both are implemented and the probe chose, because "projection would kill shine"
+ * was a prediction until a measurement said so — and predictions have lost twice
+ * in this sequence already. `scripts/calibration/shine-probe.mts`, on the
+ * brown-wave render and the copper one whose highlights run bright:
+ *
+ *   criterion     real shine lost (hair-down / copper)   shine DIMMED
+ *   projection            0.6%  /  1.0%                  5,584 / 9,304 px
+ *   novelty               0.0%  /  0.0%                    428 /     0 px
+ *   either                0.0%  /  0.0%                    766 /   498 px
+ *
+ * **The hazard is real: the approved projection criterion does dim glossy hair**,
+ * thousands of pixels of it, and loses some outright. `novelty` spares shine
+ * completely while reverting substantially more veil than `either` — so it is the
+ * default, and projection stays available for a case that wants it.
+ *
+ * One correction the probe needed on itself: a punch-out only costs something if
+ * the pixel was going to change the picture. Where the patch already equals the
+ * master — hair the painter left alone — reverting is a no-op, and counting it as
+ * damage condemned the gate for doing nothing. Copper's raw 16% became a real 1%.
+ */
+export type HarvestGateCriterion = "projection" | "novelty" | "either";
+
+export function harvestGate(input: {
+  master: Raster;
+  patch: Raster;
+  /** The claim to narrow. Never widened. */
+  alpha: Mask;
+  /** Measured from the interior of confirmed content — see `differenceMatte`. */
+  strandColour: [number, number, number];
+  /** The painter's own drift, measured per render from untouched territory. */
+  baselineDelta: number;
+  criterion?: HarvestGateCriterion;
+  /** Below this share of a full strand move, a claim is not the strand. */
+  keepAt?: number;
+}): { alpha: Mask; revertedPixels: number; softenedPixels: number } {
+  const criterion = input.criterion ?? "novelty";
+  const keepAt = input.keepAt ?? 0.35;
+  const { master, patch } = input;
+  const quiet = Math.max(2, input.baselineDelta * 2);
+  const loud = Math.max(quiet + 1, input.baselineDelta * 6);
+
+  const data = Buffer.from(input.alpha.data);
+  let revertedPixels = 0;
+  let softenedPixels = 0;
+  for (let pixel = 0; pixel < data.length; pixel += 1) {
+    if (data[pixel] === 0) continue;
+    const at = pixel * 3;
+
+    let projection = 0;
+    if (criterion !== "novelty") {
+      let dot = 0;
+      let span = 0;
+      for (let channel = 0; channel < 3; channel += 1) {
+        const toStrand = input.strandColour[channel] - master.data[at + channel];
+        dot += (patch.data[at + channel] - master.data[at + channel]) * toStrand;
+        span += toStrand * toStrand;
+      }
+      projection = span > 1 ? Math.max(0, Math.min(1, dot / span)) : 0;
+    }
+
+    let novelty = 0;
+    if (criterion !== "projection") {
+      const delta = (Math.abs(patch.data[at] - master.data[at])
+        + Math.abs(patch.data[at + 1] - master.data[at + 1])
+        + Math.abs(patch.data[at + 2] - master.data[at + 2])) / 3;
+      novelty = Math.max(0, Math.min(1, (delta - quiet) / (loud - quiet)));
+    }
+
+    const confidence = criterion === "projection" ? projection
+      : criterion === "novelty" ? novelty
+        : Math.max(projection, novelty);
+
+    if (confidence >= keepAt) continue;
+    /* Scaled down rather than cut, so the gate cannot introduce a hard edge of
+       its own — the failure this whole workstream keeps finding. */
+    const kept = Math.round(data[pixel] * (confidence / keepAt));
+    if (kept === 0) revertedPixels += 1; else softenedPixels += 1;
+    data[pixel] = kept;
+  }
+  return { alpha: { data, width: input.alpha.width, height: input.alpha.height }, revertedPixels, softenedPixels };
+}
+
+/**
  * SKIN-AWARE WASH SUPPRESSION — the founder's D ruling, and the last thing
  * standing between the two modes.
  *

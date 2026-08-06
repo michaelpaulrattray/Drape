@@ -7677,4 +7677,43 @@ one every such check uses.**
 
 ---
 
+## D-232 — Measure a defect where the change is, never where an instrument says to look.
+
+**Four boundary errors in one session, one rule.** Each time a boundary was
+derived from an INPUT rather than from the artifact, and each time the picture
+had to correct the arithmetic:
+
+| # | boundary drawn from | what it cost |
+|---|---|---|
+| 1 | the hard zone, not the feather band | a designed blend reported as a broken promise |
+| 2 | `dilate(zone, 6)`, not the gaussian's real support | a ring of legitimate blend outside the assertion |
+| 3 | the harvest, not `composed.applied` | 5,682 ratified contact shadows reported as a wall breach |
+| 4 | SAM 3's "face skin", not where the defect is | **179 lightened pixels reported where the frame carried 30,093** |
+
+The fourth is the clearest. The face-skin mask begins at row 316; the veil is
+dense from row 105. More than half the defect sat outside the region being
+measured, and the instrument returned a confident, precise, useless number.
+
+**THE RULE: a defect is measured where the change is, never where an
+instrument's opinion says to look. Scope by the observed delta against the
+master, which cannot be wrong about where things changed.** `composed.applied`
+is the canonical boundary for anything about what the composite did; the
+master-delta is the canonical territory for anything about where a defect lives.
+Both share the property that makes them trustworthy — they are the artifact, not
+a claim about it.
+
+Same family as D-231's instrument lesson, and the two now bracket the problem:
+**prefer the thing that fired over the thing you computed, and prefer the thing
+that changed over the thing that was asked.**
+
+### The near-miss that made it concrete
+
+`suppressWash` hit its target five- to nine-fold — the faint-claim tail fell 82%
+in C and 89% in D — and the picture stayed dirty, because the tail was not the
+defect. *"I would have shipped a clean number and a dirty picture"* is the exact
+sentence the difference-view law exists to force, and this time it was obeyed
+before the claim went out rather than after.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

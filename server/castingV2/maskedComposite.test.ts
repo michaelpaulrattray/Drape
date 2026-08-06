@@ -4,6 +4,7 @@ import {
   CompositeError,
   adoptInteraction,
   differenceMatte,
+  harvestGate,
   suppressWash,
   compositeMasked,
   featherMask,
@@ -707,5 +708,80 @@ describe("skin-aware wash suppression — a film with nothing casting it", () =>
     const before = merge(strand, shadowAtStrand, wash);
     expect(before.data[30 * SIZE + 48]).toBe(60);
     expect(skin.data[30 * SIZE + 48]).toBe(255);
+  });
+});
+
+describe("the harvest gate — a pure narrowing, and shine survives it", () => {
+  const SIZE = 64;
+  const GREY: [number, number, number] = [190, 188, 186];
+  const STRAND: [number, number, number] = [45, 32, 26];
+  const raster = (fill: (pixel: number) => [number, number, number]): Raster => {
+    const data = Buffer.allocUnsafe(SIZE * SIZE * 3);
+    for (let pixel = 0; pixel < SIZE * SIZE; pixel += 1) {
+      const [r, g, b] = fill(pixel);
+      data[pixel * 3] = r; data[pixel * 3 + 1] = g; data[pixel * 3 + 2] = b;
+    }
+    return { data, width: SIZE, height: SIZE };
+  };
+  const inBox = (pixel: number, x0: number, y0: number, x1: number, y1: number) => {
+    const x = pixel % SIZE; const y = Math.floor(pixel / SIZE);
+    return x >= x0 && x < x1 && y >= y0 && y < y1;
+  };
+
+  const master = raster(() => GREY);
+  /* strand, a bright SHINE on that strand, and a faint veil of near-master. */
+  const patch = raster((pixel) => {
+    if (inBox(pixel, 10, 10, 20, 50)) return STRAND;
+    if (inBox(pixel, 20, 10, 26, 50)) return [225, 215, 205];
+    if (inBox(pixel, 40, 10, 56, 50)) return [188, 186, 184];
+    return GREY;
+  });
+  const claim: Mask = {
+    data: Buffer.from(Array.from({ length: SIZE * SIZE }, (_, pixel) =>
+      (inBox(pixel, 10, 10, 26, 50) || inBox(pixel, 40, 10, 56, 50)) ? 255 : 0)),
+    width: SIZE, height: SIZE,
+  };
+  const at = (mask: Mask, x: number, y: number) => mask.data[y * SIZE + x];
+
+  it("keeps the strand", () => {
+    const { alpha } = harvestGate({ master, patch, alpha: claim, strandColour: STRAND, baselineDelta: 1 });
+    expect(at(alpha, 15, 30)).toBe(255);
+  });
+
+  it("spares specular shine — the named hazard", () => {
+    /* A highlight moves toward white, AWAY from a dark strand. The criterion
+       that asks "is this her surface" keeps it; the one that asks "is this the
+       strand colour" does not. */
+    const novelty = harvestGate({ master, patch, alpha: claim, strandColour: STRAND, baselineDelta: 1 });
+    expect(at(novelty.alpha, 23, 30), "shine survives the shipped criterion").toBe(255);
+    const projection = harvestGate({
+      master, patch, alpha: claim, strandColour: STRAND, baselineDelta: 1, criterion: "projection",
+    });
+    expect(at(projection.alpha, 23, 30), "and projection WOULD have dimmed it — the control")
+      .toBeLessThan(255);
+  });
+
+  it("reverts the veil that is really her own surface", () => {
+    const { alpha, revertedPixels } = harvestGate({ master, patch, alpha: claim, strandColour: STRAND, baselineDelta: 1 });
+    expect(at(alpha, 48, 30), "near-master content is not new content").toBe(0);
+    expect(revertedPixels).toBeGreaterThan(0);
+  });
+
+  it("is a PURE NARROWING — it can never admit a pixel", () => {
+    /* The property that made global scope safe to approve. */
+    const { alpha } = harvestGate({ master, patch, alpha: claim, strandColour: STRAND, baselineDelta: 1 });
+    for (let pixel = 0; pixel < alpha.data.length; pixel += 1) {
+      expect(alpha.data[pixel]).toBeLessThanOrEqual(claim.data[pixel]);
+    }
+  });
+
+  it("scales down rather than cutting, so it cannot mint an edge of its own", () => {
+    const soft = raster((pixel) => (inBox(pixel, 40, 10, 56, 50) ? [187, 185, 183] : GREY));
+    const { alpha, softenedPixels } = harvestGate({
+      master, patch: soft, alpha: claim, strandColour: STRAND, baselineDelta: 1,
+    });
+    expect(softenedPixels, "partial confidence yields partial alpha").toBeGreaterThan(0);
+    expect(at(alpha, 48, 30)).toBeGreaterThan(0);
+    expect(at(alpha, 48, 30)).toBeLessThan(255);
   });
 });
