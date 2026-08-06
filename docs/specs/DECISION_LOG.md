@@ -7137,6 +7137,51 @@ as default is also the rule whose failure mode is recoverable. A chain that has
 drifted has no way back to the original; an anchored render that misreads a
 relative instruction is one re-ask away from right.
 
+## D-222 — The relative carve-out is SUPPORTED in direction, and its magnitude is unmeasured.
+
+**The re-run D-220 said it was owed, 2026-08-06.** Every relative instruction now
+follows a change to the same facet it is relative to, so "this" and the base
+genuinely differ. Length measured mechanically — the lowest hair pixel as a
+fraction of frame height. The prediction was written into the script before the
+run.
+
+| step | instruction | chain | anchored | gap |
+|---|---|---|---|---|
+| 1 | "much longer hair, well past her shoulders" | 56.3% | 56.3% | 0.1pp |
+| 2 | **"a bit shorter than this"** | **52.3%** | **56.3%** | **3.9pp** |
+| 3 | **"shorter again"** | 46.9% | 47.6% | 0.7pp |
+
+**At step 2 the chain shortened and base-anchoring did not move at all** — 56.3%,
+the same figure step 1 produced. The relative instruction had no referent in the
+recipe form and resolved to nothing. That is the exception earning itself, and it
+is the first evidence for it: D-220 could not produce any.
+
+**Step 3 is the surprise and it narrows the claim.** Two stacked relative
+instructions DID resolve under anchoring (47.6%, within 0.7pp of the chain). So
+the failure is not "anchoring cannot do relative" — it is closer to *a single
+relative clause after an absolute one can be dropped*, while a run of them
+accumulates enough signal to land. One instruction, not the mechanism.
+
+### The confound, stated because the number invites a wrong reading
+
+**56.3% is almost certainly the ZONE'S lower boundary, not the hair's length.**
+The base hair reaches 48.9% and the zone was a 90px dilation — about 5.9pp on a
+1536px frame — which lands within a whisker of 56.3%. The figure appears three
+times across separate renders, which is what saturation looks like.
+
+So step 1 measures the zone, not the model, and step 2's anchored figure says
+"still at or beyond the limit" rather than "exactly unchanged". **The DIRECTION
+survives** — the chain came in to 52.3%, well inside the ceiling, while anchoring
+stayed pinned at it, and clipping cannot manufacture that difference. **The
+MAGNITUDE does not.** 3.9pp is a floor on the gap, not a measurement of it.
+
+**What the row may say:** relative instructions are the chain's case, on one
+demonstrated instance, with the size of the effect unknown. **What it may not
+say:** any number. A clean magnitude needs the same sequence in a zone generous
+enough that "much longer" is not clipped — cheap, and worth doing before the
+exception is written into pricing or copy, since a chain-routed edit is a
+different cost shape from an anchored one.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
