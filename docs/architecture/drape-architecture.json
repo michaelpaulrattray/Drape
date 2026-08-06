@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0a8132cfdce3e1aa"
+    "sourceFingerprint": "89c942673ec1a9af"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 58
+      "moduleCount": 59
     },
     {
       "id": "domain:castingV2",
@@ -3251,6 +3251,12 @@
     {
       "id": "module:server/castingV2/cohortPhotorealHuman.ts",
       "path": "server/castingV2/cohortPhotorealHuman.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/falRegionReader.ts",
+      "path": "server/castingV2/falRegionReader.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -16995,6 +17001,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/hairResolver.ts",
       "to": "module:server/castingV2/castingIntent.ts",
       "kind": "imports"
@@ -17502,6 +17528,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/falRegionReader.ts",
       "kind": "imports"
     },
     {

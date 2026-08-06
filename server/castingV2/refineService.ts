@@ -115,6 +115,7 @@ import {
 } from "./refineRemoval";
 import { facetOfAxis, type Facet } from "./refineFacets";
 import { harvestRefinement, refusingRegionReader, type RegionReader } from "./maskedRefine";
+import { createFalRegionReader } from "./falRegionReader";
 import {
   captionClause,
   captionRealization,
@@ -251,12 +252,21 @@ export type RefineServiceDependencies = {
   /**
    * The segmenter the masked path asks where a region is.
    *
-   * Optional because the masked path is dark: with the flag off it is never
-   * consulted, and the default refuses rather than returning an empty mask —
-   * an empty mask composites to "nothing changed" and would charge her for the
-   * picture she already had.
+   * The default is fal-backed; without a key it refuses rather than returning an
+   * empty mask, because an empty mask composites to "nothing changed" and would
+   * charge her for the picture she already had.
    */
   regions?: RegionReader;
+  /**
+   * The masked harvest itself, injectable like every other dependency here.
+   *
+   * Suites that are about CHARGING, RETRYING and REFUNDING pass a passthrough:
+   * they are not about masking, `maskedRefine.test.ts` is, and running the real
+   * composite against a flat synthetic swatch measures the fixture rather than
+   * the service. The seam is a dependency for the same reason `interpret` and
+   * `verifier` are.
+   */
+  harvest?: typeof harvestRefinement;
   storeImage?: (
     input: { key: string; bytes: Buffer; contentType: string },
   ) => Promise<{ key: string; url: string }>;
@@ -264,6 +274,20 @@ export type RefineServiceDependencies = {
 
 async function defaultStoreImage(input: { key: string; bytes: Buffer; contentType: string }) {
   return storagePut(input.key, input.bytes, input.contentType);
+}
+
+/**
+ * The segmenter the masked path asks, in production.
+ *
+ * Built per call rather than at module load so an unconfigured key is a REFUSAL
+ * at the moment of use rather than a boot crash — and so the dark path never
+ * constructs one at all. Without a key it returns the refusing reader, because a
+ * masked edit that cannot segment must fail into the refund rather than quietly
+ * deliver an unmasked frame.
+ */
+function defaultRegionReader(): RegionReader {
+  const apiKey = process.env.FAL_KEY;
+  return apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader;
 }
 
 export async function refineCandidate(
@@ -1203,11 +1227,11 @@ export async function refineCandidate(
         // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
         resolution: "1K",
       });
-      const harvested = await harvestRefinement({
+      const harvested = await (dependencies.harvest ?? harvestRefinement)({
         master: { bytes: base.bytes, contentType: base.contentType },
         painted: { bytes: painted.bytes, contentType: painted.contentType },
         facets: Array.from(facetsWrittenBy(composed)),
-        reader: dependencies.regions ?? refusingRegionReader,
+        reader: dependencies.regions ?? defaultRegionReader(),
         /* Per user, not per deploy — the first flip goes to one account. */
         userId: input.userId,
         /* What the instruction said the thing IS. An earring hangs from a lobe

@@ -243,7 +243,26 @@ const input = {
   instruction: "make her eyes green",
 };
 
-const greenEyes = { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }) };
+/**
+ * This suite is about the refinement SERVICE — charging, retrying, refusing,
+ * refunding — and not about masking, which `maskedRefine.test.ts` owns.
+ *
+ * The masked path is live for this suite's user, so without this every test
+ * would run a real composite against a flat synthetic swatch and measure the
+ * fixture rather than the service. A passthrough keeps each suite testing its
+ * own subject, which is why the seam is an injectable dependency like
+ * `interpret` and `verifier`.
+ */
+const unmasked = async (input: { painted: { bytes: Buffer; contentType: string } }) => ({
+  bytes: input.painted.bytes,
+  contentType: input.painted.contentType,
+  outcome: "flag-off" as const,
+});
+
+const greenEyes = {
+  interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+  harvest: unmasked,
+};
 
 describe("refusals land before anything is claimed", () => {
   /*
@@ -252,8 +271,7 @@ describe("refusals land before anything is claimed", () => {
     picture that was never going to be what they asked for.
   */
   it("refuses an out-of-tier instruction for free", async () => {
-    await expect(refineCandidate(
-      { interpret: async () => ({ ok: false, refusal: { reason: "wall_stage", asked: "her age" } }) },
+    await expect(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: false, refusal: { reason: "wall_stage", asked: "her age" } }) },
       { ...input, instruction: "make her older" },
     )).rejects.toThrow(/not the shoot/);
 
@@ -263,8 +281,7 @@ describe("refusals land before anything is claimed", () => {
   });
 
   it("refuses when the interpreter cannot be reached, rather than guessing", async () => {
-    await expect(refineCandidate(
-      { interpret: async () => ({ ok: false, refusal: { reason: "unreadable" } }) },
+    await expect(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: false, refusal: { reason: "unreadable" } }) },
       input,
     )).rejects.toThrow(/Nothing was charged/);
     expect(ledger.charges).toHaveLength(0);
@@ -277,8 +294,7 @@ describe("refusals land before anything is claimed", () => {
   });
 
   it("refuses a real TOO_MANY_REQUESTS when the queue is full, before the claim", async () => {
-    await expect(refineCandidate(
-      { ...greenEyes, admit: () => false },
+    await expect(refineCandidate({ ...greenEyes, admit: () => false },
       input,
     )).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     expect(journal).not.toContain("begin");
@@ -321,8 +337,7 @@ describe("the questions cost nothing, and never dead-end", () => {
 
   it("runs the answer as the instruction it stands for, and charges once", async () => {
     let seen = "";
-    await refineCandidate(
-      {
+    await refineCandidate({ harvest: unmasked,
         interpret: async (parse: { instruction: string }) => {
           seen = parse.instruction;
           return { ok: true as const, delta: { hairColour: "copper" as const } };
@@ -337,8 +352,7 @@ describe("the questions cost nothing, and never dead-end", () => {
 
   it("treats an unrecognised reply as a new instruction rather than a dead end", async () => {
     let seen = "";
-    await refineCandidate(
-      {
+    await refineCandidate({ harvest: unmasked,
         interpret: async (parse: { instruction: string }) => {
           seen = parse.instruction;
           return { ok: true as const, delta: { hairColour: "copper" as const } };
@@ -352,8 +366,7 @@ describe("the questions cost nothing, and never dead-end", () => {
 
   it("does not ask twice — an answer is never re-questioned", async () => {
     let seen = "";
-    await refineCandidate(
-      {
+    await refineCandidate({ harvest: unmasked,
         interpret: async (parse: { instruction: string }) => {
           seen = parse.instruction;
           return { ok: true as const, delta: { free: { hairShade: "piink" } } };
@@ -418,8 +431,7 @@ describe("an unreadable history stops the money", () => {
     }];
     candidateRow.selectedVariantPublicId = "variant-old";
 
-    await refineCandidate(
-      { interpret: async () => ({ ok: true as const, delta: { free: { hairShade: "pink" } } }) },
+    await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { hairShade: "pink" } } }) },
       input,
     );
     const claimed = JSON.stringify(landedVariant ?? {});
@@ -515,6 +527,7 @@ describe("the render is checked against the record before it is delivered", () =
     const freeLane = {
       interpret: async () => ({ ok: true as const, delta: { free: { eyeColourFree: "seafoam green" } } }),
       verifier: verifierSaying(false, false),
+      harvest: unmasked,
     };
     await refineCandidate(freeLane, input);
     /* Delivered on the first attempt: an advisory miss buys nothing and costs
@@ -562,8 +575,7 @@ describe("the render is checked against the record before it is delivered", () =
     /* Attempt 1: miss, hit, miss → majority missing → re-render.
        Attempt 2: miss, miss → confirmed → refuse and refund. */
     await expect(
-      refineCandidate(
-        { ...greenEyes, verifier: verifierSaying(false, true, false, false, false) },
+      refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true, false, false, false) },
         input,
       ),
     ).rejects.toThrow();
@@ -593,8 +605,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
   };
 
   it("does not confess about taking off something being put on", async () => {
-    const result = await refineCandidate(
-      {
+    const result = await refineCandidate({ harvest: unmasked,
         interpret: misreads({
           ok: true as const,
           delta: { free: { statedAccessories: ["small gold hoop earrings"] } },
@@ -619,8 +630,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
     it("removes glasses the brief asked for", async () => {
       briefWorn = ["wire-framed glasses"];
       let call = 0;
-      const result = await refineCandidate(
-        {
+      const result = await refineCandidate({ harvest: unmasked,
           /* Rule 3: the record says it IS there, so the sentence is re-read as
              an ordinary content edit with the removal vocabulary withheld. */
           interpret: (async () => {
@@ -646,8 +656,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
          accessory nobody named — but it no longer claims to have looked at her
          face when all it read was a record. */
       briefWorn = null;
-      await expect(refineCandidate(
-        {
+      await expect(refineCandidate({ harvest: unmasked,
           interpret: async () => ({
             ok: true as const,
             intent: "remove" as const,
@@ -661,8 +670,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
 
     it("charges nothing either way", async () => {
       briefWorn = null;
-      await expect(refineCandidate(
-        {
+      await expect(refineCandidate({ harvest: unmasked,
           interpret: async () => ({
             ok: true as const,
             intent: "remove" as const,
@@ -682,8 +690,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
        honest confession is reached when the face has none. Since D-206 that
        confession names what it consulted — the brief and the recipe — rather
        than claiming to have looked at her face. */
-    await expect(refineCandidate(
-      {
+    await expect(refineCandidate({ harvest: unmasked,
         interpret: async () => ({
           ok: true as const,
           intent: "remove" as const,
@@ -727,8 +734,7 @@ describe("how many refinements one face can carry", () => {
   it("accepts a twenty-fourth refinement, which twelve used to refuse", async () => {
     variantRows = chainOf(23);
     candidateRow.selectedVariantPublicId = "variant-23";
-    const result = await refineCandidate(
-      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
+    const result = await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
       { ...input, instruction: "make her eyes green" },
     );
     expect(result.variantId).toBeTruthy();
@@ -737,8 +743,7 @@ describe("how many refinements one face can carry", () => {
   it("refuses the twenty-fifth, for free", async () => {
     variantRows = chainOf(24);
     candidateRow.selectedVariantPublicId = "variant-24";
-    await expect(refineCandidate(
-      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
+    await expect(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
       { ...input, instruction: "make her eyes green" },
     )).rejects.toThrow(/as many refinements as it can carry/);
     expect(ledger.charges).toHaveLength(0);
@@ -861,8 +866,7 @@ describe("the record and the picture come from the same place", () => {
     candidateRow.selectedVariantPublicId = "variant-1";
 
     const { claimVariant } = await import("../db/castingV2Variants");
-    await refineCandidate(
-      { interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
+    await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
       { ...input, instruction: "hood her eyes a little" },
     );
     const claimed = vi.mocked(claimVariant).mock.results[0].value as Promise<Record<string, unknown>>;
@@ -886,8 +890,7 @@ describe("the record and the picture come from the same place", () => {
     candidateRow.selectedVariantPublicId = "variant-1";
 
     const { claimVariant } = await import("../db/castingV2Variants");
-    await refineCandidate(
-      { interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
+    await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
       { ...input, instruction: "hood her eyes a little" },
     );
     const call = vi.mocked(claimVariant).mock.calls[0][0];
@@ -1029,7 +1032,10 @@ describe("removal is typed, and most of it is free", () => {
     candidateRow.selectedVariantPublicId = "variant-2";
   };
 
-  const asks = (parse: Record<string, unknown>) => ({ interpret: async () => parse as never });
+  const asks = (parse: Record<string, unknown>) => ({
+    interpret: async () => parse as never,
+    harvest: unmasked,
+  });
 
   it("walks back a step for free on a bare undo", async () => {
     twoStep();
@@ -1121,8 +1127,7 @@ describe("removal is typed, and most of it is free", () => {
       },
     };
     const modes: Array<string | undefined> = [];
-    const result = await refineCandidate(
-      {
+    const result = await refineCandidate({ harvest: unmasked,
         interpret: async (request: { mode?: string }) => {
           modes.push(request.mode);
           return modes.length === 1

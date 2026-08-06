@@ -50,20 +50,24 @@ const reader: RegionReader = {
   landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
 };
 
-describe("the flag is dark, and dark means nothing happens", () => {
-  it("ships off", () => {
-    expect(MASKED_EDITING_SCOPE, "a deploy of this must change nothing").toBe("off");
-  });
-
-  it("is a SCOPE, so the first flip can go to one account", () => {
+describe("the scope is one account, and everyone else is on the old path", () => {
+  it("is scoped to a named user, never to everyone", () => {
     /* A boolean would make "on for me" and "on for everyone" the same edit, and
-       that is exactly the decision that deserves two. Same grammar as
-       CASTING_V2_SCOPE — a second scope parser would be a mirror (law #4). */
-    expect(maskedEditingEnabledFor(1), "off means off for everyone").toBe(false);
-    expect(maskedEditingEnabledFor(undefined)).toBe(false);
+       that is exactly the decision that deserves two. Same grammar and the same
+       parser as CASTING_V2_SCOPE — a second scope grammar would be a mirror
+       (law #4). Widening is a separate founder call. */
+    expect(MASKED_EDITING_SCOPE).toMatch(/^(off|users:[1-9][0-9,]*)$/);
+    expect(MASKED_EDITING_SCOPE, "never flipped straight to everyone").not.toBe("all");
   });
 
-  it("returns the engine's own bytes, byte for byte", async () => {
+  it("leaves every other account exactly where it was", () => {
+    /* The half that matters on a scoped flip: the blast radius is one id. */
+    expect(maskedEditingEnabledFor(2)).toBe(false);
+    expect(maskedEditingEnabledFor(999)).toBe(false);
+    expect(maskedEditingEnabledFor(undefined), "and an unattributed render never opts in").toBe(false);
+  });
+
+  it("returns the engine's own bytes, byte for byte, for everyone off the scope", async () => {
     const master = await png(() => [190, 188, 186]);
     const painted = await png((x, y) => (y < 30 ? [40, 30, 25] : [12, 200, 40]));
     const result = await harvestRefinement({
@@ -71,14 +75,14 @@ describe("the flag is dark, and dark means nothing happens", () => {
       painted: { bytes: painted, contentType: "image/png" },
       facets: ["hair.cut"],
       reader,
-      userId: 1,
+      userId: 2,
     });
     expect(result.outcome).toBe("flag-off");
     expect(Buffer.compare(result.bytes, painted), "not re-encoded, not touched").toBe(0);
     expect(result.contentType).toBe("image/png");
   });
 
-  it("does not even consult the segmenter while dark", async () => {
+  it("does not even consult the segmenter for an account off the scope", async () => {
     /* A dark path that still spends provider calls is not dark. */
     let calls = 0;
     const counting: RegionReader = {
@@ -91,7 +95,7 @@ describe("the flag is dark, and dark means nothing happens", () => {
       painted: { bytes: await png(() => [40, 30, 25]), contentType: "image/png" },
       facets: ["hair.cut"],
       reader: counting,
-      userId: 1,
+      userId: 2,
     });
     expect(calls).toBe(0);
   });

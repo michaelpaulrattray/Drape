@@ -74,12 +74,18 @@ import type { Facet } from "./refineFacets";
 const log = createModuleLogger("castingV2/maskedRefine");
 
 /**
- * THE FLAG. `off` ships this dark — the deploy changes nothing.
+ * THE FLAG. **LIVE FOR THE FOUNDER'S ACCOUNT ONLY** (founder decision,
+ * 2026-08-06, after the face wall passed).
  *
- * Flip only behind a founder decision, and to `users:<their id>` first. The
- * rollback is this line.
+ * `users:1` — the sole admin, and the only account this path touches. Widening
+ * to `all` is a separate founder decision after the walk, never a rider on this
+ * one; that separation is the entire reason this is a scope rather than a
+ * boolean.
+ *
+ * **The rollback is this line: set it back to `"off"`.** Nothing else has to
+ * change, and every other user is already on that path.
  */
-export const MASKED_EDITING_SCOPE = "off";
+export const MASKED_EDITING_SCOPE = "users:1";
 
 /** Is the masked path live for this user? Off means off for everyone. */
 export function maskedEditingEnabledFor(userId: number | undefined): boolean {
@@ -91,10 +97,22 @@ export function maskedEditingEnabledFor(userId: number | undefined): boolean {
 
 /** Feathering the zone; the harvest matte supplies the visible edge. */
 const FEATHER_PX = 4;
-/** How far strand tips are recovered past the confirmed content. */
-const STRAND_REACH_PX = 40;
-/** How far interaction (contact shadow) may reach from confirmed content. */
-const BAND_PX = 14;
+/**
+ * REACHES ARE FRACTIONS OF THE FRAME, NOT PIXEL CONSTANTS.
+ *
+ * They were absolute — 40px for strand recovery, 14px for the interaction band —
+ * which is local on the 1024x1536 the workstream was measured on and the WHOLE
+ * FRAME on anything small. A constant in pixels is a constant that assumes a
+ * resolution, and this path already promises never to resample; it should not
+ * quietly assume one instead.
+ *
+ * The fractions are the measured values divided by 1024, so behaviour at the
+ * resolution everything was calibrated on is unchanged.
+ */
+const STRAND_REACH_FRACTION = 40 / 1024;
+const BAND_FRACTION = 14 / 1024;
+const scaled = (fraction: number, width: number, height: number) =>
+  Math.max(4, Math.round(Math.min(width, height) * fraction));
 /** A pixel has moved when it moved by this much — used to find painted content. */
 const MOVED_LEVELS = 25;
 
@@ -434,7 +452,10 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
 
   /* The strand alpha the segmenter's boundary discards — exact, because we own
      the background (D-230). */
-  const strands = differenceMatte({ master, patch: painted, confirmed: harvest, reachPx: STRAND_REACH_PX });
+  const strands = differenceMatte({
+    master, patch: painted, confirmed: harvest,
+    reachPx: scaled(STRAND_REACH_FRACTION, master.width, master.height),
+  });
   const withStrands: Mask = {
     data: Buffer.from(harvest.data.map((value, index) => Math.max(value, strands.alpha.data[index]))),
     width: harvest.width,
@@ -471,7 +492,9 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
 
   /* Contact shadows, darkening only — her hue cannot change (D-229). */
   const adopted = adoptInteraction({
-    master, patch: painted, harvest: gated, bandPx: BAND_PX, mode: "shadow",
+    master, patch: painted, harvest: gated,
+    bandPx: scaled(BAND_FRACTION, master.width, master.height),
+    mode: "shadow",
   });
 
   /* Refused before the composite if the mask cannot do its job. */
