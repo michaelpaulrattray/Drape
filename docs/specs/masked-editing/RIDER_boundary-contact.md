@@ -1,7 +1,20 @@
 # Rider — the boundary-contact check
 
 **Founder rider, definition transmitted verbatim 2026-08-06. Canonical.**
-Applies to destination-zone edits. Not yet implemented.
+Applies to destination-zone edits.
+
+> **STATUS: BUILT** — `expandUntilClear` in `server/castingV2/maskGeometry.ts`,
+> shipped `cb94a781`. Fires on painted content touching the zone's hard edge;
+> the re-render ceiling is measured on the EFFECTIVE edit (the harvest), not the
+> zone, because under harvest gating the zone is only an outer bound.
+>
+> **Every rider in this folder carries this line, and it is not bookkeeping.**
+> This one sat canonical and unbuilt while the founder reported hair "cut off
+> straight" across three passes, and two diagnoses went to the painter and the
+> segmenter before landing on the zone. **Spec'd-but-never-implemented is the
+> invoked-but-inert class wearing better paperwork** — the rule exists, the
+> document exists, the call site does not, and nothing in the repository says so.
+> A rider without a built/unbuilt bit can sit quiet indefinitely.
 
 ## The rule, as given
 

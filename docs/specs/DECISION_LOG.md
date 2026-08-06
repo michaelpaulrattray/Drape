@@ -7607,4 +7607,74 @@ the picture beat it.
 
 ---
 
+## D-231 — A canonical rider that was never built. And: read your own instruments before your own inferences.
+
+**`expandUntilClear` ships (`cb94a781`), and what it closes is worth naming
+separately from what it does.** The boundary-contact rider was transmitted
+verbatim by the founder, written up as canonical, and left unimplemented. In that
+state it cost three passes: the founder reported hair "cut off straight" each
+time, and the diagnosis went to the painter, then to the segmenter, before
+landing on the zone — which is precisely what the rider had been describing all
+along.
+
+**Spec'd-but-never-implemented is the invoked-but-inert class wearing better
+paperwork.** The rule exists, the document exists, the call site does not, and
+nothing in the repository says so. Every rider now carries a **STATUS: BUILT /
+UNBUILT** line for that reason; a rider without that bit can sit quiet
+indefinitely, and this program has a standing list of controls that did exactly
+that.
+
+### The instrument lesson, filed beside the difference-view law
+
+**When a guard prints its own firing, that line outranks any statistic derived
+beside it.**
+
+The hem diagnostic printed *"columns where the paint actually touches the zone
+edge: 351 of 738"* — the boundary-contact rider firing, in plain words. A
+correlation coefficient computed two lines above won the argument anyway. The
+correlation was answering a different question (does the hem track the zone's
+SHAPE) and answered it correctly; the guard was answering the one that mattered
+(is the paint pressed against the edge) and was read past.
+
+Same family as look-at-the-file, now with a worked example: **a derived number is
+a claim about the artifact; a guard's own output is the artifact.** Prefer the
+thing that fired over the thing you computed.
+
+### Two predictions the tests reversed, recorded as found
+
+- **No frame-edge deadlock.** I predicted paint running to the frame edge could
+  never stop touching a boundary. Once the zone fills the frame there is no
+  interior edge left to touch, so contact genuinely clears. The assertion records
+  what happens rather than what I expected.
+- **The re-render ceiling moved onto the EFFECTIVE edit.** Measured on the zone
+  it refuses the generous zones the harvest law exists to make safe — a hair
+  instruction may need a zone across her whole torso while the edit itself is a
+  fraction of it. `expandUntilClear` takes an `effective` mask (the harvest) and
+  measures the ceiling there.
+
+### What the fix is worth, without the overclaim
+
+The guillotine is gone and the ends taper (`EXHIBIT-25`, `EXHIBIT-26`).
+**Strand reach turned out not to be the limiter at all**: 40, 80, 120 and 160px
+blanket radii, and 2/4/8-hop propagation along the strands, all reach row 1369
+exactly. The zone reaches 1535, the harvest 1520, the applied alpha 1530 — the
+alpha IS placed down there, at values too low to clear the measurement's own
+threshold. The painter's own content below 1369 runs at 18–42 px per row out of
+1024: isolated flying strands. Ours reads denser and stops higher; the painter's
+sparsest wisps run further.
+
+**The person-never-stage wall held at every widening — 0 px of her own shirt
+moved, in all seven configurations.**
+
+### And a third boundary drawn from the wrong input
+
+The wall check first reported 5,682 broken pixels. Those were the CONTACT SHADOWS
+the founder ratified as mode C — the shadow band adopts outside the harvest by
+design, and the check was comparing against the harvest. Third time this session
+a boundary came from something other than the composite's own `applied` alpha.
+**It is the only source that cannot disagree with the picture, and it is now the
+one every such check uses.**
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

@@ -14,6 +14,20 @@
  * too and would be indistinguishable from a phantom at a glance. The
  * amplification factor is printed onto nothing and returned instead, so a
  * caption can state it — an unlabelled amplified diff is its own way of lying.
+ *
+ * # The sibling law: read your own instruments before your own inferences
+ *
+ * **When a guard prints its own firing, that line outranks any statistic derived
+ * beside it.** The hem diagnostic printed *"columns where the paint actually
+ * touches the zone edge: 351 of 738"* — the boundary-contact rider firing, in
+ * plain words — and a correlation coefficient computed two lines above won the
+ * argument anyway. The correlation was answering a different question (does the
+ * hem track the zone's SHAPE) and answered it correctly; the guard was answering
+ * the one that mattered (is the paint pressed against the edge) and was ignored.
+ *
+ * Two more passes and two wrong diagnoses followed. Same family as look-at-the-
+ * file: a derived number is a claim about the artifact, and a guard's own output
+ * is the artifact. **Prefer the thing that fired over the thing you computed.**
  */
 import sharp from "sharp";
 
