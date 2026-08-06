@@ -6,6 +6,7 @@ import {
   browRegion,
   coverage,
   dilateMask,
+  expandUntilClear,
   eyeMaskFrom,
   eyeRegion,
   eyewearRegion,
@@ -840,5 +841,86 @@ describe("the harvest gate — only confirmed content survives, everything else 
       leaky.composite.data[shirtAt + 1],
       "the defect, reproduced: the painter's clothing survives on a subject matte",
     ).toBe(200);
+  });
+});
+
+describe("boundary-contact auto-expand — a zone that stops where the hair does not", () => {
+  const SIZE = 64;
+  const box = (from: { x: number; y: number }, to: { x: number; y: number }, fill = 255): Mask => {
+    const data = Buffer.alloc(SIZE * SIZE, 0);
+    for (let y = from.y; y < to.y; y += 1) for (let x = from.x; x < to.x; x += 1) data[y * SIZE + x] = fill;
+    return { data, width: SIZE, height: SIZE };
+  };
+
+  /* Paint that runs well past where the zone stops — the hair-down case. */
+  const painted = box({ x: 24, y: 8 }, { x: 40, y: 40 });
+  const tightZone = box({ x: 20, y: 4 }, { x: 44, y: 28 });
+
+  it("fires when painted content sits on the zone's hard edge", async () => {
+    /* maxCoverage is opened up so this tests CONTACT and nothing else — on a
+       64px fixture the re-render ceiling would otherwise fire first and the
+       test would be measuring the wrong guard. */
+    const result = await expandUntilClear({ painted, zone: tightZone, stepPx: 6, maxCoverage: 0.95 });
+    expect(result.contactAtStart, "the paint was against the edge").toBeGreaterThan(0);
+    expect(result.passes, "so the zone grew").toBeGreaterThan(0);
+    expect(result.contactAtEnd, "until the paint is no longer pressed against it")
+      .toBeLessThan(result.contactAtStart / 2);
+  });
+
+  it("leaves a generous zone alone — contact, never geometry", async () => {
+    /* The control that stops this from being "always grow". A zone whose paint
+       sits comfortably inside must cost nothing at all. */
+    const roomy = box({ x: 8, y: 2 }, { x: 56, y: 62 });
+    const result = await expandUntilClear({ painted, zone: roomy, stepPx: 6 });
+    expect(result.contactAtStart, "nothing was touching to begin with").toBe(0);
+    expect(result.passes, "so nothing grew").toBe(0);
+  });
+
+  it("keeps growing for paint that runs to the frame edge, and clears", async () => {
+    /*
+      I predicted this would deadlock — paint at the frame edge "can never stop
+      touching a boundary" — and the test said otherwise. Once the zone fills the
+      frame there is no interior edge left to touch, so contact genuinely clears.
+      The prediction was wrong and the assertion records what happens instead.
+    */
+    const toTheEdge = box({ x: 24, y: 8 }, { x: 40, y: SIZE });
+    const result = await expandUntilClear({ painted: toTheEdge, zone: tightZone, stepPx: 6, maxCoverage: 1.1 });
+    expect(result.stoppedBy).toBe("no contact");
+    expect(result.contactAtEnd).toBe(0);
+  });
+
+  it("measures the re-render ceiling on the EFFECTIVE edit, not the zone", async () => {
+    /*
+      The law that makes generous zones usable. Under harvest gating the zone is
+      only an outer bound — a hair instruction may need one across her whole
+      torso while the edit itself is a fraction of it. Same zone, same paint: the
+      ceiling refuses when measured on the zone, and allows when measured on what
+      the harvest actually keeps.
+    */
+    const toTheEdge = box({ x: 24, y: 8 }, { x: 40, y: SIZE });
+    const harvest = box({ x: 26, y: 10 }, { x: 38, y: 30 });
+    const onTheZone = await expandUntilClear({ painted: toTheEdge, zone: tightZone, stepPx: 6, maxCoverage: 0.6 });
+    const onTheEdit = await expandUntilClear({
+      painted: toTheEdge, zone: tightZone, stepPx: 6, maxCoverage: 0.6, effective: harvest,
+    });
+    expect(onTheZone.stoppedBy, "the zone alone trips the ceiling").toBe("coverage ceiling");
+    expect(onTheEdit.stoppedBy, "the edit it actually makes does not").not.toBe("coverage ceiling");
+    expect(onTheEdit.passes).toBeGreaterThan(onTheZone.passes);
+  });
+
+  it("stops at the coverage ceiling rather than growing into a re-render", async () => {
+    const everywhere = box({ x: 0, y: 0 }, { x: SIZE, y: SIZE });
+    const result = await expandUntilClear({
+      painted: everywhere, zone: box({ x: 2, y: 2 }, { x: 62, y: 62 }), stepPx: 6, maxCoverage: 0.6,
+    });
+    expect(result.stoppedBy, "a local edit never becomes a full re-render").toBe("coverage ceiling");
+  });
+
+  it("does not grow for mask geometry alone — only for paint", async () => {
+    /* An empty painted mask means the edit put nothing near the boundary. The
+       rider is explicit that geometry never triggers it. */
+    const nothing = box({ x: 0, y: 0 }, { x: 0, y: 0 });
+    const result = await expandUntilClear({ painted: nothing, zone: tightZone, stepPx: 6 });
+    expect(result.passes).toBe(0);
   });
 });

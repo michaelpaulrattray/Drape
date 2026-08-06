@@ -684,6 +684,92 @@ export async function harvestMatteFrom(input: {
   return input.occludedBy ? subtractMask(tapered, input.occludedBy) : tapered;
 }
 
+/**
+ * BOUNDARY-CONTACT AUTO-EXPAND — the ratified rider, finally built, and the
+ * thing that was actually cutting the hair.
+ *
+ * The rider has been canonical since `RIDER_boundary-contact.md` and was never
+ * implemented, and the cost of that is on the record: the founder saw hair "cut
+ * off straight" three passes running, and the diagnosis went to the painter, then
+ * to the segmenter, before landing here. **A destination zone that stops where
+ * the hair does not is a guillotine.** The composite takes `min(feather(zone),
+ * matte)`, so beyond the zone the alpha is zero no matter what any matte says —
+ * every strand the painter drew past that line is discarded, and the cut is
+ * straight because the zone's edge is.
+ *
+ * The rider's own words are the specification, and the important half is the
+ * second: it fires on **PAINTED CONTENT** — pixels where the patch differs from
+ * the master inside the zone — touching the zone's **HARD edge**. Never on mask
+ * geometry. A generous zone whose paint sits comfortably inside passes untouched
+ * and costs nothing; real hair never ends in a straight line where a mask
+ * stopped.
+ *
+ * **The signal was already in front of me and I read past it.** The hem
+ * diagnostic reported *351 of 738 columns where the paint touches the zone edge*
+ * — that IS this rider firing — and it was set aside in favour of a shape
+ * correlation that answered a different question. A measurement nobody acts on is
+ * worth what an unbuilt rider is worth.
+ */
+export async function expandUntilClear(input: {
+  /** Painted content: where the patch meaningfully differs from the master. */
+  painted: Mask;
+  zone: Mask;
+  /** How much to grow per pass. */
+  stepPx: number;
+  /** Stop here whatever happens — past this an edit is a re-render (D-218). */
+  maxCoverage?: number;
+  /** The effective edit the ceiling is measured on — the harvest, when there is one. */
+  effective?: Mask;
+  maxPasses?: number;
+}): Promise<{ zone: Mask; passes: number; contactAtStart: number; contactAtEnd: number; stoppedBy: string }> {
+  const maxCoverage = input.maxCoverage ?? MAX_COVERAGE;
+  const maxPasses = input.maxPasses ?? 24;
+
+  /** Painted pixels sitting ON the zone's hard edge — the rider's trigger. */
+  const contact = (zone: Mask): number => {
+    const { width, height } = zone;
+    let touching = 0;
+    for (let y = 1; y < height - 1; y += 1) {
+      for (let x = 1; x < width - 1; x += 1) {
+        const pixel = y * width + x;
+        if (zone.data[pixel] === 0 || input.painted.data[pixel] === 0) continue;
+        if (zone.data[pixel - 1] === 0 || zone.data[pixel + 1] === 0
+          || zone.data[pixel - width] === 0 || zone.data[pixel + width] === 0) touching += 1;
+      }
+    }
+    return touching;
+  };
+
+  const contactAtStart = contact(input.zone);
+  let zone = input.zone;
+  let passes = 0;
+  let stoppedBy = "no contact";
+  while (contact(zone) > 0 && passes < maxPasses) {
+    const grown = await dilateMask(zone, input.stepPx);
+    /*
+      A ZONE THAT CANNOT GROW ENDS THE LOOP. Paint running to the frame edge can
+      never stop touching a boundary — the hair-down case reaches row 1534 of
+      1536 — and without this the loop spins until a cap fires and reports the
+      cap as the finding.
+    */
+    if (coverage(grown) <= coverage(zone)) { stoppedBy = "zone cannot grow further"; break; }
+    /*
+      THE CEILING IS MEASURED ON THE EFFECTIVE EDIT, NOT THE ZONE.
+      Under harvest gating the zone is only an outer bound: a hair instruction
+      may legitimately need a zone across her whole torso while the edit itself —
+      what the harvest actually keeps — is a quarter of that. Testing the ZONE
+      against the re-render ceiling would refuse the generous zones the harvest
+      law exists to make safe. `effective` is the harvest when the caller has one.
+    */
+    const measured = input.effective ? intersectMask(input.effective, grown) : grown;
+    if (coverage(measured) > maxCoverage) { stoppedBy = "coverage ceiling"; break; }
+    zone = grown;
+    passes += 1;
+    if (passes >= maxPasses) stoppedBy = "pass ceiling";
+  }
+  return { zone, passes, contactAtStart, contactAtEnd: contact(zone), stoppedBy };
+}
+
 /** Above this a matte byte is interior opacity, not an edge ramp (D-215). */
 const RAMP_CEILING = 229;
 /** At and above this it is unambiguously interior. */
