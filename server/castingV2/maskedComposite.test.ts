@@ -384,3 +384,44 @@ describe("the finish pass — grain, tone and the edge that belongs to the paint
     expect(composite.data[(20 * W + 20) * 3], "inside both").toBe(20);
   });
 });
+
+describe("grain is measured per neighbourhood, not once for the whole zone", () => {
+  /*
+    THE DEFECT THIS REPLACES. One amplitude for a zone holding both smooth skin
+    and a busy hair edge over-serves whichever half it did not measure — it
+    measured the busy half and speckled the skin, visible at 100% zoom on the
+    founder's exhibit.
+
+    Left half of the frame: a NOISY master beside a smooth patch — needs grain.
+    Right half: a SMOOTH master beside a smooth patch — needs none. A global
+    amplitude cannot produce both answers; a local one must.
+  */
+  const W = 128;
+  const H = 64;
+
+  it("adds grain where the master is noisy and none where it is smooth", () => {
+    const master = solid(W, H, [128, 128, 128]);
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W / 2; x += 1) {
+        const jitter = (x + y) % 2 === 0 ? 16 : -16;
+        for (let channel = 0; channel < 3; channel += 1) master.data[(y * W + x) * 3 + channel] = 128 + jitter;
+      }
+    }
+    const patch = solid(W, H, [128, 128, 128]);
+    /* A band across both halves, so one mask spans both neighbourhoods. */
+    const mask: Mask = { data: Buffer.alloc(W * H, 0), width: W, height: H };
+    for (let y = 20; y < 44; y += 1) for (let x = 0; x < W; x += 1) mask.data[y * W + x] = 255;
+
+    const grained = matchGrain({ master, patch, mask });
+
+    const moved = (fromX: number, toX: number) => {
+      let count = 0;
+      for (let y = 20; y < 44; y += 1) {
+        for (let x = fromX; x < toX; x += 1) if (grained.data[(y * W + x) * 3] !== 128) count += 1;
+      }
+      return count;
+    };
+    expect(moved(4, 56), "the noisy side should gain grain").toBeGreaterThan(0);
+    expect(moved(72, 124), "the smooth side should not").toBe(0);
+  });
+});

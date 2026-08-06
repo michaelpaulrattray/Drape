@@ -263,50 +263,109 @@ export function matchGrain(input: {
     return total / 3;
   };
 
-  const depth = depthInside(mask, ring);
-  let masterEnergy = 0;
-  let masterCount = 0;
-  let patchEnergy = 0;
-  let patchCount = 0;
-  for (let pixel = 0; pixel < depth.length; pixel += 1) {
+  /*
+    LOCALLY, NOT GLOBALLY — and the global version was a real defect.
+
+    One amplitude for a zone containing both smooth forehead and a hair edge
+    over-serves whichever of the two it did not measure. It measured the hair
+    edge, which is far busier, and then speckled the skin: visible at 100% zoom
+    on the founder's own exhibit, which is what a failed acceptance criterion
+    looks like when you write the number down honestly.
+
+    So the frame is tiled, and each tile gets the amplitude ITS neighbourhood
+    needs: the grain skin wants where the boundary crosses skin, the grain a hair
+    edge wants at the edge. A tile with no master samples of its own — deep
+    inside the zone, where there is no untouched neighbour to learn from —
+    borrows from the nearest tile that has them rather than inventing a figure.
+  */
+  const TILE = 64;
+  const tilesX = Math.ceil(width / TILE);
+  const tilesY = Math.ceil(height / TILE);
+  const masterSum = new Float64Array(tilesX * tilesY);
+  const masterCount = new Int32Array(tilesX * tilesY);
+  const patchSum = new Float64Array(tilesX * tilesY);
+  const patchCount = new Int32Array(tilesX * tilesY);
+
+  /*
+    The tile's own patch tone, needed before the master is sampled at all —
+    because a neighbourhood has to be local in CONTENT, not merely in space.
+
+    Tiling alone was not enough and the picture said so: a tile straddling the
+    hairline contains smooth forehead on the patch side and dark curls on the
+    master side, so it measured HAIR grain and laid it on SKIN. Speckle, in
+    exactly the place the acceptance criterion is about.
+
+    So a master pixel only teaches a tile if it is the same KIND of surface as
+    what the patch put there. Same reflex as `harmonizeSeam`'s self-limit: match
+    like to like, and decline to learn from a neighbour that is a different
+    thing.
+  */
+  const tileTone = new Float64Array(tilesX * tilesY);
+  const tileToneCount = new Int32Array(tilesX * tilesY);
+  for (let pixel = 0; pixel < mask.data.length; pixel += 1) {
+    if (mask.data[pixel] === 0) continue;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const tile = Math.floor(y / TILE) * tilesX + Math.floor(x / TILE);
+    const at = pixel * 3;
+    tileTone[tile] += (patch.data[at] + patch.data[at + 1] + patch.data[at + 2]) / 3;
+    tileToneCount[tile] += 1;
+  }
+
+  const SAME_SURFACE = 42;
+  for (let pixel = 0; pixel < mask.data.length; pixel += 1) {
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const tile = Math.floor(y / TILE) * tilesX + Math.floor(x / TILE);
     if (mask.data[pixel] === 0) {
-      /* Outside, but near the boundary — the master's own grain, uncontaminated
-         by anything the edit did. */
-      const x = pixel % width;
-      const y = Math.floor(pixel / width);
-      let near = false;
-      for (let dy = -ring; dy <= ring && !near; dy += 1) {
-        for (let dx = -ring; dx <= ring; dx += 1) {
-          const sx = x + dx;
-          const sy = y + dy;
-          if (sx < 0 || sy < 0 || sx >= width || sy >= height) continue;
-          if (mask.data[sy * width + sx] > 0) { near = true; break; }
-        }
-      }
-      if (!near) continue;
-      masterEnergy += highFrequency(master, pixel);
-      masterCount += 1;
-      continue;
+      if (tileToneCount[tile] === 0) continue;
+      const at = pixel * 3;
+      const tone = (master.data[at] + master.data[at + 1] + master.data[at + 2]) / 3;
+      /* Different surface — this pixel has nothing to teach about that one. */
+      if (Math.abs(tone - tileTone[tile] / tileToneCount[tile]) > SAME_SURFACE) continue;
+      masterSum[tile] += highFrequency(master, pixel);
+      masterCount[tile] += 1;
+    } else {
+      patchSum[tile] += highFrequency(patch, pixel);
+      patchCount[tile] += 1;
     }
-    patchEnergy += highFrequency(patch, pixel);
-    patchCount += 1;
   }
 
   const out = Buffer.from(patch.data);
-  if (masterCount === 0 || patchCount === 0) return { data: out, width: patch.width, height: patch.height };
-  const masterMean = masterEnergy / masterCount;
-  const patchMean = patchEnergy / patchCount;
-  /* Only ever ADD grain. Smoothing a patch that is already grainier than the
-     master would be inventing a cleanliness the photograph does not have. */
-  if (patchMean >= masterMean) return { data: out, width: patch.width, height: patch.height };
-  const amplitude = Math.min(12, masterMean - patchMean);
+  const amplitude = new Float64Array(tilesX * tilesY).fill(-1);
+  for (let tile = 0; tile < amplitude.length; tile += 1) {
+    if (masterCount[tile] < 16 || patchCount[tile] < 16) continue;
+    const gap = masterSum[tile] / masterCount[tile] - patchSum[tile] / patchCount[tile];
+    /* Only ever ADD grain. Smoothing a patch already grainier than the master
+       would invent a cleanliness the photograph does not have. */
+    amplitude[tile] = Math.max(0, Math.min(12, gap));
+  }
+  /* Borrow from the nearest measured tile rather than guessing. */
+  const resolved = new Float64Array(amplitude.length);
+  for (let tile = 0; tile < amplitude.length; tile += 1) {
+    if (amplitude[tile] >= 0) { resolved[tile] = amplitude[tile]; continue; }
+    const tx = tile % tilesX;
+    const ty = Math.floor(tile / tilesX);
+    let best = -1;
+    let bestDistance = Infinity;
+    for (let other = 0; other < amplitude.length; other += 1) {
+      if (amplitude[other] < 0) continue;
+      const distance = Math.abs((other % tilesX) - tx) + Math.abs(Math.floor(other / tilesX) - ty);
+      if (distance < bestDistance) { bestDistance = distance; best = amplitude[other]; }
+    }
+    resolved[tile] = best < 0 ? 0 : best;
+  }
 
   for (let pixel = 0; pixel < mask.data.length; pixel += 1) {
     if (mask.data[pixel] === 0) continue;
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    const local = resolved[Math.floor(y / TILE) * tilesX + Math.floor(x / TILE)];
+    if (local <= 0) continue;
     /* A cheap deterministic hash — same pixel, same noise, every run. */
     let hash = (pixel * 2654435761) % 4294967296;
     hash ^= hash >>> 13;
-    const jitter = ((hash % 2000) / 1000 - 1) * amplitude;
+    const jitter = ((hash % 2000) / 1000 - 1) * local;
     const at = pixel * 3;
     for (let channel = 0; channel < 3; channel += 1) {
       const index = at + channel;
