@@ -373,6 +373,32 @@ export type MatteRequest = {
    * not exist yet is the request that has no honest answer.
    */
   present: boolean;
+  /**
+   * THE SILHOUETTE LAW — guard four, and the same refusal as `present` wearing
+   * different clothes (D-218, founder-ratified 2026-08-06).
+   *
+   * Does this edit change the region's OUTLINE, or only what is inside it?
+   *
+   *   false   recolour an iris, retexture skin, change a brow's weight — the
+   *           object keeps its shape, so a tight segmentation of the object as
+   *           it currently is is exactly the right destination
+   *   true    swap in bolder glasses, lengthen hair, broaden a jaw — the new
+   *           outline is somewhere the old outline is not
+   *
+   * Asked with `true`, this refuses. **A tight segmentation of the current
+   * object is a destination zone for the object that is already there**, so an
+   * engine drawing a larger frame paints outside the footprint, gets clipped at
+   * the boundary, and leaves the new rim sitting inside the old rim's edges.
+   * That is exactly what FLUX.2 Pro produced on the glasses fixture — ghosted
+   * doubled frames — and the reason was structural rather than a bad model day.
+   *
+   * The kinship with `present` is worth seeing, because it is why both live
+   * here: **you cannot segment a thing that is not there yet.** An accessory
+   * being ADDED is not there yet; a reshaped object's new outline is not there
+   * yet either. Both roads lead to a destination zone derived from anatomy and
+   * grown, never to a matte of the status quo.
+   */
+  changesSilhouette: boolean;
   /** Where this region can anatomically be. Optional only where none exists. */
   prior?: Mask;
 };
@@ -392,6 +418,18 @@ export async function requestMatte(
     throw new MaskError(
       `the record says this face has no ${request.region} — refusing to ask a `
       + "segmentation model where it is",
+    );
+  }
+  /*
+    Refused BEFORE the model is called, like the record gate above it. There is
+    nothing to learn from segmenting the old shape when the edit is about to
+    change it, and paying for that answer would only produce a mask that clips
+    the result.
+  */
+  if (request.changesSilhouette) {
+    throw new MaskError(
+      `this edit changes the ${request.region} silhouette — a matte of the current `
+      + "shape would clip the new one; use a grown destination zone",
     );
   }
   const mask = await source.matte({

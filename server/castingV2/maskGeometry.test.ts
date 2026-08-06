@@ -372,6 +372,7 @@ describe("a mask that was invented rather than found", () => {
     width: SIZE,
     height: SIZE,
     present: true,
+    changesSilhouette: false,
     ...over,
   });
 
@@ -386,6 +387,38 @@ describe("a mask that was invented rather than found", () => {
     await expect(requestMatte(source, request({ present: false })))
       .rejects.toThrow(/refusing to ask a segmentation model/);
     expect(asked, "the model must not be called at all").toBe(false);
+  });
+
+  it("never segments the current shape when the edit is about to change it", async () => {
+    /*
+      D-218, and the same refusal as the record gate: you cannot segment a thing
+      that is not there yet, and a reshaped object's NEW outline is not there
+      yet. The glasses fixture is the exhibit — an engine drawing bolder frames
+      inside a matte cut from the old frames produced ghosted doubled rims.
+
+      Refused BEFORE the call, so this asserts the model is never reached. A
+      version that refused afterwards would still be paying for an answer it had
+      already decided not to use.
+    */
+    let asked = false;
+    const source: SegmentationSource = {
+      id: "test-segmenter",
+      matte: async () => { asked = true; return patch(255, 12, 19); },
+    };
+    await expect(requestMatte(source, request({ changesSilhouette: true })))
+      .rejects.toThrow(/use a grown destination zone/);
+    expect(asked, "the model must not be called at all").toBe(false);
+  });
+
+  it("still allows an edit that stays inside the region's own outline", async () => {
+    /* The counter-case, without which the guard above could be `() => false` and
+       nobody would notice. Recolouring an iris changes nothing's shape. */
+    const good = patch(255, 12, 19);
+    const mask: UsableMask = await requestMatte(
+      sourceReturning(good),
+      request({ changesSilhouette: false }),
+    );
+    expect(mask.data.length).toBe(SIZE * SIZE);
   });
 
   it("refuses a blob too small for its own class, though it clears the global floor", async () => {
