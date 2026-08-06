@@ -7797,4 +7797,32 @@ work, noted and not built.
 
 ---
 
+## D-234 — Degree words steer COVERAGE, not opacity, and not length. First measurement.
+
+**The soft spot flagged in D-233, measured instead of shrugged at.** Both engines
+rendered heavier than "wispy"; the founder called for one render with the weight
+pushed explicitly lighter, on the provisional hair-row engine. Same whole-hair
+instruction, the fringe named at its intended weight — *a light, wispy fringe:
+fine separated strands, see-through and airy, barely veiling her forehead rather
+than covering it.*
+
+| | forehead claimed | opaque share | reaches row |
+|---|---|---|---|
+| as asked ("a soft wispy fringe") | 92.5% | 92.4% | 496 |
+| pushed explicitly lighter | **63.9%** | 84.6% | 496 |
+
+**Degree words steer, and they steer one axis.** Coverage moved 28.6 points;
+opacity moved 7.8; length did not move at all. The engine reads "wispy" as *less
+of it* rather than *more see-through* — a partial compliance, and a specific one.
+
+That matters for how the net should eventually check intensity: a degree word is
+not a single dial, and an advisory check that asked "is this wispy" would be
+asking about three properties the engine treats separately. **The useful form is
+per-property** — coverage, opacity, length — which is only visible because the
+measurement split them.
+
+Byte-identity outside the mask held on both. `EXHIBIT-30`.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
