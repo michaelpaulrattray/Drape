@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   CompositeError,
+  adoptInteraction,
   compositeMasked,
   featherMask,
   harmonizeSeam,
@@ -423,5 +424,132 @@ describe("grain is measured per neighbourhood, not once for the whole zone", () 
     };
     expect(moved(4, 56), "the noisy side should gain grain").toBeGreaterThan(0);
     expect(moved(72, 124), "the smooth side should not").toBe(0);
+  });
+});
+
+describe("the interaction band — the sticker effect, and the room to blend", () => {
+  const SIZE = 64;
+  const solidRaster = (rgb: [number, number, number]): Raster => {
+    const data = Buffer.allocUnsafe(SIZE * SIZE * 3);
+    for (let pixel = 0; pixel < SIZE * SIZE; pixel += 1) {
+      data[pixel * 3] = rgb[0];
+      data[pixel * 3 + 1] = rgb[1];
+      data[pixel * 3 + 2] = rgb[2];
+    }
+    return { data, width: SIZE, height: SIZE };
+  };
+  const box = (from: { x: number; y: number }, to: { x: number; y: number }, fill = 255): Mask => {
+    const data = Buffer.alloc(SIZE * SIZE, 0);
+    for (let y = from.y; y < to.y; y += 1) for (let x = from.x; x < to.x; x += 1) data[y * SIZE + x] = fill;
+    return { data, width: SIZE, height: SIZE };
+  };
+  const at = (raster: Raster, x: number, y: number) => {
+    const index = (y * SIZE + x) * 3;
+    return [raster.data[index], raster.data[index + 1], raster.data[index + 2]];
+  };
+
+  /* An object across the top, and a master that is a plain mid-grey wall. */
+  const harvest = box({ x: 20, y: 8 }, { x: 44, y: 24 });
+  const master = solidRaster([160, 160, 160]);
+
+  /**
+   * A painter's answer: the object, a genuine CONTACT SHADOW just beneath it,
+   * a faint everywhere-drift, and one distant patch it recoloured for no reason.
+   */
+  const painter = (() => {
+    const data = Buffer.from(master.data);
+    /* the everywhere-drift: the painter repaints the whole frame slightly */
+    for (let pixel = 0; pixel < SIZE * SIZE; pixel += 1) {
+      const at3 = pixel * 3;
+      for (let channel = 0; channel < 3; channel += 1) data[at3 + channel] = 162;
+    }
+    /* the object itself */
+    for (let y = 8; y < 24; y += 1) for (let x = 20; x < 44; x += 1) {
+      const at3 = (y * SIZE + x) * 3;
+      data[at3] = 40; data[at3 + 1] = 30; data[at3 + 2] = 25;
+    }
+    /* the contact shadow: a darkening band under the object, neutral */
+    for (let y = 24; y < 30; y += 1) for (let x = 20; x < 44; x += 1) {
+      const at3 = (y * SIZE + x) * 3;
+      data[at3] = 96; data[at3 + 1] = 96; data[at3 + 2] = 96;
+    }
+    /* a distant repaint the band must NOT reach */
+    for (let y = 52; y < 60; y += 1) for (let x = 4; x < 16; x += 1) {
+      const at3 = (y * SIZE + x) * 3;
+      data[at3] = 20; data[at3 + 1] = 200; data[at3 + 2] = 40;
+    }
+    return { data, width: SIZE, height: SIZE };
+  })();
+
+  it("adopts the contact shadow the strict harvest threw away", () => {
+    const strict = adoptInteraction({
+      master, patch: painter, harvest, bandPx: 8, mode: "interaction",
+    });
+    expect(strict.alpha.data[26 * SIZE + 32], "the shadow under the object is adopted").toBeGreaterThan(0);
+  });
+
+  it("leaves the distant repaint to die — the control", () => {
+    /* Without this, "adopts the shadow" could be satisfied by adopting
+       everything, which is the whole-frame repaint the workstream exists to
+       prevent. The green patch is far from any confirmed content. */
+    const strict = adoptInteraction({
+      master, patch: painter, harvest, bandPx: 8, mode: "interaction",
+    });
+    expect(strict.alpha.data[56 * SIZE + 10], "distant repaint is never adopted").toBe(0);
+  });
+
+  it("measures the painter's own drift and does not mistake it for interaction", () => {
+    /* The everywhere-drift is 2 levels. A threshold would have adopted the
+       entire band; the comparison against the painter's own baseline does not. */
+    const strict = adoptInteraction({
+      master, patch: painter, harvest, bandPx: 8, mode: "interaction",
+    });
+    expect(strict.baselineDelta, "the drift is measured, not assumed").toBeCloseTo(2, 0);
+    /* A pixel in the band that carries only drift, off to the side of the shadow. */
+    expect(strict.alpha.data[26 * SIZE + 15], "drift alone is not interaction").toBe(0);
+  });
+
+  it("shadow mode darkens without letting the painter tint her", () => {
+    /* The painter is given a shadow that is also a strong COLOUR — the failure
+       the founder's ruling names: contact shadows, never a tint on her shirt. */
+    const tinted = (() => {
+      const data = Buffer.from(painter.data);
+      for (let y = 24; y < 30; y += 1) for (let x = 20; x < 44; x += 1) {
+        const at3 = (y * SIZE + x) * 3;
+        data[at3] = 30; data[at3 + 1] = 96; data[at3 + 2] = 180;
+      }
+      return { data, width: SIZE, height: SIZE };
+    })();
+
+    const shadow = adoptInteraction({ master, patch: tinted, harvest, bandPx: 8, mode: "shadow" });
+    const [r, g, b] = at(shadow.patch, 32, 26);
+    expect(r, "darker than the master").toBeLessThan(160);
+    expect(r === g && g === b, "and still neutral — her hue survives by construction").toBe(true);
+
+    const raw = adoptInteraction({ master, patch: tinted, harvest, bandPx: 8, mode: "interaction" });
+    const [rr, rg, rb] = at(raw.patch, 32, 26);
+    expect(rr === rg && rg === rb, "interaction mode WOULD have taken the blue — the control").toBe(false);
+  });
+
+  it("never lightens: an invented highlight is not a contact shadow", () => {
+    const brightened = (() => {
+      const data = Buffer.from(painter.data);
+      for (let y = 24; y < 30; y += 1) for (let x = 20; x < 44; x += 1) {
+        const at3 = (y * SIZE + x) * 3;
+        data[at3] = 240; data[at3 + 1] = 240; data[at3 + 2] = 240;
+      }
+      return { data, width: SIZE, height: SIZE };
+    })();
+    const shadow = adoptInteraction({ master, patch: brightened, harvest, bandPx: 8, mode: "shadow" });
+    expect(shadow.alpha.data[26 * SIZE + 32], "lightening is discarded").toBe(0);
+  });
+
+  it("reports the band it cost, so the guarantee can be restated rather than broken", () => {
+    const strict = adoptInteraction({
+      master, patch: painter, harvest, bandPx: 8, mode: "interaction",
+    });
+    expect(strict.bandPixels, "the band is measured").toBeGreaterThan(0);
+    expect(strict.adoptedPixels, "and so is what it actually took").toBeGreaterThan(0);
+    expect(strict.adoptedPixels).toBeLessThan(strict.bandPixels);
   });
 });

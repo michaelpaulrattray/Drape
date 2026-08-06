@@ -790,6 +790,41 @@ describe("the harvest gate — only confirmed content survives, everything else 
     expect(at(layered, { x: 23, y: 33 }), "below the hair's edge, the drop emerges intact").toBe(255);
   });
 
+  it("renders a low-confidence strand tip at its own matte value instead of clipping it", async () => {
+    /*
+      The founder's "the ends cut off straight". A segmenter stops where its
+      confidence does; the matte knew the tip was 20% there and `intersect`
+      multiplied it by zero.
+    */
+    const tipAt = { x: 32, y: 2 };
+    const withTip = (() => {
+      const data = blank();
+      paint(data, { x: 16, y: 6 }, { x: 48, y: 64 }, 255);
+      /* a faint tip, well outside the hard segmentation */
+      paint(data, { x: 30, y: 1 }, { x: 34, y: 5 }, 51);
+      return { data, width: SIZE, height: SIZE };
+    })();
+
+    const clipped = await harvestMatteFrom({ content, matte: withTip, growPx: 0 });
+    const tapered = await harvestMatteFrom({ content, matte: withTip, growPx: 0, taperPx: 6 });
+    expect(at(clipped, tipAt), "the strict harvest cuts the tip to nothing").toBe(0);
+    expect(at(tapered, tipAt), "20% confident renders at 20%").toBe(51);
+  });
+
+  it("still refuses to adopt opaque interior — the taper is not the r=16 bleed", async () => {
+    /*
+      The control that keeps the taper honest. Just outside the confirmed hair
+      and well inside the person, the subject matte is FULLY OPAQUE — that is
+      forehead skin, not a strand end, and adopting it is exactly the bleed
+      D-216 measured at r=16. Ramp-ness (D-215's band) is what tells them apart,
+      and the two pixels differ only in the matte's own value.
+    */
+    const justBelow = { x: 32, y: 24 };
+    expect(at(subject, justBelow), "the matte is opaque here — interior, not an edge").toBe(255);
+    const tapered = await harvestMatteFrom({ content, matte: subject, growPx: 0, taperPx: 6 });
+    expect(at(tapered, justBelow), "opaque interior is never adopted as a tip").toBe(0);
+  });
+
   it("and the subject matte hands that same shirt through — the end-to-end control", async () => {
     const master = solid([120, 120, 120]);
     const patch = solid([20, 200, 40]);

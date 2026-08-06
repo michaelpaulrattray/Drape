@@ -145,6 +145,38 @@ function depthInside(mask: Mask, maxDepth: number): Int32Array {
 }
 
 /**
+ * Distance in pixels from the nearest set pixel of `from`, outward, bounded.
+ *
+ * `0` inside, `-1` beyond `maxDistance`. A bounded breadth-first sweep rather
+ * than a full distance transform: the bands this module needs are a handful of
+ * pixels wide, and a loop anyone can check beats a cleverer thing nobody does.
+ */
+export function distanceOutside(from: Mask, maxDistance: number): Int32Array {
+  const { width, height } = from;
+  const distance = new Int32Array(width * height).fill(-1);
+  let frontier: number[] = [];
+  for (let pixel = 0; pixel < from.data.length; pixel += 1) {
+    if (from.data[pixel] > 0) {
+      distance[pixel] = 0;
+      frontier.push(pixel);
+    }
+  }
+  for (let step = 1; step <= maxDistance && frontier.length > 0; step += 1) {
+    const next: number[] = [];
+    for (const pixel of frontier) {
+      const x = pixel % width;
+      const y = Math.floor(pixel / width);
+      if (x > 0) { const n = pixel - 1; if (distance[n] < 0) { distance[n] = step; next.push(n); } }
+      if (x < width - 1) { const n = pixel + 1; if (distance[n] < 0) { distance[n] = step; next.push(n); } }
+      if (y > 0) { const n = pixel - width; if (distance[n] < 0) { distance[n] = step; next.push(n); } }
+      if (y < height - 1) { const n = pixel + width; if (distance[n] < 0) { distance[n] = step; next.push(n); } }
+    }
+    frontier = next;
+  }
+  return distance;
+}
+
+/**
  * HARMONISE THE SEAM — the founder's forehead line, closed.
  *
  * A destination zone whose edge crosses skin leaves a faint tonal boundary:
@@ -401,6 +433,163 @@ export function matchGrain(input: {
     }
   }
   return { data: out, width: patch.width, height: patch.height };
+}
+
+/**
+ * THE INTERACTION BAND — the sticker effect, and the founder's brief verbatim:
+ * *allow room for the model to actually blend.*
+ *
+ * The strict substance harvest keeps only pixels a segmenter confirms ARE the
+ * object. That is exactly right for the object and exactly wrong for everything
+ * the object does to the picture around it. A real thing in a photograph casts a
+ * contact shadow, darkens what it lies against, tapers into translucency and
+ * spills a little light — and **those pixels are not the object, so a substance
+ * harvest discards every one of them.** What survives is a correct cut-out of the
+ * right shape, floating. Three separate observations from the founder's pass —
+ * the fringe floating, the afro edge smoothed out, the hair lying on the shirt
+ * with no shadow — are one class, and this is its cause.
+ *
+ * So the harvest is widened by a BOUNDED band around confirmed content, and
+ * inside that band the painter's own answer is adopted where it meaningfully
+ * differs from the master. Distant repaint still dies; the object keeps its
+ * consequences.
+ *
+ * # The comparison, because a threshold here would adopt the whole band
+ *
+ * The painter repaints essentially every pixel — 99.6% of the frame moved on the
+ * specimen this was measured against — so "the patch differs here" is true
+ * everywhere and selects nothing. What distinguishes a contact shadow is that it
+ * differs *far more than the painter's own background drift does*.
+ *
+ * That baseline is therefore MEASURED PER RENDER, from pixels well outside the
+ * band, and the adoption ramps against it (D-218: contact is a comparison, never
+ * a threshold). A painter having a wild day raises its own bar.
+ *
+ * # Two modes, because a shadow and a tint are not the same permission
+ *
+ *   `interaction`  adopt the painter's pixels in the band. Shadows, tapers and
+ *                  spill all arrive together, and so does any colour the painter
+ *                  felt like putting on her shirt.
+ *   `shadow`       adopt only DARKENING, as a multiply drawn from the luminance
+ *                  ratio. Contact shadows without letting the painter tint her.
+ *                  Hue is hers by construction; the band can only make her
+ *                  darker, never a different colour.
+ *
+ * # What this costs, stated rather than hidden
+ *
+ * The byte-identical territory shrinks by exactly this band, and the caller is
+ * handed its size so the claim can be restated honestly rather than quietly
+ * broken. **Beyond the destination zone nothing changes: byte-identity there is
+ * untouched, forever.** This is the guarantee's boundary becoming accurate about
+ * where it actually sits, which is the opposite of weakening it.
+ */
+export type InteractionMode = "interaction" | "shadow";
+
+/** Where the painter's drift stops being noise. Both ends of the ramp. */
+const BASELINE_QUIET = 2;
+const BASELINE_LOUD = 6;
+
+export function adoptInteraction(input: {
+  master: Raster;
+  patch: Raster;
+  /** The strict substance harvest — Mode A's matte, already tapered. */
+  harvest: Mask;
+  bandPx: number;
+  mode: InteractionMode;
+  /** Distance beyond which pixels are used to measure the painter's baseline. */
+  baselineFrom?: number;
+}): {
+  alpha: Mask;
+  /** The patch to composite — rewritten in the band for `shadow`. */
+  patch: Raster;
+  bandPixels: number;
+  adoptedPixels: number;
+  baselineDelta: number;
+} {
+  const { master, patch, harvest, bandPx, mode } = input;
+  assertSameShape(master, patch, harvest);
+  const baselineFrom = input.baselineFrom ?? bandPx * 3;
+  const { width, height } = harvest;
+
+  /* A hard core of confirmed content — the band is measured from what the
+     harvest actually kept, not from the geometry that bounded it. */
+  const core: Mask = {
+    data: Buffer.from(harvest.data.map((value) => (value > 0 ? 255 : 0))),
+    width,
+    height,
+  };
+  const near = distanceOutside(core, baselineFrom);
+
+  const delta = (pixel: number): number => {
+    const at = pixel * 3;
+    return (Math.abs(patch.data[at] - master.data[at])
+      + Math.abs(patch.data[at + 1] - master.data[at + 1])
+      + Math.abs(patch.data[at + 2] - master.data[at + 2])) / 3;
+  };
+
+  /*
+    THE PAINTER'S OWN NOISE FLOOR, from pixels it had no reason to touch. Median
+    rather than mean, so one bright repainted corner cannot raise the bar and
+    silently switch the whole band off.
+  */
+  const far: number[] = [];
+  for (let pixel = 0; pixel < near.length; pixel += 1) {
+    if (near[pixel] === -1) far.push(delta(pixel));
+  }
+  far.sort((a, b) => a - b);
+  const baselineDelta = far.length > 0 ? far[Math.floor(far.length / 2)] : 0;
+  const quiet = Math.max(1, baselineDelta * BASELINE_QUIET);
+  const loud = Math.max(quiet + 1, baselineDelta * BASELINE_LOUD);
+
+  const alphaData = Buffer.from(harvest.data);
+  const patchData = Buffer.from(patch.data);
+  let bandPixels = 0;
+  let adoptedPixels = 0;
+
+  for (let pixel = 0; pixel < near.length; pixel += 1) {
+    const away = near[pixel];
+    if (away <= 0 || away > bandPx) continue;
+    bandPixels += 1;
+    /* A contact shadow fades with distance from the thing casting it. */
+    const falloff = 1 - (away - 1) / bandPx;
+    const strength = Math.max(0, Math.min(1, (delta(pixel) - quiet) / (loud - quiet)));
+    if (strength <= 0) continue;
+
+    const at = pixel * 3;
+    let adopted = Math.round(255 * strength * falloff);
+
+    if (mode === "shadow") {
+      /*
+        DARKENING ONLY, as a multiply. The luminance ratio says how much less
+        light reaches this pixel in the painter's answer; anything that says MORE
+        light is discarded, because a highlight the painter invented is not a
+        contact shadow. Her hue survives by construction — every channel is
+        scaled by one factor, so nothing here can change what colour she is.
+      */
+      const lumMaster = 0.2126 * master.data[at] + 0.7152 * master.data[at + 1] + 0.0722 * master.data[at + 2];
+      const lumPatch = 0.2126 * patch.data[at] + 0.7152 * patch.data[at + 1] + 0.0722 * patch.data[at + 2];
+      if (lumMaster <= 0 || lumPatch >= lumMaster) { adopted = 0; }
+      else {
+        const factor = lumPatch / lumMaster;
+        for (let channel = 0; channel < 3; channel += 1) {
+          patchData[at + channel] = Math.max(0, Math.min(255, Math.round(master.data[at + channel] * factor)));
+        }
+      }
+    }
+
+    if (adopted > alphaData[pixel]) {
+      alphaData[pixel] = adopted;
+      adoptedPixels += 1;
+    }
+  }
+
+  return {
+    alpha: { data: alphaData, width, height },
+    patch: mode === "shadow" ? { data: patchData, width: patch.width, height: patch.height } : patch,
+    bandPixels,
+    adoptedPixels,
+    baselineDelta,
+  };
 }
 
 function assertSameShape(master: Raster, patch: Raster, mask: Mask): void {

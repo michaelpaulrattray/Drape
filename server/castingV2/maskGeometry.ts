@@ -40,7 +40,7 @@
  */
 import sharp from "sharp";
 
-import { type Mask } from "./maskedComposite";
+import { distanceOutside, type Mask } from "./maskedComposite";
 
 /**
  * Where a production mask comes from. One model per region kind, chosen by
@@ -644,15 +644,68 @@ export async function harvestMatteFrom(input: {
    * interleaves resolved BY HARVEST rather than by ordering.
    */
   occludedBy?: Mask;
+  /**
+   * THE TIP TAPER — founder observation, 2026-08-06: *the ends cut off straight.*
+   *
+   * A SAM-class segmentation is binary and stops where its confidence does, which
+   * on hair is short of the finest strand ends. `intersect` then multiplies those
+   * tips by zero, and a strand that the matte knew was 20% there composites at 0%
+   * — a straight cut where a taper belongs. It is one of the three things that
+   * make an edit read as a sticker.
+   *
+   * So just outside the confirmed region, the matte's own value is adopted
+   * DIRECTLY: **a tip the matte is 20% confident of renders at 20%.** The matte
+   * is the confidence, so no new number invents the alpha.
+   *
+   * Two things bound it, because an unbounded version of this is exactly the r=16
+   * forehead bleed D-216 measured:
+   *
+   *   DISTANCE   only within `taperPx` of confirmed content. A strand end is
+   *              near its strand; a cheek is not.
+   *   RAMP-NESS  only where the matte carries a genuine EDGE value rather than
+   *              interior opacity. D-215 already had to draw that line to score
+   *              softness at all — BiRefNet's interior sits at 250–254 while a
+   *              real edge ramp lives below — so this reuses the ratified band
+   *              instead of inventing a threshold. Forehead skin inside the
+   *              subject is opaque, scores zero ramp-ness, and is never adopted.
+   */
+  taperPx?: number;
 }): Promise<Mask> {
   assertStride(input.content, "content segmentation");
   assertStride(input.matte, "edge matte");
   assertSameSize(input.content, input.matte);
   const grown = await dilateMask(input.content, input.growPx ?? DEFAULT_HARVEST_GROWTH);
   const harvested = intersectMask(grown, input.matte);
+  const tapered = input.taperPx && input.taperPx > 0
+    ? adoptTips(harvested, grown, input.matte, input.taperPx)
+    : harvested;
   /* Subtracted LAST, like every other exclusion in this module — what is in
      front cannot be talked open by anything that ran before it. */
-  return input.occludedBy ? subtractMask(harvested, input.occludedBy) : harvested;
+  return input.occludedBy ? subtractMask(tapered, input.occludedBy) : tapered;
+}
+
+/** Above this a matte byte is interior opacity, not an edge ramp (D-215). */
+const RAMP_CEILING = 229;
+/** At and above this it is unambiguously interior. */
+const INTERIOR_AT = 250;
+
+function adoptTips(harvested: Mask, confirmed: Mask, matte: Mask, taperPx: number): Mask {
+  const distance = distanceOutside(confirmed, taperPx);
+  const data = Buffer.from(harvested.data);
+  for (let pixel = 0; pixel < data.length; pixel += 1) {
+    const away = distance[pixel];
+    if (away <= 0) continue;
+    const value = matte.data[pixel];
+    if (value === 0) continue;
+    /* Ramp-ness: full across a genuine edge value, nothing at interior opacity,
+       and smooth between so the adoption has no cliff of its own. */
+    const rampness = value <= RAMP_CEILING
+      ? 1
+      : Math.max(0, (INTERIOR_AT - value) / (INTERIOR_AT - RAMP_CEILING));
+    const adopted = Math.round(value * rampness);
+    if (adopted > data[pixel]) data[pixel] = adopted;
+  }
+  return { data, width: harvested.width, height: harvested.height };
 }
 
 /**
