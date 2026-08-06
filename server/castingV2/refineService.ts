@@ -114,6 +114,7 @@ import {
   type ChainStep,
 } from "./refineRemoval";
 import { facetOfAxis, type Facet } from "./refineFacets";
+import { harvestRefinement, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import {
   captionClause,
   captionRealization,
@@ -247,6 +248,15 @@ export type RefineServiceDependencies = {
   /** The brief that knows what she was drawn wearing (D-206). */
   readBaseWorn?: typeof getBriefForOwnedCandidate;
   readBytes?: typeof storageReadBytes;
+  /**
+   * The segmenter the masked path asks where a region is.
+   *
+   * Optional because the masked path is dark: with the flag off it is never
+   * consulted, and the default refuses rather than returning an empty mask —
+   * an empty mask composites to "nothing changed" and would charge her for the
+   * picture she already had.
+   */
+  regions?: RegionReader;
   storeImage?: (
     input: { key: string; bytes: Buffer; contentType: string },
   ) => Promise<{ key: string; url: string }>;
@@ -1171,13 +1181,37 @@ export async function refineCandidate(
 
     /* ONE definition of "render this", so a retry cannot quietly differ from
        the attempt it is retrying. */
-    const renderOnce = () => engine.editWithReferences({
-      prompt,
-      /* ONE reference, forever: the sharp original. */
-      references: [{ bytes: base.bytes, contentType: base.contentType }],
-      // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
-      resolution: "1K",
-    });
+    /*
+      THE MASKED SEAM (the masked-editing workstream, shipped dark).
+
+      The engine call does not change — full-frame context with local harvest is
+      the standing rider, because the model needs the whole face to know what it
+      is editing. What changes is what we KEEP from its answer: only the pixels
+      inside the region that was asked about, composited into an otherwise
+      untouched master.
+
+      `MASKED_EDITING_ENABLED` is false, so today this returns the engine's own
+      bytes byte-for-byte and does not even consult a segmenter. Everything below
+      — the fault detector, the verification net, the retry, the refund — is
+      untouched and does not know this exists.
+    */
+    const renderOnce = async () => {
+      const painted = await engine.editWithReferences({
+        prompt,
+        /* ONE reference, forever: the sharp original. */
+        references: [{ bytes: base.bytes, contentType: base.contentType }],
+        // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
+        resolution: "1K",
+      });
+      const harvested = await harvestRefinement({
+        master: { bytes: base.bytes, contentType: base.contentType },
+        painted: { bytes: painted.bytes, contentType: painted.contentType },
+        facets: Array.from(facetsWrittenBy(composed)),
+        reader: dependencies.regions ?? refusingRegionReader,
+        operationId,
+      });
+      return { ...painted, bytes: harvested.bytes, contentType: harvested.contentType };
+    };
 
     /*
       THE FACTS THIS PICTURE HAS TO CONTAIN (D-185).

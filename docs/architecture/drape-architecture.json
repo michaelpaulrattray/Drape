@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fcb6d067c45da10a"
+    "sourceFingerprint": "c36d32a274022d1a"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 57
+      "moduleCount": 58
     },
     {
       "id": "domain:castingV2",
@@ -3305,6 +3305,12 @@
     {
       "id": "module:server/castingV2/maskedComposite.ts",
       "path": "server/castingV2/maskedComposite.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/maskedRefine.ts",
+      "path": "server/castingV2/maskedRefine.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8259,6 +8265,10 @@
     {
       "id": "test:server/castingV2/maskedComposite.test.ts",
       "path": "server/castingV2/maskedComposite.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/maskedRefine.test.ts",
+      "path": "server/castingV2/maskedRefine.test.ts"
     },
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
@@ -17065,6 +17075,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/zoneScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/maskGeometry.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -17467,6 +17502,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
       "kind": "imports"
     },
     {
