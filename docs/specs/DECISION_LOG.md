@@ -7022,6 +7022,54 @@ model to leave them alone — and all three engines' frames are pixel-unchanged,
 including FLUX's, which failed the other scenario. An exclusion that subtracts
 last cannot be talked open by a prompt.
 
+## D-219 — The 60% ceiling never fires. Seam-mean measures contrast, not blend quality.
+
+**The max-delta transfer fixture, 2026-08-06. Both directions, run whole.**
+
+A crew-cut master and a giant-afro reference — the largest hair delta the product
+can be asked for. Material came free from the bespectacled roll's retention
+neighbours. Zones built from a similarity transform on eye centres
+(`moondream3-preview/point`; both controls clean on three specimens, every point
+cross-checked against SAM 3's independent eye mask), padded, face carved out
+last (D-211).
+
+**Both directions held the guarantee: outside the zone, byte-identical.** And
+both worked. Grow produced a natural full afro. **Shrink — the honest half —
+reconstructed the studio backdrop where the hair had been, with the ears, neck
+and shoulder line correct.** "Paint background over it" turned out to be an
+operation after all, at least on a plain ground.
+
+### The routing finding: the ceiling is unreachable
+
+| direction | zone coverage |
+|---|---|
+| grow (crew → afro) | **16.4%** |
+| shrink (afro → crew) | **13.2%** |
+
+This fixture exists partly to find where `assertUsable`'s 60% rule fires. **It
+does not.** The largest legitimate hair instruction in the product lands at a
+quarter of the ceiling. So the 60% rule is not the masked/full-frame crossover in
+practice — **D-218's non-convergence trigger is**, and it fires at ~3%. The
+ceiling remains a correct backstop against a mask that has stopped being local;
+it is not the routing boundary anyone will meet.
+
+### And a caveat on an instrument already in use
+
+Grow's seam mean is **45.5**; shrink's is **5.8** — which inverts the fixture
+spec's own difficulty prediction, and would read as "growing hair is the hard
+one" to anybody trusting the number.
+
+It is not. **Seam mean measures the CONTRAST across the boundary, not the quality
+of the blend.** Grow's feather ring separates dark hair from a pale wall;
+shrink's sits in backdrop meeting backdrop. A high figure there is the picture
+being high-contrast, not the seam being bad.
+
+So the rule: **seam mean compares engines on the SAME zone. It never compares
+zones.** The bake-off's use of it (D-218) is valid on exactly that reading — same
+mask, three engines. Nothing else measured so far depends on the cross-zone
+reading, which is why this is a caveat rather than a correction. Same family as
+D-215: ask what a number actually had to read.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
