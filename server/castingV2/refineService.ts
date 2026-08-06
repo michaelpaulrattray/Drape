@@ -114,8 +114,9 @@ import {
   type ChainStep,
 } from "./refineRemoval";
 import { facetOfAxis, type Facet } from "./refineFacets";
-import { harvestRefinement, refusingRegionReader, type RegionReader } from "./maskedRefine";
+import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { createFalRegionReader } from "./falRegionReader";
+import { createFalMaskedEditEngine } from "../providers/falImages";
 import {
   captionClause,
   captionRealization,
@@ -267,6 +268,8 @@ export type RefineServiceDependencies = {
    * `verifier` are.
    */
   harvest?: typeof harvestRefinement;
+  /** The engine the masked path renders with — GPT Image 2, at a pinned size. */
+  maskedEdit?: () => ReturnType<typeof createFalMaskedEditEngine>;
   storeImage?: (
     input: { key: string; bytes: Buffer; contentType: string },
   ) => Promise<{ key: string; url: string }>;
@@ -285,6 +288,15 @@ async function defaultStoreImage(input: { key: string; bytes: Buffer; contentTyp
  * masked edit that cannot segment must fail into the refund rather than quietly
  * deliver an unmasked frame.
  */
+/*
+  The key check lives in the FACTORY, not here — so a test can replace the whole
+  engine, and so production still refuses with one clear sentence rather than
+  discovering it deep in a request.
+*/
+function defaultMaskedEditEngine() {
+  return createFalMaskedEditEngine({ apiKey: process.env.FAL_KEY ?? "" });
+}
+
 function defaultRegionReader(): RegionReader {
   const apiKey = process.env.FAL_KEY;
   return apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader;
@@ -1155,6 +1167,24 @@ export async function refineCandidate(
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
     /*
+      THE MASTER'S EXACT PIXELS, read from the master itself — and read LAZILY,
+      because only the masked path needs them.
+    
+      The masked engine is told this rather than a resolution tier, because a
+      tier is what produced 848x1264 for a 1024x1536 master: the right aspect,
+      an engine's own cap, and nothing the composite can use. Everyone off the
+      masked path should not pay a decode for a number they never consult — and
+      more to the point, should not gain a new way to fail.
+    */
+    const masterSize = async () => {
+      const sharp = (await import("sharp")).default;
+      const meta = await sharp(base.bytes).metadata();
+      if (!meta.width || !meta.height) {
+        throw new ProviderError("capability", "could not read the master's dimensions to pin the render size");
+      }
+      return { width: meta.width, height: meta.height };
+    };
+    /*
       RENDER RECIPE v3 (D-152) — ONE step from the sharp original, always.
 
       v2 carried the selected PARENT as a realization pin, which held the facets
@@ -1220,13 +1250,34 @@ export async function refineCandidate(
       untouched and does not know this exists.
     */
     const renderOnce = async () => {
-      const painted = await engine.editWithReferences({
-        prompt,
-        /* ONE reference, forever: the sharp original. */
-        references: [{ bytes: base.bytes, contentType: base.contentType }],
-        // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
-        resolution: "1K",
-      });
+      /*
+        THE ROUTING ROW THE FACE WALL ESTABLISHED, wired at last.
+
+        Every render on the wall came from GPT Image 2 — founder's eye, seat's
+        eye and the convergence arithmetic picked it independently for
+        face-region edits. The product path was still calling the incumbent
+        identity engine, so the wall was measuring one engine while production
+        ran another. That gap is what produced an 848x1264 answer to a 1024x1536
+        master: a resolution TIER instead of a size, and a cap the composite
+        cannot use.
+
+        Only the masked path routes here. Everyone else is on exactly the engine
+        they were on.
+      */
+      const painted = maskedEditingEnabledFor(input.userId)
+        ? await (dependencies.maskedEdit ?? defaultMaskedEditEngine)().edit({
+          prompt,
+          references: [{ bytes: base.bytes, contentType: base.contentType }],
+          /* The master's exact pixels — the composite has no use for a size class. */
+          ...(await masterSize()),
+        })
+        : await engine.editWithReferences({
+          prompt,
+          /* ONE reference, forever: the sharp original. */
+          references: [{ bytes: base.bytes, contentType: base.contentType }],
+          // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
+          resolution: "1K",
+        });
       const harvested = await (dependencies.harvest ?? harvestRefinement)({
         master: { bytes: base.bytes, contentType: base.contentType },
         painted: { bytes: painted.bytes, contentType: painted.contentType },

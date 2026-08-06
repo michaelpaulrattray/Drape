@@ -152,7 +152,10 @@ vi.mock("../casting/directOperation", () => ({
 }));
 
 vi.mock("../storage", () => ({
-  storageReadBytes: vi.fn(async () => ({ bytes: Buffer.from("base"), contentType: "image/png" })),
+  /* A REAL png, because the service reads the master's dimensions to pin the
+     render size — a fake buffer made that a decode error rather than a test.
+     32x48 keeps the master's 2:3 and both dimensions multiples of 16. */
+  storageReadBytes: vi.fn(async () => ({ bytes: TINY_MASTER_PNG, contentType: "image/png" })),
   storagePut: vi.fn(async (key: string) => ({ key, url: `https://cdn.example/${key}` })),
   /* Typed removal answers some asks by SELECTING an existing picture, which
      needs the public URL of a row rather than a fresh upload (D-163). */
@@ -181,6 +184,37 @@ vi.mock("./renderFault", () => ({
     reason: renderFault ? "seam" : "clean",
     detail: "a horizontal seam",
   })),
+}));
+
+/*
+  The masked path renders through GPT Image 2 at a pinned size — the routing row
+  the face wall established. Stubbed here beside the incumbent engine so the
+  service suite keeps testing the service; `maskedRefine.test.ts` owns masking.
+  Partial mock, so everything else in the module keeps its real implementation.
+*/
+/* Built once, at module scope, so every mock can hand back the same master. */
+const TINY_MASTER_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAIAAAD/zu84AAAACXBIWXMAAAPoAAAD6AG1e1JrAAAASklEQVR4nO3YwQkAMAxC0c7uEE7igJ2i0MOD3AMhUX/Omqd1NKgRxRbNoYVUjJqW4YxlVqqI4FXRMdL1AEgg1FBmgfi8Evrxt+UCvS/Il+tSa9kAAAAASUVORK5CYII=",
+  "base64",
+);
+
+vi.mock("../providers/falImages", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../providers/falImages")>()),
+  createFalMaskedEditEngine: () => ({
+    id: "test:masked",
+    edit: vi.fn(async () => {
+      journal.push("generate");
+      if (engineThrows) throw engineThrows;
+      return {
+        bytes: Buffer.from("refined"),
+        contentType: "image/png",
+        width: 1024,
+        height: 1536,
+        latencyMs: 10,
+        provenance: { provider: "fal", model: "gpt-image-2", providerRef: "req-1" },
+      };
+    }),
+  }),
 }));
 
 vi.mock("./signEngine", () => ({

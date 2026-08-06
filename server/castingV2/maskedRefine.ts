@@ -386,11 +386,37 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   });
 
   const master: Raster = await readRaster(input.master.bytes);
-  const painted: Raster = await readRaster(input.painted.bytes);
+  let painted: Raster = await readRaster(input.painted.bytes);
   if (painted.width !== master.width || painted.height !== master.height) {
-    throw new MaskError(
-      `the engine returned ${painted.width}x${painted.height} for a ${master.width}x${master.height} master `
-      + "— a masked composite never resizes the master to fit",
+    /*
+      MASTER HYGIENE, STATED RATHER THAN HIDDEN — and this is the line that
+      refused the founder's first three real edits.
+    
+      **The MASTER is never resampled**, and that half does not bend: it is the
+      picture the guarantee is about. The PATCH is another matter — we are about
+      to discard most of it anyway, and the calibration harness has resized it
+      since the first fixture for exactly that reason.
+    
+      Refusing outright was too strict for the wrong half. The engine is now
+      told the exact size to return (`createFalMaskedEditEngine` pins
+      `image_size`), so this should never fire; it stays as the honest fallback
+      for an engine that ignores the ask, and it says so in the log rather than
+      quietly resampling.
+    */
+    log.warn(
+      {
+        operationId: input.operationId,
+        returned: `${painted.width}x${painted.height}`,
+        master: `${master.width}x${master.height}`,
+      },
+      "[maskedRefine] the engine ignored the pinned size — resampling the PATCH, never the master",
+    );
+    const sharp = (await import("sharp")).default;
+    painted = await readRaster(
+      await sharp(input.painted.bytes)
+        .resize(master.width, master.height, { fit: "fill" })
+        .png()
+        .toBuffer(),
     );
   }
 

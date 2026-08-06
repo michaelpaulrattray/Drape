@@ -98,3 +98,90 @@ export function createFalCreativeEngine(config: FalCreativeConfig): CreativeEngi
     },
   };
 }
+
+/**
+ * THE MASKED-EDIT ENGINE — GPT Image 2, at the master's exact resolution.
+ *
+ * Two things this fixes, and the first one cost the founder three refusals on
+ * the first three minutes of real use.
+ *
+ * **The output size is PINNED, not hoped for.** The incumbent identity engine
+ * takes a resolution TIER ("1K"), and Nano Banana Pro answered a 1024x1536
+ * master with 848x1264 — its own cap at roughly a megapixel, at the right aspect
+ * and the wrong size. A masked composite cannot use that: the master is never
+ * resampled, so a patch of a different shape has nothing to composite against.
+ * `image_size` takes exact pixels, so the engine is told the answer rather than
+ * asked for a size class.
+ *
+ * **And it is GPT Image 2**, which is the routing row the face wall established:
+ * the founder's eye, the seat's eye and the convergence arithmetic picked it
+ * independently for face-region edits, and every render on the wall came from
+ * it. The product path was still calling the incumbent, so the wall was
+ * measuring one engine while production ran another — the gap this closes.
+ */
+export function createFalMaskedEditEngine(config: FalCreativeConfig) {
+  if (!config.apiKey) {
+    /* Refused at construction, in one sentence, rather than discovered inside a
+       request that has already taken money. */
+    throw new ProviderError("capability", "masked editing needs FAL_KEY to render");
+  }
+  const model = config.model ?? FAL_GPT_IMAGE_2_EDIT;
+  const timeoutMs = config.timeoutMs ?? 300_000;
+  const pollIntervalMs = config.pollIntervalMs ?? 1_500;
+  const queue =
+    config.queue ?? new ProviderQueue({ name: "fal-masked-edit", concurrency: 4, maxQueueDepth: 32 });
+
+  return {
+    id: `fal:${model}`,
+    async edit(request: {
+      prompt: string;
+      references: readonly { bytes: Buffer; contentType: string }[];
+      /** The master's exact pixels. The composite has no use for anything else. */
+      width: number;
+      height: number;
+      signal?: AbortSignal;
+    }): Promise<ImageResult> {
+      if (request.width % 16 !== 0 || request.height % 16 !== 0) {
+        /* Fail before dispatch rather than pay to learn the constraint. */
+        throw new ProviderError(
+          "capability",
+          `fal requires both dimensions to be multiples of 16 — got ${request.width}x${request.height}`,
+        );
+      }
+      return queue.run("maskedEdit", () =>
+        withRetry(
+          "fal.maskedEdit",
+          async () => {
+            const job = await runFalImageJob({
+              apiKey: config.apiKey,
+              endpoint: model,
+              body: {
+                prompt: request.prompt,
+                image_urls: request.references.map(
+                  (reference) => `data:${reference.contentType};base64,${reference.bytes.toString("base64")}`,
+                ),
+                image_size: { width: request.width, height: request.height },
+                num_images: 1,
+                quality: "high",
+                output_format: "png",
+              },
+              timeoutMs,
+              pollIntervalMs,
+              signal: request.signal,
+            });
+            return {
+              bytes: job.bytes,
+              contentType: job.contentType,
+              width: job.width,
+              height: job.height,
+              latencyMs: job.latencyMs,
+              estimatedCostUsd: FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE,
+              provenance: { provider: "fal" as const, model, providerRef: job.requestId },
+            };
+          },
+          { signal: request.signal },
+        ),
+      );
+    },
+  };
+}

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f52f3ef1782f4b3d"
+    "sourceFingerprint": "e45d3d550590c499"
   },
   "domains": [
     {
@@ -17663,6 +17663,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/providers/falImages.ts",
       "kind": "imports"
     },
     {
