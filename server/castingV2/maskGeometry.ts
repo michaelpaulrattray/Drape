@@ -478,6 +478,100 @@ export function assertUsable(mask: Mask, kind: RegionKind): UsableMask {
   return mask as UsableMask;
 }
 
+/**
+ * Intersection — `min(a, b)`. The operation D-216 named and the module lacked.
+ *
+ * Reduces to binary AND on hard inputs, like its siblings, and keeps a soft
+ * side soft: intersecting a region with a matte is how a hair mask gets an edge
+ * it can actually blend on.
+ */
+export function intersectMask(a: Mask, b: Mask): Mask {
+  assertStride(a, "mask a");
+  assertStride(b, "mask b");
+  assertSameSize(a, b);
+  const data = Buffer.allocUnsafe(a.data.length);
+  for (let index = 0; index < data.length; index += 1) {
+    data[index] = a.data[index] < b.data[index] ? a.data[index] : b.data[index];
+  }
+  return { data, width: a.width, height: a.height };
+}
+
+/** How far a destination zone may reach onto skin. See `placeDestinationZone`. */
+const DEFAULT_SKIN_MARGIN = 8;
+
+/**
+ * WHERE A ZONE'S BOUNDARY IS ALLOWED TO SIT — founder law, 2026-08-06.
+ *
+ * > A zone boundary should follow natural image edges wherever feasible — the
+ * > hairline, a jawline, a contour — and never cross open smooth skin if it can
+ * > help it.
+ *
+ * The reasoning is about where a seam can hide. **Smooth skin is the worst seam
+ * real estate in the picture**: no texture to disappear into and an eye that is
+ * more sensitive to a gradient there than anywhere else. The same residual
+ * mismatch that is invisible along a hairline glows in the middle of a forehead.
+ * Grain matching and tone harmonisation reduce that mismatch; putting the
+ * boundary somewhere else removes the problem.
+ *
+ * A plain dilation cannot obey this, and that is exactly what went wrong: it
+ * sweeps outward equally in every direction, so growing a hair mask to make room
+ * for longer hair also pushes the boundary DOWN across the forehead, and the
+ * seam ends up in open skin because the dilation happened to sweep there.
+ *
+ * So growth is asymmetric, which is the whole idea:
+ *
+ *   into BACKGROUND   generous — `reach` px. Hair being lengthened needs
+ *                     somewhere to go and nobody can segment hair that does not
+ *                     exist yet.
+ *   onto the SUBJECT  `skinMargin` px and no more. Enough for the new hairline
+ *                     to be drawn, and not one pixel of forehead beyond it.
+ *
+ * The zone therefore takes the skin it MUST rather than the skin a dilation
+ * swept, and its lower boundary hugs the hairline, where texture hides a seam
+ * for free.
+ *
+ * `subject` is a whole-subject matte (BiRefNet, ratified round one). It is what
+ * tells background from person; without it there is no way to grow one way and
+ * not the other, which is why this takes it rather than deriving it.
+ */
+export async function placeDestinationZone(input: {
+  /** The region as it currently is — a real segmentation. */
+  region: Mask;
+  /** Whole-subject matte: background outside, person inside. */
+  subject: Mask;
+  /** How far the edit may reach into BACKGROUND. */
+  reach: number;
+  /** How far it may reach onto the subject's skin. Small on purpose. */
+  skinMargin?: number;
+  /** Carved out last, by law (D-211) — the face is never inside a hair zone. */
+  exclude?: Mask;
+}): Promise<Mask> {
+  const skinMargin = input.skinMargin ?? DEFAULT_SKIN_MARGIN;
+  assertStride(input.region, "region");
+  assertStride(input.subject, "subject matte");
+  assertSameSize(input.region, input.subject);
+
+  const outward = await dilateMask(input.region, input.reach);
+  const inward = skinMargin > 0 ? await dilateMask(input.region, skinMargin) : input.region;
+
+  /* Background is everything the subject matte does not claim. */
+  const background: Mask = {
+    data: Buffer.from(input.subject.data.map((value) => 255 - value)),
+    width: input.subject.width,
+    height: input.subject.height,
+  };
+
+  const zone = unionMasks(
+    input.region,
+    /* generous, but only where there is nothing to disturb */
+    intersectMask(outward, background),
+    /* minimal, where there is */
+    intersectMask(inward, input.subject),
+  );
+  /* Exclusion subtracts LAST and cannot be talked open (D-211). */
+  return input.exclude ? subtractMask(zone, input.exclude) : zone;
+}
+
 export type FaceGeometry = {
   /** The face oval — carved out of every hair mask, by law. */
   face: Shape;

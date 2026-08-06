@@ -16,7 +16,9 @@ import {
   subtractMask,
   unionMasks,
   type FaceGeometry,
+  intersectMask,
   overlapWith,
+  placeDestinationZone,
   requestMatte,
   type MatteRequest,
   type SegmentationSource,
@@ -452,5 +454,52 @@ describe("a mask that was invented rather than found", () => {
     const mask: UsableMask = await requestMatte(sourceReturning(good), request({ prior }));
     expect(mask.data.length).toBe(SIZE * SIZE);
     expect(overlapWith(good, prior)).toBe(1);
+  });
+});
+
+describe("placeDestinationZone — a boundary is not allowed to sit on open skin", () => {
+  const SIZE = 64;
+  const blank = () => Buffer.alloc(SIZE * SIZE, 0);
+  const box = (from: { x: number; y: number }, to: { x: number; y: number }, fill = 255): Mask => {
+    const data = blank();
+    for (let y = from.y; y < to.y; y += 1) for (let x = from.x; x < to.x; x += 1) data[y * SIZE + x] = fill;
+    return { data, width: SIZE, height: SIZE };
+  };
+
+  /* A head: hair across the top, skin below it, background either side. */
+  const hair = box({ x: 20, y: 8 }, { x: 44, y: 24 });
+  const subject = box({ x: 20, y: 8 }, { x: 44, y: 60 });
+
+  it("grows generously into background and barely onto skin", async () => {
+    const zone = await placeDestinationZone({ region: hair, subject, reach: 12, skinMargin: 3 });
+    const at = (x: number, y: number) => zone.data[y * SIZE + x] > 0;
+
+    /* Background above and beside the hair: taken, because hair may grow there. */
+    expect(at(32, 2), "background above the hair").toBe(true);
+    expect(at(12, 16), "background beside the hair").toBe(true);
+
+    /* Skin just under the hairline: taken, because the new hairline is drawn there. */
+    expect(at(32, 25), "a small margin of skin below the hairline").toBe(true);
+
+    /*
+      OPEN FOREHEAD, well below the hairline but inside a 12px dilation: NOT
+      taken. This is the assertion the founder's law exists for — a plain
+      dilation would have swept it, and the seam would have landed in open skin.
+    */
+    expect(at(32, 32), "open skin a plain dilation would have swept").toBe(false);
+  });
+
+  it("a plain dilation DOES sweep that skin — the control that makes the test mean something", async () => {
+    /* Without this, the assertion above could pass because the zone was small
+       for some unrelated reason. This proves the skin in question is genuinely
+       within reach and is being declined deliberately. */
+    const swept = await dilateMask(hair, 12);
+    expect(swept.data[32 * SIZE + 32], "the naive zone reaches this forehead pixel").toBeGreaterThan(0);
+  });
+
+  it("still subtracts its exclusion last", async () => {
+    const face = box({ x: 24, y: 24 }, { x: 40, y: 40 });
+    const zone = await placeDestinationZone({ region: hair, subject, reach: 12, skinMargin: 6, exclude: face });
+    expect(zone.data[30 * SIZE + 32], "the exclusion wins over the skin margin").toBe(0);
   });
 });

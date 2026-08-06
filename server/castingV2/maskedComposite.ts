@@ -115,6 +115,207 @@ export async function featherMask(mask: Mask, radius: number): Promise<Mask> {
   return { data, width: info.width, height: info.height };
 }
 
+/**
+ * Depth inside a mask, in pixels from its own boundary. `-1` outside.
+ *
+ * Repeated erosion rather than a distance transform: the bands this module
+ * needs are a handful of pixels wide, and a loop anyone can read beats a
+ * cleverer thing nobody checks.
+ */
+function depthInside(mask: Mask, maxDepth: number): Int32Array {
+  const { width, height } = mask;
+  const depth = new Int32Array(width * height).fill(-1);
+  let current = new Uint8Array(width * height);
+  for (let pixel = 0; pixel < mask.data.length; pixel += 1) current[pixel] = mask.data[pixel] > 0 ? 1 : 0;
+  for (let layer = 0; layer <= maxDepth; layer += 1) {
+    const next = new Uint8Array(width * height);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const pixel = y * width + x;
+        if (!current[pixel]) continue;
+        const edge = x === 0 || y === 0 || x === width - 1 || y === height - 1
+          || !current[pixel - 1] || !current[pixel + 1]
+          || !current[pixel - width] || !current[pixel + width];
+        if (edge) { if (depth[pixel] < 0) depth[pixel] = layer; } else next[pixel] = 1;
+      }
+    }
+    current = next;
+  }
+  return depth;
+}
+
+/**
+ * HARMONISE THE SEAM — the founder's forehead line, closed.
+ *
+ * A destination zone whose edge crosses skin leaves a faint tonal boundary:
+ * repainted skin sits a whisper off master skin, and **feathering cannot hide a
+ * tonal mismatch** — opacity blending between two slightly different tones
+ * still lands on a visible line, it just makes it a soft one.
+ *
+ * So the band blends TONE, not only opacity. A single per-channel offset is
+ * measured between the ring just inside the boundary and the ring just outside
+ * it, then applied to the patch with a weight that fades to nothing as you move
+ * inward — the boundary matches, the interior keeps whatever the edit intended.
+ *
+ * **The self-limit is the important part.** At a hair silhouette the master is
+ * background and the patch is hair; they are SUPPOSED to differ, and dragging
+ * one toward the other would grey the hairline. So the correction is scaled down
+ * where master and patch already disagree strongly: a whisper is corrected, a
+ * genuine content change is left alone. `TONE_MATCH_LIMIT` is where that judgement
+ * sits, and it is a measured constant rather than a taste one — above it, the two
+ * sides are different things rather than the same thing lit differently.
+ */
+const TONE_MATCH_LIMIT = 40;
+
+export function harmonizeSeam(input: {
+  master: Raster;
+  patch: Raster;
+  mask: Mask;
+  bandPx?: number;
+}): Raster {
+  const { master, patch, mask } = input;
+  const band = input.bandPx ?? 12;
+  assertSameShape(master, patch, mask);
+
+  const depth = depthInside(mask, band);
+  /* The offset is read at the boundary itself, where the two sides should agree. */
+  const totals = [0, 0, 0];
+  let counted = 0;
+  for (let pixel = 0; pixel < depth.length; pixel += 1) {
+    if (depth[pixel] < 0 || depth[pixel] > 2) continue;
+    const at = pixel * 3;
+    const spread = Math.abs(master.data[at] - patch.data[at])
+      + Math.abs(master.data[at + 1] - patch.data[at + 1])
+      + Math.abs(master.data[at + 2] - patch.data[at + 2]);
+    /* Only pixels where the two sides are the same KIND of thing inform the
+       offset — a hairline in the ring must not drag the skin correction. */
+    if (spread > TONE_MATCH_LIMIT * 3) continue;
+    for (let channel = 0; channel < 3; channel += 1) {
+      totals[channel] += master.data[at + channel] - patch.data[at + channel];
+    }
+    counted += 1;
+  }
+  const out = Buffer.from(patch.data);
+  if (counted === 0) return { data: out, width: patch.width, height: patch.height };
+  const offset = totals.map((total) => total / counted);
+
+  for (let pixel = 0; pixel < depth.length; pixel += 1) {
+    if (depth[pixel] < 0) continue;
+    const fade = 1 - Math.min(1, depth[pixel] / band);
+    if (fade <= 0) continue;
+    const at = pixel * 3;
+    const spread = Math.abs(master.data[at] - patch.data[at])
+      + Math.abs(master.data[at + 1] - patch.data[at + 1])
+      + Math.abs(master.data[at + 2] - patch.data[at + 2]);
+    /* Same self-limit, per pixel: correct a whisper, never a content change. */
+    const trust = spread > TONE_MATCH_LIMIT * 3 ? 0 : 1;
+    if (!trust) continue;
+    for (let channel = 0; channel < 3; channel += 1) {
+      const index = at + channel;
+      out[index] = Math.max(0, Math.min(255, Math.round(patch.data[index] + offset[channel] * fade)));
+    }
+  }
+  return { data: out, width: patch.width, height: patch.height };
+}
+
+/**
+ * MATCH THE GRAIN — the other half of the invisible-boundary requirement.
+ *
+ * A generated patch is smoother than a photograph. Even with tone matched, the
+ * eye finds the boundary because one side has sensor noise and the other does
+ * not, so both sides must share one texture.
+ *
+ * **The master's noise is measured, never copied.** Copying the master's
+ * high-frequency content into the mask would drag the OLD content's edges in
+ * with it — old strands ghosting through new hair, which is the record-lies
+ * class arriving as pixels. So we measure the master's noise amplitude in a ring
+ * just OUTSIDE the mask, measure the patch's inside, and if the patch is
+ * smoother, add deterministic noise to close the gap. Nothing structural
+ * crosses the boundary; only an amplitude.
+ *
+ * Deterministic by pixel index, so the same edit twice produces the same bytes —
+ * a composite that varies run to run would make byte-identity untestable.
+ */
+export function matchGrain(input: {
+  master: Raster;
+  patch: Raster;
+  mask: Mask;
+  ringPx?: number;
+}): Raster {
+  const { master, patch, mask } = input;
+  const ring = input.ringPx ?? 6;
+  assertSameShape(master, patch, mask);
+  const { width, height } = mask;
+
+  /** Local high-frequency energy: how far a pixel sits from its neighbours. */
+  const highFrequency = (raster: Raster, pixel: number): number => {
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    if (x < 1 || y < 1 || x >= width - 1 || y >= height - 1) return 0;
+    const at = pixel * 3;
+    let total = 0;
+    for (let channel = 0; channel < 3; channel += 1) {
+      const centre = raster.data[at + channel];
+      total += Math.abs(4 * centre
+        - raster.data[at - 3 + channel] - raster.data[at + 3 + channel]
+        - raster.data[at - width * 3 + channel] - raster.data[at + width * 3 + channel]) / 4;
+    }
+    return total / 3;
+  };
+
+  const depth = depthInside(mask, ring);
+  let masterEnergy = 0;
+  let masterCount = 0;
+  let patchEnergy = 0;
+  let patchCount = 0;
+  for (let pixel = 0; pixel < depth.length; pixel += 1) {
+    if (mask.data[pixel] === 0) {
+      /* Outside, but near the boundary — the master's own grain, uncontaminated
+         by anything the edit did. */
+      const x = pixel % width;
+      const y = Math.floor(pixel / width);
+      let near = false;
+      for (let dy = -ring; dy <= ring && !near; dy += 1) {
+        for (let dx = -ring; dx <= ring; dx += 1) {
+          const sx = x + dx;
+          const sy = y + dy;
+          if (sx < 0 || sy < 0 || sx >= width || sy >= height) continue;
+          if (mask.data[sy * width + sx] > 0) { near = true; break; }
+        }
+      }
+      if (!near) continue;
+      masterEnergy += highFrequency(master, pixel);
+      masterCount += 1;
+      continue;
+    }
+    patchEnergy += highFrequency(patch, pixel);
+    patchCount += 1;
+  }
+
+  const out = Buffer.from(patch.data);
+  if (masterCount === 0 || patchCount === 0) return { data: out, width: patch.width, height: patch.height };
+  const masterMean = masterEnergy / masterCount;
+  const patchMean = patchEnergy / patchCount;
+  /* Only ever ADD grain. Smoothing a patch that is already grainier than the
+     master would be inventing a cleanliness the photograph does not have. */
+  if (patchMean >= masterMean) return { data: out, width: patch.width, height: patch.height };
+  const amplitude = Math.min(12, masterMean - patchMean);
+
+  for (let pixel = 0; pixel < mask.data.length; pixel += 1) {
+    if (mask.data[pixel] === 0) continue;
+    /* A cheap deterministic hash — same pixel, same noise, every run. */
+    let hash = (pixel * 2654435761) % 4294967296;
+    hash ^= hash >>> 13;
+    const jitter = ((hash % 2000) / 1000 - 1) * amplitude;
+    const at = pixel * 3;
+    for (let channel = 0; channel < 3; channel += 1) {
+      const index = at + channel;
+      out[index] = Math.max(0, Math.min(255, Math.round(patch.data[index] + jitter)));
+    }
+  }
+  return { data: out, width: patch.width, height: patch.height };
+}
+
 function assertSameShape(master: Raster, patch: Raster, mask: Mask): void {
   /*
     DIMENSIONS ARE PART OF THE PROMISE, not a detail. The acceptance test
@@ -162,9 +363,63 @@ export async function compositeMasked(input: {
   patch: Raster;
   mask: Mask;
   featherRadius?: number;
+  /**
+   * THE OUTPUT-SIDE MATTE — founder-set, and it closes two observations at once.
+   *
+   * A destination zone is a padded region: where paint MAY go. Blending on its
+   * boundary means the silhouette fades out on a uniform opacity ramp sitting
+   * wherever the padding happened to stop — which is why a grown afro came back
+   * with a halo, and why hair edges elsewhere read as steps rather than strands.
+   * Both are the same defect: **the visible edge was taken from a geometric
+   * construct instead of from the hair.**
+   *
+   * So the edge comes from a matte of the PAINTED RESULT — segment the patch,
+   * and blend by the paint's own strand-and-coil-textured alpha. The zone stops
+   * being the edge and becomes only the outer bound.
+   *
+   *   where paint MAY go   the zone
+   *   where paint WENT     this matte
+   *   the visible edge     belongs to the second
+   *
+   * **The zone is still feathered, and the first version of this was wrong.**
+   *
+   * It originally REFUSED a feather radius alongside a matte, reasoning that
+   * feathering the bound would put the uniform ramp back underneath the matte
+   * brought in to replace it. Looking at the result killed that: a subject matte
+   * is uniformly opaque across the person, so it carries edge information at the
+   * OUTER silhouette and none at all where the zone's own boundary runs through
+   * the subject — the face carve-out. With the feather refused, that inner
+   * boundary composited HARD, and the afro fix arrived with a cut-out edge round
+   * the forehead that the uniform feather had never produced.
+   *
+   * `min(feather(zone), matte)` gets both, because the two ramps live in
+   * different places. At the hair's real edge the zone is deep inside itself and
+   * still 255, so the matte's strand-textured ramp governs alone. At the face
+   * carve-out the matte is 255, so the feather governs alone. The zone's own
+   * feather ramp sits far outside the hair where the matte is already 0, so it
+   * contributes nothing and no halo returns.
+   *
+   * Where paint MAY go is the zone; where paint WENT is the matte; the visible
+   * edge belongs to whichever of them actually knows about that boundary.
+   */
+  edgeMatte?: Mask;
 }): Promise<{ composite: Raster; applied: Mask }> {
   const { master, patch } = input;
-  const applied = await featherMask(input.mask, input.featherRadius ?? 0);
+  const feathered = await featherMask(input.mask, input.featherRadius ?? 0);
+  let applied: Mask;
+  if (input.edgeMatte) {
+    assertSameShape(master, patch, input.edgeMatte);
+    /* min: whichever side actually knows about this boundary supplies its ramp.
+       See the note on `edgeMatte` for why both are needed and why refusing the
+       feather was a defect rather than a discipline. */
+    const data = Buffer.allocUnsafe(feathered.data.length);
+    for (let pixel = 0; pixel < data.length; pixel += 1) {
+      data[pixel] = Math.min(feathered.data[pixel], input.edgeMatte.data[pixel]);
+    }
+    applied = { data, width: feathered.width, height: feathered.height };
+  } else {
+    applied = feathered;
+  }
   assertSameShape(master, patch, applied);
 
   const out = Buffer.allocUnsafe(master.data.length);
