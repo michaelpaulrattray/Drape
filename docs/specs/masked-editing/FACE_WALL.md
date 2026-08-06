@@ -8,12 +8,95 @@ a number beside it. Nothing here has touched the product path.
 > *belong*. That is answered in the section immediately below; the rest of the
 > wall stands as it was, and the exhibits it references are the before-side of
 > the comparison.
+>
+> **PASS 2 VERDICT: Mode C ratified, fringe accepted, held on two residuals — and
+> the diagnosis came back the OTHER WAY.** Both were called authorship. Both are
+> ours. The painter's ends taper beautifully and its afro perimeter is coils
+> breaking the outline; we were removing them. See *"The two residuals, and who
+> actually did it"*.
 
 Exhibits live in `docs/specs/masked-editing/shop/evidence/`. **Every before/after
 pair carries a DIFFERENCE VIEW**, because a pair on its own is what sent this
 work chasing a seam that was not there for three rounds. A difference panel is
 black where nothing moved and bright where something did; the panels are
 amplified, and each says by how much.
+
+---
+
+## THE TWO RESIDUALS, AND WHO ACTUALLY DID IT
+
+`EXHIBIT-23c-the-painters-ends-are-good.png`,
+`EXHIBIT-23a-where-the-hem-comes-from.png`,
+`EXHIBIT-23b-where-the-blob-comes-from.png`
+
+Both residuals were diagnosed as authorship. **The five-minute check says
+otherwise, on both, and the pictures are not ambiguous.**
+
+**The painter's raw output ends in scattered, tapering, individual strands.**
+Better ends than the brief was going to ask for. **The painter's raw afro has
+individual coils standing proud of the outline** with gaps between them. Neither
+defect is in the paint.
+
+And the zone cannot have authored anything, because **the painter is never sent
+the zone.** The standing rider is full-frame context with local harvest: the
+model gets the master and one sentence, and returns a whole frame. There is no
+canvas to complete inside, so the box-authored mechanism is unreachable on this
+dispatch shape. *(It becomes reachable the day we start sending masks to the
+model — worth remembering, not worth acting on now.)*
+
+**So we were removing it.** `EXHIBIT-23a` is the proof in three rows: the raw
+paint, the harvest matte painted red over it, and what shipped. The red is a
+smooth rounded blob that stops short of the strands — and the shipped picture
+ends exactly on that boundary. **The hem is the segmenter's confidence frontier,
+composited into a haircut.**
+
+One cause, two costumes:
+
+| where the paint lies | subject matte there | what happens |
+|---|---|---|
+| over the **wall** (afro) | ramps — 11% of edge pixels carry a real ramp value | partially rescued; reads *smoothed* |
+| over her **own shirt** (hem) | flat **254/255**, zero ramp | nothing rescues it; the segmenter's outline transfers whole |
+
+That also explains why the tip taper did not save the hem: its ramp-ness guard —
+the thing that stops it bleeding onto a forehead — refuses every strand over her
+body for exactly the same reason. **The guard that makes the taper safe is the
+guard that makes it useless where the hem is.**
+
+### The fix, and why it needs no model
+
+D-216 found fal has no hair-matting model. That finding stands, and it stops
+mattering here, because **the one thing a matting model exists to infer, we
+already own exactly: the background.** The master *is* the plate.
+
+    patch = alpha · strand + (1 − alpha) · master
+
+Difference matting against a known background is not an approximation standing in
+for a segmentation — it is the exact solution, and the strand colour is measured
+from the interior of confirmed content rather than assumed.
+
+**It does not reopen the wall, and not because of a threshold.** It is a
+projection: a repainted shirt moves grey toward a *different grey*, a delta
+nearly orthogonal to (strand − master), which projects to about nothing. Proven
+on the real render — of her t-shirt, **269,703 pixels stayed hers, and the
+painter had repainted them by a mean of 8 levels. All discarded.** The 49% that
+was claimed is where hair genuinely lies on the shirt.
+
+### Mode D — C, with the substance no longer cut to a confidence frontier
+
+`EXHIBIT-24a` (hair-down), `24b` (afro), `24c` (fringe) — five rows each: master,
+A, B, C, **D**.
+
+| case | strand pixels the boundary was discarding |
+|---|---|
+| hair-down | **150,280** |
+| afro | **92,794** |
+| fringe | **51,470** |
+
+On `EXHIBIT-24a` the hem is gone: the ends scatter into wisps that carry on down
+over the shirt, which is what the painter drew in the first place. **Beyond the
+destination zone: 0 pixels moved, on all twelve composites.**
+
+D is C plus recovered substance — **the ratified shadow behaviour is untouched.**
 
 ---
 
@@ -290,11 +373,11 @@ cleaner than the painter drew it. Named limit, visible in `EXHIBIT-17`.
 
 ## What this wall is asking for
 
-**Pass 2: one call, then a walk.**
+**Pass 3: look at D, then walk.**
 
-The call is **A, B or C** — `EXHIBIT-22a/b/c`, master and all three modes at
-100%. My recommendation is C, for the permission it withholds rather than the
-pixels it produced.
+`EXHIBIT-24a/b/c` — master, A, B, C, D at 100%. D is the ratified C with the
+strands the segmenter's boundary was discarding. The two residuals from pass 2
+are answered there; the fringe row is closed by the founder's own acceptance.
 
 Then the walk: the same sequence that blocked the sale — freckles, earrings, a
 removal — on the masked path, in the founder's own hands. **That walk is what

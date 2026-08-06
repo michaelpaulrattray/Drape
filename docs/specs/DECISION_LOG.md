@@ -7527,4 +7527,84 @@ habit this program keeps catching, in its smallest costume yet.
 
 ---
 
+## D-230 — The hem and the blob are OURS. A binary segmenter's boundary, composited into a haircut.
+
+**Both residuals from the founder's second pass were diagnosed as authorship.
+Opening the painter's raw output reversed both.** The paint ends in scattered,
+tapering, individual strands; the paint's afro perimeter is coils standing proud
+of the outline. We were removing them.
+
+**The zone cannot have authored anything, because the painter is never sent the
+zone.** The standing rider is full-frame context with local harvest — the model
+gets the master and a sentence and returns a whole frame. There is no canvas to
+complete inside, so the box-authored mechanism is unreachable on this dispatch
+shape. It becomes reachable the day we send masks to the model, and that is worth
+remembering rather than acting on.
+
+### One cause, two costumes
+
+`harvestMatteFrom` takes its SHAPE from a SAM-class segmentation, and a binary
+segmenter's boundary is smooth — **a confidence frontier, not a haircut, and
+compositing along it makes it one.**
+
+| paint lies over | the subject matte there | outcome |
+|---|---|---|
+| the wall (afro) | ramps; 11% of edge pixels carry a real ramp value | partly rescued — reads *smoothed* |
+| her own shirt (hem) | flat **254/255**, zero ramp | nothing rescues it; the outline transfers whole |
+
+It also explains why the tip taper (D-229) did not save the hem: **the ramp-ness
+guard that stops it bleeding onto a forehead refuses every strand over her body
+for exactly the same reason.** A guard's safety and its uselessness were the same
+property.
+
+### Difference matting — the alpha nobody had to infer
+
+D-216's finding that fal has no hair-matting model stands, and **stops mattering
+over her own body, because the one thing a matting model exists to infer we
+already possess exactly: the background.** The master IS the plate.
+
+    patch = alpha · strand + (1 − alpha) · master
+
+so alpha is the projection of the observed move onto the move a fully-opaque
+strand would make. This is the exact solution to the compositing equation, not an
+approximation standing in for a segmentation — the distinction the fidelity law
+turns on. The strand colour is measured from the INTERIOR of confirmed content;
+averaging edge pixels would drag the reference toward the very background it is
+measured against and bias every alpha downstream.
+
+**It does not reopen the person-never-stage wall, and not by a threshold.** A
+repainted garment moves grey toward a different grey — a delta nearly ORTHOGONAL
+to (strand − master) — and projects to approximately zero. **The painter's
+clothing is rejected by the geometry of colour space.** On the real render,
+269,703 pixels of her t-shirt stayed hers while the painter had repainted them by
+a mean of 8 levels. The unit test's control proves the rejected regrade is a
+LARGER byte move than the 20% strand the matte accepts, so magnitude cannot be
+what is doing the work.
+
+Named limit: content the same colour as what it lies on is invisible to this,
+exactly as it is to the eye.
+
+### Mode D, and what it recovered
+
+D is the ratified Mode C with the substance no longer cut to a confidence
+frontier — the shadow behaviour is untouched.
+
+| case | strand pixels the boundary was discarding |
+|---|---|
+| hair-down | 150,280 |
+| afro | 92,794 |
+| fringe | 51,470 |
+
+Beyond the destination zone: 0 pixels moved, on all twelve composites.
+
+### The lesson worth keeping
+
+**Two hypotheses, both plausible, both wrong, and five minutes of looking settled
+it.** The instruction to open the raw output before building is what saved a
+zone-tracking experiment and a prompt-craft rewrite, neither of which addressed
+the cause. A correlation had already been computed and was about to be believed;
+the picture beat it.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

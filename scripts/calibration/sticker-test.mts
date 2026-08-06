@@ -60,6 +60,7 @@ import {
 import {
   adoptInteraction,
   compositeMasked,
+  differenceMatte,
   featherMask,
   outsideMaskUnchanged,
   readRaster,
@@ -78,6 +79,8 @@ mkdirSync(OUT, { recursive: true });
 const TAPER_PX = 8;
 /** How far interaction may reach from confirmed content. */
 const BAND_PX = 14;
+/** How far strand tips may be recovered from confirmed content. */
+const STRAND_REACH_PX = 40;
 /** The composite's own feather radius — the zone's ramp reaches this far past it. */
 const FEATHER = 4;
 
@@ -127,6 +130,14 @@ const MODES: { id: string; label: string; interaction: InteractionMode | null }[
   { id: "A-substance", label: "strict substance harvest (what shipped)", interaction: null },
   { id: "B-interaction", label: "+ interaction band", interaction: "interaction" },
   { id: "C-shadow", label: "+ luminance-only shadow adoption", interaction: "shadow" },
+  /*
+    D — C, plus the strands the SHAPE was losing. Pass 2 found the hem and the
+    blob are the SAM-class boundary transferred into the picture, not the
+    painter. Difference matting recovers the real alpha over a background we
+    already own exactly, so this is the same ratified shadow behaviour with the
+    substance no longer cut to a confidence frontier.
+  */
+  { id: "D-strands", label: "C + difference-matted strands", interaction: "shadow" },
 ];
 
 function pixelsIn(mask: Mask): number {
@@ -190,10 +201,20 @@ for (const scenario of CASES) {
   for (const mode of MODES) {
     let alpha = tapered;
     let source = patch;
+    let recovered = 0;
+    if (mode.id === "D-strands") {
+      /* The strand alpha the segmenter's boundary was throwing away. Unioned in
+         BEFORE the interaction band, so shadows still ride on top of it. */
+      const strands = differenceMatte({
+        master, patch, confirmed: tapered, reachPx: STRAND_REACH_PX,
+      });
+      recovered = strands.recoveredPixels;
+      alpha = unionMasks(tapered, strands.alpha);
+    }
     let band = { bandPixels: 0, adoptedPixels: 0, baselineDelta: 0 };
     if (mode.interaction) {
       const adopted = adoptInteraction({
-        master, patch, harvest: tapered, bandPx: BAND_PX, mode: mode.interaction,
+        master, patch, harvest: alpha, bandPx: BAND_PX, mode: mode.interaction,
       });
       alpha = adopted.alpha;
       source = adopted.patch;
@@ -250,7 +271,8 @@ for (const scenario of CASES) {
       `  ${mode.id.padEnd(14)} band ${String(band.bandPixels).padStart(7)} px, adopted `
       + `${String(band.adoptedPixels).padStart(6)}  (painter baseline ${band.baselineDelta.toFixed(1)} levels)`
       + `   beyond the zone: ${beyondMoved} px moved`
-      + `   frame ${(diff.changedShare * 100).toFixed(2)}%`,
+      + `   frame ${(diff.changedShare * 100).toFixed(2)}%`
+      + (recovered ? `   strands recovered ${recovered.toLocaleString()} px` : ""),
     );
     if (beyondMoved !== 0) {
       throw new Error(`${scenario.name}/${mode.id} moved ${beyondMoved} px BEYOND the zone — the half of the guarantee that never bends`);
@@ -263,6 +285,7 @@ for (const scenario of CASES) {
       bandPixels: band.bandPixels,
       adoptedPixels: band.adoptedPixels,
       baselineDelta: band.baselineDelta,
+      strandsRecovered: recovered,
       byteIdenticalOutsideApplied: outside.identical,
       blendBandPixels: outside.bandPixels,
       beyondZoneMoved: beyondMoved,

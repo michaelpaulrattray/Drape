@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CompositeError,
   adoptInteraction,
+  differenceMatte,
   compositeMasked,
   featherMask,
   harmonizeSeam,
@@ -551,5 +552,103 @@ describe("the interaction band — the sticker effect, and the room to blend", (
     expect(strict.bandPixels, "the band is measured").toBeGreaterThan(0);
     expect(strict.adoptedPixels, "and so is what it actually took").toBeGreaterThan(0);
     expect(strict.adoptedPixels).toBeLessThan(strict.bandPixels);
+  });
+});
+
+describe("difference matting — the strand alpha we already own the background for", () => {
+  const SIZE = 64;
+  const GREY = 200;
+  const STRAND: [number, number, number] = [40, 30, 25];
+
+  const master = (() => {
+    const data = Buffer.allocUnsafe(SIZE * SIZE * 3);
+    for (let pixel = 0; pixel < SIZE * SIZE; pixel += 1) {
+      data[pixel * 3] = GREY; data[pixel * 3 + 1] = GREY; data[pixel * 3 + 2] = GREY;
+    }
+    return { data, width: SIZE, height: SIZE };
+  })();
+
+  /* A solid block of hair, plus a half-transparent strand tip lying beyond it. */
+  const confirmed = (() => {
+    const data = Buffer.alloc(SIZE * SIZE, 0);
+    for (let y = 8; y < 24; y += 1) for (let x = 20; x < 44; x += 1) data[y * SIZE + x] = 255;
+    return { data, width: SIZE, height: SIZE };
+  })();
+
+  const withTip = (tipAlpha: number) => {
+    const data = Buffer.from(master.data);
+    for (let y = 8; y < 24; y += 1) for (let x = 20; x < 44; x += 1) {
+      const at = (y * SIZE + x) * 3;
+      for (let channel = 0; channel < 3; channel += 1) data[at + channel] = STRAND[channel];
+    }
+    /* the tip: a genuine linear blend of strand over the known background */
+    for (let y = 24; y < 30; y += 1) for (let x = 30; x < 34; x += 1) {
+      const at = (y * SIZE + x) * 3;
+      for (let channel = 0; channel < 3; channel += 1) {
+        data[at + channel] = Math.round(tipAlpha * STRAND[channel] + (1 - tipAlpha) * GREY);
+      }
+    }
+    return { data, width: SIZE, height: SIZE };
+  };
+
+  it("recovers the tip's true alpha, because the background is known exactly", () => {
+    const { alpha, strandColour } = differenceMatte({
+      master, patch: withTip(0.2), confirmed, reachPx: 10,
+    });
+    expect(Math.round(strandColour[0]), "the strand colour is measured, not assumed").toBe(STRAND[0]);
+    /* 20% there renders at 20%, to within a rounding step. */
+    expect(alpha.data[26 * SIZE + 32]).toBeGreaterThan(45);
+    expect(alpha.data[26 * SIZE + 32]).toBeLessThan(60);
+  });
+
+  it("tracks alpha across its whole range, not just at one point", () => {
+    for (const [asked, expected] of [[0.2, 51], [0.5, 128], [0.9, 230]] as const) {
+      const { alpha } = differenceMatte({ master, patch: withTip(asked), confirmed, reachPx: 10 });
+      expect(Math.abs(alpha.data[26 * SIZE + 32] - expected)).toBeLessThan(12);
+    }
+  });
+
+  it("rejects a repainted shirt — orthogonal in colour space, not below a threshold", () => {
+    /*
+      THE WALL, and the reason this does not reopen it. The painter regrades the
+      garment from one grey to a noticeably different grey. That delta is large —
+      a threshold would have taken it — but it points nowhere near the strand
+      colour, so the projection is approximately nothing.
+    */
+    const regraded = (() => {
+      const data = Buffer.from(master.data);
+      for (let y = 8; y < 24; y += 1) for (let x = 20; x < 44; x += 1) {
+        const at = (y * SIZE + x) * 3;
+        for (let channel = 0; channel < 3; channel += 1) data[at + channel] = STRAND[channel];
+      }
+      /* a cool regrade of her shirt: moves away from the strand, not toward it */
+      for (let y = 24; y < 32; y += 1) for (let x = 20; x < 44; x += 1) {
+        const at = (y * SIZE + x) * 3;
+        data[at] = GREY - 50; data[at + 1] = GREY - 15; data[at + 2] = GREY + 55;
+      }
+      return { data, width: SIZE, height: SIZE };
+    })();
+    const { alpha } = differenceMatte({ master, patch: regraded, confirmed, reachPx: 10 });
+    expect(alpha.data[26 * SIZE + 32], "her regraded shirt is not a strand").toBeLessThan(20);
+  });
+
+  it("and the same pixel WOULD be taken by raw magnitude — the control", () => {
+    /* Without this, "rejects the shirt" could pass because the change was small.
+       It is not: it is a bigger byte move than the 20% strand the matte accepts. */
+    const regradeDelta = 50 + 15 + 55;
+    const strandDelta = 0.2 * ((GREY - STRAND[0]) + (GREY - STRAND[1]) + (GREY - STRAND[2]));
+    expect(regradeDelta).toBeGreaterThan(strandDelta);
+  });
+
+  it("never reaches beyond its bound", () => {
+    const { alpha } = differenceMatte({ master, patch: withTip(0.9), confirmed, reachPx: 4 });
+    expect(alpha.data[40 * SIZE + 32], "far from confirmed content, nothing is recovered").toBe(0);
+  });
+
+  it("takes the strand colour from the interior, never from blended edge pixels", () => {
+    /* An edge pixel is already part background; averaging it in would drag the
+       reference toward the plate and bias every alpha downstream. */
+    const { strandColour } = differenceMatte({ master, patch: withTip(0.5), confirmed, reachPx: 10 });
+    expect(strandColour[0]).toBeLessThan(GREY / 2);
   });
 });

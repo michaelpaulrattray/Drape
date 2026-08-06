@@ -436,6 +436,127 @@ export function matchGrain(input: {
 }
 
 /**
+ * DIFFERENCE MATTING — the strand alpha nobody had to guess, because we own the
+ * background.
+ *
+ * # The defect this exists for
+ *
+ * The founder's second pass named a hem on the hair ends and a smooth blob on the
+ * afro silhouette, and called both authorship. Opening the painter's raw output
+ * settled it the other way: **the paint is good.** The ends taper into scattered
+ * individual strands; the afro's perimeter is coils standing proud of the
+ * outline. We were removing both.
+ *
+ * The cause is one thing wearing two costumes. `harvestMatteFrom` takes its SHAPE
+ * from a SAM-class segmentation, and a binary segmenter's boundary is smooth —
+ * it is a confidence frontier, not a haircut, and compositing along it turns it
+ * into one. Over BACKGROUND the subject matte's own ramp partially rescues it
+ * (11% of the afro's edge pixels carry a real ramp value). Over the SUBJECT'S OWN
+ * BODY there is nothing to rescue it with: BiRefNet is flat 254 across her shirt,
+ * so the strand tips lying on fabric get the segmenter's rounded outline
+ * transferred directly into the picture. That is the hem, and it is visible as
+ * the mask's own shape in `output/masked/diagnose/LOST-hem.png`.
+ *
+ * # Why no model is needed here
+ *
+ * D-216 established that fal has no hair-matting model, and that finding stands.
+ * It also stops mattering over her own body, because **the one thing a matting
+ * model exists to infer, we already possess exactly: the background.** The master
+ * IS the plate. Difference matting against a known background is not an
+ * approximation standing in for a segmentation — it is the exact solution to the
+ * compositing equation, and this is the case where it applies.
+ *
+ *   patch = alpha * strand + (1 - alpha) * master
+ *
+ * so, projecting the observed move onto the move a fully-opaque strand would
+ * make, `alpha = ((patch - master) . (strand - master)) / |strand - master|²`.
+ * The strand colour is measured from the interior of confirmed content rather
+ * than assumed, so nothing here is a constant somebody liked.
+ *
+ * # Why this does not reopen the person-never-stage wall
+ *
+ * It is a PROJECTION, and that does the work a threshold would have done badly.
+ * A repainted shirt moves grey toward a slightly different grey — a delta nearly
+ * ORTHOGONAL to (strand - master) — and projects to approximately zero. The
+ * painter's clothing is rejected by the geometry of colour space rather than by a
+ * number, and the same arithmetic that admits a 20%-alpha strand refuses a fully
+ * repainted garment. Bounded by distance from confirmed content as well, so it
+ * can never wander off across the frame.
+ *
+ * The honest limit, stated: content the same colour as what it lies on is
+ * invisible to this, exactly as it is to the eye.
+ */
+export function differenceMatte(input: {
+  master: Raster;
+  patch: Raster;
+  /** Where the content is definitely present — its interior supplies the colour. */
+  confirmed: Mask;
+  /** How far from confirmed content strands may be recovered. */
+  reachPx: number;
+}): { alpha: Mask; strandColour: [number, number, number]; recoveredPixels: number } {
+  const { master, patch, confirmed, reachPx } = input;
+  assertSameShape(master, patch, confirmed);
+  const { width, height } = confirmed;
+
+  /*
+    THE STRAND COLOUR, from the INTERIOR of what is confirmed. Edge pixels are
+    already blends of strand and background, so averaging them would drag the
+    reference toward the very background it is meant to be measured against —
+    and every alpha downstream would inherit that error.
+  */
+  const interior = new Uint8Array(width * height);
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const pixel = y * width + x;
+      if (confirmed.data[pixel] < 250) continue;
+      if (confirmed.data[pixel - 1] < 250 || confirmed.data[pixel + 1] < 250
+        || confirmed.data[pixel - width] < 250 || confirmed.data[pixel + width] < 250) continue;
+      interior[pixel] = 1;
+    }
+  }
+  const totals = [0, 0, 0];
+  let counted = 0;
+  for (let pixel = 0; pixel < interior.length; pixel += 1) {
+    if (!interior[pixel]) continue;
+    const at = pixel * 3;
+    totals[0] += patch.data[at];
+    totals[1] += patch.data[at + 1];
+    totals[2] += patch.data[at + 2];
+    counted += 1;
+  }
+  if (counted === 0) {
+    return { alpha: { data: Buffer.alloc(width * height, 0), width, height }, strandColour: [0, 0, 0], recoveredPixels: 0 };
+  }
+  const strand: [number, number, number] = [
+    totals[0] / counted, totals[1] / counted, totals[2] / counted,
+  ];
+
+  const near = distanceOutside(confirmed, reachPx);
+  const data = Buffer.alloc(width * height, 0);
+  let recoveredPixels = 0;
+  for (let pixel = 0; pixel < near.length; pixel += 1) {
+    const away = near[pixel];
+    if (away <= 0 || away > reachPx) continue;
+    const at = pixel * 3;
+    let dot = 0;
+    let span = 0;
+    for (let channel = 0; channel < 3; channel += 1) {
+      const toStrand = strand[channel] - master.data[at + channel];
+      dot += (patch.data[at + channel] - master.data[at + channel]) * toStrand;
+      span += toStrand * toStrand;
+    }
+    if (span <= 1) continue;
+    const alpha = Math.max(0, Math.min(1, dot / span));
+    const value = Math.round(alpha * 255);
+    if (value > 0) {
+      data[pixel] = value;
+      recoveredPixels += 1;
+    }
+  }
+  return { alpha: { data, width, height }, strandColour: strand, recoveredPixels };
+}
+
+/**
  * THE INTERACTION BAND — the sticker effect, and the founder's brief verbatim:
  * *allow room for the model to actually blend.*
  *
