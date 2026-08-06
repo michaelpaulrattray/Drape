@@ -115,6 +115,7 @@ import {
 } from "./refineRemoval";
 import { facetOfAxis, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
+import { COVERAGE_BANDS, coverage } from "./maskGeometry";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
 import {
@@ -704,7 +705,63 @@ export async function refineCandidate(
           .statedAccessories
         : null;
       const briefNamesIt = baseWorn?.some((worn) => textMentions(worn, parsed.match)) ?? false;
-      if (!echoedSomething && !textMentions(recorded, parsed.match) && !briefNamesIt) {
+
+      /*
+        FOR A REMOVAL, THE RECORD GATES NOTHING — THE PICTURE DECIDES.
+        (Founder ruling, 2026-08-07, and it retires an interim confession.)
+
+        The record-gate exists to stop the system asking a segmenter where an
+        absent thing is (D-213) — a question with no honest answer, which
+        returns a confident blob. **A removal is not that question.** The user
+        has ASSERTED the thing is there, and their assertion plus a segmenter's
+        agreement are two independent signals; the record is a third, and it is
+        the one that has now been wrong on a real face.
+
+        The founder's own testimony: their brief was edited to ask for glasses
+        and re-rolled, the candidate came from that re-roll, and the refusal
+        told them the brief never asked. Whether that is a stale `briefText`
+        against a fresh intent or the brand scrub taking "miu miu" out of one
+        side of `tokensComeFromBrief`, the record lost — and the confession said
+        so in a sentence that was factually false to someone looking at her
+        glasses.
+
+        So the record is consulted FIRST, as an optimization: if it names the
+        thing, no call is spent. If it is silent, we LOOK. The interim sentence
+        was marked interim until the masked pass could look at her face, and it
+        can look now.
+      */
+      let faceWearsIt = false;
+      if (!echoedSomething && !textMentions(recorded, parsed.match) && !briefNamesIt
+        && subject === "statedAccessories" && parsed.match
+        && maskedEditingEnabledFor(input.userId)) {
+        try {
+          const reader = dependencies.regions ?? defaultRegionReader();
+          /* The face she is actually looking at — the selected variant if there
+             is one, her candidate otherwise. Asking the wrong picture would be
+             the record-versus-pixels mistake wearing a new hat. */
+          const shown = await (dependencies.readBytes ?? storageReadBytes)(
+            source.imageKey ?? source.candidate.imageKey,
+          );
+          const seen = await reader.region({ image: shown.bytes, name: parsed.match });
+          const area = coverage(seen);
+          /* Above the class band it is really there; a confident speck is not. */
+          const band = COVERAGE_BANDS.eyewearFrames;
+          faceWearsIt = area >= band.min;
+          log.info(
+            { userId: input.userId, candidate: input.candidatePublicId, asked: parsed.match, coverage: Number(area.toFixed(5)), faceWearsIt },
+            "[refineService] the record was silent on a removal, so her face was asked",
+          );
+        } catch (error) {
+          /* A segmenter that finds nothing throws, and that is the honest
+             answer to "is it there" — not a reason to fail the request. */
+          log.info(
+            { candidate: input.candidatePublicId, asked: parsed.match, why: error instanceof Error ? error.message : String(error) },
+            "[refineService] her face does not show the thing asked to be removed",
+          );
+        }
+      }
+
+      if (!echoedSomething && !textMentions(recorded, parsed.match) && !briefNamesIt && !faceWearsIt) {
         const named = parsed.match
           ?? (subject ? FREE_SUBJECTS[subject as FreeSubject]?.toLowerCase() : null)
           ?? "that";

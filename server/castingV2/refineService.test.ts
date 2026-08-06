@@ -702,6 +702,63 @@ describe("a removal with no removal word is re-read as an edit", () => {
       )).rejects.toThrow(/brief didn't ask for glasses/);
     });
 
+    /* The founder's own face: brief edited to ask for glasses, re-rolled, and
+       the refusal told them the brief never asked. Whatever the record did, she
+       was wearing them — so the picture decides. */
+    const seeingReader = (found: boolean) => ({
+      region: async () => {
+        if (!found) throw new Error("the segmenter found no glasses to edit");
+        const data = Buffer.alloc(32 * 48, 0);
+        /* A real pair of frames: comfortably inside the eyewear class band. */
+        for (let y = 18; y < 24; y += 1) for (let x = 6; x < 26; x += 1) data[y * 32 + x] = 255;
+        return { data, width: 32, height: 48 };
+      },
+      subject: async () => ({ data: Buffer.alloc(32 * 48, 255), width: 32, height: 48 }),
+      landmark: async () => [{ x: 0.3, y: 0.4 }, { x: 0.7, y: 0.4 }],
+    });
+
+    it("LOOKS when the record is silent, and lets the removal through if she is wearing them", async () => {
+      briefWorn = null;
+      let call = 0;
+      const result = await refineCandidate({ harvest: unmasked,
+          regions: seeingReader(true),
+          /* Same two-call shape as a record-backed removal: once the face has
+             confirmed the thing, the sentence is re-read as a content edit. */
+          interpret: (async () => {
+            call += 1;
+            return call === 1
+              ? {
+                ok: true as const,
+                intent: "remove" as const,
+                subject: "statedAccessories",
+                match: "glasses",
+              }
+              : { ok: true as const, delta: { free: { statedAccessories: ["no glasses"] } } };
+          }) as never,
+        },
+        { ...input, instruction: "remove her glasses" },
+      );
+      /* No confession, no refusal — it did the work on the face she is looking at. */
+      expect(result.variantId).toBeTruthy();
+    });
+
+    it("still refuses when her face genuinely has none — the control", async () => {
+      /* Without this the branch above could pass by never refusing anything,
+         which is the confession deleted rather than corrected. */
+      briefWorn = null;
+      await expect(refineCandidate({ harvest: unmasked,
+          regions: seeingReader(false),
+          interpret: async () => ({
+            ok: true as const,
+            intent: "remove" as const,
+            subject: "statedAccessories",
+            match: "glasses",
+          }),
+        } as never,
+        { ...input, instruction: "remove her glasses" },
+      )).rejects.toThrow(/nothing on record to take off/);
+    });
+
     it("charges nothing either way", async () => {
       briefWorn = null;
       await expect(refineCandidate({ harvest: unmasked,
