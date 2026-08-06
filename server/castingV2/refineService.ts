@@ -1208,6 +1208,12 @@ export async function refineCandidate(
         painted: { bytes: painted.bytes, contentType: painted.contentType },
         facets: Array.from(facetsWrittenBy(composed)),
         reader: dependencies.regions ?? refusingRegionReader,
+        /* Per user, not per deploy — the first flip goes to one account. */
+        userId: input.userId,
+        /* What the instruction said the thing IS. An earring hangs from a lobe
+           and glasses sit at the eyes, so the placement needs the words, not
+           just the slot they landed in. */
+        described: itemsOf(composed.free?.statedAccessories).join(" ") || undefined,
         operationId,
       });
       return { ...painted, bytes: harvested.bytes, contentType: harvested.contentType };

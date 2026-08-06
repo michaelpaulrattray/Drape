@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c36d32a274022d1a"
+    "sourceFingerprint": "0a8132cfdce3e1aa"
   },
   "domains": [
     {
@@ -17072,6 +17072,11 @@
     {
       "from": "module:server/castingV2/interpreter.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
     {

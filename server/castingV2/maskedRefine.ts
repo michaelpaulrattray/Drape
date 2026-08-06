@@ -18,13 +18,19 @@
  * Everything downstream — the fault detector, the verification net, the retry,
  * the refund — is untouched and does not know this happened.
  *
- * # Dark by default, and the flag is a code constant
+ * # Dark by default, and SCOPED when it opens
  *
- * `MASKED_EDITING_ENABLED` is `false`, so a deploy of this changes nothing at
- * all: the function returns the engine's own bytes, byte for byte, and a test
- * proves it. Founder precedent (brand translation, partial deference) is that a
- * behaviour switch like this is a code constant rather than a new env var — one
- * line to flip, one line to roll back.
+ * `MASKED_EDITING_SCOPE` is `off`, so a deploy of this changes nothing at all:
+ * the function returns the engine's own bytes, byte for byte, and a test proves
+ * it.
+ *
+ * It is a SCOPE rather than a boolean because this program has one convention for
+ * every spendable surface — `off` / `all` / `users:<ids>` — and the first flip
+ * goes to the founder's account alone. A boolean would have made "on for me" and
+ * "on for everyone" the same edit, which is exactly the decision that deserves
+ * two. Widening is a separate founder call after the walk, never a rider on the
+ * flip. Same parser as `CASTING_V2_SCOPE`, deliberately: a second scope grammar
+ * would be a mirror, and mirrors drift (law #4).
  *
  * # It REFUSES rather than falling open
  *
@@ -62,17 +68,26 @@ import {
   type Raster,
 } from "./maskedComposite";
 import { hasRegion, isDistributed, zoneScopeOf } from "./zoneScope";
+import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
 import type { Facet } from "./refineFacets";
 
 const log = createModuleLogger("castingV2/maskedRefine");
 
 /**
- * THE FLAG. `false` ships this dark — the deploy changes nothing.
+ * THE FLAG. `off` ships this dark — the deploy changes nothing.
  *
- * Flip to `true` only behind a founder decision, and expect the rollback to be
- * this line.
+ * Flip only behind a founder decision, and to `users:<their id>` first. The
+ * rollback is this line.
  */
-export const MASKED_EDITING_ENABLED = false;
+export const MASKED_EDITING_SCOPE = "off";
+
+/** Is the masked path live for this user? Off means off for everyone. */
+export function maskedEditingEnabledFor(userId: number | undefined): boolean {
+  const scope = parseCastingV2Scope(MASKED_EDITING_SCOPE);
+  if (scope.kind === "off") return false;
+  if (scope.kind === "all") return true;
+  return userId !== undefined && castingV2EnabledForUser(scope, userId);
+}
 
 /** Feathering the zone; the harvest matte supplies the visible edge. */
 const FEATHER_PX = 4;
@@ -92,6 +107,16 @@ export type RegionReader = {
   region(input: { image: Buffer; name: string }): Promise<Mask>;
   /** A soft whole-subject matte, for edge ramps. */
   subject(input: { image: Buffer }): Promise<Mask>;
+  /**
+   * WHERE A THING WOULD BE, even when nothing can see it.
+   *
+   * A different capability from segmentation, not a worse one. A segmenter
+   * answers *where is this in the picture* and returns nothing at all when hair
+   * covers the ear; a landmark model answers *where is the ear on this face* and
+   * still answers. That distinction is D-213's sibling, and it is the whole
+   * reason an addition can be placed at all.
+   */
+  landmark(input: { image: Buffer; name: string }): Promise<{ x: number; y: number }[]>;
 };
 
 export type MaskedRefineInput = {
@@ -102,6 +127,10 @@ export type MaskedRefineInput = {
   /** Which facets this instruction wrote. Decides the zone's scope. */
   facets: readonly Facet[];
   reader: RegionReader;
+  /** Whose refinement this is — the scope is per user, not per deploy. */
+  userId?: number;
+  /** What the instruction said the thing IS. Places an addition. */
+  described?: string;
   /** For the log line, so a composite can be traced to its operation. */
   operationId?: string;
 };
@@ -165,20 +194,135 @@ export function regionNameOf(facet: Facet): string | null {
  * builds earring corridors from `moondream3-preview/point`) and this adapter
  * does not yet.
  *
- * So the object path is scaffolding-declared: it refuses with its own name
- * rather than falling through to a region prompt that would be a lie. **This gap
- * closes before the flag flips**, because the founder's own walk includes
- * earrings.
+ * That path is now wired: `landmarkNameOf` names the anchor, `additionDestination`
+ * builds the corridor, and boundary-contact auto-expand catches an under-estimate.
+ * A facet with no landmark vocabulary — ink, whose "left forearm" is not a facial
+ * landmark — still refuses by its own name rather than having one invented.
  */
 export function needsLandmarkDestination(facet: Facet): boolean {
   return zoneScopeOf(facet) === "object";
 }
 
 /**
+ * WHERE AN ADDITION IS PLACED — the landmark a facet is anchored to.
+ *
+ * Only accessories have one today. Ink has no landmark vocabulary — "left
+ * forearm" is not a facial landmark, and inventing one would be the same lie as
+ * inventing a region prompt — so it still refuses by name.
+ */
+const LANDMARK_OF_ACCESSORY: { words: readonly string[]; landmark: string; drops: boolean }[] = [
+  { words: ["earring", "stud", "hoop", "dangle", "drop"], landmark: "earlobe", drops: true },
+  { words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"], landmark: "eye", drops: false },
+  { words: ["nose ring", "nose stud", "septum", "nostril"], landmark: "nose", drops: false },
+];
+
+/**
+ * WHICH LANDMARK AN ADDITION HANGS FROM — facet AND instruction, again.
+ *
+ * `statedAccessories` is one facet covering earrings, glasses and piercings, and
+ * they do not share an anchor: an earring hangs from the lobe, glasses sit at the
+ * eyes. Keying the landmark on the facet alone would put her spectacles on her
+ * earlobes — the same class as the audit's marks-versus-freckles finding, which
+ * is now the second time the instruction has turned out to carry half the
+ * placement.
+ *
+ * An accessory nobody has a landmark for REFUSES. Guessing an anchor is guessing
+ * anatomy, and a guess dressed as anatomy is the D-210 family.
+ *
+ * **Longest match wins, not first match.** "A small nose stud" contains both
+ * "stud" and "nose stud", and a first-match scan put it on her earlobe — the
+ * answer depended on the order of a list, which is a defect waiting for someone
+ * to tidy the array. The longest matched word is the most specific thing the
+ * instruction said.
+ */
+function accessoryEntry(described?: string) {
+  const said = (described ?? "").toLowerCase();
+  let best: { landmark: string; drops: boolean; length: number } | null = null;
+  for (const entry of LANDMARK_OF_ACCESSORY) {
+    for (const word of entry.words) {
+      if (!said.includes(word)) continue;
+      if (!best || word.length > best.length) {
+        best = { landmark: entry.landmark, drops: entry.drops, length: word.length };
+      }
+    }
+  }
+  return best;
+}
+
+export function landmarkNameOf(facet: Facet, described?: string): string | null {
+  if (!needsLandmarkDestination(facet)) return null;
+  if (facet !== "statedAccessories") return null;
+  return accessoryEntry(described)?.landmark ?? null;
+}
+
+/** Does the described object hang below its anchor? A drop does; glasses do not. */
+export function hangsBelowAnchor(described?: string): boolean {
+  return accessoryEntry(described)?.drops ?? false;
+}
+
+/** A filled disc at a normalised point — the unit an addition is built from. */
+function discAt(point: { x: number; y: number }, radius: number, width: number, height: number): Mask {
+  const data = Buffer.alloc(width * height, 0);
+  const cx = point.x * width;
+  const cy = point.y * height;
+  for (let y = Math.max(0, Math.floor(cy - radius)); y < Math.min(height, Math.ceil(cy + radius)); y += 1) {
+    for (let x = Math.max(0, Math.floor(cx - radius)); x < Math.min(width, Math.ceil(cx + radius)); x += 1) {
+      const dx = x - cx;
+      const dy = y - cy;
+      if (dx * dx + dy * dy <= radius * radius) data[y * width + x] = 255;
+    }
+  }
+  return { data, width, height };
+}
+
+/**
+ * THE DESTINATION FOR AN ADDITION — a corridor per landmark, conservative on
+ * purpose.
+ *
+ * The extent comes from the described object, and this deliberately does not try
+ * to be clever about it: a stud is a disc at the lobe, a drop hangs below it, and
+ * the founder's rider is explicit that **boundary-contact auto-expand catches
+ * under-estimates.** So the default is the smaller guess and the expansion loop
+ * grows it when paint presses against the edge. Guessing generously would hand
+ * the painter more canvas than the ask deserves.
+ *
+ * **Scale comes from the face, never from a number somebody liked.** The distance
+ * between the two landmarks is the head's width at that feature, so a stud is a
+ * fraction of it on any face at any framing.
+ */
+export function additionDestination(input: {
+  landmarks: { x: number; y: number }[];
+  width: number;
+  height: number;
+  /** How far the object hangs below its anchor, in multiples of its own radius. */
+  dropSteps?: number;
+}): Mask {
+  if (input.landmarks.length === 0) {
+    throw new MaskError("an addition needs a landmark to be placed against — none was returned");
+  }
+  const { width, height, landmarks } = input;
+  const span = landmarks.length > 1
+    ? Math.hypot((landmarks[0].x - landmarks[1].x) * width, (landmarks[0].y - landmarks[1].y) * height)
+    : Math.min(width, height) * 0.25;
+  const radius = Math.max(4, span * 0.035);
+  const steps = input.dropSteps ?? 0;
+  const parts: Mask[] = [];
+  for (const landmark of landmarks) {
+    for (let step = 0; step <= steps; step += 1) {
+      parts.push(discAt(
+        { x: landmark.x, y: landmark.y + (step * radius * 1.4) / height },
+        radius, width, height,
+      ));
+    }
+  }
+  return parts.length === 1 ? parts[0] : unionMasks(...parts);
+}
+
+/**
  * Take only what was asked for, and leave the rest of her exactly as she was.
  */
 export async function harvestRefinement(input: MaskedRefineInput): Promise<MaskedRefineResult> {
-  if (!MASKED_EDITING_ENABLED) {
+  if (!maskedEditingEnabledFor(input.userId)) {
     /* The dark path, and it is byte-for-byte the engine's own answer. */
     return { bytes: input.painted.bytes, contentType: input.painted.contentType, outcome: "flag-off" };
   }
@@ -198,19 +342,24 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     return { bytes: input.painted.bytes, contentType: input.painted.contentType, outcome: "no-region" };
   }
 
+  /*
+    ADDITIONS ARE PLACED, NOT SEGMENTED. The thing is not there yet, so nothing
+    can segment it (D-213) — its destination comes from a landmark on HER face
+    plus the described object's own extent. A facet with no landmark vocabulary
+    still refuses by name rather than having one invented for it.
+  */
   const objects = input.facets.filter(needsLandmarkDestination);
-  if (objects.length > 0) {
-    /* Declared scaffolding, not a silent fallthrough. An add's destination comes
-       from a landmark and the described object's extent; this adapter does not
-       carry that yet, and inventing a region prompt for a thing that is not
-       there is precisely what D-213 forbids. */
+  const unplaceable = objects.filter((facet) => landmarkNameOf(facet, input.described) === null);
+  if (unplaceable.length > 0) {
     throw new MaskError(
-      `${objects.join(", ")} is an addition — its destination comes from a landmark, not from `
-      + "segmenting the master, and that path is not wired into the refine adapter yet",
+      `${unplaceable.join(", ")} is an addition with no landmark to place it against`
+      + (input.described ? ` for "${input.described}"` : "")
+      + " — inventing an anchor would be a guess dressed as anatomy",
     );
   }
 
-  const names = input.facets.map((facet) => {
+  const segmentable = input.facets.filter((facet) => !needsLandmarkDestination(facet));
+  const names = segmentable.map((facet) => {
     const name = regionNameOf(facet);
     if (!name) {
       /* Loud. A facet with no segmentation question has no masked path, and
@@ -235,19 +384,52 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     pixels move is what made a fringe into appliqué.
   */
   let zone: Mask | null = null;
-  for (let index = 0; index < input.facets.length; index += 1) {
+  for (let index = 0; index < segmentable.length; index += 1) {
     const region = await input.reader.region({ image: input.master.bytes, name: names[index] });
-    const scoped = isDistributed(input.facets[index])
+    const scoped = isDistributed(segmentable[index])
       ? await dilateMask(region, 48)
       : region;
     zone = zone ? unionMasks(zone, scoped) : scoped;
   }
+  for (const facet of objects) {
+    /* Two landmarks means two corridors — the bilateral law, and the reason a
+       stud's scale can be read off her face rather than guessed. */
+    const points = await input.reader.landmark({
+      image: input.master.bytes, name: landmarkNameOf(facet, input.described)!,
+    });
+    const destination = additionDestination({
+      landmarks: points,
+      width: master.width,
+      height: master.height,
+      /* A drop hangs; glasses sit. The described object says which. */
+      dropSteps: hangsBelowAnchor(input.described) ? 6 : 0,
+    });
+    zone = zone ? unionMasks(zone, destination) : destination;
+  }
   if (!zone) throw new MaskError("no facets to mask");
 
   const paintedSubject = await input.reader.subject({ image: input.painted.bytes });
-  const paintedContent = await input.reader.region({ image: input.painted.bytes, name: names[0] });
+  /*
+    The harvest asks what the PAINTER actually drew. For an addition that is the
+    object itself — now that it exists it can be segmented, which is the whole
+    asymmetry: unsegmentable before, segmentable after.
+  */
+  const harvestName = names.length > 0 ? names[0] : "earring";
+  const paintedContent = await input.reader.region({ image: input.painted.bytes, name: harvestName });
+  /*
+    THE DEPTH STACK, for additions. Her hair sits in front of anything at the
+    lobe, so it rides as `occludedBy` and an earring under it renders BEHIND it
+    by construction — softly, so a half-transparent strand passes half the metal
+    through, which is what a real strand does to the light behind it.
+  */
+  const inFront = objects.length > 0
+    ? await input.reader.region({ image: input.master.bytes, name: "hair" }).catch(() => null)
+    : null;
   const harvest = await harvestMatteFrom({
-    content: paintedContent, matte: paintedSubject, taperPx: 8,
+    content: paintedContent,
+    matte: paintedSubject,
+    taperPx: 8,
+    ...(inFront ? { occludedBy: inFront } : {}),
   });
 
   /* The strand alpha the segmenter's boundary discards — exact, because we own
@@ -344,6 +526,9 @@ export const refusingRegionReader: RegionReader = {
     throw new MaskError("masked editing is enabled but no segmentation reader was supplied");
   },
   subject: async () => {
+    throw new MaskError("masked editing is enabled but no segmentation reader was supplied");
+  },
+  landmark: async () => {
     throw new MaskError("masked editing is enabled but no segmentation reader was supplied");
   },
 };
