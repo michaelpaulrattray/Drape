@@ -12,6 +12,9 @@ import {
   hairMaskFrom,
   hairRegion,
   harvestMatteFrom,
+  assertVisible,
+  occludedShare,
+  INVISIBLE_AT,
   mergeRegions,
   rasterise,
   subtractMask,
@@ -505,6 +508,151 @@ describe("placeDestinationZone — a boundary is not allowed to sit on open skin
   });
 });
 
+describe("the visibility gate — an edit predicted invisible never silently charges", () => {
+  const SIZE = 64;
+  const blank = () => Buffer.alloc(SIZE * SIZE, 0);
+  const box = (from: { x: number; y: number }, to: { x: number; y: number }, fill = 255): Mask => {
+    const data = blank();
+    for (let y = from.y; y < to.y; y += 1) for (let x = from.x; x < to.x; x += 1) data[y * SIZE + x] = fill;
+    return { data, width: SIZE, height: SIZE };
+  };
+
+  /* Where a stud would sit, and hair worn over the ear. */
+  const stud = box({ x: 20, y: 30 }, { x: 26, y: 36 });
+  const hairOverEar = box({ x: 16, y: 24 }, { x: 30, y: 40 });
+  const hairTuckedBack = box({ x: 16, y: 4 }, { x: 30, y: 20 });
+
+  it("scores nothing in front as 0 — the floor (D-215)", () => {
+    expect(occludedShare(stud, hairTuckedBack)).toBe(0);
+  });
+
+  it("scores solid cover as 1 — the ceiling (D-215)", () => {
+    expect(occludedShare(stud, hairOverEar)).toBe(1);
+  });
+
+  it("weights a half-transparent wisp as half a wall, not a whole one", () => {
+    const wisp = box({ x: 16, y: 24 }, { x: 30, y: 40 }, 128);
+    /* 128/255, not 1.0 — treating any non-zero byte as opaque would refuse an
+       edit that a real fringe leaves perfectly visible. */
+    expect(occludedShare(stud, wisp)).toBeCloseTo(128 / 255, 5);
+  });
+
+  it("refuses the studs, and says what would make them visible", () => {
+    expect(() => assertVisible({
+      item: stud,
+      occluder: hairOverEar,
+      what: "earrings",
+      enabledBy: "tuck her hair back",
+      alternative: { label: "long drop earrings", item: box({ x: 20, y: 30 }, { x: 26, y: 52 }) },
+    })).toThrow(/nothing would be visible.*tuck her hair back.*long drop earrings/s);
+  });
+
+  it("never offers an alternative that is also invisible — measured, not assumed", () => {
+    /*
+      The rider assumed a drop escapes hair that hides a stud. On `fresh-03` the
+      measurement said the opposite: lobe 17.9% covered, drop 83.2%, because hair
+      worn down over the shoulders is what a drop hangs INTO rather than out of.
+      Offering it would sell a second invisible edit as the fix for the first.
+    */
+    const hairToTheChest = box({ x: 12, y: 24 }, { x: 34, y: 60 });
+    let message = "";
+    try {
+      assertVisible({
+        item: stud,
+        occluder: hairToTheChest,
+        what: "earrings",
+        enabledBy: "tuck her hair back",
+        alternative: { label: "long drop earrings", item: box({ x: 20, y: 30 }, { x: 26, y: 52 }) },
+      });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message, "it still refuses").toMatch(/nothing would be visible/);
+    expect(message, "and still offers the edit that would genuinely work").toMatch(/tuck her hair back/);
+    expect(message, "but not the alternative that would be hidden too").not.toMatch(/drop/);
+  });
+
+  it("allows the drops, which emerge below the hair — the counter-case", () => {
+    /* Without this the guard could be `() => { throw }` and still look correct.
+       A drop earring hangs past the hair's edge, so most of it is visible. */
+    const drop = box({ x: 20, y: 30 }, { x: 26, y: 52 });
+    expect(() => assertVisible({ item: drop, occluder: hairOverEar, what: "earrings" })).not.toThrow();
+  });
+
+  it("treats partly hidden as VISIBLE — a false refusal is the worse failure", () => {
+    /* The founder's walk died on a reader refusing an edit at a face that
+       plainly supported it. Half-covered is not invisible and must render. */
+    const half = box({ x: 20, y: 30 }, { x: 26, y: 50 });
+    expect(occludedShare(half, hairOverEar)).toBeLessThan(INVISIBLE_AT);
+    expect(() => assertVisible({ item: half, occluder: hairOverEar, what: "earrings" })).not.toThrow();
+  });
+
+  it("refuses at the contract door, before the model is ever called", async () => {
+    let calls = 0;
+    const source: SegmentationSource = {
+      id: "test",
+      matte: async ({ width, height }) => {
+        calls += 1;
+        return { data: Buffer.alloc(width * height, 255), width, height };
+      },
+    };
+    await expect(requestMatte(source, {
+      image: Buffer.alloc(0),
+      region: "ears",
+      width: SIZE,
+      height: SIZE,
+      present: true,
+      changesSilhouette: false,
+      prior: stud,
+      visibility: { occluder: hairOverEar, enabledBy: "tuck her hair back" },
+    })).rejects.toThrow(MaskError);
+    expect(calls, "nothing was spent on a question the pixels already answered").toBe(0);
+  });
+
+  it("lets a visible one through the same door — the control", async () => {
+    let calls = 0;
+    const source: SegmentationSource = {
+      id: "test",
+      matte: async ({ width, height }) => {
+        calls += 1;
+        const data = Buffer.alloc(width * height, 0);
+        for (let y = 30; y < 36; y += 1) for (let x = 20; x < 26; x += 1) data[y * width + x] = 255;
+        return { data, width, height };
+      },
+    };
+    const mask = await requestMatte(source, {
+      image: Buffer.alloc(0),
+      region: "ears",
+      width: SIZE,
+      height: SIZE,
+      present: true,
+      changesSilhouette: false,
+      prior: stud,
+      visibility: { occluder: hairTuckedBack },
+    });
+    expect(calls, "the guard did not block an edit that was plainly visible").toBe(1);
+    expect(coverage(mask)).toBeGreaterThan(0);
+  });
+
+  it("refuses to guess where the item would sit rather than checking nothing", () => {
+    /* A visibility check with no anatomy and no prior is a check that cannot
+       fail, which is the inert-control shape this program keeps cataloguing. */
+    const source: SegmentationSource = {
+      id: "test",
+      matte: async ({ width, height }) => ({ data: Buffer.alloc(width * height, 255), width, height }),
+    };
+    return expect(requestMatte(source, {
+      image: Buffer.alloc(0),
+      region: "ears",
+      width: SIZE,
+      height: SIZE,
+      present: true,
+      changesSilhouette: false,
+      visibility: { occluder: hairOverEar },
+    })).rejects.toThrow(/needs somewhere the item would sit/);
+  });
+});
+
 describe("the harvest gate — only confirmed content survives, everything else is hers", () => {
   const SIZE = 64;
   const blank = () => Buffer.alloc(SIZE * SIZE, 0);
@@ -606,6 +754,40 @@ describe("the harvest gate — only confirmed content survives, everything else 
     /* And the hair genuinely did change, or the wall is just a broken composite. */
     const hairAt = (HAIR.y * SIZE + HAIR.x) * 3;
     expect(walled.composite.data[hairAt + 1], "the hair still took the paint").toBe(200);
+  });
+
+  it("puts what is in front on top, so an earring under hair renders behind it", async () => {
+    /*
+      THE DEPTH STACK, as one subtraction. The painted earring lands only where
+      the master's own hair does not already cover the spot, so her hair sits
+      over the new earring by construction rather than because a model
+      remembered to.
+    */
+    const earring = (() => {
+      const data = blank();
+      paint(data, { x: 20, y: 26 }, { x: 26, y: 34 }, 255);
+      return { data, width: SIZE, height: SIZE };
+    })();
+    const matte = (() => {
+      const data = blank();
+      paint(data, { x: 16, y: 6 }, { x: 48, y: 64 }, 255);
+      return { data, width: SIZE, height: SIZE };
+    })();
+    /* Her hair, hanging over the top half of where the earring goes. */
+    const hairInFront = (() => {
+      const data = blank();
+      paint(data, { x: 18, y: 24 }, { x: 28, y: 30 }, 255);
+      /* a wisp: half-transparent, so half the earring should still show */
+      paint(data, { x: 18, y: 30 }, { x: 28, y: 32 }, 128);
+      return { data, width: SIZE, height: SIZE };
+    })();
+
+    const bare = await harvestMatteFrom({ content: earring, matte, growPx: 0 });
+    const layered = await harvestMatteFrom({ content: earring, matte, growPx: 0, occludedBy: hairInFront });
+    expect(at(bare, { x: 23, y: 27 }), "without the stack the earring paints over her hair").toBe(255);
+    expect(at(layered, { x: 23, y: 27 }), "behind solid hair, the earring does not render").toBe(0);
+    expect(at(layered, { x: 23, y: 31 }), "behind a half-transparent wisp, half of it shows").toBe(127);
+    expect(at(layered, { x: 23, y: 33 }), "below the hair's edge, the drop emerges intact").toBe(255);
   });
 
   it("and the subject matte hands that same shirt through — the end-to-end control", async () => {

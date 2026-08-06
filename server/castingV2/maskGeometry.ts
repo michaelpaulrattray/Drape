@@ -401,6 +401,29 @@ export type MatteRequest = {
   changesSilhouette: boolean;
   /** Where this region can anatomically be. Optional only where none exists. */
   prior?: Mask;
+  /**
+   * THE VISIBILITY GATE — guard five, and the third refuse-before-dispatch.
+   *
+   * Supplied whenever something could plausibly be in front of this region: the
+   * current master's hair matte for an ear or an earring, the hair for a brow
+   * under a fringe. Absent means nothing covers it, which is the common case and
+   * must stay cheap to say.
+   *
+   * See `assertVisible` for why the matte is the authority and the presentation
+   * pin only an optimisation, and for why the bar is near-total rather than
+   * generous — a false refusal is the failure this program has already shipped
+   * once and does not get to ship again.
+   */
+  visibility?: {
+    /** What currently sits in front, from the CURRENT master. */
+    occluder: Mask;
+    /** Where the item would sit. Defaults to `prior` — the anatomy — when omitted. */
+    item?: Mask;
+    /** Offered in the re-ask: the edit that would make it visible. */
+    enabledBy?: string;
+    /** Offered in the re-ask, and scored before it is offered. See `assertVisible`. */
+    alternative?: { label: string; item: Mask };
+  };
 };
 
 /**
@@ -431,6 +454,28 @@ export async function requestMatte(
       `this edit changes the ${request.region} silhouette — a matte of the current `
       + "shape would clip the new one; use a grown destination zone",
     );
+  }
+  /*
+    Third of the family, and refused before the model like both siblings. An
+    edit predicted invisible never silently charges — "don't spend on a question
+    the record already answers", except that here the answer comes from the
+    pixels rather than the record, which is stronger.
+  */
+  if (request.visibility) {
+    const item = request.visibility.item ?? request.prior;
+    if (!item) {
+      throw new MaskError(
+        `a visibility check on ${request.region} needs somewhere the item would sit — `
+        + "pass `visibility.item` or `prior`",
+      );
+    }
+    assertVisible({
+      item,
+      occluder: request.visibility.occluder,
+      what: request.region,
+      enabledBy: request.visibility.enabledBy,
+      alternative: request.visibility.alternative,
+    });
   }
   const mask = await source.matte({
     image: request.image,
@@ -558,12 +603,130 @@ export async function harvestMatteFrom(input: {
   matte: Mask;
   /** How far to grow `content` before intersecting. See `DEFAULT_HARVEST_GROWTH`. */
   growPx?: number;
+  /**
+   * THE DEPTH STACK, and it is one subtraction rather than machinery.
+   *
+   * Overlay content sits at a depth: background → clothes → earrings → hair and
+   * glasses. An earring added under hair worn over the ears must render BEHIND
+   * that hair — studs occluded, drops emerging below the hair's edge — and the
+   * honest way to get that is not to ask a model to remember it.
+   *
+   * Pass the layers that sit IN FRONT, taken from the CURRENT MASTER's mattes.
+   * Subtracting them from the harvest means painted pixels land only where
+   * nothing of hers already covers that spot, so the master's own hair composites
+   * over the new earrings **by construction**. Soft subtraction keeps it
+   * physical: a 30%-alpha strand lets 70% of the earring through, which is what a
+   * real strand does to the light behind it.
+   *
+   * **Hair and glasses are NOT linearly ordered, and they need no rule.** Wisps
+   * fall in front of frames while the arms tuck under hair, simultaneously. The
+   * per-pixel harvest already resolves that: painted-glasses pixels land only
+   * where glasses were confirmed, and every hair pixel in the zone reverts to
+   * MASTER strands, which therefore overlay the new frames in their exact
+   * original positions. Record the stack as governing DISTINCT layers, with
+   * interleaves resolved BY HARVEST rather than by ordering.
+   */
+  occludedBy?: Mask;
 }): Promise<Mask> {
   assertStride(input.content, "content segmentation");
   assertStride(input.matte, "edge matte");
   assertSameSize(input.content, input.matte);
   const grown = await dilateMask(input.content, input.growPx ?? DEFAULT_HARVEST_GROWTH);
-  return intersectMask(grown, input.matte);
+  const harvested = intersectMask(grown, input.matte);
+  /* Subtracted LAST, like every other exclusion in this module — what is in
+     front cannot be talked open by anything that ran before it. */
+  return input.occludedBy ? subtractMask(harvested, input.occludedBy) : harvested;
+}
+
+/**
+ * How much of `item` is hidden behind `occluder`, 0..1 — the visibility score.
+ *
+ * Alpha-weighted on BOTH sides, which is the difference between this and
+ * `overlapWith`. A wisp of hair at 30% alpha hides 30% of what is behind it, not
+ * all of it; treating any non-zero occluder byte as opaque would score a soft
+ * fringe as a wall and refuse an edit that would have been perfectly visible.
+ *
+ * D-215's shape: the score has a constructible FLOOR (nothing in front → 0.0)
+ * and CEILING (solid cover → 1.0), and both are pinned by test. A score with
+ * neither is a number nobody can calibrate.
+ */
+export function occludedShare(item: Mask, occluder: Mask): number {
+  assertStride(item, "item");
+  assertStride(occluder, "occluder");
+  assertSameSize(item, occluder);
+  let hidden = 0;
+  let total = 0;
+  for (let index = 0; index < item.data.length; index += 1) {
+    const alpha = item.data[index];
+    if (!alpha) continue;
+    total += alpha;
+    hidden += (alpha * occluder.data[index]) / 255;
+  }
+  return total ? hidden / total : 0;
+}
+
+/**
+ * WHEN AN EDIT WOULD BE INVISIBLE — the third refuse-before-dispatch guard.
+ *
+ * Its two siblings live on `MatteRequest`: `present: false` (you cannot segment a
+ * thing that is not there) and `changesSilhouette: true` (a reshaped object's new
+ * outline is not there either). This one is the same family in a third costume:
+ * **the item would be there, and nobody could see it.** All three are derived
+ * from what we already hold, cost nothing, and answer before a credit moves.
+ *
+ * The rule that makes it honest is the founder's: **THE MATTE DECIDES, THE PIN
+ * SUGGESTS.** The presentation pin — *hair worn covering the ears* — is a free
+ * pre-check that triggers the look; the authority is the CURRENT MASTER'S matte,
+ * because occlusion is a question about current pixels and we possess the current
+ * pixels. Trusting a record while the artifact is in hand would break law #1 in
+ * its own house. A stale pin then costs one unnecessary matte consult and can
+ * never block a visible edit or wave through an invisible one.
+ *
+ * **The bar is deliberately near-total.** A false refusal is the worse failure by
+ * a distance — the founder's walk died on a reader refusing "remove her glasses"
+ * at a bespectacled face, and this program does not get to repeat that with
+ * arithmetic. Partly hidden is VISIBLE; only all-but-hidden refuses.
+ */
+export const INVISIBLE_AT = 0.98;
+
+export function assertVisible(input: {
+  /** Where the asked-for item would sit — anatomy for an add, the region for an edit. */
+  item: Mask;
+  /** What currently covers it, from the CURRENT master's mattes. Never the record. */
+  occluder: Mask;
+  /** For the message: what was asked for, and what would enable it. */
+  what: string;
+  enabledBy?: string;
+  /**
+   * A DIFFERENT ITEM THAT WOULD BE VISIBLE — and it is **scored before it is
+   * offered**, which the rider did not originally require and the measurement
+   * says it must.
+   *
+   * The intuition was that a drop earring escapes hair that hides a stud, since
+   * it hangs below the hair's edge. On real faces that is sometimes exactly
+   * backwards: on `fresh-03`, hair worn down over the shoulders leaves the LOBE
+   * 17.9% covered and the DROP 83.2% covered, because the drop hangs into the
+   * hair rather than out of it. Offering it as the visible alternative would
+   * have sold a second invisible edit as the fix for the first.
+   *
+   * So an alternative arrives with the geometry of what it actually is, gets the
+   * same score as the refused item, and is named in the re-ask only if it
+   * passes. **Never offer a chip whose outcome you have not measured.**
+   */
+  alternative?: { label: string; item: Mask };
+}): void {
+  const hidden = occludedShare(input.item, input.occluder);
+  if (hidden < INVISIBLE_AT) return;
+  const alternativeWorks = input.alternative
+    && occludedShare(input.alternative.item, input.occluder) < INVISIBLE_AT;
+  const offers = [
+    input.enabledBy ? `"${input.enabledBy}"` : null,
+    alternativeWorks ? `"${input.alternative!.label}"` : null,
+  ].filter(Boolean).join(" or ");
+  throw new MaskError(
+    `${(hidden * 100).toFixed(0)}% of the ${input.what} would sit behind what is already there — `
+    + `nothing would be visible${offers ? `; try ${offers}` : ""}`,
+  );
 }
 
 /** How far a destination zone may reach onto skin. See `placeDestinationZone`. */

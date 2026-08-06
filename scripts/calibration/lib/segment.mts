@@ -125,6 +125,38 @@ export async function sam3(
 }
 
 /**
+ * WHERE A THING WOULD BE, even when nothing can see it — the landmark model.
+ *
+ * `moondream3-preview/point` returns located points rather than a region, and it
+ * is a genuinely different capability from segmentation, not a worse version of
+ * it. The distinction is the one D-213's sibling turns on:
+ *
+ *   a SEGMENTER answers "where is this thing in the picture" — and returns
+ *   nothing at all when hair covers the ear, because there is nothing to outline
+ *   a LANDMARK model answers "where is the ear on this face" — and answers it
+ *   from the face, so it still answers when the ear is hidden
+ *
+ * Measured, not assumed: on the afro specimen where SAM 3 returned an empty mask
+ * set for both ears, this returns two symmetric earlobe points. **Every caller
+ * runs the negative control** ("wristwatch" — nothing here wears one) because a
+ * pointer that answers confidently about absent things is worse than no pointer,
+ * and that is exactly the failure the first segmentation shop caught.
+ *
+ * Ratified in D-219 for eye centres, cross-checked there against SAM 3's
+ * independent eye mask 2/2 on all three specimens.
+ */
+export type Point = { x: number; y: number };
+
+export async function pointAt(image: Buffer, prompt: string): Promise<Point[]> {
+  const json = await post("fal-ai/moondream3-preview/point", {
+    image_url: `data:image/png;base64,${image.toString("base64")}`,
+    prompt,
+  });
+  const points: any[] = Array.isArray(json.points) ? json.points : [];
+  return points.map((entry) => ({ x: Number(entry.x), y: Number(entry.y) }));
+}
+
+/**
  * The whole-subject matte, with the real edge ramp.
  *
  * **This is never a harvest matte on its own.** It is opaque across hair, skin
