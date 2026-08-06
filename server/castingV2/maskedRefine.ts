@@ -113,8 +113,6 @@ const STRAND_REACH_FRACTION = 40 / 1024;
 const BAND_FRACTION = 14 / 1024;
 const scaled = (fraction: number, width: number, height: number) =>
   Math.max(4, Math.round(Math.min(width, height) * fraction));
-/** A pixel has moved when it moved by this much — used to find painted content. */
-const MOVED_LEVELS = 25;
 
 /**
  * What a region looks like to this module. One call per named region, so the
@@ -462,20 +460,14 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     height: harvest.height,
   };
 
-  /* The painter's own drift, measured per render, and the content it painted. */
-  const paintedPixels: Mask = {
-    data: Buffer.alloc(master.width * master.height, 0),
-    width: master.width,
-    height: master.height,
-  };
+  /* The painter's own drift, measured per render. */
   const quietSamples: number[] = [];
-  for (let pixel = 0; pixel < paintedPixels.data.length; pixel += 1) {
+  for (let pixel = 0; pixel < withStrands.data.length; pixel += 1) {
+    if (withStrands.data[pixel] !== 0 || pixel % 37 !== 0) continue;
     const at = pixel * 3;
-    const delta = (Math.abs(painted.data[at] - master.data[at])
+    quietSamples.push((Math.abs(painted.data[at] - master.data[at])
       + Math.abs(painted.data[at + 1] - master.data[at + 1])
-      + Math.abs(painted.data[at + 2] - master.data[at + 2])) / 3;
-    if (delta > MOVED_LEVELS) paintedPixels.data[pixel] = 255;
-    if (withStrands.data[pixel] === 0 && pixel % 37 === 0) quietSamples.push(delta);
+      + Math.abs(painted.data[at + 2] - master.data[at + 2])) / 3);
   }
   quietSamples.sort((a, b) => a - b);
   const baselineDelta = quietSamples[Math.floor(quietSamples.length / 2)] ?? 0;
@@ -487,7 +479,25 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
 
   /* A zone that stops where the content does not is a guillotine (D-230). */
   const grown = await expandUntilClear({
-    painted: paintedPixels, zone, stepPx: 48, effective: gated,
+    /*
+      THE PAINT THAT WILL ACTUALLY BE DELIVERED, not everything the painter
+      touched — and the difference is the whole behaviour of this loop.
+
+      Defined as "any pixel differing by 25 levels", the mask was the painter's
+      WHOLE-FRAME DRIFT: a generated frame differs almost everywhere, so content
+      pressed against every edge of the zone forever and the loop grew to its
+      pass cap with the zone covering 100% of the frame. Sixteen dilations of a
+      1024x1536 mask, twenty to thirty seconds, and a destination zone that had
+      stopped meaning anything.
+
+      The rider's subject is the CONTENT, and the content is what the harvest
+      keeps. A strand pressing against the boundary is a clipped strand; a
+      repainted background pixel is not, and it never was.
+    */
+    painted: { data: Buffer.from(gated.data), width: gated.width, height: gated.height },
+    zone,
+    stepPx: 48,
+    effective: gated,
   });
 
   /* Contact shadows, darkening only — her hue cannot change (D-229). */

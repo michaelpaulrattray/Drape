@@ -1582,6 +1582,26 @@ export async function refineCandidate(
     });
     return result;
   } catch (error) {
+    /*
+      SAY WHY, BEFORE THE MONEY MOVES.
+      
+      This block refunded correctly and recorded `failureClass: "unknown"`, and
+      the founder's first three real masked edits refused with NOTHING in the
+      logs but the public sentence. The money law held perfectly and the trail
+      did not exist — a refusal nobody can diagnose is a refusal that will happen
+      again. The cause is now written down before anything else happens to it.
+    */
+    log.error(
+      {
+        operationId,
+        variant: variant.publicId,
+        userId: input.userId,
+        failureClass: error instanceof ProviderError ? error.failureClass : "unknown",
+        cause: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack?.split(/\r?\n/).slice(0, 4).join(" | ") : undefined,
+      },
+      "[refineService] REFINEMENT FAILED — refunding; this line is the only record of why",
+    );
     /* WHOLE charge back — one image, one unit, nothing partial to keep. */
     const refund = await (dependencies.refund ?? recordRefund)(
       input.userId,
