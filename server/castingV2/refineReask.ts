@@ -29,6 +29,7 @@
  * error state — and **never a dead end**: the box is the interface, so typing
  * the answer resolves the question exactly as tapping it would.
  */
+import { mentionsUpsweptAsk } from "./eyeShapeRouting";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { EYE_COLOURS, type EyeColour } from "../../shared/castingRealization";
 import { facetOfSubject, type Facet } from "./refineFacets";
@@ -45,7 +46,7 @@ import { facetOfAxis } from "./refineFacets";
  * second implementation of the other.
  */
 export type Reask = {
-  kind: "which-facet" | "did-you-mean";
+  kind: "which-facet" | "did-you-mean" | "already-upswept";
   /** The sentence, in their words. */
   question: string;
   options: Array<{ label: string; resolves: string }>;
@@ -390,6 +391,15 @@ export function pendingReaskFor(instruction: string, hasColourHistory: boolean):
   const miss = nearMiss(instruction);
   if (miss) return didYouMeanReask(instruction, miss);
   if (!hasColourHistory && needsColourReferent(instruction)) return whichFacetReask(instruction);
+  /*
+    LAST, because it is the widest.
+
+    The other two are questions about the WORDS; this one is a question about
+    the FACE, and it is re-derived from the sentence alone. A typo'd "fox eyess"
+    should still be offered the correction first — the near-miss door is the more
+    specific reading of the same sentence.
+  */
+  if (mentionsUpsweptAsk(instruction)) return alreadyUpsweptReask(instruction);
   return null;
 }
 
@@ -417,7 +427,7 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
     if (said === label || bare === core || said === core) return option.resolves;
   }
 
-  if (reask.kind === "did-you-mean") {
+  if (reask.kind === "did-you-mean" || reask.kind === "already-upswept") {
     if (YES.includes(bare)) return reask.options[0]?.resolves ?? null;
     if (NO.includes(bare)) return reask.options[1]?.resolves ?? null;
     return null;
@@ -433,6 +443,52 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
     return words.includes(core) || words.includes(`${singular}s`) || words.includes(singular);
   });
   return hits.length === 1 ? hits[0].resolves : null;
+}
+
+/**
+ * The answer that means "don't". Free, and it lands on the picture she has.
+ *
+ * Every other option in this module resolves into an ORDINARY INSTRUCTION, so
+ * that tapping and typing end in one code path. A decline cannot: there is no
+ * sentence that means "render nothing". So it resolves into this one shared
+ * string, which `refineCandidate` recognises before the parse and answers with
+ * a free outcome — one constant, read in two places, rather than a sentinel
+ * spelled out at each of them.
+ */
+export const LEAVE_AS_SHE_IS = "leave her as she is";
+
+/**
+ * THE ALREADY-TRUE QUESTION — the third one, and the first about the FACE
+ * rather than about the words (founder ruling, 2026-08-07).
+ *
+ * She asks for eyes that sweep up and her eyes measurably already do. Rendering
+ * that spends 25 credits to produce the picture she is looking at and then asks
+ * a reader whether it complied, which is how a false pass gets manufactured
+ * (D-235). So the product asks instead, for free.
+ *
+ * **The offer resolves as an intensification, not as a second run at the same
+ * absolute ask** — "fox eyes" on a face that already reads as fox eyes is the
+ * request that has nowhere to go, so the resolved sentence says *further than
+ * they already are*, and the gate stands down once something has been answered.
+ *
+ * The question text is a constant rather than a rendering of the measurement:
+ * a degree count is the instrument's language, not the stylist's (working law
+ * 8), and it is also what lets this be rebuilt identically on the answer path,
+ * where no image has been read.
+ */
+export function alreadyUpsweptReask(instruction: string): Reask {
+  const asked = instruction.trim().replace(/[.!?]+$/, "");
+  return {
+    kind: "already-upswept",
+    question: "Her eyes already sweep up at the outer corners. Push them further, "
+      + "or leave her as she is? Either way this costs nothing.",
+    options: [
+      { label: "More tilt", resolves: `${asked} — further than they already are` },
+      /* As easy as the accept, and genuinely free: it lands on her current
+         picture and never reaches the claim. */
+      { label: "Never mind", resolves: LEAVE_AS_SHE_IS },
+    ],
+  };
 }
 
 /**

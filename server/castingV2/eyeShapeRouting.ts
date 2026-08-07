@@ -149,6 +149,23 @@ export function isUpsweptAsk(shape: EyeShape | null | undefined): boolean {
 }
 
 /**
+ * The same question asked of RAW TEXT, for re-deriving an outstanding question.
+ *
+ * The client sends back which sentence is outstanding, never the question
+ * itself, so the server has to rebuild it — and rebuilding this one cannot use
+ * `isUpsweptAsk`, which needs a parsed shape and therefore an interpreter call
+ * the answer path has not made yet. Deriving both from `UPSWEPT_ASKS` is what
+ * stops the text door and the parsed door drifting apart (law 4).
+ *
+ * Forging it buys nothing: the answer resolves to an instruction the user could
+ * have typed unaided, which is the property every option in `refineReask` has.
+ */
+export function mentionsUpsweptAsk(text: string): boolean {
+  const said = text.toLowerCase();
+  return UPSWEPT_ASKS.some((shape) => said.includes(shape));
+}
+
+/**
  * READ HER TILT THE WAY THE MEASUREMENT LAW SAYS TO — both rungs, master-anchored.
  *
  * A single rung is BIASED, not merely incomplete: segmenting a whole frame goes
@@ -229,20 +246,21 @@ export async function readCanthalTilt(input: {
   }
 }
 
-export type AlreadyTrueReAsk = {
-  /** What the face already is, said plainly and without jargon. */
-  because: string;
-  /** The offer, which is the only thing that would actually change the picture. */
-  offer: string;
-  /** The decline, which must be as easy as the accept. */
-  decline: string;
-};
-
-export function upsweptReAsk(reading: { meanDeg: number }): AlreadyTrueReAsk | null {
-  if (!alreadyUpswept(reading)) return null;
-  return {
-    because: "Her eyes already sweep up at the outer corners.",
-    offer: "More tilt",
-    decline: "Never mind",
-  };
-}
+/**
+ * THE QUESTION ITSELF LIVES IN `refineReask`, and that move is the fix.
+ *
+ * This module used to build its own `{ because, offer, decline }` and the call
+ * site interpolated **only `because`** into a thrown error sentence — so the
+ * offer and the decline were constructed on every firing and never reached a
+ * screen, and the question could be read but not answered. A question with no
+ * answer path is a dead end, which is the one thing D-180 says a question may
+ * never be; the module's own doc above had already specified the resolution
+ * ("resolves as a RELATIVE intensification") and nothing implemented it.
+ *
+ * So the shape is now the same one the other two free questions use — a
+ * `Reask` with chips, returned as `kind: "asked"`, resolvable by typing — and
+ * it is built in exactly one place: `alreadyUpsweptReask` in `refineReask.ts`.
+ * What stays here is the part that is about eyes: the vocabulary
+ * (`UPSWEPT_ASKS`), the instrument (`readCanthalTilt`) and the threshold
+ * (`alreadyUpswept`, in `canthalTilt`).
+ */

@@ -7,11 +7,12 @@ import {
   EYE_SHAPE_ENGINE,
   EYE_SHAPE_ROUTING_IS_PROVISIONAL,
   isUpsweptAsk,
+  mentionsUpsweptAsk,
   readCanthalTilt,
-  upsweptReAsk,
 } from "./eyeShapeRouting";
 import type { Mask } from "./maskedComposite";
-import { UPSWEPT_ALREADY } from "./canthalTilt";
+import { UPSWEPT_ALREADY, alreadyUpswept } from "./canthalTilt";
+import { alreadyUpsweptReask } from "./refineReask";
 import { BANNED_ENGINES } from "../providers/falImages";
 
 describe("the prose never says the trend word", () => {
@@ -74,26 +75,34 @@ describe("the already-true gate applies to this class from birth", () => {
       question. That is not the walk failing — it is the walk meeting the right
       answer.
     */
-    const reAsk = upsweptReAsk({ meanDeg: 7.2 });
-    expect(reAsk).not.toBeNull();
-    expect(reAsk!.because).toMatch(/already/i);
-    expect(reAsk!.offer, "the only thing that would change the picture").toBe("More tilt");
-    expect(reAsk!.decline, "declining must be as easy as accepting").toBeTruthy();
+    expect(alreadyUpswept({ meanDeg: 7.2 })).toBe(true);
   });
 
   it("stays out of the way of the ask it exists for", () => {
     /* A flat face asking to be upswept is the real edit, and a gate that fires
        there would be the false refusal this program has shipped once. */
-    expect(upsweptReAsk({ meanDeg: -0.8 })).toBeNull();
-    expect(upsweptReAsk({ meanDeg: 0 })).toBeNull();
-    expect(upsweptReAsk({ meanDeg: UPSWEPT_ALREADY - 0.1 })).toBeNull();
+    expect(alreadyUpswept({ meanDeg: -0.8 })).toBe(false);
+    expect(alreadyUpswept({ meanDeg: 0 })).toBe(false);
+    expect(alreadyUpswept({ meanDeg: UPSWEPT_ALREADY - 0.1 })).toBe(false);
   });
 
   it("speaks like a person, not like a measurement", () => {
     /* The user is never shown degrees. The number decides; the sentence is what
        a stylist would actually say. */
-    const reAsk = upsweptReAsk({ meanDeg: 9 })!;
-    expect(reAsk.because).not.toMatch(/deg|°|canthal|tilt|[0-9]/);
+    expect(alreadyUpsweptReask("fox eyes").question).not.toMatch(/deg|°|canthal|[0-9]/);
+  });
+
+  it("re-derives the question from RAW TEXT, because the answer path has no parse", () => {
+    /*
+      The client sends back which sentence is outstanding, never the question.
+      Rebuilding it cannot go through `isUpsweptAsk`, which needs a parsed shape
+      — so the text door exists, and it is derived from the same vocabulary as
+      the parsed one rather than being a second list of words (law 4).
+    */
+    expect(mentionsUpsweptAsk("give her fox eyes")).toBe(true);
+    expect(mentionsUpsweptAsk("upturned eyes please")).toBe(true);
+    expect(mentionsUpsweptAsk("downturned eyes")).toBe(false);
+    expect(mentionsUpsweptAsk("make her hair copper")).toBe(false);
   });
 });
 
@@ -168,7 +177,7 @@ describe("reading her tilt — both rungs, and silence spends", () => {
       reader: { region: async () => { throw new Error("the segmenter found no eye"); } },
     });
     expect(reading).toBeNull();
-    expect(upsweptReAsk({ meanDeg: 0 })).toBeNull();
+    expect(alreadyUpswept({ meanDeg: 0 })).toBe(false);
   });
 
   it("falls to the ZONE rung when the whole frame will not read", async () => {

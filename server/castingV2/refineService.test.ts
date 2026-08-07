@@ -352,7 +352,7 @@ describe("refusals land before anything is claimed", () => {
     const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
       .png().toBuffer();
 
-    await expect(refineCandidate(
+    const asked = await refineCandidate(
       {
         harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
@@ -364,9 +364,75 @@ describe("refusals land before anything is claimed", () => {
         },
       },
       { ...input, instruction: "fox eyes" },
-    )).rejects.toThrow(/already sweep/);
+    );
 
+    expect(asked.kind, "a question, in the shape the product asks questions in").toBe("asked");
+    expect(asked.reask!.question).toMatch(/already sweep/);
     expect(ledger.charges, "and it costs her nothing").toHaveLength(0);
+    expect(journal).not.toContain("begin");
+  });
+
+  /*
+    AND IT MUST BE ANSWERABLE — which is the half that was missing.
+
+    The gate shipped as a thrown BAD_REQUEST carrying the sentence, so the
+    question arrived in the refusal channel with no chips, and `pendingReaskFor`
+    had never heard of it: every answer re-derived nothing, fell through to the
+    gate, and was asked the same question again. The founder's condition on
+    shipping the sentence form is that it must NEVER dead end, and these two
+    tests are what say it does not. They fail if the gate stops standing down.
+  */
+  it("takes YES for an answer, and then actually spends", async () => {
+    const W = 400;
+    const H = 300;
+    const upsweptEyes = () => {
+      const data = Buffer.alloc(W * H, 0);
+      const put = (x0: number, x1: number, yAt: (x: number) => number) => {
+        for (let x = x0; x < x1; x += 1) {
+          const y = Math.round(yAt(x));
+          for (let dy = -4; dy <= 4; dy += 1) data[(y + dy) * W + x] = 255;
+        }
+      };
+      put(80, 160, (x) => 120 + (x - 80) * 0.25);
+      put(240, 320, (x) => 140 - (x - 240) * 0.25);
+      return { data, width: W, height: H };
+    };
+    const sharp = (await import("sharp")).default;
+    const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    const answered = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async () => ({ bytes: face, contentType: "image/png" }),
+        regions: {
+          region: async () => upsweptEyes(),
+          subject: async () => upsweptEyes(),
+          landmark: async () => [],
+        },
+      },
+      /* Exactly what the chip sends: the outstanding sentence travels as
+         `answering`, the label as the instruction. Typing "More tilt" is the
+         same request, which is the property that keeps the two routes one. */
+      { ...input, instruction: "More tilt", answering: "fox eyes" },
+    );
+
+    expect(answered.kind, "the question must not be asked a second time").toBe("rendered");
+    expect(ledger.charges, "she said yes, so this one is paid for").toHaveLength(1);
+  });
+
+  it("takes NO for an answer, for free, and lands on the face she has", async () => {
+    /* Declining has to be as easy as accepting, or the question has one real
+       answer and is not a question. It never reaches the claim. */
+    const declined = await refineCandidate(
+      { harvest: unmasked, interpret: async () => { throw new Error("the parse is never reached"); } },
+      { ...input, instruction: "Never mind", answering: "fox eyes" },
+    );
+
+    expect(declined.kind).toBe("selected");
+    expect(declined.note).toMatch(/nothing was charged/i);
+    expect(ledger.charges).toHaveLength(0);
     expect(journal).not.toContain("begin");
   });
 

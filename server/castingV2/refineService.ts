@@ -91,6 +91,8 @@ import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { readStoredDelta } from "./refineLegacy";
 import { namesRemoval } from "./removalWords";
 import {
+  LEAVE_AS_SHE_IS,
+  alreadyUpsweptReask,
   colourFacetLabel,
   colourFacetOf,
   didYouMeanReask,
@@ -115,7 +117,8 @@ import {
 } from "./refineRemoval";
 import { facetOfAxis, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
-import { isUpsweptAsk, readCanthalTilt, upsweptReAsk } from "./eyeShapeRouting";
+import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
+import { alreadyUpswept } from "./canthalTilt";
 import { COVERAGE_BANDS, coverage } from "./maskGeometry";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
@@ -430,6 +433,26 @@ export async function refineCandidate(
     : null;
   const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
   const instruction = answered ?? input.instruction;
+
+  /*
+    "NEVER MIND" — the one answer that is not an instruction.
+
+    Every other option resolves into a sentence they could have typed unaided.
+    A decline cannot, because there is no sentence meaning "render nothing", so
+    it resolves into one shared constant and is answered here: her current
+    picture, a note saying so, and no claim. It has to be as easy as the accept
+    or the question only has one real answer, which is not a question.
+  */
+  if (answered === LEAVE_AS_SHE_IS) {
+    return {
+      kind: "selected",
+      note: "Left her as she is — nothing was charged.",
+      variantId: source.variantPublicId,
+      candidateId: input.candidatePublicId,
+      imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+      instructions: readInstructions(predecessorForParse?.instructions),
+    };
+  }
 
   /*
     THE TWO FREE QUESTIONS, BEFORE THE PARSE AND LONG BEFORE THE CLAIM.
@@ -1149,7 +1172,7 @@ export async function refineCandidate(
     Scoped to the masked path, because that is where the eye.shape row lives and
     every other account is still on exactly the behaviour it had.
   */
-  if (isUpsweptAsk(composed.eyeShape) && maskedEditingEnabledFor(input.userId)) {
+  if (!answered && isUpsweptAsk(composed.eyeShape) && maskedEditingEnabledFor(input.userId)) {
     const reading = await (async () => {
       try {
         const bytes = await (dependencies.readBytes ?? storageReadBytes)(source.candidate.imageKey!);
@@ -1160,17 +1183,31 @@ export async function refineCandidate(
         return null;
       }
     })();
-    const reAsk = reading ? upsweptReAsk(reading) : null;
-    if (reAsk) {
+    if (reading && alreadyUpswept(reading)) {
       log.info(
-        { meanDeg: Number(reading!.meanDeg.toFixed(2)), asked: composed.eyeShape },
+        { meanDeg: Number(reading.meanDeg.toFixed(2)), asked: composed.eyeShape },
         "[refineService] already-true — asking instead of spending",
       );
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: `${reAsk.because} Want me to push them further, or leave her as she is? `
-          + "Nothing was charged.",
-      });
+      /*
+        A QUESTION, IN THE SHAPE THE PRODUCT ASKS QUESTIONS IN.
+
+        This was a thrown `BAD_REQUEST` carrying the sentence, which put a
+        question into the refusal channel: no chips, and — because
+        `pendingReaskFor` had never heard of it — no way for an answer to come
+        back. The founder's condition on shipping the sentence form is that it
+        must never dead end, and that was exactly what it did.
+
+        `kind: "asked"` is free by construction here: it returns above `admit`
+        and above the claim, so nothing is reserved and nothing is charged.
+      */
+      return {
+        kind: "asked",
+        reask: alreadyUpsweptReask(instruction),
+        variantId: source.variantPublicId,
+        candidateId: input.candidatePublicId,
+        imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+        instructions: readInstructions(predecessorForParse?.instructions),
+      };
     }
   }
 
