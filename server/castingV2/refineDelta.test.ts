@@ -316,9 +316,18 @@ describe("accessories are refinable; garments and headwear are not", () => {
   });
 
   it("carries the failure-to-appear licence into the prompt", () => {
+    /*
+      D-160's licence is unchanged in substance and now comes from the FLOOR
+      rather than from this one class's own wording — the accessory clause said
+      "a failed candidate" while twenty-two other classes said nothing at all.
+      Asserted on the promise rather than on the phrase, because the phrase is
+      now shared and tuning it in one place must not fail a test about another.
+    */
     const prompt = composeEditPrompt({ free: { statedAccessories: "small gold hoops" } }, prose);
     expect(prompt).toContain("ACCESSORIES: small gold hoops");
-    expect(prompt).toContain("failed candidate");
+    expect(prompt).toMatch(/fails to appear is a failed render/);
+    /* And the part that is still the accessory class's own. */
+    expect(prompt).toContain("Nothing else is added");
   });
 });
 
@@ -328,7 +337,18 @@ describe("the free lane composes under its registered headings", () => {
       { free: { brows: "thick and straight", ink: "a small rose on her neck" } },
       prose,
     );
-    expect(prompt).toContain("BROWS: thick and straight.");
+    /*
+      THE HEADING AND THE USER'S OWN WORDS STILL LEAD, and the qualifier follows
+      them. This test used to pin `BROWS: thick and straight.` — the BARE clause
+      — which is exactly the defect: nineteen subjects shipped with the heading,
+      the user's words and nothing else, while the model was told for accessories
+      that a thing failing to appear is a failure. Pinning the bare form is how a
+      test comes to defend a defect.
+    */
+    expect(prompt).toContain("BROWS: thick and straight,");
+    expect(prompt).toMatch(/BROWS: thick and straight,[^.]*fails to appear is a failed render/);
+    /* Ink is the declared exemption: its items carry their own placement
+       clauses, so its heading is still followed by the words alone. */
     expect(prompt).toContain("INK: a small rose on her neck.");
   });
 });

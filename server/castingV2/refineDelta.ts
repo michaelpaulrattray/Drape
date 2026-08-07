@@ -51,6 +51,7 @@ import {
   isPresentationSubject,
   type FreeSubject,
 } from "./refineSubjects";
+import { qualifierFor } from "./subjectQualifiers";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
 import { composePreservation } from "./refinePreservation";
 
@@ -1025,30 +1026,6 @@ function stemmedContainment(value: string, instruction: string): boolean {
  * treatment, in the one place a free value can be qualified without inventing
  * a fact the user did not state.
  */
-function qualifierFor(subject: FreeSubject): string {
-  if (subject === "hairShade") {
-    return ", rendered as natural hair — dimensional rather than flat, with a "
-      + "slightly deeper root shadow and the tone reading as grown rather than dyed";
-  }
-  if (subject === "ink") return "";
-  /*
-    THE LICENCE, CARRIED (D-160). The cohort constant gives stated accessories
-    failure-to-appear teeth on the ROLL; the edit prompt has to say it too, or
-    the one surface where a person deliberately asks for an earring is the one
-    surface where it can quietly not appear.
-  */
-  if (subject === "statedAccessories") {
-    return ", worn by this person and plainly visible, rendered accurately as "
-      + "described and as their own — an accessory that fails to appear is a "
-      + "failed candidate. Nothing else is added: no other jewellery, no "
-      + "headwear, no props";
-  }
-  if (subject === "hairCut") {
-    return ", cut and dressed as a real haircut on this person's own hair density "
-      + "and hairline";
-  }
-  return "";
-}
 
 /**
  * The free-lane entries that are IDENTITY, keyed by subject.

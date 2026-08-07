@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "eb1134c17368fa3c"
+    "sourceFingerprint": "74711a5e54d89119"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 62
+      "moduleCount": 63
     },
     {
       "id": "domain:castingV2",
@@ -3521,6 +3521,12 @@
     {
       "id": "module:server/castingV2/stylingResolution.ts",
       "path": "server/castingV2/stylingResolution.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/subjectQualifiers.ts",
+      "path": "server/castingV2/subjectQualifiers.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8441,6 +8447,10 @@
     {
       "id": "test:server/castingV2/stylingResolution.test.ts",
       "path": "server/castingV2/stylingResolution.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/subjectQualifiers.test.ts",
+      "path": "server/castingV2/subjectQualifiers.test.ts"
     },
     {
       "id": "test:server/castingV2/truncation.test.ts",
@@ -17401,6 +17411,11 @@
     },
     {
       "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/subjectQualifiers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
@@ -18137,6 +18152,11 @@
     {
       "from": "module:server/castingV2/stylingResolution.ts",
       "to": "module:server/castingV2/castingIntent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/subjectQualifiers.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
     {
