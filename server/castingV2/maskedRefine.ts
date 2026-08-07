@@ -238,6 +238,8 @@ export type MaskedRefineResult = {
    * measurements came from checking against something else.
    */
   explain?: {
+    /** The zone as the facet's scope drew it, before any boundary expansion. */
+    zoneAsScoped: Mask;
     zone: Mask;
     harvested: Mask;
     vacated: Mask;
@@ -629,6 +631,23 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
         image: which === "master" ? input.master.bytes : input.painted.bytes,
         name,
         absentIsAnswer,
+      }).then((mask) => {
+        /*
+          A GUARD ON THE PATH THAT ACTUALLY RUNS.
+
+          `requestMatte` checks this and `requestMatte` has no callers, so until
+          today nothing checked it where masks are really acquired. A reader
+          returning a differently-sized mask misaligns every subsequent index by
+          a row and reports nothing: the composite would still produce bytes, the
+          guarantee would still "hold" against its own wrong mask, and the
+          picture would be quietly wrong. **Never resize a mask to fit** — that
+          is a resample on the one path that promises not to have one, and it
+          moves every edge it touches.
+        */
+        if (mask.data.length !== mask.width * mask.height) {
+          throw new MaskError(`the "${name}" mask is ${mask.data.length} bytes for ${mask.width}x${mask.height} — not single-channel`);
+        }
+        return mask;
       });
     asked.set(key, pending);
     return pending;
@@ -988,6 +1007,7 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     ...(input.explain
       ? {
         explain: {
+          zoneAsScoped: zone,
           zone: grown.zone,
           harvested,
           vacated,

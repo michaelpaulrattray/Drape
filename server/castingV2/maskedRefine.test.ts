@@ -538,3 +538,74 @@ describe("the reveal fires on a shrink and is structurally empty on a grow", () 
     expect(result.explain, "the product path allocates none of it").toBeUndefined();
   });
 });
+
+/**
+ * WHAT THE MASK GUARDS ACTUALLY COVER ON THIS PATH — pinned so the gap between
+ * the specification and the code cannot go quiet again.
+ *
+ * `requestMatte` in maskGeometry describes itself as the one way to get a mask
+ * from a model, with every guard in the contract rather than in the callers. It
+ * has no production call site. These say which of its guarantees are real here.
+ */
+describe("the mask guards that are actually invoked", () => {
+  const masterPng = () => png(() => [190, 188, 186]);
+  const paintedPng = () => png((x, y) => (y < 20 ? [40, 30, 25] : [186, 184, 182]));
+
+  it("refuses a mask whose bytes do not match its own dimensions", async () => {
+    /* A row-misaligned mask silently shifts every index downstream. The
+       composite would still produce bytes and still "verify" against its own
+       wrong mask — the picture is the only thing that would know. */
+    const malformed: RegionReader = {
+      region: async () => ({ data: Buffer.alloc(W * H * 3, 255), width: W, height: H }),
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }],
+    };
+    await expect(harvestRefinement({
+      master: { bytes: await masterPng(), contentType: "image/png" },
+      painted: { bytes: await paintedPng(), contentType: "image/png" },
+      facets: ["hair.cut"],
+      reader: malformed,
+      userId: 1,
+    })).rejects.toThrow(/not single-channel/);
+  });
+
+  it("KNOWN GAP, NAMED — nothing gates the question before it is asked (D-213)", async () => {
+    /*
+      An ADD of an absent distributed facet segments a thing that is not there.
+      "Give him a beard" on a clean-shaven man asks a segmenter where his facial
+      hair is, and a SAM-class model answers that question confidently rather
+      than emptily — which is precisely the phantom `requestMatte.present` was
+      written to prevent, on a path that never calls it.
+
+      The harvest narrows the gap without closing it: when the phantom lands
+      somewhere the painter drew nothing, the empty harvest refuses and the user
+      is refunded. That is NOT the dangerous case. The dangerous one is when the
+      painter DOES draw the beard it was asked for — then the phantom zone and
+      the paint agree, and an edit lands wherever a segmenter guessed a beard
+      would be on a face that has none.
+
+      This test asserts the CURRENT behaviour, not the desired one, so that the
+      day someone closes the gap this goes red and has to be updated deliberately.
+      It is a marker, not an endorsement.
+     */
+    const phantom: RegionReader = {
+      /* A confident blob for a beard that does not exist. */
+      region: async () => box(24, 40, 40, 52),
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: await masterPng(), contentType: "image/png" },
+      /* The painter drew the beard it was asked for, at the guessed place. */
+      painted: {
+        bytes: await png((x, y) => (x >= 24 && x < 40 && y >= 40 && y < 52 ? [50, 40, 34] : [186, 184, 182])),
+        contentType: "image/png",
+      },
+      facets: ["facialHair"],
+      reader: phantom,
+      userId: 1,
+    });
+    expect(result.outcome, "today it composites on the phantom — the record is never consulted")
+      .toBe("composited");
+  });
+});

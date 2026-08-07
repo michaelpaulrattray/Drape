@@ -427,11 +427,49 @@ export type MatteRequest = {
 };
 
 /**
- * The one way to get a mask from a model — with all three guards in the
- * contract rather than in the callers, per the founder's ruling.
+ * ⚠ **THIS HAS NO PRODUCTION CALL SITE, AND SAYING SO IS THE POINT.**
  *
- * Callers forget. This cannot: it returns `UsableMask`, which the paid render
- * path demands and which nothing else produces.
+ * It was written as *"the one way to get a mask from a model, with all the
+ * guards in the contract rather than in the callers"*, and that sentence was
+ * true of the design and never of the code. The paid path is
+ * `maskedRefine.harvestRefinement`, which reads regions straight off a
+ * `RegionReader` and has never called this. A module describing itself as the
+ * only door, with nobody walking through it, is invariant 7 exactly — a control
+ * that is not invoked does not exist — and D-231's sibling: **spec'd-but-never-
+ * implemented is the invoked-but-inert class wearing better paperwork.**
+ *
+ * It is kept, deliberately, rather than deleted or wired:
+ *
+ *   `present` (D-213)      **a live gap on the product path.** Nothing gates the
+ *                          question before it is asked, so an ADD of an absent
+ *                          distributed facet — "give him a beard" on a clean-
+ *                          shaven man — segments "facial hair" on a face that
+ *                          has none. That is the phantom this guard exists for.
+ *                          The harvest NARROWS it — a phantom landing where the
+ *                          painter drew nothing yields an empty harvest and an
+ *                          honest refund — but does not close it: when the
+ *                          painter draws the beard it was asked for, the guess
+ *                          and the paint agree and the edit lands on a face that
+ *                          has no beard. QUEUED, NAMED, NOT CLOSED; marked by a
+ *                          current-behaviour test in `maskedRefine.test.ts`.
+ *   `changesSilhouette`    **measured, and it does not bite on this path.** The
+ *                          predicted defect was that fuller lips would be
+ *                          clipped at her current lip line. Driven on a real
+ *                          render (`scripts/calibration/fuller-lips.mts`): the
+ *                          boundary-contact auto-expand grew the scoped zone
+ *                          23.6x and 1,905 px were delivered beyond it — the
+ *                          fuller lip is there in the picture. `expandUntilClear`
+ *                          IS the destination allowance D-218 asks for, reached
+ *                          by a different route. Adding a shape dimension to the
+ *                          zone-scope table would be a second mechanism doing a
+ *                          ratified mechanism's job, which is law #4.
+ *   `visibility`           built and wired here, never calibrated (D-226).
+ *
+ * So this is a specification with tests, not a control. **Do not cite it as
+ * enforcement of anything.** Wiring it would mean mapping `RegionKind` onto the
+ * facet vocabulary and teaching it to GROW a zone rather than refuse — that is
+ * a real piece of work with a real design question in it, and pretending it is
+ * already done is the more expensive option.
  */
 export async function requestMatte(
   source: SegmentationSource,
