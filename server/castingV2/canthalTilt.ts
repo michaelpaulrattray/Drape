@@ -210,6 +210,73 @@ export function pairCorners(outers: Point[], inners: Point[]): {
   };
 }
 
+/**
+ * The leftmost and rightmost points of one eye's mask, each averaged over a few
+ * outermost columns so a stray pixel of lash cannot lever a short baseline.
+ */
+function extremesOf(mask: Mask): { leftMost: Point; rightMost: Point } {
+  const { width, height, data } = mask;
+  if (data.length !== width * height) {
+    throw new MaskError(`an eye mask is ${data.length} bytes for ${width}x${height} — not single-channel`);
+  }
+  let minX = width;
+  let maxX = -1;
+  for (let pixel = 0; pixel < data.length; pixel += 1) {
+    if (data[pixel] <= 127) continue;
+    const x = pixel % width;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+  }
+  if (maxX < 0) throw new MaskError("an eye mask selected nothing — no corner to read");
+
+  const meanYNear = (limit: number, side: "min" | "max", span = 3) => {
+    let sumY = 0;
+    let count = 0;
+    for (let pixel = 0; pixel < data.length; pixel += 1) {
+      if (data[pixel] <= 127) continue;
+      const x = pixel % width;
+      const within = side === "min" ? x <= limit + span : x >= limit - span;
+      if (!within) continue;
+      sumY += (pixel - x) / width;
+      count += 1;
+    }
+    return sumY / count / height;
+  };
+
+  return {
+    leftMost: { x: minX / width, y: meanYNear(minX, "min") },
+    rightMost: { x: maxX / width, y: meanYNear(maxX, "max") },
+  };
+}
+
+/**
+ * CORNERS FROM TWO SEPARATE EYE MASKS — because "how many regions came back" is
+ * a property of the segmenter's mood, not of the face.
+ *
+ * `cornersFromMask` splits one mask into two eyes by connected components, and
+ * on three of six probe renders SAM 3 returned the pair as a SINGLE region, so
+ * the reading refused. That refusal is honest — far better than pairing corners
+ * across two different eyes — but it left three arms of a factorial
+ * "unreadable", and **an unreadable arm is not a failed one.** Scoring it as a
+ * miss would be the false-pass asymmetry running backwards, and the hole landed
+ * exactly where the engine-versus-vocabulary attribution lives.
+ *
+ * Asking each side by name removes the question: two masks in, two eyes out, no
+ * component analysis to be defeated. The single-mask path stays for callers who
+ * genuinely have one region.
+ */
+export function cornersFromEyeMasks(right: Mask, left: Mask): { outers: Point[]; inners: Point[] } {
+  const r = extremesOf(right);
+  const l = extremesOf(left);
+  /* Her RIGHT eye sits on the image's left, so its outer corner is its leftmost
+     point; her LEFT eye's outer corner is its rightmost. Anatomy decides, not
+     the order the masks arrived in. */
+  return {
+    outers: [r.leftMost, l.rightMost],
+    inners: [r.rightMost, l.leftMost],
+  };
+}
+
 export function readingFrom(
   outers: Point[],
   inners: Point[],
