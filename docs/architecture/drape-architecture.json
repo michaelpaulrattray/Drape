@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "87fe50a398cfb94a"
+    "sourceFingerprint": "fcc34f760e7876f9"
   },
   "domains": [
     {
@@ -17050,6 +17050,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/eyeShapeRouting.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/eyeShapeRouting.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -17577,6 +17587,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/eyeShapeRouting.ts",
       "kind": "imports"
     },
     {

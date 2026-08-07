@@ -321,6 +321,80 @@ describe("refusals land before anything is claimed", () => {
     expect(ledger.charges).toHaveLength(0);
   });
 
+  it("ASKS INSTEAD OF SPENDING when her eyes already sweep up", async () => {
+    /*
+      THE ALREADY-TRUE GATE, proved at its call site rather than in isolation.
+
+      The walk candidate measures 7.2 degrees of canthal tilt, so "fox eyes" on
+      her is an ask for a property she has. Rendering it spends 25 credits to
+      produce the face she is looking at and then asks a reader whether it
+      complied — which is how a false pass is manufactured. The honest answer is
+      a free question.
+
+      This is the half that matters: a gate nobody calls does not exist, and
+      until this test existed the gate was built, unit-tested and INERT.
+    */
+    const W = 400;
+    const H = 300;
+    const upsweptEyes = () => {
+      const data = Buffer.alloc(W * H, 0);
+      const put = (x0: number, x1: number, yAt: (x: number) => number) => {
+        for (let x = x0; x < x1; x += 1) {
+          const y = Math.round(yAt(x));
+          for (let dy = -4; dy <= 4; dy += 1) data[(y + dy) * W + x] = 255;
+        }
+      };
+      put(80, 160, (x) => 120 + (x - 80) * 0.25);
+      put(240, 320, (x) => 140 - (x - 240) * 0.25);
+      return { data, width: W, height: H };
+    };
+    const sharp = (await import("sharp")).default;
+    const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    await expect(refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async () => ({ bytes: face, contentType: "image/png" }),
+        regions: {
+          region: async () => upsweptEyes(),
+          subject: async () => upsweptEyes(),
+          landmark: async () => [],
+        },
+      },
+      { ...input, instruction: "fox eyes" },
+    )).rejects.toThrow(/already sweep/);
+
+    expect(ledger.charges, "and it costs her nothing").toHaveLength(0);
+    expect(journal).not.toContain("begin");
+  });
+
+  it("still SPENDS when the instrument cannot read her — silence never refuses", async () => {
+    /*
+      The asymmetry, at the call site. A gate that refuses on a no-read would
+      cost a customer the picture they asked for whenever a segmenter had an off
+      day, and that is the failure this program has shipped once already. So an
+      unreadable face falls through to the ordinary paid path.
+    */
+    const blind = {
+      region: async () => { throw new Error("the segmenter found no eyes to edit"); },
+      subject: async () => { throw new Error("no subject"); },
+      landmark: async () => [],
+    };
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async () => ({ bytes: Buffer.from("not-an-image"), contentType: "image/png" }),
+        regions: blind,
+      },
+      { ...input, instruction: "fox eyes" },
+    ).catch((error) => error);
+    /* Whatever happens downstream, it must NOT be the gate's refusal. */
+    expect(String(result)).not.toMatch(/already sweep/);
+  });
+
   it("refuses a candidate that has already been signed", async () => {
     candidateRow.signedCastId = 42;
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/already been signed/);

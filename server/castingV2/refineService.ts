@@ -115,6 +115,7 @@ import {
 } from "./refineRemoval";
 import { facetOfAxis, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
+import { isUpsweptAsk, readCanthalTilt, upsweptReAsk } from "./eyeShapeRouting";
 import { COVERAGE_BANDS, coverage } from "./maskGeometry";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
@@ -1115,6 +1116,62 @@ export async function refineCandidate(
       message: "That edit would have asked for a change and forbidden it in the same breath, "
         + "so it was refused rather than rendered. Nothing was charged.",
     });
+  }
+
+  /*
+    THE ALREADY-TRUE GATE, and this is its CALL SITE (founder ruling, 2026-08-07).
+
+    Fourth member of the refuse-before-dispatch family — absent, silhouette,
+    occluded, already-true — and the only one that could be answered from a
+    picture we already hold.
+
+    She asks for eyes that sweep up and her eyes already sweep up. Rendering that
+    spends 25 credits to produce the face she is looking at, and then asks a
+    reader whether it complied, which is how a false pass is manufactured. The
+    honest answer is a QUESTION, and asking it is free.
+
+    **It sits before `admit` so nothing has been claimed**, alongside every other
+    free refusal in this function.
+
+    Three conditions, each load-bearing:
+
+      DIRECTION   only an upswept ask. "Downturned" wants the opposite and
+                  "hooded" is about the lid, and a gate firing on those would
+                  refuse the very edit a high-baseline face most needs.
+      MEASURED    both rungs of the tilt ladder, master-anchored. A single rung
+                  goes blind exactly on narrowed eyes, so it would under-report
+                  the faces this is about.
+      SILENT MEANS SPEND  a no-read never fires the gate. Refusing costs a
+                  customer the picture they asked for, and that asymmetry runs
+                  the same way as D-235's: silence resolves toward the outcome
+                  that does not take something away from her.
+
+    Scoped to the masked path, because that is where the eye.shape row lives and
+    every other account is still on exactly the behaviour it had.
+  */
+  if (isUpsweptAsk(composed.eyeShape) && maskedEditingEnabledFor(input.userId)) {
+    const reading = await (async () => {
+      try {
+        const bytes = await (dependencies.readBytes ?? storageReadBytes)(source.candidate.imageKey!);
+        return await readCanthalTilt({ image: bytes.bytes, reader: dependencies.regions ?? defaultRegionReader() });
+      } catch (error) {
+        /* An instrument that cannot answer must not be able to refuse. */
+        log.warn({ error: String(error).slice(0, 120) }, "[refineService] tilt unreadable — not gating");
+        return null;
+      }
+    })();
+    const reAsk = reading ? upsweptReAsk(reading) : null;
+    if (reAsk) {
+      log.info(
+        { meanDeg: Number(reading!.meanDeg.toFixed(2)), asked: composed.eyeShape },
+        "[refineService] already-true — asking instead of spending",
+      );
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `${reAsk.because} Want me to push them further, or leave her as she is? `
+          + "Nothing was charged.",
+      });
+    }
   }
 
   if (dependencies.admit && !dependencies.admit()) {

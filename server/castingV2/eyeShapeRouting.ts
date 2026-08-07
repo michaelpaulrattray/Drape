@@ -44,7 +44,9 @@
  * rather than on the tilt number, which could not read both engines fairly.
  * NBP took it: the same person, with genuinely restructured eyes.
  */
-import { alreadyUpswept } from "./canthalTilt";
+import { alreadyUpswept, cornersFromEyeMasks, cornersFromMask, readingFrom } from "./canthalTilt";
+import type { EyeShape } from "../../shared/castingRealization";
+import type { Mask } from "./maskedComposite";
 
 /**
  * THE PROSE, in one place, because the alternative is a probe measuring one
@@ -130,6 +132,103 @@ export const EYE_SHAPE_ROUTING_IS_PROVISIONAL = false;
  * baseline, through the machinery relative asks already use — "more tilt" is not
  * a second attempt at the same absolute ask.
  */
+/**
+ * WHICH EYE-SHAPE ASKS ARE ABOUT AN UPWARD TILT — and it is a short list on
+ * purpose.
+ *
+ * The already-true gate must fire on a request for an upswept eye and never on
+ * one of the other eight shapes. "Hooded" and "monolid" describe the lid, not
+ * the corners; "downturned" asks for the OPPOSITE tilt, and a gate that fired
+ * there would refuse the one ask a high-baseline face most needs. So the
+ * mapping is enumerated rather than inferred from the prose.
+ */
+const UPSWEPT_ASKS: readonly EyeShape[] = ["fox eyes", "upturned"];
+
+export function isUpsweptAsk(shape: EyeShape | null | undefined): boolean {
+  return shape != null && UPSWEPT_ASKS.includes(shape);
+}
+
+/**
+ * READ HER TILT THE WAY THE MEASUREMENT LAW SAYS TO — both rungs, master-anchored.
+ *
+ * A single rung is BIASED, not merely incomplete: segmenting a whole frame goes
+ * blind exactly on narrowed eyes, so full-frame-only reads systematically miss
+ * the strongest cases. Measured, blind renders averaged +5.11 degrees of change
+ * against +1.40 for readable ones.
+ *
+ * **The crop comes from the master, never from the render, so the measurement
+ * cannot wander to where the answer is convenient.** That is assert-at-the-wire's
+ * sibling for instruments, and it is the reason this takes one image and crops
+ * it against its own eyes rather than against anything downstream.
+ *
+ * Returns null when neither rung reads. **A no-read must never fire the gate**:
+ * the gate refuses a render, and a false "she already has it" costs a customer
+ * the picture they asked for — which is the one failure this program has shipped
+ * before and does not get to ship again. Silence resolves toward spending.
+ */
+export async function readCanthalTilt(input: {
+  image: Buffer;
+  reader: { region(input: { image: Buffer; name: string }): Promise<Mask> };
+}): Promise<{ meanDeg: number; asymmetryDeg: number } | null> {
+  const sharp = (await import("sharp")).default;
+  const meta = await sharp(input.image).metadata();
+  const width = meta.width ?? 0;
+  const height = meta.height ?? 0;
+  if (!width || !height) return null;
+
+  const corners = async (image: Buffer, w: number, h: number) => {
+    try {
+      const [right, left] = await Promise.all([
+        input.reader.region({ image, name: "right eye" }),
+        input.reader.region({ image, name: "left eye" }),
+      ]);
+      const pair = cornersFromEyeMasks(right, left);
+      return readingFrom(pair.outers, pair.inners, w, h);
+    } catch { /* next rung */ }
+    try {
+      const eyes = await input.reader.region({ image, name: "eyes" });
+      const pair = cornersFromMask(eyes);
+      return readingFrom(pair.outers, pair.inners, w, h);
+    } catch {
+      return null;
+    }
+  };
+
+  const full = await corners(input.image, width, height);
+  if (full) return { meanDeg: full.meanDeg, asymmetryDeg: full.asymmetryDeg };
+
+  /* Rung two: crop to her own eyes and ask again, where they fill the frame. */
+  try {
+    const eyes = await input.reader.region({ image: input.image, name: "eyes" });
+    let minX = width, maxX = -1, minY = height, maxY = -1;
+    for (let index = 0; index < eyes.data.length; index += 1) {
+      if (eyes.data[index] <= 127) continue;
+      const x = index % width;
+      const y = Math.floor(index / width);
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    if (maxX < 0) return null;
+    const padX = Math.round((maxX - minX) * 0.45);
+    const padY = Math.round((maxY - minY) * 2.2);
+    const left = Math.max(0, minX - padX);
+    const top = Math.max(0, minY - padY);
+    const box = {
+      left,
+      top,
+      width: Math.min(width - left, (maxX - minX) + padX * 2),
+      height: Math.min(height - top, (maxY - minY) + padY * 2),
+    };
+    const crop = await sharp(input.image).extract(box).png().toBuffer();
+    const zoned = await corners(crop, box.width, box.height);
+    return zoned ? { meanDeg: zoned.meanDeg, asymmetryDeg: zoned.asymmetryDeg } : null;
+  } catch {
+    return null;
+  }
+}
+
 export type AlreadyTrueReAsk = {
   /** What the face already is, said plainly and without jargon. */
   because: string;

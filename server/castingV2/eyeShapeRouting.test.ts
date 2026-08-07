@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import sharp from "sharp";
+
 import {
   ANATOMICAL_UPSWEPT_EDIT,
   EYE_SHAPE_ENGINE,
   EYE_SHAPE_ROUTING_IS_PROVISIONAL,
+  isUpsweptAsk,
+  readCanthalTilt,
   upsweptReAsk,
 } from "./eyeShapeRouting";
+import type { Mask } from "./maskedComposite";
 import { UPSWEPT_ALREADY } from "./canthalTilt";
 import { BANNED_ENGINES } from "../providers/falImages";
 
@@ -89,5 +94,118 @@ describe("the already-true gate applies to this class from birth", () => {
        a stylist would actually say. */
     const reAsk = upsweptReAsk({ meanDeg: 9 })!;
     expect(reAsk.because).not.toMatch(/deg|°|canthal|tilt|[0-9]/);
+  });
+});
+
+
+describe("the gate fires on an upswept ask and on nothing else", () => {
+  it("recognises the two asks that are about an upward tilt", () => {
+    expect(isUpsweptAsk("fox eyes")).toBe(true);
+    expect(isUpsweptAsk("upturned")).toBe(true);
+  });
+
+  it("NEVER fires on the ask that wants the opposite", () => {
+    /* A gate firing on "downturned" would refuse the one edit a high-baseline
+       face most needs — the exact inversion of what it is for. */
+    expect(isUpsweptAsk("downturned")).toBe(false);
+  });
+
+  it("does not fire on shapes that are about the LID rather than the corners", () => {
+    for (const shape of ["hooded", "monolid", "round", "almond", "deep-set", "wide-set", "close-set"] as const) {
+      expect(isUpsweptAsk(shape), `${shape} is not a tilt ask`).toBe(false);
+    }
+  });
+
+  it("does not fire when no eye shape was asked for at all", () => {
+    expect(isUpsweptAsk(null)).toBe(false);
+    expect(isUpsweptAsk(undefined)).toBe(false);
+  });
+});
+
+describe("reading her tilt — both rungs, and silence spends", () => {
+  const W = 400;
+  const H = 300;
+
+  const png = () => sharp({
+    create: { width: W, height: H, channels: 3, background: "#808080" },
+  }).png().toBuffer();
+
+  /** Two eye boxes whose outer corners sit HIGHER than their inner ones. */
+  const upsweptEyes = (): Mask => {
+    const data = Buffer.alloc(W * H, 0);
+    const put = (x0: number, x1: number, yAt: (x: number) => number) => {
+      for (let x = x0; x < x1; x += 1) {
+        const y = Math.round(yAt(x));
+        for (let dy = -4; dy <= 4; dy += 1) data[(y + dy) * W + x] = 255;
+      }
+    };
+    /* Her right eye: outer at x=80 (high), inner at x=160 (lower). */
+    put(80, 160, (x) => 120 + (x - 80) * 0.25);
+    /* Her left eye: inner at x=240 (lower), outer at x=320 (high). */
+    put(240, 320, (x) => 140 - (x - 240) * 0.25);
+    return { data, width: W, height: H };
+  };
+
+  it("measures an upswept face as upswept", async () => {
+    const reading = await readCanthalTilt({
+      image: await png(),
+      reader: { region: async () => upsweptEyes() },
+    });
+    expect(reading).not.toBeNull();
+    expect(reading!.meanDeg, "outer corners above inner reads positive").toBeGreaterThan(5);
+  });
+
+  it("RETURNS NULL WHEN NOTHING READS — and null must never refuse anybody", async () => {
+    /*
+      THE ASYMMETRY, and it is the same one D-235 drew. This gate REFUSES a
+      render. A false "she already has it" costs a customer the picture they
+      asked for, which is the failure this program has shipped once and does not
+      get to ship again. So an instrument that cannot answer must be unable to
+      refuse, and the caller treats null as "spend".
+    */
+    const reading = await readCanthalTilt({
+      image: await png(),
+      reader: { region: async () => { throw new Error("the segmenter found no eye"); } },
+    });
+    expect(reading).toBeNull();
+    expect(upsweptReAsk({ meanDeg: 0 })).toBeNull();
+  });
+
+  it("falls to the ZONE rung when the whole frame will not read", async () => {
+    /*
+      A single rung is biased rather than merely incomplete: full-frame
+      segmentation goes blind exactly on narrowed eyes, so it under-reports the
+      faces this gate is about. Measured, blind renders carried +5.11deg against
+      +1.40 for readable ones. Here the first rung refuses on the full frame and
+      answers on the crop, and the reading must survive that.
+    */
+    let calls = 0;
+    const reading = await readCanthalTilt({
+      image: await png(),
+      reader: {
+        region: async ({ image }) => {
+          calls += 1;
+          const meta = await sharp(image).metadata();
+          /* Refuse at full size; answer once the caller has cropped. */
+          if (meta.width === W && meta.height === H && calls <= 3) {
+            if (calls === 3) return upsweptEyes();
+            throw new Error("no eye at full frame");
+          }
+          const w = meta.width!;
+          const h = meta.height!;
+          const scaled = Buffer.alloc(w * h, 0);
+          const source = upsweptEyes();
+          for (let y = 0; y < h; y += 1) {
+            for (let x = 0; x < w; x += 1) {
+              const sx = Math.min(W - 1, Math.round((x / w) * W));
+              const sy = Math.min(H - 1, Math.round((y / h) * H));
+              scaled[y * w + x] = source.data[sy * W + sx];
+            }
+          }
+          return { data: scaled, width: w, height: h };
+        },
+      },
+    });
+    expect(reading, "the zone rung answered where the full frame would not").not.toBeNull();
   });
 });
