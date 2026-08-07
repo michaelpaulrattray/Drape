@@ -609,3 +609,45 @@ describe("the mask guards that are actually invoked", () => {
       .toBe("composited");
   });
 });
+
+/**
+ * A COMPOUND OVER TWO REGIONS REFUSES, because the alternative is delivering
+ * one of them and charging for both.
+ */
+describe("one harvest question per render, and it says so when asked for two", () => {
+  const master = () => png(() => [190, 188, 186]);
+  const painted = () => png((x, y) => (y < 20 ? [40, 30, 25] : [186, 184, 182]));
+  it("refuses two different regions by name", async () => {
+    await expect(harvestRefinement({
+      master: { bytes: await master(), contentType: "image/png" },
+      painted: { bytes: await painted(), contentType: "image/png" },
+      facets: ["eye.colour", "lips"],
+      reader,
+      userId: 1,
+    })).rejects.toThrow(/eyes and lips.*only harvest one region/s);
+  });
+
+  it("refuses a region edit bundled with an accessory", async () => {
+    await expect(harvestRefinement({
+      master: { bytes: await master(), contentType: "image/png" },
+      painted: { bytes: await painted(), contentType: "image/png" },
+      facets: ["lips", "statedAccessories"],
+      reader,
+      userId: 1,
+      described: "small gold hoops",
+    })).rejects.toThrow(/lips and the accessory/);
+  });
+
+  it("ALLOWS two facets that ask the SAME question — the common case", async () => {
+    /* A cut and a colour are one instruction about one region, and refusing
+       them would break the edits this path was built for. */
+    const result = await harvestRefinement({
+      master: { bytes: await master(), contentType: "image/png" },
+      painted: { bytes: await painted(), contentType: "image/png" },
+      facets: ["hair.cut", "hair.colour"],
+      reader,
+      userId: 1,
+    });
+    expect(result.outcome).toBe("composited");
+  });
+});

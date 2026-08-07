@@ -581,6 +581,38 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     return name;
   });
 
+  /*
+    A COMPOUND OVER TWO REGIONS IS REFUSED BY NAME, because today it is
+    delivered as one of them and charged as both.
+
+    The harvest asks ONE segmentation question. With "green eyes and fuller
+    lips" the zone is built from both regions and the harvest is taken for the
+    first, so every pixel of the second reverts to her master: **the lips edit is
+    discarded and the receipt says it happened.** Silent partial delivery is the
+    worst outcome available here — worse than a refusal, which costs only the
+    render, and worse than a wrong picture, which at least announces itself.
+
+    Two facets asking the SAME question are fine and common — `hair.cut` and
+    `hair.colour` both segment "hair" — so this counts DISTINCT questions rather
+    than facets. A region edit alongside an addition is refused for the same
+    reason: one harvest name cannot be both her lips and her earrings.
+
+    The real answer is multi-patch — a render and a harvest per region, composed
+    together, each independently retryable, which is exactly what D-233's makeup
+    ruling already describes ("a smoky eye and a nude lip is two renders, and
+    that is correct"). That is its own build on its own clock. Until it lands,
+    this says so instead of quietly dropping half the instruction.
+  */
+  const questions = Array.from(new Set(names));
+  if (questions.length > 1 || (questions.length > 0 && objects.length > 0)) {
+    const asked = [...questions, ...(objects.length > 0 ? ["the accessory"] : [])];
+    throw new MaskError(
+      `this instruction changes ${asked.join(" and ")}, and a masked edit can only harvest one `
+      + "region per render — asking for both would deliver one and charge for both; "
+      + "multi-region refinement is not built yet",
+    );
+  }
+
   const master: Raster = await readRaster(input.master.bytes);
   let painted: Raster = await readRaster(input.painted.bytes);
   if (painted.width !== master.width || painted.height !== master.height) {
