@@ -10,8 +10,10 @@ import {
   maskedEditingEnabledFor,
   needsLandmarkDestination,
   regionNameOf,
+  vacancyOf,
   type RegionReader,
 } from "./maskedRefine";
+import { coverage } from "./maskGeometry";
 import { allFacets } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
 import type { Mask } from "./maskedComposite";
@@ -195,5 +197,344 @@ describe("an addition is placed from landmarks, and scaled by her own face", () 
   it("gives the regionless facet none", () => {
     /* expression routes full-frame; a region prompt for it would be a lie. */
     expect(regionNameOf("expression")).toBeNull();
+  });
+});
+
+/**
+ * THE REVEAL — the harvest used to discard it, and a perfect render was undone.
+ *
+ * Proven on the founder's own specimen before any of this was written (exhibit
+ * 32): asked to tie her hair up, the painter produced a clean updo with bare
+ * shoulders, moving 19.2% and 18.1% of the two shoulder bands — and the
+ * composite moved 0.0% of them, because the revealed shoulder is not "hair" and
+ * nothing was harvested there. We charged for a render that was correct until we
+ * composited it.
+ *
+ * These drive the arithmetic with masks rather than with a painter, because a
+ * test of this that needs a real render to fire is a test of the render.
+ */
+describe("the reveal is harvested, and no instruction is ever classified", () => {
+  const zone = box(0, 0, W, H);
+
+  it("gives up territory the region has left — the shrink", async () => {
+    /* Hair down to row 40; the painter puts it up and it stops at row 20. */
+    const vacancy = await vacancyOf({
+      zone, masterRegion: box(20, 8, 44, 40), paintedRegion: box(20, 8, 44, 20), tolerancePx: 0,
+    });
+    /* The band between them is the shoulder she got back. */
+    expect(vacancy.data[30 * W + 32], "the revealed band is delivered from the painter").toBe(255);
+    expect(vacancy.data[14 * W + 32], "the hair that is still hair is not vacated").toBe(0);
+  });
+
+  it("gives up the WHOLE region when the painter removed the thing", async () => {
+    /* "Take her glasses off" — the segmenter finds none on the painted frame,
+       and nothing found is the answer rather than a failure. */
+    const vacancy = await vacancyOf({
+      zone, masterRegion: box(20, 8, 44, 28), paintedRegion: box(0, 0, 0, 0), tolerancePx: 0,
+    });
+    expect(coverage(vacancy)).toBeGreaterThan(0);
+    expect(vacancy.data[18 * W + 32], "the frames' own territory is given up whole").toBe(255);
+  });
+
+  /* --- the negative controls, so the term can be shown unable to fire --- */
+
+  it("NEGATIVE CONTROL — a grow vacates nothing at all", async () => {
+    /* The path a growth takes must be byte-for-byte the path it always took. */
+    const vacancy = await vacancyOf({
+      zone, masterRegion: box(20, 8, 44, 28), paintedRegion: box(12, 4, 52, 44), tolerancePx: 0,
+    });
+    expect(coverage(vacancy), "nothing was given up, so nothing is claimed").toBe(0);
+  });
+
+  it("NEGATIVE CONTROL — an unchanged silhouette vacates nothing", async () => {
+    /* A pure recolour. Same outline on both frames. */
+    const vacancy = await vacancyOf({
+      zone, masterRegion: box(20, 8, 44, 28), paintedRegion: box(20, 8, 44, 28), tolerancePx: 0,
+    });
+    expect(coverage(vacancy)).toBe(0);
+  });
+
+  it("NEGATIVE CONTROL — a jittering segmenter vacates nothing", async () => {
+    /*
+      Two segmentations of the same face on two frames do not agree pixel for
+      pixel. Without the tolerance every pixel they disagree on reads as vacated
+      territory, and a recolour would ship slivers of painter-background along an
+      unchanged hair edge.
+    */
+    const wobbled = await vacancyOf({
+      zone, masterRegion: box(20, 8, 44, 28), paintedRegion: box(22, 10, 42, 26), tolerancePx: 8,
+    });
+    expect(coverage(wobbled), "a boundary that wobbles a few pixels gives up nothing").toBe(0);
+
+    const withoutTolerance = await vacancyOf({
+      zone, masterRegion: box(20, 8, 44, 28), paintedRegion: box(22, 10, 42, 26), tolerancePx: 0,
+    });
+    expect(coverage(withoutTolerance), "and the control proves the tolerance is what did it")
+      .toBeGreaterThan(0);
+  });
+
+  it("NEGATIVE CONTROL — the tolerance cannot swallow a real reveal", async () => {
+    /* The guard has to be shown to stop guarding somewhere, or it is a guard
+       that would swallow the defect it was written beside. */
+    const vacancy = await vacancyOf({
+      zone, masterRegion: box(20, 8, 44, 40), paintedRegion: box(20, 8, 44, 20), tolerancePx: 8,
+    });
+    expect(coverage(vacancy), "a shoulder is orders of magnitude wider than the wobble")
+      .toBeGreaterThan(0);
+  });
+
+  it("can never claim a pixel the zone does not already allow", async () => {
+    /* The outer bound holds for this term exactly as it holds for the harvest —
+       the reveal widens what is DELIVERED inside the zone, never the zone. */
+    const vacancy = await vacancyOf({
+      zone: box(20, 8, 44, 20),
+      masterRegion: box(20, 8, 44, 40),
+      paintedRegion: box(0, 0, 0, 0),
+      tolerancePx: 0,
+    });
+    expect(vacancy.data[30 * W + 32], "outside the zone, nothing is claimed").toBe(0);
+    expect(vacancy.data[14 * W + 32], "inside it, the reveal stands").toBe(255);
+  });
+});
+
+/**
+ * An accessory's harvest question comes from the INSTRUCTION, like its landmark.
+ *
+ * The second half of the same table, and it was missing: the harvest name fell
+ * back to the literal string "earring" whenever no facet was segmentable, which
+ * is every pure accessory edit. So an ask about GLASSES harvested wherever her
+ * earrings were — the exact defect `landmarkNameOf` exists to prevent, one field
+ * away in the same rows.
+ */
+describe("an accessory is harvested by what it IS", () => {
+  /**
+   * ONE ROW PER OBJECT TYPE, so no single case can ever be the only witness.
+   *
+   * The defect this matrix exists for is the placeholder-turned-load-bearing
+   * class: the harvest name was a literal `"earring"` fallback, which was true
+   * for the only case anyone had driven and silent about being scaffolding.
+   * Earrings were the only witness, so earrings were the only thing that worked.
+   */
+  const OBJECTS = [
+    { described: "small gold hoops", region: "earring", landmark: "earlobe" },
+    { described: "thin wire glasses", region: "glasses", landmark: "eye" },
+    { described: "a small nose stud", region: "nose stud", landmark: "nose" },
+  ];
+
+  const askedFor = async (described: string) => {
+    const asked: string[] = [];
+    const naming: RegionReader = {
+      region: async ({ name }) => { asked.push(name); return box(20, 8, 44, 28); },
+      subject: async () => box(16, 6, 48, 60),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+    await harvestRefinement({
+      master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+      painted: { bytes: await png((x, y) => (y < 30 ? [40, 30, 25] : [188, 186, 184])), contentType: "image/png" },
+      facets: ["statedAccessories"],
+      reader: naming,
+      userId: 1,
+      described,
+    }).catch(() => undefined);
+    return asked;
+  };
+
+  for (const object of OBJECTS) {
+    it(`asks about ${object.region}, because that is what the instruction named`, async () => {
+      const asked = await askedFor(object.described);
+      expect(asked, `"${object.described}" is a question about ${object.region}`).toContain(object.region);
+      for (const other of OBJECTS) {
+        if (other.region === object.region) continue;
+        expect(asked, `and never about ${other.region}`).not.toContain(other.region);
+      }
+    });
+
+    it(`anchors ${object.region} on its own landmark`, () => {
+      expect(landmarkNameOf("statedAccessories", object.described)).toBe(object.landmark);
+    });
+  }
+
+  it("REFUSES ink by name rather than defaulting it into somebody else's row", async () => {
+    /* "Left forearm" is not a facial landmark. The refusal is the feature — a
+       default here would place a sleeve on her earlobe. */
+    await expect(harvestRefinement({
+      master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+      painted: { bytes: await png(() => [40, 30, 25]), contentType: "image/png" },
+      facets: ["ink"],
+      reader,
+      userId: 1,
+      described: "a sleeve on her left forearm",
+    })).rejects.toThrow(/no landmark/);
+  });
+
+  it("REFUSES an object nobody has a row for, rather than picking the first one", async () => {
+    await expect(harvestRefinement({
+      master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+      painted: { bytes: await png(() => [40, 30, 25]), contentType: "image/png" },
+      facets: ["statedAccessories"],
+      reader,
+      userId: 1,
+      described: "a silver anklet",
+    })).rejects.toThrow(/no landmark/);
+  });
+});
+
+/**
+ * NO QUIET DEFAULTS IN A DISPATCH OVER FACETS (founder rider, 2026-08-07).
+ *
+ * The zone builder was `isDistributed(facet) ? dilate(region, 48) : region` — a
+ * five-valued scope table collapsed to a boolean, so three classes shared one
+ * branch written for one of them. `allSkin` was the silent casualty.
+ */
+describe("every zone scope is handled by name, or refuses by name", () => {
+  it("refuses a skin-spanning facet instead of quietly scoping it to her face", async () => {
+    /* zoneScope.ts: "scoping a tan to the face manufactures a body mismatch".
+       The adapter can only ask about "face skin", so it says so and refunds
+       rather than delivering a face that does not match her neck. */
+    await expect(harvestRefinement({
+      master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+      painted: { bytes: await png(() => [150, 120, 95]), contentType: "image/png" },
+      facets: ["skinTone"],
+      reader,
+      userId: 1,
+    })).rejects.toThrow(/visible skin/);
+  });
+
+  it("still builds a zone for every scope class that IS implemented", async () => {
+    /* The control: the refusal above must be about allSkin specifically, not a
+       builder that refuses everything. */
+    for (const facet of ["hair.cut", "eye.colour", "lips"] as const) {
+      const result = await harvestRefinement({
+        master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+        painted: { bytes: await png((x, y) => (y < 30 ? [40, 30, 25] : [188, 186, 184])), contentType: "image/png" },
+        facets: [facet],
+        reader,
+        userId: 1,
+      });
+      expect(result.outcome, `${facet} composites`).toBe("composited");
+    }
+  });
+});
+
+/**
+ * THE REVEAL, END TO END — asserted on the DELIVERED PIXELS, never on an
+ * intermediate mask.
+ *
+ * The first version of this checked `explain.vacated` and **survived having the
+ * whole vacancy term deleted**, because that intermediate is computed either
+ * way. A test of a claim that never reaches the picture is the invoked-but-inert
+ * class wearing a green tick. What the user gets is the composite, so that is
+ * what is measured.
+ */
+describe("the reveal fires on a shrink and is structurally empty on a grow", () => {
+  const HAIR: [number, number, number] = [40, 30, 25];
+  const SHIRT: [number, number, number] = [190, 188, 186];
+  /* The painter's reconstruction of the shirt — near hers, not identical, which
+     is what a reconstruction actually is. */
+  const PLATE: [number, number, number] = [176, 174, 172];
+  const inBlock = (x: number, y: number, y1: number) => x >= 20 && x < 44 && y >= 8 && y < y1;
+
+  const twoFrameReader = (masterBytes: Buffer, onMaster: Mask, onPainted: Mask): RegionReader => ({
+    region: async ({ image }) => (Buffer.compare(image, masterBytes) === 0 ? onMaster : onPainted),
+    subject: async () => box(0, 0, W, H),
+    landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+  });
+
+  /** What the composite actually put at one pixel. */
+  const pixelAt = async (bytes: Buffer, x: number, y: number) => {
+    const { data } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const at = (y * W + x) * 3;
+    return [data[at], data[at + 1], data[at + 2]] as [number, number, number];
+  };
+
+  it("DELIVERS the painter's plate where a shrinking region gave up its territory", async () => {
+    /* Her hair runs to row 40; the painter puts it up and it stops at row 20.
+       Rows 20-40 are the shoulder she got back. */
+    const masterBytes = await png((x, y) => (inBlock(x, y, 40) ? HAIR : SHIRT));
+    const paintedBytes = await png((x, y) => (inBlock(x, y, 20) ? HAIR : PLATE));
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: ["hairWorn"],
+      reader: twoFrameReader(masterBytes, box(20, 8, 44, 40), box(20, 8, 44, 20)),
+      userId: 1,
+    });
+
+    const revealed = await pixelAt(result.bytes, 32, 30);
+    /* THE WHOLE POINT: before the fix this was her old hair, at full strength,
+       on top of a render that had correctly taken it off. */
+    expect(revealed[0], "the revealed shoulder is the painter's, not her old ponytail")
+      .toBeGreaterThan(140);
+    expect(Math.abs(revealed[0] - PLATE[0]), "and it is the plate, closely").toBeLessThan(20);
+  });
+
+  it("NEGATIVE CONTROL — a grow leaves her surface alone outside the harvest", async () => {
+    /*
+      The half that protects everything that already worked. The projection would
+      otherwise fire on a growth — her shirt against a NEW head of hair projects
+      onto (old hair - new hair) perfectly well — and hand the painter's frame to
+      territory the harvest gate is meant to govern.
+
+      Her hair runs to row 28; the painter gives her more, to row 44. Row 50 is
+      shirt on BOTH frames and the painter repainted it, as painters do. It must
+      still be hers.
+    */
+    const masterBytes = await png((x, y) => (inBlock(x, y, 28) ? HAIR : SHIRT));
+    const paintedBytes = await png((x, y) => (x >= 12 && x < 52 && y >= 4 && y < 44 ? HAIR : PLATE));
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: ["hairWorn"],
+      reader: twoFrameReader(masterBytes, box(20, 8, 44, 28), box(12, 4, 52, 44)),
+      userId: 1,
+      explain: true,
+    });
+
+    expect(coverage(result.explain!.vacated), "nothing was given up, so nothing is claimed").toBe(0);
+    const untouched = await pixelAt(result.bytes, 32, 50);
+    expect(untouched, "her repainted shirt below the new hair is still hers").toEqual(SHIRT);
+  });
+
+  it("leaves her surface alone when hair grows nearly her own colour", async () => {
+    /*
+      The projection divides by |old strand - painted|, so hair grown close to
+      the colour she already had collapses that denominator and a faint
+      alignment can scale to full alpha. This drives that case and asserts the
+      outcome that matters — her shirt is still hers.
+
+      **HONEST LIMIT ON THIS FIXTURE:** it does NOT demonstrate that the fence on
+      the departed term is what prevents it. Removing the fence leaves this green,
+      because at 64x64 the frame-fraction reaches collapse to about ten pixels and
+      nothing is within range to leak. The fence is kept as reasoned insurance
+      that costs the shrink nothing (measured: shoulder bands identical with and
+      without it), not as a control this suite has driven red. Marked so nobody
+      later reads a green tick here as evidence it was needed.
+    */
+    const masterBytes = await png((x, y) => (inBlock(x, y, 28) ? HAIR : SHIRT));
+    const paintedBytes = await png((x, y) =>
+      (x >= 12 && x < 52 && y >= 4 && y < 44 ? [34, 24, 19] : PLATE));
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: ["hairWorn"],
+      reader: twoFrameReader(masterBytes, box(20, 8, 44, 28), box(12, 4, 52, 44)),
+      userId: 1,
+      explain: true,
+    });
+    expect(coverage(result.explain!.vacated), "a growth gives up nothing").toBe(0);
+    const shirt = await pixelAt(result.bytes, 32, 55);
+    expect(shirt, "and her shirt well below the new hair is untouched").toEqual(SHIRT);
+  });
+
+  it("keeps its working to itself unless a fixture asks for it", async () => {
+    const masterBytes = await png(() => SHIRT);
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: await png((x, y) => (y < 20 ? HAIR : PLATE)), contentType: "image/png" },
+      facets: ["hairWorn"],
+      reader,
+      userId: 1,
+    });
+    expect(result.explain, "the product path allocates none of it").toBeUndefined();
   });
 });

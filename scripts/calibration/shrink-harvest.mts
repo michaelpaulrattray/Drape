@@ -26,7 +26,7 @@
  */
 import "dotenv/config";
 import sharp from "sharp";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createFalMaskedEditEngine } from "../../server/providers/falImages";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
@@ -50,14 +50,35 @@ const PROMPT = "Edit this photograph of this exact person, changing ONLY what is
   + "off the shoulders and away from the neck entirely — the same hair, restyled upward, "
   + "not cut and not a different head of hair.";
 
-const began = Date.now();
-const painted = await engine.edit({
-  prompt: PROMPT,
-  references: [{ bytes: master, contentType: "image/png" }],
-  width: meta.width!, height: meta.height!,
-});
-writeFileSync(`${OUT}/painted.png`, painted.bytes);
-console.log(`painted in ${((Date.now() - began) / 1000).toFixed(1)}s`);
+/*
+  THE PAINTED FRAME IS THE FIXTURE, AND IT IS KEPT.
+
+  This started as a one-render diagnosis and is now the regression test for the
+  fix it proved the need for. Re-painting to check a COMPOSITING change would
+  vary the one thing that must be held still: the painter is stochastic, so a
+  fresh render would leave "did the fix work" and "did the painter do the job
+  this time" inseparable — which is precisely the ambiguity that made the
+  original specimen undiagnosable and the reason the painted frame is saved at
+  all. So by default this re-composites the STORED paint, for free.
+
+  `--repaint` takes a fresh one, for when the question really is about the paint.
+*/
+const repaint = process.argv.includes("--repaint");
+let painted: { bytes: Buffer; contentType: string };
+if (repaint || !existsSync(`${OUT}/painted.png`)) {
+  const began = Date.now();
+  const fresh = await engine.edit({
+    prompt: PROMPT,
+    references: [{ bytes: master, contentType: "image/png" }],
+    width: meta.width!, height: meta.height!,
+  });
+  writeFileSync(`${OUT}/painted.png`, fresh.bytes);
+  painted = { bytes: fresh.bytes, contentType: fresh.contentType };
+  console.log(`painted in ${((Date.now() - began) / 1000).toFixed(1)}s`);
+} else {
+  painted = { bytes: readFileSync(`${OUT}/painted.png`), contentType: "image/png" };
+  console.log("re-composited the STORED paint — the painter is held still (--repaint to take a fresh one)");
+}
 
 const composed = await harvestRefinement({
   master: { bytes: master, contentType: "image/png" },
@@ -66,9 +87,24 @@ const composed = await harvestRefinement({
   reader,
   userId: 1,
   described: "gathered up and fastened at the back of the head",
+  /* Return the working. A fixture that inspects the adapter's OWN masks cannot
+     drift from the adapter, which is exactly what a rebuilt harness does. */
+  explain: true,
 });
 writeFileSync(`${OUT}/composed.png`, composed.bytes);
 console.log("composed through the product's own adapter\n");
+
+/* Every term as its own picture. `applied` is canonical — the only boundary
+   source that cannot disagree with the composite. */
+for (const [name, mask] of Object.entries(composed.explain ?? {})) {
+  writeFileSync(`${OUT}/mask-${name}.png`, await sharp(mask.data, {
+    raw: { width: mask.width, height: mask.height, channels: 1 },
+  }).png().toBuffer());
+  let sum = 0;
+  for (let i = 0; i < mask.data.length; i += 1) sum += mask.data[i];
+  console.log(`  ${name.padEnd(10)} ${((sum / (mask.data.length * 255)) * 100).toFixed(2)}% of frame, alpha-weighted`);
+}
+console.log();
 
 /* Where did each half move, in bands? The crown and the shoulder are the two
    places that tell the story apart. */

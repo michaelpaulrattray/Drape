@@ -114,26 +114,42 @@ export function createFalRegionReader(input: {
   };
 
   return {
-    async region({ image, name }) {
+    async region({ image, name, absentIsAnswer }) {
+      /*
+        AN EMPTY ANSWER MEANS TWO DIFFERENT THINGS, and which one is the
+        CALLER's to know.
+
+        Asked of the master about a region the record says is there, nothing
+        found is a question this model could not answer, and composing on it
+        would deliver "nothing changed" at full price. Asked of the PAINTED
+        frame after *"take her glasses off"*, nothing found is the painter
+        having done exactly what was asked — and refusing it would charge her
+        for the picture she already had, which is the worse of the two errors
+        this whole path exists to prevent.
+      */
+      const absent = async (): Promise<Mask> => {
+        if (!absentIsAnswer) throw new MaskError(`the segmenter found no ${name} to edit`);
+        const sharp = (await import("sharp")).default;
+        const meta = await sharp(image).metadata();
+        const width = meta.width ?? 0;
+        const height = meta.height ?? 0;
+        if (!width || !height) throw new MaskError(`cannot size an empty ${name} mask for this image`);
+        log.debug({ name }, "[falRegionReader] nothing there, and nothing there is the answer");
+        return { data: Buffer.alloc(width * height, 0), width, height };
+      };
+
       if (BILATERAL.has(name)) {
         const sides = await Promise.all([
           askRegion(image, `left ${name === "eyes" ? "eye" : name.replace(/s$/, "")}`),
           askRegion(image, `right ${name === "eyes" ? "eye" : name.replace(/s$/, "")}`),
         ]);
         const found = sides.filter((mask): mask is Mask => mask !== null);
-        if (found.length === 0) {
-          throw new MaskError(`the segmenter found no ${name} to edit`);
-        }
+        if (found.length === 0) return absent();
         const { unionMasks } = await import("./maskGeometry");
         return found.length === 1 ? found[0] : unionMasks(...found);
       }
       const mask = await askRegion(image, name);
-      if (!mask) {
-        /* An empty answer is not an empty region — it is a question this model
-           could not answer, and composing on it would deliver "nothing changed"
-           at full price. */
-        throw new MaskError(`the segmenter found no ${name} to edit`);
-      }
+      if (!mask) return absent();
       return mask;
     },
 
