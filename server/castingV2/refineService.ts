@@ -1175,7 +1175,20 @@ export async function refineCandidate(
   if (!answered && isUpsweptAsk(composed.eyeShape) && maskedEditingEnabledFor(input.userId)) {
     const reading = await (async () => {
       try {
-        const bytes = await (dependencies.readBytes ?? storageReadBytes)(source.candidate.imageKey!);
+        /*
+          THE FACE SHE IS ACTUALLY LOOKING AT, not the one she started from.
+
+          This read `source.candidate.imageKey` — her BASE — while the removal
+          path three hundred lines above reads `source.imageKey ?? …` and says
+          in as many words that asking the wrong picture is "the
+          record-versus-pixels mistake wearing a new hat". This gate shipped
+          the same day and made it anyway: on a chain that had already changed
+          her eyes, it would measure the tilt of a face nobody is looking at
+          and refuse — or fail to refuse — on the strength of it.
+        */
+        const bytes = await (dependencies.readBytes ?? storageReadBytes)(
+          source.imageKey ?? source.candidate.imageKey,
+        );
         return await readCanthalTilt({ image: bytes.bytes, reader: dependencies.regions ?? defaultRegionReader() });
       } catch (error) {
         /* An instrument that cannot answer must not be able to refuse. */

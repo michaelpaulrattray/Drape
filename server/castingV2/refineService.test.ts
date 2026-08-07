@@ -436,6 +436,67 @@ describe("refusals land before anything is claimed", () => {
     expect(journal).not.toContain("begin");
   });
 
+  it("measures the face she is LOOKING at, not the one she started from", async () => {
+    /*
+      ASSERTED AT THE WIRE, because the contract is about which picture gets
+      read and a constant near it proves nothing.
+
+      This gate shipped reading `source.candidate.imageKey` — her base — while
+      the removal path three hundred lines above reads the SELECTED face and
+      says outright that asking the wrong picture is "the record-versus-pixels
+      mistake wearing a new hat". On a chain that has already changed her eyes,
+      the base is a face nobody is looking at, and the gate would decide whether
+      to charge her on the strength of it.
+    */
+    variantRows.push({
+      id: 91,
+      publicId: "variant-selected",
+      imageKey: "casting-v2/variants/she-is-looking-at-this.png",
+      instructions: ["icy blue eyes"],
+      stepDeltas: [{ eyeColour: "blue" }],
+      deltas: { eyeColour: "blue" },
+      internalPrompt: {},
+    } as never);
+    candidateRow.selectedVariantPublicId = "variant-selected";
+
+    /*
+      The two faces are told apart by their SIZE, not by the key that was
+      asked for: another read happens earlier in this function for a different
+      purpose, so asserting on "the first key requested" would measure that one
+      instead. What the gate segments is the thing under test.
+    */
+    const sharp = (await import("sharp")).default;
+    const base = await sharp({ create: { width: 40, height: 40, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+    const looking = await sharp({ create: { width: 60, height: 60, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    const segmented: number[] = [];
+    await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async (key: string) => ({
+          bytes: key.includes("she-is-looking-at-this") ? looking : base,
+          contentType: "image/png",
+        }),
+        regions: {
+          region: async ({ image }: { image: Buffer }) => {
+            segmented.push((await sharp(image).metadata()).width ?? 0);
+            throw new Error("no eyes — the gate stands down, which this test is not about");
+          },
+          subject: async () => { throw new Error("no subject"); },
+          landmark: async () => [],
+        } as never,
+      },
+      { ...input, instruction: "fox eyes" },
+    ).catch(() => undefined);
+
+    expect(segmented[0], "the gate measured her base instead of her selected face").toBe(60);
+    candidateRow.selectedVariantPublicId = null;
+    variantRows.pop();
+  });
+
   it("still SPENDS when the instrument cannot read her — silence never refuses", async () => {
     /*
       The asymmetry, at the call site. A gate that refuses on a no-read would
