@@ -32,6 +32,48 @@
  *
  * Exits non-zero unless every step delivered compliantly, so two consecutive
  * green runs are a fact rather than a recollection.
+ *
+ * # ⚠ PREREQUISITE, NOT YET BUILT: step two cannot pass until the already-true
+ * gate has a CALL SITE
+ *
+ * The walk candidate measures 7.2 degrees of canthal tilt. "Fox eyes" on her is
+ * an ask for a property she already has, and the founder's ruling is that the
+ * correct behaviour — and step two's pass criterion — is the already-true gate
+ * firing a FREE question: *"Her eyes already sweep up at the outer corners —
+ * push them further?"*
+ *
+ * `upsweptReAsk` in `castingV2/eyeShapeRouting` is built and unit-tested, and
+ * **nothing calls it.** That is the invoked-but-inert class this program has
+ * catalogued a dozen times, and running the walk against it would measure a
+ * behaviour that does not exist: step two would spend 25 credits, render an
+ * unchanged-looking face, and be scored by whatever the reader felt about it.
+ *
+ * Wiring it needs three things, all on the refine path before the charge:
+ *   1. the candidate's current image, which that path already holds
+ *   2. a tilt reading via BOTH rungs of the ladder (see `canthalTilt` — a
+ *      no-read is evidence, not absence, and a single rung is biased)
+ *   3. the ask's DIRECTION, so the gate fires on an upswept request and not on
+ *      "downturned" or "hooded", which are different asks entirely
+ *
+ * Until that lands, this driver's step two is measuring the old behaviour.
+ *
+ * # THE CLASS SWEEP — this driver's second campaign (founder, 2026-08-07)
+ *
+ * Ordered as the walk's immediate successor, and the standing bot's first real
+ * campaign rather than someday. Once the five-step walk passes twice and summons
+ * the founder, the SAME harness runs one canonical ask per routable facet class,
+ * into the same per-class table, browser-level, inside a renewed ceiling:
+ *
+ *   deliverable   hair colour · hair cut · hair worn · lips · brows ·
+ *                 makeup variants · nose piercing (the anchor exists) ·
+ *                 glasses-add
+ *   refusals      skin tone and body ink, verified as REFUSING CORRECTLY —
+ *                 a class that routes honestly is a pass, not an omission
+ *
+ * The two gates are different and must not be confused: **the founder's walk
+ * gates the founder's moment; the class sweep gates any scope beyond the
+ * founder.** No account past `users:1` moves until the sweep's table clears the
+ * bar per class, or the class is honestly routed.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
