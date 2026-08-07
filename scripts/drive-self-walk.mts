@@ -155,7 +155,33 @@ async function trpcQuery(path: string, input: unknown): Promise<any> {
   return body?.result?.data?.json;
 }
 
-async function locateCandidate(): Promise<{ sessionId: string; indexLabel: string }> {
+type Located = {
+  sessionId: string;
+  /** Kept so her CURRENT face can be re-asked for before every step. */
+  rollId: string;
+  /** The rail pill to press. A sheet shows its ACTIVE roll, not every roll. */
+  rollIndex: number;
+  rollLabel: string;
+  indexLabel: string;
+  /**
+   * Her own picture — the only thing on the sheet that identifies HER.
+   *
+   * The first version of this walked to `View candidate 08 larger` and clicked
+   * whatever wore that label. Every roll has an eighth face, the sheet was
+   * showing a different roll, and so all nine paid renders landed on a
+   * different woman at the same position — a face nobody had asked for, with
+   * its own history, on which "no freckles" and "glasses still on" were then
+   * recorded as findings about the walk candidate.
+   *
+   * A label is a coordinate; an image key is an identity. Matching on the
+   * coordinate is the same mistake as scoping a write by id and checking the
+   * owner separately, and it deserves the same fix: ask the question about the
+   * thing itself.
+   */
+  imageUrl: string;
+};
+
+async function locateCandidate(): Promise<Located> {
   const sessions = await trpcQuery("castingV2.openSessions", {});
   for (const session of sessions ?? []) {
     const detail = await trpcQuery("castingV2.getSession", { sessionId: session.sessionId });
@@ -164,7 +190,18 @@ async function locateCandidate(): Promise<{ sessionId: string; indexLabel: strin
       const found = (projection?.candidates ?? []).find(
         (candidate: any) => candidate.candidateId === CANDIDATE,
       );
-      if (found) return { sessionId: session.sessionId, indexLabel: found.indexLabel };
+      if (!found) continue;
+      if (!found.imageUrl) {
+        throw new Error(`candidate ${CANDIDATE} has no image — there is nothing to identify her by`);
+      }
+      return {
+        sessionId: session.sessionId,
+        rollId: roll.rollId,
+        rollIndex: roll.rollIndex,
+        rollLabel: String(roll.rollIndex).padStart(2, "0"),
+        indexLabel: found.indexLabel,
+        imageUrl: found.imageUrl,
+      };
     }
   }
   throw new Error(
@@ -175,8 +212,29 @@ async function locateCandidate(): Promise<{ sessionId: string; indexLabel: strin
 
 console.log(`SELF-DRIVE WALK — ${WALK.length} steps on candidate ${CANDIDATE}`);
 console.log(`base ${BASE}`);
-const { sessionId, indexLabel } = await locateCandidate();
-console.log(`sheet ${sessionId} · candidate ${indexLabel} — session verified live`);
+const { sessionId, rollId, rollIndex, rollLabel, indexLabel, imageUrl } = await locateCandidate();
+
+/**
+ * The picture her TILE is wearing right now.
+ *
+ * A tile shows the candidate's currently selected face, so it changes the
+ * moment this walk selects a new version — pinning the identity to the picture
+ * found at startup would work for step one and silently miss her from step two
+ * onward, which is the same coordinate-versus-identity error one layer along.
+ * So it is re-asked, from the server, immediately before each open.
+ */
+async function currentFaceKey(): Promise<string> {
+  const projection = await trpcQuery("castingV2.getRoll", { rollId });
+  const found = (projection?.candidates ?? []).find((c: any) => c.candidateId === CANDIDATE);
+  const url: string | null = found?.imageUrl ?? null;
+  if (!url) throw new Error(`candidate ${CANDIDATE} no longer has a face on roll ${rollLabel}`);
+  return url.slice(url.lastIndexOf("/") + 1);
+}
+console.log(
+  `sheet ${sessionId} · roll ${rollLabel} (index ${rollIndex}) · candidate ${indexLabel}`
+  + `
+identified by her own picture: ${imageUrl.slice(imageUrl.lastIndexOf("/") + 1)}`,
+);
 const paidSteps = WALK.filter((step) => step.expects === "delivered").length;
 console.log(`cost if it runs: ${paidSteps * 25} credits (${paidSteps} paid, ${WALK.length - paidSteps} free)\n`);
 for (const [index, step] of WALK.entries()) {
@@ -222,15 +280,49 @@ async function openViewer(): Promise<void> {
   await page.goto(`${BASE}/casting/s/${sessionId}`, { waitUntil: "networkidle2" });
   await page.waitForSelector(".dpc-card", { timeout: 60_000 });
 
-  const label = `View candidate ${indexLabel} larger`;
-  const opened = await page.evaluate((wanted) => {
-    const button = Array.from(document.querySelectorAll<HTMLElement>(".dpc-card__open"))
-      .find((node) => node.getAttribute("aria-label") === wanted);
-    if (!button) return false;
-    button.click();
-    return true;
-  }, label);
-  if (!opened) throw new Error(`no tile offering "${label}" — the sheet is not showing her`);
+  /*
+    HER ROLL FIRST. The sheet opens on the ACTIVE roll and the rail is how every
+    earlier one stays reachable — free navigation, no server call.
+  */
+  const railed = await page.evaluate((wanted) => {
+    const rail = Array.from(document.querySelectorAll<HTMLElement>(".dpc-rollrail__item"));
+    if (rail.length === 0) return "no rail — this sheet has one roll";
+    const pill = rail.find((node) => node.innerText.trim().startsWith(wanted));
+    if (!pill) return `no rail pill for roll ${wanted}`;
+    if (pill.getAttribute("aria-selected") === "true") return "already showing her roll";
+    pill.click();
+    return "switched to her roll";
+  }, rollLabel);
+  await page.waitForSelector(".dpc-card", { timeout: 30_000 });
+
+  /*
+    AND THEN HER, BY HER OWN PICTURE.
+
+    `View candidate 08 larger` is a coordinate, not a name — every roll has an
+    eighth face, and clicking that label on the wrong roll is how nine paid
+    renders were made of a woman nobody had asked for. The tile carrying HER
+    image is the only tile that is her.
+  */
+  const key = await currentFaceKey();
+  const opened = await page.evaluate((wantedKey) => {
+    for (const card of Array.from(document.querySelectorAll<HTMLElement>(".dpc-card"))) {
+      const img = card.querySelector<HTMLImageElement>("img");
+      if (!img || !img.src.includes(wantedKey)) continue;
+      const button = card.classList.contains("dpc-card__open")
+        ? card
+        : card.querySelector<HTMLElement>(".dpc-card__open");
+      if (!button) return "her tile has no open control";
+      button.click();
+      return "opened";
+    }
+    return "not on this sheet";
+  }, key);
+  if (opened !== "opened") {
+    throw new Error(
+      `could not open the walk candidate by her own picture (${opened}; rail: ${railed}). `
+      + "Refusing to spend on whoever happens to be at the same position.",
+    );
+  }
   await page.waitForSelector(".dpc-viewer", { timeout: 20_000 });
 
   /*
