@@ -23,7 +23,10 @@ export async function openDrivenPage(input: {
   width?: number;
   height?: number;
 }): Promise<{ browser: Browser; page: Page }> {
-  const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new" });
+  /* `true`, not `"new"` — puppeteer-core dropped that string and its type says
+     so. It ran anyway, which is why it survived: the scripts tree was not in
+     any typecheck, so nothing ever read the type. */
+  const browser = await puppeteer.launch({ executablePath: EDGE, headless: true });
   const page = await browser.newPage();
   await page.setViewport({ width: input.width ?? 1440, height: input.height ?? 900 });
   const { hostname } = new URL(input.base);

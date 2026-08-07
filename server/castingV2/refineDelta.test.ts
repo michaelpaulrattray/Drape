@@ -325,7 +325,7 @@ describe("accessories are refinable; garments and headwear are not", () => {
     */
     const prompt = composeEditPrompt({ free: { statedAccessories: "small gold hoops" } }, prose);
     expect(prompt).toContain("ACCESSORIES: small gold hoops");
-    expect(prompt).toMatch(/fails to appear is a failed render/);
+    expect(prompt).toMatch(/does not appear at all is a failed render/);
     /* And the part that is still the accessory class's own. */
     expect(prompt).toContain("Nothing else is added");
   });
@@ -346,7 +346,7 @@ describe("the free lane composes under its registered headings", () => {
       test comes to defend a defect.
     */
     expect(prompt).toContain("BROWS: thick and straight,");
-    expect(prompt).toMatch(/BROWS: thick and straight,[^.]*fails to appear is a failed render/);
+    expect(prompt).toMatch(/BROWS: thick and straight,[^.]*does not appear at all is a failed render/);
     /* Ink is the declared exemption: its items carry their own placement
        clauses, so its heading is still followed by the words alone. */
     expect(prompt).toContain("INK: a small rose on her neck.");

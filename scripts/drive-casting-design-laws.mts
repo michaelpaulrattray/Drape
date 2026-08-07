@@ -501,7 +501,7 @@ async function auditSurface(page: Page, url: string, where: string, waitFor?: st
   if (OPTIMISTIC && where.includes("sheet")) await assertOptimisticChrome(page, where);
 }
 
-const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new" });
+const browser = await puppeteer.launch({ executablePath: EDGE, headless: true });
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 900 });
 const { hostname } = new URL(BASE);

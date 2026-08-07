@@ -14,7 +14,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "architecture:generate": "tsx scripts/generate-architecture.mts",
-    "architecture:check": "tsx scripts/check-architecture.mts"
+    "architecture:check": "tsx scripts/check-architecture.mts",
+    "check:scripts": "tsc --noEmit -p tsconfig.scripts.json"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.984.0",

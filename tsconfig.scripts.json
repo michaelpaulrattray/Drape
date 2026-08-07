@@ -1,0 +1,12 @@
+{
+  "//": "THE SCRIPTS TREE, which tsconfig.json does not include. Every 'typecheck clean' run against the main config silently skipped scripts/ — the walk driver, the calibration fixtures and the refund script were only ever validated by running them, which is a poor place to discover a typo in a money script. Scripts are .mts run by tsx as ESM, so top-level await and modern iteration are legal here even though the app's own module setting forbids them. Server and shared come along because scripts import them.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2022",
+    "lib": ["es2023", "dom"],
+    "moduleResolution": "bundler",
+    "noEmit": true
+  },
+  "include": ["scripts/**/*", "server/**/*", "shared/**/*"]
+}

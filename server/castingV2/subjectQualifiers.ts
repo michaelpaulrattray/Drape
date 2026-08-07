@@ -44,17 +44,25 @@
 import { FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
 
 /**
- * The floor. Two promises, both of which the accessory clause already made and
- * the other twenty-two did not: it belongs to THIS person, and failing to
- * appear is a failure rather than a style choice.
+ * The floor. Two promises: it belongs to THIS person, and not appearing at all
+ * is a failure rather than a style choice.
  *
- * Kept as one constant so a class can never be armed with weaker teeth than
- * its neighbour — the difference between classes should be description, never
- * how seriously the ask is taken.
+ * **It enforces EXISTENCE, never PROMINENCE, and the difference is the whole
+ * point** (founder ruling, 2026-08-07). This constant shipped saying "plainly
+ * visible at a normal viewing distance", which is an amplitude instruction: a
+ * user asking for *light* freckles would have had the qualifier arguing against
+ * her own adjective, and the render inflated past what she asked for. Her words
+ * are the spec — the floor may insist the thing is THERE and may not decide how
+ * much of it there is.
+ *
+ * Kept as one constant so a class can never be armed with weaker teeth than its
+ * neighbour — the difference between classes should be description, never how
+ * seriously the ask is taken.
  */
 export const TEETH =
-  ", rendered on this person's own face and plainly visible at a normal viewing "
-  + "distance — a change that fails to appear is a failed render";
+  ", rendered on this person's own face and present exactly as asked — at the "
+  + "strength their own words describe, neither weaker nor stronger — and a change "
+  + "that does not appear at all is a failed render";
 
 export type SubjectQualifier =
   /** Wording specific to the class, which the floor is appended to. */
@@ -94,8 +102,10 @@ export const SUBJECT_QUALIFIER: Record<FreeSubject, SubjectQualifier> = {
   skinTone: { describe: ", across all of this person's visible skin, evenly and consistently" },
   skinCharacter: { describe: ", as the skin's own surface — texture that follows the form of the face rather than sitting flat on it" },
   marks: {
+    /* "dense enough to read as theirs" was here and had to go: density is
+       amplitude, and a request for a few freckles is not a request for many. */
     describe: ", as real marks on this person's own skin, following the form of the "
-      + "face rather than painted flat, and dense enough to read as theirs",
+      + "face rather than painted flat",
   },
   statedAccessories: {
     /* The licence, carried (D-160). The cohort constant gives stated accessories

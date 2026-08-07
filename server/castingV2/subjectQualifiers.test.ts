@@ -41,7 +41,47 @@ describe("every subject is armed, and the map cannot drift from the vocabulary",
        not. Asserted on the FLOOR itself, so tuning a class's own wording can
        never quietly weaken them. */
     expect(TEETH).toMatch(/this person's own face/);
-    expect(TEETH).toMatch(/fails to appear is a failed render/);
+    expect(TEETH).toMatch(/does not appear at all is a failed render/);
+  });
+
+  it("enforces EXISTENCE and never PROMINENCE — anywhere in the table", () => {
+    /*
+      FOUNDER RULING, 2026-08-07, and it caught this module's own first version.
+
+      The floor shipped saying "plainly visible at a normal viewing distance"
+      and `marks` said "dense enough to read as theirs". Both are amplitude
+      instructions, and they collide with the user's own adjective: someone
+      asking for LIGHT freckles would have had the qualifier arguing against
+      her, and either got a render inflated past her ask or — if the render was
+      honest — a reader that could not see it. Her words are the spec; the floor
+      may insist a thing is there and may not decide how much of it there is.
+
+      Swept across every entry, not just the two that were caught, because the
+      next qualifier someone tunes is the one that reintroduces it.
+    */
+    /*
+      Phrases that PUSH, not words that merely mention strength — the first
+      version of this listed `strong(ly)?` and fired on the floor's own
+      "neither weaker nor stronger", which is the clause FORBIDDING amplitude.
+      A guard built against a property the thing is correct not to have is this
+      program's most repeated instrument error; it deserved to happen once more
+      in the test that exists to prevent the original.
+    */
+    const PUSHES_AMPLITUDE = /plainly visible|clearly visible|prominent|unmistakable|striking\b|\bbold\b|dense enough|obvious|heavil|dramatic|pronounced|at a normal viewing distance|as (strong|dark|bright) as/i;
+    expect(TEETH, "the floor pushes amplitude").not.toMatch(PUSHES_AMPLITUDE);
+    for (const subject of FREE_SUBJECT_KEYS) {
+      const entry = SUBJECT_QUALIFIER[subject];
+      if ("exempt" in entry) continue;
+      expect(entry.describe, `${subject} pushes amplitude rather than existence`)
+        .not.toMatch(PUSHES_AMPLITUDE);
+    }
+  });
+
+  it("defers to the strength the user's own words describe", () => {
+    /* The positive half of the same ruling: the floor must actively say the ask
+       governs intensity, not merely avoid overriding it. */
+    expect(TEETH).toMatch(/strength their own words describe/);
+    expect(TEETH).toMatch(/neither weaker nor stronger/);
   });
 
   it("never states the teeth twice", () => {
