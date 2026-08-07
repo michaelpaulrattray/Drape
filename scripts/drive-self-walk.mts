@@ -479,7 +479,25 @@ const reset = await page.evaluate(() => {
   return { wasPressed };
 });
 if (reset === null) {
-  checks.neverArmed("[reset] the original is addressable", "no Original pick in the stack");
+  /*
+    A FRESH FACE HAS NO STACK, and that is the point of walking one.
+
+    The panel renders its version stack only once a candidate HAS versions, so
+    a candidate with no variants has no "Original" pick to press — and
+    `--fresh` guarantees exactly that candidate. Scoring it as a failed control
+    made every fresh-face walk unclean before its first step, which would have
+    made the twice-clean bar unreachable by construction.
+
+    The distinction that matters: no stack at all is legitimately absent; a
+    stack that exists WITHOUT an Original is a real defect, and that is what
+    the query below separates.
+  */
+  const hasStack = await page.$(".dpc-refine__stack");
+  if (hasStack) {
+    checks.neverArmed("[reset] the original is addressable", "a version stack with no Original in it");
+  } else {
+    checks.absent("[reset] the walk starts from the original face", "she has no versions yet — she IS the original");
+  }
 } else {
   await page.waitForFunction(
     () => document.querySelector('.dpc-refine__pick[aria-label="The original"]')
