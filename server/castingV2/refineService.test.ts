@@ -1332,6 +1332,92 @@ describe("removal is typed, and most of it is free", () => {
     harvest: unmasked,
   });
 
+  /*
+    THE TABLE IS THE TEST (Fable ruling, 2026-08-08). Two rows, and the whole
+    argument is that they are indistinguishable by language:
+
+      asked      echoed item          correct
+      earrings   small gold hoops     prune the step   (D-173's founding case)
+      glasses    gold hoop earrings   leave it alone   (the founder's walk)
+
+    In both, the named thing is nowhere in the item's text. Only the face knows
+    which is a true reference — and specifically the ORIGINAL face, because a
+    prune can only remove what the chain added. Either of these going red means
+    the implementation is wrong, not the test.
+  */
+  const seesInBase = (present: boolean) => ({
+    regions: {
+      region: async () => {
+        if (!present) throw new Error("the segmenter finds none");
+        /* Above eyewearFrames.min (0.004) — a real thing, not a speck. */
+        const side = 64;
+        return { data: Buffer.alloc(side * side, 255), width: side, height: side };
+      },
+      subject: async () => { throw new Error("no subject"); },
+      landmark: async () => [],
+    } as never,
+    readBytes: async () => ({ bytes: Buffer.from("original"), contentType: "image/png" }),
+  });
+
+  it("PRUNES when the chain put it there — D-173's founding case", async () => {
+    twoStep();
+    const result = await refineCandidate(
+      {
+        ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "earrings", items: ["small gold hoops"] }),
+        /* Her ORIGINAL wore no earrings: the hoops arrived in step two, so
+           undoing that step really does take them off her face. */
+        ...seesInBase(false),
+      },
+      { ...input, instruction: "remove the earrings" },
+    );
+    expect(result.kind, "a chain-added accessory comes off for free").toBe("selected");
+    expect(ledger.charges).toEqual([]);
+  });
+
+  it("REFUSES TO PRUNE when the thing predates the chain — the founder's walk", async () => {
+    twoStep();
+    /*
+      She asks for her GLASSES. The parser has only ever been shown her hoops,
+      so it echoes those, and `matchSteps` would delete the earrings step she
+      paid for — landing her on an older variant and answering "you already have
+      that version" while she looks straight at her glasses.
+
+      Her original wears the glasses, so no prune can remove them. The step
+      survives and the ask goes to the face.
+    */
+    await refineCandidate(
+      {
+        ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "glasses", items: ["small gold hoops"] }),
+        ...seesInBase(true),
+      },
+      { ...input, instruction: "remove her glasses" },
+    ).catch(() => undefined);
+
+    expect(journal, "it must not have quietly walked her selection backwards")
+      .not.toContain("select");
+    expect(ledger.charges, "and nothing is charged for the attempt").toEqual([]);
+  });
+
+  it("REFUSES rather than guessing when her face cannot be checked", async () => {
+    /* Fail closed. Handing the decision back to the word match when a
+       dependency is missing is invariant 7's violation wearing a new hat — it
+       is the exact path that corrupted a paid chain. */
+    twoStep();
+    await expect(refineCandidate(
+      {
+        ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "glasses", items: ["small gold hoops"] }),
+        regions: {
+          region: async () => { throw new Error("segmenter unreachable"); },
+          subject: async () => { throw new Error("no subject"); },
+          landmark: async () => [],
+        } as never,
+        readBytes: async () => { throw new Error("storage unreachable"); },
+      },
+      { ...input, instruction: "remove her glasses" },
+    )).rejects.toThrow(/couldn't check her face/);
+    expect(ledger.charges).toEqual([]);
+  });
+
   it("walks back a step for free on a bare undo", async () => {
     twoStep();
     const result = await refineCandidate(

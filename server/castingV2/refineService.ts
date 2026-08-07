@@ -669,6 +669,89 @@ export async function refineCandidate(
       */
       items: parsed.items,
     });
+
+    /*
+      DID THE CHAIN PUT IT THERE? — the picture arbitrates, in front of BOTH
+      branches (Fable ruling, 2026-08-08, on the founder's `96640590`).
+
+      `matchSteps` deletes a step when the parser's echo matches its items, and
+      never checks that the echo has anything to do with what was NAMED. On the
+      founder's walk "remove her glasses" was resolved against the only
+      accessory the parser had been shown — her gold hoops — and it deleted the
+      EARRINGS step she had paid for, landed on an older variant, and answered
+      "you already have that version" to a woman wearing glasses.
+
+      **No comparison of words can fix this**, and that is worth stating because
+      it is the obvious fix. D-173's founding case is "remove the earrings"
+      matching a stored "small gold hoops": the named thing is nowhere in the
+      item's text and the match is CORRECT. Tonight's is "remove her glasses"
+      matching "gold hoop earrings": the named thing is nowhere in the item's
+      text and the match is WRONG. A relevance check strict enough to stop the
+      second reintroduces the bug the first one fixed.
+
+      What separates them is not language, it is history. A prune can only
+      remove what the CHAIN added. So the question is asked of the ORIGINAL
+      candidate — the face before any refinement touched it:
+
+        absent from the base   the chain put it there, so pruning removes it
+        present in the base    it predates every step, and no amount of
+                               pruning will take it off her face — this is a
+                               render, not an undo
+
+      The base is the right frame here and the selected face would be the wrong
+      one: the question is about provenance, not about what she is looking at.
+    */
+    if (matched.length > 0 && parsed.match && maskedEditingEnabledFor(input.userId)) {
+      const began = Date.now();
+      let presentInBase: boolean;
+      try {
+        const reader = dependencies.regions ?? defaultRegionReader();
+        const original = await (dependencies.readBytes ?? storageReadBytes)(source.candidate.imageKey!);
+        /*
+          TWO DIFFERENT FAILURES, and collapsing them was this block's first
+          bug. A segmenter that finds nothing THROWS, and that is the honest
+          answer to "is it there" — not a reason to refuse. Only being unable to
+          LOOK at all is the fail-closed case, which is why the image read sits
+          outside this inner try and the segmentation sits inside it.
+        */
+        try {
+          const seen = await reader.region({ image: original.bytes, name: parsed.match });
+          presentInBase = coverage(seen) >= COVERAGE_BANDS.eyewearFrames.min;
+        } catch {
+          presentInBase = false;
+        }
+      } catch (error) {
+        /*
+          FAIL CLOSED. A segmenter that cannot answer must not hand the decision
+          back to the word match — that is precisely the path that corrupted a
+          paid chain, and falling back to it when a dependency is missing is
+          invariant 7's violation wearing a new hat. Free, and it says why.
+        */
+        log.warn(
+          { candidate: input.candidatePublicId, asked: parsed.match, why: error instanceof Error ? error.message : String(error) },
+          "[refineService] could not check her face before undoing — refusing rather than guessing",
+        );
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "I couldn't check her face just now, and I won't undo a step without "
+            + "looking. Try that again in a moment — nothing was charged.",
+        });
+      }
+      log.info(
+        {
+          candidate: input.candidatePublicId, asked: parsed.match, presentInBase,
+          ms: Date.now() - began,
+        },
+        "[refineService] asked the ORIGINAL whether the chain put it there",
+      );
+      if (presentInBase) {
+        /* It predates the chain. Whatever the echo matched, it is not the thing
+           she asked to remove, and pruning it would delete a step she paid for
+           while leaving her glasses exactly where they are. */
+        matched.length = 0;
+      }
+    }
+
     if (matched.length === 0) {
       /*
         THE HONEST THIRD STEP, BEFORE THE FACE (D-167).
