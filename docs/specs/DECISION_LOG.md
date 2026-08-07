@@ -7937,6 +7937,62 @@ artifacts. The next thing that reaches the founder is the twice-passing walk
 with its table. The go/no-go is **a number plus pictures**, never pictures
 alone.
 
+## D-237 — Fox eyes: prompt strength is NOT the lever. Correcting my own diagnosis of the day before.
+
+**2026-08-07.** Yesterday I reported that the engine drops the shape clause at
+ordinary prompt strength — D-227's July finding recurring — and that the fix was
+engineered prose for the shape class. **That conclusion did not follow from the
+experiment that produced it.**
+
+The experiment's weak arm was labelled `as-composed` and read:
+
+> `Change only her eyes: fox eyes.`
+
+The product does not send that. It sends `composedPrompt.full`, whose eye-shape
+lane is already the anatomical prose of `EYE_SHAPE_RENDER`:
+
+> *"Change the eye shape to fox eyes — the outer corner lifted distinctly higher
+> than the inner corner with a strong upward canthal tilt, the eye opening long
+> and narrow rather than round … this is the bone and lid STRUCTURE of the eye
+> itself, not liner, shadow or any makeup effect."*
+
+So the run compared **a bare term against engineered prose** and demonstrated
+that prose beats a bare term — which is D-124/A9, ruled long ago, and not a
+finding about this defect at all. A weak arm *named* as-composed instead of
+*taken from* the composer. D-202 in its natural habitat, inside a script whose
+whole purpose was to settle a question of fact.
+
+**Re-run with the product's real instruction as the weak arm, the two arms are
+indistinguishable:**
+
+| arm | eye region, mean change | moved >25 levels |
+|---|---|---|
+| the product's own prompt | 8.4 levels | 6.1% |
+| deliberately stronger | 8.1 levels | 5.5% |
+
+Prompt strength is not the lever. And the earlier run's numbers (13.7 / 29.6 on
+the same script) were **a different sample of a stochastic process** — n=1 per
+arm, treated as a measurement. A second lesson at no extra charge.
+
+**What the picture shows, which no number said.** Under the stronger prompt the
+engine does change something visible: it draws **eyeliner** — a winged flick —
+rather than restructuring the lid. The prose explicitly forbids exactly that
+("not liner, shadow or any makeup effect") and it happened anyway. So the
+reader's *"rounded/almond, not fox-shaped"* was correct in **both** arms, and
+would rightly refuse the liner render too. **D-227's exoneration of the reader
+stands and is strengthened; only my account of the mechanism was wrong.**
+
+**Live hypothesis, explicitly UNTESTED:** every specimen in the set is
+bespectacled — `fresh`, `chunky` and `wire` are frame styles — and the upper rim
+runs directly across the outer corner, which is where a canthal tilt reads.
+Isolating occlusion from capability needs a bare-faced specimen, which the set
+does not contain. Named here so it is not mistaken for a ruled-out cause.
+
+**Consequence for D-236:** `eye.shape` is now a named candidate for the class
+that cannot reach the bar. Per that ruling it does not block the others — it is
+fixed or honestly routed ("not yet supported") before any wider scope. The
+decision needs the occlusion experiment first.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
