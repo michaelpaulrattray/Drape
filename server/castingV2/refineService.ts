@@ -115,7 +115,7 @@ import {
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
-import { facetOfAxis, type Facet } from "./refineFacets";
+import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept } from "./canthalTilt";
@@ -1614,6 +1614,31 @@ export async function refineCandidate(
            watched rather than enforced — same reasoning as the free lane. */
         facts.push({ facet, asked: pinned, binding: false });
       }
+    }
+
+    /*
+      AND THE THING THAT WAS SUPPOSED TO GO (Fable consumer sweep, 2026-08-08).
+
+      `facts` is built from `facetsWrittenBy(composed)`, and a removal deletes
+      its own facet from the recipe — so a removal was verified against
+      everything EXCEPT the thing that was asked for. Every other fact could
+      pass while her glasses sat there untouched, and the row landed
+      `delivered_unverified` forever: the same asymmetry as the harvest, one
+      consumer over, and invisible for exactly the same reason.
+
+      A removal's success criterion is an ABSENCE, so the ask is phrased as one
+      and the reader is told how to judge it. Binding, because unlike a shade
+      name this is not a matter of taste — either they are gone or they are
+      not — and D-235's asymmetry protects a correct render from a reader that
+      cannot see: an unread check spends no refusal.
+    */
+    if (departed) {
+      const facet = facetOfSubject("statedAccessories");
+      facts.push({
+        facet,
+        asked: `no ${departed} — they have been taken off and are not in the picture`,
+        binding: true,
+      });
     }
 
     /*

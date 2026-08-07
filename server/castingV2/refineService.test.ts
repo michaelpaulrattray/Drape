@@ -1359,6 +1359,24 @@ describe("removal is typed, and most of it is free", () => {
     readBytes: async () => ({ bytes: Buffer.from("original"), contentType: "image/png" }),
   });
 
+  /*
+    ⚠ THE ABSENCE ROW IS SHIPPED AND NOT YET PROVEN — declared, not hidden.
+
+    `refineService` now pushes a binding "no <departed> — they have been taken
+    off" fact whenever a removal ran, because `facts` is built from
+    `facetsWrittenBy(composed)` and a removal deletes its own facet: the render
+    was verified against everything EXCEPT the thing that was asked for, and
+    landed `delivered_unverified` forever.
+
+    The test that belongs here could not be made to reach the render inside a
+    reasonable budget — the base-worn removal path needs the interpreter mocked
+    across two calls plus a chain fixture the existing helpers do not build, and
+    three attempts got the ask to the parser but never to the net. Rather than
+    leave a green test that exercises nothing, the gap is named here: this
+    behaviour is currently proven only by the end-to-end walk, and until that
+    run lands it is UNVERIFIED. A control that is not invoked does not exist.
+  */
+
   it("PRUNES when the chain put it there — D-173's founding case", async () => {
     twoStep();
     const result = await refineCandidate(
