@@ -259,7 +259,8 @@ type StepResult = {
   instruction: string;
   expectClass: string;
   expects: "delivered" | "asked";
-  outcome: "delivered" | "asked" | "refused" | "errored" | "timeout";
+  /** `collided` — the server restarted under this step, so it measured nothing. */
+  outcome: "delivered" | "asked" | "refused" | "errored" | "timeout" | "collided";
   /** The sentence the panel showed, verbatim — a refusal nobody can read is a
       refusal nobody can act on, so it is captured rather than summarised. */
   said: string | null;
@@ -358,6 +359,34 @@ async function openViewer(): Promise<void> {
  * that starts while it is *becoming* busy types half a sentence. Waiting for
  * quiet is what the founder does without noticing.
  */
+/**
+ * HOW LONG THE SERVER HAS BEEN UP — the only way to tell OUR fault from ITS.
+ *
+ * Every push to `main` deploys, and a deploy kills the process holding a
+ * refinement. That is a known and accepted collision class (founder ruling,
+ * 2026-08-01): per-slice billing plus the recovery sweep is the designed answer,
+ * and the money is right — charged 25, swept, refunded 25.
+ *
+ * But a step killed by a deploy is not a product signal, and it looks exactly
+ * like one from the browser: the panel shows a transport error because the
+ * connection died mid-request. Runs three and four both failed step one that
+ * way, both within a minute of a push of mine, and both were about to be
+ * written down as defects.
+ *
+ * Uptime going BACKWARDS across a step is proof the process restarted under it.
+ * A step that collided is void — not a pass, not a failure, and never a row in
+ * the delivery rate.
+ */
+async function serverUptime(): Promise<number | null> {
+  try {
+    const res = await fetch(`${BASE}/api/health`);
+    const body = await res.json() as { uptime?: number };
+    return typeof body.uptime === "number" ? body.uptime : null;
+  } catch {
+    return null;
+  }
+}
+
 async function waitUntilIdle(): Promise<string> {
   const settled = await page
     .waitForFunction(
@@ -417,6 +446,8 @@ for (const [index, step] of WALK.entries()) {
   console.log(`\n── ${position} "${step.instruction}"  (expects ${step.expects})`);
   const began = Date.now();
 
+  const uptimeBefore = await serverUptime();
+
   /* Re-opened per step. Closing and reopening between edits is what the founder
      actually does, and it is the path that has broken before (D-161: a running
      refinement that vanished with the component and got bought twice). */
@@ -464,6 +495,23 @@ for (const [index, step] of WALK.entries()) {
       seconds: Math.round((Date.now() - began) / 100) / 10,
     });
     console.log(`   → skipped — ${idle}`);
+    continue;
+  }
+
+  /* The panel can re-render between the idle check and the keystroke — the
+     viewer remounts on a variants refetch. Re-open once rather than dying on a
+     missing selector, which is how two runs ended with three steps unattempted. */
+  if (!(await page.$(".dpc-refine__field"))) {
+    await openViewer();
+    await waitUntilIdle();
+  }
+  if (!(await page.$(".dpc-refine__field"))) {
+    checks.neverArmed(`[${position}] the box survives to be typed into`, "the panel went away");
+    results.push({
+      instruction: step.instruction, expectClass: step.expectClass, expects: step.expects,
+      outcome: "timeout", said: "the refine panel went away before the sentence could be typed",
+      answers: [], imageUrl: null, seconds: Math.round((Date.now() - began) / 100) / 10,
+    });
     continue;
   }
 
@@ -611,17 +659,35 @@ for (const [index, step] of WALK.entries()) {
   const MACHINE_WORDS = /transform response|undefined|\[object |TypeError|NetworkError|ECONN|fetch failed|<html|status code|JSON/i;
   const machineSaid = Boolean(seen.said && MACHINE_WORDS.test(seen.said));
 
-  const outcome: StepResult["outcome"] = !landed
-    ? "timeout"
-    : seen.mine
-      ? "delivered"
-      : seen.answers.length > 0
-        ? "asked"
-        : machineSaid
-          ? "errored"
-          : "refused";
+  /*
+    DID THE PROCESS SURVIVE THIS STEP? Asked before anything is concluded from
+    it, because a deploy landing mid-refine produces exactly the picture a
+    broken product would.
+  */
+  const uptimeAfter = await serverUptime();
+  const collided = uptimeBefore !== null && uptimeAfter !== null && uptimeAfter < uptimeBefore;
 
-  if (seen.said) {
+  const outcome: StepResult["outcome"] = collided
+    ? "collided"
+    : !landed
+      ? "timeout"
+      : seen.mine
+        ? "delivered"
+        : seen.answers.length > 0
+          ? "asked"
+          : machineSaid
+            ? "errored"
+            : "refused";
+
+  if (collided) {
+    checks.absent(
+      `[${position}] measured anything at all`,
+      `the server restarted under this step (uptime ${Math.round(uptimeBefore!)}s → `
+      + `${Math.round(uptimeAfter!)}s) — a deploy collision, void, re-run needed`,
+    );
+  }
+
+  if (seen.said && !collided) {
     checks.check(
       !machineSaid,
       `[${position}] the panel speaks to her, not about the transport`,
@@ -663,7 +729,9 @@ for (const [index, step] of WALK.entries()) {
     path: `${OUT}/${String(index + 1).padStart(2, "0")}-${step.instruction.replace(/\W+/g, "-")}.png`,
   });
 
-  checks.check(
+  if (collided) {
+    checks.absent(`[${position}] lands where it said it would`, "void — the deploy took it");
+  } else checks.check(
     outcome === step.expects,
     `[${position}] lands where it said it would`,
     `expected ${step.expects}, got ${outcome}`
@@ -765,7 +833,9 @@ try {
 console.log("");
 checks.print();
 
+const collisions = results.filter((step) => step.outcome === "collided").length;
 const landedRight = results.length === WALK.length
+  && collisions === 0
   && results.every((step) => step.outcome === step.expects);
 const clean = landedRight
   && checks.failures().length === 0
@@ -783,7 +853,8 @@ console.log(
     ? `WALK CLEAN — ${results.length}/${WALK.length} steps landed where they said they would, `
       + `${report!.overall.delivered_compliant} delivered compliant, 0 false passes.`
     : "WALK NOT CLEAN — the founder is not called."
-      + (landedRight ? "" : " Steps did not land as declared.")
+      + (collisions > 0 ? ` ${collisions} step(s) VOID — the server redeployed under them; re-run, do not diagnose.` : "")
+      + (landedRight || collisions > 0 ? "" : " Steps did not land as declared.")
       + (checks.failures().length ? ` ${checks.failures().length} browser check(s) failed.` : "")
       + (report === null ? " No verdicts were read." : report.blockers.length ? ` Classes below the bar: ${report.blockers.join(", ")}.` : ""),
 );
