@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5f09118715cb7dd3"
+    "sourceFingerprint": "16f61fe7aa374149"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 60
+      "moduleCount": 61
     },
     {
       "id": "domain:castingV2",
@@ -3203,6 +3203,12 @@
     {
       "id": "module:server/castingV2/candidateService.ts",
       "path": "server/castingV2/candidateService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/canthalTilt.ts",
+      "path": "server/castingV2/canthalTilt.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8201,6 +8207,10 @@
     {
       "id": "test:server/castingV2/candidateRetention.test.ts",
       "path": "server/castingV2/candidateRetention.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/canthalTilt.test.ts",
+      "path": "server/castingV2/canthalTilt.test.ts"
     },
     {
       "id": "test:server/castingV2/castProjection.test.ts",
@@ -16867,6 +16877,16 @@
     {
       "from": "module:server/castingV2/candidateService.ts",
       "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/canthalTilt.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/canthalTilt.ts",
+      "to": "module:server/castingV2/maskGeometry.ts",
       "kind": "imports"
     },
     {
