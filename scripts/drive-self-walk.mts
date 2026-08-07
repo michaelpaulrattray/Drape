@@ -95,7 +95,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import type { Page } from "puppeteer-core";
 
 import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
-import { readAttemptRows } from "./lib/attemptRows.mjs";
+import { databaseUrl, readAttemptRows } from "./lib/attemptRows.mjs";
 import { createChecks, openDrivenPage } from "./lib/drivePage.mjs";
 
 function arg(name: string, fallback = ""): string {
@@ -108,9 +108,18 @@ const TOKEN = arg("token");
 const CANDIDATE = arg("candidate");
 const SPEND = process.argv.includes("--spend");
 const OUT = arg("out", `output/walk/${new Date().toISOString().replace(/[:.]/g, "-")}`);
+/**
+ * `--fresh <rollPublicId>` walks an UNTOUCHED face from that roll instead of a
+ * named one. Required for any run that counts toward the two-clean bar: a face
+ * this walk has already edited carries those facets into every later render, so
+ * a second walk over it measures a chain rather than a product.
+ */
+const freshFromRoll = arg("fresh");
 
 if (!TOKEN) throw new Error("--token <app_session_id JWT> is required (see mint-production-session.mts)");
-if (!CANDIDATE) throw new Error("--candidate <publicId> is required — never guess which face to spend on");
+if (!CANDIDATE && !freshFromRoll) {
+  throw new Error("--candidate <publicId> or --fresh <rollPublicId> is required — never guess which face to spend on");
+}
 
 /**
  * THE WALK, in the founder's own order.
@@ -146,6 +155,49 @@ const LANDING_TIMEOUT_MS = 4 * 60 * 1000;
    driver can have, and one that can only be checked by spending is not a
    pre-flight at all.
 --------------------------------------------------------------------------- */
+
+/**
+ * AN UNTOUCHED FACE FROM THE SAME ROLL — because two runs on one face are not
+ * two samples.
+ *
+ * Edits are base-anchored and `composed` carries every facet the chain ever
+ * wrote, so a second walk over a face the first walk edited starts from a
+ * different identity than the first did: run two of this walk rendered earrings
+ * nobody had asked for, inherited from run one. Selecting the original changes
+ * the base PICTURE and not the accumulated record, which is why "reset to the
+ * original" was not enough.
+ *
+ * "Untouched" is asked of the database rather than remembered between runs —
+ * a face with no variant rows has never been refined, and that is a fact the
+ * driver can check rather than a note it has to keep. Signed candidates are
+ * excluded by name: position 0 of this roll is the founder's Cast.
+ */
+async function pickFreshCandidate(): Promise<string> {
+  const { openDatabase } = await import("./lib/dbConnection.mjs");
+  const conn = await openDatabase(databaseUrl());
+  try {
+    const [rows] = await conn.query<any[]>(
+      `SELECT c.publicId, c.position
+         FROM casting_candidates c
+         JOIN casting_rolls r ON r.id = c.rollId
+        WHERE r.publicId = ? AND c.status = 'ready' AND c.signedCastId IS NULL
+          AND NOT EXISTS (SELECT 1 FROM casting_candidate_variants v WHERE v.candidateId = c.id)
+        ORDER BY c.position ASC
+        LIMIT 1`,
+      [freshFromRoll],
+    );
+    if (rows.length === 0) {
+      throw new Error(
+        `no untouched face left on roll ${freshFromRoll} — every candidate has been refined. `
+        + "Roll a fresh one rather than walking a face with a history.",
+      );
+    }
+    console.log(`--fresh: position ${rows[0].position} of roll ${freshFromRoll}, no prior variants`);
+    return String(rows[0].publicId);
+  } finally {
+    await conn.end();
+  }
+}
 
 async function trpcQuery(path: string, input: unknown): Promise<any> {
   const url = `${BASE}/api/trpc/${path}?input=${encodeURIComponent(JSON.stringify({ json: input }))}`;
@@ -188,11 +240,11 @@ async function locateCandidate(): Promise<Located> {
     for (const roll of detail?.rolls ?? []) {
       const projection = await trpcQuery("castingV2.getRoll", { rollId: roll.rollId });
       const found = (projection?.candidates ?? []).find(
-        (candidate: any) => candidate.candidateId === CANDIDATE,
+        (candidate: any) => candidate.candidateId === CANDIDATE_ID,
       );
       if (!found) continue;
       if (!found.imageUrl) {
-        throw new Error(`candidate ${CANDIDATE} has no image — there is nothing to identify her by`);
+        throw new Error(`candidate ${CANDIDATE_ID} has no image — there is nothing to identify her by`);
       }
       return {
         sessionId: session.sessionId,
@@ -205,13 +257,15 @@ async function locateCandidate(): Promise<Located> {
     }
   }
   throw new Error(
-    `candidate ${CANDIDATE} is not on any open sheet for this session — `
+    `candidate ${CANDIDATE_ID} is not on any open sheet for this session — `
     + "refusing to walk a face I cannot find rather than guessing at one",
   );
 }
 
-console.log(`SELF-DRIVE WALK — ${WALK.length} steps on candidate ${CANDIDATE}`);
+console.log(`SELF-DRIVE WALK — ${WALK.length} steps`);
 console.log(`base ${BASE}`);
+const CANDIDATE_ID = freshFromRoll ? await pickFreshCandidate() : CANDIDATE;
+console.log(`candidate ${CANDIDATE_ID}`);
 const { sessionId, rollId, rollIndex, rollLabel, indexLabel, imageUrl } = await locateCandidate();
 
 /**
@@ -225,9 +279,9 @@ const { sessionId, rollId, rollIndex, rollLabel, indexLabel, imageUrl } = await 
  */
 async function currentFaceKey(): Promise<string> {
   const projection = await trpcQuery("castingV2.getRoll", { rollId });
-  const found = (projection?.candidates ?? []).find((c: any) => c.candidateId === CANDIDATE);
+  const found = (projection?.candidates ?? []).find((c: any) => c.candidateId === CANDIDATE_ID);
   const url: string | null = found?.imageUrl ?? null;
-  if (!url) throw new Error(`candidate ${CANDIDATE} no longer has a face on roll ${rollLabel}`);
+  if (!url) throw new Error(`candidate ${CANDIDATE_ID} no longer has a face on roll ${rollLabel}`);
   return url.slice(url.lastIndexOf("/") + 1);
 }
 console.log(
@@ -845,7 +899,7 @@ const clean = landedRight
 
 writeFileSync(
   `${OUT}/walk.json`,
-  JSON.stringify({ startedAt, sessionId, candidate: CANDIDATE, results, checks: checks.records, report, readbackError }, null, 2),
+  JSON.stringify({ startedAt, sessionId, candidate: CANDIDATE_ID, results, checks: checks.records, report, readbackError }, null, 2),
 );
 console.log(`\nevidence written to ${OUT}`);
 console.log(
