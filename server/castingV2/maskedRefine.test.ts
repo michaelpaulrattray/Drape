@@ -611,43 +611,82 @@ describe("the mask guards that are actually invoked", () => {
 });
 
 /**
- * A COMPOUND OVER TWO REGIONS REFUSES, because the alternative is delivering
- * one of them and charging for both.
+ * A COMPOUND OVER TWO REGIONS IS HARVESTED, ONE REGION AT A TIME.
+ *
+ * My first answer to `harvestName = names[0]` was to refuse compounds. That was
+ * wrong, and wrong in the way that would have shown up only in the founder's
+ * hands: refinements are BASE-ANCHORED, so the master is the ORIGINAL and the
+ * painted frame carries every composed instruction. By the second step of any
+ * chain the edit spans two regions — freckles, then fox eyes — and a refusal
+ * there refuses the walk. Nothing in the suite drove a chain through this
+ * function, so nothing would have caught it.
  */
-describe("one harvest question per render, and it says so when asked for two", () => {
-  const master = () => png(() => [190, 188, 186]);
-  const painted = () => png((x, y) => (y < 20 ? [40, 30, 25] : [186, 184, 182]));
-  it("refuses two different regions by name", async () => {
-    await expect(harvestRefinement({
-      master: { bytes: await master(), contentType: "image/png" },
-      painted: { bytes: await painted(), contentType: "image/png" },
-      facets: ["eye.colour", "lips"],
-      reader,
-      userId: 1,
-    })).rejects.toThrow(/eyes and lips.*only harvest one region/s);
+describe("every region the instruction touches is harvested, not just the first", () => {
+  const HAIR: [number, number, number] = [40, 30, 25];
+  const SKIN: [number, number, number] = [190, 188, 186];
+  const LIP: [number, number, number] = [150, 90, 90];
+
+  /* Two regions in two places, answered per name and per frame. */
+  const twoRegionReader = (masterBytes: Buffer): RegionReader => ({
+    region: async ({ name }) => (name === "lips" ? box(26, 40, 40, 48) : box(20, 4, 44, 24)),
+    subject: async () => box(0, 0, W, H),
+    landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
   });
 
-  it("refuses a region edit bundled with an accessory", async () => {
-    await expect(harvestRefinement({
-      master: { bytes: await master(), contentType: "image/png" },
-      painted: { bytes: await painted(), contentType: "image/png" },
-      facets: ["lips", "statedAccessories"],
-      reader,
-      userId: 1,
-      described: "small gold hoops",
-    })).rejects.toThrow(/lips and the accessory/);
-  });
+  const pixelAt = async (bytes: Buffer, x: number, y: number) => {
+    const { data } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const at = (y * W + x) * 3;
+    return [data[at], data[at + 1], data[at + 2]] as [number, number, number];
+  };
 
-  it("ALLOWS two facets that ask the SAME question — the common case", async () => {
-    /* A cut and a colour are one instruction about one region, and refusing
-       them would break the edits this path was built for. */
+  it("DELIVERS BOTH — a chain spanning two regions composites, never refuses", async () => {
+    const masterBytes = await png((x, y) => {
+      if (x >= 20 && x < 44 && y >= 4 && y < 24) return HAIR;
+      if (x >= 26 && x < 40 && y >= 40 && y < 48) return LIP;
+      return SKIN;
+    });
+    /* The painter changed BOTH: paler hair and a darker lip. */
+    const paintedBytes = await png((x, y) => {
+      if (x >= 20 && x < 44 && y >= 4 && y < 24) return [120, 100, 80];
+      if (x >= 26 && x < 40 && y >= 40 && y < 48) return [90, 40, 45];
+      return SKIN;
+    });
     const result = await harvestRefinement({
-      master: { bytes: await master(), contentType: "image/png" },
-      painted: { bytes: await painted(), contentType: "image/png" },
-      facets: ["hair.cut", "hair.colour"],
-      reader,
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: ["hair.colour", "lips"],
+      reader: twoRegionReader(masterBytes),
       userId: 1,
     });
     expect(result.outcome).toBe("composited");
+
+    const hair = await pixelAt(result.bytes, 32, 14);
+    const lip = await pixelAt(result.bytes, 32, 44);
+    expect(hair[0], "the hair edit landed").toBeGreaterThan(HAIR[0] + 20);
+    /* THE ONE THAT USED TO BE DROPPED: the second region of the compound. */
+    expect(lip[0], "and so did the lip edit, which names[0] discarded")
+      .toBeLessThan(LIP[0] - 20);
+  });
+
+  it("asks each distinct question once, and both of them", async () => {
+    const asked: string[] = [];
+    const counting: RegionReader = {
+      region: async ({ name, image }) => {
+        asked.push(name);
+        return name === "lips" ? box(26, 40, 40, 48) : box(20, 4, 44, 24);
+      },
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }],
+    };
+    const masterBytes = await png(() => SKIN);
+    await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: await png((x, y) => (y < 24 ? HAIR : SKIN)), contentType: "image/png" },
+      /* Three facets, TWO questions — a cut and a colour both segment hair. */
+      facets: ["hair.cut", "hair.colour", "lips"],
+      reader: counting,
+      userId: 1,
+    }).catch(() => undefined);
+    expect(new Set(asked), "both questions asked").toEqual(new Set(["hair", "lips"]));
   });
 });

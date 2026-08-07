@@ -581,38 +581,6 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     return name;
   });
 
-  /*
-    A COMPOUND OVER TWO REGIONS IS REFUSED BY NAME, because today it is
-    delivered as one of them and charged as both.
-
-    The harvest asks ONE segmentation question. With "green eyes and fuller
-    lips" the zone is built from both regions and the harvest is taken for the
-    first, so every pixel of the second reverts to her master: **the lips edit is
-    discarded and the receipt says it happened.** Silent partial delivery is the
-    worst outcome available here — worse than a refusal, which costs only the
-    render, and worse than a wrong picture, which at least announces itself.
-
-    Two facets asking the SAME question are fine and common — `hair.cut` and
-    `hair.colour` both segment "hair" — so this counts DISTINCT questions rather
-    than facets. A region edit alongside an addition is refused for the same
-    reason: one harvest name cannot be both her lips and her earrings.
-
-    The real answer is multi-patch — a render and a harvest per region, composed
-    together, each independently retryable, which is exactly what D-233's makeup
-    ruling already describes ("a smoky eye and a nude lip is two renders, and
-    that is correct"). That is its own build on its own clock. Until it lands,
-    this says so instead of quietly dropping half the instruction.
-  */
-  const questions = Array.from(new Set(names));
-  if (questions.length > 1 || (questions.length > 0 && objects.length > 0)) {
-    const asked = [...questions, ...(objects.length > 0 ? ["the accessory"] : [])];
-    throw new MaskError(
-      `this instruction changes ${asked.join(" and ")}, and a masked edit can only harvest one `
-      + "region per render — asking for both would deliver one and charge for both; "
-      + "multi-region refinement is not built yet",
-    );
-  }
-
   const master: Raster = await readRaster(input.master.bytes);
   let painted: Raster = await readRaster(input.painted.bytes);
   if (painted.width !== master.width || painted.height !== master.height) {
@@ -709,27 +677,51 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   if (!zone) throw new MaskError("no facets to mask");
 
   /*
-    THE HARVEST'S OWN QUESTION, named from the instruction for an object exactly
-    the way its landmark is. It used to fall back to the literal string
-    `"earring"` whenever no facet was segmentable, which is every pure accessory
-    edit — so an ask about GLASSES harvested wherever her earrings were.
-  */
-  const harvestsAnObject = names.length === 0 && objects.length > 0;
-  const harvestName = harvestsAnObject
-    ? accessoryEntry(input.described)?.region ?? null
-    : names[0] ?? null;
-  if (!harvestName) throw new MaskError("nothing names what this edit is about — refusing to guess a region");
+    ONE HARVEST PER REGION THE INSTRUCTION TOUCHES — and this is not an edge
+    case, it is every chain past its first step.
 
-  /*
-    WHERE THE THING IS *NOW* — and this is the question that makes a shrink
-    possible, without anything ever classifying the instruction.
+    The harvest name used to be `names[0]`, with a literal `"earring"` fallback
+    when no facet was segmentable. Both were the placeholder-turned-load-bearing
+    class: true for the only case anyone had driven, silent about the rest. An
+    ask about GLASSES harvested wherever her earrings were, and a compound
+    dropped every region after the first.
 
-    For a segmentable facet the answer is already in hand (the zone was built
-    from it, so this is a cache hit). For an object it is the honest question
-    that separates an addition from a removal: she is wearing glasses, or she is
-    not, and "nowhere" is a legitimate answer to it rather than a failure.
+    **Refusing compounds was my first answer and it was wrong.** Refinements are
+    BASE-ANCHORED (D-86): variant N is the ORIGINAL edited by composed
+    instructions 1..N, and the master handed to this function is that original.
+    So `facetsWrittenBy(composed)` legitimately carries every facet the chain has
+    ever written, and by step two of any real session the edit spans two regions.
+    A refusal there would have refused the founder's walk at its second step —
+    freckles, then fox eyes — while every test stayed green, because nothing in
+    the suite drives a CHAIN through this function.
+
+    So each distinct question gets its own harvest, its own reveal and its own
+    strand colour, and the results are unioned. The strand colour matters most:
+    it is measured from the interior of confirmed content, and one colour shared
+    between a hair region and a lip region would be neither of them.
+
+    This is the multi-patch composition D-233's makeup ruling describes, inside
+    one render rather than across several. Independently retryable renders are
+    still the fuller answer and still their own build.
   */
-  const masterRegion = await regionOf("master", harvestName, harvestsAnObject);
+  type Question = {
+    name: string;
+    /** May the master legitimately not have this? True only for an addition. */
+    absentOnMaster: boolean;
+    /** Does her own hair sit in front of it? True only for an accessory. */
+    occluded: boolean;
+  };
+  const questions: Question[] = Array.from(new Set(names))
+    .map((name) => ({ name, absentOnMaster: false, occluded: false }));
+  if (objects.length > 0) {
+    const entry = accessoryEntry(input.described);
+    if (!entry) throw new MaskError("nothing names what this accessory is — refusing to guess a region");
+    questions.push({ name: entry.region, absentOnMaster: true, occluded: true });
+  }
+  if (questions.length === 0) {
+    throw new MaskError("nothing names what this edit is about — refusing to guess a region");
+  }
+
   /*
     FOR A REMOVAL, HER CURRENT OBJECT IS THE TERRITORY THAT MUST STOP BEING IT.
 
@@ -739,210 +731,99 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     as the zone, and this is that, unioned rather than substituted so an addition
     keeps its destination allowance.
   */
-  if (harvestsAnObject && coverage(masterRegion) > 0) zone = unionMasks(zone, masterRegion);
+  for (const question of questions) {
+    if (!question.absentOnMaster) continue;
+    const worn = await regionOf("master", question.name, true);
+    if (coverage(worn) > 0) zone = unionMasks(zone, worn);
+  }
 
   const paintedSubject = await input.reader.subject({ image: input.painted.bytes });
-  /*
-    The harvest asks what the PAINTER actually drew. For an addition that is the
-    object itself — now that it exists it can be segmented, which is the whole
-    asymmetry: unsegmentable before, segmentable after. And for a removal the
-    honest answer is *nothing*, which is the point rather than a problem.
-  */
-  const paintedContent = await regionOf("painted", harvestName, true);
   /*
     THE DEPTH STACK, for additions. Her hair sits in front of anything at the
     lobe, so it rides as `occludedBy` and an earring under it renders BEHIND it
     by construction — softly, so a half-transparent strand passes half the metal
     through, which is what a real strand does to the light behind it.
   */
-  const inFront = objects.length > 0
+  const inFront = questions.some((question) => question.occluded)
     ? await input.reader.region({ image: input.master.bytes, name: "hair" }).catch(() => null)
     : null;
-  const harvest = await harvestMatteFrom({
-    content: paintedContent,
-    matte: paintedSubject,
-    taperPx: 8,
-    ...(inFront ? { occludedBy: inFront } : {}),
-  });
 
-  /* The strand alpha the segmenter's boundary discards — exact, because we own
-     the background (D-230). */
-  const strands = differenceMatte({
-    master, patch: painted, confirmed: harvest,
-    reachPx: scaled(STRAND_REACH_FRACTION, master.width, master.height),
-  });
-  const withStrands: Mask = {
-    data: Buffer.from(harvest.data.map((value, index) => Math.max(value, strands.alpha.data[index]))),
-    width: harvest.width,
-    height: harvest.height,
-  };
+  const strandReach = scaled(STRAND_REACH_FRACTION, master.width, master.height);
+  const departedReach = scaled(DEPARTED_REACH_FRACTION, master.width, master.height);
+  const tolerancePx = scaled(VACANCY_TOLERANCE_FRACTION, master.width, master.height);
 
-  /*
-    THE REVEAL — territory her region USED to occupy and the painted one no
-    longer does. Without this the harvest is self-defeating in one direction and
-    we charge for renders that were correct until we composited them.
+  const perRegion: {
+    withStrands: Mask;
+    vacated: Mask;
+    departed: Mask;
+    vacancy: Mask;
+    strandColour: [number, number, number];
+  }[] = [];
 
-    `harvestMatteFrom` asks where the thing IS in the painted frame. That is
-    right for a growth and exactly wrong for a shrink or a removal: when a
-    ponytail becomes an updo, the revealed shoulder is not "hair", so nothing is
-    harvested there, alpha is zero, and **the master's old ponytail survives a
-    perfect render.** Measured on the founder's own specimen (exhibit 32): the
-    painter moved 19.2% and 18.1% of the two shoulder bands and the composite
-    moved 0.0% of them. The same arithmetic makes a glasses removal keep the
-    glasses.
+  for (const question of questions) {
+    /*
+      WHERE THE THING IS *NOW* — the question that makes a shrink possible
+      without anything ever classifying the instruction. For a segmentable facet
+      the answer is already in hand (the zone was built from it, so this is a
+      cache hit). For an accessory it is what separates an addition from a
+      removal: she is wearing glasses or she is not, and "nowhere" is a
+      legitimate answer rather than a failure.
+    */
+    const masterRegion = await regionOf("master", question.name, question.absentOnMaster);
+    /*
+      The harvest asks what the PAINTER actually drew. For an addition that is
+      the object itself — now that it exists it can be segmented, which is the
+      whole asymmetry: unsegmentable before, segmentable after. And for a removal
+      the honest answer is *nothing*, which is the point rather than a problem.
+    */
+    const paintedContent = await regionOf("painted", question.name, true);
+    const harvest = await harvestMatteFrom({
+      content: paintedContent,
+      matte: paintedSubject,
+      taperPx: 8,
+      ...(question.occluded && inFront ? { occludedBy: inFront } : {}),
+    });
 
-    # Vacancy, not direction
+    /* The strand alpha the segmenter's boundary discards — exact, because we own
+       the background (D-230). */
+    const strands = differenceMatte({ master, patch: painted, confirmed: harvest, reachPx: strandReach });
+    const withStrands: Mask = {
+      data: Buffer.from(harvest.data.map((value, index) => Math.max(value, strands.alpha.data[index]))),
+      width: harvest.width,
+      height: harvest.height,
+    };
 
-    The obvious fix is to classify the instruction — shrink, grow, remove — and
-    harvest differently per class. That would be a second vocabulary beside
-    `namesRemoval`, and it would have to be right about *"tie her hair up"*,
-    *"shorter"*, *"off the shoulders"* and every phrasing nobody has typed yet.
+    const vacated = await vacancyOf({ zone, masterRegion, paintedRegion: paintedContent, tolerancePx });
+    const departed = differenceMatte({
+      master: painted, patch: master, confirmed: masterRegion, reachPx: departedReach,
+    });
+    const departedFully: Mask = {
+      data: Buffer.from(departed.alpha.data.map((value) =>
+        Math.min(255, Math.round(value / REMOVAL_TOTAL_ABOVE)))),
+      width: departed.alpha.width,
+      height: departed.alpha.height,
+    };
+    const departedVacated = await vacancyOf({
+      zone, masterRegion: departedFully, paintedRegion: paintedContent, tolerancePx,
+    });
 
-    This asks the pixels instead, which is the house direction of travel — the
-    removal ruling (`96640590`) is *the record gates nothing; the picture
-    decides*, and D-232 is *prefer the thing that CHANGED over the thing that was
-    asked*. Where her region was and the painter's is not, the master pixel **is
-    the thing being removed**, so reverting to it is the defect and the painter's
-    reconstruction ships — her shoulder, her neck, the wall behind where the
-    ponytail hung.
-
-    All three edit classes fall out of the one formula as limiting cases, with
-    nothing classifying anything:
-
-      GROW     vacancy is empty; the path is byte-for-byte what it was
-      SHRINK   vacancy is the revealed band; the harvest still governs the updo
-      REMOVAL  vacancy is the whole region; the harvest is empty, correctly
-
-    # What this costs the wall, stated rather than discovered
-
-    The person-never-stage guarantee gets one honest amendment: **her surface
-    reverts wherever it still exists, and a VACATED surface is the removed thing
-    rather than her.** Everything outside the zone is untouched as before, and
-    everything inside it that her region still occupies is still harvest-gated.
-
-    Two defences against a segmenter that merely jitters between two frames of
-    the same face — which would otherwise mint slivers of painter-background at
-    an unchanged hair edge on a pure colour edit:
-
-      TOLERANCE  the painted region is grown before subtraction, so a boundary
-                 that wobbles a few pixels vacates nothing
-      NOVELTY    the same measured-per-render criterion the harvest gate uses.
-                 A pixel the painter did not actually change cannot be a reveal,
-                 and "actually" is scaled against this render's own drift rather
-                 than a constant.
-  */
-  const vacated = await vacancyOf({
-    zone,
-    masterRegion,
-    paintedRegion: paintedContent,
-    tolerancePx: scaled(VACANCY_TOLERANCE_FRACTION, master.width, master.height),
-  });
-  /*
-    THE OLD CONTENT'S OWN STRANDS — D-230's arithmetic, run in the other
-    direction, and the geometric term is a patch without it.
-
-    First measurement of the reveal delivered the shoulder and left **a hard
-    outline of surviving flyaways tracing where the ponytail had been**: the bulk
-    vacated, a halo of strands still standing around an empty middle. The bands
-    called it a pass — they cannot see a seam — and the 100% crop did not.
-
-    The cause is the one this workstream has now met from three sides: **a
-    SAM-class mask fills the SILHOUETTE.** Its boundary is a confidence frontier,
-    so the bulk is inside it and the fine strands lying over her shirt are not.
-    Vacating exactly that region removes exactly the bulk.
-
-    D-230 closed the same defect for a GROW by noting we own the plate — the
-    master IS the background, so the strand alpha is the exact projection of the
-    observed move onto the move an opaque strand would make. A shrink owns the
-    plate just as exactly, and it is the other frame: **the painter's
-    reconstruction is what is there once the hair is gone.** So this is
-    `differenceMatte` with the two frames swapped, and it reads off, per pixel,
-    *how much old hair was here* — flyaways at their true partial alpha, which is
-    the ramp the geometric boundary could not have.
-
-    Not an approximation standing in for a segmentation; the same exact solution
-    to the same compositing equation, pointed the other way. Bounded by the zone
-    like every other claim, and narrowed by the same novelty gate below — a pixel
-    the painter did not really change cannot be a strand that really left.
-  */
-  const departed = differenceMatte({
-    master: painted,
-    patch: master,
-    confirmed: masterRegion,
-    reachPx: scaled(DEPARTED_REACH_FRACTION, master.width, master.height),
-  });
-  /*
-    A REVEAL IS NOT AN OVERLAY, AND THE ALPHA MEANS SOMETHING DIFFERENT.
-
-    This is the arithmetic slip that left a ghost of the ponytail after the
-    strands were being found correctly. `differenceMatte` returns an OPACITY —
-    *how much of this pixel is the strand* — and for an overlay that is exactly
-    the number to composite with: a 60% strand laid over her cheek should be 60%
-    strand and 40% cheek.
-
-    A removal inverts what that number is for. A master pixel holding a 60%
-    strand is `0.6·strand + 0.4·shirt`, and compositing the plate at 0.6 leaves
-    `0.24·strand` behind — the strand dimmed, not gone. Measured: the wisps came
-    out at roughly a quarter strength and read as a ghost tracing exactly where
-    her hair had been, which is a worse artifact than leaving them alone.
-
-    **Where the thing being removed contributed at all, the pixel underneath is
-    contaminated by it, so the plate must be taken WHOLE.** Opacity therefore
-    stops being the alpha and becomes the QUESTION: was any of it here? Above a
-    low floor the answer is yes and the replacement is total; below it the alpha
-    ramps to nothing, which is what keeps the outer edge soft. The ramp moves
-    from "how solid was the hair" to "where does hair content end" — and the
-    second is the boundary a viewer can actually see.
-
-    This is also why the contour appeared at the segmentation boundary: inside it
-    the vacancy was 255 and just outside it the strand opacity was ~128, so the
-    two terms met in a step. With the floor applied they meet at 255 and the only
-    ramp left is at the true end of the hair.
-  */
-  const departedFully: Mask = {
-    data: Buffer.from(departed.alpha.data.map((value) =>
-      Math.min(255, Math.round(value / REMOVAL_TOTAL_ABOVE)))),
-    width: departed.alpha.width,
-    height: departed.alpha.height,
-  };
-  /*
-    THROUGH THE SAME FENCE, and this is not tidiness — it is what keeps a GROW
-    on the path it was always on.
-
-    The projection asks whether the master moved toward the old content's colour
-    relative to the painter's frame, and on a growth that question has a
-    misleading answer: her shirt against a NEW head of hair projects onto
-    (old hair − new hair) perfectly well, so the term would claim territory the
-    harvest gate is supposed to govern and hand it the painter's frame ungated.
-
-    The fence is the one the geometric term already uses: **nothing departed
-    where the painter still has the thing.** A grow therefore produces an empty
-    reveal by construction rather than by a threshold happening to hold.
-
-    **REASONED, NOT MEASURED — say so rather than let a green suite imply it.**
-    The leak above is derived from the arithmetic; no fixture in this suite has
-    been driven red by removing this fence, because the synthetic frames are
-    64x64 and the frame-fraction reaches collapse to about ten pixels there. What
-    IS measured is that it costs the shrink nothing: the founder's specimen gives
-    identical shoulder bands with and without it. So this is cheap insurance
-    against a derived hazard, and it stays on the honest side of the line the
-    visibility gate drew — built and wired, not calibrated.
-  */
-  const departedVacated = await vacancyOf({
-    zone,
-    masterRegion: departedFully,
-    paintedRegion: paintedContent,
-    tolerancePx: scaled(VACANCY_TOLERANCE_FRACTION, master.width, master.height),
-  });
-  const vacancy = unionMasks(vacated, departedVacated);
+    perRegion.push({
+      withStrands,
+      vacated,
+      departed: departed.alpha,
+      vacancy: unionMasks(vacated, departedVacated),
+      strandColour: strands.strandColour,
+    });
+  }
 
   /*
     The painter's own drift, measured per render — from territory this composite
-    claims NOTHING in. The vacancy is claimed, so it is excluded from the sample
-    for the same reason the harvest always was: a baseline drawn through the loud
-    part of the frame raises the bar the loud part then has to clear.
+    claims NOTHING in, across every region. The vacancy is claimed, so it is
+    excluded from the sample for the same reason the harvest always was: a
+    baseline drawn through the loud part of the frame raises the bar the loud
+    part then has to clear.
   */
-  const claimed = unionMasks(withStrands, vacancy);
+  const claimed = unionMasks(...perRegion.flatMap((region) => [region.withStrands, region.vacancy]));
   const quietSamples: number[] = [];
   for (let pixel = 0; pixel < claimed.data.length; pixel += 1) {
     if (claimed.data[pixel] !== 0 || pixel % 37 !== 0) continue;
@@ -954,22 +835,25 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   quietSamples.sort((a, b) => a - b);
   const baselineDelta = quietSamples[Math.floor(quietSamples.length / 2)] ?? 0;
 
-  /* Only what is really the new content — not her surface rendered again. */
-  const harvested = harvestGate({
-    master, patch: painted, alpha: withStrands, strandColour: strands.strandColour, baselineDelta,
-  }).alpha;
   /*
-    The reveal is narrowed by the SAME gate on the SAME criterion, and only that
-    one — `novelty` asks *is this her surface*, which is precisely the jitter
-    question. The strand projection would be the wrong question entirely: what
-    lands in a reveal is background and skin, and asking it to look like hair
-    would revert every pixel of it.
+    Each region gated with ITS OWN strand colour. Only what is really the new
+    content, never her surface rendered again — and the reveal narrowed by the
+    same gate on `novelty` only, because what lands in a reveal is background and
+    skin, and asking it to look like the strand would revert every pixel of it.
   */
-  const revealed = harvestGate({
-    master, patch: painted, alpha: vacancy, strandColour: strands.strandColour,
-    baselineDelta, criterion: "novelty",
-  }).alpha;
-  const gated = unionMasks(harvested, revealed);
+  const gated = unionMasks(...perRegion.map((region) => unionMasks(
+    harvestGate({
+      master, patch: painted, alpha: region.withStrands,
+      strandColour: region.strandColour, baselineDelta,
+    }).alpha,
+    harvestGate({
+      master, patch: painted, alpha: region.vacancy,
+      strandColour: region.strandColour, baselineDelta, criterion: "novelty",
+    }).alpha,
+  )));
+  const harvested = unionMasks(...perRegion.map((region) => region.withStrands));
+  const vacated = unionMasks(...perRegion.map((region) => region.vacated));
+  const departedAlpha = unionMasks(...perRegion.map((region) => region.departed));
 
   /* A zone that stops where the content does not is a guillotine (D-230). */
   const grown = await expandUntilClear({
@@ -1043,7 +927,7 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
           zone: grown.zone,
           harvested,
           vacated,
-          departed: departed.alpha,
+          departed: departedAlpha,
           delivered: gated,
           applied: composed.applied,
         },
