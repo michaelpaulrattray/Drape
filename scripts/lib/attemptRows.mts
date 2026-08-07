@@ -24,8 +24,8 @@
  * one number is the mirror law #4 forbids, and it is how the on-demand report
  * and the walk report would come to disagree about the same window.
  */
-import mysql from "mysql2/promise";
 import type { AttemptRow } from "../../server/castingV2/reliabilityReport.js";
+import { openDatabase } from "./dbConnection.mjs";
 
 /**
  * The stored verdict is a JSON column, and mysql2 hands it back already parsed
@@ -65,7 +65,21 @@ export async function readAttemptRows(input: {
   since?: Date;
   userId?: number;
 }): Promise<AttemptRow[]> {
-  const conn = await mysql.createConnection(databaseUrl());
+  /*
+    THROUGH `openDatabase`, AND THE TEN HOURS ARE THE REASON.
+
+    A raw `mysql.createConnection` parses a DATETIME as LOCAL, and everything in
+    this database is UTC — so on this machine (UTC+10) a `--since` window is
+    compared ten hours out of frame in BOTH directions. The first walk to run
+    against it reported `n=0` over a window in which four renders had just
+    completed, and a zero is exactly the shape of a real finding.
+
+    `scripts/lib/dbConnection.mts` was written for this defect and says so; this
+    module and `reliability-report.mts` had both opened their own connection and
+    opted straight back out of it. That is the class, not the instance: the
+    shared connection only helps if the thing that needs it imports it.
+  */
+  const conn = await openDatabase(databaseUrl());
   const where: string[] = ["v.pointsCost > 0"];
   const params: unknown[] = [];
   if (input.since) { where.push("v.createdAt >= ?"); params.push(input.since); }

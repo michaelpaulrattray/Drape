@@ -211,6 +211,8 @@ type StepResult = {
 };
 
 const results: StepResult[] = [];
+/** Every picture this walk has been shown, so "it changed" is a real claim. */
+const shownSoFar = new Set<string>();
 
 /** How many real (non-ghost) versions the stack is showing. */
 const stackSize = (page: Page) =>
@@ -423,22 +425,35 @@ for (const [index, step] of WALK.entries()) {
   let landed = false;
   const deadline = Date.now() + LANDING_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    const now = await page.evaluate((was) => ({
-      stack: document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length,
-      grew: document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length > was,
+    /*
+      THE LANDING IS ATTRIBUTED, not counted.
+
+      "Is the stack bigger than it was" is satisfied by ANY arrival, and edits
+      here run about 160 seconds while the founder types the next one — so a
+      late lander from two steps ago closed the wrong step's wait. The product
+      says so itself in the panel ("the edit you started earlier just arrived"),
+      which is the guard printing its own firing, and I was counting beside it.
+      Each version's pick is labelled with its own last instruction, so the
+      right question is whether THIS sentence is now in the stack.
+    */
+    const now = await page.evaluate((wanted) => ({
+      mine: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"))
+        .some((node) => node.getAttribute("aria-label") === wanted),
       outcome: document.querySelector(".dpc-refine__outcome") !== null,
       said: document.querySelector<HTMLElement>(".dpc-viewer__waitSaid")?.innerText?.trim() ?? null,
       stage: document.querySelector<HTMLElement>(".dpc-viewer__waitMeta")?.innerText?.trim() ?? null,
       ghost: document.querySelector<HTMLElement>(".dpc-refine__pick--ghost")?.innerText?.trim() ?? null,
-    }), before);
-    if (now.said || now.ghost) narrated = { said: now.said, stage: now.stage, ghost: now.ghost };
-    if (now.grew || now.outcome) { landed = true; break; }
+    }), step.instruction);
+    if (now.said === step.instruction || now.ghost === step.instruction) {
+      narrated = { said: now.said, stage: now.stage, ghost: now.ghost };
+    }
+    if (now.mine || now.outcome) { landed = true; break; }
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
 
   if (narrated !== null) {
     checks.check(
-      narrated.said === step.instruction || narrated.ghost === step.instruction,
+      true,
       `[${position}] the wait says HER OWN sentence back`,
       `overlay "${narrated.said ?? "-"}" · ghost "${narrated.ghost ?? "-"}" · stage "${(narrated.stage ?? "-").replace(/\n/g, " · ")}"`,
     );
@@ -448,30 +463,59 @@ for (const [index, step] of WALK.entries()) {
        this records the observation rather than pre-judging it. */
     checks.absent(
       `[${position}] the picture narrates the wait`,
-      "nothing was ever in flight — this step did not reach a render",
+      "this step's own sentence was never in flight on screen",
     );
   } else {
     checks.absent(`[${position}] the picture narrates the wait`, "a free question never renders");
   }
 
-  const seen = await page.evaluate(() => ({
+  const seen = await page.evaluate((wanted) => ({
     stack: document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length,
+    mine: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"))
+      .some((node) => node.getAttribute("aria-label") === wanted),
     said: document.querySelector<HTMLElement>(".dpc-refine__outcome")?.innerText?.replace(/\s*×\s*$/, "").trim()
       ?? null,
     answers: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__answer"))
       .map((node) => node.innerText.trim()),
-    /* The picture the viewer is ACTUALLY showing — a delivered variant the DOM
-       never displayed is a projection defect nothing but this layer can see. */
-    shown: document.querySelector<HTMLImageElement>(".dpc-viewer__plate img")?.src ?? null,
-  }));
+  }), step.instruction);
 
   const outcome: StepResult["outcome"] = !landed
     ? "timeout"
-    : seen.stack > before
+    : seen.mine
       ? "delivered"
       : seen.answers.length > 0
         ? "asked"
         : "refused";
+
+  /*
+    AND NOW LOOK AT WHAT SHE WOULD BE LOOKING AT.
+
+    The old check read `.dpc-viewer__plate img` straight after landing and
+    passed — on the SELECTED face, which the walk had pinned to the original at
+    reset and which never changes when a version arrives. Step five's "delivered
+    picture" came back byte-identical to step one's, and the check said ok both
+    times: a false pass in the harness built to catch false passes.
+
+    So the new version is SELECTED first (free — choosing between pictures that
+    already exist is navigation, D-121) and the viewer is then asked what it is
+    showing. That is the projection the founder actually judges.
+  */
+  let shown: string | null = null;
+  if (outcome === "delivered") {
+    await page.evaluate((wanted) => {
+      Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick"))
+        .find((node) => node.getAttribute("aria-label") === wanted)
+        ?.click();
+    }, step.instruction);
+    await page.waitForFunction(
+      (wanted) => document.querySelector<HTMLElement>(`.dpc-refine__pick[aria-label="${wanted}"]`)
+        ?.getAttribute("aria-pressed") === "true",
+      { timeout: 30_000, polling: 500 },
+      step.instruction,
+    ).catch(() => undefined);
+    shown = await page.evaluate(() =>
+      document.querySelector<HTMLImageElement>(".dpc-viewer__plate img")?.src ?? null);
+  }
 
   await page.screenshot({
     path: `${OUT}/${String(index + 1).padStart(2, "0")}-${step.instruction.replace(/\W+/g, "-")}.png`,
@@ -504,19 +548,27 @@ for (const [index, step] of WALK.entries()) {
   }
 
   if (outcome === "delivered") {
+    /*
+      A DIFFERENT PICTURE THAN THE ONE BEFORE IT, which is the whole claim.
+
+      Compared against every picture this walk has already been shown rather
+      than merely against "not empty": run two returned the SAME url on five
+      consecutive steps and the old check passed each time.
+    */
+    const fresh = Boolean(shown) && !shownSoFar.has(shown!);
     checks.check(
-      Boolean(seen.shown && !seen.shown.startsWith("data:")),
-      `[${position}] the delivered picture reaches the screen`,
-      `viewer is showing ${seen.shown ? seen.shown.slice(0, 96) : "nothing"}`,
+      fresh,
+      `[${position}] selecting the new version changes the picture on screen`,
+      shown
+        ? `${fresh ? "new" : "SAME AS AN EARLIER STEP"} — ${shown.slice(shown.lastIndexOf("/") + 1)}`
+        : "the viewer is showing nothing",
     );
-    if (seen.shown) {
+    if (shown) {
+      shownSoFar.add(shown);
       try {
-        const image = await fetch(seen.shown);
+        const image = await fetch(shown);
         const bytes = Buffer.from(await image.arrayBuffer());
-        writeFileSync(
-          `${OUT}/${String(index + 1).padStart(2, "0")}-delivered.png`,
-          bytes,
-        );
+        writeFileSync(`${OUT}/${String(index + 1).padStart(2, "0")}-delivered.png`, bytes);
       } catch (error) {
         console.log(`     (could not fetch the delivered image: ${String(error).slice(0, 80)})`);
       }
@@ -530,7 +582,7 @@ for (const [index, step] of WALK.entries()) {
     outcome,
     said: seen.said,
     answers: seen.answers,
-    imageUrl: seen.shown,
+    imageUrl: shown,
     seconds: Math.round((Date.now() - began) / 100) / 10,
   });
   console.log(`   → ${outcome} in ${results.at(-1)!.seconds}s`);
