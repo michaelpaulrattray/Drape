@@ -32,17 +32,17 @@
  * reading (four attempts, the segmenter could not find an eye on any of them),
  * so the vocabulary comparison has zero measurements on one side. What IS
  * measured is that the anatomical arm restructures — +4.84 and +3.99 degrees on
- * two renders. Attribution between "the words" and "the engine" is unsettled and
- * is being decided by the cross-cast matrix, not asserted here.
+ * one face, then +6.35 and +7.61 across the matrix. Attribution between "the
+ * words" and "the engine" remains UNSETTLED and is not asserted here; the row
+ * was decided on realism, which does not depend on settling it.
  *
- * # PROVISIONAL, and the word is load-bearing
+ * # RATIFIED, after a deliberately provisional interval
  *
- * `EYE_SHAPE_ENGINE` is this round's winner on ONE face. The founder's ruling is
- * that the row does not harden until the cross-cast matrix has run across four
- * to six casts spanning baseline, gender and ethnicity, judged on REALISM FOR
- * THE SUBJECT by eye rather than on the tilt number. A split verdict — one
- * engine for some face classes, another for others — is a legitimate outcome and
- * simply adds a column.
+ * The row was held provisional while exactly one face had been tested, and only
+ * hardened once the cross-cast matrix had run over six casts spanning baseline,
+ * gender and ethnicity — judged on REALISM FOR THE SUBJECT by the founder's eye
+ * rather than on the tilt number, which could not read both engines fairly.
+ * NBP took it: the same person, with genuinely restructured eyes.
  */
 import { alreadyUpswept } from "./canthalTilt";
 
@@ -76,18 +76,37 @@ export const ANATOMICAL_UPSWEPT_EDIT =
   + "exactly as they are.";
 
 /**
- * PROVISIONAL routing for the class. Nano Banana Pro took this round on the one
- * face that has been tested; GPT Image 2 measured +0.52deg on the same face and
- * same prose, which is inside the instrument's noise.
+ * THE RATIFIED ROW — Nano Banana Pro, founder ruling 2026-08-07, after the
+ * cross-cast matrix.
+ *
+ * Judged on REALISM FOR THE SUBJECT across six casts spanning baseline tilt,
+ * gender and ethnicity, which was always the deciding criterion rather than the
+ * tilt number: **NBP is the same person with genuinely restructured eyes.** GPT
+ * Image 2 was near-invisible on every cast (+1.4 to +1.7 degrees, at the edge of
+ * the instrument's own resolution) and on one cast moved the corners the WRONG
+ * WAY.
+ *
+ * This is the routing table's first genuine per-class payoff: the identity
+ * engine keeps every other row, and eye.shape alone comes here.
  *
  * FLUX is not a candidate and never will be again — banned 0-for-4
  * (`BANNED_ENGINES` in `providers/falImages`), having decorated rather than
  * restructured when given a caged chance at the one thing it was reputed for.
+ *
+ * Strength modulation — should "intense" ever bother a real face — is a future
+ * refinement and explicitly NOT a condition of this row.
  */
 export const EYE_SHAPE_ENGINE = "nbp" as const;
 
-/** Has the matrix run? Until it has, this row is not settled and says so. */
-export const EYE_SHAPE_ROUTING_IS_PROVISIONAL = true;
+/**
+ * RATIFIED. Was `true` while one face had been tested; the matrix closed it.
+ *
+ * Kept as a named constant rather than deleted, because the thing worth
+ * remembering is that this row went through a provisional state on purpose and
+ * only hardened on evidence — and the next class to earn a row should do the
+ * same.
+ */
+export const EYE_SHAPE_ROUTING_IS_PROVISIONAL = false;
 
 /**
  * THE ALREADY-TRUE GATE, fourth member of the refuse-before-dispatch family.

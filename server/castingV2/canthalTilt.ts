@@ -32,13 +32,49 @@
  *
  * # The instrument is not trusted until it is controlled
  *
- * A landmark model is stochastic and its points wobble by a few pixels, which on
- * a 78-pixel eye is degrees. So this SAMPLES, reports the spread alongside the
- * value, and refuses to pretend to a precision it does not have. The positive
- * control lives in the tests and in `scripts/calibration/tilt-instrument.mts`:
- * **rotate the image by a known angle and the measured tilt must move by that
- * angle.** An instrument that cannot see a rotation it was handed cannot see a
- * render it was pointed at.
+ * The controls live in `scripts/calibration/tilt-instrument.mts`. The positive
+ * one is a TENT WARP — lift every pixel in proportion to its distance from the
+ * midline and every canthal tilt in the frame gains exactly `atan(k)` degrees,
+ * by geometry, with no model or render involved. Measured residual 0.02 and 1.07
+ * degrees against known 4 and 8 degree warps; noise floor zero. **Resolution is
+ * ~1.1 degrees and nothing smaller may be called.**
+ *
+ * (An earlier control rotated the image and expected the reading to follow. It
+ * does not, and should not: tilt is measured per eye against that eye's own
+ * axis, so a head tilt raises one eye's angle and lowers the other's and the
+ * mean is invariant. That invariance is the desired behaviour, and the control
+ * was testing for a property the measure is correct not to have.)
+ *
+ * # READ IT TWO WAYS AND TAKE WHICHEVER ANSWERS — the no-read bias
+ *
+ * The dangerous failure here was never a wrong number. It was a MISSING one,
+ * and the misses were not random: segmenting a whole frame declined 11 of 25
+ * renders, overwhelmingly the ones from the engine that changes the most.
+ * **A narrowed eye aperture is exactly what defeats an eye detector**, so the
+ * instrument went blind precisely on the renders it most needed to score, and a
+ * matrix built on it understated the winning engine. Measured: renders that
+ * would not read at full frame averaged **+5.11 degrees** of tilt change once
+ * they could be read, against **+1.40** for the ones that read easily.
+ *
+ * A no-read is therefore evidence, not absence — and treating it as absence is
+ * the false-pass asymmetry running backwards.
+ *
+ * The fix is a two-rung ladder, and both rungs measure the same thing:
+ *
+ *   FULL FRAME  segment the render whole
+ *   ZONE        crop to where the MASTER's eyes are — the master always reads —
+ *               and segment inside that crop, where the eyes fill the frame
+ *               instead of occupying a thousandth of it
+ *
+ * The crop comes from the MASTER and never from the render, so the measurement
+ * cannot wander to wherever the answer is convenient. Angles survive it because
+ * the pixel aspect is preserved. **Where both rungs read they agree within the
+ * instrument's own resolution** (0.03, 0.22 and 0.52 degrees apart on three
+ * casts), which is what makes them interchangeable rather than two different
+ * measurements; together they read 12 of 12 where either alone reads 8.
+ *
+ * `scripts/calibration/no-read-hypothesis.mts` is the evidence, and any wiring
+ * of this metric into verification must use both rungs.
  */
 import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";

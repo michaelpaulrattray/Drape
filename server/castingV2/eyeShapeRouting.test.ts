@@ -43,11 +43,14 @@ describe("the routing row, and its honesty about being unfinished", () => {
     expect(EYE_SHAPE_ENGINE).toBe("nbp");
   });
 
-  it("SAYS IT IS PROVISIONAL, because one face is one face", () => {
-    /* The founder's ruling: the row does not harden until the cross-cast matrix
-       has run. A flag that quietly flips to settled is how a provisional
-       decision becomes a permanent one nobody re-examined. */
-    expect(EYE_SHAPE_ROUTING_IS_PROVISIONAL).toBe(true);
+  it("is RATIFIED — the matrix closed it, and only the matrix could", () => {
+    /* It was provisional while one face had been tested. Six casts spanning
+       baseline, gender and ethnicity, judged on realism for the subject, closed
+       it: NBP is the same person with restructured eyes; GPT2 was near-invisible
+       and once went backwards. The flag stays as a named constant so the next
+       class to earn a row remembers this one went through a provisional state
+       on purpose. */
+    expect(EYE_SHAPE_ROUTING_IS_PROVISIONAL).toBe(false);
   });
 
   it("can never route to a banned engine", () => {
