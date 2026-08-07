@@ -42,6 +42,7 @@ import { createFalMaskedEditEngine } from "../../server/providers/falImages";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
+import { amplitudeFor } from "../../server/castingV2/changeAmplitude";
 import { composeEditPrompt } from "../../server/castingV2/refineDelta";
 
 const OUT = "output/masked/marks-prose";
@@ -90,6 +91,9 @@ for (let i = 0; i < skin.data.length; i += 1) if (skin.data[i] > 127) skinPx += 
 const raw = async (bytes: Buffer) =>
   sharp(bytes).resize(W, H, { fit: "fill" }).removeAlpha().raw().toBuffer();
 const A = await raw(master);
+const MOVED = amplitudeFor("marks");
+console.log(`counting at >${MOVED} levels — the marks class’s own amplitude`);
+console.log("");
 
 async function arm(label: string, prompt: string) {
   const began = Date.now();
@@ -111,15 +115,16 @@ async function arm(label: string, prompt: string) {
   });
   writeFileSync(`${OUT}/${label}-composed.png`, composed.bytes);
 
-  /* Freckle amplitude, on her skin, against the master. A freckle is worth
-     about four levels; the program's habitual 25 would report nothing. */
+  /* This class's OWN amplitude, from `changeAmplitude` rather than a literal
+     here — a freckle is worth about four levels and the program's habitual 25
+     would report nothing. The table is the one place that decides. */
   const B = await raw(composed.bytes);
   let moved = 0;
   for (let p = 0; p < W * H; p += 1) {
     if (skin.data[p] <= 127) continue;
     const i = p * 3;
     const d = (Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2])) / 3;
-    if (d > 4) moved += 1;
+    if (d > MOVED) moved += 1;
   }
   console.log(
     `${label.padEnd(10)} ${((Date.now() - began) / 1000).toFixed(0)}s · `

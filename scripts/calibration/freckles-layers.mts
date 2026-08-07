@@ -42,6 +42,7 @@ import { createFalMaskedEditEngine } from "../../server/providers/falImages";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
+import { amplitudeFor } from "../../server/castingV2/changeAmplitude";
 
 const OUT = "output/masked/freckles";
 mkdirSync(OUT, { recursive: true });
