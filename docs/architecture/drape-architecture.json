@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dd628c1a7e96ac9d"
+    "sourceFingerprint": "9ebdb2a90f4613bc"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 61
+      "moduleCount": 62
     },
     {
       "id": "domain:castingV2",
@@ -3257,6 +3257,12 @@
     {
       "id": "module:server/castingV2/cohortPhotorealHuman.ts",
       "path": "server/castingV2/cohortPhotorealHuman.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/eyeShapeRouting.ts",
+      "path": "server/castingV2/eyeShapeRouting.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8247,6 +8253,10 @@
     {
       "id": "test:server/castingV2/deployCollision.test.ts",
       "path": "server/castingV2/deployCollision.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/eyeShapeRouting.test.ts",
+      "path": "server/castingV2/eyeShapeRouting.test.ts"
     },
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
@@ -17032,6 +17042,11 @@
     {
       "from": "module:server/castingV2/cohortPhotorealHuman.ts",
       "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/eyeShapeRouting.ts",
+      "to": "module:server/castingV2/canthalTilt.ts",
       "kind": "imports"
     },
     {

@@ -21,6 +21,30 @@ import { ProviderError, type CandidateRequest, type CreativeEngine, type ImageRe
  * response is the same `images[]` shape the identity engine returns.
  */
 
+/**
+ * ⛔ FLUX.2 PRO IS BANNED FROM THIS PROGRAM — founder ruling, 2026-08-07.
+ *
+ * Never tested again, on anything. Struck from the engine pool, the routing
+ * table, and every future probe design. The record is 0-for-4:
+ *
+ *   1. the engine bake-off — OVER-STYLED, consistently the least restrained
+ *      photographically (seam 35.9 and 21.1 against NBP's and GPT2's teens)
+ *   2. the glasses silhouette case — GHOSTED, doubled frame outlines, the only
+ *      engine to fail that scenario visibly
+ *   3. seam convergence — NEVER CONVERGED at any radius, alone among the three
+ *   4. eye geometry, its one reputed strength, given a caged chance on a face
+ *      measured flat enough to show the delta — it DECORATED rather than
+ *      restructured (-0.42deg, inside the instrument's own noise)
+ *
+ * **The reputation was always styling mistaken for anatomy.** It looked like the
+ * engine that changed structure because it changed the most, and "changed the
+ * most" is the one thing this program has learned not to read as compliance.
+ *
+ * Do not add it back for a fifth try. If a successor model appears it is a new
+ * entry with its own evidence, not this one rehabilitated.
+ */
+export const BANNED_ENGINES = ["fal-ai/flux-2-pro", "fal-ai/flux-2-pro/edit"] as const;
+
 export const FAL_GPT_IMAGE_2 = "openai/gpt-image-2";
 export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
 

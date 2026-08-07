@@ -76,7 +76,7 @@ const MASTER_FILE = "output/masked/specimens/fresh-02.png";
 const FEATHER = 3;
 
 const enginesFlag = process.argv.indexOf("--engines");
-const ENGINES = (enginesFlag >= 0 ? process.argv[enginesFlag + 1] : "nbp,gpt2,flux").split(",");
+const ENGINES = (enginesFlag >= 0 ? process.argv[enginesFlag + 1] : "nbp,gpt2").split(",");
 
 /* ------------------------------------------------------------- segmentation */
 

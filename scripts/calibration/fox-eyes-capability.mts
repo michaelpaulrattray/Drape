@@ -25,9 +25,10 @@
  * product's current trend-named prose AND a purely anatomical description that
  * never says the words, and the two are compared.
  *
- * ENGINE. The glasses bake-off found FLUX the only engine that visibly
- * RESTRUCTURED rather than decorated (it also ghosted frames, which is why it
- * did not take that row). Eye geometry is the row it might earn.
+ * ENGINE. FLUX was in this probe and is now BANNED (see `BANNED_ENGINES`): given
+ * a caged chance at the one thing it was reputed to do, it decorated rather than
+ * restructured, finishing 0-for-4. The reputation was styling mistaken for
+ * anatomy. Two engines remain.
  *
  * # The bar, stated before the numbers arrive
  *
@@ -108,10 +109,6 @@ const ENGINES: Record<string, { endpoint: string; body: (prompt: string) => Reco
   nbp: {
     endpoint: DEFAULT_IDENTITY_EDIT_MODEL,
     body: (prompt) => ({ prompt, image_urls: [masterUri], num_images: 1, resolution: "2K", aspect_ratio: "2:3", output_format: "png" }),
-  },
-  flux: {
-    endpoint: "fal-ai/flux-2-pro/edit",
-    body: (prompt) => ({ prompt, image_urls: [masterUri], output_format: "png", image_size: "portrait_4_3" }),
   },
 };
 
