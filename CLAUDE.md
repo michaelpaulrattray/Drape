@@ -47,7 +47,19 @@ it be challenged before it ships, not after.
    the outgoing request, not on a constant near it.
 6. **Render before shipping anything visual.** No visual change ships
    without being looked at in the running app first. (D-101.)
-7. **This is a visual studio, not a maths class.** (Founder, 2026-08-06.)
+7. **Fix the class, not the instance.** (Founder, 2026-08-07.) A bug
+   found once is a pattern until proven unique. Before declaring any
+   defect fixed: name its class (the shape of the mistake, not the
+   symptom), sweep the rest of the feature — and any code sharing the
+   shape — for siblings, and fix or explicitly file every one found.
+   The sweep is part of the fix; a fix without its sweep is half done.
+   Evidence this pays: the nose/rose typo fix swept 46 sentences and
+   caught two more latent hits before any user did; the "earring"
+   default was one of a class of quiet dispatch fallbacks; the
+   wrong-boundary measurement error took four appearances before its
+   class was named — each earlier sweep would have prevented the later
+   instances.
+8. **This is a visual studio, not a maths class.** (Founder, 2026-08-06.)
    The user's ontology governs design: edits are scoped and named the
    way a stylist, photographer, or casting director thinks — a fringe
    is part of a haircut, a tan covers all visible skin, earrings come
