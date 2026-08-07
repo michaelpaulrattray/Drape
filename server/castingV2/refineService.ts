@@ -606,6 +606,22 @@ export async function refineCandidate(
   const droppedReference = "droppedReference" in parsed && parsed.droppedReference === true;
   let chain: ChainStep[] = predecessorChain ?? [];
   let removedFacets = new Set<Facet>();
+  /**
+   * WHAT A REMOVAL TOOK OFF HER, in her own words.
+   *
+   * An operation that deletes its own facet from the record must carry its
+   * subject explicitly to every consumer that keys off the record (Fable,
+   * 2026-08-08). The harvest asks `facetsWrittenBy(composed)` which question to
+   * segment; a removal prunes its own step, so `composed` no longer names the
+   * thing, the glasses are never asked about, and `outsideMaskUnchanged` then
+   * guarantees the master is kept exactly where the painter removed them —
+   * a paid render that hands back the face she started with.
+   *
+   * The pruned record definitionally cannot name what departed. The removal
+   * EVENT is the only source of truth for its own subject, so it is carried
+   * rather than reconstructed.
+   */
+  let departed: string | null = null;
 
   /*
     A REMOVAL HAS TO SAY SO (D-189).
@@ -645,6 +661,8 @@ export async function refineCandidate(
   }
 
   if (parsed.intent === "remove") {
+    /* Carried from here, before any pruning can erase the evidence of it. */
+    if (parsed.match) departed = parsed.match;
     if (predecessorChain === null) {
       /*
         A row from before the chain column, or one whose two lists disagree.
@@ -1540,6 +1558,12 @@ export async function refineCandidate(
            and glasses sit at the eyes, so the placement needs the words, not
            just the slot they landed in. */
         described: itemsOf(composed.free?.statedAccessories).join(" ") || undefined,
+        /* The thing that LEFT, which the pruned record cannot name. Without it
+           an object removal asks no question at all, and with only `described`
+           it asks about the SURVIVING accessory — a chain of earrings+glasses
+           minus the glasses would harvest at her earlobes, which is the exact
+           failure `LANDMARK_OF_ACCESSORY` was introduced to kill. */
+        departed: departed ?? undefined,
         operationId,
       });
       return { ...painted, bytes: harvested.bytes, contentType: harvested.contentType };

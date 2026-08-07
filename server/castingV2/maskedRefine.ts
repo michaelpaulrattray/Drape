@@ -206,6 +206,21 @@ export type MaskedRefineInput = {
   userId?: number;
   /** What the instruction said the thing IS. Places an addition. */
   described?: string;
+  /**
+   * WHAT A REMOVAL TOOK OFF HER — carried, because the record cannot say it.
+   *
+   * An object removal deletes its own facet from the recipe, so
+   * `facetsWrittenBy(composed)` no longer names it and no question is ever
+   * asked about the thing being removed. The painter takes the glasses off, the
+   * harvest claims nothing at the eyes, and `outsideMaskUnchanged` then
+   * guarantees the master is kept exactly there — the composite puts them back
+   * and she pays for the face she started with.
+   *
+   * `described` cannot stand in for this: it holds the SURVIVORS, so a chain of
+   * earrings plus glasses minus the glasses would place the question at her
+   * earlobes — the failure `LANDMARK_OF_ACCESSORY` exists to prevent.
+   */
+  departed?: string;
   /** For the log line, so a composite can be traced to its operation. */
   operationId?: string;
   /**
@@ -674,6 +689,25 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     });
     zone = zone ? unionMasks(zone, destination) : destination;
   }
+  /*
+    A REMOVAL CAN BE THE WHOLE INSTRUCTION, and then there are no facets at all.
+
+    `facetsWrittenBy(composed)` is built from what the recipe still says, and a
+    removal that pruned its only step leaves it empty — so this threw "no facets
+    to mask" and the refinement refunded, for an ask the painter had carried out
+    perfectly. The departed thing is the territory in that case: her own frames,
+    from her own master.
+  */
+  if (!zone && input.departed) {
+    const gone = accessoryEntry(input.departed);
+    if (!gone) {
+      throw new MaskError(
+        `nothing names what "${input.departed}" is — refusing to guess where it was`,
+      );
+    }
+    const worn = await regionOf("master", gone.region, true);
+    if (coverage(worn) > 0) zone = worn;
+  }
   if (!zone) throw new MaskError("no facets to mask");
 
   /*
@@ -717,6 +751,28 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     const entry = accessoryEntry(input.described);
     if (!entry) throw new MaskError("nothing names what this accessory is — refusing to guess a region");
     questions.push({ name: entry.region, absentOnMaster: true, occluded: true });
+  }
+  /*
+    AND THE THING THAT LEFT, which no facet in the record points at any more.
+
+    `absentOnMaster: true` is what makes the loop below widen the zone from HER
+    OWN frame — for a removal the object is on the master, and the landmark
+    corridor is two small discs at the eyes while her frames run out to her
+    temples. The vacancy arithmetic is then exactly the distributed shrink's:
+    `zone ∩ (masterRegion − painted)`, which for a removed object is its whole
+    footprint, because the painter's answer to "where are the glasses" is
+    correctly nothing.
+  */
+  if (input.departed) {
+    const gone = accessoryEntry(input.departed);
+    if (!gone) {
+      throw new MaskError(
+        `nothing names what "${input.departed}" is — refusing to guess where it was`,
+      );
+    }
+    if (!questions.some((question) => question.name === gone.region)) {
+      questions.push({ name: gone.region, absentOnMaster: true, occluded: true });
+    }
   }
   if (questions.length === 0) {
     throw new MaskError("nothing names what this edit is about — refusing to guess a region");

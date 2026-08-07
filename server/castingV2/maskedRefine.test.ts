@@ -354,6 +354,73 @@ describe("an accessory is harvested by what it IS", () => {
     });
   }
 
+  /*
+    A REMOVAL DELETES ITS OWN FACET, so the record cannot name what left.
+
+    This is the asymmetry against `52a22740`: a distributed shrink keeps its
+    facet in `composed` (a shorter cut is still `hair.cut`), so the harvest is
+    still asked where the hair is. An object removal prunes its own step —
+    `facetsWrittenBy(composed)` stops naming `statedAccessories`, no question is
+    asked at the eyes at all, and `outsideMaskUnchanged` then guarantees the
+    master is kept exactly where the painter took the glasses off. The
+    composite puts them back and she pays for the face she started with.
+
+    So the removal event carries its own subject, and these prove it arrives.
+  */
+  it("asks about the DEPARTED thing when the record no longer names it", async () => {
+    const asked: string[] = [];
+    const naming: RegionReader = {
+      region: async ({ name }) => { asked.push(name); return box(20, 8, 44, 28); },
+      subject: async () => box(16, 6, 48, 60),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+    await harvestRefinement({
+      master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+      painted: { bytes: await png(() => [188, 186, 184]), contentType: "image/png" },
+      /* The pruned record: the glasses step is gone, so no facet points at it. */
+      facets: [],
+      reader: naming,
+      userId: 1,
+      departed: "thin wire glasses",
+    }).catch(() => undefined);
+    expect(asked, "the thing that left is never asked about").toContain("glasses");
+  });
+
+  it("asks about the DEPARTED thing and not the SURVIVOR", async () => {
+    /* The earlobe failure, precisely: a chain of earrings plus glasses minus
+       the glasses leaves `described` holding the hoops, so keying the question
+       off survivors sends the harvest to her earlobes to remove her
+       spectacles. */
+    const asked: string[] = [];
+    const naming: RegionReader = {
+      region: async ({ name }) => { asked.push(name); return box(20, 8, 44, 28); },
+      subject: async () => box(16, 6, 48, 60),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+    await harvestRefinement({
+      master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+      painted: { bytes: await png(() => [188, 186, 184]), contentType: "image/png" },
+      facets: ["statedAccessories"],
+      reader: naming,
+      userId: 1,
+      described: "small gold hoops",
+      departed: "thin wire glasses",
+    }).catch(() => undefined);
+    expect(asked, "the departed thing must be asked about").toContain("glasses");
+    expect(asked, "and the surviving hoops keep their own question too").toContain("earring");
+  });
+
+  it("REFUSES a departed thing it has no row for, rather than guessing where it was", async () => {
+    await expect(harvestRefinement({
+      master: { bytes: await png(() => [190, 188, 186]), contentType: "image/png" },
+      painted: { bytes: await png(() => [40, 30, 25]), contentType: "image/png" },
+      facets: [],
+      reader,
+      userId: 1,
+      departed: "a silver anklet",
+    })).rejects.toThrow(/refusing to guess where it was/);
+  });
+
   it("REFUSES ink by name rather than defaulting it into somebody else's row", async () => {
     /* "Left forearm" is not a facial landmark. The refusal is the feature — a
        default here would place a sleeve on her earlobe. */
