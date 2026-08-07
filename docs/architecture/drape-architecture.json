@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e0c7e70dec604a60"
+    "sourceFingerprint": "227510e39602463d"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 63
+      "moduleCount": 64
     },
     {
       "id": "domain:castingV2",
@@ -3239,6 +3239,12 @@
     {
       "id": "module:server/castingV2/castingV2Scope.ts",
       "path": "server/castingV2/castingV2Scope.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/changeAmplitude.ts",
+      "path": "server/castingV2/changeAmplitude.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8243,6 +8249,10 @@
     {
       "id": "test:server/castingV2/categorySurvival.test.ts",
       "path": "server/castingV2/categorySurvival.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/changeAmplitude.test.ts",
+      "path": "server/castingV2/changeAmplitude.test.ts"
     },
     {
       "id": "test:server/castingV2/characterSheet.test.ts",
@@ -16972,6 +16982,11 @@
     {
       "from": "module:server/castingV2/castViewPackage.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/changeAmplitude.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
       "kind": "imports"
     },
     {

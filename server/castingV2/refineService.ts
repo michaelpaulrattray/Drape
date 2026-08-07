@@ -1186,9 +1186,13 @@ export async function refineCandidate(
           her eyes, it would measure the tilt of a face nobody is looking at
           and refuse — or fail to refuse — on the strength of it.
         */
-        const bytes = await (dependencies.readBytes ?? storageReadBytes)(
-          source.imageKey ?? source.candidate.imageKey,
-        );
+        const key = source.imageKey ?? source.candidate.imageKey;
+        /* No picture, no reading — and a no-read never refuses, so this falls
+           through to spending exactly as an unreadable face does. Asserting the
+           key non-null with `!` would be claiming something the type says is
+           not true, on the one path whose whole job is to decline safely. */
+        if (!key) return null;
+        const bytes = await (dependencies.readBytes ?? storageReadBytes)(key);
         return await readCanthalTilt({ image: bytes.bytes, reader: dependencies.regions ?? defaultRegionReader() });
       } catch (error) {
         /* An instrument that cannot answer must not be able to refuse. */
