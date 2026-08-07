@@ -259,7 +259,7 @@ type StepResult = {
   instruction: string;
   expectClass: string;
   expects: "delivered" | "asked";
-  outcome: "delivered" | "asked" | "refused" | "timeout";
+  outcome: "delivered" | "asked" | "refused" | "errored" | "timeout";
   /** The sentence the panel showed, verbatim — a refusal nobody can read is a
       refusal nobody can act on, so it is captured rather than summarised. */
   said: string | null;
@@ -443,6 +443,29 @@ for (const [index, step] of WALK.entries()) {
 
   const idle = await waitUntilIdle();
   checks.check(idle === "box is live", `[${position}] the box is ready to take a sentence`, idle);
+  if (idle !== "box is live") {
+    /*
+      AND THEN STOP, rather than typing into a box that will not take it.
+
+      Run three found a step still running four minutes later, typed into the
+      disabled field anyway, and died on the next selector — so the walk ended
+      at step two with three steps never attempted and no report at all. A
+      driver that crashes has measured nothing; a driver that records "this step
+      never got a turn" has measured exactly that.
+    */
+    results.push({
+      instruction: step.instruction,
+      expectClass: step.expectClass,
+      expects: step.expects,
+      outcome: "timeout",
+      said: idle,
+      answers: [],
+      imageUrl: null,
+      seconds: Math.round((Date.now() - began) / 100) / 10,
+    });
+    console.log(`   → skipped — ${idle}`);
+    continue;
+  }
 
   await page.type(".dpc-refine__field", step.instruction, { delay: 12 });
 
@@ -571,13 +594,40 @@ for (const [index, step] of WALK.entries()) {
       .map((node) => node.innerText.trim()),
   }), step.instruction);
 
+  /*
+    A SENTENCE SHOWN TO A CUSTOMER IS WRITTEN FOR THEM.
+
+    Run three's first step put **"Unable to transform response from server"** in
+    the panel — the tRPC client failing to deserialize a response, rendered
+    verbatim where the product's own refusal copy goes. Every refusal in this
+    program is a carefully written sentence that names its wall and says nothing
+    was charged; a transport string in that frame is not a refusal at all, and
+    lumping it in with the honest ones is how a real defect gets counted as
+    correct behaviour.
+
+    So it is its own outcome. The markers are the vocabulary of machines, not of
+    the stylist this panel speaks as.
+  */
+  const MACHINE_WORDS = /transform response|undefined|\[object |TypeError|NetworkError|ECONN|fetch failed|<html|status code|JSON/i;
+  const machineSaid = Boolean(seen.said && MACHINE_WORDS.test(seen.said));
+
   const outcome: StepResult["outcome"] = !landed
     ? "timeout"
     : seen.mine
       ? "delivered"
       : seen.answers.length > 0
         ? "asked"
-        : "refused";
+        : machineSaid
+          ? "errored"
+          : "refused";
+
+  if (seen.said) {
+    checks.check(
+      !machineSaid,
+      `[${position}] the panel speaks to her, not about the transport`,
+      `panel said "${seen.said.slice(0, 120)}"`,
+    );
+  }
 
   /*
     AND NOW LOOK AT WHAT SHE WOULD BE LOOKING AT.
