@@ -230,6 +230,92 @@ async function openViewer(): Promise<void> {
   }, label);
   if (!opened) throw new Error(`no tile offering "${label}" — the sheet is not showing her`);
   await page.waitForSelector(".dpc-viewer", { timeout: 20_000 });
+
+  /*
+    AND WAIT FOR THE PANEL'S OWN DATA, which is a separate query.
+
+    Run one read the stack the instant the viewer opened, got 0 because
+    `variants` had not resolved, and then every landing check — "is the stack
+    bigger than it was" — fired the moment the real stack rendered. Four steps
+    were scored `delivered` that had refused or never run. Reading a projection
+    before its query settles is the vacuous-pass hazard this harness keeps
+    meeting; a settled read is two identical counts a second apart, not a
+    hopeful sleep.
+  */
+  /* First that it has rendered at all — two equal reads of nothing is a settled
+     read of an unsettled query, which is the same false zero one rung up. */
+  await page.waitForSelector(".dpc-refine__pick", { timeout: 25_000 }).catch(() => undefined);
+  await page.waitForFunction(
+    () => {
+      const stack = document.querySelectorAll(".dpc-refine__pick").length;
+      const previous = (window as any).__walkStack;
+      (window as any).__walkStack = stack;
+      return previous !== undefined && previous === stack;
+    },
+    { timeout: 30_000, polling: 1000 },
+  ).catch(() => undefined);
+}
+
+/**
+ * Nothing of this face's is still running.
+ *
+ * `busy` disables the box while ANY refine on the sheet is in flight, so a step
+ * that starts while the last one is still out cannot type at all — and a step
+ * that starts while it is *becoming* busy types half a sentence. Waiting for
+ * quiet is what the founder does without noticing.
+ */
+async function waitUntilIdle(): Promise<string> {
+  const settled = await page
+    .waitForFunction(
+      () => {
+        const field = document.querySelector<HTMLInputElement>(".dpc-refine__field");
+        return field !== null && !field.disabled;
+      },
+      { timeout: LANDING_TIMEOUT_MS, polling: 1000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  return settled ? "box is live" : "box still disabled — something is still running";
+}
+
+/*
+  BACK TO THE ORIGINAL BEFORE ANYTHING IS TYPED — and it is free.
+
+  The walk candidate already carries a chain from the founder's own attempt
+  ("icy blue eyes", "tie her hair up"), and edits are base-anchored, so without
+  this every step would compose those two facets in alongside its own. Two
+  costs, both fatal to the exercise: the per-class table would carry `hairWorn`
+  readings the walk is not testing, and — decisively — RUN TWO WOULD START FROM
+  A DIFFERENT FACE THAN RUN ONE, which makes "clean twice in a row" a sentence
+  about two different experiments.
+
+  Selecting a version is navigation between pictures that already exist, so it
+  costs nothing (D-121).
+*/
+console.log("\n── reset: selecting the original");
+await openViewer();
+const reset = await page.evaluate(() => {
+  const button = document.querySelector<HTMLElement>('.dpc-refine__pick[aria-label="The original"]');
+  if (!button) return null;
+  const wasPressed = button.getAttribute("aria-pressed") === "true";
+  button.click();
+  return { wasPressed };
+});
+if (reset === null) {
+  checks.neverArmed("[reset] the original is addressable", "no Original pick in the stack");
+} else {
+  await page.waitForFunction(
+    () => document.querySelector('.dpc-refine__pick[aria-label="The original"]')
+      ?.getAttribute("aria-pressed") === "true",
+    { timeout: 30_000 },
+  ).catch(() => undefined);
+  const pressed = await page.evaluate(() =>
+    document.querySelector('.dpc-refine__pick[aria-label="The original"]')?.getAttribute("aria-pressed"));
+  checks.check(
+    pressed === "true",
+    "[reset] the walk starts from the original face",
+    `Original aria-pressed="${pressed}" (was ${reset.wasPressed ? "already" : "not"} selected)`,
+  );
 }
 
 for (const [index, step] of WALK.entries()) {
@@ -261,7 +347,44 @@ for (const [index, step] of WALK.entries()) {
     priceNote || "no note carrying a per-edit price",
   );
 
+  const idle = await waitUntilIdle();
+  checks.check(idle === "box is live", `[${position}] the box is ready to take a sentence`, idle);
+
   await page.type(".dpc-refine__field", step.instruction, { delay: 12 });
+
+  /*
+    WHAT IS ACTUALLY IN THE BOX, BEFORE THE MONEY MOVES.
+
+    Run one typed into a field that went `disabled` mid-keystroke because a
+    previous refinement's `pending` arrived on the poll, and dispatched a paid
+    render of **"gold hoop ear"**. Twenty-five credits on a sentence nobody
+    typed, and the only reason it was ever noticed is that the wait overlay
+    read the truncation back. Asserting at the wire is exactly this: the
+    contract is about what gets SENT, so it is proved on the outgoing value and
+    not on the constant beside it (invariant 5).
+  */
+  const inBox = await page.$eval(".dpc-refine__field", (node) => (node as HTMLInputElement).value);
+  const intact = inBox === step.instruction;
+  checks.check(
+    intact,
+    `[${position}] the box holds the sentence that is about to be paid for`,
+    `field reads "${inBox}"`,
+  );
+  if (!intact) {
+    /* Refusing to spend beats spending on the wrong thing and measuring it. */
+    results.push({
+      instruction: step.instruction,
+      expectClass: step.expectClass,
+      expects: step.expects,
+      outcome: "timeout",
+      said: `the box held "${inBox}" — not submitted`,
+      answers: [],
+      imageUrl: null,
+      seconds: Math.round((Date.now() - began) / 100) / 10,
+    });
+    continue;
+  }
+
   await page.evaluate(() => {
     const form = document.querySelector<HTMLFormElement>(".dpc-refine__ask");
     form?.requestSubmit();
@@ -288,55 +411,48 @@ for (const [index, step] of WALK.entries()) {
   );
 
   /*
-    THE WAIT, AND WHETHER THE PICTURE NARRATES IT.
+    LANDING, AND THE NARRATION ALONG THE WAY — one loop, not two windows.
 
-    Server truth on a 4s poll, so it is polled for rather than sampled once —
-    and a free question resolves before any of it exists, which is why the
-    narration is only expected on a step that spends.
+    Run one watched for narration in its own 30-second window and then waited
+    separately for the landing, so a render that took 32 seconds was recorded as
+    "never narrated". Worse, a step that REFUSED for free was judged against a
+    narration it was right not to have. The wait is the same wait: poll it once,
+    keep the best narration seen, and stop when the outcome arrives.
   */
-  const narrated = step.expects === "delivered"
-    ? await page
-      .waitForFunction(
-        () => document.querySelector(".dpc-viewer__wait") !== null
-          || document.querySelector(".dpc-refine__pick--ghost") !== null,
-        { timeout: 30_000 },
-      )
-      .then(() => page.evaluate(() => ({
-        said: document.querySelector<HTMLElement>(".dpc-viewer__waitSaid")?.innerText?.trim() ?? null,
-        stage: document.querySelector<HTMLElement>(".dpc-viewer__waitMeta")?.innerText?.trim() ?? null,
-        ghost: document.querySelector<HTMLElement>(".dpc-refine__pick--ghost")?.innerText?.trim() ?? null,
-      })))
-      .catch(() => null)
-    : null;
+  let narrated: { said: string | null; stage: string | null; ghost: string | null } | null = null;
+  let landed = false;
+  const deadline = Date.now() + LANDING_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const now = await page.evaluate((was) => ({
+      stack: document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length,
+      grew: document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length > was,
+      outcome: document.querySelector(".dpc-refine__outcome") !== null,
+      said: document.querySelector<HTMLElement>(".dpc-viewer__waitSaid")?.innerText?.trim() ?? null,
+      stage: document.querySelector<HTMLElement>(".dpc-viewer__waitMeta")?.innerText?.trim() ?? null,
+      ghost: document.querySelector<HTMLElement>(".dpc-refine__pick--ghost")?.innerText?.trim() ?? null,
+    }), before);
+    if (now.said || now.ghost) narrated = { said: now.said, stage: now.stage, ghost: now.ghost };
+    if (now.grew || now.outcome) { landed = true; break; }
+    await new Promise((resolve) => setTimeout(resolve, 750));
+  }
 
-  if (step.expects === "delivered") {
-    if (narrated === null) {
-      checks.neverArmed(
-        `[${position}] the picture narrates the wait`,
-        "neither the viewer's wait overlay nor a ghost chip appeared within 30s",
-      );
-    } else {
-      checks.check(
-        narrated.said === step.instruction || narrated.ghost === step.instruction,
-        `[${position}] the wait says HER OWN sentence back`,
-        `overlay "${narrated.said ?? "-"}" · ghost "${narrated.ghost ?? "-"}" · stage "${narrated.stage ?? "-"}"`,
-      );
-    }
+  if (narrated !== null) {
+    checks.check(
+      narrated.said === step.instruction || narrated.ghost === step.instruction,
+      `[${position}] the wait says HER OWN sentence back`,
+      `overlay "${narrated.said ?? "-"}" · ghost "${narrated.ghost ?? "-"}" · stage "${(narrated.stage ?? "-").replace(/\n/g, " · ")}"`,
+    );
+  } else if (step.expects === "delivered") {
+    /* A step that spends should have narrated; whether it is a defect or simply
+       a step that refused instead is decided by the outcome check below, so
+       this records the observation rather than pre-judging it. */
+    checks.absent(
+      `[${position}] the picture narrates the wait`,
+      "nothing was ever in flight — this step did not reach a render",
+    );
   } else {
     checks.absent(`[${position}] the picture narrates the wait`, "a free question never renders");
   }
-
-  /* Landing: one more real version in the stack, or a sentence in the panel. */
-  const landed = await page
-    .waitForFunction(
-      (was) =>
-        document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length > was
-        || document.querySelector(".dpc-refine__outcome") !== null,
-      { timeout: LANDING_TIMEOUT_MS, polling: 500 },
-      before,
-    )
-    .then(() => true)
-    .catch(() => false);
 
   const seen = await page.evaluate(() => ({
     stack: document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length,
