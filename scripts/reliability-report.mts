@@ -14,8 +14,8 @@
  * build attribution is by timestamp and what that costs in precision)
  *           --user 1
  */
-import mysql from "mysql2/promise";
-import { formatReport, summarize, type AttemptRow } from "../server/castingV2/reliabilityReport.js";
+import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
+import { readAttemptRows } from "./lib/attemptRows.mjs";
 
 const arg = (name: string): string | undefined => {
   const index = process.argv.indexOf(`--${name}`);
@@ -30,54 +30,16 @@ if (sinceRaw && Number.isNaN(since!.getTime())) {
 }
 const userId = arg("user");
 
-const url = process.env.MYSQL_PUBLIC_URL ?? process.env.DATABASE_URL;
-if (!url) {
-  console.error("No database URL. Set DATABASE_URL, or run under `railway run` for production.");
+/* The query and the row shape live in `lib/attemptRows` because the walk reads
+   the same rows to score itself. Two SELECTs feeding one number is how the
+   on-demand report and the walk report would come to disagree (law 4). */
+const attempts = await readAttemptRows({
+  since,
+  userId: userId ? Number(userId) : undefined,
+}).catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
-}
-
-const conn = await mysql.createConnection(url);
-const where: string[] = ["v.pointsCost > 0"];
-const params: unknown[] = [];
-if (since) { where.push("v.createdAt >= ?"); params.push(since); }
-if (userId) { where.push("v.userId = ?"); params.push(Number(userId)); }
-
-const [rows] = await conn.query<any[]>(
-  `SELECT v.operationId, v.createdAt, v.status, v.failureClass, v.pointsCost,
-          v.requestText, v.internalPrompt, o.refundedCredits
-     FROM casting_candidate_variants v
-     LEFT JOIN generation_operations o ON o.id = v.operationId
-    WHERE ${where.join(" AND ")}
-    ORDER BY v.createdAt ASC`,
-  params,
-);
-await conn.end();
-
-/*
-  The stored verdict is a JSON column, and mysql2 hands it back already parsed
-  or as a string depending on the driver's mood. Both shapes are read, and an
-  unreadable one becomes NO verdict rather than an invented pass.
-*/
-const verdictOf = (internalPrompt: unknown): AttemptRow["verification"] => {
-  if (!internalPrompt) return null;
-  let parsed: any = internalPrompt;
-  if (typeof parsed === "string") {
-    try { parsed = JSON.parse(parsed); } catch { return null; }
-  }
-  const verification = parsed?.verification;
-  return verification && typeof verification === "object" ? verification : null;
-};
-
-const attempts: AttemptRow[] = rows.map((row) => ({
-  operationId: String(row.operationId ?? ""),
-  createdAt: new Date(row.createdAt),
-  status: String(row.status),
-  failureClass: row.failureClass ?? null,
-  pointsCost: row.pointsCost ?? 0,
-  refundedCredits: row.refundedCredits ?? 0,
-  verification: verdictOf(row.internalPrompt),
-  requestText: row.requestText ?? null,
-}));
+});
 
 const report = summarize(attempts, {
   windowFrom: since,
