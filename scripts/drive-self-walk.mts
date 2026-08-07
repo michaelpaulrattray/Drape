@@ -508,6 +508,21 @@ for (const [index, step] of WALK.entries()) {
   await openViewer();
 
   const before = await stackSize(page);
+  /*
+    HOW MANY VERSIONS ALREADY CARRY THIS SENTENCE.
+
+    Landing was "a pick labelled with my instruction exists", which any EARLIER
+    version wearing the same words satisfies — and the big walk asks some
+    classes more than once. A stale match would score a step delivered with
+    nothing landed, which is the coordinate-versus-identity class again, now
+    inside the check written to fix its previous instance. Counted before, so
+    landing is an INCREASE rather than a presence.
+  */
+  const mineBefore = await page.$$eval(
+    ".dpc-refine__pick:not(.dpc-refine__pick--ghost)",
+    (nodes, wanted) => nodes.filter((node) => node.getAttribute("aria-label") === wanted).length,
+    step.instruction,
+  );
   const panel = await page.$(".dpc-refine");
   checks.check(
     panel !== null,
@@ -654,8 +669,8 @@ for (const [index, step] of WALK.entries()) {
       right question is whether THIS sentence is now in the stack.
     */
     const now = await page.evaluate((wanted) => ({
-      mine: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"))
-        .some((node) => node.getAttribute("aria-label") === wanted),
+      mineCount: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"))
+        .filter((node) => node.getAttribute("aria-label") === wanted).length,
       outcome: document.querySelector(".dpc-refine__outcome") !== null,
       said: document.querySelector<HTMLElement>(".dpc-viewer__waitSaid")?.innerText?.trim() ?? null,
       stage: document.querySelector<HTMLElement>(".dpc-viewer__waitMeta")?.innerText?.trim() ?? null,
@@ -664,7 +679,7 @@ for (const [index, step] of WALK.entries()) {
     if (now.said === step.instruction || now.ghost === step.instruction) {
       narrated = { said: now.said, stage: now.stage, ghost: now.ghost };
     }
-    if (now.mine || now.outcome) { landed = true; break; }
+    if (now.mineCount > mineBefore || now.outcome) { landed = true; break; }
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
 
@@ -688,8 +703,8 @@ for (const [index, step] of WALK.entries()) {
 
   const seen = await page.evaluate((wanted) => ({
     stack: document.querySelectorAll(".dpc-refine__pick:not(.dpc-refine__pick--ghost)").length,
-    mine: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"))
-      .some((node) => node.getAttribute("aria-label") === wanted),
+    mineCount: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"))
+      .filter((node) => node.getAttribute("aria-label") === wanted).length,
     said: document.querySelector<HTMLElement>(".dpc-refine__outcome")?.innerText?.replace(/\s*×\s*$/, "").trim()
       ?? null,
     answers: Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__answer"))
@@ -725,7 +740,7 @@ for (const [index, step] of WALK.entries()) {
     ? "collided"
     : !landed
       ? "timeout"
-      : seen.mine
+      : seen.mineCount > mineBefore
         ? "delivered"
         : seen.answers.length > 0
           ? "asked"
@@ -765,13 +780,20 @@ for (const [index, step] of WALK.entries()) {
   let shown: string | null = null;
   if (outcome === "delivered") {
     await page.evaluate((wanted) => {
-      Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick"))
-        .find((node) => node.getAttribute("aria-label") === wanted)
-        ?.click();
+      /* The LAST match: new versions append, so the first one wearing these
+         words is the oldest and selecting it would show a picture from an
+         earlier step. */
+      const matches = Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick"))
+        .filter((node) => node.getAttribute("aria-label") === wanted);
+      matches[matches.length - 1]?.click();
     }, step.instruction);
     await page.waitForFunction(
-      (wanted) => document.querySelector<HTMLElement>(`.dpc-refine__pick[aria-label="${wanted}"]`)
-        ?.getAttribute("aria-pressed") === "true",
+      (wanted) => {
+        const matches = Array.from(
+          document.querySelectorAll<HTMLElement>(".dpc-refine__pick"),
+        ).filter((node) => node.getAttribute("aria-label") === wanted);
+        return matches[matches.length - 1]?.getAttribute("aria-pressed") === "true";
+      },
       { timeout: 30_000, polling: 500 },
       step.instruction,
     ).catch(() => undefined);
