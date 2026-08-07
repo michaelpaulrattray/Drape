@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "57e06425dc81b16e"
+    "sourceFingerprint": "3cff69b31abc9743"
   },
   "domains": [
     {
@@ -8351,6 +8351,10 @@
     {
       "id": "test:server/castingV2/renderFault.test.ts",
       "path": "server/castingV2/renderFault.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/renderVerification.test.ts",
+      "path": "server/castingV2/renderVerification.test.ts"
     },
     {
       "id": "test:server/castingV2/retentionExemption.test.ts",

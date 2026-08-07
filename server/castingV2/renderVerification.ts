@@ -40,7 +40,7 @@
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
-import { facetHeading, type Facet } from "./refineFacets";
+import { facetHeading, facetOfSubject, type Facet } from "./refineFacets";
 
 const log = createModuleLogger("castingV2/renderVerification");
 
@@ -49,7 +49,19 @@ export type FacetCheck = {
   facet: Facet;
   asked: string;
   verified: boolean;
-  /** What the reader says it sees instead — only when it disagrees. */
+  /**
+   * AN AFFIRMATIVE WITHOUT EVIDENCE IS NOT A READING (D-235).
+   *
+   * `verified` only means something when `read` is true. A row the reader
+   * omitted, or an answer that names nothing it saw, is not a pass and not a
+   * miss — it is silence, and silence is recorded as silence.
+   *
+   * This is the door the hair-up false pass came through: the prompt used to
+   * ask for `saw` ONLY on a disagreement, so every affirmative was empty by
+   * construction and there was nothing to check it against.
+   */
+  read: boolean;
+  /** What the reader says it sees — required on every answer, either way. */
   saw?: string;
   /**
    * Whether this fact is one the product may REFUSE over (D-187).
@@ -97,8 +109,55 @@ const SYSTEM_PROMPT = [
   "the colour changed to the thing they named.",
   "",
   'Reply with JSON: {"results":[{"id":1,"present":true|false,"saw":"..."}]} and nothing',
-  "else. Include `saw` only where present is false, under 90 characters.",
+  "else.",
+  "",
+  "`saw` is REQUIRED on EVERY line, whether present is true or false. Name what you",
+  "actually see for that feature in this photograph — 'hair gathered at the nape',",
+  "'hair loose past the shoulders' — under 90 characters. Describe the picture, not",
+  "the request: never restate the asked-for wording back as what you saw.",
+  "",
+  "A line with no `saw` is discarded as unanswered. Do not answer without saying what",
+  "you saw.",
 ].join("\n");
+
+/**
+ * Only a READ, BINDING miss spends the user's refusal. An unread check is
+ * silence: it never refuses, and it never passes either.
+ */
+function okOf(checks: ReadonlyArray<FacetCheck>): boolean {
+  return checks.every((check) => !check.read || check.verified || !check.binding);
+}
+
+const keyOf = (check: FacetCheck): string => `${check.facet}|${check.asked}`;
+
+/**
+ * FACETS WITH A MEASURED UNRELIABILITY PRIOR (D-235).
+ *
+ * D-194 re-reads binding MISSES, because a miss is about to spend a refusal.
+ * That asymmetry was right for the refusal path and wrong for the delivery
+ * path: an affirmative was never re-read, so a false pass was single-sampled
+ * and free to produce — and a false pass is worse than a refusal, because it
+ * charges for non-compliance.
+ *
+ * Re-reading every affirmative would double the reading cost of every render.
+ * So this is a TARGETED list, and the entry bar is measured disagreement, not
+ * suspicion. It is seeded with the one facet that has a rap sheet:
+ *
+ *   - `hairWorn` — production operation 92e327ab ("tie her hair up"): affirmed
+ *     on one reading with no `saw`, delivered and charged with the hair
+ *     visibly still down. Refunded as a correction, 2026-08-07.
+ *
+ * The reliability report is what earns a facet its place here — a class whose
+ * audited false-pass count is non-zero gets added, and one that stops
+ * disagreeing can be argued back off. Do not add a facet on a hunch; a hunch
+ * costs every user of that facet an extra vision call on the happy path.
+ */
+const UNRELIABLE_FACETS: ReadonlySet<Facet> = new Set<Facet>([facetOfSubject("hairWorn")]);
+
+/** Test seam: the guard is only honest if it can be driven without an LLM. */
+export function facetsWithUnreliabilityPrior(): Facet[] {
+  return Array.from(UNRELIABLE_FACETS);
+}
 
 /**
  * One vision pass over every named fact in the recipe.
@@ -147,20 +206,55 @@ export async function verifyRender(input: {
 
     const checks: FacetCheck[] = input.facts.map((fact, index) => {
       const row = results.find((entry: { id?: unknown }) => Number(entry?.id) === index + 1);
-      /* A fact the reader did not answer for is NOT counted as a failure — an
-         omission is the reader's silence, and silence never spends a refusal. */
-      const verified = row ? row.present === true : true;
       const saw = typeof row?.saw === "string" ? row.saw.trim().slice(0, 90) : undefined;
+      /*
+        THE EVIDENCE RULE IS ASYMMETRIC, AND THE ASYMMETRY IS THE POINT.
+
+        An AFFIRMATIVE must name what it saw or it is not a reading: that is the
+        door the hair-up false pass came through, and an evidence-free yes is
+        the single cheapest way to charge for non-compliance.
+
+        A NEGATIVE without evidence stays a miss. Making this rule symmetric
+        looked tidier and was wrong — it would have delivered and CHARGED for a
+        render the reader believed was non-compliant, manufacturing the exact
+        false pass this guard exists to prevent. Every silence is resolved in
+        the direction that does not take the user's money. A miss is already
+        protected from reader flake by the two readings of D-194.
+      */
+      const answered = row !== undefined && typeof row.present === "boolean";
+      const read = answered && (row.present === false || (saw !== undefined && saw.length > 0));
       return {
         facet: fact.facet,
         asked: fact.asked,
-        verified,
+        verified: read && row.present === true,
+        read,
         binding: fact.binding !== false,
-        ...(verified ? {} : { saw }),
+        ...(saw ? { saw } : {}),
       };
     });
+
+    /*
+      If NOTHING came back readable, the reader spoke without answering. That is
+      an instrument failure, not eight separate silences, and it is reported as
+      one — otherwise a reader that quietly stopped emitting `saw` would read as
+      a clean sheet forever.
+    */
+    if (checks.length > 0 && checks.every((check) => !check.read)) {
+      log.warn(
+        { facts: checks.length, reply: reply.text.slice(0, 200) },
+        "[renderVerification] every affirmative named nothing it saw — delivering unverified",
+      );
+      return { ok: true, checks, unavailable: true };
+    }
+    const unread = checks.filter((check) => !check.read);
+    if (unread.length > 0) {
+      log.warn(
+        { unread: unread.map((check) => check.facet) },
+        "[renderVerification] answers with no evidence — recorded as unread, not as passes",
+      );
+    }
     /* Everything is recorded; only a BINDING failure spends the user's refusal. */
-    return { ok: checks.every((check) => check.verified || !check.binding), checks };
+    return { ok: okOf(checks), checks };
   } catch (error) {
     log.warn({ err: error }, "[renderVerification] the reader could not be reached — delivering");
     return { ok: true, checks: [], unavailable: true };
@@ -188,12 +282,19 @@ export async function verifyRender(input: {
  * refunded, never on the happy path. One or two more vision calls against a 25
  * credit refund and a wasted image.
  */
-export async function confirmBindingMisses(
+export async function confirmVerdict(
   first: RenderVerdict,
   reread: () => Promise<RenderVerdict>,
 ): Promise<RenderVerdict> {
-  const contested = first.checks.filter((check) => !check.verified && check.binding);
-  if (contested.length === 0 || first.unavailable) return { ...first, readings: 1 };
+  const original = new Map(first.checks.map((check) => [keyOf(check), check]));
+  const bindingMisses = first.checks.filter((c) => c.read && !c.verified && c.binding);
+  /* (b) The delivery-path half: an affirmative on a facet with a rap sheet. */
+  const suspectPasses = first.checks.filter(
+    (c) => c.read && c.verified && UNRELIABLE_FACETS.has(c.facet),
+  );
+  if ((bindingMisses.length === 0 && suspectPasses.length === 0) || first.unavailable) {
+    return { ...first, readings: 1 };
+  }
 
   const second = await reread();
   if (second.unavailable) {
@@ -201,44 +302,70 @@ export async function confirmBindingMisses(
     log.warn({}, "[renderVerification] no second opinion — delivering rather than refusing");
     return { ...first, ok: true, readings: 1 };
   }
+  const secondBy = new Map(second.checks.map((check) => [keyOf(check), check]));
 
-  const verdicts = new Map(second.checks.map((check) => [`${check.facet}|${check.asked}`, check]));
-  const needsTieBreak = contested.some((check) => {
-    const other = verdicts.get(`${check.facet}|${check.asked}`);
-    return other ? other.verified : true;
+  /*
+    AN AFFIRMATION ON AN UNRELIABLE FACET LOSES TO DISAGREEMENT.
+
+    Not a majority — a demotion. The asymmetry is deliberate and it is the
+    founder's bar talking: a false pass charges for non-compliance, so on the
+    facets that have actually produced one, the benefit of the doubt runs the
+    other way. Where the facet is advisory this costs nothing but an honest
+    record; where it is binding the demoted check still has to survive the
+    majority of three below before it spends anybody's refusal.
+  */
+  let checks = first.checks.map((check) => {
+    if (!(check.read && check.verified && UNRELIABLE_FACETS.has(check.facet))) return check;
+    const other = secondBy.get(keyOf(check));
+    if (!other || !other.read || other.verified) return check;
+    log.warn(
+      { facet: check.facet, asked: check.asked, saw: other.saw },
+      "[renderVerification] affirmation withdrawn on re-read — recorded as a miss, not a pass",
+    );
+    return { ...check, verified: false, saw: other.saw };
   });
-  if (!needsTieBreak) {
-    /* Both readings say the same thing. That is what a refusal is made of. */
-    return { ...first, readings: 2 };
+
+  const contested = checks.filter((c) => c.read && !c.verified && c.binding);
+  /* Two readings that AGREE are what a refusal is made of; a split needs a third. */
+  const split = contested.some((check) => {
+    const other = secondBy.get(keyOf(check));
+    if (!other || !other.read) return true;
+    return original.get(keyOf(check))!.verified !== other.verified;
+  });
+  if (contested.length === 0 || !split) {
+    return { ...first, checks, ok: okOf(checks), readings: 2 };
   }
 
   const third = await reread();
-  if (third.unavailable) return { ...first, ok: true, readings: 2 };
-  const tie = new Map(third.checks.map((check) => [`${check.facet}|${check.asked}`, check]));
+  if (third.unavailable) return { ...first, checks, ok: true, readings: 2 };
+  const thirdBy = new Map(third.checks.map((check) => [keyOf(check), check]));
 
-  /* Majority of three, per fact. A fact only one reader doubted is not missing. */
-  const checks = first.checks.map((check) => {
-    if (check.verified || !check.binding) return check;
-    const key = `${check.facet}|${check.asked}`;
-    const votes = [check, verdicts.get(key), tie.get(key)]
+  /* Majority of three, per fact, voting the FIRST reading rather than the
+     demoted one — otherwise the second reading would be counted twice. */
+  checks = checks.map((check) => {
+    if (!(check.read && !check.verified && check.binding)) return check;
+    const key = keyOf(check);
+    const votes = [original.get(key), secondBy.get(key), thirdBy.get(key)]
       .filter(Boolean)
       .filter((vote) => vote!.verified === false).length;
     return votes >= 2 ? check : { ...check, verified: true, saw: undefined };
   });
-  return {
-    ...first,
-    checks,
-    ok: checks.every((check) => check.verified || !check.binding),
-    readings: 3,
-  };
+  return { ...first, checks, ok: okOf(checks), readings: 3 };
 }
 
 /** The facets that failed and are worth acting on. */
 export function missingFacts(verdict: RenderVerdict): string[] {
-  return verdict.checks.filter((check) => !check.verified && check.binding).map((check) => check.asked);
+  return verdict.checks
+    .filter((check) => check.read && !check.verified && check.binding)
+    .map((check) => check.asked);
 }
 
 /** Failures the product will NOT refuse over — the reader-defect watch list. */
 export function advisoryMisses(verdict: RenderVerdict): FacetCheck[] {
-  return verdict.checks.filter((check) => !check.verified && !check.binding);
+  return verdict.checks.filter((check) => check.read && !check.verified && !check.binding);
+}
+
+/** Facts the reader was asked about and said nothing usable on. Never a pass. */
+export function unreadFacts(verdict: RenderVerdict): FacetCheck[] {
+  return verdict.checks.filter((check) => !check.read);
 }

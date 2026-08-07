@@ -501,7 +501,10 @@ describe("the render is checked against the record before it is delivered", () =
         const present = verdicts[Math.min(call, verdicts.length - 1)];
         call += 1;
         return {
-          text: JSON.stringify({ results: [{ id: 1, present, saw: present ? undefined : "brown" }] }),
+          /* `saw` on BOTH answers (D-235). An affirmative that names nothing is
+             not a reading, so a fake that omits it here is reproducing the
+             empty yes rather than a pass. */
+          text: JSON.stringify({ results: [{ id: 1, present, saw: present ? "green irises" : "brown" }] }),
           truncated: false,
           latencyMs: 1,
         };

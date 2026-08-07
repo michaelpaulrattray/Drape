@@ -128,7 +128,7 @@ import {
 import { detectRenderFault } from "./renderFault";
 import {
   advisoryMisses,
-  confirmBindingMisses,
+  confirmVerdict,
   missingFacts,
   verifyRender,
   type RenderVerdict,
@@ -1436,7 +1436,7 @@ export async function refineCandidate(
           refusal. The extra calls land only on a render already headed for a
           re-render or a refund.
         */
-        verification: await confirmBindingMisses(await read(), read),
+        verification: await confirmVerdict(await read(), read),
       };
     };
 

@@ -7823,6 +7823,120 @@ measurement split them.
 
 Byte-identity outside the mask held on both. `EXHIBIT-30`.
 
+## D-235 — An affirmative without a `saw` is not a reading. The false pass came in through the pass door.
+
+**Ratified 2026-08-07**, from production operation `92e327ab` ("tie her hair
+up"): **delivered and charged with the hair visibly still down**, and the stored
+verdict said this —
+
+```json
+{"asked":"tied up","facet":"hairWorn","binding":false,"verified":true}
+… "attempts":2, "readings":1
+```
+
+An affirmative, on one reading, with **no `saw` field**. Both suspects were
+guilty — a long-down → up edit is background reconstruction and the painter
+probably never complied — but the structural finding is the keeper, and it was
+built into the prompt:
+
+> `"Include \`saw\` only where present is false"`
+
+**Every affirmative was evidence-free by construction.** There was nothing to
+check a yes against, and nothing to store that a later audit could read. The
+holistic-yes class of D-199 arriving through the pass door instead of the fail
+door.
+
+Compounding it, the parse counted a **row the reader never returned** as a pass
+(`row ? row.present === true : true`). Two separate doors, both opening the same
+way.
+
+**The ruling, in three parts:**
+
+1. **Evidence or it did not happen.** An affirmative names what it saw, per
+   feature, in the picture's own terms — or the check is recorded as `read:
+   false` and is neither a pass nor a miss. Costless: an unread check never
+   spends a refusal, so no user pays for reader flake. Silence is now stored as
+   silence, where before it was stored as compliance.
+2. **A measured prior earns a second reading.** D-194 re-reads binding MISSES,
+   because a miss is about to spend a refusal. That asymmetry was right for the
+   refusal path and wrong for the delivery path, where an affirmative was
+   single-sampled and free to produce. Facets with a *measured* unreliability
+   prior get a second reading, and an affirmation that a second reading
+   withdraws is demoted — not majority-voted, demoted, because a false pass
+   charges for non-compliance. The list is **targeted and evidence-gated**
+   (today: `hairWorn`, on the rap sheet above); the reliability report of D-236
+   is what earns a facet its place, never a hunch, because a hunch costs every
+   user of that facet an extra vision call on the happy path.
+3. **Advisory facets get the same treatment.** They cannot refuse, but their
+   verdicts feed records and captions — and a false pass on an advisory facet
+   is *invisible by construction*, which is precisely how this one survived.
+
+**THE ASYMMETRY IS LOAD-BEARING, and making it symmetric was an error caught by
+a test.** Requiring evidence on a NEGATIVE too looked tidier and would have
+delivered and charged for a render the reader believed was non-compliant —
+manufacturing the exact false pass this guard exists to prevent. Every silence
+resolves in the direction that does not take the user's money. A miss is already
+protected from reader flake by D-194's two readings.
+
+**And the module had no tests at all** until this ruling — the one deciding
+whether somebody gets charged for a render that does not contain what they asked
+for. That is how the empty yes survived review. It now has fifteen, all driven
+through a scripted reader rather than a live model (working law 3), with the
+prompt contract asserted at the wire (working law 5) and the guard
+sabotage-verified: removing it fails the suite.
+
+## D-236 — DELIVERY RATE IS THE PRODUCT. Honest refunds are the floor, not the ceiling.
+
+**Founder ruling, 2026-08-07.** Beside D-193's steadiness bar, and the same
+shape: a number with teeth.
+
+> Honest refunds are the floor, not the product. The product is **delivery
+> rate**, and nobody currently knows what it is.
+
+Every guard built so far answers *"did we charge fairly?"* — which is necessary
+and is not the question a customer asks. The question a customer asks is *"did I
+get the thing?"* Until this ruling that number did not exist anywhere.
+
+**The report** is a derived query over rows that already exist (law 4 — derive,
+never mirror). Per attempt, one of:
+
+| outcome | meaning |
+|---|---|
+| delivered & compliant | the ask is in the picture |
+| delivered & NON-compliant | a false pass — charged for a miss, caught by audit |
+| refused — infra | our fault: transport, size, routing |
+| refused — honest | the render genuinely lacked the fact |
+| refunded | credits returned |
+
+Cut **by facet class** and **by build**, so a dead bug's corpse does not pollute
+the living number. It runs in three places: on demand; in every heartbeat line
+(`state pushed · walk N/M · delivery rate X% · blockers none/named`); and in
+every self-drive walk report — a walk is not merely pass/fail, it is a **rate
+sample**.
+
+**THE BAR:**
+
+- **95% delivered-and-compliant per edit class**, on the current build,
+  measured over self-drive runs, before the founder walks.
+- **ZERO false passes in audited samples.** A false pass is worse than a
+  refusal, because it charges for non-compliance.
+- A class that cannot reach the bar **does not block the others**: it is named,
+  and then either fixed or honestly routed — full-frame, or "not yet supported"
+  copy — before any wider scope.
+
+**The first report states the founder's to-date sample honestly** — one
+compliant delivery, one false pass, multiple refusals, most of them since-fixed
+infra; a tiny n and an ugly rate, mostly dead causes — and then the current-build
+number takes over. An ugly first number that is TRUE is the point of building
+the instrument.
+
+**And the founder is retired from data collection.** The specimen set is
+complete: one success, one refusal class, one false pass, one false refusal by
+record — the four corners of the remaining surface, all diagnosed from stored
+artifacts. The next thing that reaches the founder is the twice-passing walk
+with its table. The go/no-go is **a number plus pictures**, never pictures
+alone.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
