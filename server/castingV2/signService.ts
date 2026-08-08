@@ -34,6 +34,7 @@
  * anchor and an id. Only views refund after that, and only their own slice.
  */
 import { TRPCError } from "@trpc/server";
+import { spokenError } from "../_core/spokenError";
 import { randomUUID } from "node:crypto";
 
 import { recordRefund } from "../casting/atomicCredits";
@@ -521,13 +522,15 @@ function signRefusal(error: unknown, refunded: boolean, operationId: string): TR
           message: `This Sign was already settled. ${tail}`,
         });
       default:
-        return new TRPCError({
+        return spokenError({
           code: "INTERNAL_SERVER_ERROR",
           message: `The Cast couldn't be signed. ${tail}`,
         });
     }
   }
-  return new TRPCError({
+  /* The tail is where the money is named, and it was being dropped for the
+     panel's generic line — see `shared/spokenError`. */
+  return spokenError({
     code: "INTERNAL_SERVER_ERROR",
     message: `The Cast couldn't be signed. ${tail}`,
   });

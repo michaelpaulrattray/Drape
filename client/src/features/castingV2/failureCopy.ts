@@ -30,6 +30,8 @@
  * and was written for an engineer; it is replaced.
  */
 
+import { errorIsSpoken } from "@shared/spokenError";
+
 type Trpcish = { message?: string; data?: { code?: string } };
 
 /**
@@ -76,6 +78,17 @@ export function readableFailure(error: unknown, fallback: string): string {
   const err = error as Trpcish;
   const code = err?.data?.code;
   const message = typeof err?.message === "string" ? err.message.trim() : "";
+  /*
+    TWO KINDS OF EVIDENCE THAT THE SENTENCE IS OURS, NOT TWO COPIES OF ONE LIST.
+
+    `spoken` is the server saying so at the throw site (`shared/spokenError`);
+    the code list is the structural argument that a gateway cannot forge a 400.
+    The list is what drifted — five authored sentences were thrown as
+    `INTERNAL_SERVER_ERROR` and every one of them was replaced by the
+    lost-contact line, including three that said "Nothing was charged" — so the
+    marker is checked first and the list stays as the older evidence.
+  */
+  if (errorIsSpoken(error) && message) return message;
   if (code && OURS.has(code) && message) return message;
   return fallback;
 }

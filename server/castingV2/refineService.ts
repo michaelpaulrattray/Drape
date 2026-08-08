@@ -153,6 +153,7 @@ import {
   type RenderVerdict,
 } from "./renderVerification";
 import { detailForVerification } from "./verificationDetail";
+import { spokenError } from "../_core/spokenError";
 import {
   capturePresentation,
   presentationInvalidatedBy,
@@ -1482,8 +1483,11 @@ export async function refineCandidate(
   const dropped = missingFromPrompt(composed, preview.edits);
   if (dropped.length > 0) {
     log.error({ dropped }, "[refineService] composition would drop filed facts — refusing");
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
+    throw spokenError({
+      /* PRE-CLAIM, so the code says so: nothing was reserved and nothing can be.
+         `INTERNAL_SERVER_ERROR` is the bucket unhandled crashes land in, and it
+         is exactly why the client could not trust this sentence. */
+      code: "PRECONDITION_FAILED",
       message: "That edit would have quietly dropped one of your earlier changes, so it was "
         + "refused rather than rendered. Nothing was charged.",
     });
@@ -1501,8 +1505,8 @@ export async function refineCandidate(
   const stale = staleCaptions(carriedCaptions, writtenFacets);
   if (stale.length > 0) {
     log.error({ stale }, "[refineService] a superseded caption survived — refusing");
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
+    throw spokenError({
+      code: "PRECONDITION_FAILED",
       message: "That edit would have argued with one of your earlier changes, so it was "
         + "refused rather than rendered. Nothing was charged.",
     });
@@ -1518,8 +1522,8 @@ export async function refineCandidate(
   const contradicted = contradictedFacets(preview, composed);
   if (contradicted.length > 0) {
     log.error({ contradicted }, "[refineService] the tail would protect an edited facet — refusing");
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
+    throw spokenError({
+      code: "PRECONDITION_FAILED",
       message: "That edit would have asked for a change and forbidden it in the same breath, "
         + "so it was refused rather than rendered. Nothing was charged.",
     });
@@ -2486,7 +2490,13 @@ export async function refineCandidate(
         solved it; the shape is borrowed, including quoting the operation so
         support can act on it rather than re-deriving it.
       */
-      error: new TRPCError({
+      error: spokenError({
+        /*
+          THE CODE STAYS AND THE MARKER IS WHAT CHANGES. This one really did
+          charge and refund, its `errorCode` is on a receipt, and rewriting that
+          would rewrite history for support. What was wrong was never the code —
+          it was that an authored sentence had no way to say it was authored.
+        */
         code: "INTERNAL_SERVER_ERROR",
         /*
           AND THE PERSON IS TOLD THE SAME THING THE LEDGER IS.

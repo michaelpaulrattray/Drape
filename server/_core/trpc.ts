@@ -5,6 +5,7 @@ import { ZodError } from "zod";
 import type { TrpcContext } from "./context";
 import { validateAdminAccess, logUnauthorizedAdminAccess } from "../security/adminSecurity";
 import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
+import { withSpokenFlag } from "./spokenError";
 
 export function appUpdateRequiredMessage(cause: unknown): string | null {
   if (!(cause instanceof ZodError)) return null;
@@ -17,7 +18,15 @@ const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     const updateMessage = appUpdateRequiredMessage(error.cause);
-    return updateMessage ? { ...shape, message: updateMessage } : shape;
+    /*
+      THE MARKER RIDES THE OUTGOING PAYLOAD (see `shared/spokenError`).
+
+      A sentence the server wrote for a person to read is flagged here, once,
+      for every procedure — so the client can tell it from a gateway's or a
+      parser's sentence without keeping a list of codes that drifts. Applied
+      last so it survives the update-required rewrite above.
+    */
+    return withSpokenFlag(updateMessage ? { ...shape, message: updateMessage } : shape, error);
   },
 });
 
