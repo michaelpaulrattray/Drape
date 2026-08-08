@@ -21,6 +21,11 @@ const DETAIL_SUITES = [
   "server/castingV2/renderVerification.test.ts",
 ];
 
+const LANE_SUITES = [
+  "server/castingV2/refineDeparture.test.ts",
+  "server/castingV2/refineDelta.test.ts",
+];
+
 const MASK_SUITES = [
   "server/castingV2/maskedRefine.test.ts",
   "server/castingV2/maskGeometry.test.ts",
@@ -192,6 +197,42 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     mutations: [{
       find: "  return facets.some((facet) => FINE_DETAIL_FACETS.has(facet));",
       replace: "  return facets.length > 0;",
+    }],
+  },
+  {
+    /*
+      ORDER 3. The caption back in the lane that merely asserts — which is
+      exactly where it sat for four paid renders while the imperative lane
+      carried the bare noun.
+    */
+    name: "the caption left in the already-true lane instead of sharpening the ask",
+    file: "server/castingV2/refineDelta.ts",
+    suites: LANE_SUITES,
+    mutations: [{
+      find: "    if (asked.has(facet)) adopted[facet] = caption;",
+      replace: "    if (asked.has(facet)) carried[facet] = caption;",
+    }],
+  },
+  {
+    /* And the guard's new eye. A guard that watches one of three doors reports
+       a clean house, which is what it did all morning. */
+    name: "contradictedFacets blinded to the captions lane again",
+    file: "server/castingV2/refineDelta.ts",
+    suites: LANE_SUITES,
+    mutations: [{
+      find: "    ...prompt.captionedFacets.filter((facet) => edited.has(facet)),\n",
+    }],
+  },
+  {
+    /* And the sweep's own finding: a departed facet's caption carried into the
+       removal, which is "reproduce her glasses exactly" beside "take them
+       off". Unreachable through the routing, so it is driven directly. */
+    name: "a departed facet's caption carried into the already-true lane",
+    file: "server/castingV2/refineDelta.ts",
+    suites: LANE_SUITES,
+    mutations: [{
+      find: "    else if (!written.has(facet)) carried[facet] = caption;",
+      replace: "    else carried[facet] = caption;",
     }],
   },
 ];

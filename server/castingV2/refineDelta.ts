@@ -55,6 +55,7 @@ import { qualifierFor } from "./subjectQualifiers";
 import { accessoryKindOf } from "./accessoryKinds";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
 import { composePreservation } from "./refinePreservation";
+import { captionClause } from "./realizationCaption";
 
 /** One adjustment, not a paragraph — the brief box is where prose belongs. */
 const MAX_MAKEUP_LENGTH = 80;
@@ -1455,13 +1456,45 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
   hairStyle: (value: string) => string;
   hairColour: (value: HairColour) => string;
   hairTexture: (value: HairTexture) => string;
-}): string {
+}, realized: Partial<Record<Facet, string>> = {}): string {
+  /**
+   * THE REMEMBERED WORDING, SPOKEN IN THE LANE THAT INSTRUCTS (D-152, 2026-08-08).
+   *
+   * Recipe v3 already writes down what a facet actually looked like. It was
+   * being carried into every later render — in the ALREADY-TRUE clause, which
+   * is not an instruction. So the prompt said her freckles twice: `MARKS:
+   * freckles` in the imperative lane, and the precise caption in a lane that
+   * merely asserts. **The specific wording was never the ask**, and the bare
+   * noun bought a different density every render — nothing at run-12's step 4,
+   * a light scatter at steps 1 and 3, three times that at step 5.
+   *
+   * Worse than vague: the two lanes CONTRADICT. "Change this" and "this is
+   * already true" about one facet, where the reference — the master — does not
+   * have it. One way to reconcile being told a false thing about the picture in
+   * front of you is to change nothing.
+   *
+   * So the caption specifies the ask, in the ask's own clause. Exactly D-143's
+   * and D-166's lesson, which the repo had already learnt for the PRESERVATION
+   * lane and never extended to this one: one fact, one lane, one wording.
+   *
+   * **The user's own words stay at the head of the clause.** They are the
+   * record of what she asked for, `missingFromPrompt` proves they reached the
+   * prompt, and prune arithmetic runs on them. The caption sharpens the ask; it
+   * does not replace it.
+   */
+  const specified = (facet: Facet, clause: string): string => {
+    const caption = realized[facet];
+    return caption ? `${clause.replace(/\.$/, "")}, rendered exactly as this: ${caption}` : clause;
+  };
+
   const edits: string[] = [];
   if (delta.eyeColour != null) {
-    edits.push(`Change the iris colour to ${delta.eyeColour} — ${prose.eyeColour(delta.eyeColour)}.`);
+    edits.push(specified(facetOfAxis("eyeColour"),
+      `Change the iris colour to ${delta.eyeColour} — ${prose.eyeColour(delta.eyeColour)}.`));
   }
   if (delta.eyeShape != null) {
-    edits.push(`Change the eye shape to ${delta.eyeShape} — ${prose.eyeShape(delta.eyeShape)}.`);
+    edits.push(specified(facetOfAxis("eyeShape"),
+      `Change the eye shape to ${delta.eyeShape} — ${prose.eyeShape(delta.eyeShape)}.`));
   }
   /*
     Hair is described as CUT, COLOUR and TEXTURE in one sentence where more than
@@ -1476,15 +1509,24 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
       did not ask for. The STATED MAKEUP licence in the cohort constant is what
       gives them teeth.
     */
-    edits.push(`Apply makeup: ${delta.makeup}. Everything else about the face stays bare.`);
+    edits.push(specified(facetOfAxis("makeup"),
+      `Apply makeup: ${delta.makeup}.`) + " Everything else about the face stays bare.");
   }
   const hair: string[] = [];
   if (delta.hairStyle != null) hair.push(`cut into ${prose.hairStyle(delta.hairStyle)}`);
   if (delta.hairColour != null) hair.push(`coloured ${prose.hairColour(delta.hairColour)}`);
   if (delta.hairTexture != null) hair.push(`with ${prose.hairTexture(delta.hairTexture)}`);
   if (hair.length > 0) {
+    /* Cut, colour and texture are one visible thing and share one clause, so
+       the specification hangs off whichever of the three this delta names —
+       first one wins, and they cannot disagree because they describe the same
+       hair in the same render. */
+    const hairFacet = (["hairStyle", "hairColour", "hairTexture"] as const)
+      .map((axis) => facetOfAxis(axis))
+      .find((facet) => realized[facet]);
     edits.push(
-      `Change the hair: ${hair.join(", ")}. Keep the hairline and the density the same — `
+      specified(hairFacet ?? facetOfAxis("hairStyle"), `Change the hair: ${hair.join(", ")}.`)
+      + " Keep the hairline and the density the same — "
       + "this is the same person's hair restyled, not a wig and not a different head of hair.",
     );
   }
@@ -1504,10 +1546,21 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
         getting one clause covering both — the second design's address quietly
         borrowed from the first.
       */
-      edits.push(`${heading}: ${items.map((item) => `${item}.${placementClause(item)}`).join(" ")}`);
+      /* Ink takes the specification too. Skipping it here would have been
+         worse than leaving it alone: the routing moves an asked facet's caption
+         OUT of the already-true lane, so a lane that then declines to speak it
+         drops the memory entirely. Found by sweeping the lanes rather than by
+         a test, which is why the sweep is part of the fix. */
+      edits.push(specified(
+        facetOfSubject("ink"),
+        `${heading}: ${items.map((item) => `${item}.${placementClause(item)}`).join(" ")}`,
+      ));
       continue;
     }
-    edits.push(`${heading}: ${items.join(", ")}${qualifierFor(subject as FreeSubject)}.`);
+    edits.push(specified(
+      facetOfSubject(subject as FreeSubject),
+      `${heading}: ${items.join(", ")}${qualifierFor(subject as FreeSubject)}.`,
+    ));
   }
   /*
     AND THE THING THAT IS GONE — the sentence that was never being said.
@@ -1571,39 +1624,97 @@ export type RenderPrompt = {
   full: string;
   /** Facets the tail protects — asserted disjoint from the edited ones. */
   protectedFacets: Facet[];
+  /**
+   * Facets the already-true clause speaks for — asserted disjoint from the
+   * facets the edits lane asks for, which is the half nothing checked.
+   */
+  captionedFacets: Facet[];
 };
 
+/**
+ * THE THREE LANES, AND WHICH ONE SPEAKS FOR EACH FACET.
+ *
+ * Takes the captions themselves rather than a finished clause, because the
+ * routing is the whole point: a facet the edits lane is already naming must
+ * have its caption SPOKEN THERE, not repeated in the already-true clause as a
+ * second, contradicting statement about the same thing.
+ */
 export function composeRenderPrompt(
   delta: RefineDelta,
   prose: Parameters<typeof composeEditPrompt>[1],
-  captionsClause: string,
+  captions: Partial<Record<Facet, string>>,
 ): RenderPrompt {
-  const edits = composeEditPrompt(delta, prose);
+  /*
+    A facet the edits lane names takes its caption INTO that clause; the rest
+    stay in the already-true lane, where they belong — those are facets nothing
+    is asking to change, and the render still has to reproduce them.
+  */
+  const written = facetsWrittenBy(delta);
+  const asked = facetsAnsweredBy(delta);
+  const adopted: Partial<Record<Facet, string>> = {};
+  const carried: Partial<Record<Facet, string>> = {};
+  for (const [facet, caption] of Object.entries(captions)) {
+    if (!caption) continue;
+    if (asked.has(facet)) adopted[facet] = caption;
+    /*
+      A DEPARTED FACET'S CAPTION IS DROPPED, NOT CARRIED.
+
+      The edits lane names it — `TAKEN OFF: no glasses, they have been taken
+      off` — but there is no positive clause for a caption to sharpen. Leaving
+      it in the already-true lane would put "she is wearing square dark
+      tortoiseshell frames, reproduce them exactly" in the same prompt as "take
+      them off", which is the contradiction this whole change exists to end,
+      pointed at the facet where it does the most damage.
+
+      Found by sweeping the lanes for the class rather than by a failing test.
+    */
+    else if (!written.has(facet)) carried[facet] = caption;
+  }
+
+  const edits = composeEditPrompt(delta, prose, adopted);
   /*
     THE COMPOSED delta, not one step of it. Subtracting a single step would
     leave every earlier edit protected against the ORIGINAL, which is a quiet
     instruction to undo the stack once per render.
   */
   const preservation = composePreservation(facetsWrittenBy(delta));
+  const captionsClause = captionClause(carried);
   return {
     edits,
     captions: captionsClause,
     tail: preservation.clause,
     full: `${edits}${captionsClause} ${preservation.clause}`,
     protectedFacets: preservation.protectedFacets,
+    captionedFacets: Object.keys(carried) as Facet[],
   };
 }
 
 /**
- * A tail clause naming a facet the edits also name — D-143, pointed at the
+ * A LANE NAMING A FACET ANOTHER LANE ALSO NAMES — D-143, pointed at the
  * template that was doing the contradicting (D-166).
  *
- * Empty by construction, because the tail is built by subtraction. Asserted
- * anyway: the category table is hand-authored prose, and the whole lesson of
- * this round is that a hand-authored string quietly disagreed with the machine
- * for days.
+ * Empty by construction on both counts: the tail is built by subtraction, and
+ * the already-true clause now hands an edited facet's caption to the edits lane
+ * instead of restating it.
+ *
+ * # It was NOT empty, and nothing was looking
+ *
+ * This checked the preservation tail alone from the day it was written. The
+ * captions lane grew afterwards and the guard never learnt about it, so every
+ * carried captioned facet was in TWO lanes on every render — `MARKS: freckles`
+ * as a thing to do, and the caption as a thing already done. Run-12 shipped
+ * that contradiction on four consecutive paid renders and this function
+ * returned `[]` each time.
+ *
+ * A guard that watches one of three doors reports a clean house.
  */
 export function contradictedFacets(prompt: RenderPrompt, delta: RefineDelta): Facet[] {
   const edited = facetsWrittenBy(delta);
-  return prompt.protectedFacets.filter((facet) => edited.has(facet));
+  return [
+    ...prompt.protectedFacets.filter((facet) => edited.has(facet)),
+    /* `facetsWrittenBy`, not `facetsAnsweredBy` — a DEPARTED facet is one the
+       edits lane speaks about too, and it is the one where an already-true
+       assertion contradicts hardest. */
+    ...prompt.captionedFacets.filter((facet) => edited.has(facet)),
+  ];
 }

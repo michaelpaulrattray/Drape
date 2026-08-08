@@ -156,7 +156,7 @@ describe("the edit prompt", () => {
   });
 
   it("names what must NOT change, minus what it changes", () => {
-    const composed = composeRenderPrompt({ eyeColour: "green" }, prose, "");
+    const composed = composeRenderPrompt({ eyeColour: "green" }, prose, {});
     for (const preserved of ["bone", "skin", "hair", "clothing", "lighting", "framing", "background"]) {
       expect(composed.full, preserved).toContain(preserved);
     }

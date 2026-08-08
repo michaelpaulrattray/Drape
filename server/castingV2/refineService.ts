@@ -1457,7 +1457,7 @@ export async function refineCandidate(
     runs against the edits lane alone, which makes that impossible rather than
     unlikely.
   */
-  const preview = composeRenderPrompt(composed, EDIT_PROSE, captionClause(carriedCaptions));
+  const preview = composeRenderPrompt(composed, EDIT_PROSE, carriedCaptions);
   const dropped = missingFromPrompt(composed, preview.edits);
   if (dropped.length > 0) {
     log.error({ dropped }, "[refineService] composition would drop filed facts — refusing");
@@ -1776,7 +1776,7 @@ export async function refineCandidate(
       rendered-but-not-filed, which nothing can. What IS re-asserted is the
       property that matters on the string actually being sent.
     */
-    const composedPrompt = composeRenderPrompt(filed, EDIT_PROSE, captionClause(carriedCaptions));
+    const composedPrompt = composeRenderPrompt(filed, EDIT_PROSE, carriedCaptions);
     const filedContradictions = contradictedFacets(composedPrompt, filed);
     if (filedContradictions.length > 0) {
       log.error(

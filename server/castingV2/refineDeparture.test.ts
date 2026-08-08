@@ -80,7 +80,7 @@ describe("the departure reaches the painter, in the reader's own words", () => {
   it("uses the verification net's exact sentence, verbatim", () => {
     const asked = departedClause("glasses");
     expect(composeEditPrompt(GONE, PROSE)).toContain(asked);
-    expect(composeRenderPrompt(GONE, PROSE, "").full).toContain(asked);
+    expect(composeRenderPrompt(GONE, PROSE, {}).full).toContain(asked);
   });
 
   /*
@@ -135,7 +135,7 @@ describe("the preservation tail stops protecting what is leaving", () => {
     play, so a tail that protects it is a contradiction the guard reports.
   */
   it("SEES a departed facet, so a tail that protects it is caught", () => {
-    const prompt = composeRenderPrompt(GONE, PROSE, "");
+    const prompt = composeRenderPrompt(GONE, PROSE, {});
     /* Built correctly, there is nothing to catch. */
     expect(contradictedFacets(prompt, GONE)).toEqual([]);
     /* And if the tail ever protects it again — a hand-authored table is exactly
@@ -179,7 +179,7 @@ describe("remove, then re-add, then remove again", () => {
     expect(composed.absent).toBeUndefined();
     expect(composed.free?.statedAccessories).toEqual(["round wire-frame glasses"]);
     /* And the prompt is no longer of two minds about her glasses. */
-    const prompt = composeRenderPrompt(composed, PROSE, "");
+    const prompt = composeRenderPrompt(composed, PROSE, {});
     expect(prompt.full).not.toContain("taken off");
     expect(contradictedFacets(prompt, composed)).toEqual([]);
   });
@@ -231,7 +231,7 @@ describe("a departure subtracts from the base without deleting paid work", () =>
 
   it("says both things in one prompt, and they do not argue", () => {
     const composed = composeDeltas([HOOPS, GONE]);
-    const prompt = composeRenderPrompt(composed, PROSE, "");
+    const prompt = composeRenderPrompt(composed, PROSE, {});
     expect(prompt.full).toContain("small gold hoops");
     expect(prompt.full).toContain(departedClause("glasses"));
     expect(contradictedFacets(prompt, composed)).toEqual([]);
@@ -265,7 +265,7 @@ describe("a departure subtracts from the base without deleting paid work", () =>
     expect(departedItems(composed), "her glasses must stay off").toEqual(["glasses"]);
     expect(composed.free?.statedAccessories).toEqual(["small gold hoops"]);
     /* And the prompt says both, which is the honest state of her face. */
-    const prompt = composeRenderPrompt(composed, PROSE, "");
+    const prompt = composeRenderPrompt(composed, PROSE, {});
     expect(prompt.full).toContain(departedClause("glasses"));
     expect(prompt.full).toContain("small gold hoops");
   });
@@ -489,5 +489,135 @@ describe("only things that sit on her can depart", () => {
       ).clause;
       expect(departed, subject).not.toBe(bare);
     }
+  });
+});
+
+/*
+  THE THIRD LANE — the one nothing was watching (2026-08-08).
+
+  `contradictedFacets` compared the preservation tail against the edits and
+  reported `[]`. The captions lane grew after it was written, and it was never
+  taught to look there, so every CARRIED captioned facet was stated twice in
+  one prompt — `MARKS: freckles` as a thing to do, and the caption as a thing
+  already done — with the guard reporting a clean house.
+
+  Run-12 shipped exactly that on four consecutive paid renders. The already-true
+  clause is also FALSE of the reference: the render is one step from the master
+  and the master has no freckles, so the painter is told a thing about the
+  photograph in front of it that is not true of it. One reasonable way to
+  reconcile that is to change nothing, which is what frame 04 did.
+
+  Every assertion below fails on the code as it stood this morning.
+*/
+describe("a remembered realization is spoken in the lane that instructs", () => {
+  const MARKS = facetOfSubject("marks");
+  const FRECKLED: RefineDelta = { free: { marks: ["freckles"] } };
+  const CAPTION = "A faint scatter of small light freckles across the nose and upper cheeks";
+
+  it("puts the caption INSIDE the ask, not in a second clause beside it", () => {
+    const prompt = composeRenderPrompt(FRECKLED, PROSE, { [MARKS]: CAPTION });
+
+    expect(prompt.edits).toContain(CAPTION);
+    /* And the already-true clause has nothing left to say about her marks. */
+    expect(prompt.captions).not.toContain(CAPTION);
+    expect(prompt.captionedFacets).not.toContain(MARKS);
+  });
+
+  it("keeps the user's own words at the head of the clause", () => {
+    /* The caption sharpens the ask; it does not replace it. Her words are the
+       record, `missingFromPrompt` proves they reached the prompt, and prune
+       arithmetic runs on them. */
+    const prompt = composeRenderPrompt(FRECKLED, PROSE, { [MARKS]: CAPTION });
+
+    expect(prompt.edits).toContain("MARKS: freckles");
+    expect(missingFromPrompt(FRECKLED, prompt.edits)).toEqual([]);
+  });
+
+  it("says it ONCE — the facet appears in exactly one lane", () => {
+    const prompt = composeRenderPrompt(FRECKLED, PROSE, { [MARKS]: CAPTION });
+    expect(contradictedFacets(prompt, FRECKLED)).toEqual([]);
+  });
+
+  it("CATCHES the contradiction if a caption ever reaches both lanes again", () => {
+    /* The guard, driven directly. Before today it could not represent this
+       finding at all: `captionedFacets` did not exist and the caption clause
+       was an opaque string handed in from outside. */
+    const prompt = composeRenderPrompt(FRECKLED, PROSE, { [MARKS]: CAPTION });
+    const bothLanes = { ...prompt, captionedFacets: [...prompt.captionedFacets, MARKS] };
+
+    expect(contradictedFacets(bothLanes, FRECKLED)).toContain(MARKS);
+  });
+
+  it("leaves a caption for a facet nobody is editing exactly where it was", () => {
+    /* The lane is not wrong, it was only being used for the wrong facets. A
+       fact nothing is asking to change still has to be reproduced, and
+       already-true is the right thing to say about it. */
+    const HAIR_WORN = facetOfSubject("hairWorn");
+    const prompt = composeRenderPrompt(FRECKLED, PROSE, {
+      [MARKS]: CAPTION,
+      [HAIR_WORN]: "half up, half down",
+    });
+
+    expect(prompt.captions).toContain("half up, half down");
+    expect(prompt.captionedFacets).toEqual([HAIR_WORN]);
+    expect(contradictedFacets(prompt, FRECKLED)).toEqual([]);
+  });
+});
+
+/*
+  THE SWEEP'S OWN FINDINGS (2026-08-08).
+
+  Two holes the routing opened that no failing test pointed at. They were found
+  by walking every lane that contributes facet-named text to the prompt —
+  which is why the sweep is part of the fix and not a follow-up.
+*/
+describe("every lane that names a facet, swept", () => {
+  const MARKS = facetOfSubject("marks");
+  const ACCESSORIES = facetOfSubject("statedAccessories");
+  const INK = facetOfSubject("ink");
+
+  it("does not DROP a caption for a lane that declines to speak it (ink)", () => {
+    /* Routing moves an asked facet's caption out of the already-true lane. A
+       lane that then says nothing loses the memory entirely — strictly worse
+       than the contradiction it replaced. */
+    const inked: RefineDelta = { free: { ink: ["a small swallow"] } };
+    const caption = "A fine black swallow, two centimetres, inside the left wrist";
+    const prompt = composeRenderPrompt(inked, PROSE, { [INK]: caption });
+
+    expect(prompt.edits).toContain(caption);
+    expect(prompt.captions).not.toContain(caption);
+  });
+
+  it("DROPS a departed facet's caption rather than carrying it into the removal", () => {
+    /*
+      The worst case in the class. `TAKEN OFF: no glasses` in one lane and
+      "square dark tortoiseshell frames, reproduce them exactly" in another is
+      the contradiction pointed at the facet where it does most damage — and a
+      departure has no positive clause for the caption to sharpen, so there is
+      nowhere honest to put it.
+    */
+    const prompt = composeRenderPrompt(GONE, PROSE, {
+      [ACCESSORIES]: "Square dark tortoiseshell-framed glasses",
+    });
+
+    expect(prompt.captions).not.toContain("tortoiseshell");
+    expect(prompt.edits).toContain("taken off");
+    expect(prompt.captionedFacets).not.toContain(ACCESSORIES);
+    expect(contradictedFacets(prompt, GONE)).toEqual([]);
+  });
+
+  it("catches an already-true assertion about a DEPARTED facet", () => {
+    /* Driven directly, because the routing above makes it unreachable — which
+       is exactly when a guard stops being tested and starts being decorative. */
+    const prompt = composeRenderPrompt(GONE, PROSE, {});
+    const asserted = { ...prompt, captionedFacets: [ACCESSORIES] };
+
+    expect(contradictedFacets(asserted, GONE)).toContain(ACCESSORIES);
+  });
+
+  it("still carries a caption for a facet no lane is talking about", () => {
+    const prompt = composeRenderPrompt(GONE, PROSE, { [MARKS]: "A faint scatter of freckles" });
+    expect(prompt.captions).toContain("A faint scatter of freckles");
+    expect(contradictedFacets(prompt, GONE)).toEqual([]);
   });
 });

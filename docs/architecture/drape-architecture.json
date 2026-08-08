@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e6ee9c5d4c6c48a3"
+    "sourceFingerprint": "f72847df9f89fa94"
   },
   "domains": [
     {
@@ -17557,6 +17557,11 @@
     {
       "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/castingV2/properNouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/realizationCaption.ts",
       "kind": "imports"
     },
     {
