@@ -141,6 +141,16 @@ export function matchSteps(
   target: {
     subject: FreeSubject | RefinableAxis | null;
     match: string | null;
+    /**
+     * Did they mean the WHOLE subject? Reported by the parser, never inferred.
+     *
+     * This used to be read off an empty `match`, and that inference is run-7's
+     * root cause: "remove her glasses" arrived with its words missing, was read
+     * as "she named the whole subject", and took every `statedAccessories` step
+     * — including the gold hoops she had paid for. Missing words are missing
+     * words; they are not a claim about width.
+     */
+    whole?: boolean;
     /** Stored items this removal means, already proved verbatim (D-173). */
     items?: readonly string[];
   },
@@ -207,7 +217,25 @@ export function matchSteps(
     .split(/[^a-z0-9]+/)
     .filter((word) => word.length > 2)
     .map(stem);
-  if (words.length === 0) return byFacet.map(({ index }) => ({ index, keep: null }));
+  /*
+    THE WHOLE FACET GOES ONLY WHEN THEY SAID THE WHOLE FACET.
+
+    This was `if (words.length === 0)` — no narrowing words, take the lot — and
+    it is the widest, most destructive branch in the file: it deletes whole
+    steps rather than pruning items. Reaching it by ACCIDENT is what cost run-7
+    its earrings, and there were two ways in: a parser that reported width by
+    omission, and an authority filter that drops an echo it cannot verify,
+    turning "they named a thing" into "they named nothing". Width is now a
+    claim the parser makes out loud, so neither road leads here.
+
+    Words with nothing to narrow are rule 3's case — no matching step — which
+    the caller sends to her face. That is the same answer this function already
+    gives an echo that matched nothing, for the same reason.
+  */
+  if (words.length === 0) {
+    return target.whole ? byFacet.map(({ index }) => ({ index, keep: null })) : [];
+  }
+  if (target.whole) return byFacet.map(({ index }) => ({ index, keep: null }));
 
   const subject = target.subject as FreeSubject;
   const plural = target.subject != null

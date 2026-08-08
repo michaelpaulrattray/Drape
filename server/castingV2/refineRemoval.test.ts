@@ -32,7 +32,22 @@ describe("matching the steps a removal takes out", () => {
 
   it("takes the WHOLE subject when they name the subject", () => {
     /* "Remove the makeup" — both makeup steps, because they named the lot. */
-    expect(matchSteps(chain, { subject: "makeup", match: null })).toEqual([{ index: 1, keep: null }, { index: 3, keep: null }]);
+    expect(matchSteps(chain, { subject: "makeup", match: "makeup", whole: true }))
+      .toEqual([{ index: 1, keep: null }, { index: 3, keep: null }]);
+  });
+
+  /*
+    RUN-7's ROOT CAUSE, PINNED AT THE MATCHER.
+
+    Width used to be inferred from missing words, so this exact call — the
+    shape "remove her glasses" arrived in when its words went missing — took
+    every accessory step on the face, including one that had been paid for.
+    Missing words are not a claim about width, and the honest answer to them is
+    rule 3's: no matching step, ask her face.
+  */
+  it("takes NOTHING when the words are missing and no width was claimed", () => {
+    expect(matchSteps(chain, { subject: "statedAccessories", match: null })).toEqual([]);
+    expect(matchSteps(chain, { subject: "makeup", match: null })).toEqual([]);
   });
 
   it("takes ONE step when they name one thing", () => {
@@ -139,7 +154,7 @@ describe("removing one item out of a step that holds several", () => {
   });
 
   it("deletes the step only when nothing survives", () => {
-    const matches = matchSteps(worn, { subject: "statedAccessories", match: null });
+    const matches = matchSteps(worn, { subject: "statedAccessories", match: "accessories", whole: true });
     expect(matches).toEqual([{ index: 0, keep: null }]);
     expect(chainAfterRemoval(worn, matches, "statedAccessories")).toEqual([]);
   });

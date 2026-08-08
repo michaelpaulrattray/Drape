@@ -716,9 +716,57 @@ export async function refineCandidate(
           + "taken apart. Backing up to an earlier version still works. Nothing was charged.",
       });
     }
+    /*
+      A REMOVAL WITH NO NOUN IN IT REFUSES, FREE, BEFORE ANYTHING IS MATCHED
+      (Fable ruling, 2026-08-08, on run-7's root cause).
+
+      The parse that reached this line on run-7 named nothing at all. Width was
+      then INFERRED from the missing words — "no narrowing words" meant "take
+      every step on this facet" — so the widest, most destructive branch in the
+      matcher was reached by omission, and the provenance check that would have
+      stopped it needs a noun to ask the picture about and so was skipped for
+      want of one. Her paid earrings step went, silently, on a question about
+      her glasses.
+
+      This sits BEFORE the matcher deliberately. A parse with no noun has failed
+      its own contract, and anything downstream of a known-broken read — a
+      prune, a confession about her brief, an honest paid render — is a decision
+      built on a read we already know we cannot trust. The first draft of this
+      sent it to her face; ruled against, and rightly: a free, instant "tell me
+      which one" beats a surprise 25 credits resolving an ambiguity she never
+      got to see.
+
+      A width claim does not rescue it, which is the one place this goes past
+      the ruling's letter: `whole: true` with no noun still leaves the picture
+      nothing to arbitrate, and asks for the widest prune there is. The
+      requirement is the NOUN. Width only ever said how far.
+    */
+    if (!parsed.match) {
+      log.warn(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          instruction,
+          subject: parsed.subject,
+          whole: parsed.whole,
+          items: parsed.items,
+        },
+        "[refineService] a removal reached the chain with no words in it — refusing rather than pruning",
+      );
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "I didn't catch what should come off. Tell me the thing itself — "
+          + "\"the earrings\", \"her glasses\", \"the fringe\" — and I'll take it off. "
+          + "Nothing was charged.",
+      });
+    }
+
     const matched = matchSteps(predecessorChain, {
       subject: readRemovalSubject(parsed.subject),
       match: parsed.match,
+      /* How wide they meant it, as the parser reported it — never inferred
+         from what the parse happens to be missing (run-7). */
+      whole: parsed.whole,
       /*
         Identity beats word overlap — the parser resolved the referent and the
         code already proved the echo is a stored item (D-173). Without this the
@@ -759,7 +807,42 @@ export async function refineCandidate(
       The base is the right frame here and the selected face would be the wrong
       one: the question is about provenance, not about what she is looking at.
     */
-    if (matched.length > 0 && parsed.match && maskedEditingEnabledFor(input.userId)) {
+    /*
+      THE GUARD'S OWN PRECONDITIONS WERE THE HOLE (run-7's root cause, and it
+      was inside this branch rather than beside it).
+
+      The condition read `matched.length > 0 && parsed.match &&
+      maskedEditingEnabledFor(…)`, so the arbitration was skipped — silently,
+      and with every one of its log lines skipped alongside it — whenever
+      either extra precondition failed. Both were reachable:
+
+      **No words to arbitrate with.** `matchSteps` matches on the SUBJECT ALONE
+      when the parse carries no narrowing words, and a subject-only match
+      deletes WHOLE STEPS on that facet. So the parse shape that destroys the
+      most was the one shape the picture was never shown. That shape is not
+      exotic — the interpreter's own echo example omits `match` entirely, and
+      any echo that is not verbatim a filed item is dropped by the authority
+      filter, so a targeted removal arrives here silently widened to a
+      subject-wide one. It is the only shape that reaches run-7's harm: with a
+      match present the check runs and logs, and the flag is `users:1` with
+      user 1 walking, so the deduction closes on the swept single pruning site.
+
+      **The masked-editing flag.** The reader is not a masked-path dependency —
+      `defaultRegionReader()` needs only `FAL_KEY` and degrades to a refusing
+      reader, which the fail-closed branch below already handles honestly. The
+      flag was therefore guarding nothing except the guard itself, and its own
+      documented rollback ("set it back to off") would have quietly disabled
+      the control for everybody. A control that a feature flag can switch off
+      without saying so is invariant 7 wearing the rollback switch as a hat.
+
+      So: A PRUNE PROCEEDS ONLY WHERE THE PICTURE HAS ARBITRATED. Nothing named
+      means nothing to ask, which means no prune — the ask falls through to the
+      face below, where the record and then the face answer it honestly. The
+      user's own words reaching `match` is the parser's job (its prompt now
+      says so in the echo example too), and this is the backstop that does not
+      depend on the model doing it — a guard the model cannot rescue.
+    */
+    if (matched.length > 0) {
       const began = Date.now();
       let presentInBase: boolean;
       try {

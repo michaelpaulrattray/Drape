@@ -185,6 +185,23 @@ export type RefineParse =
     subject: string | null;
     match: string | null;
     /**
+     * DID THEY NAME THE WHOLE SUBJECT, OR A THING INSIDE IT?
+     *
+     * "Take off her earrings" and "take off all her jewellery" are different
+     * asks in the user's own ontology (law 8), and the record has to be able to
+     * tell them apart. It used to say so by leaving `match` EMPTY — and that is
+     * the contract run-7 died on: a targeted removal whose words went missing
+     * became indistinguishable from a genuine whole-subject one, so it deleted
+     * every step on the facet, and the provenance check (which needs a noun to
+     * ask the picture about) was skipped for both. Her paid earrings step went
+     * with it.
+     *
+     * So the two facts are now carried separately: `match` is always their own
+     * words, and this says how wide they meant it. A removal that arrives with
+     * neither has said nothing the code can act on, and prunes nothing.
+     */
+    whole?: boolean;
+    /**
      * The stored items this removal means, echoed VERBATIM (D-173).
      *
      * Referent resolution lives in the parser because it needs language:

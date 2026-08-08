@@ -1560,6 +1560,104 @@ describe("removal is typed, and most of it is free", () => {
     expect(ledger.charges, "and nothing is charged for the attempt").toEqual([]);
   });
 
+  /*
+    THE HOLE INSIDE THE GUARD — run-7's mechanism, reproduced without a render.
+
+    The provenance check is written `if (matched.length > 0 && parsed.match …)`,
+    and `matchSteps` matches on the SUBJECT ALONE when there are no narrowing
+    words: "no words" returns every step on the facet, whole-step deletion. So
+    the one parse shape that deletes the MOST is the one shape the guard never
+    sees, and — because every log line on that path is inside the guard — it
+    leaves no record at all. That is why run-7 was undiagnosable.
+
+    The parse shape is not exotic; the interpreter's own prompt asks for it. It
+    tells the model to send `{"remove": {"subject": …, "items": [...]}}` with no
+    `match` at all when it is echoing filed items, and the authority filter then
+    DROPS any echo that is not verbatim a stored item. A model that echoes
+    "tortoiseshell glasses" against a chain that only ever stored "small gold
+    hoops" therefore arrives here as `match: null, items: []` — a targeted
+    removal silently promoted to a subject-wide one.
+
+    Her original wears the glasses, so no prune can take them off; the answer is
+    a render, and her paid earrings step must survive.
+  */
+  it("REFUSES TO PRUNE when the parse named no words — run-7's mechanism", async () => {
+    twoStep();
+    await expect(refineCandidate(
+      {
+        ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: null, items: [] }),
+        ...seesInBase(true),
+      },
+      { ...input, instruction: "remove her glasses" },
+      /* Free, and it asks for the one thing that would let it act. */
+    )).rejects.toThrow(/didn't catch what should come off/);
+
+    /*
+      Run-7's exact harm, and the only assertion that matters: she asked about
+      her glasses and must not be walked off the earrings step she paid for.
+      Before the fix this reached `selectAndReport` with
+      `dropped: ["small gold hoops"]` — the log line belt part 1 added, firing
+      on the defect it was built to expose.
+    */
+    expect(journal, "it must not have quietly walked her selection backwards")
+      .not.toContain("select");
+    expect(ledger.charges, "and nothing is charged for the attempt").toEqual([]);
+  });
+
+  /*
+    THE THIRD ROAD TO AN UNARBITRATED PRUNE — found by sabotage, not by reading.
+
+    The matcher's width fix covers the WORD path. The ITEMS path does not go
+    through it at all: a verbatim echo matches by identity, so a parse carrying
+    `items: ["small gold hoops"]` and NO match prunes her earrings step while
+    the provenance check — which needs a noun to ask the picture about — is
+    skipped for want of one. That is the same harm by a different road, and the
+    interpreter's own echo example produced exactly this shape until today.
+
+    The service-side belt is what stops it, and until this row existed the belt
+    was decorative: sabotaging it left the suite green.
+  */
+  it("REFUSES TO PRUNE when an echo matched but nothing was named", async () => {
+    twoStep();
+    await expect(refineCandidate(
+      {
+        ...asks({
+          ok: true,
+          intent: "remove",
+          subject: "statedAccessories",
+          match: null,
+          items: ["small gold hoops"],
+        }),
+        ...seesInBase(true),
+      },
+      { ...input, instruction: "remove her glasses" },
+    )).rejects.toThrow(/didn't catch what should come off/);
+
+    expect(journal, "an echo is not a licence to prune unarbitrated")
+      .not.toContain("select");
+    expect(ledger.charges).toEqual([]);
+  });
+
+  /*
+    A WIDTH CLAIM IS NOT A NOUN, and this row is where the implementation goes
+    one step past the ruling's letter, deliberately. `whole: true` with no words
+    still leaves the picture nothing to arbitrate — and it asks for the WIDEST
+    prune there is, every step on the facet. Refusing for want of the noun is
+    the requirement; the width only ever said how far.
+  */
+  it("REFUSES TO PRUNE on a width claim with no noun", async () => {
+    twoStep();
+    await expect(refineCandidate(
+      {
+        ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: null, whole: true }),
+        ...seesInBase(true),
+      },
+      { ...input, instruction: "take all that off her" },
+    )).rejects.toThrow(/didn't catch what should come off/);
+    expect(journal).not.toContain("select");
+    expect(ledger.charges).toEqual([]);
+  });
+
   it("REFUSES rather than guessing when her face cannot be checked", async () => {
     /* Fail closed. Handing the decision back to the word match when a
        dependency is missing is invariant 7's violation wearing a new hat — it
@@ -1633,10 +1731,26 @@ describe("removal is typed, and most of it is free", () => {
     expect(result.note).toMatch(/takes off|already have that version/i);
   });
 
+  /*
+    THE WHOLE-SUBJECT UNDO SURVIVES, and it now arrives carrying her own noun.
+
+    This row used to be pinned as `match: null` — because the interpreter's
+    prompt asked for exactly that on a whole-subject removal. That contract is
+    what made a WIDENED removal indistinguishable from a genuine one: run-7's
+    "remove her glasses" reached the same code as "remove the makeup", and the
+    provenance check, which needs something to ask the picture about, was
+    skipped for both. The prompt now requires their words in every case, so the
+    whole-subject undo is a named prune like any other and is arbitrated like
+    any other. Her original wore no makeup, so the chain really did put it
+    there and the undo is honest.
+  */
   it("returns to the ORIGINAL for free when every step is removed", async () => {
     twoStep();
     const result = await refineCandidate(
-      asks({ ok: true, intent: "remove", subject: "makeup", match: null }),
+      {
+        ...asks({ ok: true, intent: "remove", subject: "makeup", match: "makeup", whole: true }),
+        ...seesInBase(false),
+      },
       { ...input, instruction: "remove the makeup" },
     );
     /* Both the smokey eye and the hoops? No — only makeup matches, so the

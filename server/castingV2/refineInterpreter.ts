@@ -202,14 +202,20 @@ const REMOVAL_PROMPT = [
   '    {"navigate": true}',
   '  Naming what should go — "remove the hoops", "get rid of the earrings", "take those off",',
   '    "lose the lipstick", "undo the fringe", "no more freckles" ->',
-  '    {"remove": {"subject": "<the subject it belongs to>", "match": "<their own words for the',
-  "    thing, or empty if they named the whole subject>\"}}",
+  '    {"remove": {"subject": "<the subject it belongs to>", "match": "<their own words for what',
+  '    should go>", "whole": <true if they meant the whole subject, false if one thing in it>}}',
   '  subject uses the SAME names as everything above: a free-lane subject, or one of',
   "    eyeColour, eyeShape, hairColour, hairTexture, hairStyle, makeup.",
-  '  "remove the makeup" is the whole subject -> match empty. "remove the smokey eye" names one',
-  '    thing -> match "smokey eye". Put THEIR words in match, never yours.',
+  '  Put THEIR words in match, never yours, ALWAYS — even when they meant the whole subject,',
+  '    and even when you are also sending items. Their noun is the only record of what they',
+  '    pointed at; leaving it out throws away the one fact only they can supply.',
+  '  "remove the makeup" means all of it -> match "makeup", whole true.',
+  '  "remove the smokey eye" names one thing -> match "smokey eye", whole false.',
+  '  "take her jewellery off" means all of it -> whole true. "take her earrings off" names one',
+  '    thing in it -> whole false. When you are not sure they meant ALL of it, say false.',
   '  WHEN SOMETHING IS ALREADY FILED, name it by ECHOING the stored text EXACTLY, in an',
-  '    "items" array: {"remove": {"subject": "statedAccessories", "items": ["small gold hoops"]}}.',
+  '    "items" array, ALONGSIDE their own words:',
+  '    {"remove": {"subject": "statedAccessories", "match": "earrings", "items": ["small gold hoops"]}}.',
   '    Copy the stored string character for character — do not rephrase it, do not shorten it.',
   '    "Remove the earrings" against ["small gold hoops"] echoes ["small gold hoops"], because',
   '    hoops ARE earrings. Naming a CATEGORY echoes every filed item in it; naming ONE thing',
@@ -485,7 +491,20 @@ async function runOnce(
       is not a rule.
     */
     if (!subject && !match && echoed.length === 0) return { ok: true, intent: "navigate" };
-    return { ok: true, intent: "remove", subject, match: match || null, items: echoed };
+    return {
+      ok: true,
+      intent: "remove",
+      subject,
+      match: match || null,
+      /*
+        WIDTH IS REPORTED, NEVER INFERRED. Inferring it from an empty `match`
+        is what let a removal whose words went missing delete every step on the
+        facet — the model has to say it meant all of it, and a model that says
+        nothing has not said all.
+      */
+      whole: target.whole === true,
+      items: echoed,
+    };
   }
 
   if (typeof reply.wall === "string" && reply.wall.trim()) {
