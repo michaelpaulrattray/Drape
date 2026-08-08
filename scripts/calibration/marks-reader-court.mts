@@ -53,6 +53,7 @@ import sharp from "sharp";
 
 import { verifyRender } from "../../server/castingV2/renderVerification";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
+import { boxOfMask, magnifiedDetail } from "../../server/castingV2/verificationDetail";
 
 const OUT = "output/marks-court";
 mkdirSync(OUT, { recursive: true });
@@ -68,9 +69,17 @@ const reader = createFalRegionReader({ apiKey: falKey });
  * whole point: a control whose answer comes from the thing under test is not a
  * control.
  */
-type Case = { name: string; file: string; asked: string; truth: "present" | "absent" };
+type Case = {
+  name: string;
+  file: string;
+  asked: string;
+  truth: "present" | "absent";
+  /** Is this a frame of the bench's own woman? Only hers may take the bench's
+   *  master box, because production's box comes from HER master. */
+  hers?: boolean;
+};
 
-const CASES: Case[] = [
+const RUN_12_CASES: Case[] = [
   /*
     NEGATIVE — HER OWN BARE MASTER, the case this court was missing.
 
@@ -79,11 +88,11 @@ const CASES: Case[] = [
     skin before anyone asked for freckles", so every reading of hers was
     compared against a declaration rather than against her.
   */
-  { name: "run12-00 HER MASTER, before freckles", file: "output/marks-court/MASTER-run12.png", asked: "freckles", truth: "absent" },
+  { name: "run12-00 HER MASTER, before freckles", file: "output/marks-court/MASTER-run12.png", asked: "freckles", truth: "absent", hers: true },
   /* POSITIVE — run-12, the olive-skinned face. Freckles across both cheeks and
      the nose bridge, clear at 3×. All four are the same face. */
-  { name: "run12-01 after 'give her freckles'", file: "output/walk/run-12/01-delivered.png", asked: "freckles", truth: "present" },
-  { name: "run12-03 after lip gloss", file: "output/walk/run-12/03-delivered.png", asked: "freckles", truth: "present" },
+  { name: "run12-01 after 'give her freckles'", file: "output/walk/run-12/01-delivered.png", asked: "freckles", truth: "present", hers: true },
+  { name: "run12-03 after lip gloss", file: "output/walk/run-12/03-delivered.png", asked: "freckles", truth: "present", hers: true },
   /*
     NEGATIVE — AND THIS TRUTH WAS DECLARED THE OTHER WAY UNTIL 2026-08-08.
 
@@ -104,8 +113,8 @@ const CASES: Case[] = [
     much larger one than a reader miss. It is not this court's business; it is
     the reason order 3 exists.
   */
-  { name: "run12-04 after hoops", file: "output/walk/run-12/04-delivered.png", asked: "freckles", truth: "absent" },
-  { name: "run12-05 after the removal", file: "output/walk/run-12/05-delivered.png", asked: "freckles", truth: "present" },
+  { name: "run12-04 after hoops", file: "output/walk/run-12/04-delivered.png", asked: "freckles", truth: "absent", hers: true },
+  { name: "run12-05 after the removal", file: "output/walk/run-12/05-delivered.png", asked: "freckles", truth: "present", hers: true },
   /* POSITIVE — run-11, a different face type entirely (redhead, pale, heavily
      freckled by the roll itself). If the reader can see these and not the
      others, the failure is about skin tone or density rather than about seeing. */
@@ -116,6 +125,47 @@ const CASES: Case[] = [
      that manufactures false passes. */
   { name: "fresh-02 specimen (no freckles)", file: "output/masked/specimens/fresh-02.png", asked: "freckles", truth: "absent" },
 ];
+
+/**
+ * RUN-15's BENCH — a second woman, and the first one this court has met whose
+ * freckles the DENSITY COUNTER cannot see.
+ *
+ * Her stored verdicts read PASS, MISS, MISS, PASS on the four delivered frames.
+ * The truths below are declared from `output/marks-court/ZOOM-run15-nose.png`:
+ * her own bare master and the four frames, the same window on each, her nose
+ * bridge at 8×. The master is clean skin; 01, 03, 04 and 05 all carry the same
+ * scatter of small brown specks across the bridge and its sides.
+ *
+ * **The counter is on the bench too, and it fails here.** It puts 01 at +9%,
+ * 03 at +3% and 04 at +1% above her floor, on a band whose floor is already 77
+ * specks of her own pore texture — a signal of two to seven specks inside that
+ * noise. On run-12 it separated a delivered frame from a lost one and it was
+ * believed for it; on this woman it cannot, and a reading of hers taken from it
+ * would be the instrument speaking past its own declared limit. Recorded here
+ * so nobody quotes those percentages as a truth.
+ */
+const RUN_15_CASES: Case[] = [
+  { name: "run15-00 HER MASTER, before freckles", file: "output/marks-court/MASTER-run15.png", asked: "freckles", truth: "absent", hers: true },
+  { name: "run15-01 after 'give her freckles'", file: "output/walk/2026-08-08T19-59-45-742Z/01-delivered.png", asked: "freckles", truth: "present", hers: true },
+  /* The two the product recorded as advisory misses — the rows this sitting is for. */
+  { name: "run15-03 after lip gloss", file: "output/walk/2026-08-08T19-59-45-742Z/03-delivered.png", asked: "freckles", truth: "present", hers: true },
+  { name: "run15-04 after hoops", file: "output/walk/2026-08-08T19-59-45-742Z/04-delivered.png", asked: "freckles", truth: "present", hers: true },
+  { name: "run15-05 after the removal", file: "output/walk/2026-08-08T19-59-45-742Z/05-delivered.png", asked: "freckles", truth: "present", hers: true },
+  /* The same two cross-face controls the other bench uses, so one calibrated
+     instrument reads both sittings rather than two. */
+  { name: "run11-05 redhead, removal", file: "output/walk/run-11/05-delivered.png", asked: "freckles", truth: "present" },
+  { name: "fresh-02 specimen (no freckles)", file: "output/masked/specimens/fresh-02.png", asked: "freckles", truth: "absent" },
+];
+
+const runFlag = process.argv.indexOf("--run");
+const RUN = runFlag > -1 ? String(process.argv[runFlag + 1]) : "12";
+const BENCH: Record<string, { master: string; cases: Case[] }> = {
+  "12": { master: "output/marks-court/MASTER-run12.png", cases: RUN_12_CASES },
+  "15": { master: "output/marks-court/MASTER-run15.png", cases: RUN_15_CASES },
+};
+const bench = BENCH[RUN];
+if (!bench) throw new Error(`no bench for run ${RUN} — the benches are ${Object.keys(BENCH).join(", ")}`);
+const CASES = bench.cases;
 
 /** Her face, from the segmenter, with a margin — never a fraction of the frame. */
 async function faceCrop(file: string, padFraction = 0.12): Promise<Buffer | null> {
@@ -170,6 +220,33 @@ async function enlargedFaceCrop(file: string): Promise<Buffer | null> {
     .png().toBuffer();
 }
 
+/**
+ * THE CROP PRODUCTION ACTUALLY BUILDS — her MASTER's box, this frame's pixels,
+ * cut by the product's own two functions.
+ *
+ * The three lenses above take their box from the frame in front of them. The
+ * product does not: `detailForVerification` reads the box off the master
+ * regions the harvest already segmented, then extracts it from the render
+ * (`verificationDetail`, "why the box comes from the MASTER and is applied to
+ * the RENDER"). Those are not the same crop on a chain where an accessory has
+ * come off, and this bench has already learnt once that measuring a shape you
+ * did not ship proves nothing about the shape you did.
+ *
+ * So `boxOfMask` and `magnifiedDetail` are IMPORTED rather than re-written: a
+ * lens that reimplements the thing under test can only ever measure the copy.
+ */
+let masterBox: Awaited<ReturnType<typeof boxOfMask>> | undefined;
+async function productionDetail(file: string): Promise<Buffer | null> {
+  if (masterBox === undefined) {
+    const mask = await reader.region({ image: readFileSync(bench.master), name: "face skin" })
+      .catch(() => null);
+    masterBox = mask ? boxOfMask(mask) : null;
+  }
+  if (!masterBox) return null;
+  const detail = await magnifiedDetail({ bytes: readFileSync(file), box: masterBox });
+  return detail?.bytes ?? null;
+}
+
 /** The production reader, asked the production question. */
 async function ask(
   bytes: Buffer,
@@ -212,7 +289,7 @@ if (!Number.isInteger(REPEAT) || REPEAT < 1) throw new Error("--repeat needs a w
  * getting the crop in front of the reader, and shipping the second on the
  * evidence for the first is the mistake this bench has corrected twice.
  */
-const LENSES = ["portrait", "crop", "enlarged", "shipped"] as const;
+const LENSES = ["portrait", "crop", "enlarged", "shipped", "production"] as const;
 type Lens = (typeof LENSES)[number];
 
 /** N readings of one question about one picture, kept individually. */
@@ -234,8 +311,8 @@ async function sit(bytes: Buffer | null, asked: string, detail?: Buffer | null):
 const rows: Record<string, unknown>[] = [];
 console.log(`\n${REPEAT} readings per lens. A tally, not a verdict — "3/5" and "5/5" are `
   + `different diagnoses.\n`);
-console.log("case                                  truth      portrait     crop         enlarged     shipped");
-console.log("-".repeat(96));
+console.log("case                                  truth      portrait     crop         enlarged     shipped      production");
+console.log("-".repeat(109));
 
 for (const entry of CASES) {
   if (!existsSync(entry.file)) { console.log(`${entry.name.padEnd(38)} SKIPPED — ${entry.file} missing`); continue; }
@@ -247,11 +324,17 @@ for (const entry of CASES) {
   const enlargedBytes = await enlargedFaceCrop(entry.file);
   if (enlargedBytes) writeFileSync(`${OUT}/${slug}-enlarged.png`, enlargedBytes);
 
+  /* Only HER frames may take the bench master's box; a stranger's face is not
+     at her pose and the box would land on their ear. */
+  const productionBytes = entry.hers ? await productionDetail(entry.file) : enlargedBytes;
+  if (productionBytes) writeFileSync(`${OUT}/${slug}-production.png`, productionBytes);
+
   const sittings: Record<Lens, Sitting> = {
     portrait: await sit(bytes, entry.asked),
     crop: await sit(cropBytes, entry.asked),
     enlarged: await sit(enlargedBytes, entry.asked),
     shipped: await sit(bytes, entry.asked, enlargedBytes),
+    production: await sit(bytes, entry.asked, productionBytes),
   };
 
   /* How many of the N readings landed on the truth. The tally IS the finding:

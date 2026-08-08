@@ -52,7 +52,17 @@
  * and only for frames of HER. The two cross-face rows are kept to keep that
  * honest: a clear-skinned stranger scores 6.02, higher than any frame of hers.
  *
+ * # And why it takes a `--run` (2026-08-09)
+ *
+ * Run-15 asked the same question of a different woman, and the answer to
+ * *"did her freckles come and go"* is not transferable between faces — the
+ * counter's declared limit is that it can only ORDER FRAMES OF ONE FACE. So the
+ * bench holds one frame set per walk, each with its own master as row 00, and
+ * neither borrows the other's floor. Run-12 stays the default so every number
+ * already quoted from this script reproduces without an argument.
+ *
  *   railway.cmd run --service MySQL -- npx tsx scripts/calibration/freckle-density.mts
+ *   npx tsx scripts/calibration/freckle-density.mts --run 15
  *   (no database needed — plain `npx tsx` is fine; FAL_KEY supplies the face)
  */
 import "dotenv/config";
@@ -69,7 +79,14 @@ const apiKey = process.env.FAL_KEY;
 if (!apiKey) throw new Error("FAL_KEY required — the patch comes from a segmentation, never from a fraction");
 const reader = createFalRegionReader({ apiKey });
 
-const FRAMES = [
+/**
+ * One frame on the bench. `hers` says whose skin it is: only frames of the
+ * walk's OWN woman may be read against her floor, and the cross-face controls
+ * exist to keep that limit visible rather than to be compared through it.
+ */
+type Frame = { name: string; file: string; hers?: boolean };
+
+const RUN_12_FRAMES: Frame[] = [
   /*
     HER OWN BARE FACE — the baseline this counter was specified to have, and
     could not have until 2026-08-08.
@@ -95,11 +112,11 @@ const FRAMES = [
       curl -o output/marks-court/MASTER-run12.png \
         https://pub-990e39d8d995468eb61aced83162123a.r2.dev/casting-v2/candidates/606208e9-4889-4bee-b981-d4d79219be34.png
   */
-  { name: "00 HER MASTER — before any freckles were asked for", file: "output/marks-court/MASTER-run12.png" },
-  { name: "01 after 'give her freckles'", file: "output/walk/run-12/01-delivered.png" },
-  { name: "03 after lip gloss", file: "output/walk/run-12/03-delivered.png" },
-  { name: "04 after hoops", file: "output/walk/run-12/04-delivered.png" },
-  { name: "05 after the removal", file: "output/walk/run-12/05-delivered.png" },
+  { name: "00 HER MASTER — before any freckles were asked for", file: "output/marks-court/MASTER-run12.png", hers: true },
+  { name: "01 after 'give her freckles'", file: "output/walk/run-12/01-delivered.png", hers: true },
+  { name: "03 after lip gloss", file: "output/walk/run-12/03-delivered.png", hers: true },
+  { name: "04 after hoops", file: "output/walk/run-12/04-delivered.png", hers: true },
+  { name: "05 after the removal", file: "output/walk/run-12/05-delivered.png", hers: true },
   /*
     06 — THE ONE PAID RENDER THAT SETTLES IT (approved, fable-048).
 
@@ -111,7 +128,7 @@ const FRAMES = [
     Frame 04 read 3.49, BELOW her 3.84 floor. If this reads at the floor too,
     the fix did not save it and the coin-flip theory needs its retry.
   */
-  { name: "06 a necklace, AFTER the lane fix", file: "output/caption-governs/delivered.png" },
+  { name: "06 a necklace, AFTER the lane fix", file: "output/caption-governs/delivered.png", hers: true },
   /*
     THE COUNTER'S OWN CONTROLS, because a count nobody has calibrated is worth
     what an unproven reader is worth — and this shift has now been burnt twice
@@ -140,6 +157,40 @@ const FRAMES = [
   { name: "neg CONTROL — a DIFFERENT clear-skinned face", file: "output/masked/specimens/fresh-02.png" },
   { name: "pos CONTROL — heavily freckled redhead", file: "output/walk/run-11/05-delivered.png" },
 ];
+
+/**
+ * RUN-15 — the same four questions of a different woman, and the reason the
+ * bench grew a second set.
+ *
+ * Her stored verdicts read PASS, MISS, MISS, PASS on `marks` across the four
+ * delivered frames, and the shift that bought them declared by eye that the
+ * freckles are present in all four. That declaration is exactly the one this
+ * counter overturned on run-12's frame 04, on the same class of frame, so it
+ * gets the same measurement before it is believed either way.
+ *
+ * Her master carries the same two controls as run-12's: the same clear-skinned
+ * stranger and the same heavily-freckled redhead, so the two sets are read on
+ * one calibrated instrument rather than on two.
+ */
+const RUN_15_FRAMES: Frame[] = [
+  { name: "00 HER MASTER — before any freckles were asked for", file: "output/marks-court/MASTER-run15.png", hers: true },
+  { name: "01 after 'give her freckles'", file: "output/walk/2026-08-08T19-59-45-742Z/01-delivered.png", hers: true },
+  { name: "03 after lip gloss", file: "output/walk/2026-08-08T19-59-45-742Z/03-delivered.png", hers: true },
+  { name: "04 after hoops", file: "output/walk/2026-08-08T19-59-45-742Z/04-delivered.png", hers: true },
+  { name: "05 after the removal", file: "output/walk/2026-08-08T19-59-45-742Z/05-delivered.png", hers: true },
+  { name: "neg CONTROL — a DIFFERENT clear-skinned face", file: "output/masked/specimens/fresh-02.png" },
+  { name: "pos CONTROL — heavily freckled redhead", file: "output/walk/run-11/05-delivered.png" },
+];
+
+const runFlag = process.argv.indexOf("--run");
+const RUN = runFlag > -1 ? String(process.argv[runFlag + 1]) : "12";
+const BENCH: Record<string, { master: string; frames: Frame[] }> = {
+  "12": { master: "output/marks-court/MASTER-run12.png", frames: RUN_12_FRAMES },
+  "15": { master: "output/marks-court/MASTER-run15.png", frames: RUN_15_FRAMES },
+};
+const bench = BENCH[RUN];
+if (!bench) throw new Error(`no frame set for run ${RUN} — the benches are ${Object.keys(BENCH).join(", ")}`);
+const FRAMES = bench.frames;
 
 /**
  * How much darker than local skin a speck has to be, in mean levels.
@@ -367,7 +418,7 @@ async function countSpecks(file: string, population: Population, save: string): 
   glasses were is excluded from every frame equally, including the one where
   they are gone.
 */
-const HER_MASTER = "output/marks-court/MASTER-run12.png";
+const HER_MASTER = bench.master;
 const herPopulation = await cheekBand(HER_MASTER);
 if (!herPopulation) throw new Error("no face read on her master — nothing below can be compared");
 console.log(`her population: ${herPopulation.pixels} skin px inside a `
@@ -394,9 +445,11 @@ console.log("-".repeat(90));
 for (const frame of FRAMES) {
   /* The cross-face controls are different people, so they cannot borrow her
      ground; they take their own, and their limit is declared above. */
-  const population = frame.file.includes("/run-12/") || frame.file === HER_MASTER || frame.file.includes("/caption-governs/")
-    ? herPopulation
-    : await cheekBand(frame.file);
+  /* `hers` is declared per frame rather than sniffed from the path — the path
+     test worked while there was one walk on the bench and would have silently
+     given run-15's frames their own ground, which is the population law's own
+     failure mode. */
+  const population = frame.hers ? herPopulation : await cheekBand(frame.file);
   if (!population) { console.log(`${frame.name.padEnd(34)} NO FACE READ`); continue; }
   const save = `${OUT}/PATCH-${frame.name.slice(0, 2)}.png`;
   const result = await countSpecks(frame.file, population, save);
