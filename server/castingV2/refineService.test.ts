@@ -1333,6 +1333,17 @@ describe("removal is typed, and most of it is free", () => {
     candidateRow.selectedVariantPublicId = "variant-2";
   };
 
+  /** One small valid PNG, built once, for any removal test that renders. */
+  let pngCache: Buffer | null = null;
+  const realPng = async (): Promise<Buffer> => {
+    if (!pngCache) {
+      const sharp = (await import("sharp")).default;
+      pngCache = await sharp({ create: { width: 64, height: 64, channels: 3, background: "#808080" } })
+        .png().toBuffer();
+    }
+    return pngCache;
+  };
+
   const asks = (parse: Record<string, unknown>) => ({
     interpret: async () => parse as never,
     harvest: unmasked,
@@ -1362,26 +1373,153 @@ describe("removal is typed, and most of it is free", () => {
       subject: async () => { throw new Error("no subject"); },
       landmark: async () => [],
     } as never,
-    readBytes: async () => ({ bytes: Buffer.from("original"), contentType: "image/png" }),
+    /* A REAL PNG, because the absence row is the first removal test that
+       reaches a render — `Buffer.from("original")` made sharp throw
+       "unsupported image format" and the refusal looked like a product
+       failure. The prune tests never got this far, which is why it held. */
+    readBytes: async () => ({ bytes: await realPng(), contentType: "image/png" }),
   });
 
   /*
-    ⚠ THE ABSENCE ROW IS SHIPPED AND NOT YET PROVEN — declared, not hidden.
+    THE ABSENCE ROW — the gap declared here on 2026-08-08 is now CLOSED, and how
+    it closed is worth more than the test.
 
-    `refineService` now pushes a binding "no <departed> — they have been taken
-    off" fact whenever a removal ran, because `facts` is built from
-    `facetsWrittenBy(composed)` and a removal deletes its own facet: the render
-    was verified against everything EXCEPT the thing that was asked for, and
-    landed `delivered_unverified` forever.
+    The note said the row could not be reached "inside a reasonable budget"
+    because the path needs the interpreter mocked across two calls plus a chain
+    fixture the helpers do not build. The interpreter half was true and cheap
+    (`asksThenEdits`). The rest was not a fixture problem at all: `readBytes`
+    handed sharp `Buffer.from("original")`, sharp answered "unsupported image
+    format", and the render died looking exactly like a product refusal. Three
+    attempts read that as the path being unreachable.
 
-    The test that belongs here could not be made to reach the render inside a
-    reasonable budget — the base-worn removal path needs the interpreter mocked
-    across two calls plus a chain fixture the existing helpers do not build, and
-    three attempts got the ask to the parser but never to the net. Rather than
-    leave a green test that exercises nothing, the gap is named here: this
-    behaviour is currently proven only by the end-to-end walk, and until that
-    run lands it is UNVERIFIED. A control that is not invoked does not exist.
+    The fixture was lying and the diagnosis believed it — the same shape as
+    every measurement error this campaign has produced. It cost a shipped-
+    unproven guard for a day.
+
+    And the test that belongs here does not need the render to SUCCEED: what has
+    to be true is that the reader is asked about the departed object, in a
+    binding row, when the record can no longer name it. That is a claim about
+    the outgoing request (working law 5).
   */
+
+
+  /**
+   * THE ABSENCE ROW, PROVEN AT THE WIRE (the gap declared above, closed).
+   *
+   * The test that "could not reach the render" was trying to reach the wrong
+   * thing. What has to be true is not that a removal renders — it is that the
+   * reader is ASKED about the departed object, in a binding row, when the record
+   * can no longer name it. That is a claim about the outgoing request, and
+   * working law 5 says to assert it there rather than on a constant near it.
+   *
+   * So this drives the base-worn removal path — which needs the interpreter
+   * answering twice, a removal first and the edit its rule-3 re-read produces
+   * second — and captures what the verifier is actually handed.
+   */
+  const asksThenEdits = (first: Record<string, unknown>, second: Record<string, unknown>) => {
+    let call = 0;
+    return {
+      interpret: async () => (call++ === 0 ? first : second) as never,
+      harvest: unmasked,
+    };
+  };
+
+  /** Captures the fact list the reader is given, and answers everything true. */
+  const capturingVerifier = () => {
+    const asked: string[] = [];
+    return {
+      asked,
+      verifier: {
+        id: "verifier",
+        complete: async (request: { system: string; user: string }) => {
+          if (request.system.includes("how they")) {
+            return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+          }
+          asked.push(request.user);
+          const lines = request.user.split("\n").filter((line) => line.trim());
+          return {
+            text: JSON.stringify({
+              results: lines.map((_, index) => ({ id: index + 1, present: true, saw: "seen" })),
+            }),
+            truncated: false,
+            latencyMs: 1,
+          };
+        },
+      } as never,
+    };
+  };
+
+  it("ASKS THE READER ABOUT THE THING THAT LEFT — binding, and in her own terms", async () => {
+    twoStep();
+    const { asked, verifier } = capturingVerifier();
+    await refineCandidate(
+      {
+        ...asksThenEdits(
+          /* She is wearing them from the brief, so the chain cannot prune them:
+             this routes to a render (`8adc3634`). */
+          { ok: true, intent: "remove", subject: "statedAccessories", match: "glasses", items: ["small gold hoops"] },
+          /* Rule 3's re-read, as an ordinary edit. */
+          { ok: true, delta: { free: { statedAccessories: ["small gold hoops"] } } },
+        ),
+        ...seesInBase(true),
+        verifier,
+      },
+      { ...input, instruction: "remove her glasses" },
+    ).catch(() => undefined);
+
+    /*
+      In this fixture the absence row is the ONLY fact — there is no identity to
+      resolve the surviving accessory against — so "the reader was reached" IS
+      the row's presence, which is why removing the row turns this red rather
+      than the regex below. Said out loud so the signal is not mistaken for a
+      broader one than it is.
+    */
+    expect(asked.length, "the reader was reached at all").toBeGreaterThan(0);
+    /*
+      `facts` is built from `facetsWrittenBy(composed)` and a removal deletes
+      its own facet, so without this row the render is verified against
+      everything EXCEPT the thing that was asked for — and lands
+      `delivered_unverified` forever while her glasses sit there.
+    */
+    expect(
+      asked.some((prompt) => /no glasses — they have been taken off and are not in the picture/.test(prompt)),
+      "the departed thing is asked about, phrased as the absence it is",
+    ).toBe(true);
+  });
+
+  it("tells the reader HOW to judge an absence, or the row is unreadable", async () => {
+    /* The prompt had no notion of an ask phrased as a removal, so the
+       instruction that makes the row judgeable ships with it. Asserted at the
+       wire for the same reason the row is. */
+    const { asked, verifier } = capturingVerifier();
+    let system = "";
+    const watching = {
+      id: "verifier",
+      complete: async (request: { system: string; user: string }) => {
+        if (request.system.includes("how they")) {
+          return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+        }
+        system = request.system;
+        return (verifier as never as { complete: (r: unknown) => unknown }).complete(request) as never;
+      },
+    } as never;
+    twoStep();
+    await refineCandidate(
+      {
+        ...asksThenEdits(
+          { ok: true, intent: "remove", subject: "statedAccessories", match: "glasses", items: ["small gold hoops"] },
+          { ok: true, delta: { free: { statedAccessories: ["small gold hoops"] } } },
+        ),
+        ...seesInBase(true),
+        verifier: watching,
+      },
+      { ...input, instruction: "remove her glasses" },
+    ).catch(() => undefined);
+
+    expect(asked.length, "the reader was reached").toBeGreaterThan(0);
+    expect(system, "an absence is VISIBLY TRUE when the thing is not there")
+      .toMatch(/taken off/);
+  });
 
   it("PRUNES when the chain put it there — D-173's founding case", async () => {
     twoStep();
