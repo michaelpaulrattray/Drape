@@ -25,6 +25,16 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[] }> = [
     }],
   },
   {
+    /* Run-8: the already-true gate keyed on the COMPOSED recipe, so a delivered
+       "fox eyes" intercepted every later ask with a question about her eyes. */
+    name: "the already-true gate reading the composed recipe instead of this ask",
+    file: "server/castingV2/refineService.ts",
+    mutations: [{
+      find: "  const asksUpsweptNow = editDelta != null && isUpsweptAsk(editDelta.eyeShape);",
+      replace: "  const asksUpsweptNow = isUpsweptAsk(composed.eyeShape);",
+    }],
+  },
+  {
     name: "the noun requirement dropped before the matcher (the service's half)",
     file: "server/castingV2/refineService.ts",
     mutations: [{
@@ -56,4 +66,4 @@ if (!allProven) {
   console.error("At least one sabotage left the suite green. The guard is not driven by these tests.");
   process.exit(1);
 }
-console.log("Both halves of the fix are driven by the suite.");
+console.log(`All ${runs.length} guards are driven by the suite.`);

@@ -1394,8 +1394,24 @@ export async function refineCandidate(
     **It sits before `admit` so nothing has been claimed**, alongside every other
     free refusal in this function.
 
-    Three conditions, each load-bearing:
+    Four conditions, each load-bearing:
 
+      THIS ASK     the gate answers the sentence in front of it, and it read
+                  the COMPOSED recipe instead — which carries every earlier
+                  step forever. Run-8 is the exhibit: once "fox eyes" was
+                  delivered at step 2, `composed.eyeShape` stayed upswept, so
+                  "add nude lip gloss" and "gold hoop earrings" were BOTH
+                  intercepted with *"Her eyes already sweep up at the outer
+                  corners. Push them further, or leave her as she is?"* — and
+                  the chips offered were "More tilt" and "Never mind". A
+                  customer who buys an eye edit could not then buy anything
+                  else: every later sentence came back as a question about her
+                  eyes, and the fifth step was consumed answering it.
+
+                  Same shape as the prune defect fixed earlier the same day —
+                  a decision keyed on the record rather than on the
+                  instruction — and the record is exactly where past asks
+                  outlive their moment.
       DIRECTION   only an upswept ask. "Downturned" wants the opposite and
                   "hooded" is about the lid, and a gate firing on those would
                   refuse the very edit a high-baseline face most needs.
@@ -1410,7 +1426,10 @@ export async function refineCandidate(
     Scoped to the masked path, because that is where the eye.shape row lives and
     every other account is still on exactly the behaviour it had.
   */
-  if (!answered && isUpsweptAsk(composed.eyeShape) && maskedEditingEnabledFor(input.userId)) {
+  /* THIS step's own ask, never the composed recipe — `editDelta` is what this
+     sentence wrote, and a removal writes none of it. */
+  const asksUpsweptNow = editDelta != null && isUpsweptAsk(editDelta.eyeShape);
+  if (!answered && asksUpsweptNow && maskedEditingEnabledFor(input.userId)) {
     const reading = await (async () => {
       try {
         /*

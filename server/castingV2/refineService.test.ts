@@ -373,6 +373,71 @@ describe("refusals land before anything is claimed", () => {
   });
 
   /*
+    AND IT ANSWERS THE SENTENCE IN FRONT OF IT — run-8's defect, pinned.
+
+    The gate read `composed.eyeShape`, which carries every earlier step forever.
+    So once "fox eyes" was delivered, a customer could not buy anything else:
+    run-8's step 3 asked for nude lip gloss and step 4 for gold hoop earrings,
+    and BOTH came back *"Her eyes already sweep up at the outer corners. Push
+    them further, or leave her as she is?"* with chips reading "More tilt" and
+    "Never mind". The fifth step was then consumed answering a question nobody
+    had asked.
+
+    A paid, correctly delivered edit locked the product. The gate now keys on
+    what THIS sentence wrote.
+  */
+  it("does not interrupt a LATER ask because an earlier step bought fox eyes", async () => {
+    const W = 400;
+    const H = 300;
+    const upswept = () => {
+      const data = Buffer.alloc(W * H, 0);
+      const put = (x0: number, x1: number, yAt: (x: number) => number) => {
+        for (let x = x0; x < x1; x += 1) {
+          const y = Math.round(yAt(x));
+          for (let dy = -4; dy <= 4; dy += 1) data[(y + dy) * W + x] = 255;
+        }
+      };
+      put(80, 160, (x) => 120 + (x - 80) * 0.25);
+      put(240, 320, (x) => 140 - (x - 240) * 0.25);
+      return { data, width: W, height: H };
+    };
+    const sharp = (await import("sharp")).default;
+    const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    /* Her recipe ALREADY carries the delivered fox eyes, and her face really is
+       upswept now — both halves of run-8's state. This sentence is about her
+       lips and has nothing to do with her eyes. */
+    variantRows = [{
+      id: 501,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["fox eyes"],
+      stepDeltas: [{ eyeShape: "fox eyes" }],
+      deltas: { eyeShape: "fox eyes" },
+      internalPrompt: {},
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { makeup: "nude lip gloss" } }),
+        readBytes: async () => ({ bytes: face, contentType: "image/png" }),
+        regions: {
+          region: async () => upswept(),
+          subject: async () => upswept(),
+          landmark: async () => [],
+        },
+      },
+      { ...input, instruction: "add nude lip gloss" },
+    );
+
+    expect(result.kind, "her lip gloss is rendered, not answered with a question about her eyes")
+      .toBe("rendered");
+  });
+
+  /*
     AND IT MUST BE ANSWERABLE — which is the half that was missing.
 
     The gate shipped as a thrown BAD_REQUEST carrying the sentence, so the

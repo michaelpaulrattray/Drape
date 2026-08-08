@@ -30,9 +30,18 @@ if (!openId) throw new Error("OPEN_ID not set — whose session is this?");
 const token = await new SignJWT({ openId, appId, name: "Dogfood Walk" })
   .setProtectedHeader({ alg: "HS256" })
   .setIssuedAt()
-  /* Minutes, not hours. Long enough for a walk, short enough that a leaked
-     cookie is worthless by the time anyone finds it. */
-  .setExpirationTime("30m")
+  /*
+    Minutes, not hours. Long enough for a walk, short enough that a leaked
+    cookie is worthless by the time anyone finds it.
+
+    `TTL` exists because 30m stopped being "long enough for a walk": the landing
+    cap is eight minutes a step and there are five steps, so a legitimately slow
+    run can outlive its own session and die looking exactly like a product
+    failure. Raising the default instead would spend the safety margin on every
+    caller to fix one; the caller that needs longer asks for longer, and says so
+    in the command that mints it.
+  */
+  .setExpirationTime(process.env.TTL || "30m")
   .sign(new TextEncoder().encode(secret));
 
 console.log(token);
