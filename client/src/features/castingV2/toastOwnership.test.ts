@@ -40,9 +40,9 @@ const PAGES: Array<[string, URL]> = [
 const ALLOWED: Array<{ match: string; because: string }> = [
   // ---- CastingSheet.tsx
   {
-    match: "toast(error.message)",
+    match: '"That didn\'t save — nothing has changed."',
     because:
-      "A refused keep or discard. The optimistic paint snaps back, which shows something was refused and never why.",
+      "A refused keep or discard. The optimistic paint snaps back, which shows something was refused and never why. It carries OUR sentence rather than the error's since run-9 (see failureCopy.ts) — a server refusal still speaks for itself, and a transport failure no longer speaks at all.",
   },
   {
     match: '"Discarded — undo is only available on the latest roll"',
@@ -55,9 +55,14 @@ const ALLOWED: Array<{ match: string; because: string }> = [
       "'Restored' is duplicated by the card returning; 'not kept' is not. The only in-place evidence is a missing ring, which looks identical to a card that was never kept.",
   },
   {
+    match: '"Signing didn\'t go through. Nothing has changed — try again."',
+    because:
+      "A failed Sign. It navigates on success, so a failure leaves the user on a closed modal with nothing said. Ours rather than the error's since run-9; a PRECONDITION_FAILED from our own server still passes through verbatim, because that sentence names its wall.",
+  },
+  {
     match: "toast.error(error.message)",
     because:
-      "A failed Sign (the sheet) or a failed inline rename (the room). Sign navigates on success, so a failure leaves the user on a closed modal with nothing said; the rename reverts to the old name, which is not a reason. Found by this lint rather than by the audit — the audit had missed both.",
+      "A failed inline rename (the room). The name reverts to the old one, which is not a reason. Found by this lint rather than by the audit — the audit had missed it.",
   },
   // ---- CastingV2.tsx (the lobby)
   {

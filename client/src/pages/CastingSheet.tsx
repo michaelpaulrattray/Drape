@@ -19,6 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import { CandidateTile, UndoDiscard } from "@/features/castingV2/components/CandidateTile";
+import { readableFailure, refineFailureMessage } from "@/features/castingV2/failureCopy";
 import { useSheetSession, type UnlockableField } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import {
@@ -419,7 +420,7 @@ export default function CastingSheet() {
           // The server said no. Drop the optimistic paint rather than leaving
           // the screen claiming something that did not happen.
           clearOptimistic(candidateId);
-          toast(error.message);
+          toast(readableFailure(error, "That didn't save — nothing has changed."));
         }),
     )(candidateId, { candidateId, kept });
   };
@@ -448,7 +449,7 @@ export default function CastingSheet() {
       })
       .catch((error: Error) => {
         clearOptimistic(input.candidateId);
-        toast(error.message);
+        toast(readableFailure(error, "That didn't save — nothing has changed."));
       }),
   );
 
@@ -1637,7 +1638,14 @@ export default function CastingSheet() {
                     could be read, and a refusal that names its wall is
                     worthless at 2.1 seconds.
                   */
-                  .catch((error: Error) => setRefineOutcome(error.message));
+                  /*
+                    OUR SENTENCE, NEVER THE ERROR'S (run-9). This was
+                    `error.message`, so a gateway's plain-text 502 reached the
+                    panel as "Unexpected token 'u', "upstream error" is not
+                    valid JSON" — the same string already fixed once for roll
+                    dispatch, kept alive here because that fix was never swept.
+                  */
+                  .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
               }}
               onSelect={(variantId) => {
                 void chooseVariant
@@ -1646,7 +1654,14 @@ export default function CastingSheet() {
                     await variants.refetch();
                     await invalidate();
                   })
-                  .catch((error: Error) => setRefineOutcome(error.message));
+                  /*
+                    OUR SENTENCE, NEVER THE ERROR'S (run-9). This was
+                    `error.message`, so a gateway's plain-text 502 reached the
+                    panel as "Unexpected token 'u', "upstream error" is not
+                    valid JSON" — the same string already fixed once for roll
+                    dispatch, kept alive here because that fix was never swept.
+                  */
+                  .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
               }}
             />
           ) : null}
@@ -1685,7 +1700,7 @@ export default function CastingSheet() {
                 },
                 onError: (error) => {
                   setSigning(null);
-                  toast.error(error.message);
+                  toast.error(readableFailure(error, "Signing didn't go through. Nothing has changed — try again."));
                 },
               },
             );

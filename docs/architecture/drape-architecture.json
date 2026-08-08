@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "21442e18dad995e1"
+    "sourceFingerprint": "6bedaaa77614787a"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 22
+      "moduleCount": 23
     },
     {
       "id": "domain:client-shared",
@@ -1487,6 +1487,12 @@
     {
       "id": "module:client/src/features/castingV2/dispatchFailure.ts",
       "path": "client/src/features/castingV2/dispatchFailure.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/failureCopy.ts",
+      "path": "client/src/features/castingV2/failureCopy.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7674,6 +7680,10 @@
       "path": "client/src/features/castingV2/dockAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/failureCopy.test.ts",
+      "path": "client/src/features/castingV2/failureCopy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/heroBox.test.ts",
       "path": "client/src/features/castingV2/heroBox.test.ts"
     },
@@ -13427,6 +13437,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/dispatchFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/failureCopy.ts",
       "kind": "imports"
     },
     {

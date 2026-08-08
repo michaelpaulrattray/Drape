@@ -62,20 +62,11 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
     The earlier branches use `serverMessage` deliberately: those are tRPC codes
     our own server raised, and the sentence attached to them was written for a
     reader. Anything reaching here was not — it is a transport or parse failure
-    whose text comes from a library or a proxy. There is nothing to pass on.
-  */
-  /*
-    The fallback shows OUR sentence, never the error's.
-
-    The founder was shown: `Unexpected token 'u', "upstream error" is not valid
-    JSON`. That is a JSON parser talking about a gateway's plain-text 502 —
-    three layers of implementation detail, in the place where a person is
-    trying to find out whether they were charged.
-
-    The earlier branches use `serverMessage` deliberately: those are tRPC codes
-    our own server raised, and the sentence attached to them was written for a
-    reader. Anything reaching here was not — it is a transport or parse failure
     whose text comes from a library or a proxy.
+
+    The REFINE panel had the identical hole and kept it until run-9 put the
+    same string on screen — `refineFailure.ts` is its half. Naming a class here
+    and fixing one consumer is what law 7 is about.
 
     AND IT NO LONGER PROMISES THE MONEY IS SAFE. It used to say "Nothing was
     charged", which the earlier branches can say truthfully because the server
