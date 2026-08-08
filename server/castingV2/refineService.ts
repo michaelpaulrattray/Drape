@@ -71,7 +71,12 @@ import {
   IRIS_RENDER,
 } from "./realizedAxes";
 import { hairStyleByName } from "./hairStyles";
-import { FREE_SUBJECT_KEYS, FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
+import {
+  FREE_SUBJECT_KEYS,
+  FREE_SUBJECTS,
+  isDepartableSubject,
+  type FreeSubject,
+} from "./refineSubjects";
 import { readResolvedIdentity } from "./rollService";
 import {
   applyDelta,
@@ -79,6 +84,11 @@ import {
   composeRenderPrompt,
   contradictedFacets,
   currentValueOfFacet,
+  facetsAnsweredBy,
+  departedItems,
+  departedClause,
+  departedNoun,
+  departedShortfall,
   facetsWrittenBy,
   itemsOf,
   missingFromPrompt,
@@ -1053,6 +1063,44 @@ export async function refineCandidate(
         });
       }
       /*
+        THE DEPARTURE GETS A HOME — and this is where a base-worn removal has
+        always fallen through the floor (D-238).
+
+        Everything above has just established the two facts that matter: nothing
+        in the CHAIN put this here, and it is nevertheless on her — from the
+        brief, from the dice, or from her own face as the segmenter saw it. That
+        is the definition of base-worn, and it is the one removal subtraction
+        cannot perform. There is no step to prune; the glasses are in the
+        original photograph, and every render is anchored on that photograph.
+
+        It used to be re-read as an ordinary EDIT, which handed the model a
+        negative ask and asked it to file a positive answer. Whatever came back,
+        the departure itself was never recorded — so the render never asked for
+        it, and her next ask started again from the bespectacled original.
+
+        So the code authors the fact rather than asking for it. It knows the
+        subject and it knows their words, both already validated, and no model
+        round-trip can improve on that — the same reason removal matching is
+        code-owned. It becomes a chain step like any other, which is what makes
+        it durable, undoable, and superseded by a later ask on the same subject.
+
+        Only for subjects that can LEAVE (law 8, and the founder's fringe is the
+        argument — see `DEPARTABLE_SUBJECTS`). Anything else keeps the road
+        below, where a cut with no fringe is a haircut rather than a hole.
+      */
+      if (subject && isDepartableSubject(subject as FreeSubject)) {
+        const noun = departedNoun(parsed.match);
+        log.info(
+          {
+            userId: input.userId, candidate: input.candidatePublicId,
+            subject, noun, recorded: Boolean(recorded), briefNamesIt, faceWearsIt,
+          },
+          "[refineService] a base-worn thing is departing — recording it in the recipe",
+        );
+        editDelta = { absent: { [subject as FreeSubject]: [noun] } };
+        departed = noun;
+      } else {
+      /*
         RULE 3 — THE FACE SECOND. The record says it IS there, so this is an
         ordinary content edit. Re-read with the removal vocabulary withheld, or
         the same sentence classifies as a removal forever.
@@ -1077,6 +1125,7 @@ export async function refineCandidate(
         });
       }
       editDelta = asEdit.delta;
+      }
     } else {
       for (const match of matched) {
         for (const facet of Array.from(facetsWrittenBy(predecessorChain[match.index]!.delta))) {
@@ -1153,6 +1202,28 @@ export async function refineCandidate(
   const composed = editDelta
     ? composeDeltas([priorDelta, editDelta])
     : composeChain(chain);
+
+  /*
+    EVERYTHING THAT MUST NOT BE IN THIS PICTURE — standing, plus this render's own.
+
+    Two sources, and neither one alone is enough:
+
+    - **The recipe's standing departures.** Renders are base-anchored, so on her
+      NEXT ask — lip gloss tomorrow — the base still has the glasses on and the
+      removal has to be performed all over again. That is the whole reason the
+      departure was given a home rather than left as one render's local.
+    - **This render's own prune.** A chain-added thing leaves by having its step
+      deleted, which writes nothing to `absent` and must not: the base never had
+      it. But the mask and the net still need to know what left THIS time.
+
+    Derived here, once, so every consumer below reads the same list rather than
+    each reconstructing it — the shape that let four consumers disagree about
+    what a removal was in the first place.
+  */
+  const departedFromPicture: string[] = Array.from(new Set([
+    ...departedItems(composed),
+    ...(departed ? [departed] : []),
+  ]));
 
   /*
     MATERIALIZATION IS HONEST ABOUT MONEY (D-163 rule 4).
@@ -1710,7 +1781,22 @@ export async function refineCandidate(
       const harvested = await (dependencies.harvest ?? harvestRefinement)({
         master: { bytes: base.bytes, contentType: base.contentType },
         painted: { bytes: painted.bytes, contentType: painted.contentType },
-        facets: Array.from(facetsWrittenBy(composed)),
+        /*
+          THE ANSWERED FACETS, and the distinction is load-bearing here (D-238).
+
+          `facets` tells the mask-cutter what this render PUTS THERE: a facet
+          whose zone scope is "object" takes the addition path, which anchors a
+          landmark corridor from the described object. A departure has no
+          described object — nothing survives on the subject to describe — so
+          sending its facet here would ask for the landmark of nothing and refuse
+          a render the painter could have carried out perfectly.
+
+          A removal is not an addition of an absence. It travels in `departed`,
+          which has its own territory rule: the object is ON the master, so the
+          zone is its own footprint rather than a corridor. Two channels because
+          they are two different questions about the picture.
+        */
+        facets: Array.from(facetsAnsweredBy(composed)),
         reader: dependencies.regions ?? defaultRegionReader(),
         /* Per user, not per deploy — the first flip goes to one account. */
         userId: input.userId,
@@ -1723,7 +1809,7 @@ export async function refineCandidate(
            it asks about the SURVIVING accessory — a chain of earrings+glasses
            minus the glasses would harvest at her earlobes, which is the exact
            failure `LANDMARK_OF_ACCESSORY` was introduced to kill. */
-        departed: departed ?? undefined,
+        departed: departedFromPicture,
         operationId,
       });
       /*
@@ -1808,11 +1894,19 @@ export async function refineCandidate(
       not — and D-235's asymmetry protects a correct render from a reader that
       cannot see: an unread check spends no refusal.
     */
-    if (departed) {
+    /*
+      AND EVERY STANDING DEPARTURE, not only this render's own.
+
+      It was `if (departed)` — one render's local — so a recipe that says the
+      glasses are off went unchecked on every render after the one that took
+      them off, which is precisely where they come back. Same list as the mask
+      and the prompt, so the three cannot disagree about what left.
+    */
+    for (const gone of departedFromPicture) {
       const facet = facetOfSubject("statedAccessories");
       facts.push({
         facet,
-        asked: `no ${departed} — they have been taken off and are not in the picture`,
+        asked: departedClause(gone),
         /*
           AND THE CUSTOMER'S VERSION OF THE SAME FAILURE.
 
@@ -1823,7 +1917,7 @@ export async function refineCandidate(
           have been taken off and are not in the picture"** on a real receipt.
           One string cannot be a vision prompt and a sentence.
         */
-        shortfall: `with ${departed} still in the picture`,
+        shortfall: departedShortfall(gone),
         binding: true,
       });
     }

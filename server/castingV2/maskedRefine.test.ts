@@ -389,7 +389,7 @@ describe("an accessory is harvested by what it IS", () => {
       facets: [],
       reader: naming,
       userId: 1,
-      departed: "thin wire glasses",
+      departed: ["thin wire glasses"],
     }).catch(() => undefined);
     expect(asked, "the thing that left is never asked about").toContain("glasses");
   });
@@ -412,7 +412,7 @@ describe("an accessory is harvested by what it IS", () => {
       reader: naming,
       userId: 1,
       described: "small gold hoops",
-      departed: "thin wire glasses",
+      departed: ["thin wire glasses"],
     }).catch(() => undefined);
     expect(asked, "the departed thing must be asked about").toContain("glasses");
     expect(asked, "and the surviving hoops keep their own question too").toContain("earring");
@@ -425,7 +425,7 @@ describe("an accessory is harvested by what it IS", () => {
       facets: [],
       reader,
       userId: 1,
-      departed: "a silver anklet",
+      departed: ["a silver anklet"],
     })).rejects.toThrow(/refusing to guess where it was/);
   });
 
@@ -969,7 +969,7 @@ describe("territory it was never asked about is given back to her master", () =>
       reader,
       userId: 1,
       described: "glasses",
-      departed: "glasses",
+      departed: ["glasses"],
       explain: true,
     });
     /* The arm's own footprint over her hair: x in [10, 26). The reveal must
@@ -1194,7 +1194,7 @@ describe("only an edit that can move an edge may claim a reveal", () => {
       facets: [],
       reader,
       userId: 1,
-      departed: "glasses",
+      departed: ["glasses"],
       explain: true,
     });
     expect(coverage(result.explain!.delivered), "the frames still come off").toBeGreaterThan(0);

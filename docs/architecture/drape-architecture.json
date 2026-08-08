@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "79ed23448bdc188f"
+    "sourceFingerprint": "b94358aa3d4880bb"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 67
+      "moduleCount": 68
     },
     {
       "id": "domain:castingV2",
@@ -3174,6 +3174,12 @@
       "id": "module:server/casting/wholeCastRestore.ts",
       "path": "server/casting/wholeCastRestore.ts",
       "domain": "casting",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/accessoryKinds.ts",
+      "path": "server/castingV2/accessoryKinds.ts",
+      "domain": "casting-v2",
       "lifecycle": "active"
     },
     {
@@ -8402,6 +8408,10 @@
     {
       "id": "test:server/castingV2/refineDelta.test.ts",
       "path": "server/castingV2/refineDelta.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineDeparture.test.ts",
+      "path": "server/castingV2/refineDeparture.test.ts"
     },
     {
       "id": "test:server/castingV2/refineFacets.test.ts",
@@ -17291,6 +17301,11 @@
     },
     {
       "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
@@ -17502,6 +17517,11 @@
     {
       "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
     },
     {

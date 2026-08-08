@@ -1610,19 +1610,44 @@ describe("removal is typed, and most of it is free", () => {
       that version" while she looks straight at her glasses.
 
       Her original wears the glasses, so no prune can remove them. The step
-      survives and the ask goes to the face.
+      survives and the ask goes to the face — as a DEPARTURE recorded in the
+      recipe (D-238), which is the road this walk used to fall off.
+
+      This test now carries run-7's harm directly rather than by proxy. It used
+      to assert that nothing was charged, and that was an artefact of the mock:
+      the ask was re-read as an edit, the stub handed back the same removal
+      parse, and the service refused for want of a delta. The comment above
+      always said the ask goes to the face, which costs 25. So the assertions
+      are what the walk is actually about — her paid hoops SURVIVE the question
+      about her glasses, and the glasses are asked to leave.
     */
-    await refineCandidate(
+    const result = await refineCandidate(
       {
         ...asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "glasses", items: ["small gold hoops"] }),
         ...seesInBase(true),
       },
       { ...input, instruction: "remove her glasses" },
-    ).catch(() => undefined);
+    );
 
     expect(journal, "it must not have quietly walked her selection backwards")
       .not.toContain("select");
-    expect(ledger.charges, "and nothing is charged for the attempt").toEqual([]);
+    expect(result.kind, "the answer is a render, not an undo").toBe("rendered");
+    const call = vi.mocked(claimVariant).mock.calls[0]![0];
+    /*
+      RUN-7'S HARM, ASSERTED ON THE MONEY PATH. A question about her glasses
+      must not take the earrings she paid for out of the recipe — and because
+      renders are base-anchored, a recipe that stops naming them is a face that
+      stops wearing them.
+    */
+    expect((call.deltas as { free?: Record<string, unknown> }).free?.statedAccessories)
+      .toEqual(["small gold hoops"]);
+    /* And the thing she actually asked about is recorded as gone, durably, so
+       her NEXT ask does not re-render the glasses back on. */
+    expect((call.deltas as { absent?: Record<string, unknown> }).absent)
+      .toEqual({ statedAccessories: ["glasses"] });
+    expect(call.instructions)
+      .toEqual(["a smokey eye", "small gold hoops", "remove her glasses"]);
+    expect(ledger.charges[0]?.amount, "a render is a render").toBe(25);
   });
 
   /*
@@ -1848,10 +1873,17 @@ describe("removal is typed, and most of it is free", () => {
   });
 
   /*
-    RULE 3 — THE FACE SECOND. Nothing in the recipe matches, so the ask is an
-    ordinary content edit and is re-read with the removal vocabulary withheld.
+    RULE 3 — THE FACE SECOND, and for a thing that can LEAVE her the answer is a
+    DEPARTURE rather than a re-read (D-238).
+
+    Nothing in the recipe matches and the record says she has them, so this is
+    base-worn: there is no step to prune, and the removal has to become a fact
+    the recipe carries. It used to be handed back to the interpreter as an
+    ordinary edit, which asked a model to express a negative as a positive and
+    recorded nothing about the departure at all — so the render never asked for
+    it and her next ask started again from the original.
   */
-  it("falls through to a content edit when the FACE has it but the recipe does not", async () => {
+  it("records a departure when the FACE has it but the recipe does not", async () => {
     twoStep();
     /*
       D-167: rule 3 only fires when the thing actually exists. Freckles from
@@ -1880,11 +1912,17 @@ describe("removal is typed, and most of it is free", () => {
       },
       { ...input, instruction: "remove her freckles" },
     );
-    expect(modes).toEqual([undefined, "edit"]);
+    /* ONE reading, not two. The code owns what a removal means, so there is
+       nothing left for a second sampling to get wrong. */
+    expect(modes).toEqual([undefined]);
     expect(result.kind).toBe("rendered");
     const call = vi.mocked(claimVariant).mock.calls[0]![0];
     /* Appended like any other edit — the chain GREW. */
     expect(call.instructions).toEqual(["a smokey eye", "small gold hoops", "remove her freckles"]);
+    /* And the departure is in the recipe, so every later render still asks. */
+    expect((call.deltas as { absent?: Record<string, unknown> }).absent)
+      .toEqual({ marks: ["freckles"] });
+    expect((call.stepDeltas as unknown[]).at(-1)).toEqual({ absent: { marks: ["freckles"] } });
   });
 
   /*

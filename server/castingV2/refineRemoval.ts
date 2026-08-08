@@ -19,7 +19,7 @@
  * preference. A list of surface forms is a guard that proves the implementation
  * matches itself.
  */
-import { composeDeltas, itemsOf, type RefineDelta } from "./refineDelta";
+import { composeDeltas, facetsWrittenBy, itemsOf, type RefineDelta } from "./refineDelta";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { FREE_SUBJECT_KEYS, isPluralSubject, type FreeSubject } from "./refineSubjects";
 import { REFINABLE_AXES, type RefinableAxis } from "./refineDelta";
@@ -64,19 +64,18 @@ export function facetOf(subject: FreeSubject | RefinableAxis): Facet {
     : facetOfSubject(subject as FreeSubject);
 }
 
-/** Every facet a step writes — the same table composition supersedes on. */
-function facetsOfStep(step: ChainStep): Set<Facet> {
-  const facets = new Set<Facet>();
-  for (const axis of REFINABLE_AXES) {
-    if (step.delta[axis] != null) facets.add(facetOfAxis(axis));
-  }
-  for (const [subject, value] of Object.entries(step.delta.free ?? {})) {
-    /* `[]` is truthy, so an emptied plural subject would otherwise still claim
-       its facet and keep matching forever (D-171). */
-    if (itemsOf(value).length > 0) facets.add(facetOfSubject(subject as FreeSubject));
-  }
-  return facets;
-}
+/**
+ * Every facet a step writes — the same table composition supersedes on.
+ *
+ * **This was `facetsWrittenBy` copied out by hand, and the copies had drifted**
+ * (law 4). The copy knew that `[]` is truthy and that an emptied plural subject
+ * must stop claiming its facet (D-171); the original did not, so the two
+ * disagreed about a shape that reaches the money path. One derivation now, the
+ * stricter reading kept, and a step that only says something DEPARTED claims its
+ * facet here too — otherwise a departure is invisible to the matcher and the
+ * removal it recorded can never itself be undone.
+ */
+const facetsOfStep = (step: ChainStep): Set<Facet> => facetsWrittenBy(step.delta);
 
 /**
  * The words a step is ABOUT — its own sentence and every value it filed.
@@ -369,6 +368,19 @@ export function fingerprintDelta(delta: RefineDelta): string {
       that is not theirs.
     */
     flat.push([`free.${subject}`, JSON.stringify([...items].sort())]);
+  }
+  /*
+    AND THE DEPARTURES, or two different recipes fingerprint the same.
+
+    "Her, wearing her glasses" and "her, with the glasses taken off" differ by
+    nothing else — same instructions minus one, same positive facts — so leaving
+    `absent` out would make rule 4 hand back the bespectacled picture as though
+    it were the recipe just described. A free selection of a face they did not
+    ask for is worse than the double charge this function exists to prevent.
+  */
+  for (const [subject, items] of Object.entries(delta.absent ?? {})) {
+    if ((items ?? []).length === 0) continue;
+    flat.push([`absent.${subject}`, JSON.stringify([...items].sort())]);
   }
   flat.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return flat.map(([key, value]) => `${key}=${value}`).join("");

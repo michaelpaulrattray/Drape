@@ -52,6 +52,7 @@ import {
   type FreeSubject,
 } from "./refineSubjects";
 import { qualifierFor } from "./subjectQualifiers";
+import { accessoryKindOf } from "./accessoryKinds";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
 import { composePreservation } from "./refinePreservation";
 
@@ -100,7 +101,75 @@ export type RefineDelta = {
    * a prompt that argues with itself.
    */
   free?: Partial<Record<FreeSubject, FreeValue>>;
+  /**
+   * WHAT HAS LEFT HER — the one negative fact the recipe can hold (D-238).
+   *
+   * Every other field above is a positive assertion, and that omission is why no
+   * removal of a BASE-WORN thing has ever worked in this product. A removal that
+   * the chain can prune is arithmetic — the step goes, and the recipe stops
+   * asking. A removal of something the ORIGINAL PHOTOGRAPH already had has
+   * nothing to prune: her glasses came from the brief, no instruction ever added
+   * them, and subtracting nothing from nothing leaves the glasses on her face.
+   *
+   * It was carried as a local variable that died with the request, so it reached
+   * the mask-cutter and the fact-checker and never the painter — masked for,
+   * verified for, refunded for, never ASKED for. Even with the clause added it
+   * would have lasted exactly one render: renders are base-anchored, so her next
+   * ask re-renders from the bespectacled original, and a recipe that cannot say
+   * "not wearing glasses" resurrects them. Run-7's vanishing freckles in
+   * reverse, at 100% reproduction.
+   *
+   * So the departure is a permanent fact about the recipe rather than an event.
+   * Per subject, holding her own words, and json — old rows simply have no key,
+   * which reads as nothing-departed, which is true of every row written before
+   * this existed.
+   */
+  absent?: Partial<Record<FreeSubject, string[]>>;
 };
+
+/**
+ * THE ONE SENTENCE A DEPARTURE IS SAID IN — painter and reader share it.
+ *
+ * The prompt asks for the absence and the verification net checks for it, and
+ * two hand-authored wordings of one fact is a second vocabulary waiting to
+ * drift. So there is one function, `refineDelta.test` pins that the string the
+ * reader is given appears VERBATIM in the prompt the painter is sent, and a
+ * rewording that touches only one of them cannot pass.
+ */
+export function departedClause(item: string): string {
+  return `no ${item} — they have been taken off and are not in the picture`;
+}
+
+/** The customer's half of the same fact — spliced into "came back ___". */
+export function departedShortfall(item: string): string {
+  return `with ${item} still in the picture`;
+}
+
+/** Everything a composed recipe says has left her, in her own words. */
+export function departedItems(delta: RefineDelta): string[] {
+  return Object.values(delta.absent ?? {}).flatMap((items) => items ?? []);
+}
+
+/**
+ * Her words with the pointing word taken off the front.
+ *
+ * People type "remove HER glasses" and "take off THE necklace", and the match is
+ * the phrase as they said it — so the two sentences a departure is spoken in
+ * came out as "no her glasses" and "came back with the necklace still in the
+ * picture". The second is fine and the first is not, and one of them is a
+ * paid vision prompt.
+ *
+ * The mirror of the walk's article bug, which read "This face doesn't have
+ * necklace" and was fixed by ADDING a word. Same lesson from the other side: a
+ * noun phrase spliced into a frame has to be the bare noun, and the frame
+ * supplies the grammar.
+ *
+ * Provenance is untouched — their sentence is stored whole as the chain step.
+ */
+export function departedNoun(match: string): string {
+  const bare = match.trim().replace(/^(her|his|their|its|the|a|an)\s+/i, "").trim();
+  return bare || match.trim();
+}
 
 /**
  * A free value is one thing, or SEVERAL (D-171).
@@ -653,6 +722,36 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     }
   }
 
+  /*
+    THE DEPARTURES — read back from OUR OWN RECORD, never accepted from a model.
+
+    `check` is exactly the model boundary: it is present when a reply is being
+    validated and absent when a stored row is being re-read. A departure is
+    authored by the code at the one place that has proved the thing is on her
+    face, so a reply carrying `absent` has invented an authority it was never
+    given — the interpreter is not even told the key exists. It refuses rather
+    than being ignored, because a model that has started answering a question
+    nobody asked is a model whose whole reply is suspect.
+  */
+  if (raw.absent != null) {
+    if (check) return null;
+    if (typeof raw.absent !== "object" || Array.isArray(raw.absent)) return null;
+    const absent: Partial<Record<FreeSubject, string[]>> = {};
+    for (const [subject, value] of Object.entries(raw.absent as Record<string, unknown>)) {
+      if (!FREE_SUBJECT_KEYS.includes(subject as FreeSubject)) return null;
+      if (!Array.isArray(value) || value.length > MAX_ITEMS) return null;
+      const items = value.filter(
+        (item): item is string => typeof item === "string" && item.trim().length > 0
+          && item.length <= MAX_FREE_LENGTH,
+      );
+      if (items.length !== value.length) return null;
+      /* An empty list is no subject here for the same reason it is no subject
+         in the free lane — it would claim a facet while saying nothing. */
+      if (items.length > 0) absent[subject as FreeSubject] = items;
+    }
+    if (Object.keys(absent).length > 0) delta.absent = absent;
+  }
+
   /* An empty delta is not a delta. Charging for a generation that changes
      nothing is the worst possible outcome of a misread instruction. */
   return Object.keys(delta).length > 0 ? delta : null;
@@ -726,19 +825,69 @@ function promoteToGuaranteedLane(
   return false;
 }
 
-/** Which FACETS one delta writes — the unit composition supersedes on (D-159). */
-export function facetsWrittenBy(delta: RefineDelta): Set<Facet> {
+/**
+ * Which facets one delta ANSWERS — the unit composition supersedes on (D-159).
+ *
+ * Positive lanes only, and that is the whole of the distinction below: an answer
+ * is a claim about what the facet IS, so a later one replaces whatever was said
+ * before. **`[]` is not an answer.** An emptied plural subject reads as truthy
+ * and used to claim its facet here, which would clear a live value on behalf of
+ * a subject holding nothing — `readDelta` has always said "an empty list is not
+ * a subject with no items, it is no subject", and this now agrees with it.
+ */
+export function facetsAnsweredBy(delta: RefineDelta): Set<Facet> {
   const facets = new Set<Facet>();
   for (const axis of REFINABLE_AXES) {
     if (delta[axis] != null) facets.add(facetOfAxis(axis));
   }
   for (const [subject, value] of Object.entries(delta.free ?? {})) {
-    if (value) facets.add(facetOfSubject(subject as FreeSubject));
+    if (itemsOf(value).length > 0) facets.add(facetOfSubject(subject as FreeSubject));
   }
   return facets;
 }
 
-/** Clear every key — either lane — that answers one of these facets. */
+/**
+ * Which facets one delta SAYS SOMETHING ABOUT — answers and departures alike.
+ *
+ * # Why this is two functions and not one, which is the load-bearing decision
+ *
+ * A departure has to reach every consumer that keys off the recipe, or it is the
+ * blinded-consumer class again: the prompt must ask for it, the preservation
+ * tail must stop protecting it, its guard must see it, the mask must cover it,
+ * the net must check it. All of those ask "is this facet in play", and for a
+ * departure the answer is yes. So `absent` belongs here.
+ *
+ * **But it must not reach the CLEAR.** `clearFacets` is symmetric — it drops
+ * everything on the facet — and a departure sharing a facet with a positive
+ * statement would then delete it. Walked on the founder's own shape: a chain
+ * holding "small gold hoops" plus a base-worn "remove her glasses" are both
+ * `statedAccessories`, so clearing on the departure takes the hoops out of the
+ * recipe, and renders are base-anchored, so the next render stops asking for
+ * them and the hoops she PAID for leave her face. That is run-7 one layer in,
+ * and it is reachable by the ordinary road: the parser cannot echo "glasses"
+ * against a recipe holding only hoops, so nothing matches, and nothing-matched
+ * is exactly the base-worn road that writes a departure.
+ *
+ * The rule that separates them is a property of the two kinds rather than a case
+ * in the composition, and it is one sentence:
+ *
+ *   **An answer replaces everything previously said about its facet, a departure
+ *   included. A departure displaces no answers, and departures accumulate until
+ *   an answer clears them.**
+ *
+ * Which is why the founder's remove-then-re-add still falls out by derivation:
+ * "round wire-frame glasses" ANSWERS the facet, so the ordinary clear retires
+ * the departure with no branch anywhere.
+ */
+export function facetsWrittenBy(delta: RefineDelta): Set<Facet> {
+  const facets = facetsAnsweredBy(delta);
+  for (const [subject, items] of Object.entries(delta.absent ?? {})) {
+    if ((items ?? []).length > 0) facets.add(facetOfSubject(subject as FreeSubject));
+  }
+  return facets;
+}
+
+/** Clear every key — either positive lane — that answers one of these facets. */
 function clearFacets(composed: RefineDelta, facets: ReadonlySet<Facet>): void {
   for (const axis of REFINABLE_AXES) {
     if (facets.has(facetOfAxis(axis))) delete composed[axis];
@@ -748,6 +897,68 @@ function clearFacets(composed: RefineDelta, facets: ReadonlySet<Facet>): void {
     if (facets.has(facetOfSubject(subject))) delete composed.free[subject];
   }
   if (Object.keys(composed.free).length === 0) delete composed.free;
+}
+
+/**
+ * Do these two descriptions name THE SAME THING? (D-238.)
+ *
+ * The kind table first, because it is knowledge rather than string overlap:
+ * "round wire-frame glasses" and "tortoiseshell frames" are both eyewear
+ * although they share no word, and "small gold hoops" is not eyewear although it
+ * is worn on a head. Where the table knows both sides it is the answer.
+ *
+ * Otherwise the departed thing's own words have to appear in the answer — the
+ * same containment the free lane already uses, deliberately not a new matcher.
+ * `marks` and `ink` have no kind vocabulary, and this is what serves them: a
+ * scar does not name freckles, so adding one retires nothing.
+ */
+function namesSameThing(departed: string, answer: string): boolean {
+  const departedKind = accessoryKindOf(departed);
+  const answerKind = accessoryKindOf(answer);
+  if (departedKind && answerKind) return departedKind === answerKind;
+  return stemmedContainment(departed, answer);
+}
+
+/**
+ * Retire the departures a new answer has overtaken — scoped to the THING.
+ *
+ * # The subject is too coarse a unit, and that is the fourth direction
+ *
+ * Retiring every departure on an answered facet is right for a subject that
+ * holds ONE fact: asking for stubble after "shave the beard" plainly retires the
+ * departure. It is wrong for a plural subject, which holds a set:
+ *
+ *     "remove her glasses"  then  "round wire-frame glasses"   → retire
+ *     "remove her glasses"  then  "small gold hoops"           → DO NOT retire
+ *
+ * Both answer `statedAccessories`. Retiring on the second would put her glasses
+ * back on while she was asking about her ears — the same coarseness disease as
+ * clearing paid work on a departure, one lane over. So a plural subject retires
+ * per departed item, and only the items the new answer actually names.
+ */
+function retireDepartures(
+  composed: RefineDelta,
+  delta: RefineDelta,
+  answered: ReadonlySet<Facet>,
+): void {
+  if (!composed.absent) return;
+  for (const subject of Object.keys(composed.absent) as FreeSubject[]) {
+    if (!answered.has(facetOfSubject(subject))) continue;
+    const answers = itemsOf(delta.free?.[subject]);
+    /* A singular subject holds one fact, so any answer replaces it. So does an
+       answer that arrives without nameable items — there is nothing to compare
+       against, and the conservative reading is that the facet was re-answered. */
+    if (!isPluralSubject(subject) || answers.length === 0) {
+      delete composed.absent[subject];
+      continue;
+    }
+    const surviving = (composed.absent[subject] ?? []).filter(
+      (departed) => !answers.some((answer) => namesSameThing(departed, answer)),
+    );
+    if (surviving.length > 0) composed.absent[subject] = surviving;
+    else delete composed.absent[subject];
+  }
+  if (Object.keys(composed.absent).length === 0) delete composed.absent;
 }
 
 /**
@@ -806,7 +1017,11 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
     const delta = collapseWithinDelta(raw);
     /* Everything this delta is about loses its previous answer FIRST, in either
        lane, so the assignments below are the only surviving writers. */
-    clearFacets(composed, facetsWrittenBy(delta));
+    const answered = facetsAnsweredBy(delta);
+    clearFacets(composed, answered);
+    /* And the departures this answer has overtaken — per thing, not per facet,
+       or "gold hoops" would put her glasses back on. */
+    retireDepartures(composed, delta, answered);
     if (delta.eyeColour != null) composed.eyeColour = delta.eyeColour;
     if (delta.eyeShape != null) composed.eyeShape = delta.eyeShape;
     if (delta.hairStyle != null) composed.hairStyle = delta.hairStyle;
@@ -821,6 +1036,31 @@ export function composeDeltas(deltas: readonly RefineDelta[]): RefineDelta {
       arithmetic here as it does everywhere else.
     */
     if (delta.free) composed.free = { ...(composed.free ?? {}), ...delta.free };
+    /*
+      DEPARTURES ACCUMULATE — they do not spread over each other.
+
+      A plain object spread is what the free lane does, and it is wrong here for
+      a reason the free lane does not have: a plural subject restates its whole
+      current set every time, so overwriting is honest, while each removal event
+      names ONE thing and the code authors it. "Remove her glasses" then "remove
+      her necklace" are both `statedAccessories`, and a spread would have put the
+      necklace where the glasses were and quietly handed the glasses back.
+
+      Nothing needs to un-accumulate: an ANSWER on the facet has already cleared
+      the whole entry above, which is the only way something comes back.
+    */
+    if (delta.absent) {
+      const absent: Partial<Record<FreeSubject, string[]>> = { ...(composed.absent ?? {}) };
+      for (const [subject, items] of Object.entries(delta.absent)) {
+        const already = absent[subject as FreeSubject] ?? [];
+        const seen = new Set(already.map((item) => item.toLowerCase()));
+        absent[subject as FreeSubject] = [
+          ...already,
+          ...(items ?? []).filter((item) => !seen.has(item.toLowerCase())),
+        ];
+      }
+      composed.absent = absent;
+    }
   }
   return composed;
 }
@@ -968,6 +1208,11 @@ export function filedSubjectsOf(deltas: unknown): string[] {
   for (const subject of Object.keys(delta.free ?? {})) {
     subjects.push(FREE_SUBJECTS[subject as FreeSubject]);
   }
+  /* A removal landed somewhere too, and the chip is where the user reads that
+     it did. A departure with no heading is a paid edit that filed nowhere. */
+  for (const subject of Object.keys(delta.absent ?? {})) {
+    subjects.push(FREE_SUBJECTS[subject as FreeSubject]);
+  }
   return Array.from(new Set(subjects));
 }
 
@@ -1004,6 +1249,15 @@ export function missingFromPrompt(delta: RefineDelta, prompt: string): string[] 
   ].filter((entry): entry is [string, string] => typeof entry[1] === "string");
   for (const [subject, value] of Object.entries(delta.free ?? {})) {
     for (const item of itemsOf(value)) wants.push([subject, item]);
+  }
+  /*
+    A DEPARTURE IS A FILED FACT, so it gets D-143's teeth like every other one.
+    The whole defect this closes is a removal that never reached the prompt; a
+    composition that drops it again must stop the render rather than buy a
+    picture with the glasses still on.
+  */
+  for (const [subject, items] of Object.entries(delta.absent ?? {})) {
+    for (const item of items ?? []) wants.push([`absent.${subject}`, item]);
   }
   for (const [key, value] of wants) {
     if (!value) continue;
@@ -1153,6 +1407,31 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
       continue;
     }
     edits.push(`${heading}: ${items.join(", ")}${qualifierFor(subject as FreeSubject)}.`);
+  }
+  /*
+    AND THE THING THAT IS GONE — the sentence that was never being said.
+
+    The painter has been obeying us precisely: `departed` reached the mask-cutter
+    and the fact-checker and never this function, so across three paints on two
+    faces nothing in the prompt ever asked for a removal. This is the ask.
+
+    `departedClause` is shared VERBATIM with the verification net, so the
+    painter and the reader hold one fact in one wording — a test pins that the
+    reader's exact string appears in the prompt, and a rewording of either alone
+    goes red.
+
+    The trailing instruction is D-183's lesson kept: naming a thing invites it,
+    and the one mention of glasses in a prompt is now this clause. So the same
+    sentence that asks for them to go also forbids anything arriving in their
+    place, and says what to draw instead of leaving that to the portrait prior.
+  */
+  const departed = departedItems(delta);
+  if (departed.length > 0) {
+    edits.push(
+      `TAKEN OFF: ${departed.map((item) => `${departedClause(item)}.`).join(" ")} `
+      + "Draw the skin, hair and shadow behind them exactly as they would look without them, "
+      + "and put nothing in their place.",
+    );
   }
   return [
     "Edit this photograph of this exact person, changing ONLY what is listed below.",

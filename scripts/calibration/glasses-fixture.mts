@@ -62,6 +62,7 @@ import {
   writePng,
   type Raster,
 } from "../../server/castingV2/maskedComposite";
+import { composeRenderPrompt } from "../../server/castingV2/refineDelta";
 import { runFalImageJob } from "../../server/providers/falTransport";
 import { FAL_GPT_IMAGE_2_EDIT } from "../../server/providers/falImages";
 import { DEFAULT_IDENTITY_EDIT_MODEL } from "../../server/providers/falQueue";
@@ -77,6 +78,9 @@ const FEATHER = 3;
 
 const enginesFlag = process.argv.indexOf("--engines");
 const ENGINES = (enginesFlag >= 0 ? process.argv[enginesFlag + 1] : "nbp,gpt2").split(",");
+/* Re-running one scenario should not re-buy the other two. */
+const onlyFlag = process.argv.indexOf("--only");
+const ONLY = onlyFlag >= 0 ? process.argv[onlyFlag + 1]!.split(",") : null;
 
 /* ------------------------------------------------------------- segmentation */
 
@@ -93,7 +97,7 @@ async function toMask(bytes: Buffer): Promise<Mask> {
 const masterBytes = readFileSync(MASTER_FILE);
 const masterUri = `data:image/png;base64,${masterBytes.toString("base64")}`;
 
-async function segment(prompt: string): Promise<Mask> {
+async function segment(prompt: string, imageUri: string = masterUri): Promise<Mask> {
   const response = await fetch("https://fal.run/fal-ai/sam-3/image", {
     method: "POST",
     headers: {
@@ -101,7 +105,7 @@ async function segment(prompt: string): Promise<Mask> {
       "Content-Type": "application/json",
       "X-Fal-Object-Lifecycle-Preference": JSON.stringify({ expiration_duration_seconds: 3600 }),
     },
-    body: JSON.stringify({ image_url: masterUri, prompt, include_scores: true, output_format: "png" }),
+    body: JSON.stringify({ image_url: imageUri, prompt, include_scores: true, output_format: "png" }),
   });
   if (!response.ok) throw new Error(`${prompt}: ${(await response.text()).slice(0, 160)}`);
   const json = await response.json() as any;
@@ -115,6 +119,22 @@ async function segment(prompt: string): Promise<Mask> {
     ? Buffer.from(url.split(",")[1], "base64")
     : Buffer.from(await (await fetch(url)).arrayBuffer());
   return toMask(bytes);
+}
+
+/**
+ * IS IT STILL THERE? — asked of a frame we just made, not of the master.
+ *
+ * An empty mask set is the segmenter's way of saying "nothing like that here",
+ * which for this question is the ANSWER rather than an error. Anything at or
+ * below the eyewear band is a confident speck rather than a pair of glasses.
+ */
+async function stillPresent(bytes: Buffer, name: string): Promise<number> {
+  try {
+    const seen = await segment(name, `data:image/png;base64,${bytes.toString("base64")}`);
+    return coverage(seen);
+  } catch {
+    return 0;
+  }
 }
 
 /* --------------------------------------------------------- boundary contact */
@@ -255,10 +275,54 @@ const SCENARIOS = [
       + "position. Keep her identity, bone structure, skin, hair, expression, pose, "
       + "lighting, clothing and the background exactly as they are.",
   },
+  {
+    /*
+      (c) THE REMOVAL — the scenario this fixture never had, and the one that had
+      never worked (D-238).
+
+      Base-worn glasses: they came off the roll's brief, no instruction ever
+      added them, so there is no step to prune. Until now the prompt never asked
+      for them to go — `departed` reached the mask-cutter and the verification
+      net and never the painter, while the preservation tail told it that
+      anything worn in the reference stays worn. Three paints, zero removals, and
+      the painter obeyed us precisely every time.
+
+      **The prompt is not written here.** It is composed by the production path
+      from a composed delta, so what this fixture proves is what the product
+      actually sends. A hand-written removal prompt would prove that SOME
+      sentence removes glasses, which was never in doubt and is not the question.
+
+      The mask is the master's own eyeglasses — for a removal the object is on
+      the master, and the vacancy left behind is its whole footprint.
+    */
+    key: "c-remove-glasses",
+    mask: eyeglasses,
+    prompt: composeRenderPrompt(
+      { absent: { statedAccessories: ["glasses"] } },
+      /* No guaranteed axis is written, so no prose function is ever called —
+         these exist to satisfy the signature, not to shape the string. */
+      {
+        eyeColour: (v: string) => v, eyeShape: (v: string) => v, hairStyle: (v: string) => v,
+        hairColour: (v: string) => v, hairTexture: (v: string) => v,
+      } as never,
+      "",
+    ).full,
+    /* THE COURT (suspect-the-adapter-first). Both frames are asked the same
+       question, and the pair of answers names the culprit rather than leaving
+       "it still has glasses" to be argued about:
+
+         raw HAS them        → the painter never removed. Our sentence failed.
+         raw clean, comp HAS → the compositor put them back. Our mask failed.
+         both clean          → delivered.
+
+       The raw frame is saved either way, which is what keeps this decidable
+       tomorrow instead of only tonight. */
+    verifyAbsent: "eyeglasses",
+  },
 ];
 
 const rows: any[] = [];
-for (const scenario of SCENARIOS) {
+for (const scenario of SCENARIOS.filter((s) => !ONLY || ONLY.includes(s.key))) {
   console.log(`\n### ${scenario.key} — mask coverage ${(coverage(scenario.mask) * 100).toFixed(2)}%`);
   writeFileSync(
     `${OUT}/${scenario.key}-mask.png`,
@@ -281,8 +345,31 @@ for (const scenario of SCENARIOS) {
     const seam = seamBand(master, composite, applied);
     const contact = boundaryContact(master, composite, scenario.mask, [0, 1, 2, 4, 8]);
 
+    const compositeBytes = await writePng(composite);
     writeFileSync(`${OUT}/${scenario.key}-${engine}-raw.png`, run.bytes);
-    writeFileSync(`${OUT}/${scenario.key}-${engine}-composite.png`, await writePng(composite));
+    writeFileSync(`${OUT}/${scenario.key}-${engine}-composite.png`, compositeBytes);
+
+    /* THE COURT, when the scenario asks for an absence. Both frames, one
+       question, and the verdict is derived from the pair. */
+    let verdict: Record<string, unknown> | null = null;
+    if ((scenario as { verifyAbsent?: string }).verifyAbsent) {
+      const name = (scenario as { verifyAbsent: string }).verifyAbsent;
+      const inRaw = await stillPresent(run.bytes, name);
+      const inComposite = await stillPresent(compositeBytes, name);
+      /* The same band the service uses to decide a thing is really there rather
+         than a confident speck. */
+      const BAND = 0.004;
+      const acquits = inRaw >= BAND
+        ? "PAINTER NEVER REMOVED — our sentence failed"
+        : inComposite >= BAND
+          ? "COMPOSITOR PUT THEM BACK — our mask failed"
+          : "REMOVED — painter and composite both clean";
+      verdict = { name, inRaw, inComposite, band: BAND, acquits };
+      console.log(
+        `  ${engine.padEnd(5)} ${name}: raw ${(inRaw * 100).toFixed(3)}%  `
+        + `composite ${(inComposite * 100).toFixed(3)}%  → ${acquits}`,
+      );
+    }
 
     console.log(
       `  ${engine.padEnd(5)} outside ${outside.identical ? "BYTE-IDENTICAL" : `CHANGED ${outside.changedPixels}`}`
@@ -306,6 +393,7 @@ for (const scenario of SCENARIOS) {
       paintedPixels: contact.paintedPixels,
       boundaryContact: contact.contact,
       ms: run.ms,
+      ...(verdict ? { absence: verdict } : {}),
     });
   }
 }

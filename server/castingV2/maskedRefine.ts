@@ -76,6 +76,7 @@ import { ProviderError } from "../providers/types";
 import { hasRegion, zoneScopeOf } from "./zoneScope";
 import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
 import type { Facet } from "./refineFacets";
+import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 
 const log = createModuleLogger("castingV2/maskedRefine");
 
@@ -223,8 +224,18 @@ export type MaskedRefineInput = {
    * `described` cannot stand in for this: it holds the SURVIVORS, so a chain of
    * earrings plus glasses minus the glasses would place the question at her
    * earlobes — the failure `LANDMARK_OF_ACCESSORY` exists to prevent.
+   *
+   * # A LIST, and the singular was quietly capping this at one
+   *
+   * A base-worn departure now lives in the recipe rather than in one request's
+   * local (D-238), so it stands on EVERY later render — the base still has the
+   * glasses on, so every render must take them off again, and every render must
+   * therefore mask for them. Two departures on one face is then an ordinary
+   * state ("no glasses" and "no freckles"), and passing only the first would
+   * mask one and let the composite hand the other straight back. A silent cap
+   * reads as coverage, so there is none: each departure asks its own question.
    */
-  departed?: string;
+  departed?: readonly string[];
   /** For the log line, so a composite can be traced to its operation. */
   operationId?: string;
   /**
@@ -574,36 +585,6 @@ export function needsLandmarkDestination(facet: Facet): boolean {
 }
 
 /**
- * WHERE AN ADDITION IS PLACED — the landmark a facet is anchored to.
- *
- * Only accessories have one today. Ink has no landmark vocabulary — "left
- * forearm" is not a facial landmark, and inventing one would be the same lie as
- * inventing a region prompt — so it still refuses by name.
- */
-const LANDMARK_OF_ACCESSORY: {
-  words: readonly string[];
-  landmark: string;
-  drops: boolean;
-  /**
-   * WHAT TO ASK A SEGMENTER FOR ONCE IT EXISTS — the other half of the same
-   * table, and it was missing.
-   *
-   * An addition cannot be segmented before it is painted, but it can be
-   * segmented AFTER, and that is what the harvest asks. The name for that
-   * question was a hardcoded `"earring"` fallback, so **an edit adding or
-   * removing GLASSES harvested wherever her earrings were.** Exactly the defect
-   * `landmarkNameOf` exists to prevent, one line lower down: `statedAccessories`
-   * is one facet over several objects, and every question about it needs the
-   * instruction as well as the facet.
-   */
-  region: string;
-}[] = [
-  { words: ["earring", "stud", "hoop", "dangle", "drop"], landmark: "earlobe", drops: true, region: "earring" },
-  { words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"], landmark: "eye", drops: false, region: "glasses" },
-  { words: ["nose ring", "nose stud", "septum", "nostril"], landmark: "nose", drops: false, region: "nose stud" },
-];
-
-/**
  * WHICH LANDMARK AN ADDITION HANGS FROM — facet AND instruction, again.
  *
  * `statedAccessories` is one facet covering earrings, glasses and piercings, and
@@ -616,25 +597,10 @@ const LANDMARK_OF_ACCESSORY: {
  * An accessory nobody has a landmark for REFUSES. Guessing an anchor is guessing
  * anatomy, and a guess dressed as anatomy is the D-210 family.
  *
- * **Longest match wins, not first match.** "A small nose stud" contains both
- * "stud" and "nose stud", and a first-match scan put it on her earlobe — the
- * answer depended on the order of a list, which is a defect waiting for someone
- * to tidy the array. The longest matched word is the most specific thing the
- * instruction said.
+ * The table itself now lives in `accessoryKinds`, because composition needs the
+ * same knowledge to tell "round wire-frame glasses" from "small gold hoops" when
+ * retiring a departure (D-238). One table, two consumers.
  */
-function accessoryEntry(described?: string) {
-  const said = (described ?? "").toLowerCase();
-  let best: { landmark: string; drops: boolean; region: string; length: number } | null = null;
-  for (const entry of LANDMARK_OF_ACCESSORY) {
-    for (const word of entry.words) {
-      if (!said.includes(word)) continue;
-      if (!best || word.length > best.length) {
-        best = { landmark: entry.landmark, drops: entry.drops, region: entry.region, length: word.length };
-      }
-    }
-  }
-  return best;
-}
 
 export function landmarkNameOf(facet: Facet, described?: string): string | null {
   if (!needsLandmarkDestination(facet)) return null;
@@ -965,15 +931,15 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     perfectly. The departed thing is the territory in that case: her own frames,
     from her own master.
   */
-  if (!zone && input.departed) {
-    const gone = accessoryEntry(input.departed);
+  for (const departedThing of (zone ? [] : input.departed ?? [])) {
+    const gone = accessoryEntry(departedThing);
     if (!gone) {
       throw new MaskError(
-        `nothing names what "${input.departed}" is — refusing to guess where it was`,
+        `nothing names what "${departedThing}" is — refusing to guess where it was`,
       );
     }
     const worn = await regionOf("master", gone.region, true);
-    if (coverage(worn) > 0) zone = worn;
+    if (coverage(worn) > 0) zone = zone ? unionMasks(zone, worn) : worn;
   }
   if (!zone) throw new MaskError("no facets to mask");
 
@@ -1030,11 +996,11 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     footprint, because the painter's answer to "where are the glasses" is
     correctly nothing.
   */
-  if (input.departed) {
-    const gone = accessoryEntry(input.departed);
+  for (const departedThing of input.departed ?? []) {
+    const gone = accessoryEntry(departedThing);
     if (!gone) {
       throw new MaskError(
-        `nothing names what "${input.departed}" is — refusing to guess where it was`,
+        `nothing names what "${departedThing}" is — refusing to guess where it was`,
       );
     }
     if (!questions.some((question) => question.name === gone.region)) {
@@ -1147,7 +1113,7 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     const canReveal = anyFacetMovesAnEdge(input.facets)
       /* A departure is a reveal by definition, whatever the facets say — a
          removal that pruned its only step leaves `facets` empty. */
-      || input.departed !== undefined;
+      || (input.departed?.length ?? 0) > 0;
     const vacated = canReveal
       ? await vacancyOf({ zone, masterRegion, paintedRegion: paintedContent, tolerancePx })
       : empty;
@@ -1328,7 +1294,8 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     deliver, which is how `renderFault` shipped before it was flipped on a
     number. The shadow period produces the evidence its own flip needs.
   */
-  const seamEnforced = !anyFacetMovesAnEdge(input.facets) && input.departed === undefined;
+  const seamEnforced = !anyFacetMovesAnEdge(input.facets)
+    && (input.departed?.length ?? 0) === 0;
   if (seam.torn) {
     log[seamEnforced ? "error" : "warn"](
       {

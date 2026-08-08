@@ -138,6 +138,35 @@ export function isPluralSubject(subject: FreeSubject): boolean {
   return PLURAL_SUBJECTS.includes(subject);
 }
 
+/**
+ * Subjects whose things sit ON her and can therefore LEAVE (law 8).
+ *
+ * A departure is only the right shape where absence is a state a person can
+ * actually be in. Glasses come off, a tattoo is removed, freckles clear, a beard
+ * is shaved — for each of those "she is not wearing it" is a picture anyone can
+ * imagine, and it is what the user means.
+ *
+ * **The fringe is why this list is short.** "Remove her fringe" is not a face
+ * with a fringe-shaped hole in it; it is a HAIRCUT, and the founder's own ruling
+ * is that a fringe is part of a cut rather than strands painted on a forehead.
+ * A departed clause there — "no her fringe, it has been taken off" — is the
+ * maths-class answer to a stylist's ask, and it would render as exactly the
+ * absurdity it describes. Same for a nose, a jaw, an expression: those change,
+ * they do not depart.
+ *
+ * So everything outside this list keeps the older road — the removal is re-read
+ * as an ordinary edit, and the stylist's own answer ("a cut with no fringe") is
+ * what reaches the painter. This is a deliberate boundary, not an oversight, and
+ * it grows only with a named case.
+ */
+export const DEPARTABLE_SUBJECTS: readonly FreeSubject[] = [
+  "statedAccessories", "ink", "marks", "facialHair",
+];
+
+export function isDepartableSubject(subject: FreeSubject): boolean {
+  return DEPARTABLE_SUBJECTS.includes(subject);
+}
+
 /*
   THE GUARANTEE-LANE CARVE-OUT, at compile time.
 
