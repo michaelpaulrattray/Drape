@@ -132,14 +132,107 @@ if (!CANDIDATE && !freshFromRoll) {
  * than inferred from what happened, because inferring it is exactly how an ask
  * would come to look like a pass on a step that should have delivered.
  */
-const WALK: Array<{ instruction: string; expectClass: string; expects: "delivered" | "asked" }> = [
+type WalkStep = {
+  instruction: string;
+  expectClass: string;
+  expects: "delivered" | "asked";
+  /**
+   * Outcomes that are ALSO correct for this step, and why.
+   *
+   * Only ever used where the product has two honest answers and which one it
+   * gives depends on the face — never as a way to make a step easier to pass.
+   * The forbidden outcomes are unchanged and enforced elsewhere: a charged
+   * non-compliant (`delivered_noncompliant`) and a false pass fail the run on
+   * either branch.
+   */
+  orHonestly?: readonly StepResult["outcome"][];
+  /** Printed beside the step so the derivation is visible in the log. */
+  why?: string;
+};
+
+/**
+ * STEP 2's EXPECTATION IS MEASURED OFF HER FACE, not declared against one.
+ *
+ * It used to read `expects: "asked"` with the comment *"she measures 7.2
+ * degrees"* — a constant that assumed a specific specimen, sitting inside the
+ * `--fresh` feature built to stop reusing specimens. On run-7's face, whose
+ * eyes were not already upswept, the product did the right thing (rendered,
+ * came back without fox eyes twice, refunded honestly) and the walk scored it
+ * a failure. The twice-clean bar was unreachable on any fresh face.
+ *
+ * So the ladder measures her before the walk starts, using the same instrument
+ * and the same threshold the gate itself uses — not a second copy of either:
+ *
+ *   already upswept   the gate fires and she is ASKED, free
+ *   not, or no read   the gate stays silent and she is SPENT on — which lands
+ *                     `delivered`, or an honest refusal-and-refund when the
+ *                     painter cannot do it (run-7's fox eyes, twice)
+ *
+ * The no-read case follows the product's own asymmetry: *silence resolves
+ * toward spending*, so an unreadable face expects the spending branch. Reading
+ * it the other way would have the walk expect a gate the product will not fire.
+ */
+async function deriveEyeShapeExpectation(imageUrl: string): Promise<Pick<WalkStep, "expects" | "orHonestly" | "why">> {
+  const apiKey = process.env.FAL_KEY;
+  if (!apiKey) {
+    return {
+      expects: "delivered",
+      orHonestly: ["refused"],
+      why: "no FAL_KEY to measure her tilt — the gate cannot fire for the walk either",
+    };
+  }
+  const reading = await (async () => {
+    try {
+      const [{ readCanthalTilt }, { createFalRegionReader }] = await Promise.all([
+        import("../server/castingV2/eyeShapeRouting.js"),
+        import("../server/castingV2/falRegionReader.js"),
+      ]);
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error(`her picture answered ${response.status}`);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      return await readCanthalTilt({ image: bytes, reader: createFalRegionReader({ apiKey }) });
+    } catch (error) {
+      console.log(`  tilt unreadable (${String(error).slice(0, 90)})`);
+      return null;
+    }
+  })();
+
+  const { alreadyUpswept } = await import("../server/castingV2/canthalTilt.js");
+  if (reading && alreadyUpswept(reading)) {
+    return {
+      expects: "asked",
+      why: `she measures ${reading.meanDeg.toFixed(1)}° — already upswept, so the gate asks instead of spending`,
+    };
+  }
+  return {
+    expects: "delivered",
+    orHonestly: ["refused"],
+    why: reading
+      ? `she measures ${reading.meanDeg.toFixed(1)}° — not already upswept, so this is a real edit she pays for`
+      : "her tilt did not read, and a no-read never fires the gate — so this spends",
+  };
+}
+
+const WALK: WalkStep[] = [
   { instruction: "give her freckles", expectClass: "marks", expects: "delivered" },
-  /* She measures 7.2 degrees. The already-true gate fires and asks, free. */
+  /* Replaced before the walk runs, by the measurement above. */
   { instruction: "fox eyes", expectClass: "eye.shape", expects: "asked" },
   { instruction: "add nude lip gloss", expectClass: "makeup", expects: "delivered" },
   { instruction: "gold hoop earrings", expectClass: "statedAccessories", expects: "delivered" },
   { instruction: "remove her glasses", expectClass: "statedAccessories", expects: "delivered" },
 ];
+
+/**
+ * Did this step land where it said it would?
+ *
+ * One predicate, used by the per-step check AND by the final gate — they read
+ * the same rule or they can disagree, and a run that prints "landed" per step
+ * and "not clean" overall would be unreadable.
+ */
+const landedAsDeclared = (
+  step: Pick<WalkStep, "expects" | "orHonestly">,
+  outcome: StepResult["outcome"],
+): boolean => outcome === step.expects || (step.orHonestly?.includes(outcome) ?? false);
 
 const COOKIE = `app_session_id=${TOKEN}`;
 /**
@@ -305,10 +398,28 @@ console.log(
   + `
 identified by her own picture: ${imageUrl.slice(imageUrl.lastIndexOf("/") + 1)}`,
 );
+/*
+  MEASURE HER BEFORE COSTING THE WALK, not after.
+
+  It runs here, ahead of the `--spend` gate, for the same reason the sheet
+  lookup does: a dry run must print the plan this walk would actually execute,
+  and step 2's price depends on her face. A derivation the dry run cannot show
+  is a derivation nobody reviews.
+*/
+const eyeShape = await deriveEyeShapeExpectation(imageUrl);
+const eyeShapeStep = WALK.find((step) => step.expectClass === "eye.shape");
+if (!eyeShapeStep) throw new Error("the eye.shape step is gone — its expectation is derived and has nowhere to land");
+Object.assign(eyeShapeStep, eyeShape);
+
 const paidSteps = WALK.filter((step) => step.expects === "delivered").length;
 console.log(`cost if it runs: ${paidSteps * 25} credits (${paidSteps} paid, ${WALK.length - paidSteps} free)\n`);
 for (const [index, step] of WALK.entries()) {
-  console.log(`  ${index + 1}. "${step.instruction}"  → expects ${step.expects} · ${step.expectClass}`);
+  console.log(
+    `  ${index + 1}. "${step.instruction}"  → expects ${step.expects}`
+    + (step.orHonestly?.length ? ` (or ${step.orHonestly.join("/")})` : "")
+    + ` · ${step.expectClass}`
+    + (step.why ? `\n       ${step.why}` : ""),
+  );
 }
 if (!SPEND) {
   console.log("\nDRY RUN — pass --spend to actually drive it. Nothing was charged.");
@@ -329,6 +440,10 @@ type StepResult = {
   instruction: string;
   expectClass: string;
   expects: "delivered" | "asked";
+  /** The other honest outcome for this step, if its expectation was derived. */
+  orHonestly?: readonly StepResult["outcome"][];
+  /** How the expectation was arrived at, in words, for the evidence pack. */
+  why?: string;
   /** `collided` — the server restarted under this step, so it measured nothing. */
   outcome: "delivered" | "asked" | "refused" | "errored" | "timeout" | "collided";
   /** The sentence the panel showed, verbatim — a refusal nobody can read is a
@@ -618,6 +733,56 @@ for (const [index, step] of WALK.entries()) {
     continue;
   }
 
+  /*
+    RE-DERIVE AGAINST THE FACE SHE IS ACTUALLY ON.
+
+    The pre-walk reading measures her BASE, which is what a dry run can show
+    and what prices the walk. But the gate reads `source.imageKey ?? …` — the
+    SELECTED face — and by step 2 that is step 1's render, not her original.
+    Freckles should not move a canthal tilt, but "should not" is a claim about
+    a re-render and this program does not score 25-credit outcomes against
+    those. Measuring the same frame the gate will measure is the whole point of
+    deriving rather than declaring.
+
+    Her base reading stays in the record beside it: if the two disagree, a
+    re-render moved a measurement nobody asked it to move, and that is a
+    finding rather than a nuisance.
+  */
+  if (step.expectClass === "eye.shape") {
+    const onScreen = await page.evaluate(() =>
+      document.querySelector<HTMLImageElement>(".dpc-viewer__plate img")?.src ?? null);
+    if (onScreen && onScreen !== imageUrl) {
+      const rederived = await deriveEyeShapeExpectation(onScreen);
+      const moved = rederived.expects !== step.expects;
+      console.log(
+        `   re-derived on the face she is on: ${rederived.expects}`
+        + `${moved ? ` — MOVED from ${step.expects} (base said: ${step.why ?? "-"})` : " (unchanged)"}`,
+      );
+      /*
+        A MOVE IS RECORDED, NOT FAILED. The forbidden outcomes on this step are
+        a charged non-compliant and a false pass (Fable, 2026-08-08); a tilt
+        that crossed the threshold under an earlier render is an honest fact
+        about the product, and failing the walk for it would be scoring the
+        run against a frame nobody promised would hold still. The expectation
+        follows the face; the observation goes in the record either way.
+      */
+      if (moved) {
+        checks.absent(
+          `[${position}] the expectation holds on the face she is actually on`,
+          `her base derived ${step.expects} and the rendered face she is on derives `
+          + `${rederived.expects} — an earlier render moved her across the threshold`,
+        );
+      } else {
+        checks.check(
+          true,
+          `[${position}] the expectation holds on the face she is actually on`,
+          `base and current face agree — ${rederived.why ?? rederived.expects}`,
+        );
+      }
+      Object.assign(step, rederived, { why: `${rederived.why} (re-read on the face she is on)` });
+    }
+  }
+
   await page.type(".dpc-refine__field", step.instruction, { delay: 12 });
 
   /*
@@ -842,9 +1007,10 @@ for (const [index, step] of WALK.entries()) {
   if (collided) {
     checks.absent(`[${position}] lands where it said it would`, "void — the deploy took it");
   } else checks.check(
-    outcome === step.expects,
+    landedAsDeclared(step, outcome),
     `[${position}] lands where it said it would`,
-    `expected ${step.expects}, got ${outcome}`
+    `expected ${step.expects}${step.orHonestly?.length ? ` (or ${step.orHonestly.join("/")})` : ""}, got ${outcome}`
+    + (step.why ? ` — ${step.why}` : "")
     + (seen.said ? ` — panel said "${seen.said.slice(0, 110)}"` : ""),
   );
 
@@ -910,6 +1076,10 @@ for (const [index, step] of WALK.entries()) {
     instruction: step.instruction,
     expectClass: step.expectClass,
     expects: step.expects,
+    /* Recorded, not recomputed: a derived expectation that only exists in the
+       console is one nobody can audit after the run. */
+    orHonestly: step.orHonestly,
+    why: step.why,
     outcome,
     said: seen.said,
     answers: seen.answers,
@@ -972,7 +1142,7 @@ checks.print();
 const collisions = results.filter((step) => step.outcome === "collided").length;
 const landedRight = results.length === WALK.length
   && collisions === 0
-  && results.every((step) => step.outcome === step.expects);
+  && results.every((step) => landedAsDeclared(step, step.outcome));
 const clean = landedRight
   && checks.failures().length === 0
   && report !== null
