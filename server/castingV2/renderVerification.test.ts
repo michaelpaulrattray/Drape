@@ -18,7 +18,9 @@ import {
   advisoryMisses,
   confirmVerdict,
   facetsWithUnreliabilityPrior,
+  joinClauses,
   missingFacts,
+  shortfalls,
   unreadFacts,
   verifyRender,
   type RenderVerdict,
@@ -271,5 +273,85 @@ describe("the prompt asks for the evidence it now requires", () => {
     expect(system).toMatch(/REQUIRED on EVERY line/);
     expect(system).toMatch(/discarded as unanswered/);
     expect(system).not.toMatch(/only where present is false/);
+  });
+});
+
+/**
+ * THE READER'S SENTENCE AND THE CUSTOMER'S SENTENCE ARE NOT THE SAME STRING.
+ *
+ * Production receipt, run-6, "remove her glasses":
+ *
+ *   "That one came back twice WITHOUT NO GLASSES — THEY HAVE BEEN TAKEN OFF AND
+ *    ARE NOT IN THE PICTURE, so it wasn't delivered and your credits have been
+ *    returned."
+ *
+ * `asked` is an instruction to a vision model and is phrased as an assertion.
+ * It was also spliced verbatim into that sentence and into the ledger line, so
+ * one string was doing three jobs with three grammars. The absence row is the
+ * one where the grammars disagree, and it went out on a real receipt.
+ */
+describe("a refusal reads as a sentence", () => {
+  it("gives a removal its own shortfall clause instead of negating an assertion", async () => {
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":false,"saw":"she is still wearing her glasses"}]}'],
+      [{
+        facet: facetOfSubject("statedAccessories"),
+        asked: "no glasses — they have been taken off and are not in the picture",
+        shortfall: "with glasses still in the picture",
+        binding: true,
+      }],
+    );
+
+    /* The log still wants the reader's own phrasing — that is what an engineer
+       comparing against the prompt needs to see. */
+    expect(missingFacts(verdict)).toEqual([
+      "no glasses — they have been taken off and are not in the picture",
+    ]);
+    /* The customer gets a clause that completes "the render came back ___". */
+    expect(joinClauses(shortfalls(verdict))).toBe("with glasses still in the picture");
+    expect(`That one came back twice ${joinClauses(shortfalls(verdict))}`)
+      .toBe("That one came back twice with glasses still in the picture");
+  });
+
+  it("leaves an ordinary fact reading exactly as it always did", async () => {
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":false,"saw":"smooth skin, no freckles"}]}'],
+      [{ facet: facetOfSubject("marks"), asked: "freckles", binding: true }],
+    );
+    expect(joinClauses(shortfalls(verdict))).toBe("without freckles");
+  });
+
+  it("joins several shortfalls as a person would say them", async () => {
+    const { verdict } = await read(
+      ['{"results":['
+        + '{"id":1,"present":false,"saw":"smooth skin"},'
+        + '{"id":2,"present":false,"saw":"still wearing glasses"}]}'],
+      [
+        { facet: facetOfSubject("marks"), asked: "freckles", binding: true },
+        {
+          facet: facetOfSubject("statedAccessories"),
+          asked: "no glasses — they have been taken off and are not in the picture",
+          shortfall: "with glasses still in the picture",
+          binding: true,
+        },
+      ],
+    );
+    expect(joinClauses(shortfalls(verdict)))
+      .toBe("without freckles and with glasses still in the picture");
+  });
+
+  it("counts only the failures the product may refuse over", async () => {
+    const { verdict } = await read(
+      ['{"results":['
+        + '{"id":1,"present":false,"saw":"hair is down"},'
+        + '{"id":2,"present":false,"saw":"smooth skin"}]}'],
+      [
+        { facet: HAIR_WORN, asked: "tied up", binding: false },
+        { facet: facetOfSubject("marks"), asked: "freckles", binding: true },
+      ],
+    );
+    /* An advisory miss never reaches a refusal sentence, because it never
+       reaches a refusal. */
+    expect(shortfalls(verdict)).toEqual(["without freckles"]);
   });
 });

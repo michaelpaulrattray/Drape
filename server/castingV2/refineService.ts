@@ -133,7 +133,9 @@ import { detectRenderFault } from "./renderFault";
 import {
   advisoryMisses,
   confirmVerdict,
+  joinClauses,
   missingFacts,
+  shortfalls,
   verifyRender,
   type RenderVerdict,
 } from "./renderVerification";
@@ -1593,12 +1595,16 @@ export async function refineCandidate(
     const guaranteedFacets = new Set(
       REFINABLE_AXES.filter((axis) => composed[axis] != null).map((axis) => facetOfAxis(axis)),
     );
-    const facts = Array.from(facetsWrittenBy(composed)).flatMap((facet) => {
-      const asked = currentIdentity
-        ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
-        : null;
-      return asked ? [{ facet, asked, binding: guaranteedFacets.has(facet) }] : [];
-    });
+    /* Typed from the reader's own input shape rather than inferred from the
+       first element, so a fact carrying a `shortfall` is not a stranger to the
+       array it lives in. */
+    const facts: Parameters<typeof verifyRender>[0]["facts"][number][] =
+      Array.from(facetsWrittenBy(composed)).flatMap((facet) => {
+        const asked = currentIdentity
+          ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
+          : null;
+        return asked ? [{ facet, asked, binding: guaranteedFacets.has(facet) }] : [];
+      });
     /*
       AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
 
@@ -1637,6 +1643,17 @@ export async function refineCandidate(
       facts.push({
         facet,
         asked: `no ${departed} — they have been taken off and are not in the picture`,
+        /*
+          AND THE CUSTOMER'S VERSION OF THE SAME FAILURE.
+
+          `asked` is an instruction to the reader and is an assertion; the
+          refusal message and the ledger line both splice their fact into
+          *"came back ___"*, and an assertion does not fit there. In production
+          this exact row produced **"came back twice without no glasses — they
+          have been taken off and are not in the picture"** on a real receipt.
+          One string cannot be a vision prompt and a sentence.
+        */
+        shortfall: `with ${departed} still in the picture`,
         binding: true,
       });
     }
@@ -1740,7 +1757,12 @@ export async function refineCandidate(
           conversation nobody can resolve from the record.
         */
         "facts_missing",
-        missingFacts(verification).join(", "),
+        /*
+          THE CLAUSE, NOT THE READER'S PROMPT. Both consumers of this message —
+          the refusal sentence and the ledger line — say "the render came back
+          ___", and `shortfalls` is the only thing that fits there.
+        */
+        joinClauses(shortfalls(verification)),
       );
     }
 
@@ -2008,7 +2030,7 @@ function failedFactsMessage(error: unknown): string | null {
   if (!(error instanceof ProviderError) || error.failureClass !== "facts_missing") return null;
   const missing = error.message.trim();
   return missing
-    ? `That one came back twice without ${missing}, so it wasn't delivered and your credits `
+    ? `That one came back twice ${missing}, so it wasn't delivered and your credits `
       + "have been returned. Try saying it a different way."
     : "That one came back without what you asked for, twice, so it wasn't delivered and your "
       + "credits have been returned.";
@@ -2028,12 +2050,17 @@ function refundDescriptionFor(error: unknown): string {
   /*
     NAMES WHAT WAS MISSING. The throw carries the facts, so the receipt can say
     which ones rather than making support re-derive them from a log.
+
+    "came back" rather than "was missing", because a removal's shortfall is not
+    an absence — the render came back WITH the thing that was supposed to go,
+    and "the render was missing with glasses still in the picture" is the same
+    grammar failure one line over.
   */
   if (error instanceof ProviderError && error.failureClass === "facts_missing") {
     const missing = error.message.trim();
     return missing
-      ? `Refine refunded — the render was missing ${missing}`
-      : "Refine refunded — the render was missing what you asked for";
+      ? `Refine refunded — the render came back ${missing}`
+      : "Refine refunded — the render came back without what you asked for";
   }
   return "Refine refunded — the generation failed";
 }

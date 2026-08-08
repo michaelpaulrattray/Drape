@@ -1110,8 +1110,14 @@ describe("the order, and the money", () => {
     } as never;
 
     await expect(refineCandidate({ ...greenEyes, verifier }, input)).rejects.toThrow(/without green/);
+    /*
+      "came back", not "was missing" — a removal's shortfall is not an absence.
+      The render came back WITH the thing that was supposed to go, and "the
+      render was missing with glasses still in the picture" is the grammar
+      failure that reached a real receipt in run-6.
+    */
     expect(ledger.refunds).toEqual([
-      { amount: 25, description: "Refine refunded — the render was missing green" },
+      { amount: 25, description: "Refine refunded — the render came back without green" },
     ]);
   });
 

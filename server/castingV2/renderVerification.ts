@@ -77,6 +77,24 @@ export type FacetCheck = {
    * instrument. Only the binding kind spends a refusal.
    */
   binding: boolean;
+  /**
+   * WHAT WENT WRONG, IN THE CUSTOMER'S SENTENCE — not the reader's.
+   *
+   * `asked` is an instruction to a vision model and is phrased as one. It was
+   * also being spliced verbatim into two customer-facing sentences ("came back
+   * twice without …") and into the ledger line, so one string was doing three
+   * jobs with three different grammars. The absence row is where that broke in
+   * production: its `asked` is an assertion — *"no glasses — they have been
+   * taken off and are not in the picture"* — and the receipt read **"came back
+   * twice without no glasses — they have been taken off and are not in the
+   * picture"**.
+   *
+   * A shortfall is a clause that completes *"the render came back ___"*, which
+   * is the one frame both customer sentences and the ledger line share. It
+   * defaults to `without <asked>`, so an ordinary fact reads exactly as it
+   * always did; only a fact whose failure is not an absence has to say so.
+   */
+  shortfall?: string;
 };
 
 export type RenderVerdict = {
@@ -184,7 +202,7 @@ export async function verifyRender(input: {
   bytes: Buffer;
   contentType: string;
   /** `binding` false means checked and recorded, never refunded (D-187). */
-  facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean }>;
+  facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean; shortfall?: string }>;
   engine?: TextEngine;
   signal?: AbortSignal;
 }): Promise<RenderVerdict> {
@@ -243,6 +261,7 @@ export async function verifyRender(input: {
         read,
         binding: fact.binding !== false,
         ...(saw ? { saw } : {}),
+        ...(fact.shortfall ? { shortfall: fact.shortfall } : {}),
       };
     });
 
@@ -371,6 +390,33 @@ export function missingFacts(verdict: RenderVerdict): string[] {
   return verdict.checks
     .filter((check) => check.read && !check.verified && check.binding)
     .map((check) => check.asked);
+}
+
+/**
+ * THE SAME FAILURES, IN THE SENTENCE A CUSTOMER READS.
+ *
+ * Separate from `missingFacts` on purpose: that one is for the log, where the
+ * reader's own phrasing is what an engineer wants to see. This one completes
+ * *"the render came back ___"*, which is the frame the refusal message and the
+ * ledger line both use, so neither has to reshape a string written for a vision
+ * model. See `FacetCheck.shortfall`.
+ */
+export function shortfalls(verdict: RenderVerdict): string[] {
+  return verdict.checks
+    .filter((check) => check.read && !check.verified && check.binding)
+    .map((check) => check.shortfall ?? `without ${check.asked}`);
+}
+
+/**
+ * Clauses as a person would say them: "a", "a and b", "a, b and c".
+ *
+ * An Oxford-comma-free list because these are read aloud in a sentence, not
+ * scanned in a table, and "without freckles, with glasses still in the picture"
+ * reads as a fragment where "and" reads as English.
+ */
+export function joinClauses(clauses: ReadonlyArray<string>): string {
+  if (clauses.length <= 1) return clauses[0] ?? "";
+  return `${clauses.slice(0, -1).join(", ")} and ${clauses[clauses.length - 1]}`;
 }
 
 /** Failures the product will NOT refuse over — the reader-defect watch list. */
