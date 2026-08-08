@@ -171,10 +171,15 @@ async function enlargedFaceCrop(file: string): Promise<Buffer | null> {
 }
 
 /** The production reader, asked the production question. */
-async function ask(bytes: Buffer, asked: string): Promise<{ verified: boolean | null; saw: string }> {
+async function ask(
+  bytes: Buffer,
+  asked: string,
+  detail?: Buffer | null,
+): Promise<{ verified: boolean | null; saw: string }> {
   const verdict = await verifyRender({
     bytes,
     contentType: "image/png",
+    ...(detail ? { detail: { bytes: detail, contentType: "image/png" } } : {}),
     facts: [{ facet: "marks", asked, binding: false }],
   });
   const check = verdict.checks[0];
@@ -186,17 +191,30 @@ const repeatFlag = process.argv.indexOf("--repeat");
 const REPEAT = repeatFlag > -1 ? Number(process.argv[repeatFlag + 1]) : 5;
 if (!Number.isInteger(REPEAT) || REPEAT < 1) throw new Error("--repeat needs a whole number of readings");
 
-const LENSES = ["portrait", "crop", "enlarged"] as const;
+/**
+ * THE FOUR LENSES — and the last one is the only one that ships.
+ *
+ * `enlarged` puts the magnified crop to the reader ON ITS OWN. That answered
+ * the diagnostic question (is the loss resolution?) and it is NOT what
+ * production can do: the reader has to weigh every fact in the recipe against
+ * one photograph, and a crop of her cheek cannot answer a question about her
+ * hair. So production sends BOTH — the frame and the enlargement, in one call.
+ *
+ * Those are different experiments, and a court that proved the first and
+ * shipped the second would be assuring us about a shape nobody ran. `pair` is
+ * the shape that ships, driven through `verifyRender`'s own `detail` argument.
+ */
+const LENSES = ["portrait", "crop", "enlarged", "pair"] as const;
 type Lens = (typeof LENSES)[number];
 
 /** N readings of one question about one picture, kept individually. */
 type Sitting = { present: number; absent: number; unread: number; saws: string[] };
 
-async function sit(bytes: Buffer | null, asked: string): Promise<Sitting> {
+async function sit(bytes: Buffer | null, asked: string, detail?: Buffer | null): Promise<Sitting> {
   const sitting: Sitting = { present: 0, absent: 0, unread: 0, saws: [] };
   if (!bytes) { sitting.unread = REPEAT; sitting.saws.push("(no face read)"); return sitting; }
   for (let reading = 0; reading < REPEAT; reading += 1) {
-    const result = await ask(bytes, asked);
+    const result = await ask(bytes, asked, detail);
     if (result.verified === null) sitting.unread += 1;
     else if (result.verified) sitting.present += 1;
     else sitting.absent += 1;
@@ -208,7 +226,7 @@ async function sit(bytes: Buffer | null, asked: string): Promise<Sitting> {
 const rows: Record<string, unknown>[] = [];
 console.log(`\n${REPEAT} readings per lens. A tally, not a verdict — "3/5" and "5/5" are `
   + `different diagnoses.\n`);
-console.log("case                                  truth      portrait      crop         enlarged");
+console.log("case                                  truth      portrait     crop         enlarged     pair (SHIPS)");
 console.log("-".repeat(96));
 
 for (const entry of CASES) {
@@ -225,6 +243,7 @@ for (const entry of CASES) {
     portrait: await sit(bytes, entry.asked),
     crop: await sit(cropBytes, entry.asked),
     enlarged: await sit(enlargedBytes, entry.asked),
+    pair: await sit(bytes, entry.asked, enlargedBytes),
   };
 
   /* How many of the N readings landed on the truth. The tally IS the finding:

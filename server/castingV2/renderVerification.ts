@@ -152,6 +152,20 @@ const SYSTEM_PROMPT = [
 ].join("\n");
 
 /**
+ * The paragraph added when a magnified detail rides along. Only then — a
+ * standing sentence about a second photograph that is usually absent is a
+ * standing invitation to hallucinate one.
+ */
+const DETAIL_PROMPT = [
+  "",
+  "THE SECOND IMAGE IS THE SAME PHOTOGRAPH, ENLARGED. It is a crop of the first, magnified,",
+  "with no detail added — use it to look closely at fine surface things like freckles, moles",
+  "or texture, which are only a few pixels across in the full frame. It is the same person in",
+  "the same picture, not a different render: never report a difference between the two, and",
+  "answer every line about the photograph as a whole.",
+].join("\n");
+
+/**
  * Only a READ, BINDING miss spends the user's refusal. An unread check is
  * silence: it never refuses, and it never passes either.
  */
@@ -201,6 +215,42 @@ export function facetsWithUnreliabilityPrior(): Facet[] {
 export async function verifyRender(input: {
   bytes: Buffer;
   contentType: string;
+  /**
+   * A MAGNIFIED CROP OF THE SAME FRAME, when the recipe names something too
+   * small to survive the reader's own downsample.
+   *
+   * # Measured, not supposed
+   *
+   * Run-12 scored `marks` at 25% and the story was a broken reader. Its court
+   * (`scripts/calibration/marks-reader-court.mts`) put eight cases to the
+   * production reader five times at each of three lenses — **120 readings, zero
+   * split verdicts**. The reader agrees with itself perfectly at temperature 0.
+   * What changes the answer is what it is shown:
+   *
+   *     portrait (today)              6/8 cases unanimous, 30/40 readings right
+   *     face crop                     7/8                  35/40
+   *     face crop, enlarged 2x        8/8                  40/40
+   *
+   * Her freckles are a few pixels across in a 1024x1536 portrait and do not
+   * survive the downsample a vision model applies before it ever sees them. So
+   * this is not a second reading and not a rewritten question — it is the same
+   * question with the pixels intact.
+   *
+   * # Why it rides in the SAME call
+   *
+   * One pass over every fact is the design (a reader that cannot see the eyes
+   * and the eyeshadow together cannot tell them apart), and a separate call for
+   * the small facets would break it as surely as asking eight times would. The
+   * transport already takes a list of images.
+   *
+   * # Why it cannot manufacture what it is looking for
+   *
+   * The upscale is nearest-neighbour, so it invents no pigment, and the court's
+   * three clear-skin cases — her own bare master, the frame that lost its
+   * freckles, and a specimen with none — stay unanimously ABSENT at this lens.
+   * A magnifier whose failure mode is seeing things would have broken there.
+   */
+  detail?: { bytes: Buffer; contentType: string };
   /** `binding` false means checked and recorded, never refunded (D-187). */
   facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean; shortfall?: string }>;
   engine?: TextEngine;
@@ -218,9 +268,11 @@ export async function verifyRender(input: {
 
   try {
     const reply = await engine.complete({
-      system: SYSTEM_PROMPT,
+      system: input.detail ? SYSTEM_PROMPT + DETAIL_PROMPT : SYSTEM_PROMPT,
       user: lines.join("\n"),
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      images: input.detail
+        ? [{ bytes: input.bytes, contentType: input.contentType }, input.detail]
+        : [{ bytes: input.bytes, contentType: input.contentType }],
       json: true,
       temperature: 0,
       maxOutputTokens: 700,

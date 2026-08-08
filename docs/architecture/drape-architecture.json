@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "addbf1e2008e77c3"
+    "sourceFingerprint": "e6ee9c5d4c6c48a3"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 68
+      "moduleCount": 69
     },
     {
       "id": "domain:castingV2",
@@ -3569,6 +3569,12 @@
     {
       "id": "module:server/castingV2/varianceBudget.ts",
       "path": "server/castingV2/varianceBudget.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/verificationDetail.ts",
+      "path": "server/castingV2/verificationDetail.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8528,6 +8534,10 @@
     {
       "id": "test:server/castingV2/varianceBudget.test.ts",
       "path": "server/castingV2/varianceBudget.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/verificationDetail.test.ts",
+      "path": "server/castingV2/verificationDetail.test.ts"
     },
     {
       "id": "test:server/castingV2/viewConformance.test.ts",
@@ -17886,6 +17896,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/verificationDetail.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/db/castingV2.ts",
       "kind": "imports"
     },
@@ -18337,6 +18352,26 @@
     {
       "from": "module:server/castingV2/varianceBudget.ts",
       "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/verificationDetail.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/verificationDetail.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/verificationDetail.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/verificationDetail.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

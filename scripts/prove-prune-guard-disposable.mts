@@ -16,6 +16,11 @@ const SUITES = [
   "server/castingV2/reliabilityReport.test.ts",
 ];
 
+const DETAIL_SUITES = [
+  "server/castingV2/verificationDetail.test.ts",
+  "server/castingV2/renderVerification.test.ts",
+];
+
 const MASK_SUITES = [
   "server/castingV2/maskedRefine.test.ts",
   "server/castingV2/maskGeometry.test.ts",
@@ -134,6 +139,48 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     mutations: [{
       find: "        reachPx: question.departed ? departedEdgeReach : departedReach,",
       replace: "        reachPx: departedReach,",
+    }],
+  },
+  {
+    /*
+      THE MAGNIFIER'S TWO DISHONEST FAILURE MODES, one sabotage each.
+
+      A magnifier that never fires leaves the reader as blind as before while
+      every test about the crop's correctness stays green — which is why the
+      contract is asserted on the outgoing request rather than near it.
+    */
+    name: "the detail computed and then never sent to the reader",
+    file: "server/castingV2/renderVerification.ts",
+    suites: DETAIL_SUITES,
+    mutations: [{
+      find: "      images: input.detail\n        ? [{ bytes: input.bytes, contentType: input.contentType }, input.detail]\n        : [{ bytes: input.bytes, contentType: input.contentType }],",
+      replace: "      images: [{ bytes: input.bytes, contentType: input.contentType }],",
+    }],
+  },
+  {
+    /*
+      And the other one: a smooth resampler invents plausible pigment, so the
+      magnifier would begin manufacturing the very thing it was added to
+      detect. The test asserts the nearest-neighbour promise BY VALUE, so
+      swapping the kernel must turn it red.
+    */
+    name: "the enlargement blending neighbours instead of repeating them",
+    file: "server/castingV2/verificationDetail.ts",
+    suites: DETAIL_SUITES,
+    mutations: [{
+      find: "resize({ width: target, kernel: \"nearest\" })",
+      replace: "resize({ width: target, kernel: \"lanczos3\" })",
+    }],
+  },
+  {
+    /* And the third: magnifying every facet would cost every render a larger
+       reading on a hunch. The seeded list is the decision; it must be pinned. */
+    name: "the fine-detail list opened up to every facet",
+    file: "server/castingV2/verificationDetail.ts",
+    suites: DETAIL_SUITES,
+    mutations: [{
+      find: "  return facets.some((facet) => FINE_DETAIL_FACETS.has(facet));",
+      replace: "  return facets.length > 0;",
     }],
   },
 ];

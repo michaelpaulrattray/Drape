@@ -151,6 +151,7 @@ import {
   verifyRender,
   type RenderVerdict,
 } from "./renderVerification";
+import { detailForVerification } from "./verificationDetail";
 import {
   capturePresentation,
   presentationInvalidatedBy,
@@ -2029,9 +2030,29 @@ export async function refineCandidate(
         named the facet) and it changes refusal behaviour, so it waits for a
         ruling rather than being decided here.
       */
+      /*
+        A MAGNIFIED CROP RIDES ALONG WHEN THE RECIPE NAMES SOMETHING SMALL.
+
+        Measured in `marks-reader-court.mts`: the reader is not unreliable — 120
+        readings at temperature 0 produced zero split verdicts — it simply
+        cannot see her freckles in a 1024x1536 portrait, and can see them every
+        time at 2x on the face crop. Portrait 6/8 cases unanimous, enlarged 8/8.
+
+        It costs no vision call: the box comes from a region the harvest already
+        segmented for its own work. On a step whose harvest never touched the
+        face there is no detail and the reading is exactly today's, which is the
+        honest partial — buying a segmentation here would put ten seconds and a
+        new failure mode on every paid render.
+      */
+      const detail = await detailForVerification({
+        bytes: rendered.bytes,
+        facets: facts.map((fact) => fact.facet),
+        masterRegions: rendered.evidence?.masterRegions,
+      });
       const read = () => verifyRender({
         bytes: rendered.bytes,
         contentType: rendered.contentType,
+        ...(detail ? { detail } : {}),
         facts,
         engine: dependencies.verifier,
       });
