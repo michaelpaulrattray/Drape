@@ -533,6 +533,43 @@ export async function refineCandidate(
     target: { publicId: string | null; imageUrl: string; instructions: string[] },
     note: string,
   ): Promise<RefineResult> => {
+    /*
+      A FREE ANSWER THAT MOVES HER IS NOT ALLOWED TO BE SILENT (Fable, 2026-08-08).
+
+      Run-7: "remove her glasses", on a face plainly wearing them, answered
+      "You already have that version — nothing charged" and moved her from the
+      three-step earrings variant back to the two-step one. The gold hoops she
+      had paid for left her selected face and nothing said so.
+
+      Two things follow, and neither depends on knowing why the prune was wrong.
+
+      **The sentence names what it did.** She asked about glasses; if the answer
+      is "this takes off the gold hoop earrings step", the mistake is in the
+      sentence she is reading, not buried in a chain. Silent corruption becomes
+      an immediately contestable statement. (A step-count rule cannot do this
+      job: D-173's legitimate undo moves her to FEWER steps by design — that
+      move IS the delivery — and the facet cannot separate them either, since
+      glasses and earrings are both `statedAccessories`.)
+
+      **And it is written down.** Every FREE exit from this path logged nothing
+      at all, which is why run-7 could not be diagnosed from production: the
+      paid failure path carries "this line is the only record of why" and the
+      free ones carried no record whatsoever. The next one is diagnosable.
+    */
+    const leaving = readInstructions(predecessor?.instructions);
+    const dropped = leaving.filter((step) => !target.instructions.includes(step));
+    log.info(
+      {
+        userId: input.userId,
+        candidate: input.candidatePublicId,
+        instruction,
+        from: leaving,
+        to: target.instructions,
+        dropped,
+        note,
+      },
+      "[refineService] a FREE answer moved her selection",
+    );
     const moved = await selectVariant({
       userId: input.userId,
       candidatePublicId: input.candidatePublicId,
@@ -1063,7 +1100,21 @@ export async function refineCandidate(
         },
       ));
     if (already) {
-      return selectAndReport(asTarget(already), "You already have that version — nothing charged.");
+      /*
+        NAME THE STEPS THIS TAKES OFF. "You already have that version" is true
+        and uninformative, and on run-7 it was the whole disguise: she asked
+        about her glasses and was moved off the earrings she had bought.
+      */
+      const target = asTarget(already);
+      const dropped = readInstructions(predecessor?.instructions)
+        .filter((step) => !target.instructions.includes(step));
+      return selectAndReport(
+        target,
+        dropped.length > 0
+          ? `That takes off ${joinClauses(dropped.map((step) => `“${step}”`))} — `
+            + "you're on the version without it, and nothing was charged."
+          : "You already have that version — nothing charged.",
+      );
     }
   }
   /*

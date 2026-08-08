@@ -1607,9 +1607,30 @@ describe("removal is typed, and most of it is free", () => {
     );
     expect(result.kind).toBe("selected");
     expect(result.variantId).toBe("variant-1");
-    expect(result.note).toMatch(/already have that version/i);
+    /*
+      IT NAMES WHAT IT TOOK OFF (Fable, 2026-08-08). "You already have that
+      version" is true and uninformative, and on run-7 it was the whole
+      disguise: she asked about her GLASSES and was silently moved off the
+      earrings she had paid for. A sentence that names the step turns a wrong
+      prune into something she can contest while reading it.
+    */
+    expect(result.note).toMatch(/takes off/i);
+    expect(result.note, "the step it dropped, in her own words").toContain("small gold hoops");
+    expect(result.note).toMatch(/nothing was charged/i);
     expect(ledger.charges).toEqual([]);
     expect(journal).not.toContain("claim");
+  });
+
+  it("says nothing was taken off when the match lands on the same steps", async () => {
+    /* The genuinely-identical case keeps the old sentence: there is no step to
+       name, and inventing one would be worse than the vague line. */
+    twoStep();
+    const result = await refineCandidate(
+      asks({ ok: true, intent: "remove", subject: "statedAccessories", match: "hoops" }),
+      { ...input, instruction: "take the hoops off" },
+    );
+    expect(result.kind).toBe("selected");
+    expect(result.note).toMatch(/takes off|already have that version/i);
   });
 
   it("returns to the ORIGINAL for free when every step is removed", async () => {

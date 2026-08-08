@@ -85,14 +85,28 @@ const STAGE_WORDS: Record<ViewerWait["stage"], string> = {
 /**
  * How long a refine usually takes — MEASURED, and a copy constant on purpose.
  *
- * From the last 64 successful refines on production, 2026-08-05: median 31s,
- * a quarter inside 25s, nine in ten inside 60s. It is written here rather than
- * queried because a number that moves on its own is a number nobody has
- * checked; if real latency drifts, re-measuring and editing this line is a
- * deliberate act. The two-minute supervised-wait sentence in the panel is what
- * takes it back on a slow day.
+ * RE-MEASURED 2026-08-08, and the previous line had stopped being true. Last 80
+ * successful paid refines on production:
+ *
+ *   p25 31s · median 39s · p75 111s · p90 159s · max 328s
+ *   THE LAST TWENTY ALONE: median 151s
+ *
+ * Two populations, and the recent one is four times slower — the masked path is
+ * live and spends several segmentation calls per render. The old line ("usually
+ * about half a minute") was measured at median 31s on 2026-08-05 and was true
+ * then; it is a lie on the current build, and a walk step delivered honestly in
+ * 327.8s while the product promised half a minute.
+ *
+ * "A minute or two" covers both populations without promising either, and it
+ * hands off exactly where the panel's supervised-wait sentence takes over past
+ * two minutes. Founder-approved via voice check, 2026-08-08.
+ *
+ * It stays a constant rather than a query because a number that moves on its
+ * own is a number nobody has checked; re-measuring and editing this line is a
+ * deliberate act. **The latency itself is a named program item** — the honest
+ * answer is to make it faster, not to widen the sentence again.
  */
-const TYPICAL_WAIT = "usually about half a minute";
+const TYPICAL_WAIT = "usually a minute or two";
 
 export function CandidateViewer({
   frames,
