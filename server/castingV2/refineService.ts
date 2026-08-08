@@ -155,6 +155,7 @@ import { detailForVerification } from "./verificationDetail";
 import {
   capturePresentation,
   presentationInvalidatedBy,
+  unconstrainedPresentationPins,
   PRESENTATION_FACETS,
 } from "./presentationState";
 import { castingIdentityEngine } from "./signEngine";
@@ -1392,6 +1393,20 @@ export async function refineCandidate(
     cut had just retired. Superseding by the same facet is not enough.
   */
   for (const stale of presentationInvalidatedBy(writtenFacets)) delete carriedCaptions[stale];
+
+  /*
+    AND A PIN THE VOCABULARY DOES NOT RECOGNISE GOES TOO (D-238).
+
+    Free-text pins predate the closed arrangement list, and they are the exact
+    strings that cost `hairWorn` two 25% scores on hair that never moved:
+    "worn natural, loose" against a tight crop is an argument, not a fact.
+    Deleted rather than translated — the capture below then re-reads the value
+    from the MASTER, because the picture is what knows.
+  */
+  for (const unowned of unconstrainedPresentationPins(carriedCaptions)) {
+    log.info({ facet: unowned }, "[refineService] retiring a pin from before the vocabulary");
+    delete carriedCaptions[unowned];
+  }
 
   /*
     AND IT IS NOT RE-CAPTURED EITHER (D-187, completing the fix).

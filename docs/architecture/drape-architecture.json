@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ec21153ff7392437"
+    "sourceFingerprint": "1ce871b42a15e6b4"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 69
+      "moduleCount": 70
     },
     {
       "id": "domain:castingV2",
@@ -3305,6 +3305,12 @@
     {
       "id": "module:server/castingV2/goldenBriefs.ts",
       "path": "server/castingV2/goldenBriefs.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/hairArrangement.ts",
+      "path": "server/castingV2/hairArrangement.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8334,6 +8340,10 @@
     {
       "id": "test:server/castingV2/followDrift.test.ts",
       "path": "server/castingV2/followDrift.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/hairArrangement.test.ts",
+      "path": "server/castingV2/hairArrangement.test.ts"
     },
     {
       "id": "test:server/castingV2/hairCoverage.test.ts",
@@ -17432,6 +17442,11 @@
     {
       "from": "module:server/castingV2/poolTendencies.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/presentationState.ts",
+      "to": "module:server/castingV2/hairArrangement.ts",
       "kind": "imports"
     },
     {

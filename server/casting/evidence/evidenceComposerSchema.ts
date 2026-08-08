@@ -96,24 +96,19 @@ const EXISTING_COLUMN_TYPES: Readonly<Record<string, string>> = {
   // domain). This constant pins the LIVE DDL, so it must be updated in the same
   // change as the enum itself or startup validation fails.
   //
-  // ⛔ 0024 (`casting_diagnostic_cleanup`) IS NOT HERE YET, DELIBERATELY.
+  // `casting_diagnostic_cleanup` added by 0024, and it is here BECAUSE
+  // production has now run it — the founder applied the migration against the
+  // production database on 2026-08-08 and the readback confirmed the new enum
+  // (`APPLIED OK`, relayed fable-050). It was deliberately withheld until then:
+  // "live" means production, and a boot guard describing a database that does
+  // not exist is the 2026-07-31 failure shape, sequenced rather than assumed.
   //
-  // "Live" means production, and production has not run 0024. Adding the value
-  // here first would make this constant describe a database that does not
-  // exist — and this is a boot guard, which is the thing 2026-07-31 taught us
-  // to sequence rather than assume. It cannot refuse traffic today, because the
-  // validation only runs when EVIDENCE_COMPOSER_SCOPE is non-off and that
-  // variable is ABSENT in production (verified 2026-08-08 by name) — but a
-  // guard that is wrong and merely unreached is still wrong.
-  //
-  // The ORM enum and migration 0024 ship now, which is safe in the other
-  // direction: writing the new value to a database that lacks it is rejected by
-  // MySQL, the reservation fails, and capture goes inert rather than
-  // unpurgeable. Fail-closed, like the rest of this path.
-  //
-  // Order: founder runs 0024 → this line gains the value → deploy.
+  // The order that was followed, and the order for the next one: ship the ORM
+  // enum and the migration first (writing an unknown value is rejected by
+  // MySQL, so the feature goes inert rather than unpurgeable) → founder runs
+  // the migration → this line gains the value → deploy.
   "storage_cleanup_batches.kind":
-    "enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup','casting_candidate_cleanup')",
+    "enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup','casting_candidate_cleanup','casting_diagnostic_cleanup')",
   "model_reference_plates.kind":
     "enum('uploaded_reference','accepted_candidate')",
   "model_reference_plates.featureIntentId": "varchar(36)",

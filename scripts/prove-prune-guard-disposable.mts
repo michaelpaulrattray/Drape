@@ -26,6 +26,13 @@ const LANE_SUITES = [
   "server/castingV2/refineDelta.test.ts",
 ];
 
+/* D-238's subject: the pin's value-space, its capture and its retirement. */
+const PIN_SUITES = [
+  "server/castingV2/hairArrangement.test.ts",
+  "server/castingV2/presentationState.test.ts",
+  "server/castingV2/refineService.test.ts",
+];
+
 const MASK_SUITES = [
   "server/castingV2/maskedRefine.test.ts",
   "server/castingV2/maskGeometry.test.ts",
@@ -233,6 +240,56 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     mutations: [{
       find: "    else if (!written.has(facet)) carried[facet] = caption;",
       replace: "    else carried[facet] = caption;",
+    }],
+  },
+  /*
+    D-238 — FOUR REVERSIONS, ONE PER LOAD-BEARING CLAIM.
+
+    `hairWorn` scored 25% twice on hair that never moved, because a two-word
+    free-text pin nobody constrained said "loose" and the reader read that word
+    against the CUT. Each of these puts one plank of the repair back the way it
+    was the morning of run-13.
+  */
+  {
+    name: "the pin taking free text again instead of a choice",
+    file: "server/castingV2/presentationState.ts",
+    suites: PIN_SUITES,
+    mutations: [{
+      find: "      const wording = entry.vocabulary.wordingFor(value);",
+      replace: "      const wording = value.trim().toLowerCase();",
+    }],
+  },
+  {
+    /* Storing the id rather than the sentence: the painter and the reader stop
+       sharing a wording, which is the failure fable-048 named one consumer
+       earlier. */
+    name: "the chosen id stored instead of the one shared wording",
+    file: "server/castingV2/presentationState.ts",
+    suites: PIN_SUITES,
+    mutations: [{
+      find: "        return id ? arrangementWording(id) : null;",
+      replace: "        return id;",
+    }],
+  },
+  {
+    /* The retirement unwired at its CALL SITE, not inside the helper — a
+       control that is not invoked does not exist (invariant 7). */
+    name: "pre-vocabulary pins carried forward instead of re-read from the master",
+    file: "server/castingV2/refineService.ts",
+    suites: PIN_SUITES,
+    mutations: [{
+      find: "unconstrainedPresentationPins(carriedCaptions)",
+      replace: "[]",
+    }],
+  },
+  {
+    /* Without it, run-12's pixie and run-13's crop have no true answer on the
+       list, and the vocabulary reintroduces the argument it was built to end. */
+    name: "the vocabulary losing 'worn as cut'",
+    file: "server/castingV2/hairArrangement.ts",
+    suites: PIN_SUITES,
+    mutations: [{
+      find: "  \"worn as cut\": \"worn exactly as cut — short enough that it is not gathered, tied or pinned at all\",\n",
     }],
   },
 ];

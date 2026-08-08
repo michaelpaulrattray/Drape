@@ -112,10 +112,52 @@ export async function sabotage(
     + `${Math.abs(delta)} bytes ${delta > 0 ? "removed" : "added"}`,
   );
 
+  /*
+    AND THE FILE GOES BACK EVEN IF THIS PROCESS NEVER REACHES ITS RESTORE.
+    (2026-08-09, from the incident that made it necessary.)
+
+    `npx tsx prove-…mts | grep … | tail -8` kills the driver with SIGPIPE the
+    moment `tail` has what it needs. That happened here mid-sweep, and the
+    working tree was left carrying a DELIBERATE DEFECT — `reachPx: departedReach`,
+    a real removal bug — through a full suite run that was then reported as
+    4,861 green. Nothing was wrong with the suite; it was measuring sabotaged
+    source, and the only tell was `git status`.
+
+    The `restore()` handle is right for the happy path and cannot cover a death.
+    So every applied sabotage also registers a synchronous writer on the ways a
+    node process actually ends. Idempotent, because a normal `restore()` will
+    usually get there first, and cheap enough to be unconditional — a leftover
+    mutation is the single most expensive thing this helper can produce.
+  */
+  let live = true;
+  const putBack = () => {
+    if (!live) return;
+    live = false;
+    try {
+      writeFileSync(file, original);
+      console.error(`sabotage: restored ${file} on process exit — the run did not finish`);
+    } catch { /* exiting anyway; a failed write here is visible in `git status` */ }
+  };
+  const onSignal = () => { putBack(); process.exit(1); };
+  const onThrow = (error: unknown) => { putBack(); throw error; };
+  const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP", "SIGPIPE"] as const;
+  /* Detached on restore, or a 22-guard sweep leaves 22 sets behind and node
+     starts warning about a leak in the middle of the evidence. */
+  const detach = () => {
+    process.off("exit", putBack);
+    for (const signal of SIGNALS) process.off(signal, onSignal);
+    process.off("uncaughtException", onThrow);
+  };
+  process.once("exit", putBack);
+  for (const signal of SIGNALS) process.once(signal, onSignal);
+  process.once("uncaughtException", onThrow);
+
   return {
     landed,
     delta,
     restore: async () => {
+      live = false;
+      detach();
       writeFileSync(file, original);
       const back = readFileSync(file, "utf8");
       /* Restoring is the half nobody checks, and a half-restored source file is

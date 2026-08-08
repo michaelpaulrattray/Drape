@@ -67,6 +67,21 @@ async function snapshotRows() {
     (row) => row.TABLE_NAME === "casting_evidence_candidate_attempts",
   );
   columns.splice(lastAttemptIndex + 1, 0, priorInkColumn);
+  // And migration 0024, which has no snapshot to read: it is the ceremony
+  // migration the FOUNDER runs against production by hand (applied 2026-08-08),
+  // so drizzle-kit never generated one. The fixture models the live database,
+  // and the live database has run it — the same reasoning that kept this value
+  // OUT of the pinned DDL until the day it landed. Modelled here rather than
+  // hardcoded beside the pin so the two cannot agree with each other by being
+  // copies of each other.
+  const batchKind = columns.find(
+    (row) => row.TABLE_NAME === "storage_cleanup_batches" && row.COLUMN_NAME === "kind",
+  );
+  if (!batchKind) throw new Error("storage cleanup batch kind fixture missing");
+  batchKind.COLUMN_TYPE = batchKind.COLUMN_TYPE.replace(
+    /\)$/,
+    ",'casting_diagnostic_cleanup')",
+  );
   const indexes = Object.entries(snapshot.tables).flatMap(
     ([TABLE_NAME, table]) => {
       const ordinary = Object.values(table.indexes).flatMap((index) =>

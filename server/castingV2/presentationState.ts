@@ -29,31 +29,84 @@
  * the class that drifts because nobody thinks to state it. Not the face: the
  * face is what the reference image is FOR, and re-describing it in words is how
  * a description quietly replaces the photograph (D-152).
+ *
+ * # And the value is CHOSEN, never written (D-238)
+ *
+ * It shipped taking free text, and free text is how run-12's pixie and run-13's
+ * tight crop were both pinned *"loose"* — a word that means _not gathered_ to
+ * this product and _not tightly curled_ to anyone reading the picture. The hair
+ * never changed and the class scored 25% twice. See `hairArrangement.ts`: every
+ * facet here now names a closed value-space, the vision pass picks from it, and
+ * anything outside it is NO PIN rather than a fact the product cannot stand
+ * behind.
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import {
+  arrangementGuidance,
+  arrangementIdOf,
+  arrangementWording,
+  isConstrainedArrangement,
+} from "./hairArrangement";
 import { interpreterEngine } from "./interpreter";
 import { facetOfSubject, type Facet } from "./refineFacets";
 
 const log = createModuleLogger("castingV2/presentationState");
 
-/** The facets worth naming, and the question each is read with. */
-const PRESENTATION: ReadonlyArray<{ facet: Facet; id: string; ask: string }> = [
+/**
+ * A facet's closed value-space, and the only three things this module needs
+ * from one.
+ *
+ * `wordingFor` does the parse and the expansion in one step deliberately: the
+ * stored pin IS the wording, so there is no moment where a chosen id and its
+ * sentence exist apart and could be paired up wrongly.
+ */
+type Vocabulary = {
+  /** The choices as the vision pass is shown them. */
+  guidance: string;
+  /** The one wording for a chosen answer, or null if it chose nothing valid. */
+  wordingFor: (answer: string) => string | null;
+  /** Whether an already-stored pin is one this build can stand behind. */
+  owns: (pinned: string) => boolean;
+};
+
+/** The facets worth naming, the question each is read with, and its answers. */
+const PRESENTATION: ReadonlyArray<{
+  facet: Facet;
+  id: string;
+  ask: string;
+  vocabulary: Vocabulary;
+}> = [
   {
     facet: facetOfSubject("hairWorn"),
     id: "hairWorn",
-    ask: "How is the hair WORN — up, down, tied back, half up, or something else? "
-      + "Two or three words. This is about arrangement, never about the cut or the colour.",
+    ask: "How is the hair WORN? Choose the one id below that is true of this photograph. "
+      + "This is about arrangement only — never about the cut, the texture or the colour.",
+    vocabulary: {
+      guidance: arrangementGuidance(),
+      wordingFor: (answer) => {
+        const id = arrangementIdOf(answer);
+        return id ? arrangementWording(id) : null;
+      },
+      owns: isConstrainedArrangement,
+    },
   },
 ];
 
 const SYSTEM_PROMPT = [
-  "You look at a photograph of a person and answer short factual questions about how they",
-  "are presented in it — how things are arranged, not what they are made of.",
+  "You look at a photograph of a person and answer questions about how they are presented",
+  "in it — how things are ARRANGED, not what they are made of.",
   "",
-  "Answer in two to five words. No sentences, no judgement, no description of their face,",
-  "their identity, the lighting or the background. If you genuinely cannot tell, say",
-  '"unclear" rather than guessing.',
+  "Each question is followed by the complete list of allowed answers. Choose the ONE that is",
+  "true of this photograph and reply with its id, copied exactly as written.",
+  "",
+  'If none of them is true of this photograph, answer "other". If you genuinely cannot see',
+  'well enough to tell, answer "unclear". Both of those are better than a near miss: your',
+  "answer is stored as a fact about this person and repeated in every later picture of them,",
+  "so a close-enough choice becomes a description that argues with the photograph forever.",
+  "",
+  "No sentences, no judgement, no description of their face, their identity, the lighting or",
+  "the background.",
   "",
   'Reply with JSON: {"hairWorn": "..."} and nothing else.',
 ].join("\n");
@@ -76,7 +129,9 @@ export async function capturePresentation(input: {
   try {
     const reply = await engine.complete({
       system: SYSTEM_PROMPT,
-      user: PRESENTATION.map((entry) => `${entry.id}: ${entry.ask}`).join("\n"),
+      user: PRESENTATION
+        .map((entry) => `${entry.id}: ${entry.ask}\n${entry.vocabulary.guidance}`)
+        .join("\n\n"),
       images: [{ bytes: input.bytes, contentType: input.contentType }],
       json: true,
       temperature: 0,
@@ -90,11 +145,19 @@ export async function capturePresentation(input: {
     for (const entry of PRESENTATION) {
       const value = parsed?.[entry.id];
       if (typeof value !== "string") continue;
-      const cleaned = value.trim().toLowerCase();
-      /* "Unclear" is an answer and it is not a fact. Pinning it would tell every
-         later render that the hair is unclear, which is worse than silence. */
-      if (!cleaned || cleaned.startsWith("unclear") || cleaned.length > 40) continue;
-      captured[entry.facet] = cleaned;
+      /*
+        ANYTHING THAT IS NOT A CHOICE IS NO PIN.
+
+        "Unclear" and "other" arrive here, and so does a model that answers the
+        question in its own words despite being handed a list. All three take
+        the same road out, because they are the same thing: an answer this
+        build cannot stand behind. Pinning it would hand every later render a
+        fact — stated as ALREADY TRUE to the painter and checked by the net —
+        that nobody can hold either of them to.
+      */
+      const wording = entry.vocabulary.wordingFor(value);
+      if (!wording) continue;
+      captured[entry.facet] = wording;
     }
     return captured;
   } catch (error) {
@@ -126,4 +189,29 @@ const INVALIDATED_BY: Partial<Record<Facet, readonly Facet[]>> = {
 export function presentationInvalidatedBy(written: ReadonlySet<Facet>): Facet[] {
   return PRESENTATION_FACETS.filter((pinned) =>
     (INVALIDATED_BY[pinned] ?? []).some((facet) => written.has(facet)));
+}
+
+/**
+ * A PIN FROM BEFORE THE VOCABULARY IS RETIRED, NEVER TRANSLATED (D-238).
+ *
+ * Every chain that has already been touched carries free text — *"worn natural,
+ * loose"*, *"pulled back low"*, *"tied back, up"* — and those are exactly the
+ * strings that produced the false misses. Mapping old words onto new values
+ * would be guessing from a description what only the photograph knows, which is
+ * D-173's swamp with a thesaurus attached: *"pulled back low"* is a ponytail or
+ * a bun or neither, and the answer is in a picture we already have.
+ *
+ * So an unrecognised pin is DELETED, and the capture branch immediately below
+ * finds the facet unpinned and re-reads it from the MASTER — the base, which
+ * never changes, at no extra cost beyond the one text call that pin was always
+ * worth. Lazily, on the chain's next touch; there is no sweep, because a chain
+ * nobody touches never renders and so is never scored.
+ */
+export function unconstrainedPresentationPins(
+  captions: Readonly<Partial<Record<Facet, string>>>,
+): Facet[] {
+  return PRESENTATION.flatMap((entry) => {
+    const pinned = captions[entry.facet];
+    return pinned && !entry.vocabulary.owns(pinned) ? [entry.facet] : [];
+  });
 }

@@ -238,6 +238,7 @@ vi.mock("./signEngine", () => ({
 
 const { refineCandidate } = await import("./refineService");
 const { claimVariant } = await import("../db/castingV2Variants");
+const { arrangementWording } = await import("./hairArrangement");
 
 beforeEach(() => {
   journal.length = 0;
@@ -817,6 +818,69 @@ describe("an unreadable history stops the money", () => {
     expect(claimed).toContain("mullet");
     expect(claimed).toContain("seafoam green");
     expect(claimed).toContain("pink");
+  });
+
+  /*
+    AND A PRESENTATION PIN FROM BEFORE THE VOCABULARY IS RE-READ, NOT CARRIED
+    (D-238).
+
+    `hairWorn` scored 25% on run-12 and again on run-13 with hair that never
+    moved a pixel. The pin said "worn natural, loose"; the reader looked at a
+    tight crop and answered "not loose" three times, then "worn loose" once —
+    same pixels, same pin, opposite verdicts. The word was doing double duty and
+    nothing had ever constrained it.
+
+    Chains carrying those strings are live, so the fix has to reach them: the
+    unrecognised pin is deleted and the base is re-read, which is the ONE thing
+    that knows the answer. This drives the whole road — retire, re-capture, and
+    the free text nowhere in the paid prompt.
+  */
+  it("retires a pre-vocabulary presentation pin and re-reads the master", async () => {
+    variantRows = [{
+      id: 503,
+      publicId: "variant-old",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/old.png",
+      internalPrompt: {
+        ...(candidateRow.internalPrompt as Record<string, unknown>),
+        /* Run-13's pin, verbatim from production. */
+        captions: { hairWorn: "worn natural, loose" },
+      },
+      instructions: ["give her freckles"],
+      deltas: { free: { marks: "freckles" } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-old";
+
+    let presentationReads = 0;
+    const verifier = {
+      id: "verifier",
+      complete: async (request: { system: string }) => {
+        if (request.system.includes("how they")) {
+          presentationReads += 1;
+          /* The base is a tight crop, and the honest answer is the value both
+             broken pins were reaching for. */
+          return { text: JSON.stringify({ hairWorn: "worn as cut" }), truncated: false, latencyMs: 1 };
+        }
+        return {
+          text: JSON.stringify({ results: [{ id: 1, present: true, saw: "green irises" }] }),
+          truncated: false,
+          latencyMs: 1,
+        };
+      },
+    } as never;
+
+    await refineCandidate({ ...greenEyes, verifier }, input);
+
+    const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt;
+    /* The picture was asked, not a thesaurus. */
+    expect(presentationReads).toBeGreaterThan(0);
+    expect(prompt).toContain(arrangementWording("worn as cut"));
+    /* And the string that spent two walks' worth of score is gone from the
+       prompt the user pays for. */
+    expect(prompt).not.toContain("worn natural, loose");
+    expect(prompt).not.toContain("loose");
   });
 });
 

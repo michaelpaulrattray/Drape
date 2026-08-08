@@ -9,9 +9,11 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { arrangementWording } from "./hairArrangement";
 import {
   capturePresentation,
   presentationInvalidatedBy,
+  unconstrainedPresentationPins,
   PRESENTATION_FACETS,
 } from "./presentationState";
 import { facetOfSubject } from "./refineFacets";
@@ -34,17 +36,44 @@ function reader(payload: unknown, seen?: { system?: string; user?: string }) {
 }
 
 describe("the base's presentation gets a name", () => {
-  it("pins how the hair is worn", async () => {
+  it("pins the vocabulary's own wording for the value the reader chose", async () => {
+    /* The reader answers with an id; what is STORED is the sentence — the same
+       sentence the painter is told is already true and the net checks (D-238).
+       One fact, one wording, and no place for the three to disagree. */
     const pinned = await capturePresentation({
-      bytes, contentType: "image/png", engine: reader({ hairWorn: "pulled back low" }),
+      bytes, contentType: "image/png", engine: reader({ hairWorn: "tied back" }),
     });
-    expect(pinned[HAIR_WORN]).toBe("pulled back low");
+    expect(pinned[HAIR_WORN]).toBe(arrangementWording("tied back"));
   });
 
   it("pins nothing when the reader cannot tell", async () => {
     /* "Unclear" is an answer and it is not a fact. */
     const pinned = await capturePresentation({
       bytes, contentType: "image/png", engine: reader({ hairWorn: "unclear" }),
+    });
+    expect(pinned[HAIR_WORN]).toBeUndefined();
+  });
+
+  it("pins nothing when no value on the list is true of the photograph", async () => {
+    /* "Other" is the honest escape hatch, and it must cost a pin rather than
+       buy an approximation: wrong does not beat missing. */
+    const pinned = await capturePresentation({
+      bytes, contentType: "image/png", engine: reader({ hairWorn: "other" }),
+    });
+    expect(pinned[HAIR_WORN]).toBeUndefined();
+  });
+
+  /*
+    THE RUN-13 DEFECT, AT THE DOOR IT CAME IN THROUGH.
+
+    This exact string was captured from a base, pinned, and then argued with the
+    picture in every render: the reader answered "not loose" three times about
+    hair that had never moved, and the class scored 25% on four correct frames.
+    Free text is now simply not a pin.
+  */
+  it("pins nothing when the reader answers in its own words", async () => {
+    const pinned = await capturePresentation({
+      bytes, contentType: "image/png", engine: reader({ hairWorn: "worn natural, loose" }),
     });
     expect(pinned[HAIR_WORN]).toBeUndefined();
   });
@@ -77,6 +106,11 @@ describe("the base's presentation gets a name", () => {
       bytes, contentType: "image/png", engine: reader({ hairWorn: "down" }, seen),
     });
     expect(seen.user).toContain("How is the hair WORN");
+    /* And it is a CHOICE, not a blank: the whole list travels with the
+       question, so the model cannot answer a question it was not asked. */
+    expect(seen.user).toContain("- worn as cut: ");
+    expect(seen.user).toContain("- ponytail: ");
+    expect(seen.system).toMatch(/copied exactly as written/i);
     /* The face is what the reference image is for — describing it in words is
        how a description replaces the photograph (D-152). */
     expect(seen.system).toContain("never about the cut" .slice(0, 0) + "");
@@ -96,6 +130,37 @@ describe("the base's presentation gets a name", () => {
   it("leaves the worn pin alone for an edit that does not re-make the hair", () => {
     expect(presentationInvalidatedBy(new Set([facetOfSubject("hairShade")]))).toEqual([]);
     expect(presentationInvalidatedBy(new Set([facetOfSubject("nose")]))).toEqual([]);
+  });
+
+  /*
+    A PIN FROM BEFORE THE VOCABULARY IS RETIRED, NEVER TRANSLATED (D-238).
+
+    Every chain already in flight carries free text, and those are the strings
+    that produced the false misses. Deleting one hands the facet back to the
+    capture branch, which re-reads it from the MASTER — the picture decides what
+    her pin should have said. A text mapping would be D-173's swamp with a
+    thesaurus: "pulled back low" is a ponytail or a bun or neither.
+  */
+  describe("pins from before the vocabulary", () => {
+    it("retires free text the vocabulary cannot stand behind", () => {
+      expect(unconstrainedPresentationPins({ [HAIR_WORN]: "worn natural, loose" }))
+        .toEqual([HAIR_WORN]);
+      expect(unconstrainedPresentationPins({ [HAIR_WORN]: "pulled back low" }))
+        .toEqual([HAIR_WORN]);
+    });
+
+    it("leaves a pin the vocabulary wrote exactly where it is", () => {
+      expect(unconstrainedPresentationPins({ [HAIR_WORN]: arrangementWording("bun") }))
+        .toEqual([]);
+    });
+
+    it("has nothing to say about an unpinned facet, or about other facets", () => {
+      expect(unconstrainedPresentationPins({})).toEqual([]);
+      /* A realization caption for a facet this module does not own is somebody
+         else's fact and is not retired by a hair vocabulary. */
+      expect(unconstrainedPresentationPins({ [facetOfSubject("nose")]: "a soft rounded tip" }))
+        .toEqual([]);
+    });
   });
 
   it("declares exactly the facets the net is allowed to check", () => {
