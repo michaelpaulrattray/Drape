@@ -31,8 +31,28 @@
  * composite and that is precisely why two earlier specimens were undiagnosable
  * after the fact.
  *
+ * # THE SECOND CASE: a CARRIED marks fact (2026-08-09)
+ *
+ * Run-15 asked for freckles at step 1 and got them; the reader then read her
+ * skin as clear on steps 3 and 4 and freckled again on step 5, five readings
+ * each, at every lens. The prompts are not the difference — every step carried
+ * the freckle caption verbatim, read off the stored rows. What differs is how
+ * much else the painter was redrawing.
+ *
+ * So the bench takes a `--case`. `written` is the original: the bare "give her
+ * freckles" ask, the positive control. `carried` is run-15's step 3, its own
+ * stored prompt sent verbatim, with the facets production passed — the same
+ * measurement, on the shape that lost them.
+ *
+ * The hypothesis it can kill: `baselineDelta` in the harvest gate is the median
+ * drift of THIS render over unclaimed ground, so a render that repaints more of
+ * the frame raises its own bar, and a freckle is a few levels. If that is it,
+ * the painter frecked her in both cases and only the carried composite threw it
+ * away.
+ *
  *   npx tsx scripts/calibration/freckles-layers.mts            # re-composite stored paint
  *   npx tsx scripts/calibration/freckles-layers.mts --repaint  # take a fresh one
+ *   npx tsx scripts/calibration/freckles-layers.mts --case carried --repaint
  */
 import "dotenv/config";
 import sharp from "sharp";
@@ -44,12 +64,167 @@ import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { facetOfSubject } from "../../server/castingV2/refineFacets";
 import { amplitudeFor } from "../../server/castingV2/changeAmplitude";
 
-const OUT = "output/masked/freckles";
+const caseFlag = process.argv.indexOf("--case");
+const CASE = caseFlag > -1 ? String(process.argv[caseFlag + 1]) : "written";
+
+/**
+ * The two shapes, each with the master it belongs to and the facets production
+ * passed the harvest for it.
+ *
+ * `carried`'s prompt is run-15 v146's own stored `internalPrompt.prompt`, sent
+ * verbatim rather than rebuilt: a fixture that re-composes the prompt is
+ * measuring a prompt composer, and the composer is not what is on trial.
+ */
+const CASES: Record<string, {
+  out: string; master: string; described: string; prompt: string; facets: string[];
+}> = {
+  written: {
+    out: "output/masked/freckles",
+    master: "output/masked/freckles/master.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: "Edit this photograph of this exact person, changing ONLY what is listed below. "
+      + "Give her freckles: a natural scattering of small brown freckles across the nose, "
+      + "cheeks and upper face, denser over the bridge of the nose and thinning outward — "
+      + "the same person with freckled skin, not a different face and not makeup.",
+  },
+  /*
+    THE POSITIVE CONTROL, on HER master: run-15's step 1, the render that
+    delivered. Without it, "the carried shape does not paint" is a claim about
+    one prompt on one face with nothing to compare it to.
+  */
+  "written-run15": {
+    out: "output/masked/freckles-written15",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: readFileSync("output/marks-court/run15-step1-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE DISCRIMINATOR. Step 3's prompt with ONE clause removed — the caption
+    interpolation `— rendered exactly as this: Light scattering of small
+    freckles … faint and sparse against fair skin`. Everything else, including
+    the makeup ask and the facet set, is byte-identical to what production sent.
+    If this paints and `carried` does not, the memory the product built to
+    preserve her density is the thing suppressing it.
+  */
+  "carried-nocaption": {
+    out: "output/masked/freckles-nocaption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks", "makeup"],
+    prompt: readFileSync("output/marks-court/run15-step3-nocaption-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE SECOND DISCRIMINATOR, and the one the prose points at. Step 3's prompt
+    with ONE sentence removed — `Everything else about the face stays bare.`,
+    the makeup lane's own inline preservation, which stands immediately before
+    `MARKS: freckles` and tells the painter to leave her face bare. The
+    preservation TAIL is checked for exactly this contradiction; an inline
+    sentence inside another lane's clause is not.
+  */
+  "carried-nobare": {
+    out: "output/masked/freckles-nobare",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks", "makeup"],
+    prompt: readFileSync("output/marks-court/run15-step3-nobare-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE FOURTH CELL. Step 3's prompt with the MAKEUP ASK removed — the carried
+    MARKS clause, caption and all, standing alone. It completes the square:
+    clause form × second ask. If this paints, the form is innocent and the
+    second ask is the thing that suppresses her freckles.
+  */
+  "carried-alone": {
+    out: "output/masked/freckles-alone",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: readFileSync("output/marks-court/run15-step3-nomakeup-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE CLAUSE, NARROWED TO ITS INTENSITY WORDS. The carried prompt with
+    ", faint and sparse against fair skin" removed and nothing else changed.
+    The caption is honest about her freckles; the question is whether the
+    painter obliges it past the point of visibility.
+  */
+  "carried-nointensity": {
+    out: "output/masked/freckles-nointensity",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks", "makeup"],
+    prompt: readFileSync("output/marks-court/run15-step3-nointensity-prompt.txt", "utf8").trim(),
+  },
+  /*
+    AND THE SAME NARROWING WITHOUT THE SECOND ASK — the arm that isolates the
+    intensity words alone, against `carried-alone`'s 0/3.
+  */
+  "carried-alone-nointensity": {
+    out: "output/masked/freckles-alone-nointensity",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: readFileSync("output/marks-court/run15-step3-alone-nointensity-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE OTHER CANDIDATE: the caption kept WHOLE, intensity words and all, with
+    the framing turned back into an instruction. `rendered exactly as this:` is
+    a description of a photograph that already exists; `draw them onto her skin,
+    matching what she already has:` asks for the same thing and says to make it.
+    If the words are innocent and the framing is the site, this delivers where
+    `carried-alone` does not.
+  */
+  "carried-alone-imperative": {
+    out: "output/masked/freckles-alone-imperative",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: readFileSync("output/marks-court/run15-step3-alone-imperative-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE LAST DIFFERENCE. A mechanical sentence-diff of the delivering prompt
+    against the failing one leaves exactly two: the caption interpolation, and
+    the tail's "the same makeup" (absent because makeup was step 3's edit).
+    This arm removes the caption entirely, so its MARKS clause is byte-identical
+    to the one that delivers 6 of 8 — and the tail is the only thing left.
+  */
+  "carried-alone-nocaption": {
+    out: "output/masked/freckles-alone-nocaption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: readFileSync("output/marks-court/run15-step3-alone-nocaption-prompt.txt", "utf8").trim(),
+  },
+  carried: {
+    out: "output/masked/freckles-carried",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    /* marks AND makeup — `facetsAnsweredBy(composed)` for her step 3. */
+    facets: ["marks", "makeup"],
+    prompt: readFileSync("output/marks-court/run15-step3-prompt.txt", "utf8").trim(),
+  },
+};
+
+const chosen = CASES[CASE];
+if (!chosen) throw new Error(`no case "${CASE}" — the cases are ${Object.keys(CASES).join(", ")}`);
+
+/*
+  A ROUND TAG, because one paint is not a rate.
+
+  This defect is a flicker: the same prompt delivered her freckles at step 1
+  and not at step 3, and a single render per arm cannot tell a flicker from a
+  constant. Each round writes its own directory, so round 1's frames are still
+  on disk to be read beside round 2's rather than overwritten by them.
+*/
+const tagFlag = process.argv.indexOf("--tag");
+const TAG = tagFlag > -1 ? String(process.argv[tagFlag + 1]) : "";
+const OUT = TAG ? `${chosen.out}-${TAG}` : chosen.out;
 mkdirSync(OUT, { recursive: true });
 
-/* The walk candidate's own master — the face the four charged renders were
-   made from, so this is her defect and not a lookalike's. */
-const master = readFileSync(`${OUT}/master.png`);
+/* The walk candidate's own master — the face the charged renders were made
+   from, so this is her defect and not a lookalike's. */
+const master = readFileSync(chosen.master);
 const meta = await sharp(master).metadata();
 const W = meta.width!;
 const H = meta.height!;
@@ -58,11 +233,10 @@ console.log(`master ${W}x${H} — the walk candidate, clear skin\n`);
 const engine = createFalMaskedEditEngine({ apiKey: process.env.FAL_KEY! });
 const reader = createFalRegionReader({ apiKey: process.env.FAL_KEY! });
 
-const DESCRIBED = "visibly textured, freckles";
-const PROMPT = "Edit this photograph of this exact person, changing ONLY what is listed below. "
-  + "Give her freckles: a natural scattering of small brown freckles across the nose, "
-  + "cheeks and upper face, denser over the bridge of the nose and thinning outward — "
-  + "the same person with freckled skin, not a different face and not makeup.";
+const DESCRIBED = chosen.described;
+const PROMPT = chosen.prompt;
+console.log(`case "${CASE}" — facets [${chosen.facets.join(", ")}]
+`);
 
 const repaint = process.argv.includes("--repaint");
 let painted: { bytes: Buffer; contentType: string };
@@ -85,7 +259,7 @@ if (repaint || !existsSync(`${OUT}/painted.png`)) {
 const composed = await harvestRefinement({
   master: { bytes: master, contentType: "image/png" },
   painted: { bytes: painted.bytes, contentType: painted.contentType },
-  facets: [facetOfSubject("marks")],
+  facets: chosen.facets.map((subject) => facetOfSubject(subject as Parameters<typeof facetOfSubject>[0])),
   reader,
   userId: 1,
   described: DESCRIBED,
