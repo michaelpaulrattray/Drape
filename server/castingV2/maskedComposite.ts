@@ -486,6 +486,42 @@ export function matchGrain(input: {
  * The honest limit, stated: content the same colour as what it lies on is
  * invisible to this, exactly as it is to the eye.
  */
+/**
+ * THE CONTENT'S OWN COLOUR, from the INTERIOR of what is confirmed.
+ *
+ * Edge pixels are already blends of content and background, so averaging them
+ * would drag the reference toward the very background it is meant to be
+ * measured against — and every alpha downstream would inherit that error.
+ *
+ * Separated from `differenceMatte` because a region with no fringe still needs
+ * this colour for the harvest gate, and it must not have to run a strand
+ * recovery it is going to discard in order to get it. Null when nothing is
+ * confirmed strongly enough to measure.
+ */
+export function confirmedColour(
+  patch: Raster,
+  confirmed: Mask,
+): [number, number, number] | null {
+  const { width, height } = confirmed;
+  const totals = [0, 0, 0];
+  let counted = 0;
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const pixel = y * width + x;
+      if (confirmed.data[pixel] < 250) continue;
+      if (confirmed.data[pixel - 1] < 250 || confirmed.data[pixel + 1] < 250
+        || confirmed.data[pixel - width] < 250 || confirmed.data[pixel + width] < 250) continue;
+      const at = pixel * 3;
+      totals[0] += patch.data[at];
+      totals[1] += patch.data[at + 1];
+      totals[2] += patch.data[at + 2];
+      counted += 1;
+    }
+  }
+  if (counted === 0) return null;
+  return [totals[0] / counted, totals[1] / counted, totals[2] / counted];
+}
+
 export function differenceMatte(input: {
   master: Raster;
   patch: Raster;
@@ -498,38 +534,10 @@ export function differenceMatte(input: {
   assertSameShape(master, patch, confirmed);
   const { width, height } = confirmed;
 
-  /*
-    THE STRAND COLOUR, from the INTERIOR of what is confirmed. Edge pixels are
-    already blends of strand and background, so averaging them would drag the
-    reference toward the very background it is meant to be measured against —
-    and every alpha downstream would inherit that error.
-  */
-  const interior = new Uint8Array(width * height);
-  for (let y = 1; y < height - 1; y += 1) {
-    for (let x = 1; x < width - 1; x += 1) {
-      const pixel = y * width + x;
-      if (confirmed.data[pixel] < 250) continue;
-      if (confirmed.data[pixel - 1] < 250 || confirmed.data[pixel + 1] < 250
-        || confirmed.data[pixel - width] < 250 || confirmed.data[pixel + width] < 250) continue;
-      interior[pixel] = 1;
-    }
-  }
-  const totals = [0, 0, 0];
-  let counted = 0;
-  for (let pixel = 0; pixel < interior.length; pixel += 1) {
-    if (!interior[pixel]) continue;
-    const at = pixel * 3;
-    totals[0] += patch.data[at];
-    totals[1] += patch.data[at + 1];
-    totals[2] += patch.data[at + 2];
-    counted += 1;
-  }
-  if (counted === 0) {
+  const strand = confirmedColour(patch, confirmed);
+  if (strand === null) {
     return { alpha: { data: Buffer.alloc(width * height, 0), width, height }, strandColour: [0, 0, 0], recoveredPixels: 0 };
   }
-  const strand: [number, number, number] = [
-    totals[0] / counted, totals[1] / counted, totals[2] / counted,
-  ];
 
   const near = distanceOutside(confirmed, reachPx);
   const data = Buffer.alloc(width * height, 0);

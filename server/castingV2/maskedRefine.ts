@@ -61,6 +61,7 @@ import {
 import {
   adoptInteraction,
   compositeMasked,
+  confirmedColour,
   differenceMatte,
   harvestGate,
   outsideMaskUnchanged,
@@ -298,6 +299,93 @@ const REGION_OF_FACET: Partial<Record<Facet, string>> = {
 
 export function regionNameOf(facet: Facet): string | null {
   return REGION_OF_FACET[facet] ?? null;
+}
+
+/**
+ * WHICH REGIONS HAVE CONTENT FINER THAN A SEGMENTER'S BOUNDARY.
+ *
+ * # The defect this ends
+ *
+ * `differenceMatte` recovers a strand as the projection of `(patch − master)`
+ * onto `(strand − master)`, where `strand` is measured from the interior of the
+ * confirmed content. It was run for **every** region, and for a `marks` edit
+ * the confirmed content is FACE SKIN — so the reference colour is her skin, and
+ * the recovery reaches forty pixels past the jaw into her hair.
+ *
+ * *Dark hair → pale background* is very nearly parallel to *dark hair → skin*.
+ * Measured on the production pixels of run-6's torn render (candidate
+ * `7c796a72`, variant `198005a3`, charged 25 and scored compliant):
+ *
+ *   left notch     master [8,6,6] → delivered [136,129,127]   alpha **0.730**
+ *   left wash      master [7,6,6] → delivered  [92, 90, 88]   alpha **0.490**
+ *   untouched hair / untouched background                     alpha 0.000
+ *
+ * So the mechanism written to rescue a hem on her hair ends claimed a slab of
+ * background lying over it, at 73% opacity, and the composite delivered it as a
+ * hole punched through her hair. The module's own doc anticipates the
+ * neighbouring case correctly — a repainted shirt moves grey toward a slightly
+ * different grey, a delta nearly ORTHOGONAL to `(strand − master)`, projecting
+ * to ~0 — but that defence assumes master and patch are the SAME MATERIAL. It
+ * has nothing to say about the painter having replaced one material with
+ * another, which is what a drifting hair silhouette does.
+ *
+ * # Why a region property, and why declared rather than derived from the name
+ *
+ * Fringe is a fact about the MATERIAL, not about the edit: hair has flyaway
+ * strands whether you are recolouring it or cutting it, and skin has none
+ * whatever you do to it. So it belongs to the region, once.
+ *
+ * `Record<string, …>` with a test that closes the reverse direction — every
+ * region name reachable from `REGION_OF_FACET` or `LANDMARK_OF_ACCESSORY` must
+ * have an entry — because this file already carries the scar of the other
+ * approach: a `names[0]` harvest and a literal `"earring"` fallback, both true
+ * for the only case anyone had driven and silent about the rest.
+ *
+ * # What this does NOT fix, stated
+ *
+ * The regions that keep fringe keep the projection's blind spot with it: a
+ * glasses harvest can still confuse *skin → hair-drift* with *skin → frame*.
+ * Turning fringe off there would lose the thing it is for — a wire temple arm
+ * is two pixels wide and is exactly what a segmenter's boundary discards. That
+ * exposure is closed by the territory rule, not by this table.
+ */
+const FRINGE_AT_EDGE: Record<string, { readonly fringe: boolean; readonly why: string }> = {
+  hair: { fringe: true, why: "flyaway strands and coils stand proud of any outline — the founding case" },
+  "facial hair": { fringe: true, why: "stubble and beard edges are individual hairs over skin" },
+  eyebrows: { fringe: true, why: "brow hairs stand outside the brow's own shape" },
+  eyes: { fringe: true, why: "lashes reach well past the lid the segmenter draws" },
+  earring: { fringe: true, why: "hooks and fine chains are thinner than a confidence frontier" },
+  glasses: { fringe: true, why: "a wire temple arm is a couple of pixels wide" },
+  "face skin": { fringe: false, why: "skin is a surface bounded by other features; it has no fringe, and this is where the tear came from" },
+  lips: { fringe: false, why: "the vermilion border is an edge, not a fringe" },
+  nose: { fringe: false, why: "a contour against the face, with nothing finer at its boundary" },
+  ear: { fringe: false, why: "hair may fall across it, but that fringe is the HAIR's, harvested when hair is the question" },
+  "nose stud": { fringe: false, why: "a bead — solid, and larger than the boundary's error" },
+};
+
+/**
+ * Whether this region's harvest may reach beyond the segmenter's boundary.
+ *
+ * Unknown regions do NOT get fringe. A name nobody has considered is a name
+ * whose material nobody has considered, and the failure mode of guessing yes is
+ * the torn frame; the failure mode of guessing no is a slightly tight boundary.
+ * The test closes the gap so this default never has to be relied on.
+ */
+export function hasFringeAtEdge(region: string): boolean {
+  return FRINGE_AT_EDGE[region]?.fringe === true;
+}
+
+/** Every region this file can ask a segmenter about — the table's own domain. */
+export function segmentableRegionNames(): string[] {
+  return Array.from(new Set([
+    ...Object.values(REGION_OF_FACET).filter((name): name is string => typeof name === "string"),
+    ...LANDMARK_OF_ACCESSORY.map((entry) => entry.region),
+  ])).sort();
+}
+
+/** Regions declared in the fringe table — for the reverse-direction test. */
+export function fringeTableNames(): string[] {
+  return Object.keys(FRINGE_AT_EDGE).sort();
 }
 
 /**
@@ -840,11 +928,24 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       ...(question.occluded && inFront ? { occludedBy: inFront } : {}),
     });
 
-    /* The strand alpha the segmenter's boundary discards — exact, because we own
-       the background (D-230). */
-    const strands = differenceMatte({ master, patch: painted, confirmed: harvest, reachPx: strandReach });
+    /*
+      The strand alpha the segmenter's boundary discards — exact, because we own
+      the background (D-230). ONLY where the material has one: see
+      `FRINGE_AT_EDGE`. A face-skin harvest reaching forty pixels past the jaw
+      recovered a slab of background lying over her hair at alpha 0.730, and the
+      composite delivered it as a hole. Skin has no fringe to rescue, so nothing
+      is lost by not looking for one.
+    */
+    const strands = hasFringeAtEdge(question.name)
+      ? differenceMatte({ master, patch: painted, confirmed: harvest, reachPx: strandReach })
+      : {
+        alpha: { data: Buffer.alloc(harvest.data.length, 0), width: harvest.width, height: harvest.height },
+        /* The gate still needs the content's own colour; it just does not need
+           a recovery to obtain it. */
+        strandColour: confirmedColour(painted, harvest) ?? ([0, 0, 0] as [number, number, number]),
+      };
     const withStrands: Mask = {
-      data: Buffer.from(harvest.data.map((value, index) => Math.max(value, strands.alpha.data[index]))),
+      data: Buffer.from(harvest.data.map((value, index) => Math.max(value, strands.alpha.data[index]!))),
       width: harvest.width,
       height: harvest.height,
     };

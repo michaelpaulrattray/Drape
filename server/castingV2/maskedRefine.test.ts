@@ -5,16 +5,19 @@ import {
   MASKED_EDITING_SCOPE,
   additionDestination,
   hangsBelowAnchor,
+  fringeTableNames,
   harvestRefinement,
+  hasFringeAtEdge,
   landmarkNameOf,
   maskedEditingEnabledFor,
   needsLandmarkDestination,
   regionNameOf,
+  segmentableRegionNames,
   vacancyOf,
   type RegionReader,
 } from "./maskedRefine";
 import { coverage } from "./maskGeometry";
-import { allFacets } from "./refineFacets";
+import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
 import type { Mask } from "./maskedComposite";
 
@@ -755,5 +758,88 @@ describe("every region the instruction touches is harvested, not just the first"
       userId: 1,
     }).catch(() => undefined);
     expect(new Set(asked), "both questions asked").toEqual(new Set(["hair", "lips"]));
+  });
+});
+
+/**
+ * FRINGE IS A PROPERTY OF THE MATERIAL, AND SKIN HAS NONE.
+ *
+ * Run-6's torn render: "give her freckles" was delivered, charged 25, and
+ * scored `delivered_compliant` with a hard-edged slab of background punched
+ * through her hair. `differenceMatte` recovers a strand as the projection of
+ * `(patch − master)` onto `(strand − master)`, and for a `marks` edit the
+ * confirmed content is FACE SKIN — so the reference is her skin, and *dark hair
+ * → pale background* is nearly parallel to *dark hair → skin*.
+ *
+ * Measured on the production pixels: alpha 0.730 at the notch, 0.490 at the
+ * wash, 0.000 at both untouched controls.
+ */
+describe("a harvest only reaches past its boundary where the material has fringe", () => {
+  it("declares every region it can be asked about — no silent default", () => {
+    /* The reverse direction, closed. This file already carries the scar of the
+       other approach: a `names[0]` harvest and a literal "earring" fallback,
+       both correct for the only case anyone had driven. */
+    expect(fringeTableNames()).toEqual(expect.arrayContaining(segmentableRegionNames()));
+    for (const name of segmentableRegionNames()) {
+      expect(fringeTableNames(), `region "${name}" has no fringe declaration`).toContain(name);
+    }
+  });
+
+  it("gives hair its fringe and skin none — the two the tear turns on", () => {
+    expect(hasFringeAtEdge("hair")).toBe(true);
+    expect(hasFringeAtEdge("face skin")).toBe(false);
+  });
+
+  it("refuses fringe to a region nobody has considered", () => {
+    /* Guessing yes produces the torn frame; guessing no produces a slightly
+       tight boundary. The default resolves the way that does not tear. */
+    expect(hasFringeAtEdge("shoulder blade")).toBe(false);
+  });
+
+  it("does not claim the painter's drift outside a skin harvest — the notch, in miniature", async () => {
+    /* Her master: dark hair on the left half, skin on the right. The painter
+       returns the same face with the hair edge moved — pale where hair was.
+       The harvest is her skin, and the drift lies outside it. */
+    const HAIR_EDGE = 24;
+    const SKIN: [number, number, number] = [210, 164, 147];
+    const HAIR: [number, number, number] = [8, 6, 6];
+    const masterBytes = await png((x) => (x < HAIR_EDGE ? HAIR : SKIN));
+    const paintedBytes = await png((x, y) => {
+      /* The hair edge has drifted eight pixels left — pale where hair was. */
+      if (x < HAIR_EDGE - 8) return HAIR;
+      /* And she has been freckled, which is the edit that was actually asked
+         for: without a real change inside the harvest the gate refuses the
+         whole render and this test would pass for the wrong reason. */
+      if (x >= 32 && x < 60 && y >= 8 && y < 56 && (x + y) % 3 === 0) return [150, 110, 95];
+      return SKIN;
+    });
+
+    const skinOnly: RegionReader = {
+      /* "face skin" on both frames: the right half, well clear of the drift. */
+      region: async () => box(32, 8, 60, 56),
+      subject: async () => box(0, 0, 64, 64),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+
+    const composed = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("marks")],
+      reader: skinOnly,
+      userId: 1,
+      described: "freckles",
+      explain: true,
+    });
+
+    /* The drifted band is at x in [16, 24). Nothing there may be claimed: the
+       instruction was about her skin, and her hair is not its business. */
+    const applied = composed.explain!.applied;
+    let claimedInDrift = 0;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = HAIR_EDGE - 8; x < HAIR_EDGE; x += 1) {
+        if (applied.data[y * W + x]! > 0) claimedInDrift += 1;
+      }
+    }
+    expect(claimedInDrift).toBe(0);
   });
 });
