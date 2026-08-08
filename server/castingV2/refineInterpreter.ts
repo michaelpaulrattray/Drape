@@ -605,6 +605,16 @@ export function refusalMessage(refusal: RefineParse & { ok: false }): string {
         + "Nothing was charged.";
     case "gate_ink_document":
       return INK_NEEDS_DOCUMENT_MESSAGE;
+    case "absorbed":
+      /*
+        HER ONTOLOGY, NOT OURS (law 8). What she can see is that she asked for
+        something the face already has; the model losing her sentence into a
+        restatement is our business and not a sentence anybody wants to read.
+        So the copy states the observable fact — everything that came back was
+        already true — and offers the two moves that are actually open.
+      */
+      return `She already has ${refusal.refusal.asked} — this would have changed nothing, `
+        + "so nothing was charged. Ask for more of it, or say it another way.";
     case "empty":
       return "Say what you'd like changed — anything about the person themselves.";
     case "unreadable":

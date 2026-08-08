@@ -84,6 +84,7 @@ import {
   composeRenderPrompt,
   contradictedFacets,
   currentValueOfFacet,
+  saysNothingNew,
   facetsAnsweredBy,
   departedItems,
   departedClause,
@@ -508,6 +509,29 @@ export async function refineCandidate(
     currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
     currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
   });
+  /*
+    AND DID HER SENTENCE SURVIVE THE READING? — before anything is claimed.
+
+    A delta that only repeats what she already is renders a face identical to
+    the one she started with, charges for it, and leaves the verification net
+    with no row for the thing she asked about — a false pass built at the parse,
+    invisible to the zero-false-pass bar because the check that would have
+    failed was never written. Measured at three of nineteen readings on the
+    plural shape. Refused here, in the step that was already free.
+  */
+  const refuseIfAbsorbed = (delta: RefineDelta): void => {
+    const verdict = saysNothingNew({ delta, prior: priorItems, identity: currentIdentity });
+    if (!verdict.absorbed) return;
+    log.warn(
+      { candidateId: input.candidatePublicId, instruction, alreadyTrue: verdict.alreadyTrue },
+      "[refineService] the ask was absorbed into a restatement of what she already is — refusing, free",
+    );
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: refusalMessage({ ok: false, refusal: { reason: "absorbed", asked: verdict.alreadyTrue } }),
+    });
+  };
+  if (parsed.ok && "delta" in parsed) refuseIfAbsorbed(parsed.delta);
   if (!parsed.ok) {
     // An honest boundary, not a fault — and free, which is the point of §10.
     throw new TRPCError({ code: "BAD_REQUEST", message: refusalMessage(parsed) });
@@ -705,6 +729,9 @@ export async function refineCandidate(
       currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
     });
     if (asEdit.ok && "delta" in asEdit) {
+      /* The SECOND reading gets the same guard as the first. A re-read is a
+         parse, and a parse that loses her sentence loses it either time. */
+      refuseIfAbsorbed(asEdit.delta);
       parsed = asEdit;
       editDelta = asEdit.delta;
     }

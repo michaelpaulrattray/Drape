@@ -130,6 +130,15 @@ if (!TOKEN) throw new Error("--token <app_session_id JWT> is required (see mint-
 if (!CANDIDATE && !freshFromRoll) {
   throw new Error("--candidate <publicId> or --fresh <rollPublicId> is required — never guess which face to spend on");
 }
+/* Refused BEFORE anything is spent, not at the step that needs it — see the
+   note in `deriveEyeShapeExpectation`. Run-11 spent 25 credits on step 1 and
+   then booked a false failure on step 2 for want of this line. */
+if (!process.env.FAL_KEY) {
+  throw new Error(
+    "FAL_KEY is required before the first credit is spent: step 2's expectation is measured "
+    + "off her face, and a walk that cannot measure it would grade the product against a guess.",
+  );
+}
 
 /**
  * THE WALK, in the founder's own order.
@@ -185,11 +194,25 @@ type WalkStep = {
 async function deriveEyeShapeExpectation(imageUrl: string): Promise<Pick<WalkStep, "expects" | "orHonestly" | "why">> {
   const apiKey = process.env.FAL_KEY;
   if (!apiKey) {
-    return {
-      expects: "delivered",
-      orHonestly: ["refused"],
-      why: "no FAL_KEY to measure her tilt — the gate cannot fire for the walk either",
-    };
+    /*
+      A MISSING INSTRUMENT IS NOT A NO-READ, and defaulting here booked a
+      product failure against a step the product got right.
+
+      The no-read branch below is a real reading — we looked at her face and
+      could not tell — and the product's own asymmetry says silence resolves
+      toward spending, so expecting the spending branch is correct there. An
+      absent key is a different thing entirely: nobody looked. Run-11 was
+      launched under `railway run --service MySQL`, which carries the database
+      URL and not this key, so the ladder expected `delivered`, the product
+      correctly ASKED an already-upswept face, and the walk wrote that down as
+      a failure. A harness that cannot measure must refuse, not assume — the
+      same rule the product lives under.
+    */
+    throw new Error(
+      "FAL_KEY is required: step 2's expectation is MEASURED off her face, and without it "
+      + "the walk would guess. Export it alongside the database URL "
+      + "(`FAL_KEY=… railway run --service MySQL -- npx tsx scripts/drive-self-walk.mts …`).",
+    );
   }
   const reading = await (async () => {
     try {

@@ -11,6 +11,7 @@ import {
   identityDetailsOf,
   presentationOf,
   readDelta,
+  saysNothingNew,
   type FreeLaneCheck,
 } from "./refineDelta";
 import {
@@ -482,5 +483,111 @@ describe("ink renders only where the anchor is the document", () => {
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("face and neck");
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("body-art studio is coming");
     expect(INK_NEEDS_DOCUMENT_MESSAGE).toContain("Nothing was charged");
+  });
+});
+
+/**
+ * AN ASK THAT FILES NOTHING OF ITSELF IS REFUSED, NEVER ABSORBED.
+ *
+ * Containment guards one direction — an item in neither her sentence nor the
+ * record is an invention. Nothing guarded the other: asked to restate every
+ * item of a plural subject, the interpreter sometimes returns the restatement
+ * and DROPS the ask. Measured at three of nineteen readings of "give her
+ * freckles" against a record holding `marks: ["lightly freckled"]`.
+ *
+ * What that costs if it is not refused is the whole reason it is a guard rather
+ * than a note: the delta files, the render is dispatched, it changes nothing
+ * because there is nothing to change, the customer is charged — and the
+ * verification net checks `facetsWrittenBy(composed)`, which has NO ROW for the
+ * thing she actually asked about. A false pass built at the parse, invisible to
+ * a zero-false-pass bar because the check it would have failed was never
+ * written down.
+ */
+describe("an ask absorbed into a restatement is refused before the charge", () => {
+  const FRECKLED = {
+    ...ORIGINAL,
+    realized: { ...(ORIGINAL as { realized: object }).realized, skinCharacter: "lightly freckled" },
+  } as unknown as ResolvedIdentity;
+
+  it("catches the reading that lost her sentence", () => {
+    /* The observed failure, verbatim: her record's own two words back, and
+       nothing of the three she typed. */
+    const verdict = saysNothingNew({
+      delta: { free: { marks: ["lightly freckled"] } },
+      prior: { marks: ["lightly freckled"] },
+      identity: FRECKLED,
+    });
+    expect(verdict.absorbed).toBe(true);
+    expect(verdict.absorbed && verdict.alreadyTrue).toBe("lightly freckled");
+  });
+
+  it("lets the SAME reading through the moment her ask survives beside it", () => {
+    /* Sixteen of the nineteen came back like this, and they are correct: the
+       prior restated AND her word kept. One new item is enough. */
+    const verdict = saysNothingNew({
+      delta: { free: { marks: ["lightly freckled", "freckles"] } },
+      prior: { marks: ["lightly freckled"] },
+      identity: FRECKLED,
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("cannot refuse her for the model's eloquence — only for losing her", () => {
+    /*
+      THE DIRECTION, pinned. A richer phrasing than she typed still differs from
+      what she already was, so it passes here. That asymmetry is the whole
+      argument for checking our filing rather than her sentence: containment
+      pointed the other way is how a guard starts refusing honest instructions
+      (D-157, D-171), and this one structurally cannot.
+    */
+    const verdict = saysNothingNew({
+      delta: { free: { marks: ["a scattering of freckles across her nose and cheeks"] } },
+      prior: { marks: ["lightly freckled"] },
+      identity: FRECKLED,
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("sees a labelled axis echoed back as itself", () => {
+    /* The free lane is where it was measured; the same shape exists one lane
+       over, and a guard that only knows the lane it was born in is half a
+       guard. She is brown-eyed; "brown" changes nothing. */
+    expect(saysNothingNew({ delta: { eyeColour: "brown" }, prior: {}, identity: ORIGINAL }).absorbed)
+      .toBe(true);
+    expect(saysNothingNew({ delta: { eyeColour: "green" }, prior: {}, identity: ORIGINAL }).absorbed)
+      .toBe(false);
+  });
+
+  it("never claims a DEPARTURE, which is new by definition", () => {
+    /* She was wearing them a moment ago. A removal filed beside a restatement
+       is still a change, and refusing it would undo the thing this campaign
+       just shipped. */
+    const verdict = saysNothingNew({
+      delta: { free: { marks: ["lightly freckled"] }, absent: { statedAccessories: ["glasses"] } },
+      prior: { marks: ["lightly freckled"] },
+      identity: FRECKLED,
+    });
+    expect(verdict.absorbed).toBe(false);
+  });
+
+  it("leaves an EMPTY delta to the paths that own it", () => {
+    /* Nothing filed is not this refusal's business — the free question and the
+       rule-3 re-read both hand back empty deltas on their way to an answer,
+       and claiming them here would take a sentence away from a path that has
+       one. */
+    expect(saysNothingNew({ delta: {}, prior: {}, identity: ORIGINAL }).absorbed).toBe(false);
+    expect(saysNothingNew({ delta: { free: {} }, prior: {}, identity: ORIGINAL }).absorbed).toBe(false);
+  });
+
+  it("does not fire when the record is silent about the subject", () => {
+    /* A first freckle on a plain-skinned face has no prior to echo, so there is
+       nothing for this guard to be about. `skinCharacter: "plain"` is the
+       registry's own silent value and reads as absence (D-167). */
+    const verdict = saysNothingNew({
+      delta: { free: { marks: ["freckles"] } },
+      prior: {},
+      identity: ORIGINAL,
+    });
+    expect(verdict.absorbed).toBe(false);
   });
 });

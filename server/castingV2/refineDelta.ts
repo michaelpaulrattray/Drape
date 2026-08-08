@@ -213,7 +213,25 @@ export type RefineRefusal =
   /** Not a wall — a GATE. It names what does work and what is coming (D-137). */
   | { reason: "gate_ink_document" }
   | { reason: "unreadable" }
-  | { reason: "empty" };
+  | { reason: "empty" }
+  /**
+   * THE ASK WAS ABSORBED — everything filed was already true of her.
+   *
+   * Not a wall and not a gate: the sentence was read, it was fileable, and what
+   * came back says only what she already is. Measured on the interpreter, three
+   * of nineteen readings of *"give her freckles"* against a record holding
+   * `marks: ["lightly freckled"]` came back as that item and nothing else — the
+   * ask absorbed into a restatement of the prior.
+   *
+   * It is refused rather than recorded because of what happens if it is not:
+   * the delta files, the render is dispatched, it changes nothing (there is
+   * nothing to change), the customer is charged — and the verification net,
+   * which checks `facetsWrittenBy(composed)`, has NO ROW for the thing she
+   * actually asked for. That is a false pass by construction, and the
+   * zero-false-pass bar cannot see it, because the check it would have failed
+   * was never written down. A refusal costs a sentence; this costs the bar.
+   */
+  | { reason: "absorbed"; asked: string };
 
 /**
  * What the box was asked to DO — classified once, at entry (D-163).
@@ -1116,6 +1134,79 @@ export function currentValueOfFacet(
 
 function asText(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+/**
+ * DOES THIS DELTA SAY ANYTHING THAT IS NOT ALREADY TRUE OF HER?
+ *
+ * The guard behind the `absorbed` refusal, and it is pointed deliberately at
+ * OUR filing rather than at her sentence.
+ *
+ * Containment already guards the other direction — an item in neither her words
+ * nor the record is an invention and is refused. That guard protects her from
+ * the model inventing; nothing protected her from the model LOSING her. Asked
+ * to restate every item of a plural subject, it sometimes returns the
+ * restatement and drops the ask, and a delta that only repeats the prior is a
+ * render that changes nothing, charged for.
+ *
+ * This direction is the safe one to check, and that is why it is this one: it
+ * can never refuse her for the model's eloquence, only refuse the model for
+ * losing her. A richer phrasing of her ask still differs from what she already
+ * was, so it passes here; only an exact echo of her current state does not.
+ *
+ * The comparison is per subject and per facet against what the face IS now —
+ * the free lane against the items already filed for that subject, the labelled
+ * axes against `currentValueOfFacet`. A departure always says something new by
+ * construction: nothing that has left is still true of her.
+ */
+export function saysNothingNew(input: {
+  delta: RefineDelta;
+  /** What each free subject already held — the same map the parse was shown. */
+  prior: Partial<Record<FreeSubject, string[]>>;
+  identity: ResolvedIdentity | null | undefined;
+}): { absorbed: false } | { absorbed: true; alreadyTrue: string } {
+  const { delta } = input;
+  /* A departure is new by definition — she was wearing it a moment ago. */
+  for (const subject of FREE_SUBJECT_KEYS) {
+    if ((delta.absent?.[subject]?.length ?? 0) > 0) return { absorbed: false };
+  }
+
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const echoed: string[] = [];
+
+  for (const subject of FREE_SUBJECT_KEYS) {
+    const filed = itemsOf(delta.free?.[subject]);
+    if (filed.length === 0) continue;
+    const already = input.prior[subject] ?? [];
+    for (const item of filed) {
+      if (!already.some((held) => same(held, item))) return { absorbed: false };
+      echoed.push(item);
+    }
+  }
+
+  const labelled: [keyof RefineDelta, Facet][] = [
+    ["eyeColour", "eye.colour"],
+    ["eyeShape", "eye.shape"],
+    ["hairStyle", "hair.cut"],
+    ["hairColour", "hair.colour"],
+    ["hairTexture", "hair.texture"],
+    ["makeup", "makeup"],
+  ];
+  for (const [field, facet] of labelled) {
+    const filed = asText(delta[field]);
+    if (filed === null) continue;
+    const current = currentValueOfFacet(input.identity, facet);
+    if (current === null || !same(current, filed)) return { absorbed: false };
+    echoed.push(filed);
+  }
+
+  /*
+    NOTHING FILED AT ALL is not this refusal's business. An empty delta reaches
+    the free-question and rule-3 paths, which have their own answers; claiming
+    it here would take a sentence those paths handle away from them.
+  */
+  if (echoed.length === 0) return { absorbed: false };
+  return { absorbed: true, alreadyTrue: echoed.join(", ") };
 }
 
 /**

@@ -314,6 +314,35 @@ describe("refusals land before anything is claimed", () => {
     expect(ledger.charges).toHaveLength(0);
   });
 
+  it("refuses an ask the reading ABSORBED — and the customer keeps their credits", async () => {
+    /*
+      INVARIANT 7 AT ITS CALL SITE. `saysNothingNew` has its own controls in
+      `refineDelta.test.ts`; this proves the service actually asks it, before
+      the claim, and that a delta echoing her own record never reaches a charge.
+
+      Her record says brown. A reading that comes back "brown" has lost the
+      sentence she typed — and if it were let through she would pay for a
+      picture identical to the one she is looking at, with no row in the
+      verification net for the thing she asked about.
+    */
+    await expect(refineCandidate(
+      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "brown" as const } }) },
+      { ...input, instruction: "make her eyes a warmer brown" },
+    )).rejects.toThrow(/already has brown/);
+
+    expect(journal, "nothing was begun").not.toContain("begin");
+    expect(journal, "and nothing was deducted").not.toContain("deduct");
+    expect(ledger.charges).toHaveLength(0);
+  });
+
+  it("does NOT refuse a reading that keeps her sentence, on the same face", async () => {
+    /* The negative half, on the same fixture: green is not brown, so the guard
+       has nothing to say and the ordinary path runs. */
+    const result = await refineCandidate(greenEyes, input);
+    expect(result).toBeTruthy();
+    expect(ledger.charges.length, "and this one is paid for").toBeGreaterThan(0);
+  });
+
   it("refuses when the interpreter cannot be reached, rather than guessing", async () => {
     await expect(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: false, refusal: { reason: "unreadable" } }) },
       input,

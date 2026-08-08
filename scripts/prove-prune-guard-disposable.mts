@@ -97,6 +97,26 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     }],
   },
   {
+    /* The absorbed ask: if the service stops asking, or the guard stops
+       answering, a delta that only repeats her record reaches a charge. */
+    name: "the absorbed-ask guard never consulted by the service",
+    file: "server/castingV2/refineService.ts",
+    suites: ["server/castingV2/refineService.test.ts"],
+    mutations: [{
+      find: '  if (parsed.ok && "delta" in parsed) refuseIfAbsorbed(parsed.delta);',
+      replace: '  if (false && parsed.ok && "delta" in parsed) refuseIfAbsorbed((parsed as never)!);',
+    }],
+  },
+  {
+    name: "the absorbed-ask guard answering 'nothing was absorbed' every time",
+    file: "server/castingV2/refineDelta.ts",
+    suites: ["server/castingV2/refineDelta.test.ts", "server/castingV2/refineService.test.ts"],
+    mutations: [{
+      find: "  if (echoed.length === 0) return { absorbed: false };",
+      replace: "  if (echoed.length >= 0) return { absorbed: false };",
+    }],
+  },
+  {
     name: "the departure inheriting the ponytail's 160px reach (the fence removed)",
     file: "server/castingV2/maskedRefine.ts",
     suites: MASK_SUITES,
