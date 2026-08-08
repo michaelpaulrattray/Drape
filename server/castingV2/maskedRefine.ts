@@ -70,6 +70,8 @@ import {
   type Mask,
   type Raster,
 } from "./maskedComposite";
+import { compositeSeam } from "./compositeIntegrity";
+import { ProviderError } from "../providers/types";
 import { hasRegion, zoneScopeOf } from "./zoneScope";
 import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
 import type { Facet } from "./refineFacets";
@@ -1283,6 +1285,49 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   const composed = await compositeMasked({
     master, patch: adopted.patch, mask: grown.zone, edgeMatte: adopted.alpha, featherRadius: FEATHER_PX,
   });
+  /*
+    AND DID WE TEAR IT? — the question nothing in the product asked (see
+    `compositeIntegrity`). `outsideMaskUnchanged` proves we changed nothing we
+    should not have; this asks whether what we changed INSIDE was cut across
+    real content. Run-6's torn render passed the first and would have failed
+    this one, and it was scored `delivered_compliant`.
+  */
+  const seam = compositeSeam({
+    master, composite: composed.composite, applied: composed.applied,
+  });
+  /*
+    ENFORCING only where a step at the boundary can never be legitimate. A cut,
+    a removal or a shrink is SUPPOSED to change the silhouette, and one clean
+    specimen of that kind is not a calibration — those record the verdict and
+    deliver, which is how `renderFault` shipped before it was flipped on a
+    number. The shadow period produces the evidence its own flip needs.
+  */
+  const seamEnforced = !anyFacetMovesAnEdge(input.facets) && input.departed === undefined;
+  if (seam.torn) {
+    log[seamEnforced ? "error" : "warn"](
+      {
+        operationId: input.operationId,
+        facets: input.facets,
+        enforced: seamEnforced,
+        boundaryPixels: seam.boundaryPixels,
+        tornPixels: seam.tornPixels,
+        worstExcess: Number(seam.worstExcess.toFixed(1)),
+      },
+      seamEnforced
+        ? "[maskedRefine] OUR COMPOSITE TORE THE FRAME — refusing to deliver it"
+        : "[maskedRefine] composite seam on an edge-moving edit — SHADOW, delivered anyway",
+    );
+    if (seamEnforced) {
+      /*
+        Its own failure class, because the receipt is the record. `render_fault`
+        writes "the image came back damaged" about a provider that did nothing
+        wrong — the exact mistake `facts_missing` was split out to stop, one
+        layer further in. This one is ours.
+      */
+      throw new ProviderError("composite_fault", seam.detail);
+    }
+  }
+
   const outside = outsideMaskUnchanged(master, composed.composite, composed.applied);
   if (!outside.identical) {
     /* Arithmetic, so this cannot happen — which is exactly why it is checked.

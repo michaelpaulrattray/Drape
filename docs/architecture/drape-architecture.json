@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f867acd2a067b5e5"
+    "sourceFingerprint": "a5f20792a964716f"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 64
+      "moduleCount": 65
     },
     {
       "id": "domain:castingV2",
@@ -3263,6 +3263,12 @@
     {
       "id": "module:server/castingV2/cohortPhotorealHuman.ts",
       "path": "server/castingV2/cohortPhotorealHuman.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/compositeIntegrity.ts",
+      "path": "server/castingV2/compositeIntegrity.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8265,6 +8271,10 @@
     {
       "id": "test:server/castingV2/composedDirection.test.ts",
       "path": "server/castingV2/composedDirection.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/compositeIntegrity.test.ts",
+      "path": "server/castingV2/compositeIntegrity.test.ts"
     },
     {
       "id": "test:server/castingV2/deployCollision.test.ts",
@@ -17070,6 +17080,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/compositeIntegrity.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/eyeShapeRouting.ts",
       "to": "module:server/castingV2/canthalTilt.ts",
       "kind": "imports"
@@ -17191,6 +17206,11 @@
     },
     {
       "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/compositeIntegrity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
     },
@@ -17212,6 +17232,11 @@
     {
       "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {

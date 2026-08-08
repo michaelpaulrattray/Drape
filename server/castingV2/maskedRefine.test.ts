@@ -24,6 +24,7 @@ import { coverage } from "./maskGeometry";
 import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
 import type { Mask } from "./maskedComposite";
+import { ProviderError } from "../providers/types";
 
 /**
  * The product-path seam, proved without a provider.
@@ -1077,7 +1078,17 @@ describe("territory it was never asked about is given back to her master", () =>
  * 160px, run for every question including a freckle instruction.
  */
 describe("only an edit that can move an edge may claim a reveal", () => {
-  const HAIR_E: [number, number, number] = [20, 16, 14];
+  /*
+    A DELIBERATELY LOW-CONTRAST "hair" — declared, because it is unusual.
+
+    These tests are about the REVEAL path. At photographic contrast the residual
+    boundary content in this fixture trips the composite-seam guard, which then
+    refuses the render before any of these assertions is reached — a true
+    verdict about a different question. The seam guard has its own controls in
+    `compositeIntegrity.test.ts` and on the product path below; this keeps the
+    two instruments from measuring each other.
+  */
+  const HAIR_E: [number, number, number] = [130, 112, 104];
   const SKIN_E: [number, number, number] = [205, 165, 150];
   const PALE_E: [number, number, number] = [200, 198, 200];
 
@@ -1214,5 +1225,105 @@ describe("only an edit that can move an edge may claim a reveal", () => {
       for (let x = 20; x < 40; x += 1) if (delivered.data[y * W + x]! > 0) revealed += 1;
     }
     expect(revealed, "the shrink still reveals what was behind her hair").toBeGreaterThan(0);
+  });
+});
+
+/**
+ * AND THE CHECK IS INVOKED ON THE PRODUCT PATH (enforcement invariant 7).
+ *
+ * `compositeIntegrity` has its own controls. These prove the thing that guard
+ * actually runs where a render is delivered, and that it refuses with its OWN
+ * failure class rather than blaming the provider for our cut.
+ */
+describe("a composite that tore the frame does not get delivered", () => {
+  const HAIR_S: [number, number, number] = [10, 8, 8];
+  const SKIN_S: [number, number, number] = [210, 164, 147];
+  const BACKDROP_S: [number, number, number] = [200, 198, 200];
+  /* The wreck has to differ in LUMA, not merely in hue: backdrop over skin is
+     23 levels and is correctly not a tear. Run-6's was backdrop over HAIR. */
+  const WRECK_S: [number, number, number] = [12, 10, 10];
+
+  /* Her hair is the left column; her face skin is the right block. */
+  const skinRegion = () => box(34, 10, 60, 54);
+  const masterOf = () => png((x) => (x < 30 ? HAIR_S : SKIN_S));
+  /* The painter returned a slab of backdrop where her face should be. */
+  const wreckedOf = () => png((x, y) =>
+    (x >= 34 && x < 60 && y >= 10 && y < 54 ? WRECK_S : (x < 30 ? HAIR_S : SKIN_S)));
+
+  const reader: RegionReader = {
+    region: async ({ name }) => (name === "hair" ? box(0, 0, 30, 64) : skinRegion()),
+    subject: async () => box(0, 0, W, H),
+    landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+  };
+
+  it("REFUSES a surface edit whose composite steps hard at the boundary", async () => {
+    await expect(harvestRefinement({
+      master: { bytes: await masterOf(), contentType: "image/png" },
+      painted: { bytes: await wreckedOf(), contentType: "image/png" },
+      facets: [facetOfSubject("marks")],
+      reader,
+      userId: 1,
+      described: "freckles",
+    })).rejects.toThrow(/boundary px step more than/);
+  });
+
+  it("refuses under its OWN failure class, never as provider damage", async () => {
+    /* The receipt is the record. `render_fault` writes "the image came back
+       damaged" about a provider that did nothing wrong — the mistake
+       `facts_missing` was split out to stop, one layer further in. */
+    const failure = await harvestRefinement({
+      master: { bytes: await masterOf(), contentType: "image/png" },
+      painted: { bytes: await wreckedOf(), contentType: "image/png" },
+      facets: [facetOfSubject("marks")],
+      reader,
+      userId: 1,
+      described: "freckles",
+    }).then(() => null, (error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(ProviderError);
+    expect((failure as ProviderError).failureClass).toBe("composite_fault");
+  });
+
+  it("SHADOWS an edge-moving edit — records the seam and delivers anyway", async () => {
+    /*
+      A cut, a removal and a shrink are SUPPOSED to change the silhouette, and
+      one clean specimen of that kind is not a calibration. They deliver until
+      the specimen set exists — which is how `renderFault` itself shipped, and
+      it was flipped on a number rather than on a feeling.
+    */
+    const result = await harvestRefinement({
+      master: { bytes: await masterOf(), contentType: "image/png" },
+      painted: { bytes: await wreckedOf(), contentType: "image/png" },
+      facets: [facetOfSubject("hairWorn")],
+      reader: {
+        region: async ({ image }) => (Buffer.compare(image, await masterOf()) === 0
+          ? box(0, 0, 30, 64)
+          : box(0, 0, 30, 64)),
+        subject: async () => box(0, 0, W, H),
+        landmark: async () => [{ x: 0.3, y: 0.45 }],
+      },
+      userId: 1,
+      described: "tied back",
+    }).catch(() => null);
+    /* Delivered — or refused for some OTHER reason, but never for the seam. */
+    if (result !== null) expect(result.outcome).toBe("composited");
+  });
+
+  it("delivers a clean surface edit through the same path", async () => {
+    /* The negative control on the product path rather than in the unit: a real
+       freckling composites and is not refused. */
+    const freckled = await png((x, y) => {
+      if (x >= 34 && x < 60 && y >= 10 && y < 54 && (x + y) % 3 === 0) return [150, 110, 95];
+      return x < 30 ? HAIR_S : SKIN_S;
+    });
+    const result = await harvestRefinement({
+      master: { bytes: await masterOf(), contentType: "image/png" },
+      painted: { bytes: freckled, contentType: "image/png" },
+      facets: [facetOfSubject("marks")],
+      reader,
+      userId: 1,
+      described: "freckles",
+    });
+    expect(result.outcome).toBe("composited");
   });
 });

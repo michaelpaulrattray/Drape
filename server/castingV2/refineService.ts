@@ -2048,6 +2048,15 @@ function refundDescriptionFor(error: unknown): string {
     return "Refine refunded — the image came back damaged";
   }
   /*
+    OURS, AND THE RECEIPT SAYS SO. The provider's frame was fine and our
+    compositor cut it; a ledger line blaming the vendor is a support
+    conversation nobody can resolve, which is the whole reason this class was
+    split from `render_fault`.
+  */
+  if (error instanceof ProviderError && error.failureClass === "composite_fault") {
+    return "Refine refunded — we could not assemble the picture cleanly";
+  }
+  /*
     NAMES WHAT WAS MISSING. The throw carries the facts, so the receipt can say
     which ones rather than making support re-derive them from a log.
 

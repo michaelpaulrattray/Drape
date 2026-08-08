@@ -85,6 +85,24 @@ export type ProviderFailureClass =
    * request.
    */
   | "facts_missing"
+  /**
+   * The provider succeeded, the picture it returned was fine, and OUR
+   * compositor cut it (2026-08-08).
+   *
+   * Third split for the same reason as the two above: the receipt is the
+   * record. `render_fault` says "the image came back damaged", which about a
+   * provider that did nothing wrong is the mistake `facts_missing` was split
+   * out to stop, one layer further in — and this time the damage is ours, so a
+   * support conversation that blames the vendor is worse than useless.
+   *
+   * Origin: run-6's freckles render was delivered and charged with a slab of
+   * background punched through her hair, and scored `delivered_compliant`,
+   * because nothing in the product asked whether the frame was intact.
+   *
+   * Non-retryable. A seam is a verdict about what our own compositor did with
+   * a frame; the same inputs produce the same cut.
+   */
+  | "composite_fault"
   /** Unmapped. Treated as non-retryable so unknowns fail closed. */
   | "unknown";
 
