@@ -299,6 +299,10 @@ export async function verifyRender(input: {
     signal: input.signal,
   });
 
+  /* Nothing to sharpen if the frame reading produced no checks to sharpen —
+     an unavailable reader is already delivering unverified, and a second call
+     would be paid for to merge into an empty list. */
+  if (verdict.unavailable) return verdict;
   const closely = input.detail
     ? input.facts.filter((fact) => input.detail!.answers.includes(fact.facet))
     : [];

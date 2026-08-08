@@ -301,6 +301,16 @@ describe("at the wire — what the reader was actually handed", () => {
     expect(verdict.unavailable).toBeUndefined();
   });
 
+  it("does not pay for a close reading when the FRAME reading failed", async () => {
+    /* An unavailable reader is already delivering unverified with no checks, so
+       a second call would be bought to merge into an empty list. */
+    const engine = capturingEngine(["not json at all"]);
+    const verdict = await verifyRender({ bytes: frame, contentType: "image/png", detail, facts, engine });
+
+    expect(verdict.unavailable).toBe(true);
+    expect(engine.requests).toHaveLength(1);
+  });
+
   it("magnifies on the RE-READ too, not just the first look", async () => {
     /*
       The re-read is where a refusal is actually decided (D-194). A magnifier
