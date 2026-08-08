@@ -209,7 +209,17 @@ export type RefineRefusal =
   | { reason: "wall_likeness" }
   | { reason: "wall_stage"; asked: string }
   | { reason: "wall_content" }
-  | { reason: "wall_unfileable"; asked: string }
+  /**
+   * `value` is WHAT THE MODEL ACTUALLY SAID, carried so the refusal can be
+   * diagnosed instead of argued about.
+   *
+   * Run-11 met this wall on a plain three-word instruction and the reply was
+   * unrecoverable an hour later — not because logs expire (they reach back to
+   * container start) but because **the refusal path wrote nothing at all**. A
+   * refusal that costs the customer nothing should not also cost us the ability
+   * to tell why. Operator-log only; it never crosses a projection.
+   */
+  | { reason: "wall_unfileable"; asked: string; value?: string }
   /** Not a wall — a GATE. It names what does work and what is coming (D-137). */
   | { reason: "gate_ink_document" }
   | { reason: "unreadable" }
@@ -531,7 +541,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     if (check) {
       const strip = (text: string) => text.replace(/['’]/g, "");
       if (!stemmedContainment(strip(cleaned), strip(check.instruction))) {
-        check.wall = { reason: "wall_unfileable", asked: "makeup" };
+        check.wall = { reason: "wall_unfileable", asked: "makeup", value: cleaned };
         return null;
       }
     }
@@ -689,7 +699,7 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           .some((item) => strip(item).toLowerCase() === strip(scrubbed).toLowerCase());
         if (!alreadyStated
           && !stemmedContainment(strip(scrubbed), strip(check.instruction))) {
-          check.wall = { reason: "wall_unfileable", asked: subject };
+          check.wall = { reason: "wall_unfileable", asked: subject, value: scrubbed };
           return null;
         }
       }

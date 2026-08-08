@@ -591,3 +591,23 @@ describe("an ask absorbed into a restatement is refused before the charge", () =
     expect(verdict.absorbed).toBe(false);
   });
 });
+
+/**
+ * A REFUSAL THAT CARRIES WHAT THE MODEL SAID.
+ *
+ * Run-11 met `wall_unfileable` on three plain words and the reply was
+ * unrecoverable an hour later — not because logs expire (they reach back to
+ * container start) but because the refusal path wrote nothing. The wall now
+ * carries the value that failed to file, so the line the service writes has
+ * something in it worth reading.
+ */
+describe("an unfileable item names itself", () => {
+  it("carries the value the guard refused, not only the subject", () => {
+    const check: FreeLaneCheck = { instruction: "give her freckles", prior: {} };
+    readDelta({ free: { marks: ["a scar she never mentioned"] } }, check);
+    expect(check.wall?.reason).toBe("wall_unfileable");
+    expect(check.wall && "asked" in check.wall && check.wall.asked).toBe("marks");
+    expect(check.wall && "value" in check.wall && check.wall.value)
+      .toBe("a scar she never mentioned");
+  });
+});

@@ -117,6 +117,17 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     }],
   },
   {
+    /* The diagnostic backstop: a refusal that stops saying what the model said
+       puts us back where run-11 left us — a free refusal and no way to tell why. */
+    name: "the refusal line dropping what the model actually said",
+    file: "server/castingV2/refineService.ts",
+    suites: ["server/castingV2/refineService.test.ts"],
+    mutations: [{
+      find: '        ...("value" in parsed.refusal && parsed.refusal.value',
+      replace: '        ...(false && "value" in parsed.refusal && parsed.refusal.value',
+    }],
+  },
+  {
     name: "the departure inheriting the ponytail's 160px reach (the fence removed)",
     file: "server/castingV2/maskedRefine.ts",
     suites: MASK_SUITES,

@@ -293,6 +293,28 @@ const unmasked = async (input: { painted: { bytes: Buffer; contentType: string }
   outcome: "flag-off" as const,
 });
 
+/**
+ * WHAT THE SERVICE WROTE DOWN.
+ *
+ * The real logger is pino writing through its own stream, not through
+ * `process.stdout.write` — an interceptor on that seam captured nothing, which
+ * is its own small lesson about asserting at the wire you actually have. So the
+ * module is replaced for this suite and the records are read back directly.
+ * The thing under test is the FIELDS the service chose to write, and those are
+ * ours either way.
+ */
+const logged: { level: string; fields: Record<string, unknown>; message: string }[] = [];
+vi.mock("../logging/logger", () => {
+  const record = (level: string) => (fields: unknown, message: string) => {
+    logged.push({ level, fields: (fields ?? {}) as Record<string, unknown>, message });
+  };
+  return {
+    createModuleLogger: () => ({
+      error: record("error"), warn: record("warn"), info: record("info"), debug: record("debug"),
+    }),
+  };
+});
+
 const greenEyes = {
   interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
   harvest: unmasked,
@@ -341,6 +363,34 @@ describe("refusals land before anything is claimed", () => {
     const result = await refineCandidate(greenEyes, input);
     expect(result).toBeTruthy();
     expect(ledger.charges.length, "and this one is paid for").toBeGreaterThan(0);
+  });
+
+  it("SAYS WHY, in a line that outlives the request", async () => {
+    /*
+      The gap run-11 fell into. A refusal writes no row — correctly — and used
+      to write no log either, so a customer meeting a wall on three plain words
+      left nothing behind to diagnose. The value that failed to file rides with
+      it, because "which subject" was never the question; "what did it say" was.
+    */
+    logged.length = 0;
+    {
+      await expect(refineCandidate(
+        {
+          harvest: unmasked,
+          interpret: async () => ({
+            ok: false as const,
+            refusal: { reason: "wall_unfileable" as const, asked: "marks", value: "a scar she never mentioned" },
+          }),
+        },
+        { ...input, instruction: "give her freckles" },
+      )).rejects.toThrow(/wasn't recorded/);
+    }
+    const refusal = logged.find((line) => line.message.includes("refused before the charge"));
+    expect(refusal, "the refusal left a line").toBeTruthy();
+    expect(refusal!.fields.reason).toBe("wall_unfileable");
+    expect(refusal!.fields.instruction).toBe("give her freckles");
+    expect(refusal!.fields.modelSaid, "and it carries what the model said").toBe("a scar she never mentioned");
+    expect(ledger.charges, "still free").toHaveLength(0);
   });
 
   it("refuses when the interpreter cannot be reached, rather than guessing", async () => {

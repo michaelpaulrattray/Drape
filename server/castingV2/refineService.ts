@@ -533,6 +533,32 @@ export async function refineCandidate(
   };
   if (parsed.ok && "delta" in parsed) refuseIfAbsorbed(parsed.delta);
   if (!parsed.ok) {
+    /*
+      A FREE REFUSAL SHOULD NOT ALSO BE A FREE PASS ON DIAGNOSIS.
+
+      This path wrote nothing — no row (correctly: a zero-credit row is noise in
+      the ledger and a phantom for the recovery sweep) and no log line. So when
+      run-11 refused *"give her freckles"* on a plain face, the reply was gone by
+      the time anyone asked why: not because logs expire — they reach back to
+      container start — but because there was never a line to find. I spent a
+      chunk of a shift disproving a hypothesis I could have read in a second.
+
+      Reasons only, plus the value that failed to file. The ledger stays clean,
+      the reliability report still counts paid attempts only, and the next
+      occurrence is a lookup instead of an argument.
+    */
+    log.warn(
+      {
+        candidateId: input.candidatePublicId,
+        instruction,
+        reason: parsed.refusal.reason,
+        ...("asked" in parsed.refusal ? { asked: parsed.refusal.asked } : {}),
+        ...("value" in parsed.refusal && parsed.refusal.value
+          ? { modelSaid: parsed.refusal.value }
+          : {}),
+      },
+      "[refineService] refused before the charge — nothing claimed, nothing deducted",
+    );
     // An honest boundary, not a fault — and free, which is the point of §10.
     throw new TRPCError({ code: "BAD_REQUEST", message: refusalMessage(parsed) });
   }
