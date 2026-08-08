@@ -135,11 +135,15 @@ for (const band of BANDS) {
   AND WHICH MASK IS DOING IT, per band — because "still there" is a shrug and
   "the vacancy path claims it" is a fix.
 */
-const names = Object.keys(composed.explain!) as (keyof typeof composed.explain)[];
-console.log(`\n  which mask claims each band\n  ${"band".padEnd(46)}${names.map((n) => String(n).slice(0, 8).padStart(10)).join("")}`);
+/* `keyof typeof composed.explain` narrows to `never` through the optional, so
+   the masks are read as their own record rather than through the parent. */
+const explained = composed.explain as unknown as
+  Record<string, { data: Buffer; width: number; height: number }>;
+const names = Object.keys(explained);
+console.log(`\n  which mask claims each band\n  ${"band".padEnd(46)}${names.map((n) => n.slice(0, 8).padStart(10)).join("")}`);
 for (const band of BANDS) {
   const counts = names.map((name) => {
-    const mask = composed.explain![name]!;
+    const mask = explained[name]!;
     let count = 0;
     for (let y = band.top; y < band.top + band.height; y += 1) {
       for (let x = band.left; x < band.left + band.width; x += 1) {
