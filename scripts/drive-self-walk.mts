@@ -51,11 +51,21 @@
  * failure, and so is a delivery where an ask was expected (the gate did not
  * fire, and 25 credits went on measuring nothing).
  *
- * **Named consequence, for the founder rather than for me:** because the walk
- * stops at the ask, `eye.shape` contributes nothing to the delivery
- * denominator. Its delivery sample belongs to the class sweep, on a face
- * measured FLAT — which is the only kind of face on which the ask carries a
- * real delta (see the tilt pool). The walk keeps the founder's five steps.
+ * **Named consequence, for the founder rather than for me — and it now depends
+ * on her face.** Step 2's expectation is measured, not declared (see
+ * `deriveEyeShapeExpectation`), so what `eye.shape` contributes to the delivery
+ * denominator depends on the face this run drew:
+ *
+ *   already upswept   the gate asks, no operation is reserved, and the class
+ *                     contributes nothing — the old universal case
+ *   not upswept       she is charged for a real edit, and the class DOES enter
+ *                     the denominator, on exactly the flat face where the ask
+ *                     carries a real delta
+ *
+ * So a walk costs 100 credits on an upswept face and 125 on a flat one, and the
+ * dry run prints which this face is before anything is spent. This paragraph
+ * used to state the first row as though it were the only one; it was written
+ * when the expectation was a constant.
  *
  * # It cannot spend by accident
  *
