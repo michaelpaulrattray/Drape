@@ -1484,17 +1484,38 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
    */
   const specified = (facet: Facet, clause: string): string => {
     const caption = realized[facet];
-    return caption ? `${clause.replace(/\.$/, "")}, rendered exactly as this: ${caption}` : clause;
+    if (!caption) return clause;
+    /* Both ends trimmed of a full stop and exactly one put back, because these
+       clauses are concatenated with more prose and a caption that happens not
+       to end in a period produced a run-on sentence into the next instruction. */
+    return `${clause.replace(/\.\s*$/, "")}, rendered exactly as this: ${caption.replace(/\.\s*$/, "")}.`;
+  };
+
+  /**
+   * The same specification, placed BESIDE THE VALUE instead of after the clause.
+   *
+   * Replayed against run-12's own filed rows, appending put it forty words
+   * downstream of the noun — *"…and a change that does not appear at all is a
+   * failed render, rendered exactly as this: A faint scatter of…"* — where it
+   * reads as a remark about the failed render. The whole point of the change is
+   * that the precise wording governs the ask, and a specification the painter
+   * has to scope backwards over a qualifier to reach does not govern anything.
+   *
+   * Found by looking at the produced string rather than at the test that passed.
+   */
+  const withCaption = (facet: Facet, text: string): string => {
+    const caption = realized[facet];
+    return caption ? `${text} — rendered exactly as this: ${caption.replace(/\.$/, "")}` : text;
   };
 
   const edits: string[] = [];
   if (delta.eyeColour != null) {
-    edits.push(specified(facetOfAxis("eyeColour"),
-      `Change the iris colour to ${delta.eyeColour} — ${prose.eyeColour(delta.eyeColour)}.`));
+    edits.push(`Change the iris colour to ${withCaption(facetOfAxis("eyeColour"), delta.eyeColour)}`
+      + ` — ${prose.eyeColour(delta.eyeColour)}.`);
   }
   if (delta.eyeShape != null) {
-    edits.push(specified(facetOfAxis("eyeShape"),
-      `Change the eye shape to ${delta.eyeShape} — ${prose.eyeShape(delta.eyeShape)}.`));
+    edits.push(`Change the eye shape to ${withCaption(facetOfAxis("eyeShape"), delta.eyeShape)}`
+      + ` — ${prose.eyeShape(delta.eyeShape)}.`);
   }
   /*
     Hair is described as CUT, COLOUR and TEXTURE in one sentence where more than
@@ -1509,8 +1530,8 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
       did not ask for. The STATED MAKEUP licence in the cohort constant is what
       gives them teeth.
     */
-    edits.push(specified(facetOfAxis("makeup"),
-      `Apply makeup: ${delta.makeup}.`) + " Everything else about the face stays bare.");
+    edits.push(`Apply makeup: ${withCaption(facetOfAxis("makeup"), delta.makeup)}.`
+      + " Everything else about the face stays bare.");
   }
   const hair: string[] = [];
   if (delta.hairStyle != null) hair.push(`cut into ${prose.hairStyle(delta.hairStyle)}`);
@@ -1557,10 +1578,8 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
       ));
       continue;
     }
-    edits.push(specified(
-      facetOfSubject(subject as FreeSubject),
-      `${heading}: ${items.join(", ")}${qualifierFor(subject as FreeSubject)}.`,
-    ));
+    edits.push(`${heading}: ${withCaption(facetOfSubject(subject as FreeSubject), items.join(", "))}`
+      + `${qualifierFor(subject as FreeSubject)}.`);
   }
   /*
     AND THE THING THAT IS GONE — the sentence that was never being said.

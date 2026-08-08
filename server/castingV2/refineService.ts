@@ -171,7 +171,12 @@ const VARIANT_KEY_PREFIX = "casting-v2/variants";
  * Two copies would let the check pass on a prompt the render never builds,
  * which is the same shape as the defect the check exists to catch.
  */
-const EDIT_PROSE = {
+/**
+ * Exported so calibration and replay tools compose with the REAL prose rather
+ * than a copy of it — a second list shadowing a source of truth always drifts,
+ * and a replay that drifts is a replay of something else.
+ */
+export const EDIT_PROSE = {
   eyeColour: (value: EyeColour) => IRIS_RENDER[value],
   eyeShape: (value: EyeShape) => EYE_SHAPE_RENDER[value],
   hairStyle: (value: string) => {

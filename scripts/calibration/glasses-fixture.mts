@@ -247,7 +247,7 @@ const SCENARIOS = [
         eyeColour: (v: string) => v, eyeShape: (v: string) => v, hairStyle: (v: string) => v,
         hairColour: (v: string) => v, hairTexture: (v: string) => v,
       } as never,
-      "",
+      {},
     ).full,
     /* THE COURT (suspect-the-adapter-first). Both frames are asked the same
        question, and the pair of answers names the culprit rather than leaving
