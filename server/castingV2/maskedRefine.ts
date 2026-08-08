@@ -375,6 +375,70 @@ export function hasFringeAtEdge(region: string): boolean {
   return FRINGE_AT_EDGE[region]?.fringe === true;
 }
 
+/**
+ * WHICH REGIONS CAN BE MISTAKEN FOR THIS ONE AT ITS BOUNDARY.
+ *
+ * # The half of the torn frame that no fringe rule can reach
+ *
+ * `FRINGE_AT_EDGE` removed the strand projection from regions that have no
+ * strands, and replaying run-6's own torn render through it took the left notch
+ * down 67% and the right phantom 21% — **and left both tears alive**. The
+ * remainder is not a recovery reaching too far. It is the harvest itself: once
+ * the painter moved her hair, a segmenter asked *"where is her face skin"* on
+ * that frame answers with pixels the MASTER has hair in. The harvest is then
+ * behaving perfectly by its own lights, and delivering a hole.
+ *
+ * So the rule is about the OUTCOME rather than about any one mechanism:
+ *
+ * > A harvest may not deliver a pixel that on the MASTER belongs to a
+ * > confusable neighbour this edit does not name — minus every extent the edit
+ * > legitimately owns.
+ *
+ * # Nearly every entry is "hair", and that is the finding
+ *
+ * Hair is the only region that moves a large silhouette across everything else,
+ * which is why every tear in this campaign has been at a hair boundary. The
+ * table says so plainly rather than padding for symmetry.
+ *
+ * # What it must NOT break, because subtracting territory is how you rebuild
+ * "the composite puts them back"
+ *
+ * Three kinds of edit legitimately deliver onto a neighbour's master territory,
+ * and all three are exempted by `ownedExtents` at the call site:
+ *
+ *   - a REMOVAL — glasses arms cross her temples, and the reveal has to land
+ *     exactly where the master says "hair";
+ *   - a SHRINK — a smaller ponytail reveals background that was hair;
+ *   - an ADDITION — wire frames sit ON her hair at the temples, and an
+ *     addition's master extent is EMPTY by definition, so its destination
+ *     corridor is what owns that ground. Without this exemption "round
+ *     wire-frame glasses" delivers arms clipped at the temples after a perfect
+ *     paint, and the Tier A catalogue asks for exactly that.
+ */
+const CONFUSABLE_NEIGHBOURS: Record<string, { readonly with: readonly string[]; readonly why: string }> = {
+  "face skin": { with: ["hair", "facial hair"], why: "both grow over and against skin, and hair is what moved in run-6" },
+  lips: { with: ["facial hair"], why: "a moustache sits on the vermilion border" },
+  eyes: { with: ["hair", "eyebrows"], why: "a fringe falls across the eyes" },
+  eyebrows: { with: ["hair"], why: "a fringe reaches the brow" },
+  nose: { with: [], why: "nothing that moves borders it" },
+  ear: { with: ["hair"], why: "hair falls over the ear" },
+  earring: { with: ["hair"], why: "the lobe sits under her hair" },
+  glasses: { with: ["hair"], why: "the arms run into it at the temples" },
+  "nose stud": { with: [], why: "small, and its anchor is named" },
+  "facial hair": { with: ["hair"], why: "they meet at the sideburn" },
+  hair: { with: [], why: "hair is the aggressor here, never the victim" },
+};
+
+/** Regions that could be mistaken for this one. Unknown regions have none. */
+export function confusableNeighboursOf(region: string): readonly string[] {
+  return CONFUSABLE_NEIGHBOURS[region]?.with ?? [];
+}
+
+/** Regions declared in the neighbour table — for the reverse-direction test. */
+export function neighbourTableNames(): string[] {
+  return Object.keys(CONFUSABLE_NEIGHBOURS).sort();
+}
+
 /** Every region this file can ask a segmenter about — the table's own domain. */
 export function segmentableRegionNames(): string[] {
   return Array.from(new Set([
@@ -757,8 +821,17 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   };
 
   let zone: Mask | null = null;
+  /*
+    GROUND THIS EDIT LEGITIMATELY OWNS, collected as it is computed rather than
+    re-derived later. It is what keeps the territory rule from re-creating "the
+    composite puts them back": a removal's reveal, a shrink's reveal and an
+    addition's destination all land on a neighbour's master territory on
+    purpose, and an addition has no master extent of its own to appeal to.
+  */
+  const owned: Mask[] = [];
   for (let index = 0; index < segmentable.length; index += 1) {
     const region = await regionOf("master", names[index]);
+    owned.push(region);
     const scoped = await scopedZone(segmentable[index], region);
     zone = zone ? unionMasks(zone, scoped) : scoped;
   }
@@ -775,6 +848,10 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       /* A drop hangs; glasses sit. The described object says which. */
       dropSteps: hangsBelowAnchor(input.described) ? 6 : 0,
     });
+    /* THE ADDITION'S OWN GROUND. Its master extent is empty — there are no
+       glasses on her yet — so the destination corridor is the only thing that
+       can own the temples the arms are about to sit on. */
+    owned.push(destination);
     zone = zone ? unionMasks(zone, destination) : destination;
   }
   /*
@@ -878,6 +955,9 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   for (const question of questions) {
     if (!question.absentOnMaster) continue;
     const worn = await regionOf("master", question.name, true);
+    /* Her frames, where they are NOW — the removal's own ground, temples and
+       all, and the reason a glasses removal is not clipped by the rule below. */
+    if (coverage(worn) > 0) owned.push(worn);
     if (coverage(worn) > 0) zone = unionMasks(zone, worn);
   }
 
@@ -998,7 +1078,7 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     same gate on `novelty` only, because what lands in a reveal is background and
     skin, and asking it to look like the strand would revert every pixel of it.
   */
-  const gated = unionMasks(...perRegion.map((region) => unionMasks(
+  const ungoverned = unionMasks(...perRegion.map((region) => unionMasks(
     harvestGate({
       master, patch: painted, alpha: region.withStrands,
       strandColour: region.strandColour, baselineDelta,
@@ -1011,6 +1091,65 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   const harvested = unionMasks(...perRegion.map((region) => region.withStrands));
   const vacated = unionMasks(...perRegion.map((region) => region.vacated));
   const departedAlpha = unionMasks(...perRegion.map((region) => region.departed));
+
+  /*
+    THE TERRITORY RULE — see `CONFUSABLE_NEIGHBOURS`.
+
+    Subtracted from the DELIVERED content rather than from the zone, so the
+    expansion, the interaction band and the feather all inherit it and nothing
+    downstream has to remember. A pixel that on the MASTER belongs to a region
+    this instruction never named is not this edit's to change, however confident
+    the harvest is about it.
+
+    `owned` is the escape hatch and it is load-bearing: the named regions' own
+    master extents, a departed object's current footprint, an addition's
+    destination corridor, and every reveal computed above. Without it this rule
+    IS "the composite puts them back" — the defect it exists downstream of.
+  */
+  const namedRegions = new Set(questions.map((question) => question.name));
+  const protectedNames = new Set<string>();
+  for (const question of questions) {
+    for (const neighbour of confusableNeighboursOf(question.name)) {
+      if (!namedRegions.has(neighbour)) protectedNames.add(neighbour);
+    }
+  }
+  let gated = ungoverned;
+  let protectedTerritory: Mask | null = null;
+  if (protectedNames.size > 0) {
+    const ownedGround = unionMasks(
+      ...owned,
+      ...perRegion.map((region) => region.vacancy),
+      ...perRegion.map((region) => region.vacated),
+    );
+    for (const name of Array.from(protectedNames)) {
+      /*
+        FROM THE MASTER, ALWAYS. The painted frame is the thing under suspicion;
+        asking it where her hair is would let the measurement follow the answer
+        around, which is how run-6's harvest came to believe her hair was skin.
+
+        A neighbour the reader cannot find is not a reason to refuse the whole
+        render — it is a reason to protect nothing, which is the behaviour this
+        path had before the rule existed.
+      */
+      const territory = await regionOf("master", name, true).catch(() => null);
+      if (territory === null || coverage(territory) === 0) continue;
+      protectedTerritory = protectedTerritory
+        ? unionMasks(protectedTerritory, territory)
+        : territory;
+    }
+    if (protectedTerritory !== null) {
+      const forbidden = subtractMask(protectedTerritory, ownedGround);
+      gated = subtractMask(gated, forbidden);
+      log.info(
+        {
+          operationId: input.operationId,
+          protecting: Array.from(protectedNames),
+          surrenderedCoverage: Number((coverage(ungoverned) - coverage(gated)).toFixed(5)),
+        },
+        "[maskedRefine] territory it was never asked about, given back to her master",
+      );
+    }
+  }
 
   /* A zone that stops where the content does not is a guillotine (D-230). */
   const grown = await expandUntilClear({

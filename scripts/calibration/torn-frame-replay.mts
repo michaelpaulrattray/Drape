@@ -131,6 +131,26 @@ for (const band of BANDS) {
     + `${permitted(band).toLocaleString().padStart(11)}`,
   );
 }
+/*
+  AND WHICH MASK IS DOING IT, per band — because "still there" is a shrug and
+  "the vacancy path claims it" is a fix.
+*/
+const names = Object.keys(composed.explain!) as (keyof typeof composed.explain)[];
+console.log(`\n  which mask claims each band\n  ${"band".padEnd(46)}${names.map((n) => String(n).slice(0, 8).padStart(10)).join("")}`);
+for (const band of BANDS) {
+  const counts = names.map((name) => {
+    const mask = composed.explain![name]!;
+    let count = 0;
+    for (let y = band.top; y < band.top + band.height; y += 1) {
+      for (let x = band.left; x < band.left + band.width; x += 1) {
+        if (mask.data[y * W + x]! > 0) count += 1;
+      }
+    }
+    return count.toLocaleString().padStart(10);
+  });
+  console.log(`  ${band.name.padEnd(46)}${counts.join("")}`);
+}
+
 console.log(
   "\nBEFORE = pixels production's delivered render changed from the master."
   + "\nAFTER  = pixels this replay's delivered render changes from the master."

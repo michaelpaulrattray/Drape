@@ -5,6 +5,7 @@ import {
   MASKED_EDITING_SCOPE,
   additionDestination,
   hangsBelowAnchor,
+  confusableNeighboursOf,
   fringeTableNames,
   harvestRefinement,
   hasFringeAtEdge,
@@ -12,6 +13,7 @@ import {
   maskedEditingEnabledFor,
   needsLandmarkDestination,
   regionNameOf,
+  neighbourTableNames,
   segmentableRegionNames,
   vacancyOf,
   type RegionReader,
@@ -757,7 +759,23 @@ describe("every region the instruction touches is harvested, not just the first"
       reader: counting,
       userId: 1,
     }).catch(() => undefined);
-    expect(new Set(asked), "both questions asked").toEqual(new Set(["hair", "lips"]));
+    /*
+      The HARVEST's questions are deduped — a cut and a colour both segment
+      hair, and that is one call, which is what this test was written for.
+
+      "facial hair" is also in the list now and is NOT a harvest question: it is
+      the territory rule protecting the lips' confusable neighbour, and it is
+      asked of the MASTER only. Asserted as a superset rather than an equality
+      so the dedup claim keeps its teeth while the protection reads stay
+      visible rather than silently widening an equality nobody re-reads.
+    */
+    expect(new Set(asked), "both harvest questions asked").toEqual(
+      new Set(["hair", "lips", "facial hair"]),
+    );
+    /* ONCE PER FRAME, not once per facet — the memo's actual claim. A cut and a
+       colour both segment hair, so without it this would be four calls. */
+    expect(asked.filter((name) => name === "hair").length, "hair asked once per frame")
+      .toBe(2);
   });
 });
 
@@ -841,5 +859,208 @@ describe("a harvest only reaches past its boundary where the material has fringe
       }
     }
     expect(claimedInDrift).toBe(0);
+  });
+});
+
+/**
+ * THE TERRITORY RULE, AND THE THREE EDITS IT MUST NOT BREAK.
+ *
+ * `FRINGE_AT_EDGE` took run-6's left notch down 67% and left both tears alive.
+ * The remainder is the harvest itself: once the painter moved her hair, a
+ * segmenter asked "where is her face skin" on THAT frame answers with pixels
+ * the master has hair in. So the rule is about the outcome — a harvest may not
+ * deliver a pixel that on the MASTER belongs to a confusable neighbour this
+ * edit never named.
+ *
+ * Subtracting territory is also how you rebuild "the composite puts them back",
+ * which is the defect this whole workstream exists downstream of. Three edits
+ * legitimately deliver onto a neighbour's master ground, and each has a control
+ * here: a REMOVAL (the arms cross her temples), a SHRINK (the reveal was hair),
+ * and an ADDITION (whose master extent is empty by definition, so only its
+ * destination corridor can own the ground).
+ */
+describe("territory it was never asked about is given back to her master", () => {
+  const HAIR_T: [number, number, number] = [20, 16, 14];
+  const SKIN_T: [number, number, number] = [205, 165, 150];
+  const PALE: [number, number, number] = [200, 198, 200];
+
+  /* Her hair is the left column; her face skin is the right block. */
+  const hairBox = () => box(0, 0, 26, 64);
+  const skinBox = () => box(34, 10, 60, 54);
+
+  it("declares a neighbour list for every region it can be asked about", () => {
+    for (const name of segmentableRegionNames()) {
+      expect(neighbourTableNames(), `region "${name}" has no neighbour declaration`).toContain(name);
+    }
+  });
+
+  it("names hair as the aggressor and never as the victim", () => {
+    /* The finding, pinned: hair is the only region that moves a large
+       silhouette across everything else. If a future edit gives hair a
+       protector, that is a decision someone should have to make on purpose. */
+    expect(confusableNeighboursOf("hair")).toEqual([]);
+    expect(confusableNeighboursOf("face skin")).toContain("hair");
+  });
+
+  it("CONTROL 1 — a skin edit does not deliver onto master hair", async () => {
+    const masterBytes = await png((x) => (x < 26 ? HAIR_T : SKIN_T));
+    /* The painter freckled her AND moved the hair edge left, exposing pale. */
+    const paintedBytes = await png((x, y) => {
+      if (x < 18) return HAIR_T;
+      if (x < 26) return PALE;
+      if (x >= 34 && x < 60 && y >= 10 && y < 54 && (x + y) % 3 === 0) return [150, 110, 95];
+      return SKIN_T;
+    });
+    const reader: RegionReader = {
+      /* The painted frame's "face skin" now reaches into master-hair ground —
+         which is exactly what run-6's segmenter did. */
+      region: async ({ image, name }) => {
+        if (name === "hair") return hairBox();
+        return Buffer.compare(image, masterBytes) === 0 ? skinBox() : box(18, 10, 60, 54);
+      },
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("marks")],
+      reader,
+      userId: 1,
+      described: "freckles",
+      explain: true,
+    });
+    /* Nothing delivered over her hair; the freckles still land. */
+    const delivered = result.explain!.delivered;
+    let onHair = 0;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < 26; x += 1) if (delivered.data[y * W + x]! > 0) onHair += 1;
+    }
+    expect(onHair, "her hair is not this edit's to change").toBe(0);
+    expect(coverage(delivered), "and the freckles still arrive").toBeGreaterThan(0);
+  });
+
+  it("CONTROL 2 — a removal's reveal still lands on hair it overlaps", async () => {
+    /* Glasses on the master, arms crossing her hair at the temples. The
+       painter took them off, so the reveal is skin and hair where they were —
+       ON protected ground, and it must survive. */
+    const armBox = { x0: 10, y0: 28, x1: 56, y1: 34 };
+    const masterBytes = await png((x, y) => {
+      if (x >= armBox.x0 && x < armBox.x1 && y >= armBox.y0 && y < armBox.y1) return [15, 15, 20];
+      return x < 26 ? HAIR_T : SKIN_T;
+    });
+    const paintedBytes = await png((x) => (x < 26 ? HAIR_T : SKIN_T));
+    const reader: RegionReader = {
+      region: async ({ name }) => {
+        if (name === "hair") return hairBox();
+        if (name === "glasses") return box(armBox.x0, armBox.y0, armBox.x1, armBox.y1);
+        return skinBox();
+      },
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.48 }, { x: 0.7, y: 0.48 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("statedAccessories")],
+      reader,
+      userId: 1,
+      described: "glasses",
+      departed: "glasses",
+      explain: true,
+    });
+    /* The arm's own footprint over her hair: x in [10, 26). The reveal must
+       reach it, or the composite puts the glasses back — the exact defect. */
+    const delivered = result.explain!.delivered;
+    let revealedOverHair = 0;
+    for (let y = armBox.y0; y < armBox.y1; y += 1) {
+      for (let x = armBox.x0; x < 26; x += 1) if (delivered.data[y * W + x]! > 0) revealedOverHair += 1;
+    }
+    expect(revealedOverHair, "the removal owns the ground its object sits on").toBeGreaterThan(0);
+  });
+
+  it("CONTROL 3 — a hair shrink's reveal is untouched", async () => {
+    /* Hair is the named region, so its own extent is owned outright and it has
+       no protector anyway. The ponytail exhibit, in miniature. */
+    const masterBytes = await png((x) => (x < 40 ? HAIR_T : PALE));
+    const paintedBytes = await png((x) => (x < 20 ? HAIR_T : PALE));
+    const reader: RegionReader = {
+      region: async ({ image }) => (Buffer.compare(image, masterBytes) === 0
+        ? box(0, 0, 40, 64)
+        : box(0, 0, 20, 64)),
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("hairWorn")],
+      reader,
+      userId: 1,
+      described: "tied back",
+      explain: true,
+    });
+    /* The vacated band x in [20, 40) is the reveal and must be delivered. */
+    const delivered = result.explain!.delivered;
+    let revealed = 0;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 20; x < 40; x += 1) if (delivered.data[y * W + x]! > 0) revealed += 1;
+    }
+    expect(revealed, "the shrink's reveal is its own ground").toBeGreaterThan(0);
+  });
+
+  it("CONTROL 4 — an ADDITION owns the ground its destination corridor covers", async () => {
+    /*
+      Fable's trap: an addition has NO master extent to own, so without the
+      destination exemption "round wire-frame glasses" delivers arms sheared off
+      wherever they cross her hair, after a perfect paint. The Tier A catalogue
+      asks for exactly that.
+
+      **The artifice here is deliberate and it is the only way to see the
+      exemption at all.** For every accessory the protected neighbour is `hair`,
+      and hair ALREADY occludes accessories by design — the depth stack rides it
+      as `occludedBy` so an earring under her hair renders behind it. So on the
+      ordinary path the arms over hair are absent for a reason that has nothing
+      to do with this rule, and a test that just looks at them passes whatever
+      the rule does.
+
+      This reader therefore answers the OCCLUSION lookup with nothing and the
+      PROTECTION lookup with her real hair — they are distinguishable because
+      the protection read asks with `absentIsAnswer`. That isolates the one
+      question worth asking: with occlusion out of the way, does the territory
+      rule clip the addition? It must not.
+    */
+    const masterBytes = await png((x) => (x < 26 ? HAIR_T : SKIN_T));
+    const paintedBytes = await png((x, y) => {
+      if (y >= 28 && y < 34) return [15, 15, 20];
+      return x < 26 ? HAIR_T : SKIN_T;
+    });
+    const reader: RegionReader = {
+      region: async ({ name, image, absentIsAnswer }) => {
+        if (name === "hair") return absentIsAnswer ? hairBox() : box(0, 0, 0, 0);
+        if (name === "glasses") {
+          return Buffer.compare(image, masterBytes) === 0 ? box(0, 0, 0, 0) : box(10, 28, 56, 34);
+        }
+        return skinBox();
+      },
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.25, y: 0.48 }, { x: 0.75, y: 0.48 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("statedAccessories")],
+      reader,
+      userId: 1,
+      described: "round wire-frame glasses",
+      explain: true,
+    });
+    /* Her temples, inside the destination corridor and inside protected hair. */
+    const delivered = result.explain!.delivered;
+    let armOverHair = 0;
+    for (let y = 28; y < 34; y += 1) {
+      for (let x = 10; x < 26; x += 1) if (delivered.data[y * W + x]! > 0) armOverHair += 1;
+    }
+    expect(armOverHair, "the arms reach the temples they were painted on").toBeGreaterThan(0);
   });
 });
