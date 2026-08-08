@@ -13,6 +13,7 @@ import { sabotage, type Mutation } from "./lib/sabotage.mts";
 const SUITES = [
   "server/castingV2/refineService.test.ts",
   "server/castingV2/refineRemoval.test.ts",
+  "server/castingV2/reliabilityReport.test.ts",
 ];
 
 const runs: Array<{ name: string; file: string; mutations: Mutation[] }> = [
@@ -22,6 +23,17 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[] }> = [
     mutations: [{
       find: "  if (words.length === 0) {\n    return target.whole ? byFacet.map(({ index }) => ({ index, keep: null })) : [];\n  }",
       replace: "  if (words.length === 0) return byFacet.map(({ index }) => ({ index, keep: null }));",
+    }],
+  },
+  {
+    /* The advisory bucket is only trustworthy while a REAL miss still lands in
+       FALSE. Demoting the binding test is exactly how it would become a
+       laundromat, so the suite has to notice when it stops discriminating. */
+    name: "the advisory bucket swallowing a binding miss",
+    file: "server/castingV2/reliabilityReport.ts",
+    mutations: [{
+      find: "&& check.binding !== false)) {",
+      replace: "&& false)) {",
     }],
   },
   {

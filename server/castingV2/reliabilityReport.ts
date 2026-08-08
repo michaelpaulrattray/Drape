@@ -17,13 +17,21 @@
  *
  * # The buckets, and why "delivered" is not one of them
  *
- * A delivery splits three ways, because "delivered" on its own is the exact
+ * A delivery splits four ways, because "delivered" on its own is the exact
  * comfort that hid the hair-up false pass for a day:
  *
  *   - **compliant** — every fact the reader was asked about, it confirmed.
- *   - **NON-compliant** — delivered and charged with a fact the record itself
- *     says is missing. This is the false-pass bucket, and the founder's bar for
- *     it is ZERO, because it charges for non-compliance.
+ *   - **NON-compliant** — delivered and charged, and the thing HER WORDS asked
+ *     for is not in the picture. This is the false-pass bucket, and the
+ *     founder's bar for it is ZERO, because it charges for non-compliance.
+ *   - **advisory** — delivered and charged, her ask IS in the picture, and the
+ *     reader disagrees about a quality she never specified. Run-10: "gold hoop
+ *     earrings" delivered as a gold hoop in each ear, marked unverified for
+ *     being "thin and understated, not bold hoops" — an adjective nobody used,
+ *     on a free-lane value the product refuses to adjudicate (D-187). Her words
+ *     are the sole arbiter (law 8). Outside the numerator AND outside the false
+ *     passes: a class drowning in advisory rows has demonstrated nothing, it
+ *     has merely avoided being caught.
  *   - **unverified** — the reader said nothing usable (D-235's `read: false`),
  *     or was unreachable. Not a pass. Counted apart so a reader outage can
  *     never inflate the compliant rate.
@@ -49,6 +57,7 @@ import type { Facet } from "./refineFacets";
 export type AttemptOutcome =
   | "delivered_noncompliant"
   | "refused_infra"
+  | "delivered_advisory"
   | "refused_honest"
   | "delivered_unverified"
   | "delivered_compliant"
@@ -169,11 +178,11 @@ export function classifyAttempt(row: AttemptRow): AttemptOutcome {
  *
  * # What deliberately does NOT change
  *
- * `overall` keeps the whole-row verdict. A render delivered with ANY read miss
- * is a non-compliant delivery, because the customer was charged once for the
- * whole picture — and the zero-false-pass bar is stated on that. So the false
- * pass is never lost by this change; it moves from four class rows to the one
- * class that actually failed.
+ * `overall` keeps the whole-row verdict. A render delivered with a BINDING read
+ * miss is a non-compliant delivery, because the customer was charged once for
+ * the whole picture — and the zero-false-pass bar is stated on that. So the
+ * false pass is never lost by this change; it moves from four class rows to the
+ * one class that actually failed.
  */
 export function classifyAttemptForClass(row: AttemptRow, edit: string): AttemptOutcome {
   return classifyChecks(row, (row.verification?.checks ?? []).filter((check) => check.facet === edit));
@@ -187,9 +196,40 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
 
   if (row.verification?.unavailable === true || checks.length === 0) return "delivered_unverified";
 
-  /* A single read miss is enough. Delivered with a fact the record itself says
-     is absent is the false pass, whether or not the facet could refuse. */
-  if (checks.some((check) => wasRead(check) && !check.verified)) return "delivered_noncompliant";
+  /*
+    A BINDING miss is the false pass — and only a binding one (Fable ruling,
+    2026-08-08, sharpened so this can never launder).
+
+    It used to be any read miss, binding or not, and run-10 is why that is
+    wrong. She asked for *"gold hoop earrings"*. She got gold hoop earrings —
+    one in each ear, confirmed by opening the frame. The reader marked it
+    unverified because they were *"thin and understated, not bold hoops"*: an
+    adjective **she never used**, on a free-lane value the product deliberately
+    refuses to adjudicate (D-187, which exists because that reader refunded six
+    legitimate renders in eighteen attempts).
+
+    **Her words are the sole arbiter** (law 8). A false pass is charging for a
+    picture that lacks what SHE asked for. A reader quibbling a quality nobody
+    specified is a different finding and gets a different bucket — otherwise
+    every free-lane class fails the founder's bar by construction, and a real
+    false pass hides among the quibbles where nobody can see it.
+
+    The binding flag already carries exactly this distinction: it is set for
+    values this program DEFINES and can hold a reader to. Deriving the split
+    from it rather than from a new list is the whole reason it is trustworthy.
+  */
+  /*
+    `binding !== false`, NOT `binding === true` — and my own control caught the
+    difference. Legacy rows carry no `binding` at all, so `check.binding` reads
+    undefined; testing for truth would have quietly demoted every historical
+    miss into the harmless bucket. The safe reading of an unknown is the one
+    that does not take a finding away, which is D-235's asymmetry pointed at a
+    different field.
+  */
+  if (checks.some((check) => wasRead(check) && !check.verified && check.binding !== false)) {
+    return "delivered_noncompliant";
+  }
+  if (checks.some((check) => wasRead(check) && !check.verified)) return "delivered_advisory";
   /* Every check must be affirmatively read. One silence is not a clean sheet. */
   if (checks.every(wasRead)) return "delivered_compliant";
   return "delivered_unverified";
@@ -213,6 +253,15 @@ export type ClassTally = {
   total: number;
   delivered_compliant: number;
   delivered_noncompliant: number;
+  /**
+   * Delivered, charged, and what HER WORDS asked for is in the picture — with
+   * the reader disagreeing about a quality she never specified.
+   *
+   * Its own bucket so the founder's zero-false-pass number means what it says.
+   * Outside the compliant numerator too: a class drowning in advisory rows has
+   * demonstrated nothing, it has merely avoided being caught.
+   */
+  delivered_advisory: number;
   delivered_unverified: number;
   refused_honest: number;
   refused_infra: number;
@@ -263,6 +312,7 @@ const emptyTally = (edit: string): ClassTally => ({
   total: 0,
   delivered_compliant: 0,
   delivered_noncompliant: 0,
+  delivered_advisory: 0,
   delivered_unverified: 0,
   refused_honest: 0,
   refused_infra: 0,
@@ -294,6 +344,7 @@ function finish(tally: ClassTally): ClassTally {
   */
   tally.deliveryClaims = tally.delivered_compliant
     + tally.delivered_noncompliant
+    + tally.delivered_advisory
     + tally.delivered_unverified;
   tally.deliveryRate = tally.deliveryClaims === 0
     ? 0
@@ -387,7 +438,8 @@ export function formatReport(report: ReliabilityReport): string {
      off twenty are different findings, and the old table hid the difference. */
   const header = "class".padEnd(22)
     + "n".padStart(4) + " claim".padStart(7) + "  ok".padStart(6) + " FALSE".padStart(7)
-    + " unver".padStart(7) + " ref-h".padStart(7) + " ref-i".padStart(7) + "   rate  bar";
+    + "   adv".padStart(7) + " unver".padStart(7) + " ref-h".padStart(7)
+    + " ref-i".padStart(7) + "   rate  bar";
   lines.push(header);
   lines.push("-".repeat(header.length));
   const row = (tally: ClassTally) =>
@@ -396,6 +448,7 @@ export function formatReport(report: ReliabilityReport): string {
     + String(tally.deliveryClaims).padStart(7)
     + String(tally.delivered_compliant).padStart(6)
     + String(tally.delivered_noncompliant).padStart(7)
+    + String(tally.delivered_advisory).padStart(7)
     + String(tally.delivered_unverified).padStart(7)
     + String(tally.refused_honest).padStart(7)
     + String(tally.refused_infra).padStart(7)

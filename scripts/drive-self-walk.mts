@@ -1188,6 +1188,24 @@ console.log(
   printed beside the verdict rather than left for someone to notice in the
   table.
 */
+/*
+  EVERY ADVISORY ROW OWES A MANUAL DOUBLE-READ (Fable, fable-030, through the
+  end of Tier A — not sampling, every row).
+
+  The bucket exists because the reader quibbles adjectives nobody used. It
+  becomes a laundromat the moment one of those quibbles is actually the thing
+  she asked for going missing, so the look has teeth: if the frame does not show
+  what her words asked for, that row is a FALSE PASS and the classification is
+  itself a defect. Printed here so a clean-looking run cannot carry an unread
+  advisory row past anyone.
+*/
+if (report && report.overall.delivered_advisory > 0) {
+  console.log(
+    `DOUBLE-READ OWED: ${report.overall.delivered_advisory} advisory row(s) — `
+    + "open each delivered frame and confirm what HER WORDS asked for is in it. "
+    + "If it is not, that row is a false pass, not an advisory one.",
+  );
+}
 if (report && report.unexercised.length > 0) {
   console.log(
     `NOT PROVEN THIS RUN: ${report.unexercised.join(", ")} — every attempt refused, `

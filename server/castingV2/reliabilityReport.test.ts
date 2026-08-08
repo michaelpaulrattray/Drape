@@ -49,13 +49,29 @@ describe("what became of one paid attempt", () => {
     expect(classifyAttempt(row)).toBe("delivered_noncompliant");
   });
 
-  it("counts an ADVISORY miss as non-compliant too — it still charged for a miss", () => {
-    /* The hair-up render, exactly: delivered, charged, advisory facet missing.
-       An advisory miss cannot refuse, which is why it must be COUNTED. */
+  /*
+    OVERTURNED DELIBERATELY (Fable ruling, fable-030), and the old expectation
+    is worth keeping in view: this row used to demand `delivered_noncompliant`
+    for ANY read miss, on the reasoning that an advisory miss cannot refuse and
+    so must at least be counted.
+
+    Run-10 showed what that costs. She asked for "gold hoop earrings" and got a
+    gold hoop in each ear; the reader marked it unverified for being "thin and
+    understated, not bold hoops" — an adjective she never used. Counting that as
+    a false pass makes the founder's zero unreachable for every free-lane class
+    and buries real false passes among quibbles.
+
+    It is still COUNTED — its own bucket, its own column, outside the compliant
+    numerator, and inside the denominator. What it is not is a false pass. And
+    every advisory row carries a mandatory manual double-read until the bucket
+    has a track record; if the look finds the asked thing actually absent, the
+    row becomes a false pass and the classification itself gets investigated.
+  */
+  it("counts an ADVISORY miss in its own bucket — counted, never a false pass", () => {
     const row = attempt({
       verification: { checks: [check({ facet: "hairWorn", binding: false, verified: false, saw: "hair loose" })] },
     });
-    expect(classifyAttempt(row)).toBe("delivered_noncompliant");
+    expect(classifyAttempt(row)).toBe("delivered_advisory");
   });
 
   it("never counts an unread affirmative as compliant", () => {
@@ -288,16 +304,32 @@ describe("a class is judged by its own checks, not by its neighbours'", () => {
   });
 
   it("still names the class that actually failed — the instrument can say the ugly thing", () => {
-    expect(classifyAttemptForClass(runSix, "hairWorn")).toBe("delivered_noncompliant");
+    /*
+      Run-6's `hairWorn` is ADVISORY under fable-030, and the reason is the
+      whole ruling in one row: nobody asked for her hair. It is a pinned
+      presentation fact, and the pixels were later measured at 0.00 mean
+      |Δluma| — the reader described the same head three ways and flipped on the
+      third. Her words are the arbiter, and her words never mentioned it.
+
+      The instrument still says the ugly thing: the class is named, it is
+      outside the compliant numerator, and it is inside the denominator, so
+      `hairWorn` reads 0% and blocks. What it is not is a charge for something
+      she asked for and did not get.
+    */
+    expect(classifyAttemptForClass(runSix, "hairWorn")).toBe("delivered_advisory");
   });
 
-  it("keeps the whole render non-compliant overall — the false pass is not lost", () => {
-    /* The customer was charged once for one picture. Zero-false-pass is stated
-       on the render, and moving the miss to its own class must not launder it. */
-    expect(classifyAttempt(runSix)).toBe("delivered_noncompliant");
+  it("keeps the whole render OUT of the compliant column — nothing is laundered", () => {
+    /* The customer was charged once for one picture, and moving the miss to its
+       own bucket must not turn it into a pass. It does not: the render claims a
+       delivery, contributes nothing to the numerator, and the rate reads 0. */
+    expect(classifyAttempt(runSix)).toBe("delivered_advisory");
     const report = summarize([runSix]);
-    expect(report.overall.delivered_noncompliant).toBe(1);
+    expect(report.overall.delivered_advisory).toBe(1);
+    expect(report.overall.delivered_compliant).toBe(0);
+    expect(report.overall.deliveryClaims, "still a delivery claim").toBe(1);
     expect(report.overall.deliveryRate).toBe(0);
+    expect(report.overall.clearsBar).toBe(false);
   });
 
   it("reports run-6's real per-class table", () => {
@@ -364,5 +396,92 @@ describe("attempts that have not finished happening yet", () => {
     const midFlight = attempt({ operationId: "5afc8b62", status: "dispatched", verification: null });
     expect(unsettledAttempts([midFlight])).toHaveLength(1);
     expect(classifyAttempt(midFlight)).toBe("unclassified");
+  });
+});
+
+/**
+ * THE ADVISORY BUCKET, AND THE CONTROLS THAT STOP IT BEING A LAUNDROMAT
+ * (Fable ruling, fable-030).
+ *
+ * The specimen is run-10's, from production: she asked for "gold hoop
+ * earrings", the frame shows a gold hoop in each ear, and the reader marked it
+ * unverified for being "thin and understated, not bold hoops" — an adjective
+ * she never used. Counting that as a false pass makes the founder's zero
+ * unreachable for every free-lane class AND hides real false passes among
+ * quibbles.
+ *
+ * The pair is what makes it trustworthy: the quibble moves OUT, and a genuine
+ * miss on a value her words define stays IN.
+ */
+describe("an advisory miss is not a false pass, and a binding miss still is", () => {
+  const delivered = (checks: Array<Record<string, unknown>>) =>
+    attempt({ verification: { checks: checks as never } });
+
+  it("REPLAY — run-10's earrings row lands in advisory, not in FALSE", () => {
+    const report = summarize([delivered([
+      {
+        facet: "statedAccessories",
+        asked: "gold hoop earrings",
+        verified: false,
+        read: true,
+        binding: false,
+        saw: "small gold hoop earrings, thin and understated, not bold hoops",
+      },
+    ])]);
+    expect(report.overall.delivered_advisory).toBe(1);
+    expect(report.overall.delivered_noncompliant, "the founder's zero stays zero").toBe(0);
+    expect(report.overall.delivered_compliant, "it is not a pass either").toBe(0);
+  });
+
+  it("CONTROL — a genuine miss on a value her words define is STILL a false pass", () => {
+    /* Without this the bucket would be a laundromat: everything unverified
+       quietly reclassified into the harmless column. */
+    const report = summarize([delivered([
+      {
+        facet: "eye.colour",
+        asked: "green",
+        verified: false,
+        read: true,
+        binding: true,
+        saw: "her eyes are brown",
+      },
+    ])]);
+    expect(report.overall.delivered_noncompliant).toBe(1);
+    expect(report.overall.delivered_advisory).toBe(0);
+    expect(report.overall.clearsBar, "one false pass still fails the class").toBe(false);
+  });
+
+  it("a binding miss beside an advisory one is a FALSE PASS — the worse reading wins", () => {
+    const report = summarize([delivered([
+      { facet: "statedAccessories", asked: "gold hoop earrings", verified: false, read: true, binding: false, saw: "thin hoops" },
+      { facet: "eye.colour", asked: "green", verified: false, read: true, binding: true, saw: "brown" },
+    ])]);
+    expect(report.overall.delivered_noncompliant).toBe(1);
+    expect(report.overall.delivered_advisory).toBe(0);
+  });
+
+  it("an advisory row is a delivery CLAIM, so it cannot flatter the rate by leaving", () => {
+    /* One compliant delivery beside one advisory reads 50%, not 100%. The
+       bucket removes it from the false-pass count, never from the denominator
+       — otherwise "avoided being caught" would read identically to "delivered
+       perfectly". */
+    const report = summarize([
+      delivered([{ facet: "makeup", asked: "nude lip gloss", verified: true, read: true, binding: true, saw: "nude gloss" }]),
+      delivered([{ facet: "makeup", asked: "nude lip gloss", verified: false, read: true, binding: false, saw: "a little pinker than nude" }]),
+    ]);
+    expect(report.overall.deliveryClaims).toBe(2);
+    expect(report.overall.deliveryRate).toBe(50);
+    expect(report.overall.clearsBar, "a class half-quibbled has not shown 95%").toBe(false);
+  });
+
+  it("a legacy row with no binding flag is NOT quietly advisory", () => {
+    /* `binding` is absent on old rows. Absent must not read as "false" and
+       demote a real miss into the harmless bucket — the safe reading of an
+       unknown is the one that does not take a finding away. */
+    const report = summarize([delivered([
+      { facet: "eye.colour", asked: "green", verified: false, read: true, saw: "brown" },
+    ])]);
+    expect(report.overall.delivered_advisory).toBe(0);
+    expect(report.overall.delivered_noncompliant).toBe(1);
   });
 });
