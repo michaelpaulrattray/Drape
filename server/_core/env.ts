@@ -14,6 +14,7 @@ import {
   INK_ADD_PRODUCT_READY,
   validateEvidenceComposerEnvironment,
 } from "../casting/evidence/evidenceComposerScope";
+import { assertDiagnosticCaptureConfigured } from "../castingV2/diagnosticCapture";
 import {
   EVIDENCE_PACKAGE_SCOPE_ENV,
   validateEvidencePackageEnvironment,
@@ -102,6 +103,12 @@ export function validateEnv(): void {
     scope: process.env[EVIDENCE_PACKAGE_SCOPE_ENV],
     composerScope: process.env[EVIDENCE_COMPOSER_SCOPE_ENV],
   });
+  /*
+    Casting diagnostics: its OWN flag, so turning on "keep the picture when a
+    render is refused" never arms the R7 ingest guards above it — the ones that
+    crash-looped production on 2026-07-31. Absent means off and asserts nothing.
+  */
+  assertDiagnosticCaptureConfigured(process.env);
   // Casting V2 is off by default and cannot be switched on without the three
   // things it silently depends on: a configured image transport (or every paid
   // roll fails at dispatch), the cleanup worker (or candidate objects outlive

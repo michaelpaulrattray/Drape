@@ -71,6 +71,7 @@ import {
   type Raster,
 } from "./maskedComposite";
 import { compositeSeam } from "./compositeIntegrity";
+import { captureRefusedRender } from "./diagnosticCapture";
 import { ProviderError } from "../providers/types";
 import { hasRegion, zoneScopeOf } from "./zoneScope";
 import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
@@ -1318,6 +1319,21 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
         : "[maskedRefine] composite seam on an edge-moving edit — SHADOW, delivered anyway",
     );
     if (seamEnforced) {
+      /*
+        KEEP THE FRAMES, because this refusal is the one nobody could diagnose.
+        Dark on every account but the founder's; never throws.
+      */
+      /* `userId` is optional on this input and the capture is owner-scoped, so
+         an unattributed render captures nothing rather than guessing an owner. */
+      if (input.userId !== undefined) await captureRefusedRender({
+        userId: input.userId,
+        operationId: input.operationId ?? "unattributed",
+        reason: "composite_fault",
+        frames: [
+          { name: "painted", bytes: input.painted.bytes },
+          { name: "composite", bytes: await writePng(composed.composite) },
+        ],
+      });
       /*
         Its own failure class, because the receipt is the record. `render_fault`
         writes "the image came back damaged" about a provider that did nothing

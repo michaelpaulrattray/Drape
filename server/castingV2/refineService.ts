@@ -129,6 +129,7 @@ import {
   staleCaptions,
   type RealizationCaptions,
 } from "./realizationCaption";
+import { captureRefusedRender } from "./diagnosticCapture";
 import { detectRenderFault } from "./renderFault";
 import {
   advisoryMisses,
@@ -1745,6 +1746,21 @@ export async function refineCandidate(
         },
         "[refineService] VERIFICATION FAILED TWICE — refusing and refunding",
       );
+      /*
+        AND THE PICTURE THAT WAS REFUSED (founder-approved 2026-08-08).
+
+        Run-6's "remove her glasses" was refused twice and refunded correctly,
+        and nobody can say whether the glasses were actually still there —
+        because the frame is gone the moment this throws. This is the one
+        artifact that answers it. Dark on every account but the founder's, and
+        it can never break the refusal it is documenting.
+      */
+      await captureRefusedRender({
+        userId: input.userId,
+        operationId,
+        reason: "facts_missing",
+        frames: [{ name: "composite", bytes: image.bytes }],
+      });
       throw new ProviderError(
         /*
           ITS OWN CLASS, because the receipt is the record (D-188).

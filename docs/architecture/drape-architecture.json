@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a5f20792a964716f"
+    "sourceFingerprint": "4670d63bbff1d958"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 65
+      "moduleCount": 66
     },
     {
       "id": "domain:castingV2",
@@ -3269,6 +3269,12 @@
     {
       "id": "module:server/castingV2/compositeIntegrity.ts",
       "path": "server/castingV2/compositeIntegrity.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/diagnosticCapture.ts",
+      "path": "server/castingV2/diagnosticCapture.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7424,6 +7430,11 @@
   ],
   "flags": [
     {
+      "id": "flag:CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
+      "name": "CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_V2_SCOPE",
       "name": "CASTING_V2_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -8279,6 +8290,10 @@
     {
       "id": "test:server/castingV2/deployCollision.test.ts",
       "path": "server/castingV2/deployCollision.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/diagnosticCapture.test.ts",
+      "path": "server/castingV2/diagnosticCapture.test.ts"
     },
     {
       "id": "test:server/castingV2/eyeShapeRouting.test.ts",
@@ -13755,6 +13770,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/env.ts",
+      "to": "module:server/castingV2/diagnosticCapture.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/index.ts",
       "to": "module:server/_core/context.ts",
       "kind": "imports"
@@ -17085,6 +17105,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/diagnosticCapture.ts",
+      "to": "module:server/casting/evidence/privateEvidenceStorage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/diagnosticCapture.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/diagnosticCapture.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/eyeShapeRouting.ts",
       "to": "module:server/castingV2/canthalTilt.ts",
       "kind": "imports"
@@ -17207,6 +17242,11 @@
     {
       "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/compositeIntegrity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/maskedRefine.ts",
+      "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
     {
@@ -17652,6 +17692,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/canthalTilt.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
     {
@@ -22812,7 +22857,7 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:server/casting/evidence/privateEvidenceStorage.ts",
-      "message": "Marked retire but still imported by 2 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 3 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:server/casting/evidence/referencePlateIngestion.ts",
