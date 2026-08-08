@@ -124,6 +124,62 @@ describe("the bar has a floor and a ceiling (D-215)", () => {
     expect(report.overall.clearsBar).toBe(false);
   });
 
+  /*
+    AN HONEST REFUSAL IS NOT A FAILED DELIVERY (Fable ruling, 2026-08-08).
+
+    It sat in the denominator, so a class that behaved perfectly — delivered
+    when it could, refused honestly and refunded when it could not — had its
+    rate dragged below the founder's bar BY THE REFUSAL. The bar would then
+    have blocked a class for being honest, which is the opposite of what
+    D-236 measures. The rate answers "when we claimed a delivery, was it
+    real"; refusals answer a different question and are reported beside it.
+
+    This matters now rather than in the abstract: step 2 of the walk lands on
+    a flat face and can honestly refuse, and `eye.shape` is a single-sample
+    class.
+  */
+  it("an honest refusal does not drag the rate down — it is not a delivery claim", () => {
+    const report = summarize([compliant("eye.shape"), attempt({ status: "failed", failureClass: "facts_missing" })]);
+    expect(report.overall.refused_honest, "the refusal is still counted, beside the rate").toBe(1);
+    expect(report.overall.deliveryRate, "one claim, one compliant delivery").toBe(100);
+    expect(report.overall.clearsBar).toBe(true);
+  });
+
+  it("but refusals ALONE clear nothing — an unexercised class is not a passing one", () => {
+    /* The loophole this closes: if refusals left the denominator and nothing
+       replaced the floor, a class that only ever refused would divide zero by
+       zero and could be read as clean. It has no delivery sample, so it has
+       proven nothing about delivery. */
+    const report = summarize(Array.from({ length: 3 }, () =>
+      attempt({ status: "failed", failureClass: "facts_missing" })));
+    expect(report.overall.refused_honest).toBe(3);
+    expect(report.overall.deliveryClaims, "nothing was ever claimed as delivered").toBe(0);
+    expect(report.overall.clearsBar).toBe(false);
+  });
+
+  it("names an unexercised class apart from one that is below the bar", () => {
+    /* Two different findings: `marks` delivered and got it wrong; `eye.shape`
+       never delivered at all. Calling both "below the bar" loses one of them —
+       and only one of them is evidence about delivery. */
+    const report = summarize([
+      attempt({ verification: { checks: [check({ facet: "marks", verified: false, saw: "smooth skin" })] } }),
+      attempt({ status: "failed", failureClass: "facts_missing", verification: { checks: [check({ facet: "eye.shape" })] } }),
+    ]);
+    expect(report.blockers).toContain("marks");
+    expect(report.blockers, "an unexercised class is not a failing one").not.toContain("eye.shape");
+    expect(report.unexercised).toContain("eye.shape");
+  });
+
+  it("a false pass still fails the class when every other row is a refusal", () => {
+    /* Zero-false-pass is absolute across ALL rows, and taking refusals out of
+       the denominator must not give one a hiding place. */
+    const report = summarize([
+      attempt({ verification: { checks: [check({ facet: "marks", verified: false, saw: "smooth skin" })] } }),
+      attempt({ status: "failed", failureClass: "facts_missing" }),
+    ]);
+    expect(report.overall.clearsBar).toBe(false);
+  });
+
   it("an untested class clears nothing — no attempts is not a pass", () => {
     const report = summarize([]);
     expect(report.overall.total).toBe(0);

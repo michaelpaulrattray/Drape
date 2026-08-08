@@ -217,7 +217,17 @@ export type ClassTally = {
   refused_honest: number;
   refused_infra: number;
   unclassified: number;
-  /** Compliant deliveries as a share of ALL attempts, in percent. */
+  /**
+   * Attempts that ENDED IN A DELIVERY CLAIM — the rate's denominator.
+   *
+   * Compliant, non-compliant and unverified. Refusals are excluded: nothing was
+   * delivered and the money went back, so they answer a different question and
+   * are reported in their own columns. Kept as a field rather than recomputed
+   * by every reader, so "what was this percentage OF" is on the record beside
+   * the percentage.
+   */
+  deliveryClaims: number;
+  /** Compliant deliveries as a share of DELIVERY CLAIMS, in percent. */
   deliveryRate: number;
   /** Whether this class clears D-236: 95% delivered-and-compliant, zero false passes. */
   clearsBar: boolean;
@@ -231,6 +241,17 @@ export type ReliabilityReport = {
   creditsRefunded: number;
   /** Classes below the bar, named — they do not block the others (D-236). */
   blockers: string[];
+  /**
+   * Classes that claimed no delivery at all — every attempt refused.
+   *
+   * Named apart from `blockers` because they are a different finding and
+   * calling them the same thing loses one of them. A class BELOW the bar
+   * delivered and got it wrong; an UNEXERCISED class never delivered, so it has
+   * proven nothing either way. It is not passing — `clearsBar` is false and it
+   * shows a dash rather than a percentage — but reporting it as "below the bar"
+   * would say we measured something we did not.
+   */
+  unexercised: string[];
 };
 
 /** D-236's bar. A number with teeth, beside D-193's. */
@@ -246,20 +267,46 @@ const emptyTally = (edit: string): ClassTally => ({
   refused_honest: 0,
   refused_infra: 0,
   unclassified: 0,
+  deliveryClaims: 0,
   deliveryRate: 0,
   clearsBar: false,
 });
 
 function finish(tally: ClassTally): ClassTally {
-  tally.deliveryRate = tally.total === 0
-    ? 0
-    : Math.round((tally.delivered_compliant / tally.total) * 1000) / 10;
   /*
-    A class with no attempts has not cleared anything. Reporting an untested
-    class as passing is the instrument telling a comfortable lie, which is the
-    failure mode D-215 exists to forbid.
+    THE DENOMINATOR IS DELIVERY CLAIMS, NOT ATTEMPTS (Fable ruling, 2026-08-08).
+
+    It was `total`, which counts refusals — so a class that behaved perfectly,
+    delivering when it could and refusing honestly and refunding when it could
+    not, had its own honesty drag it below the founder's bar. One compliant
+    delivery beside one honest refusal read **50%**. The bar would then block a
+    class for being honest, which inverts the thing D-236 measures.
+
+    The rate answers one question: WHEN WE CLAIMED A DELIVERY, WAS IT REAL. A
+    refusal makes no such claim — nothing was delivered and the money went
+    back — so it is reported in its own column beside the rate rather than
+    inside it. Honesty behaviour and delivery behaviour are different questions
+    and a single number cannot answer both.
+
+    `delivered_unverified` STAYS in the denominator. It is a delivery claim
+    whose reading failed, and taking it out would let a reader outage lift the
+    rate — the exact inflation D-235 was written against.
   */
-  tally.clearsBar = tally.total > 0
+  tally.deliveryClaims = tally.delivered_compliant
+    + tally.delivered_noncompliant
+    + tally.delivered_unverified;
+  tally.deliveryRate = tally.deliveryClaims === 0
+    ? 0
+    : Math.round((tally.delivered_compliant / tally.deliveryClaims) * 1000) / 10;
+  /*
+    A class with no DELIVERY CLAIMS has not cleared anything — and this is the
+    loophole the change above would otherwise open. Refusals leaving the
+    denominator must not let a class that only ever refused divide nothing by
+    nothing and read as clean: it has no delivery sample, so it has proven
+    nothing about delivery. Reporting an unexercised class as passing is the
+    instrument telling a comfortable lie, which is what D-215 forbids.
+  */
+  tally.clearsBar = tally.deliveryClaims > 0
     && tally.deliveryRate >= DELIVERY_RATE_BAR
     && tally.delivered_noncompliant <= FALSE_PASS_BAR;
   return tally;
@@ -297,17 +344,35 @@ export function summarize(
     overall: finish(overall),
     byClass: classes,
     creditsRefunded,
-    blockers: classes.filter((tally) => !tally.clearsBar).map((tally) => tally.edit),
+    blockers: classes
+      .filter((tally) => tally.deliveryClaims > 0 && !tally.clearsBar)
+      .map((tally) => tally.edit),
+    unexercised: classes
+      .filter((tally) => tally.deliveryClaims === 0)
+      .map((tally) => tally.edit),
   };
 }
 
-/** One line, for a heartbeat: `delivery rate 96.2% (25 attempts) · 0 false passes`. */
+/**
+ * One line, for a heartbeat:
+ * `delivery rate 96.2% (25 of 26 attempts claimed a delivery) · 0 false passes`.
+ *
+ * It said "(25 attempts)" beside a percentage that was never of attempts. A
+ * number that misnames its own population is how a reader draws the wrong
+ * conclusion from a correct figure, so the denominator says what it is —
+ * especially now that refusals sit outside it.
+ */
 export function heartbeatLine(report: ReliabilityReport): string {
   const { overall } = report;
   if (overall.total === 0) return "delivery rate — (no attempts yet)";
+  if (overall.deliveryClaims === 0) {
+    return `delivery rate — (no delivery claimed in ${overall.total} attempt`
+      + `${overall.total === 1 ? "" : "s"}) · blockers ${report.blockers.join(", ") || "none"}`;
+  }
   const falsePasses = overall.delivered_noncompliant;
   const blockers = report.blockers.length === 0 ? "none" : report.blockers.join(", ");
-  return `delivery rate ${overall.deliveryRate}% (${overall.total} attempts) · `
+  return `delivery rate ${overall.deliveryRate}% `
+    + `(${overall.deliveryClaims} of ${overall.total} attempts claimed a delivery) · `
     + `${falsePasses} false pass${falsePasses === 1 ? "" : "es"} · blockers ${blockers}`;
 }
 
@@ -317,21 +382,27 @@ export function formatReport(report: ReliabilityReport): string {
   lines.push(`RELIABILITY — ${report.windowLabel}`);
   if (report.windowFrom) lines.push(`window from ${report.windowFrom.toISOString()}`);
   lines.push("");
+  /* `claims` is the rate's denominator, printed beside the rate so the two can
+     never be read apart — a class showing 100% off one claim and one showing it
+     off twenty are different findings, and the old table hid the difference. */
   const header = "class".padEnd(22)
-    + "n".padStart(4) + "  ok".padStart(6) + " FALSE".padStart(7)
+    + "n".padStart(4) + " claim".padStart(7) + "  ok".padStart(6) + " FALSE".padStart(7)
     + " unver".padStart(7) + " ref-h".padStart(7) + " ref-i".padStart(7) + "   rate  bar";
   lines.push(header);
   lines.push("-".repeat(header.length));
   const row = (tally: ClassTally) =>
     tally.edit.padEnd(22)
     + String(tally.total).padStart(4)
+    + String(tally.deliveryClaims).padStart(7)
     + String(tally.delivered_compliant).padStart(6)
     + String(tally.delivered_noncompliant).padStart(7)
     + String(tally.delivered_unverified).padStart(7)
     + String(tally.refused_honest).padStart(7)
     + String(tally.refused_infra).padStart(7)
-    + `${tally.deliveryRate}%`.padStart(7)
-    + (tally.total === 0 ? "   —" : tally.clearsBar ? "   ✓" : "   ✗");
+    /* A rate with no claims behind it is not 0% — it is nothing, and printing
+       a number there invites it to be compared with a real one. */
+    + (tally.deliveryClaims === 0 ? "—".padStart(7) : `${tally.deliveryRate}%`.padStart(7))
+    + (tally.deliveryClaims === 0 ? "   —" : tally.clearsBar ? "   ✓" : "   ✗");
   for (const tally of report.byClass) lines.push(row(tally));
   lines.push("-".repeat(header.length));
   lines.push(row(report.overall));
@@ -342,6 +413,12 @@ export function formatReport(report: ReliabilityReport): string {
   );
   if (report.blockers.length > 0) {
     lines.push(`below the bar: ${report.blockers.join(", ")} — named, not blocking the others`);
+  }
+  if (report.unexercised.length > 0) {
+    lines.push(
+      `no delivery claimed: ${report.unexercised.join(", ")} — every attempt refused, `
+      + "so nothing about delivery is proven either way",
+    );
   }
   return lines.join("\n");
 }

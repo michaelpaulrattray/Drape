@@ -1178,4 +1178,20 @@ console.log(
       + (unsettled > 0 ? ` ${unsettled} attempt row(s) never settled — the sample is incomplete.` : "")
       + (report === null ? " No verdicts were read." : report.blockers.length ? ` Classes below the bar: ${report.blockers.join(", ")}.` : ""),
 );
+/*
+  UNEXERCISED CLASSES ARE SAID OUT LOUD EVEN ON A CLEAN RUN.
+
+  A class every attempt refused proves nothing about delivery, and a "WALK
+  CLEAN" line with an unexercised class sitting silently underneath it is the
+  comfortable half of the truth. It does not fail the run — refusing honestly is
+  correct behaviour and must not cost a run (Fable, 2026-08-08) — but it is
+  printed beside the verdict rather than left for someone to notice in the
+  table.
+*/
+if (report && report.unexercised.length > 0) {
+  console.log(
+    `NOT PROVEN THIS RUN: ${report.unexercised.join(", ")} — every attempt refused, `
+    + "so this run says nothing about whether that class delivers.",
+  );
+}
 process.exit(clean ? 0 : 1);
