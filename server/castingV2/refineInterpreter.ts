@@ -232,6 +232,36 @@ const REMOVAL_PROMPT = [
 const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
 
 /**
+ * THE PARSER'S TOKEN CEILING — and why it is no longer 600.
+ *
+ * Measured 2026-08-09 on the shipped configuration: `remove her glasses, then
+ * fox eyes` came back EMPTY on a 200 **three times in a row**, `finish_reason:
+ * length`, with reasoning in the completion, and a fourth reading returned
+ * truncated JSON. An empty-on-200 at `length` is not a model declining; it is a
+ * model spending its whole allowance thinking and never reaching the answer.
+ * The same model, the same prompt and the same contract finish the sentence
+ * when they are allowed to.
+ *
+ * A ceiling is not a quality control. Nothing here asks for a longer answer —
+ * the reply is a small JSON object either way, and a run that would have fitted
+ * in 600 tokens costs exactly what it always did, because output is billed by
+ * what is produced rather than by what was permitted. What the old number bought
+ * was a person being told *"that didn't come through clearly"* about a sentence
+ * the parser had read perfectly.
+ *
+ * Exported so the ceiling can be driven from a bench rather than retyped there:
+ * a driver that hardcodes its own copy is measuring its copy.
+ */
+export const REFINE_PARSE_MAX_TOKENS = 4000;
+
+/** Test seam: the bench measures the REAL prompt, or it measures nothing. A
+ *  small hand-written prompt does not make this model reason, and a driver that
+ *  cannot reproduce the failure cannot measure the fix. */
+export function refineParseSystemPrompt(mode?: "classify" | "edit"): string {
+  return mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT;
+}
+
+/**
  * The hybrid-likeness pass's one extra line (D-181).
  *
  * The measured behaviour was 7-of-9 refuse and 2-of-9 file for the SAME input.
@@ -423,7 +453,7 @@ async function runOnce(
       json: true,
       // Extraction, not creativity — the same reason the brief interpreter runs low.
       temperature: 0.1,
-      maxOutputTokens: 600,
+      maxOutputTokens: REFINE_PARSE_MAX_TOKENS,
       signal: input.signal,
     });
     /*

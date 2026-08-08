@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1044344d18259d1f"
+    "sourceFingerprint": "0b7a79c031e44985"
   },
   "domains": [
     {
@@ -98,7 +98,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 13
+      "moduleCount": 14
     },
     {
       "id": "domain:profile",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 19
+      "moduleCount": 20
     },
     {
       "id": "domain:studio",
@@ -2397,6 +2397,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/_core/spokenError.ts",
+      "path": "server/_core/spokenError.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/_core/systemRouter.ts",
       "path": "server/_core/systemRouter.ts",
       "domain": "platform",
@@ -4577,6 +4583,12 @@
     {
       "id": "module:shared/refundCopy.ts",
       "path": "shared/refundCopy.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/spokenError.ts",
+      "path": "shared/spokenError.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -8438,6 +8450,10 @@
       "path": "server/castingV2/refineFacets.test.ts"
     },
     {
+      "id": "test:server/castingV2/refineInterpreterCeiling.test.ts",
+      "path": "server/castingV2/refineInterpreterCeiling.test.ts"
+    },
+    {
       "id": "test:server/castingV2/refineLegacy.test.ts",
       "path": "server/castingV2/refineLegacy.test.ts"
     },
@@ -8512,6 +8528,10 @@
     {
       "id": "test:server/castingV2/signService.test.ts",
       "path": "server/castingV2/signService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/spokenSentences.test.ts",
+      "path": "server/castingV2/spokenSentences.test.ts"
     },
     {
       "id": "test:server/castingV2/statedAccessories.test.ts",
@@ -11534,6 +11554,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/failureCopy.ts",
+      "to": "module:shared/spokenError.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/sheetState.ts",
       "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
@@ -13959,6 +13984,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/spokenError.ts",
+      "to": "module:shared/spokenError.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/systemRouter.ts",
       "to": "module:server/_core/notification.ts",
       "kind": "imports"
@@ -13971,6 +14001,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:server/_core/context.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
     {
@@ -17785,6 +17820,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/casting/atomicCredits.ts",
       "kind": "imports"
     },
@@ -18261,6 +18301,11 @@
     {
       "from": "module:server/castingV2/signRecovery.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
     {

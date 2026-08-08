@@ -328,6 +328,35 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
       replace: '{ label: "Take them off first", resolves: `remove her glasses, then ${asked}` },',
     }],
   },
+  {
+    /*
+      THE PARSER'S CEILING. Back at 600 the model spends its allowance thinking
+      and returns an empty completion on a 200 — four times in six on `remove
+      her glasses, then fox eyes`, measured against the real transport.
+    */
+    name: "the token ceiling that stops starving the parser",
+    file: "server/castingV2/refineInterpreter.ts",
+    suites: ["server/castingV2/refineInterpreterCeiling.test.ts"],
+    mutations: [{ find: "export const REFINE_PARSE_MAX_TOKENS = 4000;", replace: "export const REFINE_PARSE_MAX_TOKENS = 600;" }],
+  },
+  {
+    /*
+      THE MARKER THAT CARRIES HER SENTENCE. Without it every authored refusal
+      is replaced by the lost-contact line, including three that say nothing
+      was charged.
+    */
+    name: "the spoken marker reaching the outgoing payload",
+    file: "server/_core/spokenError.ts",
+    suites: ["server/castingV2/spokenSentences.test.ts"],
+    mutations: [{ find: "  if (!isSpokenError(error)) return shape;", replace: "  if (true) return shape;" }],
+  },
+  {
+    /* And the client half — the marker means nothing if the copy rule ignores it. */
+    name: "the client trusting a spoken sentence",
+    file: "client/src/features/castingV2/failureCopy.ts",
+    suites: ["server/castingV2/spokenSentences.test.ts"],
+    mutations: [{ find: "  if (errorIsSpoken(error) && message) return message;\n" }],
+  },
 ];
 
 const red = (suites: string[]): boolean => {
