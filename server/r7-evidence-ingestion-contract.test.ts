@@ -57,6 +57,11 @@ describe("R7-7C1 owned-evidence schema contract", () => {
       // worker's batches ambiguous.
       "candidate_cleanup",
       "casting_candidate_cleanup",
+      // Refused-render diagnostic frames (migration 0024). Its own value for
+      // the same reason: these are frames of a person's FACE kept only to
+      // diagnose a failure, and their retention answers to that purpose rather
+      // than to any candidate's lifecycle.
+      "casting_diagnostic_cleanup",
     ]);
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_ingest");
     expect(GENERATION_OPERATION_KINDS).toContain("evidence_plate_discard");

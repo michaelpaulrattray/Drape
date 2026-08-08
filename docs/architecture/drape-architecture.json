@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6bedaaa77614787a"
+    "sourceFingerprint": "cb7293a20671b84a"
   },
   "domains": [
     {
@@ -17137,6 +17137,11 @@
     {
       "from": "module:server/castingV2/diagnosticCapture.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/diagnosticCapture.ts",
+      "to": "module:server/db/storageCleanup.ts",
       "kind": "imports"
     },
     {

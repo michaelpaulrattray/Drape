@@ -50,6 +50,7 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 import { createModuleLogger } from "../logging/logger";
 import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
+import { reserveStorageCleanupItemForOperation } from "../db/storageCleanup";
 import {
   parsePrivateEvidenceStorageConfig,
   type PrivateEvidenceStorageConfig,
@@ -152,6 +153,32 @@ export type DiagnosticWriter = (input: {
   bytes: Buffer;
 }) => Promise<void>;
 
+/**
+ * Reserve one key for deletion. Injected so a test can drive the failure.
+ *
+ * The founder's approval had a condition attached — *under the cleanup
+ * worker's purge promise* — and until this existed the code did not keep it:
+ * `captureRefusedRender` wrote objects and registered nothing, so the frames
+ * would have accumulated forever. The boot guard could not catch it, because it
+ * asks whether the worker is ENABLED and the worker was; it simply had no
+ * instructions naming these keys. A control that checks the wrong thing and
+ * passes is the quietest way to lose an invariant.
+ */
+export type DiagnosticReserver = (input: {
+  userId: number;
+  operationId: string;
+  storageKey: string;
+}) => Promise<string>;
+
+const defaultReserver: DiagnosticReserver = async (input) =>
+  reserveStorageCleanupItemForOperation({
+    userId: input.userId,
+    operationId: input.operationId,
+    kind: "casting_diagnostic_cleanup",
+    storageKey: input.storageKey,
+    storageBackend: "private_evidence_r2",
+  });
+
 function s3Writer(config: PrivateEvidenceStorageConfig): DiagnosticWriter {
   const client = new S3Client({
     region: "auto",
@@ -187,6 +214,8 @@ export async function captureRefusedRender(input: {
   frames: ReadonlyArray<DiagnosticFrame>;
   /** Injected by tests; production builds one from the private bucket config. */
   writer?: DiagnosticWriter;
+  /** Injected by tests; production reserves a real cleanup item. */
+  reserve?: DiagnosticReserver;
   env?: NodeJS.ProcessEnv;
 }): Promise<CapturedDiagnostic> {
   const env = input.env ?? process.env;
@@ -224,6 +253,34 @@ export async function captureRefusedRender(input: {
       operationId: input.operationId,
       name: frame.name,
     });
+    /*
+      RESERVED BEFORE IT IS WRITTEN, and the order is the whole guarantee.
+
+      Register-then-write means an object can never exist without something
+      instructed to delete it: if the reservation fails, the bytes are never
+      put. The inverse ordering would leave a window — and a crash inside it —
+      where a face sits in a bucket nobody will ever sweep.
+
+      The other direction is harmless by design: a reservation whose object was
+      never written is a key the worker tries to delete and finds absent, which
+      every cleanup path already tolerates. Given a choice between an orphaned
+      instruction and an orphaned face, this campaign takes the instruction.
+    */
+    try {
+      await (input.reserve ?? defaultReserver)({
+        userId: input.userId,
+        operationId: input.operationId,
+        storageKey: key,
+      });
+    } catch (error) {
+      /* Capture is a diagnostic, so it never breaks a render — but it does not
+         get to keep the frame either. Inert is the correct failure. */
+      log.warn(
+        { err: error, operationId: input.operationId, frame: frame.name },
+        "[diagnosticCapture] could not reserve the frame for cleanup — NOT storing it",
+      );
+      continue;
+    }
     try {
       await writer({ key, bytes: frame.bytes });
       keys.push(key);

@@ -164,6 +164,43 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
       .resolves.toEqual([]);
   }, DB_TEST_TIMEOUT);
 
+  /*
+    THE PURGE PROMISE THE FOUNDER WAS ASKED TO TRUST (migration 0024).
+
+    `captureRefusedRender` reserves before it writes, so a diagnostic frame
+    cannot exist unregistered — but "registered" only means something if the
+    worker actually sweeps a batch of THIS kind. The worker is kind-agnostic by
+    design and routes on `storageBackend`; this proves that generality holds
+    for the new value rather than assuming it, which is the difference between
+    a promise and a mechanism.
+  */
+  it("sweeps a refused-render diagnostic batch through the PRIVATE authority", async () => {
+    const frameKey = "casting-v2/diagnostics/1/11111111-1111-4111-8111-111111111111/painted.png";
+    const batch = await withTransaction((tx) => cleanupDb.createStorageCleanupManifestIn(tx, {
+      userId,
+      operationId: randomUUID(),
+      kind: "casting_diagnostic_cleanup",
+      storageItems: [{ storageKey: frameKey, storageBackend: "private_evidence_r2" }],
+    }));
+    const privateCalls: string[] = [];
+    await expect(worker.processNextStorageCleanupBatch({
+      deleteObject: async () => {
+        throw new Error("a face must never go to the public delete authority");
+      },
+      deletePrivateObject: async (storageKey) => {
+        privateCalls.push(storageKey);
+        return { success: true };
+      },
+    })).resolves.toMatchObject({
+      claimed: true,
+      batchId: batch.id,
+      deleted: 1,
+      status: "succeeded",
+    });
+    expect(privateCalls, "the frame is deleted, from the private bucket").toEqual([frameKey]);
+    await expect(cleanupDb.getStorageCleanupItemsForBatch(batch.id)).resolves.toEqual([]);
+  }, DB_TEST_TIMEOUT);
+
   it("recovers a crash after object deletion by replaying the idempotent delete", async () => {
     const created = await manifest(["models/crash/head.png"]);
     const now = new Date("2026-07-21T00:00:00.000Z");

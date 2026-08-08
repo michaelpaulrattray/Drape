@@ -522,6 +522,15 @@ export const STORAGE_CLEANUP_BATCH_KINDS = [
   // worker's batches ambiguous (§G.6).
   "candidate_cleanup",
   "casting_candidate_cleanup",
+  /*
+    Refused-render diagnostics (migration 0024). Its own value for the same
+    reason `casting_candidate_cleanup` got one: these are frames of a person's
+    FACE kept only to diagnose a failure, and their retention answers to that
+    purpose rather than to a candidate's lifecycle. One enum value covering two
+    retention policies makes the worker's batches ambiguous, and this is the
+    policy nobody would want guessed at.
+  */
+  "casting_diagnostic_cleanup",
 ] as const;
 export type StorageCleanupBatchKind = typeof STORAGE_CLEANUP_BATCH_KINDS[number];
 

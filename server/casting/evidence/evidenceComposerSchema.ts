@@ -93,8 +93,25 @@ const EXISTING_COLUMN_TYPES: Readonly<Record<string, string>> = {
   "generations.type":
     "enum('masterPrompt','castingImage','fullBody','multiView','iteration','upscale','wardrobeVTO','wardrobeComposite','wardrobeRefinement','wardrobeDigitize','evidenceCandidate')",
   // `casting_candidate_cleanup` added by migration 0017 (Casting V2 roll
-  // domain). This constant pins the live DDL, so it must be updated in the
-  // same change as the enum itself or startup validation fails.
+  // domain). This constant pins the LIVE DDL, so it must be updated in the same
+  // change as the enum itself or startup validation fails.
+  //
+  // ⛔ 0024 (`casting_diagnostic_cleanup`) IS NOT HERE YET, DELIBERATELY.
+  //
+  // "Live" means production, and production has not run 0024. Adding the value
+  // here first would make this constant describe a database that does not
+  // exist — and this is a boot guard, which is the thing 2026-07-31 taught us
+  // to sequence rather than assume. It cannot refuse traffic today, because the
+  // validation only runs when EVIDENCE_COMPOSER_SCOPE is non-off and that
+  // variable is ABSENT in production (verified 2026-08-08 by name) — but a
+  // guard that is wrong and merely unreached is still wrong.
+  //
+  // The ORM enum and migration 0024 ship now, which is safe in the other
+  // direction: writing the new value to a database that lacks it is rejected by
+  // MySQL, the reservation fails, and capture goes inert rather than
+  // unpurgeable. Fail-closed, like the rest of this path.
+  //
+  // Order: founder runs 0024 → this line gains the value → deploy.
   "storage_cleanup_batches.kind":
     "enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup','casting_candidate_cleanup')",
   "model_reference_plates.kind":

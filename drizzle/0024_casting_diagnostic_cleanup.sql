@@ -1,0 +1,19 @@
+-- Refused-render diagnostics get their own cleanup batch kind.
+--
+-- Additive and reversible: one enum value appended to a column whose existing
+-- values are untouched, so every row already written keeps its exact meaning
+-- and no application version in flight can be confused by it.
+--
+-- WHY ITS OWN VALUE. These batches hold frames of a person's FACE, captured
+-- only to diagnose a render that was refused and refunded. Their retention
+-- answers to that purpose, not to a candidate's lifecycle, and one enum value
+-- covering two retention policies makes the worker's batches ambiguous — the
+-- same reasoning that gave `casting_candidate_cleanup` its own value in 0017.
+--
+-- WHY IT MATTERS THAT THIS RUNS BEFORE THE FLAG. `captureRefusedRender` now
+-- reserves a cleanup item BEFORE it writes any bytes, so a captured frame
+-- cannot exist unregistered. Without this value the reservation fails, the
+-- write does not happen, and capture is inert rather than unpurgeable — which
+-- is the correct failure, and the reason the founder's approval condition
+-- ("under the cleanup worker's purge promise") is one the code can keep.
+ALTER TABLE `storage_cleanup_batches` MODIFY COLUMN `kind` enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup','casting_candidate_cleanup','casting_diagnostic_cleanup') NOT NULL;

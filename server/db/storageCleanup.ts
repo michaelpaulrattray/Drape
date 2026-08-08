@@ -69,7 +69,10 @@ export async function createStorageCleanupManifestIn(
 export async function reserveStorageCleanupItemForOperation(input: {
   userId: number;
   operationId: string;
-  kind: "candidate_cleanup";
+  /* `casting_diagnostic_cleanup` (0024) reserves refused-render frames. It
+     shares this path deliberately: the appendable-batch-per-operation shape is
+     exactly right for a capture that writes several frames for one refusal. */
+  kind: "candidate_cleanup" | "casting_diagnostic_cleanup";
   storageKey: string;
   storageBackend: "public_r2" | "private_evidence_r2";
 }): Promise<string> {
