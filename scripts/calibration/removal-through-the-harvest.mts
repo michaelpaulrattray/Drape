@@ -21,7 +21,7 @@
 import "dotenv/config";
 import { readFileSync, writeFileSync } from "node:fs";
 
-import { coverage } from "../../server/castingV2/maskGeometry";
+import { coverage, dilateMask } from "../../server/castingV2/maskGeometry";
 import { readRaster } from "../../server/castingV2/maskedComposite";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
@@ -176,4 +176,47 @@ for (const engine of ["nbp", "gpt2"]) {
     + `harvested ${(inHarvested * 100).toFixed(3)}%  → ${verdict}`,
   );
   console.log(`  saved ${file}`);
+
+  /*
+    WHICH STAGE LOST THE SURVIVING RIM.
+
+    The interiors are replaced correctly; what survives is the frames' own
+    anti-aliased boundary — a 1–2px outline that still traces the whole spectacle
+    silhouette, which is all a segmenter or a customer needs to say she is still
+    wearing glasses. Guessing had already cost three wrong answers, so this asks
+    every stage the same question directly: of the pixels that SURVIVED, how many
+    did you ever claim? The first stage that drops them is the one to fix.
+
+    Residue is defined narrowly — dark in the master, within a small dilation of
+    the object's own region, unchanged in the delivered frame — because her hair
+    and brows are also dark and legitimately untouched, and a loose definition
+    counts them and reports a defect three times its real size. (It did, once.)
+  */
+  if (explain) {
+    const masterRaster = await readRaster(master);
+    const out = await readRaster(harvested.bytes);
+    const region = explain.zoneAsScoped!;
+    const near = await dilateMask(region, 8);
+    const residue: number[] = [];
+    for (let pixel = 0; pixel < masterRaster.width * masterRaster.height; pixel += 1) {
+      if (near.data[pixel] === 0) continue;
+      const at = pixel * 3;
+      const luma = (masterRaster.data[at] + masterRaster.data[at + 1] + masterRaster.data[at + 2]) / 3;
+      if (luma > 90) continue;
+      const delta = Math.abs(out.data[at] - masterRaster.data[at])
+        + Math.abs(out.data[at + 1] - masterRaster.data[at + 1])
+        + Math.abs(out.data[at + 2] - masterRaster.data[at + 2]);
+      if (delta <= 18) residue.push(pixel);
+    }
+    const inside = residue.filter((pixel) => region.data[pixel] > 0).length;
+    console.log(`    RESIDUE ${residue.length} px — inside the object's own segmentation `
+      + `${inside}, outside ${residue.length - inside}`);
+    for (const stage of ["zone", "zoneAsScoped", "vacated", "departed", "delivered", "applied"]) {
+      const mask = explain[stage];
+      if (!mask) continue;
+      const claimed = residue.filter((pixel) => mask.data[pixel] > 0).length;
+      console.log(`      ${stage.padEnd(13)} ever claimed ${claimed}`
+        + ` (${((claimed / Math.max(1, residue.length)) * 100).toFixed(1)}%)`);
+    }
+  }
 }
