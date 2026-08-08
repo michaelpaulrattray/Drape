@@ -251,6 +251,31 @@ export type MaskedRefineResult = {
     zoneCoverage: number;
   };
   /**
+   * WHAT THE COMPOSITE CAN PROVE ABOUT PIXELS IT DID NOT TOUCH.
+   *
+   * The composite's own guarantee is that everything outside `applied` is
+   * byte-identical to the master. So for any facet whose master region does not
+   * meet `applied`, the picture at that facet IS the master's picture — which
+   * means asking a stochastic reader to re-decide it is asking it to re-answer
+   * a question arithmetic has already settled. Run-6 is the exhibit: `hairWorn`
+   * read three ways across three renders on hair measured at **0.00** mean
+   * |Δluma|, and the third reading refused a correct render.
+   *
+   * These are the regions the harvest ALREADY segmented for its own work, kept
+   * rather than re-derived — the cost of this is zero vision calls, which is the
+   * whole reason the design survives. A facet whose region is not in here gets a
+   * live read, because "we did not look" is not "it did not change".
+   *
+   * Present on the product path, unlike `explain` — the verification step is not
+   * calibration.
+   */
+  evidence?: {
+    /** Where the composite was allowed to differ from the master. */
+    applied: Mask;
+    /** Master regions by the segmentation question that produced them. */
+    masterRegions: ReadonlyMap<string, Mask>;
+  };
+  /**
    * The masks this composite was actually built from, when `explain` was asked
    * for. `applied` is the canonical one: it is the only boundary source that
    * cannot disagree with the picture, and three of this session's four wrong
@@ -1373,6 +1398,17 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       blendBandPixels: outside.bandPixels,
       zoneCoverage: coverage(grown.zone),
     },
+    /*
+      Harvested from the memo the segmentation calls already share, so this is
+      a VIEW of what was asked rather than a second list that can drift from it
+      (derive, never mirror). Only settled master reads: a promise that rejected
+      is not evidence, and awaiting one here would make the verification step
+      pay for a call the composite already gave up on.
+    */
+    evidence: {
+      applied: composed.applied,
+      masterRegions: await settledMasterRegions(asked),
+    },
     ...(input.explain
       ? {
         explain: {
@@ -1387,6 +1423,32 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       }
       : {}),
   };
+}
+
+/**
+ * The master regions this composite actually obtained, by question.
+ *
+ * Reads the same memo the composite used, so it cannot name a region the
+ * composite did not really segment. A read that REJECTED is left out entirely:
+ * the caller's rule is "no region, live read", and a rejected promise is a
+ * no-region — reporting it as anything else would let a failed segmentation
+ * masquerade as proof that nothing changed there.
+ */
+async function settledMasterRegions(
+  asked: ReadonlyMap<string, Promise<Mask>>,
+): Promise<ReadonlyMap<string, Mask>> {
+  const settled = new Map<string, Mask>();
+  await Promise.all(
+    Array.from(asked.entries()).map(async ([key, pending]) => {
+      if (!key.startsWith("master:")) return;
+      /* `master:<name>:<absentIsAnswer>` — the question is the middle field. */
+      const name = key.slice("master:".length, key.lastIndexOf(":"));
+      try {
+        settled.set(name, await pending);
+      } catch { /* a no-region, and the caller reads that as "look again". */ }
+    }),
+  );
+  return settled;
 }
 
 /**

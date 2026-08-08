@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "47a2b354d08c0915"
+    "sourceFingerprint": "b4581df7c1875fcd"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 66
+      "moduleCount": 67
     },
     {
       "id": "domain:castingV2",
@@ -3317,6 +3317,12 @@
     {
       "id": "module:server/castingV2/heritagePromotion.ts",
       "path": "server/castingV2/heritagePromotion.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/inheritedVerdict.ts",
+      "path": "server/castingV2/inheritedVerdict.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8326,6 +8332,10 @@
     {
       "id": "test:server/castingV2/heritagePromotion.test.ts",
       "path": "server/castingV2/heritagePromotion.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/inheritedVerdict.test.ts",
+      "path": "server/castingV2/inheritedVerdict.test.ts"
     },
     {
       "id": "test:server/castingV2/likenessRefusal.test.ts",
@@ -17202,6 +17212,31 @@
     {
       "from": "module:server/castingV2/heritagePromotion.ts",
       "to": "module:server/castingV2/properNouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inheritedVerdict.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inheritedVerdict.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inheritedVerdict.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inheritedVerdict.ts",
+      "to": "module:server/castingV2/renderVerification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/inheritedVerdict.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

@@ -1703,7 +1703,19 @@ export async function refineCandidate(
         departed: departed ?? undefined,
         operationId,
       });
-      return { ...painted, bytes: harvested.bytes, contentType: harvested.contentType };
+      /*
+        The composite's own working, carried to the verification step rather
+        than re-derived there. What it proves is narrow and exact: outside
+        `applied`, this picture IS the master, byte for byte — so a facet whose
+        master region never meets `applied` has already been answered and does
+        not need a stochastic reader rolled against it again.
+      */
+      return {
+        ...painted,
+        bytes: harvested.bytes,
+        contentType: harvested.contentType,
+        evidence: harvested.evidence ?? null,
+      };
     };
 
     /*
@@ -1815,6 +1827,38 @@ export async function refineCandidate(
         );
         throw new ProviderError("render_fault", fault.detail);
       }
+      /*
+        INHERITED VERDICTS ARE NOT WIRED HERE YET, AND THE REASON IS A DEFECT
+        FOUND WHILE WIRING THEM (2026-08-08, reported to Fable in opus-020).
+
+        The design — don't ask a stochastic reader to re-decide what arithmetic
+        proves unchanged — is sound, and `inheritedVerdict.ts` implements it
+        with its controls green. What is NOT sound is the source of the
+        inherited verdict, and the reason is one line in `claimVariant`:
+
+          baseImageKey: candidate.imageKey
+
+        **Every render is anchored on the ORIGINAL CANDIDATE**, not on the
+        predecessor. So "outside `applied`, identical to the master" means
+        identical to HER FIRST PICTURE — and a facet an earlier step PAID to
+        change, whose region this composite happens not to touch, has silently
+        reverted to the candidate's version of it. Run-7 saw exactly that:
+        freckles delivered at step 1 were gone from step 3's render.
+
+        Inheriting the predecessor's "freckles are there, I saw them" onto that
+        render would have converted a visible, honestly-counted delivery failure
+        into a confident false pass — manufactured by the fix meant to prevent
+        them, on pixels nobody looked at. That is the one outcome this campaign
+        forbids outright, so it does not ship on my own judgment.
+
+        The narrow safe rule is known and stated in opus-020: inherit only for
+        facets NO step of the chain has ever written — the pinned presentation
+        facts like `hairWorn`, which is the entire motivating case — and only
+        from a check carrying its own `saw`. That still needs the residual
+        argued (a PRIOR composite may have painted the region even where no step
+        named the facet) and it changes refusal behaviour, so it waits for a
+        ruling rather than being decided here.
+      */
       const read = () => verifyRender({
         bytes: rendered.bytes,
         contentType: rendered.contentType,

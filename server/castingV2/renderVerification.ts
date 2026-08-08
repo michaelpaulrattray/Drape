@@ -155,7 +155,7 @@ const SYSTEM_PROMPT = [
  * Only a READ, BINDING miss spends the user's refusal. An unread check is
  * silence: it never refuses, and it never passes either.
  */
-function okOf(checks: ReadonlyArray<FacetCheck>): boolean {
+export function okOf(checks: ReadonlyArray<FacetCheck>): boolean {
   return checks.every((check) => !check.read || check.verified || !check.binding);
 }
 
