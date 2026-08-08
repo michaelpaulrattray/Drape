@@ -580,6 +580,79 @@ export function intersectMask(a: Mask, b: Mask): Mask {
 }
 
 /**
+ * THE PART OF A CLAIM THAT IS ATTACHED TO THE THING IT IS ABOUT.
+ *
+ * A flood fill through `mask`, starting from every pixel of it that touches
+ * `seed`. Everything the fill cannot reach is dropped.
+ *
+ * # Why an object's own edge is a connectivity question
+ *
+ * The reversed difference matte answers *what content LEFT this region* with a
+ * reach of 160px, because a shrinking ponytail's old flyaways lie that far from
+ * the mass they belonged to. For a REMOVAL the same recovery is asked a much
+ * smaller question — where does this object's anti-aliased edge and contact
+ * shadow run — and at that reach it also returns scattered specks all over the
+ * face wherever her master happens to sit a few levels toward the frames'
+ * colour. Feeding those to a grow-until-clear loop makes the loop chase them:
+ * measured, it ran to its pass ceiling and returned a territory ninety-six
+ * pixels wider than her glasses.
+ *
+ * The bound is not a smaller number, it is the physical fact: **the edge of a
+ * thing is joined to the thing.** A speck across her cheek is not her frames'
+ * boundary however dark it is, and no pad or threshold expresses that as well as
+ * asking whether it is connected.
+ *
+ * Four-connectivity, deliberately: eight would walk diagonal noise across a
+ * one-pixel gap, which is the failure this exists to prevent. The honest limit,
+ * stated: a genuine contact shadow separated from the object by a clean gap of
+ * background is dropped. That is the safe direction — it leaves a pixel to her
+ * master rather than handing her one that was never the thing that left.
+ */
+export function attachedTo(mask: Mask, seed: Mask): Mask {
+  assertStride(mask, "mask");
+  assertStride(seed, "seed");
+  assertSameSize(mask, seed);
+  const { width, height } = mask;
+  const kept = Buffer.alloc(mask.data.length, 0);
+  const queued = new Uint8Array(mask.data.length);
+  const stack: number[] = [];
+
+  /* The seeds: mask pixels that touch the thing itself. The matte never fires
+     INSIDE the region it was confirmed from, so an intersection would be empty
+     — adjacency is the join, not overlap. */
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const pixel = y * width + x;
+      if (mask.data[pixel] === 0 || seed.data[pixel] > 0) continue;
+      const touching = (x > 0 && seed.data[pixel - 1] > 0)
+        || (x < width - 1 && seed.data[pixel + 1] > 0)
+        || (y > 0 && seed.data[pixel - width] > 0)
+        || (y < height - 1 && seed.data[pixel + width] > 0);
+      if (touching) { queued[pixel] = 1; stack.push(pixel); }
+    }
+  }
+
+  while (stack.length > 0) {
+    const pixel = stack.pop()!;
+    kept[pixel] = mask.data[pixel];
+    const x = pixel % width;
+    const y = (pixel - x) / width;
+    const neighbours = [
+      x > 0 ? pixel - 1 : -1,
+      x < width - 1 ? pixel + 1 : -1,
+      y > 0 ? pixel - width : -1,
+      y < height - 1 ? pixel + width : -1,
+    ];
+    for (const neighbour of neighbours) {
+      if (neighbour < 0 || queued[neighbour] === 1 || mask.data[neighbour] === 0) continue;
+      queued[neighbour] = 1;
+      stack.push(neighbour);
+    }
+  }
+  return { data: kept, width, height };
+}
+
+/**
  * How far the content segmentation is grown before it meets the matte.
  *
  * D-216 measured why this cannot be zero: a SAM-class segmenter draws a HARD

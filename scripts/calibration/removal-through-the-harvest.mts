@@ -25,6 +25,7 @@ import { coverage, dilateMask } from "../../server/castingV2/maskGeometry";
 import { readRaster } from "../../server/castingV2/maskedComposite";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
+import { boundaryContact } from "./lib/contact.mts";
 
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) throw new Error("FAL_KEY required");
@@ -84,7 +85,8 @@ for (const engine of ["nbp", "gpt2"]) {
      first one that is empty is the one to fix. */
   const explain = (harvested as { explain?: Record<string, { data: Buffer; width: number; height: number }> }).explain;
   if (explain) {
-    for (const stage of ["zoneAsScoped", "zone", "harvested", "vacated", "departed", "delivered", "applied"]) {
+    for (const stage of ["zoneAsScoped", "zone", "harvested", "vacated", "departed",
+      "departedTerritory", "departedVacancy", "ungoverned", "delivered", "applied"]) {
       const mask = explain[stage];
       if (mask) console.log(`    ${stage.padEnd(13)} ${(coverage(mask) * 100).toFixed(3)}%`);
     }
@@ -97,7 +99,10 @@ for (const engine of ["nbp", "gpt2"]) {
       skin. For a removal only full alpha is a removal.
     */
     const applied = explain.applied;
-    const zoneMask = explain.zoneAsScoped;
+    /* HER FRAMES, as the segmenter reads them — the one population in this
+       script that no stage of the thing under test can move. See the note on
+       the residue below; it cost a verdict once. */
+    const zoneMask = await reader.region({ image: master, name: "glasses" });
     if (applied && zoneMask) {
       const buckets = [0, 0, 0, 0, 0];
       let inZone = 0;
@@ -195,7 +200,16 @@ for (const engine of ["nbp", "gpt2"]) {
   if (explain) {
     const masterRaster = await readRaster(master);
     const out = await readRaster(harvested.bytes);
-    const region = explain.zoneAsScoped!;
+    /*
+      THE POPULATION COMES FROM THE SEGMENTER, NOT FROM A STAGE OF THE THING
+      UNDER TEST. It used to be `explain.zoneAsScoped`, and the moment the fix
+      changed what that stage contained, every figure below silently began
+      describing a different set of pixels — a residue of 3,673 became one of
+      30,874 with nothing wrong. A before/after comparison whose population
+      moves between the before and the after is not a comparison. Her frames, as
+      the segmenter reads them on her own master, do not move.
+    */
+    const region = await reader.region({ image: master, name: "glasses" });
     const near = await dilateMask(region, 8);
     const residue: number[] = [];
     for (let pixel = 0; pixel < masterRaster.width * masterRaster.height; pixel += 1) {
@@ -211,12 +225,61 @@ for (const engine of ["nbp", "gpt2"]) {
     const inside = residue.filter((pixel) => region.data[pixel] > 0).length;
     console.log(`    RESIDUE ${residue.length} px — inside the object's own segmentation `
       + `${inside}, outside ${residue.length - inside}`);
-    for (const stage of ["zone", "zoneAsScoped", "vacated", "departed", "delivered", "applied"]) {
+    for (const stage of ["zone", "zoneAsScoped", "vacated", "departed", "departedTerritory",
+      "departedVacancy", "ungoverned", "delivered", "applied"]) {
       const mask = explain[stage];
       if (!mask) continue;
       const claimed = residue.filter((pixel) => mask.data[pixel] > 0).length;
-      console.log(`      ${stage.padEnd(13)} ever claimed ${claimed}`
+      console.log(`      ${stage.padEnd(17)} ever claimed ${claimed}`
         + ` (${((claimed / Math.max(1, residue.length)) * 100).toFixed(1)}%)`);
     }
+
+    /*
+      THE RIDER'S OWN PASS CRITERION, on the mask that actually shipped.
+
+      `expandUntilClear` exists so a zone never stops where the content does not,
+      and contact@2 is how that is read: the share of the applied mask's own
+      two-pixel inner ring still carrying paint. A removal whose rim is fixed
+      shows a clean ring; one still cut tight shows paint pressed against it.
+      Measured here rather than asserted, because the number a knob is tuned
+      against has to come off the delivered picture.
+    */
+    /*
+      HOW FAR THE CLAIM ACTUALLY REACHES FROM THE THING IT IS ABOUT.
+
+      The territory stopped on its PASS CEILING rather than on its criterion,
+      which by this program's own rule means the cap is being reported as the
+      finding. So this asks the only question that settles whether that matters:
+      of every pixel the composite delivered as a departure's vacancy, how far
+      from her actual frames was it? An anti-aliased edge and a contact shadow
+      live in the first few pixels. Anything out at fifty is her hair.
+    */
+    const bands = [2, 4, 8, 16, 32, 64, 128];
+    const reachOf: Awaited<ReturnType<typeof dilateMask>>[] = [];
+    for (const band of bands) reachOf.push(await dilateMask(region, band));
+    const claim = explain.departedVacancy;
+    if (claim) {
+      const counts = new Array(bands.length + 2).fill(0);
+      for (let pixel = 0; pixel < claim.data.length; pixel += 1) {
+        if (claim.data[pixel] === 0) continue;
+        if (region.data[pixel] > 0) { counts[0] += 1; continue; }
+        let placed = false;
+        for (let index = 0; index < bands.length; index += 1) {
+          if (reachOf[index]!.data[pixel] > 0) { counts[index + 1] += 1; placed = true; break; }
+        }
+        if (!placed) counts[counts.length - 1] += 1;
+      }
+      const total = counts.reduce((sum, value) => sum + value, 0);
+      const share = (n: number) => `${((n / Math.max(1, total)) * 100).toFixed(1)}%`;
+      console.log(`    the departed vacancy, by distance from her frames (${total} px):`);
+      console.log(`      on them ${share(counts[0])}`
+        + bands.map((band, index) => `  ≤${band}px ${share(counts[index + 1])}`).join("")
+        + `  beyond ${share(counts[counts.length - 1])}`);
+    }
+
+    const rider = boundaryContact(masterRaster, out, explain.applied!, [0, 1, 2, 4, 8]);
+    console.log(`    contact  ${rider.contact.map((entry) =>
+      `@${entry.tolerance} ${(entry.paintedShareOfRing * 100).toFixed(1)}%`).join("  ")}`
+      + `  (painted ${rider.paintedPixels} px inside the applied mask)`);
   }
 }

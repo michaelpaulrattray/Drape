@@ -50,6 +50,7 @@ import { createModuleLogger } from "../logging/logger";
 import {
   MaskError,
   assertUsable,
+  attachedTo,
   coverage,
   dilateMask,
   expandUntilClear,
@@ -151,6 +152,30 @@ const VACANCY_TOLERANCE_FRACTION = 8 / 1024;
  */
 const DEPARTED_REACH_FRACTION = 160 / 1024;
 /**
+ * HOW FAR A DEPARTED OBJECT'S OWN EDGE IS LOOKED FOR — and why it is not that.
+ *
+ * The reach above is honest about what bounds it: *"the bound is not really this
+ * number — it is the projection, and the novelty gate under it."* On the shrink
+ * lane that is true and the 160px is free. On a removal it is not, because the
+ * removal's vacancy no longer passes the veil gate — so this reach is the only
+ * fence left standing, and a number written when something else was load-bearing
+ * cannot be inherited by the case where it is.
+ *
+ * Measured, not asserted. With the departure taking the ponytail's reach, the
+ * delivered vacancy on the glasses specimen was **17.5% on her actual frames and
+ * 60% more than thirty-two pixels away** — the projection firing across every
+ * dark thing near a dark object, which is her hair, admitted at full strength
+ * because the lane that used to catch it is the one we deliberately opened.
+ *
+ * The physical question a removal asks is much smaller: **where does this
+ * object's own anti-aliased boundary and contact shadow run?** That is the width
+ * of the boundary a segmenter cannot place exactly — the same quantity
+ * `VACANCY_TOLERANCE_FRACTION` already measures from the other side, and
+ * deliberately its own name rather than a second use of that one, because two
+ * meanings sharing a constant is how a number outlives its argument.
+ */
+const DEPARTED_EDGE_REACH_FRACTION = 8 / 1024;
+/**
  * The share of old content above which a revealed pixel is replaced WHOLE.
  *
  * See the note at `departedFully`: for a removal the strand opacity is not the
@@ -160,6 +185,24 @@ const DEPARTED_REACH_FRACTION = 160 / 1024;
  * vacate a whole shoulder, and so the outer edge still has somewhere to ramp.
  */
 const REMOVAL_TOTAL_ABOVE = 0.25;
+/**
+ * HOW FAR THE DEPARTED THING'S OWN TERRITORY GROWS PER PASS.
+ *
+ * Not a pad. The territory is grown by `expandUntilClear` until none of the old
+ * content presses against its boundary — the hem guillotine's own answer, reused
+ * because this is the same physical complaint one object over: **a segmentation
+ * tight to an object cannot contain that object's own anti-aliased edge and
+ * contact shadow**, and a mask that stops where the frames' edge does not is the
+ * same straight cut, one pixel wide instead of across her hair.
+ *
+ * A hand-picked number of pixels here would be the measurement-window law
+ * violated from the other side: a constant tuned until this fixture looked right.
+ * The step is only the resolution of the search — small, because the thing being
+ * searched for is one or two pixels wide, and the loop stops the moment contact
+ * clears. A fraction rather than a pixel count, for the reason every reach above
+ * it is: a constant in pixels assumes a resolution.
+ */
+const DEPARTED_TERRITORY_STEP_FRACTION = 4 / 1024;
 const scaled = (fraction: number, width: number, height: number) =>
   Math.max(4, Math.round(Math.min(width, height) * fraction));
 
@@ -299,6 +342,19 @@ export type MaskedRefineResult = {
     harvested: Mask;
     vacated: Mask;
     departed: Mask;
+    /** A base-worn departure's own ground: its master extent, grown until clear. */
+    departedTerritory: Mask;
+    /** The vacancy inside that ground — the part the veil gate does not govern. */
+    departedVacancy: Mask;
+    /**
+     * The claim after the harvest gate and BEFORE the territory rule.
+     *
+     * Separated because a stage table that jumps from the raw claim to the
+     * delivered one attributes a loss to whichever stage the reader already
+     * suspects — and one such reading has already cost this diagnosis a wrong
+     * verdict. Two stages narrow this claim; they are now two numbers.
+     */
+    ungoverned: Mask;
     delivered: Mask;
     applied: Mask;
   };
@@ -977,13 +1033,23 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     absentOnMaster: boolean;
     /** Does her own hair sit in front of it? True only for an accessory. */
     occluded: boolean;
+    /**
+     * Is this region's occupant a thing the customer asked to have TAKEN OFF?
+     *
+     * Narrower than `absentOnMaster`, which an addition also sets, and narrower
+     * than "something can leave here", which a shrink also sets. It is true only
+     * for a name that came out of `input.departed` — and the reason it has to
+     * exist is that the removal's rule about a partly-covered pixel governs a
+     * departure's vacancy and must NOT govern a shrink's.
+     */
+    departed: boolean;
   };
   const questions: Question[] = Array.from(new Set(names))
-    .map((name) => ({ name, absentOnMaster: false, occluded: false }));
+    .map((name) => ({ name, absentOnMaster: false, occluded: false, departed: false }));
   if (objects.length > 0) {
     const entry = accessoryEntry(input.described);
     if (!entry) throw new MaskError("nothing names what this accessory is — refusing to guess a region");
-    questions.push({ name: entry.region, absentOnMaster: true, occluded: true });
+    questions.push({ name: entry.region, absentOnMaster: true, occluded: true, departed: false });
   }
   /*
     AND THE THING THAT LEFT, which no facet in the record points at any more.
@@ -1003,9 +1069,16 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
         `nothing names what "${departedThing}" is — refusing to guess where it was`,
       );
     }
-    if (!questions.some((question) => question.name === gone.region)) {
-      questions.push({ name: gone.region, absentOnMaster: true, occluded: true });
-    }
+    /*
+      MARKED, NOT JUST ADDED. "Take the glasses off and give her sunglasses"
+      names one region twice — the departure and the addition — and pushing a
+      second question would ask the segmenter the same thing twice while the
+      one that survives carries the wrong flag. The region is departed ground
+      either way; whether something new arrives there is a separate fact.
+    */
+    const already = questions.find((question) => question.name === gone.region);
+    if (already) already.departed = true;
+    else questions.push({ name: gone.region, absentOnMaster: true, occluded: true, departed: true });
   }
   if (questions.length === 0) {
     throw new MaskError("nothing names what this edit is about — refusing to guess a region");
@@ -1042,13 +1115,19 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
 
   const strandReach = scaled(STRAND_REACH_FRACTION, master.width, master.height);
   const departedReach = scaled(DEPARTED_REACH_FRACTION, master.width, master.height);
+  const departedEdgeReach = scaled(DEPARTED_EDGE_REACH_FRACTION, master.width, master.height);
   const tolerancePx = scaled(VACANCY_TOLERANCE_FRACTION, master.width, master.height);
+  const territoryStep = scaled(DEPARTED_TERRITORY_STEP_FRACTION, master.width, master.height);
 
   const perRegion: {
     withStrands: Mask;
     vacated: Mask;
     departed: Mask;
     vacancy: Mask;
+    /** Empty unless this question is a base-worn departure — see `territory`. */
+    territory: Mask;
+    /** Whether this vacancy is the removal's to rule. Never true for a shrink. */
+    removalGoverned: boolean;
     strandColour: [number, number, number];
   }[] = [];
 
@@ -1119,7 +1198,12 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       : empty;
     const departed = canReveal
       ? differenceMatte({
-        master: painted, patch: master, confirmed: masterRegion, reachPx: departedReach,
+        master: painted,
+        patch: master,
+        confirmed: masterRegion,
+        /* A shrink's flyaways lie most of the way down her chest; a removed
+           object's edge lies against the object. See the two reach notes. */
+        reachPx: question.departed ? departedEdgeReach : departedReach,
       })
       : { alpha: empty };
     const departedFully: Mask = {
@@ -1128,9 +1212,60 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       width: departed.alpha.width,
       height: departed.alpha.height,
     };
+    /*
+      THE DEPARTED THING'S OWN TERRITORY — and the reason it is not the zone.
+
+      A segmentation tight to an object cannot contain that object's own
+      anti-aliased edge and contact shadow: measured on the glasses fixture,
+      **79.5% of the surviving rim lay OUTSIDE the segmenter's own eyeglasses
+      mask**, and the zone for a pure removal IS that mask, so the vacancy was
+      clipped to the inside of the very outline the customer can still see.
+
+      So the ground grows the way the hem's guillotine was answered — expand
+      until her old content stops pressing against the boundary, with the old
+      content itself as the rider's subject. Bounded three ways: it starts from
+      her own frames, it only ever grows toward pixels the difference matte says
+      carry the departed thing, and the loop's own coverage ceiling stops it.
+
+      Only for a DEPARTURE. A shrink's old strands are recovered by the same
+      matte and must keep passing the veil gate — the flyaway that arrives as a
+      hank of hair on her neck is what that gate is holding back.
+
+      The rider's subject here is HER OLD OBJECT AND EVERYTHING THE MATTE STILL
+      FINDS OF IT, unioned, and that union is not cosmetic: the recovery only
+      ever fires OUTSIDE the segmentation it was given, so a mask of it alone
+      touches the seed zone nowhere, reports no contact, and the loop returns
+      the tight outline it was handed. The thing pressing on the boundary is the
+      object; what lies just past the boundary is the rest of the object.
+    */
+    const oldContent = unionMasks(masterRegion, attachedTo(departedFully, masterRegion));
+    const grownTerritory = question.departed && coverage(masterRegion) > 0
+      ? await expandUntilClear({
+        painted: oldContent,
+        zone: masterRegion,
+        stepPx: territoryStep,
+        effective: oldContent,
+      })
+      : null;
+    const territory = grownTerritory?.zone ?? null;
+    if (grownTerritory) {
+      log.info(
+        {
+          operationId: input.operationId,
+          question: question.name,
+          passes: grownTerritory.passes,
+          stoppedBy: grownTerritory.stoppedBy,
+          contactAtStart: grownTerritory.contactAtStart,
+          contactAtEnd: grownTerritory.contactAtEnd,
+          seenAsScoped: Number(coverage(masterRegion).toFixed(5)),
+          ground: Number(coverage(grownTerritory.zone).toFixed(5)),
+        },
+        "[maskedRefine] the departed thing's own ground, grown until its edge stopped pressing",
+      );
+    }
     const departedVacated = canReveal
       ? await vacancyOf({
-        zone, masterRegion: departedFully, paintedRegion: paintedContent, tolerancePx,
+        zone: territory ?? zone, masterRegion: departedFully, paintedRegion: paintedContent, tolerancePx,
       })
       : empty;
 
@@ -1139,8 +1274,56 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       vacated,
       departed: departed.alpha,
       vacancy: unionMasks(vacated, departedVacated),
+      territory: territory ?? empty,
+      /*
+        ONE PIXEL CANNOT SERVE TWO MASTERS, and this file already ruled which
+        master a removal's pixel serves. `REMOVAL_TOTAL_ABOVE` says it plainly —
+        *a pixel a quarter covered by the departing thing is still a contaminated
+        pixel, and taking the plate at a quarter strength leaves a ghost* — and
+        `departedFully` honours it; then the veil gate downstream, whose novelty
+        criterion was calibrated to suppress painter-forehead inside a HAIR
+        silhouette, scaled those same partial pixels back down and handed ~85% of
+        what the recovery caught straight back to her master.
+
+        The two gates are asking opposite questions. The veil gate asks *is this
+        her surface rendered again?* and keeps what is novel. A removal asks *was
+        any of this the thing that left?* and must replace whatever was. Inside
+        the departed thing's own territory the second question is the only one
+        with a meaning: there is no surface of hers to protect there — what lies
+        under her frames is precisely what the painter was asked to invent.
+      */
+      removalGoverned: territory !== null,
       strandColour: strands.strandColour,
     });
+  }
+
+  /*
+    AND THE TERRITORY IS PART OF THE ZONE, or none of the above reaches the
+    picture. The composite takes `min(feather(zone), matte)`, so a vacancy
+    outside the zone is discarded no matter what any matte says — the same
+    arithmetic as the guillotine, which is why the fix has to land in both
+    places. Unioned after the loop rather than before it, so a shrink's reveal
+    keeps being measured against the zone its own facet drew.
+  */
+  /*
+    HELD BEFORE THE TERRITORY JOINS IT, because `zoneAsScoped` means what its
+    name says: the zone as the facet's scope drew it, before any boundary
+    expansion. Folding the territory into it silently redefined the population
+    every measurement downstream is taken over — this diagnosis has already lost
+    one verdict to a shifted population and will not lose a second.
+  */
+  const zoneAsScoped = zone;
+  const departedTerritory = unionMasks(...perRegion.map((region) => region.territory));
+  /* The half of the vacancy the veil gate no longer governs, kept for the record
+     rather than recomputed — a second derivation of it could disagree. */
+  const departedVacancy = unionMasks(
+    ...perRegion.map((region) => (region.removalGoverned ? region.vacancy : region.territory)),
+  );
+  if (coverage(departedTerritory) > 0) {
+    zone = unionMasks(zone, departedTerritory);
+    /* Owned ground, so the neighbour rule cannot give the rim back to `hair`
+       — her temples are exactly where the arms of a pair of glasses sit. */
+    owned.push(departedTerritory);
   }
 
   /*
@@ -1173,10 +1356,18 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       master, patch: painted, alpha: region.withStrands,
       strandColour: region.strandColour, baselineDelta,
     }).alpha,
-    harvestGate({
-      master, patch: painted, alpha: region.vacancy,
-      strandColour: region.strandColour, baselineDelta, criterion: "novelty",
-    }).alpha,
+    /*
+      THE ONE BYPASS, AND IT IS SCOPED TO THE THING THAT LEFT. Inside a
+      departure's own territory the removal's rule governs — see
+      `removalGoverned`. Everywhere else, including every shrink's reveal and
+      every surface repaint, the veil gate governs exactly as it did.
+    */
+    region.removalGoverned
+      ? region.vacancy
+      : harvestGate({
+        master, patch: painted, alpha: region.vacancy,
+        strandColour: region.strandColour, baselineDelta, criterion: "novelty",
+      }).alpha,
   )));
   const harvested = unionMasks(...perRegion.map((region) => region.withStrands));
   const vacated = unionMasks(...perRegion.map((region) => region.vacated));
@@ -1379,11 +1570,14 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     ...(input.explain
       ? {
         explain: {
-          zoneAsScoped: zone,
+          zoneAsScoped,
           zone: grown.zone,
           harvested,
           vacated,
           departed: departedAlpha,
+          departedTerritory,
+          departedVacancy,
+          ungoverned,
           delivered: gated,
           applied: composed.applied,
         },

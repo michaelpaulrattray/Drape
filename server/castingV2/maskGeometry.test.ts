@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   MaskError,
   assertUsable,
+  attachedTo,
   browRegion,
   coverage,
   dilateMask,
@@ -922,5 +923,60 @@ describe("boundary-contact auto-expand — a zone that stops where the hair does
     const nothing = box({ x: 0, y: 0 }, { x: 0, y: 0 });
     const result = await expandUntilClear({ painted: nothing, zone: tightZone, stepPx: 6 });
     expect(result.passes).toBe(0);
+  });
+});
+
+/**
+ * THE EDGE OF A THING IS JOINED TO THE THING.
+ *
+ * The bound the removal lane needed, and the reason it is a connectivity
+ * question rather than a smaller number: the reversed projection fires on any
+ * dark thing near a dark object, and on a real face the dark thing near a pair
+ * of glasses is her hair. Measured on the specimen, a grow-until-clear loop fed
+ * the unfiltered recovery ran to its pass ceiling and returned a ground ninety-
+ * six pixels wider than her frames.
+ */
+describe("only what is attached to the thing counts as the thing's edge", () => {
+  const SIZE = 32;
+  const mask = (fill: (x: number, y: number) => number): Mask => {
+    const data = Buffer.alloc(SIZE * SIZE, 0);
+    for (let y = 0; y < SIZE; y += 1) for (let x = 0; x < SIZE; x += 1) data[y * SIZE + x] = fill(x, y);
+    return { data, width: SIZE, height: SIZE };
+  };
+
+  const object = mask((x, y) => (x >= 10 && x < 20 && y >= 10 && y < 20 ? 255 : 0));
+
+  it("keeps the band running out of the object and drops the speck across the frame", () => {
+    /* A one-pixel skirt along the object's right edge — its anti-aliased
+       boundary — and a blob in the far corner that is simply something else
+       dark. The reach cannot tell them apart; adjacency can. */
+    const claim = mask((x, y) => {
+      if (x === 20 && y >= 10 && y < 20) return 128;
+      if (x >= 26 && x < 30 && y >= 26 && y < 30) return 255;
+      return 0;
+    });
+    const kept = attachedTo(claim, object);
+    expect(kept.data[15 * SIZE + 20], "the skirt is the object's own edge, at its own alpha").toBe(128);
+    expect(kept.data[27 * SIZE + 27], "the far blob was never this object's edge").toBe(0);
+  });
+
+  it("walks a chain outward, so a two-pixel shadow is not cut in half", () => {
+    const claim = mask((x, y) => (x >= 20 && x < 23 && y >= 12 && y < 16 ? 200 : 0));
+    const kept = attachedTo(claim, object);
+    expect(kept.data[13 * SIZE + 22], "the far side of the band is still the band").toBe(200);
+  });
+
+  it("does not cross a diagonal-only join", () => {
+    /* Four-connectivity on purpose: eight would walk noise across a one-pixel
+       gap, which is the failure this exists to prevent. */
+    const claim = mask((x, y) => (x === 20 && y === 20) || (x === 21 && y === 21) ? 255 : 0);
+    const kept = attachedTo(claim, object);
+    expect(kept.data[20 * SIZE + 20], "touching the corner of the object edge-on").toBe(0);
+    expect(kept.data[21 * SIZE + 21]).toBe(0);
+  });
+
+  it("returns nothing when nothing touches", () => {
+    const claim = mask((x, y) => (x >= 26 && y >= 26 ? 255 : 0));
+    expect(coverage(attachedTo(claim, object))).toBe(0);
   });
 });

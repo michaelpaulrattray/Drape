@@ -16,7 +16,17 @@ const SUITES = [
   "server/castingV2/reliabilityReport.test.ts",
 ];
 
-const runs: Array<{ name: string; file: string; mutations: Mutation[] }> = [
+const MASK_SUITES = [
+  "server/castingV2/maskedRefine.test.ts",
+  "server/castingV2/maskGeometry.test.ts",
+  "server/castingV2/maskedComposite.test.ts",
+  "server/castingV2/compositeIntegrity.test.ts",
+];
+
+/* `suites` overrides the default for a guard that lives elsewhere — the driver
+   grew a second subject (the compositor) and pointing it at the refine suites
+   would have proved four compositor guards DECORATIVE for the wrong reason. */
+const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: string[] }> = [
   {
     name: "width inferred from missing words (the matcher's half)",
     file: "server/castingV2/refineRemoval.ts",
@@ -54,11 +64,52 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[] }> = [
       replace: "    if (false) {\n      log.warn(",
     }],
   },
+  /*
+    THE REMOVAL CRITERION — four halves of one ruling, each a real reversion.
+    A base-worn removal's vacancy is governed by the removal's own rule inside
+    the departed thing's own ground, and by the veil gate nowhere inside it.
+  */
+  {
+    name: "the veil gate governing a departure's vacancy again (the bypass removed)",
+    file: "server/castingV2/maskedRefine.ts",
+    suites: MASK_SUITES,
+    mutations: [{
+      find: "    region.removalGoverned\n      ? region.vacancy\n      : harvestGate({",
+      replace: "    false\n      ? region.vacancy\n      : harvestGate({",
+    }],
+  },
+  {
+    name: "the ground left as the segmenter's own tight outline (no expansion)",
+    file: "server/castingV2/maskedRefine.ts",
+    suites: MASK_SUITES,
+    mutations: [{
+      find: "    const grownTerritory = question.departed && coverage(masterRegion) > 0",
+      replace: "    const grownTerritory = false && question.departed && coverage(masterRegion) > 0",
+    }],
+  },
+  {
+    name: "a SHRINK handed the removal's rule too (the scope removed)",
+    file: "server/castingV2/maskedRefine.ts",
+    suites: MASK_SUITES,
+    mutations: [{
+      find: "    const grownTerritory = question.departed && coverage(masterRegion) > 0",
+      replace: "    const grownTerritory = coverage(masterRegion) > 0",
+    }],
+  },
+  {
+    name: "the departure inheriting the ponytail's 160px reach (the fence removed)",
+    file: "server/castingV2/maskedRefine.ts",
+    suites: MASK_SUITES,
+    mutations: [{
+      find: "        reachPx: question.departed ? departedEdgeReach : departedReach,",
+      replace: "        reachPx: departedReach,",
+    }],
+  },
 ];
 
-const red = (): boolean => {
+const red = (suites: string[]): boolean => {
   try {
-    execFileSync("npx", ["vitest", "run", ...SUITES], { stdio: "pipe", shell: true });
+    execFileSync("npx", ["vitest", "run", ...suites], { stdio: "pipe", shell: true });
     return false;
   } catch {
     return true;
@@ -68,7 +119,7 @@ const red = (): boolean => {
 let allProven = true;
 for (const run of runs) {
   const applied = await sabotage(run.file, run.mutations);
-  const wentRed = red();
+  const wentRed = red(run.suites ?? SUITES);
   await applied.restore();
   console.log(`${wentRed ? "PROVEN" : "DECORATIVE"} — ${run.name}`);
   if (!wentRed) allProven = false;

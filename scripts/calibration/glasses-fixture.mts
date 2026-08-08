@@ -62,6 +62,7 @@ import {
   writePng,
   type Raster,
 } from "../../server/castingV2/maskedComposite";
+import { boundaryContact } from "./lib/contact.mts";
 import { composeRenderPrompt } from "../../server/castingV2/refineDelta";
 import { runFalImageJob } from "../../server/providers/falTransport";
 import { FAL_GPT_IMAGE_2_EDIT } from "../../server/providers/falImages";
@@ -139,67 +140,8 @@ async function stillPresent(bytes: Buffer, name: string): Promise<number> {
 
 /* --------------------------------------------------------- boundary contact */
 
-/**
- * The RIDER, implemented as arithmetic.
- *
- * `painted` is where the composite differs from the master inside the hard mask
- * — where paint WENT, never where paint was allowed. `edgeRing(t)` is the band
- * of the hard mask within `t` pixels of its own boundary. Contact is the share
- * of that ring carrying paint: if real hair or a frame runs right up to where
- * the zone stopped, the ring is painted and the zone was cut too tight.
- *
- * Reported across tolerances because the rider says the number is measured here,
- * not guessed. Nothing is chosen.
- */
-function boundaryContact(master: Raster, composite: Raster, hard: Mask, tolerances: number[]) {
-  const { width, height } = hard;
-  const painted = new Uint8Array(width * height);
-  let paintedCount = 0;
-  for (let pixel = 0; pixel < hard.data.length; pixel += 1) {
-    if (hard.data[pixel] === 0) continue;
-    const at = pixel * 3;
-    const delta = Math.abs(composite.data[at] - master.data[at])
-      + Math.abs(composite.data[at + 1] - master.data[at + 1])
-      + Math.abs(composite.data[at + 2] - master.data[at + 2]);
-    /* A few levels of tolerance so JPEG-grade noise is not scored as paint. */
-    if (delta > 18) { painted[pixel] = 1; paintedCount += 1; }
-  }
-
-  /* Distance from the mask's own boundary, by repeated erosion — exact, and the
-     masks are small enough that clarity beats a distance transform here. */
-  const inside = new Uint8Array(width * height);
-  for (let pixel = 0; pixel < hard.data.length; pixel += 1) inside[pixel] = hard.data[pixel] > 0 ? 1 : 0;
-  const depth = new Int32Array(width * height).fill(-1);
-  let current = inside;
-  for (let layer = 0; layer < Math.max(...tolerances) + 1; layer += 1) {
-    const next = new Uint8Array(width * height);
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const pixel = y * width + x;
-        if (!current[pixel]) continue;
-        const edge = x === 0 || y === 0 || x === width - 1 || y === height - 1
-          || !current[pixel - 1] || !current[pixel + 1]
-          || !current[pixel - width] || !current[pixel + width];
-        if (edge) { if (depth[pixel] < 0) depth[pixel] = layer; } else next[pixel] = 1;
-      }
-    }
-    current = next;
-  }
-
-  return {
-    paintedPixels: paintedCount,
-    contact: tolerances.map((tolerance) => {
-      let ring = 0;
-      let ringPainted = 0;
-      for (let pixel = 0; pixel < depth.length; pixel += 1) {
-        if (depth[pixel] < 0 || depth[pixel] > tolerance) continue;
-        ring += 1;
-        if (painted[pixel]) ringPainted += 1;
-      }
-      return { tolerance, ringPixels: ring, paintedShareOfRing: ring === 0 ? 0 : ringPainted / ring };
-    }),
-  };
-}
+/* The rider now lives in one place — see `lib/contact.mts`. It was written
+   three times, and the second copy said so in its own comment. */
 
 /* -------------------------------------------------------------- the engines */
 

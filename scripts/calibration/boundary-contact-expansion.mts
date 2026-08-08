@@ -46,6 +46,7 @@ import {
   writePng,
   type Raster,
 } from "../../server/castingV2/maskedComposite";
+import { boundaryContact } from "./lib/contact.mts";
 
 const FIXTURE = "output/masked/glasses-fixture";
 const OUT = "output/masked/boundary-expansion";
@@ -61,47 +62,6 @@ async function toMask(bytes: Buffer): Promise<Mask> {
   const { data, info } = await pipeline.raw().toBuffer({ resolveWithObject: true });
   if (data.length !== info.width * info.height) throw new Error("mask not single-channel");
   return { data, width: info.width, height: info.height };
-}
-
-/** Painted content against the zone's HARD edge. Copied in shape from the fixture. */
-function contactAt(master: Raster, composite: Raster, hard: Mask, tolerance: number) {
-  const { width, height } = hard;
-  const painted = new Uint8Array(width * height);
-  let paintedCount = 0;
-  for (let pixel = 0; pixel < hard.data.length; pixel += 1) {
-    if (hard.data[pixel] === 0) continue;
-    const at = pixel * 3;
-    const delta = Math.abs(composite.data[at] - master.data[at])
-      + Math.abs(composite.data[at + 1] - master.data[at + 1])
-      + Math.abs(composite.data[at + 2] - master.data[at + 2]);
-    if (delta > 18) { painted[pixel] = 1; paintedCount += 1; }
-  }
-  const inside = new Uint8Array(width * height);
-  for (let pixel = 0; pixel < hard.data.length; pixel += 1) inside[pixel] = hard.data[pixel] > 0 ? 1 : 0;
-  const depth = new Int32Array(width * height).fill(-1);
-  let current = inside;
-  for (let layer = 0; layer <= tolerance; layer += 1) {
-    const next = new Uint8Array(width * height);
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const pixel = y * width + x;
-        if (!current[pixel]) continue;
-        const edge = x === 0 || y === 0 || x === width - 1 || y === height - 1
-          || !current[pixel - 1] || !current[pixel + 1]
-          || !current[pixel - width] || !current[pixel + width];
-        if (edge) { if (depth[pixel] < 0) depth[pixel] = layer; } else next[pixel] = 1;
-      }
-    }
-    current = next;
-  }
-  let ring = 0;
-  let ringPainted = 0;
-  for (let pixel = 0; pixel < depth.length; pixel += 1) {
-    if (depth[pixel] < 0 || depth[pixel] > tolerance) continue;
-    ring += 1;
-    if (painted[pixel]) ringPainted += 1;
-  }
-  return { paintedPixels: paintedCount, paintedShareOfRing: ring === 0 ? 0 : ringPainted / ring };
 }
 
 const master: Raster = await readRaster(readFileSync(MASTER_FILE));
@@ -121,10 +81,11 @@ for (const engine of ["nbp", "gpt2", "flux"]) {
     const { composite, applied } = await compositeMasked({ master, patch, mask: zone, featherRadius: FEATHER });
     const outside = outsideMaskUnchanged(master, composite, applied);
     const seam = seamBand(master, composite, applied);
-    const contact = contactAt(master, composite, zone, 2);
+    const rider = boundaryContact(master, composite, zone, [2]);
+    const contactShare = rider.contact[0]!.paintedShareOfRing;
     console.log(
       `  ${engine.padEnd(6)}  r=${String(radius).padEnd(4)}  ${(coverage(zone) * 100).toFixed(2)}%`
-      + `      ${(contact.paintedShareOfRing * 100).toFixed(1)}%`
+      + `      ${(contactShare * 100).toFixed(1)}%`
       + `        ${seam.meanDelta.toFixed(1)}`
       + `        ${outside.identical ? "identical" : `CHANGED ${outside.changedPixels}`}`,
     );
@@ -134,8 +95,8 @@ for (const engine of ["nbp", "gpt2", "flux"]) {
     rows.push({
       engine, radius,
       coverage: coverage(zone),
-      contactAt2: contact.paintedShareOfRing,
-      paintedPixels: contact.paintedPixels,
+      contactAt2: contactShare,
+      paintedPixels: rider.paintedPixels,
       seamMeanDelta: seam.meanDelta,
       outsideIdentical: outside.identical,
     });

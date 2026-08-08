@@ -23,7 +23,7 @@ import {
 import { coverage } from "./maskGeometry";
 import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
-import type { Mask } from "./maskedComposite";
+import { readRaster, type Mask } from "./maskedComposite";
 import { ProviderError } from "../providers/types";
 
 /**
@@ -1325,5 +1325,258 @@ describe("a composite that tore the frame does not get delivered", () => {
       described: "freckles",
     });
     expect(result.outcome).toBe("composited");
+  });
+});
+
+/**
+ * A DEPARTURE'S VACANCY IS THE REMOVAL'S TO RULE — the rim, and the two stages
+ * that were holding opposite rules about the same pixel.
+ *
+ * The fixture court proved the half that had never worked: with the departed
+ * clause in the prompt the painter removes, 0.000% eyeglasses in the raw frame
+ * from both engines. The production compositor then handed back a 1–2px outline
+ * that traced the whole spectacle silhouette — enough for a segmenter to read
+ * eyeglasses and for a customer to say she is still wearing them.
+ *
+ * Localised on the saved frames, over the population the finding is about (the
+ * edge pixels, not the lens interiors that drowned them the first time):
+ *
+ *   79.5% of the surviving rim lay OUTSIDE the segmenter's own eyeglasses mask
+ *   — its anti-aliased edge and contact shadow — and the zone for a pure
+ *   removal IS that mask;
+ *   and of what the recovery did catch, the veil gate scaled ~85% back down.
+ *
+ * Both halves are one mistake with two faces: a rule written for *is this her
+ * surface rendered again?* applied to a pixel whose only question is *was any of
+ * this the thing that left?*. These pin the answer at the two places it lands —
+ * the ground, and the gate — and CONTROL 5 pins the scope, because a bypass that
+ * leaked to a shrink would put run-6's hank of hair back on her neck.
+ */
+describe("the removal's own rule governs the vacancy a departure leaves", () => {
+  const SKIN_R: [number, number, number] = [205, 165, 150];
+  const FRAME_R: [number, number, number] = [15, 15, 20];
+  /* Her frames' own anti-aliased edge — the midpoint of the two, which is what
+     a half-covered pixel physically IS. The segmenter is not given it, exactly
+     as no segmenter gives it: a mask tight to the object stops at the object. */
+  const HALO_R: [number, number, number] = [110, 90, 85];
+  /*
+    AND HER HAIR AT THE TEMPLE, running out of the left of the frames — dark,
+    touching them, and redrawn a few levels lighter by the painter.
+
+    Not decoration. It is the population the whole reach question is about: the
+    reversed projection fires on any dark thing near a dark object, and on a real
+    face the dark thing joined to a pair of glasses is her hair. On the specimen
+    it took 60% of the delivered vacancy more than thirty-two pixels from her
+    frames. A fixture without it can only prove the easy half.
+  */
+  const HAIR_M: [number, number, number] = [40, 35, 30];
+  const HAIR_P: [number, number, number] = [55, 48, 42];
+  const core = { x0: 12, y0: 28, x1: 52, y1: 34 };
+  const tail = { x0: 2, y0: 29, x1: 12, y1: 33 };
+  const inCore = (x: number, y: number) =>
+    x >= core.x0 && x < core.x1 && y >= core.y0 && y < core.y1;
+  const onHalo = (x: number, y: number) =>
+    x >= core.x0 - 1 && x < core.x1 + 1 && y >= core.y0 - 1 && y < core.y1 + 1 && !inCore(x, y);
+  const onTail = (x: number, y: number) =>
+    x >= tail.x0 && x < tail.x1 && y >= tail.y0 && y < tail.y1;
+
+  const masterOf = () => png((x, y) => {
+    if (inCore(x, y)) return FRAME_R;
+    if (onTail(x, y)) return HAIR_M;
+    if (onHalo(x, y)) return HALO_R;
+    return SKIN_R;
+  });
+  /*
+    The painter's answer, which is the one thing that was never in doubt: the
+    glasses are gone and her skin is drawn behind them. Her skin comes back a few
+    levels off — the painter's own drift, which is what the veil gate scales its
+    band against, and without it the gate has nothing to be strict about. The
+    block at the foot of the frame is the painter having a day of its own, far
+    from anything that departed.
+  */
+  const SKIN_P: [number, number, number] = [200, 160, 145];
+  const DRIFT: [number, number, number] = [150, 120, 110];
+  const paintedOf = () => png((x, y) => {
+    if (y >= 52) return DRIFT;
+    if (onTail(x, y)) return HAIR_P;
+    return SKIN_P;
+  });
+
+  const readerFor = (masterBytes: Buffer): RegionReader => ({
+    region: async ({ name, image }) => (name === "glasses" && Buffer.compare(image, masterBytes) === 0
+      ? box(core.x0, core.y0, core.x1, core.y1)
+      : box(0, 0, 0, 0)),
+    subject: async () => box(0, 0, W, H),
+    landmark: async () => [{ x: 0.3, y: 0.48 }, { x: 0.7, y: 0.48 }],
+  });
+
+  const removeTheGlasses = async () => {
+    const masterBytes = await masterOf();
+    return harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: await paintedOf(), contentType: "image/png" },
+      /* The production shape of a pure base-worn removal: no positive facet,
+         the departure in its own channel. */
+      facets: [],
+      reader: readerFor(masterBytes),
+      userId: 1,
+      departed: ["glasses"],
+      explain: true,
+    });
+  };
+
+  it("THE FACT — her frames' edge comes back as skin, not as a pale outline", async () => {
+    /*
+      The bytes, not the masks. Every stage table in this diagnosis is a claim
+      about what was going to happen; this is the picture that would reach her.
+    */
+    const result = await removeTheGlasses();
+    const out = await readRaster(result.bytes);
+    const master = await readRaster(await masterOf());
+    const painted = await readRaster(await paintedOf());
+    const distance = (a: typeof out, b: typeof out, at: number) =>
+      Math.abs(a.data[at]! - b.data[at]!)
+      + Math.abs(a.data[at + 1]! - b.data[at + 1]!)
+      + Math.abs(a.data[at + 2]! - b.data[at + 2]!);
+
+    let handedBack = 0;
+    let replaced = 0;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        if (!onHalo(x, y)) continue;
+        const at = (y * W + x) * 3;
+        if (distance(out, master, at) < distance(out, painted, at)) handedBack += 1;
+        else replaced += 1;
+      }
+    }
+    expect(replaced + handedBack, "the fixture has a rim to argue about").toBe(96);
+    expect(
+      replaced / (replaced + handedBack),
+      "the outline a customer would call her glasses is the painter's answer now",
+    ).toBeGreaterThan(0.9);
+  });
+
+  it("grows the departed thing's ground past the outline the segmenter drew", async () => {
+    const result = await removeTheGlasses();
+    const territory = result.explain!.departedTerritory;
+    let halo = 0;
+    let owned = 0;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        if (!onHalo(x, y)) continue;
+        halo += 1;
+        if (territory.data[y * W + x]! > 0) owned += 1;
+      }
+    }
+    expect(owned, "the edge it could not contain is inside its own ground").toBe(halo);
+  });
+
+  it("takes the vacancy WHOLE — a half-covered pixel is not half removed", async () => {
+    /*
+      `REMOVAL_TOTAL_ABOVE`'s own sentence, at the far end of the pipeline: a
+      pixel a quarter covered by the departing thing is still contaminated, and
+      taking the plate at a quarter strength leaves a ghost. Every halo pixel is
+      half-covered by construction, so under the veil criterion they arrive
+      softened; under the removal's they arrive whole.
+    */
+    const result = await removeTheGlasses();
+    const delivered = result.explain!.delivered;
+    let full = 0;
+    let halo = 0;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        if (!onHalo(x, y)) continue;
+        halo += 1;
+        if (delivered.data[y * W + x]! === 255) full += 1;
+      }
+    }
+    expect(full, "at full strength, or it is a ghost").toBe(halo);
+  });
+
+  it("takes her temple hair WHOLE too, where the veil gate would have halved it", async () => {
+    /*
+      THE GATE HALF, and the only place in this fixture where the two criteria
+      actually disagree. On the frames themselves the painter's answer is loud —
+      skin where black plastic was — so novelty keeps it whichever rule is asked.
+      Where her hair meets the frames it is quiet: dark redrawn as slightly less
+      dark, thirteen levels against a painter drifting five, which lands under
+      the gate's keep-at and comes through at less than half strength. Half
+      strength over a vacancy is the ghost `REMOVAL_TOTAL_ABOVE` is named for.
+    */
+    const result = await removeTheGlasses();
+    const delivered = result.explain!.delivered;
+    let claimed = 0;
+    let whole = 0;
+    for (let y = tail.y0; y < tail.y1; y += 1) {
+      /* Inside the departure's own reach: the four pixels nearest her frames. */
+      for (let x = 8; x < tail.x1; x += 1) {
+        const value = delivered.data[y * W + x]!;
+        if (value > 0) claimed += 1;
+        if (value === 255) whole += 1;
+      }
+    }
+    expect(claimed, "her temple is inside the reach and is claimed").toBeGreaterThan(0);
+    expect(whole, "and it arrives whole, not at the gate's fraction").toBe(claimed);
+  });
+
+  it("CONTROL 7 — and stops at her frames' own edge, not at the ponytail's reach", async () => {
+    /*
+      THE FENCE. The reach that finds a shrinking ponytail's flyaways is 160px
+      because they lie that far from the mass. Inherited by a removal — whose
+      vacancy no longer passes the veil gate — it walks straight out along her
+      hair, which is what the specimen measured. A departure looks for its own
+      edge and stops.
+    */
+    const result = await removeTheGlasses();
+    const delivered = result.explain!.delivered;
+    let far = 0;
+    for (let y = tail.y0; y < tail.y1; y += 1) {
+      /* More than five pixels out along her hair: past any edge, into her. */
+      for (let x = tail.x0; x < 7; x += 1) if (delivered.data[y * W + x]! > 0) far += 1;
+    }
+    expect(far, "her hair is not the thing that left").toBe(0);
+  });
+
+  it("CONTROL 5 — a hair SHRINK gets no such ground, and no bypass", async () => {
+    /*
+      THE SCOPE, and the reason it is a test rather than a sentence. The same
+      reversed projection recovers a shrinking ponytail's old flyaways with a
+      reach of 160px, and the veil gate under it is what stops run-6's hank of
+      hair arriving on her neck. A departure is a thing the customer asked to
+      have taken off; a shrink is not, and it keeps the gate it was given.
+    */
+    const masterBytes = await png((x) => (x < 40 ? [130, 112, 104] : [200, 198, 200]));
+    const paintedBytes = await png((x) => (x < 20 ? [130, 112, 104] : [200, 198, 200]));
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("hairWorn")],
+      reader: {
+        region: async ({ image }) => (Buffer.compare(image, masterBytes) === 0
+          ? box(0, 0, 40, 64)
+          : box(0, 0, 20, 64)),
+        subject: async () => box(0, 0, W, H),
+        landmark: async () => [{ x: 0.3, y: 0.45 }],
+      },
+      userId: 1,
+      described: "tied back",
+      explain: true,
+    });
+    expect(coverage(result.explain!.departedTerritory), "nothing departed, so nothing is exempt").toBe(0);
+    expect(coverage(result.explain!.departedVacancy)).toBe(0);
+    expect(coverage(result.explain!.delivered), "and the shrink still reveals").toBeGreaterThan(0);
+  });
+
+  it("CONTROL 6 — the ground stops at the thing, and does not chase the painter", async () => {
+    /* The painter repainted the foot of the frame, eighteen pixels below her
+       frames and outside every reach in the file. A ground that grew to meet it
+       would be the veil gate's job being done by a dilation. */
+    const result = await removeTheGlasses();
+    const delivered = result.explain!.delivered;
+    let onDrift = 0;
+    for (let y = 52; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) if (delivered.data[y * W + x]! > 0) onDrift += 1;
+    }
+    expect(onDrift, "the painter's own day is not this edit's to deliver").toBe(0);
   });
 });
