@@ -24,6 +24,7 @@
  *
  *   npx tsx scripts/calibration/composite-seam.mts
  */
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 
@@ -123,11 +124,9 @@ console.log(
   specimen. A detector calibrated on a table and never pointed at the artifact
   is the class of control this program keeps finding inert.
 */
-console.log("\nthe shipped check, on these frames");
-for (const name of ["01-freckles", "02-lipgloss", "03-earrings"]) {
-  const delivered = await raster(`${DIR}/${name}.png`);
+function verdictFor(delivered: Frame) {
   const applied = appliedOf(master, delivered);
-  const verdict = compositeSeam({
+  return compositeSeam({
     master,
     composite: delivered,
     applied: {
@@ -136,5 +135,60 @@ for (const name of ["01-freckles", "02-lipgloss", "03-earrings"]) {
       height: master.height,
     },
   });
-  console.log(`  ${name.padEnd(16)}${verdict.torn ? "TORN " : "clean"}  ${verdict.detail}`);
+}
+
+/*
+  AND IT IS A CONTROL, not a printout (Fable, fable-016).
+
+  The synthetic controls in `compositeIntegrity.test.ts` prove the arithmetic.
+  This proves the shipped thresholds still fire on THE ACTUAL DEFECT and still
+  stay silent on two real renders that were fine — the specimen the numbers were
+  cut against. A calibration that only ever prints is the class of control this
+  program keeps finding inert, so this one exits non-zero when it is wrong.
+*/
+console.log("\nthe shipped check, on these frames");
+const EXPECTED: Record<string, boolean> = {
+  "01-freckles": true,
+  "02-lipgloss": false,
+  "03-earrings": false,
+};
+let wrong = 0;
+for (const [name, shouldBeTorn] of Object.entries(EXPECTED)) {
+  const verdict = verdictFor(await raster(`${DIR}/${name}.png`));
+  const ok = verdict.torn === shouldBeTorn;
+  if (!ok) wrong += 1;
+  console.log(
+    `  ${ok ? "ok  " : "FAIL"} ${name.padEnd(16)}${verdict.torn ? "TORN " : "clean"}  ${verdict.detail}`,
+  );
+}
+
+/*
+  THE RESIDUE'S OWNER (Fable's condition).
+
+  The three fixes took run-6's tear down 92% and 63% and left roughly 1,200 px
+  per band. Either the check can still SEE that residue — in which case it is
+  inside this instrument's jurisdiction and stays managed here — or it honestly
+  cannot, and the residue's disposition becomes a visual question for the
+  stylist's eye on the next walk. Printed either way, so it belongs to someone.
+*/
+const REPLAYED = "output/masked/torn-replay/replayed.png";
+if (existsSync(REPLAYED)) {
+  const verdict = verdictFor(await raster(REPLAYED));
+  console.log(
+    `\n  post-fix replay: ${verdict.torn ? "STILL TORN — the residue is this instrument's" : "below the bar"}`
+    + `\n  ${verdict.detail}`,
+  );
+  console.log(
+    verdict.tornPixels > 0
+      ? "  the check can still SEE the residue, so it stays inside its jurisdiction."
+      : "  the check cannot see the residue: its disposition is a VISUAL question,\n"
+        + "  and the next walk's renders get looked at with that band in mind (law 8).",
+  );
+} else {
+  console.log(`\n  no ${REPLAYED} — run scripts/calibration/torn-frame-replay.mts for the residue verdict`);
+}
+
+if (wrong > 0) {
+  console.error(`\n${wrong} frame(s) read the wrong way — the thresholds no longer fit the specimen.`);
+  process.exitCode = 1;
 }
