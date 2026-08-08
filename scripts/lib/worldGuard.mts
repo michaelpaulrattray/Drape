@@ -35,8 +35,10 @@
  * fact from a direction that cannot be reordered.
  *
  * A shared value between the two worlds would refuse a run that was actually
- * fine. That is the safe direction, and it does not currently arise: the
- * bucket, its base URL and the database differ between dev and production.
+ * fine. **This DOES arise** — the R2 endpoint and credential are identical in
+ * dev and production — which is why callers declare
+ * `WORLD_DISCRIMINATING_KEYS` rather than every key they touch. See that
+ * constant for the measurement and the rule it produced.
  *
  *   npx tsx scripts/lib/worldGuard.mts --prove   # drives both controls
  */
@@ -58,6 +60,108 @@ const WORLD_KEYS = [
   "R2_ACCESS_KEY_ID",
   "R2_SECRET_ACCESS_KEY",
 ] as const;
+
+/**
+ * THE KEYS THE APP'S OWN WRITE PATH READS — for scripts that run app services
+ * in-process rather than talking to a running server.
+ *
+ * # The third bite, and why declaring by hand kept failing
+ *
+ * The guard protects what a caller TELLS it the answer rests on, and twice now
+ * a caller has told it the truth about itself and been wrong about its
+ * dependencies:
+ *
+ *   1. A probe declared nothing and asked the DEV bucket for a PRODUCTION key.
+ *   2. `bespectacled-roll-production` declared `MYSQL_PUBLIC_URL`, but called
+ *      `getDb()`, which reads `DATABASE_URL` — eight faces cast into the dev
+ *      database while every console line said production.
+ *   3. The same script, repaired, then declared `DATABASE_URL` too — and cast a
+ *      **paid** sheet whose ROWS landed in production and whose **BYTES landed
+ *      in the dev bucket**, because `createRoll → storagePut → ENV.r2*` is
+ *      three frames below the line anybody was reading. Production 404s all
+ *      eight; the dev bucket serves all eight; 160 credits bought a tray of
+ *      broken tiles on the founder's own account.
+ *
+ * Each time the declaration was honest and incomplete, and incomplete in a
+ * direction nobody could see from the call site. So the answer is not "declare
+ * harder" — it is a NAMED SET a script can point at, maintained beside the
+ * guard, so the knowledge lives once instead of in each author's head.
+ *
+ *   > Declare the variable your DEPENDENCIES read, not the one you read.
+ *   > A helper's hidden key is still your reliance.
+ *
+ * Anything that calls `createRoll`, `refine`, `sign`, `storagePut` or any other
+ * app service in-process is writing objects, so it declares these. In practice
+ * that means it must run under a service that defines them all — `--service
+ * Drape` — because `--service MySQL` defines none of them and dotenv will
+ * quietly supply five dev values.
+ */
+export const APP_WRITE_PATH_KEYS = [
+  /* `getDb()` / drizzle. */
+  "DATABASE_URL",
+  /* `server/storage.ts` via `ENV`, every one of them. */
+  "R2_ENDPOINT",
+  "R2_BUCKET",
+  "R2_PUBLIC_URL",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
+] as const;
+
+/**
+ * THE KEYS THAT ACTUALLY DECIDE WHICH WORLD AN ANSWER IS ABOUT — measured,
+ * after this module's header turned out to be two-thirds right.
+ *
+ * The header claimed "the bucket, its base URL and the database differ between
+ * dev and production", and used that to argue the equality test could not
+ * produce a false refusal. Driven against the real services, it is wrong:
+ *
+ *   DATABASE_URL, R2_BUCKET, R2_PUBLIC_URL   differ    → they discriminate
+ *   R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+ *                                            IDENTICAL → they cannot
+ *
+ * Production and dev are the same R2 account with the same credential; only the
+ * bucket and its base differ. So the correct invocation
+ * (`railway run --service Drape`, which defines all six itself) was refused by
+ * the guard for three keys whose value is the same in both worlds.
+ *
+ * And that false refusal is not merely annoying — it is the shape that teaches
+ * people to stop declaring keys, which is how all three bites happened. So the
+ * rule is stated as narrowly as the evidence supports:
+ *
+ *   > A key whose two worlds hold the SAME value cannot carry an answer to the
+ *   > wrong world, no matter who supplied it. Only a key that differs can, and
+ *   > only those are worth refusing over.
+ *
+ * If production's credential is ever rotated away from dev's — and it should
+ * be — these keys start discriminating and belong in the list below. That is a
+ * one-line change, and the sentence above is the test for making it.
+ */
+export const WORLD_DISCRIMINATING_KEYS = [
+  "DATABASE_URL",
+  "MYSQL_PUBLIC_URL",
+  "R2_BUCKET",
+  "R2_PUBLIC_URL",
+] as const;
+
+/**
+ * EVERY KEY THIS PROCESS RELIES ON IS ACTUALLY THERE.
+ *
+ * The companion to the mixture check, and the half with teeth when `.env` is
+ * NOT loaded: under `railway run --service MySQL` the five R2 keys are simply
+ * absent, and absent is the state that dotenv converts into a silent dev value.
+ * Refusing by name on absence is what makes the substitution impossible to miss
+ * rather than merely improbable.
+ */
+export function assertDefinedByService(keys: readonly string[]): void {
+  const missing = keys.filter((key) => !process.env[key]);
+  if (missing.length === 0) return;
+  throw new Error(
+    `Missing: ${missing.join(", ")} — this process relies on ${missing.length === 1 ? "it" : "them"} and `
+    + `the environment does not supply ${missing.length === 1 ? "it" : "them"}. `
+    + `Run under a service that defines the whole set (\`railway run --service Drape\`), `
+    + `and never let a local .env quietly fill the gap.`,
+  );
+}
 
 /** The local `.env`, parsed the way dotenv parses it — enough of it, anyway. */
 export function readLocalEnvFile(path = ".env"): Map<string, string> {
@@ -122,7 +226,11 @@ export function assertOneWorld(keys?: readonly string[]): void {
 if (process.argv.includes("--prove")) {
   const local = new Map([
     ["R2_PUBLIC_URL", "https://pub-DEV.r2.dev"],
+    ["R2_BUCKET", "drape-dev"],
     ["DATABASE_URL", "mysql://dev"],
+    /* Identical in both worlds — the real shape, so the shared-credential
+       control is driven against a fixture that actually shares. */
+    ["R2_ACCESS_KEY_ID", "the-one-account"],
   ]);
 
   const cases: {
@@ -164,6 +272,50 @@ if (process.argv.includes("--prove")) {
       name: "NEGATIVE — the same mixed env, but the caller declares it reads only the database",
       environment: { RAILWAY_ENVIRONMENT_NAME: "production", R2_PUBLIC_URL: "https://pub-DEV.r2.dev" },
       keys: ["MYSQL_PUBLIC_URL"],
+      expect: 0,
+    },
+    {
+      /*
+        The third bite, driven: rows pointed at production by hand, bucket left
+        to dotenv. Declaring only the database is what let this through — the
+        set is what catches it.
+      */
+      name: "POSITIVE — a paid roll: DATABASE_URL pointed at production, R2 left to .env",
+      environment: {
+        RAILWAY_ENVIRONMENT_NAME: "production",
+        DATABASE_URL: "mysql://production",
+        R2_PUBLIC_URL: "https://pub-DEV.r2.dev",
+        R2_BUCKET: "drape-dev",
+      },
+      keys: WORLD_DISCRIMINATING_KEYS,
+      expect: 2,
+    },
+    {
+      name: "NEGATIVE — the same roll run under a service that defines the whole set",
+      environment: {
+        RAILWAY_ENVIRONMENT_NAME: "production",
+        DATABASE_URL: "mysql://production",
+        R2_PUBLIC_URL: "https://pub-PROD.r2.dev",
+        R2_BUCKET: "drape-production",
+      },
+      keys: WORLD_DISCRIMINATING_KEYS,
+      expect: 0,
+    },
+    {
+      /*
+        THE FALSE REFUSAL THAT SENT ME BACK TO THE HEADER. Production and dev
+        share the R2 credential, so a correct `--service Drape` run holds three
+        keys equal to `.env` and is entirely fine. Declaring only the
+        discriminating keys is what tells the two cases apart.
+      */
+      name: "NEGATIVE — shared credentials: identical in both worlds, so they cannot mislead",
+      environment: {
+        RAILWAY_ENVIRONMENT_NAME: "production",
+        DATABASE_URL: "mysql://production",
+        R2_BUCKET: "drape-production",
+        R2_ACCESS_KEY_ID: "the-one-account",
+      },
+      keys: WORLD_DISCRIMINATING_KEYS,
       expect: 0,
     },
   ];

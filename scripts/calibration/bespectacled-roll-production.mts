@@ -28,14 +28,33 @@
  * `--spend` is required. Without it this prints what it would do and exits, the
  * same contract the walk lives under, for the same reason.
  *
- *   FAL_KEY=… railway.cmd run --service MySQL -- npx tsx scripts/calibration/bespectacled-roll-production.mts
- *   …--spend
+ * # The invocation is NESTED, and that is not a trick
+ *
+ * Neither service alone can do this from a laptop, which is itself why the
+ * mistake was so easy to make:
+ *
+ *   --service MySQL   the public database URL, and NO bucket at all
+ *   --service Drape   the production bucket, and a database URL of
+ *                     `mysql.railway.internal` — unreachable from outside
+ *
+ * Nesting one run inside the other composes them: the outer supplies R2, the
+ * inner adds `MYSQL_PUBLIC_URL`, and this script swaps the internal host for
+ * the public one below. Measured, not assumed — `R2_BUCKET` reads
+ * `drape-production` under it.
+ *
+ *   railway.cmd run --service Drape -- railway.cmd run --service MySQL -- \
+ *     npx tsx scripts/calibration/bespectacled-roll-production.mts --spend
  */
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 
-import { assertOneWorld } from "../lib/worldGuard.mts";
+import {
+  APP_WRITE_PATH_KEYS,
+  assertDefinedByService,
+  assertOneWorld,
+  WORLD_DISCRIMINATING_KEYS,
+} from "../lib/worldGuard.mts";
 
 /*
   THE WORLD IS DECLARED BEFORE A CREDIT MOVES.
@@ -67,23 +86,48 @@ import { assertOneWorld } from "../lib/worldGuard.mts";
   `MYSQL_PUBLIC_URL` when present because that is how the run is meant to be
   pointed at production.
 */
-if (!process.env.MYSQL_PUBLIC_URL) {
-  throw new Error(
-    "MYSQL_PUBLIC_URL is required: this casts a paid sheet on the founder's account, and "
-    + "without it `getDb()` silently uses whatever DATABASE_URL your .env supplies — which is "
-    + "exactly how the first attempt cast eight faces into the dev database. "
-    + "Run it under `railway run --service MySQL`.",
-  );
-}
 /*
-  POINTED FIRST, THEN CHECKED. `railway run --service MySQL` does not define
-  DATABASE_URL at all, so the guard cannot fire on its absence — only on a local
-  value still sitting there. Overwriting it with the service's own URL is what
-  makes the process one world; the assertion then PROVES it, and still fires if
-  this line is ever removed or reordered.
+  AND THAT REPAIR WAS STILL INCOMPLETE, WHICH IS THE THIRD BITE.
+
+  Declaring `DATABASE_URL` fixed the rows and said nothing about the BYTES.
+  `createRoll` runs the app's own pipeline in process, so the eight pictures are
+  written by `server/storage.ts` — which reads five R2 variables through `ENV`,
+  three frames below anything visible at this call site. Under
+  `railway run --service MySQL` the MySQL service defines none of them and
+  dotenv supplied five DEV values.
+
+  Result, measured afterwards rather than feared: roll `641c71d0` charged 160
+  credits, its eight rows are in PRODUCTION, and all eight objects are in the
+  **dev** bucket. Production 404s every key; the dev base serves every key; an
+  older candidate proves the bases themselves are fine in both directions. The
+  founder paid for a tray of broken tiles.
+
+  So the declaration is no longer hand-written. `APP_WRITE_PATH_KEYS` is the
+  maintained set of everything the app's own write path reads, and pointing at
+  it is what makes this script run ONLY under a service that defines all six —
+  `--service Drape`. `--service MySQL` now refuses by name instead of casting.
+
+  Two assertions rather than one, because they catch different failures:
+  presence catches the key nobody supplied, and the world check catches the key
+  somebody supplied from the wrong world. The world check is asked only about
+  the keys that DIFFER between dev and production — the R2 endpoint and
+  credential are identical in both, so refusing on them would refuse the
+  correct invocation.
 */
-process.env.DATABASE_URL = process.env.MYSQL_PUBLIC_URL;
-assertOneWorld(["DATABASE_URL", "MYSQL_PUBLIC_URL"]);
+/*
+  THE DATABASE IS REACHED BY ITS PUBLIC NAME, and the swap happens before any
+  assertion so the guards judge the URL that will actually be dialled.
+
+  The Drape service's own `DATABASE_URL` is `mysql.railway.internal`, which
+  resolves inside Railway and nowhere else. Swapping in the public URL is what
+  makes the nested invocation work; doing it BEFORE `assertOneWorld` is what
+  keeps the guard's opinion about the real value rather than a placeholder.
+*/
+if (process.env.MYSQL_PUBLIC_URL && /\.railway\.internal/.test(process.env.DATABASE_URL ?? "")) {
+  process.env.DATABASE_URL = process.env.MYSQL_PUBLIC_URL;
+}
+assertDefinedByService(APP_WRITE_PATH_KEYS);
+assertOneWorld(WORLD_DISCRIMINATING_KEYS);
 
 const { getDb } = await import("../../server/db/connection");
 const { castingCandidates, users } = await import("../../drizzle/schema");

@@ -20,6 +20,7 @@
  * question vocabulary lives beside the facets rather than here.
  */
 import { createModuleLogger } from "../logging/logger";
+import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch";
 import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -87,6 +88,29 @@ function dataUri(image: Buffer): string {
 }
 
 /**
+ * EVERY QUESTION HERE IS A QUESTION ABOUT A PICTURE, so it is asked of one.
+ *
+ * Placed at the reader's own door rather than in each caller, because the
+ * caller who forgets is the one who is silently wrong: a sweep over thirty
+ * faces handed this module HTML error pages and read back "no glasses on any
+ * of them" (opus-052 §3). `absentIsAnswer` is what makes it dangerous — it is
+ * the one path that turns a failed reading into a confident negative, so it
+ * must never be reachable from bytes that are not the medium.
+ *
+ * A `MaskError` rather than the raw `NotAnImageError`, because every caller on
+ * the product path already handles that type as *this reading did not happen*;
+ * the cause is preserved in the message so the diagnosis is not lost.
+ */
+function assertPicture(image: Buffer, question: string): void {
+  try {
+    assertImageBytes(image, `asked "${question}"`);
+  } catch (error) {
+    if (error instanceof NotAnImageError) throw new MaskError(error.message);
+    throw error;
+  }
+}
+
+/**
  * A bilateral region is TWO QUESTIONS, and this is where that is enforced.
  *
  * SAM 3 returns exactly ONE instance for "ear", and which one depends on the
@@ -115,6 +139,7 @@ export function createFalRegionReader(input: {
 
   return {
     async region({ image, name, absentIsAnswer }) {
+      assertPicture(image, name);
       /*
         AN EMPTY ANSWER MEANS TWO DIFFERENT THINGS, and which one is the
         CALLER's to know.
@@ -154,6 +179,7 @@ export function createFalRegionReader(input: {
     },
 
     async subject({ image }) {
+      assertPicture(image, "the whole subject");
       const json = await post(apiKey, BIREFNET, {
         image_url: dataUri(image), mask_only: true, model: "Matting", output_format: "png",
       }, signal);
@@ -163,6 +189,7 @@ export function createFalRegionReader(input: {
     },
 
     async landmark({ image, name }) {
+      assertPicture(image, name);
       const json = await post(apiKey, POINT, { image_url: dataUri(image), prompt: name }, signal);
       const points: any[] = Array.isArray(json.points) ? json.points : [];
       if (points.length === 0) {

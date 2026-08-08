@@ -23,6 +23,7 @@ import "dotenv/config";
 import { mkdirSync, writeFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
+import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 
@@ -59,20 +60,46 @@ await connection.end();
 
 console.log(`${rows.length} walkable faces to look at\n`);
 const found: any[] = [];
+const unread: { candidate: string; why: string }[] = [];
 for (const row of rows) {
   const href = `${PUBLIC_BASE}/${row.imageKey}`;
-  const response = await fetch(href);
-  if (!response.ok) { console.log(`  ${row.publicId.slice(0, 8)} image ${response.status} — skipped`); continue; }
-  const bytes = Buffer.from(await response.arrayBuffer());
+
+  /*
+    THE READING AND THE NON-READING ARE DIFFERENT ROWS, and this is the fix for
+    the defect that made this script's last sweep meaningless (opus-052 §3).
+
+    It used to fetch, check `response.ok`, and `.catch(() => null)` the reading
+    — so an HTTP 200 carrying an HTML page produced a coverage of ZERO, and a
+    coverage of zero prints as "not bespectacled". Thirty faces were reported
+    bare on the strength of thirty error pages, and the report read clean.
+
+    Now the bytes must be provably a picture (`fetchImageBytes`) and a failed
+    reading is printed as NO-READ and counted nowhere. D-235's asymmetry, one
+    surface over: an affirmative without a look is not a finding.
+  */
+  let image;
+  try {
+    image = await fetchImageBytes(href);
+  } catch (error) {
+    unread.push({ candidate: row.publicId, why: String((error as Error).message).slice(0, 120) });
+    console.log(`  ${row.publicId.slice(0, 8)} NO-READ — ${String((error as Error).message).slice(0, 100)}`);
+    continue;
+  }
 
   /* `absentIsAnswer` matters: "no glasses on this face" is the answer for most
-     of them, and an absence that throws would read as an outage. */
-  const region = await reader
-    .region({ image: bytes, name: "glasses", absentIsAnswer: true })
-    .catch(() => null);
-  const covered = region
-    ? region.data.reduce((sum, value) => sum + (value > 0 ? 1 : 0), 0) / (region.width * region.height)
-    : 0;
+     of them, and an absence that throws would read as an outage. It is only
+     safe now because the bytes above are proven to be a picture. */
+  let region;
+  try {
+    region = await reader.region({ image: image.bytes, name: "glasses", absentIsAnswer: true });
+  } catch (error) {
+    unread.push({ candidate: row.publicId, why: `segmenter: ${String((error as Error).message).slice(0, 100)}` });
+    console.log(`  ${row.publicId.slice(0, 8)} NO-READ — segmenter: ${String((error as Error).message).slice(0, 90)}`);
+    continue;
+  }
+
+  const covered = region.data.reduce((sum, value) => sum + (value > 0 ? 1 : 0), 0)
+    / (region.width * region.height);
   /* Frames are a small part of a portrait; a fraction of a percent is a real
      pair, and zero is zero. The number is printed so the threshold is visible
      rather than believed. */
@@ -80,10 +107,16 @@ for (const row of rows) {
   console.log(`  ${row.publicId.slice(0, 8)} pos ${row.position} roll ${String(row.roll).slice(0, 8)} `
     + `glasses ${(covered * 100).toFixed(3)}%${wearing ? "  <-- BESPECTACLED" : ""}  "${row.brief}"`);
   if (wearing) {
-    writeFileSync(`${OUT}/${row.publicId}.png`, bytes);
+    writeFileSync(`${OUT}/${row.publicId}.png`, image.bytes);
     found.push({ candidate: row.publicId, roll: row.roll, position: row.position, covered });
   }
 }
 
-writeFileSync(`${OUT}/found.json`, `${JSON.stringify(found, null, 2)}\n`);
-console.log(`\n${found.length} bespectacled walkable faces — images in ${OUT}. LOOK AT THEM before walking one.`);
+writeFileSync(`${OUT}/found.json`, `${JSON.stringify({ found, unread }, null, 2)}\n`);
+const looked = rows.length - unread.length;
+console.log(`\n${found.length} bespectacled of ${looked} ACTUALLY READ (${unread.length} no-read) `
+  + `— images in ${OUT}. LOOK AT THEM before walking one.`);
+if (unread.length > 0) {
+  console.log(`The ${unread.length} no-read faces are NOT evidence of anything. `
+    + `"Zero bespectacled" is a claim about the ${looked} that were looked at.`);
+}

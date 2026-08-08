@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  assertImageBytes,
+  describeNonImageBytes,
   fetchTrustedImage,
+  NotAnImageError,
   TrustedImageFetchError,
 } from "./trustedImageFetch";
 
@@ -141,5 +144,54 @@ describe("fetchTrustedImage", () => {
       "https://pub-test.r2.dev/casting/head.png",
       { fetchImpl: fetchImpl as typeof fetch },
     )).rejects.toBeInstanceOf(TrustedImageFetchError);
+  });
+});
+
+/*
+  THE CANONICAL SPECIMEN, pinned (fable-062).
+
+  A bucket base that routes an unknown key to the app's own index answers HTTP
+  200 with an HTML page. A sweep that checked `response.ok` and handed the body
+  to a segmenter with `absentIsAnswer: true` read back "this face wears no
+  glasses" — for thirty faces in a row. The reading never happened; the
+  instrument completed on a document and produced a confident negative.
+
+  So the rule is about the MEDIUM, not the status: bytes may only answer a
+  question about pictures if they are provably a picture.
+*/
+const APP_INDEX_HTML = Buffer.from(
+  '<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <title>Drape</title>\n',
+  "utf8",
+);
+
+describe("assertImageBytes — the medium is proven, never assumed", () => {
+  it("refuses the app's own HTML index served at 200, and says so in words", () => {
+    expect(() => assertImageBytes(APP_INDEX_HTML, 'asked "glasses"'))
+      .toThrow(NotAnImageError);
+    try {
+      assertImageBytes(APP_INDEX_HTML, 'asked "glasses"');
+    } catch (error) {
+      /* The message has to name the specimen, or the next reader goes back to
+         the network to find out what "not an image" meant. */
+      expect((error as Error).message).toContain('asked "glasses"');
+      expect((error as Error).message).toContain("an HTML page");
+      expect((error as Error).message).toContain("<!DOCTYPE html>");
+    }
+  });
+
+  it("refuses empty bytes and unrecognised binary, each described by what it is", () => {
+    expect(describeNonImageBytes(Buffer.alloc(0))).toBe("0 bytes");
+    expect(describeNonImageBytes(Buffer.from([0x1f, 0x8b, 0x08, 0x00, 0xff, 0xfe, 0x00, 0x01])))
+      .toContain("unrecognised binary (starts 1f 8b 08 00");
+    expect(() => assertImageBytes(Buffer.alloc(0), "asked anything")).toThrow(NotAnImageError);
+  });
+
+  it("passes real pictures through, naming the medium it proved", () => {
+    expect(assertImageBytes(Buffer.from(PNG_BYTES), "asked")).toBe("image/png");
+    expect(assertImageBytes(Buffer.from([0xff, 0xd8, 0xff, 0x00]), "asked")).toBe("image/jpeg");
+    const webp = Buffer.concat([
+      Buffer.from("RIFF", "ascii"), Buffer.alloc(4), Buffer.from("WEBP", "ascii"),
+    ]);
+    expect(assertImageBytes(webp, "asked")).toBe("image/webp");
   });
 });

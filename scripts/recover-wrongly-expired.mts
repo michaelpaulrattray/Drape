@@ -18,12 +18,32 @@
  *
  * **This never deletes and never touches an object.** It flips a status back
  * and reports. Run with `--apply` to write; without it, it only counts.
+ *
+ * # Which world it writes to is declared, because it CAN write to production
+ *
+ * `getDb()` reads `DATABASE_URL`, and inside a Railway run of a service that
+ * does not define it, `dotenv` fills it from the developer's local `.env` — so
+ * a run that says "production" in every console line can quietly restore rows
+ * in dev, or, pointed the other way, write to production when nobody meant to.
+ * That exact substitution cast a paid sheet into the wrong database twice this
+ * week. This script restores rows on real customer accounts, so it says out
+ * loud which database it relies on rather than accepting whichever one arrives.
+ *
+ *   railway.cmd run --service MySQL -- npx tsx scripts/recover-wrongly-expired.mts
  */
 import "dotenv/config";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { castingCandidates, castingRolls, castingSessions } from "../drizzle/schema";
 import { getDb } from "../server/db/connection";
+import { assertDefinedByService, assertOneWorld } from "./lib/worldGuard.mts";
+
+/* Pointed first, then proven: `--service MySQL` supplies the public URL under a
+   different name and defines no `DATABASE_URL` at all, so the guard could not
+   fire on its absence — only on a local value still sitting there. */
+if (process.env.MYSQL_PUBLIC_URL) process.env.DATABASE_URL = process.env.MYSQL_PUBLIC_URL;
+assertDefinedByService(["DATABASE_URL"]);
+assertOneWorld(["DATABASE_URL", "MYSQL_PUBLIC_URL"]);
 
 const APPLY = process.argv.includes("--apply");
 const db = await getDb();

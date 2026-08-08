@@ -107,6 +107,7 @@ import type { Page } from "puppeteer-core";
 import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
 import { databaseUrl, settleAttemptRows } from "./lib/attemptRows.mjs";
 import { createChecks, openDrivenPage } from "./lib/drivePage.mjs";
+import { fetchImageBytes } from "./lib/imageBytes.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -220,9 +221,7 @@ async function deriveEyeShapeExpectation(imageUrl: string): Promise<Pick<WalkSte
         import("../server/castingV2/eyeShapeRouting.js"),
         import("../server/castingV2/falRegionReader.js"),
       ]);
-      const response = await fetch(imageUrl);
-      if (!response.ok) throw new Error(`her picture answered ${response.status}`);
-      const bytes = Buffer.from(await response.arrayBuffer());
+      const { bytes } = await fetchImageBytes(imageUrl);
       return await readCanthalTilt({ image: bytes, reader: createFalRegionReader({ apiKey }) });
     } catch (error) {
       console.log(`  tilt unreadable (${String(error).slice(0, 90)})`);
@@ -464,9 +463,11 @@ Object.assign(eyeShapeStep, eyeShape);
 async function wearsGlasses(url: string): Promise<boolean | null> {
   try {
     const { createFalRegionReader } = await import("../server/castingV2/falRegionReader.js");
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`her picture answered ${response.status}`);
-    const bytes = Buffer.from(await response.arrayBuffer());
+    /* The bytes are proven to be a picture first. This precondition decides
+       whether 75 credits are spent, and it used to be answerable by an HTML
+       error page: a 200 carrying the app's index would have read as "she is
+       not wearing glasses" and refused a face that is wearing them. */
+    const { bytes } = await fetchImageBytes(url);
     const reader = createFalRegionReader({ apiKey: process.env.FAL_KEY! });
     /* `absentIsAnswer` so nothing-found comes back as an empty mask rather than
        a throw: here, absent IS the finding and the whole point of asking. */

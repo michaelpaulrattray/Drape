@@ -51,6 +51,59 @@ export function supportedImageMime(bytes: Buffer): TrustedImage["mime"] | null {
   return null;
 }
 
+/**
+ * WHAT THESE BYTES ACTUALLY ARE, when they are not an image — for the error.
+ *
+ * An assertion that says only "not an image" sends the reader back to the
+ * network to find out what it was. The canonical specimen is an HTML page
+ * served with HTTP 200 from a bucket base that routes unknown keys to the app's
+ * own index; quoting its first line names the mistake in the message itself.
+ */
+export function describeNonImageBytes(bytes: Buffer): string {
+  if (bytes.length === 0) return "0 bytes";
+  const head = bytes.subarray(0, 80).toString("utf8");
+  /* Printable-ASCII-dominant means it is a document, not a truncated image. */
+  const printable = head.replace(/[^\x09\x0a\x0d\x20-\x7e]/g, "").length;
+  if (printable >= head.length * 0.9) {
+    const label = /^\s*<(!doctype html|html)/i.test(head) ? "an HTML page" : "text";
+    return `${bytes.length} bytes of ${label}: ${JSON.stringify(head.replace(/\s+/g, " ").trim())}…`;
+  }
+  const magic = bytes.subarray(0, 8).toString("hex").replace(/(..)(?=.)/g, "$1 ");
+  return `${bytes.length} bytes of unrecognised binary (starts ${magic})`;
+}
+
+export class NotAnImageError extends Error {
+  constructor(context: string, bytes: Buffer) {
+    super(`${context}: these are not image bytes — ${describeNonImageBytes(bytes)}`);
+    this.name = "NotAnImageError";
+  }
+}
+
+/**
+ * REFUSE TO ANSWER A QUESTION ABOUT A MEDIUM THESE BYTES ARE NOT.
+ *
+ * The law this enforces (fable-062, from the third costume of *an instrument
+ * that can complete with nothing must fail on nothing*): a reading may only
+ * ever be granted bytes that are provably the medium the question is about.
+ *
+ * The specimen: a glasses sweep fetched each master, checked `response.ok`,
+ * and handed the body to a segmenter with `absentIsAnswer: true`. **A 200
+ * carrying an HTML page passes `response.ok`** — and `absentIsAnswer` then
+ * turned *this is not an image* into *this face wears no glasses*. The sweep
+ * reported clean over thirty faces and meant nothing. The failure needs no
+ * outage and no exception; it is an affirmative answer produced from a
+ * document.
+ *
+ * Magic bytes rather than the `content-type` header, because the header is the
+ * server's claim and the bytes are the fact — and it was a truthful
+ * `text/html` header nobody read that would have caught this one.
+ */
+export function assertImageBytes(bytes: Buffer, context: string): TrustedImage["mime"] {
+  const mime = supportedImageMime(bytes);
+  if (!mime) throw new NotAnImageError(context, bytes);
+  return mime;
+}
+
 async function cancelBody(response: Response): Promise<void> {
   await response.body?.cancel().catch(() => undefined);
 }

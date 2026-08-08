@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "16ab30d8ce8f23f8"
+    "sourceFingerprint": "91e9ed6651ea054c"
   },
   "domains": [
     {
@@ -8332,6 +8332,10 @@
     {
       "id": "test:server/castingV2/eyeShapeRouting.test.ts",
       "path": "server/castingV2/eyeShapeRouting.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/falRegionReader.test.ts",
+      "path": "server/castingV2/falRegionReader.test.ts"
     },
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
@@ -17212,6 +17216,11 @@
     {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/security/trustedImageFetch.ts",
       "kind": "imports"
     },
     {

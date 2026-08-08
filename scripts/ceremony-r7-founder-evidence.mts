@@ -30,6 +30,7 @@ import {
 import { canonicalizeEvidenceDataUrl } from "../server/casting/evidence/imageValidation";
 import { getStorageCleanupHealth } from "../server/db/storageCleanup";
 import { getDb } from "../server/db/connection";
+import { assertOneWorld } from "./lib/worldGuard.mts";
 import { getUserById } from "../server/db/users";
 import { appRouter } from "../server/routers";
 
@@ -506,7 +507,19 @@ async function main(): Promise<void> {
   if (!storageConfig || storageConfig.bucket !== args.evidenceBucket) {
     throw new Error("founder_evidence_bucket_confirmation_mismatch");
   }
+  /*
+    THE DATABASE THIS CEREMONY WAS POINTED AT IS NOT THE DEVELOPER'S OWN.
+
+    This script is better placed than most — it never loads `.env`, it takes the
+    URL as an explicit argument, and it already makes the operator confirm the
+    evidence bucket by name. What none of that catches is the paste: a
+    production ceremony run against the development URL because the wrong line
+    was copied. The check is one line and the failure it prevents is a founder
+    evidence ceremony reporting on the wrong world with a straight face.
+  */
+  assertOneWorld(["DATABASE_URL"]);
   process.env.DATABASE_URL = args.databaseUrl;
+  assertOneWorld(["DATABASE_URL"]);
   try {
     connection = await mysql.createConnection({
       uri: args.databaseUrl,
