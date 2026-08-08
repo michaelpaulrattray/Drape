@@ -5,6 +5,7 @@ import {
   MASKED_EDITING_SCOPE,
   additionDestination,
   hangsBelowAnchor,
+  anyFacetMovesAnEdge,
   confusableNeighboursOf,
   fringeTableNames,
   harvestRefinement,
@@ -13,6 +14,7 @@ import {
   maskedEditingEnabledFor,
   needsLandmarkDestination,
   regionNameOf,
+  edgeTableNames,
   neighbourTableNames,
   segmentableRegionNames,
   vacancyOf,
@@ -1062,5 +1064,155 @@ describe("territory it was never asked about is given back to her master", () =>
       for (let x = 10; x < 26; x += 1) if (delivered.data[y * W + x]! > 0) armOverHair += 1;
     }
     expect(armOverHair, "the arms reach the temples they were painted on").toBeGreaterThan(0);
+  });
+});
+
+/**
+ * A REVEAL ONLY EXISTS WHERE SOMETHING CAN LEAVE.
+ *
+ * With the strand projection scoped and the territory rule in place, run-6's
+ * left notch fell 90% and the right phantom did not move at all. Per-mask
+ * attribution on the replay named it: `vacated` was zero everywhere and
+ * `departed` claimed 7,955 px of that band — the reversed projection, reach
+ * 160px, run for every question including a freckle instruction.
+ */
+describe("only an edit that can move an edge may claim a reveal", () => {
+  const HAIR_E: [number, number, number] = [20, 16, 14];
+  const SKIN_E: [number, number, number] = [205, 165, 150];
+  const PALE_E: [number, number, number] = [200, 198, 200];
+
+  it("declares every facet, so a new one cannot inherit a reveal by silence", () => {
+    for (const facet of allFacets()) {
+      expect(edgeTableNames(), `facet "${facet}" has no edge declaration`).toContain(facet);
+    }
+  });
+
+  it("separates a surface repaint from a silhouette change", () => {
+    expect(anyFacetMovesAnEdge([facetOfSubject("marks")]), "freckles do not remove skin").toBe(false);
+    expect(anyFacetMovesAnEdge([facetOfSubject("skinTone")])).toBe(false);
+    expect(anyFacetMovesAnEdge(["makeup"])).toBe(false);
+    expect(anyFacetMovesAnEdge([facetOfSubject("hairWorn")]), "the shrink it was built for").toBe(true);
+    expect(anyFacetMovesAnEdge([facetOfSubject("statedAccessories")])).toBe(true);
+  });
+
+  it("does not disagree with itself on a compound — one mover is enough", () => {
+    expect(anyFacetMovesAnEdge([facetOfSubject("marks"), facetOfSubject("hairWorn")])).toBe(true);
+  });
+
+  it("holds a hair COLOUR to no reveal, where the amplitude table calls it REPLACEMENT", () => {
+    /* The two tables genuinely disagree here, which is why this one exists
+       rather than reusing the amplitude record's SURFACE band: every strand
+       pixel moves, and the silhouette does not. */
+    expect(anyFacetMovesAnEdge([facetOfSubject("hairShade")])).toBe(false);
+  });
+
+  it("claims no reveal on a surface edit — the right phantom, in miniature", async () => {
+    /* Her hair is the left column. The painter drifted it RIGHT, putting hair
+       where the master has skin: exactly the phantom's geometry. */
+    const masterBytes = await png((x) => (x < 20 ? HAIR_E : SKIN_E));
+    const paintedBytes = await png((x, y) => {
+      if (x < 40) return HAIR_E;
+      if (x >= 44 && x < 62 && y >= 10 && y < 54 && (x + y) % 3 === 0) return [150, 110, 95];
+      return SKIN_E;
+    });
+    const reader: RegionReader = {
+      /*
+        A REALISTIC SEGMENTER, on purpose. Asked for "face skin" on the PAINTED
+        frame it answers x >= 30, because the painter put hair over x in
+        [20, 30) and a segmenter does not call hair skin. That isolates the one
+        question this test is about: with the harvest behaving correctly, can
+        the REVEAL path still deliver the painter's hair onto her neck?
+
+        (A segmenter that widens into moved hair is a different defect and has
+        its own control, one describe up — that is the territory rule's.)
+      */
+      region: async ({ name, image }) => {
+        if (name === "hair") return box(0, 0, 20, 64);
+        return Buffer.compare(image, masterBytes) === 0 ? box(20, 6, 62, 58) : box(40, 6, 62, 58);
+      },
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("marks")],
+      reader,
+      userId: 1,
+      described: "freckles",
+      explain: true,
+    });
+    expect(coverage(result.explain!.vacated), "a freckle vacates nothing").toBe(0);
+    expect(coverage(result.explain!.departed), "and nothing departed her face").toBe(0);
+    /*
+      The band x in [20, 30) is master-skin the painter covered with hair, and
+      it is measured a clear TEN pixels inside the painted skin boundary at 40
+      — because `harvestMatteFrom` tapers its own edge by 8px, and a band drawn
+      inside that taper would be measuring the feather rather than the phantom.
+      The first version of this test asserted over a 10px band whose far edge WAS
+      the boundary, and could not have passed however correct the fix.
+    */
+    const delivered = result.explain!.delivered;
+    let phantom = 0;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 20; x < 30; x += 1) if (delivered.data[y * W + x]! > 0) phantom += 1;
+    }
+    expect(phantom, "the painter's hair does not arrive on her neck").toBe(0);
+  });
+
+  it("still reveals for a REMOVAL whose facets were all pruned away", async () => {
+    /* A removal can be the whole instruction, leaving `facets` empty — the case
+       that once threw "no facets to mask" and refunded a perfect render. A
+       departure is a reveal by definition, whatever the facet list says. */
+    const glasses = { x0: 12, y0: 28, x1: 52, y1: 34 };
+    const masterBytes = await png((x, y) => {
+      if (x >= glasses.x0 && x < glasses.x1 && y >= glasses.y0 && y < glasses.y1) return [15, 15, 20];
+      return SKIN_E;
+    });
+    const paintedBytes = await png(() => SKIN_E);
+    const reader: RegionReader = {
+      region: async ({ name }) => (name === "glasses"
+        ? box(glasses.x0, glasses.y0, glasses.x1, glasses.y1)
+        : box(0, 0, 0, 0)),
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.48 }, { x: 0.7, y: 0.48 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [],
+      reader,
+      userId: 1,
+      departed: "glasses",
+      explain: true,
+    });
+    expect(coverage(result.explain!.delivered), "the frames still come off").toBeGreaterThan(0);
+  });
+
+  it("still reveals for a hair shrink — the ponytail exhibit", async () => {
+    const masterBytes = await png((x) => (x < 40 ? HAIR_E : PALE_E));
+    const paintedBytes = await png((x) => (x < 20 ? HAIR_E : PALE_E));
+    const reader: RegionReader = {
+      region: async ({ image }) => (Buffer.compare(image, masterBytes) === 0
+        ? box(0, 0, 40, 64)
+        : box(0, 0, 20, 64)),
+      subject: async () => box(0, 0, W, H),
+      landmark: async () => [{ x: 0.3, y: 0.45 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: masterBytes, contentType: "image/png" },
+      painted: { bytes: paintedBytes, contentType: "image/png" },
+      facets: [facetOfSubject("hairWorn")],
+      reader,
+      userId: 1,
+      described: "tied back",
+      explain: true,
+    });
+    let revealed = 0;
+    const delivered = result.explain!.delivered;
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 20; x < 40; x += 1) if (delivered.data[y * W + x]! > 0) revealed += 1;
+    }
+    expect(revealed, "the shrink still reveals what was behind her hair").toBeGreaterThan(0);
   });
 });

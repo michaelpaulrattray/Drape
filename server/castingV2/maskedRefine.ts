@@ -439,6 +439,80 @@ export function neighbourTableNames(): string[] {
   return Object.keys(CONFUSABLE_NEIGHBOURS).sort();
 }
 
+/**
+ * WHICH FACETS CAN MOVE THEIR REGION'S EDGE — and therefore may claim a reveal.
+ *
+ * # The third mechanism in run-6's torn frame
+ *
+ * With the strand projection scoped (`FRINGE_AT_EDGE`) and the territory rule
+ * in place, run-6's left notch fell 90% and the RIGHT PHANTOM did not move at
+ * all. Per-mask attribution on the replay named it: `vacated` is zero
+ * everywhere and **`departed` claims 7,955 px of that band.**
+ *
+ * `departed` is the reversed projection — it asks what content LEFT a region,
+ * with a 160px reach, so a shrinking ponytail's old flyaways can be found far
+ * from the mass they belonged to. It was computed for **every** question. On a
+ * `marks` edit that means a freckle instruction hunting for skin that departed
+ * from her face, across 160 pixels, and then delivering the painter's
+ * replacement for it — which is where a hank of hair arrived on her neck.
+ *
+ * # The rule
+ *
+ * A reveal only exists where something can leave. A facet that repaints a
+ * region's SURFACE cannot move its edge: freckles do not remove skin, a tan
+ * does not, lipstick does not, and neither does a hair colour — a recoloured
+ * ponytail is the same ponytail. Those facets get no `vacated`, no `departed`,
+ * and no reveal, and lose nothing by it.
+ *
+ * # Its own table, deliberately not `CHANGE_AMPLITUDE`
+ *
+ * The amplitude record has a SURFACE band that looks like the same distinction
+ * and it is **instrument-only** — it exists to tell a band table what threshold
+ * to count at. Reusing it here would quietly promote a measurement constant
+ * onto the paid render path, which is the class of thing this program keeps
+ * finding. They also genuinely disagree: `hair.colour` is REPLACEMENT amplitude
+ * (every strand pixel moves) and moves no edge at all.
+ *
+ * `Record<Facet, …>` so a new facet does not compile without a decision, with a
+ * test closing the other direction.
+ */
+const MOVES_ITS_EDGE: Record<Facet, { readonly moves: boolean; readonly why: string }> = {
+  "hair.cut": { moves: true, why: "a cut is a new silhouette" },
+  "hair.colour": { moves: false, why: "a recoloured ponytail is the same ponytail" },
+  "hair.texture": { moves: true, why: "curl pattern changes how far the mass stands out" },
+  hairFinish: { moves: false, why: "shine changes how light sits, not where the hair is" },
+  hairWorn: { moves: true, why: "up, down, tied back — the shrink this machinery was built for" },
+  facialHair: { moves: true, why: "shaving removes it entirely" },
+  statedAccessories: { moves: true, why: "an object arrives or departs" },
+  ink: { moves: false, why: "a design is drawn on skin; the skin stays where it is" },
+  "eye.colour": { moves: false, why: "the iris does not change shape" },
+  "eye.shape": { moves: true, why: "a corner lift moves the lid boundary" },
+  brows: { moves: true, why: "a shape change moves the brow's edge" },
+  lashes: { moves: true, why: "lashes extend and retract past the lid" },
+  nose: { moves: true, why: "a contour edit moves the edge" },
+  lips: { moves: true, why: "fuller lips move the vermilion border" },
+  teeth: { moves: false, why: "behind the lips; the lips' own edge is unmoved" },
+  cheekbones: { moves: false, why: "bone structure reads as shading over a wide area" },
+  jaw: { moves: true, why: "a contour against the background" },
+  chin: { moves: true, why: "as the jaw, over a smaller arc" },
+  ears: { moves: true, why: "an ear is exposed or covered" },
+  skinTone: { moves: false, why: "a tan is her own surface, a few levels different" },
+  skinCharacter: { moves: false, why: "texture is the freckle case by another name" },
+  marks: { moves: false, why: "freckles do not remove skin — the right phantom's own facet" },
+  makeup: { moves: false, why: "makeup sits on the surface it is painted on" },
+  expression: { moves: true, why: "features move; it routes full-frame and never reaches here" },
+};
+
+/** May any facet in this edit legitimately reveal what was behind something? */
+export function anyFacetMovesAnEdge(facets: ReadonlyArray<Facet>): boolean {
+  return facets.some((facet) => MOVES_ITS_EDGE[facet]?.moves === true);
+}
+
+/** Facets declared in the edge table — for the reverse-direction test. */
+export function edgeTableNames(): string[] {
+  return Object.keys(MOVES_ITS_EDGE).sort();
+}
+
 /** Every region this file can ask a segmenter about — the table's own domain. */
 export function segmentableRegionNames(): string[] {
   return Array.from(new Set([
@@ -1030,19 +1104,41 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       height: harvest.height,
     };
 
-    const vacated = await vacancyOf({ zone, masterRegion, paintedRegion: paintedContent, tolerancePx });
-    const departed = differenceMatte({
-      master: painted, patch: master, confirmed: masterRegion, reachPx: departedReach,
-    });
+    /*
+      A REVEAL ONLY EXISTS WHERE SOMETHING CAN LEAVE — see `MOVES_ITS_EDGE`.
+
+      Both halves of this ran for every question. On a `marks` edit that meant a
+      freckle instruction hunting across 160 pixels for skin that had departed
+      from her face, and then delivering the painter's replacement for it. That
+      is where run-6's phantom hank of hair arrived on her neck: `vacated` was
+      zero and `departed` claimed 7,955 px of the band.
+
+      Freckles do not remove skin. Nothing is lost by not asking.
+    */
+    const empty: Mask = { data: Buffer.alloc(master.width * master.height, 0), width: master.width, height: master.height };
+    const canReveal = anyFacetMovesAnEdge(input.facets)
+      /* A departure is a reveal by definition, whatever the facets say — a
+         removal that pruned its only step leaves `facets` empty. */
+      || input.departed !== undefined;
+    const vacated = canReveal
+      ? await vacancyOf({ zone, masterRegion, paintedRegion: paintedContent, tolerancePx })
+      : empty;
+    const departed = canReveal
+      ? differenceMatte({
+        master: painted, patch: master, confirmed: masterRegion, reachPx: departedReach,
+      })
+      : { alpha: empty };
     const departedFully: Mask = {
       data: Buffer.from(departed.alpha.data.map((value) =>
         Math.min(255, Math.round(value / REMOVAL_TOTAL_ABOVE)))),
       width: departed.alpha.width,
       height: departed.alpha.height,
     };
-    const departedVacated = await vacancyOf({
-      zone, masterRegion: departedFully, paintedRegion: paintedContent, tolerancePx,
-    });
+    const departedVacated = canReveal
+      ? await vacancyOf({
+        zone, masterRegion: departedFully, paintedRegion: paintedContent, tolerancePx,
+      })
+      : empty;
 
     perRegion.push({
       withStrands,
