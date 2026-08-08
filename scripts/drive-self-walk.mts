@@ -142,8 +142,24 @@ const WALK: Array<{ instruction: string; expectClass: string; expects: "delivere
 ];
 
 const COOKIE = `app_session_id=${TOKEN}`;
-/** A refine is ~30s median; twice the two-minute supervised-wait line. */
-const LANDING_TIMEOUT_MS = 4 * 60 * 1000;
+/**
+ * How long the walk waits for a render to reach her screen.
+ *
+ * WAS four minutes, and run-6 scored two honest deliveries as timeouts because
+ * of it. The operation rows: "give her freckles" completed in **283s** and
+ * "remove her glasses" in **276s**, against a cap that gave up at 240. The
+ * walk was measuring its own patience and calling it delivery, and a window
+ * that scores honest deliveries as failures poisons every rate it touches.
+ *
+ * Eight minutes is comfortably past the slowest render measured, and the step
+ * still records the seconds it actually took — so a genuinely slow product is
+ * visible as a number rather than hidden behind a verdict.
+ *
+ * The wait itself is a separate, real question: the product's own copy says
+ * "usually about half a minute" against a measured 283s. That is a founder
+ * matter, not a harness one, and widening this does not settle it.
+ */
+const LANDING_TIMEOUT_MS = 8 * 60 * 1000;
 
 /* ---------------------------------------------------------------------------
    Finding the sheet. Navigation, not verdict — so HTTP is the honest tool.
@@ -844,10 +860,21 @@ for (const [index, step] of WALK.entries()) {
       `[${position}] the question has answers, not just a sentence`,
       `chips: ${seen.answers.length ? seen.answers.join(" / ") : "none"}`,
     );
+    /*
+      HER OWN STEP'S COUNT, not the whole stack.
+      
+      This compared TOTAL stack size, so run-6's step 1 — which landed LATE,
+      after its window closed — made step 2's free question look as though it
+      had charged. That is the late-lander attribution bug I had already fixed
+      for the landing poll and did not sweep to its neighbour: law 7 on my own
+      fix, missed once. A free ask creates no version bearing THIS instruction,
+      whatever else lands meanwhile.
+    */
     checks.check(
-      seen.stack === before,
+      seen.mineCount === mineBefore,
       `[${position}] asking costs her nothing`,
-      `stack ${before} → ${seen.stack} (no new version)`,
+      `versions of this ask ${mineBefore} → ${seen.mineCount}`
+      + (seen.stack === before ? "" : ` (stack ${before} → ${seen.stack}, a late lander from an earlier step)`),
     );
   }
 
