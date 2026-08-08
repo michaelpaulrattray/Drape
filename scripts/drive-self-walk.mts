@@ -444,6 +444,56 @@ const eyeShapeStep = WALK.find((step) => step.expectClass === "eye.shape");
 if (!eyeShapeStep) throw new Error("the eye.shape step is gone — its expectation is derived and has nowhere to land");
 Object.assign(eyeShapeStep, eyeShape);
 
+/*
+  AND A FACE THAT CANNOT SATISFY A DECLARED STEP IS REFUSED BEFORE IT IS PAID
+  FOR (2026-08-09).
+
+  `--fresh` picks any untouched candidate, and TWO of the five steps are only
+  meaningful on a bespectacled face: "gold hoop earrings" wants her glasses to
+  SURVIVE, and "remove her glasses" wants them to GO. Run-13 found a
+  bespectacled face by asking the segmenter; the harness itself never checked,
+  and run-15's draw was cand-1546 — no glasses anywhere in the frame. It would
+  have spent 75 credits and then failed on a step that was impossible from the
+  start, and the table would have called it a product failure.
+
+  Same rule the eye-shape ladder already lives under: a harness that cannot
+  measure must refuse rather than assume — extended from "cannot measure" to
+  "measured, and this face is wrong for the script". Asked of the PIXELS, which
+  is the only thing that cannot lie about it (D-206's lesson, one surface over).
+*/
+async function wearsGlasses(url: string): Promise<boolean | null> {
+  try {
+    const { createFalRegionReader } = await import("../server/castingV2/falRegionReader.js");
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`her picture answered ${response.status}`);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const reader = createFalRegionReader({ apiKey: process.env.FAL_KEY! });
+    /* `absentIsAnswer` so nothing-found comes back as an empty mask rather than
+       a throw: here, absent IS the finding and the whole point of asking. */
+    const mask = await reader.region({ image: bytes, name: "eyeglasses", absentIsAnswer: true });
+    return mask.data.some((value) => value > 0);
+  } catch (error) {
+    console.log(`  glasses unreadable (${String(error).slice(0, 90)})`);
+    return null;
+  }
+}
+
+const glassesSteps = WALK.filter((step) => /glasses/i.test(step.instruction));
+if (glassesSteps.length > 0) {
+  const bespectacled = await wearsGlasses(imageUrl);
+  if (bespectacled === false) {
+    throw new Error(
+      `this face is not wearing glasses, and ${glassesSteps.length} of the ${WALK.length} steps are about them `
+      + `("${glassesSteps.map((step) => step.instruction).join('", "')}"). `
+      + "Walking her would spend on steps that cannot land and then score the product for it. "
+      + "Pick a bespectacled face — `--candidate <publicId>` — or roll one.",
+    );
+  }
+  console.log(bespectacled === null
+    ? "  glasses: NO READ — proceeding, but the removal step's expectation is unproven"
+    : "  glasses: present, so the earrings and removal steps are answerable");
+}
+
 const paidSteps = WALK.filter((step) => step.expects === "delivered").length;
 console.log(`cost if it runs: ${paidSteps * 25} credits (${paidSteps} paid, ${WALK.length - paidSteps} free)\n`);
 for (const [index, step] of WALK.entries()) {
