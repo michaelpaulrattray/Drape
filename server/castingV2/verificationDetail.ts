@@ -164,12 +164,17 @@ export async function magnifiedDetail(input: {
 /**
  * The whole decision, in one place: do these facts need magnifying, is a region
  * available for free, and if so what does the reader get.
+ *
+ * `answers` is the crop's own franchise, and it is narrow on purpose — only the
+ * magnified facets whose region is the one this crop was actually cut from. A
+ * crop of her cheeks must not be allowed to answer a question about her hair
+ * just because it happened to be in the call.
  */
 export async function detailForVerification(input: {
   bytes: Buffer;
   facets: ReadonlyArray<Facet>;
   masterRegions: ReadonlyMap<string, Mask> | null | undefined;
-}): Promise<{ bytes: Buffer; contentType: string } | null> {
+}): Promise<{ bytes: Buffer; contentType: string; answers: Facet[] } | null> {
   if (!input.masterRegions || !needsMagnification(input.facets)) return null;
   for (const name of detailRegionNames(input.facets)) {
     const mask = input.masterRegions.get(name);
@@ -177,7 +182,10 @@ export async function detailForVerification(input: {
     const box = boxOfMask(mask);
     if (!box) continue;
     const detail = await magnifiedDetail({ bytes: input.bytes, box });
-    if (detail) return detail;
+    if (!detail) continue;
+    const answers = input.facets.filter((facet) =>
+      FINE_DETAIL_FACETS.has(facet) && regionNameOf(facet) === name);
+    return { ...detail, answers };
   }
   return null;
 }

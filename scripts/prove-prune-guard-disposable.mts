@@ -149,12 +149,23 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
       every test about the crop's correctness stays green — which is why the
       contract is asserted on the outgoing request rather than near it.
     */
-    name: "the detail computed and then never sent to the reader",
+    name: "the crop computed and then never read (the close pass skipped)",
     file: "server/castingV2/renderVerification.ts",
     suites: DETAIL_SUITES,
     mutations: [{
-      find: "      images: input.detail\n        ? [{ bytes: input.bytes, contentType: input.contentType }, input.detail]\n        : [{ bytes: input.bytes, contentType: input.contentType }],",
-      replace: "      images: [{ bytes: input.bytes, contentType: input.contentType }],",
+      find: "  if (!input.detail || closely.length === 0) return verdict;",
+      replace: "  return verdict;",
+    }],
+  },
+  {
+    /* And the merge: a close reading taken and then discarded looks identical
+       from outside to one that was never taken. */
+    name: "the close reading taken and then thrown away",
+    file: "server/castingV2/renderVerification.ts",
+    suites: DETAIL_SUITES,
+    mutations: [{
+      find: "    return closer?.read ? closer : check;",
+      replace: "    return check;",
     }],
   },
   {

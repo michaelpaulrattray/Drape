@@ -152,17 +152,34 @@ const SYSTEM_PROMPT = [
 ].join("\n");
 
 /**
- * The paragraph added when a magnified detail rides along. Only then — a
- * standing sentence about a second photograph that is usually absent is a
- * standing invitation to hallucinate one.
+ * The preamble for the CLOSE reading — the magnified crop, on its own.
+ *
+ * # Why on its own, when riding along was so much tidier
+ *
+ * The first build sent the frame and the enlargement together in one call, so
+ * that one pass could still weigh every fact at once. The court measured that
+ * shape rather than assuming it, and it does not work: on run-12's frame 03 the
+ * crop ALONE is right 5 times out of 5 and the frame-plus-crop pair is right
+ * **once** out of 5. The full frame dominates — the reader looks at the
+ * portrait, sees skin that reads clear at that size, and answers from it.
+ *
+ * A magnifier you are allowed to ignore is not a magnifier. So the small facets
+ * get their own look, at the only size they survive.
+ *
+ * # And this does not reopen the one-pass argument
+ *
+ * One call over every fact exists because facets in the same neighbourhood must
+ * be weighed against each other — pink irises against pink eyeshadow. That
+ * applies to facets competing for one place on a face. It does not apply to
+ * "are there freckles on this skin", which nothing else in the recipe can be
+ * mistaken for, and for which the crop IS the whole photograph.
  */
-const DETAIL_PROMPT = [
+const CLOSE_PROMPT = [
   "",
-  "THE SECOND IMAGE IS THE SAME PHOTOGRAPH, ENLARGED. It is a crop of the first, magnified,",
-  "with no detail added — use it to look closely at fine surface things like freckles, moles",
-  "or texture, which are only a few pixels across in the full frame. It is the same person in",
-  "the same picture, not a different render: never report a difference between the two, and",
-  "answer every line about the photograph as a whole.",
+  "THIS IMAGE IS A MAGNIFIED CROP of a portrait — the person's face, enlarged, with no detail",
+  "added or invented. You are looking closely on purpose, at fine surface things that are only",
+  "a few pixels across in the full photograph. Judge only the lines below, from what is",
+  "actually in this crop.",
 ].join("\n");
 
 /**
@@ -250,7 +267,18 @@ export async function verifyRender(input: {
    * freckles, and a specimen with none — stay unanimously ABSENT at this lens.
    * A magnifier whose failure mode is seeing things would have broken there.
    */
-  detail?: { bytes: Buffer; contentType: string };
+  detail?: {
+    bytes: Buffer;
+    contentType: string;
+    /**
+     * Exactly which facets this crop is entitled to answer.
+     *
+     * Declared by the caller rather than inferred here, because the caller is
+     * the one that knows what the crop contains: a face-skin crop can answer
+     * "are there freckles" and has no business answering "is her hair up".
+     */
+    answers: ReadonlyArray<Facet>;
+  };
   /** `binding` false means checked and recorded, never refunded (D-187). */
   facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean; shortfall?: string }>;
   engine?: TextEngine;
@@ -263,16 +291,66 @@ export async function verifyRender(input: {
     return { ok: true, checks: [], unavailable: true };
   }
 
+  const verdict = await readOnce({
+    engine,
+    system: SYSTEM_PROMPT,
+    image: { bytes: input.bytes, contentType: input.contentType },
+    facts: input.facts,
+    signal: input.signal,
+  });
+
+  const closely = input.detail
+    ? input.facts.filter((fact) => input.detail!.answers.includes(fact.facet))
+    : [];
+  if (!input.detail || closely.length === 0) return verdict;
+
+  /*
+    THE CLOSE READING, and it REPLACES the frame's answer for these facets.
+
+    Not a vote and not a tie-break. The court settled which instrument is
+    trustworthy for them — 40/40 on the crop against 30/40 on the portrait,
+    with every portrait error a false negative and every clear-skin control
+    unanimously absent at both. Averaging a sound reading with a blind one
+    would only make the blindness quieter.
+
+    An unavailable or unreadable close pass changes nothing: the frame's verdict
+    stands, exactly as it does today. A magnifier is an improvement to a
+    reading, never a precondition for one.
+  */
+  const close = await readOnce({
+    engine,
+    system: SYSTEM_PROMPT + CLOSE_PROMPT,
+    image: { bytes: input.detail.bytes, contentType: input.detail.contentType },
+    facts: closely,
+    signal: input.signal,
+  });
+  if (close.unavailable) return verdict;
+
+  const closeBy = new Map(close.checks.map((check) => [keyOf(check), check]));
+  const checks = verdict.checks.map((check) => {
+    const closer = closeBy.get(keyOf(check));
+    return closer?.read ? closer : check;
+  });
+  return { ...verdict, checks, ok: okOf(checks) };
+}
+
+/** One reading of one image over a list of facts. */
+async function readOnce(input: {
+  engine: TextEngine;
+  system: string;
+  image: { bytes: Buffer; contentType: string };
+  facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean; shortfall?: string }>;
+  signal?: AbortSignal;
+}): Promise<RenderVerdict> {
+  const { engine } = input;
   const lines = input.facts.map((fact, index) =>
     `${index + 1}. ${facetHeading(fact.facet)}: ${fact.asked}`);
 
   try {
     const reply = await engine.complete({
-      system: input.detail ? SYSTEM_PROMPT + DETAIL_PROMPT : SYSTEM_PROMPT,
+      system: input.system,
       user: lines.join("\n"),
-      images: input.detail
-        ? [{ bytes: input.bytes, contentType: input.contentType }, input.detail]
-        : [{ bytes: input.bytes, contentType: input.contentType }],
+      images: [input.image],
       json: true,
       temperature: 0,
       maxOutputTokens: 700,

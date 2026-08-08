@@ -179,7 +179,7 @@ async function ask(
   const verdict = await verifyRender({
     bytes,
     contentType: "image/png",
-    ...(detail ? { detail: { bytes: detail, contentType: "image/png" } } : {}),
+    ...(detail ? { detail: { bytes: detail, contentType: "image/png", answers: ["marks"] } } : {}),
     facts: [{ facet: "marks", asked, binding: false }],
   });
   const check = verdict.checks[0];
@@ -194,17 +194,25 @@ if (!Number.isInteger(REPEAT) || REPEAT < 1) throw new Error("--repeat needs a w
 /**
  * THE FOUR LENSES — and the last one is the only one that ships.
  *
- * `enlarged` puts the magnified crop to the reader ON ITS OWN. That answered
- * the diagnostic question (is the loss resolution?) and it is NOT what
- * production can do: the reader has to weigh every fact in the recipe against
- * one photograph, and a crop of her cheek cannot answer a question about her
- * hair. So production sends BOTH — the frame and the enlargement, in one call.
+ * The first three are diagnostic: they ask where the reader's blindness lives.
+ * `shipped` is the whole production call, `detail` argument and all, so the
+ * thing measured is the thing that runs.
  *
- * Those are different experiments, and a court that proved the first and
- * shipped the second would be assuring us about a shape nobody ran. `pair` is
- * the shape that ships, driven through `verifyRender`'s own `detail` argument.
+ * # A negative result worth keeping: sending both images in ONE call
+ *
+ * The first design put the frame and the enlargement in a single reading, so
+ * one pass could still weigh every fact together. **It does not work.** On
+ * run-12's frame 03 the crop alone is right 5 times out of 5 and the pair is
+ * right ONCE — the full portrait dominates, the reader sees skin that looks
+ * clear at that size, and answers from it. A magnifier you are allowed to
+ * ignore is not a magnifier.
+ *
+ * That is exactly why the shipping shape gets its own lens. `enlarged` proved
+ * the crop is a sound instrument; it did not prove any particular way of
+ * getting the crop in front of the reader, and shipping the second on the
+ * evidence for the first is the mistake this bench has corrected twice.
  */
-const LENSES = ["portrait", "crop", "enlarged", "pair"] as const;
+const LENSES = ["portrait", "crop", "enlarged", "shipped"] as const;
 type Lens = (typeof LENSES)[number];
 
 /** N readings of one question about one picture, kept individually. */
@@ -226,7 +234,7 @@ async function sit(bytes: Buffer | null, asked: string, detail?: Buffer | null):
 const rows: Record<string, unknown>[] = [];
 console.log(`\n${REPEAT} readings per lens. A tally, not a verdict — "3/5" and "5/5" are `
   + `different diagnoses.\n`);
-console.log("case                                  truth      portrait     crop         enlarged     pair (SHIPS)");
+console.log("case                                  truth      portrait     crop         enlarged     shipped");
 console.log("-".repeat(96));
 
 for (const entry of CASES) {
@@ -243,7 +251,7 @@ for (const entry of CASES) {
     portrait: await sit(bytes, entry.asked),
     crop: await sit(cropBytes, entry.asked),
     enlarged: await sit(enlargedBytes, entry.asked),
-    pair: await sit(bytes, entry.asked, enlargedBytes),
+    shipped: await sit(bytes, entry.asked, enlargedBytes),
   };
 
   /* How many of the N readings landed on the truth. The tally IS the finding:

@@ -166,6 +166,17 @@ describe("choosing a detail from what the harvest already segmented", () => {
     expect(detail!.contentType).toBe("image/png");
   });
 
+  it("gives the crop a NARROW franchise — only the facets its own region covers", async () => {
+    /* A crop of her cheeks must not answer a question about her hair merely
+       because it happened to be in the call. */
+    const detail = await detailForVerification({
+      bytes: await speckledFrame(),
+      facets: [MARKS, HAIR_WORN],
+      masterRegions: new Map([["face skin", faceSkin]]),
+    });
+    expect(detail!.answers).toEqual([MARKS]);
+  });
+
   it("sends nothing when the step's harvest never touched the face", async () => {
     /* The honest partial. Frame 04's step segmented an earlobe, not skin. */
     const detail = await detailForVerification({
@@ -192,15 +203,17 @@ describe("choosing a detail from what the harvest already segmented", () => {
 });
 
 describe("at the wire — what the reader was actually handed", () => {
-  function capturingEngine(): TextEngine & { requests: TextRequest[] } {
+  /** Answers each call from a script, and keeps every request it was sent. */
+  function capturingEngine(replies: string[]): TextEngine & { requests: TextRequest[] } {
     const requests: TextRequest[] = [];
     return {
       id: "capturing",
       requests,
       async complete(request: TextRequest): Promise<TextResult> {
+        const text = replies[Math.min(requests.length, replies.length - 1)]!;
         requests.push(request);
         return {
-          text: '{"results":[{"id":1,"present":true,"saw":"light freckles across nose and cheeks"}]}',
+          text,
           provenance: { provider: "test", model: "capturing" } as unknown as TextResult["provenance"],
           latencyMs: 1,
         };
@@ -208,46 +221,99 @@ describe("at the wire — what the reader was actually handed", () => {
     };
   }
 
+  const SAW_THEM = '{"results":[{"id":1,"present":true,"saw":"light freckles across nose and cheeks"}]}';
+  const SAW_NONE = '{"results":[{"id":1,"present":false,"saw":"clear skin, no visible freckles"}]}';
+
   const facts = [{ facet: MARKS, asked: "freckles", binding: false }] as const;
   const frame = Buffer.from("the frame");
-  const detail = { bytes: Buffer.from("the enlargement"), contentType: "image/png" };
+  const detail = { bytes: Buffer.from("the enlargement"), contentType: "image/png", answers: [MARKS] };
 
-  it("sends BOTH images, in order, and says what the second one is", async () => {
-    const engine = capturingEngine();
+  it("reads the crop in a SEPARATE call, on its own, never alongside the frame", async () => {
+    /*
+      The shape matters and was measured, not assumed. Sending the frame and the
+      crop together in one call scored 1/5 on run-12's frame 03 where the crop
+      alone scored 5/5 — the full portrait dominates and the reader answers from
+      it. A magnifier you are allowed to ignore is not a magnifier.
+    */
+    const engine = capturingEngine([SAW_NONE, SAW_THEM]);
     await verifyRender({ bytes: frame, contentType: "image/png", detail, facts, engine });
 
-    const request = engine.requests[0]!;
-    expect(request.images?.map((image) => image.bytes.toString()))
-      .toEqual(["the frame", "the enlargement"]);
-    expect(request.system).toContain("THE SECOND IMAGE IS THE SAME PHOTOGRAPH, ENLARGED");
+    expect(engine.requests).toHaveLength(2);
+    expect(engine.requests[0]!.images?.map((image) => image.bytes.toString())).toEqual(["the frame"]);
+    expect(engine.requests[1]!.images?.map((image) => image.bytes.toString())).toEqual(["the enlargement"]);
+    expect(engine.requests[1]!.system).toContain("MAGNIFIED CROP");
   });
 
-  it("sends ONE image and never mentions a second when there is no detail", async () => {
+  it("lets the close reading OVERTURN the frame's miss — the whole point", async () => {
+    const engine = capturingEngine([SAW_NONE, SAW_THEM]);
+    const verdict = await verifyRender({ bytes: frame, contentType: "image/png", detail, facts, engine });
+
+    expect(verdict.checks[0]!.verified).toBe(true);
+    expect(verdict.checks[0]!.saw).toBe("light freckles across nose and cheeks");
+  });
+
+  it("and equally lets it stand a miss up — it is a reading, not a rubber stamp", async () => {
+    /* The direction that would manufacture a false pass. If the crop says the
+       freckles are not there, they are not there. */
+    const engine = capturingEngine([SAW_THEM, SAW_NONE]);
+    const verdict = await verifyRender({ bytes: frame, contentType: "image/png", detail, facts, engine });
+
+    expect(verdict.checks[0]!.verified).toBe(false);
+    expect(verdict.checks[0]!.saw).toBe("clear skin, no visible freckles");
+  });
+
+  it("asks the crop ONLY about the facets it is entitled to answer", async () => {
+    const engine = capturingEngine([
+      '{"results":[{"id":1,"present":false,"saw":"clear skin"},{"id":2,"present":true,"saw":"hair gathered at the nape"}]}',
+      SAW_THEM,
+    ]);
+    await verifyRender({
+      bytes: frame,
+      contentType: "image/png",
+      detail,
+      facts: [{ facet: MARKS, asked: "freckles" }, { facet: HAIR_WORN, asked: "tied up" }],
+      engine,
+    });
+
+    expect(engine.requests[0]!.user).toContain("tied up");
+    expect(engine.requests[1]!.user).not.toContain("tied up");
+    expect(engine.requests[1]!.user).toContain("freckles");
+  });
+
+  it("reads once and never mentions a crop when there is no detail", async () => {
     /* A standing sentence about a photograph that is usually absent is a
        standing invitation to describe one. */
-    const engine = capturingEngine();
+    const engine = capturingEngine([SAW_THEM]);
     await verifyRender({ bytes: frame, contentType: "image/png", facts, engine });
 
-    const request = engine.requests[0]!;
-    expect(request.images).toHaveLength(1);
-    expect(request.system).not.toContain("SECOND IMAGE");
+    expect(engine.requests).toHaveLength(1);
+    expect(engine.requests[0]!.images).toHaveLength(1);
+    expect(engine.requests[0]!.system).not.toContain("MAGNIFIED CROP");
   });
 
-  it("carries the detail into the RE-READ too, not just the first look", async () => {
+  it("keeps the frame's verdict when the close reading comes back unusable", async () => {
+    /* A magnifier is an improvement to a reading, never a precondition for
+       one. An outage on the second call must not destroy the first. */
+    const engine = capturingEngine([SAW_THEM, "not json at all"]);
+    const verdict = await verifyRender({ bytes: frame, contentType: "image/png", detail, facts, engine });
+
+    expect(verdict.checks[0]!.verified).toBe(true);
+    expect(verdict.unavailable).toBeUndefined();
+  });
+
+  it("magnifies on the RE-READ too, not just the first look", async () => {
     /*
       The re-read is where a refusal is actually decided (D-194). A magnifier
       present on the first reading and absent on the one that spends the user's
-      credits would make the second reading systematically blinder than the
-      first — and the suite would be green.
+      credits would make the deciding reading blinder than the first — and the
+      suite would be green.
     */
-    const engine = capturingEngine();
+    const engine = capturingEngine([SAW_NONE, SAW_THEM]);
     const read = () => verifyRender({ bytes: frame, contentType: "image/png", detail, facts, engine });
     await read();
     await read();
 
-    expect(engine.requests).toHaveLength(2);
-    for (const request of engine.requests) {
-      expect(request.images).toHaveLength(2);
-    }
+    expect(engine.requests).toHaveLength(4);
+    expect(engine.requests[3]!.system).toContain("MAGNIFIED CROP");
   });
 });
