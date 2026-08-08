@@ -101,6 +101,18 @@ const FRAMES = [
   { name: "04 after hoops", file: "output/walk/run-12/04-delivered.png" },
   { name: "05 after the removal", file: "output/walk/run-12/05-delivered.png" },
   /*
+    06 — THE ONE PAID RENDER THAT SETTLES IT (approved, fable-048).
+
+    A `statedAccessories` addition, the same class as the step that lost her
+    freckles, with `marks` CARRIED rather than written — the exact condition
+    frame 04 failed under. The only difference is the lane fix: the caption is
+    now spoken inside the instruction rather than asserted beside it.
+
+    Frame 04 read 3.49, BELOW her 3.84 floor. If this reads at the floor too,
+    the fix did not save it and the coin-flip theory needs its retry.
+  */
+  { name: "06 a necklace, AFTER the lane fix", file: "output/caption-governs/delivered.png" },
+  /*
     THE COUNTER'S OWN CONTROLS, because a count nobody has calibrated is worth
     what an unproven reader is worth — and this shift has now been burnt twice
     by believing an instrument that had never been made to fail.
@@ -382,7 +394,7 @@ console.log("-".repeat(90));
 for (const frame of FRAMES) {
   /* The cross-face controls are different people, so they cannot borrow her
      ground; they take their own, and their limit is declared above. */
-  const population = frame.file.includes("/run-12/") || frame.file === HER_MASTER
+  const population = frame.file.includes("/run-12/") || frame.file === HER_MASTER || frame.file.includes("/caption-governs/")
     ? herPopulation
     : await cheekBand(frame.file);
   if (!population) { console.log(`${frame.name.padEnd(34)} NO FACE READ`); continue; }
