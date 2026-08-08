@@ -46,7 +46,7 @@ import { facetOfAxis } from "./refineFacets";
  * second implementation of the other.
  */
 export type Reask = {
-  kind: "which-facet" | "did-you-mean" | "already-upswept";
+  kind: "which-facet" | "did-you-mean" | "already-upswept" | "glasses-hide-eyes";
   /** The sentence, in their words. */
   question: string;
   options: Array<{ label: string; resolves: string }>;
@@ -427,7 +427,11 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
     if (said === label || bare === core || said === core) return option.resolves;
   }
 
-  if (reask.kind === "did-you-mean" || reask.kind === "already-upswept") {
+  if (
+    reask.kind === "did-you-mean"
+    || reask.kind === "already-upswept"
+    || reask.kind === "glasses-hide-eyes"
+  ) {
     if (YES.includes(bare)) return reask.options[0]?.resolves ?? null;
     if (NO.includes(bare)) return reask.options[1]?.resolves ?? null;
     return null;
@@ -487,6 +491,45 @@ export function alreadyUpsweptReask(instruction: string): Reask {
       /* As easy as the accept, and genuinely free: it lands on her current
          picture and never reaches the claim. */
       { label: "Never mind", resolves: LEAVE_AS_SHE_IS },
+    ],
+  };
+}
+
+/**
+ * THE QUESTION FOR WHEN HER GLASSES ARE IN THE WAY OF THE MEASUREMENT.
+ *
+ * Sibling of `alreadyUpsweptReask`, and it exists because the gate above can
+ * only protect a face it can measure. Measured on 2026-08-09: the canthal tilt
+ * reads on **6 of 6** bare faces and **4 of 8** bespectacled ones. When it does
+ * not read, nothing fires, and she is charged for an eye edit that may be a
+ * no-op — the protection is silently unavailable to people who wear glasses.
+ *
+ * **The glasses are a correlate, not a proven cause**, and the code says so
+ * rather than implying more: the same woman's master read 2.0° with her frames
+ * on while a later frame of her, also bespectacled, would not read at all. What
+ * we know is that the reading failed and that there are frames over her eyes;
+ * that is enough to ask and not enough to explain.
+ *
+ * So the product says the true thing — *I cannot see your eyes well enough to
+ * tell* — and offers the two real answers. Free, like every member of this
+ * family, and it never dead-ends: "go ahead" is as easy as the alternative.
+ *
+ * No degree count in the copy: a measurement is the instrument's language, not
+ * the stylist's (working law 8). She is told what the product can and cannot
+ * see, which is a fact about her picture, not about our arithmetic.
+ */
+export function glassesHideEyesReask(instruction: string): Reask {
+  const asked = instruction.trim().replace(/[.!?]+$/, "");
+  return {
+    kind: "glasses-hide-eyes",
+    question: "Her glasses are sitting over her eyes, so I can't tell whether "
+      + "they already do this. Take the glasses off first, or go ahead anyway? "
+      + "Either way this costs nothing.",
+    options: [
+      /* Removal first, then the original ask — the order a stylist would work
+         in, and it leaves her with a face the gate can measure next time. */
+      { label: "Take them off first", resolves: `remove her glasses, then ${asked}` },
+      { label: "Go ahead anyway", resolves: asked },
     ],
   };
 }

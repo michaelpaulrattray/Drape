@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   UPSWEPT_ALREADY,
   alreadyUpswept,
+  GLASSES_COVERAGE_FLOOR,
+  wearsGlassesByPixels,
   medianReading,
   pairCorners,
   readingFrom,
@@ -129,5 +131,48 @@ describe("the already-true gate", () => {
     /* The failure this program has shipped once and does not get to ship again
        is a FALSE REFUSAL. Pinned so lowering it is a deliberate act. */
     expect(UPSWEPT_ALREADY).toBeGreaterThanOrEqual(5);
+  });
+});
+
+/*
+  THE GLASSES READING, and the measurement its threshold comes from.
+
+  Measured 2026-08-09 through the production segmenter, both populations, one
+  arithmetic: 23 bare faces read 0.000% and 8 bespectacled faces read 1.349% to
+  2.093%, with nothing in between. The threshold sits in the middle of that
+  empty space rather than at a number somebody liked, and these cases pin both
+  edges of it so a future nudge has to argue with the specimens.
+*/
+describe("wearsGlassesByPixels — the picture says what exists", () => {
+  const maskOf = (coveredFraction: number) => {
+    const width = 100;
+    const height = 100;
+    const data = Buffer.alloc(width * height, 0);
+    for (let index = 0; index < Math.round(width * height * coveredFraction); index += 1) {
+      data[index] = 255;
+    }
+    return { data, width, height };
+  };
+
+  it("says no to the bare population, which measured a flat zero", () => {
+    expect(wearsGlassesByPixels(maskOf(0))).toBe(false);
+  });
+
+  it("says yes across the whole bespectacled population, 1.349% to 2.093%", () => {
+    for (const measured of [0.01349, 0.01376, 0.01418, 0.01480, 0.01551, 0.01601, 0.01652, 0.02093]) {
+      expect(wearsGlassesByPixels(maskOf(measured))).toBe(true);
+    }
+  });
+
+  it("puts the threshold in the empty space, an order of magnitude from each side", () => {
+    /* Ten times the highest bare reading is still nothing; a tenth of the
+       lowest bespectacled one is still plainly a pair of frames. */
+    expect(GLASSES_COVERAGE_FLOOR).toBeLessThan(0.01349 / 10);
+    expect(wearsGlassesByPixels(maskOf(0.0005))).toBe(false);
+    expect(wearsGlassesByPixels(maskOf(0.0015))).toBe(true);
+  });
+
+  it("cannot divide by an empty frame", () => {
+    expect(wearsGlassesByPixels({ data: Buffer.alloc(0), width: 0, height: 0 })).toBe(false);
   });
 });

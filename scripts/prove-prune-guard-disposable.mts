@@ -292,6 +292,28 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
       find: "  \"worn as cut\": \"worn exactly as cut — short enough that it is not gathered, tied or pinned at all\",\n",
     }],
   },
+  {
+    /*
+      THE GLASSES GATE. Without it a woman whose eyes cannot be measured
+      through her frames is charged for an eye edit that may be a no-op — the
+      protection silently unavailable to half of one population.
+    */
+    name: "the glasses gate that asks instead of charging",
+    file: "server/castingV2/refineService.ts",
+    suites: ["server/castingV2/refineService.test.ts"],
+    mutations: [{ find: "if (!reading && faceBytes) {", replace: "if (false) {" }],
+  },
+  {
+    /*
+      And the THRESHOLD, separately — a gate that fires on everything is as
+      broken as one that never fires, and it would fire on the bare population
+      whose measured coverage is a flat zero.
+    */
+    name: "the glasses threshold separating 0.000% from 1.349%",
+    file: "server/castingV2/canthalTilt.ts",
+    suites: ["server/castingV2/canthalTilt.test.ts", "server/castingV2/refineService.test.ts"],
+    mutations: [{ find: "export const GLASSES_COVERAGE_FLOOR = 0.001;", replace: "export const GLASSES_COVERAGE_FLOOR = -1;" }],
+  },
 ];
 
 const red = (suites: string[]): boolean => {

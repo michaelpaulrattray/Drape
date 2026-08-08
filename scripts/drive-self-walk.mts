@@ -215,19 +215,31 @@ async function deriveEyeShapeExpectation(imageUrl: string): Promise<Pick<WalkSte
       + "(`FAL_KEY=… railway run --service MySQL -- npx tsx scripts/drive-self-walk.mts …`).",
     );
   }
-  const reading = await (async () => {
+  const measured = await (async () => {
     try {
-      const [{ readCanthalTilt }, { createFalRegionReader }] = await Promise.all([
+      const [{ readCanthalTilt }, { createFalRegionReader }, { wearsGlassesByPixels }] = await Promise.all([
         import("../server/castingV2/eyeShapeRouting.js"),
         import("../server/castingV2/falRegionReader.js"),
+        import("../server/castingV2/canthalTilt.js"),
       ]);
+      const reader = createFalRegionReader({ apiKey });
       const { bytes } = await fetchImageBytes(imageUrl);
-      return await readCanthalTilt({ image: bytes, reader: createFalRegionReader({ apiKey }) });
+      const reading = await readCanthalTilt({ image: bytes, reader });
+      /* Only asked when the tilt FAILED — the same two conditions the product's
+         gate uses, in the same order, so the walk's expectation is derived from
+         the same facts rather than from a parallel guess about them. */
+      if (reading) return { reading, glasses: false };
+      const glasses = await reader
+        .region({ image: bytes, name: "glasses", absentIsAnswer: true })
+        .then(wearsGlassesByPixels)
+        .catch(() => false);
+      return { reading: null, glasses };
     } catch (error) {
       console.log(`  tilt unreadable (${String(error).slice(0, 90)})`);
-      return null;
+      return { reading: null, glasses: false };
     }
   })();
+  const reading = measured.reading;
 
   const { alreadyUpswept } = await import("../server/castingV2/canthalTilt.js");
   if (reading && alreadyUpswept(reading)) {
@@ -236,12 +248,26 @@ async function deriveEyeShapeExpectation(imageUrl: string): Promise<Pick<WalkSte
       why: `she measures ${reading.meanDeg.toFixed(1)}° — already upswept, so the gate asks instead of spending`,
     };
   }
+  /*
+    THE THIRD BRANCH — her eyes could not be measured because her frames are
+    over them, so the product asks for free instead of charging (2026-08-09).
+
+    Derived, not declared: the walk asks the same two questions the gate asks,
+    in the same order, off the same bytes. A harness that guessed this would be
+    grading the product against its own opinion.
+  */
+  if (!reading && measured.glasses) {
+    return {
+      expects: "asked",
+      why: "her tilt did not read and she is wearing glasses, so the gate asks instead of charging",
+    };
+  }
   return {
     expects: "delivered",
     orHonestly: ["refused"],
     why: reading
       ? `she measures ${reading.meanDeg.toFixed(1)}° — not already upswept, so this is a real edit she pays for`
-      : "her tilt did not read, and a no-read never fires the gate — so this spends",
+      : "her tilt did not read and no frames were found, so a no-read spends exactly as before",
   };
 }
 

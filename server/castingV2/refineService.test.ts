@@ -452,6 +452,122 @@ describe("refusals land before anything is claimed", () => {
     expect(journal).not.toContain("begin");
   });
 
+  it("ASKS INSTEAD OF SPENDING when her glasses hide the eyes it must measure", async () => {
+    /*
+      THE PROTECTION THAT WAS SILENTLY UNAVAILABLE TO PEOPLE IN GLASSES.
+
+      The gate above only fires on a measurement. Measured 2026-08-09: the tilt
+      reads on 6 of 6 bare faces and 4 of 8 bespectacled ones — so about half
+      the time a woman in glasses was charged 25 credits for an eye edit that
+      may have been a no-op, with nothing able to protect her. A measurement
+      that could not be taken fell through to the branch that spends.
+
+      Both conditions are required and both are driven here: the tilt read
+      FAILS (no eye masks at all) and the picture shows frames.
+    */
+    const W = 400;
+    const H = 300;
+    const nothing = () => ({ data: Buffer.alloc(W * H, 0), width: W, height: H });
+    /* Well above the measured bespectacled floor of 1.349%. */
+    const frames = () => {
+      const data = Buffer.alloc(W * H, 0);
+      for (let index = 0; index < Math.round(W * H * 0.015); index += 1) data[index] = 255;
+      return { data, width: W, height: H };
+    };
+    const sharp = (await import("sharp")).default;
+    const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    const asked = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async () => ({ bytes: face, contentType: "image/png" }),
+        regions: {
+          /* The eyes cannot be found; the glasses can. That IS the case. */
+          region: async ({ name }) => (name === "glasses" ? frames() : nothing()),
+          subject: async () => nothing(),
+          landmark: async () => [],
+        },
+      },
+      { ...input, instruction: "fox eyes" },
+    );
+
+    expect(asked.kind, "a free question, not a charge").toBe("asked");
+    expect(asked.reask!.question).toMatch(/glasses are sitting over her eyes/);
+    expect(asked.reask!.options[0]!.resolves, "and the first answer leaves her measurable next time")
+      .toMatch(/^remove her glasses, then fox eyes$/);
+    expect(ledger.charges, "nothing reserved, nothing charged").toHaveLength(0);
+  });
+
+  it("does NOT ask a bare-eyed customer whose tilt merely failed to read", async () => {
+    /*
+      THE FAIL-CLOSED HALF, and the reason the gate is allowed to exist.
+
+      This may only ever ADD a free question. A no-read on a face with no
+      frames keeps exactly the old behaviour — she is charged and rendered —
+      because the alternative is a new way to withhold a picture somebody
+      wanted, which is the failure this program has shipped once already.
+    */
+    const W = 400;
+    const H = 300;
+    const nothing = () => ({ data: Buffer.alloc(W * H, 0), width: W, height: H });
+    const sharp = (await import("sharp")).default;
+    const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    const spent = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async () => ({ bytes: face, contentType: "image/png" }),
+        regions: {
+          /* Nothing anywhere — no eyes AND no glasses. */
+          region: async () => nothing(),
+          subject: async () => nothing(),
+          landmark: async () => [],
+        },
+      },
+      { ...input, instruction: "fox eyes" },
+    );
+
+    expect(spent.kind, "today's behaviour, unchanged").not.toBe("asked");
+    expect(ledger.charges.length, "she is charged, as she always was").toBeGreaterThan(0);
+  });
+
+  it("falls through to spending when the glasses reader itself throws", async () => {
+    /*
+      An instrument that cannot answer must not be able to ask. A segmenter
+      outage must look exactly like today, never like a new question.
+    */
+    const W = 400;
+    const H = 300;
+    const nothing = () => ({ data: Buffer.alloc(W * H, 0), width: W, height: H });
+    const sharp = (await import("sharp")).default;
+    const face = await sharp({ create: { width: W, height: H, channels: 3, background: "#808080" } })
+      .png().toBuffer();
+
+    const spent = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
+        readBytes: async () => ({ bytes: face, contentType: "image/png" }),
+        regions: {
+          region: async ({ name }) => {
+            if (name === "glasses") throw new Error("the segmenter is down");
+            return nothing();
+          },
+          subject: async () => nothing(),
+          landmark: async () => [],
+        },
+      },
+      { ...input, instruction: "fox eyes" },
+    );
+
+    expect(spent.kind).not.toBe("asked");
+    expect(ledger.charges.length).toBeGreaterThan(0);
+  });
+
   /*
     AND IT ANSWERS THE SENTENCE IN FRONT OF IT — run-8's defect, pinned.
 

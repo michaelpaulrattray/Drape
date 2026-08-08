@@ -104,6 +104,7 @@ import { namesRemoval } from "./removalWords";
 import {
   LEAVE_AS_SHE_IS,
   alreadyUpsweptReask,
+  glassesHideEyesReask,
   colourFacetLabel,
   colourFacetOf,
   didYouMeanReask,
@@ -129,7 +130,7 @@ import {
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
-import { alreadyUpswept } from "./canthalTilt";
+import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
 import { COVERAGE_BANDS, coverage } from "./maskGeometry";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
@@ -1575,6 +1576,25 @@ export async function refineCandidate(
      sentence wrote, and a removal writes none of it. */
   const asksUpsweptNow = editDelta != null && isUpsweptAsk(editDelta.eyeShape);
   if (!answered && asksUpsweptNow && maskedEditingEnabledFor(input.userId)) {
+    /*
+      WHY THE BYTES ARE HOISTED OUT OF THE READING.
+
+      The tilt read and the glasses read are two questions about the SAME
+      picture, and fetching it twice would be two chances to disagree about
+      which face we are talking about — the record-versus-pixels mistake in its
+      cheapest form. One fetch, two questions, one answer about one face.
+    */
+    const faceBytes = await (async () => {
+      try {
+        const key = source.imageKey ?? source.candidate.imageKey;
+        if (!key) return null;
+        return await (dependencies.readBytes ?? storageReadBytes)(key);
+      } catch (error) {
+        log.warn({ error: String(error).slice(0, 120) }, "[refineService] her picture is unreadable — not gating");
+        return null;
+      }
+    })();
+
     const reading = await (async () => {
       try {
         /*
@@ -1588,14 +1608,12 @@ export async function refineCandidate(
           her eyes, it would measure the tilt of a face nobody is looking at
           and refuse — or fail to refuse — on the strength of it.
         */
-        const key = source.imageKey ?? source.candidate.imageKey;
         /* No picture, no reading — and a no-read never refuses, so this falls
            through to spending exactly as an unreadable face does. Asserting the
            key non-null with `!` would be claiming something the type says is
            not true, on the one path whose whole job is to decline safely. */
-        if (!key) return null;
-        const bytes = await (dependencies.readBytes ?? storageReadBytes)(key);
-        return await readCanthalTilt({ image: bytes.bytes, reader: dependencies.regions ?? defaultRegionReader() });
+        if (!faceBytes) return null;
+        return await readCanthalTilt({ image: faceBytes.bytes, reader: dependencies.regions ?? defaultRegionReader() });
       } catch (error) {
         /* An instrument that cannot answer must not be able to refuse. */
         log.warn({ error: String(error).slice(0, 120) }, "[refineService] tilt unreadable — not gating");
@@ -1631,6 +1649,69 @@ export async function refineCandidate(
         imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
         instructions: readInstructions(predecessorForParse?.instructions),
       };
+    }
+
+    /*
+      AND WHEN THE MEASUREMENT COULD NOT BE TAKEN AT ALL.
+
+      The gate above can only protect a face it can read. Measured 2026-08-09:
+      the tilt reads on 6 of 6 bare faces and 4 of 8 bespectacled ones — so on
+      a woman in glasses the protection is, about half the time, silently
+      unavailable, and she is charged 25 credits for an eye edit that may be a
+      no-op. A measurement that cannot be made was falling through to the
+      branch that spends.
+
+      **Two conditions, both required**, and the second is the safety one: the
+      reading failed, AND the picture shows frames over her eyes. A no-read on
+      a bare-eyed face keeps exactly today's behaviour, because this gate may
+      only ever ADD a free question — never block someone the old path served.
+
+      **The glasses are asked of the PIXELS, not of the record.** The record
+      says what was ASKED; the picture says what EXISTS, and frames that came
+      with her face were never in anybody's instruction, so `statedAccessories`
+      is empty for precisely the customers this protects. A record-keyed gate
+      would be inert in its own population.
+
+      **Fail-closed to today's behaviour in every direction**: no bytes, no
+      segmenter, a non-picture, a thrown reader — all of them fall through and
+      spend, exactly as before. The only new outcome is a free question.
+
+      **The glasses are a CORRELATE used as a safety condition, not a proven
+      cause**, and the code says only what was measured. The citation: the same
+      woman's master read 2.0° with her frames on, three times, spread 0.0° —
+      while a later frame of her, also bespectacled, would not read at all. So
+      frames do not block the reading. What we know is that the reading failed
+      and that there are frames over her eyes; the second clause is here to keep
+      this gate off bare-eyed customers, not to explain the first.
+    */
+    if (!reading && faceBytes) {
+      const wearingGlasses = await (async () => {
+        try {
+          const mask = await (dependencies.regions ?? defaultRegionReader())
+            .region({ image: faceBytes.bytes, name: "glasses", absentIsAnswer: true });
+          return wearsGlassesByPixels(mask);
+        } catch (error) {
+          /* An instrument that cannot answer must not be able to ask, either. */
+          log.warn({ error: String(error).slice(0, 120) }, "[refineService] glasses unreadable — not asking");
+          return false;
+        }
+      })();
+      if (wearingGlasses) {
+        log.info(
+          { asked: editDelta?.eyeShape },
+          "[refineService] her eyes are behind frames and did not read — asking instead of spending",
+        );
+        /* Free by construction, like its sibling: returns above `admit` and
+           above the claim, so nothing is reserved and nothing is charged. */
+        return {
+          kind: "asked",
+          reask: glassesHideEyesReask(instruction),
+          variantId: source.variantPublicId,
+          candidateId: input.candidatePublicId,
+          imageUrl: storagePublicUrl(source.imageKey ?? source.candidate.imageKey),
+          instructions: readInstructions(predecessorForParse?.instructions),
+        };
+      }
     }
   }
 

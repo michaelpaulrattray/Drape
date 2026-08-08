@@ -371,6 +371,44 @@ export function medianReading(readings: TiltReading[]): TiltReading & { spreadDe
  */
 export const UPSWEPT_ALREADY = 6;
 
+/**
+ * IS SHE WEARING GLASSES, by the picture rather than by the record?
+ *
+ * # Why the picture is the authority here
+ *
+ * The record says what was ASKED; the picture says what EXISTS. A woman whose
+ * frames came with her face — from the brief, from her own photograph — never
+ * had an instruction that mentioned them, so `statedAccessories` is empty and
+ * every `RefineDelta` field is a positive assertion about something someone
+ * typed. A gate keyed to the record would therefore be inert in exactly the
+ * population it exists for: invariant 7's shape, a control that cannot fire.
+ *
+ * # The threshold is derived from a measurement, and here is the measurement
+ *
+ * Both populations, read through the production segmenter on 2026-08-09, one
+ * threshold, one arithmetic — coverage as a fraction of the whole frame:
+ *
+ *   23 bare faces (the untouched tray)      0.000%  every one
+ *    8 bespectacled faces (one roll)        1.349% – 2.093%
+ *
+ * Nothing landed in between, and the gap is three orders of magnitude wide.
+ * `0.1%` sits an order of magnitude above the highest bare reading and an order
+ * below the lowest bespectacled one, so it is the middle of the empty space
+ * rather than a number anybody liked. If a future face lands inside the gap,
+ * that is a specimen worth looking at, not a threshold worth nudging.
+ */
+export const GLASSES_COVERAGE_FLOOR = 0.001;
+
+export function wearsGlassesByPixels(mask: { data: Buffer | Uint8Array; width: number; height: number }): boolean {
+  const area = mask.width * mask.height;
+  if (area <= 0) return false;
+  let covered = 0;
+  for (let index = 0; index < mask.data.length; index += 1) {
+    if (mask.data[index]! > 0) covered += 1;
+  }
+  return covered / area > GLASSES_COVERAGE_FLOOR;
+}
+
 /** Does this face already carry the upswept property an ask is about? */
 export function alreadyUpswept(reading: { meanDeg: number }): boolean {
   return reading.meanDeg >= UPSWEPT_ALREADY;
