@@ -1459,7 +1459,11 @@ export async function refineCandidate(
     })();
     if (reading && alreadyUpswept(reading)) {
       log.info(
-        { meanDeg: Number(reading.meanDeg.toFixed(2)), asked: composed.eyeShape },
+        /* The value the DECISION was made on, not the recipe's — they agree
+           today only because the gate now requires this step to have written
+           it, and a log that reads the other one would go quietly wrong the
+           moment that stopped being true. */
+        { meanDeg: Number(reading.meanDeg.toFixed(2)), asked: editDelta?.eyeShape },
         "[refineService] already-true — asking instead of spending",
       );
       /*
