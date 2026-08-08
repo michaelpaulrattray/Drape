@@ -98,6 +98,33 @@ export type AttemptRow = {
 const HONEST_REFUSAL_CLASSES = new Set(["facts_missing"]);
 
 /**
+ * The variant statuses an attempt can still move away from.
+ *
+ * Lives here rather than in the caller because it is a property of an
+ * `AttemptRow`, and a second copy in the walk's own library is the mirror law's
+ * drift waiting to happen.
+ */
+const IN_FLIGHT_STATUSES = new Set(["queued", "dispatched"]);
+
+/**
+ * ATTEMPTS THAT HAVE NOT FINISHED HAPPENING YET.
+ *
+ * Run-6's walk read its rate table **31 seconds before its last operation
+ * settled**. The removal appeared as `unclassified` with `credits refunded: 0`;
+ * the row it was about to become says `refused_honest`, 25 refunded. Neither
+ * number looked wrong — an unclassified row and a zero refund are exactly the
+ * shape of a real finding.
+ *
+ * A reader that samples mid-flight is not slightly early, it is biased: the
+ * rows still moving are the SLOW ones, and slow is where the failures are. So
+ * callers wait on this and say how many they gave up on, rather than scoring a
+ * half-written row.
+ */
+export function unsettledAttempts(rows: ReadonlyArray<AttemptRow>): AttemptRow[] {
+  return rows.filter((row) => IN_FLIGHT_STATUSES.has(row.status));
+}
+
+/**
  * A check counts as READ only if it says so.
  *
  * Rows written before D-235 have no `read` field, and the safe reading of a
@@ -110,14 +137,55 @@ function wasRead(check: StoredCheck): boolean {
 }
 
 export function classifyAttempt(row: AttemptRow): AttemptOutcome {
+  return classifyChecks(row, row.verification?.checks ?? []);
+}
+
+/**
+ * WHAT BECAME OF ONE CLASS ON ONE ATTEMPT — judged by its OWN checks.
+ *
+ * # The false NEGATIVE this exists to end
+ *
+ * The class tallies used to take the WHOLE row's outcome and count it against
+ * every facet the verdict mentioned. A render carries checks for everything the
+ * chain has ever written, not just the thing that was asked for, so one advisory
+ * miss on an inherited fact marked every other class on that render
+ * non-compliant too.
+ *
+ * Run-6, step 4, is the canonical case. The user asked for gold hoop earrings.
+ * The render's own stored verdict reads:
+ *
+ *   statedAccessories  verified: true   saw: "small gold hoop earrings on both ears"
+ *   hairWorn           verified: false  saw: "hair pulled back but left loose…"
+ *
+ * The earrings were perfect, first time. The table reported
+ * **`statedAccessories` 0%** — and `marks` and `makeup` were dragged down the
+ * same way on the same render, both having passed their own checks. The class
+ * the founder would have been told was most broken is the one that worked.
+ *
+ * That is the safe direction for a false reading and it is still poison: it
+ * makes the 95% bar unreachable for any class unlucky enough to share a render
+ * with a flaky one, and it points fixing effort at whichever class happened to
+ * be along for the ride.
+ *
+ * # What deliberately does NOT change
+ *
+ * `overall` keeps the whole-row verdict. A render delivered with ANY read miss
+ * is a non-compliant delivery, because the customer was charged once for the
+ * whole picture — and the zero-false-pass bar is stated on that. So the false
+ * pass is never lost by this change; it moves from four class rows to the one
+ * class that actually failed.
+ */
+export function classifyAttemptForClass(row: AttemptRow, edit: string): AttemptOutcome {
+  return classifyChecks(row, (row.verification?.checks ?? []).filter((check) => check.facet === edit));
+}
+
+function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): AttemptOutcome {
   if (row.status !== "ready") {
     if (!row.failureClass) return "unclassified";
     return HONEST_REFUSAL_CLASSES.has(row.failureClass) ? "refused_honest" : "refused_infra";
   }
 
-  const verification = row.verification;
-  const checks = verification?.checks ?? [];
-  if (verification?.unavailable === true || checks.length === 0) return "delivered_unverified";
+  if (row.verification?.unavailable === true || checks.length === 0) return "delivered_unverified";
 
   /* A single read miss is enough. Delivered with a fact the record itself says
      is absent is the false pass, whether or not the facet could refuse. */
@@ -214,7 +282,10 @@ export function summarize(
     for (const edit of classesOf(row)) {
       const tally = byClass.get(edit) ?? emptyTally(edit);
       tally.total += 1;
-      tally[outcome] += 1;
+      /* ITS OWN CHECKS, not the render's. See `classifyAttemptForClass` — the
+         whole-row verdict here is what reported run-6's perfect earrings as
+         `statedAccessories` 0%. */
+      tally[classifyAttemptForClass(row, edit)] += 1;
       byClass.set(edit, tally);
     }
   }

@@ -95,7 +95,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import type { Page } from "puppeteer-core";
 
 import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
-import { databaseUrl, readAttemptRows } from "./lib/attemptRows.mjs";
+import { databaseUrl, settleAttemptRows } from "./lib/attemptRows.mjs";
 import { createChecks, openDrivenPage } from "./lib/drivePage.mjs";
 
 function arg(name: string, fallback = ""): string {
@@ -910,9 +910,24 @@ await browser.close();
 
 let report: ReturnType<typeof summarize> | null = null;
 let readbackError: string | null = null;
+let unsettled = 0;
 try {
-  const attempts = await readAttemptRows({ since: startedAt });
-  report = summarize(attempts, { windowFrom: startedAt, windowLabel: "this walk" });
+  /*
+    ONCE THE ROWS HAVE STOPPED MOVING (run-6). The walk read its table 31
+    seconds before its last operation settled and printed `unclassified` with
+    `credits refunded: 0` about a row that became `refused_honest` with 25
+    refunded. The browser gives up before the server does — that is the normal
+    case whenever a step outlives the landing cap, not a rare race.
+  */
+  const settled = await settleAttemptRows({ since: startedAt });
+  unsettled = settled.unsettled;
+  if (unsettled > 0) {
+    console.log(
+      `\n${unsettled} attempt row(s) NEVER SETTLED after ${Math.round(settled.waitedMs / 1000)}s `
+      + "— the table below is missing them, and this run does not count.",
+    );
+  }
+  report = summarize(settled.rows, { windowFrom: startedAt, windowLabel: "this walk" });
   console.log(`\n${formatReport(report)}`);
 } catch (error) {
   /*
@@ -934,12 +949,15 @@ const landedRight = results.length === WALK.length
 const clean = landedRight
   && checks.failures().length === 0
   && report !== null
+  /* A run whose rows never settled has measured a subset it did not choose,
+     and the ones it dropped are the SLOWEST — where the failures live. */
+  && unsettled === 0
   && report.overall.delivered_noncompliant === 0
   && report.blockers.length === 0;
 
 writeFileSync(
   `${OUT}/walk.json`,
-  JSON.stringify({ startedAt, sessionId, candidate: CANDIDATE_ID, results, checks: checks.records, report, readbackError }, null, 2),
+  JSON.stringify({ startedAt, sessionId, candidate: CANDIDATE_ID, results, checks: checks.records, report, unsettled, readbackError }, null, 2),
 );
 console.log(`\nevidence written to ${OUT}`);
 console.log(
@@ -950,6 +968,7 @@ console.log(
       + (collisions > 0 ? ` ${collisions} step(s) VOID — the server redeployed under them; re-run, do not diagnose.` : "")
       + (landedRight || collisions > 0 ? "" : " Steps did not land as declared.")
       + (checks.failures().length ? ` ${checks.failures().length} browser check(s) failed.` : "")
+      + (unsettled > 0 ? ` ${unsettled} attempt row(s) never settled — the sample is incomplete.` : "")
       + (report === null ? " No verdicts were read." : report.blockers.length ? ` Classes below the bar: ${report.blockers.join(", ")}.` : ""),
 );
 process.exit(clean ? 0 : 1);

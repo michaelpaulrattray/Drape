@@ -24,7 +24,10 @@
  * one number is the mirror law #4 forbids, and it is how the on-demand report
  * and the walk report would come to disagree about the same window.
  */
-import type { AttemptRow } from "../../server/castingV2/reliabilityReport.js";
+import {
+  unsettledAttempts,
+  type AttemptRow,
+} from "../../server/castingV2/reliabilityReport.js";
 import { openDatabase } from "./dbConnection.mjs";
 
 /**
@@ -40,6 +43,65 @@ export function verdictOf(internalPrompt: unknown): AttemptRow["verification"] {
   }
   const verification = parsed?.verification;
   return verification && typeof verification === "object" ? verification : null;
+}
+
+export type SettledRows = {
+  rows: AttemptRow[];
+  /** Rows still in flight when the wait gave up. Zero on a clean read. */
+  unsettled: number;
+  waitedMs: number;
+};
+
+/**
+ * THE ROWS, ONCE THEY HAVE STOPPED MOVING.
+ *
+ * # The defect
+ *
+ * Run-6's walk read its own rate table **31 seconds before its last operation
+ * settled**. The removal appeared as `unclassified` with `credits refunded: 0`;
+ * the row it was about to become says `refused_honest`, 25 refunded. Both
+ * numbers in the walk's own report were wrong, and neither was wrong in a way
+ * that looks wrong — an unclassified row and a zero refund are exactly what a
+ * real finding looks like.
+ *
+ * The walk closes the browser as soon as its last DOM check gives up, and its
+ * landing cap is shorter than a slow render, so this is not a rare race: it is
+ * what happens every time a step times out on the screen while the server is
+ * still working.
+ *
+ * # Why it waits rather than filtering
+ *
+ * Dropping in-flight rows would silently shrink the denominator, and a sample
+ * that quietly excludes the slowest renders is the most flattering possible
+ * bias — the slow ones are exactly where the failures are. So it waits, and if
+ * it runs out of patience it says how many rows it gave up on rather than
+ * reporting their half-written state as a verdict.
+ */
+export async function settleAttemptRows(input: {
+  since?: Date;
+  userId?: number;
+  timeoutMs?: number;
+  pollMs?: number;
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+}): Promise<SettledRows> {
+  const timeoutMs = input.timeoutMs ?? 180_000;
+  const pollMs = input.pollMs ?? 5_000;
+  const now = input.now ?? (() => Date.now());
+  const sleep = input.sleep ?? ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const began = now();
+
+  for (;;) {
+    const rows = await readAttemptRows(input);
+    const unsettled = unsettledAttempts(rows).length;
+    const waitedMs = now() - began;
+    if (unsettled === 0) return { rows, unsettled: 0, waitedMs };
+    if (waitedMs >= timeoutMs) return { rows, unsettled, waitedMs };
+    console.log(
+      `  waiting for ${unsettled} attempt row(s) to settle — ${Math.round(waitedMs / 1000)}s`,
+    );
+    await sleep(pollMs);
+  }
 }
 
 export function databaseUrl(): string {

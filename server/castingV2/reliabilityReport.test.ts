@@ -7,10 +7,12 @@ import { describe, expect, it } from "vitest";
 import {
   classesOf,
   classifyAttempt,
+  classifyAttemptForClass,
   DELIVERY_RATE_BAR,
   formatReport,
   heartbeatLine,
   summarize,
+  unsettledAttempts,
   type AttemptRow,
   type StoredCheck,
 } from "./reliabilityReport";
@@ -196,5 +198,115 @@ describe("the report says the ugly number out loud", () => {
     expect(table).toContain("FALSE");
     expect(table).toContain("eye.colour");
     expect(table).toContain(`${DELIVERY_RATE_BAR}% delivered-and-compliant`);
+  });
+});
+
+/**
+ * A CLASS IS JUDGED BY ITS OWN CHECKS — the false NEGATIVE, and its controls.
+ *
+ * Run-6 step 4 is the specimen, and these rows are its stored verdict verbatim
+ * from production (variant `c002f6bf`, candidate `7c796a72`): the user asked
+ * for gold hoop earrings, got them perfectly, and the table said
+ * `statedAccessories` 0% because an inherited `hairWorn` fact on the same
+ * render read false.
+ */
+describe("a class is judged by its own checks, not by its neighbours'", () => {
+  /* The verdict as production stored it, one check per line, `saw` included —
+     a row with no `saw` would be testing D-235 instead of this. */
+  const runSix = attempt({
+    operationId: "run-6-step-4",
+    verification: {
+      checks: [
+        { facet: "makeup", asked: "nude lip gloss", verified: true, read: true, binding: true, saw: "lips have a soft nude-pink glossy sheen" },
+        { facet: "marks", asked: "freckles", verified: true, read: true, binding: false, saw: "light freckles visible across cheeks and nose" },
+        { facet: "statedAccessories", asked: "gold hoop earrings", verified: true, read: true, binding: false, saw: "small gold hoop earrings on both ears" },
+        { facet: "hairWorn", asked: "tied back, low ponytail", verified: false, read: true, binding: false, saw: "hair pulled back but left loose down the back, not tied into a ponytail" },
+      ],
+    },
+  });
+
+  it("does not drag a passing class down with a failing one — the earrings were perfect", () => {
+    expect(classifyAttemptForClass(runSix, "statedAccessories")).toBe("delivered_compliant");
+    expect(classifyAttemptForClass(runSix, "marks")).toBe("delivered_compliant");
+    expect(classifyAttemptForClass(runSix, "makeup")).toBe("delivered_compliant");
+  });
+
+  it("still names the class that actually failed — the instrument can say the ugly thing", () => {
+    expect(classifyAttemptForClass(runSix, "hairWorn")).toBe("delivered_noncompliant");
+  });
+
+  it("keeps the whole render non-compliant overall — the false pass is not lost", () => {
+    /* The customer was charged once for one picture. Zero-false-pass is stated
+       on the render, and moving the miss to its own class must not launder it. */
+    expect(classifyAttempt(runSix)).toBe("delivered_noncompliant");
+    const report = summarize([runSix]);
+    expect(report.overall.delivered_noncompliant).toBe(1);
+    expect(report.overall.deliveryRate).toBe(0);
+  });
+
+  it("reports run-6's real per-class table", () => {
+    const report = summarize([runSix]);
+    const rate = (edit: string) => report.byClass.find((tally) => tally.edit === edit)?.deliveryRate;
+    expect(rate("statedAccessories")).toBe(100);
+    expect(rate("marks")).toBe(100);
+    expect(rate("makeup")).toBe(100);
+    expect(rate("hairWorn")).toBe(0);
+    /* Named, and only the one — the others do not block on its account. */
+    expect(report.blockers).toEqual(["hairWorn"]);
+  });
+
+  it("counts a class silent on this render as unverified, never as a pass", () => {
+    /* Negative control: a facet the reader was asked about and said nothing
+       usable on cannot inherit a neighbour's affirmative. */
+    const partly = attempt({
+      verification: {
+        checks: [
+          check({ facet: "marks", saw: "freckles across the nose" }),
+          check({ facet: "hairWorn", read: false, saw: undefined }),
+        ],
+      },
+    });
+    expect(classifyAttemptForClass(partly, "marks")).toBe("delivered_compliant");
+    expect(classifyAttemptForClass(partly, "hairWorn")).toBe("delivered_unverified");
+  });
+
+  it("gives a refusal the row's own outcome, since a refusal has no per-class checks", () => {
+    const refused = attempt({ status: "failed", failureClass: "facts_missing", verification: null });
+    expect(classifyAttemptForClass(refused, "statedAccessories")).toBe("refused_honest");
+    /* And it lands in the totals only, because nothing names its class. */
+    expect(classesOf(refused)).toEqual([]);
+  });
+});
+
+/**
+ * A SAMPLE READ MID-FLIGHT IS BIASED, NOT SLIGHTLY EARLY.
+ *
+ * Run-6's walk read its table 31 seconds before its last operation settled and
+ * printed `unclassified` with `credits refunded: 0` about a row that became
+ * `refused_honest` with 25 refunded.
+ */
+describe("attempts that have not finished happening yet", () => {
+  it("names the rows still in flight", () => {
+    const rows = [
+      attempt({ operationId: "done", status: "ready" }),
+      attempt({ operationId: "queued", status: "queued" }),
+      attempt({ operationId: "sent", status: "dispatched" }),
+      attempt({ operationId: "failed", status: "failed", failureClass: "facts_missing" }),
+    ];
+    expect(unsettledAttempts(rows).map((row) => row.operationId)).toEqual(["queued", "sent"]);
+  });
+
+  it("treats a settled failure as settled — a refusal is an outcome", () => {
+    expect(unsettledAttempts([attempt({ status: "failed", failureClass: "facts_missing" })])).toEqual([]);
+    expect(unsettledAttempts([attempt({ status: "expired" })])).toEqual([]);
+  });
+
+  it("is what run-6 needed: the removal row was mid-flight when the walk scored it", () => {
+    /* Read at 23:24:32 as `dispatched`; it settled at 23:25:03 as a refund. If
+       it is scored where it stands, the table says `unclassified` and 0
+       refunded — both wrong, neither obviously so. */
+    const midFlight = attempt({ operationId: "5afc8b62", status: "dispatched", verification: null });
+    expect(unsettledAttempts([midFlight])).toHaveLength(1);
+    expect(classifyAttempt(midFlight)).toBe("unclassified");
   });
 });
