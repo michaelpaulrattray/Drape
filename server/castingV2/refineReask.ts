@@ -517,6 +517,28 @@ export function alreadyUpsweptReask(instruction: string): Reask {
  * No degree count in the copy: a measurement is the instrument's language, not
  * the stylist's (working law 8). She is told what the product can and cannot
  * see, which is a fact about her picture, not about our arithmetic.
+ *
+ * # THE FIRST CHIP SUBMITS ONE INSTRUCTION, AND IT USED TO SUBMIT TWO
+ *
+ * It resolved to *"remove her glasses, then fox eyes"* — a removal and an edit
+ * in one sentence, which reads to a person as exactly the right order to work
+ * in. Driven through the live interpreter before it shipped
+ * (`scripts/drive-compound-chip.mts`, 5 readings per row):
+ *
+ *     COMPOUND — the chip's own sentence      0/5 carried every half
+ *     control: the removal alone              5/5
+ *     control: the eye ask alone              5/5
+ *
+ * The compound files as `intent: remove, subject: statedAccessories, match:
+ * glasses` and **the eye ask is gone**. That is not a prompt to tune: the parse
+ * is a union, an edit carries a `delta` and a removal carries an intent, and no
+ * variant of it can hold both. A compound sentence must drop a half to be
+ * representable at all.
+ *
+ * So the chip submits the removal ALONE — the thing its label promises — and
+ * her eye ask is one sentence away, on a face the gate can finally measure.
+ * Handing our own button a sentence the parser mangles would have been the
+ * absorbed-ask defect, delivered by us rather than typed by her.
  */
 export function glassesHideEyesReask(instruction: string): Reask {
   const asked = instruction.trim().replace(/[.!?]+$/, "");
@@ -526,9 +548,9 @@ export function glassesHideEyesReask(instruction: string): Reask {
       + "they already do this. Take the glasses off first, or go ahead anyway? "
       + "Either way this costs nothing.",
     options: [
-      /* Removal first, then the original ask — the order a stylist would work
-         in, and it leaves her with a face the gate can measure next time. */
-      { label: "Take them off first", resolves: `remove her glasses, then ${asked}` },
+      /* One fact, the one the label names. See the header: two facts in one
+         sentence cost the second one. */
+      { label: "Take them off first", resolves: "remove her glasses" },
       { label: "Go ahead anyway", resolves: asked },
     ],
   };

@@ -12,9 +12,11 @@ import { describe, expect, it } from "vitest";
 import { readDelta } from "./refineDelta";
 import { FREE_SUBJECTS, FREE_SUBJECT_KEYS } from "./refineSubjects";
 import {
+  alreadyUpsweptReask,
   colourFacetLabel,
   colourFacetOf,
   didYouMeanReask,
+  glassesHideEyesReask,
   nearMiss,
   needsColourReferent,
   pendingReaskFor,
@@ -290,5 +292,50 @@ describe("pendingReaskFor — the question is re-derived, never trusted", () => 
 
   it("is null for an ordinary instruction", () => {
     expect(pendingReaskFor("give her a fringe", false)).toBeNull();
+  });
+});
+
+describe("a chip submits ONE instruction — the compound the parser cannot hold", () => {
+  /*
+    THE MEASUREMENT BEHIND THIS BLOCK.
+
+    The glasses chip shipped as *"remove her glasses, then fox eyes"* until it
+    was driven through the live interpreter (`scripts/drive-compound-chip.mts`):
+    the compound carried both halves 0 times in 5 while each half alone carried
+    5 in 5. It files as `intent: remove` and the eye ask is gone — and it cannot
+    do otherwise, because `RefineParse` is a union in which a removal has no
+    delta and an edit has no intent. A compound chip is unrepresentable, not
+    badly worded.
+
+    Driven here without a model, per this file's own standard: the sentence a
+    chip submits is a pure function of the sentence a person typed.
+  */
+  const COMPOUND = /,\s*then\s|\sand then\s|;/i;
+
+  it("the glasses chip takes the frames off and asks for nothing else", () => {
+    const reask = glassesHideEyesReask("fox eyes");
+    expect(reask.options[0]!.resolves).toBe("remove her glasses");
+    /* And the other chip is still exactly her own sentence. */
+    expect(reask.options[1]!.resolves).toBe("fox eyes");
+    expect(resolveAnswer(reask, "Take them off first")).toBe("remove her glasses");
+    expect(resolveAnswer(reask, "yes")).toBe("remove her glasses");
+    expect(resolveAnswer(reask, "no")).toBe("fox eyes");
+  });
+
+  it("no question in the family offers a chip carrying two instructions", () => {
+    /* Every constructor, with an instruction that reaches it — the sweep is the
+       fix (law 7). A new question added without a row here is the next place
+       this defect lands. */
+    const every = [
+      whichFacetReask("pinker"),
+      alreadyUpsweptReask("fox eyes"),
+      glassesHideEyesReask("fox eyes"),
+      didYouMeanReask("piink hair", nearMiss("piink hair")!),
+    ];
+    for (const reask of every) {
+      for (const option of reask.options) {
+        expect(`${reask.kind}: ${option.resolves}`).not.toMatch(COMPOUND);
+      }
+    }
   });
 });

@@ -314,6 +314,20 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     suites: ["server/castingV2/canthalTilt.test.ts", "server/castingV2/refineService.test.ts"],
     mutations: [{ find: "export const GLASSES_COVERAGE_FLOOR = 0.001;", replace: "export const GLASSES_COVERAGE_FLOOR = -1;" }],
   },
+  {
+    /*
+      THE CHIP THAT SUBMITS ONE INSTRUCTION. Restoring the compound is the
+      exact string that shipped for an hour: the interpreter files it as a
+      removal and her eye ask is gone, 0 times in 5 carrying both halves.
+    */
+    name: "the chip refusing to submit two instructions in one sentence",
+    file: "server/castingV2/refineReask.ts",
+    suites: ["server/castingV2/refineReask.test.ts"],
+    mutations: [{
+      find: '{ label: "Take them off first", resolves: "remove her glasses" },',
+      replace: '{ label: "Take them off first", resolves: `remove her glasses, then ${asked}` },',
+    }],
+  },
 ];
 
 const red = (suites: string[]): boolean => {

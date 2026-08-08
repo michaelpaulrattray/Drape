@@ -495,8 +495,15 @@ describe("refusals land before anything is claimed", () => {
 
     expect(asked.kind, "a free question, not a charge").toBe("asked");
     expect(asked.reask!.question).toMatch(/glasses are sitting over her eyes/);
+    /*
+      ONE INSTRUCTION, and it used to be two. `remove her glasses, then fox
+      eyes` carried both halves 0 times in 5 through the live interpreter
+      (`scripts/drive-compound-chip.mts`) while each half alone carried 5 in 5:
+      the compound files as a removal and the eye ask disappears. See
+      `glassesHideEyesReask` — the parse is a union that cannot hold both.
+    */
     expect(asked.reask!.options[0]!.resolves, "and the first answer leaves her measurable next time")
-      .toMatch(/^remove her glasses, then fox eyes$/);
+      .toBe("remove her glasses");
     expect(ledger.charges, "nothing reserved, nothing charged").toHaveLength(0);
   });
 
