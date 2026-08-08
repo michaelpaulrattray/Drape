@@ -74,58 +74,57 @@ export const HAIR_ARRANGEMENTS = {
     and an exemplar is not.
   */
   down: "worn down — hanging, not gathered, tied or pinned up",
-  up: "worn up — gathered off the neck and fastened up on the head",
   /*
-    THE WISPS, NAMED — because they were deciding the verdict (run-14).
+    `up` AND `tied back` ARE ONE VALUE, BECAUSE THE READER CANNOT HOLD TWO.
 
-    This shipped as *"…fastened behind, the length still hanging"* and produced
-    noise on four frames of ONE arrangement that never moved: her master 3/5, one
-    render 0/5, another 5/5, the third 0/5. The `saw`s said why every time —
-    *"loose strands framing the face"* — the reader was answering about a few
-    temple wisps, and **"hanging" is also the salient verb in `down`'s wording**,
-    so the question was one association away from the wrong one.
+    Founder-program ruling, and the principle outlives the instance: **a pinned
+    fact is limited to the resolution the verifying instrument can hold.** A pin
+    finer than its reader fabricates verdicts at the boundary, and runs 13 and 14
+    paid to demonstrate exactly that — 1547, 1553 and 1557 all live on this seam,
+    and every wording that fixed one of them broke another.
 
-    Measured rather than argued, after the last wording tweak measured worse:
-    four candidates, six frames, five readings each, WITH negative controls (two
-    masters whose hair really is down, where every candidate must refuse), and
-    **two separate sittings** — because the first sitting alone would have made
-    the wrong call. Positives, both sittings, out of 40:
+    What the pin is FOR is the drift D-186 named: gathered → down. That is the
+    distinction it can check, so that is the distinction it makes. The user keeps
+    full resolution where it belongs: "tie it back" and "put it up" still reach
+    the painter in her own words through the ask lane, and a test pins that.
 
-        shipped                      19/40      negatives 20/20
-        no "hanging"                 29/40      negatives 20/20
-        "apart from loose strands"   32/40      negatives 20/20
-        this one, "stray strands"    15/20 (one sitting; level with the above)
+    # What the seam cost, kept because it is the evidence for the ruling
 
-    Every repaired wording beats the shipped one decisively; between them the gap
-    is inside the noise, and the same wording scored 8/20 and 11/20 on two
-    sittings — so "best" here means "clearly not the shipped one", not a ranking.
-    This one wins the tie because it also obeys this file's own law: **it does
-    not contain the word "loose".** That test failed on the top scorer and it was
-    right to; a rule dropped because the winner broke it is not a rule.
+    Run-14 pinned cand-1543 `tied back` — correct about her master, and the value
+    the reader itself chose 3/3 there. Two of three renders then came back *"hair
+    worn down, loose strands framing the face"* on an arrangement that never
+    moved: master, 03, 04 and 05 are the same hair, shoulders bare in all four.
+    Both misses were false.
 
-    Residual, declared: frame 05 — the REMOVAL composite — reads as down 0 of 5
-    under every repaired wording, on a band where the shoulders are visibly bare
-    in every frame. Whether the removal's compositing alters the hair silhouette
-    is a separate question with its own frames, not a wording to keep tuning.
+    Diagnosed by court rather than by tweak — four wordings, six frames, five
+    readings, **two sittings**, with negative controls (masters whose hair really
+    is down, which every candidate must refuse). The old `tied back` scored
+    **19/40** on the positives; every repaired wording scored 29–32/40, and the
+    reason was in its own tail: *"the length still hanging"* shares its salient
+    verb with `down`. But each repair widened `tied back` until it **swallowed
+    `up`** — the precedent replay caught cand-1547 flipping while the aggregate
+    number went UP. There was no wording that separated them, which is the
+    finding, and this merge is what it implies.
 
-    # And it is NOT SHIPPED, because the precedents refused it
+    # And the merged wording is NOT the obvious one
 
-    Replayed against all 19 pinned faces, the repaired wording raised overall
-    agreement 43/52 → 44/52 **and broke two rulings**: cand-1547 (ruled `up`)
-    went to `tied back` 3/3, and cand-1557 (ruled `tied back`) split to
-    `ponytail`. Naming the temple wisps as forgivable widens `tied back` until it
-    swallows its neighbour — a wording that helps one face by eating another.
+    *"gathered — drawn away from the face and fastened, not left hanging down"*
+    is the sentence the ruling itself proposed, and it scored **1/40**: the
+    reader, given no place to look, answers about the hair in general and reports
+    it *"loose past the shoulders"* on frames whose shoulders are bare. Adding
+    the wisp clause alone only reached 16/40.
 
-    That is precisely what the precedent set exists to catch, and the rule is
-    Fable's: **a broken precedent is a ruling needing a new hearing with its
-    frame, not a wording to adjust.** So the shipped wording stands, run-14's two
-    misses stay on the record as advisory (they cost no money — non-binding, so
-    D-235's asymmetry holds), and the real question goes up: does a PIN need to
-    tell `up` from `tied back` at all? Its job is to stop drift, and the drift it
-    guards against is gathered → down. Nobody has yet argued it needs the finer
-    cut, and the reader plainly cannot hold it.
+    What was doing the work all along was **"behind the head"** — a location, not
+    an adjective. Isolated by changing nothing but the label on the best `tied
+    back` wording, and it reads **20/20 on the positives and 10/10 on the
+    controls**, including frame 05, which no other wording could read at all.
+
+    So the wording keeps its body and takes the merged name. The lesson is the
+    one worth carrying: a wording that tells the reader WHERE beats a wording
+    that tells it what to conclude.
   */
-  "tied back": "tied back — drawn away from the face and fastened behind, the length still hanging",
+  gathered: "gathered — the bulk of the hair drawn away from the face and gathered behind the head,"
+    + " apart from a few stray strands at the temples",
   ponytail: "in a ponytail — gathered at one point and hanging as a single tail",
   bun: "in a bun — gathered and coiled or knotted against the head",
   braided: "braided — plaited into one or more braids",
@@ -228,10 +227,10 @@ export const HAIR_ARRANGEMENT_PRECEDENTS: ReadonlyArray<{
   { candidateId: 1546, candidate: "", value: "down", why: "long hair past the shoulders, hanging free" },
   { candidateId: 1584, candidate: "", value: "down", why: "mid-length hair hanging, nothing fastened" },
   /* The gathered family, whose neighbours are the other place words fail. */
-  { candidateId: 1553, candidate: "", value: "up", why: "gathered at the crown, NOTHING hanging — the rule 'tied back' states and my own eye missed" },
-  { candidateId: 1547, candidate: "", value: "up", why: "same shape as 1553, and the second half of that rule" },
-  { candidateId: 1557, candidate: "", value: "tied back", why: "drawn back and fastened, length still hanging" },
-  { candidateId: 1543, candidate: "", value: "tied back", why: "fastened behind with wisps, length still there" },
+  { candidateId: 1553, candidate: "", value: "gathered", why: "gathered at the crown, nothing hanging — one of the three faces that proved the up/tied-back seam unholdable" },
+  { candidateId: 1547, candidate: "", value: "gathered", why: "gathered at the crown, nothing hanging — the face every repaired `tied back` wording stole" },
+  { candidateId: 1557, candidate: "", value: "gathered", why: "drawn back and fastened, length still there — the same fact from the other side of the old seam" },
+  { candidateId: 1543, candidate: "", value: "gathered", why: "run-14's own face: fastened behind with temple wisps, and the two false misses that forced the merge" },
   { candidateId: 1556, candidate: "", value: "ponytail", why: "one smooth tail, gathered at a single point" },
   { candidateId: 1538, candidate: "", value: "ponytail", why: "tail hanging over the shoulder" },
   { candidateId: 1554, candidate: "", value: "bun", why: "coiled knot against the head, nothing hanging" },

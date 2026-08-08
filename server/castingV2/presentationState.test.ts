@@ -41,9 +41,9 @@ describe("the base's presentation gets a name", () => {
        sentence the painter is told is already true and the net checks (D-238).
        One fact, one wording, and no place for the three to disagree. */
     const pinned = await capturePresentation({
-      bytes, contentType: "image/png", engine: reader({ hairWorn: "tied back" }),
+      bytes, contentType: "image/png", engine: reader({ hairWorn: "gathered" }),
     });
-    expect(pinned[HAIR_WORN]).toBe(arrangementWording("tied back"));
+    expect(pinned[HAIR_WORN]).toBe(arrangementWording("gathered"));
   });
 
   it("pins nothing when the reader cannot tell", async () => {

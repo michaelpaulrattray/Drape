@@ -95,8 +95,12 @@ describe("how the hair is worn is a closed list", () => {
   it("accepts a choice the model shouted or padded", () => {
     /* Case and whitespace are transport, not meaning. Anything beyond that is
        the model answering in its own words and takes the null road. */
-    expect(arrangementIdOf("  Tied Back ")).toBe("tied back");
-    expect(arrangementIdOf("her hair is tied back")).toBeNull();
+    expect(arrangementIdOf("  Gathered ")).toBe("gathered");
+    expect(arrangementIdOf("her hair is gathered")).toBeNull();
+    /* And the two ids the merge retired are simply not ids any more. A pin
+       carrying either is legacy free text and takes the retirement road. */
+    expect(arrangementIdOf("up")).toBeNull();
+    expect(arrangementIdOf("tied back")).toBeNull();
   });
 
   it("recognises its own wordings, and nothing else, as a standing pin", () => {
@@ -116,13 +120,14 @@ describe("how the hair is worn is a closed list", () => {
     /* A pin is stated to the painter as ALREADY TRUE. A paragraph there is a
        description quietly replacing the photograph (D-152).
 
-       It was briefly raised to 135 for a `tied back` wording that named the
-       temple wisps and measured far better (19/40 → 29/40). That wording is not
-       shipped — the precedent replay caught it swallowing cand-1547 — so the cap
-       goes back with it. A limit relaxed for a change that was then reverted is
-       a limit nobody is enforcing. */
+       Raised from 110 to 135 for exactly one wording — `gathered` — which needed
+       the room to say WHERE to look ("behind the head") and which strands to
+       forgive. It earned the clause with a court: 20/20 on the positives and
+       10/10 on the controls, against 1/40 for the short version the ruling
+       itself proposed. The cap is not a budget to spend; it is the line where a
+       pin would start being a second brief, and one clause is not that. */
     for (const id of HAIR_ARRANGEMENT_IDS) {
-      expect(arrangementWording(id).length).toBeLessThanOrEqual(110);
+      expect(arrangementWording(id).length).toBeLessThanOrEqual(135);
     }
   });
 
@@ -187,8 +192,11 @@ describe("how the hair is worn is a closed list", () => {
 
     it("settles a boundary with more than one face on each side", () => {
       /* One exemplar per value is an anecdote; the neighbours that actually
-         collided — up/tied back, and worn as cut/down — each carry two or more. */
-      for (const value of ["up", "tied back", "worn as cut", "down", "ponytail"] as const) {
+         collided — `gathered` against `down` and against `ponytail`, and
+         `worn as cut` against `down` — each carry two or more. `gathered`
+         carries four, because it is the merge of two values whose seam three
+         separate faces disproved. */
+      for (const value of ["gathered", "worn as cut", "down", "ponytail"] as const) {
         expect(
           HAIR_ARRANGEMENT_PRECEDENTS.filter((row) => row.value === value).length,
           `${value} needs more than one face to be a boundary rather than an anecdote`,

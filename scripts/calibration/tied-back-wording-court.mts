@@ -47,6 +47,23 @@ const HAIR_WORN = facetOfSubject("hairWorn");
 const repeat = Number(process.argv[process.argv.indexOf("--repeat") + 1]) || 5;
 
 const WORDINGS = {
+  /* THE MERGE (fable-059). Same six frames, same controls — the pin now claims
+     only what its reader can hold. */
+  merged: "gathered — drawn away from the face and fastened, not left hanging down",
+  mergedWisps: "gathered — the bulk of the hair drawn away from the face and fastened,"
+    + " apart from a few stray strands at the temples",
+  /*
+    BOTH OF THOSE COLLAPSED (1/20 and 7/20) WHERE `strayStrands` HOLDS AT 15/20,
+    and the only thing they dropped is **"behind the head"**. Without a place to
+    look, the reader answers about the hair in general and reports it "loose past
+    the shoulders" on frames whose shoulders are bare.
+
+    So this is `strayStrands` with nothing changed but the label. It isolates the
+    variable: if it scores like `strayStrands`, the merge costs nothing and the
+    body of the sentence is what was doing the work all along.
+  */
+  mergedKeepBody: "gathered — the bulk of the hair drawn away from the face and gathered behind the head,"
+    + " apart from a few stray strands at the temples",
   /* What shipped, and what produced the two false misses. */
   shipped: "tied back — drawn away from the face and fastened behind, the length still hanging",
   /* The hypothesis: drop the verb `down` also owns. */

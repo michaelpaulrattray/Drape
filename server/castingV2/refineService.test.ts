@@ -882,6 +882,70 @@ describe("an unreadable history stops the money", () => {
     expect(prompt).not.toContain("worn natural, loose");
     expect(prompt).not.toContain("loose");
   });
+
+  /*
+    THE PIN COARSENED; HER WORDS DID NOT.
+
+    `up` and `tied back` were merged into one pinned value because the reader
+    cannot hold that seam, and a pin finer than its reader fabricates verdicts at
+    the boundary. The cost of that ruling is real — the pinned BASE STATE can no
+    longer say which — and this is the assertion that it stops there. What she
+    typed reaches the painter verbatim and is what the net checks her render
+    against, at full resolution, with the coarse pin nowhere in the prompt
+    because her instruction rewrote that very facet.
+  */
+  it("keeps HER words at full resolution when the pin has none left", async () => {
+    variantRows = [{
+      id: 504,
+      publicId: "variant-old",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/old.png",
+      internalPrompt: {
+        ...(candidateRow.internalPrompt as Record<string, unknown>),
+        captions: { hairWorn: arrangementWording("gathered") },
+      },
+      instructions: ["give her freckles"],
+      deltas: { free: { marks: "freckles" } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-old";
+
+    const askedOfTheReader: string[] = [];
+    const verifier = {
+      id: "verifier",
+      complete: async (request: { system: string; user: string }) => {
+        if (request.system.includes("how they")) {
+          return { text: JSON.stringify({ hairWorn: "gathered" }), truncated: false, latencyMs: 1 };
+        }
+        askedOfTheReader.push(request.user);
+        return {
+          text: JSON.stringify({ results: [{ id: 1, present: true, saw: "hair fastened at the crown" }] }),
+          truncated: false,
+          latencyMs: 1,
+        };
+      },
+    } as never;
+
+    await refineCandidate(
+      {
+        harvest: unmasked,
+        verifier,
+        interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "tied up in a high knot" } } }),
+      },
+      { ...input, instruction: "tie her hair up in a high knot" },
+    );
+
+    const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt;
+    /* Her distinction, intact, in the picture she is paying for. */
+    expect(prompt).toContain("tied up in a high knot");
+    /* And the coarse pin is gone rather than arguing beside it — her instruction
+       rewrote that facet, so the remembered fact dies with it (D-159). */
+    expect(prompt).not.toContain(arrangementWording("gathered"));
+    /* The net checks HER words, not the vocabulary's. */
+    expect(askedOfTheReader.join("\n")).toContain("tied up in a high knot");
+    expect(askedOfTheReader.join("\n")).not.toContain(arrangementWording("gathered"));
+  });
 });
 
 /*
