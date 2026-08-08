@@ -114,7 +114,13 @@ describe("how the hair is worn is a closed list", () => {
 
   it("keeps every wording short enough to be a fact rather than a brief", () => {
     /* A pin is stated to the painter as ALREADY TRUE. A paragraph there is a
-       description quietly replacing the photograph (D-152). */
+       description quietly replacing the photograph (D-152).
+
+       It was briefly raised to 135 for a `tied back` wording that named the
+       temple wisps and measured far better (19/40 → 29/40). That wording is not
+       shipped — the precedent replay caught it swallowing cand-1547 — so the cap
+       goes back with it. A limit relaxed for a change that was then reverted is
+       a limit nobody is enforcing. */
     for (const id of HAIR_ARRANGEMENT_IDS) {
       expect(arrangementWording(id).length).toBeLessThanOrEqual(110);
     }

@@ -75,6 +75,56 @@ export const HAIR_ARRANGEMENTS = {
   */
   down: "worn down — hanging, not gathered, tied or pinned up",
   up: "worn up — gathered off the neck and fastened up on the head",
+  /*
+    THE WISPS, NAMED — because they were deciding the verdict (run-14).
+
+    This shipped as *"…fastened behind, the length still hanging"* and produced
+    noise on four frames of ONE arrangement that never moved: her master 3/5, one
+    render 0/5, another 5/5, the third 0/5. The `saw`s said why every time —
+    *"loose strands framing the face"* — the reader was answering about a few
+    temple wisps, and **"hanging" is also the salient verb in `down`'s wording**,
+    so the question was one association away from the wrong one.
+
+    Measured rather than argued, after the last wording tweak measured worse:
+    four candidates, six frames, five readings each, WITH negative controls (two
+    masters whose hair really is down, where every candidate must refuse), and
+    **two separate sittings** — because the first sitting alone would have made
+    the wrong call. Positives, both sittings, out of 40:
+
+        shipped                      19/40      negatives 20/20
+        no "hanging"                 29/40      negatives 20/20
+        "apart from loose strands"   32/40      negatives 20/20
+        this one, "stray strands"    15/20 (one sitting; level with the above)
+
+    Every repaired wording beats the shipped one decisively; between them the gap
+    is inside the noise, and the same wording scored 8/20 and 11/20 on two
+    sittings — so "best" here means "clearly not the shipped one", not a ranking.
+    This one wins the tie because it also obeys this file's own law: **it does
+    not contain the word "loose".** That test failed on the top scorer and it was
+    right to; a rule dropped because the winner broke it is not a rule.
+
+    Residual, declared: frame 05 — the REMOVAL composite — reads as down 0 of 5
+    under every repaired wording, on a band where the shoulders are visibly bare
+    in every frame. Whether the removal's compositing alters the hair silhouette
+    is a separate question with its own frames, not a wording to keep tuning.
+
+    # And it is NOT SHIPPED, because the precedents refused it
+
+    Replayed against all 19 pinned faces, the repaired wording raised overall
+    agreement 43/52 → 44/52 **and broke two rulings**: cand-1547 (ruled `up`)
+    went to `tied back` 3/3, and cand-1557 (ruled `tied back`) split to
+    `ponytail`. Naming the temple wisps as forgivable widens `tied back` until it
+    swallows its neighbour — a wording that helps one face by eating another.
+
+    That is precisely what the precedent set exists to catch, and the rule is
+    Fable's: **a broken precedent is a ruling needing a new hearing with its
+    frame, not a wording to adjust.** So the shipped wording stands, run-14's two
+    misses stay on the record as advisory (they cost no money — non-binding, so
+    D-235's asymmetry holds), and the real question goes up: does a PIN need to
+    tell `up` from `tied back` at all? Its job is to stop drift, and the drift it
+    guards against is gathered → down. Nobody has yet argued it needs the finer
+    cut, and the reader plainly cannot hold it.
+  */
   "tied back": "tied back — drawn away from the face and fastened behind, the length still hanging",
   ponytail: "in a ponytail — gathered at one point and hanging as a single tail",
   bun: "in a bun — gathered and coiled or knotted against the head",
