@@ -417,6 +417,35 @@ describe("a pair means both ears", () => {
     expect(shortfalls(verdict)).toEqual(["without gold hoop earrings, one on each ear, a matching pair"]);
   });
 
+  /*
+    AND THE RISK PRESENCE-BINDING CREATES, CLOSED BEFORE IT SHIPS.
+
+    Production v#123, "gold hoop earrings": the reader answered `verified:
+    false` with *"small gold hoop earrings, thin and understated, not bold
+    hoops"* — it invented a strength the ask never named and failed a picture
+    that HAD the earrings. Advisory, so it cost nothing. Under ruling (c) that
+    same answer refunds a real delivery, which is D-187's own defect wearing
+    accessories. So the instruction that already covered it gets teeth and a
+    test rather than a hope.
+  */
+  it("tells the reader that a smaller hoop is still a hoop", async () => {
+    let system = "";
+    const engine = {
+      id: "watcher",
+      async complete(request: { system: string }): Promise<TextResult> {
+        system = request.system;
+        return {
+          text: '{"results":[{"id":1,"present":true,"saw":"small gold hoops on both ears"}]}',
+          provenance: { provider: "test", model: "watcher" } as unknown as TextResult["provenance"],
+          latencyMs: 1,
+        };
+      },
+    } as TextEngine;
+    await verifyRender({ bytes, contentType: "image/png", facts: [...EARRINGS], engine });
+    expect(system).toContain("SIZE AND PROMINENCE ARE DEGREE, NEVER PRESENCE");
+    expect(system).toMatch(/Only answer that a thing is\s+not present when you cannot find it at all/);
+  });
+
   it("records an ear behind her hair as OCCLUDED — neither a pass nor a miss", async () => {
     const { verdict } = await read(
       ['{"results":[{"id":1,"present":true,"occluded":true,'
