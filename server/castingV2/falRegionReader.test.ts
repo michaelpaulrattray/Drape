@@ -1,7 +1,9 @@
+import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createFalRegionReader } from "./falRegionReader";
 import { MaskError } from "./maskGeometry";
+import type { Mask } from "./maskedComposite";
 
 /**
  * WHAT THE READER MUST DO WITH BYTES THAT ARE NOT A PICTURE.
@@ -81,5 +83,195 @@ describe("falRegionReader refuses a question asked of a document", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(mask.data.every((value) => value === 0)).toBe(true);
     expect(mask.width).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * BOTH SIDES OF A SYMMETRICAL FEATURE, DRIVEN DIRECTLY.
+ *
+ * # The defect these are written against, in its own numbers
+ *
+ * The bilateral branch used to ask SAM 3 *"left eye"* and *"right eye"* and union
+ * the two answers. Measured through this module's own code path on the founder's
+ * production frames v#147 and v#156
+ * (`scripts/prove-bilateral-laterality-disposable.mts`):
+ *
+ *   `"right eye"` returned ZERO masks on both frames, both runs, so the union the
+ *   caller received was ONE EYE — 695px and 727px, every pixel on one side of her
+ *   midline, while the same frames cut in half and asked the plain noun read
+ *   518/937 and 581/1019. On v#156 BOTH `"eyebrow"` calls returned zero, so the
+ *   union was EMPTY — which with `absentIsAnswer` is the sentence *"she has no
+ *   eyebrows"* about a face whose brows measure 1429px and 1593px.
+ *
+ * Four paid refine facets route here (`eye.colour`, `eye.shape`, `lashes` →
+ * `eyes`; `brows` → `eyebrows`), so the shipped consequence was a customer paying
+ * for both eyes and receiving one.
+ *
+ * # Why these are stubbed rather than driven at a provider
+ *
+ * A guard whose only test runs through a model that usually behaves is untested
+ * (working law 3). The fake below is not a convenience — it is the measured
+ * behaviour of SAM 3 pinned in place: **one instance per answer, and the answer
+ * is about the pixels it was handed.** Against it, the old implementation
+ * produces a one-sided mask and the new one cannot.
+ */
+describe("falRegionReader cuts the frame instead of naming a side", () => {
+  const WIDTH = 200;
+  const HEIGHT = 120;
+
+  /** A real PNG of the right size — the reader sizes and crops with sharp. */
+  async function frame(): Promise<Buffer> {
+    return sharp({
+      create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 90, g: 90, b: 90 } },
+    }).png().toBuffer();
+  }
+
+  /** A single-channel mask PNG as a data URI, so no mask fetch leaves the test. */
+  async function maskUri(
+    width: number,
+    height: number,
+    paint: (x: number, y: number) => boolean,
+  ): Promise<string> {
+    const data = Buffer.alloc(width * height, 0);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) if (paint(x, y)) data[y * width + x] = 255;
+    }
+    const png = await sharp(data, { raw: { width, height, channels: 1 } }).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  }
+
+  /** A centred rectangle, so her "face" centroid is the middle of the frame. */
+  const faceMask = (width: number, height: number) => maskUri(width, height, (x, y) =>
+    x >= width * 0.3 && x < width * 0.7 && y >= height * 0.25 && y < height * 0.75);
+
+  /**
+   * ONE blob, in the middle of WHATEVER PICTURE IT WAS HANDED — the measured
+   * behaviour, and the thing that makes the whole fix work: handed one side, the
+   * model answers about that side.
+   */
+  const featureBlob = (width: number, height: number) => maskUri(width, height, (x, y) =>
+    x >= width * 0.4 && x < width * 0.6 && y >= height * 0.4 && y < height * 0.6);
+
+  function acrossMidline(mask: Mask, midline: number): { left: number; right: number } {
+    let left = 0;
+    let right = 0;
+    for (let y = 0; y < mask.height; y += 1) {
+      for (let x = 0; x < mask.width; x += 1) {
+        if (mask.data[y * mask.width + x] === 0) continue;
+        if (x < midline) left += 1;
+        else right += 1;
+      }
+    }
+    return { left, right };
+  }
+
+  /**
+   * The fake segmenter. `sides` decides what a half-frame question answers, so
+   * one stub serves the pair-found case, the one-side case and the empty case —
+   * and the "both sides" assertion is therefore not trivially true.
+   */
+  function stubSam3(options: {
+    sides: "both" | "one" | "none";
+    /** Answer a side question at the FULL frame's size, to drive the resampling
+     *  path a provider's own scaling preference would put us on. */
+    wrongSize?: boolean;
+  }): { prompts: string[] } {
+    const prompts: string[] = [];
+    let sideCalls = 0;
+    vi.stubGlobal("fetch", async (_url: unknown, init: any) => {
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      const prompt = String(body.prompt ?? "");
+      prompts.push(prompt);
+      const image = Buffer.from(String(body.image_url).split(",")[1], "base64");
+      const meta = await sharp(image).metadata();
+      const width = meta.width ?? 0;
+      const height = meta.height ?? 0;
+
+      const reply = (masks: string[]) => new Response(JSON.stringify({ masks: masks.map((url) => ({ url })) }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+
+      if (prompt === "face") return reply([await faceMask(width, height)]);
+
+      /*
+        THE OLD PROMPTS, ANSWERED THE WAY PRODUCTION ANSWERED THEM: "left" gets
+        one instance and "right" gets nothing. If the qualifiers ever come back,
+        this is what they come back to.
+      */
+      if (prompt.startsWith("right ")) return reply([]);
+      if (prompt.startsWith("left ")) return reply([await featureBlob(width, height)]);
+
+      sideCalls += 1;
+      if (options.sides === "none") return reply([]);
+      if (options.sides === "one" && sideCalls > 1) return reply([]);
+      return reply([
+        options.wrongSize
+          ? await featureBlob(WIDTH, HEIGHT)
+          : await featureBlob(width, height),
+      ]);
+    });
+    return { prompts };
+  }
+
+  it("returns a union covering BOTH sides of her midline, and never names a side", async () => {
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const mask = await reader.region({ image: await frame(), name: "eyes" });
+
+    /* The answer is in the WHOLE frame's coordinates, not a crop's. */
+    expect({ width: mask.width, height: mask.height }).toEqual({ width: WIDTH, height: HEIGHT });
+
+    /* The finding, inverted: pixels on both sides of her own midline. */
+    const split = acrossMidline(mask, WIDTH / 2);
+    expect(split.left).toBeGreaterThan(0);
+    expect(split.right).toBeGreaterThan(0);
+    /* Two blobs of 20×24 within their own halves — the second side is not the
+       first one smeared across the frame. */
+    expect(split.left + split.right).toBe(2 * 20 * 24);
+
+    /* Assert at the wire: the face, then one plain noun per side. No adjective. */
+    expect(prompts).toEqual(["face", "eye", "eye"]);
+    expect(prompts.some((prompt) => /^(left|right) /.test(prompt))).toBe(false);
+  });
+
+  it("gives the whole frame's coordinates back even when a side answers at the wrong size", async () => {
+    stubSam3({ sides: "both", wrongSize: true });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const mask = await reader.region({ image: await frame(), name: "eyebrows" });
+
+    expect({ width: mask.width, height: mask.height }).toEqual({ width: WIDTH, height: HEIGHT });
+    const split = acrossMidline(mask, WIDTH / 2);
+    expect(split.left).toBeGreaterThan(0);
+    expect(split.right).toBeGreaterThan(0);
+  });
+
+  it("answers with the one side that had something — a turned head has one visible ear", async () => {
+    stubSam3({ sides: "one" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const mask = await reader.region({ image: await frame(), name: "ear" });
+
+    const split = acrossMidline(mask, WIDTH / 2);
+    /* Exactly one side, and which one depends on which crop won the race — the
+       assertion that matters is that a single-sided answer is still an answer. */
+    expect(split.left > 0).not.toBe(split.right > 0);
+    expect(split.left + split.right).toBe(20 * 24);
+  });
+
+  it("reaches absence only when BOTH pictures came back empty", async () => {
+    stubSam3({ sides: "none" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const image = await frame();
+
+    const empty = await reader.region({ image, name: "eyes", absentIsAnswer: true });
+    expect(empty.data.every((value) => value === 0)).toBe(true);
+    expect({ width: empty.width, height: empty.height }).toEqual({ width: WIDTH, height: HEIGHT });
+
+    /* And where absence is NOT an answer, it is a refusal rather than an empty
+       mask — the half of the asymmetry that stops a paid render changing nothing. */
+    await expect(reader.region({ image, name: "eyes" })).rejects.toBeInstanceOf(MaskError);
   });
 });

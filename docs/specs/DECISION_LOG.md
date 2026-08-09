@@ -7995,4 +7995,80 @@ decision needs the occlusion experiment first.
 
 ---
 
+## D-238 — A bilateral region was two ADJECTIVES. She was paying for both eyes and getting one.
+
+**2026-08-10.** Ordered by fable-131 as this shift's first investigation, off a
+question I filed rather than answered: `falRegionReader`'s bilateral branch asks
+SAM 3 *"left ear"* and *"right ear"*, and the pair counter had just proved on the
+founder's own frames that **the model answers the noun and ignores the
+laterality**. If that held for the product's own bilateral regions, the union was
+one side unioned with itself.
+
+**It held for two of the three names, and the third failed a worse way.** Driven
+through the module's own code path — the real `region()`, with `fetch` recorded
+at the wire — against a split-frame ground truth on v#147 and v#156
+(`scripts/prove-bilateral-laterality-disposable.mts`, masks kept in
+`output/bilateral-laterality-BEFORE-FIX/`):
+
+| name | the two qualified calls | the union the caller received | the frame cut in half, plain noun |
+|---|---|---|---|
+| `ear` | two distinct masks, IoU 0.000 | both sides — correct | 3118 / 3222 and 2800 / 2497 |
+| `eyes` | `"right eye"` → **ZERO masks**, both frames, both runs | **ONE EYE** — 695px and 727px, all one side | 518 / 937 and 581 / 1019 |
+| `eyebrows` | on v#156 **both sides zero** | **EMPTY** — *"she has no eyebrows"* | 1429 / 1593 |
+
+Four of twelve laterally-qualified calls returned nothing at all. The same twelve
+features, asked as a plain noun of a picture containing one side only, read
+**12 of 12**.
+
+**The shipped consequence.** `eye.colour`, `eye.shape` and `lashes` route to
+`eyes`, and `brows` to `eyebrows` (`REGION_OF_FACET`). A customer asking for
+green eyes was masked on one eye and charged in full. The `eyebrows` case is
+worse than wrong, it is *confident*: with `absentIsAnswer` an empty union is the
+sentence "there is nothing there", which for a removal is "already done".
+
+**And it was eating the tilt instrument's readings.** `readCanthalTilt`'s rung 1
+asks `"right eye"` directly and throws; rung 2 asks `eyes` and hands the one-eyed
+union to `cornersFromMask`, which correctly refuses — *"a tilt reading needs two
+eyes"*. So a frame with two plainly visible eyes read **NO-READ**, and a no-read
+is a missing number rather than a wrong one, which is why nothing caught it.
+Measured both ways in one run against the deleted branch reproduced as the
+control (`scripts/prove-tilt-recovered-disposable.mts`):
+
+| frame | the old branch | the fixed reader |
+|---|---|---|
+| v#147 | NO-READ | 2.48° mean, 7.93° asymmetry |
+| v#156 | NO-READ | 1.24° mean, 10.99° asymmetry |
+
+**The cheaper fix was measured and refuted.** The plain noun with every mask
+kept — no crop, one call instead of two — covered both sides in **2 of 6** cells.
+SAM 3 returned exactly **one** mask on every single call, so there is no second
+instance being thrown away by `masks[0]`; the second side is simply not in the
+answer. The reader's written premise was right about that and wrong about the
+remedy.
+
+**The fix is the pair counter's, one layer down: cut the frame before asking.**
+Her face's own centroid is the midline (a portrait is not guaranteed centred; a
+tight crop with no face falls back to the image's middle), each half is asked the
+plain noun with every mask kept, and each half's answer is placed back into the
+whole frame's coordinates. A call can only answer about the pixels it was handed,
+so laterality stops being a word the model must honour and becomes the crop. Cost:
+one extra segmentation call per bilateral region and one extra round trip, the two
+sides still in parallel.
+
+**Class sweep (law 7).** `landmark()` is clean — the product asks it "earlobe",
+"eye", "nose", unqualified, and keeps every point. `bornWornDetector`'s only
+armed class is `glasses`, not bilateral. Two siblings filed rather than fixed:
+`readCanthalTilt`'s rung 1 is now dead weight (four wasted calls per read, never
+observed to fire) and `refineService`'s `name: parsed.match` sends an open noun
+phrase to a segmenter, which is D-213's own rule under strain. Neither is
+silently left — both are in the mailbox with a recommendation.
+
+**Two smaller lessons.** The stride guard caught sharp promoting a resized
+one-channel mask to three channels on the first run — D-210, fourth time through
+that door, and the reason the guard is a throw rather than a comment. And the
+refuted candidate is recorded as a *tally* rather than a failing check, because a
+refutation filed as a red assertion reads as a broken product forever after.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

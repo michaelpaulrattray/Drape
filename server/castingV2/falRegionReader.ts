@@ -21,7 +21,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch";
-import { MaskError } from "./maskGeometry";
+import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 
@@ -111,15 +111,116 @@ function assertPicture(image: Buffer, question: string): void {
 }
 
 /**
- * A bilateral region is TWO QUESTIONS, and this is where that is enforced.
+ * A BILATERAL REGION IS TWO PICTURES, not two adjectives.
  *
- * SAM 3 returns exactly ONE instance for "ear", and which one depends on the
- * wording — "ear" came back with her left, "ears" with her right, each perfectly
- * good. A caller taking either would mask one side of a symmetrical feature and
- * report success. So a name in this set is asked once per side and unioned, and
- * the union is what the caller sees.
+ * # What this set used to do, and the measurement that ended it
+ *
+ * The premise was right and the method was not. SAM 3 does return exactly ONE
+ * instance for a bilateral noun — measured on the founder's own production
+ * frames v#147 and v#156, the plain noun came back with **1 mask, every single
+ * time**, and for `ear` and `eye` that one mask sits on ONE side. So a caller
+ * taking it would mask half a symmetrical feature and report success. That much
+ * was known.
+ *
+ * The fix was to ask twice, *"left ear"* and *"right ear"*, and union. **Those
+ * words do not work.** Driven through this module's own code path against the
+ * split-frame ground truth (`scripts/prove-bilateral-laterality-disposable.mts`,
+ * artifacts in `output/bilateral-laterality/`):
+ *
+ *   ear        two distinct masks, one per side, on both frames — it worked here
+ *   eye        `"right eye"` returned ZERO masks on BOTH frames, both runs, so
+ *              the union was ONE EYE — 695px and 727px, all of it on one side of
+ *              her midline, while the split frame found 518/937 and 581/1019
+ *   eyebrow    on v#156 BOTH sides returned zero, so the union was EMPTY — and
+ *              with `absentIsAnswer` that is the confident negative *"she has no
+ *              eyebrows"*, over a frame whose brows measure 1429px and 1593px
+ *
+ * Four of twelve laterally-qualified calls returned nothing at all. The same
+ * twelve features, asked as a PLAIN noun of a picture containing one side only,
+ * read 12 of 12.
+ *
+ * # So the frame is cut before the question is asked
+ *
+ * This is the pair counter's cure, arrived at the same way (three instruments,
+ * two of them wrong on his frames, mailbox opus-104): **a call can only answer
+ * about the pixels it was handed.** Asked "is there an eye here" of a picture
+ * containing one eye, laterality is not a word the model has to honour — it is
+ * the crop. The midline is her FACE's own centroid rather than the image's,
+ * because a portrait is not guaranteed centred; where no face reads — a tight
+ * crop already inside one — the image's own middle is the honest fallback.
+ *
+ * The cost is one extra segmentation call per bilateral region (the face) and
+ * one extra round trip, the two sides still going out in parallel. That is the
+ * price of not silently editing one of a customer's eyes.
  */
 const BILATERAL = new Set(["ear", "eyes", "eyebrows"]);
+
+/** The noun ONE SIDE of a bilateral region is asked by. */
+function singularOf(name: string): string {
+  return name === "eyes" ? "eye" : name.replace(/s$/, "");
+}
+
+/** Her own vertical axis — the centroid of a mask, or null if it holds nothing. */
+function centroidX(mask: Mask): number | null {
+  let total = 0;
+  let weighted = 0;
+  for (let y = 0; y < mask.height; y += 1) {
+    const row = y * mask.width;
+    for (let x = 0; x < mask.width; x += 1) {
+      if (mask.data[row + x] === 0) continue;
+      total += 1;
+      weighted += x;
+    }
+  }
+  return total === 0 ? null : weighted / total;
+}
+
+/**
+ * A HALF-FRAME MASK BACK INTO THE WHOLE FRAME'S COORDINATES.
+ *
+ * The caller asked about one picture and must be answered in that picture's
+ * pixels; a mask that is silently half a frame wide would compose forty percent
+ * of the way across her face. The returned size is CHECKED rather than assumed —
+ * and where a provider hands back a different resolution than it was given, the
+ * mask is resampled to the crop it answers about instead of throwing, because a
+ * paid edit is not worth losing to a provider's scaling preference. Nearest
+ * neighbour, so a binary mask stays binary.
+ */
+async function placeInFrame(
+  half: Mask,
+  crop: { left: number; width: number },
+  width: number,
+  height: number,
+): Promise<Mask> {
+  let source = half;
+  if (half.width !== crop.width || half.height !== height) {
+    log.warn(
+      { returned: `${half.width}x${half.height}`, expected: `${crop.width}x${height}` },
+      "[falRegionReader] the segmenter answered at a different size than it was asked — resampling to the crop",
+    );
+    const sharp = (await import("sharp")).default;
+    const { data, info } = await sharp(half.data, {
+      raw: { width: half.width, height: half.height, channels: 1 },
+    })
+      .resize({ width: crop.width, height, kernel: "nearest", fit: "fill" })
+      /* `toColourspace` is not decoration: a resize of a one-channel raw buffer
+         comes back as THREE channels, and the guard below caught it on the first
+         run. D-210, for the fourth time through the same door. */
+      .toColourspace("b-w")
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    if (data.length !== info.width * info.height) {
+      throw new MaskError(`a resampled side mask is ${data.length} bytes for ${info.width}x${info.height}`);
+    }
+    source = { data: Buffer.from(data), width: info.width, height: info.height };
+  }
+  const data = Buffer.alloc(width * height, 0);
+  for (let y = 0; y < source.height; y += 1) {
+    const from = y * source.width;
+    source.data.copy(data, y * width + crop.left, from, from + source.width);
+  }
+  return { data, width, height };
+}
 
 export function createFalRegionReader(input: {
   apiKey: string;
@@ -127,14 +228,75 @@ export function createFalRegionReader(input: {
 }): RegionReader {
   const { apiKey, signal } = input;
 
-  const askRegion = async (image: Buffer, prompt: string): Promise<Mask | null> => {
+  /**
+   * `keep: "all"` exists for the half frames, and the distinction is real.
+   *
+   * A region is one region, so the whole-frame path takes the first answer. A
+   * SIDE of a bilateral region is a question about everything on that side —
+   * two hoops in one ear, a brow read as two fragments — so nothing there may be
+   * dropped. Measured: the plain noun returns one mask on a whole frame anyway,
+   * which is exactly why the second side had to come from a second picture.
+   */
+  const askRegion = async (
+    image: Buffer,
+    prompt: string,
+    keep: "first" | "all" = "first",
+  ): Promise<Mask | null> => {
     const json = await post(apiKey, SAM3, {
       image_url: dataUri(image), prompt, include_scores: true, output_format: "png",
     }, signal);
     const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
-    if (masks.length === 0) return null;
-    const entry = masks[0];
-    return fetchMask(typeof entry === "string" ? entry : entry.url);
+    const urls = masks
+      .map((entry) => (typeof entry === "string" ? entry : entry?.url))
+      .filter((url): url is string => typeof url === "string" && url.length > 0);
+    if (urls.length === 0) return null;
+    if (keep === "first") return fetchMask(urls[0]);
+    const every = await Promise.all(urls.map((url) => fetchMask(url)));
+    return every.length === 1 ? every[0] : unionMasks(...every);
+  };
+
+  /**
+   * ONE SIDE AT A TIME, each side its own picture. See `BILATERAL` for the
+   * measurement that made this the method.
+   *
+   * Returns null when NEITHER side had anything — which is now a real reading of
+   * two pictures rather than two words the model ignored, and is therefore fit to
+   * reach `absentIsAnswer`. One side answering alone is also a real answer: a
+   * head turned away genuinely has one visible ear.
+   */
+  const bilateral = async (image: Buffer, name: string): Promise<Mask | null> => {
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(image).metadata();
+    const width = meta.width ?? 0;
+    const height = meta.height ?? 0;
+    if (!width || !height) throw new MaskError(`cannot read a ${name} on an image with no size`);
+    const noun = singularOf(name);
+    /* A picture one pixel wide has no two sides to cut between. */
+    if (width < 2) return askRegion(image, noun, "all");
+
+    const face = await askRegion(image, "face", "all");
+    const axis = face ? centroidX(face) : null;
+    /* Clamped so a face read that lands on an edge cannot ask for a zero-width
+       crop — a degenerate half is a thrown sharp error in place of a reading. */
+    const midline = Math.min(width - 1, Math.max(1, Math.round(axis ?? width / 2)));
+
+    const crops = [{ left: 0, width: midline }, { left: midline, width: width - midline }] as const;
+    const sides = await Promise.all(crops.map(async (crop) => {
+      const bytes = await sharp(image)
+        .extract({ left: crop.left, top: 0, width: crop.width, height })
+        .png()
+        .toBuffer();
+      const mask = await askRegion(bytes, noun, "all");
+      return mask ? placeInFrame(mask, crop, width, height) : null;
+    }));
+
+    const found = sides.filter((mask): mask is Mask => mask !== null);
+    log.debug(
+      { name, noun, sides: found.length, midline, byFace: axis !== null },
+      "[falRegionReader] bilateral read, one side to a picture",
+    );
+    if (found.length === 0) return null;
+    return found.length === 1 ? found[0] : unionMasks(...found);
   };
 
   return {
@@ -164,14 +326,8 @@ export function createFalRegionReader(input: {
       };
 
       if (BILATERAL.has(name)) {
-        const sides = await Promise.all([
-          askRegion(image, `left ${name === "eyes" ? "eye" : name.replace(/s$/, "")}`),
-          askRegion(image, `right ${name === "eyes" ? "eye" : name.replace(/s$/, "")}`),
-        ]);
-        const found = sides.filter((mask): mask is Mask => mask !== null);
-        if (found.length === 0) return absent();
-        const { unionMasks } = await import("./maskGeometry");
-        return found.length === 1 ? found[0] : unionMasks(...found);
+        const both = await bilateral(image, name);
+        return both ?? absent();
       }
       const mask = await askRegion(image, name);
       if (!mask) return absent();
