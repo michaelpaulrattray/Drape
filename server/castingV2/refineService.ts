@@ -2169,6 +2169,27 @@ export async function refineCandidate(
         contentType: assembled.contentType,
         evidence: assembled.evidence,
         carried: assembled.carriedFacets,
+        /*
+          THE ASSEMBLY'S OWN WORKING, KEPT ON THE ROW (fable-109).
+
+          A carried fact cannot be adjudicated by a reader — the freckles this
+          architecture pastes sit at the reader's own floor, and it called them
+          absent three times on a frame that provably contains 20,036 of their
+          24,056 pixels. The instrument that CAN judge them is arithmetic: every
+          pixel the segment owns is either byte-identical in the delivered frame
+          or accounted for by a recorded intersection.
+
+          That judgement needs the intersections, and they only existed in a log
+          line — so the walk could never adjudicate itself, and a log is not an
+          artifact a report can be derived from. They ride the row now, beside
+          the verdict, where the reliability report already looks.
+        */
+        assembly: assembled.assembly && {
+          segmentsApplied: assembled.assembly.segmentsApplied,
+          intersections: assembled.assembly.intersections,
+          superseded: assembled.assembly.supersededCandidates,
+          excluded: assembled.assembly.segmentsExcluded,
+        },
       };
     };
 
@@ -2542,6 +2563,12 @@ export async function refineCandidate(
           the fix becoming the bug the founder described.
         */
         captions: capturedCaptions,
+        /*
+          WHAT THE COMPOSITE DID, so a carried fact can be adjudicated later
+          (fable-109). Absent when nothing was carried — an ordinary render has
+          no assembly to describe.
+        */
+        ...(image.assembly ? { assembly: image.assembly } : {}),
         /*
           THE NET'S VERDICT, RECORDED (D-185).
 

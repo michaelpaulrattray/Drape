@@ -108,6 +108,7 @@ import { formatReport, summarize } from "../server/castingV2/reliabilityReport.j
 import { databaseUrl, settleAttemptRows } from "./lib/attemptRows.mjs";
 import { createChecks, openDrivenPage } from "./lib/drivePage.mjs";
 import { openDatabase } from "./lib/dbConnection.mjs";
+import { adjudicateCandidateCarries, formatCarriedVerdict } from "./lib/carriedAdjudicator.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
 
 function arg(name: string, fallback = ""): string {
@@ -127,6 +128,14 @@ const OUT = arg("out", `output/walk/${new Date().toISOString().replace(/[:.]/g, 
  * a second walk over it measures a chain rather than a product.
  */
 const freshFromRoll = arg("fresh");
+/*
+  THE BUCKET THE KEYS RESOLVE AGAINST — production's, never the one in `.env`.
+
+  A production key fetched from the dev bucket is a 404 dressed up as a bare
+  face, and it has cost this campaign a whole court's worth of readings once
+  already. It is required rather than defaulted for exactly that reason.
+*/
+const PUBLIC_BASE = arg("publicBase", process.env.PUBLIC_BASE ?? "");
 
 if (!TOKEN) throw new Error("--token <app_session_id JWT> is required (see mint-production-session.mts)");
 if (!CANDIDATE && !freshFromRoll) {
@@ -1320,6 +1329,75 @@ try {
   console.log(`\nVERDICTS UNREADABLE — ${readbackError}`);
 }
 
+/*
+  AND THE CARRIED FACTS, JUDGED BY ARITHMETIC (fable-109).
+
+  The reader cannot adjudicate a carried fact. On walk two it called her
+  freckles absent on three consecutive frames that provably contained 20,036 of
+  their 24,056 pixels — the delivery sits at the reader's own floor, which is a
+  reading problem and not a rendering one. But the rate table drops carried rows
+  from its denominator, so those three dissents left no mark at all and the walk
+  printed 100%: the flattering bias the design named, arriving exactly where it
+  said it would.
+
+  So every carried fact is now adjudicated against the bytes: each pixel the
+  segment owns is either byte-identical in the delivered frame or accounted for
+  by a recorded intersection. A carried fact that is neither is UNRESOLVED, and
+  a walk cannot be clean over one.
+*/
+let carriedUnresolved = 0;
+try {
+  const connection = await openDatabase(databaseUrl());
+  try {
+    const [variantRows] = await connection.query<any[]>(
+      `SELECT v.id, v.imageKey, v.requestText, v.internalPrompt, v.createdAt
+         FROM casting_candidate_variants v
+         JOIN casting_candidates c ON c.id = v.candidateId
+        WHERE c.publicId = ? ORDER BY v.id ASC`,
+      [CANDIDATE_ID],
+    );
+    const [segmentRows] = await connection.query<any[]>(
+      `SELECT s.* FROM casting_segments s
+         JOIN casting_candidates c ON c.id = s.candidateId
+        WHERE c.publicId = ? ORDER BY s.id ASC`,
+      [CANDIDATE_ID],
+    );
+    if (!PUBLIC_BASE) throw new Error("--publicBase (or PUBLIC_BASE) is required to read the kept objects back");
+    const adjudication = await adjudicateCandidateCarries({
+      variants: variantRows,
+      segments: segmentRows,
+      fetchBytes: async (key: string) => (await fetchImageBytes(`${PUBLIC_BASE}/${key}`)).bytes,
+    });
+    console.log("\nCARRIED FACTS — judged against the bytes, not the reader");
+    if (adjudication.verdicts.length === 0 && adjudication.unadjudicable.length === 0) {
+      console.log("  (nothing was carried on this walk)");
+    }
+    for (const verdict of adjudication.verdicts) {
+      console.log(`  v#${verdict.variantId} ${formatCarriedVerdict(verdict)}`);
+    }
+    for (const entry of adjudication.unadjudicable) {
+      console.log(`  v#${entry.variantId} ${entry.facet}: UNADJUDICABLE — ${entry.why}`);
+    }
+    carriedUnresolved = adjudication.verdicts.filter((verdict) => !verdict.kept).length
+      + adjudication.unadjudicable.length;
+    checks.check(
+      carriedUnresolved === 0,
+      "[carried] every kept fact is byte-identical or recorded",
+      `${adjudication.verdicts.length} judged, ${carriedUnresolved} unresolved`,
+    );
+  } finally {
+    await connection.end();
+  }
+} catch (error) {
+  /* An adjudicator that could not run has judged nothing, and a walk that
+     carried something cannot be clean on its silence. */
+  carriedUnresolved += 1;
+  checks.neverArmed(
+    "[carried] every kept fact is byte-identical or recorded",
+    error instanceof Error ? error.message : String(error),
+  );
+}
+
 console.log("");
 checks.print();
 
@@ -1334,7 +1412,10 @@ const clean = landedRight
      and the ones it dropped are the SLOWEST — where the failures live. */
   && unsettled === 0
   && report.overall.delivered_noncompliant === 0
-  && report.blockers.length === 0;
+  && report.blockers.length === 0
+  /* A carried fact the arithmetic could not account for is the one failure the
+     rate table structurally cannot show — carried rows are not in it. */
+  && carriedUnresolved === 0;
 
 writeFileSync(
   `${OUT}/walk.json`,
