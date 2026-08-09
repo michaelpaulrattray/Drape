@@ -113,19 +113,22 @@ superseded it — fable-071/080).
   concept exists); record whether D-192's frozen-reference rule
   moots it.
 - Shared R2 credential split (founder re-prioritized here);
-  real-inbox Resend test; fal retention answer; the five inert
+  real-inbox Resend test; fal retention answer (founder confirms
+  answered, 2026-08-09); the five inert
   security controls (CLAUDE.md's "currently not enforced" list).
 - Hygiene batch (L2): **11 dev-fixture `getDb()` scripts still lack
   world guards** (list in the 2026-08-09 audit) — guard when next
   touched, or burn down in one sitting.
 
-## 8. Dormant founder items — batch into the next founder session
+## 8. Dormant founder items — mostly CLOSED 2026-08-09 (fable-122)
 
-(L14) roster-card coherence question (sheets era, unanswered);
-(L15a) D-82 vouched non-people vocabulary confirmation; (L15b) the
-D-166 glasses-clause choice; (L16) the Higgsfield-style canvas intro
-(awaiting the founder's own prompt + reference since 2026-07-10);
-the D-169 mock eyeball (item 2).
+Remaining: (L14) roster-card coherence question (sheets era,
+unanswered); the D-169 mock eyeball (waits for item 2's loader mock
+to exist). CLOSED by founder ruling 2026-08-09: the canvas intro
+(KILLED); the fal retention question (founder confirms already
+answered — annotated on item 7's checklist); D-82 vocabulary reading
+and the D-166 glasses clause (both "fine as shipped" —
+founder-ratified, no longer provisional).
 
 ## 9. Shelved-with-trigger register (durable in DECISION_LOG; pointers here)
 
