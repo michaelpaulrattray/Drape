@@ -30,6 +30,7 @@ import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { segmentsOnFace } from "../castingV2/segmentsOnFace";
+import { pronounsForSex } from "../castingV2/castPronouns";
 import { currentValueOfFacet } from "../castingV2/refineDelta";
 import { readResolvedIdentity } from "../castingV2/rollService";
 import {
@@ -877,7 +878,9 @@ export const castingV2Router = router({
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
-      if (input.variantId === null) return { rows: [] };
+      /* No version selected means the original, which keeps nothing — and an
+         empty list renders no panel at all, so the pronoun is never used. */
+      if (input.variantId === null) return { possessive: "their", rows: [] };
 
       /* Owner proved inside the statements that read, never in a check before
          them (invariant 1) — `resolveOwnedCandidateId` and
@@ -905,7 +908,21 @@ export const castingV2Router = router({
         facet id, which is the projection's rule, not this route's.
       */
       const byId = new Map(variants.map((variant) => [variant.id, variant]));
+
+      /*
+        THIS FACE'S OWN PRONOUN, from the version she is looking at.
+
+        Taken from the ANCHOR rather than per segment, because a pronoun is a
+        fact about the person and not about the edit — and because the heading
+        above the rows has to agree with them. Derived from the resolved
+        identity's sex through the same helper the room uses; `they` when the
+        record cannot say, which is correct English rather than a guess.
+      */
+      const pronouns = pronounsForSex(readResolvedIdentity(anchor.internalPrompt)?.sex);
       return {
+        /* The heading is "On {possessive} face" — his ruling's structure, with
+           the one word the product is able to know. */
+        possessive: pronouns.possessive,
         rows: segmentsOnFace({
           segments,
           deliveredValue: (segment) => {
@@ -914,6 +931,7 @@ export const castingV2Router = router({
             return currentValueOfFacet(readResolvedIdentity(source.internalPrompt), segment.facet);
           },
           urlOf: storagePublicUrl,
+          pronouns,
         }),
       };
     }),

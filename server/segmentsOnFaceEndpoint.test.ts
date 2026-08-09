@@ -117,7 +117,52 @@ describe("castingV2.segmentsOnFace", () => {
     expect(result.rows[0].name).toBe("Her freckles");
     expect(result.rows[0].from).toBe("from an edit");
     expect(result.rows[0].prefill).toBe("her freckles — ");
-    expect(result.rows[0].maskUrl).toBe("https://pub-test.r2.dev/casting-v2/segments/a-mask.png");
+    /*
+      The crop comes off the bucket; the STENCIL cannot, because a CSS
+      `mask-image` is a CORS-mode fetch and the bucket has no ACAO header —
+      through a real caller, so the route's own wiring is what is proved.
+    */
+    expect(result.rows[0].contentUrl).toBe("https://pub-test.r2.dev/casting-v2/segments/a-content.png");
+    expect(result.rows[0].maskUrl).toBe(
+      `/api/image-proxy?url=${encodeURIComponent("https://pub-test.r2.dev/casting-v2/segments/a-mask.png")}`,
+    );
+  });
+
+  it("takes the face's PRONOUN from the version she is looking at, heading included", async () => {
+    /*
+      Through the real caller, because the pronoun is the route's own
+      derivation: the projection is handed three words and the route is what
+      decides which. A male candidate's row said "Her surgical fox eyes" in
+      front of his own photograph until this existed.
+    */
+    const asWoman = await appRouter.createCaller(ctxFor())
+      .castingV2.segmentsOnFace({ candidateId: CANDIDATE, variantId: VARIANT });
+    expect(asWoman.possessive).toBe("her");
+    expect(asWoman.rows[0].name).toBe("Her freckles");
+
+    for (const [sex, possessive, name] of [
+      ["male", "his", "His freckles"],
+      ["nonbinary", "their", "Their freckles"],
+      /*
+        A record that cannot state a sex cannot state a delivered value either —
+        `readResolvedIdentity` refuses the whole identity — so the row is
+        dropped and the panel does not render. "their" is still the honest
+        answer for the heading nobody will see.
+      */
+      [undefined, "their", undefined],
+    ] as const) {
+      (listCandidateVariants as any).mockResolvedValue([{
+        ...VARIANT_ROW,
+        internalPrompt: {
+          ...VARIANT_ROW.internalPrompt,
+          resolved: { ...VARIANT_ROW.internalPrompt.resolved, sex },
+        },
+      }]);
+      const result = await appRouter.createCaller(ctxFor())
+        .castingV2.segmentsOnFace({ candidateId: CANDIDATE, variantId: VARIANT });
+      expect(result.possessive, `sex ${String(sex)}`).toBe(possessive);
+      expect(result.rows[0]?.name, `sex ${String(sex)}`).toBe(name);
+    }
   });
 
   it("derives from the COMPOSITOR's own query, anchored on the version she is looking at", async () => {

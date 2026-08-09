@@ -31,12 +31,20 @@ const withoutProse = (source: string): string => source
   .replace(/^\s*\/\/.*$/gm, " ");
 
 describe("the panel says what the founder cleared, and nothing he did not", () => {
-  it("carries his own two sentences, verbatim", async () => {
-    /* fable-122: "Panel copy: KEEP as mocked." Pinned so the build cannot
-       quietly improve on the thing he actually looked at. */
+  it("carries his own two sentences, with the one word the face decides", async () => {
+    /*
+      fable-122: "Panel copy: KEEP as mocked." Pinned so the build cannot
+      quietly improve on the thing he actually looked at — with ONE derivation
+      he did not rule on because his mock could not raise it: the mock was of a
+      woman, and rendered against a real sheet the literal "On her face" sat
+      over a man's photograph. Structure verbatim, pronoun derived (fable-127).
+    */
     const source = await readFile(PANEL, "utf8");
-    expect(source).toContain(">On her face<");
+    expect(source).toContain(">On {possessive} face<");
     expect(source).toContain("Things this version is keeping. Tap one to talk about it.");
+    /* The word comes from the server, which is the only side allowed to read a
+       face's sex — never guessed in the component. */
+    expect(source).not.toMatch(/possessive\s*=\s*["'](his|her|their)["']/);
   });
 
   it("carries NO version tag, which he called ugly and not required", async () => {

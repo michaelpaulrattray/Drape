@@ -1579,6 +1579,9 @@ export default function CastingSheet() {
               /* Empty until the segment store is armed for this account, and an
                  empty list renders nothing at all. */
               kept={kept.data?.rows ?? []}
+              /* The heading's one derived word — his/her/their, from the server,
+                 which is the only side that may read a face's sex. */
+              keptPossessive={kept.data?.possessive ?? "their"}
               reask={reaskOptions ? { question: refineOutcome ?? "", options: reaskOptions } : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a

@@ -47,10 +47,23 @@ const THEY: CastPronouns = { subject: "they", object: "them", possessive: "their
  * bug than the one this fixes.
  */
 export function castPronouns(technicalSchema: unknown): CastPronouns {
-  const subject = (technicalSchema as { subject?: { sex?: unknown } } | null)?.subject;
-  const sex = typeof subject?.sex === "string" ? subject.sex.toLowerCase() : null;
-  if (sex === "male") return HE;
-  if (sex === "female") return SHE;
+  return pronounsForSex((technicalSchema as { subject?: { sex?: unknown } } | null)?.subject?.sex);
+}
+
+/**
+ * The same three words, for a face that is not a Cast yet.
+ *
+ * A candidate on a sheet has no `technicalSchema` — its sex sits on the
+ * resolved identity of the roll that made it. Extracted here rather than
+ * re-derived at the second call site, because two implementations of "which
+ * pronoun" is the shape that produced the original defect: the room called
+ * every Cast "she", and the segments panel called a male candidate's eyes
+ * "hers" for exactly the same reason.
+ */
+export function pronounsForSex(sex: unknown): CastPronouns {
+  const value = typeof sex === "string" ? sex.toLowerCase() : null;
+  if (value === "male") return HE;
+  if (value === "female") return SHE;
   return THEY;
 }
 

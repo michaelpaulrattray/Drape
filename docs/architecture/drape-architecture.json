@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "eb7e33ed304add00"
+    "sourceFingerprint": "8db91c582711d571"
   },
   "domains": [
     {
@@ -18639,6 +18639,11 @@
     {
       "from": "module:server/castingV2/segmentPrune.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentsOnFace.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {

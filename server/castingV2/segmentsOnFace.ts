@@ -38,6 +38,7 @@
  */
 import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
+import { capitalize, type CastPronouns } from "./castPronouns";
 import type { Facet } from "./refineFacets";
 
 /** How a facet's delivered value becomes something she would say. */
@@ -108,12 +109,36 @@ const sentenceCase = (value: string): string => (
 );
 
 /**
- * The row's name, from her own delivered words.
+ * A POSSESSIVE AND AN ARTICLE CANNOT BOTH INTRODUCE THE SAME NOUN.
+ *
+ * "Her a mullet" and "her a beauty mark" were both live in real data, because
+ * the delivered value is sometimes a noun phrase that already introduces
+ * itself — `hair.cut` reads "a mullet", `marks` reads "a beauty mark". The
+ * possessive REPLACES the article; it does not queue behind it. That is
+ * grammar rather than a cosmetic trim, which is why it happens here and not in
+ * a display filter somewhere downstream.
+ */
+function withoutLeadingArticle(value: string): string {
+  return value.replace(/^(?:a|an|the)\s+/i, "");
+}
+
+/**
+ * The row's name, in the face's own words and the face's own pronoun.
  *
  * Returns null when the chain has no value for the facet — the caller drops the
  * row rather than showing an id.
+ *
+ * **The pronoun is passed in, never assumed.** The first version said "Her"
+ * because the founder's mock was a woman; rendered against a real dev sheet it
+ * called a male candidate's eyes "hers" in front of his own face. Law 8 in his
+ * words: a stylist does not call a man's face hers. Same defect the room had
+ * (see `castPronouns`), same fix, and `they` remains the honest fallback.
  */
-export function nameForFacet(facet: string, delivered: string | null | undefined): string | null {
+export function nameForFacet(
+  facet: string,
+  delivered: string | null | undefined,
+  pronouns: CastPronouns,
+): string | null {
   const value = (delivered ?? "").trim();
   if (!value) return null;
   const naming = NAMING_OF_FACET[facet];
@@ -123,9 +148,10 @@ export function nameForFacet(facet: string, delivered: string | null | undefined
     behaviour for one it does not.
   */
   if (!naming) return null;
+  const possessive = capitalize(pronouns.possessive);
   switch (naming.shape) {
     case "hers":
-      return `Her ${value}`;
+      return `${possessive} ${withoutLeadingArticle(value)}`;
     case "worn":
       return sentenceCase(value);
     case "hairArrangement":
@@ -135,14 +161,16 @@ export function nameForFacet(facet: string, delivered: string | null | undefined
         was done with it. A value that already starts with "worn" is not made to
         say it twice.
       */
-      return `Her hair, ${value}`;
+      return `${possessive} hair, ${value}`;
   }
 }
 
 /** Provenance, in the plain language the design asks for. */
 export type Provenance = "edit_patch" | "detected_born";
-export function provenanceWording(provenance: Provenance): string {
-  return provenance === "detected_born" ? "she came with it" : "from an edit";
+export function provenanceWording(provenance: Provenance, pronouns: CastPronouns): string {
+  /* "they came with it" is already correct with a plural verb-less clause, so
+     the only thing that varies is the subject. */
+  return provenance === "detected_born" ? `${pronouns.subject} came with it` : "from an edit";
 }
 
 export type FaceRow = {
@@ -153,9 +181,38 @@ export type FaceRow = {
   from: string;
   /** The sentence tapping this row starts — nothing changes until she finishes it. */
   prefill: string;
+  /** SAME-ORIGIN, and it has to be — see `maskFetchUrl`. */
   maskUrl: string;
   contentUrl: string;
 };
+
+/**
+ * THE STENCIL IS FETCHED UNDER CORS AND THE CROP IS NOT, so they cannot come
+ * from the same place.
+ *
+ * A CSS `mask-image` is a CORS-mode fetch; a `background-image` is not. The R2
+ * public bucket sends no `Access-Control-Allow-Origin` — by default, in both
+ * worlds — so a mask served straight off the bucket is BLOCKED, and an element
+ * whose mask failed to load renders nothing at all. Not a degraded thumbnail:
+ * an empty box, silently, with every stylesheet assertion still true.
+ *
+ * Found by looking at the running app (D-101) after twelve green tests and a
+ * browser check that read the computed style and passed on a blank panel.
+ *
+ * The proxy is the product's own established answer to this exact sentence —
+ * `client/src/features/boards/canvas/imageActions.ts` has said "R2 bucket URLs
+ * are cross-origin and CORS-less" since boards was written. It is
+ * authenticated, rate-limited, SSRF-allowlisted and privately cached, and a
+ * mask is a few hundred bytes.
+ *
+ * Built HERE rather than in the client because the reason is a property of the
+ * bytes, not of the surface: any future reader of a segment mask inherits the
+ * same constraint, and a rule that lives in one component is a rule the second
+ * component gets wrong.
+ */
+export function maskFetchUrl(publicUrl: string): string {
+  return `/api/image-proxy?url=${encodeURIComponent(publicUrl)}`;
+}
 
 /**
  * The panel's rows, in the order the compositor pastes them.
@@ -176,20 +233,22 @@ export function segmentsOnFace(input: {
   /** What the chain delivered for this facet, from the variant that filed it. */
   deliveredValue: (segment: { facet: string; variantId: number | null }) => string | null;
   urlOf: (key: string) => string;
+  /** This face's own three words — see `nameForFacet`. */
+  pronouns: CastPronouns;
 }): FaceRow[] {
   const rows: FaceRow[] = [];
   for (const segment of input.segments) {
-    const name = nameForFacet(segment.facet, input.deliveredValue(segment));
+    const name = nameForFacet(segment.facet, input.deliveredValue(segment), input.pronouns);
     if (!name) continue;
     rows.push({
       facet: segment.facet,
       publicId: segment.publicId,
       name,
-      from: provenanceWording(segment.provenance as Provenance),
-      /* Lowercased, because it is the opening of HER sentence rather than a
+      from: provenanceWording(segment.provenance as Provenance, input.pronouns),
+      /* Lowercased, because it is the opening of THEIR sentence rather than a
          heading — "her freckles — " is what she would have typed. */
       prefill: `${name.charAt(0).toLowerCase()}${name.slice(1)} — `,
-      maskUrl: input.urlOf(segment.maskKey),
+      maskUrl: maskFetchUrl(input.urlOf(segment.maskKey)),
       contentUrl: input.urlOf(segment.contentKey),
     });
   }

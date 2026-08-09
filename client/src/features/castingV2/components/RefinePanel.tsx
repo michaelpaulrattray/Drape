@@ -98,6 +98,7 @@ export function RefinePanel({
   reask,
   onDismissOutcome,
   kept = [],
+  keptPossessive = "their",
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -143,6 +144,14 @@ export function RefinePanel({
    * is armed for this account. Absent or empty renders nothing at all.
    */
   kept?: readonly FaceRow[];
+  /**
+   * This face's own possessive, from the server — see `SegmentsOnFace`.
+   *
+   * Defaults to "their", which is the honest word for a face whose record
+   * cannot say, and is never seen anyway: with no kept rows the panel does not
+   * render at all.
+   */
+  keptPossessive?: string;
 }) {
   const [instruction, setInstruction] = useState("");
   const trimmed = instruction.trim();
@@ -304,7 +313,11 @@ export function RefinePanel({
         prefills the ask, so the row and the field it fills are adjacent and the
         cause of the text appearing is visible in one glance.
       */}
-      <SegmentsOnFace rows={kept} onPrefill={(prefill) => setInstruction(prefill)} />
+      <SegmentsOnFace
+        rows={kept}
+        possessive={keptPossessive}
+        onPrefill={(prefill) => setInstruction(prefill)}
+      />
 
       <form
         className="dpc-refine__ask"

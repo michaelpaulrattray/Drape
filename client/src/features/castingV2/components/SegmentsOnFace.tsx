@@ -12,11 +12,16 @@
  * # What the founder cleared, and what had to be adapted
  *
  * PROTOTYPE-VERIFIED (his ruling, 2026-08-09 — "KEEP as mocked"): the heading
- * "On her face", the sub "Things this version is keeping. Tap one to talk about
- * it.", the row shape (thumbnail · name · provenance), and the row names
- * themselves, which come from the server projection.
+ * "On {possessive} face", the sub "Things this version is keeping. Tap one to
+ * talk about it.", the row shape (thumbnail · name · provenance), and the row
+ * names themselves, which come from the server projection.
  *
  * DROPPED on his ruling: the `v1` tags — "ugly and not required".
+ *
+ * ADAPTED, and stated: the mock's heading is literally "On her face" because
+ * the mock was of a woman. Rendered against a real sheet it said that over a
+ * man's photograph, so the STRUCTURE is verbatim and the pronoun is derived
+ * (fable-127; law 8 — a stylist does not call a man's face hers).
  *
  * ADAPTED, and stated because the UI contract says quotation is not
  * requirement: **the mock is a card on `--surface`; this panel lives on the
@@ -50,10 +55,21 @@ export type FaceRow = {
 
 export function SegmentsOnFace({
   rows,
+  possessive,
   onPrefill,
 }: {
   rows: readonly FaceRow[];
-  /** Writes the opening of her sentence into the ask box. Never submits it. */
+  /**
+   * HIS · HER · THEIR — this face's own word, derived on the server.
+   *
+   * The heading was "On her face" verbatim, and rendered against a real sheet
+   * it said that over a man's photograph. The structure the founder cleared is
+   * kept exactly; the one word the product can actually know is derived from
+   * the same place the room derives it (`castPronouns`), with `their` when the
+   * record cannot say.
+   */
+  possessive: string;
+  /** Writes the opening of their sentence into the ask box. Never submits it. */
   onPrefill: (prefill: string) => void;
 }) {
   /*
@@ -67,7 +83,7 @@ export function SegmentsOnFace({
   return (
     <div className="dpc-kept" aria-labelledby="dpc-kept-title">
       <div className="dpc-kept__head">
-        <p className="dpc-kept__title" id="dpc-kept-title">On her face</p>
+        <p className="dpc-kept__title" id="dpc-kept-title">On {possessive} face</p>
         <p className="dpc-kept__sub">Things this version is keeping. Tap one to talk about it.</p>
       </div>
       <ul className="dpc-kept__rows">

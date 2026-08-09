@@ -142,6 +142,21 @@ superseded it — fable-071/080).
 - Hygiene batch (L2): **11 dev-fixture `getDb()` scripts still lack
   world guards** (list in the 2026-08-09 audit) — guard when next
   touched, or burn down in one sitting.
+- Hygiene batch (L2, added 2026-08-10, fable-127): **a script that
+  touches an app service never exits.** `getDb()` hands out a
+  module-level pool with no exported shutdown, so the process stays
+  resident with all its work done — eighteen such processes from four
+  scripts were found alive from the previous day, and the shift that
+  left them had reported "no background jobs of mine running" in good
+  faith, because nothing showed them. Two parts: scripts calling app
+  services end with an explicit `process.exit(0)`, and the park
+  checklist's hygiene step becomes a `Get-CimInstance Win32_Process`
+  sweep **by command line** rather than a claim from memory.
+- **A CORS rule on the image buckets** (added 2026-08-10, fable-127;
+  founder-queue item 5): wanted on merits before the M12 face chart,
+  which will draw many masked thumbnails. Not urgent — the segments
+  panel routes its stencils through `/api/image-proxy`, which is the
+  product's own established answer and needs no infrastructure.
 
 ## 8. Dormant founder items — mostly CLOSED 2026-08-09 (fable-122)
 
