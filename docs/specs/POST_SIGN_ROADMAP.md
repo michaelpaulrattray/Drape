@@ -1,96 +1,133 @@
 # Post-Sign Roadmap — founder-ruled items awaiting their slot
 
-Canonical home for roadmap rulings made during the M8 walk campaign
-(2026-08-08/09). Each item cites its ruling. Nothing here is built
-before its stated gate; nothing here may be silently dropped. The
-Fable/Opus mailbox and session memory POINT here — this file is the
-survivor.
+Canonical home for roadmap rulings and deferred commitments. Each item
+cites its ruling. Nothing here is built before its stated gate;
+nothing here may be silently dropped. Session memory and the mailbox
+POINT here — this file is the survivor. Reconciled against the full
+mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
+2026-08-09; items marked (L#) were recovered by that audit.
+
+## 0. CAMPAIGN PRECONDITIONS — owed BEFORE Tier A scores (not post-Sign)
+
+- **Frame-05 / removal-composite hair silhouette** (L1): owed its own
+  frames before Tier A scores removals against `hairWorn`
+  (fable-059/060/061). The segments pivot does NOT moot it — removals
+  still ride the departed/vacancy machinery.
+- **Seam-check shadow→enforce flip decision** (L12): the trigger
+  ("bring the flip decision with the second specimen") has been MET —
+  specimens: 775 torn px (opus-024) + GPT2's torn frames at 848
+  (opus-068). Raise the decision before Tier A; the manual double-read
+  that currently covers the gap ends with Tier A.
+- **Truncation-notice verification** (L17): confirm the >2000-char
+  brief rejection surfaces honestly in the client; close or fix.
 
 ## 1. Latency investigation (first, after the walk campaign)
 
-Renders regressed from median 39s to median 151s (last-20 window,
-measured 2026-08-08); the founder's felt complaint: "5 minutes for 1
-generation is absurd." Prime suspect: our own segmentation spend
-(the territory rule's author self-reported understating its cost).
-Step one is a stopwatch on every pipeline stage — dispatch, paint,
-retry, verification, composite, delivery — no optimising on hunches.
-Related finding, first hard number on paint quality: a single hair
-edit costs ~44% of the region's high-frequency energy vs the master
-(hair 0.556/0.514, brows 0.479/0.556, two independent runs,
-2026-08-09) — first-generation softness, not chain degradation.
+Median 39s → 151s regression (2026-08-08); founder: "5 minutes for 1
+generation is absurd." Stopwatch every stage before optimising.
+Enumerated sub-items (L3): **the gateway-outliving-refine topology**
+(~300s Railway edge timeout swallowing honest refusals — may need a
+founder Railway ask) and **the run-15 timestamp audit** (was an
+honest refusal shown as "we lost contact"? settle by artifacts —
+ordered fable-067/068, never reported done). Related: first-generation
+paint softness (hair ~0.51–0.56, brows ~0.48–0.56 vs master, twice
+measured) → the **engine sharpness comparison** (NBP vs GPT2 on
+hair/brows) rides with item 6's routing question.
 
 ## 2. The honest loader (with #1 — same instrumentation)
 
-Thin progress indicator advancing on REAL stage transitions only,
-stage named in the product's voice ("being drawn", "taking a second
-pass", "checking", "assembling"). NO invented percentages, ever
-(founder + Fable ruling, mailbox fable-020). Interim copy "usually a
-minute or two" shipped 2026-08-08.
+Real stage transitions only, product voice, NO invented percentages
+(fable-020). Interim copy shipped. Owed inside it: **the D-169
+loading mock including the re-ask chip states** — the one artifact
+still promised to the founder from the paraphrase thread. Small UX
+rider (L13): the follow-up-queue chip (a refused compound chip
+queues its second half as a follow-up sentence) — filed fable-069.
 
 ## 3. The face chart + tattoo studio (post-Sign; skeleton is M12)
 
-Tappable, human-named chart of her segments — hair, brows, eyes,
-lips, skin, jewellery (stylist's ontology, never segmenter labels) —
-tap → the existing sentence box pre-scoped. Differentiator vs Grok:
-segments WITH the byte-identity guarantee, verification, and honest
-refunds. The segment store (slice 1, live 2026-08-09) is its
-foundation; per-segment version history ships with it.
+Tappable, human-named chart of her segments (stylist's ontology);
+tap → sentence box pre-scoped; per-segment version history. Segment
+store (live 2026-08-09) is the foundation. **Tattoo-studio
+extension** (founder 2026-08-08): detected ink as INDIVIDUALS,
+restyle/resize/move/remove on the patch machinery. **Governing law
+D-138 stands:** ALL ink — asked or reference-supplied — via the
+FLASH-SHEET path (mannequin templates, tone ladder, no text);
+references frozen at introduction (D-192); D-139/140/141 carry.
 
-**Tattoo-studio extension** (founder, 2026-08-08): casts with ink get
-tattoos auto-detected and listed as INDIVIDUALS ("rose, left
-forearm"), each tappable → restyle / resize / move / remove, riding
-the base-worn removal machinery and the patch store.
+## 4. "Show her the refused frame" (walk-campaign's END; founder judges)
 
-**Governing law — D-138 (Body-Art Studio, founder-designed
-2026-08-04) stands:** ink never renders from words directly onto
-her. Every tattoo — asked-for OR reference-supplied — goes through
-the FLASH-SHEET path: design document plated on code-owned neutral
-mannequin templates (tone ladder, fades-never-cuts, no text on
-templates), iterated in its tab, then applied. A supplied reference
-is promoted to an immutable asset, frozen at introduction (D-192).
-D-139 (no ink inheritance on Follow), D-140 (lettering law), D-141
-(hardening) all carry. See DECISION_LOG D-132–D-141, D-192.
+Founder 2026-08-09 (fable-106): option to show a twice-refused render
+("you weren't charged; keep it if you disagree"). Until ruled:
+refuse-and-refund. Companion principle: **the checker judges
+EXISTENCE against her own words only; intensity/density belongs to
+her words or nobody; any widening is a founder gate.**
 
-## 4. "Show her the refused frame" (walk-campaign's END; founder
-##    personally judges)
+## 5. Open-vocabulary regions — the map becomes a cache
 
-Option: show a twice-refused render to the customer — "this didn't
-look right to us; you weren't charged; keep it if you disagree" —
-making her the final judge of borderline checker calls (founder,
-2026-08-09, mailbox fable-106). Until ruled: refuse-and-refund
-stands. Companion principle, ratified same exchange: **the checker
-judges EXISTENCE against her own words only; intensity/density
-belongs to her words or to nobody; any widening is a founder gate.**
-
-## 5. Open-vocabulary regions — the map becomes a cache (design
-##    direction; wants its own court)
-
-Founder question, 2026-08-09: "I couldn't possibly think of every
-territory." Design answer: when the facet→region map is silent,
-derive the region from HER OWN WORDS via the segmenter (which
-already answers free-text questions), with the hand-built map as the
-proven fast path — territories discovered per-ask, ratified into the
-map once seen working. Never built without its own court: a
-hallucinated region is a confinement hole. Natural substrate for
-M12 and the face chart.
+Founder question 2026-08-09. When the facet→region map is silent,
+derive the region from HER WORDS via the segmenter; map = cache of
+proven territories. Needs its own court (a hallucinated region is a
+confinement hole). Known missing territories (L11): **`allSkin` is
+declared and unimplemented** — `skinTone`/`skinCharacter` (a tan!)
+cannot reach the masked path, and Tier A's catalogue contains tan
+asks; **cheeks** ("the day a cheek region exists, the placement
+table is the only thing that changes"); accessory regions (edits
+persist by recipe, not patch, until they exist).
 
 ## 6. Engine routing for marks (evidence exists; engineering item)
 
-NBP delivered freckles 6/6 (at 848×1264, the only size it returns)
-vs GPT2's 6/8 at native size; GPT2 tore half its frames at 848
-(caught by the seam detector). Routing marks to NBP is NOT a config
-change — NBP ignores `image_size`, so the masked path must drive it
-at a size it returns. Watch: NBP over-delivery (density) — judged by
-HER words only, per item 4's principle. Also filed: the interpreter
-placement field for makeup (built only when a real specimen defeats
-the placement table — trigger recorded in fable-103); the
-`earring`/`nose stud` detector courts (need hand-classified negative
-specimens); accessory-region gap (accessory edits persist by recipe,
-not patch, until they get regions).
+NBP 6/6 at 848×1264 (its only size) vs GPT2 6/8 native; GPT2 tore
+half its frames at 848. Routing is NOT a config change (NBP ignores
+`image_size`). **Gate: n≥20 before any routing claim goes near the
+bar** (opus-068). Over-delivery watched under item 4's principle.
+Also filed: interpreter placement field (trigger: a specimen the
+table can't place — fable-103); `earring`/`nose stud` detector
+courts; the retry-as-safety-net is CLOSED by this item (routing
+superseded it — fable-071/080).
 
-## 7. Pre-launch checklist items (M13 gate)
+## 7. Pre-launch checklist (M13 gate) — reconciled with the pre-campaign debts
 
-The shared production R2 credential split (least-privilege token per
-bucket — founder re-prioritized here 2026-08-09); live Stripe keys;
-real-inbox test of the Resend verification sender; the fal retention
-answer.
+- **Klieg rebrand M5b** (L4, founder-held): domain cutover, OAuth
+  redirect, Resend domain, Stripe copy + the tail: TM knockout
+  search, .ai/.studio/typo domains, social handles.
+- **Hero assets** (L5): `hero/*` never migrated from Manus — home
+  hero 502s in dev AND prod; needs founder's source files +
+  `scripts/upload-hero-v3.mjs`.
+- **Stripe**: live keys **+ env-tag/account separation so cross-env
+  webhooks cannot credit prod users** (L6 — dev checkouts currently
+  fire webhooks at prod trusting `metadata.userId`).
+- **Cookie consent** (L7): flagged 2026-07-10, never built.
+- **`mintModel` concurrency double-charge** (L8): fix, or record
+  that M14 legacy retirement deletes the path.
+- **R7 evidence migrations 0015/0016** (L9): never applied to prod
+  (the 2026-07-31 crash-loop); decide re-enable-by-ceremony vs
+  retire-with-legacy.
+- **Refine deferred-delete determination** (L10): image-referenced
+  edits were owed a deferred-delete migration (no `notBefore`
+  concept exists); record whether D-192's frozen-reference rule
+  moots it.
+- Shared R2 credential split (founder re-prioritized here);
+  real-inbox Resend test; fal retention answer; the five inert
+  security controls (CLAUDE.md's "currently not enforced" list).
+- Hygiene batch (L2): **11 dev-fixture `getDb()` scripts still lack
+  world guards** (list in the 2026-08-09 audit) — guard when next
+  touched, or burn down in one sitting.
+
+## 8. Dormant founder items — batch into the next founder session
+
+(L14) roster-card coherence question (sheets era, unanswered);
+(L15a) D-82 vouched non-people vocabulary confirmation; (L15b) the
+D-166 glasses-clause choice; (L16) the Higgsfield-style canvas intro
+(awaiting the founder's own prompt + reference since 2026-07-10);
+the D-169 mock eyeball (item 2).
+
+## 9. Shelved-with-trigger register (durable in DECISION_LOG; pointers here)
+
+Hair-matting shop (trigger: strand-gap artifacts visible to the
+founder in a real case); fine strand tips clipped (cosmetic ceiling,
+future shop round); advisory degree/intensity check (bounded by item
+4's principle); D-213's record gate has no call site (ADD of an
+absent distributed facet still segments — current-behaviour test
+marks it); `requestMatte`/`changesSilhouette` documented as
+spec-not-control; reliability-report build-id column (prod migration
+= founder gate).
