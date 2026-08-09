@@ -365,6 +365,173 @@ describeWithDatabase("the segment store (disposable DB)", () => {
       .toHaveLength(1);
   });
 
+  /* ------------------------------------------- the born-worn catalogue */
+
+  /** The catalogue's write, with its manifest — never a shortcut around it. */
+  async function fileDetection(input: {
+    userId: number;
+    candidateId: number;
+    facet?: string;
+    region?: string;
+    maskKey: string;
+    contentKey: string;
+    detector?: string;
+  }) {
+    const cleanupBatchId = randomUUID();
+    await connection.execute(
+      "INSERT INTO storage_cleanup_batches (id, userId, operationId, kind, status, expectedCount, deletedCount, failedCount)"
+        + " VALUES (?, ?, ?, 'casting_candidate_cleanup', 'pending', 2, 0, 0)",
+      [cleanupBatchId, input.userId, randomUUID()],
+    );
+    for (const storageKey of [input.maskKey, input.contentKey]) {
+      await connection.execute(
+        "INSERT INTO storage_cleanup_items (batchId, storageKey, storageBackend, status, attempts) VALUES (?, ?, 'public_r2', 'pending', 0)",
+        [cleanupBatchId, storageKey],
+      );
+    }
+    const recorded = await segments.recordDetectedSegments({
+      userId: input.userId,
+      candidateId: input.candidateId,
+      detector: input.detector ?? "sam3-coverage@1",
+      cleanupBatchId,
+      detections: [{
+        facet: input.facet ?? "glasses",
+        region: input.region ?? "glasses",
+        maskKey: input.maskKey,
+        contentKey: input.contentKey,
+        geometry,
+      }],
+    });
+    return { recorded, cleanupBatchId };
+  }
+
+  it("files what the master already had as a FACT — no variant, no verdict", async () => {
+    const face = await newFace(owner);
+    const { recorded, cleanupBatchId } = await fileDetection({
+      userId: owner,
+      candidateId: face.candidateId,
+      maskKey: "segments/detected-mask.png",
+      contentKey: "segments/detected-content.png",
+    });
+
+    expect(recorded).toHaveLength(1);
+    const [row] = await connection.query<RowDataPacket[]>(
+      "SELECT provenance, variantId, verdict, verifiedAt, detector FROM casting_segments WHERE id = ?",
+      [recorded[0].id],
+    ).then(([rows]) => rows as RowDataPacket[]);
+    /*
+      Nothing delivered these pixels and nothing promised them, so the columns
+      that record a delivery are NULL — in the database, not merely in a caller
+      that remembered to pass nulls. This is the line that keeps the catalogue
+      out of every delivery denominator.
+    */
+    expect(row.provenance).toBe("detected_born");
+    expect(row.variantId).toBeNull();
+    expect(row.verdict).toBeNull();
+    expect(row.verifiedAt).toBeNull();
+    expect(row.detector).toBe("sam3-coverage@1");
+
+    /* The manifest is discharged, or the worker deletes what the row points at. */
+    const [items] = await connection.query<RowDataPacket[]>(
+      "SELECT id FROM storage_cleanup_items WHERE batchId = ?",
+      [cleanupBatchId],
+    );
+    expect(items).toHaveLength(0);
+  });
+
+  it("refuses to file a fact against a stranger's candidate", async () => {
+    const face = await newFace(owner);
+    await expect(fileDetection({
+      userId: stranger,
+      candidateId: face.candidateId,
+      maskKey: "segments/stranger-mask.png",
+      contentKey: "segments/stranger-content.png",
+    })).rejects.toThrow(/candidate not available/);
+    expect(await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId }))
+      .toEqual([]);
+  });
+
+  it("keeps ONE live row when a better detector re-reads the same master", async () => {
+    const face = await newFace(owner);
+    await fileDetection({
+      userId: owner,
+      candidateId: face.candidateId,
+      maskKey: "segments/v1-mask.png",
+      contentKey: "segments/v1-content.png",
+      detector: "sam3-coverage@1",
+    });
+    const second = await fileDetection({
+      userId: owner,
+      candidateId: face.candidateId,
+      maskKey: "segments/v2-mask.png",
+      contentKey: "segments/v2-content.png",
+      detector: "sam3-coverage@2",
+    });
+
+    expect(second.recorded[0].version).toBe(2);
+    expect(second.recorded[0].retired).toBe(1);
+    const live = await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId });
+    expect(live).toHaveLength(1);
+    expect(live[0].detector).toBe("sam3-coverage@2");
+    /* What the worse detector believed stays readable, with its bytes. */
+    expect(await segments.listSegmentHistory({ userId: owner, candidateId: face.candidateId }))
+      .toHaveLength(2);
+  });
+
+  /*
+    THE RETIRE IS SCOPED BY PROVENANCE — a fact and a patch never supersede
+    each other. The vocabularies are disjoint today, so this is defence in
+    depth; it is proved on MySQL because that is where the predicate runs.
+  */
+  it("does not let a patch retire a fact that shares its identity", async () => {
+    const face = await newFace(owner);
+    await fileDetection({
+      userId: owner,
+      candidateId: face.candidateId,
+      facet: "glasses",
+      region: "glasses",
+      maskKey: "segments/fact-mask.png",
+      contentKey: "segments/fact-content.png",
+    });
+    await fileSegment({
+      userId: owner,
+      variantId: face.variantId,
+      facet: "glasses",
+      region: "glasses",
+      maskKey: "segments/patch-mask.png",
+      contentKey: "segments/patch-content.png",
+    });
+
+    const live = await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId });
+    expect(live.map((row) => row.provenance).sort()).toEqual(["detected_born", "edit_patch"]);
+    /* Different version numbers, because the unique index knows nothing about
+       provenance and two rows on one identity must not collide. */
+    expect(new Set(live.map((row) => row.version)).size).toBe(2);
+  });
+
+  it("carries a fact's objects onto the candidate's own cleanup manifest", async () => {
+    const face = await newFace(owner);
+    await fileDetection({
+      userId: owner,
+      candidateId: face.candidateId,
+      maskKey: "segments/purge-fact-mask.png",
+      contentKey: "segments/purge-fact-content.png",
+    });
+
+    await connection.execute(
+      "UPDATE casting_candidates SET status = 'expired', discardedAt = NOW(), expiresAt = DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE id = ?",
+      [face.candidateId],
+    );
+    await retention.runCandidateRetentionSweep();
+
+    const [queued] = await connection.query<RowDataPacket[]>(
+      "SELECT storageKey FROM storage_cleanup_items WHERE storageKey LIKE 'segments/purge-fact-%'",
+    );
+    expect(queued).toHaveLength(2);
+    expect(await segments.listSegmentHistory({ userId: owner, candidateId: face.candidateId }))
+      .toEqual([]);
+  });
+
   /**
    * THE REAL ABSENCE, not a hand-written one.
    *

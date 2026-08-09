@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "da8ea6431ca06fa9"
+    "sourceFingerprint": "990bbd38f72e8fd0"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 76
+      "moduleCount": 78
     },
     {
       "id": "domain:castingV2",
@@ -3191,6 +3191,18 @@
     {
       "id": "module:server/castingV2/axisRegistry.ts",
       "path": "server/castingV2/axisRegistry.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/bornWornCatalogue.ts",
+      "path": "server/castingV2/bornWornCatalogue.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/bornWornDetector.ts",
+      "path": "server/castingV2/bornWornDetector.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8319,6 +8331,14 @@
     {
       "id": "test:server/castingV2/biasTierAxes.test.ts",
       "path": "server/castingV2/biasTierAxes.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/bornWornCatalogue.test.ts",
+      "path": "server/castingV2/bornWornCatalogue.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/bornWornDetector.test.ts",
+      "path": "server/castingV2/bornWornDetector.test.ts"
     },
     {
       "id": "test:server/castingV2/brandScrub.test.ts",
@@ -16991,6 +17011,91 @@
     {
       "from": "module:server/castingV2/axisRegistry.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/castingV2/bornWornDetector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/castingV2/segmentPersistence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/db/castingV2Segments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornCatalogue.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornDetector.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornDetector.ts",
+      "to": "module:server/castingV2/canthalTilt.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornDetector.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornDetector.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornDetector.ts",
+      "to": "module:server/castingV2/maskGeometry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/bornWornDetector.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

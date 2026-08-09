@@ -600,6 +600,78 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
       replace: "  const uncovered: number[] = [];",
     }],
   },
+  {
+    /*
+      THE LINE BETWEEN A CATALOGUE AND A GUESS. Arming a class whose floor
+      nobody measured is a product telling a customer what is on her face on the
+      strength of a number somebody liked — working law 2, in the one place
+      where breaking it is a single word.
+    */
+    name: "a class that cannot arm without a measured floor",
+    file: "server/castingV2/bornWornDetector.ts",
+    suites: ["server/castingV2/bornWornDetector.test.ts"],
+    mutations: [{
+      find: "    armed: typeof measured?.floor === \"number\",",
+      replace: "    armed: true,",
+    }],
+  },
+  {
+    /*
+      THE ASYMMETRY, AT THE WIRE. With `absentIsAnswer` false, a bare face is a
+      failed question rather than a bare face — the catalogue would report every
+      face it could not find glasses on as unreadable, which is the exact
+      conflation that once made removal impossible.
+    */
+    name: "the catalogue asking with absent-is-an-answer",
+    file: "server/castingV2/bornWornDetector.ts",
+    suites: ["server/castingV2/bornWornDetector.test.ts"],
+    mutations: [{
+      find: "name: entry.region, absentIsAnswer: true });",
+      replace: "name: entry.region, absentIsAnswer: false });",
+    }],
+  },
+  {
+    /*
+      A DETECTOR THAT CAN BLOCK A CAST. fable-085 §4: detection failures are
+      silent non-entries. Rethrowing turns a segmenter's bad minute into a
+      customer losing a picture.
+    */
+    name: "a failed detection costing one row rather than the whole scan",
+    file: "server/castingV2/bornWornDetector.ts",
+    suites: ["server/castingV2/bornWornDetector.test.ts"],
+    mutations: [{
+      find: "      scan.failed.push({ facet: entry.id, detail: error instanceof Error ? error.message : String(error) });",
+      replace: "      throw error;",
+    }],
+  },
+  {
+    /*
+      THE RE-SCAN'S ORDER. If the idempotency read stops filtering, a catalogue
+      pays a segmenter to tell it what a row already says — every time anything
+      re-runs.
+    */
+    name: "the re-scan skipping classes it already holds, BEFORE asking",
+    file: "server/castingV2/bornWornCatalogue.ts",
+    suites: ["server/castingV2/bornWornCatalogue.test.ts"],
+    mutations: [{
+      find: "    const wanted = catalogue.filter((entry) => entry.armed && !held.has(entry.id));",
+      replace: "    const wanted = catalogue.filter((entry) => entry.armed);",
+    }],
+  },
+  {
+    /*
+      NEVER RESIZE A MASK TO FIT. A detection measured against another frame,
+      filed anyway, names the wrong part of her face — and the row says so
+      forever, silently.
+    */
+    name: "a detection measured against a different frame being refused",
+    file: "server/castingV2/bornWornCatalogue.ts",
+    suites: ["server/castingV2/bornWornCatalogue.test.ts"],
+    mutations: [{
+      find: "      if (detection.mask.width !== master.width || detection.mask.height !== master.height) {",
+      replace: "      if (false) {",
+    }],
+  },
 ];
 
 const red = (suites: string[]): boolean => {

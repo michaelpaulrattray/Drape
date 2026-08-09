@@ -88,6 +88,10 @@ describe("R7-7C5A private evidence cleanup backend", () => {
     expect(callers).toEqual([
       "server/casting/evidence/evidenceFork.ts",
       "server/casting/finalCastDeletion.ts",
+      // The born-worn catalogue (slice 1) writes a mask and a crop of a thing
+      // the master already had — the same pieces of a person's face, at the
+      // same permanently public keys, registered before they exist.
+      "server/castingV2/bornWornCatalogue.ts",
       // Casting V2 candidate retention (M4). It names `public_r2` explicitly
       // for every item, which is what this pin is here to require: candidate
       // images live in the public bucket, evidence does not, and a manifest

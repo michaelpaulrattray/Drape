@@ -76,7 +76,7 @@
  * `scripts/calibration/no-read-hypothesis.mts` is the evidence, and any wiring
  * of this metric into verification must use both rungs.
  */
-import { MaskError } from "./maskGeometry";
+import { binaryCoverage, MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 
 /** Normalised landmark, as the point model returns them. */
@@ -400,13 +400,7 @@ export const UPSWEPT_ALREADY = 6;
 export const GLASSES_COVERAGE_FLOOR = 0.001;
 
 export function wearsGlassesByPixels(mask: { data: Buffer | Uint8Array; width: number; height: number }): boolean {
-  const area = mask.width * mask.height;
-  if (area <= 0) return false;
-  let covered = 0;
-  for (let index = 0; index < mask.data.length; index += 1) {
-    if (mask.data[index]! > 0) covered += 1;
-  }
-  return covered / area > GLASSES_COVERAGE_FLOOR;
+  return binaryCoverage(mask) > GLASSES_COVERAGE_FLOOR;
 }
 
 /** Does this face already carry the upswept property an ask is about? */

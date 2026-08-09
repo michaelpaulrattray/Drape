@@ -345,6 +345,60 @@ path is unchanged and binding:
 - D-139 (no inheritance on Follow), D-140 (the lettering law) and D-141 (the
   hardening list) carry unchanged.
 
+## 12b. The born-worn catalogue — what the picture says she already has
+
+*Founder ruling, fable-085: the catalogue joins slice 1, so the store is built
+as one coherent thing. Built and courted 2026-08-09.*
+
+A `detected_born` row is a FACT: provenance `detected_born`, `variantId` NULL,
+`verdict` and `verifiedAt` NULL **enforced by the writer rather than asked of
+the caller**, and a `detector` string so a better instrument can re-earn the
+row. It never enters a delivery denominator, the compositor never pastes it
+(the thing already lives in the master), and **removing one is still a real
+render** — the departed/vacancy machinery, untouched.
+
+**The vocabulary is derived, not restated.** The catalogue's classes are the
+accessory table's own regions (`accessoryKinds.ts`), so there is one answer to
+*what kinds of thing can a face wear*. A closure test requires every kind to be
+CONSIDERED here, even when the consideration is "nobody has measured this".
+
+**A class files nothing until its own court has run** (working law 2). `armed`
+is derived from *has a measured floor*, not written by hand, and the sabotage
+suite proves that line. Slice 1 arms exactly one class:
+
+| class | floor | state |
+|---|---|---|
+| `glasses` | 0.001 of the frame | **ARMED** — courted 2026-08-09 |
+| `earring` | — | declared, inert: its negative arm cannot be selected by brief (a face rolled without a mention of earrings often has them), so it needs a hand-classified specimen set |
+| `nose stud` | — | declared, inert: same |
+
+**The court** (`scripts/calibration/born-worn-court.mts`, specimens drawn by
+`scripts/born-worn-specimens-disposable.mts`): 12 bespectacled and 12 bare
+production faces, **both arms read in one sitting**, specimens selected by the
+roll's own BRIEF so the set is independent of the instrument on trial. Result:
+**12/12 bespectacled filed a row (1.197%–2.093%), 12/12 bare filed none
+(0.000%)**. Every detection's mask and crop was saved and looked at — a coverage
+number cannot tell you the mask found her glasses rather than her hairline.
+
+Two instrument faults were caught by the court itself and are pinned in the
+script: production keys resolved against the **dev** bucket returned 404 on all
+24 specimens, and the naive summary printed that as *"NEGATIVE control: 0/12
+rows filed"* — a perfect-looking negative control built from zero readings. The
+arithmetic now marks an arm INVALID unless every specimen in it actually read.
+
+**Re-runnable, and the cheap half comes first.** A re-scan by the same detector
+on the same master can learn nothing, so it is skipped **before** the vision
+call; a better detector finds its class unheld and files the next version over
+its predecessor, whose row and bytes stay readable.
+
+**Not wired to a call site yet, and that is declared rather than slipped.** The
+catalogue's only consumer is the face chart (M12), and the call site turns on a
+question this document has not answered: **a segment's lifetime is its
+candidate's (§3), but a signed Cast outlives its candidate.** Cataloguing at
+Sign against the candidate would give a Cast a catalogue that disappears when
+the candidate is purged. The scan, its writer and its trial are complete; where
+it runs waits on that ruling.
+
 ## 13. The over-guarding accounting the founder asked for
 
 One line each, because he asked whether the product is being strangled by its

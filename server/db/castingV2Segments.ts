@@ -264,6 +264,107 @@ export async function recordEditPatchSegments(
   });
 }
 
+export type DetectedToRecord = {
+  /** The worn class — the user's word for the thing (`glasses`). */
+  facet: string;
+  /** The segmentation question that found it. */
+  region: string;
+  maskKey: string;
+  contentKey: string;
+  geometry: SegmentGeometry;
+};
+
+export type RecordDetectedInput = {
+  userId: number;
+  /** The candidate whose MASTER was read — the parent this write proves. */
+  candidateId: number;
+  /** Which detector said so; a row that cannot say cannot be re-earned. */
+  detector: string;
+  detections: readonly DetectedToRecord[];
+  /** Same register-before-write manifest the patch writer discharges. */
+  cleanupBatchId: string;
+  now?: Date;
+};
+
+/**
+ * File what the picture says she already has — the born-worn catalogue's write.
+ *
+ * Everything that separates a FACT from a DELIVERY is enforced here rather than
+ * asked of the caller:
+ *
+ * - **No variant.** Nothing delivered these pixels; they were found on the
+ *   master, and the NULL says so rather than standing for missing data.
+ * - **No verdict, ever.** A verdict is a reading of whether a promise was kept,
+ *   and nothing promised her the glasses she was rolled wearing. This is the
+ *   line that keeps the catalogue out of every delivery denominator, so it is
+ *   drawn in the writer and not left to a caller passing the right nulls.
+ * - **The detector's name on every row**, because detectors improve.
+ *
+ * Idempotency is the caller's cheap half and this function's authoritative one:
+ * a re-scan skips classes it already holds before spending a vision call, and
+ * anything that reaches here retires its own predecessor and writes the next
+ * version, so a race leaves one live row rather than two copies of one fact.
+ */
+export async function recordDetectedSegments(
+  input: RecordDetectedInput,
+): Promise<RecordedSegment[]> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.candidateId, "candidateId");
+  if (!input.detector.trim()) throw new TypeError("a detected segment must name its detector");
+  if (input.detections.length === 0) return [];
+  for (const detection of input.detections) assertGeometry(detection.geometry);
+  const now = input.now ?? new Date();
+
+  return withTransaction(async (tx) => {
+    /*
+      The parent, proved in the same transaction as the write, with the id taken
+      from the row rather than from the caller — the same rule the patch writer
+      follows one function up, and for the same reason: a fact filed against a
+      stranger's candidate would put a claim about someone else's face into her
+      catalogue.
+    */
+    const [candidate] = await tx
+      .select({ id: castingCandidates.id })
+      .from(castingCandidates)
+      .where(and(
+        eq(castingCandidates.id, input.candidateId),
+        eq(castingCandidates.userId, input.userId),
+      ))
+      .limit(1);
+    if (!candidate) throw new SegmentOwnershipError("candidate");
+
+    const recorded: RecordedSegment[] = [];
+    for (const detection of input.detections) {
+      recorded.push(await insertVersionedSegmentIn(tx, {
+        userId: input.userId,
+        candidateId: candidate.id,
+        variantId: null,
+        provenance: "detected_born",
+        facet: detection.facet,
+        region: detection.region,
+        maskKey: detection.maskKey,
+        contentKey: detection.contentKey,
+        geometry: detection.geometry,
+        verdict: null,
+        verifiedAt: null,
+        detector: input.detector,
+        now,
+      }));
+    }
+
+    await tx.delete(storageCleanupItems)
+      .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+    const removedBatch = await tx.delete(storageCleanupBatches).where(and(
+      eq(storageCleanupBatches.id, input.cleanupBatchId),
+      eq(storageCleanupBatches.userId, input.userId),
+      eq(storageCleanupBatches.status, "pending"),
+    ));
+    if (affectedRows(removedBatch) !== 1) throw new SegmentOwnershipError("segment");
+
+    return recorded;
+  });
+}
+
 /**
  * Retire whatever this identity currently holds, then write the next version.
  *
@@ -297,11 +398,32 @@ async function insertVersionedSegmentIn(
     eq(castingSegments.region, input.region),
   );
 
+  /*
+    THE RETIRE IS SCOPED BY PROVENANCE; THE VERSION COUNTER IS NOT.
+
+    Two different things could in principle land on one identity — a fact the
+    master already had and a patch an edit added over the same ground — and they
+    supersede each other in neither direction. A better detector re-reading her
+    glasses must not retire the patch that repainted them, and a repaint must
+    not delete the record of what she came with. So the retire names its own
+    provenance.
+
+    The counter deliberately does NOT, because the unique index is
+    (candidate, facet, region, version) and knows nothing about provenance: two
+    rows sharing an identity must still take different version numbers or the
+    second insert dies on the index. The vocabularies are disjoint today
+    (`bornWornDetector.test.ts` proves it), so this is defence in depth rather
+    than a case anyone can currently reach.
+  */
   const retired = affectedRows(
     await tx
       .update(castingSegments)
       .set({ retiredAt: input.now })
-      .where(and(identity, isNull(castingSegments.retiredAt))),
+      .where(and(
+        identity,
+        eq(castingSegments.provenance, input.provenance),
+        isNull(castingSegments.retiredAt),
+      )),
   );
 
   /*

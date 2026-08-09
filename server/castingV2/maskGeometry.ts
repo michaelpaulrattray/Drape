@@ -275,6 +275,32 @@ export function coverage(mask: Mask): number {
 }
 
 /**
+ * How much of the frame a mask covers COUNTING PIXELS, 0..1 — the presence
+ * arithmetic, which is a different question from the one above.
+ *
+ * `coverage` weighs by alpha because it governs how much paint lands. *Is this
+ * thing in the picture at all* is not a question about paint: a segmenter's
+ * binary answer has no ramp to weigh, and a soft-edged answer's ramp is the
+ * thing's own boundary rather than its opacity. Weighing by alpha there would
+ * make a wire frame read as less present than a lens, which is not a fact about
+ * her face.
+ *
+ * Two arithmetics, one each, both named — rather than one that is subtly wrong
+ * for whichever caller did not write it. This is the one the glasses floor was
+ * measured with (`GLASSES_COVERAGE_FLOOR`), so it is the one the born-worn
+ * detector reads with too.
+ */
+export function binaryCoverage(mask: { data: Buffer | Uint8Array; width: number; height: number }): number {
+  const area = mask.width * mask.height;
+  if (area <= 0) return 0;
+  let covered = 0;
+  for (let index = 0; index < mask.data.length; index += 1) {
+    if (mask.data[index]! > 0) covered += 1;
+  }
+  return covered / area;
+}
+
+/**
  * A mask that selects nothing is a paid render that changes nothing.
  *
  * The composite would faithfully return the master, the verification net would
