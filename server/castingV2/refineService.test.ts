@@ -28,6 +28,14 @@ let landedVariant: Record<string, unknown> | null = null;
 let briefWorn: string[] | null = null;
 let failedVariant: Record<string, unknown> | null = null;
 let engineThrows: Error | null = null;
+/**
+ * EVERY STRING THE PAINTER WAS ACTUALLY SENT.
+
+ * Assert at the wire (invariant 5): what a render asks for is a property of the
+ * prompt that left the building, never of a constant near it. The segment
+ * subtraction below is only real if the clause is missing from THIS list.
+ */
+const sentPrompts: string[] = [];
 let renderFault = false;
 
 vi.mock("./spendGuards", () => ({ assertNotFrozen: vi.fn(async () => undefined) }));
@@ -205,7 +213,8 @@ vi.mock("../providers/falImages", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../providers/falImages")>()),
   createFalMaskedEditEngine: () => ({
     id: "test:masked",
-    edit: vi.fn(async () => {
+    edit: vi.fn(async (request: { prompt: string }) => {
+      sentPrompts.push(request.prompt);
       journal.push("generate");
       if (engineThrows) throw engineThrows;
       return {
@@ -220,10 +229,55 @@ vi.mock("../providers/falImages", async (importOriginal) => ({
   }),
 }));
 
+/**
+ * THE SEGMENT STORE, AT THE SEAM THE PRODUCT ACTUALLY USES.
+ *
+ * Both calibration benches proved the carried machinery by handing it
+ * `writing: [step.facet]` — an argument the product derives for itself, and
+ * derived it WRONG for as long as the store has existed. So this suite never
+ * hands it anything: it records what the SERVICE decided and asserts on that.
+ */
+const carriedAsks: Array<{ writing: readonly string[]; anchorVariantId: number | null }> = [];
+const assembleAsks: Array<{ writing: readonly string[]; rows?: readonly unknown[] }> = [];
+let carriedRowsFixture: Array<Record<string, unknown>> = [];
+
+vi.mock("./carriedSegments", () => ({
+  listCarriedRows: vi.fn(async (ask: { writing: readonly string[]; anchorVariantId: number | null }) => {
+    carriedAsks.push({ writing: ask.writing, anchorVariantId: ask.anchorVariantId });
+    const writing = new Set(ask.writing);
+    if (!ask.anchorVariantId) return [];
+    return carriedRowsFixture.filter((row) => !writing.has(row.facet as string));
+  }),
+  assembleWithCarriedSegments: vi.fn(async (ask: {
+    writing: readonly string[];
+    rows?: readonly unknown[];
+    harvested: { bytes: Buffer; contentType: string; evidence?: unknown };
+  }) => {
+    assembleAsks.push({ writing: ask.writing, rows: ask.rows });
+    return {
+      bytes: ask.harvested.bytes,
+      contentType: ask.harvested.contentType,
+      evidence: ask.harvested.evidence ?? null,
+      carriedFacets: (ask.rows ?? []).map((row) => (row as { facet: string }).facet),
+      assembly: null,
+    };
+  }),
+}));
+
+/** What the render asked permanence to KEEP — captured, never supplied. */
+const keptAsks: Array<{ facets: readonly string[]; verdict: string | null }> = [];
+vi.mock("./segmentPersistence", () => ({
+  keepSegmentsFromRender: vi.fn(async (ask: { facets: readonly string[]; verdict?: string | null }) => {
+    keptAsks.push({ facets: ask.facets, verdict: ask.verdict ?? null });
+    return { outcome: "off" as const, segments: [] };
+  }),
+}));
+
 vi.mock("./signEngine", () => ({
   castingIdentityEngine: () => ({
     id: "test",
-    editWithReferences: vi.fn(async () => {
+    editWithReferences: vi.fn(async (request: { prompt: string }) => {
+      sentPrompts.push(request.prompt);
       journal.push("generate");
       if (engineThrows) throw engineThrows;
       return {
@@ -245,6 +299,11 @@ const { arrangementWording } = await import("./hairArrangement");
 
 beforeEach(() => {
   journal.length = 0;
+  sentPrompts.length = 0;
+  carriedAsks.length = 0;
+  keptAsks.length = 0;
+  assembleAsks.length = 0;
+  carriedRowsFixture = [];
   ledger.charges.length = 0;
   ledger.refunds.length = 0;
   chargeSucceeds = true;
@@ -2292,5 +2351,157 @@ describe("removal is typed, and most of it is free", () => {
       { ...input, instruction: "remove the makeup" },
     )).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(ledger.charges).toEqual([]);
+  });
+});
+
+/**
+ * SEGMENT PERMANENCE, AT THE SEAM THE BENCHES COULD NOT SEE.
+ *
+ * The first production walk of the armed store lost her freckles twice on
+ * renders she paid for, while both calibration benches said the architecture
+ * held. Both benches were right about the module and blind to the product: they
+ * supplied `writing: [step.facet]` by hand, and the service derived it from the
+ * ACCUMULATED recipe — so every facet that could be carried disqualified itself
+ * as "one this edit writes", and the prompt asked for it again anyway.
+ *
+ * These tests hand the service nothing. They read what it decided, off the
+ * arguments it passed and the string it sent.
+ */
+describe("what this ask writes, and what it stops asking for", () => {
+  /** Her recipe already holds delivered freckles; this sentence is about lips. */
+  const withFreckledPredecessor = () => {
+    variantRows = [{
+      id: 501,
+      publicId: "variant-1",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["give her freckles"],
+      stepDeltas: [{ free: { marks: "freckles" } }],
+      deltas: { free: { marks: "freckles" } },
+      internalPrompt: {},
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+    carriedRowsFixture = [{
+      id: 9001,
+      facet: "marks",
+      provenance: "edit_patch",
+      version: 1,
+      maskKey: "casting-v2/segments/mask.png",
+      contentKey: "casting-v2/segments/content.png",
+    }];
+  };
+
+  const glossOnFreckles = {
+    harvest: unmasked,
+    interpret: async () => ({ ok: true as const, delta: { makeup: "nude lip gloss" } }),
+  };
+
+  it("asks the store for THIS ask's facets, not the whole recipe", async () => {
+    withFreckledPredecessor();
+    await refineCandidate(glossOnFreckles, { ...input, instruction: "add nude lip gloss" });
+
+    expect(carriedAsks.length, "the store was consulted before the paint").toBeGreaterThan(0);
+    const writing = carriedAsks[0].writing;
+    expect(writing, "the facet this sentence writes").toContain("makeup");
+    /*
+      THE DEFECT ITSELF. `marks` here is what made the whole architecture inert:
+      a segment only ever exists for a facet the recipe names, so listing the
+      recipe excluded every carriable facet by construction.
+    */
+    expect(writing, "and NOT the facet she is already keeping").not.toContain("marks");
+    expect(carriedAsks[0].anchorVariantId, "anchored on the face she is looking at").toBe(501);
+  });
+
+  it("stops asking the painter for a facet it is going to paste", async () => {
+    withFreckledPredecessor();
+    await refineCandidate(glossOnFreckles, { ...input, instruction: "add nude lip gloss" });
+
+    expect(sentPrompts.length, "a prompt reached the painter").toBeGreaterThan(0);
+    for (const prompt of sentPrompts) {
+      /*
+        Asserted on the string that LEFT, not on the recipe object. Carrying the
+        pixels while still asking for them is worse than not carrying at all:
+        the paste lands, the fresh paint is applied last by design, and the
+        re-roll wins the pixels straight back — which is exactly what her walk
+        recorded.
+      */
+      expect(prompt, "her kept freckles are not re-asked for").not.toMatch(/freckle/i);
+      expect(prompt, "and the thing she actually asked for is").toMatch(/gloss/i);
+    }
+  });
+
+  it("hands the composite the SAME rows the prompt was stripped against", async () => {
+    withFreckledPredecessor();
+    await refineCandidate(glossOnFreckles, { ...input, instruction: "add nude lip gloss" });
+
+    expect(assembleAsks.length).toBeGreaterThan(0);
+    /* One list, decided once. Two reads of the store could disagree, and then
+       the prompt and the paste would hold different opinions about her face. */
+    expect(assembleAsks[0].rows, "the rows travelled with the render").toHaveLength(1);
+    expect(assembleAsks[0].writing).not.toContain("marks");
+  });
+
+  it("still asks for everything when nothing is carried", async () => {
+    /* The dark-store case, and the first edit of any face: no anchor, no rows,
+       and the prompt must be exactly what it always was. */
+    carriedRowsFixture = [];
+    await refineCandidate(
+      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { marks: "freckles" } } }) },
+      { ...input, instruction: "give her freckles" },
+    );
+    expect(sentPrompts.length).toBeGreaterThan(0);
+    expect(sentPrompts[0], "the ask is untouched when there is nothing to paste").toMatch(/freckle/i);
+  });
+});
+
+/**
+ * WHAT PERMANENCE IS ALLOWED TO KEEP (fable-102 §4).
+ *
+ * The first production walk filed `marks@v2` and `marks@v3` from the two frames
+ * where her freckles had been LOST — each stamped `verified` by a constant,
+ * while the render's own reading of that exact facet said `verified:false`. The
+ * lineage walk takes the newest version, so the store had quietly made the loss
+ * the truth, and a promotion at Sign would have written it onto her Cast.
+ *
+ * D-235 at permanence's front door: an affirmative without a `saw` is not a
+ * reading, and a reading that says NO keeps nothing.
+ */
+describe("a render keeps only the facets its own reading earned", () => {
+  const freckles = {
+    harvest: unmasked,
+    interpret: async () => ({ ok: true as const, delta: { free: { marks: "freckles" } } }),
+  };
+  const readerSays = (present: boolean, saw: string) => ({
+    id: "verifier",
+    complete: async () => ({
+      text: JSON.stringify({ results: [{ id: 1, present, saw }] }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never);
+
+  it("keeps the pixels when the reading found them", async () => {
+    await refineCandidate(
+      { ...freckles, verifier: readerSays(true, "light scattered freckles across nose and cheeks") },
+      { ...input, instruction: "give her freckles" },
+    );
+    expect(keptAsks, "the render offered its pixels to the store").toHaveLength(1);
+    expect(keptAsks[0].facets).toContain("marks");
+    expect(keptAsks[0].verdict, "and the verdict is the reading that earned them").toBe("verified");
+  });
+
+  it("keeps NOTHING when the reading says the facet is not there", async () => {
+    await refineCandidate(
+      { ...freckles, verifier: readerSays(false, "no freckling visible") },
+      { ...input, instruction: "give her freckles" },
+    );
+    expect(keptAsks, "the store was still called — silently, as it must be").toHaveLength(1);
+    /*
+      The exact row the walk filed. Keeping this would make the LOSS the newest
+      version of the facet, and every later render would paste it back.
+    */
+    expect(keptAsks[0].facets, "a facet that did not arrive keeps no pixels").not.toContain("marks");
+    expect(keptAsks[0].facets).toHaveLength(0);
+    expect(keptAsks[0].verdict, "and no verdict is invented for it").toBeNull();
   });
 });

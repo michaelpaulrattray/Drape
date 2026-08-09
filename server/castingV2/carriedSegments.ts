@@ -88,7 +88,7 @@ async function readMask(bytes: Buffer): Promise<Mask> {
  * pixels it shares with an earlier one, and that order IS the user's own edit
  * order rather than a rule invented for the compositor.
  */
-export async function loadCarriedSegments(input: {
+export type CarriedRowsInput = {
   userId: number;
   candidateId: number;
   /**
@@ -100,14 +100,32 @@ export async function loadCarriedSegments(input: {
   /** The facets this edit writes — their segments are not carried. */
   writing: readonly string[];
   dependencies?: CarriedSegmentDependencies;
-}): Promise<CarriedLoad> {
+};
+
+/**
+ * WHICH SEGMENTS THIS RENDER WILL PASTE — answered BEFORE the paint, on rows
+ * alone, because the prompt depends on the answer.
+ *
+ * # The ordering this exists for
+ *
+ * The carried set used to be read after the paint, which is the natural place
+ * for it: the assembly is the only thing that needs the bytes. But the PROMPT
+ * needs the LIST — a facet whose pixels are about to be pasted must stop being
+ * asked for, or the painter re-rolls it and the fresh paint, applied last by
+ * design, wins the pixels straight back. The first production walk lost her
+ * freckles exactly that way.
+ *
+ * So the question splits in two: which rows (cheap, before the prompt) and
+ * their pixels (expensive, after the paint). The rows are listed ONCE and
+ * handed down, so the prompt and the composite can never disagree about what
+ * is being carried — the two-lists failure this codebase keeps meeting.
+ */
+export async function listCarriedRows(input: CarriedRowsInput): Promise<StoredSegment[]> {
   const enabled = input.dependencies?.enabledFor ?? captureCastingSegmentsEnabled;
-  if (!enabled(input.userId)) return { segments: [], excluded: [] };
-  if (!input.anchorVariantId) return { segments: [], excluded: [] };
+  if (!enabled(input.userId)) return [];
+  if (!input.anchorVariantId) return [];
 
   const list = input.dependencies?.list ?? listLineageSegments;
-  const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
-
   /*
     Deliberately NOT caught. A store that cannot be read is a refusal, and it
     belongs to the caller — see the header. Swallowing it here would produce
@@ -120,8 +138,23 @@ export async function loadCarriedSegments(input: {
   });
 
   const writing = new Set(input.writing);
-  const wanted = rows.filter((row: StoredSegment) =>
+  return rows.filter((row: StoredSegment) =>
     row.provenance === "edit_patch" && !writing.has(row.facet));
+}
+
+export async function loadCarriedSegments(input: CarriedRowsInput & {
+  /**
+   * The rows this render already decided to carry, from `listCarriedRows`.
+   *
+   * Passed rather than re-read so the prompt's view and the composite's view
+   * are the SAME list by construction. Absent, this re-lists — the shape a
+   * caller with no prompt to strip (the prune path) still wants.
+   */
+  rows?: readonly StoredSegment[];
+}): Promise<CarriedLoad> {
+  const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
+  const wanted = input.rows ?? await listCarriedRows(input);
+  if (wanted.length === 0) return { segments: [], excluded: [] };
 
   const segments: CarriedSegment[] = [];
   const excluded: CarriedLoad["excluded"] = [];
@@ -185,6 +218,8 @@ export async function assembleWithCarriedSegments(input: {
   anchorVariantId: number | null;
   /** The facets this edit answers — their segments are not carried. */
   writing: readonly string[];
+  /** The rows the prompt was already stripped against (`listCarriedRows`). */
+  rows?: readonly StoredSegment[];
   master: { bytes: Buffer; contentType: string };
   harvested: {
     bytes: Buffer;
@@ -212,6 +247,7 @@ export async function assembleWithCarriedSegments(input: {
       candidateId: input.candidateId,
       anchorVariantId: input.anchorVariantId,
       writing: input.writing,
+      rows: input.rows,
       dependencies: input.dependencies,
     });
   } catch (error) {

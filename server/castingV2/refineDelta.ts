@@ -930,6 +930,38 @@ function clearFacets(composed: RefineDelta, facets: ReadonlySet<Facet>): void {
 }
 
 /**
+ * The same recipe with some facets UNASKED — what the painter is told when the
+ * compositor is going to supply those pixels instead.
+ *
+ * # Why a render ever asks for less than the recipe holds
+ *
+ * Renders are base-anchored: every render restates the whole recipe from the
+ * master, so a facet delivered three edits ago is asked for again, painted
+ * again, and re-rolled again. That is the drift the segment store exists to
+ * end — and the store only ends it if the prompt STOPS ASKING for what the
+ * composite is about to paste. Otherwise the paste lands and the fresh paint,
+ * which is applied last by design, wins the pixels straight back.
+ *
+ * The first production walk of the segment architecture is the specimen: her
+ * freckles were pasted-eligible and asked for anyway, so the painter re-rolled
+ * them and lost them, twice, on renders she paid for.
+ *
+ * **Departures are deliberately NOT stripped.** A removal describes something
+ * that is still on the master — it has to be performed on every render, forever,
+ * and a segment can never supply an absence. `clearFacets` only touches the
+ * positive lanes, which is exactly the half this needs.
+ *
+ * A copy, never a mutation: the recipe is the record, and only the ASK narrows.
+ */
+export function withoutFacets(delta: RefineDelta, facets: ReadonlySet<Facet>): RefineDelta {
+  if (facets.size === 0) return delta;
+  const copy: RefineDelta = { ...delta };
+  if (delta.free) copy.free = { ...delta.free };
+  clearFacets(copy, facets);
+  return copy;
+}
+
+/**
  * Do these two descriptions name THE SAME THING? (D-238.)
  *
  * The kind table first, because it is knowledge rather than string overlap:

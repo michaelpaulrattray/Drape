@@ -93,6 +93,7 @@ import {
   facetsWrittenBy,
   itemsOf,
   missingFromPrompt,
+  withoutFacets,
   presentationOf,
   readDelta,
   REFINABLE_AXES,
@@ -129,7 +130,7 @@ import {
 } from "./refineRemoval";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
-import { assembleWithCarriedSegments } from "./carriedSegments";
+import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { captureCastingSegmentsEnabled } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
@@ -1482,8 +1483,80 @@ export async function refineCandidate(
     runs against the edits lane alone, which makes that impossible rather than
     unlikely.
   */
-  const preview = composeRenderPrompt(composed, EDIT_PROSE, carriedCaptions);
-  const dropped = missingFromPrompt(composed, preview.edits);
+  /*
+    WHAT THIS RENDER WILL PASTE INSTEAD OF ASKING FOR (segment permanence).
+
+    # The defect this ends, found on the first production walk
+
+    The store was armed, the rows were written, and every render still re-rolled
+    every earlier facet — her freckles arrived on step 1, vanished on step 2 and
+    step 3, and came back on step 4 by luck. Two independent reasons, and BOTH
+    had to go:
+
+    1. The carried set was computed against `facetsAnsweredBy(composed)` — the
+       ACCUMULATED recipe — so every facet that could be carried was disqualified
+       as "one this edit writes". A segment only ever exists for a facet the
+       recipe names, so the exclusion was total by construction. The right notion
+       was three hundred lines above it the whole time: `writtenFacets`, which
+       the caption machinery has used since D-163.
+    2. Even carried, the prompt still ASKED for the facet, so the painter
+       repainted it and the fresh paint — applied last, by design, because the
+       current ask outranks every memory — won the pixels straight back.
+
+    So the ask narrows here, on the recipe, before a string is composed: the
+    facets whose pixels are about to be pasted are removed from what the painter
+    is told. §13 of the design: *"the thing to remove is not the guards, it is
+    the words."*
+
+    Read BEFORE the claim, so a store we cannot read refuses free — and read
+    ONCE, with the rows handed down to the composite, so the prompt and the
+    paste can never disagree about what is being carried.
+  */
+  const carriedRows = await listCarriedRows({
+    userId: input.userId,
+    candidateId: source.candidate.id,
+    /* The branch she is looking at, not the newest — fable-091's fork rule. */
+    anchorVariantId: predecessor?.id ?? null,
+    writing: Array.from(writtenFacets),
+  });
+  const facetsToCarry = new Set<Facet>(carriedRows.map((row) => row.facet as Facet));
+  const asked = withoutFacets(composed, facetsToCarry);
+
+  const preview = composeRenderPrompt(asked, EDIT_PROSE, carriedCaptions);
+  /*
+    AND THE CLAUSE IS GONE FROM THE STRING, not just from the object (D-143's
+    own discipline, pointed at the new subtraction).
+
+    Empty by construction — `withoutFacets` cleared these lanes — and asserted
+    anyway on the PRODUCED PROMPT, exactly like the contradiction check below.
+    The whole finding this shift was a subtraction everyone assumed and nothing
+    measured, and a carried facet still named in the prompt is that defect
+    resurrected: she would be charged for a re-roll of something she already
+    owns, and the paste would be overpainted.
+
+    `missingFromPrompt` is the existing matcher, pointed at a recipe holding
+    only the carried facets — every one of them must be missing.
+  */
+  if (facetsToCarry.size > 0) {
+    const carriedOnly = withoutFacets(
+      composed,
+      new Set(Array.from(facetsAnsweredBy(composed)).filter((facet) => !facetsToCarry.has(facet))),
+    );
+    const absent = new Set(missingFromPrompt(carriedOnly, preview.edits));
+    const stillAsked = Array.from(facetsAnsweredBy(carriedOnly)).filter((facet) => !absent.has(facet));
+    if (stillAsked.length > 0) {
+      log.error(
+        { stillAsked, carried: Array.from(facetsToCarry) },
+        "[refineService] a carried facet is still being asked for — refusing rather than paying to re-roll kept pixels",
+      );
+      throw spokenError({
+        code: "PRECONDITION_FAILED",
+        message: "That edit would have re-done something this face already keeps, so it was "
+          + "refused rather than rendered. Nothing was charged.",
+      });
+    }
+  }
+  const dropped = missingFromPrompt(asked, preview.edits);
   if (dropped.length > 0) {
     log.error({ dropped }, "[refineService] composition would drop filed facts — refusing");
     throw spokenError({
@@ -1522,7 +1595,7 @@ export async function refineCandidate(
     entire finding this round was a hand-authored string quietly disagreeing
     with the machine for days while every driver stayed green.
   */
-  const contradicted = contradictedFacets(preview, composed);
+  const contradicted = contradictedFacets(preview, asked);
   if (contradicted.length > 0) {
     log.error({ contradicted }, "[refineService] the tail would protect an edited facet — refusing");
     throw spokenError({
@@ -1899,8 +1972,22 @@ export async function refineCandidate(
       rendered-but-not-filed, which nothing can. What IS re-asserted is the
       property that matters on the string actually being sent.
     */
-    const composedPrompt = composeRenderPrompt(filed, EDIT_PROSE, carriedCaptions);
-    const filedContradictions = contradictedFacets(composedPrompt, filed);
+    /*
+      THE SAME SUBTRACTION, ON THE PERSISTED ROW — wall (d) again.
+
+      The pre-claim preview narrowed the ask against `composed`; this narrows
+      the ROW, which is the thing actually sent. One list of carried facets,
+      decided once above, used in both places and handed to the composite — so
+      the prompt, the mask and the paste cannot hold three different opinions
+      about what this face is keeping.
+
+      When nothing is carried — a dark store, a first edit, a fork with no
+      ancestry — `withoutFacets` returns the recipe unchanged and every line
+      below behaves exactly as it did before segments existed.
+    */
+    const askedFiled = withoutFacets(filed, facetsToCarry);
+    const composedPrompt = composeRenderPrompt(askedFiled, EDIT_PROSE, carriedCaptions);
+    const filedContradictions = contradictedFacets(composedPrompt, askedFiled);
     if (filedContradictions.length > 0) {
       log.error(
         { operationId, variant: variant.publicId, filedContradictions },
@@ -1973,7 +2060,10 @@ export async function refineCandidate(
           zone is its own footprint rather than a corridor. Two channels because
           they are two different questions about the picture.
         */
-        facets: Array.from(facetsAnsweredBy(composed)),
+        /* The facets the painter was actually ASKED for — the carried ones were
+           subtracted from the prompt above, and harvesting a region nobody was
+           asked to change would cut a patch out of untouched master. */
+        facets: Array.from(facetsAnsweredBy(askedFiled)),
         reader: dependencies.regions ?? defaultRegionReader(),
         /* Per user, not per deploy — the first flip goes to one account. */
         userId: input.userId,
@@ -2015,7 +2105,20 @@ export async function refineCandidate(
         candidateId: variant.candidateId,
         /* The branch, not the candidate: what the SELECTED face keeps. */
         anchorVariantId: variant.parentVariantId,
-        writing: Array.from(facetsAnsweredBy(composed)),
+        /*
+          WHAT THIS ASK WRITES — not what the recipe holds.
+
+          This read `facetsAnsweredBy(composed)`, the accumulated recipe, and
+          that single wrong noun made the whole architecture inert: a segment
+          exists only for a facet the recipe names, so every carriable facet
+          disqualified itself. `writtenFacets` is the notion the caption
+          machinery has used since D-163 — an edit writes what IT says, plus
+          what a removal took away.
+        */
+        writing: Array.from(writtenFacets),
+        /* Decided before the prompt was composed, so the string and the paste
+           agree by construction rather than by two queries agreeing. */
+        rows: carriedRows,
         master: { bytes: base.bytes, contentType: base.contentType },
         harvested,
       });
@@ -2459,15 +2562,42 @@ export async function refineCandidate(
       all. The facet simply keeps no pixels, and the next render carries it the
       way every render does today: with words.
     */
+    /*
+      AND ONLY WHAT THIS RENDER ACTUALLY EARNED — D-235 at permanence's front
+      door (fable-102 §4).
+
+      The first production walk filed `marks@v2` and `marks@v3` from the two
+      frames where the freckles had been LOST, each stamped `verified` by a
+      constant, while the render's own per-facet reading said
+      `verified:false` about that exact facet. The lineage walk takes the
+      newest version, so the store had quietly made the loss the truth — and a
+      promotion at Sign would have written it onto her Cast forever.
+
+      Three conditions, and each one is a different failure it closes:
+
+      - **`read && verified`, per facet.** An affirmative without a `saw` is not
+        a reading, so silence keeps nothing. The previous version stays newest
+        and stays good.
+      - **Never a carried facet.** Those pixels were pasted, not painted; filing
+        them again would buy a new version of the same crop on every render.
+      - **Nothing at all when the reader was unavailable.** We have no reading,
+        so we have no evidence, so we keep no pixels. Permanence fails closed.
+    */
+    const earned = verification.unavailable
+      ? []
+      : verification.checks
+        .filter((check) => check.read && check.verified && !carriedFacets.has(check.facet))
+        .map((check) => check.facet);
     await keepSegmentsFromRender({
       userId: input.userId,
       variantId: variant.id,
       image,
-      /* The same set the harvest cut for — see `renderOnce`. */
-      facets: Array.from(facetsAnsweredBy(composed)),
-      /* The reading that earned these pixels, so a paste never re-asks. */
-      verdict: verification.unavailable ? null : "verified",
-      verifiedAt: verification.unavailable ? null : new Date(),
+      facets: earned,
+      /* The reading that earned these pixels, so a paste never re-asks. Every
+         facet here verified on its own reading — the string is no longer a
+         constant standing in for one. */
+      verdict: earned.length > 0 ? "verified" : null,
+      verifiedAt: earned.length > 0 ? new Date() : null,
       operationId,
     });
 
