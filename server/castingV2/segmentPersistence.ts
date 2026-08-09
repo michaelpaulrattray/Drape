@@ -78,6 +78,8 @@ export async function keepSegmentsFromRender(input: {
   };
   /** The facets this render answered — the same set the harvest cut for. */
   facets: readonly Facet[];
+  /** Where a facet lives when the facet alone does not say — the harvest's map. */
+  regionOverrides?: Readonly<Partial<Record<Facet, string>>>;
   verdict?: string | null;
   verifiedAt?: Date | null;
   operationId?: string;
@@ -97,7 +99,10 @@ export async function keepSegmentsFromRender(input: {
   try {
     const facetRegions = new Map<string, string>();
     for (const facet of input.facets) {
-      const region = regionNameOf(facet);
+      /* The harvest's own answer, not a second derivation of it — the crop is
+         keyed by region name, so a store that placed `makeup` differently from
+         the harvest would look up a mask that is not there and file nothing. */
+      const region = input.regionOverrides?.[facet] ?? regionNameOf(facet);
       if (region) facetRegions.set(facet, region);
     }
     if (facetRegions.size === 0) return { outcome: "nothing-to-keep", segments: [] };

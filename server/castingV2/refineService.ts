@@ -131,6 +131,7 @@ import {
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments";
+import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { captureCastingSegmentsEnabled } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
@@ -1986,6 +1987,22 @@ export async function refineCandidate(
       below behaves exactly as it did before segments existed.
     */
     const askedFiled = withoutFacets(filed, facetsToCarry);
+    /*
+      WHERE THIS ASK LIVES ON HER FACE (law 8, fable-103's table ruling).
+
+      `makeup` is one facet over several places: a lip gloss lives on lips, a
+      foundation on the whole complexion. It mapped to `face skin` whatever it
+      said, so the walk's lip gloss claimed her entire face and — under the
+      surrender rule, correctly — took the freckles she had paid for one render
+      earlier with it.
+
+      Derived ONCE here and handed to both the harvest and the store, because
+      the crop is keyed by region name: two derivations that disagree file a
+      segment against a mask that does not exist.
+    */
+    const regionOverrides: Partial<Record<Facet, string>> = askedFiled.makeup
+      ? { makeup: makeupRegionFor(askedFiled.makeup) }
+      : {};
     const composedPrompt = composeRenderPrompt(askedFiled, EDIT_PROSE, carriedCaptions);
     const filedContradictions = contradictedFacets(composedPrompt, askedFiled);
     if (filedContradictions.length > 0) {
@@ -2064,6 +2081,7 @@ export async function refineCandidate(
            subtracted from the prompt above, and harvesting a region nobody was
            asked to change would cut a patch out of untouched master. */
         facets: Array.from(facetsAnsweredBy(askedFiled)),
+        regionOverrides,
         reader: dependencies.regions ?? defaultRegionReader(),
         /* Per user, not per deploy — the first flip goes to one account. */
         userId: input.userId,
@@ -2593,6 +2611,8 @@ export async function refineCandidate(
       variantId: variant.id,
       image,
       facets: earned,
+      /* The harvest's own placement map — see `regionOverrides` in renderOnce. */
+      regionOverrides,
       /* The reading that earned these pixels, so a paste never re-asks. Every
          facet here verified on its own reading — the string is no longer a
          constant standing in for one. */

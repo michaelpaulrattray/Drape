@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "49d4fb3bab0adb4c"
+    "sourceFingerprint": "2b7e658997bf7200"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 78
+      "moduleCount": 79
     },
     {
       "id": "domain:castingV2",
@@ -3377,6 +3377,12 @@
     {
       "id": "module:server/castingV2/interpreter.ts",
       "path": "server/castingV2/interpreter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/makeupPlacement.ts",
+      "path": "server/castingV2/makeupPlacement.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8463,6 +8469,10 @@
     {
       "id": "test:server/castingV2/likenessRefusal.test.ts",
       "path": "server/castingV2/likenessRefusal.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/makeupPlacement.test.ts",
+      "path": "server/castingV2/makeupPlacement.test.ts"
     },
     {
       "id": "test:server/castingV2/maskGeometry.test.ts",
@@ -18106,6 +18116,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/makeupPlacement.ts",
       "kind": "imports"
     },
     {

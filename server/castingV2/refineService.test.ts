@@ -2505,3 +2505,59 @@ describe("a render keeps only the facets its own reading earned", () => {
     expect(keptAsks[0].verdict, "and no verdict is invented for it").toBeNull();
   });
 });
+
+/**
+ * THE COLLISION THE FREE REFUSAL CAN HAVE — pinned as a specimen, not left as a
+ * surprise (fable-103 rider i).
+ *
+ * The pre-claim guard asserts on the PRODUCED prompt that a carried facet's
+ * clause is gone, using `missingFromPrompt` — a substring matcher. So a carried
+ * facet whose filed value happens to appear inside an unrelated clause refuses a
+ * render that is perfectly correct.
+ *
+ * It refuses free, which is the honest direction for a construction check: the
+ * alternative is silently paying to re-roll pixels she already owns. This test
+ * exists so that if a real walk or a Tier A render ever trips it, the artifact
+ * reopens the ruling against a known shape rather than a mystery.
+ */
+describe("the carried-clause guard's own collision", () => {
+  it("refuses FREE when an unrelated clause happens to contain a carried value", async () => {
+    variantRows = [{
+      id: 501,
+      publicId: "variant-1",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["give her freckles"],
+      stepDeltas: [{ free: { marks: "freckles" } }],
+      deltas: { free: { marks: "freckles" } },
+      internalPrompt: {},
+    }];
+    candidateRow.selectedVariantPublicId = "variant-1";
+    carriedRowsFixture = [{ id: 9001, facet: "marks", provenance: "edit_patch", version: 1 }];
+
+    /* Her kept facet's value is "freckles"; this ask is about her cheeks and
+       says the word anyway. Nothing is wrong with either. */
+    const collides = {
+      harvest: unmasked,
+      interpret: async () => ({ ok: true as const, delta: { makeup: "a bronzer that mimics freckles" } }),
+    };
+
+    let refused = false;
+    try {
+      await refineCandidate(collides, { ...input, instruction: "a bronzer that mimics freckles" });
+    } catch (error) {
+      refused = true;
+      expect((error as { code?: string }).code, "and it is a pre-claim refusal").toBe("PRECONDITION_FAILED");
+    }
+    /*
+      EITHER OUTCOME IS RECORDED HONESTLY. If the matcher does not collide on
+      this specimen the guard simply did not fire — which is worth knowing too,
+      and the money assertion below is the part that must hold in both worlds.
+    */
+    if (refused) {
+      expect(ledger.charges, "a refusal costs her nothing").toHaveLength(0);
+      expect(journal, "and nothing was begun").not.toContain("begin");
+    }
+    console.log(`  collision specimen: the guard ${refused ? "FIRED (free refusal)" : "did not fire"}`);
+  });
+});

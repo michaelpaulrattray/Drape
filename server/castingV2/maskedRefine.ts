@@ -249,6 +249,15 @@ export type MaskedRefineInput = {
   painted: { bytes: Buffer; contentType: string };
   /** Which facets this instruction wrote. Decides the zone's scope. */
   facets: readonly Facet[];
+  /**
+   * WHERE A FACET LIVES WHEN THE FACET ALONE DOES NOT SAY.
+   *
+   * `makeup` is the case: a lip gloss and a foundation are one facet in two
+   * places, and `REGION_OF_FACET` can only hold one answer. The caller resolves
+   * it from the instruction (`makeupPlacement`) and passes the same map to the
+   * segment store, so the harvest and the store cannot name a crop differently.
+   */
+  regionOverrides?: Readonly<Partial<Record<Facet, string>>>;
   reader: RegionReader;
   /** Whose refinement this is — the scope is per user, not per deploy. */
   userId?: number;
@@ -863,7 +872,17 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
 
   const segmentable = input.facets.filter((facet) => !needsLandmarkDestination(facet));
   const names = segmentable.map((facet) => {
-    const name = regionNameOf(facet);
+    /*
+      THE CALLER'S OWN PLACEMENT FIRST — one facet can live in more than one
+      place, and only the instruction knows which (`makeupPlacement`).
+
+      `makeup` used to be `face skin` whatever it said, so a lip gloss ask
+      claimed her whole face and took an earlier edit's freckles with it. The
+      override is passed rather than computed here because the SAME answer has
+      to reach the harvest and the segment store, and two modules computing it
+      separately is how they come to disagree about which mask a crop belongs to.
+    */
+    const name = input.regionOverrides?.[facet] ?? regionNameOf(facet);
     if (!name) {
       /* Loud. A facet with no segmentation question has no masked path, and
          inventing a prompt for it is exactly what D-213 forbids. */
