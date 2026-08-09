@@ -20,6 +20,7 @@ import {
   facetsWithUnreliabilityPrior,
   joinClauses,
   missingFacts,
+  settleCarriedChecks,
   shortfalls,
   unreadFacts,
   verifyRender,
@@ -484,5 +485,130 @@ describe("a pair means both ears", () => {
     );
     expect(verdict.ok).toBe(false);
     expect(verdict.checks[0]?.occluded).toBeUndefined();
+  });
+});
+
+/**
+ * A KEPT HOOP BEHIND NEW HAIR IS OCCLUDED, NOT ABSENT — the pair law meeting
+ * the store (fable-120's third condition).
+ *
+ * Two correct decisions meet badly here and this is the seam between them.
+ * Ruling (c) made an accessory's PRESENCE binding, because "are there dangly
+ * cross earrings on her" has an answer and a shade name does not. The segment
+ * store, separately, now pastes a delivered earring onto every later render. So
+ * the first time she asks for her hair down over a face wearing kept hoops, the
+ * new hair covers the ear, the reader honestly answers "no earrings", and the
+ * founder is refunded and re-rendered for a picture that is exactly right.
+ *
+ * fable-109 already settled which instrument judges a carried fact: **the bytes,
+ * never the reader.** That law had no consumer on the refusal path until now.
+ */
+describe("a carried fact is recorded by the reader and never refused by it", () => {
+  const CARRIED = facetOfSubject("statedAccessories");
+  const missOf = (facet: string): RenderVerdict => ({
+    ok: false,
+    checks: [{
+      facet: facet as never,
+      asked: "gold hoop earrings, one on each ear, a matching pair",
+      read: true,
+      verified: false,
+      binding: true,
+      saw: "hair falling over both ears, no jewellery visible",
+    }],
+  });
+
+  it("calls it OCCLUDED when this render's own paint covered the ground it owns", async () => {
+    /* Not a reader's opinion and not a new measurement: `superseded` is the
+       assembly's own arithmetic, computed at paste time as the share of a
+       carried segment's pixels the fresh paint then claimed, and already on the
+       row. A second answer to "was it covered" is how two would disagree. */
+    const settled = settleCarriedChecks(missOf(CARRIED), {
+      facets: [CARRIED],
+      superseded: [{ facet: CARRIED }],
+    });
+
+    expect(settled.checks[0]?.occluded, "hidden, not missing").toBe(true);
+    expect(settled.checks[0]?.binding).toBe(false);
+    expect(settled.ok, "and nothing is refused over it").toBe(true);
+  });
+
+  it("records a carried miss that nothing covered — never binding, never hidden", async () => {
+    /*
+      The honest middle. The reader could not find a fact we PASTED and no paint
+      of ours explains it, so the record must keep saying so: this is precisely
+      the false-pass evidence the two-column report exists to collect, and
+      promoting it to `occluded` would be the flattering direction.
+
+      It still spends no refusal, because the reader is the wrong instrument for
+      a carried fact — the byte adjudicator is the right one, and it runs against
+      the artifacts rather than in the request.
+    */
+    const settled = settleCarriedChecks(missOf(CARRIED), { facets: [CARRIED] });
+
+    expect(settled.checks[0]?.occluded, "no evidence of covering, so no claim of it").toBeUndefined();
+    expect(settled.checks[0]?.verified, "the miss is still on the record").toBe(false);
+    expect(settled.checks[0]?.read).toBe(true);
+    expect(settled.checks[0]?.binding).toBe(false);
+    expect(settled.ok).toBe(true);
+  });
+
+  it("CONTROL — leaves a PAINTED facet's miss exactly as it found it", async () => {
+    /* The whole protection ruling (c) bought. A fact this render painted is the
+       reader's to refuse, and if this control ever goes green the founder is
+       being charged for missing earrings again. */
+    const painted = missOf(CARRIED);
+    const settled = settleCarriedChecks(painted, { facets: [], superseded: [{ facet: CARRIED }] });
+
+    expect(settled).toBe(painted);
+    expect(settled.checks[0]?.binding).toBe(true);
+    expect(settled.ok).toBe(false);
+  });
+
+  it("CONTROL — a carried facet that PASSED is untouched, occlusion or not", async () => {
+    const passed: RenderVerdict = {
+      ok: true,
+      checks: [{
+        facet: CARRIED as never,
+        asked: "gold hoop earrings",
+        read: true,
+        verified: true,
+        binding: true,
+        saw: "a gold hoop on each ear",
+      }],
+    };
+    const settled = settleCarriedChecks(passed, { facets: [CARRIED], superseded: [{ facet: CARRIED }] });
+
+    expect(settled.checks[0]?.verified).toBe(true);
+    expect(settled.checks[0]?.occluded, "a delivered thing is not hidden").toBeUndefined();
+    expect(settled.checks[0]?.binding).toBe(true);
+  });
+
+  it("CONTROL — silence stays silence, and never becomes an occlusion", async () => {
+    /*
+      D-235's asymmetry, at this door. `occluded` is an answer ABOUT a
+      photograph; a check with no reading has none, and letting a covered
+      segment manufacture one would give the store a way to convert every
+      unanswered question into a tidy third verdict.
+    */
+    const silent: RenderVerdict = {
+      ok: true,
+      checks: [{
+        facet: CARRIED as never,
+        asked: "gold hoop earrings",
+        read: false,
+        verified: false,
+        binding: true,
+      }],
+    };
+    const settled = settleCarriedChecks(silent, { facets: [CARRIED], superseded: [{ facet: CARRIED }] });
+
+    expect(settled.checks[0]?.occluded).toBeUndefined();
+    expect(settled.checks[0]?.read).toBe(false);
+    expect(settled.checks[0]?.binding, "an unread check was never a refusal anyway").toBe(true);
+  });
+
+  it("CONTROL — a render that carried nothing is returned untouched", async () => {
+    const ordinary = missOf(CARRIED);
+    expect(settleCarriedChecks(ordinary, { facets: [] })).toBe(ordinary);
   });
 });

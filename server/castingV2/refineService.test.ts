@@ -2792,3 +2792,80 @@ describe("the carried-clause guard matches the lane, not the word", () => {
     for (const prompt of sentPrompts) expect(prompt.toLowerCase()).not.toContain("marks:");
   });
 });
+
+/**
+ * WHERE AN ACCESSORY LIVES, DERIVED BY THE SERVICE AND ASSERTED ON THE WIRE.
+ *
+ * `statedAccessories` is the one facet with no `REGION_OF_FACET` entry and no
+ * way to have one — an earring is at the lobe and glasses are at the eyes, so
+ * the region depends on the described OBJECT rather than the facet. The
+ * placement therefore travels as an override, and the override is the only
+ * thing that lets the segment cutter find the corridor the harvest built.
+ *
+ * Asserted where the service SENDS it, not on a constant beside it. This suite
+ * has already learned that lesson twice: the segment store spent a shift inert
+ * behind a harness that supplied what the product was supposed to derive, and
+ * both benches passed the whole time.
+ */
+describe("the service says where an accessory lives, from the words in the ask", () => {
+  const capturingHarvest = () => {
+    const overrides: Array<Record<string, string> | undefined> = [];
+    const described: Array<string | undefined> = [];
+    return {
+      overrides,
+      described,
+      harvest: async (input: {
+        painted: { bytes: Buffer; contentType: string };
+        regionOverrides?: Record<string, string>;
+        described?: string;
+      }) => {
+        overrides.push(input.regionOverrides);
+        described.push(input.described);
+        return {
+          bytes: input.painted.bytes,
+          contentType: input.painted.contentType,
+          outcome: "flag-off" as const,
+        };
+      },
+    };
+  };
+
+  it("sends the earring corridor's name for an earring ask", async () => {
+    const capture = capturingHarvest();
+    await refineCandidate(
+      {
+        harvest: capture.harvest as never,
+        interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: ["small gold hoops"] } } }),
+      },
+      { ...input, instruction: "give her small gold hoops" },
+    );
+
+    expect(capture.overrides[0]?.statedAccessories).toBe("earring");
+    /* And the SAME words placed it — one derivation, or the corridor and its
+       name come from two readings of one sentence and drift apart. */
+    expect(capture.described[0]).toContain("small gold hoops");
+  });
+
+  it("sends the glasses corridor's name for a glasses ask — never the earring one", async () => {
+    const capture = capturingHarvest();
+    await refineCandidate(
+      {
+        harvest: capture.harvest as never,
+        interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: ["round tortoiseshell glasses"] } } }),
+      },
+      { ...input, instruction: "put her in round tortoiseshell glasses" },
+    );
+
+    expect(capture.overrides[0]?.statedAccessories).toBe("glasses");
+  });
+
+  it("CONTROL — an eye-colour ask sends no accessory placement at all", async () => {
+    /* The instrument has to be able to say nothing. An override present on every
+       render would file a slab of her ear as jewellery on an edit that never
+       mentioned any. */
+    const capture = capturingHarvest();
+    await refineCandidate({ ...greenEyes, harvest: capture.harvest as never }, input);
+
+    expect(capture.overrides[0]?.statedAccessories).toBeUndefined();
+  });
+});

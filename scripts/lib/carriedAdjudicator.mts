@@ -43,6 +43,38 @@ import sharp from "sharp";
 /** Unexplained pixels allowed per carried facet, for feathered boundaries. */
 export const FEATHER_TOLERANCE = 64;
 
+/**
+ * The most a SMALL segment's boundary may excuse — at most a quarter of it.
+ *
+ * # Why the flat number stopped working the day accessories could be kept
+ *
+ * 64 was calibrated against the founding specimen, a 24,056-pixel freckle
+ * patch, where it is a quarter of one percent and "cannot hide a lost feature".
+ * The first accessory segment the product can cut is **58 pixels** — a pair of
+ * hoops is two small discs — so the allowance was larger than the entire thing
+ * it was judging. Every accessory carry would have passed, including one where
+ * the frame contains no jewellery at all, and the table would have filled with
+ * KEPT verdicts that no picture could contradict.
+ *
+ * That is the shape working law 2 exists for: an instrument at its floor
+ * reporting a clean result. It was found by driving the adjudicator against a
+ * frame it should have failed rather than by reasoning about it, which is the
+ * only way this kind of thing is ever found.
+ *
+ * # Why a share, and why a quarter
+ *
+ * A feather is a ring around the boundary, so what it can honestly excuse
+ * scales with the segment's PERIMETER — and on a small compact segment the
+ * perimeter is a large fraction of the area (a 7-pixel disc is almost all
+ * edge). A quarter is the bound that keeps every existing verdict identical —
+ * anything at or above 256 pixels still gets the flat 64 — while making the
+ * verdict on a hoop mean something: losing the hoop is 58 unexplained pixels
+ * against an allowance of 14.
+ */
+export function featherToleranceFor(owned: number): number {
+  return Math.min(FEATHER_TOLERANCE, Math.floor(owned / 4));
+}
+
 export type RecordedIntersection = { winner: string; loser: string; pixels: number };
 
 export type CarriedVerdict = {
@@ -116,7 +148,7 @@ export async function adjudicateCarried(input: {
     identical,
     recorded,
     unexplained,
-    kept: unexplained <= (input.tolerance ?? FEATHER_TOLERANCE),
+    kept: unexplained <= (input.tolerance ?? featherToleranceFor(owned)),
   };
 }
 

@@ -70,7 +70,7 @@ import {
   HAIR_TEXTURE_RENDER,
   IRIS_RENDER,
 } from "./realizedAxes";
-import { pairClauseFor } from "./accessoryKinds";
+import { accessoryKindOf, pairClauseFor } from "./accessoryKinds";
 import { hairStyleByName } from "./hairStyles";
 import {
   FREE_SUBJECT_KEYS,
@@ -155,6 +155,7 @@ import {
   confirmVerdict,
   joinClauses,
   missingFacts,
+  settleCarriedChecks,
   shortfalls,
   verifyRender,
   type RenderVerdict,
@@ -2037,9 +2038,39 @@ export async function refineCandidate(
       the crop is keyed by region name: two derivations that disagree file a
       segment against a mask that does not exist.
     */
-    const regionOverrides: Partial<Record<Facet, string>> = askedFiled.makeup
-      ? { makeup: makeupRegionFor(askedFiled.makeup) }
-      : {};
+    /*
+      WHAT THE INSTRUCTION SAID THE OBJECT IS — derived once, three consumers.
+
+      It used to be computed inline at the harvest call. That was fine while the
+      harvest was the only thing that needed it; it is not, now that the corridor
+      it places has to be findable again by name. The placement, the segment
+      cutter's lookup and the painter's own clause all have to name the same
+      kind of object, and three inline derivations of one string is how they come
+      to disagree about whether an ask is about ears or eyes.
+    */
+    const describedAccessories = itemsOf(composed.free?.statedAccessories).join(" ") || undefined;
+    /* Through the shared table's longest-match rule, never a scan of the words
+       here — "a small nose stud" contains "stud", and first-match put it on her
+       earlobe once already. */
+    const accessoryRegion = describedAccessories ? accessoryKindOf(describedAccessories) : null;
+    const regionOverrides: Partial<Record<Facet, string>> = {
+      ...(askedFiled.makeup ? { makeup: makeupRegionFor(askedFiled.makeup) } : {}),
+      /*
+        AND WHERE AN ACCESSORY LIVES (the accessory corridor, fable-120 half 1).
+
+        `statedAccessories` has no `REGION_OF_FACET` entry and cannot have one:
+        the region depends on the described OBJECT, not on the facet — an earring
+        is at the lobe and glasses are at the eyes. So the harvest builds the
+        corridor from the landmark table and now files it under this same kind
+        id, and this override is what points the segment cutter at it.
+
+        Without it `regionNameOf("statedAccessories")` is null, the cutter files
+        nothing, and every earring the product has ever delivered is re-rolled
+        from words on the next render — which is how one gold hoop moved from her
+        left ear to her right between v#156 and v#157.
+      */
+      ...(accessoryRegion ? { statedAccessories: accessoryRegion } : {}),
+    };
     const composedPrompt = composeRenderPrompt(askedFiled, EDIT_PROSE, carriedCaptions);
     const filedContradictions = contradictedFacets(composedPrompt, askedFiled);
     if (filedContradictions.length > 0) {
@@ -2124,8 +2155,9 @@ export async function refineCandidate(
         userId: input.userId,
         /* What the instruction said the thing IS. An earring hangs from a lobe
            and glasses sit at the eyes, so the placement needs the words, not
-           just the slot they landed in. */
-        described: itemsOf(composed.free?.statedAccessories).join(" ") || undefined,
+           just the slot they landed in. Derived once above, beside the region
+           override that has to name the same object. */
+        described: describedAccessories,
         /* The thing that LEFT, which the pruned record cannot name. Without it
            an object removal asks no question at all, and with only `described`
            it asks about the SURVIVING accessory — a chain of earrings+glasses
@@ -2426,13 +2458,26 @@ export async function refineCandidate(
         facets: facts.map((fact) => fact.facet),
         masterRegions: rendered.evidence?.masterRegions,
       });
-      const read = () => verifyRender({
-        bytes: rendered.bytes,
-        contentType: rendered.contentType,
-        ...(detail ? { detail } : {}),
-        facts,
-        engine: dependencies.verifier,
-      });
+      /*
+        AND A CARRIED FACT IS SETTLED BEFORE IT COUNTS AS ANYTHING (fable-120).
+
+        Inside `read`, not after it, so all three of D-194's readings are settled
+        the same way. Applied after the reading rather than by building the fact
+        non-binding up front, because the question is about the frame this
+        attempt actually produced: which segments were pasted, and which of them
+        this attempt's own paint then covered. A re-render answers both
+        differently.
+      */
+      const read = async () => settleCarriedChecks(
+        await verifyRender({
+          bytes: rendered.bytes,
+          contentType: rendered.contentType,
+          ...(detail ? { detail } : {}),
+          facts,
+          engine: dependencies.verifier,
+        }),
+        { facets: rendered.carried ?? [], superseded: rendered.assembly?.superseded },
+      );
       return {
         rendered,
         /*

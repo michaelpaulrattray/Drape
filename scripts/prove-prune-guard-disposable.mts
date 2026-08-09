@@ -781,6 +781,64 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
       replace: "captured[entry.facet] = { wording, pin: \"\" };",
     }],
   },
+  {
+    /* The corridor is built, governs the paint, and was never NAMED — so the
+       cutter could not find it and `statedAccessories` was zero in production
+       on every face. Drop the naming and the census comes back. */
+    name: "an addition's corridor reaching the cutter under a name",
+    file: "server/castingV2/maskedRefine.ts",
+    suites: ["server/castingV2/accessoryCorridor.test.ts"],
+    mutations: [{
+      find: "      masterRegions: await settledMasterRegions(asked, placed),",
+      replace: "      masterRegions: await settledMasterRegions(asked),",
+    }],
+  },
+  {
+    /* And the UNION, which is the version of this fix that almost shipped: an
+       addition asks the master for its own region too, and letting that
+       (empty) read win files zero accessory segments silently. */
+    name: "both grounds surviving, rather than the master's empty read winning",
+    file: "server/castingV2/maskedRefine.ts",
+    suites: ["server/castingV2/accessoryCorridor.test.ts"],
+    mutations: [{
+      find: "        settled.set(name, already ? unionMasks(already, read) : read);",
+      replace: "        settled.set(name, read);",
+    }],
+  },
+  {
+    /* The placement the service derives from the customer's own words. Without
+       it the cutter is asked for a facet with no region and files nothing. */
+    name: "the service sending an accessory's placement to the cutter",
+    file: "server/castingV2/refineService.ts",
+    suites: ["server/castingV2/refineService.test.ts"],
+    mutations: [{
+      find: "      ...(accessoryRegion ? { statedAccessories: accessoryRegion } : {}),",
+      replace: "",
+    }],
+  },
+  {
+    /* A carried fact is judged by arithmetic, never by the reader (fable-109).
+       Restore the binding and a hoop behind her new hair refunds a correct
+       render on the founder's own account. */
+    name: "a carried fact never spending the reader's refusal",
+    file: "server/castingV2/renderVerification.ts",
+    suites: ["server/castingV2/renderVerification.test.ts"],
+    mutations: [{
+      find: "      binding: false,",
+      replace: "",
+    }],
+  },
+  {
+    /* An allowance larger than the segment it judges is an instrument that
+       cannot fail — 64 flat against a 58-pixel pair of hoops. */
+    name: "the feather allowance scaling with a small segment",
+    file: "scripts/lib/carriedAdjudicator.mts",
+    suites: ["server/castingV2/accessoryCorridor.test.ts"],
+    mutations: [{
+      find: "    kept: unexplained <= (input.tolerance ?? featherToleranceFor(owned)),",
+      replace: "    kept: unexplained <= (input.tolerance ?? FEATHER_TOLERANCE),",
+    }],
+  },
 ];
 
 const red = (suites: string[]): boolean => {

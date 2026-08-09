@@ -233,6 +233,70 @@ export function okOf(checks: ReadonlyArray<FacetCheck>): boolean {
   return checks.every((check) => !isMiss(check) || !check.binding);
 }
 
+/**
+ * A CARRIED FACT IS NOT THE READER'S TO REFUSE — the pair law meeting the store
+ * (fable-120's third condition).
+ *
+ * # The two things this settles, and why they are one function
+ *
+ * A carried facet's pixels were PASTED, not painted. fable-109 settled what
+ * judges them: *"A carried fact is the one thing a stochastic reader must not
+ * adjudicate, because the claim is not 'does this look freckled' — it is 'are
+ * these the same pixels she already paid for'"*. The instrument for that is the
+ * byte adjudicator, and it is deterministic.
+ *
+ * That law had no consumer on the refusal path, and ruling (c) has just given
+ * one class of fact teeth. So today a carried earring that a reader cannot find
+ * spends a binding refusal on the founder's own account — a false refusal
+ * manufactured by two correct decisions meeting. **A carried miss is recorded
+ * and never binding.** The verdict is untouched: the report's honesty column
+ * still shows a carried fact the reader could not find, because that is exactly
+ * the false-pass evidence the two-column report exists to collect.
+ *
+ * # And the one carried miss that is not a miss at all
+ *
+ * When this render's own fresh paint covers the ground a carried segment owns —
+ * new hair falling over the ear the hoop was pasted onto — the picture cannot
+ * answer the question. That is not absence and not delivery; it is the third
+ * verdict ruling (b) introduced for a hidden second ear, arriving from the other
+ * direction.
+ *
+ * It is taken from the assembly's OWN arithmetic rather than from a reader's
+ * opinion or a new measurement: `supersededCandidates` is already computed at
+ * paste time as the share of a carried segment's pixels that the fresh paint
+ * later claimed, and already rides the row. A segment over that bar was
+ * demonstrably painted over by this very render. Nothing here re-derives it —
+ * a second answer to "was it covered" is how the two would come to disagree.
+ *
+ * Silence stays silence: a check with no reading is not promoted to occluded,
+ * because `occluded` is an answer about a photograph and an unread check has
+ * none (D-235's asymmetry).
+ */
+export function settleCarriedChecks(
+  verdict: RenderVerdict,
+  carried: {
+    /** Facets present in this frame because a segment was pasted. */
+    facets: readonly string[];
+    /** The assembly's own record of segments this render's paint covered. */
+    superseded?: ReadonlyArray<{ facet: string }>;
+  },
+): RenderVerdict {
+  if (carried.facets.length === 0) return verdict;
+  const isCarried = new Set(carried.facets);
+  const coveredByThisPaint = new Set((carried.superseded ?? []).map((entry) => entry.facet));
+  let changed = false;
+  const checks = verdict.checks.map((check) => {
+    if (!isCarried.has(check.facet) || !isMiss(check)) return check;
+    changed = true;
+    return {
+      ...check,
+      binding: false,
+      ...(coveredByThisPaint.has(check.facet) ? { occluded: true } : {}),
+    };
+  });
+  return changed ? { ...verdict, checks, ok: okOf(checks) } : verdict;
+}
+
 const keyOf = (check: FacetCheck): string => `${check.facet}|${check.asked}`;
 
 /**

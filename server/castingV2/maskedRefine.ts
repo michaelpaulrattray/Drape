@@ -354,7 +354,25 @@ export type MaskedRefineResult = {
   evidence?: {
     /** Where the composite was allowed to differ from the master. */
     applied: Mask;
-    /** Master regions by the segmentation question that produced them. */
+    /**
+     * The geography of this render, by the question that produced it.
+     *
+     * Two kinds of answer live in one map, and the difference is stated here
+     * rather than left to be inferred:
+     *
+     * - **Segmented** — a region the reader drew on the MASTER. The great
+     *   majority, and what the name has always meant.
+     * - **PLACED** — an addition's destination corridor, which no reader could
+     *   have drawn because the thing was not there yet (D-213). Filed under the
+     *   accessory's kind id, which is the same string the segmenter would be
+     *   asked if the thing already existed (`LANDMARK_OF_ACCESSORY.region`).
+     *
+     * The second kind is why accessories could never be kept. The corridor was
+     * built, unioned into the zone and then dropped on the floor, so the segment
+     * cutter — which looks a facet's ground up in this map by NAME — found
+     * nothing for `statedAccessories` and filed nothing, on every face, on every
+     * render this campaign has paid for.
+     */
     masterRegions: ReadonlyMap<string, Mask>;
   };
   /**
@@ -991,6 +1009,17 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     purpose, and an addition has no master extent of its own to appeal to.
   */
   const owned: Mask[] = [];
+  /*
+    AND THE GROUND AN ADDITION OWNS, UNDER A NAME (the accessory corridor).
+
+    `owned` is a list of anonymous masks — enough for the territory rule, which
+    only asks "may this edit legitimately be here", and useless to the segment
+    cutter, which asks "where does `statedAccessories` live". That gap is the
+    whole reason `statedAccessories: ZERO` is the production census: the corridor
+    existed, governed the paint, and was never named, so nothing could look it
+    up. Named here, filed into `evidence.masterRegions` below.
+  */
+  const placed = new Map<string, Mask>();
   for (let index = 0; index < segmentable.length; index += 1) {
     const region = await regionOf("master", names[index]);
     owned.push(region);
@@ -1014,6 +1043,19 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
        glasses on her yet — so the destination corridor is the only thing that
        can own the temples the arms are about to sit on. */
     owned.push(destination);
+    /*
+      THE SAME TABLE THAT PLACED IT NAMES IT — through `accessoryEntry`, never a
+      second scan of the same words. `pairClauseFor` put "one on each ear" on a
+      NOSE STUD by re-scanning the word list one function from where the
+      longest-match rule was born; the corridor is filed under the entry the
+      landmark itself came from, so the mask and its name cannot disagree about
+      what kind of object this is.
+    */
+    const kind = accessoryEntry(input.described)?.region;
+    if (kind) {
+      const already = placed.get(kind);
+      placed.set(kind, already ? unionMasks(already, destination) : destination);
+    }
     zone = zone ? unionMasks(zone, destination) : destination;
   }
   /*
@@ -1628,7 +1670,7 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     */
     evidence: {
       applied: composed.applied,
-      masterRegions: await settledMasterRegions(asked),
+      masterRegions: await settledMasterRegions(asked, placed),
     },
     ...(input.explain
       ? {
@@ -1650,25 +1692,76 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
 }
 
 /**
- * The master regions this composite actually obtained, by question.
+ * The geography this composite actually obtained, by question.
  *
  * Reads the same memo the composite used, so it cannot name a region the
  * composite did not really segment. A read that REJECTED is left out entirely:
  * the caller's rule is "no region, live read", and a rejected promise is a
  * no-region — reporting it as anything else would let a failed segmentation
  * masquerade as proof that nothing changed there.
+ *
+ * `placed` is the other kind of answer — an addition's destination corridor,
+ * which was never segmented because the thing was not there to segment.
+ *
+ * # The two are UNIONED, and precedence would have been the same bug again
+ *
+ * They collide on every addition, and not rarely: an addition asks the master
+ * for its own region too (`absentOnMaster`, so that "nowhere" is a legitimate
+ * answer), which files `earring` into this map from a read whose honest answer
+ * for a genuine addition is EMPTY. Letting either side win outright is wrong in
+ * one direction or the other, and letting the READ win — the instinct, since a
+ * read is evidence and a corridor is a guess — would have overwritten the
+ * corridor with nothing and filed zero accessory segments while every test went
+ * green. That is the defect this whole change exists to end, one layer deeper.
+ *
+ * The union is not a compromise between them; it is the delivered-anchored
+ * design's own rule (`own(facet) = applied ∩ (delivered ∪ master)`) arriving at
+ * its first consumer. Each side is a different ground and the edit needs both:
+ *
+ * - the **corridor** is ARRIVED ground — where the new hoop now hangs, which
+ *   the master cannot know about because there was nothing there;
+ * - the **master read** is DEPARTED ground — where the studs she was already
+ *   wearing sat, which the corridor does not reach and which has to vacate.
+ *
+ * Neither is a claim on its own: `applied` still governs, so a union with empty
+ * is exactly the other side, and a segment only ever owns pixels this render was
+ * actually allowed to change.
+ *
+ * # And the DELIVERED extent, for a placed name only
+ *
+ * The corridor is a conservative geometric guess made before the paint — the
+ * founder's rider is explicit that it errs small and lets boundary-contact
+ * expansion catch the rest. So the segment cut from it alone would lose a hoop
+ * that hangs past six drop steps, and the fringe the expansion won back.
+ *
+ * The delivered answer is already in hand: the harvest asks the PAINTED frame
+ * where this thing is now (`painted:<region>`), for its own content gate. Union
+ * it in and the placed ground becomes `corridor ∪ delivered` — the design's
+ * arrived ground, at its true extent, for no new vision call. Empty is a
+ * legitimate answer to that question and unions to exactly the corridor, so a
+ * segmenter that cannot find a two-pixel wire costs nothing.
+ *
+ * Only for a name `placed` already holds. A painted read for an ordinary region
+ * is a different question with a different meaning to its consumers, and hoping
+ * it means the same thing here is how a map comes to hold two kinds of answer
+ * under one name without saying so.
  */
 async function settledMasterRegions(
   asked: ReadonlyMap<string, Promise<Mask>>,
+  placed?: ReadonlyMap<string, Mask>,
 ): Promise<ReadonlyMap<string, Mask>> {
-  const settled = new Map<string, Mask>();
+  const settled = new Map<string, Mask>(placed ? Array.from(placed.entries()) : []);
   await Promise.all(
     Array.from(asked.entries()).map(async ([key, pending]) => {
-      if (!key.startsWith("master:")) return;
-      /* `master:<name>:<absentIsAnswer>` — the question is the middle field. */
-      const name = key.slice("master:".length, key.lastIndexOf(":"));
+      /* `<which>:<name>:<absentIsAnswer>` — the question is the middle field. */
+      const which = key.slice(0, key.indexOf(":"));
+      const name = key.slice(which.length + 1, key.lastIndexOf(":"));
+      if (which === "painted" && !placed?.has(name)) return;
+      if (which !== "master" && which !== "painted") return;
       try {
-        settled.set(name, await pending);
+        const read = await pending;
+        const already = settled.get(name);
+        settled.set(name, already ? unionMasks(already, read) : read);
       } catch { /* a no-region, and the caller reads that as "look again". */ }
     }),
   );

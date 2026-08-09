@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dd675815ed6cdb14"
+    "sourceFingerprint": "73a1f9ec65d9a452"
   },
   "domains": [
     {
@@ -8321,6 +8321,10 @@
     {
       "id": "test:server/castingV2-segment-store-db.test.ts",
       "path": "server/castingV2-segment-store-db.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/accessoryCorridor.test.ts",
+      "path": "server/castingV2/accessoryCorridor.test.ts"
     },
     {
       "id": "test:server/castingV2/aestheticRetry.test.ts",
