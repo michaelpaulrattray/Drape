@@ -28,7 +28,7 @@
  */
 import sharp from "sharp";
 
-import { listLineageSegments, type StoredSegment } from "../db/castingV2Segments";
+import { listLiveSegments, type StoredSegment } from "../db/castingV2Segments";
 import { storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { captureCastingSegmentsEnabled } from "./castingV2Scope";
@@ -45,7 +45,7 @@ export type CarriedLoad = {
 };
 
 export type CarriedSegmentDependencies = {
-  list?: typeof listLineageSegments;
+  list?: typeof listLiveSegments;
   readBytes?: typeof storageReadBytes;
   enabledFor?: (userId: number) => boolean;
 };
@@ -91,21 +91,14 @@ async function readMask(bytes: Buffer): Promise<Mask> {
 export async function loadCarriedSegments(input: {
   userId: number;
   candidateId: number;
-  /**
-   * The SELECTED variant this edit is made from — the branch whose layers she
-   * is looking at (fable-091). Without one there is no branch, so nothing is
-   * carried: the first edit of a face carries nothing by definition.
-   */
-  anchorVariantId: number | null;
   /** The facets this edit writes — their segments are not carried. */
   writing: readonly string[];
   dependencies?: CarriedSegmentDependencies;
 }): Promise<CarriedLoad> {
   const enabled = input.dependencies?.enabledFor ?? captureCastingSegmentsEnabled;
   if (!enabled(input.userId)) return { segments: [], excluded: [] };
-  if (!input.anchorVariantId) return { segments: [], excluded: [] };
 
-  const list = input.dependencies?.list ?? listLineageSegments;
+  const list = input.dependencies?.list ?? listLiveSegments;
   const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
 
   /*
@@ -113,11 +106,7 @@ export async function loadCarriedSegments(input: {
     belongs to the caller — see the header. Swallowing it here would produce
     the render that looks right and is missing everything she paid for.
   */
-  const rows = await list({
-    userId: input.userId,
-    candidateId: input.candidateId,
-    anchorVariantId: input.anchorVariantId,
-  });
+  const rows = await list({ userId: input.userId, candidateId: input.candidateId });
 
   const writing = new Set(input.writing);
   const wanted = rows.filter((row: StoredSegment) =>
@@ -181,8 +170,6 @@ export async function loadCarriedSegments(input: {
 export async function assembleWithCarriedSegments(input: {
   userId: number;
   candidateId: number;
-  /** The SELECTED variant this edit is made from — the branch she is on. */
-  anchorVariantId: number | null;
   /** The facets this edit answers — their segments are not carried. */
   writing: readonly string[];
   master: { bytes: Buffer; contentType: string };
@@ -210,7 +197,6 @@ export async function assembleWithCarriedSegments(input: {
     load = await loadCarriedSegments({
       userId: input.userId,
       candidateId: input.candidateId,
-      anchorVariantId: input.anchorVariantId,
       writing: input.writing,
       dependencies: input.dependencies,
     });

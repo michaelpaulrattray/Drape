@@ -345,49 +345,6 @@ path is unchanged and binding:
 - D-139 (no inheritance on Follow), D-140 (the lettering law) and D-141 (the
   hardening list) carry unchanged.
 
-## 4a. The carried set is PER-BRANCH — refinement history is a tree
-
-*Founder requirement, carried in by fable-091, built 2026-08-09:*
-
-> *"If you go back to a previous edit, the layers are only what that currently
-> selected image holds — you can fork-edit from any previous edit."*
-
-The first shape of this store answered *what does this face keep* from **one
-global live-list per candidate**, with a same-facet write retiring its
-predecessor. That is a single flag over a TREE, and it failed the founder's own
-case in both directions: chain A→B→C→D, fork from B, new edit E — **E inherited
-D's glasses, and lost the facets D had superseded.**
-
-The fix has three parts and no second source of truth:
-
-1. **`casting_candidate_variants.parentVariantId`** (migration `0026`, nullable,
-   NULL = made from the candidate itself). The tree is recorded rather than
-   inferred: the only ancestry the row previously held was `instructions`, and
-   reconstructing the tree by prefix-matching recipes would be a second
-   implementation of the chain matcher — law 4's own failure mode, and wrong the
-   moment a re-ask REWRITES a step instead of appending one. It is written from
-   the SELECTED variant, which the service already calls the predecessor, and
-   re-anchored to the proved candidate inside the same transaction (invariant 2).
-2. **`listLineageSegments`** walks that ancestry (a recursive CTE, owner- and
-   candidate-scoped at every level, with a depth ceiling) and takes each facet's
-   **newest version filed by an ancestor**. Supersession is resolved by the walk,
-   so a branch sees its own answer and no other branch's.
-3. **A write no longer retires its predecessor** — for `edit_patch`. `retiredAt`
-   keeps only the two jobs a flag can do: the undo, and the storage lifecycle.
-   For `detected_born` the retire STAYS, because a fact describes the master and
-   there is exactly one master.
-
-**The undo is anchored too.** "Take the earrings off" means off the face she is
-LOOKING AT, so `retireSegmentFacet` retires exactly the row the anchor's own
-ancestry carries and other branches keep theirs.
-
-**None of this touches base-anchoring.** Every variant is still `edit(the
-ORIGINAL, instructions 1..N)`; `parentVariantId` records which face she was
-looking at, never which image was fed to the painter.
-
-Proved on real MySQL: the founder's own A→B→C→D fork case, the per-branch undo,
-and a parent variant belonging to another face refused outright.
-
 ## 12b. The born-worn catalogue — what the picture says she already has
 
 *Founder ruling, fable-085: the catalogue joins slice 1, so the store is built

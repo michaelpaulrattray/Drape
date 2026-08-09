@@ -85,16 +85,6 @@ export type ClaimVariantInput = {
    * chip (D-161) has to name the thing the person is actually waiting on.
    */
   requestText?: string | null;
-  /**
-   * The face she had SELECTED when she asked — the branch this edit forks from
-   * (fable-091). Null for an edit made from the candidate itself.
-   *
-   * Public id rather than internal, because that is what a request carries and
-   * because it has to be re-proved against the candidate inside the same
-   * transaction (invariant 2): a parent id trusted from input is how a variant
-   * would end up claiming ancestry on somebody else's face.
-   */
-  parentVariantPublicId?: string | null;
   now?: Date;
 };
 
@@ -103,8 +93,6 @@ export type ClaimedVariant = {
   publicId: string;
   candidateId: number;
   sessionId: number;
-  /** The branch this edit forks from — null when made from the candidate. */
-  parentVariantId: number | null;
   /** The face this refinement was rendered FROM — always the ORIGINAL. */
   baseImageKey: string;
   baseInternalPrompt: unknown;
@@ -148,29 +136,6 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
     if (!candidate) throw new VariantOwnershipError("candidate");
     if (!candidate.imageKey) throw new VariantOwnershipError("candidate");
 
-    /*
-      THE PARENT, RE-ANCHORED TO THE CANDIDATE JUST PROVED (invariant 2).
-
-      Verifying the candidate does not validate a variant id handed in beside
-      it. A parent taken on trust would let one face's edit claim ancestry on
-      another's, and the segment store reads that ancestry to decide which kept
-      pixels to paste — so the consequence is a stranger's freckles on her face.
-    */
-    let parentVariantId: number | null = null;
-    if (input.parentVariantPublicId) {
-      const [parent] = await tx
-        .select({ id: castingCandidateVariants.id })
-        .from(castingCandidateVariants)
-        .where(and(
-          eq(castingCandidateVariants.publicId, input.parentVariantPublicId),
-          eq(castingCandidateVariants.userId, input.userId),
-          eq(castingCandidateVariants.candidateId, candidate.id),
-        ))
-        .limit(1);
-      if (!parent) throw new VariantOwnershipError("variant");
-      parentVariantId = parent.id;
-    }
-
     const publicId = randomUUID();
     const [inserted] = await tx
       .insert(castingCandidateVariants)
@@ -180,7 +145,6 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
         candidateId: candidate.id,
         sessionId: candidate.sessionId,
         userId: input.userId,
-        parentVariantId,
         status: "queued",
         instructions: input.instructions,
         deltas: input.deltas,
@@ -204,7 +168,6 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
       publicId,
       candidateId: candidate.id,
       sessionId: candidate.sessionId,
-      parentVariantId,
       baseImageKey: candidate.imageKey,
       baseInternalPrompt: candidate.internalPrompt,
       deltas: written?.deltas ?? null,

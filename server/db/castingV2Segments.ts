@@ -27,7 +27,7 @@
  * deliberately no second schedule for it.
  */
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import {
   castingCandidates,
@@ -399,39 +399,32 @@ async function insertVersionedSegmentIn(
   );
 
   /*
-    A WRITE RETIRES ITS PREDECESSOR ONLY WHERE THERE IS ONE TRUTH TO RETIRE.
+    THE RETIRE IS SCOPED BY PROVENANCE; THE VERSION COUNTER IS NOT.
 
-    **`detected_born` — yes.** It describes the MASTER, and there is exactly one
-    master. A better detector re-reading her glasses supersedes the worse
-    detector's answer outright, so the old row stops being live.
+    Two different things could in principle land on one identity — a fact the
+    master already had and a patch an edit added over the same ground — and they
+    supersede each other in neither direction. A better detector re-reading her
+    glasses must not retire the patch that repainted them, and a repaint must
+    not delete the record of what she came with. So the retire names its own
+    provenance.
 
-    **`edit_patch` — no, and this is fable-091's fix.** Refinement history is a
-    TREE. A patch is true on the branch that made it and says nothing about any
-    other, so "which version of `marks` does this face keep" has one answer per
-    branch — and a single `retiredAt` flag cannot hold several. Retiring on
-    write is what made a fork from B inherit D's glasses and lose what D had
-    superseded. Supersession is now resolved where it belongs: by taking the
-    newest version filed by the anchor's OWN ancestry (`listLineageSegments`).
-    `retiredAt` keeps only the two jobs a flag can do — the undo, and the
-    storage lifecycle.
-
-    The retire is scoped by provenance either way, and the version counter
-    deliberately is NOT: the unique index is (candidate, facet, region, version)
-    and knows nothing about provenance, so two rows sharing an identity must
-    still take different numbers or the second insert dies on the index.
+    The counter deliberately does NOT, because the unique index is
+    (candidate, facet, region, version) and knows nothing about provenance: two
+    rows sharing an identity must still take different version numbers or the
+    second insert dies on the index. The vocabularies are disjoint today
+    (`bornWornDetector.test.ts` proves it), so this is defence in depth rather
+    than a case anyone can currently reach.
   */
-  const retired = input.provenance === "detected_born"
-    ? affectedRows(
-      await tx
-        .update(castingSegments)
-        .set({ retiredAt: input.now })
-        .where(and(
-          identity,
-          eq(castingSegments.provenance, "detected_born"),
-          isNull(castingSegments.retiredAt),
-        )),
-    )
-    : 0;
+  const retired = affectedRows(
+    await tx
+      .update(castingSegments)
+      .set({ retiredAt: input.now })
+      .where(and(
+        identity,
+        eq(castingSegments.provenance, input.provenance),
+        isNull(castingSegments.retiredAt),
+      )),
+  );
 
   /*
     The next version counts past RETIRED rows too. Versions are the segment's
@@ -514,106 +507,6 @@ export async function listLiveSegments(input: {
 }
 
 /**
- * WHAT THE FACE SHE IS LOOKING AT KEEPS — the fork-safe carried set
- * (fable-091, the founder's version-jumping semantics).
- *
- * > *"If you go back to a previous edit, the layers are only what that
- * > currently selected image holds — you can fork-edit from any previous
- * > edit."*
- *
- * So the question is never "what is live on this candidate", it is "what did
- * THIS variant's own chain deliver". The walk is the ancestry of the anchor —
- * itself, its parent, its parent's parent — and within that walk each facet
- * keeps its newest version. A branch that superseded `marks` three times sees
- * its third; a fork from before any of them sees none of them.
- *
- * Ownership and the candidate are proved INSIDE the walk at every level, not
- * once at the top: a variant is a child of a child, and a walk that trusted a
- * parent id it was handed could climb out of the face it started on.
- *
- * Only `edit_patch` rows. A `detected_born` fact belongs to the master rather
- * than to any branch, it is never pasted, and the compositor filters it out one
- * layer up — it is excluded here too so the two layers cannot disagree.
- */
-export async function listLineageSegments(input: {
-  userId: number;
-  candidateId: number;
-  /** The SELECTED variant this edit is being made from. */
-  anchorVariantId: number;
-}): Promise<StoredSegment[]> {
-  assertPositiveId(input.userId, "userId");
-  assertPositiveId(input.candidateId, "candidateId");
-  assertPositiveId(input.anchorVariantId, "anchorVariantId");
-  const db = await requireDb();
-
-  /*
-    A DEPTH COLUMN AND A CEILING, because a cycle in a self-referencing table is
-    a hang rather than an error. `parentVariantId` is only ever written to a
-    variant that already existed, so a cycle should be unreachable — and "should
-    be unreachable" is exactly the class of thing that takes a product down at
-    3am. The ceiling is far above any real chain.
-  */
-  const rows = await db.execute(sql`
-    WITH RECURSIVE ancestry (id, parentVariantId, depth) AS (
-      SELECT id, parentVariantId, 0 FROM casting_candidate_variants
-       WHERE id = ${input.anchorVariantId}
-         AND userId = ${input.userId}
-         AND candidateId = ${input.candidateId}
-      UNION ALL
-      SELECT v.id, v.parentVariantId, a.depth + 1
-        FROM casting_candidate_variants v
-        JOIN ancestry a ON v.id = a.parentVariantId
-       WHERE v.userId = ${input.userId}
-         AND v.candidateId = ${input.candidateId}
-         AND a.depth < 512
-    )
-    SELECT s.* FROM casting_segments s
-      JOIN ancestry a ON a.id = s.variantId
-     WHERE s.userId = ${input.userId}
-       AND s.candidateId = ${input.candidateId}
-       AND s.provenance = 'edit_patch'
-     ORDER BY s.createdAt ASC, s.id ASC
-  `);
-
-  /*
-    NEWEST VERSION PER FACET, AND A RETIRED NEWEST MEANS *GONE FROM THIS BRANCH*.
-
-    Retired rows are deliberately NOT filtered out in SQL, and that is the whole
-    subtlety of an undo inside a tree. She takes her earrings off on this
-    branch; the branch's own row is retired; and if the walk simply skipped it,
-    the walk would find her ANCESTOR's older earrings and put them straight back
-    on. The undo would visibly not work, and the older pair would be the ones
-    that came back.
-
-    So retirement is a fact about a VERSION rather than about a facet: the
-    newest thing this branch says about `statedAccessories` is either "these
-    pixels" or "none", and either way it is the answer. A fork from before the
-    undo still finds its own newest version live and keeps its earrings.
-
-    Resolved here rather than in SQL so the rule is readable and testable.
-    Insertion order is preserved, which is the order the assembly wants — a
-    later paste wins the pixels it shares with an earlier one.
-  */
-  const newest = new Map<string, typeof castingSegments.$inferSelect>();
-  for (const row of asSegmentRows(rows)) {
-    const held = newest.get(row.facet);
-    if (!held || row.version > held.version) newest.set(row.facet, row);
-  }
-  return Array.from(newest.values())
-    .filter((row) => row.retiredAt === null)
-    .map(toStoredSegment);
-}
-
-/**
- * `db.execute` hands back a driver-shaped result whose rows sit in different
- * places on different drivers. Unwrapped in one place, so no caller has to know.
- */
-function asSegmentRows(result: unknown): Array<typeof castingSegments.$inferSelect> {
-  const rows = Array.isArray(result) ? result[0] : (result as { rows?: unknown })?.rows ?? result;
-  return (Array.isArray(rows) ? rows : []) as Array<typeof castingSegments.$inferSelect>;
-}
-
-/**
  * Everything ever filed against this face, newest first — history included.
  *
  * A retired segment is not deleted (§3's one deliberate asymmetry): the bytes
@@ -664,21 +557,12 @@ export async function resolveOwnedCandidateId(input: {
 }
 
 /**
- * Take one facet back out of the composite — §7's undo, on ONE branch.
+ * Take one facet back out of the composite — §7's undo.
  *
  * **The bytes survive.** Only `retiredAt` moves, so the redo in §7 can exist
  * and so the row stays readable as evidence of a render that was delivered.
  * Her account-level deletion still removes everything, because that runs on the
  * candidate.
- *
- * # It is anchored, and that is fable-091 reaching the undo too
- *
- * "Take the earrings off" means *off the face I am looking at*. Retiring every
- * live row for a facet on the candidate would reach across branches and take
- * the earrings off a version she never had open — the same tree-shaped mistake
- * the carried set had, wearing the other hat. So the undo retires exactly the
- * row the anchor's own ancestry currently carries, and other branches keep
- * theirs.
  *
  * Scoped by owner in the statement that writes, not in a check before it — the
  * same rule every other write in this file follows, and the reason is that a
@@ -687,36 +571,19 @@ export async function resolveOwnedCandidateId(input: {
 export async function retireSegmentFacet(input: {
   userId: number;
   candidateId: number;
-  /** The SELECTED variant — which branch's earrings come off. */
-  anchorVariantId: number;
   facet: string;
   now?: Date;
 }): Promise<number> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.candidateId, "candidateId");
-  assertPositiveId(input.anchorVariantId, "anchorVariantId");
-
-  const carried = await listLineageSegments({
-    userId: input.userId,
-    candidateId: input.candidateId,
-    anchorVariantId: input.anchorVariantId,
-  });
-  const held = carried.find((segment) => segment.facet === input.facet);
-  /*
-    Nothing on this branch answers to that name. Saying "done" here is what
-    would show her a picture with the earrings still on, so the caller is told
-    zero and refuses (see `segmentPrune`).
-  */
-  if (!held) return 0;
-
   const db = await requireDb();
   const result = await db
     .update(castingSegments)
     .set({ retiredAt: input.now ?? new Date() })
     .where(and(
-      eq(castingSegments.id, held.id),
       eq(castingSegments.candidateId, input.candidateId),
       eq(castingSegments.userId, input.userId),
+      eq(castingSegments.facet, input.facet),
       /*
         EDIT PATCHES ONLY, and this is the born-versus-added line drawn in SQL.
 
@@ -724,9 +591,6 @@ export async function retireSegmentFacet(input: {
         the catalogue while leaving the thing itself in the picture — the
         glasses she was rolled wearing do not come off by dropping a row, they
         come off with a real render into the skin behind them.
-
-        `listLineageSegments` already excludes them, so this is the second lock
-        on the same door: the id could otherwise come from a caller.
       */
       eq(castingSegments.provenance, "edit_patch"),
       isNull(castingSegments.retiredAt),

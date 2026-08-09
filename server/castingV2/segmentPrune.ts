@@ -59,12 +59,6 @@ export type PruneResult =
 export async function pruneSegmentFacet(input: {
   userId: number;
   candidateId: number;
-  /**
-   * The SELECTED variant — which branch's earrings come off (fable-091).
-   * "Take the earrings off" means off the face she is LOOKING AT, and a prune
-   * that reached every branch would undo an edit on a version she never opened.
-   */
-  anchorVariantId: number;
   /** The thing to take off, in her vocabulary: `marks`, `hair.colour`. */
   facet: string;
   /** Her sharp original — the base of every assembly, as always. */
@@ -78,7 +72,6 @@ export async function pruneSegmentFacet(input: {
   const dropped = await retire({
     userId: input.userId,
     candidateId: input.candidateId,
-    anchorVariantId: input.anchorVariantId,
     facet: input.facet,
   });
   if (dropped === 0) {
@@ -94,7 +87,6 @@ export async function pruneSegmentFacet(input: {
   const remaining = await loadCarriedSegments({
     userId: input.userId,
     candidateId: input.candidateId,
-    anchorVariantId: input.anchorVariantId,
     /* Nothing is being written: this is a rebuild, not an edit. */
     writing: [],
     dependencies: input.dependencies,

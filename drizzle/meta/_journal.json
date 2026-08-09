@@ -176,13 +176,6 @@
       "when": 1786243007071,
       "tag": "0025_casting_v2_segment_store",
       "breakpoints": true
-    },
-    {
-      "idx": 26,
-      "version": "5",
-      "when": 1786253000000,
-      "tag": "0026_casting_v2_variant_lineage",
-      "breakpoints": true
     }
   ]
 }
