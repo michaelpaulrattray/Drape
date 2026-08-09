@@ -143,14 +143,52 @@ fixture cannot produce one between these two arms.
    spread *between the two composite chains* is as large as the difference
    between the arms. Reporting either direction from it would be reading noise.
 
-### What would answer it
+### The overlapping chain — the measurement that CAN separate them
 
-An **overlapping** chain — two or more edits on the same ground (hair colour
-then hair worn; lip gloss then fuller lips) — because that is the only shape
-where composite anchoring re-encodes ground a second time and patch anchoring
-does not. Both arms, n ≥ 2, same instrument: 24 fixture paints, roughly 70
-minutes. That measurement is not yet made, and this page does not pretend
-otherwise.
+Run 2026-08-09/10. Six edits on three grounds, hair entered **three times**
+(colour → worn down → texture), face skin twice, lips once as the internal
+control. Both arms identical in every respect except what the engine is handed:
+her master every time, or the previous composite. 24 paints intended, **21
+bought** — the run's fourth chain stopped when the engine returned a `lips`
+frame whose change the harvest could not find and the product refused it. That
+is the product behaving correctly; the harness treated a legitimate refusal as
+fatal. Nothing was repainted to tidy that up, and every cell states its own n.
+
+```
+  ground      entry  master-anchored     composite-anchored  difference
+  hair        #1     0.569 ±0.033 n=2    0.553 ±0.004 n=2    -0.016
+  hair        #2     0.490 ±0.046 n=2    0.442 ±0.082 n=2    -0.048
+  hair        #3     0.597 ±0.001 n=2    0.343        n=1    -0.254
+  face skin   #1     0.894 ±0.003 n=2    0.882 ±0.066 n=2    -0.012
+  face skin   #2     0.843 ±0.049 n=2    1.148        n=1    +0.305
+  lips        #1     0.867 ±0.053 n=2    0.923        n=1    +0.057
+
+  FIRST entries (both arms hand the engine the same master — the engine's own
+                 run-to-run spread, and the scale everything else must beat):
+                                                     mean difference  +0.009
+  RE-entries    (the only place the arms genuinely differ):
+                                                     mean difference  +0.001
+```
+
+**What this says, stated at the strength it actually supports:**
+
+- **No measurable degradation from composite anchoring at this n.** The
+  re-entry difference (+0.001) is smaller than the control difference (+0.009).
+  Whatever the photocopy effect is here, it is smaller than the engine's own
+  run-to-run variation on the same ask.
+- **The two big numbers are both n=1 and they point opposite ways** — hair #3 at
+  −0.254 and face skin #2 at +0.305. They cancel in the mean, and neither is a
+  finding. Read either one alone and you could write this page's conclusion in
+  either direction, which is precisely why they are shown with their n attached.
+- **The instrument's noise floor is larger than the effect being hunted.** Hair's
+  within-arm spread is ±0.046 to ±0.082; hair #2's −0.048 difference does not
+  clear its own spread. Detecting a 5% effect would need substantially more
+  chains than two.
+
+So the fear has been bounded rather than confirmed or dismissed: **at two chains,
+on this face, a composite-anchored chain does not visibly soften ground it
+re-enters.** That is a real result and it is not the same as "chain anchoring is
+free" — see Column B's other costs, which are unaffected by any of this.
 
 ---
 
@@ -162,8 +200,17 @@ Not "which is better". The question is narrower:
 > worth not building the boundary class, the surrender rules and the bigger
 > purge — given that undo becomes a re-render?**
 
-**As of 2026-08-09 the honest answer is that the degradation is unmeasured on
-the shape that matters**, and the fear it rests on has been shown to be about a
-different mechanism. Column A's first consumer is already shipped and working,
-so nothing is blocked by leaving this open — but the choice should not be made
-on this page's numbers until the overlapping chain has been run.
+**As of 2026-08-10 the degradation has been measured on the shape that matters
+and does not appear at two chains.** The photocopy fear turns out to be about a
+different mechanism (regenerating the whole frame, which does degrade — 3 of 5
+regions) rather than about re-encoding only the repainted region, which does
+not, at any strength this instrument can see.
+
+That removes the argument Column B was mostly losing on. It does **not** decide
+the question, because Column B's other three costs are untouched by it: undo
+becomes a re-render, D-146's guarantee changes what it is a statement about, and
+every seam instrument is then measuring against a moving reference.
+
+**So the choice is now between real things on both sides**, which is what this
+page was ordered to produce. Column A's first consumer is already shipped and
+working, so nothing is blocked while he thinks about it.
