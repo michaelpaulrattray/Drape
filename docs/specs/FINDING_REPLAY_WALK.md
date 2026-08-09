@@ -44,13 +44,26 @@ instrument passes and whose frame he dislikes is a failure of the step.
 One face, one branch, in this order. The order is the point: findings 2 and 4
 are only visible in what a **later** render does to an **earlier** one.
 
+**Reordered 2026-08-10 (fable-135), and by a defect the harness found rather
+than a preference.** The original order opened with `wear her hair down` — and
+hair worn down goes over the ears, which is where assertions A and B both look.
+The walk's own first step could have removed the subject of its next two
+assertions, and a NO-READ there closes nothing. Findings 1/2 and findings 3/4
+came from **different chains of his anyway; the conflation was ours.**
+
 | Step | Ask | Cost | Serves | Expected |
 |---|---|---|---|---|
-| 1 | `wear her hair down` | 25 | 3, 4 | delivered |
-| 2 | `gold hoop earrings` | 25 | 1, 4 | delivered |
-| 3 | `dangly cross earrings` | 25 | 4 (his exact sequence) | delivered |
-| 4 | `copper hair` | 25 | 2 (an unrelated ask that must not move the ears) | delivered |
-| 5 | `remove her glasses` — on the bespectacled face only | 25 | 3 (the ghost rim) | delivered |
+| 1 | `gold hoop earrings` | 25 | 1 — a pair, while her ears are visible | delivered |
+| 2 | `dangly cross earrings` | 25 | 1, 2 — the replacement: pair *and* swap | delivered |
+| 3 | `copper hair` | 25 | 2 — the unrelated ask, before hair can supersede | delivered |
+| 4 | `wear her hair down` | 25 | 3, 4 — and C reads **this** row's seam | delivered |
+| 5 | `remove her glasses` — on the bespectacled face only | 25 | 3, 4 — the ghost rim, and a later ask | delivered |
+
+Findings 1 and 2 are closed at steps 1–3, with A armed on **both** accessory
+steps. Finding 4's mechanism — a later ask re-pinning her hair off the master —
+is exercised by step 5 following step 4, which is the same length as his own
+sequence (one later ask). If her hair covers her ears by steps 4–5, A is
+legitimately a NO-READ there and has already been answered.
 
 **125 credits per run. The twice-clean bar (founder, 2026-08-06) makes it 250.**
 Against the ceiling: net 1,410 of 5,000 as of this drafting, so two runs leave
@@ -121,15 +134,28 @@ segment's own mask, step 4's frame equals step 3's, pixel for pixel, allowing
 only the compositor's declared feather at the boundary. This is the same
 byte-level proof the campaign already used for 20,036 of 24,056 pixels.
 
-**Control:** the same comparison run between step 2 and step 3 — where the
-earrings were *deliberately replaced* (hoops → crosses) — must come back
-**different**. A comparison that reports "identical" for a facet that genuinely
-changed is measuring the wrong region.
+**Control:** the same comparison run between steps 1 and 2 — where the earrings
+were *deliberately replaced* (hoops → crosses) — must come back **different**. A
+comparison that reports "identical" for a facet that genuinely changed is
+measuring the wrong region. Judged with **no recorded intersections**, because
+the question is "did these pixels survive", not "did the compositor account for
+their loss"; an instrument that can only ever say KEPT cannot fail.
+
+**And a second instrument on the same step, added when the reorder exposed the
+hole it closes.** Step 3 is `copper hair`, and hair covers ears. The adjudicator
+forgives a loss the assembly RECORDED as an intersection — right for its own
+question and blind to this one: if the copper repaint wins the whole earring
+region and the compositor writes that down, B reads KEPT over a hoop that is
+simply gone from her picture. An instrument at its own floor reporting a clean
+result, which is working law 2's exact shape. So **A's counter also runs on step
+3's frame**, asking the thing the arithmetic structurally cannot: is the
+jewellery still *there*. A disagreement between the two is the finding.
 
 ### C. The seam is on the record, and the record agrees with his eye (finding 3)
 
-**Assert:** step 1's variant row carries a seam verdict — `worstExcess` and the
-coherence statistic — written whether or not it tore. Nothing here is a
+**Assert:** step 4's variant row — `wear her hair down`, his own ask, the render
+he called *"like it was pasted there"* — carries a seam verdict, `worstExcess`
+and the coherence statistic, written whether or not it tore. Nothing here is a
 pass/fail against a threshold, because the threshold is exactly what is being
 decided (roadmap §0, the shadow→enforce flip).
 
@@ -160,8 +186,9 @@ instantly — which is why a picture may be derived here where a verdict may not
 
 ### D. The hair stays down (finding 4)
 
-**Assert:** after steps 2, 3 and 4, her hair is still down. Two instruments,
-both required, because they fail differently:
+**Assert:** step 4 delivers her hair down, and after step 5 — the later ask —
+it is **still** down. Two instruments, both required, because they fail
+differently:
 
 - **the recipe** — `hairWorn` is still in the resolved identity of each later
   variant, so the words did not get dropped;
@@ -171,9 +198,11 @@ The picture is the one that matters and the recipe is the one that explains it.
 His finding was the picture reverting; a recipe that still says "down" over a
 frame that is not is the same defect with a better alibi.
 
-**Control:** step 1's own *parent* frame — the one before the hair came down —
-must read as **not** down on the same instrument. Without that, "still down" is
-a reading that has never been able to say otherwise.
+**Control:** a frame before the hair came down must read as **not** down on the
+same instrument. Without that, "still down" is a reading that has never been able
+to say otherwise. Satisfied by control D, which uses two readings the product
+itself already took on one face — v#163 `verified: true`, v#164 `verified:
+false`, both asked with the same word.
 
 ### E. The panel agrees with the assembly (new, free)
 

@@ -272,20 +272,45 @@ const EAR_VISIBLE_AT = 400;
 const MOVED_AT = 12;
 
 /**
- * THE WALK, in the founder's own order — and the order IS the point.
+ * THE WALK, AND THE ORDER IS THE POINT — reordered by fable-135, for a reason
+ * the harness found rather than a preference.
  *
- * Findings 2 and 4 are only visible in what a LATER render does to an EARLIER
- * one, so no step here may be reordered for convenience and none may be dropped
- * for being expensive (spec: "a partial replay reported as a replay is the
- * flattering direction").
+ * The plan opened with *"wear her hair down"*. Hair worn down goes over the
+ * ears, and assertions A and B are both about what is ON an ear — so the walk's
+ * own first step could remove the thing its next two assertions are about, and
+ * a NO-READ there closes nothing. **Findings 1/2 and findings 3/4 came from
+ * different chains of his anyway; the conflation was ours.**
+ *
+ * So the accessories go first, while her ears are visible, and the hair follows.
+ * Every assertion gets a window in which it can actually be made:
+ *
+ *   1  gold hoop earrings     ears visible (she is rolled hair-up) — A armed
+ *   2  dangly cross earrings  the REPLACEMENT: pair and swap, A and B armed
+ *   3  copper hair            the unrelated ask — B's byte check on the
+ *                             crosses' own mask, BEFORE hair can supersede it
+ *   4  wear her hair down     finding 4's subject; C reads THIS row's seam
+ *   5  remove her glasses     the ghost rim, and a later ask after hair-down,
+ *                             which is finding 4's own reproduction window
+ *
+ * Findings 1 and 2 are closed at steps 1–3. Finding 4's mechanism — a later ask
+ * re-pinning her hair off the master — is exercised by step 5 following step 4,
+ * which is the same length as his own sequence (one later ask). If the hair
+ * covers her ears by steps 4–5, A is legitimately a NO-READ there and has
+ * already been answered.
+ *
+ * No step may be dropped for being expensive: "a partial replay reported as a
+ * replay is the flattering direction".
  */
 const WALK = [
-  { instruction: "wear her hair down", serves: "3, 4" },
-  { instruction: "gold hoop earrings", serves: "1, 4" },
-  { instruction: "dangly cross earrings", serves: "4 — his exact sequence" },
+  { instruction: "gold hoop earrings", serves: "1 — a pair, on visible ears" },
+  { instruction: "dangly cross earrings", serves: "1, 2 — the replacement" },
   { instruction: "copper hair", serves: "2 — an unrelated ask that must not move the ears" },
-  { instruction: "remove her glasses", serves: "3 — the ghost rim" },
+  { instruction: "wear her hair down", serves: "3, 4" },
+  { instruction: "remove her glasses", serves: "3, 4 — the ghost rim, and a later ask" },
 ] as const;
+
+/** Indices, named — so a reorder cannot silently re-aim an assertion. */
+const STEP = { hoops: 0, crosses: 1, copperHair: 2, hairDown: 3, removeGlasses: 4 } as const;
 
 const COST_PER_STEP = 25;
 
@@ -639,7 +664,7 @@ async function runControls(): Promise<void> {
     Two deviations from the spec, both stated rather than smoothed over:
 
     1. It is an addition, not a replacement. The replacement comparison arrives with
-       the walk's own steps 2→3 and is not available before it.
+       the walk's own accessory steps (1→2) and is not available before it.
     2. The mask is the READER's earring region, not a stored `statedAccessories`
        segment — because there is no such segment anywhere in production (all 14 are
        `marks`, `makeup`, `hairWorn` and `eye.colour`). When the walk produces one,
@@ -749,7 +774,7 @@ async function runControls(): Promise<void> {
         "B: the REPLACEMENT comparison, and the segment's own mask",
         "no branch in production replaces one stated accessory with another, and no "
         + "`statedAccessories` segment exists anywhere (all 14 are marks/makeup/hairWorn/eye.colour) — "
-        + "both arrive with the walk's own steps 2→3, and this control stands in for neither",
+        + "both arrive with the walk's own accessory steps (1→2), and this control stands in for neither",
       );
     }
   }
@@ -937,7 +962,7 @@ async function runWalk(): Promise<boolean> {
   }
   console.log(ears
     ? `  ears: ${ears.sides.map((side) => `${side.side} ${side.ear}px`).join(", ")} — `
-      + "both visible, so step 2's count can distinguish a miss from a hairstyle"
+      + "both visible, so step 1's count can distinguish a miss from a hairstyle"
     : REHEARSE
       ? "  ears: not asked — a rehearsal cannot spend, so the precondition has nothing to refuse"
       : "  ears: NO READ — her face could not be fetched");
@@ -1218,14 +1243,27 @@ async function runWalk(): Promise<boolean> {
 
   /* --------------------- A. Both ears, or an honest refusal (finding 1) */
 
-  {
-    const entry = walkRows[1];
+  /*
+    ASKED OF BOTH ACCESSORY STEPS, not just the first.
+
+    Steps 1 and 2 each promise a PAIR — hoops, then crosses — so each is its own
+    instance of his finding, and the second is the more interesting one: a
+    replacement that arrives on one ear is the same defect with a swap on top.
+    Both run while her ears are still visible, which is the whole reason
+    fable-135 put them first.
+  */
+  const countedAt = new Map<number, Awaited<ReturnType<typeof countEarringPair>>>();
+  for (const index of [STEP.hoops, STEP.crosses]) {
+    const entry = walkRows[index];
     const row = entry.row;
+    const label = `step ${index + 1} ("${entry.step.instruction}")`;
     const stored = parsePrompt(row?.internalPrompt);
     const accessory = (stored?.verification?.checks ?? []).find((c: any) => c?.facet === "statedAccessories");
     if (!row) {
-      checks.neverArmed("[A] both ears, or an honest refusal", "step 2 wrote no row at all");
-    } else if (row.status !== "ready") {
+      checks.neverArmed(`[A] ${label} — both ears, or an honest refusal`, "this step wrote no row at all");
+      continue;
+    }
+    if (row.status !== "ready") {
       /*
         THE REFUSAL BRANCH THE SPEC ALLOWS — and it is only honest if the money
         came back. A refusal that kept the credits is finding 1 wearing a
@@ -1233,51 +1271,53 @@ async function runWalk(): Promise<boolean> {
       */
       check(
         Number(row.refundedCredits ?? 0) >= Number(row.pointsCost ?? 0),
-        "[A] step 2 refused, and refused HONESTLY — the credits came back",
+        `[A] ${label} refused, and refused HONESTLY — the credits came back`,
         `status ${row.status}, charged ${row.pointsCost}, refunded ${row.refundedCredits}`,
       );
-    } else {
-      const response = await fetch(`${base}/${row.imageKey}`);
-      if (!response.ok) {
-        checks.neverArmed("[A] both ears, or an honest refusal", `the delivered frame came back HTTP ${response.status}`);
-      } else {
-        const counted = await countEarringPair(Buffer.from(await response.arrayBuffer()), `walk-step2-v${row.id}`);
-        /*
-          ONE HOOP DELIVERED AND CHARGED IS A FALSE PASS, and it fails the run
-          outright. The pixels decide it; the stored verdict's own words are
-          recorded beside them, because D-235's asymmetry is what made the
-          original miss legible — *"gold hoop earring visible on visible ear"*,
-          singular, one ear, accepted.
-
-          Unless an ear is not THERE. Step 1 asks her to wear her hair down, and
-          hair worn down goes over the ears — so this walk's own second step can
-          remove the thing its second assertion is about. That is a NO-READ and
-          it is recorded as one: unarmed, which fails the run, because a walk
-          that cannot see her ears has not closed finding 1 and must not be able
-          to say it has.
-        */
-        if (counted.unreadable.length > 0) {
-          checks.neverArmed(
-            "[A] step 2 delivered an earring on BOTH ears",
-            `${counted.saw} — no ear on the ${counted.unreadable.join("/")}, so "no earring there" is a `
-            + "no-read rather than a miss. His finding was one hoop with the other ear bare AND VISIBLE",
-          );
-        } else {
-          check(
-            counted.isPair,
-            "[A] step 2 delivered an earring on BOTH ears",
-            `${counted.saw} → ${counted.isPair ? "a pair" : "NOT a pair"}`,
-          );
-        }
-        check(
-          true,
-          "[A] and the product's own verdict on the same frame, recorded verbatim",
-          accessory
-            ? `verified=${accessory.verified} — saw: ${String(accessory.saw ?? "").slice(0, 140)}`
-            : "the row carries no statedAccessories check",
-        );
-      }
+      continue;
     }
+    const response = await fetch(`${base}/${row.imageKey}`);
+    if (!response.ok) {
+      checks.neverArmed(`[A] ${label} — both ears, or an honest refusal`,
+        `the delivered frame came back HTTP ${response.status}`);
+      continue;
+    }
+    const counted = await countEarringPair(Buffer.from(await response.arrayBuffer()), `walk-${index + 1}-v${row.id}`);
+    countedAt.set(index, counted);
+    /*
+      ONE HOOP DELIVERED AND CHARGED IS A FALSE PASS, and it fails the run
+      outright. The pixels decide it; the stored verdict's own words are
+      recorded beside them, because D-235's asymmetry is what made the original
+      miss legible — *"gold hoop earring visible on visible ear"*, singular, one
+      ear, accepted.
+
+      Unless an ear is not THERE — a NO-READ, recorded as one: unarmed, which
+      fails the run, because a walk that cannot see her ears has not closed
+      finding 1 and must not be able to say it has. Under fable-135's order this
+      should not happen here (nothing has touched her hair yet), so if it does,
+      it is news rather than an expected excuse.
+    */
+    if (counted.unreadable.length > 0) {
+      checks.neverArmed(
+        `[A] ${label} delivered an earring on BOTH ears`,
+        `${counted.saw} — no ear on the ${counted.unreadable.join("/")}, so "no earring there" is a `
+        + "no-read rather than a miss. His finding was one hoop with the other ear bare AND VISIBLE. "
+        + "Nothing has asked about her hair by this step, so this is unexpected",
+      );
+    } else {
+      check(
+        counted.isPair,
+        `[A] ${label} delivered an earring on BOTH ears`,
+        `${counted.saw} → ${counted.isPair ? "a pair" : "NOT a pair"}`,
+      );
+    }
+    check(
+      true,
+      `[A] ${label} — and the product's own verdict on the same frame, verbatim`,
+      accessory
+        ? `verified=${accessory.verified} — saw: ${String(accessory.saw ?? "").slice(0, 140)}`
+        : "the row carries no statedAccessories check",
+    );
   }
 
   /* ------------------------------- B. The ears do not move (finding 2) */
@@ -1288,25 +1328,29 @@ async function runWalk(): Promise<boolean> {
     1. The result is stated with its OWN n, on the REAL `statedAccessories`
        segments — not on the reader's mask, which is what the pre-walk control
        stands in with.
-    2. **If steps 2→3 produce no segments at all, the walk is NOT clean whatever
-       else passes.** There was no `statedAccessories` segment anywhere in
-       production when this was written — all 14 were marks/makeup/hairWorn/
-       eye.colour — so an empty result here is a live risk rather than a
+    2. **If the two accessory steps produce no segments at all, the walk is NOT
+       clean whatever else passes.** There was no `statedAccessories` segment
+       anywhere in production when this was written — all 14 were marks/makeup/
+       hairWorn/eye.colour — so an empty result here is a live risk rather than a
        formality, and it must never read as "nothing to report".
+
+    (fable-133 wrote "steps 2→3"; under fable-135's order those are steps 1→2.
+    Named through `STEP` rather than by number, so the next reorder cannot
+    silently re-aim this at the wrong pair.)
   */
   let accessorySegments = 0;
   let carriedVerdicts = 0;
   {
-    const stepTwo = walkRows[1].row;
-    const stepThree = walkRows[2].row;
-    const stepFour = walkRows[3].row;
+    const hoopsRow = walkRows[STEP.hoops].row;
+    const crossesRow = walkRows[STEP.crosses].row;
+    const copperHairRow = walkRows[STEP.copperHair].row;
     const minted = segmentRows.filter((segment) =>
       segment.facet === "statedAccessories"
-      && [stepTwo?.id, stepThree?.id].includes(segment.variantId));
+      && [hoopsRow?.id, crossesRow?.id].includes(segment.variantId));
     accessorySegments = minted.length;
     check(
       accessorySegments > 0,
-      "[B] steps 2→3 minted a real `statedAccessories` segment — the thing an earring persists AS",
+      "[B] the accessory steps minted a real `statedAccessories` segment — the thing an earring persists AS",
       accessorySegments > 0
         ? `${accessorySegments} segment(s): ${minted.map((s) => `${s.facet}@v${s.version} from v#${s.variantId}`).join(", ")}`
         : "no accessory segment exists on this face — an earring is still a sentence, "
@@ -1349,8 +1393,8 @@ async function runWalk(): Promise<boolean> {
       }
 
       /*
-        AND THE OTHER DIRECTION, INSIDE THE WALK: step 3 REPLACED the hoops, so
-        step 2's segment must NOT survive into step 3's frame.
+        AND THE OTHER DIRECTION, INSIDE THE WALK: step 2 REPLACED the hoops, so
+        step 1's segment must NOT survive into step 2's frame.
 
         Judged with NO recorded intersections on purpose. The question here is
         "did these pixels survive", not "did the compositor account for their
@@ -1359,24 +1403,24 @@ async function runWalk(): Promise<boolean> {
         fail. This is the spec's own control for B, run on the walk's own frames
         rather than on a stand-in.
       */
-      const hoop = minted.filter((segment) => segment.variantId === stepTwo?.id).sort((a, b) => b.version - a.version)[0];
-      if (!hoop || !stepThree?.imageKey) {
+      const hoop = minted.filter((segment) => segment.variantId === hoopsRow?.id).sort((a, b) => b.version - a.version)[0];
+      const fetchKey = async (key: string) => {
+        const response = await fetch(`${base}/${key}`);
+        if (!response.ok) throw new Error(`${key} → HTTP ${response.status}`);
+        return Buffer.from(await response.arrayBuffer());
+      };
+      if (!hoop || !crossesRow?.imageKey) {
         checks.neverArmed(
           "[B] CONTROL — the same arithmetic reports DIFFERENT where the accessory was replaced",
-          hoop ? "step 3 delivered no frame to compare against" : "step 2 minted no accessory segment to compare",
+          hoop ? "step 2 delivered no frame to compare against" : "step 1 minted no accessory segment to compare",
         );
       } else {
-        const fetchKey = async (key: string) => {
-          const response = await fetch(`${base}/${key}`);
-          if (!response.ok) throw new Error(`${key} → HTTP ${response.status}`);
-          return Buffer.from(await response.arrayBuffer());
-        };
         const verdict = await adjudicateCarried({
           facet: "statedAccessories",
           version: hoop.version,
           maskBytes: await fetchKey(hoop.maskKey),
           contentBytes: await fetchKey(hoop.contentKey),
-          frameBytes: await fetchKey(stepThree.imageKey),
+          frameBytes: await fetchKey(crossesRow.imageKey),
           /* The row's own columns, exactly as `adjudicateCandidateCarries` reads
              them — the geometry is four ints on the row, not a json blob. */
           bbox: { x: hoop.bboxX, y: hoop.bboxY, width: hoop.bboxW, height: hoop.bboxH },
@@ -1385,12 +1429,46 @@ async function runWalk(): Promise<boolean> {
         check(
           !verdict.kept,
           "[B] CONTROL — the same arithmetic reports DIFFERENT where the accessory was replaced",
-          `${formatCarriedVerdict(verdict)} against step 3's frame (hoops → crosses) — `
+          `${formatCarriedVerdict(verdict)} against step 2's frame (hoops → crosses) — `
           + "KEPT here would mean the comparison is measuring the wrong region",
         );
       }
+
+      /*
+        AND THE PICTURE, BESIDE THE ARITHMETIC — the hole in the new order, closed.
+
+        Step 3 is *"copper hair"*, and hair covers ears. The adjudicator forgives
+        a loss the assembly RECORDED as an intersection, which is right for its
+        question ("was this accounted for") and blind to this one: if the copper
+        repaint wins the whole earring region and the compositor dutifully writes
+        that down, B reads KEPT over a hoop that is simply gone from her picture.
+        An instrument at its own floor reporting a clean result — working law 2's
+        exact shape.
+
+        So the counter runs on step 3's frame as well. It is the same instrument
+        A uses, and it answers a question the arithmetic structurally cannot: is
+        the jewellery still THERE. A disagreement between the two is the finding.
+      */
+      if (copperHairRow?.status === "ready" && copperHairRow.imageKey) {
+        const after = await countEarringPair(await fetchKey(copperHairRow.imageKey), `walk-3-v${copperHairRow.id}`);
+        const before = countedAt.get(STEP.crosses) ?? null;
+        if (after.unreadable.length > 0) {
+          absent(
+            "[B] and the earrings are still IN THE PICTURE after the unrelated ask",
+            `${after.saw} — the copper repaint put hair over the ${after.unreadable.join("/")} ear, so the `
+            + "counter cannot answer here. The byte arithmetic above is the surviving instrument",
+          );
+        } else {
+          check(
+            after.present > 0 && (before === null || after.present >= before.present),
+            "[B] and the earrings are still IN THE PICTURE after the unrelated ask",
+            `${after.saw}`
+            + (before ? ` · step 2 had ${before.present} of 2 sides wearing one` : "")
+            + " — the arithmetic forgives a RECORDED loss, so this asks the question it cannot",
+          );
+        }
+      }
     }
-    void stepFour;
   }
 
   /* --------- C. The seam is on the record, and the record agrees with his eye */
@@ -1402,17 +1480,19 @@ async function runWalk(): Promise<boolean> {
     and his eye on the frame is the other half.
   */
   {
-    const row = walkRows[0].row;
+    /* HIS OWN ASK — *"wear her hair down"* is the render he called "like it was
+       pasted there", and under fable-135's order that is step 4. */
+    const row = walkRows[STEP.hairDown].row;
     const seam = row ? readSeamRow({
       id: row.id, requestText: row.requestText, status: row.status, internalPrompt: row.internalPrompt,
     }) : null;
     check(
       seam !== null,
-      "[C] step 1's row carries a seam verdict, torn or clean",
+      "[C] step 4's row (\"wear her hair down\") carries a seam verdict, torn or clean",
       seam
         ? `worstExcess ${seam.worstExcess.toFixed(1)} · torn ${seam.torn} (${seam.tornPixels}/${seam.boundaryPixels}px) `
           + `· coherence ${seam.coherence?.toFixed(3) ?? "absent"} · enforced ${seam.enforced}`
-        : row ? "the row carries no seam key — nothing was composited, or the verdict did not ride" : "step 1 wrote no row",
+        : row ? "the row carries no seam key — nothing was composited, or the verdict did not ride" : "step 4 wrote no row",
     );
     absent(
       "[C] the founder's verdict on the same frame",
@@ -1426,7 +1506,7 @@ async function runWalk(): Promise<boolean> {
       AND THE PICTURE FOR HIS EYE — the boundary at 3×.
 
       The seam verdict records no coordinates, so the boundary is DERIVED rather
-      than read: the composited region is where step 1's frame differs from the
+      than read: the composited region is where step 4's frame differs from the
       face it was made from, and its bounding box is that region's edge. Stated
       because it is a derivation — a crop that points somewhere wrong is visible
       to him instantly, which is exactly why a picture may be derived where a
@@ -1442,7 +1522,7 @@ async function runWalk(): Promise<boolean> {
           fetch(`${base}/${row.imageKey}`).then(async (r) => Buffer.from(await r.arrayBuffer())),
           fetch(beforeUrl).then(async (r) => Buffer.from(await r.arrayBuffer())),
         ]);
-        await writeFile(path.join(OUT, "C-step1-delivered-full.png"), afterBytes);
+        await writeFile(path.join(OUT, "C-step4-hairdown-delivered-full.png"), afterBytes);
         const meta = await sharpModule(afterBytes).metadata();
         const width = meta.width ?? 0;
         const height = meta.height ?? 0;
@@ -1461,7 +1541,7 @@ async function runWalk(): Promise<boolean> {
           }
         }
         if (maxX < 0) {
-          absent("[C] the boundary at 3× for his eye", "step 1's frame differs nowhere from the face it was made from");
+          absent("[C] the boundary at 3× for his eye", "step 4's frame differs nowhere from the face it was made from");
         } else {
           const pad = 24;
           const left = Math.max(0, minX - pad);
@@ -1469,7 +1549,7 @@ async function runWalk(): Promise<boolean> {
           const cropW = Math.min(width - left, maxX - minX + pad * 2);
           const cropH = Math.min(height - top, maxY - minY + pad * 2);
           await writeFile(
-            path.join(OUT, "C-step1-boundary-3x.png"),
+            path.join(OUT, "C-step4-hairdown-boundary-3x.png"),
             await sharpModule(afterBytes)
               .extract({ left, top, width: cropW, height: cropH })
               .resize({ width: cropW * 3, height: cropH * 3, kernel: "nearest" })
@@ -1496,7 +1576,14 @@ async function runWalk(): Promise<boolean> {
     it — a recipe that still says "down" over a frame that is not is the same
     defect with a better alibi.
   */
-  for (const index of [1, 2, 3]) {
+  /*
+    STEP 4 SETS IT AND STEP 5 IS THE LATER ASK — which is his own sequence's
+    length, not a shortened one. His finding was *"wear her hair down"* followed
+    by ONE further request, after which the hair had reverted. Step 4 is asserted
+    because a step must deliver what it promised; step 5 is asserted because that
+    is where the disease reproduces.
+  */
+  for (const index of [STEP.hairDown, STEP.removeGlasses]) {
     const entry = walkRows[index];
     const row = entry.row;
     const position = `${index + 1}/${WALK.length}`;
