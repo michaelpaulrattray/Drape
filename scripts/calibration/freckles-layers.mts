@@ -251,6 +251,57 @@ const CASES: Record<string, {
     region: "hair",
     prompt: readFileSync("output/marks-court/hair-nocaption-prompt.txt", "utf8").trim(),
   },
+  /*
+    THE SECOND SURFACE MEMBER, measured rather than reasoned. `skinTone` is the
+    founder's own example of the class and the nearest neighbour to marks; if
+    the caption suppresses here too, the rule's boundary is a reading on two
+    members instead of one.
+  */
+  "skin-caption": {
+    out: "output/masked/skin-caption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "a light golden tan",
+    facets: ["skinTone"],
+    prompt: readFileSync("output/marks-court/skin-caption-prompt.txt", "utf8").trim(),
+  },
+  "skin-nocaption": {
+    out: "output/masked/skin-nocaption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "a light golden tan",
+    facets: ["skinTone"],
+    prompt: readFileSync("output/marks-court/skin-nocaption-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE LAST REACHABLE SURFACE MEMBER. `skinTone` and `skinCharacter` are
+    `allSkin`, which the masked path refuses outright (`maskedRefine.ts:776`),
+    so the caption rule's live surface is marks plus this.
+  */
+  "cheek-caption": {
+    out: "output/masked/cheek-caption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "higher, more defined cheekbones",
+    facets: ["cheekbones"],
+    prompt: readFileSync("output/marks-court/cheek-caption-prompt.txt", "utf8").trim(),
+  },
+  "cheek-nocaption": {
+    out: "output/masked/cheek-nocaption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "higher, more defined cheekbones",
+    facets: ["cheekbones"],
+    prompt: readFileSync("output/marks-court/cheek-nocaption-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE ENGINE COMPARISON, at the one size both transports will return. Same
+    written ask, same face, caption absent — the arm that delivers 6/8 on GPT
+    Image 2 at full size.
+  */
+  "written-848": {
+    out: "output/masked/freckles-w15-848",
+    master: "output/marks-court/MASTER-run15-848.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: readFileSync("output/marks-court/run15-step1-prompt.txt", "utf8").trim(),
+  },
   carried: {
     out: "output/masked/freckles-carried",
     master: "output/marks-court/MASTER-run15.png",
@@ -272,9 +323,28 @@ if (!chosen) throw new Error(`no case "${CASE}" — the cases are ${Object.keys(
   constant. Each round writes its own directory, so round 1's frames are still
   on disk to be read beside round 2's rather than overwritten by them.
 */
+/*
+  AND AN ENGINE, because "the marks delivery rate" has always been a rate FOR
+  GPT IMAGE 2 — the masked default — and nobody has ever measured the other
+  transport on this class. If Nano Banana Pro delivers where GPT2 flickers, the
+  residual's answer is per-class ROUTING (the eye.shape precedent) rather than
+  a retry: cheaper, faster, and one dispatch instead of two.
+
+  The rounds live in their own directories so an engine's frames can never be
+  read into the other's row.
+*/
+const engineFlag = process.argv.indexOf("--engine");
+const ENGINE = engineFlag > -1 ? String(process.argv[engineFlag + 1]) : "gpt2";
+const ENGINE_MODEL: Record<string, string | undefined> = {
+  gpt2: undefined, /* the product's own default for the masked path */
+  nbp: "fal-ai/nano-banana-pro/edit",
+};
+if (!(ENGINE in ENGINE_MODEL)) throw new Error(`no engine "${ENGINE}" — try ${Object.keys(ENGINE_MODEL).join(", ")}`);
+
 const tagFlag = process.argv.indexOf("--tag");
 const TAG = tagFlag > -1 ? String(process.argv[tagFlag + 1]) : "";
-const OUT = TAG ? `${chosen.out}-${TAG}` : chosen.out;
+const suffix = `${ENGINE === "gpt2" ? "" : `-${ENGINE}`}${TAG ? `-${TAG}` : ""}`;
+const OUT = `${chosen.out}${suffix}`;
 mkdirSync(OUT, { recursive: true });
 
 /* The walk candidate's own master — the face the charged renders were made
@@ -285,7 +355,11 @@ const W = meta.width!;
 const H = meta.height!;
 console.log(`master ${W}x${H} — the walk candidate, clear skin\n`);
 
-const engine = createFalMaskedEditEngine({ apiKey: process.env.FAL_KEY! });
+const engine = createFalMaskedEditEngine({
+  apiKey: process.env.FAL_KEY!,
+  ...(ENGINE_MODEL[ENGINE] ? { model: ENGINE_MODEL[ENGINE] } : {}),
+});
+console.log(`engine "${ENGINE}" — ${engine.id}`);
 const reader = createFalRegionReader({ apiKey: process.env.FAL_KEY! });
 
 const DESCRIBED = chosen.described;
