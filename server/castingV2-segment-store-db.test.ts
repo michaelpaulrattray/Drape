@@ -311,6 +311,60 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     expect(queued.map((row) => row.storageKey).sort()).toEqual([contentKey, maskKey].sort());
   });
 
+  it("retires a facet for its owner, and for nobody else", async () => {
+    const face = await newFace(owner);
+    await fileSegment({
+      userId: owner,
+      variantId: face.variantId,
+      maskKey: "segments/undo-mask.png",
+      contentKey: "segments/undo-content.png",
+    });
+
+    // A stranger holding the right candidate id and the right facet name.
+    expect(await segments.retireSegmentFacet({
+      userId: stranger,
+      candidateId: face.candidateId,
+      facet: "marks",
+    })).toBe(0);
+    expect(await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId }))
+      .toHaveLength(1);
+
+    expect(await segments.retireSegmentFacet({
+      userId: owner,
+      candidateId: face.candidateId,
+      facet: "marks",
+    })).toBe(1);
+    expect(await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId }))
+      .toEqual([]);
+    // Out of the composite, still on the record — the bytes survive for redo.
+    expect(await segments.listSegmentHistory({ userId: owner, candidateId: face.candidateId }))
+      .toHaveLength(1);
+  });
+
+  it("will not retire something she was born wearing", async () => {
+    /*
+      The born-versus-added line, drawn in SQL. Dropping a `detected_born` row
+      would take a fact about her face out of the catalogue while leaving the
+      thing itself in the picture: the glasses she was rolled wearing come off
+      with a render into the skin behind them, never with a row change.
+    */
+    const face = await newFace(owner);
+    await connection.execute(
+      "INSERT INTO casting_segments (publicId, userId, candidateId, provenance, facet, region, version,"
+        + " maskKey, contentKey, bboxX, bboxY, bboxW, bboxH, frameWidth, frameHeight, detector)"
+        + " VALUES (?, ?, ?, 'detected_born', 'glasses', 'glasses', 1, ?, ?, 40, 120, 200, 90, 1024, 1536, 'test-detector')",
+      [randomUUID(), owner, face.candidateId, "segments/born-mask.png", "segments/born-content.png"],
+    );
+
+    expect(await segments.retireSegmentFacet({
+      userId: owner,
+      candidateId: face.candidateId,
+      facet: "glasses",
+    })).toBe(0);
+    expect(await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId }))
+      .toHaveLength(1);
+  });
+
   /**
    * THE REAL ABSENCE, not a hand-written one.
    *

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "482bd78950f94ac5"
+    "sourceFingerprint": "4a48c80752e24d5f"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 74
+      "moduleCount": 75
     },
     {
       "id": "domain:castingV2",
@@ -3545,6 +3545,12 @@
     {
       "id": "module:server/castingV2/segmentPersistence.ts",
       "path": "server/castingV2/segmentPersistence.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/segmentPrune.ts",
+      "path": "server/castingV2/segmentPrune.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8567,6 +8573,10 @@
     {
       "id": "test:server/castingV2/segmentPersistence.test.ts",
       "path": "server/castingV2/segmentPersistence.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/segmentPrune.test.ts",
+      "path": "server/castingV2/segmentPrune.test.ts"
     },
     {
       "id": "test:server/castingV2/sexCoding.test.ts",
@@ -18396,6 +18406,36 @@
     {
       "from": "module:server/castingV2/segmentPersistence.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPrune.ts",
+      "to": "module:server/castingV2/carriedSegments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPrune.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPrune.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPrune.ts",
+      "to": "module:server/castingV2/segmentAssembly.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPrune.ts",
+      "to": "module:server/db/castingV2Segments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPrune.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

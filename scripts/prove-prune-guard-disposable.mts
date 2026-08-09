@@ -462,6 +462,21 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
   },
   {
     /*
+      THE UNDO THAT REFUSES TO PRETEND. Carrying on after dropping nothing
+      would report success for a facet she never bought — or worse, for
+      something she was BORN wearing, where the answer is a real render into
+      the skin behind it. "Done" and the glasses still on.
+    */
+    name: "an undo with nothing to drop saying so",
+    file: "server/castingV2/segmentPrune.ts",
+    suites: ["server/castingV2/segmentPrune.test.ts"],
+    mutations: [{
+      find: '    return { outcome: "nothing-to-drop" };',
+      replace: "    /* sabotage */",
+    }],
+  },
+  {
+    /*
       RECENCY. Reversing the paste order hands contested pixels to the OLDER
       segment — her previous freckles winning over the ones she just asked to
       be heavier, silently, with the evidence still reporting a resolution.

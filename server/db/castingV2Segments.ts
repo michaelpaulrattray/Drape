@@ -434,6 +434,48 @@ export async function resolveOwnedCandidateId(input: {
   return candidate.id;
 }
 
+/**
+ * Take one facet back out of the composite — §7's undo.
+ *
+ * **The bytes survive.** Only `retiredAt` moves, so the redo in §7 can exist
+ * and so the row stays readable as evidence of a render that was delivered.
+ * Her account-level deletion still removes everything, because that runs on the
+ * candidate.
+ *
+ * Scoped by owner in the statement that writes, not in a check before it — the
+ * same rule every other write in this file follows, and the reason is that a
+ * check-then-write is a race with someone else's edit.
+ */
+export async function retireSegmentFacet(input: {
+  userId: number;
+  candidateId: number;
+  facet: string;
+  now?: Date;
+}): Promise<number> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.candidateId, "candidateId");
+  const db = await requireDb();
+  const result = await db
+    .update(castingSegments)
+    .set({ retiredAt: input.now ?? new Date() })
+    .where(and(
+      eq(castingSegments.candidateId, input.candidateId),
+      eq(castingSegments.userId, input.userId),
+      eq(castingSegments.facet, input.facet),
+      /*
+        EDIT PATCHES ONLY, and this is the born-versus-added line drawn in SQL.
+
+        Retiring a `detected_born` row would take a fact about her face out of
+        the catalogue while leaving the thing itself in the picture — the
+        glasses she was rolled wearing do not come off by dropping a row, they
+        come off with a real render into the skin behind them.
+      */
+      eq(castingSegments.provenance, "edit_patch"),
+      isNull(castingSegments.retiredAt),
+    ));
+  return affectedRows(result);
+}
+
 /* ------------------------------------------------------------- retention */
 
 /**
