@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f39f8b29f0801f29"
+    "sourceFingerprint": "eb7e33ed304add00"
   },
   "domains": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 45
+      "moduleCount": 46
     },
     {
       "id": "domain:evidence",
@@ -3869,6 +3869,12 @@
     {
       "id": "module:server/db/ipBlocking.ts",
       "path": "server/db/ipBlocking.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/migrationLag.ts",
+      "path": "server/db/migrationLag.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -8739,6 +8745,10 @@
     {
       "id": "test:server/creditsSQL.test.ts",
       "path": "server/creditsSQL.test.ts"
+    },
+    {
+      "id": "test:server/db/migrationLag.test.ts",
+      "path": "server/db/migrationLag.test.ts"
     },
     {
       "id": "test:server/debugUtility.test.ts",
@@ -14034,6 +14044,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/casting/evidence/privateEvidenceSchema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/db/migrationLag.ts",
       "kind": "imports"
     },
     {
@@ -19733,6 +19748,11 @@
     },
     {
       "from": "module:server/db/ipBlocking.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/migrationLag.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },

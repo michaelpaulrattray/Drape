@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { checkDevMigrationLag } from "../db/migrationLag";
 import { handleStripeWebhook } from "../stripe/webhooks";
 import { securityHeaders } from "../security/securityHeaders";
 import { correlationIdMiddleware } from "../security/correlationId";
@@ -266,6 +267,23 @@ async function startServer() {
 
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
+    /*
+      IS THIS DATABASE BEHIND THE CODE ABOUT TO RUN AGAINST IT? (fable-125.)
+
+      Dev sat one migration behind production while every test was green — the
+      suite strips `DATABASE_URL` on purpose, so nothing in it can reach a
+      database, and the gap between the suite and the machine had nothing
+      watching it. The carried-segment path and the segments panel were both
+      untestable locally and nobody found out until somebody happened to render.
+
+      Boot is the right place because it is where the person is. It reports and
+      never refuses: a developer whose database is behind needs to know which
+      migrations to run, and a refusal would turn a five-second fix into a
+      blocked morning. Development only, and never on the request path.
+    */
+    void checkDevMigrationLag().catch((error) => {
+      log.warn({ err: error }, "[migrations] could not read the migration ledger");
+    });
     await setupVite(app, server);
   } else {
     serveStatic(app);
