@@ -2682,3 +2682,115 @@
   one overflow menu in casting — and it arrives with the action it opens. A
   visible control that does nothing is worse than the one nobody found.
 */
+
+/*
+  ON HER FACE — what this version is keeping (fable-113, founder-cleared).
+
+  On the SCRIM, not on a card. The mock is a panel on `--surface` because a mock
+  has no neighbours; this one sits beside `.dpc-refine__field`, which is already
+  written in `--onScrim`, and a white card here would be a hole in the viewer.
+  Same structure, same copy, the surface language of the place it actually
+  lives — quotation is not requirement.
+*/
+.dpc-kept {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.dpc-kept__head { display: flex; flex-direction: column; gap: 2px; }
+
+.dpc-kept__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  color: var(--onScrim);
+}
+
+/* A sentence, so it is set as one. */
+.dpc-kept__sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--onScrim) 62%, transparent);
+}
+
+.dpc-kept__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dpc-kept__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dpc-kept__row:hover {
+  background: color-mix(in srgb, var(--onScrim) 10%, transparent);
+}
+
+/* The border carries focus — no inner ring on a row, same law as the field. */
+.dpc-kept__row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--onScrim) 52%, transparent);
+}
+
+/*
+  THE CROP, CUT BY ITS OWN MASK.
+
+  `luminance` is not a detail: a segment mask is a single-channel PNG that is
+  white where the facet is and black where it is not, and it carries NO alpha —
+  so the default `alpha` mask mode reads it as opaque everywhere and shows the
+  whole crop, which is the useless version the mock started with.
+*/
+.dpc-kept__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background-color: color-mix(in srgb, var(--onScrim) 8%, transparent);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-source-type: luminance;
+  mask-mode: luminance;
+}
+
+.dpc-kept__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.dpc-kept__name {
+  font-size: 13px;
+  color: var(--onScrim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dpc-kept__from {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--onScrim) 58%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e19ff70fdf826a26"
+    "sourceFingerprint": "f39f8b29f0801f29"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 23
+      "moduleCount": 24
     },
     {
       "id": "domain:client-shared",
@@ -1475,6 +1475,12 @@
     {
       "id": "module:client/src/features/castingV2/components/RenameCastDialog.tsx",
       "path": "client/src/features/castingV2/components/RenameCastDialog.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/SegmentsOnFace.tsx",
+      "path": "client/src/features/castingV2/components/SegmentsOnFace.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7803,6 +7809,10 @@
       "path": "client/src/features/castingV2/imageGrammar.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/keptPanelAnatomy.test.ts",
+      "path": "client/src/features/castingV2/keptPanelAnatomy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/lostContact.test.ts",
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
@@ -11669,6 +11679,11 @@
     {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/components/SegmentsOnFace.tsx",
       "kind": "imports"
     },
     {

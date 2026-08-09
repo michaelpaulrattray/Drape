@@ -775,6 +775,26 @@ export default function CastingSheet() {
   );
 
   /*
+    WHAT THIS VERSION IS KEEPING (fable-113).
+
+    Asked for the SELECTED version, because "what is kept" is a question about a
+    branch and never about the candidate — going back to an earlier version and
+    forking from it shows that version's layers, not the newest one's
+    (fable-091, the founder's own semantics).
+
+    No polling. Kept segments change only when a refinement lands, and that is
+    exactly when `variants` refetches, so this rides the same cadence rather
+    than adding an interval of its own.
+  */
+  const kept = trpc.castingV2.segmentsOnFace.useQuery(
+    {
+      candidateId: viewerCandidateId ?? "",
+      variantId: variants.data?.selectedVariantId ?? null,
+    },
+    { enabled: viewerRefinable && Boolean(viewerCandidateId) },
+  );
+
+  /*
     The refinement the picture narrates while it runs (D-169).
 
     Newest first, because the newest is the one they just asked for; the others
@@ -1556,6 +1576,9 @@ export default function CastingSheet() {
               */
               busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
               outcome={refineOutcome}
+              /* Empty until the segment store is armed for this account, and an
+                 empty list renders nothing at all. */
+              kept={kept.data?.rows ?? []}
               reask={reaskOptions ? { question: refineOutcome ?? "", options: reaskOptions } : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a

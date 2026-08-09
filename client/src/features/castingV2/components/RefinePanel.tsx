@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Button } from "@/foundation";
+import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 
 /**
  * Refining one face — the panel under the expanded picture (M8).
@@ -96,6 +97,7 @@ export function RefinePanel({
   outcome,
   reask,
   onDismissOutcome,
+  kept = [],
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -136,6 +138,11 @@ export function RefinePanel({
    */
   reask?: RefineReask | null;
   onDismissOutcome?: () => void;
+  /**
+   * What this version is keeping — read-only, and empty until the segment store
+   * is armed for this account. Absent or empty renders nothing at all.
+   */
+  kept?: readonly FaceRow[];
 }) {
   const [instruction, setInstruction] = useState("");
   const trimmed = instruction.trim();
@@ -289,6 +296,15 @@ export function RefinePanel({
           ))}
         </div>
       ) : null}
+
+      {/*
+        WHAT SHE IS KEEPING, immediately above the box it writes into (fable-113).
+
+        Placed here rather than beside the stack on purpose: tapping a row
+        prefills the ask, so the row and the field it fills are adjacent and the
+        cause of the text appearing is visible in one glance.
+      */}
+      <SegmentsOnFace rows={kept} onPrefill={(prefill) => setInstruction(prefill)} />
 
       <form
         className="dpc-refine__ask"
