@@ -41,6 +41,9 @@
 import mysql from "mysql2/promise";
 
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import {
+  CLEAN_BOUNDARY_COHERENCE, FOUNDER_SEAM_COHERENCE, readSeamRow, seamRates, SEAM_CONTROL_ROWS, type SeamRow,
+} from "./lib/seamRows.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -50,31 +53,13 @@ function arg(name: string, fallback = ""): string {
 const SELFTEST = process.argv.includes("--selftest");
 const DAYS = Number(arg("days", "30"));
 
-/**
- * Two rows the reader must be able to tell apart: an ordinary clean boundary,
- * and the founder's shirt seam — 0 pixels over the tear bar, and the coherence
- * that is the only thing in the product able to express what he saw.
- */
-const SELFTEST_ROWS = [
-  {
-    id: 1, requestText: "[selftest] a clean boundary", status: "ready",
-    internalPrompt: {
-      seam: {
-        torn: false, enforced: false, boundaryPixels: 38_592, tornPixels: 0,
-        share: 0, worstExcess: 41.2, signedMean: 0.39, signedSpread: 19.76, coherence: 0.020,
-      },
-    },
-  },
-  {
-    id: 2, requestText: "[selftest] the founder's shirt seam", status: "ready",
-    internalPrompt: {
-      seam: {
-        torn: false, enforced: false, boundaryPixels: 3_080, tornPixels: 0,
-        share: 0, worstExcess: 73.1, signedMean: -10.31, signedSpread: 9.22, coherence: 1.118,
-      },
-    },
-  },
-];
+/*
+  THE TWO CONTROL ROWS MOVED TO `lib/seamRows.mts` (2026-08-10), because the
+  finding-replay walk's control C needs the same pair and a second copy of a
+  control drifts from the thing it checks (law 4). The numbers are unchanged: an
+  ordinary clean boundary, and the founder's shirt seam.
+*/
+const SELFTEST_ROWS = SEAM_CONTROL_ROWS;
 
 let rows: any[];
 if (SELFTEST) {
@@ -103,41 +88,13 @@ const json = (value: unknown): any => {
   return value;
 };
 
-type SeamRow = {
-  id: number;
-  requestText: string;
-  landed: boolean;
-  torn: boolean;
-  enforced: boolean;
-  boundaryPixels: number;
-  tornPixels: number;
-  share: number;
-  worstExcess: number;
-  signedMean?: number;
-  signedSpread?: number;
-  coherence?: number;
-};
-
 const seams: SeamRow[] = [];
 let composited = 0;
 for (const row of rows) {
-  const seam = json(row.internalPrompt)?.seam;
+  const seam = readSeamRow(row);
   if (!seam) continue;
   composited += 1;
-  seams.push({
-    id: row.id,
-    requestText: row.requestText,
-    landed: row.status === "ready",
-    torn: Boolean(seam.torn),
-    enforced: Boolean(seam.enforced),
-    boundaryPixels: Number(seam.boundaryPixels ?? 0),
-    tornPixels: Number(seam.tornPixels ?? 0),
-    share: Number(seam.share ?? 0),
-    worstExcess: Number(seam.worstExcess ?? 0),
-    ...(seam.signedMean === undefined ? {} : { signedMean: Number(seam.signedMean) }),
-    ...(seam.signedSpread === undefined ? {} : { signedSpread: Number(seam.signedSpread) }),
-    ...(seam.coherence === undefined ? {} : { coherence: Number(seam.coherence) }),
-  });
+  seams.push(seam);
 }
 
 console.log(`${rows.length} variant rows in the last ${DAYS} day(s)`);
@@ -181,28 +138,28 @@ for (const seam of seams) {
 
 /* ------------------------------------------------------------------ the two rates */
 
-const torn = seams.filter((seam) => seam.torn);
-const withCoherence = seams.filter((seam) => seam.coherence !== undefined);
-const mean = (values: number[]) => (values.length === 0 ? 0 : values.reduce((a, b) => a + b, 0) / values.length);
+const rates = seamRates(seams);
 
-console.log("\n" + "=".repeat(88));
+console.log(`\n${"=".repeat(88)}`);
 console.log("WHAT THE TABLE SAYS SO FAR");
 console.log("=".repeat(88));
-console.log(`amplitude  : ${torn.length} of ${seams.length} renders scored TORN on the 80-level bar`);
-if (withCoherence.length > 0) {
-  const values = withCoherence.map((seam) => seam.coherence!).sort((a, b) => a - b);
+console.log(`amplitude  : ${rates.torn} of ${rates.total} renders scored TORN on the 80-level bar`);
+if (rates.coherence) {
   console.log(
-    `coherence  : mean ${mean(values).toFixed(3)}`
-    + `  median ${values[Math.floor(values.length / 2)].toFixed(3)}`
-    + `  max ${values[values.length - 1].toFixed(3)}`
-    + `   (n=${values.length})`,
+    `coherence  : mean ${rates.coherence.mean.toFixed(3)}`
+    + `  median ${rates.coherence.median.toFixed(3)}`
+    + `  max ${rates.coherence.max.toFixed(3)}`
+    + `   (n=${rates.coherence.n})`,
   );
   /*
     The founder's own specimen, so the table always carries the thing it is being
     compared against rather than a number a reader has to remember.
   */
-  console.log("             his shirt seam measured 1.118 in-band against 0.020 whole-boundary");
-  const suspicious = withCoherence.filter((seam) => seam.coherence! >= 0.5 && !seam.torn);
+  console.log(
+    `             his shirt seam measured ${FOUNDER_SEAM_COHERENCE} in-band`
+    + ` against ${CLEAN_BOUNDARY_COHERENCE.toFixed(3)} whole-boundary`,
+  );
+  const suspicious = seams.filter((seam) => seam.coherence !== undefined && seam.coherence >= 0.5 && !seam.torn);
   console.log(
     `             ${suspicious.length} render(s) scored coherence ≥ 0.5 while passing the tear bar`
     + " — the founder-visible class",
