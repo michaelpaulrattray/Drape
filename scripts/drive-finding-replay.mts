@@ -34,6 +34,7 @@ import path from "node:path";
 import mysql from "mysql2/promise";
 
 import { assertOneWorld, readLocalEnvFile } from "./lib/worldGuard.mts";
+import { spendAuthorized } from "./lib/stopline.mts";
 import { createChecks } from "./lib/drivePage.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import type { Mask } from "../server/castingV2/maskedComposite";
@@ -44,10 +45,19 @@ function arg(name: string, fallback = ""): string {
 }
 
 const CONTROLS = process.argv.includes("--controls");
-const SPEND = process.argv.includes("--spend");
 const OUT = path.resolve("output/finding-replay");
 
-if (SPEND) {
+/*
+  `--spend` THROUGH THE ONE DOOR, not a hand-rolled read of argv.
+
+  This file shipped last shift asking `process.argv.includes("--spend")`
+  directly, and `stopline --prove`'s derived roster caught it: an account
+  spender whose refusal was its own opinion rather than the freeze's. The walk
+  costs 125 credits on his real account, so the freeze must be the FIRST answer
+  it gets — the not-implemented refusal below is the second, for the morning the
+  line thaws with this harness still unfinished.
+*/
+if (spendAuthorized("walk the finding replay (125 credits on his account)")) {
   throw new Error(
     "the walk itself is NOT implemented and is HELD until the STOPLINE lifts "
     + "(docs/specs/FINDING_REPLAY_WALK.md). `--spend` exists here only so it cannot be "
