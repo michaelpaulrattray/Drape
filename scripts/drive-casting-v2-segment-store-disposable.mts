@@ -7,6 +7,13 @@
  * migration journal into it, run the suite against it, drop it. It never
  * touches the database named in DATABASE_URL, and refuses to run if that URL
  * did not come from `.env` or looks like production.
+ *
+ * `--run <script.mts>` swaps the suite for any script that needs a real store
+ * on a real database — the benches do, because "one facet, one live segment"
+ * is a SQL predicate and a bench that mocked it would be measuring a mock. The
+ * script is handed the throwaway database as both `DATABASE_URL` and
+ * `TEST_DATABASE_URL`, and everything about creation, journal replay and the
+ * drop is shared rather than restated.
  */
 import "dotenv/config";
 import { readFileSync } from "node:fs";
@@ -81,13 +88,27 @@ try {
   const applied = await applyJournal(server);
   console.log(`[segment-store] applied ${applied} migration file(s)\n`);
 
+  const runFlag = process.argv.indexOf("--run");
+  const script = runFlag > -1 ? process.argv[runFlag + 1] : null;
+  const rest = runFlag > -1 ? process.argv.slice(runFlag + 2) : [];
+  const command = script
+    ? ["tsx", script, ...rest]
+    : ["vitest", "run", "server/castingV2-segment-store-db.test.ts"];
+
   exitCode = await new Promise<number>((resolve) => {
     // `shell: true` on Windows: Node 20+ refuses to spawn a .cmd shim
     // directly (EINVAL), and npx is a shim here.
-    const child = spawn("npx", ["vitest", "run", "server/castingV2-segment-store-db.test.ts"], {
+    const child = spawn("npx", command, {
       stdio: "inherit",
       shell: process.platform === "win32",
-      env: { ...process.env, TEST_DATABASE_URL: testUrl.toString() },
+      env: {
+        ...process.env,
+        TEST_DATABASE_URL: testUrl.toString(),
+        // A script driven here talks to the store through the product's own
+        // `getDb()`, which reads DATABASE_URL. Pointed at the throwaway
+        // database rather than left on the developer's.
+        ...(script ? { DATABASE_URL: testUrl.toString() } : {}),
+      },
     });
     child.on("exit", (code) => resolve(code ?? 1));
   });

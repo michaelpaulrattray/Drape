@@ -29,6 +29,7 @@ describeWithDatabase("the segment store (disposable DB)", () => {
   let owner: number;
   let stranger: number;
   let segments: typeof import("./db/castingV2Segments");
+  let variants: typeof import("./db/castingV2Variants");
   let retention: typeof import("./castingV2/candidateRetention");
 
   const geometry = {
@@ -90,7 +91,8 @@ describeWithDatabase("the segment store (disposable DB)", () => {
   }
 
   /** A whole lineage — session, roll, candidate, variant — as the product makes it. */
-  async function newFace(userId: number): Promise<{ candidateId: number; variantId: number }> {
+  async function newFace(userId: number): Promise<{ candidateId: number; candidatePublicId: string; variantId: number }> {
+    const candidatePublicId = randomUUID();
     const [session] = await connection.execute<ResultSetHeader>(
       "INSERT INTO casting_sessions (publicId, userId, status) VALUES (?, ?, 'open')",
       [randomUUID(), userId],
@@ -103,14 +105,14 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     const [candidate] = await connection.execute<ResultSetHeader>(
       "INSERT INTO casting_candidates (publicId, rollId, sessionId, userId, position, status, imageKey, thumbKey)"
         + " VALUES (?, ?, ?, ?, 0, 'ready', ?, ?)",
-      [randomUUID(), roll.insertId, session.insertId, userId, `faces/${randomUUID()}.png`, `faces/${randomUUID()}-thumb.png`],
+      [candidatePublicId, roll.insertId, session.insertId, userId, `faces/${randomUUID()}.png`, `faces/${randomUUID()}-thumb.png`],
     );
     const [variant] = await connection.execute<ResultSetHeader>(
       "INSERT INTO casting_candidate_variants (publicId, candidateId, sessionId, userId, status, instructions, operationId)"
         + " VALUES (?, ?, ?, ?, 'ready', ?, ?)",
       [randomUUID(), candidate.insertId, session.insertId, userId, JSON.stringify(["give her freckles"]), randomUUID()],
     );
-    return { candidateId: candidate.insertId, variantId: variant.insertId };
+    return { candidateId: candidate.insertId, candidatePublicId, variantId: variant.insertId };
   }
 
   beforeAll(async () => {
@@ -122,6 +124,7 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     owner = await newUser("Segment Owner");
     stranger = await newUser("Segment Stranger");
     segments = await import("./db/castingV2Segments");
+    variants = await import("./db/castingV2Variants");
     retention = await import("./castingV2/candidateRetention");
   });
 
@@ -183,7 +186,14 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     expect(rows[0].n).toBe(0);
   });
 
-  it("retires the predecessor when one facet is asked again — one facet, one live segment", async () => {
+  it("supersedes a facet by VERSION on the branch, and keeps the predecessor readable", async () => {
+    /*
+      Re-asking one facet used to RETIRE its predecessor. It no longer does, and
+      fable-091 is why: retirement is one flag over a TREE, and "which version
+      of `marks` does this face keep" has one answer per branch. Supersession is
+      resolved where it can be — by taking the newest version filed by the
+      anchor's own ancestry — and both rows stay live, each true on its branch.
+    */
     const face = await newFace(owner);
     const base = { userId: owner, variantId: face.variantId };
     await fileSegment({
@@ -198,17 +208,21 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     });
 
     expect(heavier[0].version).toBe(2);
-    expect(heavier[0].retired).toBe(1);
+    expect(heavier[0].retired).toBe(0);
 
-    const live = await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId });
-    expect(live).toHaveLength(1);
-    expect(live[0].contentKey).toBe("segments/v2-content.png");
+    // ONE carried segment, and it is the newest — resolved by the lineage walk.
+    const carried = await segments.listLineageSegments({
+      userId: owner, candidateId: face.candidateId, anchorVariantId: face.variantId,
+    });
+    expect(carried).toHaveLength(1);
+    expect(carried[0].contentKey).toBe("segments/v2-content.png");
 
-    // The predecessor is out of the composite but still on the record (§7).
+    // Both are on the record (§7), and neither is retired: an undo is the only
+    // thing that retires, and nobody undid anything here.
     const history = await segments.listSegmentHistory({ userId: owner, candidateId: face.candidateId });
     expect(history).toHaveLength(2);
     expect(history.map((row) => row.version).sort()).toEqual([1, 2]);
-    expect(history.find((row) => row.version === 1)?.retiredAt).toBeInstanceOf(Date);
+    expect(history.every((row) => row.retiredAt === null)).toBe(true);
   });
 
   it("keeps two facets side by side — retirement is per facet, not per face", async () => {
@@ -324,6 +338,7 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     expect(await segments.retireSegmentFacet({
       userId: stranger,
       candidateId: face.candidateId,
+      anchorVariantId: face.variantId,
       facet: "marks",
     })).toBe(0);
     expect(await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId }))
@@ -332,6 +347,7 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     expect(await segments.retireSegmentFacet({
       userId: owner,
       candidateId: face.candidateId,
+      anchorVariantId: face.variantId,
       facet: "marks",
     })).toBe(1);
     expect(await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId }))
@@ -359,10 +375,130 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     expect(await segments.retireSegmentFacet({
       userId: owner,
       candidateId: face.candidateId,
+      anchorVariantId: face.variantId,
       facet: "glasses",
     })).toBe(0);
     expect(await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId }))
       .toHaveLength(1);
+  });
+
+  /* ------------------------------------------------ fork semantics */
+
+  /**
+   * THE FOUNDER'S OWN CASE, on real MySQL (fable-091).
+   *
+   * *"If you go back to a previous edit, the layers are only what that
+   * currently selected image holds — you can fork-edit from any previous
+   * edit."*
+   *
+   * Chain A→B→C→D, fork from B, new edit E. E carries exactly what B had; D is
+   * untouched and still renders with its own. Before the lineage walk this
+   * failed in BOTH directions — E inherited D's glasses, and the facets D had
+   * superseded were gone from E as well.
+   */
+  it("carries what the SELECTED face holds, not what the candidate last did", async () => {
+    const face = await newFace(owner);
+    const chain: Array<{ id: number; publicId: string }> = [];
+    /* A→B→C→D, each one made from the last, as the service records it. */
+    let parent: string | null = null;
+    for (const step of ["A", "B", "C", "D"]) {
+      const claimed = await variants.claimVariant({
+        userId: owner,
+        candidatePublicId: face.candidatePublicId,
+        operationId: randomUUID(),
+        pointsCost: 25,
+        instructions: [`step ${step}`],
+        deltas: null,
+        stepDeltas: null,
+        parentVariantPublicId: parent,
+      });
+      chain.push({ id: claimed.id, publicId: claimed.publicId });
+      parent = claimed.publicId;
+    }
+    const [a, b, c, d] = chain;
+
+    /* A gives her freckles; B gives her hoops; C repaints the freckles; D
+       repaints them again. Every step files against its own variant. */
+    await fileSegment({ userId: owner, variantId: a.id, facet: "marks", region: "face skin",
+      maskKey: "segments/a-mask.png", contentKey: "segments/a-content.png" });
+    await fileSegment({ userId: owner, variantId: b.id, facet: "statedAccessories", region: "earring",
+      maskKey: "segments/b-mask.png", contentKey: "segments/b-content.png" });
+    await fileSegment({ userId: owner, variantId: c.id, facet: "marks", region: "face skin",
+      maskKey: "segments/c-mask.png", contentKey: "segments/c-content.png" });
+    await fileSegment({ userId: owner, variantId: d.id, facet: "marks", region: "face skin",
+      maskKey: "segments/d-mask.png", contentKey: "segments/d-content.png" });
+
+    /* THE FORK: E is made from B. */
+    const e = await variants.claimVariant({
+      userId: owner,
+      candidatePublicId: face.candidatePublicId,
+      operationId: randomUUID(),
+      pointsCost: 25,
+      instructions: ["step E"],
+      deltas: null,
+      stepDeltas: null,
+      parentVariantPublicId: b.publicId,
+    });
+
+    const fromE = await segments.listLineageSegments({
+      userId: owner, candidateId: face.candidateId, anchorVariantId: e.id,
+    });
+    /* Exactly B's world: A's freckles and B's hoops. NOT C's or D's freckles. */
+    expect(fromE.map((segment) => `${segment.facet}@v${segment.version}`).sort())
+      .toEqual(["marks@v1", "statedAccessories@v1"]);
+    expect(fromE.find((segment) => segment.facet === "marks")!.maskKey).toBe("segments/a-mask.png");
+
+    /* And D is untouched: its own branch still holds the newest freckles. */
+    const fromD = await segments.listLineageSegments({
+      userId: owner, candidateId: face.candidateId, anchorVariantId: d.id,
+    });
+    expect(fromD.map((segment) => `${segment.facet}@v${segment.version}`).sort())
+      .toEqual(["marks@v3", "statedAccessories@v1"]);
+    expect(fromD.find((segment) => segment.facet === "marks")!.maskKey).toBe("segments/d-mask.png");
+  });
+
+  it("takes the earrings off ONE branch — an undo does not reach across the tree", async () => {
+    const face = await newFace(owner);
+    const first = await variants.claimVariant({
+      userId: owner, candidatePublicId: face.candidatePublicId, operationId: randomUUID(),
+      pointsCost: 25, instructions: ["hoops"], deltas: null, stepDeltas: null,
+    });
+    await fileSegment({ userId: owner, variantId: first.id, facet: "statedAccessories", region: "earring",
+      maskKey: "segments/hoops-mask.png", contentKey: "segments/hoops-content.png" });
+    /* Two branches from the same face, each with its own hoops. */
+    const branch = await variants.claimVariant({
+      userId: owner, candidatePublicId: face.candidatePublicId, operationId: randomUUID(),
+      pointsCost: 25, instructions: ["hoops", "again"], deltas: null, stepDeltas: null,
+      parentVariantPublicId: first.publicId,
+    });
+    await fileSegment({ userId: owner, variantId: branch.id, facet: "statedAccessories", region: "earring",
+      maskKey: "segments/hoops2-mask.png", contentKey: "segments/hoops2-content.png" });
+
+    expect(await segments.retireSegmentFacet({
+      userId: owner, candidateId: face.candidateId, anchorVariantId: branch.id, facet: "statedAccessories",
+    })).toBe(1);
+
+    /* The branch lost them; the face she forked from still has hers. */
+    expect(await segments.listLineageSegments({
+      userId: owner, candidateId: face.candidateId, anchorVariantId: branch.id,
+    })).toEqual([]);
+    expect((await segments.listLineageSegments({
+      userId: owner, candidateId: face.candidateId, anchorVariantId: first.id,
+    })).map((segment) => segment.maskKey)).toEqual(["segments/hoops-mask.png"]);
+  });
+
+  it("refuses a parent variant that belongs to another face", async () => {
+    const mine = await newFace(owner);
+    const other = await newFace(owner);
+    const theirs = await variants.claimVariant({
+      userId: owner, candidatePublicId: other.candidatePublicId, operationId: randomUUID(),
+      pointsCost: 25, instructions: ["x"], deltas: null, stepDeltas: null,
+    });
+    await expect(variants.claimVariant({
+      userId: owner, candidatePublicId: mine.candidatePublicId, operationId: randomUUID(),
+      pointsCost: 25, instructions: ["y"], deltas: null, stepDeltas: null,
+      parentVariantPublicId: theirs.publicId,
+    })).rejects.toThrow(/variant not available/);
   });
 
   /* ------------------------------------------- the born-worn catalogue */

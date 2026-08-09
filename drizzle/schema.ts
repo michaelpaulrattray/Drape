@@ -2170,6 +2170,34 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
   userId: int("userId").notNull(), // denormalized — single-statement ownership
   status: mysqlEnum("status", CASTING_VARIANT_STATUSES).default("queued").notNull(),
   /**
+   * THE FACE THIS EDIT WAS MADE FROM — the version-jumping tree, made explicit.
+   *
+   * NULL means it was made from the candidate itself, which is the first edit
+   * of any branch. Anything else names the variant that was SELECTED when this
+   * one was asked for, and that is the founder's own semantics: *"if you go
+   * back to a previous edit, the layers are only what that currently selected
+   * image holds — you can fork-edit from any previous edit."*
+   *
+   * # Why a column rather than a derivation
+   *
+   * Refinement history is a TREE, and until now the only ancestry in this row
+   * was `instructions`, the accumulated recipe. Reconstructing the tree by
+   * prefix-matching recipes would be a second implementation of the chain
+   * matcher — law 4's own failure mode — and it would be wrong the moment a
+   * re-ask REWRITES a facet's step instead of appending one.
+   *
+   * The segment store is what forced it: the set of kept pieces a render
+   * carries has one answer per BRANCH, and a single global "currently live"
+   * flag cannot hold more than one answer. A fork from B was carrying D's
+   * glasses (fable-091).
+   *
+   * This changes nothing about base-anchoring. Every variant is still
+   * `edit(the ORIGINAL, instructions 1..N)` — see `claimVariant` — and this
+   * column records which face the user was LOOKING AT, never which image was
+   * fed to the painter.
+   */
+  parentVariantId: int("parentVariantId"), // →casting_candidate_variants, NULL = from the candidate
+  /**
    * The user's OWN sentences, in order, oldest first.
    *
    * Provenance and the only refinement text a projection may return. The
