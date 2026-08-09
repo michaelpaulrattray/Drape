@@ -55,6 +55,18 @@ import {
   assertOneWorld,
   WORLD_DISCRIMINATING_KEYS,
 } from "../lib/worldGuard.mts";
+import { spendAuthorized } from "../lib/stopline.mts";
+
+/*
+  THE FREEZE IS ASKED FIRST — before the world is declared, before a database is
+  opened, before anything else can fail in a more interesting way.
+
+  A roll is eight paid candidates. fable-117 moved the stop-the-line out of the
+  mailbox and into a file the tooling reads for itself, and the earliest
+  possible refusal is the one that cannot be overtaken by an unrelated error.
+  Dry runs are untouched.
+*/
+const SPEND = spendAuthorized("cast a paid sheet on the founder's account");
 
 /*
   THE WORLD IS DECLARED BEFORE A CREDIT MOVES.
@@ -137,7 +149,6 @@ const { createRoll } = await import("../../server/castingV2/rollService");
 /* Founder-verified verbatim. Do not "improve" this on a paid path. */
 const BRIEF = "a woman in her 40s wearing chunky glasses";
 const OPEN_ID = "google_109438922864282769159";
-const SPEND = process.argv.includes("--spend");
 
 const db = await getDb();
 if (!db) throw new Error("no db");

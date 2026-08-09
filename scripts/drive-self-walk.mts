@@ -110,6 +110,7 @@ import { createChecks, openDrivenPage } from "./lib/drivePage.mjs";
 import { openDatabase } from "./lib/dbConnection.mjs";
 import { adjudicateCandidateCarries, formatCarriedVerdict } from "./lib/carriedAdjudicator.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
+import { spendAuthorized } from "./lib/stopline.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -119,7 +120,15 @@ function arg(name: string, fallback = ""): string {
 const BASE = arg("base", "http://localhost:3000");
 const TOKEN = arg("token");
 const CANDIDATE = arg("candidate");
-const SPEND = process.argv.includes("--spend");
+/*
+  THE FREEZE IS ASKED BEFORE THE ARGUMENTS ARE EVEN VALIDATED.
+
+  fable-117, after this driver ran a paid walk inside a founder-ordered
+  stop-the-line: the order lived in a mailbox file a shift had to remember to
+  re-read, so it moved into one the tooling reads for itself. Dry runs are
+  untouched — a frozen shift still plans.
+*/
+const SPEND = spendAuthorized("spend a walk's credits on the founder's account");
 const OUT = arg("out", `output/walk/${new Date().toISOString().replace(/[:.]/g, "-")}`);
 /**
  * `--fresh <rollPublicId>` walks an UNTOUCHED face from that roll instead of a

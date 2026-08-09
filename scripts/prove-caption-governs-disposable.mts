@@ -37,6 +37,8 @@ import "dotenv/config";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
+import { spendAuthorized } from "./lib/stopline.mts";
+
 const BASE = "https://drape-production-0232.up.railway.app";
 const CANDIDATE = "8154ac6d-64ee-45ad-834b-fcbabca0f3ef";
 /*
@@ -53,7 +55,7 @@ function arg(name: string, fallback = ""): string {
 }
 const TOKEN = arg("token");
 if (!TOKEN) throw new Error("--token <jwt> required — mint with scripts/mint-production-session.mts");
-if (!process.argv.includes("--spend")) {
+if (!spendAuthorized("charge a refine on the founder's account")) {
   throw new Error("refusing to charge without --spend. This costs the founder real credits.");
 }
 
