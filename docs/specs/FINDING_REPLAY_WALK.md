@@ -227,7 +227,11 @@ fact, and when they part, the picture follows the caption.
 from). Whether the cure holds is what this walk is for, and it is now aimed at a
 mechanism that is understood rather than at a symptom.
 
-The pin is **recorded, not graded**, and the reason is a negative control: the
+The pin is recorded on **every step, 1–5**, and graded on none (fable-137):
+attribution is cheap, and the step where the caption first turns is the step that
+explains all the ones after it.
+
+It is **recorded, not graded**, and the reason is a negative control: the
 obvious version — fail if the caption names a gathered arrangement — fails a
 *correct* walk, because v#162's own real pin reads *"worn exactly as cut — short
 enough that it is not gathered, tied or pinned at all"*, which means the opposite
