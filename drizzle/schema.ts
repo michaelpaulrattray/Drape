@@ -2434,6 +2434,12 @@ export const castingSegments = mysqlTable("casting_segments", {
     repeat inside a unique index and a key that can quietly hold duplicates is
     not a key.
   */
+  /*
+    Its counterpart is `casting_cast_segments`, and the two are SEPARATE ON
+    PURPOSE — see that table's own note. In one line: this key is keyed on the
+    candidate, the other on the Cast, and neither may be widened to cover both
+    because a shared key would have to admit NULLs and MySQL lets NULLs repeat.
+  */
   uniqueIndex("uq_casting_segments_identity").on(
     table.candidateId,
     table.facet,
@@ -2446,3 +2452,113 @@ export const castingSegments = mysqlTable("casting_segments", {
 
 export type CastingSegment = typeof castingSegments.$inferSelect;
 export type InsertCastingSegment = typeof castingSegments.$inferInsert;
+
+/**
+ * What a signed Cast KEEPS — the promoted segment set (fable-092).
+ *
+ * Sign copies and never invents, and this table is that law at the row level.
+ * At Sign, the signed variant's whole lineage-derived set is copied here and
+ * its objects are re-manifested onto the Cast's own lifetime, so the face chart
+ * on the object she actually keeps does not go empty a week later when the
+ * candidate purges.
+ *
+ * # Why this is a SECOND TABLE and not a `castId` column on `casting_segments`
+ *
+ * Ruled fable-101 on two artifacts, and recorded here because the next reader's
+ * first instinct will be to unify them:
+ *
+ * 1. **A nullable `castId`/`candidateId` pair kills the identity key.**
+ *    `uq_casting_segments_identity` is `(candidateId, facet, region, version)`
+ *    and every column in it is NOT NULL precisely because MySQL lets NULLs
+ *    repeat inside a unique index. A promoted row with `candidateId NULL` is
+ *    outside that key's reach — and promotion is re-run by the Sign adjudicator
+ *    when a lease lapses, so that is an idempotency hole on the one path that
+ *    replays by design.
+ * 2. **A non-null sentinel puts promoted rows inside the candidate purge.**
+ *    `listPurgeableSegmentsIn` matches on `candidateId` alone and its breadth
+ *    is deliberate. A promoted row sharing the candidate's id would be deleted,
+ *    with its objects, seven days after Sign — which is the exact permanence
+ *    expiry this promotion exists to prevent, reintroduced as a forgotten
+ *    `WHERE`.
+ *
+ * Two lifetimes, two owners, two tables — the row-level form of fable-093's
+ * "never share a key with a thing that is going to be deleted". The candidate's
+ * sweep structurally cannot reach this table; this table is deleted by the
+ * Cast's own deletion, in that transaction, with its objects on that manifest.
+ *
+ * # No `retiredAt`, deliberately
+ *
+ * A Cast's segment set is **immutable except through an M12-style ceremony**
+ * (fable-092 §4): what she signed is what persists, and post-Sign refinement
+ * happens on candidates and variants. `retiredAt` on the candidate-side table
+ * serves the undo and the storage lifecycle; neither exists here, and a column
+ * that can only ever be NULL is an invitation to invent a meaning for it.
+ */
+export const castingCastSegments = mysqlTable("casting_cast_segments", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  castId: int("castId").notNull(), // →models.id, the signed Cast
+  /**
+   * The candidate-side row these pixels were copied from, for provenance only.
+   *
+   * Nullable and never joined to: the source row purges on the candidate's own
+   * schedule, so a NULL here means "her candidate is gone", which is the normal
+   * end state rather than missing data. Nothing about the Cast's set depends on
+   * it — the bytes are the Cast's own copies.
+   */
+  sourceSegmentId: int("sourceSegmentId"),
+  provenance: mysqlEnum("provenance", CASTING_SEGMENT_PROVENANCES).notNull(),
+  /** The stylist's word for what this is — see `casting_segments.facet`. */
+  facet: varchar("facet", { length: 48 }).notNull(),
+  /** The segmentation question that drew it — see `casting_segments.region`. */
+  region: varchar("region", { length: 48 }).notNull(),
+  /**
+   * Which version of that facet she signed.
+   *
+   * The lineage walk resolves supersession at promotion time, so exactly one
+   * version per facet is ever promoted; this records WHICH, because "the
+   * freckles she signed" is version 2 of that facet and the record should say
+   * so rather than flattening her history to 1.
+   */
+  version: int("version").default(1).notNull(),
+  /** The Cast's OWN objects — copied bytes, never the candidate's keys. */
+  maskKey: varchar("maskKey", { length: 512 }).notNull(),
+  contentKey: varchar("contentKey", { length: 512 }).notNull(),
+  bboxX: int("bboxX").notNull(),
+  bboxY: int("bboxY").notNull(),
+  bboxW: int("bboxW").notNull(),
+  bboxH: int("bboxH").notNull(),
+  frameWidth: int("frameWidth").notNull(),
+  frameHeight: int("frameHeight").notNull(),
+  /** The reading that earned these pixels, carried across unchanged. */
+  verifiedAt: timestamp("verifiedAt"),
+  verdict: varchar("verdict", { length: 24 }),
+  /** Which detector catalogued a `detected_born` row. Internal, never projected. */
+  detector: varchar("detector", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_casting_cast_segments_public").on(table.publicId),
+  /*
+    Identity, and promotion idempotency for free.
+
+    Every column is NOT NULL — the same requirement as
+    `uq_casting_segments_identity`, and the reason these are two keys on two
+    tables rather than one key on one: a shared key would need a nullable owner
+    column, and a nullable column inside a unique index enforces nothing.
+
+    A re-run of the promotion (the Sign adjudicator finishing a lapsed lease)
+    lands on the rows it already wrote instead of buying a second copy of her
+    face.
+  */
+  uniqueIndex("uq_casting_cast_segments_identity").on(
+    table.castId,
+    table.facet,
+    table.region,
+    table.version,
+  ),
+  index("idx_casting_cast_segments_cast").on(table.castId),
+]));
+
+export type CastingCastSegment = typeof castingCastSegments.$inferSelect;
+export type InsertCastingCastSegment = typeof castingCastSegments.$inferInsert;
