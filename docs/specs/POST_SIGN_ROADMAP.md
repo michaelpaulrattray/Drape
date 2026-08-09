@@ -20,6 +20,22 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   that currently covers the gap ends with Tier A.
 - **Truncation-notice verification** (L17): confirm the >2000-char
   brief rejection surfaces honestly in the client; close or fix.
+- **`bornWornCatalogue` has NO CALLERS** (opus-094, filed by
+  fable-121). Built, tested, guarded by two sabotage runs, and invoked
+  from nowhere in the product — so **no `detected_born` row can exist**,
+  and the whole "she came with it" half of the segment vocabulary is
+  unreachable. Verified 2026-08-09: the only importers are its own test
+  and the sabotage roster; `bornWornDetector` reaches production code
+  through the catalogue alone, plus one calibration script. The
+  invariant-7 shape exactly — helper written, docs written, call site
+  never added.
+  *Not a Tier-A blocker*, and deliberately not built inside the
+  stop-line. **Its first honest consumer is the Sign-time scan
+  (fable-092), which is ACTIVE work** — that is where the call site
+  belongs, so this is filed as a linkage rather than a task of its own.
+  The segments panel wanted a "she came with it" row and could not
+  honestly draw one (opus-094); the row returns the day the catalogue is
+  invoked.
 
 ## 1. Latency investigation (first, after the walk campaign)
 
@@ -77,8 +93,15 @@ confinement hole). Known missing territories (L11): **`allSkin` is
 declared and unimplemented** — `skinTone`/`skinCharacter` (a tan!)
 cannot reach the masked path, and Tier A's catalogue contains tan
 asks; **cheeks** ("the day a cheek region exists, the placement
-table is the only thing that changes"); accessory regions (edits
-persist by recipe, not patch, until they exist).
+table is the only thing that changes"); accessory regions —
+**CLOSED 2026-08-09 (`6bc2b75e`)**, and not by adding a region to the
+map. `statedAccessories` cannot have a `REGION_OF_FACET` entry, because
+the region depends on the described OBJECT rather than the facet; the
+placement corridor the harvest already builds is now filed under the
+accessory's kind id and reaches the cutter as an override, unioned with
+the master's own read and with the delivered extent read off the painted
+frame. Accessories persist by PATCH from that commit. The remaining
+territories above are untouched by it.
 
 ## 6. Engine routing for marks (evidence exists; engineering item)
 
