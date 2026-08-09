@@ -383,6 +383,59 @@ const greenEyes = {
   harvest: unmasked,
 };
 
+/*
+  THE SEAM VERDICT RIDES THE ROW ON EVERY RENDER (fable-119).
+
+  It existed only as a log line, and only when it fired — a sample of failures
+  with no denominator, which is why the shadow→enforce flip has rested on three
+  anecdotes for four shifts. A log is not an artifact a report can be derived
+  from; the intersections learned that first (fable-109) and this is the same
+  lesson one consumer over.
+
+  Asserted on what is WRITTEN, not on a constant near it: the clean case is the
+  one that matters, because a verdict recorded only when it is bad cannot
+  produce a rate.
+*/
+describe("the seam verdict is an artifact, not a log line", () => {
+  const composited = async (input: { painted: { bytes: Buffer; contentType: string } }) => ({
+    bytes: input.painted.bytes,
+    contentType: input.painted.contentType,
+    outcome: "composited" as const,
+    seam: {
+      torn: false,
+      enforced: false,
+      boundaryPixels: 38_592,
+      tornPixels: 0,
+      share: 0,
+      worstExcess: 73.1,
+      signedMean: -10.31,
+      signedSpread: 9.22,
+      coherence: 1.118,
+    },
+  });
+
+  it("writes a CLEAN verdict to the row, so the rate has a denominator", async () => {
+    await refineCandidate({ ...greenEyes, harvest: composited }, input);
+    const stored = (landedVariant?.internalPrompt as { seam?: Record<string, unknown> }).seam;
+    expect(stored).toEqual({
+      torn: false,
+      enforced: false,
+      boundaryPixels: 38_592,
+      tornPixels: 0,
+      share: 0,
+      worstExcess: 73.1,
+      signedMean: -10.31,
+      signedSpread: 9.22,
+      coherence: 1.118,
+    });
+  });
+
+  it("writes nothing when nothing was composited — no boundary, no opinion", async () => {
+    await refineCandidate({ ...greenEyes, harvest: unmasked }, input);
+    expect((landedVariant?.internalPrompt as { seam?: unknown }).seam).toBeUndefined();
+  });
+});
+
 describe("refusals land before anything is claimed", () => {
   /*
     §10's whole argument. An out-of-tier ask is a real thing a user will type,

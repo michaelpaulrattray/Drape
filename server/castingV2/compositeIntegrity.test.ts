@@ -128,3 +128,91 @@ describe("a composite that cut through her picture", () => {
     expect(verdict.torn).toBe(false);
   });
 });
+
+/*
+  THE COHERENCE STATISTIC — recorded, acted on by nothing (fable-119).
+
+  The founder traced a visible tonal seam along an expanded ground's edge on a
+  frame this detector scored `torn: false`. It was not a bar set too high. In
+  the band he marked, his frame is ZERO pixels over the tear bar with a
+  consistent −10 luma offset along the whole edge: a tear is an amplitude and a
+  blend seam is a coherence, and no threshold on |step| separates the second
+  from texture.
+
+  So the controls here are about DISCRIMINATION, not about a verdict — nothing
+  refuses on this number yet, and it has one production specimen.
+*/
+describe("a seam the eye reads as a line", () => {
+  /* A uniform-ish surface so the only structure is what the composite adds. */
+  const SHIRT: [number, number, number] = [170, 170, 172];
+  const shirt = frame((x, y) => [
+    SHIRT[0] + ((x * 7 + y * 13) % 5) - 2,
+    SHIRT[1] + ((x * 11 + y * 5) % 5) - 2,
+    SHIRT[2] + ((x * 3 + y * 17) % 5) - 2,
+  ]);
+  const block = maskOf((x) => x >= 16 && x < 48);
+
+  it("POSITIVE — a consistent tonal offset inside the mask reads as coherent", () => {
+    /* Ten levels darker inside, which is roughly what he saw and nowhere near
+       the tear bar of eighty. */
+    const pasted = frame((x, y) => {
+      const at = (y * W + x) * 3;
+      const base: [number, number, number] = [shirt.data[at]!, shirt.data[at + 1]!, shirt.data[at + 2]!];
+      return block.data[y * W + x] ? [base[0] - 10, base[1] - 10, base[2] - 10] : base;
+    });
+    const verdict = compositeSeam({ master: shirt, composite: pasted, applied: block });
+
+    /* The tear detector is silent, correctly — nothing here is a tear. */
+    expect(verdict.torn).toBe(false);
+    expect(verdict.tornPixels).toBe(0);
+    /* And the coherence is loud: the step has a consistent sign and a spread
+       far smaller than its mean. */
+    expect(Math.abs(verdict.signedMean)).toBeGreaterThan(5);
+    expect(verdict.coherence).toBeGreaterThan(1);
+  });
+
+  it("NEGATIVE — a noisy edit with no consistent offset is not coherent", () => {
+    /* Same magnitude of change, alternating sign: visible as texture, invisible
+       as a line. This is the control that stops "any edit" scoring as a seam. */
+    const noisy = frame((x, y) => {
+      const at = (y * W + x) * 3;
+      const base: [number, number, number] = [shirt.data[at]!, shirt.data[at + 1]!, shirt.data[at + 2]!];
+      if (!block.data[y * W + x]) return base;
+      const wobble = (x + y) % 2 === 0 ? 10 : -10;
+      return [base[0] + wobble, base[1] + wobble, base[2] + wobble];
+    });
+    const verdict = compositeSeam({ master: shirt, composite: noisy, applied: block });
+
+    expect(verdict.torn).toBe(false);
+    expect(verdict.coherence).toBeLessThan(1);
+  });
+
+  /*
+    THE CONTROL THAT CAUGHT THIS STATISTIC'S OWN FIRST BUG.
+
+    It shipped as `spread === 0 ? 0 : |mean|/spread`, so a boundary with a
+    dead-consistent offset — the strongest possible reading of the defect it
+    exists to find — scored ZERO. The flattering direction, in an instrument
+    written to stop exactly that. Nothing acted on the number yet, which is the
+    only reason it is a footnote.
+  */
+  it("scores a PERFECTLY consistent offset at the top, not at the bottom", () => {
+    /* No texture at all: master and delivered differ by a flat ten levels, so
+       the signed excess has zero spread. */
+    const flat = frame(() => SHIRT);
+    const offset = frame((x, y) => (block.data[y * W + x]
+      ? [SHIRT[0] - 10, SHIRT[1] - 10, SHIRT[2] - 10]
+      : SHIRT));
+    const verdict = compositeSeam({ master: flat, composite: offset, applied: block });
+    expect(verdict.signedSpread).toBe(0);
+    expect(verdict.coherence).toBeGreaterThan(10);
+    expect(Number.isFinite(verdict.coherence)).toBe(true);
+  });
+
+  it("reports zero rather than a division by nothing when there is no boundary", () => {
+    const verdict = compositeSeam({ master: shirt, composite: shirt, applied: maskOf(() => false) });
+    expect(verdict.boundaryPixels).toBe(0);
+    expect(verdict.coherence).toBe(0);
+    expect(verdict.signedSpread).toBe(0);
+  });
+});

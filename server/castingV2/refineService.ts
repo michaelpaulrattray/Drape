@@ -2212,6 +2212,22 @@ export async function refineCandidate(
           superseded: assembled.assembly.supersededCandidates,
           excluded: assembled.assembly.segmentsExcluded,
         },
+        /*
+          AND THE SEAM VERDICT, FOR THE SAME REASON, ON EVERY RENDER (fable-119).
+
+          The seam check has been running in SHADOW on edge-moving classes since
+          it shipped, and the shadow produced a log line that fired only when it
+          found something — a sample of failures with no denominator, which is
+          why the flip decision has spent four shifts resting on three
+          anecdotes. It rides the row now, torn or clean, enforced or shadow.
+
+          `coherence` beside it is the statistic the tear bar cannot express:
+          the founder traced a visible seam on a frame this detector scored
+          `torn: false`, and in his band it is 0 pixels over the bar with a
+          consistent -10 luma offset along the whole edge. Recorded and acted on
+          by nothing — one specimen is not a calibration.
+        */
+        seam: harvested.seam,
       };
     };
 
@@ -2618,6 +2634,12 @@ export async function refineCandidate(
           no assembly to describe.
         */
         ...(image.assembly ? { assembly: image.assembly } : {}),
+        /*
+          THE SEAM VERDICT, ON EVERY LANDED RENDER (fable-119). Absent only when
+          nothing was composited — a flag-off or no-region render has no
+          boundary to have an opinion about.
+        */
+        ...(image.seam ? { seam: image.seam } : {}),
         /*
           THE NET'S VERDICT, RECORDED (D-185).
 

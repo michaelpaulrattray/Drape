@@ -106,6 +106,35 @@ export type SeamVerdict = {
   share: number;
   /** The worst excess seen, for a log line that can be acted on. */
   worstExcess: number;
+  /**
+   * THE STATISTIC A TEAR DETECTOR CANNOT EXPRESS — shadow only, for now.
+   *
+   * The founder traced a visible tonal seam along the expanded ground's edge on
+   * a render he had paid for, and this detector said `torn: false` about that
+   * exact frame. It was not a threshold set too high. Measured on his own
+   * artifacts, in the band he marked:
+   *
+   *     pixels over the tear bar (80 levels)        0
+   *     signed excess along the boundary     -10.31 +/- 9.22   |mean|/sd 1.118
+   *     the same statistic, whole boundary   +0.39 +/- 19.76   |mean|/sd 0.020
+   *
+   * **A tear is an amplitude and a blend seam is a COHERENCE.** One material
+   * replacing another reads in the hundreds and is local; a painted shirt-grey
+   * meeting a master shirt-grey reads at ten, CONSISTENTLY, along the whole
+   * edge — and the eye integrates along an edge where a threshold does not. No
+   * bar on |step| can be lowered far enough to find it without drowning in
+   * texture: his band's median excess is 1.9 and the whole boundary's p90 is
+   * 14.7.
+   *
+   * So it is recorded and nothing acts on it. It has ONE specimen, and one
+   * specimen is not a calibration — the same rule `renderFault` and the seam
+   * bar itself were held to. What it needs is a table, which is what persisting
+   * it on every render buys.
+   */
+  signedMean: number;
+  signedSpread: number;
+  /** `|mean| / sd` — how much of the step is a consistent offset rather than noise. */
+  coherence: number;
   detail: string;
 };
 
@@ -129,7 +158,8 @@ export function compositeSeam(input: {
 }): SeamVerdict {
   const { master, composite, applied } = input;
   const nothing = (detail: string): SeamVerdict => ({
-    torn: false, boundaryPixels: 0, tornPixels: 0, share: 0, worstExcess: 0, detail,
+    torn: false, boundaryPixels: 0, tornPixels: 0, share: 0, worstExcess: 0,
+    signedMean: 0, signedSpread: 0, coherence: 0, detail,
   });
 
   if (master.width !== composite.width || master.height !== composite.height
@@ -142,6 +172,9 @@ export function compositeSeam(input: {
   let boundaryPixels = 0;
   let tornPixels = 0;
   let worstExcess = 0;
+  /* The SIGNED excess, accumulated for the coherence statistic below. */
+  let signedTotal = 0;
+  let signedSquares = 0;
   for (let y = 1; y < height - 1; y += 1) {
     for (let x = 1; x < width - 1; x += 1) {
       const pixel = y * width + x;
@@ -153,10 +186,14 @@ export function compositeSeam(input: {
           The outside pixel is the same in both images by the compositor's own
           guarantee, so this difference is entirely about what was delivered.
         */
-        const excess = Math.abs(luma(composite, pixel) - luma(composite, neighbour))
-          - Math.abs(luma(master, pixel) - luma(master, neighbour));
+        const deliveredStep = luma(composite, pixel) - luma(composite, neighbour);
+        const masterStep = luma(master, pixel) - luma(master, neighbour);
+        const excess = Math.abs(deliveredStep) - Math.abs(masterStep);
         if (excess > worstExcess) worstExcess = excess;
         if (excess > SEAM_EXCESS_LEVELS) tornPixels += 1;
+        const signed = deliveredStep - masterStep;
+        signedTotal += signed;
+        signedSquares += signed * signed;
       }
     }
   }
@@ -164,14 +201,31 @@ export function compositeSeam(input: {
   if (boundaryPixels === 0) return nothing("nothing was composited — delivering");
   const share = tornPixels / boundaryPixels;
   const torn = tornPixels >= SEAM_MIN_PIXELS && share >= SEAM_MIN_SHARE;
+  const signedMean = signedTotal / boundaryPixels;
+  const variance = Math.max(0, signedSquares / boundaryPixels - signedMean * signedMean);
+  const signedSpread = Math.sqrt(variance);
   return {
     torn,
     boundaryPixels,
     tornPixels,
     share,
     worstExcess,
+    signedMean,
+    signedSpread,
+    /*
+      A FLOOR ON THE DENOMINATOR, BECAUSE PERFECT COHERENCE IS THE LOUDEST CASE.
+
+      The first version read `spread === 0 ? 0 : |mean|/spread`, so a boundary
+      with a dead-consistent offset — the strongest possible reading of exactly
+      the defect this measures — scored ZERO. Its own positive control caught
+      it. Half a luma level is below what eight-bit pixels can express, so
+      anything under it is not a smaller spread, it is no spread; and a floor
+      keeps the number finite, which a row of JSON requires (`Infinity`
+      serialises to `null`).
+    */
+    coherence: Math.abs(signedMean) / Math.max(signedSpread, 0.5),
     detail: `${tornPixels} of ${boundaryPixels} boundary px step more than `
       + `${SEAM_EXCESS_LEVELS} levels past the master (${(share * 100).toFixed(3)}%, worst `
-      + `${worstExcess.toFixed(1)})`,
+      + `${worstExcess.toFixed(1)}); signed mean ${signedMean.toFixed(2)} +/- ${signedSpread.toFixed(2)}`,
   };
 }

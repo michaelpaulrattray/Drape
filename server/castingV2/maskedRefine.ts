@@ -314,6 +314,25 @@ export type MaskedRefineResult = {
     zoneCoverage: number;
   };
   /**
+   * THE SEAM VERDICT FOR THIS COMPOSITE — every render, not only the torn ones.
+   *
+   * `enforced` says whether this render's classes were ones a boundary step can
+   * never be legitimate on. It is recorded beside the verdict so the flip
+   * decision can read "what would have been refused" off the rows rather than
+   * off memory.
+   */
+  seam?: {
+    torn: boolean;
+    enforced: boolean;
+    boundaryPixels: number;
+    tornPixels: number;
+    share: number;
+    worstExcess: number;
+    signedMean: number;
+    signedSpread: number;
+    coherence: number;
+  };
+  /**
    * WHAT THE COMPOSITE CAN PROVE ABOUT PIXELS IT DID NOT TOUCH.
    *
    * The composite's own guarantee is that everything outside `applied` is
@@ -1574,6 +1593,31 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       outsideIdentical: outside.identical,
       blendBandPixels: outside.bandPixels,
       zoneCoverage: coverage(grown.zone),
+    },
+    /*
+      THE SEAM VERDICT, CARRIED OUT RATHER THAN LOGGED AWAY (fable-119).
+
+      It existed only as a log line, and only when it fired — so the shadow
+      period this check has been running in produced nothing a report could be
+      derived from. That is fable-109's ruling one consumer over: **a log is not
+      an artifact.** The intersections moved onto the row for exactly this
+      reason and the flip decision has been waiting on three anecdotes ever
+      since.
+
+      Every render, torn or clean, shadow or enforced. A verdict recorded only
+      when it fires is a sample of failures with no denominator.
+    */
+    seam: {
+      torn: seam.torn,
+      enforced: seamEnforced,
+      boundaryPixels: seam.boundaryPixels,
+      tornPixels: seam.tornPixels,
+      share: seam.share,
+      worstExcess: seam.worstExcess,
+      /* Shadow only — one specimen is not a calibration. See `SeamVerdict`. */
+      signedMean: seam.signedMean,
+      signedSpread: seam.signedSpread,
+      coherence: seam.coherence,
     },
     /*
       Harvested from the memo the segmentation calls already share, so this is

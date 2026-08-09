@@ -748,6 +748,29 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     }],
   },
   {
+    /* fable-119: the shadow period has to produce ARTIFACTS. Drop the verdict
+       from the row and it is a log line again — a sample of failures with no
+       denominator, which is the state the flip decision has been stuck in. */
+    name: "the seam verdict riding the row instead of a log line",
+    file: "server/castingV2/refineService.ts",
+    suites: ["server/castingV2/refineService.test.ts"],
+    mutations: [{
+      find: "        ...(image.seam ? { seam: image.seam } : {}),",
+      replace: "",
+    }],
+  },
+  {
+    /* The statistic's own first bug: perfect coherence scored zero. Restore it
+       and the positive control must go red. */
+    name: "a perfectly consistent offset scoring at the top rather than the bottom",
+    file: "server/castingV2/compositeIntegrity.ts",
+    suites: ["server/castingV2/compositeIntegrity.test.ts"],
+    mutations: [{
+      find: "    coherence: Math.abs(signedMean) / Math.max(signedSpread, 0.5),",
+      replace: "    coherence: signedSpread === 0 ? 0 : Math.abs(signedMean) / signedSpread,",
+    }],
+  },
+  {
     /* A pin's id is what makes it structurally a pin. Drop it and the
        retirement is back to reading prose. */
     name: "the pin carrying the id it was chosen from",
