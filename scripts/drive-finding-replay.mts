@@ -112,6 +112,22 @@ function arg(name: string, fallback = ""): string {
 */
 const SPEND = spendAuthorized("walk the finding replay (125 credits on his account)");
 const CONTROLS = process.argv.includes("--controls");
+/**
+ * `--rehearse` — everything the walk does EXCEPT type and submit.
+ *
+ * The browser half of this driver is the half that cannot be reasoned about:
+ * whether her tile opens, whether the reset finds the Original, whether the kept
+ * panel's thumbnails really carry segment object keys the way this file assumes.
+ * Getting any of that wrong is not discovered until after 125 credits, and it
+ * would look like a product defect on five consecutive steps.
+ *
+ * None of it costs anything. Opening a viewer and selecting a version are
+ * navigation between pictures that already exist (D-121), so the whole path up
+ * to the keystroke can be driven inside the freeze — and it is the only part of
+ * `--spend` that is testable without spending, which makes it obligatory rather
+ * than nice.
+ */
+const REHEARSE = process.argv.includes("--rehearse");
 const OUT = path.resolve(arg("out", "output/finding-replay"));
 
 const APP_BASE = arg("base");
@@ -125,10 +141,11 @@ const CANDIDATE = arg("candidate");
   should not be told which argument it is missing for the work it was not asked
   to do. Everything below this line is a precondition of real work.
 */
-if (!CONTROLS && !SPEND && !CANDIDATE) {
+if (!CONTROLS && !SPEND && !REHEARSE && !CANDIDATE) {
   console.log(
     "Nothing to do. `--controls` drives the instruments against his own frames; "
-    + "add --base/--token/--candidate for the dry run, and --spend to walk it.",
+    + "add --base/--token/--candidate for the dry run, `--rehearse` to drive the "
+    + "browser without typing, and --spend to walk it.",
   );
   process.exit(0);
 }
@@ -143,10 +160,11 @@ if (base === (readLocalEnvFile().get("R2_PUBLIC_URL") ?? "").replace(/\/$/, ""))
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) throw new Error("FAL_KEY is required — the counter is a real segmentation read");
 
-if (SPEND && (!APP_BASE || !TOKEN || !CANDIDATE)) {
+if ((SPEND || REHEARSE) && (!APP_BASE || !TOKEN || !CANDIDATE)) {
   throw new Error(
-    "--base, --token and --candidate are all required to spend. Refusing to walk a face "
-    + "I cannot name rather than guessing at one (see mint-production-session.mts for the token).",
+    `--base, --token and --candidate are all required to ${SPEND ? "spend" : "rehearse"}. `
+    + "Refusing to walk a face I cannot name rather than guessing at one "
+    + "(see mint-production-session.mts for the token).",
   );
 }
 
@@ -764,7 +782,9 @@ type StepRecord = {
    * segment table read at the end of the walk are minutes apart. Comparing them
    * would book a disagreement against a product that was simply still writing.
    */
-  segmentsAtPanelRead: Array<{ facet: string; contentKey: string; variantId: number | null }>;
+  segmentsAtPanelRead: Array<{
+    facet: string; contentKey: string; variantId: number | null; retiredAt: Date | null;
+  }>;
 };
 
 /**
@@ -817,14 +837,14 @@ async function readKeptPanel(page: any): Promise<{ keys: string[]; rows: number 
 }
 
 /** Every segment row on this face, right now — E's other half, same moment. */
-async function segmentsNow(): Promise<Array<{ facet: string; contentKey: string; variantId: number | null }>> {
+async function segmentsNow(): Promise<StepRecord["segmentsAtPanelRead"]> {
   const [rows] = await connection.query<any[]>(
-    `SELECT s.facet, s.contentKey, s.variantId FROM casting_segments s
+    `SELECT s.facet, s.contentKey, s.variantId, s.retiredAt FROM casting_segments s
        JOIN casting_candidates c ON c.id = s.candidateId
       WHERE c.publicId = ? ORDER BY s.id ASC`,
     [CANDIDATE],
   );
-  return rows as Array<{ facet: string; contentKey: string; variantId: number | null }>;
+  return rows as StepRecord["segmentsAtPanelRead"];
 }
 
 async function runWalk(): Promise<boolean> {
@@ -874,8 +894,26 @@ async function runWalk(): Promise<boolean> {
       console.log(`  glasses unreadable (${String(error).slice(0, 90)})`);
       return null;
     });
+  /*
+    THE PRECONDITIONS REFUSE A SPEND AND ONLY REPORT TO A REHEARSAL, and the
+    reason is structural rather than a convenience.
+
+    A walkable face is by definition one this walk has not edited — so it keeps
+    no segments, so its kept panel does not render, so the rehearsal's whole
+    subject (do the panel's thumbnails join to segment rows) is unanswerable on
+    her. The only faces that CAN answer it are faces the walk would rightly
+    refuse. Refusing the rehearsal on a walk precondition would make the join
+    permanently unprovable, which is how a check ends up existing and never
+    having run.
+
+    The refusal itself is untouched on the path where money moves.
+  */
+  const refuseOrReport = (why: string): void => {
+    if (SPEND) throw new Error(why);
+    console.log(`  NOT A WALK FACE — ${why.split(".")[0]}. Rehearsing anyway; nothing here can spend.`);
+  };
   if (bespectacled === false) {
-    throw new Error(
+    refuseOrReport(
       "this face is not wearing glasses, and step 5 (\"remove her glasses\") is the whole of "
       + "finding 3's ghost rim. Walking her would spend 25 credits on a step that cannot land "
       + "and then score the product for it. Pick a bespectacled face, or roll one — the spec "
@@ -886,9 +924,11 @@ async function runWalk(): Promise<boolean> {
     ? "  glasses: NO READ — proceeding, but step 5's expectation is unproven"
     : "  glasses: present, so step 5 is answerable");
 
-  const ears = faceBytes === null ? null : await countEarringPair(faceBytes, "preflight");
+  /* Skipped entirely on a rehearsal: four fal calls to answer a question that
+     cannot refuse anything on that path. */
+  const ears = (faceBytes === null || REHEARSE) ? null : await countEarringPair(faceBytes, "preflight");
   if (ears && ears.unreadable.length > 0) {
-    throw new Error(
+    refuseOrReport(
       `this face's ${ears.unreadable.join(" and ")} ear cannot be found in the frame `
       + `(${ears.saw}). Assertion A counts an earring on each side, so on her a missing hoop and a `
       + "hidden ear are the same picture — the walk could not tell his finding 1 from her hairstyle. "
@@ -898,7 +938,9 @@ async function runWalk(): Promise<boolean> {
   console.log(ears
     ? `  ears: ${ears.sides.map((side) => `${side.side} ${side.ear}px`).join(", ")} — `
       + "both visible, so step 2's count can distinguish a miss from a hairstyle"
-    : "  ears: NO READ — her face could not be fetched");
+    : REHEARSE
+      ? "  ears: not asked — a rehearsal cannot spend, so the precondition has nothing to refuse"
+      : "  ears: NO READ — her face could not be fetched");
 
   console.log(
     `\nTHE WALK — ${WALK.length} steps, ${WALK.length * COST_PER_STEP} credits `
@@ -908,10 +950,11 @@ async function runWalk(): Promise<boolean> {
     console.log(`  ${index + 1}. "${step.instruction}"  · serves finding ${step.serves}`);
   }
 
-  if (!SPEND) {
+  if (!SPEND && !REHEARSE) {
     console.log(
       "\nDRY RUN — the face is found, her glasses are proven and the price is stated. "
-      + "Pass --spend to walk it. Nothing was charged.",
+      + "Pass --rehearse to drive the browser without typing, or --spend to walk it. "
+      + "Nothing was charged.",
     );
     return true;
   }
@@ -961,6 +1004,72 @@ async function runWalk(): Promise<boolean> {
         "[reset] the walk starts from the original face",
         `Original aria-pressed="${pressed}" (was ${reset.wasPressed ? "already" : "not"} selected)`,
       );
+    }
+
+    /*
+      THE REHEARSAL STOPS HERE — at the keystroke, which is the only line in this
+      function that costs money.
+
+      What it has just proved is everything upstream of it: her sheet opened, the
+      rail found her roll, her tile was matched by her own picture, the version
+      stack settled, the Original was addressable. What it proves below is the
+      kept panel — that its thumbnails really do carry segment object keys this
+      file can join on, which assertion E assumes on all five steps and which
+      nothing had ever checked.
+    */
+    if (REHEARSE) {
+      /*
+        AND THE PANEL IS ASKED OF A VERSION THAT KEEPS SOMETHING.
+
+        The first rehearsal read it straight after the reset and found no panel
+        on a face with three live segment rows — which looked like a defect and
+        is the product being right: the panel lists what THIS VERSION is keeping,
+        and the Original keeps nothing by definition. During the walk the panel
+        is always read on a version that has just landed, so the rehearsal has to
+        select the newest one to be rehearsing the same thing.
+      */
+      const selected = await page.evaluate(() => {
+        const picks = Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"));
+        const last = picks[picks.length - 1];
+        if (!last) return null;
+        last.click();
+        return last.getAttribute("aria-label");
+      });
+      await page.waitForFunction(
+        () => {
+          const picks = Array.from(document.querySelectorAll<HTMLElement>(".dpc-refine__pick:not(.dpc-refine__pick--ghost)"));
+          return picks[picks.length - 1]?.getAttribute("aria-pressed") === "true";
+        },
+        { timeout: 30_000, polling: 500 },
+      ).catch(() => undefined);
+      console.log(`  selected the newest version: ${selected ?? "she has no versions"}`);
+
+      const panel = await readKeptPanel(page);
+      const rows = await segmentsNow();
+      await page.screenshot({ path: `${OUT}/rehearsal.png` });
+      if (panel.rows === null) {
+        absent(
+          "[rehearsal] the kept panel's thumbnails join to segment rows",
+          `no panel on this face — she keeps nothing (${rows.length} segment row(s) on her). `
+          + "E's join is unproven on her; rehearse a face that keeps something",
+        );
+      } else {
+        /* LIVE rows only — the same join assertion E makes on every step, so the
+           rehearsal proves the thing the walk will rely on rather than a looser
+           cousin of it. */
+        const live = rows.filter((segment) => segment.retiredAt === null);
+        const mapped = panel.keys.filter((key) => live.some((segment) => segment.contentKey === key));
+        check(
+          panel.rows > 0 && mapped.length === panel.keys.length,
+          "[rehearsal] every kept-panel thumbnail joins to a LIVE segment row by its own object key",
+          `${mapped.length}/${panel.keys.length} of the panel's ${panel.rows} row(s) matched a live `
+          + `casting_segments.contentKey — facets [${
+            [...new Set(mapped.map((key) => live.find((s) => s.contentKey === key)!.facet))].join(", ")}]`
+          + ` · she keeps ${live.length} live segment(s) in total on this face`,
+        );
+      }
+      console.log(`\nREHEARSAL — the browser path is proved up to the keystroke. Nothing was charged.`);
+      return failures().length === 0;
     }
 
     for (const [index, step] of WALK.entries()) {
@@ -1420,12 +1529,37 @@ async function runWalk(): Promise<boolean> {
     THE PANEL AND THE COMPOSITOR READ THE SAME STORE THROUGH DIFFERENT PATHS, so
     a disagreement is a real finding either way.
 
-    One correction to the spec's wording, stated rather than quietly applied: the
-    panel lists what this VERSION is keeping, which is everything the assembly
-    CARRIED plus whatever this render kept for the first time. "Exactly the
-    facets the assembly says were carried" would be short by precisely the facet
-    the step just wrote, on every step that writes one — the comparison would
-    fail on a correct product. Both halves come from the product's own records.
+    # Two corrections to the spec's wording, both found by driving rather than by
+    # reading, both stated rather than quietly applied
+
+    The spec says the panel lists *exactly the facets the assembly says were
+    carried — no more, no fewer.* Driven against production, that is wrong twice:
+
+    1. **No fewer is wrong.** A render that WRITES a facet does not carry it, so
+       the panel is longer than the carried list by exactly the facet the step
+       just asked for, on every step that asks for one.
+    2. **No more is wrong too.** The rehearsal on his own v#157 found a panel of
+       two rows over three live segments and no assembly record at all — the
+       panel lists what is live on the BRANCH, which is a superset of what any
+       one render carried. Asserting equality would have failed all five steps of
+       a perfectly correct walk.
+
+    So the assertion is a containment plus a join, which is what actually has
+    teeth, and the extras are NAMED rather than counted:
+
+      every panel row joins to a LIVE segment row      a panel showing a retired
+                                                       segment is a real defect
+      every carried-or-kept facet is ON the panel      the picture contains those
+                                                       pixels; a panel hiding them
+                                                       is the disagreement E exists
+                                                       to catch
+      anything else the panel shows                    printed in the observation
+
+    The one honest caveat, seen on his own face: the projection DROPS a row whose
+    delivered value cannot be found (`hairWorn` from a render that never asked
+    about hair), by design — "a silent row is honest where an ugly one is not".
+    On this walk step 1 sets a hair arrangement, so its value exists; if a carried
+    facet still fails to appear, that IS the finding, and the observation says so.
   */
   for (const [index, entry] of walkRows.entries()) {
     const position = `${index + 1}/${WALK.length}`;
@@ -1452,19 +1586,32 @@ async function runWalk(): Promise<boolean> {
       }
       continue;
     }
-    const expected = [...new Set([...carried, ...kept])].sort();
+    const owed = [...new Set([...carried, ...kept])].sort();
+    const live = thenRows.filter((segment) => segment.retiredAt === null);
     const shown = [...new Set(
       step.panelContentKeys
-        .map((key) => thenRows.find((segment) => segment.contentKey === key)?.facet)
+        .map((key) => live.find((segment) => segment.contentKey === key)?.facet)
         .filter((facet): facet is string => Boolean(facet)),
     )].sort();
-    const unmapped = step.panelContentKeys.length - step.panelContentKeys
-      .filter((key) => thenRows.some((segment) => segment.contentKey === key)).length;
+    /* A row whose object is not a LIVE segment: either a retired one still on
+       screen, or a thumbnail pointing at something the store does not know. */
+    const orphaned = step.panelContentKeys.filter((key) => !live.some((segment) => segment.contentKey === key));
+    const missing = owed.filter((facet) => !shown.includes(facet));
+    const extra = shown.filter((facet) => !owed.includes(facet));
+
     check(
-      shown.join(",") === expected.join(",") && unmapped === 0,
-      `[E] ${position} the panel lists exactly what this version is keeping`,
-      `panel [${shown.join(", ")}] against carried+kept [${expected.join(", ")}]`
-      + (unmapped ? ` · ${unmapped} panel row(s) whose object matches no segment row` : ""),
+      orphaned.length === 0,
+      `[E] ${position} every kept-panel row is a LIVE segment of this face`,
+      orphaned.length === 0
+        ? `${step.panelContentKeys.length} row(s), all joined to live casting_segments rows by object key`
+        : `${orphaned.length} row(s) point at no live segment: ${orphaned.map((k) => k.slice(-28)).join(", ")}`,
+    );
+    check(
+      missing.length === 0,
+      `[E] ${position} everything this render carried or kept is ON the panel`,
+      `panel [${shown.join(", ")}] · carried [${carried.join(", ")}] · kept [${kept.join(", ")}]`
+      + (missing.length ? ` — MISSING from the panel: ${missing.join(", ")}` : "")
+      + (extra.length ? ` · also shown (live on the branch from an earlier render): ${extra.join(", ")}` : ""),
     );
   }
 

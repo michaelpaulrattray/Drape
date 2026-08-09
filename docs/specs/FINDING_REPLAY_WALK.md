@@ -177,15 +177,24 @@ a reading that has never been able to say otherwise.
 
 ### E. The panel agrees with the assembly (new, free)
 
-**Assert:** after each step, the "On his/her face" panel lists exactly the
-facets the assembly says were carried **plus whatever that render kept for the
-first time** — no more, no fewer.
+**Assert,** as revised during the build — two assertions, not one:
 
-*(The italicised half is a correction made during the build, stated rather than
-quietly applied. The panel lists what this VERSION is keeping; a render that
-writes a facet does not CARRY it, so "exactly the facets the assembly says were
-carried" is short by precisely the facet the step just wrote, on every step that
-writes one. As specified, E would have failed on a correct product.)*
+1. **every panel row joins to a LIVE segment row** of this face, by object key;
+2. **every facet the assembly carried, or this render kept, is ON the panel.**
+
+Anything else the panel shows is **named in the observation, not failed**.
+
+*Both revisions were forced by driving rather than by reading, and the original
+wording — "exactly the facets the assembly says were carried, no more, no fewer"
+— was wrong in both directions:*
+
+- ***no fewer** is wrong: a render that WRITES a facet does not carry it, so the
+  panel is longer than the carried list by exactly the facet the step just asked
+  for, on every step that asks for one.*
+- ***no more** is wrong: rehearsed against his own v#157, the panel showed two
+  rows over three live segments with no assembly record at all. The panel lists
+  what is live on the BRANCH, which is a superset of what any one render carried.
+  Asserting equality would have failed all five steps of a correct walk.*
 
 Compared by **identity, not by copy**: each row's thumbnail carries the stored
 segment's own `contentKey` in its `background-image`, and that key is a row in
@@ -193,6 +202,26 @@ segment's own `contentKey` in its `background-image`, and that key is a row in
 persisted after the variant lands, so a panel read at landing against a segment
 table read at the end of the walk is a disagreement about time rather than about
 the product.
+
+**The one honest caveat**, seen on that same face: the projection deliberately
+drops a row whose delivered value cannot be found — a `hairWorn` segment from a
+render that never asked about hair — because "a silent row is honest where an
+ugly one is not". Step 1 of this walk sets a hair arrangement, so its value
+exists; a carried facet that still fails to appear IS the finding, and the
+observation says so.
+
+**`--rehearse` drives all of this without typing**, which is how both corrections
+were found before a credit: it opens her sheet, matches her tile by her own
+picture, settles the stack, presses the Original, selects the newest version and
+reads the panel. Opening a viewer and selecting a version are navigation between
+pictures that already exist (D-121), so the entire path up to the keystroke is
+free — and it is the only part of `--spend` testable without spending, which
+makes driving it obligatory rather than optional.
+
+A rehearsal reports the walk's face preconditions instead of refusing on them,
+and the reason is structural: a walkable face is by definition one the walk has
+not edited, so it keeps nothing, so its panel does not render — the only faces
+that can answer E's join are faces the walk would rightly refuse.
 
 Free, on-screen, and it is a genuine cross-check rather than a decoration: the
 panel and the compositor read the same store through different paths, so a
