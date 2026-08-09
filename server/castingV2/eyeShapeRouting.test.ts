@@ -185,23 +185,47 @@ describe("reading her tilt — both rungs, and silence spends", () => {
       A single rung is biased rather than merely incomplete: full-frame
       segmentation goes blind exactly on narrowed eyes, so it under-reports the
       faces this gate is about. Measured, blind renders carried +5.11deg against
-      +1.40 for readable ones. Here the first rung refuses on the full frame and
-      answers on the crop, and the reading must survive that.
+      +1.40 for readable ones. Here the whole frame yields no reading and the crop
+      does, and the reading must survive that.
+
+      # The fake was rescheduled when the side-naming rung was deleted (D-238)
+
+      It used to answer by CALL COUNT — refuse twice, answer on the third — which
+      only lined up with the old ladder's two wasted `"right eye"`/`"left eye"`
+      calls. With those gone the count no longer landed, and looking at why showed
+      the schedule had been passing this test through the FULL-FRAME rung all
+      along: its third call returned a readable full-size mask, so the zone crop
+      the test is named for was never reached.
+
+      So the fake now answers by what it is HANDED, which is the only thing the
+      real segmenter answers by. At full size it returns ONE eye — a mask that is
+      genuinely present, so the caller can take a bounding box from it, and from
+      which `cornersFromMask` correctly refuses to read a pair. Inside a crop it
+      returns both. That is the zone rung's actual job, and (not incidentally) the
+      exact shape of the defect D-238 fixed one layer down.
     */
-    let calls = 0;
+    const oneEye = (): Mask => {
+      const whole = upsweptEyes();
+      const data = Buffer.alloc(W * H, 0);
+      /* Her right eye only — x in [80,160] per the pair painted above. */
+      for (let y = 0; y < H; y += 1) {
+        for (let x = 0; x <= 160; x += 1) data[y * W + x] = whole.data[y * W + x];
+      }
+      return { data, width: W, height: H };
+    };
+
+    let fullFrameReads = 0;
     const reading = await readCanthalTilt({
       image: await png(),
       reader: {
         region: async ({ image }) => {
-          calls += 1;
           const meta = await sharp(image).metadata();
-          /* Refuse at full size; answer once the caller has cropped. */
-          if (meta.width === W && meta.height === H && calls <= 3) {
-            if (calls === 3) return upsweptEyes();
-            throw new Error("no eye at full frame");
-          }
           const w = meta.width!;
           const h = meta.height!;
+          if (w === W && h === H) {
+            fullFrameReads += 1;
+            return oneEye();
+          }
           const scaled = Buffer.alloc(w * h, 0);
           const source = upsweptEyes();
           for (let y = 0; y < h; y += 1) {
@@ -215,6 +239,10 @@ describe("reading her tilt — both rungs, and silence spends", () => {
         },
       },
     });
+
     expect(reading, "the zone rung answered where the full frame would not").not.toBeNull();
+    /* And the reading came from the CROP, not from a full-frame answer — the
+       thing the old call-count schedule quietly stopped proving. */
+    expect(fullFrameReads).toBeGreaterThan(0);
   });
 });

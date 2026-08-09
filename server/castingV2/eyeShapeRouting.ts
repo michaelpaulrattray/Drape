@@ -44,7 +44,7 @@
  * rather than on the tilt number, which could not read both engines fairly.
  * NBP took it: the same person, with genuinely restructured eyes.
  */
-import { alreadyUpswept, cornersFromEyeMasks, cornersFromMask, readingFrom } from "./canthalTilt";
+import { alreadyUpswept, cornersFromMask, readingFrom } from "./canthalTilt";
 import type { EyeShape } from "../../shared/castingRealization";
 import type { Mask } from "./maskedComposite";
 
@@ -193,15 +193,31 @@ export async function readCanthalTilt(input: {
   const height = meta.height ?? 0;
   if (!width || !height) return null;
 
+  /*
+    THE SIDE-NAMING RUNG IS GONE (D-238, ruled fable-132).
+
+    This used to ask `region({ name: "right eye" })` and `"left eye"` first and
+    pair the two answers by which prompt produced them. Those names are not in
+    the reader's bilateral set, so they went to SAM 3 verbatim — and `"right eye"`
+    returns ZERO masks on real frames, measured on the founder's own. So the rung
+    threw on every face tried, spent four provider calls doing it (twice: once
+    full-frame, once inside the crop), and its only lasting effect was to STARVE
+    the rung below it: the bilateral `eyes` union it fell through to was one eye,
+    which `cornersFromMask` correctly refuses.
+
+    **Annotation for the pack, and it is not a re-score:** tilt NO-READs recorded
+    before 2026-08-10 conflate two mechanisms — genuinely narrowed apertures AND
+    a laterality-blind region call that starved this ladder. The fox-eyes
+    matrix's annulment already stands on its own grounds; no historical number is
+    re-scored here. Where the old path DID read, the fixed reader returns the
+    identical number (v#165: 2.29° both ways), which is why this is a recovery of
+    coverage rather than a change of instrument.
+
+    What remains is the rung the module's own header always called
+    interchangeable: one bilateral `eyes` read, split into two eyes by connected
+    components.
+  */
   const corners = async (image: Buffer, w: number, h: number) => {
-    try {
-      const [right, left] = await Promise.all([
-        input.reader.region({ image, name: "right eye" }),
-        input.reader.region({ image, name: "left eye" }),
-      ]);
-      const pair = cornersFromEyeMasks(right, left);
-      return readingFrom(pair.outers, pair.inners, w, h);
-    } catch { /* next rung */ }
     try {
       const eyes = await input.reader.region({ image, name: "eyes" });
       const pair = cornersFromMask(eyes);

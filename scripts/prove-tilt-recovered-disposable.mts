@@ -20,12 +20,21 @@
  *
  * # The before is REPRODUCED, not remembered
  *
- * `oldBilateralReader` below is the deleted code, re-expressed: ask
+ * `lib/deletedBilateralBranch.mts` is the deleted code kept to the letter: ask
  * `"left eye"`/`"right eye"`, take `masks[0]`, union what came back. Both readers
- * are driven against the same two frames in the same run, so the delta is
- * measured rather than inferred from a commit. That is the shift's own law — a
- * null result is evidence only against a fixture that could have produced a
- * non-null one.
+ * are driven against the same frames in the same run, so the delta is measured
+ * rather than inferred from a commit. That is the shift's own law — a null result
+ * is evidence only against a fixture that could have produced a non-null one.
+ *
+ * # And the defect is FRAME-DEPENDENT, which the third specimen is here to say
+ *
+ * v#165 sits on a different face, and its stored `eye.colour` segment mask —
+ * seg#14, pulled and counted — holds TWO blobs, 783px and 659px at opposite ends
+ * of its 184px bbox. **That render got both eyes.** So the old branch was not
+ * broken everywhere; it lost a side on some faces and not others, which is worse
+ * than uniform breakage for the obvious reason: nothing on the product path could
+ * tell the two apart. The number that matters is therefore not "it fails" but
+ * *how many of his own faces it failed on*, and that is what this prints.
  *
  * Reads only: SAM 3 on the provider balance, no account credit, no walk.
  *
@@ -34,14 +43,12 @@
  *       --bucket https://pub-990e39d8d995468eb61aced83162123a.r2.dev
  */
 import mysql from "mysql2/promise";
-import sharp from "sharp";
 
 import { assertOneWorld, readLocalEnvFile } from "./lib/worldGuard.mts";
 import { createChecks } from "./lib/drivePage.mts";
+import { deletedBilateralReader } from "./lib/deletedBilateralBranch.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { readCanthalTilt } from "../server/castingV2/eyeShapeRouting";
-import { MaskError } from "../server/castingV2/maskGeometry";
-import type { Mask } from "../server/castingV2/maskedComposite";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -59,76 +66,24 @@ const apiKey = process.env.FAL_KEY;
 if (!apiKey) throw new Error("FAL_KEY is required — this is a real segmentation read");
 
 const SPECIMENS = [
-  { label: "v#147", publicId: "8ac53e6e-ac36-4a83-83be-a17e04593450" },
-  { label: "v#156", publicId: "ffe31dae-afac-4fd7-af15-46fb65ee273a" },
+  { label: "v#147 (cand 1593)", publicId: "8ac53e6e-ac36-4a83-83be-a17e04593450" },
+  { label: "v#156 (cand 1596)", publicId: "ffe31dae-afac-4fd7-af15-46fb65ee273a" },
+  /* His newest render, and the face whose stored segment holds two eyes. */
+  { label: "v#165 (cand 1599)", publicId: "23bf4f61-1a93-4024-915f-021efac9cc2b" },
 ] as const;
-
-/* ------------------------------------------------------- the deleted code */
-
-/**
- * THE OLD BILATERAL BRANCH, exactly as it was, as this run's negative control.
- *
- * Copied rather than imported because it no longer exists — and kept to the
- * letter, `masks[0]` and all, so the control is the failure and not an
- * approximation of it.
- */
-function oldBilateralReader(): { region(input: { image: Buffer; name: string }): Promise<Mask> } {
-  const BILATERAL = new Set(["ear", "eyes", "eyebrows"]);
-
-  const toMask = async (bytes: Buffer): Promise<Mask> => {
-    const meta = await sharp(bytes).metadata();
-    const pipeline = meta.hasAlpha ? sharp(bytes).extractChannel(3) : sharp(bytes).toColourspace("b-w");
-    const { data, info } = await pipeline.raw().toBuffer({ resolveWithObject: true });
-    return { data: Buffer.from(data), width: info.width, height: info.height };
-  };
-
-  const askRegion = async (image: Buffer, prompt: string): Promise<Mask | null> => {
-    const response = await fetch("https://fal.run/fal-ai/sam-3/image", {
-      method: "POST",
-      headers: { Authorization: `Key ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image_url: `data:image/png;base64,${image.toString("base64")}`,
-        prompt,
-        include_scores: true,
-        output_format: "png",
-      }),
-    });
-    if (!response.ok) throw new MaskError(`sam-3 ${prompt}: ${response.status}`);
-    const json: any = await response.json();
-    const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
-    if (masks.length === 0) return null;
-    const entry = masks[0];
-    const url = typeof entry === "string" ? entry : entry.url;
-    return toMask(Buffer.from(await (await fetch(url)).arrayBuffer()));
-  };
-
-  return {
-    async region({ image, name }) {
-      if (BILATERAL.has(name)) {
-        const singular = name === "eyes" ? "eye" : name.replace(/s$/, "");
-        const sides = await Promise.all([
-          askRegion(image, `left ${singular}`),
-          askRegion(image, `right ${singular}`),
-        ]);
-        const found = sides.filter((mask): mask is Mask => mask !== null);
-        if (found.length === 0) throw new MaskError(`the segmenter found no ${name} to edit`);
-        if (found.length === 1) return found[0];
-        const { unionMasks } = await import("../server/castingV2/maskGeometry");
-        return unionMasks(...found);
-      }
-      const mask = await askRegion(image, name);
-      if (!mask) throw new MaskError(`the segmenter found no ${name} to edit`);
-      return mask;
-    },
-  };
-}
 
 /* ----------------------------------------------------------------- the run */
 
 const connection = await mysql.createConnection({
   uri: process.env[databaseKey]!, timezone: "Z",
 } as mysql.ConnectionOptions);
-const { check, records, failures, print } = createChecks();
+const { check, records, print } = createChecks();
+/** Every face's before and after, so the rate has a denominator. */
+const ledger: Array<{
+  label: string;
+  before: { meanDeg: number; asymmetryDeg: number } | null;
+  after: { meanDeg: number; asymmetryDeg: number } | null;
+}> = [];
 
 for (const specimen of SPECIMENS) {
   const [row] = await connection.query<any[]>(
@@ -147,34 +102,51 @@ for (const specimen of SPECIMENS) {
   const image = Buffer.from(await response.arrayBuffer());
   console.log(`\n=== ${specimen.label} (v#${row.id})`);
 
-  const before = await readCanthalTilt({ image, reader: oldBilateralReader() });
+  const before = await readCanthalTilt({ image, reader: deletedBilateralReader(apiKey) });
   console.log(`    BEFORE (the deleted bilateral branch): ${before ? `${before.meanDeg.toFixed(2)}°` : "NO-READ"}`);
-  check(
-    before === null,
-    `${specimen.label}: the OLD branch could not read a tilt at all`,
-    before === null
-      ? "NO-READ — the reproduced failure, and the reason this was invisible"
-      : `it read ${before.meanDeg.toFixed(2)}° — the control did NOT fail, so the delta below proves nothing`,
-  );
 
   const after = await readCanthalTilt({ image, reader: createFalRegionReader({ apiKey }) });
   console.log(
     `    AFTER  (one side to a picture):            `
     + `${after ? `${after.meanDeg.toFixed(2)}° mean, ${after.asymmetryDeg.toFixed(2)}° asymmetry` : "NO-READ"}`,
   );
+
+  /*
+    THE CONTRACT IS THE AFTER, and the BEFORE is the tally.
+
+    An earlier draft asserted the old branch failed on every specimen. That was
+    the wrong assertion the moment a third face was added, and asserting it would
+    have turned an honest frame-dependence into a red suite — the same mistake the
+    refuted candidate measurement got moved out of.
+  */
   check(
     after !== null,
-    `${specimen.label}: the FIXED reader gives the tilt instrument its reading back`,
-    after ? `${after.meanDeg.toFixed(2)}° mean, ${after.asymmetryDeg.toFixed(2)}° asymmetry` : "still a NO-READ",
+    `${specimen.label}: the tilt instrument reads this face`,
+    after ? `${after.meanDeg.toFixed(2)}° mean, ${after.asymmetryDeg.toFixed(2)}° asymmetry` : "NO-READ",
   );
+  ledger.push({ label: specimen.label, before, after });
 }
 
 await connection.end();
 print();
+
+const recovered = ledger.filter((row) => row.before === null && row.after !== null);
+console.log("\nBEFORE → AFTER, his own faces:");
+for (const row of ledger) {
+  console.log(
+    `  ${row.label.padEnd(18)} ${row.before ? `${row.before.meanDeg.toFixed(2)}°`.padStart(8) : " NO-READ"}`
+    + `  →  ${row.after ? `${row.after.meanDeg.toFixed(2)}°` : "NO-READ"}`,
+  );
+}
 console.log(
-  failures().length === 0
-    ? "\nThe no-read was the one-eyed mask, and the reading came back with the second eye."
-    : "\nRead the rows above before believing either direction.",
+  `\n${recovered.length} of ${ledger.length} of his faces went from NO-READ to a reading`
+  + `${recovered.length ? ` (${recovered.map((row) => row.label.split(" ")[0]).join(", ")})` : ""}.`,
 );
+check(
+  recovered.length > 0,
+  "the delta is real: at least one of his faces could not be read before and can be now",
+  `${recovered.length} of ${ledger.length} recovered — a fix with an empty delta is not a proven fix`,
+);
+print();
 console.log(`${records.length} checks recorded.`);
 process.exit(0);

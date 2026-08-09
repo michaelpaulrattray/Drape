@@ -8036,8 +8036,21 @@ control (`scripts/prove-tilt-recovered-disposable.mts`):
 
 | frame | the old branch | the fixed reader |
 |---|---|---|
-| v#147 | NO-READ | 2.48° mean, 7.93° asymmetry |
-| v#156 | NO-READ | 1.24° mean, 10.99° asymmetry |
+| v#147 (cand 1593) | NO-READ | 2.48° mean, 7.93° asymmetry |
+| v#156 (cand 1596) | NO-READ | 1.24° mean, 10.99° asymmetry |
+| v#165 (cand 1599) | **2.29°** | **2.29°** mean, 4.74° asymmetry |
+
+**It is FRAME-DEPENDENT, and that is worse than uniform breakage.** The third
+row was added after his own stored `eye.colour` segment for v#165 (seg#14) was
+pulled and counted: two blobs, 783px and 659px at opposite ends of its 184px
+bbox, so **that paid render did get both eyes.** Two of his three faces lost a
+side; the third did not, and nothing on the product path could tell them apart.
+The rate is therefore 2 of 3 of his own faces, not "it fails".
+
+The third row is also the fix's strongest safety argument: **where the old path
+read, the new one returns the identical number** — 2.29° both ways. This is a
+recovery of coverage, not a change of instrument, which is why the annotation
+below re-scores nothing.
 
 **The cheaper fix was measured and refuted.** The plain noun with every mask
 kept — no crop, one call instead of two — covered both sides in **2 of 6** cells.
@@ -8057,11 +8070,24 @@ sides still in parallel.
 
 **Class sweep (law 7).** `landmark()` is clean — the product asks it "earlobe",
 "eye", "nose", unqualified, and keeps every point. `bornWornDetector`'s only
-armed class is `glasses`, not bilateral. Two siblings filed rather than fixed:
-`readCanthalTilt`'s rung 1 is now dead weight (four wasted calls per read, never
-observed to fire) and `refineService`'s `name: parsed.match` sends an open noun
-phrase to a segmenter, which is D-213's own rule under strain. Neither is
-silently left — both are in the mailbox with a recommendation.
+armed class is `glasses`, not bilateral. Two siblings found, both now resolved by
+fable-132:
+
+- **`readCanthalTilt`'s side-naming rung: DELETED.** Four provider calls per read
+  (twice over, full frame and crop), never observed to fire on any face, and its
+  only lasting effect was starving the rung below it. **Annotation, not a
+  re-score:** tilt NO-READs recorded before 2026-08-10 conflate two mechanisms —
+  genuinely narrowed apertures AND a laterality-blind region call. The fox-eyes
+  matrix's annulment stands on its own grounds and no historical number is
+  re-scored. The two large asymmetry figures above stay quarantined until someone
+  rules on head pose.
+- **`refineService`'s `name: parsed.match`** — an interpreter-authored noun phrase
+  sent to a segmenter, D-213's rule under strain. Pre-existing, not this class, no
+  evidence of harm gathered: **filed** to the roadmap's §9 register with its
+  trigger.
+
+The call cost (5 → 7 on an eye-colour refine) is filed to roadmap item 1 with the
+midline-threading option named, rather than decided behind a bug fix.
 
 **Two smaller lessons.** The stride guard caught sharp promoting a resized
 one-channel mask to three channels on the first run — D-210, fourth time through

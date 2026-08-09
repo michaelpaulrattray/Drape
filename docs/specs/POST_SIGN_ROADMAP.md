@@ -50,6 +50,17 @@ paint softness (hair ~0.51–0.56, brows ~0.48–0.56 vs master, twice
 measured) → the **engine sharpness comparison** (NBP vs GPT2 on
 hair/brows) rides with item 6's routing question.
 
+**Filed here by fable-132, deliberately NOT slipped in behind the D-238
+fix:** a bilateral region now costs **three** segmentation calls instead of
+two (the face, for her own midline, then the plain noun once per half) and
+one extra round trip, the two halves still parallel. An `eye.colour` refine
+pulls `eyebrows` as an occlusion companion, so it goes **5 calls → 7**. The
+clean way to get the extra call back is to thread an **optional midline
+hint** through the `RegionReader` interface from callers that already hold a
+face mask — a real interface change, decided here on latency evidence rather
+than inside a bug fix. Deleting `readCanthalTilt`'s rung 1 (also D-238) pays
+four calls per tilt read back immediately.
+
 ## 2. The honest loader (with #1 — same instrumentation)
 
 Real stage transitions only, product voice, NO invented percentages
@@ -178,3 +189,13 @@ absent distributed facet still segments — current-behaviour test
 marks it); `requestMatte`/`changesSilhouette` documented as
 spec-not-control; reliability-report build-id column (prod migration
 = founder gate).
+
+**`refineService`'s open noun to the segmenter** (filed fable-132, off
+D-238's class sweep): `region({ name: parsed.match })` at
+`refineService.ts:939` and `:1073` sends an **interpreter-authored noun
+phrase** — "round wire-frame glasses", "smokey eye" — straight to SAM 3,
+which is D-213's *"a segmenter is never asked an open question"* under
+strain. Pre-existing and NOT this class; **no evidence of harm was
+gathered**, so it is filed rather than fixed. Trigger: any read on that
+path returning a mask nobody can account for, or the vocabulary work in
+item 5 (open-vocabulary regions), which meets the same question head-on.
