@@ -1,7 +1,9 @@
 # The finding-replay walk — the founder's own four findings, driven back
 
-*Drafted 2026-08-10 (fable-126 §3, fable-128). **HELD** until the STOPLINE
-lifts: every delivering step is a real 25-credit refine on a real account.*
+*Drafted 2026-08-10 (fable-126 §3, fable-128); the driver built the same day
+(fable-134). **HELD** until the STOPLINE lifts: every delivering step is a real
+25-credit refine on a real account. The controls and the dry run are not held and
+have both been driven against production.*
 
 ---
 
@@ -71,9 +73,32 @@ says so rather than being dropped silently.
 charged is a **false pass** and fails the run outright (D-235's asymmetry: the
 verdict's `saw` must name both).
 
-**Instrument:** the real reader, asked twice — `left earring`, `right earring`
-— each read separately rather than as the bilateral union, because a union of
-one earring and nothing is a non-empty mask and would pass.
+**Instrument — REVISED 2026-08-10, and the revision is the point.** This
+document originally specified *the real reader, asked twice —* `left earring`*,*
+`right earring`. That instrument was built, driven at his own frames, and
+**refuted**: it scored his ONE-hoop frame a pair, 740px and 728px, and the masks
+on disk are the same hoop returned twice. SAM 3 answers the noun and ignores the
+laterality entirely. Asking for "every mask, unioned" failed differently — 472px
+on ONE ear of a two-hoop frame, because the model returns one instance when
+asked about a class.
+
+The counter that ships is the third design: **cut the frame at her face's own
+midline and ask the plain noun of each half**, so each call can only answer about
+the pixels it was handed. The same cure was taken one layer down into the product
+(`58725856`, D-238), where the bilateral `eyes` region had been returning one eye
+for a two-eye ask on a paid render.
+
+**And an ear that is not visible is a NO-READ, not an absence.** His finding was
+precise — one hoop, *the other ear bare and visible* — so the counter reads the
+EAR on each half beside the earring, and a side with no ear makes the assertion
+`neverArmed` (which fails the run) rather than failing it for a missing hoop
+nobody could have delivered. The floor is measured, not chosen: 400px, against
+1,756–3,222px per side across every frame this campaign has looked at. It has
+four positives and no measured hidden-ear negative, and says so.
+
+The walk's **pre-flight refuses a face whose ears cannot be found**, exactly as
+it refuses one wearing no glasses — the same class, since both are a step whose
+subject is not in the frame.
 
 **Controls, before any spend — and both are already on disk:**
 
@@ -122,7 +147,16 @@ he sees no seam                                → the class is closed on his ey
 
 **Control:** `scripts/sweep-seam-rows-disposable.mts --selftest` already carries
 one — a clean boundary and his own numbers, so the reader is known able to
-express a finding before its silence is trusted. Run it in the same session.
+express a finding before its silence is trusted. Satisfied **in-process**: both
+the sweep and the walk's control C read through the same `lib/seamRows`, so
+running it in the same session is one module answering rather than a second copy
+of the same reading being consulted beside the first.
+
+**The 3× crop is DERIVED, and that is stated.** The seam verdict records no
+coordinates, so the walk locates the boundary as the bounding box of where step
+1's frame differs from the face it was made from, pads it, and writes it at 3×
+beside the full frame. A crop pointing somewhere wrong is visible to him
+instantly — which is why a picture may be derived here where a verdict may not.
 
 ### D. The hair stays down (finding 4)
 
@@ -144,7 +178,21 @@ a reading that has never been able to say otherwise.
 ### E. The panel agrees with the assembly (new, free)
 
 **Assert:** after each step, the "On his/her face" panel lists exactly the
-facets the assembly says were carried — no more, no fewer.
+facets the assembly says were carried **plus whatever that render kept for the
+first time** — no more, no fewer.
+
+*(The italicised half is a correction made during the build, stated rather than
+quietly applied. The panel lists what this VERSION is keeping; a render that
+writes a facet does not CARRY it, so "exactly the facets the assembly says were
+carried" is short by precisely the facet the step just wrote, on every step that
+writes one. As specified, E would have failed on a correct product.)*
+
+Compared by **identity, not by copy**: each row's thumbnail carries the stored
+segment's own `contentKey` in its `background-image`, and that key is a row in
+`casting_segments`. And both halves are read at the same MOMENT — segments are
+persisted after the variant lands, so a panel read at landing against a segment
+table read at the end of the walk is a disagreement about time rather than about
+the product.
 
 Free, on-screen, and it is a genuine cross-check rather than a decoration: the
 panel and the compositor read the same store through different paths, so a
@@ -170,17 +218,32 @@ that the founder can make himself, at a glance, while he walks.
 
 ```
 JWT_SECRET=… APP_ID=… OPEN_ID=… npx tsx scripts/mint-production-session.mts
+
+# the instruments alone — no credits, and this is what runs inside the freeze
 FAL_KEY=… railway.cmd run --service MySQL -- \
-  npx tsx scripts/drive-finding-replay.mts --base https://… --token <jwt> \
-    --candidate <publicId> --controls        # controls only, no spend
+  npx tsx scripts/drive-finding-replay.mts --controls --bucket https://pub-990e39d8…
+
+# the dry run — the face is found, her glasses and ears are proven, the price is stated
+FAL_KEY=… railway.cmd run --service MySQL -- \
+  npx tsx scripts/drive-finding-replay.mts --bucket https://pub-990e39d8… \
+    --base https://drape-production-0232.up.railway.app --token <jwt> --candidate <publicId>
+
+# the walk — 125 credits, and only once the STOPLINE is gone
 FAL_KEY=… railway.cmd run --service MySQL -- \
   npx tsx scripts/drive-finding-replay.mts … --spend
 ```
 
-`--controls` drives A's counter against v#156, B's difference against a known
-replacement, C's selftest and D's parent read, and **exits non-zero if any
-control fails to fail.** `--spend` refuses to run unless a controls pass was
-recorded in the same invocation. The driver is not written yet; this document is
-its specification, and it is deliberately written before the harness so the
-assertions are chosen against the findings rather than against what was easy to
-measure.
+`--controls` drives A's counter against v#156 and v#147, B's difference across a
+delivered accessory change, C's two seam rows through the production reader and
+D's pair of stored readings, and **exits non-zero if any control fails to fail.**
+
+**`--spend` does not consult `--controls` — it executes them**, and refuses if
+one is red. A flag the operator must remember is a flag the operator forgets,
+and the refusal lives in `lib/stopline`'s `assertPreconditionsProved` with its
+own three-way controls beside the freeze's, because a guard whose only test is
+the 125-credit path is an untested guard (working law 3).
+
+Written 2026-08-10. The specification came first on purpose, so the assertions
+were chosen against his findings rather than against what was easy to measure —
+and where the build had to depart from it (A's instrument, E's arithmetic, C's
+crop) the departure is recorded above rather than smoothed over.

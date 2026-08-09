@@ -107,6 +107,40 @@ export function spendAuthorized(what: string, argv: readonly string[] = process.
 }
 
 /**
+ * A SPEND'S OWN PRECONDITIONS, PROVED IN THE SAME INVOCATION.
+ *
+ * # Why this is not a boolean the caller checks
+ *
+ * The finding-replay walk costs 125 credits and is graded by instruments that
+ * must be shown able to FAIL before its numbers mean anything — "a counter that
+ * has never counted one earring is not a counter". So the walk executes its own
+ * controls rather than consulting a `--controls` flag, and it must not be able
+ * to spend on a red one.
+ *
+ * That guard cannot be exercised by the thing it guards: while the STOPLINE
+ * exists `spendAuthorized` throws long before any control runs, and the only
+ * other way to reach it is to spend. A backstop whose only test is the expensive
+ * path is an untested backstop (working law 3), so the decision lives here as a
+ * function with controls beside it and the driver holds no copy of the rule.
+ *
+ * **`null` is not "fine".** A precondition nobody ran is the invoked-but-inert
+ * class — invariant 7, a control that is not invoked does not exist — so it
+ * refuses exactly as loudly as a failed one, and says which of the two it was.
+ */
+export function assertPreconditionsProved(
+  what: string,
+  proved: boolean | null,
+  detail = "",
+): void {
+  if (proved === true) return;
+  throw new Error(
+    `refusing to ${what}: its preconditions were ${proved === null ? "NEVER RUN" : "RED"} in this invocation.`
+    + (detail ? `\n\n${detail}` : "")
+    + "\n\nAn instrument that cannot fail cannot pass, and a spend graded on one measures nothing.",
+  );
+}
+
+/**
  * THE ONE THING THE FREEZE DOES NOT COVER, WRITTEN DOWN RATHER THAN ASSUMED.
  *
  * fable-119, asked directly and answered directly: *"STOPLINE froze walks and
@@ -199,7 +233,23 @@ if (process.argv.includes("--prove")) {
     throws(() => { fixtureSpendAuthorized("a fixture paint", ["node", "script", "--spend"]); }) === null);
 
   /*
-    7: AND THE SCRIPTS THAT CAN CHARGE AN ACCOUNT USE THE STRICT DOOR.
+    7: THE PRECONDITION GATE, ALL THREE OF ITS ANSWERS.
+
+    Driven directly rather than through the 125-credit walk that uses it — the
+    walk cannot exercise this gate without either lifting the freeze or spending,
+    which is precisely the shape working law 3 forbids.
+  */
+  check("NEGATIVE — preconditions PROVED: the spend proceeds",
+    throws(() => { assertPreconditionsProved("walk", true); }) === null);
+  const red = throws(() => { assertPreconditionsProved("spend 125 credits walking", false, "control A failed"); });
+  check("POSITIVE — preconditions RED: refuses, and says which", !!red?.includes("RED"));
+  check("POSITIVE — the red refusal names the act and quotes the detail",
+    !!red?.includes("spend 125 credits walking") && !!red?.includes("control A failed"));
+  check("POSITIVE — preconditions NEVER RUN refuses just as hard (invariant 7)",
+    throws(() => { assertPreconditionsProved("walk", null); })?.includes("NEVER RUN") === true);
+
+  /*
+    8: AND THE SCRIPTS THAT CAN CHARGE AN ACCOUNT USE THE STRICT DOOR.
 
     The fixture exemption is one sentence away from being a bypass, so the
     scripts it must never cover are named and checked. A walk or a roll that
@@ -208,6 +258,7 @@ if (process.argv.includes("--prove")) {
   */
   const ACCOUNT_SPENDERS = [
     "scripts/drive-self-walk.mts",
+    "scripts/drive-finding-replay.mts",
     "scripts/calibration/bespectacled-roll-production.mts",
     "scripts/prove-caption-governs-disposable.mts",
   ];
@@ -223,7 +274,7 @@ if (process.argv.includes("--prove")) {
   );
 
   /*
-    8: THE ROSTER, DERIVED. Every script that can spend has a `--spend` gate;
+    9: THE ROSTER, DERIVED. Every script that can spend has a `--spend` gate;
     every `--spend` gate must be this module's. A hand-kept list of guarded
     scripts is the exact shape that bit `worldGuard` three times.
   */

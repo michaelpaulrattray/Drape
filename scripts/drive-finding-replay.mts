@@ -2,11 +2,31 @@
  * THE FINDING-REPLAY WALK — his four findings, driven back at the build that
  * claims to have closed them. Specification: `docs/specs/FINDING_REPLAY_WALK.md`.
  *
- * **`--controls` is the only mode implemented, and that is deliberate.** The
- * walk itself spends 125 credits a run on a real account and is HELD until the
- * STOPLINE lifts; its instruments are not, and proving they can fail belongs
- * inside the freeze rather than on the morning it thaws. A counter that has
- * never counted one earring is not a counter.
+ * # Two modes, and the second one cannot run without the first
+ *
+ *   `--controls`   drives every instrument against HIS OWN stored frames, spends
+ *                  no credits, and exits non-zero if any instrument cannot fail.
+ *   `--spend`      walks the five steps for real: 125 credits on his account.
+ *                  It RUNS THE CONTROLS FIRST, in the same invocation, and
+ *                  refuses to spend a credit if one of them is red.
+ *
+ * A counter that has never counted one earring is not a counter, so proving the
+ * instruments belongs inside the freeze rather than on the morning it thaws.
+ * The controls are not a flag the operator may forget: `--spend` does not
+ * consult `--controls`, it executes them.
+ *
+ * # The order of refusals, and why the freeze is first
+ *
+ * `spendAuthorized()` is asked before an argument is even validated. This file
+ * shipped once asking `process.argv.includes("--spend")` directly, and
+ * `stopline --prove`'s derived roster caught it: an account spender whose
+ * refusal was its own opinion rather than the freeze's. The walk costs 125
+ * credits on his real account, so the freeze must be the FIRST answer it gets.
+ *
+ * Then, before the first credit: the controls, the face (step 5 is meaningless
+ * on a face wearing no glasses), and the price — printed as a plan a person can
+ * read. A dry run reaches every one of those and stops there, so the pre-flight
+ * is not something only a spend can exercise.
  *
  * # All four controls are armed (2026-08-10), and two carry declared deviations
  *
@@ -41,21 +61,40 @@
  * Both were chosen by LOOKING at the crops (`pull-earring-specimens`), not by
  * trusting the reader that already got one of them wrong.
  *
+ *   # controls only, no credits
  *   FAL_KEY=… railway.cmd run --service MySQL -- \
  *     npx tsx scripts/drive-finding-replay.mts --controls \
  *       --bucket https://pub-990e39d8d995468eb61aced83162123a.r2.dev
+ *
+ *   # the dry run: controls optional, face and price proven, nothing charged
+ *   FAL_KEY=… railway.cmd run --service MySQL -- \
+ *     npx tsx scripts/drive-finding-replay.mts --bucket https://pub-990e39d8… \
+ *       --base https://drape-production-0232.up.railway.app --token <jwt> \
+ *       --candidate <publicId>
+ *
+ *   # the walk itself — 125 credits, and only when the STOPLINE is gone
+ *   FAL_KEY=… railway.cmd run --service MySQL -- \
+ *     npx tsx scripts/drive-finding-replay.mts … --spend
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import mysql from "mysql2/promise";
 
 import { assertOneWorld, readLocalEnvFile } from "./lib/worldGuard.mts";
-import { spendAuthorized } from "./lib/stopline.mts";
-import { createChecks } from "./lib/drivePage.mts";
+import { assertPreconditionsProved, spendAuthorized } from "./lib/stopline.mts";
+import { createChecks, openDrivenPage, type Checks } from "./lib/drivePage.mts";
+import {
+  createCurrentFaceKey, createLandedImageKey, createTrpcQuery, createViewerOpener,
+  locateCandidate, refineStep, type RefineObservation,
+} from "./lib/refineDriver.mts";
+import { settleAttemptRows } from "./lib/attemptRows.mts";
+import { adjudicateCarried, adjudicateCandidateCarries, formatCarriedVerdict } from "./lib/carriedAdjudicator.mts";
 import {
   CLEAN_BOUNDARY_COHERENCE, FOUNDER_SEAM_COHERENCE, readSeamRow, seamRates, SEAM_CONTROL_ROWS,
 } from "./lib/seamRows.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
+import { readResolvedIdentity } from "../server/castingV2/rollService";
+import { currentValueOfFacet } from "../server/castingV2/refineDelta";
 import type { Mask } from "../server/castingV2/maskedComposite";
 
 function arg(name: string, fallback = ""): string {
@@ -63,28 +102,34 @@ function arg(name: string, fallback = ""): string {
   return index > -1 ? (process.argv[index + 1] ?? fallback) : fallback;
 }
 
-const CONTROLS = process.argv.includes("--controls");
-const OUT = path.resolve("output/finding-replay");
-
 /*
   `--spend` THROUGH THE ONE DOOR, not a hand-rolled read of argv.
 
-  This file shipped last shift asking `process.argv.includes("--spend")`
-  directly, and `stopline --prove`'s derived roster caught it: an account
-  spender whose refusal was its own opinion rather than the freeze's. The walk
-  costs 125 credits on his real account, so the freeze must be the FIRST answer
-  it gets — the not-implemented refusal below is the second, for the morning the
-  line thaws with this harness still unfinished.
+  Asked before the arguments are validated, because the freeze outranks every
+  other reason this run might refuse. `spendAuthorized` THROWS while the
+  STOPLINE exists; the boolean it returns is only ever reached on a running
+  line.
 */
-if (spendAuthorized("walk the finding replay (125 credits on his account)")) {
-  throw new Error(
-    "the walk itself is NOT implemented and is HELD until the STOPLINE lifts "
-    + "(docs/specs/FINDING_REPLAY_WALK.md). `--spend` exists here only so it cannot be "
-    + "mistaken for a mode that quietly works.",
+const SPEND = spendAuthorized("walk the finding replay (125 credits on his account)");
+const CONTROLS = process.argv.includes("--controls");
+const OUT = path.resolve(arg("out", "output/finding-replay"));
+
+const APP_BASE = arg("base");
+const TOKEN = arg("token");
+const CANDIDATE = arg("candidate");
+
+/*
+  A BARE INVOCATION IS ANSWERED, NOT CRASHED INTO.
+
+  Ahead of every other requirement, because a run that was asked to do nothing
+  should not be told which argument it is missing for the work it was not asked
+  to do. Everything below this line is a precondition of real work.
+*/
+if (!CONTROLS && !SPEND && !CANDIDATE) {
+  console.log(
+    "Nothing to do. `--controls` drives the instruments against his own frames; "
+    + "add --base/--token/--candidate for the dry run, and --spend to walk it.",
   );
-}
-if (!CONTROLS) {
-  console.log("Nothing to do. `--controls` drives the instruments against his own frames; the walk is held.");
   process.exit(0);
 }
 
@@ -97,6 +142,13 @@ if (base === (readLocalEnvFile().get("R2_PUBLIC_URL") ?? "").replace(/\/$/, ""))
 }
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) throw new Error("FAL_KEY is required — the counter is a real segmentation read");
+
+if (SPEND && (!APP_BASE || !TOKEN || !CANDIDATE)) {
+  throw new Error(
+    "--base, --token and --candidate are all required to spend. Refusing to walk a face "
+    + "I cannot name rather than guessing at one (see mint-production-session.mts for the token).",
+  );
+}
 
 /**
  * HIS OWN FRAMES, BY PUBLIC ID.
@@ -171,6 +223,54 @@ const EARRING_CHANGE = [
  */
 const PRESENT_AT = 40;
 
+/**
+ * AND HOW MUCH OF AN EAR HAS TO BE THERE BEFORE "NO EARRING" MEANS ANYTHING.
+ *
+ * A clean null is evidence only if the fixture could have produced a non-null.
+ * On a face whose ear is behind her hair, "no earring on this side" is a
+ * NO-READ, not an absence — and scoring it as a miss would book a product
+ * failure against a physical impossibility. His finding was precise about this:
+ * one earring, *the other ear bare AND VISIBLE*. An ear nobody can see is not
+ * an ear he could have complained about.
+ *
+ * Measured rather than chosen (`measure-ear-visibility-disposable`, 2026-08-10),
+ * per side, across every frame this campaign has LOOKED at:
+ *
+ *   v#147  two hoops, both ears visible      left 3118px   right 3222px
+ *   v#156  one hoop, the other ear bare      left 2800px   right 2497px
+ *   4dad875d  bespectacled, hair loose        left 1812px   right 2137px
+ *   32d1d79e  bespectacled, hair worn up      left 1756px   right 1927px
+ *
+ * **Four positives and no measured negative**, and that is stated rather than
+ * dressed up: nothing here is a frame whose ear is genuinely hidden, so this
+ * floor is not calibrated against the case it exists to catch. It is set four
+ * times below the smallest ear ever measured, so it fires only when the
+ * segmenter finds essentially nothing — and every reading prints its number, so
+ * a face drifting toward the line is visible rather than silent.
+ */
+const EAR_VISIBLE_AT = 400;
+
+/** How different two greyscale pixels must be before the picture "moved". */
+const MOVED_AT = 12;
+
+/**
+ * THE WALK, in the founder's own order — and the order IS the point.
+ *
+ * Findings 2 and 4 are only visible in what a LATER render does to an EARLIER
+ * one, so no step here may be reordered for convenience and none may be dropped
+ * for being expensive (spec: "a partial replay reported as a replay is the
+ * flattering direction").
+ */
+const WALK = [
+  { instruction: "wear her hair down", serves: "3, 4" },
+  { instruction: "gold hoop earrings", serves: "1, 4" },
+  { instruction: "dangly cross earrings", serves: "4 — his exact sequence" },
+  { instruction: "copper hair", serves: "2 — an unrelated ask that must not move the ears" },
+  { instruction: "remove her glasses", serves: "3 — the ghost rim" },
+] as const;
+
+const COST_PER_STEP = 25;
+
 function pixels(mask: Mask): number {
   let count = 0;
   for (let at = 0; at < mask.data.length; at += 1) if (mask.data[at] > 0) count += 1;
@@ -186,10 +286,10 @@ function pixels(mask: Mask): number {
  * on the other, because the second hoop was the second mask. A counter that
  * inherits "first answer only" cannot count past one.
  *
- * **Filed for a ruling rather than fixed here** — whether the product's own
- * bilateral regions are losing their second side through the same door is a
- * question about `falRegionReader`, not about this script, and it is not mine
- * to answer inside the stop-line.
+ * The product's own bilateral regions were losing their second side through a
+ * different door, and that was found, fixed and shipped (`58725856`, D-238):
+ * SAM 3 returns exactly one mask, so `masks[0]` was innocent and the cure was
+ * this file's own — cut the frame first.
  */
 async function askEveryMask(image: Buffer, prompt: string): Promise<Mask> {
   const response = await fetch("https://fal.run/fal-ai/sam-3/image", {
@@ -255,68 +355,59 @@ const connection = await mysql.createConnection({
   uri: process.env[databaseKey]!, timezone: "Z",
 } as mysql.ConnectionOptions);
 const reader = createFalRegionReader({ apiKey });
-const { check, absent, records, failures, print } = createChecks();
+const checks = createChecks();
+const { check, absent, records, failures, print } = checks;
 await mkdir(OUT, { recursive: true });
 
-/* ------------------------------------------------- control A: the pair counter */
-
-for (const specimen of SPECIMENS) {
+async function frameOf(publicId: string): Promise<{ id: number | null; bytes: Buffer | null; why: string }> {
   const [row] = await connection.query<any[]>(
     "SELECT id, imageKey FROM casting_candidate_variants WHERE publicId = ? LIMIT 1",
-    [specimen.publicId],
+    [publicId],
   ).then(([rows]) => rows as any[]);
-  if (!row?.imageKey) {
-    check(false, `A: ${specimen.label}`, `no frame for ${specimen.publicId} — wrong world, or the row is gone`);
-    continue;
-  }
-
+  if (!row?.imageKey) return { id: row?.id ?? null, bytes: null, why: `no frame for ${publicId} — wrong world, or the row is gone` };
   const response = await fetch(`${base}/${row.imageKey}`);
-  if (!response.ok) {
-    check(false, `A: ${specimen.label}`, `frame HTTP ${response.status}`);
-    continue;
-  }
-  const bytes = Buffer.from(await response.arrayBuffer());
+  if (!response.ok) return { id: row.id, bytes: null, why: `frame HTTP ${response.status}` };
+  return { id: row.id, bytes: Buffer.from(await response.arrayBuffer()), why: "" };
+}
 
-  /*
-    ASKED ONCE, THEN SPLIT BY HER OWN MIDLINE — because the words "left" and
-    "right" do nothing.
-
-    The first version asked "left earring" and "right earring" as two
-    questions, and scored his ONE-hoop frame a pair: 740px and 728px. The masks
-    are on disk and they are THE SAME HOOP, returned twice — SAM 3 answers the
-    noun and ignores the laterality. A counter built on a qualifier the model
-    does not read is not a counter, and it would have passed the exact frame it
-    exists to catch.
-
-    (This also explains, harmlessly, why `falRegionReader`'s bilateral split
-    for `ear`/`eyes` is a union of one answer with itself. Harmless there — a
-    union is what it wanted — and fatal here, where the question is HOW MANY.)
-
-    So: one question, and the arithmetic decides the sides. The midline is her
-    FACE's, not the image's, because a portrait is not guaranteed centred.
-  */
-  /*
-    THE HALVES ARE CUT FIRST, AND THE MODEL IS ONLY EVER SHOWN ONE EAR.
-
-    Third instrument, and the two it replaces are worth keeping in view because
-    each failed differently on his own frames:
-
-      "left earring" / "right earring"   740px and 728px on a ONE-hoop frame —
-                                         the same hoop returned twice. SAM 3
-                                         answers the noun and ignores the
-                                         laterality entirely.
-      "earring", every mask unioned      472px on ONE ear of a TWO-hoop frame:
-                                         the model returned exactly 1 mask.
-                                         Asked about a class, it answers with an
-                                         instance, so a count cannot be taken
-                                         from it however the masks are handled.
-
-    Both were the same mistake — asking a question whose answer has to be
-    trusted to be complete. Cutting her in half first removes the trust: each
-    call can only answer about the pixels it was handed, so "is there an
-    earring on THIS side" is a question the model cannot answer laterally
-    wrong.
-  */
+/**
+ * THE PAIR COUNTER — one derivation, used by the control AND by assertion A.
+ *
+ * Third instrument, and the two it replaces are worth keeping in view because
+ * each failed differently on his own frames:
+ *
+ *   "left earring" / "right earring"   740px and 728px on a ONE-hoop frame —
+ *                                      the same hoop returned twice. SAM 3
+ *                                      answers the noun and ignores the
+ *                                      laterality entirely.
+ *   "earring", every mask unioned      472px on ONE ear of a TWO-hoop frame:
+ *                                      the model returned exactly 1 mask.
+ *                                      Asked about a class, it answers with an
+ *                                      instance, so a count cannot be taken
+ *                                      from it however the masks are handled.
+ *
+ * Both were the same mistake — asking a question whose answer has to be trusted
+ * to be complete. Cutting her in half first removes the trust: each call can
+ * only answer about the pixels it was handed, so "is there an earring on THIS
+ * side" is a question the model cannot answer laterally wrong.
+ *
+ * The midline is her FACE's, not the image's, because a portrait is not
+ * guaranteed centred.
+ *
+ * **The walk's assertion A and the control run this same function.** A counter
+ * proved on his frames and a second one grading the walk would be the mirror
+ * law #4 forbids, and the difference between them would be invisible.
+ */
+async function countEarringPair(bytes: Buffer, tag: string): Promise<{
+  sides: Array<{ side: string; px: number; ear: number }>;
+  isPair: boolean;
+  present: number;
+  /** Sides whose EAR could not be found — where "no earring" is a no-read. */
+  unreadable: string[];
+  saw: string;
+  midline: number;
+  width: number;
+}> {
   const sharpModule = (await import("sharp")).default;
   const face = await reader.region({ image: bytes, name: "face", absentIsAnswer: true });
   const meta = await sharpModule(bytes).metadata();
@@ -332,296 +423,1132 @@ for (const specimen of SPECIMENS) {
       .extract({ left: half.left, top: 0, width: half.width, height })
       .png()
       .toBuffer();
-    const mask = await askEveryMask(halfBytes, "earring");
+    /* The earring and the EAR, on the same crop — see `EAR_VISIBLE_AT`. Asked
+       together so the two readings can never be of different pixels. */
+    const [mask, ear] = await Promise.all([
+      askEveryMask(halfBytes, "earring"),
+      askEveryMask(halfBytes, "ear"),
+    ]);
     await writeFile(
-      path.join(OUT, `mask-v${row.id}-${half.side}.png`),
+      path.join(OUT, `mask-${tag}-${half.side}.png`),
       await sharpModule(mask.data, { raw: { width: mask.width, height: mask.height, channels: 1 } })
         .resize({ width: 320 }).png().toBuffer(),
     );
-    return { side: half.side, px: pixels(mask) };
+    return { side: half.side, px: pixels(mask), ear: pixels(ear) };
   }));
 
-  const present = sides.filter((side) => side.px >= PRESENT_AT);
-  const isPair = present.length === 2;
-  const saw = `${sides.map((side) => `${side.side}=${side.px}px`).join(" ")} `
-    + `across her face's midline at x=${midline} of ${width}`;
-
-  check(
-    isPair === specimen.expectPair,
-    `A: ${specimen.label} reads ${specimen.expectPair ? "as a PAIR" : "as NOT a pair"}`,
-    `${saw} (present at ≥${PRESENT_AT}px: ${present.length}) → ${isPair ? "pair" : "not a pair"}`,
-  );
+  const present = sides.filter((side) => side.px >= PRESENT_AT).length;
+  const unreadable = sides.filter((side) => side.ear < EAR_VISIBLE_AT).map((side) => side.side);
+  return {
+    sides,
+    present,
+    unreadable,
+    isPair: present === 2,
+    midline,
+    width,
+    saw: `${sides.map((side) => `${side.side}=${side.px}px earring on ${side.ear}px of ear`).join(", ")} `
+      + `across her face's midline at x=${midline} of ${width} `
+      + `(earring present at ≥${PRESENT_AT}px: ${present}; ear visible at ≥${EAR_VISIBLE_AT}px: ${2 - unreadable.length}/2)`,
+  };
 }
 
-/* ------------------------------------------------------- control C: the seam */
-
-/*
-  CAN THE SEAM INSTRUMENT EXPRESS HIS DEFECT AT ALL?
-
-  Nothing here reads the walk's own rows, because the walk has not run — and that
-  was the reason this control sat unarmed, which was a mistake about what the
-  control is FOR. C's risk is not "no rows yet", it is *the reader is blind to the
-  thing he saw*: his shirt seam scored ZERO pixels over the tear bar, so the
-  amplitude number cannot express it at any threshold. What must be shown before
-  the walk is that the coherence statistic can, and that is provable today against
-  his own numbers.
-
-  Both rows go through the SAME `readSeamRow` the production sweep uses, so this
-  is the real reader rather than a restatement of it.
-*/
-{
-  const seams = SEAM_CONTROL_ROWS.map((row) => readSeamRow(row)).filter((row): row is NonNullable<typeof row> => !!row);
-  const clean = seams.find((row) => row.requestText.includes("clean boundary"));
-  const his = seams.find((row) => row.requestText.includes("shirt seam"));
-
-  check(
-    seams.length === SEAM_CONTROL_ROWS.length,
-    "C: the seam reader reads a row that carries a verdict",
-    `${seams.length} of ${SEAM_CONTROL_ROWS.length} control rows mapped`,
-  );
-  check(
-    !!his && his.coherence === FOUNDER_SEAM_COHERENCE && his.worstExcess < 80 && !his.torn,
-    "C: POSITIVE — his own shirt seam is expressed by COHERENCE while passing the tear bar",
-    his
-      ? `coherence ${his.coherence} with worstExcess ${his.worstExcess} (<80) and torn=${his.torn}`
-      : "his control row did not map",
-  );
-  check(
-    !!clean && clean.coherence === CLEAN_BOUNDARY_COHERENCE,
-    "C: NEGATIVE — an ordinary clean boundary scores near zero on the same statistic",
-    clean ? `coherence ${clean.coherence?.toFixed(3)}` : "the clean control row did not map",
-  );
-  const rates = seamRates(seams);
-  check(
-    rates.coherence !== null && rates.coherence.max > rates.coherence.median * 0 + CLEAN_BOUNDARY_COHERENCE,
-    "C: the two rates separate the two rows rather than averaging them away",
-    rates.coherence
-      ? `n=${rates.coherence.n}, median ${rates.coherence.median.toFixed(3)}, max ${rates.coherence.max.toFixed(3)}`
-      : "no coherence statistic on either row",
-  );
-  /*
-    AND THE HONEST OTHER HALF: the walk's own rows are what the step actually
-    produces, and there are none until it runs. Recorded as not-applicable rather
-    than as a pass, so a reader of this output cannot mistake a proven instrument
-    for a delivered measurement.
-  */
-  absent(
-    "C: the walk's own seam rows",
-    "no walk has run on this build, so there is no delivered row to read — the step's "
-    + "output is the number plus his eye on the frame, and both arrive with the walk",
-  );
+/** How much of a mask's pixels differ between two same-sized greyscale rasters. */
+function movedShare(mask: Mask, before: Buffer, after: Buffer): { moved: number; sampled: number } {
+  let moved = 0;
+  let sampled = 0;
+  for (let at = 0; at < mask.data.length; at += 1) {
+    if (mask.data[at] === 0) continue;
+    sampled += 1;
+    if (Math.abs(before[at] - after[at]) > MOVED_AT) moved += 1;
+  }
+  return { moved, sampled };
 }
 
-/* ----------------------------------------- control D: the hair is still down */
+/* ==========================================================================
+   THE CONTROLS — every instrument, driven against his own stored frames.
+   ========================================================================== */
 
-/*
-  THE INSTRUMENT IS THE PRODUCT'S OWN VERIFICATION READER, and its control pair is
-  ALREADY ON HIS ROWS — which is better than driving a reader again, because these
-  are the readings the product itself took at render time.
+async function runControls(): Promise<void> {
+  console.log("\n════ CONTROLS — every instrument, against his own frames ════");
 
-  Same face, same branch, same facet, same `asked` string:
+  /* ----------------------------------------------- control A: the pair counter */
 
-    v#163  "she wear her hair down"    hairWorn "down"  verified TRUE
-                                       saw: "Long dark hair falling loose past the
-                                       shoulders, parted in center"
-    v#164  "dangly cross earrings"     hairWorn "down"  verified FALSE
-                                       saw: "hair pulled back, gathered at the nape"
-
-  So the reading has been able to say otherwise, on this face, about this facet —
-  which is exactly what the spec demands before "still down" counts for anything.
-  And v#164 IS his finding 4, in the product's own words, already recorded and
-  `binding: false`, which is why it was seen and not refunded.
-*/
-{
-  const pairs = await Promise.all(HAIR_CONTROL.map(async (specimen) => {
-    const [row] = await connection.query<any[]>(
-      "SELECT id, requestText, internalPrompt FROM casting_candidate_variants WHERE publicId = ? LIMIT 1",
-      [specimen.publicId],
-    ).then(([rows]) => rows as any[]);
-    const prompt = typeof row?.internalPrompt === "string" ? JSON.parse(row.internalPrompt) : row?.internalPrompt;
-    const checks: any[] = prompt?.verification?.checks ?? [];
-    const hair = checks.find((entry) => entry?.facet === "hairWorn");
-    return { specimen, id: row?.id, hair };
-  }));
-
-  for (const pair of pairs) {
+  for (const specimen of SPECIMENS) {
+    const frame = await frameOf(specimen.publicId);
+    if (!frame.bytes) {
+      check(false, `A: ${specimen.label}`, frame.why);
+      continue;
+    }
+    const counted = await countEarringPair(frame.bytes, `v${frame.id}`);
+    /*
+      BOTH OF HIS SPECIMENS HAVE TWO VISIBLE EARS — measured, 2,497px at the
+      smallest. A side that stopped reading as an ear would mean the specimen
+      changed under us, and the control must say so rather than quietly grading
+      an earring count on a crop with no ear in it.
+    */
     check(
-      !!pair.hair && pair.hair.read === true && pair.hair.verified === pair.specimen.expectDown,
-      `D: ${pair.specimen.label}`,
-      pair.hair
-        ? `hairWorn asked=${JSON.stringify(pair.hair.asked)} read=${pair.hair.read} `
-          + `verified=${pair.hair.verified} — saw: ${String(pair.hair.saw ?? "").slice(0, 90)}`
-        : `v#${pair.id ?? "?"} carries no hairWorn check`,
+      counted.unreadable.length === 0 && counted.isPair === specimen.expectPair,
+      `A: ${specimen.label} reads ${specimen.expectPair ? "as a PAIR" : "as NOT a pair"}`,
+      `${counted.saw} → ${counted.isPair ? "pair" : "not a pair"}`
+      + (counted.unreadable.length ? ` — but no EAR on the ${counted.unreadable.join("/")}, so this specimen no longer poses the question` : ""),
     );
   }
-  check(
-    pairs.length === 2 && pairs[0].hair?.asked === pairs[1].hair?.asked,
-    "D: both controls answered the SAME question, so the difference is the picture",
-    `asked ${JSON.stringify(pairs.map((pair) => pair.hair?.asked))}`,
-  );
-}
 
-/* ------------------------------ control B: the earring pixels move, or do not */
+  /* ------------------------------------------------------- control C: the seam */
 
-/*
-  B'S CONTROL IS A STAND-IN, AND IT IS DECLARED AS ONE.
+  /*
+    CAN THE SEAM INSTRUMENT EXPRESS HIS DEFECT AT ALL?
 
-  The spec asks for a DELIBERATE REPLACEMENT (hoops → crosses) between two frames
-  of one walk, and swept over every variant on his account there is none: no branch
-  anywhere replaces one stated accessory with another. What does exist is an
-  ADDITION on one branch — v#163 wears nothing, its child v#164 asked for crosses —
-  and the control's actual job is served by it exactly: **the arithmetic must
-  report DIFFERENT for an accessory region that genuinely changed.** A comparison
-  that says "identical" there is measuring the wrong region, which is the only
-  thing this control exists to catch.
+    Nothing here reads the walk's own rows, because the walk has not run — and that
+    was the reason this control sat unarmed, which was a mistake about what the
+    control is FOR. C's risk is not "no rows yet", it is *the reader is blind to the
+    thing he saw*: his shirt seam scored ZERO pixels over the tear bar, so the
+    amplitude number cannot express it at any threshold. What must be shown before
+    the walk is that the coherence statistic can, and that is provable today against
+    his own numbers.
 
-  Two deviations from the spec, both stated rather than smoothed over:
-
-  1. It is an addition, not a replacement. The replacement comparison arrives with
-     the walk's own steps 2→3 and is not available before it.
-  2. The mask is the READER's earring region, not a stored `statedAccessories`
-     segment — because there is no such segment anywhere in production (all 14 are
-     `marks`, `makeup`, `hairWorn` and `eye.colour`). When the walk produces one,
-     B's live assertion uses it; this control proves the arithmetic can see a
-     change at all.
-
-  The ear side is chosen by the pair counter's method — cut at her own midline,
-  ask each half — so the region compared cannot be laterally wrong.
-*/
-{
-  const frames = await Promise.all(EARRING_CHANGE.map(async (specimen) => {
-    const [row] = await connection.query<any[]>(
-      "SELECT id, imageKey FROM casting_candidate_variants WHERE publicId = ? LIMIT 1",
-      [specimen.publicId],
-    ).then(([rows]) => rows as any[]);
-    if (!row?.imageKey) return { specimen, bytes: null as Buffer | null, id: row?.id };
-    const response = await fetch(`${base}/${row.imageKey}`);
-    return {
-      specimen,
-      id: row.id,
-      bytes: response.ok ? Buffer.from(await response.arrayBuffer()) : null,
-    };
-  }));
-
-  if (frames.some((frame) => frame.bytes === null)) {
-    check(false, "B: both frames of the accessory change are readable",
-      frames.map((frame) => `v#${frame.id ?? "?"}=${frame.bytes ? "ok" : "MISSING"}`).join(" "));
-  } else {
-    const sharpModule = (await import("sharp")).default;
-    const [before, after] = frames as Array<{ specimen: any; id: number; bytes: Buffer }>;
-    const meta = await sharpModule(after.bytes).metadata();
-    const width = meta.width ?? 0;
-    const height = meta.height ?? 0;
-
-    const face = await reader.region({ image: after.bytes, name: "face", absentIsAnswer: true });
-    const midline = Math.round(centroidX(face) ?? width / 2);
-
-    /* The ear that CHANGED, found on the after-frame, one half at a time. */
-    const halves = await Promise.all(([
-      { side: "left", left: 0, width: midline },
-      { side: "right", left: midline, width: width - midline },
-    ] as const).map(async (half) => {
-      const crop = { left: half.left, top: 0, width: half.width, height };
-      const [beforeHalf, afterHalf] = await Promise.all([
-        sharpModule(before.bytes).extract(crop).png().toBuffer(),
-        sharpModule(after.bytes).extract(crop).png().toBuffer(),
-      ]);
-      const mask = await askEveryMask(afterHalf, "earring");
-      const px = pixels(mask);
-      if (px < PRESENT_AT) return { side: half.side, px, changed: 0, sampled: 0 };
-
-      /* Inside that mask only, how much of the picture actually moved. */
-      const [beforeRaw, afterRaw] = await Promise.all([
-        sharpModule(beforeHalf).resize({ width: mask.width, height: mask.height, fit: "fill" })
-          .toColourspace("b-w").raw().toBuffer(),
-        sharpModule(afterHalf).resize({ width: mask.width, height: mask.height, fit: "fill" })
-          .toColourspace("b-w").raw().toBuffer(),
-      ]);
-      let changed = 0;
-      let sampled = 0;
-      for (let at = 0; at < mask.data.length; at += 1) {
-        if (mask.data[at] === 0) continue;
-        sampled += 1;
-        if (Math.abs(beforeRaw[at] - afterRaw[at]) > 12) changed += 1;
-      }
-      return { side: half.side, px, changed, sampled };
-    }));
-
-    const measured = halves.filter((half) => half.sampled > 0);
-    const share = (half: { changed: number; sampled: number }) => half.changed / half.sampled;
-    const loudest = measured.sort((a, b) => share(b) - share(a))[0];
-    const saw = halves
-      .map((half) => `${half.side}: ${half.px}px earring, ${half.changed}/${half.sampled} moved`)
-      .join("  ");
-    console.log(`      ${saw}`);
+    Both rows go through the SAME `readSeamRow` the production sweep uses, so this
+    is the real reader rather than a restatement of it — which is also the spec's
+    "run the selftest in the same session", satisfied in-process rather than by
+    shelling out to a second copy of the same reading.
+  */
+  {
+    const seams = SEAM_CONTROL_ROWS.map((row) => readSeamRow(row)).filter((row): row is NonNullable<typeof row> => !!row);
+    const clean = seams.find((row) => row.requestText.includes("clean boundary"));
+    const his = seams.find((row) => row.requestText.includes("shirt seam"));
 
     check(
-      !!loudest && share(loudest) > 0.25,
-      "B: POSITIVE — the arithmetic reports DIFFERENT where an accessory genuinely changed",
-      loudest
-        ? `${saw} → ${(share(loudest) * 100).toFixed(1)}% of the earring region moved on the ${loudest.side}`
-        : "no earring region was found on either side of the after-frame",
+      seams.length === SEAM_CONTROL_ROWS.length,
+      "C: the seam reader reads a row that carries a verdict",
+      `${seams.length} of ${SEAM_CONTROL_ROWS.length} control rows mapped`,
+    );
+    check(
+      !!his && his.coherence === FOUNDER_SEAM_COHERENCE && his.worstExcess < 80 && !his.torn,
+      "C: POSITIVE — his own shirt seam is expressed by COHERENCE while passing the tear bar",
+      his
+        ? `coherence ${his.coherence} with worstExcess ${his.worstExcess} (<80) and torn=${his.torn}`
+        : "his control row did not map",
+    );
+    check(
+      !!clean && clean.coherence === CLEAN_BOUNDARY_COHERENCE,
+      "C: NEGATIVE — an ordinary clean boundary scores near zero on the same statistic",
+      clean ? `coherence ${clean.coherence?.toFixed(3)}` : "the clean control row did not map",
+    );
+    const rates = seamRates(seams);
+    check(
+      rates.coherence !== null && rates.coherence.max > rates.coherence.median * 0 + CLEAN_BOUNDARY_COHERENCE,
+      "C: the two rates separate the two rows rather than averaging them away",
+      rates.coherence
+        ? `n=${rates.coherence.n}, median ${rates.coherence.median.toFixed(3)}, max ${rates.coherence.max.toFixed(3)}`
+        : "no coherence statistic on either row",
+    );
+    /*
+      AND THE HONEST OTHER HALF: the walk's own rows are what the step actually
+      produces, and there are none until it runs. Recorded as not-applicable rather
+      than as a pass, so a reader of this output cannot mistake a proven instrument
+      for a delivered measurement.
+    */
+    absent(
+      "C: the walk's own seam rows",
+      "no walk has run on this build, so there is no delivered row to read — the step's "
+      + "output is the number plus his eye on the frame, and both arrive with the walk",
+    );
+  }
+
+  /* --------------------------------------- control D: the hair is still down */
+
+  /*
+    THE INSTRUMENT IS THE PRODUCT'S OWN VERIFICATION READER, and its control pair is
+    ALREADY ON HIS ROWS — which is better than driving a reader again, because these
+    are the readings the product itself took at render time.
+
+    Same face, same branch, same facet, same `asked` string:
+
+      v#163  "she wear her hair down"    hairWorn "down"  verified TRUE
+                                         saw: "Long dark hair falling loose past the
+                                         shoulders, parted in center"
+      v#164  "dangly cross earrings"     hairWorn "down"  verified FALSE
+                                         saw: "hair pulled back, gathered at the nape"
+
+    So the reading has been able to say otherwise, on this face, about this facet —
+    which is exactly what the spec demands before "still down" counts for anything.
+    And v#164 IS his finding 4, in the product's own words, already recorded and
+    `binding: false`, which is why it was seen and not refunded.
+  */
+  {
+    const pairs = await Promise.all(HAIR_CONTROL.map(async (specimen) => {
+      const [row] = await connection.query<any[]>(
+        "SELECT id, requestText, internalPrompt FROM casting_candidate_variants WHERE publicId = ? LIMIT 1",
+        [specimen.publicId],
+      ).then(([rows]) => rows as any[]);
+      const prompt = typeof row?.internalPrompt === "string" ? JSON.parse(row.internalPrompt) : row?.internalPrompt;
+      const checkRows: any[] = prompt?.verification?.checks ?? [];
+      const hair = checkRows.find((entry) => entry?.facet === "hairWorn");
+      return { specimen, id: row?.id, hair };
+    }));
+
+    for (const pair of pairs) {
+      check(
+        !!pair.hair && pair.hair.read === true && pair.hair.verified === pair.specimen.expectDown,
+        `D: ${pair.specimen.label}`,
+        pair.hair
+          ? `hairWorn asked=${JSON.stringify(pair.hair.asked)} read=${pair.hair.read} `
+            + `verified=${pair.hair.verified} — saw: ${String(pair.hair.saw ?? "").slice(0, 90)}`
+          : `v#${pair.id ?? "?"} carries no hairWorn check`,
+      );
+    }
+    check(
+      pairs.length === 2 && pairs[0].hair?.asked === pairs[1].hair?.asked,
+      "D: both controls answered the SAME question, so the difference is the picture",
+      `asked ${JSON.stringify(pairs.map((pair) => pair.hair?.asked))}`,
+    );
+  }
+
+  /* ---------------------------- control B: the earring pixels move, or do not */
+
+  /*
+    B'S CONTROL IS A STAND-IN, AND IT IS DECLARED AS ONE.
+
+    The spec asks for a DELIBERATE REPLACEMENT (hoops → crosses) between two frames
+    of one walk, and swept over every variant on his account there is none: no branch
+    anywhere replaces one stated accessory with another. What does exist is an
+    ADDITION on one branch — v#155 wears nothing, its child v#156 got a hoop — and
+    the control's actual job is served by it exactly: **the arithmetic must report
+    DIFFERENT for an accessory region that genuinely changed.** A comparison that
+    says "identical" there is measuring the wrong region, which is the only thing
+    this control exists to catch.
+
+    Two deviations from the spec, both stated rather than smoothed over:
+
+    1. It is an addition, not a replacement. The replacement comparison arrives with
+       the walk's own steps 2→3 and is not available before it.
+    2. The mask is the READER's earring region, not a stored `statedAccessories`
+       segment — because there is no such segment anywhere in production (all 14 are
+       `marks`, `makeup`, `hairWorn` and `eye.colour`). When the walk produces one,
+       B's live assertion uses it; this control proves the arithmetic can see a
+       change at all.
+
+    The ear side is chosen by the pair counter's method — cut at her own midline,
+    ask each half — so the region compared cannot be laterally wrong.
+  */
+  {
+    const frames = await Promise.all(EARRING_CHANGE.map(async (specimen) => ({
+      specimen, ...(await frameOf(specimen.publicId)),
+    })));
+
+    if (frames.some((frame) => frame.bytes === null)) {
+      check(false, "B: both frames of the accessory change are readable",
+        frames.map((frame) => `v#${frame.id ?? "?"}=${frame.bytes ? "ok" : "MISSING"}`).join(" "));
+    } else {
+      const sharpModule = (await import("sharp")).default;
+      const [before, after] = frames as Array<{ specimen: any; id: number; bytes: Buffer }>;
+      const meta = await sharpModule(after.bytes).metadata();
+      const width = meta.width ?? 0;
+      const height = meta.height ?? 0;
+
+      const face = await reader.region({ image: after.bytes, name: "face", absentIsAnswer: true });
+      const midline = Math.round(centroidX(face) ?? width / 2);
+
+      /* The ear that CHANGED, found on the after-frame, one half at a time. */
+      const halves = await Promise.all(([
+        { side: "left", left: 0, width: midline },
+        { side: "right", left: midline, width: width - midline },
+      ] as const).map(async (half) => {
+        const crop = { left: half.left, top: 0, width: half.width, height };
+        const [beforeHalf, afterHalf] = await Promise.all([
+          sharpModule(before.bytes).extract(crop).png().toBuffer(),
+          sharpModule(after.bytes).extract(crop).png().toBuffer(),
+        ]);
+        const mask = await askEveryMask(afterHalf, "earring");
+        const px = pixels(mask);
+        if (px < PRESENT_AT) return { side: half.side, px, changed: 0, sampled: 0 };
+
+        /* Inside that mask only, how much of the picture actually moved. */
+        const [beforeRaw, afterRaw] = await Promise.all([
+          sharpModule(beforeHalf).resize({ width: mask.width, height: mask.height, fit: "fill" })
+            .toColourspace("b-w").raw().toBuffer(),
+          sharpModule(afterHalf).resize({ width: mask.width, height: mask.height, fit: "fill" })
+            .toColourspace("b-w").raw().toBuffer(),
+        ]);
+        const { moved, sampled } = movedShare(mask, beforeRaw, afterRaw);
+        return { side: half.side, px, changed: moved, sampled };
+      }));
+
+      const measured = halves.filter((half) => half.sampled > 0);
+      const share = (half: { changed: number; sampled: number }) => half.changed / half.sampled;
+      const loudest = measured.sort((a, b) => share(b) - share(a))[0];
+      const saw = halves
+        .map((half) => `${half.side}: ${half.px}px earring, ${half.changed}/${half.sampled} moved`)
+        .join("  ");
+      console.log(`      ${saw}`);
+
+      check(
+        !!loudest && share(loudest) > 0.25,
+        "B: POSITIVE — the arithmetic reports DIFFERENT where an accessory genuinely changed",
+        loudest
+          ? `${saw} → ${(share(loudest) * 100).toFixed(1)}% of the earring region moved on the ${loudest.side}`
+          : "no earring region was found on either side of the after-frame",
+      );
+
+      /*
+        AND THE OTHER DIRECTION, on the same two frames and the same arithmetic.
+
+        An instrument that can only ever report DIFFERENT would make B's real
+        assertion — *these are the same pixels* — impossible to satisfy, and would
+        fail the walk for a defect that was not there. The spec asks only for the
+        replacement control; the house rule is both. The region is the BARE ear on
+        the other side of the same pair: it exists in both frames, and the only edit
+        between them put a hoop on the opposite ear, so nothing here should have
+        moved. A self-comparison would prove only that the loop can count zero.
+      */
+      const bare = { left: 0, top: 0, width: midline, height };
+      const [bareBefore, bareAfter] = await Promise.all([
+        sharpModule(before.bytes).extract(bare).png().toBuffer(),
+        sharpModule(after.bytes).extract(bare).png().toBuffer(),
+      ]);
+      const earMask = await askEveryMask(bareAfter, "ear");
+      if (pixels(earMask) < PRESENT_AT) {
+        check(false, "B: NEGATIVE — the same arithmetic reports UNCHANGED where nothing moved",
+          `no ear found on the untouched side (${pixels(earMask)}px), so the negative has no region to measure`);
+      } else {
+        const [rawBefore, rawAfter] = await Promise.all([
+          sharpModule(bareBefore).resize({ width: earMask.width, height: earMask.height, fit: "fill" })
+            .toColourspace("b-w").raw().toBuffer(),
+          sharpModule(bareAfter).resize({ width: earMask.width, height: earMask.height, fit: "fill" })
+            .toColourspace("b-w").raw().toBuffer(),
+        ]);
+        const { moved, sampled } = movedShare(earMask, rawBefore, rawAfter);
+        const bareShare = sampled === 0 ? 1 : moved / sampled;
+        console.log(`      the untouched ear: ${moved}/${sampled} moved (${(bareShare * 100).toFixed(1)}%)`);
+        check(
+          bareShare < 0.05,
+          "B: NEGATIVE — the same arithmetic reports UNCHANGED where nothing moved",
+          `the untouched ear on the other side: ${moved}/${sampled} pixels moved `
+          + `(${(bareShare * 100).toFixed(1)}%) against ${(share(loudest!) * 100).toFixed(1)}% where the hoop arrived`,
+        );
+      }
+      absent(
+        "B: the REPLACEMENT comparison, and the segment's own mask",
+        "no branch in production replaces one stated accessory with another, and no "
+        + "`statedAccessories` segment exists anywhere (all 14 are marks/makeup/hairWorn/eye.colour) — "
+        + "both arrive with the walk's own steps 2→3, and this control stands in for neither",
+      );
+    }
+  }
+}
+
+/* ==========================================================================
+   THE WALK — five steps, 125 credits, and the five assertions afterwards.
+   ========================================================================== */
+
+/** What one step of the walk did, kept for the record and for the assertions. */
+type StepRecord = {
+  instruction: string;
+  serves: string;
+  outcome: RefineObservation["outcome"];
+  said: string | null;
+  answers: string[];
+  imageUrl: string | null;
+  seconds: number;
+  /** The kept-panel's own content keys, read from the DOM after this step. */
+  panelContentKeys: string[];
+  /** Null when the panel was absent — which is legitimate on a face keeping nothing. */
+  panelRows: number | null;
+  /**
+   * THE STORE AS IT WAS WHEN THE PANEL WAS PHOTOGRAPHED.
+   *
+   * E compares two views of one store, so they have to be views of the SAME
+   * moment. Segments are persisted after the variant lands — the picture is
+   * already delivered and paid for, and keeping its pixels is deliberately the
+   * least important thing left in the request — so a panel read at landing and a
+   * segment table read at the end of the walk are minutes apart. Comparing them
+   * would book a disagreement against a product that was simply still writing.
+   */
+  segmentsAtPanelRead: Array<{ facet: string; contentKey: string; variantId: number | null }>;
+};
+
+/**
+ * THE KEPT PANEL, READ BY IDENTITY RATHER THAN BY ITS WORDS.
+ *
+ * Assertion E compares the panel against the assembly, and a comparison of NAMES
+ * would be comparing two pieces of copy. Each row's thumbnail carries the stored
+ * segment's own `contentKey` in its `background-image`, and that key is a row in
+ * `casting_segments` — an identity, not a coordinate. The same distinction that
+ * decides which tile the walk opens.
+ */
+const READ_KEPT_PANEL = `(() => {
+  const panel = document.querySelector(".dpc-kept");
+  if (!panel) return null;
+  return Array.from(panel.querySelectorAll(".dpc-kept__thumb")).map((thumb) => {
+    const background = getComputedStyle(thumb).backgroundImage || "";
+    const matched = background.match(/url\\("?([^")]+)"?\\)/);
+    return matched ? matched[1] : "";
+  });
+})()`;
+
+async function readKeptPanel(page: any): Promise<{ keys: string[]; rows: number | null }> {
+  /*
+    A SETTLED READ, for the reason every projection read in this program is one:
+    the panel's rows come from their own query, and reading them the instant the
+    viewer renders is the vacuous-pass hazard that has already scored four steps
+    `delivered` that had refused. Two identical counts a second apart, then read.
+  */
+  await page.waitForFunction(
+    () => {
+      const panel = document.querySelector(".dpc-kept");
+      const rows = panel ? panel.querySelectorAll(".dpc-kept__row").length : -1;
+      const previous = (window as any).__keptRows;
+      (window as any).__keptRows = rows;
+      return previous !== undefined && previous === rows;
+    },
+    { timeout: 20_000, polling: 1000 },
+  ).catch(() => undefined);
+
+  const urls = await page.evaluate(READ_KEPT_PANEL) as string[] | null;
+  if (urls === null) return { keys: [], rows: null };
+  return {
+    rows: urls.length,
+    /* Bucket-relative, because that is how the row stores it. */
+    keys: urls.map((url) => {
+      const withoutQuery = url.split("?")[0];
+      return withoutQuery.startsWith(base) ? withoutQuery.slice(base.length + 1) : withoutQuery;
+    }),
+  };
+}
+
+/** Every segment row on this face, right now — E's other half, same moment. */
+async function segmentsNow(): Promise<Array<{ facet: string; contentKey: string; variantId: number | null }>> {
+  const [rows] = await connection.query<any[]>(
+    `SELECT s.facet, s.contentKey, s.variantId FROM casting_segments s
+       JOIN casting_candidates c ON c.id = s.candidateId
+      WHERE c.publicId = ? ORDER BY s.id ASC`,
+    [CANDIDATE],
+  );
+  return rows as Array<{ facet: string; contentKey: string; variantId: number | null }>;
+}
+
+async function runWalk(): Promise<boolean> {
+  const startedAt = new Date();
+  const trpcQuery = createTrpcQuery({ base: APP_BASE, token: TOKEN });
+  const { sessionId, rollId, rollLabel, indexLabel, imageUrl } =
+    await locateCandidate({ trpcQuery, candidateId: CANDIDATE });
+  const currentFaceKey = createCurrentFaceKey({ trpcQuery, rollId, rollLabel, candidateId: CANDIDATE });
+  const landedImageKey = createLandedImageKey(CANDIDATE);
+  console.log(
+    `\nsheet ${sessionId} · roll ${rollLabel} · candidate ${indexLabel}`
+    + `\nidentified by her own picture: ${imageUrl.slice(imageUrl.lastIndexOf("/") + 1)}`,
+  );
+
+  /*
+    A FACE THAT CANNOT ANSWER A DECLARED STEP IS REFUSED BEFORE IT IS PAID FOR.
+
+    Two preconditions, and they are the same class rather than two chores: a step
+    whose subject is not in the frame cannot land, and the table would then call
+    the product's failure what was really the harness's choice of face. The
+    self-walk learned it the expensive way — run-15 drew a face with no glasses
+    anywhere and would have spent 75 credits before failing a step that was
+    impossible from the start. Asked of the PIXELS, which is the only thing that
+    cannot lie about it (law 7: fix the class, not the instance).
+
+      step 5  "remove her glasses"   needs her to be wearing some
+      step 2  "gold hoop earrings"   needs ears — assertion A is a COUNT, and a
+                                     count over a crop with no ear in it is a
+                                     no-read that would fail the walk for a
+                                     defect that was not there
+  */
+  const faceBytes = await (async (): Promise<Buffer | null> => {
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error(`her face came back HTTP ${response.status}`);
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error) {
+      console.log(`  her face could not be fetched (${String(error).slice(0, 90)})`);
+      return null;
+    }
+  })();
+
+  const bespectacled = faceBytes === null ? null : await reader
+    .region({ image: faceBytes, name: "eyeglasses", absentIsAnswer: true })
+    .then((mask) => mask.data.some((value) => value > 0))
+    .catch((error) => {
+      console.log(`  glasses unreadable (${String(error).slice(0, 90)})`);
+      return null;
+    });
+  if (bespectacled === false) {
+    throw new Error(
+      "this face is not wearing glasses, and step 5 (\"remove her glasses\") is the whole of "
+      + "finding 3's ghost rim. Walking her would spend 25 credits on a step that cannot land "
+      + "and then score the product for it. Pick a bespectacled face, or roll one — the spec "
+      + "says step 5 moves to its own short run rather than being dropped silently.",
+    );
+  }
+  console.log(bespectacled === null
+    ? "  glasses: NO READ — proceeding, but step 5's expectation is unproven"
+    : "  glasses: present, so step 5 is answerable");
+
+  const ears = faceBytes === null ? null : await countEarringPair(faceBytes, "preflight");
+  if (ears && ears.unreadable.length > 0) {
+    throw new Error(
+      `this face's ${ears.unreadable.join(" and ")} ear cannot be found in the frame `
+      + `(${ears.saw}). Assertion A counts an earring on each side, so on her a missing hoop and a `
+      + "hidden ear are the same picture — the walk could not tell his finding 1 from her hairstyle. "
+      + "Pick a face whose ears are visible.",
+    );
+  }
+  console.log(ears
+    ? `  ears: ${ears.sides.map((side) => `${side.side} ${side.ear}px`).join(", ")} — `
+      + "both visible, so step 2's count can distinguish a miss from a hairstyle"
+    : "  ears: NO READ — her face could not be fetched");
+
+  console.log(
+    `\nTHE WALK — ${WALK.length} steps, ${WALK.length * COST_PER_STEP} credits `
+    + `(${COST_PER_STEP} each, every step expected to deliver)`,
+  );
+  for (const [index, step] of WALK.entries()) {
+    console.log(`  ${index + 1}. "${step.instruction}"  · serves finding ${step.serves}`);
+  }
+
+  if (!SPEND) {
+    console.log(
+      "\nDRY RUN — the face is found, her glasses are proven and the price is stated. "
+      + "Pass --spend to walk it. Nothing was charged.",
+    );
+    return true;
+  }
+
+  const { browser, page } = await openDrivenPage({ base: APP_BASE, token: TOKEN, height: 1100 });
+  const openViewer = createViewerOpener({
+    page, base: APP_BASE, sessionId, rollLabel, currentFaceKey, indexLabelForError: indexLabel,
+  });
+  const steps: StepRecord[] = [];
+
+  try {
+    /*
+      BACK TO THE ORIGINAL BEFORE ANYTHING IS TYPED — and it is free.
+
+      Findings 2 and 4 are about what a LATER render does to an EARLIER one, so
+      the chain this walk measures has to be the walk's own. Starting from
+      whatever version happened to be selected would put someone else's facets
+      into every step's composition. Selecting a version is navigation between
+      pictures that already exist, so it costs nothing (D-121).
+    */
+    console.log("\n── reset: selecting the original");
+    await openViewer();
+    const reset = await page.evaluate(() => {
+      const button = document.querySelector<HTMLElement>('.dpc-refine__pick[aria-label="The original"]');
+      if (!button) return null;
+      const wasPressed = button.getAttribute("aria-pressed") === "true";
+      button.click();
+      return { wasPressed };
+    });
+    if (reset === null) {
+      const hasStack = await page.$(".dpc-refine__stack");
+      if (hasStack) {
+        checks.neverArmed("[reset] the original is addressable", "a version stack with no Original in it");
+      } else {
+        absent("[reset] the walk starts from the original face", "she has no versions yet — she IS the original");
+      }
+    } else {
+      await page.waitForFunction(
+        () => document.querySelector('.dpc-refine__pick[aria-label="The original"]')
+          ?.getAttribute("aria-pressed") === "true",
+        { timeout: 30_000 },
+      ).catch(() => undefined);
+      const pressed = await page.evaluate(() =>
+        document.querySelector('.dpc-refine__pick[aria-label="The original"]')?.getAttribute("aria-pressed"));
+      check(
+        pressed === "true",
+        "[reset] the walk starts from the original face",
+        `Original aria-pressed="${pressed}" (was ${reset.wasPressed ? "already" : "not"} selected)`,
+      );
+    }
+
+    for (const [index, step] of WALK.entries()) {
+      const position = `${index + 1}/${WALK.length}`;
+      console.log(`\n── ${position} "${step.instruction}"  · serves finding ${step.serves}`);
+
+      const seen = await refineStep({
+        page,
+        base: APP_BASE,
+        checks,
+        label: `[${position}]`,
+        instruction: step.instruction,
+        openViewer,
+        landedImageKey,
+        indexLabel,
+        /* Every step of this walk is a paid edit. The spec forbids dropping one
+           for being expensive, and none of them has a free-question branch. */
+        expectsDelivery: true,
+      });
+
+      /*
+        THE PANEL, RE-OPENED AND THEN READ — with the store read in the same breath.
+
+        Assertion E is free and it is the only one the founder can make himself at
+        a glance, so it is taken every step rather than once at the end. The
+        viewer is re-opened first (free navigation, D-121) because the panel's
+        query resolved before this render's segments were persisted, and a stale
+        projection compared against a fresh table is a disagreement about time
+        rather than about the product.
+      */
+      await openViewer();
+      const panel = await readKeptPanel(page);
+      const segmentsThen = await segmentsNow();
+
+      steps.push({
+        instruction: step.instruction,
+        serves: step.serves,
+        outcome: seen.outcome,
+        said: seen.said,
+        answers: seen.answers,
+        imageUrl: seen.shown,
+        seconds: seen.seconds,
+        panelContentKeys: panel.keys,
+        panelRows: panel.rows,
+        segmentsAtPanelRead: segmentsThen,
+      });
+      console.log(`   → ${seen.outcome} in ${seen.seconds}s · panel keeps ${panel.rows ?? "no panel"}`);
+
+      await page.screenshot({
+        path: `${OUT}/${String(index + 1).padStart(2, "0")}-${step.instruction.replace(/\W+/g, "-")}.png`,
+      });
+      if (seen.shown) {
+        try {
+          const image = await fetch(seen.shown);
+          await writeFile(
+            `${OUT}/${String(index + 1).padStart(2, "0")}-delivered.png`,
+            Buffer.from(await image.arrayBuffer()),
+          );
+        } catch (error) {
+          console.log(`     (could not fetch the delivered image: ${String(error).slice(0, 80)})`);
+        }
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+
+  /*
+    EVERY STEP LANDED WHERE IT SAID IT WOULD — or the walk is not a replay.
+
+    A collision is void rather than a failure (the deploy took it), and it is the
+    one outcome that asks for a re-run instead of a diagnosis.
+  */
+  const collisions = steps.filter((step) => step.outcome === "collided").length;
+  for (const [index, step] of steps.entries()) {
+    const position = `${index + 1}/${WALK.length}`;
+    if (step.outcome === "collided") {
+      absent(`[${position}] lands where it said it would`, "void — the deploy took it");
+      continue;
+    }
+    check(
+      step.outcome === "delivered" || step.outcome === "refused",
+      `[${position}] "${step.instruction}" landed`,
+      `outcome ${step.outcome}`
+      + (step.said ? ` — panel said "${step.said.slice(0, 110)}"` : "")
+      + (step.outcome === "refused" ? " (a refusal is data; the money check below decides whether it was honest)" : ""),
+    );
+  }
+
+  /* ---------------------------------------------------- the rows, once settled */
+
+  const settled = await settleAttemptRows({ since: startedAt });
+  if (settled.unsettled > 0) {
+    checks.neverArmed(
+      "[rows] every attempt this walk started has settled",
+      `${settled.unsettled} row(s) still in flight after ${Math.round(settled.waitedMs / 1000)}s — `
+      + "the assertions below would be reading a half-written state",
+    );
+  } else {
+    check(true, "[rows] every attempt this walk started has settled", `waited ${Math.round(settled.waitedMs / 1000)}s`);
+  }
+
+  const [variantRows] = await connection.query<any[]>(
+    `SELECT v.id, v.publicId, v.parentVariantId, v.requestText, v.imageKey, v.status,
+            v.pointsCost, v.internalPrompt, v.createdAt, o.refundedCredits
+       FROM casting_candidate_variants v
+       JOIN casting_candidates c ON c.id = v.candidateId
+       LEFT JOIN generation_operations o ON o.id = v.operationId
+      WHERE c.publicId = ? ORDER BY v.id ASC`,
+    [CANDIDATE],
+  );
+  const [segmentRows] = await connection.query<any[]>(
+    `SELECT s.* FROM casting_segments s
+       JOIN casting_candidates c ON c.id = s.candidateId
+      WHERE c.publicId = ? ORDER BY s.id ASC`,
+    [CANDIDATE],
+  );
+
+  const parsePrompt = (value: unknown): any => {
+    if (typeof value === "string") { try { return JSON.parse(value); } catch { return null; } }
+    return value ?? null;
+  };
+
+  /**
+   * WHICH ROW EACH STEP PRODUCED — the newest one wearing this sentence that this
+   * walk created. A row from an earlier run wearing the same words is the
+   * coordinate-versus-identity trap one table over, so the window matters.
+   */
+  const rowOfStep = (instruction: string): any | null =>
+    variantRows
+      .filter((row) => row.requestText === instruction && new Date(row.createdAt) >= startedAt)
+      .sort((a, b) => b.id - a.id)[0] ?? null;
+  const walkRows = WALK.map((step) => ({ step, row: rowOfStep(step.instruction) }));
+
+  /* ------------------------------------------------------------ the money */
+
+  const charged = walkRows.reduce((total, entry) => total + Number(entry.row?.pointsCost ?? 0), 0);
+  const refunded = walkRows.reduce((total, entry) => total + Number(entry.row?.refundedCredits ?? 0), 0);
+  const delivered = walkRows.filter((entry) => entry.row?.status === "ready").length;
+  check(
+    charged - refunded === delivered * COST_PER_STEP,
+    "[money] she paid for what she received and nothing else",
+    `charged ${charged}, refunded ${refunded}, net ${charged - refunded} against `
+    + `${delivered} delivered × ${COST_PER_STEP}`,
+  );
+
+  /* --------------------- A. Both ears, or an honest refusal (finding 1) */
+
+  {
+    const entry = walkRows[1];
+    const row = entry.row;
+    const stored = parsePrompt(row?.internalPrompt);
+    const accessory = (stored?.verification?.checks ?? []).find((c: any) => c?.facet === "statedAccessories");
+    if (!row) {
+      checks.neverArmed("[A] both ears, or an honest refusal", "step 2 wrote no row at all");
+    } else if (row.status !== "ready") {
+      /*
+        THE REFUSAL BRANCH THE SPEC ALLOWS — and it is only honest if the money
+        came back. A refusal that kept the credits is finding 1 wearing a
+        different hat.
+      */
+      check(
+        Number(row.refundedCredits ?? 0) >= Number(row.pointsCost ?? 0),
+        "[A] step 2 refused, and refused HONESTLY — the credits came back",
+        `status ${row.status}, charged ${row.pointsCost}, refunded ${row.refundedCredits}`,
+      );
+    } else {
+      const response = await fetch(`${base}/${row.imageKey}`);
+      if (!response.ok) {
+        checks.neverArmed("[A] both ears, or an honest refusal", `the delivered frame came back HTTP ${response.status}`);
+      } else {
+        const counted = await countEarringPair(Buffer.from(await response.arrayBuffer()), `walk-step2-v${row.id}`);
+        /*
+          ONE HOOP DELIVERED AND CHARGED IS A FALSE PASS, and it fails the run
+          outright. The pixels decide it; the stored verdict's own words are
+          recorded beside them, because D-235's asymmetry is what made the
+          original miss legible — *"gold hoop earring visible on visible ear"*,
+          singular, one ear, accepted.
+
+          Unless an ear is not THERE. Step 1 asks her to wear her hair down, and
+          hair worn down goes over the ears — so this walk's own second step can
+          remove the thing its second assertion is about. That is a NO-READ and
+          it is recorded as one: unarmed, which fails the run, because a walk
+          that cannot see her ears has not closed finding 1 and must not be able
+          to say it has.
+        */
+        if (counted.unreadable.length > 0) {
+          checks.neverArmed(
+            "[A] step 2 delivered an earring on BOTH ears",
+            `${counted.saw} — no ear on the ${counted.unreadable.join("/")}, so "no earring there" is a `
+            + "no-read rather than a miss. His finding was one hoop with the other ear bare AND VISIBLE",
+          );
+        } else {
+          check(
+            counted.isPair,
+            "[A] step 2 delivered an earring on BOTH ears",
+            `${counted.saw} → ${counted.isPair ? "a pair" : "NOT a pair"}`,
+          );
+        }
+        check(
+          true,
+          "[A] and the product's own verdict on the same frame, recorded verbatim",
+          accessory
+            ? `verified=${accessory.verified} — saw: ${String(accessory.saw ?? "").slice(0, 140)}`
+            : "the row carries no statedAccessories check",
+        );
+      }
+    }
+  }
+
+  /* ------------------------------- B. The ears do not move (finding 2) */
+
+  /*
+    THE TWO CONDITIONS FABLE-133 PUT ON B, AND THEY ARE NOT THE SAME CONDITION.
+
+    1. The result is stated with its OWN n, on the REAL `statedAccessories`
+       segments — not on the reader's mask, which is what the pre-walk control
+       stands in with.
+    2. **If steps 2→3 produce no segments at all, the walk is NOT clean whatever
+       else passes.** There was no `statedAccessories` segment anywhere in
+       production when this was written — all 14 were marks/makeup/hairWorn/
+       eye.colour — so an empty result here is a live risk rather than a
+       formality, and it must never read as "nothing to report".
+  */
+  let accessorySegments = 0;
+  let carriedVerdicts = 0;
+  {
+    const stepTwo = walkRows[1].row;
+    const stepThree = walkRows[2].row;
+    const stepFour = walkRows[3].row;
+    const minted = segmentRows.filter((segment) =>
+      segment.facet === "statedAccessories"
+      && [stepTwo?.id, stepThree?.id].includes(segment.variantId));
+    accessorySegments = minted.length;
+    check(
+      accessorySegments > 0,
+      "[B] steps 2→3 minted a real `statedAccessories` segment — the thing an earring persists AS",
+      accessorySegments > 0
+        ? `${accessorySegments} segment(s): ${minted.map((s) => `${s.facet}@v${s.version} from v#${s.variantId}`).join(", ")}`
+        : "no accessory segment exists on this face — an earring is still a sentence, "
+          + "so finding 2 cannot be closed by this walk whatever else passes",
     );
 
     /*
-      AND THE OTHER DIRECTION, on the same two frames and the same arithmetic.
-
-      An instrument that can only ever report DIFFERENT would make B's real
-      assertion — *these are the same pixels* — impossible to satisfy, and would
-      fail the walk for a defect that was not there. The spec asks only for the
-      replacement control; the house rule is both. The region is the BARE ear on
-      the other side of the same pair: it exists in both frames, and the only edit
-      between them put a hoop on the opposite ear, so nothing here should have
-      moved. A self-comparison would prove only that the loop can count zero.
+      THE ASSERTION ITSELF, through the product's own adjudicator — the same
+      module `scripts/adjudicate-carried.mts` and the self-walk use, so a
+      carried-fact verdict cannot mean two things in two harnesses.
     */
-    const bare = { left: 0, top: 0, width: midline, height };
-    const [bareBefore, bareAfter] = await Promise.all([
-      sharpModule(before.bytes).extract(bare).png().toBuffer(),
-      sharpModule(after.bytes).extract(bare).png().toBuffer(),
-    ]);
-    const earMask = await askEveryMask(bareAfter, "ear");
-    if (pixels(earMask) < PRESENT_AT) {
-      check(false, "B: NEGATIVE — the same arithmetic reports UNCHANGED where nothing moved",
-        `no ear found on the untouched side (${pixels(earMask)}px), so the negative has no region to measure`);
-    } else {
-      const [rawBefore, rawAfter] = await Promise.all([
-        sharpModule(bareBefore).resize({ width: earMask.width, height: earMask.height, fit: "fill" })
-          .toColourspace("b-w").raw().toBuffer(),
-        sharpModule(bareAfter).resize({ width: earMask.width, height: earMask.height, fit: "fill" })
-          .toColourspace("b-w").raw().toBuffer(),
-      ]);
-      let moved = 0;
-      let sampled = 0;
-      for (let at = 0; at < earMask.data.length; at += 1) {
-        if (earMask.data[at] === 0) continue;
-        sampled += 1;
-        if (Math.abs(rawBefore[at] - rawAfter[at]) > 12) moved += 1;
+    if (accessorySegments > 0) {
+      const adjudication = await adjudicateCandidateCarries({
+        variants: variantRows.filter((row) => new Date(row.createdAt) >= startedAt),
+        segments: segmentRows,
+        fetchBytes: async (key: string) => {
+          const response = await fetch(`${base}/${key}`);
+          if (!response.ok) throw new Error(`${key} → HTTP ${response.status}`);
+          return Buffer.from(await response.arrayBuffer());
+        },
+      });
+      const accessory = adjudication.verdicts.filter((verdict) => verdict.facet === "statedAccessories");
+      const unjudgeable = adjudication.unadjudicable.filter((entry) => entry.facet === "statedAccessories");
+      carriedVerdicts = accessory.length;
+      for (const verdict of accessory) console.log(`  v#${verdict.variantId} ${formatCarriedVerdict(verdict)}`);
+
+      if (carriedVerdicts === 0) {
+        checks.neverArmed(
+          "[B] the earring pixels survive an unrelated ask",
+          `no render of this walk CARRIED the accessory (n=0)`
+          + (unjudgeable.length ? ` — ${unjudgeable.map((e) => e.why).join("; ")}` : ""),
+        );
+      } else {
+        const deficits = accessory.filter((verdict) => !verdict.kept);
+        check(
+          deficits.length === 0,
+          `[B] the earring pixels survive an unrelated ask — n=${carriedVerdicts} on the REAL segments`,
+          accessory.map((v) => formatCarriedVerdict(v)).join(" | "),
+        );
       }
-      const bareShare = sampled === 0 ? 1 : moved / sampled;
-      console.log(`      the untouched ear: ${moved}/${sampled} moved (${(bareShare * 100).toFixed(1)}%)`);
-      check(
-        bareShare < 0.05,
-        "B: NEGATIVE — the same arithmetic reports UNCHANGED where nothing moved",
-        `the untouched ear on the other side: ${moved}/${sampled} pixels moved `
-        + `(${(bareShare * 100).toFixed(1)}%) against ${(share(loudest!) * 100).toFixed(1)}% where the hoop arrived`,
-      );
+
+      /*
+        AND THE OTHER DIRECTION, INSIDE THE WALK: step 3 REPLACED the hoops, so
+        step 2's segment must NOT survive into step 3's frame.
+
+        Judged with NO recorded intersections on purpose. The question here is
+        "did these pixels survive", not "did the compositor account for their
+        loss" — a replacement that the assembly dutifully recorded would come
+        back explained, and an instrument that can only ever say KEPT cannot
+        fail. This is the spec's own control for B, run on the walk's own frames
+        rather than on a stand-in.
+      */
+      const hoop = minted.filter((segment) => segment.variantId === stepTwo?.id).sort((a, b) => b.version - a.version)[0];
+      if (!hoop || !stepThree?.imageKey) {
+        checks.neverArmed(
+          "[B] CONTROL — the same arithmetic reports DIFFERENT where the accessory was replaced",
+          hoop ? "step 3 delivered no frame to compare against" : "step 2 minted no accessory segment to compare",
+        );
+      } else {
+        const fetchKey = async (key: string) => {
+          const response = await fetch(`${base}/${key}`);
+          if (!response.ok) throw new Error(`${key} → HTTP ${response.status}`);
+          return Buffer.from(await response.arrayBuffer());
+        };
+        const verdict = await adjudicateCarried({
+          facet: "statedAccessories",
+          version: hoop.version,
+          maskBytes: await fetchKey(hoop.maskKey),
+          contentBytes: await fetchKey(hoop.contentKey),
+          frameBytes: await fetchKey(stepThree.imageKey),
+          /* The row's own columns, exactly as `adjudicateCandidateCarries` reads
+             them — the geometry is four ints on the row, not a json blob. */
+          bbox: { x: hoop.bboxX, y: hoop.bboxY, width: hoop.bboxW, height: hoop.bboxH },
+          intersections: [],
+        });
+        check(
+          !verdict.kept,
+          "[B] CONTROL — the same arithmetic reports DIFFERENT where the accessory was replaced",
+          `${formatCarriedVerdict(verdict)} against step 3's frame (hoops → crosses) — `
+          + "KEPT here would mean the comparison is measuring the wrong region",
+        );
+      }
     }
-    absent(
-      "B: the REPLACEMENT comparison, and the segment's own mask",
-      "no branch in production replaces one stated accessory with another, and no "
-      + "`statedAccessories` segment exists anywhere (all 14 are marks/makeup/hairWorn/eye.colour) — "
-      + "both arrive with the walk's own steps 2→3, and this control stands in for neither",
+    void stepFour;
+  }
+
+  /* --------- C. The seam is on the record, and the record agrees with his eye */
+
+  /*
+    NOTHING HERE IS A PASS/FAIL AGAINST A THRESHOLD, because the threshold is
+    exactly what is being decided (roadmap §0, the shadow→enforce flip). What is
+    assertable is that the verdict RIDES the row at all; the number is the output,
+    and his eye on the frame is the other half.
+  */
+  {
+    const row = walkRows[0].row;
+    const seam = row ? readSeamRow({
+      id: row.id, requestText: row.requestText, status: row.status, internalPrompt: row.internalPrompt,
+    }) : null;
+    check(
+      seam !== null,
+      "[C] step 1's row carries a seam verdict, torn or clean",
+      seam
+        ? `worstExcess ${seam.worstExcess.toFixed(1)} · torn ${seam.torn} (${seam.tornPixels}/${seam.boundaryPixels}px) `
+          + `· coherence ${seam.coherence?.toFixed(3) ?? "absent"} · enforced ${seam.enforced}`
+        : row ? "the row carries no seam key — nothing was composited, or the verdict did not ride" : "step 1 wrote no row",
     );
+    absent(
+      "[C] the founder's verdict on the same frame",
+      "three outcomes are all useful and none of them is this harness's to record: he sees a seam "
+      + "and the instrument scored it (the flip has its calibration), he sees one it did NOT (the "
+      + "blind spot is at his exact amplitude — worse, and the more important finding), or he sees "
+      + "none (the class is closed on his eye and the number is a baseline)",
+    );
+
+    /*
+      AND THE PICTURE FOR HIS EYE — the boundary at 3×.
+
+      The seam verdict records no coordinates, so the boundary is DERIVED rather
+      than read: the composited region is where step 1's frame differs from the
+      face it was made from, and its bounding box is that region's edge. Stated
+      because it is a derivation — a crop that points somewhere wrong is visible
+      to him instantly, which is exactly why a picture may be derived where a
+      verdict may not.
+    */
+    if (row?.imageKey) {
+      try {
+        const sharpModule = (await import("sharp")).default;
+        const parent = variantRows.find((entry) => entry.id === row.parentVariantId);
+        const parentKey = parent?.imageKey ?? null;
+        const beforeUrl = parentKey ? `${base}/${parentKey}` : imageUrl;
+        const [afterBytes, beforeBytes] = await Promise.all([
+          fetch(`${base}/${row.imageKey}`).then(async (r) => Buffer.from(await r.arrayBuffer())),
+          fetch(beforeUrl).then(async (r) => Buffer.from(await r.arrayBuffer())),
+        ]);
+        await writeFile(path.join(OUT, "C-step1-delivered-full.png"), afterBytes);
+        const meta = await sharpModule(afterBytes).metadata();
+        const width = meta.width ?? 0;
+        const height = meta.height ?? 0;
+        const [afterRaw, beforeRaw] = await Promise.all([
+          sharpModule(afterBytes).resize({ width, height, fit: "fill" }).toColourspace("b-w").raw().toBuffer(),
+          sharpModule(beforeBytes).resize({ width, height, fit: "fill" }).toColourspace("b-w").raw().toBuffer(),
+        ]);
+        let minX = width; let minY = height; let maxX = -1; let maxY = -1;
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            if (Math.abs(afterRaw[y * width + x] - beforeRaw[y * width + x]) <= MOVED_AT) continue;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+        if (maxX < 0) {
+          absent("[C] the boundary at 3× for his eye", "step 1's frame differs nowhere from the face it was made from");
+        } else {
+          const pad = 24;
+          const left = Math.max(0, minX - pad);
+          const top = Math.max(0, minY - pad);
+          const cropW = Math.min(width - left, maxX - minX + pad * 2);
+          const cropH = Math.min(height - top, maxY - minY + pad * 2);
+          await writeFile(
+            path.join(OUT, "C-step1-boundary-3x.png"),
+            await sharpModule(afterBytes)
+              .extract({ left, top, width: cropW, height: cropH })
+              .resize({ width: cropW * 3, height: cropH * 3, kernel: "nearest" })
+              .png().toBuffer(),
+          );
+          console.log(
+            `  [C] boundary crop ${cropW}×${cropH} at (${left},${top}), written at 3× — `
+            + `derived from where the frame differs from ${parentKey ? `v#${parent?.id}` : "her original"}`,
+          );
+        }
+      } catch (error) {
+        absent("[C] the boundary at 3× for his eye", `could not be derived — ${String(error).slice(0, 120)}`);
+      }
+    }
+  }
+
+  /* -------------------------------- D. The hair stays down (finding 4) */
+
+  /*
+    TWO INSTRUMENTS, BOTH REQUIRED, because they fail differently: the RECIPE
+    (hairWorn is still in the resolved identity, so the words were not dropped)
+    and the PICTURE (a read of the delivered frame says the hair is down).
+    The picture is the one that matters and the recipe is the one that explains
+    it — a recipe that still says "down" over a frame that is not is the same
+    defect with a better alibi.
+  */
+  for (const index of [1, 2, 3]) {
+    const entry = walkRows[index];
+    const row = entry.row;
+    const position = `${index + 1}/${WALK.length}`;
+    if (!row || row.status !== "ready") {
+      absent(`[D] ${position} "${entry.step.instruction}" — her hair is still down`,
+        `this step delivered nothing (${row?.status ?? "no row"}), so there is no frame to read`);
+      continue;
+    }
+    const stored = parsePrompt(row.internalPrompt);
+    /* The product's own readers, not a second parse of its json. */
+    const recipe = currentValueOfFacet(readResolvedIdentity(stored), "hairWorn");
+    const picture = (stored?.verification?.checks ?? []).find((c: any) => c?.facet === "hairWorn");
+    check(
+      Boolean(recipe),
+      `[D] ${position} the RECIPE still says how she wears her hair`,
+      recipe ? `resolved hairWorn = "${recipe}"` : "hairWorn is absent from the resolved identity — the words were dropped",
+    );
+    check(
+      Boolean(picture) && picture.read === true && picture.verified === true,
+      `[D] ${position} the PICTURE says her hair is still down`,
+      picture
+        ? `read=${picture.read} verified=${picture.verified} — saw: ${String(picture.saw ?? "").slice(0, 120)}`
+        : "the row carries no hairWorn check at all, so the frame was never read for it",
+    );
+  }
+
+  /* ------------- E. The panel agrees with the assembly (new, free) */
+
+  /*
+    THE PANEL AND THE COMPOSITOR READ THE SAME STORE THROUGH DIFFERENT PATHS, so
+    a disagreement is a real finding either way.
+
+    One correction to the spec's wording, stated rather than quietly applied: the
+    panel lists what this VERSION is keeping, which is everything the assembly
+    CARRIED plus whatever this render kept for the first time. "Exactly the
+    facets the assembly says were carried" would be short by precisely the facet
+    the step just wrote, on every step that writes one — the comparison would
+    fail on a correct product. Both halves come from the product's own records.
+  */
+  for (const [index, entry] of walkRows.entries()) {
+    const position = `${index + 1}/${WALK.length}`;
+    const row = entry.row;
+    const step = steps[index];
+    if (!row || !step) {
+      absent(`[E] ${position} the panel agrees with the assembly`, "this step produced no row to compare against");
+      continue;
+    }
+    /* The store as it was when the panel was photographed — see the field's note. */
+    const thenRows = step.segmentsAtPanelRead;
+    const stored = parsePrompt(row.internalPrompt);
+    const carried: string[] = (stored?.assembly?.segmentsApplied ?? []).map((applied: any) => String(applied.facet));
+    const kept: string[] = thenRows.filter((segment) => segment.variantId === row.id).map((segment) => segment.facet);
+    if (step.panelRows === null) {
+      /* A face keeping nothing renders nothing — legitimately absent, and the
+         first step of a fresh branch carries nothing by definition. */
+      if (carried.length === 0 && kept.length === 0) {
+        absent(`[E] ${position} the panel agrees with the assembly`,
+          "no panel, and nothing was carried or kept — a face keeping nothing renders nothing");
+      } else {
+        check(false, `[E] ${position} the panel agrees with the assembly`,
+          `the panel was absent while this render carried [${carried.join(", ")}] and kept [${kept.join(", ")}]`);
+      }
+      continue;
+    }
+    const expected = [...new Set([...carried, ...kept])].sort();
+    const shown = [...new Set(
+      step.panelContentKeys
+        .map((key) => thenRows.find((segment) => segment.contentKey === key)?.facet)
+        .filter((facet): facet is string => Boolean(facet)),
+    )].sort();
+    const unmapped = step.panelContentKeys.length - step.panelContentKeys
+      .filter((key) => thenRows.some((segment) => segment.contentKey === key)).length;
+    check(
+      shown.join(",") === expected.join(",") && unmapped === 0,
+      `[E] ${position} the panel lists exactly what this version is keeping`,
+      `panel [${shown.join(", ")}] against carried+kept [${expected.join(", ")}]`
+      + (unmapped ? ` · ${unmapped} panel row(s) whose object matches no segment row` : ""),
+    );
+  }
+
+  await writeFile(
+    path.join(OUT, "walk.json"),
+    `${JSON.stringify({
+      startedAt, candidate: CANDIDATE, sessionId, steps,
+      money: { charged, refunded, delivered },
+      accessorySegments, carriedVerdicts,
+      checks: records,
+    }, null, 2)}\n`,
+    "utf8",
+  );
+
+  /*
+    THE VERDICT. `accessorySegments === 0` is its own clause rather than one more
+    failing check, because fable-133 made it decisive: the walk is not clean
+    whatever else passes.
+  */
+  return failures().length === 0 && collisions === 0 && accessorySegments > 0;
+}
+
+/* ==========================================================================
+   The run.
+   ========================================================================== */
+
+let controlsGreen: boolean | null = null;
+if (CONTROLS || SPEND) {
+  await runControls();
+  controlsGreen = failures().length === 0;
+  console.log(
+    controlsGreen
+      ? "\nEvery instrument here has been shown able to fail."
+      : "\nNOT READY: an instrument that cannot fail cannot pass. The walk does not run on these.",
+  );
+}
+
+/*
+  THE CONTROLS ARE A PRECONDITION, NOT A FLAG SOMEBODY REMEMBERS TO PASS.
+
+  `--spend` executes them; it does not consult `--controls`. So there is no
+  invocation in which the walk spends on instruments that were not proved in the
+  same run, and no way to get there by leaving an argument off.
+*/
+if (SPEND) {
+  const red = failures();
+  try {
+    assertPreconditionsProved(
+      `spend ${WALK.length * COST_PER_STEP} credits walking the finding replay`,
+      controlsGreen,
+      red.length ? `red controls: ${red.map((record) => record.law).join(" · ")}` : "",
+    );
+  } catch (error) {
+    /* A refusal must not leave an open connection holding the process alive —
+       the database is the one resource this script opens before the gate. */
+    await connection.end().catch(() => undefined);
+    throw error;
   }
 }
 
+let walkClean: boolean | null = null;
+if (CANDIDATE || SPEND) walkClean = await runWalk();
+
 await connection.end();
 print();
-await writeFile(path.join(OUT, "controls.json"), `${JSON.stringify(records, null, 2)}\n`, "utf8");
-console.log(`\nrecords: ${path.join(OUT, "controls.json")}`);
-console.log(
-  failures().length === 0
-    ? "\nEvery instrument here has been shown able to fail."
-    : "\nNOT READY: an instrument that cannot fail cannot pass. The walk does not run on these.",
-);
-process.exit(failures().length === 0 ? 0 : 1);
+/*
+  ONLY A RUN THAT DROVE THE CONTROLS WRITES `controls.json`.
+
+  A dry run declares no checks, and writing its empty record over a green one
+  would leave an artifact that reads as "the instruments were driven and found
+  nothing" — the opposite of what happened. Artifacts are facts (working law 1),
+  so an artifact nobody earned does not get written.
+*/
+if (controlsGreen !== null) {
+  await writeFile(path.join(OUT, "controls.json"), `${JSON.stringify(records, null, 2)}\n`, "utf8");
+  console.log(`\nrecords: ${path.join(OUT, "controls.json")}`);
+}
+if (SPEND) {
+  console.log(
+    walkClean
+      ? "\nWALK CLEAN — the five steps landed, and all four findings were driven back at the build."
+      : "\nWALK NOT CLEAN — the founder is not called.",
+  );
+}
+/* `getDb()`'s pool has no shutdown, so a script that touched an app service
+   never exits on its own. */
+process.exit(failures().length === 0 && walkClean !== false ? 0 : 1);

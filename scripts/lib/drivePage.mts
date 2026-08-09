@@ -53,6 +53,22 @@ export type CheckRecord = {
   armed: boolean;
 };
 
+/**
+ * The collector itself, named so it can be PASSED to shared mechanics.
+ *
+ * `refineDriver` records the panel's own laws into the caller's collector rather
+ * than keeping a second one — two collectors would print two verdicts about one
+ * run, and the reader would have to know which was authoritative.
+ */
+export type Checks = {
+  check: (ok: boolean, law: string, saw: string) => boolean;
+  absent: (law: string, why: string) => void;
+  neverArmed: (law: string, why: string) => void;
+  records: CheckRecord[];
+  failures: () => CheckRecord[];
+  print: () => void;
+};
+
 export function createChecks(): {
   check: (ok: boolean, law: string, saw: string) => boolean;
   /** Legitimately not applicable here — recorded, and not counted as a pass. */
