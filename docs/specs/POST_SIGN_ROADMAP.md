@@ -45,6 +45,12 @@ queues its second half as a follow-up sentence) — filed fable-069.
 
 ## 3. The face chart + tattoo studio (post-Sign; skeleton is M12)
 
+**Panel v1 PULLED FORWARD (founder, 2026-08-09, fable-113):** a
+read-only segments panel (crop thumbnails, stylist-named, per-variant
+via lineage, tap-to-prefill) builds right after the fable-112
+stop-the-line fixes — mock to the founder first per D-101/F5. The
+full chart below stays post-Sign.
+
 Tappable, human-named chart of her segments (stylist's ontology);
 tap → sentence box pre-scoped; per-segment version history. Segment
 store (live 2026-08-09) is the foundation. **Tattoo-studio
