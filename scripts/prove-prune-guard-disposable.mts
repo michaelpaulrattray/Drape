@@ -462,6 +462,21 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
   },
   {
     /*
+      BLUNT THE METRIC AND THE CONTROL MUST FIRE. The gauntlet's whole
+      argument is that its instrument can condemn a blurred chain; a metric
+      that always answers the same number would certify v2 itself. Constant
+      energy is the shape of "measured nothing, said fine".
+    */
+    name: "the sharpness metric's own positive control",
+    file: "server/castingV2/sharpness.ts",
+    suites: ["server/castingV2/sharpness.test.ts"],
+    mutations: [{
+      find: "  return { energy: variance, pixels: responses.length };",
+      replace: "  return { energy: 1000, pixels: responses.length };",
+    }],
+  },
+  {
+    /*
       THE UNDO THAT REFUSES TO PRETEND. Carrying on after dropping nothing
       would report success for a facet she never bought — or worse, for
       something she was BORN wearing, where the answer is a real render into
