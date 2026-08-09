@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4d91041c66ffc051"
+    "sourceFingerprint": "297fcf1a741a172f"
   },
   "domains": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:evidence",
@@ -3659,6 +3659,12 @@
     {
       "id": "module:server/db/castingV2.ts",
       "path": "server/db/castingV2.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2Segments.ts",
+      "path": "server/db/castingV2Segments.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -7477,6 +7483,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_SEGMENTS_SCOPE",
+      "name": "CASTING_SEGMENTS_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_V2_SCOPE",
       "name": "CASTING_V2_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -8252,6 +8263,10 @@
     {
       "id": "test:server/castingV2-roll-domain-db.test.ts",
       "path": "server/castingV2-roll-domain-db.test.ts"
+    },
+    {
+      "id": "test:server/castingV2-segment-store-db.test.ts",
+      "path": "server/castingV2-segment-store-db.test.ts"
     },
     {
       "id": "test:server/castingV2/aestheticRetry.test.ts",
@@ -17010,6 +17025,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2Segments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/castingV2Variants.ts",
       "kind": "imports"
     },
@@ -18660,6 +18680,16 @@
     },
     {
       "from": "module:server/db/castingV2.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Segments.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Segments.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },

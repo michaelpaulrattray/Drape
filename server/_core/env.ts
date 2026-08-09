@@ -24,7 +24,9 @@ import {
   validateSnapshotRestoreEnvironment,
 } from "../casting/snapshotRestoreScope";
 import {
+  CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
+  validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
 } from "../castingV2/castingV2Scope";
 
@@ -120,6 +122,19 @@ export function validateEnv(): void {
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
     transportConfigured: Boolean(process.env.FAL_KEY),
     validatorConfigured: Boolean(process.env.OPENROUTER_API_KEY),
+  });
+  /*
+    Segment permanence: its own sub-flag, checked against the flag above it.
+
+    Absent means off and asserts nothing — the 2026-07-31 posture. Set, it must
+    name users the casting scope already covers and it must have the cleanup
+    worker, because a segment writes objects the same transaction promises to
+    purge.
+  */
+  validateCastingSegmentsEnvironment({
+    scope: process.env[CASTING_SEGMENTS_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

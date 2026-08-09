@@ -1,0 +1,424 @@
+/**
+ * The segment store's database layer — the unified store of named regions of a
+ * face (segment permanence, slice 1).
+ *
+ * # One rule governs this whole file
+ *
+ * **A segment is addressable only THROUGH its owned parent.** A segment is a
+ * child of a child of a child, and the way that goes wrong is proving the
+ * candidate and then trusting ids handed in beside it. So every write proves
+ * the parent inside the same transaction and re-anchors the segment's
+ * `candidateId` to the row it just proved — never to the caller's number
+ * (invariants 1 and 2).
+ *
+ * # And one that governs versions
+ *
+ * **One facet, one live segment, newest version wins.** "Make the freckles
+ * heavier" does not contest its predecessor, it retires it. That is what keeps
+ * D-146 dead — the painter is never handed the old copper as ground truth for
+ * new copper — and it is why the retire and the insert are one transaction
+ * rather than two statements that can be interrupted between.
+ *
+ * # Retention is not in this file's gift
+ *
+ * The purge helpers at the bottom take a transaction handle because they run
+ * inside the candidate sweep's own transaction, on the candidate sweep's own
+ * cleanup manifest. A segment's lifetime is its candidate's, and there is
+ * deliberately no second schedule for it.
+ */
+import { randomUUID } from "node:crypto";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+
+import {
+  castingCandidates,
+  castingCandidateVariants,
+  castingSegments,
+  type CastingSegmentProvenance,
+} from "../../drizzle/schema";
+import { getDb, withTransaction, type TransactionHandle } from "./connection";
+
+function assertPositiveId(value: number, name: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`${name} must be a positive integer`);
+  }
+}
+
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db;
+}
+
+function affectedRows(result: unknown): number {
+  const header = Array.isArray(result) ? result[0] : result;
+  return (header as { affectedRows?: number })?.affectedRows ?? 0;
+}
+
+export class SegmentOwnershipError extends Error {
+  constructor(readonly subject: "candidate" | "variant" | "segment") {
+    super(`${subject} not available`);
+    this.name = "SegmentOwnershipError";
+  }
+}
+
+/**
+ * Where the pixels sit, and in what frame.
+ *
+ * The frame is not decoration. A mask and a crop mean nothing except against a
+ * frame of the same size: paste them onto a differently-sized one and nothing
+ * fails — her freckles simply land on her cheekbone instead of her nose. The
+ * dimensions travel with the geometry so the compositor can refuse.
+ */
+export type SegmentGeometry = {
+  bbox: { x: number; y: number; width: number; height: number };
+  frame: { width: number; height: number };
+};
+
+export type StoredSegment = {
+  id: number;
+  publicId: string;
+  candidateId: number;
+  variantId: number | null;
+  provenance: CastingSegmentProvenance;
+  facet: string;
+  region: string;
+  version: number;
+  maskKey: string;
+  contentKey: string;
+  geometry: SegmentGeometry;
+  verifiedAt: Date | null;
+  verdict: string | null;
+  detector: string | null;
+  retiredAt: Date | null;
+  createdAt: Date;
+};
+
+function assertGeometry(geometry: SegmentGeometry): void {
+  const { bbox, frame } = geometry;
+  const sides = [bbox.x, bbox.y, bbox.width, bbox.height, frame.width, frame.height];
+  if (sides.some((side) => !Number.isSafeInteger(side) || side < 0)) {
+    throw new TypeError("segment geometry must be whole non-negative pixel counts");
+  }
+  if (bbox.width <= 0 || bbox.height <= 0 || frame.width <= 0 || frame.height <= 0) {
+    throw new TypeError("segment geometry must have a positive extent");
+  }
+  /*
+    A box that leaves the frame is not a tight box on a big picture — it is a
+    box measured against a DIFFERENT picture, which is the mislabelled-frame
+    class. Caught here, at the write, because after this row exists every reader
+    of it inherits the mistake.
+  */
+  if (bbox.x + bbox.width > frame.width || bbox.y + bbox.height > frame.height) {
+    throw new TypeError("segment bbox falls outside its own frame");
+  }
+}
+
+function toStoredSegment(row: typeof castingSegments.$inferSelect): StoredSegment {
+  return {
+    id: row.id,
+    publicId: row.publicId,
+    candidateId: row.candidateId,
+    variantId: row.variantId,
+    provenance: row.provenance,
+    facet: row.facet,
+    region: row.region,
+    version: row.version,
+    maskKey: row.maskKey,
+    contentKey: row.contentKey,
+    geometry: {
+      bbox: { x: row.bboxX, y: row.bboxY, width: row.bboxW, height: row.bboxH },
+      frame: { width: row.frameWidth, height: row.frameHeight },
+    },
+    verifiedAt: row.verifiedAt,
+    verdict: row.verdict,
+    detector: row.detector,
+    retiredAt: row.retiredAt,
+    createdAt: row.createdAt,
+  };
+}
+
+/* -------------------------------------------------------------- writing */
+
+export type RecordEditPatchInput = {
+  userId: number;
+  /** The variant that delivered these pixels — the parent this write proves. */
+  variantId: number;
+  /** A `Facet` id: what the edit answered. */
+  facet: string;
+  /** The segmentation question that drew the region. */
+  region: string;
+  maskKey: string;
+  contentKey: string;
+  geometry: SegmentGeometry;
+  /** The reading that earned these pixels — §6. */
+  verdict?: string | null;
+  verifiedAt?: Date | null;
+  now?: Date;
+};
+
+export type RecordedSegment = {
+  id: number;
+  publicId: string;
+  candidateId: number;
+  version: number;
+  /** How many live predecessors this write retired — 0 or 1 in practice. */
+  retired: number;
+};
+
+/**
+ * File the pixels an edit added and the user kept.
+ *
+ * The whole point of the store is here: after this row exists, that facet is
+ * no longer a sentence the next render has to re-roll. It is pixels, and
+ * pasting them is arithmetic.
+ */
+export async function recordEditPatchSegment(
+  input: RecordEditPatchInput,
+): Promise<RecordedSegment> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.variantId, "variantId");
+  assertGeometry(input.geometry);
+  const now = input.now ?? new Date();
+
+  return withTransaction(async (tx) => {
+    /*
+      The parent, proved in the same transaction as the write, and the
+      candidate id taken from the row rather than from the caller. A segment
+      filed against someone else's candidate would be a stranger's pixels
+      pasted onto her face on every later render.
+    */
+    const [variant] = await tx
+      .select({
+        id: castingCandidateVariants.id,
+        candidateId: castingCandidateVariants.candidateId,
+      })
+      .from(castingCandidateVariants)
+      .where(and(
+        eq(castingCandidateVariants.id, input.variantId),
+        eq(castingCandidateVariants.userId, input.userId),
+      ))
+      .limit(1);
+    if (!variant) throw new SegmentOwnershipError("variant");
+
+    return insertVersionedSegmentIn(tx, {
+      userId: input.userId,
+      candidateId: variant.candidateId,
+      variantId: variant.id,
+      provenance: "edit_patch",
+      facet: input.facet,
+      region: input.region,
+      maskKey: input.maskKey,
+      contentKey: input.contentKey,
+      geometry: input.geometry,
+      verdict: input.verdict ?? null,
+      verifiedAt: input.verifiedAt ?? null,
+      detector: null,
+      now,
+    });
+  });
+}
+
+/**
+ * Retire whatever this identity currently holds, then write the next version.
+ *
+ * Both halves in one statement each, both inside one transaction. The retire
+ * is scoped by owner as well as by candidate — a write path that trusts the
+ * candidate id it was handed is exactly the check-then-write shape invariant 1
+ * exists to forbid.
+ */
+async function insertVersionedSegmentIn(
+  tx: TransactionHandle,
+  input: {
+    userId: number;
+    candidateId: number;
+    variantId: number | null;
+    provenance: CastingSegmentProvenance;
+    facet: string;
+    region: string;
+    maskKey: string;
+    contentKey: string;
+    geometry: SegmentGeometry;
+    verdict: string | null;
+    verifiedAt: Date | null;
+    detector: string | null;
+    now: Date;
+  },
+): Promise<RecordedSegment> {
+  const identity = and(
+    eq(castingSegments.candidateId, input.candidateId),
+    eq(castingSegments.userId, input.userId),
+    eq(castingSegments.facet, input.facet),
+    eq(castingSegments.region, input.region),
+  );
+
+  const retired = affectedRows(
+    await tx
+      .update(castingSegments)
+      .set({ retiredAt: input.now })
+      .where(and(identity, isNull(castingSegments.retiredAt))),
+  );
+
+  /*
+    The next version counts past RETIRED rows too. Versions are the segment's
+    history (§7), not a live counter — reusing a number would collide with the
+    identity index, and worse, it would make two different deliveries share a
+    name in the one table that is supposed to be evidence.
+  */
+  const [highest] = await tx
+    .select({ version: castingSegments.version })
+    .from(castingSegments)
+    .where(identity)
+    .orderBy(desc(castingSegments.version))
+    .limit(1);
+  const version = (highest?.version ?? 0) + 1;
+
+  const publicId = randomUUID();
+  const [inserted] = await tx
+    .insert(castingSegments)
+    .values({
+      publicId,
+      userId: input.userId,
+      candidateId: input.candidateId,
+      variantId: input.variantId,
+      provenance: input.provenance,
+      facet: input.facet,
+      region: input.region,
+      version,
+      maskKey: input.maskKey,
+      contentKey: input.contentKey,
+      bboxX: input.geometry.bbox.x,
+      bboxY: input.geometry.bbox.y,
+      bboxW: input.geometry.bbox.width,
+      bboxH: input.geometry.bbox.height,
+      frameWidth: input.geometry.frame.width,
+      frameHeight: input.geometry.frame.height,
+      verdict: input.verdict,
+      verifiedAt: input.verifiedAt,
+      detector: input.detector,
+      createdAt: input.now,
+    })
+    .$returningId();
+  if (!inserted?.id) throw new SegmentOwnershipError("segment");
+
+  return {
+    id: inserted.id,
+    publicId,
+    candidateId: input.candidateId,
+    version,
+    retired,
+  };
+}
+
+/* -------------------------------------------------------------- reading */
+
+/**
+ * The segments a composite should assemble from — live only, oldest first.
+ *
+ * Ordered by creation so a later paste sits over an earlier one, which is the
+ * same "the newer edit wins the pixels it claims" rule the surrender rules
+ * state, applied in the one place a caller could otherwise get it backwards.
+ */
+export async function listLiveSegments(input: {
+  userId: number;
+  candidateId: number;
+}): Promise<StoredSegment[]> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.candidateId, "candidateId");
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(castingSegments)
+    .where(and(
+      eq(castingSegments.candidateId, input.candidateId),
+      eq(castingSegments.userId, input.userId),
+      isNull(castingSegments.retiredAt),
+    ))
+    .orderBy(asc(castingSegments.createdAt), asc(castingSegments.id));
+  return rows.map(toStoredSegment);
+}
+
+/**
+ * Everything ever filed against this face, newest first — history included.
+ *
+ * A retired segment is not deleted (§3's one deliberate asymmetry): the bytes
+ * survive so redo can exist, and the row survives because it is evidence of a
+ * render that was delivered.
+ */
+export async function listSegmentHistory(input: {
+  userId: number;
+  candidateId: number;
+}): Promise<StoredSegment[]> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.candidateId, "candidateId");
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(castingSegments)
+    .where(and(
+      eq(castingSegments.candidateId, input.candidateId),
+      eq(castingSegments.userId, input.userId),
+    ))
+    .orderBy(desc(castingSegments.createdAt), desc(castingSegments.id));
+  return rows.map(toStoredSegment);
+}
+
+/**
+ * Prove a candidate is this user's, and hand back its internal id.
+ *
+ * The public id is what a request carries; every statement below wants the
+ * internal one, and the only safe way across that boundary is a statement that
+ * asks for both facts at once.
+ */
+export async function resolveOwnedCandidateId(input: {
+  userId: number;
+  candidatePublicId: string;
+}): Promise<number> {
+  assertPositiveId(input.userId, "userId");
+  const db = await requireDb();
+  const [candidate] = await db
+    .select({ id: castingCandidates.id })
+    .from(castingCandidates)
+    .where(and(
+      eq(castingCandidates.publicId, input.candidatePublicId),
+      eq(castingCandidates.userId, input.userId),
+    ))
+    .limit(1);
+  if (!candidate) throw new SegmentOwnershipError("candidate");
+  return candidate.id;
+}
+
+/* ------------------------------------------------------------- retention */
+
+/**
+ * Every segment object belonging to these candidates — read INSIDE the sweep's
+ * transaction, so a segment written between the read and the delete cannot
+ * slip through and outlive the face it belonged to.
+ *
+ * Deliberately not scoped to live rows. A retired segment's bytes are exactly
+ * the ones nothing else will ever collect.
+ */
+export async function listPurgeableSegmentsIn(
+  tx: TransactionHandle,
+  candidateIds: readonly number[],
+): Promise<Array<{ id: number; maskKey: string; contentKey: string }>> {
+  if (candidateIds.length === 0) return [];
+  return tx
+    .select({
+      id: castingSegments.id,
+      maskKey: castingSegments.maskKey,
+      contentKey: castingSegments.contentKey,
+    })
+    .from(castingSegments)
+    .where(inArray(castingSegments.candidateId, [...candidateIds]));
+}
+
+export async function deleteSegmentRowsIn(
+  tx: TransactionHandle,
+  candidateIds: readonly number[],
+): Promise<number> {
+  if (candidateIds.length === 0) return 0;
+  const result = await tx
+    .delete(castingSegments)
+    .where(inArray(castingSegments.candidateId, [...candidateIds]));
+  return affectedRows(result);
+}

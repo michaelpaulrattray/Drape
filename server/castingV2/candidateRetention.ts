@@ -18,6 +18,7 @@
  */
 import { randomUUID } from "node:crypto";
 
+import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { withTransaction } from "../db/connection";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
@@ -31,12 +32,43 @@ import {
 } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
 import { checkCandidateInvariants } from "./candidateInvariants";
-import { captureCastingV2Enabled, parseCastingV2Scope, CASTING_V2_SCOPE_ENV } from "./castingV2Scope";
+import {
+  captureCastingV2Enabled,
+  castingSegmentsArmed,
+  parseCastingV2Scope,
+  CASTING_V2_SCOPE_ENV,
+} from "./castingV2Scope";
 
 const log = createModuleLogger("castingV2/candidateRetention");
 
 const SWEEP_INTERVAL_MS = 60 * 60 * 1000;
 const FIRST_SWEEP_DELAY_MS = 90 * 1000;
+
+/**
+ * THE ONE TOLERATED FAILURE OF THE SEGMENT PURGE, and its exact limit.
+ *
+ * A database whose segment table has not been created yet is a real state:
+ * production gets the table by ceremony, and the code that knows about it
+ * deploys on its own schedule. In that window there are no segments to purge,
+ * because nothing can have written one — so skipping is not a lost object, it
+ * is an empty set arrived at the slow way.
+ *
+ * The tolerance ends the moment the store is armed. If the flag is on and the
+ * table is missing, something is wrong that a warning would bury, and the
+ * sweep says so instead. Every other error — a lock, a connection, a syntax
+ * mistake of ours — is rethrown at every setting: swallowing those is how a
+ * purge becomes a claim rather than a fact.
+ */
+function tolerateAbsentSegmentStore(error: unknown): never | [] {
+  const code = (error as { code?: string; errno?: number } | null)?.code;
+  const errno = (error as { errno?: number } | null)?.errno;
+  const missingTable = code === "ER_NO_SUCH_TABLE" || errno === 1146;
+  if (!missingTable || castingSegmentsArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the segment store's table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the segment migration lands.",
+  );
+  return [];
+}
 
 export type RetentionSweepResult = {
   sessionsExpired: number;
@@ -119,6 +151,31 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         }
       }
       await deleteVariantRowsIn(tx, candidateIds);
+
+      /*
+        A candidate's SEGMENTS purge with it too — same transaction, same
+        manifest, from the store's very first migration.
+
+        This is the founder's condition on the segment store, and it is here
+        rather than in a later slice for the reason the comment above gives:
+        one lifetime, one schedule. A segment holds a crop of a person's FACE
+        at a public URL, so a second retention path that fell behind would
+        leave exactly the artifact the sheet promised to destroy.
+
+        UNCONDITIONAL, and NOT gated on the segment flag. The flag governs
+        whether segments are WRITTEN; nothing may govern whether they are
+        purged. A flag turned back off after rows exist must not strand them —
+        that failure would be silent, permanent, and made of paid pictures.
+      */
+      const segments = await listPurgeableSegmentsIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentSegmentStore(error),
+      );
+      for (const segment of segments) {
+        for (const key of [segment.maskKey, segment.contentKey]) {
+          if (key) storageItems.push({ storageKey: key, storageBackend: "public_r2" as const });
+        }
+      }
+      if (segments.length > 0) await deleteSegmentRowsIn(tx, candidateIds);
 
       if (storageItems.length > 0) {
         await createStorageCleanupManifestIn(tx, {

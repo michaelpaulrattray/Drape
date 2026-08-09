@@ -2265,3 +2265,156 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
 
 export type CastingCandidateVariant = typeof castingCandidateVariants.$inferSelect;
 export type InsertCastingCandidateVariant = typeof castingCandidateVariants.$inferInsert;
+
+/**
+ * WHERE A SEGMENT CAME FROM — and it is the load-bearing column of this table.
+ *
+ * `edit_patch` — pixels an edit ADDED and the user kept. The compositor pastes
+ * these back on later renders, which is what makes a delivered facet permanent
+ * instead of a dice roll re-rolled on every subsequent paint.
+ *
+ * `detected_born` — a thing the picture says she already has: glasses from her
+ * brief, a tattoo the roll gave her, her own earrings. Catalogued at cast time
+ * so the product can NAME what is on her face, and for three hard reasons it is
+ * not the same kind of row as a patch:
+ *
+ * 1. **A detected segment is a FACT, never a delivery.** It has no promise
+ *    behind it and no verdict, so it never enters a delivery denominator and is
+ *    never "compliant". The picture is the record of what she was born with.
+ * 2. **It has no pixels to re-composite** — it already lives in the master, so
+ *    the compositor never pastes it. Its mask and crop are for reference and
+ *    for the face chart's UI.
+ * 3. **Removing one is still a real render.** Born-versus-added is the whole
+ *    distinction: dropping a patch is arithmetic, but taking off glasses she
+ *    was born wearing means inventing the skin behind them, and that is the
+ *    departed/vacancy machinery, untouched.
+ */
+export const CASTING_SEGMENT_PROVENANCES = ["edit_patch", "detected_born"] as const;
+export type CastingSegmentProvenance = typeof CASTING_SEGMENT_PROVENANCES[number];
+
+/**
+ * One named region of one face — the unified segment store (segment
+ * permanence, slice 1; the founder's "build the whole system together").
+ *
+ * **Why one table for patches and born-worn things.** They are the same object
+ * seen from two ends: a named, masked region of her face, in the stylist's
+ * vocabulary, with its own history and its own "remove this". The face chart
+ * (M12) reads exactly this list, and a chart that could only show the things
+ * she had been edited into would be a chart of our engineering rather than of
+ * her face. One store, one provenance column, one retention regime.
+ *
+ * **`userId` and `candidateId` are denormalized** for the same reason
+ * `casting_candidate_variants` denormalizes them: every read and write proves
+ * ownership inside the single statement that does the work (invariant 1),
+ * never in a SELECT before it.
+ *
+ * **No `sessionId` and no `expiresAt`, deliberately.** A segment's lifetime is
+ * its candidate's, and it is purged by the candidate sweep inside the same
+ * transaction and on the same cleanup manifest as the candidate's own objects
+ * (§3 of the design). Two schedules for one lifetime is two things to keep in
+ * step, and the one that falls behind leaves paid pictures of a person at
+ * public URLs after the sheet they belonged to is gone.
+ */
+export const castingSegments = mysqlTable("casting_segments", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  /**
+   * The variant that delivered these pixels — the provenance of a patch.
+   *
+   * NULL on `detected_born` rows, and the NULL is meaningful rather than
+   * missing data: nothing delivered them, they were found on the master.
+   */
+  variantId: int("variantId"), // →casting_candidate_variants
+  provenance: mysqlEnum("provenance", CASTING_SEGMENT_PROVENANCES).notNull(),
+  /**
+   * What this segment IS, in the product's own vocabulary — a `Facet` id for a
+   * patch (`marks`, `hair.colour`), a worn class for a detected thing
+   * (`glasses`, `earrings`). This is the key the compositor, the undo and the
+   * face chart all read, so it is the user's ontology and not a mask id.
+   */
+  facet: varchar("facet", { length: 48 }).notNull(),
+  /**
+   * The segmentation question that drew this region (`face skin`, `eyes`).
+   *
+   * Part of the identity of a segment, not decoration: one face can wear two
+   * tattoos, and a catalogue keyed on class alone would fold them into one row
+   * on every re-scan. Detectors improve, so the scan must be re-runnable, and
+   * re-runnable means the key has to name the thing precisely enough that an
+   * upsert lands on the right row.
+   */
+  region: varchar("region", { length: 48 }).notNull(),
+  /**
+   * §7 of the design: per-segment history falls out of this column.
+   *
+   * "Make the freckles heavier" retires its predecessor and writes version 2 —
+   * one facet, one live segment, newest version wins. The old version stays
+   * readable, because a segment is evidence of a delivered render.
+   */
+  version: int("version").default(1).notNull(),
+  /** R2 objects: one single-channel mask, one cropped RGB. Public bucket. */
+  maskKey: varchar("maskKey", { length: 512 }).notNull(),
+  contentKey: varchar("contentKey", { length: 512 }).notNull(),
+  /** So a paste does not decode a full frame to find its region. */
+  bboxX: int("bboxX").notNull(),
+  bboxY: int("bboxY").notNull(),
+  bboxW: int("bboxW").notNull(),
+  bboxH: int("bboxH").notNull(),
+  /**
+   * The dimensions of the frame this was cut from.
+   *
+   * A mask and a crop are only meaningful against a frame of the same size, and
+   * a paste onto a differently-sized frame does not fail — it silently lands in
+   * the wrong place, which is the worst failure this store could have. Recorded
+   * so the compositor can refuse rather than misplace her freckles.
+   */
+  frameWidth: int("frameWidth").notNull(),
+  frameHeight: int("frameHeight").notNull(),
+  /**
+   * The reading that earned these pixels — §6. A pasted patch needs no
+   * re-verification because it IS the verified pixels, and this records by what.
+   *
+   * Always NULL on `detected_born`: a fact about her face has no verdict,
+   * because nothing promised it.
+   */
+  verifiedAt: timestamp("verifiedAt"),
+  verdict: varchar("verdict", { length: 24 }),
+  /**
+   * Which detector catalogued this, for `detected_born` rows — INTERNAL
+   * provenance, never projected, like `provider` on the other casting tables.
+   * Detectors improve; a row that cannot say which one found it cannot be
+   * re-earned by a better one.
+   */
+  detector: varchar("detector", { length: 64 }),
+  /**
+   * Out of the composite, but NOT out of storage — the one deliberate
+   * asymmetry (§3). An undo drops the segment; the bytes survive so redo can
+   * exist. Her account-level deletion still removes everything, because that
+   * runs on the candidate.
+   */
+  retiredAt: timestamp("retiredAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_casting_segments_public").on(table.publicId),
+  /*
+    Identity, and idempotency for free.
+
+    A replayed harvest lands on the row it already wrote rather than buying a
+    second copy of the same pixels, and the born-worn scan's re-run is an
+    ordinary upsert. Every column here is NOT NULL, because MySQL lets NULLs
+    repeat inside a unique index and a key that can quietly hold duplicates is
+    not a key.
+  */
+  uniqueIndex("uq_casting_segments_identity").on(
+    table.candidateId,
+    table.facet,
+    table.region,
+    table.version,
+  ),
+  index("idx_casting_segments_candidate").on(table.candidateId),
+  index("idx_casting_segments_variant").on(table.variantId),
+]));
+
+export type CastingSegment = typeof castingSegments.$inferSelect;
+export type InsertCastingSegment = typeof castingSegments.$inferInsert;

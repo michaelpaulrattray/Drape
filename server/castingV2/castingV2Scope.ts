@@ -76,24 +76,34 @@ export class CastingV2ValidatorConfigurationError extends Error {
   }
 }
 
-export function parseCastingV2Scope(raw: string | undefined): CastingV2Scope {
+/**
+ * The grammar, written once.
+ *
+ * Every rollout flag in this program shares it, and a second copy of a parser
+ * is a second thing to keep in step — the one that falls behind accepts a value
+ * the other rejects, on a switch that governs spending. The caller supplies its
+ * own error so the message still names the variable the operator actually set.
+ */
+function parseScopeGrammar(raw: string | undefined, fail: () => never): CastingV2Scope {
   if (raw === undefined || raw === "" || raw === "off") return { kind: "off" };
   if (raw === "all") return { kind: "all" };
-  if (!raw.startsWith("users:") || /\s/.test(raw)) {
-    throw new CastingV2ScopeConfigurationError();
-  }
+  if (!raw.startsWith("users:") || /\s/.test(raw)) fail();
   const members = raw.slice("users:".length).split(",");
-  if (members.length === 0 || members.some((member) => !/^[1-9]\d*$/.test(member))) {
-    throw new CastingV2ScopeConfigurationError();
-  }
+  if (members.length === 0 || members.some((member) => !/^[1-9]\d*$/.test(member))) fail();
   const userIds = members.map(Number);
   if (
     userIds.some((userId) => !Number.isSafeInteger(userId) || userId <= 0)
     || new Set(userIds).size !== userIds.length
   ) {
-    throw new CastingV2ScopeConfigurationError();
+    fail();
   }
   return { kind: "users", userIds: [...userIds].sort((a, b) => a - b) };
+}
+
+export function parseCastingV2Scope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingV2ScopeConfigurationError();
+  });
 }
 
 export function castingV2EnabledForUser(scope: CastingV2Scope, userId: number): boolean {
@@ -111,6 +121,126 @@ export function castingV2EnabledForUser(scope: CastingV2Scope, userId: number): 
  */
 export function captureCastingV2Enabled(userId: number): boolean {
   return castingV2EnabledForUser(parseCastingV2Scope(process.env[CASTING_V2_SCOPE_ENV]), userId);
+}
+
+/* ------------------------------------------------- the segment sub-flag */
+
+/**
+ * Segment permanence — its OWN switch, and the reason is not tidiness.
+ *
+ * `CASTING_V2_SCOPE` is already open in production for the founder's own
+ * dogfooding. A store that shipped under that flag alone would begin writing
+ * segment rows into a database whose table does not exist yet the moment it
+ * deployed, and would do it on the paid path. The sub-flag is what makes
+ * "dark from the first commit" true rather than aspirational: absent means off,
+ * off means no row is ever written and no composite ever reads one.
+ *
+ * It is also the ordering device for the production migration. The table lands
+ * by ceremony; the flag is flipped afterwards. Neither step alone changes
+ * behaviour, so neither step alone can break a live roll.
+ */
+export const CASTING_SEGMENTS_SCOPE_ENV = "CASTING_SEGMENTS_SCOPE";
+
+export class CastingSegmentsScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_SEGMENTS_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingSegmentsScopeConfigurationError";
+  }
+}
+
+/**
+ * A segment belongs to a candidate, and only Casting V2 makes candidates. A
+ * segment scope wider than the casting scope is either inert or a mistake, and
+ * the two are indistinguishable from the outside — so it refuses instead of
+ * quietly doing nothing (invariant 7).
+ */
+export class CastingSegmentsCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_SEGMENTS_SCOPE_ENV} ${detail}`);
+    this.name = "CastingSegmentsCoverageError";
+  }
+}
+
+/**
+ * Segments write mask and crop objects to the public bucket. Without the
+ * cleanup worker nothing ever deletes them, so the retention promise this
+ * store makes in the same transaction as its writes would be false at the far
+ * end. The same posture the roll flag takes, for the same reason.
+ */
+export class CastingSegmentsCleanupWorkerError extends Error {
+  constructor() {
+    super(
+      `${CASTING_SEGMENTS_SCOPE_ENV} cannot be enabled unless ENABLE_STORAGE_CLEANUP_WORKER is exactly "true"`,
+    );
+    this.name = "CastingSegmentsCleanupWorkerError";
+  }
+}
+
+export function parseCastingSegmentsScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingSegmentsScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's faces keep their segments.
+ *
+ * Deliberately an AND of both flags rather than a read of the sub-flag alone.
+ * The boot check already refuses a segment scope that reaches past the casting
+ * scope, and this is the same rule enforced a second time at the point of use —
+ * the two ways a flag pair goes wrong are a bad value and a boot check that was
+ * never invoked, and this closes the second.
+ */
+export function captureCastingSegmentsEnabled(userId: number): boolean {
+  const segments = parseCastingSegmentsScope(process.env[CASTING_SEGMENTS_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(segments, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+/**
+ * Whether the store is armed AT ALL, regardless of user.
+ *
+ * The retention sweep reads this one. Purging is deliberately NOT per-user:
+ * the sweep must collect segments for every user who has any, including one
+ * removed from the scope list after their rows were written. The narrower read
+ * belongs on the write path; a retention path that narrows is how objects
+ * outlive the sheet that promised to purge them.
+ */
+export function castingSegmentsArmed(): boolean {
+  return parseCastingSegmentsScope(process.env[CASTING_SEGMENTS_SCOPE_ENV]).kind !== "off";
+}
+
+export function validateCastingSegmentsEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+  cleanupWorker: string | undefined;
+}): CastingV2Scope {
+  const segments = parseCastingSegmentsScope(input.scope);
+  if (segments.kind === "off") return segments;
+
+  if (input.cleanupWorker !== "true") throw new CastingSegmentsCleanupWorkerError();
+
+  const casting = parseCastingV2Scope(input.castingScope);
+  if (casting.kind === "off") {
+    throw new CastingSegmentsCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — segments belong to candidates, and nothing can create one`,
+    );
+  }
+  if (casting.kind === "all") return segments;
+  if (segments.kind === "all") {
+    throw new CastingSegmentsCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = segments.userIds.filter((userId) => !casting.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingSegmentsCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return segments;
 }
 
 export function validateCastingV2Environment(input: {

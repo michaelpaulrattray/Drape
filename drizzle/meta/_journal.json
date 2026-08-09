@@ -169,6 +169,13 @@
       "when": 1785821944421,
       "tag": "0023_casting_v2_request_text",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1786243007071,
+      "tag": "0025_casting_v2_segment_store",
+      "breakpoints": true
     }
   ]
 }

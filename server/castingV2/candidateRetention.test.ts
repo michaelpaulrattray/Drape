@@ -23,6 +23,8 @@ const calls = {
   listPurgeableCandidates: vi.fn(),
   deleteCandidates: vi.fn(),
   queueStorageCleanup: vi.fn(),
+  listSegments: vi.fn(),
+  deleteSegments: vi.fn(),
 };
 
 vi.mock("../db/castingV2", () => ({
@@ -55,6 +57,18 @@ vi.mock("../db/storageCleanup", () => ({
     calls.queueStorageCleanup(...args),
 }));
 
+/*
+  Segments purge with their candidate, in the SAME transaction and onto the
+  SAME manifest — the founder's condition on the store, held from its first
+  migration. Mocked here so the sweep's own orchestration can be driven; the
+  statements themselves are proved against real MySQL in
+  `server/castingV2-segment-store-db.test.ts`.
+*/
+vi.mock("../db/castingV2Segments", () => ({
+  listPurgeableSegmentsIn: (_tx: unknown, ...args: unknown[]) => calls.listSegments(...args),
+  deleteSegmentRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteSegments(...args),
+}));
+
 const { runCandidateRetentionSweep } = await import("./candidateRetention");
 
 beforeEach(() => {
@@ -65,6 +79,9 @@ beforeEach(() => {
   calls.listPurgeableCandidates.mockResolvedValue([]);
   calls.deleteCandidates.mockResolvedValue(0);
   calls.queueStorageCleanup.mockResolvedValue(undefined);
+  calls.listSegments.mockResolvedValue([]);
+  calls.deleteSegments.mockResolvedValue(0);
+  delete process.env.CASTING_SEGMENTS_SCOPE;
 });
 
 describe("the 7-day retention sweep", () => {
@@ -123,6 +140,96 @@ describe("the 7-day retention sweep", () => {
       again, and the cleanup worker only deletes keys a row handed it.
       */
     expect(result.objectsQueued).toBe(3);
+  });
+});
+
+describe("a candidate's segments purge with it", () => {
+  beforeEach(() => {
+    calls.listPurgeableCandidates.mockResolvedValue([
+      { id: 1, userId: 7, imageKey: "casting-v2/candidates/a.png", thumbKey: null },
+    ]);
+    calls.deleteCandidates.mockResolvedValue(1);
+  });
+
+  it("carries the mask AND the crop onto the candidate's own manifest", async () => {
+    calls.listSegments.mockResolvedValue([
+      { id: 5, maskKey: "segments/a-mask.png", contentKey: "segments/a-content.png" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    const [manifest] = calls.queueStorageCleanup.mock.calls.at(-1) as [
+      { kind: string; storageItems: Array<{ storageKey: string }> },
+    ];
+    /*
+      ONE manifest, not two. A segment holds a crop of a person's face at a
+      public URL, and a second retention path is how those outlive the sheet
+      that promised to destroy them — so the assertion is deliberately about
+      WHICH batch they are on, not merely that they were queued.
+    */
+    expect(manifest.kind).toBe("casting_candidate_cleanup");
+    expect(manifest.storageItems.map((item) => item.storageKey)).toEqual([
+      "casting-v2/candidates/a.png",
+      "segments/a-mask.png",
+      "segments/a-content.png",
+    ]);
+    expect(calls.deleteSegments).toHaveBeenCalledWith([1]);
+    expect(result.objectsQueued).toBe(3);
+  });
+
+  it("purges segments whatever the segment flag says — the flag governs writing, never purging", async () => {
+    /*
+      The failure this pins is silent and permanent. Turn the store off after
+      rows exist and a per-user or per-flag purge would strand them: the
+      candidate row goes, and the only record of those objects goes with it.
+      Nothing may gate the collection of bytes that already exist.
+    */
+    process.env.CASTING_SEGMENTS_SCOPE = "off";
+    calls.listSegments.mockResolvedValue([
+      { id: 5, maskKey: "segments/orphan-mask.png", contentKey: "segments/orphan-content.png" },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteSegments).toHaveBeenCalledWith([1]);
+    expect(result.objectsQueued).toBe(3);
+  });
+
+  it("tolerates a database whose segment table does not exist yet — but only while disarmed", async () => {
+    // Production gets the table by ceremony; the code that knows about it
+    // deploys on its own schedule. In that window there is nothing to purge.
+    const missing = Object.assign(new Error("Table 'x.casting_segments' doesn't exist"), {
+      code: "ER_NO_SUCH_TABLE",
+      errno: 1146,
+    });
+    calls.listSegments.mockRejectedValue(missing);
+
+    const result = await runCandidateRetentionSweep();
+
+    // The candidate still purges — the sweep is not taken down by the absence.
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteSegments).not.toHaveBeenCalled();
+  });
+
+  it("refuses to tolerate the missing table once the store is armed", async () => {
+    process.env.CASTING_SEGMENTS_SCOPE = "users:1";
+    calls.listSegments.mockRejectedValue(Object.assign(new Error("no such table"), {
+      code: "ER_NO_SUCH_TABLE",
+      errno: 1146,
+    }));
+
+    // Armed and missing is a real fault, and a warning would bury it.
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/no such table/);
+  });
+
+  it("rethrows every other database failure, armed or not", async () => {
+    calls.listSegments.mockRejectedValue(Object.assign(new Error("Deadlock found"), {
+      code: "ER_LOCK_DEADLOCK",
+      errno: 1213,
+    }));
+
+    // Swallowing this one would turn a purge into a claim.
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/Deadlock/);
   });
 });
 

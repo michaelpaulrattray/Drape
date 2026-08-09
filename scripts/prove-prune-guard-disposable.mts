@@ -388,6 +388,52 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
       replace: "  return true;",
     }],
   },
+  {
+    /*
+      THE SEGMENT PURGE. Deleting the join is exactly the shape the founder's
+      condition exists to forbid — a store whose deletion rights arrive "in a
+      later slice". The sweep would still report success; the crops of a
+      person's face would simply stay at their public URLs forever, with the
+      only row naming them deleted alongside the candidate.
+    */
+    name: "a candidate's segments purging with it",
+    file: "server/castingV2/candidateRetention.ts",
+    suites: ["server/castingV2/candidateRetention.test.ts"],
+    mutations: [{
+      find: "      const segments = await listPurgeableSegmentsIn(tx, candidateIds).catch(\n        (error: unknown) => tolerateAbsentSegmentStore(error),\n      );",
+      replace: "      const segments: Array<{ maskKey: string; contentKey: string }> = [];",
+    }],
+  },
+  {
+    /*
+      AND THE LIMIT OF THE ONE TOLERATED FAILURE. "Table absent" is forgiven
+      only while the store is disarmed; armed, it is a fault. Widen it and the
+      sweep would shrug at a missing table on a database actively writing
+      segments — a purge that reports success and collects nothing.
+    */
+    name: "the missing-table tolerance ending when the store is armed",
+    file: "server/castingV2/candidateRetention.ts",
+    suites: ["server/castingV2/candidateRetention.test.ts"],
+    mutations: [{
+      find: "  if (!missingTable || castingSegmentsArmed()) throw error;",
+      replace: "  if (!missingTable) throw error;",
+    }],
+  },
+  {
+    /*
+      THE SUB-FLAG'S COVERAGE RULE. Segments belong to candidates, and only
+      Casting V2 makes those — so a segment scope reaching past the casting
+      scope is inert, and an inert flag that reports itself enabled is how a
+      dark slice gets believed to be live.
+    */
+    name: "the segment scope refusing to reach past the casting scope",
+    file: "server/castingV2/castingV2Scope.ts",
+    suites: ["server/castingV2/castingV2Scope.test.ts"],
+    mutations: [{
+      find: "  const uncovered = segments.userIds.filter((userId) => !casting.userIds.includes(userId));",
+      replace: "  const uncovered: number[] = [];",
+    }],
+  },
 ];
 
 const red = (suites: string[]): boolean => {
