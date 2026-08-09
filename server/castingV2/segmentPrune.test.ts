@@ -61,6 +61,7 @@ describe("dropping a facet", () => {
     const result = await pruneSegmentFacet({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       facet: "hair.colour",
       master: await master(),
       dependencies: {
@@ -85,6 +86,7 @@ describe("dropping a facet", () => {
     const result = await pruneSegmentFacet({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       facet: "glasses",
       master: await master(),
       dependencies: { enabledFor, retire: async () => 0, list: list as never, readBytes: await readBytes() },
@@ -104,6 +106,7 @@ describe("dropping a facet", () => {
     const result = await pruneSegmentFacet({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       facet: "marks",
       master: original,
       dependencies: {
@@ -123,11 +126,33 @@ describe("dropping a facet", () => {
     expect(rebuilt.equals(master8)).toBe(true);
   });
 
+  /*
+    THE UNDO IS ANCHORED (fable-091). "Take the earrings off" means off the face
+    she is LOOKING AT — a prune that reached every branch would undo an edit on
+    a version she never opened. Asserted at the wire, because the anchor is the
+    only thing in the call that says which branch.
+  */
+  it("takes them off the branch she is on, and says which", async () => {
+    const retire = vi.fn(async () => 1);
+    await pruneSegmentFacet({
+      userId: 1,
+      candidateId: 9,
+      anchorVariantId: 12,
+      facet: "marks",
+      master: await master(),
+      dependencies: { enabledFor, retire: retire as never, list: async () => [], readBytes: await readBytes() },
+    });
+    expect(retire).toHaveBeenCalledWith({
+      userId: 1, candidateId: 9, anchorVariantId: 12, facet: "marks",
+    });
+  });
+
   it("does nothing, and drops nothing, while the store is dark", async () => {
     const retire = vi.fn();
     const result = await pruneSegmentFacet({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       facet: "marks",
       master: await master(),
       dependencies: { enabledFor: () => false, retire: retire as never },
@@ -140,6 +165,7 @@ describe("dropping a facet", () => {
     await expect(pruneSegmentFacet({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       facet: "hair.colour",
       master: await master(),
       dependencies: {

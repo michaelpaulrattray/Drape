@@ -1770,6 +1770,14 @@ export async function refineCandidate(
         last SURVIVING sentence while the user waited on "remove the earrings".
       */
       requestText: instruction.trim().slice(0, 220),
+      /*
+        THE BRANCH SHE IS ON (fable-091). The selected face, which is already
+        the predecessor everything above reasons from — recorded now so the
+        segment store can answer "what does THIS version keep" per branch
+        instead of from one global live-list. A fork from an older edit must
+        not inherit a newer one's glasses.
+      */
+      parentVariantPublicId: predecessor?.publicId ?? null,
     });
   } catch (error) {
     if (error instanceof VariantOwnershipError) {
@@ -1997,6 +2005,8 @@ export async function refineCandidate(
       const assembled = await assembleWithCarriedSegments({
         userId: input.userId,
         candidateId: variant.candidateId,
+        /* The branch, not the candidate: what the SELECTED face keeps. */
+        anchorVariantId: variant.parentVariantId,
         writing: Array.from(facetsAnsweredBy(composed)),
         master: { bytes: base.bytes, contentType: base.contentType },
         harvested,

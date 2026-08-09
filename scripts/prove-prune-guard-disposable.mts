@@ -672,6 +672,48 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
       replace: "      if (false) {",
     }],
   },
+  {
+    /*
+      THE BRANCH IS THE QUESTION (fable-091). Asking the store about the
+      CANDIDATE rather than about the selected variant's own lineage is the
+      global live-list the founder's fork semantics forbid — a fork from B
+      inheriting D's glasses, and losing what D superseded.
+    */
+    name: "the carried set asking about the SELECTED variant's lineage",
+    file: "server/castingV2/carriedSegments.ts",
+    suites: ["server/castingV2/carriedSegments.test.ts"],
+    mutations: [{
+      find: "    anchorVariantId: input.anchorVariantId,\n  });",
+      replace: "    anchorVariantId: 0 as unknown as number,\n  });",
+    }],
+  },
+  {
+    /*
+      An edit made from the candidate itself has no branch, so it carries
+      nothing. Without the guard it would ask the store with no anchor at all,
+      which is the question that has no answer.
+    */
+    name: "an edit with no branch carrying nothing",
+    file: "server/castingV2/carriedSegments.ts",
+    suites: ["server/castingV2/carriedSegments.test.ts"],
+    mutations: [{
+      find: "  if (!input.anchorVariantId) return { segments: [], excluded: [] };",
+      replace: "",
+    }],
+  },
+  {
+    /*
+      "Take the earrings off" means off the face she is LOOKING AT. An undo
+      that dropped the anchor would reach every branch of the tree.
+    */
+    name: "the undo naming the branch it takes them off",
+    file: "server/castingV2/segmentPrune.ts",
+    suites: ["server/castingV2/segmentPrune.test.ts"],
+    mutations: [{
+      find: "    anchorVariantId: input.anchorVariantId,\n    facet: input.facet,",
+      replace: "    facet: input.facet,",
+    }],
+  },
 ];
 
 const red = (suites: string[]): boolean => {

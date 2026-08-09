@@ -70,6 +70,9 @@ vi.mock("../db/castingV2Variants", () => ({
       publicId: `variant-${variantRows.length + 1}`,
       candidateId: 1,
       sessionId: 1,
+      parentVariantId: input.parentVariantPublicId
+        ? Number(String(input.parentVariantPublicId).replace("variant-", "")) + 499
+        : null,
       baseImageKey: candidateRow.imageKey as string,
       baseInternalPrompt: candidateRow.internalPrompt,
       claimedInstructions: input.instructions,
@@ -1664,6 +1667,7 @@ describe("the prompt is composed from the persisted row", () => {
       publicId: "variant-1",
       candidateId: 1,
       sessionId: 1,
+      parentVariantId: null,
       baseImageKey: candidateRow.imageKey as string,
       baseInternalPrompt: candidateRow.internalPrompt,
       deltas: { eyeColour: "blue" },
@@ -1682,6 +1686,7 @@ describe("the prompt is composed from the persisted row", () => {
       publicId: "variant-2",
       candidateId: 1,
       sessionId: 1,
+      parentVariantId: null,
       baseImageKey: candidateRow.imageKey as string,
       baseInternalPrompt: candidateRow.internalPrompt,
       deltas: { eyeColour: "violet" },

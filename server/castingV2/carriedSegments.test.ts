@@ -61,6 +61,7 @@ describe("loading a face's kept segments", () => {
     const load = await loadCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       dependencies: { enabledFor, list: async () => [row()], readBytes: await objects() },
     });
@@ -81,6 +82,7 @@ describe("loading a face's kept segments", () => {
     const load = await loadCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: ["marks"],
       dependencies: { enabledFor, list: async () => [row()], readBytes: await objects() },
     });
@@ -93,6 +95,7 @@ describe("loading a face's kept segments", () => {
     const load = await loadCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       dependencies: {
         enabledFor,
@@ -108,6 +111,7 @@ describe("loading a face's kept segments", () => {
     const load = await loadCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       dependencies: {
         enabledFor,
@@ -136,6 +140,7 @@ describe("loading a face's kept segments", () => {
     await expect(loadCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       dependencies: {
         enabledFor,
@@ -150,8 +155,43 @@ describe("loading a face's kept segments", () => {
     const load = await loadCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       dependencies: { enabledFor: () => false, list: list as never, readBytes: await objects() },
+    });
+    expect(load).toEqual({ segments: [], excluded: [] });
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  /*
+    THE BRANCH IS THE QUESTION, not the candidate (fable-091).
+
+    "The layers are only what that currently selected image holds." The store is
+    asked about ONE variant's own ancestry, and the anchor is the only thing
+    that says which. Asserted at the wire, because a caller that dropped the
+    anchor would silently be asking a different question.
+  */
+  it("asks the store about the SELECTED variant's own lineage", async () => {
+    const list = vi.fn(async () => [row()]);
+    await loadCarriedSegments({
+      userId: 1,
+      candidateId: 9,
+      anchorVariantId: 7,
+      writing: [],
+      dependencies: { enabledFor, list: list as never, readBytes: await objects() },
+    });
+    expect(list).toHaveBeenCalledWith({ userId: 1, candidateId: 9, anchorVariantId: 7 });
+  });
+
+  it("carries nothing for an edit made from the candidate itself", async () => {
+    const list = vi.fn();
+    const load = await loadCarriedSegments({
+      userId: 1,
+      candidateId: 9,
+      /* No branch yet: the first edit of a face has no ancestry to carry. */
+      anchorVariantId: null,
+      writing: [],
+      dependencies: { enabledFor, list: list as never, readBytes: await objects() },
     });
     expect(load).toEqual({ segments: [], excluded: [] });
     expect(list).not.toHaveBeenCalled();
@@ -181,6 +221,7 @@ describe("assembling a render with what she already has", () => {
     const result = await assembleWithCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       master: await masterPng(),
       harvested: {
@@ -207,6 +248,7 @@ describe("assembling a render with what she already has", () => {
     const result = await assembleWithCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       master: await masterPng(),
       harvested: { bytes: harvestBytes, contentType: "image/png", evidence: null },
@@ -219,6 +261,7 @@ describe("assembling a render with what she already has", () => {
     const result = await assembleWithCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       master: await masterPng(),
       harvested: {
@@ -240,6 +283,7 @@ describe("assembling a render with what she already has", () => {
     const attempt = assembleWithCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       master: await masterPng(),
       harvested: {
@@ -265,6 +309,7 @@ describe("assembling a render with what she already has", () => {
     const result = await assembleWithCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: ["hair.colour"],
       master: await masterPng(),
       harvested: {
@@ -290,6 +335,7 @@ describe("assembling a render with what she already has", () => {
     const result = await assembleWithCarriedSegments({
       userId: 1,
       candidateId: 9,
+      anchorVariantId: 4,
       writing: [],
       master: await masterPng(),
       harvested: {
