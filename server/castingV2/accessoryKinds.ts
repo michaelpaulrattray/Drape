@@ -48,11 +48,69 @@ export const LANDMARK_OF_ACCESSORY: {
    * as the facet.
    */
   region: string;
+  /**
+   * IS THIS THING WORN IN TWOS? (fable-118 ruling (b).)
+   *
+   * CLAUDE.md law 8's founding example, and it took the founder's own eyes to
+   * find it: he asked for "gold hoop earrings" and got ONE, on v#156, with the
+   * other ear fully visible and bare — then the same single hoop on the OTHER
+   * ear on v#157. Nothing in the paid prompt had ever said a pair means both
+   * ears, and nothing in the reader's question had either, so the painter chose
+   * an ear and the reader passed what it saw.
+   *
+   * Glasses are one object across two eyes; a nose stud is one thing in one
+   * place. Only earrings are a genuine pair, so only earrings say so.
+   */
+  pair: boolean;
+  /** How to name both sides, in the painter's clause and the reader's. */
+  bothSides?: string;
 }[] = [
-  { words: ["earring", "stud", "hoop", "dangle", "drop"], landmark: "earlobe", drops: true, region: "earring" },
-  { words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"], landmark: "eye", drops: false, region: "glasses" },
-  { words: ["nose ring", "nose stud", "septum", "nostril"], landmark: "nose", drops: false, region: "nose stud" },
+  {
+    words: ["earring", "stud", "hoop", "dangle", "drop"],
+    landmark: "earlobe",
+    drops: true,
+    region: "earring",
+    pair: true,
+    bothSides: "one on each ear, a matching pair",
+  },
+  {
+    words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"],
+    landmark: "eye",
+    drops: false,
+    region: "glasses",
+    pair: false,
+  },
+  {
+    words: ["nose ring", "nose stud", "septum", "nostril"],
+    landmark: "nose",
+    drops: false,
+    region: "nose stud",
+    pair: false,
+  },
 ];
+
+/**
+ * The clause that says a pair means both sides, or "" for a thing worn singly.
+ *
+ * Derived from the same table the mask-cutter and composition read, so the
+ * painter's clause, the reader's question and the placement corridor cannot
+ * disagree about what kind of object this is.
+ */
+export function pairClauseFor(described?: string): string {
+  /*
+    THROUGH `accessoryEntry`, NEVER A SECOND SCAN OF THE SAME WORDS.
+
+    The first version of this matched the word list itself and put "one on each
+    ear" on **a small nose stud** — "stud" is an earring word, and first-match
+    over a word list is the exact defect `accessoryEntry`'s longest-match rule
+    was written to end. Caught by its own test rather than by a founder, which
+    is the only reason it is a footnote instead of a fifth finding.
+  */
+  const matched = accessoryEntry(described);
+  if (!matched) return "";
+  const entry = LANDMARK_OF_ACCESSORY.find((candidate) => candidate.region === matched.region);
+  return entry?.pair && entry.bothSides ? `, ${entry.bothSides}` : "";
+}
 
 /**
  * WHICH ENTRY AN INSTRUCTION NAMES.

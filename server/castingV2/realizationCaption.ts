@@ -47,7 +47,46 @@ const log = createModuleLogger("castingV2/realizationCaption");
  * one, stated to the image model as already true. Keyed by facet, it dies with
  * the facet it describes.
  */
-export type RealizationCaptions = Partial<Record<Facet, string>>;
+/**
+ * A PIN CARRIES ITS VOCABULARY ID; A REALIZATION NEVER DOES (fable-118).
+ *
+ * Two different things have always shared this key space and been told apart by
+ * reading them — and on 2026-08-09 that cost the founder a render. His paid
+ * "wear her hair down" stored the realization *"Straight dark hair worn down,
+ * center-parted…"*; the next render asked whether that string was one of the
+ * ten closed arrangement wordings, decided it was a pin from before the
+ * vocabulary existed, retired it, re-read the MASTER, and told the painter
+ * *"HAIR WORN: gathered"* as an already-true fact. The engine obeyed. The edit
+ * he had paid for was not forgotten — it was countermanded.
+ *
+ * Prose-sniffing cannot separate them because both are prose. So a pin now
+ * says it is one, structurally: it is an object carrying the id it was CHOSEN
+ * from, beside the wording that id expands to. A realization caption is a bare
+ * string and can never accidentally look like a pin.
+ */
+export type PinnedCaption = {
+  /** The sentence handed to the painter and the net — unchanged in shape. */
+  wording: string;
+  /** The id it was chosen from, e.g. `gathered`. Its vocabulary owns it. */
+  pin: string;
+};
+
+/** A caption is prose read off a delivered frame, or a pin chosen from a list. */
+export type CaptionEntry = string | PinnedCaption;
+
+export type RealizationCaptions = Partial<Record<Facet, CaptionEntry>>;
+
+/** The sentence, whichever kind of caption this is. */
+export function captionWording(entry: CaptionEntry | undefined): string {
+  if (entry === undefined) return "";
+  return typeof entry === "string" ? entry : entry.wording;
+}
+
+/** The vocabulary id if this is a pin, and null if it is a realization. */
+export function pinIdOf(entry: CaptionEntry | undefined): string | null {
+  if (!entry || typeof entry === "string") return null;
+  return entry.pin;
+}
 
 /**
  * Long enough to be specific, short enough not to become a second brief.
@@ -238,8 +277,8 @@ export function staleCaptions(
  */
 export function captionClause(captions: RealizationCaptions): string {
   const lines = Object.entries(captions)
-    .filter(([, caption]) => Boolean(caption))
-    .map(([facet, caption]) => `${facetHeading(facet)}: ${caption}`);
+    .filter(([, caption]) => Boolean(captionWording(caption)))
+    .map(([facet, caption]) => `${facetHeading(facet)}: ${captionWording(caption)}`);
   if (lines.length === 0) return "";
   return " These are ALREADY TRUE of this person and must be reproduced exactly as described, "
     + `not approximated and not re-interpreted: ${lines.join(" | ")}.`;

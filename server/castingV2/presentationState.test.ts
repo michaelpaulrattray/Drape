@@ -43,7 +43,10 @@ describe("the base's presentation gets a name", () => {
     const pinned = await capturePresentation({
       bytes, contentType: "image/png", engine: reader({ hairWorn: "gathered" }),
     });
-    expect(pinned[HAIR_WORN]).toBe(arrangementWording("gathered"));
+    /* And the ID rides with it (fable-118): a pin says structurally that it is
+       one, so nothing downstream has to decide from the prose whether this is a
+       chosen value or a sentence somebody read off a frame. */
+    expect(pinned[HAIR_WORN]).toEqual({ wording: arrangementWording("gathered"), pin: "gathered" });
   });
 
   it("pins nothing when the reader cannot tell", async () => {
@@ -160,6 +163,49 @@ describe("the base's presentation gets a name", () => {
          else's fact and is not retired by a hair vocabulary. */
       expect(unconstrainedPresentationPins({ [facetOfSubject("nose")]: "a soft rounded tip" }))
         .toEqual([]);
+    });
+
+    /*
+      FOUNDER FINDING #4, AT ITS OWN DOOR (2026-08-09, fable-118 ruling (a)).
+
+      Production row v#163 stored this caption after he paid for "she wear her
+      hair down"; v#164 retired it as pre-vocabulary free text, re-read the
+      master, and told the painter "HAIR WORN: gathered" as an already-true
+      fact. His hair came back up in a render he paid 25 credits for.
+
+      The string below is the one from the row, verbatim.
+    */
+    const HIS_DELIVERY = "Straight dark hair worn down, center-parted, "
+      + "falling loosely past shoulder length on both sides.";
+
+    it("never retires a caption for a facet THIS CHAIN delivered", () => {
+      /* Without the chain's own deliveries, the old rule stands and retires it
+         — which is exactly the bug, so it is asserted rather than described. */
+      expect(unconstrainedPresentationPins({ [HAIR_WORN]: HIS_DELIVERY }))
+        .toEqual([HAIR_WORN]);
+      expect(unconstrainedPresentationPins({ [HAIR_WORN]: HIS_DELIVERY }, new Set([HAIR_WORN])))
+        .toEqual([]);
+    });
+
+    it("still retires a pre-vocabulary pin on a facet the chain never touched", () => {
+      /* The delivery outranks the dictionary; it does not abolish it. A chain
+         that edited her nose has no opinion about a free-text hair pin. */
+      expect(unconstrainedPresentationPins(
+        { [HAIR_WORN]: "worn natural, loose" },
+        new Set([facetOfSubject("nose")]),
+      )).toEqual([HAIR_WORN]);
+    });
+
+    it("judges a pin by its ID, so its prose can never be mistaken for a realization", () => {
+      /* A pin carries the id it was chosen from. One this build still offers
+         stays; one it has dropped goes — and neither answer depends on reading
+         the sentence. */
+      expect(unconstrainedPresentationPins({
+        [HAIR_WORN]: { wording: arrangementWording("bun"), pin: "bun" },
+      })).toEqual([]);
+      expect(unconstrainedPresentationPins({
+        [HAIR_WORN]: { wording: "tied back, up", pin: "tied back" },
+      })).toEqual([HAIR_WORN]);
     });
   });
 

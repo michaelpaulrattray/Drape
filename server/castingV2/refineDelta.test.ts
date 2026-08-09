@@ -399,6 +399,37 @@ describe("the free lane composes under its registered headings", () => {
        clauses, so its heading is still followed by the words alone. */
     expect(prompt).toContain("INK: a small rose on her neck.");
   });
+
+  /*
+    A PAIR MEANS BOTH EARS, IN THE PROMPT SHE PAYS FOR (fable-118 ruling (b)).
+
+    The founder asked for "gold hoop earrings" and got one, with the other ear
+    bare and fully visible — then the same single hoop on the other ear on the
+    next render. His prompt never said a pair is two, so the painter chose an
+    ear. Laterality is a fact about the OBJECT, so it comes from the accessory
+    kinds table rather than from the subject's qualifier.
+  */
+  it("says a pair means both ears, and only for the things worn in twos", () => {
+    const earrings = composeEditPrompt(
+      { free: { statedAccessories: "gold hoop earrings" } },
+      prose,
+    );
+    expect(earrings).toContain("ACCESSORIES: gold hoop earrings, one on each ear, a matching pair,");
+
+    /* Glasses are one object across two eyes; a nose stud is one thing in one
+       place. Neither gets a pair clause, and asserting that is what keeps this
+       from becoming "every accessory is two things". */
+    const glasses = composeEditPrompt(
+      { free: { statedAccessories: "round wire-frame glasses" } },
+      prose,
+    );
+    expect(glasses).not.toContain("each ear");
+    const stud = composeEditPrompt(
+      { free: { statedAccessories: "a small nose stud" } },
+      prose,
+    );
+    expect(stud).not.toContain("each ear");
+  });
 });
 
 /**

@@ -70,6 +70,7 @@ import {
   HAIR_TEXTURE_RENDER,
   IRIS_RENDER,
 } from "./realizedAxes";
+import { pairClauseFor } from "./accessoryKinds";
 import { hairStyleByName } from "./hairStyles";
 import {
   FREE_SUBJECT_KEYS,
@@ -142,6 +143,7 @@ import { createFalMaskedEditEngine } from "../providers/falImages";
 import {
   captionClause,
   captionRealization,
+  captionWording,
   dropFacets,
   staleCaptions,
   type RealizationCaptions,
@@ -1410,7 +1412,18 @@ export async function refineCandidate(
     Deleted rather than translated — the capture below then re-reads the value
     from the MASTER, because the picture is what knows.
   */
-  for (const unowned of unconstrainedPresentationPins(carriedCaptions)) {
+  /*
+    …AND NEVER A FACET THIS CHAIN ITSELF DELIVERED (founder finding #4).
+
+    `facetsWrittenBy(composed)` is every facet the accumulated recipe names —
+    the facets she has paid to change on this branch. A caption for one of
+    those describes a frame she is looking at, and retiring it sends the
+    capture below to the MASTER, which is the one image guaranteed not to
+    contain her edit. That is how "wear her hair down" came back with the hair
+    up, stated to the painter as an already-true fact in the same prompt.
+  */
+  const deliveredByChain = facetsWrittenBy(composed);
+  for (const unowned of unconstrainedPresentationPins(carriedCaptions, deliveredByChain)) {
     log.info({ facet: unowned }, "[refineService] retiring a pin from before the vocabulary");
     delete carriedCaptions[unowned];
   }
@@ -1425,7 +1438,16 @@ export async function refineCandidate(
     door. A fact this edit is about to invalidate must not be born.
   */
   const invalidated = new Set(presentationInvalidatedBy(writtenFacets));
-  const baseKeyForPresentation = source.candidate.imageKey;
+  /*
+    THE FRAME SHE IS STANDING ON, NOT THE ONE SHE STARTED FROM (fable-118 (a3)).
+
+    Reading the master is correct exactly ONCE — at the head of a chain, where
+    it is the only picture of her there is. Mid-chain it is the wrong witness:
+    every edit she has bought since is missing from it, so a pin read there
+    describes a face she has already paid to change, and states it as fact.
+    The anchor is the variant she was looking at when she asked.
+  */
+  const baseKeyForPresentation = predecessor?.imageKey ?? source.candidate.imageKey;
   if (
     baseKeyForPresentation
     && PRESENTATION_FACETS.some((facet) =>
@@ -2225,7 +2247,34 @@ export async function refineCandidate(
         const asked = currentIdentity
           ? currentValueOfFacet(applyDelta(currentIdentity, composed), facet)
           : null;
-        return asked ? [{ facet, asked, binding: guaranteedFacets.has(facet) }] : [];
+        if (!asked) return [];
+        /*
+          PRESENCE BINDS; DEGREE ADVISES (fable-118 ruling (c), scoped).
+
+          D-187's reasoning is sound and its evidence is real — asking a reader
+          whether greenish-hazel is *distinctly* "seafoam green" refunded six
+          legitimate renders in eighteen. But it was scoped by LANE, and the
+          free lane holds two different arguments. "Is this green distinctly
+          seafoam" is a matter of degree nobody has defined. "Are there dangly
+          cross earrings on her" is not: either they are in the picture or they
+          are not, which is the same test a REMOVAL is already binding on.
+
+          So the founder was charged 25 credits for a frame his own reader
+          described as *"small stud earrings, no dangly cross earrings
+          visible"*. Accessories only, this fix: `marks` stays advisory because
+          its reader sits at a measured floor and byte adjudication is its
+          honest instrument — presence-binding it would refund provably
+          delivered freckles. Each widening comes with its own specimens.
+        */
+        const presence = facet === facetOfSubject("statedAccessories");
+        /* And the question carries the laterality the ask now carries, from the
+           same table, so painter and reader hold one fact in one wording. */
+        const lateral = presence ? pairClauseFor(asked) : "";
+        return [{
+          facet,
+          asked: `${asked}${lateral}`,
+          binding: guaranteedFacets.has(facet) || presence,
+        }];
       });
     /*
       AND THE PINNED PRESENTATION (D-186), which is the fourth symptom.
@@ -2236,7 +2285,7 @@ export async function refineCandidate(
       only this class is verifiable without inviting false failures.
     */
     for (const facet of PRESENTATION_FACETS) {
-      const pinned = carriedCaptions[facet];
+      const pinned = captionWording(carriedCaptions[facet]);
       if (pinned && !facts.some((fact) => fact.facet === facet)) {
         /* Read from a photograph rather than chosen from a vocabulary, so it is
            watched rather than enforced — same reasoning as the free lane. */

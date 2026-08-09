@@ -49,6 +49,12 @@ import {
   isConstrainedArrangement,
 } from "./hairArrangement";
 import { interpreterEngine } from "./interpreter";
+import {
+  captionWording,
+  pinIdOf,
+  type PinnedCaption,
+  type RealizationCaptions,
+} from "./realizationCaption";
 import { facetOfSubject, type Facet } from "./refineFacets";
 
 const log = createModuleLogger("castingV2/presentationState");
@@ -66,8 +72,10 @@ type Vocabulary = {
   guidance: string;
   /** The one wording for a chosen answer, or null if it chose nothing valid. */
   wordingFor: (answer: string) => string | null;
-  /** Whether an already-stored pin is one this build can stand behind. */
+  /** Whether an already-stored pin's WORDING is one this build stands behind. */
   owns: (pinned: string) => boolean;
+  /** Whether a stored pin's ID is still offered — the structural test. */
+  ownsId: (id: string) => boolean;
 };
 
 /** The facets worth naming, the question each is read with, and its answers. */
@@ -89,6 +97,7 @@ const PRESENTATION: ReadonlyArray<{
         return id ? arrangementWording(id) : null;
       },
       owns: isConstrainedArrangement,
+      ownsId: (id) => arrangementIdOf(id) !== null,
     },
   },
 ];
@@ -123,7 +132,7 @@ export async function capturePresentation(input: {
   contentType: string;
   engine?: TextEngine;
   signal?: AbortSignal;
-}): Promise<Partial<Record<Facet, string>>> {
+}): Promise<Partial<Record<Facet, PinnedCaption>>> {
   const engine = input.engine ?? interpreterEngine();
   if (!engine) return {};
   try {
@@ -141,7 +150,7 @@ export async function capturePresentation(input: {
     const parsed = JSON.parse(
       reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""),
     );
-    const captured: Partial<Record<Facet, string>> = {};
+    const captured: Partial<Record<Facet, PinnedCaption>> = {};
     for (const entry of PRESENTATION) {
       const value = parsed?.[entry.id];
       if (typeof value !== "string") continue;
@@ -157,7 +166,9 @@ export async function capturePresentation(input: {
       */
       const wording = entry.vocabulary.wordingFor(value);
       if (!wording) continue;
-      captured[entry.facet] = wording;
+      /* The id rides beside the wording, so nothing downstream has to guess
+         from the prose which kind of caption this is. */
+      captured[entry.facet] = { wording, pin: value.trim().toLowerCase() };
     }
     return captured;
   } catch (error) {
@@ -208,10 +219,41 @@ export function presentationInvalidatedBy(written: ReadonlySet<Facet>): Facet[] 
  * nobody touches never renders and so is never scored.
  */
 export function unconstrainedPresentationPins(
-  captions: Readonly<Partial<Record<Facet, string>>>,
+  captions: RealizationCaptions,
+  /**
+   * THE FACETS THIS CHAIN HAS DELIVERED — and the delivery outranks the
+   * dictionary (founder finding #4, fable-118 ruling (a)).
+   *
+   * The retirement above is right about a PIN and catastrophic about a
+   * REALIZATION. A caption for a facet the chain itself paid to change
+   * describes a frame the customer is looking at; retiring it re-reads the
+   * base, which is the one image guaranteed not to contain the edit, and
+   * states the pre-edit value to the painter as already true. That is not
+   * drift — it is a countermand, and it cost the founder a render.
+   *
+   * So a delivered facet's caption is never retired, whatever it looks like.
+   * Empty by default so a caller that has not thought about it gets the old,
+   * narrower behaviour rather than a silent pass.
+   */
+  deliveredByChain: ReadonlySet<Facet> = new Set(),
 ): Facet[] {
   return PRESENTATION.flatMap((entry) => {
-    const pinned = captions[entry.facet];
-    return pinned && !entry.vocabulary.owns(pinned) ? [entry.facet] : [];
+    const caption = captions[entry.facet];
+    if (!caption) return [];
+    if (deliveredByChain.has(entry.facet)) return [];
+    const id = pinIdOf(caption);
+    /*
+      A pin says which id it was chosen from, so its retirement is a question
+      about the VOCABULARY rather than about its prose: an id this build no
+      longer offers is a pin it cannot stand behind.
+    */
+    if (id !== null) return entry.vocabulary.ownsId(id) ? [] : [entry.facet];
+    /*
+      No id: either a row written before pins carried one, or a realization
+      caption for a facet this chain did NOT deliver — which cannot happen,
+      because a realization is only ever written for a facet an instruction
+      wrote. So this branch is the legacy one, and it keeps the old test.
+    */
+    return entry.vocabulary.owns(captionWording(caption)) ? [] : [entry.facet];
   });
 }

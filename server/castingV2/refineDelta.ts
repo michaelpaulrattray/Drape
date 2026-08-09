@@ -52,11 +52,11 @@ import {
   type FreeSubject,
 } from "./refineSubjects";
 import { qualifierFor } from "./subjectQualifiers";
-import { accessoryKindOf } from "./accessoryKinds";
+import { accessoryKindOf, pairClauseFor } from "./accessoryKinds";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
 import { isSurfaceFacet } from "./changeAmplitude";
 import { composePreservation } from "./refinePreservation";
-import { captionClause } from "./realizationCaption";
+import { captionClause, captionWording, type RealizationCaptions } from "./realizationCaption";
 
 /** One adjustment, not a paragraph — the brief box is where prose belongs. */
 const MAX_MAKEUP_LENGTH = 80;
@@ -1611,8 +1611,19 @@ export function composeEditPrompt(delta: RefineDelta, prose: {
       ));
       continue;
     }
+    /*
+      A PAIR MEANS BOTH EARS, IN THE ASK ITSELF (fable-118 ruling (b)).
+
+      The founder asked for "gold hoop earrings" and got one, with the other ear
+      bare and plainly visible. Nothing in the prompt he paid for had ever said
+      a pair is two — the qualifier is per SUBJECT and laterality is a fact
+      about the OBJECT, so it comes from the same kinds table the mask corridor
+      and composition read. Empty for glasses, for a nose stud, and for every
+      subject that is not an accessory.
+    */
+    const pair = subject === "statedAccessories" ? pairClauseFor(items.join(", ")) : "";
     edits.push(`${heading}: ${withCaption(facetOfSubject(subject as FreeSubject), items.join(", "))}`
-      + `${qualifierFor(subject as FreeSubject)}.`);
+      + `${pair}${qualifierFor(subject as FreeSubject)}.`);
   }
   /*
     AND THE THING THAT IS GONE — the sentence that was never being said.
@@ -1694,7 +1705,7 @@ export type RenderPrompt = {
 export function composeRenderPrompt(
   delta: RefineDelta,
   prose: Parameters<typeof composeEditPrompt>[1],
-  captions: Partial<Record<Facet, string>>,
+  captions: RealizationCaptions,
 ): RenderPrompt {
   /*
     A facet the edits lane names takes its caption INTO that clause; the rest
@@ -1705,7 +1716,10 @@ export function composeRenderPrompt(
   const asked = facetsAnsweredBy(delta);
   const adopted: Partial<Record<Facet, string>> = {};
   const carried: Partial<Record<Facet, string>> = {};
-  for (const [facet, caption] of Object.entries(captions)) {
+  for (const [facet, entry] of Object.entries(captions)) {
+    /* Both kinds of caption say the same thing to a painter; only the
+       retirement rule cares which kind it is (fable-118). */
+    const caption = captionWording(entry);
     if (!caption) continue;
     /*
       A SURFACE FACET'S CAPTION IS DROPPED FROM THE ASK, NOT MOVED (2026-08-09).

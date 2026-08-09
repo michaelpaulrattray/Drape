@@ -95,7 +95,35 @@ export type FacetCheck = {
    * always did; only a fact whose failure is not an absence has to say so.
    */
   shortfall?: string;
+  /**
+   * THE QUESTION THE PHOTOGRAPH CANNOT ANSWER (fable-118 ruling (b)).
+   *
+   * A pair is a pair — earrings come in twos, and CLAUDE.md law 8's founding
+   * example is exactly this. But an ear behind her hair is not a bare ear, and
+   * forcing that into pass-or-miss produces one of two lies: a pass that says
+   * we delivered something nobody can see, or a refund for an earring that is
+   * probably there.
+   *
+   * So it is a third answer. Recorded, surfaced in the table, and counted in
+   * neither column — the same shape as `read: false`, for the same reason
+   * (D-235's asymmetry: a question the picture cannot answer spends no refusal
+   * and earns no credit).
+   *
+   * The founder's own specimens are why the default must stay strict: on
+   * v#156 and v#157 the empty ear was fully visible, and both were passed.
+   */
+  occluded?: boolean;
 };
+
+/** A real miss: read, not verified, and the picture could have answered. */
+export function isMiss(check: FacetCheck): boolean {
+  return check.read && !check.verified && check.occluded !== true;
+}
+
+/** Read, contradicted by nothing, and unanswerable — neither pass nor miss. */
+export function isOccluded(check: FacetCheck): boolean {
+  return check.read && !check.verified && check.occluded === true;
+}
 
 export type RenderVerdict = {
   ok: boolean;
@@ -118,6 +146,15 @@ const SYSTEM_PROMPT = [
   "not hair worn up. An earring that is present but different from the one described is",
   "still present — describe the difference rather than failing it.",
   "",
+  "A PAIR MEANS BOTH SIDES. 'Earrings' is two earrings, one on each ear — a single earring",
+  "with the other ear BARE and VISIBLE is NOT present, however good the one is. Say so, and",
+  "name which ear is empty.",
+  "",
+  'If the second side is HIDDEN — behind hair, turned away, out of frame — answer',
+  '{"present":true,"occluded":true} and say in `saw` which side you cannot see. That is not',
+  "a pass and not a failure; it is the honest answer to a question this photograph cannot",
+  "settle. Use it only when the side is genuinely not visible.",
+  "",
   "Be generous about DEGREE. A relative ask like 'pinker' or 'lighter' is satisfied by a",
   "visible move in that direction; it does not have to be extreme.",
   "",
@@ -139,7 +176,8 @@ const SYSTEM_PROMPT = [
   "You are not judging whether it is the exact shade they imagined; you are judging whether",
   "the colour changed to the thing they named.",
   "",
-  'Reply with JSON: {"results":[{"id":1,"present":true|false,"saw":"..."}]} and nothing',
+  'Reply with JSON: {"results":[{"id":1,"present":true|false,"occluded":true,"saw":"..."}]}',
+  '— `occluded` is optional and only ever appears beside "present":true — and nothing',
   "else.",
   "",
   "`saw` is REQUIRED on EVERY line, whether present is true or false. Name what you",
@@ -187,7 +225,7 @@ const CLOSE_PROMPT = [
  * silence: it never refuses, and it never passes either.
  */
 export function okOf(checks: ReadonlyArray<FacetCheck>): boolean {
-  return checks.every((check) => !check.read || check.verified || !check.binding);
+  return checks.every((check) => !isMiss(check) || !check.binding);
 }
 
 const keyOf = (check: FacetCheck): string => `${check.facet}|${check.asked}`;
@@ -388,12 +426,24 @@ async function readOnce(input: {
       */
       const answered = row !== undefined && typeof row.present === "boolean";
       const read = answered && (row.present === false || (saw !== undefined && saw.length > 0));
+      /*
+        THE THIRD ANSWER, AND IT NEEDS ITS EVIDENCE LIKE ANY OTHER (fable-118).
+
+        `occluded` only means anything on an affirmative that named what it saw.
+        A bare `{"occluded":true}` with no reading behind it would be a way to
+        answer nothing and be counted in neither column — which is precisely the
+        laundromat the evidence rule exists to prevent.
+      */
+      const occluded = read && row.present === true && row.occluded === true;
       return {
         facet: fact.facet,
         asked: fact.asked,
-        verified: read && row.present === true,
+        /* An unanswerable question is not a pass. It is not a miss either —
+           `isMiss`/`isOccluded` are what tell the two apart downstream. */
+        verified: read && row.present === true && !occluded,
         read,
         binding: fact.binding !== false,
+        ...(occluded ? { occluded: true } : {}),
         ...(saw ? { saw } : {}),
         ...(fact.shortfall ? { shortfall: fact.shortfall } : {}),
       };
@@ -453,7 +503,7 @@ export async function confirmVerdict(
   reread: () => Promise<RenderVerdict>,
 ): Promise<RenderVerdict> {
   const original = new Map(first.checks.map((check) => [keyOf(check), check]));
-  const bindingMisses = first.checks.filter((c) => c.read && !c.verified && c.binding);
+  const bindingMisses = first.checks.filter((c) => isMiss(c) && c.binding);
   /* (b) The delivery-path half: an affirmative on a facet with a rap sheet. */
   const suspectPasses = first.checks.filter(
     (c) => c.read && c.verified && UNRELIABLE_FACETS.has(c.facet),
@@ -491,7 +541,7 @@ export async function confirmVerdict(
     return { ...check, verified: false, saw: other.saw };
   });
 
-  const contested = checks.filter((c) => c.read && !c.verified && c.binding);
+  const contested = checks.filter((c) => isMiss(c) && c.binding);
   /* Two readings that AGREE are what a refusal is made of; a split needs a third. */
   const split = contested.some((check) => {
     const other = secondBy.get(keyOf(check));
@@ -509,7 +559,7 @@ export async function confirmVerdict(
   /* Majority of three, per fact, voting the FIRST reading rather than the
      demoted one — otherwise the second reading would be counted twice. */
   checks = checks.map((check) => {
-    if (!(check.read && !check.verified && check.binding)) return check;
+    if (!(isMiss(check) && check.binding)) return check;
     const key = keyOf(check);
     const votes = [original.get(key), secondBy.get(key), thirdBy.get(key)]
       .filter(Boolean)
@@ -522,7 +572,7 @@ export async function confirmVerdict(
 /** The facets that failed and are worth acting on. */
 export function missingFacts(verdict: RenderVerdict): string[] {
   return verdict.checks
-    .filter((check) => check.read && !check.verified && check.binding)
+    .filter((check) => isMiss(check) && check.binding)
     .map((check) => check.asked);
 }
 
@@ -537,7 +587,7 @@ export function missingFacts(verdict: RenderVerdict): string[] {
  */
 export function shortfalls(verdict: RenderVerdict): string[] {
   return verdict.checks
-    .filter((check) => check.read && !check.verified && check.binding)
+    .filter((check) => isMiss(check) && check.binding)
     .map((check) => check.shortfall ?? `without ${check.asked}`);
 }
 
@@ -555,7 +605,7 @@ export function joinClauses(clauses: ReadonlyArray<string>): string {
 
 /** Failures the product will NOT refuse over — the reader-defect watch list. */
 export function advisoryMisses(verdict: RenderVerdict): FacetCheck[] {
-  return verdict.checks.filter((check) => check.read && !check.verified && !check.binding);
+  return verdict.checks.filter((check) => isMiss(check) && !check.binding);
 }
 
 /** Facts the reader was asked about and said nothing usable on. Never a pass. */

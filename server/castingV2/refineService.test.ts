@@ -1069,6 +1069,147 @@ describe("an unreadable history stops the money", () => {
   });
 
   /*
+    FOUNDER FINDING #4 — HIS PAID EDIT, COUNTERMANDED BY OUR OWN PROMPT.
+
+    2026-08-09, his account, candidate `84598983`. He paid for "she wear her
+    hair down" (v#163, delivered, verified, hair genuinely down — I looked).
+    His next edit, "dangly cross earrings" (v#164, 25 credits), came back with
+    the hair BACK UP.
+
+    Nothing drifted. The realization caption v#163 stored is prose, the
+    retirement rule above owns only the ten closed arrangement wordings, so it
+    took his delivered fact for a pre-vocabulary pin and deleted it — and the
+    re-capture then read the MASTER, the one picture guaranteed not to contain
+    the edit he had just bought. His prompt said, verbatim:
+
+      "These are ALREADY TRUE of this person … HAIR WORN: gathered — the bulk
+       of the hair drawn away from the face and gathered behind the head…"
+
+    (Byte-identical to `HAIR_ARRANGEMENTS.gathered`, 132 characters, proven by
+    comparison rather than by reading it.) The engine obeyed.
+
+    Both halves are driven here: the chain's own delivery survives, and the
+    master's value never reaches the paid prompt.
+  */
+  it("never restates the master's arrangement after the chain has delivered its own", async () => {
+    const HIS_DELIVERY = "Straight dark hair worn down, center-parted, "
+      + "falling loosely past shoulder length on both sides.";
+    variantRows = [{
+      id: 163,
+      publicId: "variant-hair-down",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/hair-down.png",
+      internalPrompt: {
+        ...(candidateRow.internalPrompt as Record<string, unknown>),
+        captions: { hairWorn: HIS_DELIVERY },
+      },
+      instructions: ["she wear her hair down"],
+      deltas: { free: { hairWorn: "down" } },
+      stepDeltas: [{ free: { hairWorn: "down" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-hair-down";
+
+    let presentationReads = 0;
+    const verifier = {
+      id: "verifier",
+      complete: async (request: { system: string }) => {
+        if (request.system.includes("how they")) {
+          presentationReads += 1;
+          /* If anything DOES ask a frame about her arrangement, the master's
+             answer is this — the value that overwrote him. */
+          return { text: JSON.stringify({ hairWorn: "gathered" }), truncated: false, latencyMs: 1 };
+        }
+        return {
+          text: JSON.stringify({ results: [{ id: 1, present: true, saw: "hair loose past the shoulders" }] }),
+          truncated: false,
+          latencyMs: 1,
+        };
+      },
+    } as never;
+
+    await refineCandidate(
+      { ...greenEyes, verifier },
+      { ...input, instruction: "dangly cross earrings" },
+    );
+
+    const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt;
+    /*
+      The delivery outranks the dictionary: HIS sentence is what the painter is
+      told, spliced without its full stop — which lane it rides in depends on
+      whether this render is pasting a segment for the facet, and both lanes
+      say the same true thing.
+    */
+    expect(prompt).toContain(HIS_DELIVERY.replace(/\.$/, ""));
+    /* And the master's value is nowhere in the prompt he paid for. */
+    expect(prompt).not.toContain(arrangementWording("gathered"));
+    expect(prompt).not.toContain("gathered behind the head");
+    /* Nothing was re-read at all — the caption stood, so no frame was asked. */
+    expect(presentationReads).toBe(0);
+    /* And what is carried forward is never the base's value either. */
+    const stored = (landedVariant?.internalPrompt as { captions: Record<string, unknown> }).captions;
+    expect(JSON.stringify(stored)).not.toContain("gathered behind the head");
+  });
+
+  /*
+    AND WHEN A RE-CAPTURE IS LEGITIMATE, IT READS THE FRAME SHE IS ON.
+
+    A pin the vocabulary cannot stand behind still goes, and the facet still has
+    to be re-read from a picture. The master is the right picture exactly once —
+    at the head of a chain. Mid-chain every edit she has bought is missing from
+    it, so reading it there is the same countermand by a slower road.
+  */
+  it("re-reads the anchor she is standing on, never the master, mid-chain", async () => {
+    variantRows = [{
+      id: 504,
+      publicId: "variant-anchor",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/anchor.png",
+      internalPrompt: {
+        ...(candidateRow.internalPrompt as Record<string, unknown>),
+        /* Free text on a facet this chain never wrote: a genuine retirement. */
+        captions: { hairWorn: "pulled back low" },
+      },
+      instructions: ["give her freckles"],
+      deltas: { free: { marks: "freckles" } },
+      stepDeltas: [{ free: { marks: "freckles" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-anchor";
+
+    const framesRead: string[] = [];
+    const verifier = {
+      id: "verifier",
+      complete: async (request: { system: string }) => {
+        if (request.system.includes("how they")) {
+          return { text: JSON.stringify({ hairWorn: "bun" }), truncated: false, latencyMs: 1 };
+        }
+        return {
+          text: JSON.stringify({ results: [{ id: 1, present: true, saw: "green irises" }] }),
+          truncated: false,
+          latencyMs: 1,
+        };
+      },
+    } as never;
+
+    await refineCandidate({
+      ...greenEyes,
+      verifier,
+      readBytes: async (key: string) => {
+        framesRead.push(key);
+        return { bytes: TINY_MASTER_PNG, contentType: "image/png" };
+      },
+    } as never, input);
+
+    /*
+      The anchor's own frame is opened. Before this change it never was: the
+      render paints from the master by design, so the ONLY thing that would ask
+      for a variant's frame here is the presentation re-read.
+    */
+    expect(framesRead).toContain("casting-v2/variants/anchor.png");
+  });
+
+  /*
     THE PIN COARSENED; HER WORDS DID NOT.
 
     `up` and `tied back` were merged into one pinned value because the reader
@@ -1194,6 +1335,54 @@ describe("the render is checked against the record before it is delivered", () =
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
     expect(ledger.charges.at(-1)?.amount).toBe(25);
     expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+
+  /*
+    PRESENCE BINDS (fable-118 ruling (c), and the founder paid for the proof).
+
+    v#164, his account: "dangly cross earrings", 25 credits, delivered — with
+    his own reader saying on the row *"small stud earrings, no dangly cross
+    earrings visible"*. Not a false pass: an honest reading, made advisory
+    because `statedAccessories` lives in the free lane, and the free lane was
+    scoped to protect SHADE disputes ("is this distinctly seafoam") from a
+    reader nobody had defined the word for.
+
+    An accessory is not a shade. Either the crosses are in the picture or they
+    are not, which is the same test a removal has always been binding on.
+  */
+  it("refunds a missing accessory instead of charging for it", async () => {
+    const earrings = {
+      ...greenEyes,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { statedAccessories: "dangly cross earrings" } },
+      }),
+    };
+    await expect(refineCandidate(
+      { ...earrings, verifier: verifierSaying(false, false, false, false) },
+      { ...input, instruction: "dangly cross earrings" },
+    )).rejects.toThrow();
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+
+  it("still only WATCHES a shade nobody has defined", async () => {
+    /* The other half of the scoping, and the reason this ruling is narrow: six
+       legitimate renders were refunded in eighteen when a reader was asked to
+       arbitrate "seafoam green". A free-lane DEGREE miss still delivers. */
+    const shade = {
+      ...greenEyes,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { eyeColourFree: "seafoam green" } },
+      }),
+    };
+    await refineCandidate(
+      { ...shade, verifier: verifierSaying(false, false, false, false) },
+      { ...input, instruction: "seafoam green eyes" },
+    );
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds).toHaveLength(0);
   });
 
   /*

@@ -280,7 +280,7 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     file: "server/castingV2/refineService.ts",
     suites: PIN_SUITES,
     mutations: [{
-      find: "unconstrainedPresentationPins(carriedCaptions)",
+      find: "unconstrainedPresentationPins(carriedCaptions, deliveredByChain)",
       replace: "[]",
     }],
   },
@@ -697,7 +697,14 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     file: "server/castingV2/carriedSegments.ts",
     suites: ["server/castingV2/carriedSegments.test.ts"],
     mutations: [{
-      find: "  if (!input.anchorVariantId) return { segments: [], excluded: [] };",
+      /*
+        Re-pointed 2026-08-09: the guard moved into `listCarriedRows` when the
+        rows and their pixels were split into two questions, and this entry
+        still named the old shape — so it stopped landing and killed the driver
+        before the entries after it ran. A stale sabotage is the silent
+        non-application `lib/sabotage` exists to catch, one level up.
+      */
+      find: "  if (!input.anchorVariantId) return [];",
       replace: "",
     }],
   },
@@ -712,6 +719,43 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     mutations: [{
       find: "    anchorVariantId: input.anchorVariantId,\n    facet: input.facet,",
       replace: "    facet: input.facet,",
+    }],
+  },
+  {
+    /*
+      FOUNDER FINDING #4. Take the chain's own deliveries away from the
+      retirement rule and his hair-down caption is pre-vocabulary free text
+      again — retired, the master re-read, and "HAIR WORN: gathered" back in a
+      prompt he paid for.
+    */
+    name: "the delivery outranking the dictionary",
+    file: "server/castingV2/refineService.ts",
+    suites: PIN_SUITES,
+    mutations: [{
+      find: "unconstrainedPresentationPins(carriedCaptions, deliveredByChain)",
+      replace: "unconstrainedPresentationPins(carriedCaptions)",
+    }],
+  },
+  {
+    /* And the other half: a legitimate re-capture reading the master mid-chain
+       is the same countermand by a slower road. */
+    name: "the re-capture reading the frame she is standing on",
+    file: "server/castingV2/refineService.ts",
+    suites: PIN_SUITES,
+    mutations: [{
+      find: "const baseKeyForPresentation = predecessor?.imageKey ?? source.candidate.imageKey;",
+      replace: "const baseKeyForPresentation = source.candidate.imageKey;",
+    }],
+  },
+  {
+    /* A pin's id is what makes it structurally a pin. Drop it and the
+       retirement is back to reading prose. */
+    name: "the pin carrying the id it was chosen from",
+    file: "server/castingV2/presentationState.ts",
+    suites: ["server/castingV2/presentationState.test.ts"],
+    mutations: [{
+      find: "captured[entry.facet] = { wording, pin: value.trim().toLowerCase() };",
+      replace: "captured[entry.facet] = { wording, pin: \"\" };",
     }],
   },
 ];

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1552650fa3673c22"
+    "sourceFingerprint": "3563b234e9c10912"
   },
   "domains": [
     {
@@ -17735,6 +17735,11 @@
     },
     {
       "from": "module:server/castingV2/presentationState.ts",
+      "to": "module:server/castingV2/realizationCaption.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/presentationState.ts",
       "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
@@ -18081,6 +18086,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
     },
     {

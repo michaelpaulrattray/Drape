@@ -355,3 +355,105 @@ describe("a refusal reads as a sentence", () => {
     expect(shortfalls(verdict)).toEqual(["without freckles"]);
   });
 });
+
+/*
+  THE PAIR LAW, AND ITS THIRD ANSWER (fable-118 ruling (b)).
+
+  The founder asked for "gold hoop earrings" and was delivered ONE, twice, on
+  two consecutive renders of the same face — v#156 with the hoop on her left ear
+  and her right ear bare, v#157 with the hoop on her right and her left bare. I
+  cropped both ears in both frames at 3× and looked: in each frame the empty ear
+  is fully visible, unoccluded, and plainly bare. Both were stored `verified:
+  true`, off a `saw` reading "gold hoop earring visible on visible ear".
+
+  So the question had never been asked properly. These tests drive the reader's
+  three possible answers directly — one live model would have proved nothing
+  about any of them.
+*/
+describe("a pair means both ears", () => {
+  const EARRINGS = [{
+    facet: facetOfSubject("statedAccessories"),
+    asked: "gold hoop earrings, one on each ear, a matching pair",
+    binding: true,
+  }] as const;
+
+  it("tells the reader that one earring with a bare visible ear is not present", async () => {
+    let system = "";
+    const engine = {
+      id: "watcher",
+      async complete(request: { system: string }): Promise<TextResult> {
+        system = request.system;
+        return {
+          text: '{"results":[{"id":1,"present":true,"saw":"a hoop on the left ear"}]}',
+          provenance: { provider: "test", model: "watcher" } as unknown as TextResult["provenance"],
+          latencyMs: 1,
+        };
+      },
+    } as TextEngine;
+    await verifyRender({ bytes, contentType: "image/png", facts: [...EARRINGS], engine });
+    /* The instruction the founder's two renders never carried. Asserted on the
+       string that actually goes out, not on a constant near it. */
+    expect(system).toContain("A PAIR MEANS BOTH SIDES");
+    /* Whitespace-tolerant: the prompt is a joined array, so the clause wraps. */
+    expect(system).toMatch(/single earring\s+with the other ear BARE and VISIBLE is NOT present/);
+    /* And the third answer is offered, with its condition attached. */
+    expect(system).toContain('"occluded":true');
+    expect(system).toMatch(/Use it only when the side is genuinely not visible/);
+  });
+
+  it("v#156 and v#157 re-read as MISSES, not passes", async () => {
+    /* The reader's own words from the two production rows, now answered under
+       the pair law: one hoop, the other ear visible and bare. */
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":false,"saw":"gold hoop on her left ear, right ear bare and visible"}]}',
+        '{"results":[{"id":1,"present":false,"saw":"one hoop only, other ear empty"}]}',
+        '{"results":[{"id":1,"present":false,"saw":"one hoop only, other ear empty"}]}'],
+      [...EARRINGS],
+    );
+    expect(verdict.ok).toBe(false);
+    expect(verdict.checks[0]?.verified).toBe(false);
+    expect(verdict.checks[0]?.occluded).toBeUndefined();
+    /* And it is a real miss, so it reaches a refusal sentence. */
+    expect(shortfalls(verdict)).toEqual(["without gold hoop earrings, one on each ear, a matching pair"]);
+  });
+
+  it("records an ear behind her hair as OCCLUDED — neither a pass nor a miss", async () => {
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":true,"occluded":true,'
+        + '"saw":"a hoop on the visible ear; the other ear is behind her hair"}]}'],
+      [...EARRINGS],
+    );
+    /* It does not refuse — we cannot hold a picture to an ear it does not
+       show — and it does not pass either. */
+    expect(verdict.ok).toBe(true);
+    expect(verdict.checks[0]?.occluded).toBe(true);
+    expect(verdict.checks[0]?.verified).toBe(false);
+    /* Neither column: no refusal sentence, and not an advisory miss to chase. */
+    expect(shortfalls(verdict)).toEqual([]);
+    expect(advisoryMisses(verdict)).toEqual([]);
+  });
+
+  it("will not let `occluded` become a way to answer nothing", async () => {
+    /* Without a `saw` the row is unread, and an unread row is silence — the
+       evidence rule is asymmetric and this must not become its back door. */
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":true,"occluded":true}]}'],
+      [...EARRINGS],
+    );
+    expect(verdict.checks[0]?.read).toBe(false);
+    expect(verdict.checks[0]?.occluded).toBeUndefined();
+    expect(unreadFacts(verdict)).toHaveLength(1);
+  });
+
+  it("cannot dodge a plain miss by claiming occlusion", async () => {
+    /* `present: false` is a miss whatever else the reader says about it. */
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":false,"occluded":true,"saw":"no earrings at all"}]}',
+        '{"results":[{"id":1,"present":false,"occluded":true,"saw":"no earrings at all"}]}',
+        '{"results":[{"id":1,"present":false,"occluded":true,"saw":"no earrings at all"}]}'],
+      [...EARRINGS],
+    );
+    expect(verdict.ok).toBe(false);
+    expect(verdict.checks[0]?.occluded).toBeUndefined();
+  });
+});
