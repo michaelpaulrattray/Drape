@@ -211,6 +211,51 @@ describe("a candidate's segments purge with it", () => {
     expect(calls.deleteSegments).not.toHaveBeenCalled();
   });
 
+  it("recognises the absence THROUGH the query wrapper, which is the only shape production sends", async () => {
+    /*
+      THE DEFECT THIS PINS, found by reading production's own log two minutes
+      after the deploy that introduced it.
+
+      The first version read `code` off the top-level error. Drizzle wraps the
+      driver's error in a `DrizzleQueryError` and hangs the original off
+      `cause`, so the tolerance never fired: the sweep threw, and 56 candidates
+      went uncollected on its first pass. The test passed throughout, because it
+      had invented the error it expected — a test of its own invention.
+    */
+    const driver = Object.assign(new Error("Table 'railway.casting_segments' doesn't exist"), {
+      code: "ER_NO_SUCH_TABLE",
+      errno: 1146,
+    });
+    const wrapped = Object.assign(new Error("Failed query: select `id` from `casting_segments`"), {
+      name: "DrizzleQueryError",
+      cause: driver,
+    });
+    calls.listSegments.mockRejectedValue(wrapped);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteSegments).not.toHaveBeenCalled();
+  });
+
+  it("still refuses a wrapped absence once the store is armed", async () => {
+    process.env.CASTING_SEGMENTS_SCOPE = "users:1";
+    calls.listSegments.mockRejectedValue(Object.assign(new Error("Failed query"), {
+      cause: Object.assign(new Error("no such table"), { code: "ER_NO_SUCH_TABLE", errno: 1146 }),
+    }));
+
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/Failed query/);
+  });
+
+  it("does not mistake an unrelated wrapped failure for an absent table", async () => {
+    // The chain walk must not become "anything with a cause is forgiven".
+    calls.listSegments.mockRejectedValue(Object.assign(new Error("Failed query"), {
+      cause: Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK", errno: 1213 }),
+    }));
+
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/Failed query/);
+  });
+
   it("refuses to tolerate the missing table once the store is armed", async () => {
     process.env.CASTING_SEGMENTS_SCOPE = "users:1";
     calls.listSegments.mockRejectedValue(Object.assign(new Error("no such table"), {

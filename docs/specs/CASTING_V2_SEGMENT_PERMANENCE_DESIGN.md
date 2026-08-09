@@ -142,6 +142,14 @@ takes it out of the composite; the object survives so §7's redo can exist. Her
 account-level deletion still removes everything, because that runs on the
 candidate.
 
+**And one rule about the purge that is not a detail of it (ratified,
+fable-087): the flag governs whether segments are WRITTEN; nothing may govern
+whether they are COLLECTED.** The sweep's segment join is unconditional —
+turning the store off after rows exist must not strand crops of a person's face
+at public URLs with the only row naming them deleted alongside the candidate.
+Its single tolerated failure is a database whose table does not exist yet, and
+that tolerance ends the moment the store is armed.
+
 ## 4. Overlap — surrender rules
 
 The default matches the user's ontology: **the newer edit wins the pixels it
@@ -309,6 +317,33 @@ tappable segments in the stylist's ontology, each with its own history and its
 own "remove this". M12's surface and this store are the same thing seen from
 two ends. Building segments buys the chart's foundation; building the chart
 first would have built the segment store under a different name.
+
+## 12a. Ink is governed by D-138, not by this document
+
+*Founder confirmation carried in by fable-086, written here so nobody
+re-derives ink rules from segment rules.*
+
+A tattoo is a segment like any other once it is on her, and **none of the
+segment machinery grants it a shortcut onto her skin.** The Body-Art Studio
+path is unchanged and binding:
+
+- **Ink never renders from words directly onto her** (D-132/D-137). Every
+  tattoo — asked for or supplied as a reference — goes through a design
+  document, plated on the code-owned neutral mannequin templates (D-138: tone
+  ladder, fades never cuts, no text on templates), iterated in its own tab, and
+  only then applied.
+- **A supplied reference is promoted to an immutable asset, frozen at
+  introduction** (D-192's corollary: an anchor, never a feedback loop).
+- **Where the two systems meet:** the design document is the segment's *source
+  asset*; the APPLIED tattoo is the kept patch; apply-at-25 is patch creation;
+  D-138's staleness marker and the Sign currency gate map onto patch versions.
+  One artwork, one document, one tab, one segment.
+- **The born-worn catalogue detecting ink on a rolled face files a segment row
+  (`detected_born`) and creates NO design document.** A document exists only
+  when she works on the piece. The row says what the picture shows; it does not
+  claim authorship of a design nobody drew.
+- D-139 (no inheritance on Follow), D-140 (the lettering law) and D-141 (the
+  hardening list) carry unchanged.
 
 ## 13. The over-guarding accounting the founder asked for
 

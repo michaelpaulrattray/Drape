@@ -129,6 +129,7 @@ import {
 } from "./refineRemoval";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
+import { keepSegmentsFromRender } from "./segmentPersistence";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
 import { COVERAGE_BANDS, coverage } from "./maskGeometry";
@@ -2371,6 +2372,30 @@ export async function refineCandidate(
       provider: image.provenance?.provider ?? null,
       providerModel: image.provenance?.model ?? null,
       providerRef: image.provenance?.providerRef ?? null,
+    });
+
+    /*
+      KEEP THE PIXELS THIS RENDER EARNED (segment permanence, slice 1).
+
+      After the landing, deliberately: a segment is evidence of a DELIVERED
+      render, and filing one for a picture that then failed to land would put
+      pixels in her face's record that she never received.
+
+      Dark until `CASTING_SEGMENTS_SCOPE` names her, and silent in both
+      directions — it never throws, and a failure costs this render nothing at
+      all. The facet simply keeps no pixels, and the next render carries it the
+      way every render does today: with words.
+    */
+    await keepSegmentsFromRender({
+      userId: input.userId,
+      variantId: variant.id,
+      image,
+      /* The same set the harvest cut for — see `renderOnce`. */
+      facets: Array.from(facetsAnsweredBy(composed)),
+      /* The reading that earned these pixels, so a paste never re-asks. */
+      verdict: verification.unavailable ? null : "verified",
+      verifiedAt: verification.unavailable ? null : new Date(),
+      operationId,
     });
 
     /*

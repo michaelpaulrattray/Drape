@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "297fcf1a741a172f"
+    "sourceFingerprint": "a40574379ee6dd9b"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 70
+      "moduleCount": 72
     },
     {
       "id": "domain:castingV2",
@@ -3521,6 +3521,18 @@
     {
       "id": "module:server/castingV2/rollService.ts",
       "path": "server/castingV2/rollService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/segmentCuts.ts",
+      "path": "server/castingV2/segmentCuts.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/segmentPersistence.ts",
+      "path": "server/castingV2/segmentPersistence.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8527,6 +8539,14 @@
     {
       "id": "test:server/castingV2/rollService.test.ts",
       "path": "server/castingV2/rollService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/segmentCuts.test.ts",
+      "path": "server/castingV2/segmentCuts.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/segmentPersistence.test.ts",
+      "path": "server/castingV2/segmentPersistence.test.ts"
     },
     {
       "id": "test:server/castingV2/sexCoding.test.ts",
@@ -17985,6 +18005,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/segmentPersistence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/signEngine.ts",
       "kind": "imports"
     },
@@ -18245,6 +18270,61 @@
     },
     {
       "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentCuts.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/db/castingV2Segments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentPersistence.ts",
       "to": "module:server/storage.ts",
       "kind": "imports"
     },

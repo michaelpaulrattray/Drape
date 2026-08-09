@@ -36,6 +36,51 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     frame: { width: 1024, height: 1536 },
   };
 
+  /**
+   * The production write, with its manifest — never a shortcut around it.
+   *
+   * The keys are registered for cleanup before the row exists, exactly as the
+   * service does it, so the discharge is exercised by every case below rather
+   * than by one test that remembers to.
+   */
+  async function fileSegment(input: {
+    userId: number;
+    variantId: number;
+    facet?: string;
+    region?: string;
+    maskKey: string;
+    contentKey: string;
+    geometry?: typeof geometry;
+    verdict?: string | null;
+  }) {
+    const cleanupBatchId = randomUUID();
+    await connection.execute(
+      "INSERT INTO storage_cleanup_batches (id, userId, operationId, kind, status, expectedCount, deletedCount, failedCount)"
+        + " VALUES (?, ?, ?, 'casting_candidate_cleanup', 'pending', 2, 0, 0)",
+      [cleanupBatchId, input.userId, randomUUID()],
+    );
+    for (const storageKey of [input.maskKey, input.contentKey]) {
+      await connection.execute(
+        "INSERT INTO storage_cleanup_items (batchId, storageKey, storageBackend, status, attempts) VALUES (?, ?, 'public_r2', 'pending', 0)",
+        [cleanupBatchId, storageKey],
+      );
+    }
+    const recorded = await segments.recordEditPatchSegments({
+      userId: input.userId,
+      variantId: input.variantId,
+      cleanupBatchId,
+      verdict: input.verdict ?? null,
+      patches: [{
+        facet: input.facet ?? "marks",
+        region: input.region ?? "face skin",
+        maskKey: input.maskKey,
+        contentKey: input.contentKey,
+        geometry: input.geometry ?? geometry,
+      }],
+    });
+    return { recorded, cleanupBatchId };
+  }
+
   async function newUser(name: string): Promise<number> {
     const [row] = await connection.execute<ResultSetHeader>(
       "INSERT INTO users (openId, name, approved, emailVerified) VALUES (?, ?, 1, 1)",
@@ -90,22 +135,32 @@ describeWithDatabase("the segment store (disposable DB)", () => {
 
   it("files a kept edit's pixels against the candidate its variant belongs to", async () => {
     const face = await newFace(owner);
-    const recorded = await segments.recordEditPatchSegment({
+    const { recorded, cleanupBatchId } = await fileSegment({
       userId: owner,
       variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
       maskKey: `segments/${randomUUID()}-mask.png`,
       contentKey: `segments/${randomUUID()}-content.png`,
-      geometry,
       verdict: "delivered",
-      verifiedAt: new Date(),
     });
 
     // The candidate id is the one the variant row carries, never a caller's.
-    expect(recorded.candidateId).toBe(face.candidateId);
-    expect(recorded.version).toBe(1);
-    expect(recorded.retired).toBe(0);
+    expect(recorded[0].candidateId).toBe(face.candidateId);
+    expect(recorded[0].version).toBe(1);
+    expect(recorded[0].retired).toBe(0);
+
+    // And the manifest holding the objects is discharged by the same
+    // transaction that made them referenced — or the worker deletes pixels the
+    // compositor is about to paste.
+    const [batches] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM storage_cleanup_batches WHERE id = ?",
+      [cleanupBatchId],
+    );
+    expect(batches[0].n).toBe(0);
+    const [items] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM storage_cleanup_items WHERE batchId = ?",
+      [cleanupBatchId],
+    );
+    expect(items[0].n).toBe(0);
 
     const live = await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId });
     expect(live).toHaveLength(1);
@@ -117,14 +172,11 @@ describeWithDatabase("the segment store (disposable DB)", () => {
 
   it("refuses a segment filed against someone else's variant, and writes nothing", async () => {
     const face = await newFace(owner);
-    await expect(segments.recordEditPatchSegment({
+    await expect(fileSegment({
       userId: stranger,
       variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
       maskKey: "segments/thief-mask.png",
       contentKey: "segments/thief-content.png",
-      geometry,
     })).rejects.toThrow(/variant not available/);
 
     const [rows] = await connection.query<RowDataPacket[]>("SELECT COUNT(*) AS n FROM casting_segments");
@@ -133,26 +185,20 @@ describeWithDatabase("the segment store (disposable DB)", () => {
 
   it("retires the predecessor when one facet is asked again — one facet, one live segment", async () => {
     const face = await newFace(owner);
-    const base = {
-      userId: owner,
-      variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
-      geometry,
-    };
-    await segments.recordEditPatchSegment({
+    const base = { userId: owner, variantId: face.variantId };
+    await fileSegment({
       ...base,
       maskKey: "segments/v1-mask.png",
       contentKey: "segments/v1-content.png",
     });
-    const heavier = await segments.recordEditPatchSegment({
+    const { recorded: heavier } = await fileSegment({
       ...base,
       maskKey: "segments/v2-mask.png",
       contentKey: "segments/v2-content.png",
     });
 
-    expect(heavier.version).toBe(2);
-    expect(heavier.retired).toBe(1);
+    expect(heavier[0].version).toBe(2);
+    expect(heavier[0].retired).toBe(1);
 
     const live = await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId });
     expect(live).toHaveLength(1);
@@ -167,23 +213,19 @@ describeWithDatabase("the segment store (disposable DB)", () => {
 
   it("keeps two facets side by side — retirement is per facet, not per face", async () => {
     const face = await newFace(owner);
-    await segments.recordEditPatchSegment({
+    await fileSegment({
       userId: owner,
       variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
       maskKey: "segments/marks-mask.png",
       contentKey: "segments/marks-content.png",
-      geometry,
     });
-    await segments.recordEditPatchSegment({
+    await fileSegment({
       userId: owner,
       variantId: face.variantId,
       facet: "hair.colour",
       region: "hair",
       maskKey: "segments/hair-mask.png",
       contentKey: "segments/hair-content.png",
-      geometry,
     });
 
     const live = await segments.listLiveSegments({ userId: owner, candidateId: face.candidateId });
@@ -192,27 +234,45 @@ describeWithDatabase("the segment store (disposable DB)", () => {
 
   it("shows a stranger nothing, even holding the right candidate id", async () => {
     const face = await newFace(owner);
-    await segments.recordEditPatchSegment({
+    await fileSegment({
       userId: owner,
       variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
       maskKey: "segments/owner-mask.png",
       contentKey: "segments/owner-content.png",
-      geometry,
     });
 
     const seen = await segments.listLiveSegments({ userId: stranger, candidateId: face.candidateId });
     expect(seen).toEqual([]);
   });
 
-  it("refuses a box measured against a different frame", async () => {
+  it("refuses to file segments whose manifest something else already claimed", async () => {
     const face = await newFace(owner);
-    await expect(segments.recordEditPatchSegment({
+    await expect(segments.recordEditPatchSegments({
       userId: owner,
       variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
+      // A batch id nothing reserved: the objects these rows would point at are
+      // held by nobody, so committing would file segments whose bytes are
+      // already scheduled to die — or were never registered at all.
+      cleanupBatchId: randomUUID(),
+      patches: [{
+        facet: "marks",
+        region: "face skin",
+        maskKey: "segments/claimed-mask.png",
+        contentKey: "segments/claimed-content.png",
+        geometry,
+      }],
+    })).rejects.toThrow(/segment not available/);
+
+    const [rows] = await connection.query<RowDataPacket[]>("SELECT COUNT(*) AS n FROM casting_segments");
+    // And the rollback is real: the insert above is undone with the discharge.
+    expect(rows[0].n).toBe(0);
+  });
+
+  it("refuses a box measured against a different frame", async () => {
+    const face = await newFace(owner);
+    await expect(fileSegment({
+      userId: owner,
+      variantId: face.variantId,
       maskKey: "segments/bad-mask.png",
       contentKey: "segments/bad-content.png",
       geometry: { bbox: { x: 900, y: 0, width: 200, height: 50 }, frame: { width: 1024, height: 1536 } },
@@ -226,15 +286,7 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     const face = await newFace(owner);
     const maskKey = `segments/${randomUUID()}-mask.png`;
     const contentKey = `segments/${randomUUID()}-content.png`;
-    await segments.recordEditPatchSegment({
-      userId: owner,
-      variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
-      maskKey,
-      contentKey,
-      geometry,
-    });
+    await fileSegment({ userId: owner, variantId: face.variantId, maskKey, contentKey });
 
     // Make the candidate purgeable the way the product does: discarded, expired.
     await connection.execute(
@@ -259,25 +311,58 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     expect(queued.map((row) => row.storageKey).sort()).toEqual([contentKey, maskKey].sort());
   });
 
+  /**
+   * THE REAL ABSENCE, not a hand-written one.
+   *
+   * The first version of the tolerance read `code` off the top-level error and
+   * passed a test that invented that shape; production wraps the driver error
+   * in a `DrizzleQueryError` and the sweep threw on its first pass. So the
+   * absence is produced here by actually taking the table away — the only
+   * specimen that cannot be wrong about what the driver sends.
+   */
+  it("tolerates a genuinely absent table while disarmed, and refuses it once armed", async () => {
+    const face = await newFace(owner);
+    await connection.execute(
+      "UPDATE casting_candidates SET status = 'expired', discardedAt = NOW(), expiresAt = DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE id = ?",
+      [face.candidateId],
+    );
+    await connection.query("RENAME TABLE casting_segments TO casting_segments_hidden");
+    const previous = process.env.CASTING_SEGMENTS_SCOPE;
+    try {
+      delete process.env.CASTING_SEGMENTS_SCOPE;
+      const result = await retention.runCandidateRetentionSweep();
+      // Disarmed: nothing can have been written, so nothing is left behind and
+      // the candidate purge is not taken down by the absence.
+      expect(result.candidatesPurged).toBeGreaterThanOrEqual(1);
+
+      const second = await newFace(owner);
+      await connection.execute(
+        "UPDATE casting_candidates SET status = 'expired', discardedAt = NOW(), expiresAt = DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE id = ?",
+        [second.candidateId],
+      );
+      process.env.CASTING_SEGMENTS_SCOPE = "users:1";
+      // Armed and missing is a real fault, and a warning would bury it.
+      await expect(retention.runCandidateRetentionSweep()).rejects.toThrow(/casting_segments/);
+    } finally {
+      if (previous === undefined) delete process.env.CASTING_SEGMENTS_SCOPE;
+      else process.env.CASTING_SEGMENTS_SCOPE = previous;
+      await connection.query("RENAME TABLE casting_segments_hidden TO casting_segments");
+    }
+  });
+
   it("purges a RETIRED segment's objects too — the bytes nothing else would collect", async () => {
     const face = await newFace(owner);
-    await segments.recordEditPatchSegment({
+    await fileSegment({
       userId: owner,
       variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
       maskKey: "segments/retired-mask.png",
       contentKey: "segments/retired-content.png",
-      geometry,
     });
-    await segments.recordEditPatchSegment({
+    await fileSegment({
       userId: owner,
       variantId: face.variantId,
-      facet: "marks",
-      region: "face skin",
       maskKey: "segments/live-mask.png",
       contentKey: "segments/live-content.png",
-      geometry,
     });
 
     await connection.execute(

@@ -33,6 +33,8 @@ import {
   castingCandidates,
   castingCandidateVariants,
   castingSegments,
+  storageCleanupBatches,
+  storageCleanupItems,
   type CastingSegmentProvenance,
 } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
@@ -139,10 +141,7 @@ function toStoredSegment(row: typeof castingSegments.$inferSelect): StoredSegmen
 
 /* -------------------------------------------------------------- writing */
 
-export type RecordEditPatchInput = {
-  userId: number;
-  /** The variant that delivered these pixels — the parent this write proves. */
-  variantId: number;
+export type EditPatchToRecord = {
   /** A `Facet` id: what the edit answered. */
   facet: string;
   /** The segmentation question that drew the region. */
@@ -150,6 +149,25 @@ export type RecordEditPatchInput = {
   maskKey: string;
   contentKey: string;
   geometry: SegmentGeometry;
+};
+
+export type RecordEditPatchesInput = {
+  userId: number;
+  /** The variant that delivered these pixels — the parent this write proves. */
+  variantId: number;
+  patches: readonly EditPatchToRecord[];
+  /**
+   * The manifest holding these objects until this transaction discharges it.
+   *
+   * The register-before-write pattern the variant landing already uses, and the
+   * window it closes is the same one: the mask and the crop are put to public
+   * keys BEFORE any row references them, so a crash in between would strand
+   * pieces of a person's face at permanent URLs with nothing left that knows
+   * they exist. Discharging the manifest inside the transaction that makes the
+   * objects referenced is what stops the cleanup worker deleting a segment the
+   * compositor is about to paste.
+   */
+  cleanupBatchId: string;
   /** The reading that earned these pixels — §6. */
   verdict?: string | null;
   verifiedAt?: Date | null;
@@ -160,24 +178,31 @@ export type RecordedSegment = {
   id: number;
   publicId: string;
   candidateId: number;
+  facet: string;
   version: number;
   /** How many live predecessors this write retired — 0 or 1 in practice. */
   retired: number;
 };
 
 /**
- * File the pixels an edit added and the user kept.
+ * File the pixels an edit added and the user kept — every facet of one render,
+ * in one transaction.
  *
- * The whole point of the store is here: after this row exists, that facet is
- * no longer a sentence the next render has to re-roll. It is pixels, and
+ * The whole point of the store is here: after these rows exist, those facets
+ * are no longer sentences the next render has to re-roll. They are pixels, and
  * pasting them is arithmetic.
+ *
+ * All the facets together rather than one call each, because they are one
+ * render: a crash between two of them would leave a face half-permanent, with
+ * no record of which half.
  */
-export async function recordEditPatchSegment(
-  input: RecordEditPatchInput,
-): Promise<RecordedSegment> {
+export async function recordEditPatchSegments(
+  input: RecordEditPatchesInput,
+): Promise<RecordedSegment[]> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.variantId, "variantId");
-  assertGeometry(input.geometry);
+  if (input.patches.length === 0) return [];
+  for (const patch of input.patches) assertGeometry(patch.geometry);
   const now = input.now ?? new Date();
 
   return withTransaction(async (tx) => {
@@ -200,21 +225,42 @@ export async function recordEditPatchSegment(
       .limit(1);
     if (!variant) throw new SegmentOwnershipError("variant");
 
-    return insertVersionedSegmentIn(tx, {
-      userId: input.userId,
-      candidateId: variant.candidateId,
-      variantId: variant.id,
-      provenance: "edit_patch",
-      facet: input.facet,
-      region: input.region,
-      maskKey: input.maskKey,
-      contentKey: input.contentKey,
-      geometry: input.geometry,
-      verdict: input.verdict ?? null,
-      verifiedAt: input.verifiedAt ?? null,
-      detector: null,
-      now,
-    });
+    const recorded: RecordedSegment[] = [];
+    for (const patch of input.patches) {
+      recorded.push(await insertVersionedSegmentIn(tx, {
+        userId: input.userId,
+        candidateId: variant.candidateId,
+        variantId: variant.id,
+        provenance: "edit_patch",
+        facet: patch.facet,
+        region: patch.region,
+        maskKey: patch.maskKey,
+        contentKey: patch.contentKey,
+        geometry: patch.geometry,
+        verdict: input.verdict ?? null,
+        verifiedAt: input.verifiedAt ?? null,
+        detector: null,
+        now,
+      }));
+    }
+
+    /*
+      The objects are now referenced by rows, so the manifest holding them must
+      go — in this same transaction, or the worker deletes pixels the
+      compositor is relying on. Asserted rather than assumed: a manifest that
+      does not delete means something else already claimed it, and committing
+      on top of that files segments whose bytes are already scheduled to die.
+    */
+    await tx.delete(storageCleanupItems)
+      .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+    const removedBatch = await tx.delete(storageCleanupBatches).where(and(
+      eq(storageCleanupBatches.id, input.cleanupBatchId),
+      eq(storageCleanupBatches.userId, input.userId),
+      eq(storageCleanupBatches.status, "pending"),
+    ));
+    if (affectedRows(removedBatch) !== 1) throw new SegmentOwnershipError("segment");
+
+    return recorded;
   });
 }
 
@@ -304,6 +350,7 @@ async function insertVersionedSegmentIn(
     id: inserted.id,
     publicId,
     candidateId: input.candidateId,
+    facet: input.facet,
     version,
     retired,
   };

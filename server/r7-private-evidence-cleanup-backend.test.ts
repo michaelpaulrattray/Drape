@@ -102,6 +102,11 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // put and the landing cannot strand a paid picture of a person at a
       // permanent public URL with no row left that knows it exists.
       "server/castingV2/refineService.ts",
+      // Segment permanence (slice 1) registers a kept edit's mask and crop the
+      // same way, and for the same reason: those objects are pieces of a
+      // person's face at permanently public keys, and they are handed to the
+      // cleanup worker before they exist so a crash cannot strand them.
+      "server/castingV2/segmentPersistence.ts",
       "server/castingV2/signService.ts",
       "server/db/accountDeletion.ts",
       "server/db/evidenceCandidates.ts",

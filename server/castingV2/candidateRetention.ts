@@ -45,6 +45,28 @@ const SWEEP_INTERVAL_MS = 60 * 60 * 1000;
 const FIRST_SWEEP_DELAY_MS = 90 * 1000;
 
 /**
+ * IS THIS THE DRIVER SAYING "NO SUCH TABLE"? — asked of the whole chain.
+ *
+ * **Production taught this, within two minutes of the deploy.** The first
+ * version read `error.code` off the top-level error, which is the shape a
+ * hand-written test error has and NOT the shape the real path produces: Drizzle
+ * wraps the driver's error in a `DrizzleQueryError` and hangs the original off
+ * `cause`, so the tolerance never fired, the sweep threw, and 56 candidates
+ * went uncollected on the first pass.
+ *
+ * A test that invents the error it expects is testing its own invention. The
+ * chain walk is the fix; asserting BOTH shapes is what keeps it honest.
+ */
+function isMissingTable(error: unknown): boolean {
+  for (let link: unknown = error, depth = 0; link && depth < 5; depth += 1) {
+    const { code, errno, cause } = link as { code?: string; errno?: number; cause?: unknown };
+    if (code === "ER_NO_SUCH_TABLE" || errno === 1146) return true;
+    link = cause;
+  }
+  return false;
+}
+
+/**
  * THE ONE TOLERATED FAILURE OF THE SEGMENT PURGE, and its exact limit.
  *
  * A database whose segment table has not been created yet is a real state:
@@ -60,10 +82,7 @@ const FIRST_SWEEP_DELAY_MS = 90 * 1000;
  * purge becomes a claim rather than a fact.
  */
 function tolerateAbsentSegmentStore(error: unknown): never | [] {
-  const code = (error as { code?: string; errno?: number } | null)?.code;
-  const errno = (error as { errno?: number } | null)?.errno;
-  const missingTable = code === "ER_NO_SUCH_TABLE" || errno === 1146;
-  if (!missingTable || castingSegmentsArmed()) throw error;
+  if (!isMissingTable(error) || castingSegmentsArmed()) throw error;
   log.warn(
     "[candidateRetention] the segment store's table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the segment migration lands.",
   );
