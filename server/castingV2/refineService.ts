@@ -129,6 +129,7 @@ import {
 } from "./refineRemoval";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
+import { assembleWithCarriedSegments } from "./carriedSegments";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
@@ -1979,11 +1980,41 @@ export async function refineCandidate(
         master region never meets `applied` has already been answered and does
         not need a stochastic reader rolled against it again.
       */
+      /*
+        AND WHAT SHE ALREADY HAS, PUT BACK (segment permanence, slice 1).
+
+        Three sources in a fixed order — the master, then every kept segment
+        whose facet this edit does not write, then the fresh paint last,
+        because the current ask outranks every memory. Dark until the store is
+        armed for her, and when it is dark this returns the harvest's own bytes
+        unchanged, byte for byte.
+
+        The refusal inside is deliberate and is the reason this is not
+        wrapped in a `catch`: a face assembled from a list we could not finish
+        reading looks exactly like a correct render, and she would simply find
+        her freckles gone again on a picture she had paid for.
+      */
+      const assembled = await assembleWithCarriedSegments({
+        userId: input.userId,
+        candidateId: variant.candidateId,
+        writing: Array.from(facetsAnsweredBy(composed)),
+        master: { bytes: base.bytes, contentType: base.contentType },
+        harvested,
+      });
+
+      /*
+        The composite's own working, carried to the verification step rather
+        than re-derived there. What it proves is narrow and exact: outside
+        `applied`, this picture IS the master, byte for byte — so a facet whose
+        master region never meets `applied` has already been answered and does
+        not need a stochastic reader rolled against it again.
+      */
       return {
         ...painted,
-        bytes: harvested.bytes,
-        contentType: harvested.contentType,
-        evidence: harvested.evidence ?? null,
+        bytes: assembled.bytes,
+        contentType: assembled.contentType,
+        evidence: assembled.evidence,
+        carried: assembled.carriedFacets,
       };
     };
 
@@ -2323,6 +2354,12 @@ export async function refineCandidate(
       if (caption) capturedCaptions[facet] = caption;
     }
 
+    /*
+      Taken from the render that actually LANDED, so a re-render's own
+      carrying is what gets recorded rather than the first attempt's.
+    */
+    const carriedFacets = new Set(image.carried ?? []);
+
     const baseIdentity = readResolvedIdentity(variant.baseInternalPrompt);
     await landVariant({
       userId: input.userId,
@@ -2365,7 +2402,25 @@ export async function refineCandidate(
           /* How many readings the verdict took — 1 clean, 2 confirmed, 3 split
              (D-194). The reader's own reliability, recorded per render. */
           readings: verification.readings ?? 1,
-          checks: verification.checks,
+          /*
+            WHICH FACTS WERE CARRIED RATHER THAN PAINTED — the two-column
+            report's only writer.
+
+            Marked here, on the row, because the report is derived from stored
+            rows and nothing else knows this: by the time a reader looks at the
+            frame, a pasted segment and a fresh paint are indistinguishable —
+            which is the point of the store and exactly why the honesty column
+            cannot be inferred later.
+
+            The check keeps its verdict either way. A carried fact that the
+            reader cannot find is still a false pass, because the product
+            promised to keep it.
+          */
+          checks: carriedFacets.size === 0
+            ? verification.checks
+            : verification.checks.map((check) => (
+              carriedFacets.has(check.facet) ? { ...check, carried: true } : check
+            )),
           ...(verification.unavailable ? { unavailable: true } : {}),
         },
       },
@@ -2576,6 +2631,14 @@ function refundDescriptionFor(error: unknown): string {
   */
   if (error instanceof ProviderError && error.failureClass === "composite_fault") {
     return "Refine refunded — we could not assemble the picture cleanly";
+  }
+  /*
+    ALSO OURS, and a different ours. The picture was never attempted, because
+    the record of what she already has could not be read — and delivering
+    without it would have quietly taken back edits she paid for.
+  */
+  if (error instanceof ProviderError && error.failureClass === "segment_store") {
+    return "Refine refunded — we could not read this face's kept edits, so nothing was rendered";
   }
   /*
     NAMES WHAT WAS MISSING. The throw carries the facts, so the receipt can say

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fadad26274283420"
+    "sourceFingerprint": "482bd78950f94ac5"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 72
+      "moduleCount": 74
     },
     {
       "id": "domain:castingV2",
@@ -3231,6 +3231,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/carriedSegments.ts",
+      "path": "server/castingV2/carriedSegments.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/castProjection.ts",
       "path": "server/castingV2/castProjection.ts",
       "domain": "casting-v2",
@@ -3521,6 +3527,12 @@
     {
       "id": "module:server/castingV2/rollService.ts",
       "path": "server/castingV2/rollService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/segmentAssembly.ts",
+      "path": "server/castingV2/segmentAssembly.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8321,6 +8333,10 @@
       "path": "server/castingV2/canthalTilt.test.ts"
     },
     {
+      "id": "test:server/castingV2/carriedSegments.test.ts",
+      "path": "server/castingV2/carriedSegments.test.ts"
+    },
+    {
       "id": "test:server/castingV2/castProjection.test.ts",
       "path": "server/castingV2/castProjection.test.ts"
     },
@@ -8539,6 +8555,10 @@
     {
       "id": "test:server/castingV2/rollService.test.ts",
       "path": "server/castingV2/rollService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/segmentAssembly.test.ts",
+      "path": "server/castingV2/segmentAssembly.test.ts"
     },
     {
       "id": "test:server/castingV2/segmentCuts.test.ts",
@@ -17084,6 +17104,41 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/castingV2/segmentAssembly.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/db/castingV2Segments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -17900,6 +17955,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/carriedSegments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
@@ -18271,6 +18331,16 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentAssembly.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentAssembly.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
       "kind": "imports"
     },
     {

@@ -103,6 +103,24 @@ export type ProviderFailureClass =
    * a frame; the same inputs produce the same cut.
    */
   | "composite_fault"
+  /**
+   * WE COULD NOT READ WHAT SHE ALREADY HAS (segment permanence, slice 1).
+   *
+   * Fourth split, same law: the receipt is the record. The provider was fine,
+   * our compositor was fine, and the store of her kept edits could not be
+   * listed — so we do not know what belongs in this picture.
+   *
+   * It refuses rather than degrading, and that is the whole point of having
+   * the class. A face assembled from a list we could not finish reading looks
+   * exactly like a correct render: her freckles are simply gone again, on a
+   * picture she paid for, with every instrument green. A refusal she can see
+   * beats a silent short paste she cannot.
+   *
+   * Non-retryable here: the retry that would help is the sweep's, not the
+   * render's, and a second attempt in the same second reaches the same
+   * database.
+   */
+  | "segment_store"
   /** Unmapped. Treated as non-retryable so unknowns fail closed. */
   | "unknown";
 

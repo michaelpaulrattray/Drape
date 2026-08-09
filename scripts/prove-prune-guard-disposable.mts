@@ -462,6 +462,71 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
   },
   {
     /*
+      RECENCY. Reversing the paste order hands contested pixels to the OLDER
+      segment — her previous freckles winning over the ones she just asked to
+      be heavier, silently, with the evidence still reporting a resolution.
+    */
+    name: "the later segment winning the pixels two of them claim",
+    file: "server/castingV2/segmentAssembly.ts",
+    suites: ["server/castingV2/segmentAssembly.test.ts"],
+    mutations: [{
+      find: "  for (const segment of input.carried) {",
+      replace: "  for (const segment of [...input.carried].reverse()) {",
+    }],
+  },
+  {
+    /*
+      A DEGRADATION MUST NEVER BE SILENT. Dropping the exclusion record leaves
+      a face quietly missing a kept edit with every instrument green — the
+      permanence rots one facet at a time and the numbers keep reading well.
+    */
+    name: "an excluded segment being named rather than dropped quietly",
+    file: "server/castingV2/segmentAssembly.ts",
+    suites: ["server/castingV2/segmentAssembly.test.ts"],
+    mutations: [{
+      find: `      evidence.segmentsExcluded.push({
+        id: segment.id,
+        facet: segment.facet,
+        reason: "frameMismatch",
+        detail: \`\${segment.frame.width}×\${segment.frame.height} against \${frame.width}×\${frame.height}\`,
+      });
+`,
+    }],
+  },
+  {
+    /*
+      NEVER SCALED, NEVER MISPLACED. Skipping the frame check pastes a segment
+      cut from another size — which does not fail, it puts her freckles
+      somewhere else on her face.
+    */
+    name: "the frame-size check that stops a segment landing in the wrong place",
+    file: "server/castingV2/segmentAssembly.ts",
+    suites: ["server/castingV2/segmentAssembly.test.ts"],
+    mutations: [{
+      find: "    if (segment.frame.width !== frame.width || segment.frame.height !== frame.height) {",
+      replace: "    if (false) {",
+    }],
+  },
+  {
+    /*
+      REFUSE, DO NOT DEGRADE. An unreadable store turned into a shrug delivers
+      a face short of the edits she paid for, and it looks exactly like a
+      correct render — the silently-short paste, which is the one failure this
+      whole read path is shaped around.
+    */
+    name: "an unreadable store refusing the render instead of shrugging",
+    file: "server/castingV2/carriedSegments.ts",
+    suites: ["server/castingV2/carriedSegments.test.ts"],
+    mutations: [{
+      find: `    throw new ProviderError(
+      "segment_store",
+      "we could not read this face's kept edits",
+    );`,
+      replace: "    return unchanged;",
+    }],
+  },
+  {
+    /*
       THE HONESTY CONDITION THE FOUNDER ATTACHED TO THE STORE. Folding carried
       facets into the delivery denominator is the flattering-bias family in one
       line: the rate would climb because the painter's hardest cases quietly
