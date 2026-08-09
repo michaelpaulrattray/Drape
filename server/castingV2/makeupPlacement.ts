@@ -40,33 +40,54 @@ export const MAKEUP_PLACEMENTS = ["lips", "eyes", "cheeks", "full-face"] as cons
 export type MakeupPlacement = typeof MAKEUP_PLACEMENTS[number];
 
 /**
- * The words that place an ask, longest match wins.
+ * WHERE SHE SAID IT GOES — her own words, and they outrank the dictionary
+ * (founder specimen, fable-104).
  *
- * Longest-match for `accessoryEntry`'s own reason: "lip liner" contains both
- * "liner" (eyes) and "lip" (lips), and a first-match scan would put her lip
- * liner on her eyelids — an answer that depends on the order of an array is a
- * defect waiting for someone to tidy it.
+ * "Gloss on her cheekbones" goes on her cheekbones. The product-kind table
+ * below is the FALLBACK, for asks that name a thing without naming a place;
+ * law 8 puts her sentence first and the dictionary second.
+ *
+ * This is also the context gate that keeps a noun from capturing an ask it has
+ * nothing to do with. "Add gloss to her skin" is a skin-finish ask and "gloss
+ * on her hair" a hair-finish ask — both belong to other facets entirely, and if
+ * one ever reaches here as makeup it must NOT be dragged onto her mouth by the
+ * word "gloss". Neither names a lip, so neither can be.
+ *
+ * Hair has no entry, deliberately: there is no makeup placement for it, so a
+ * hair-worded ask falls to the coarse default rather than being given a
+ * confident wrong answer.
+ */
+const DESTINATION_OF_MAKEUP: ReadonlyArray<{
+  words: readonly string[];
+  placement: MakeupPlacement;
+}> = [
+  { placement: "lips", words: ["lips", "lip", "mouth", "pout", "cupid's bow"] },
+  { placement: "eyes", words: ["eyes", "eye", "eyelid", "eyelids", "lid", "lids", "lash", "lashes", "waterline"] },
+  { placement: "cheeks", words: ["cheekbones", "cheekbone", "cheeks", "cheek"] },
+  { placement: "full-face", words: ["skin", "complexion", "whole face", "all over her face", "face"] },
+];
+
+/**
+ * WHAT KIND OF THING IT IS — the fallback, for an ask that names no place.
+ *
+ * Product nouns only, and specific ones. Bare finish words ("gloss", "shadow")
+ * are deliberately absent: they are the ones that capture asks belonging to
+ * other facets, which is the swamp-with-a-menu failure D-173 named. "Lip gloss"
+ * lands by its LIP, not by its gloss.
+ *
+ * Longest match wins, for `accessoryEntry`'s own reason: "lip liner" contains
+ * "liner", and a first-match scan would put her lip liner on her eyelids — an
+ * answer that depends on the order of an array is a defect waiting for someone
+ * to tidy it.
  */
 export const PLACEMENT_OF_MAKEUP: ReadonlyArray<{
   words: readonly string[];
   placement: MakeupPlacement;
 }> = [
-  {
-    placement: "lips",
-    words: ["lip gloss", "lipgloss", "lipstick", "lip liner", "lip stain", "lip tint", "lip balm", "lip", "lips", "gloss", "pout", "cupid's bow"],
-  },
-  {
-    placement: "eyes",
-    words: ["eyeliner", "eye liner", "winged liner", "liner", "eyeshadow", "eye shadow", "shadow", "smoky eye", "smokey eye", "mascara", "lash", "lashes", "waterline", "lid", "eye makeup"],
-  },
-  {
-    placement: "cheeks",
-    words: ["blush", "blusher", "contour", "contouring", "bronzer", "highlighter", "cheekbone", "cheek"],
-  },
-  {
-    placement: "full-face",
-    words: ["foundation", "concealer", "base makeup", "full glam", "full-glam", "no-makeup makeup", "bare face", "complexion"],
-  },
+  { placement: "lips", words: ["lipstick", "lipgloss", "lip gloss", "lip liner", "lip stain", "lip tint", "lip balm"] },
+  { placement: "eyes", words: ["eyeliner", "eye liner", "winged liner", "eyeshadow", "eye shadow", "smoky eye", "smokey eye", "mascara"] },
+  { placement: "cheeks", words: ["blusher", "blush", "contouring", "contour", "bronzer", "highlighter"] },
+  { placement: "full-face", words: ["foundation", "concealer", "base makeup", "full glam", "full-glam", "no-makeup makeup"] },
 ];
 
 /**
@@ -77,14 +98,18 @@ export const PLACEMENT_OF_MAKEUP: ReadonlyArray<{
  */
 export function placementOfMakeup(described: string | null | undefined): MakeupPlacement {
   const said = (described ?? "").toLowerCase();
-  let best: { placement: MakeupPlacement; length: number } | null = null;
-  for (const entry of PLACEMENT_OF_MAKEUP) {
-    for (const word of entry.words) {
-      if (!said.includes(word)) continue;
-      if (!best || word.length > best.length) best = { placement: entry.placement, length: word.length };
+  const longest = (table: typeof PLACEMENT_OF_MAKEUP) => {
+    let best: { placement: MakeupPlacement; length: number } | null = null;
+    for (const entry of table) {
+      for (const word of entry.words) {
+        if (!said.includes(word)) continue;
+        if (!best || word.length > best.length) best = { placement: entry.placement, length: word.length };
+      }
     }
-  }
-  return best?.placement ?? "full-face";
+    return best?.placement ?? null;
+  };
+  /* Her sentence first, the dictionary second, the coarse default last. */
+  return longest(DESTINATION_OF_MAKEUP) ?? longest(PLACEMENT_OF_MAKEUP) ?? "full-face";
 }
 
 /**

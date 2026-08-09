@@ -128,7 +128,7 @@ import {
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
-import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
+import { facetHeading, facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments";
 import { makeupRegionFor } from "./makeupPlacement";
@@ -1539,12 +1539,27 @@ export async function refineCandidate(
     only the carried facets — every one of them must be missing.
   */
   if (facetsToCarry.size > 0) {
-    const carriedOnly = withoutFacets(
-      composed,
-      new Set(Array.from(facetsAnsweredBy(composed)).filter((facet) => !facetsToCarry.has(facet))),
-    );
-    const absent = new Set(missingFromPrompt(carriedOnly, preview.edits));
-    const stillAsked = Array.from(facetsAnsweredBy(carriedOnly)).filter((facet) => !absent.has(facet));
+    /*
+      MATCHED ON THE CLAUSE, NOT ON THE WORD (fable-105).
+
+      The first form of this asked whether the carried facet's VALUE appeared
+      anywhere in the produced string, and a legitimate sentence tripped it: her
+      kept `marks` reads "freckles", and "a bronzer that mimics freckles" is an
+      ask about her cheeks that happens to say the word. That refusal is a wall
+      in front of a real request, and the specimen is pinned in the suite.
+
+      A genuine leak has a shape: the facet's own HEADING, carrying a value, in
+      the ask lane — `MARKS: freckles…`, the same `HEADING: value` form the D-87
+      sweep looks for. The bronzer sentence composes no MARKS clause, because
+      bronzer files as makeup. A regression that re-adds the carried clause is
+      caught exactly as before.
+    */
+    const stillAsked = Array.from(facetsToCarry).filter((facet) => {
+      const heading = facetHeading(facet).toLowerCase();
+      /* The clause opens a lane: the heading, then its colon. Compared on the
+         lowered string so a heading's own casing cannot decide a refusal. */
+      return preview.edits.toLowerCase().includes(`${heading}:`);
+    });
     if (stillAsked.length > 0) {
       log.error(
         { stillAsked, carried: Array.from(facetsToCarry) },

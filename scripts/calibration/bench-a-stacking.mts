@@ -229,6 +229,13 @@ for (const arm of ARMS) {
       userId: USER_ID,
       candidateId: input.candidateId,
       anchorVariantId: input.anchor,
+      /*
+        THE PRODUCT'S OWN NOTION, not the recipe's (fable-102's sweep). An arm
+        writes the facet it asks for, and nothing else — which is exactly what
+        `writtenFacets` computes in the service now. This bench's arms are
+        single asks on a master, so accumulation does not arise here; bench B
+        carries that half.
+      */
       writing: [arm.facet],
       master: { bytes: master, contentType: "image/png" },
       harvested: {

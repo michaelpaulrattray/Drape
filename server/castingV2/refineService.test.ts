@@ -2507,21 +2507,21 @@ describe("a render keeps only the facets its own reading earned", () => {
 });
 
 /**
- * THE COLLISION THE FREE REFUSAL CAN HAVE — pinned as a specimen, not left as a
- * surprise (fable-103 rider i).
+ * THE GUARD'S PREDICATE, SHARPENED TO THE CLAUSE (fable-105).
  *
- * The pre-claim guard asserts on the PRODUCED prompt that a carried facet's
- * clause is gone, using `missingFromPrompt` — a substring matcher. So a carried
- * facet whose filed value happens to appear inside an unrelated clause refuses a
- * render that is perfectly correct.
+ * The first form asked whether the carried facet's VALUE appeared anywhere in
+ * the produced prompt, and a legitimate sentence tripped it: her kept `marks`
+ * reads "freckles", and "a bronzer that mimics freckles" is an ask about her
+ * cheeks that happens to say the word. A free refusal is still a wall in front
+ * of a real request.
  *
- * It refuses free, which is the honest direction for a construction check: the
- * alternative is silently paying to re-roll pixels she already owns. This test
- * exists so that if a real walk or a Tier A render ever trips it, the artifact
- * reopens the ruling against a known shape rather than a mystery.
+ * A genuine leak has a shape — the facet's own HEADING opening a lane,
+ * `MARKS: freckles…` — and the bronzer sentence composes no MARKS clause,
+ * because bronzer files as makeup. So the predicate matches the lane, not the
+ * word, and this specimen is pinned as the boundary.
  */
-describe("the carried-clause guard's own collision", () => {
-  it("refuses FREE when an unrelated clause happens to contain a carried value", async () => {
+describe("the carried-clause guard matches the lane, not the word", () => {
+  it("lets through a sentence that merely SAYS a carried facet's value", async () => {
     variantRows = [{
       id: 501,
       publicId: "variant-1",
@@ -2535,29 +2535,18 @@ describe("the carried-clause guard's own collision", () => {
     candidateRow.selectedVariantPublicId = "variant-1";
     carriedRowsFixture = [{ id: 9001, facet: "marks", provenance: "edit_patch", version: 1 }];
 
-    /* Her kept facet's value is "freckles"; this ask is about her cheeks and
-       says the word anyway. Nothing is wrong with either. */
-    const collides = {
-      harvest: unmasked,
-      interpret: async () => ({ ok: true as const, delta: { makeup: "a bronzer that mimics freckles" } }),
-    };
+    const result = await refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({ ok: true as const, delta: { makeup: "a bronzer that mimics freckles" } }),
+      },
+      { ...input, instruction: "a bronzer that mimics freckles" },
+    );
 
-    let refused = false;
-    try {
-      await refineCandidate(collides, { ...input, instruction: "a bronzer that mimics freckles" });
-    } catch (error) {
-      refused = true;
-      expect((error as { code?: string }).code, "and it is a pre-claim refusal").toBe("PRECONDITION_FAILED");
-    }
-    /*
-      EITHER OUTCOME IS RECORDED HONESTLY. If the matcher does not collide on
-      this specimen the guard simply did not fire — which is worth knowing too,
-      and the money assertion below is the part that must hold in both worlds.
-    */
-    if (refused) {
-      expect(ledger.charges, "a refusal costs her nothing").toHaveLength(0);
-      expect(journal, "and nothing was begun").not.toContain("begin");
-    }
-    console.log(`  collision specimen: the guard ${refused ? "FIRED (free refusal)" : "did not fire"}`);
+    expect(result.kind, "her bronzer is rendered, not walled").toBe("rendered");
+    expect(ledger.charges.length, "and paid for like any other edit").toBeGreaterThan(0);
+    /* The kept facet is still carried, and still not asked for. */
+    expect(carriedAsks[0].writing).not.toContain("marks");
+    for (const prompt of sentPrompts) expect(prompt.toLowerCase()).not.toContain("marks:");
   });
 });

@@ -43,7 +43,7 @@ import sharp from "sharp";
 import { createFalMaskedEditEngine } from "../../server/providers/falImages";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { harvestRefinement } from "../../server/castingV2/maskedRefine";
-import { assembleWithCarriedSegments } from "../../server/castingV2/carriedSegments";
+import { assembleWithCarriedSegments, listCarriedRows } from "../../server/castingV2/carriedSegments";
 import { persistSegmentsForVariant } from "../../server/castingV2/segmentPersistence";
 import { cutSegments } from "../../server/castingV2/segmentCuts";
 import { readRaster, type Mask, type Raster } from "../../server/castingV2/maskedComposite";
@@ -188,12 +188,45 @@ const versions: Version[] = [];
 let anchorVariantId: number | null = null;
 const outsideIdentical: boolean[] = [];
 const carriedByteIdentical: string[] = [];
+/** Steps whose prompt still named a facet the store was about to paste. */
+const incompleteSubtractions: string[] = [];
 
 for (let index = 0; index < STEPS.length; index += 1) {
   const step = STEPS[index];
   const began = Date.now();
+  /*
+    THE PROMPT IS BUILT THE WAY THE PRODUCT BUILDS IT (fable-102's sweep).
+
+    This bench used to send ONE ask per render — `PREAMBLE + step.ask` — while
+    the product, being base-anchored, sent the whole accumulated recipe every
+    time. That single difference is why six green benches sat beside a
+    production walk that re-rolled every earlier facet and lost her freckles
+    twice: the bench modelled a product that asks for one thing at a time.
+
+    It now accumulates like the recipe does and subtracts what the store is
+    about to paste, which is the product's own rule. On a disjoint chain the
+    result should be exactly the current ask again — and that equality is
+    ASSERTED below rather than assumed, because it is the whole claim of the
+    prompt-stripping half of the fix.
+  */
+  const carriedRows = await listCarriedRows({
+    userId: USER_ID,
+    candidateId,
+    anchorVariantId,
+    writing: [step.facet],
+  });
+  const carriedHere = new Set(carriedRows.map((row) => row.facet));
+  const stillAsked = STEPS.slice(0, index + 1).filter((earlier) => !carriedHere.has(earlier.facet));
+  if (stillAsked.length !== 1 || stillAsked[0].facet !== step.facet) {
+    console.log(
+      `
+SUBTRACTION INCOMPLETE at step ${index + 1}: still asking for `
+      + `${stillAsked.map((entry) => entry.facet).join(", ")} — the prompt would re-roll a kept facet.`,
+    );
+    incompleteSubtractions.push(`v${index + 1}: ${stillAsked.map((entry) => entry.facet).join(", ")}`);
+  }
   const painted = await engine.edit({
-    prompt: `${PREAMBLE}${step.ask}`,
+    prompt: `${PREAMBLE}${stillAsked.map((entry) => entry.ask).join(" ")}`,
     references: [{ bytes: master, contentType: "image/png" }],
     width: W,
     height: H,
@@ -213,7 +246,11 @@ for (let index = 0; index < STEPS.length; index += 1) {
     userId: USER_ID,
     candidateId,
     anchorVariantId,
+    /* The product derives this from the ASK, never from the recipe — the bug
+       that made the whole architecture inert was the other choice. */
     writing: [step.facet],
+    /* One read, shared with the prompt above, exactly as the service does it. */
+    rows: carriedRows,
     master: { bytes: master, contentType: "image/png" },
     harvested: {
       bytes: harvested.bytes,
@@ -398,12 +435,21 @@ const table = [
   "",
   `  control fired: ${controlFired ? `YES — ${controlDegraded}/${controlRead} regions read degraded` : "NO — THE BENCH HAS NOT RUN"}`,
   "",
+  "TIER 0 — THE PROMPT, built the product's way: accumulate the recipe, subtract",
+  "         what the store is about to paste. On a disjoint chain that must come",
+  "         back to exactly the current ask.",
+  `  subtraction complete at every step: ${
+    incompleteSubtractions.length === 0 ? "yes" : `NO — ${incompleteSubtractions.join(" · ")}`
+  }`,
+  "",
   `VERDICT  ${
     !controlFired
       ? "NOT PROVEN — the instrument could not flag the disease this bench exists to prevent"
-      : outsideIdentical.every(Boolean) && patchedRead > 0 && patchedHeld === patchedRead
-        ? "PASS — the patched chain holds its detail where the re-anchored chain loses it"
-        : "NOT PROVEN — read the tiers above"
+      : incompleteSubtractions.length > 0
+        ? "NOT PROVEN — a kept facet was still being asked for, so this chain re-rolled rather than carried"
+        : outsideIdentical.every(Boolean) && patchedRead > 0 && patchedHeld === patchedRead
+          ? "PASS — the patched chain holds its detail where the re-anchored chain loses it"
+          : "NOT PROVEN — read the tiers above"
   }`,
   "",
 ];

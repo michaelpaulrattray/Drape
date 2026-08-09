@@ -29,6 +29,35 @@ describe("where a makeup ask lands", () => {
     expect(makeupRegionFor("add nude lip gloss")).not.toBe("face skin");
   });
 
+  /**
+   * THE FOUNDER'S OWN BOUNDARY (fable-104). He asked the right question about
+   * this table before it shipped: does "add gloss to her skin" still work?
+   *
+   * A word-keyed table without a context gate is a swamp with a menu — "gloss"
+   * would drag a skin-finish ask onto her mouth. Her sentence names the
+   * destination, so her sentence wins; the dictionary is only consulted when
+   * she named a thing without naming a place.
+   */
+  it("never drags a skin or hair ask onto her mouth — the founder's three sentences", () => {
+    expect(placementOfMakeup("add nude lip gloss"), "the positive").toBe("lips");
+    expect(placementOfMakeup("add gloss to her skin"), "a skin finish").not.toBe("lips");
+    expect(placementOfMakeup("gloss on her hair"), "a hair finish").not.toBe("lips");
+    /*
+      And the shapes they fall to. Skin resolves to the whole complexion, which
+      is right. Hair has no makeup placement at all, so it falls to the coarse
+      default rather than being given a confident wrong answer — a hair ask
+      belongs to a hair facet upstream and should never arrive here.
+    */
+    expect(placementOfMakeup("add gloss to her skin")).toBe("full-face");
+    expect(placementOfMakeup("gloss on her hair")).toBe("full-face");
+  });
+
+  it("lets her own destination outrank the dictionary", () => {
+    /* A lip product, sent somewhere else on purpose. Her words are the spec. */
+    expect(placementOfMakeup("gloss on her cheekbones")).toBe("cheeks");
+    expect(placementOfMakeup("blush on her eyelids")).toBe("eyes");
+  });
+
   it("takes the LONGEST match, so a lip liner is not an eyeliner", () => {
     /* "lip liner" contains "liner"; first-match order would put it on her lids. */
     expect(placementOfMakeup("a soft brown lip liner")).toBe("lips");
@@ -51,7 +80,7 @@ describe("where a makeup ask lands", () => {
     expect([...regions].sort()).toEqual(["eyes", "face skin", "lips"]);
   });
 
-  it("has no entry that cannot be reached — every word places something", () => {
+  it("has no entry that cannot be reached — every product word places something", () => {
     for (const entry of PLACEMENT_OF_MAKEUP) {
       for (const word of entry.words) {
         expect(placementOfMakeup(`a look with ${word} in it`), `"${word}"`).toBe(entry.placement);
