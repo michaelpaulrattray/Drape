@@ -415,8 +415,49 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     file: "server/castingV2/candidateRetention.ts",
     suites: ["server/castingV2/candidateRetention.test.ts"],
     mutations: [{
-      find: "  if (!missingTable || castingSegmentsArmed()) throw error;",
-      replace: "  if (!missingTable) throw error;",
+      find: "  if (!isMissingTable(error) || castingSegmentsArmed()) throw error;",
+      replace: "  if (!isMissingTable(error)) throw error;",
+    }],
+  },
+  {
+    /*
+      THE CHAIN WALK, and it is here because production found its absence
+      before any test did. Reading `code` off the top-level error matches only
+      the shape a hand-written test error has: the real path arrives wrapped in
+      a DrizzleQueryError with the driver's error on `cause`. Depth 1 restores
+      exactly the version that threw in production and left 56 candidates
+      uncollected.
+    */
+    name: "the missing-table check reading THROUGH the query wrapper",
+    file: "server/castingV2/candidateRetention.ts",
+    suites: ["server/castingV2/candidateRetention.test.ts"],
+    mutations: [{
+      find: "  for (let link: unknown = error, depth = 0; link && depth < 5; depth += 1) {",
+      replace: "  for (let link: unknown = error, depth = 0; link && depth < 1; depth += 1) {",
+    }],
+  },
+  {
+    /*
+      THE ORDERING THAT KEEPS A FACE OFF A PUBLIC URL WITH NO ROW. Moving the
+      manifest after the writes reproduces the diagnostics incident exactly: a
+      crash between the put and the row leaves pieces of a person's face at
+      permanent keys that nothing will ever collect.
+    */
+    name: "the segment manifest registered BEFORE the bytes",
+    file: "server/castingV2/segmentPersistence.ts",
+    suites: ["server/castingV2/segmentPersistence.test.ts"],
+    mutations: [{
+      find: `    await withTransaction((tx) => createStorageCleanupManifestIn(tx, {
+      id: cleanupBatchId,
+      userId: input.userId,
+      operationId: randomUUID(),
+      kind: "casting_candidate_cleanup",
+      storageItems: planned.flatMap(({ maskKey, contentKey }) => [
+        { storageKey: maskKey, storageBackend: "public_r2" as const },
+        { storageKey: contentKey, storageBackend: "public_r2" as const },
+      ]),
+    }));
+`,
     }],
   },
   {
