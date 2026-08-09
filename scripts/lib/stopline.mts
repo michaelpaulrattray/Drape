@@ -106,6 +106,36 @@ export function spendAuthorized(what: string, argv: readonly string[] = process.
   return true;
 }
 
+/**
+ * THE ONE THING THE FREEZE DOES NOT COVER, WRITTEN DOWN RATHER THAN ASSUMED.
+ *
+ * fable-119, asked directly and answered directly: *"STOPLINE froze walks and
+ * campaign credits; fal fixture spend was never frozen — the benches ran
+ * through it all week."* A fixture paint charges the founder's provider
+ * balance, never his account's credits, and it is how a frozen line gets the
+ * evidence it needs to thaw.
+ *
+ * It is a SEPARATE, NAMED export rather than an option on the one above,
+ * because an option is a thing a hurried shift passes without thinking and a
+ * name is a thing it has to type on purpose. The roster control below accepts
+ * either — so a fixture still cannot hand-roll `--spend` and answer to nobody.
+ *
+ * **A script that can charge an ACCOUNT does not belong here.** If you find
+ * yourself reaching for this to make a roll or a refine run during a freeze,
+ * the freeze is the answer and this is the wrong door.
+ */
+export function fixtureSpendAuthorized(what: string, argv: readonly string[] = process.argv): boolean {
+  if (!argv.includes("--spend")) return false;
+  const frozen = readStopline();
+  if (frozen !== null) {
+    console.log(
+      `NOTE: the line is frozen, and this is a FIXTURE paint (${what}) — provider balance, `
+      + "no campaign credits, no walk. Permitted by fable-119.",
+    );
+  }
+  return true;
+}
+
 /* ---------------------------------------------------------------- controls */
 
 if (process.argv.includes("--prove")) {
@@ -162,8 +192,38 @@ if (process.argv.includes("--prove")) {
     return throws(() => { spendAuthorized("walk", ["node", "script", "--spend"]); }) !== null;
   })(), readStopline() === null ? "line running" : "line frozen");
 
+  /* 6: the fixture door — open under a freeze, and shut without `--spend`. */
+  check("NEGATIVE — the fixture door is still shut without `--spend`",
+    fixtureSpendAuthorized("a fixture paint", ["node", "script"]) === false);
+  check("POSITIVE — a FIXTURE paint is permitted under the freeze (fable-119)",
+    throws(() => { fixtureSpendAuthorized("a fixture paint", ["node", "script", "--spend"]); }) === null);
+
   /*
-    6: THE ROSTER, DERIVED. Every script that can spend has a `--spend` gate;
+    7: AND THE SCRIPTS THAT CAN CHARGE AN ACCOUNT USE THE STRICT DOOR.
+
+    The fixture exemption is one sentence away from being a bypass, so the
+    scripts it must never cover are named and checked. A walk or a roll that
+    quietly moved to the fixture door would fail here rather than at 150
+    credits.
+  */
+  const ACCOUNT_SPENDERS = [
+    "scripts/drive-self-walk.mts",
+    "scripts/calibration/bespectacled-roll-production.mts",
+    "scripts/prove-caption-governs-disposable.mts",
+  ];
+  const root = fileURLToPath(new URL("../..", import.meta.url));
+  const wrongDoor = ACCOUNT_SPENDERS.filter((relative) => {
+    const source = readFileSync(join(root, relative), "utf8");
+    return !source.includes("spendAuthorized(") || source.includes("fixtureSpendAuthorized(");
+  });
+  check(
+    "ACCOUNT SPENDERS — the walk, the roll and the prover use the STRICT door",
+    wrongDoor.length === 0,
+    wrongDoor.length ? `wrong door: ${wrongDoor.join(", ")}` : `${ACCOUNT_SPENDERS.length} checked`,
+  );
+
+  /*
+    8: THE ROSTER, DERIVED. Every script that can spend has a `--spend` gate;
     every `--spend` gate must be this module's. A hand-kept list of guarded
     scripts is the exact shape that bit `worldGuard` three times.
   */
