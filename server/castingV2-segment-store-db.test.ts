@@ -487,6 +487,43 @@ describeWithDatabase("the segment store (disposable DB)", () => {
     })).map((segment) => segment.maskKey)).toEqual(["segments/hoops-mask.png"]);
   });
 
+  /**
+   * WHY THE MIGRATION GOES FIRST — the ordering rule, pinned as a fact.
+   *
+   * A lineage column is additive to an EXISTING table, which made it feel as
+   * safe as the segment store's brand-new one. It is not, and the deploy that
+   * assumed so turned every refinement into `Unknown column 'parentVariantId'`
+   * for about a minute of production.
+   *
+   * The obvious defence — omit the key so the column is omitted, and ship dark
+   * like everything else in this program — DOES NOT WORK: Drizzle names every
+   * column in the schema and passes `default` for the ones a caller left out.
+   * That belief was refuted by this test on its first run, which is the only
+   * reason it was not shipped twice.
+   *
+   * So the specimen stays, asserting the thing that is actually true: with the
+   * column absent, a variant cannot be claimed AT ALL. There is no dark landing
+   * for this change; the ceremony runs the migration and then the code deploys.
+   */
+  it("a variant cannot be claimed at all until the lineage column exists", async () => {
+    const face = await newFace(owner);
+    await connection.query("ALTER TABLE casting_candidate_variants DROP COLUMN parentVariantId");
+    try {
+      await expect(variants.claimVariant({
+        userId: owner,
+        candidatePublicId: face.candidatePublicId,
+        operationId: randomUUID(),
+        pointsCost: 25,
+        /* No parent at all — the dark-store shape, and it still cannot run. */
+        instructions: ["dark store, no parent"],
+        deltas: null,
+        stepDeltas: null,
+      })).rejects.toThrow(/parentVariantId/);
+    } finally {
+      await connection.query("ALTER TABLE casting_candidate_variants ADD COLUMN parentVariantId int");
+    }
+  });
+
   it("refuses a parent variant that belongs to another face", async () => {
     const mine = await newFace(owner);
     const other = await newFace(owner);

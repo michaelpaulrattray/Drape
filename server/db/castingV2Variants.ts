@@ -180,6 +180,29 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
         candidateId: candidate.id,
         sessionId: candidate.sessionId,
         userId: input.userId,
+        /*
+          THE COLUMN THIS ROW CANNOT SHIP WITHOUT — a live incident, recorded
+          where the next person will meet it.
+
+          A lineage column is additive to an EXISTING table, which made it feel
+          as safe as the segment store's brand-new one. It is not. A new table
+          nobody reads is inert; a new COLUMN on the table every refinement
+          writes is named in the INSERT whether or not anything reads it, so a
+          deploy that lands before the migration turns every refinement into
+          `Unknown column 'parentVariantId'`. That deploy was live for about a
+          minute before it was reverted.
+
+          The obvious defence — omit the key so the column is omitted — DOES NOT
+          WORK, and believing it would have shipped the same outage twice.
+          Drizzle names every column in the schema and passes `default` for the
+          ones a caller left out. Proved by dropping the column under a real
+          claim rather than by reading the library:
+          `castingV2-segment-store-db.test.ts`, "a variant cannot be claimed at
+          all until the lineage column exists".
+
+          So the rule is an ORDERING rule, and it is written into the ceremony:
+          **the migration lands before the code, always.**
+        */
         parentVariantId,
         status: "queued",
         instructions: input.instructions,

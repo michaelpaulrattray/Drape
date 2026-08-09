@@ -131,6 +131,7 @@ import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { assembleWithCarriedSegments } from "./carriedSegments";
 import { keepSegmentsFromRender } from "./segmentPersistence";
+import { captureCastingSegmentsEnabled } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
 import { COVERAGE_BANDS, coverage } from "./maskGeometry";
@@ -1772,12 +1773,19 @@ export async function refineCandidate(
       requestText: instruction.trim().slice(0, 220),
       /*
         THE BRANCH SHE IS ON (fable-091). The selected face, which is already
-        the predecessor everything above reasons from — recorded now so the
-        segment store can answer "what does THIS version keep" per branch
-        instead of from one global live-list. A fork from an older edit must
-        not inherit a newer one's glasses.
+        the predecessor everything above reasons from — recorded so the segment
+        store can answer "what does THIS version keep" per branch instead of
+        from one global live-list. A fork from an older edit must not inherit a
+        newer one's glasses.
+
+        **Only while the store is armed**, and only then does the column get
+        named at all (see `claimVariant`). The lineage exists to be read by the
+        store; recording it while the store is dark would buy nothing and would
+        put a brand-new column into the one INSERT every paid refinement runs.
       */
-      parentVariantPublicId: predecessor?.publicId ?? null,
+      parentVariantPublicId: captureCastingSegmentsEnabled(input.userId)
+        ? predecessor?.publicId ?? null
+        : null,
     });
   } catch (error) {
     if (error instanceof VariantOwnershipError) {

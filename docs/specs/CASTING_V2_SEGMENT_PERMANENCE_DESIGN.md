@@ -388,6 +388,28 @@ looking at, never which image was fed to the painter.
 Proved on real MySQL: the founder's own A→B→C→D fork case, the per-branch undo,
 and a parent variant belonging to another face refused outright.
 
+**This is the one change in the program that CANNOT ship dark, and it cost a
+minute of production to learn.** A new TABLE nobody reads is inert — that is why
+the segment store could deploy months before its ceremony. A new COLUMN on the
+table every refinement writes is named in the INSERT whether or not anything
+reads it, so the deploy landed and every refinement would have failed with
+`Unknown column 'parentVariantId'`. It was reverted in about a minute, before
+any refinement ran.
+
+The obvious defence — omit the key so the column is omitted — **does not work**:
+Drizzle names every column in the schema and passes `default` for the rest. That
+belief was refuted by dropping the column under a real claim, which is the only
+reason it was not shipped a second time.
+
+So the ordering is a rule, and it belongs to the ceremony:
+
+> **The migration lands on production BEFORE the code that names its column.**
+> Additive-to-an-existing-table is not additive to the statement that writes it.
+
+Until the ceremony runs, this work waits on the `segment-lineage` branch. The
+ceremony's paste is now three statements: create `casting_segments` (0025), add
+`parentVariantId` with its index (0026), then set `CASTING_SEGMENTS_SCOPE`.
+
 ## 12b. The born-worn catalogue — what the picture says she already has
 
 *Founder ruling, fable-085: the catalogue joins slice 1, so the store is built
