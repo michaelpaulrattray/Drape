@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9e7f320cf1d26e9e"
+    "sourceFingerprint": "d642156c12f8be18"
   },
   "domains": [
     {
@@ -18081,6 +18081,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/carriedSegments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
     {
