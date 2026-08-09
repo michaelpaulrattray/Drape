@@ -2,39 +2,43 @@
  * BENCH A — SAME-FACET STACKING (fable-089, the D-146 confound).
  *
  * The claim segment permanence makes about a re-ask is structural: **one facet,
- * one CARRIED segment, the newest version this branch filed.** Re-asking
- * `marks` supersedes its predecessor rather than contesting it, so the painter
- * is never handed the previous freckles as ground truth for new freckles —
- * which is what killed D-146. A structural argument is a claim; this measures it.
+ * one CARRIED segment, the newest version this branch filed.** Re-asking a
+ * facet supersedes its predecessor rather than contesting it, so the painter is
+ * never handed the previous freckles as ground truth for new freckles — which
+ * is what killed D-146. A structural argument is a claim; this measures it.
  *
- * # The sequence, three steps on one face
+ * # THE CONTROL THIS BENCH DID NOT HAVE, AND WHY IT NOW DOES
  *
- *   1  ask for freckles            → keep the segment
- *   2  ask again, THE SAME WORDS   → must SUPERSEDE, not stack
- *   3  ask again, INTENSIFIED      → must move in the asked direction
+ * The first version compared the re-ask against a number I INVENTED —
+ * `mean(v1) + (mean(v1) − floor)`, "what stacking would read". It passed on one
+ * tree and failed on the next with the same code, because the threshold was
+ * derived from one of the arms and both arms are draws from the same noisy
+ * distribution. Neither verdict meant anything.
  *
- * n rounds of the whole chain, each on its own candidate, because one paint is
- * a lucky round and this program has read n=1 as a measurement before.
+ * A bench needs a SPECIMEN of the disease, not an arithmetic guess at it. So
+ * there is now a **STACKED arm**: the identical re-ask, painted on the FIRST
+ * ARM'S FRAME instead of on the master — genuinely compounded, by construction,
+ * the way v2 did it. The verdict is gated on that arm moving:
  *
- * # The store is REAL here, and that is the point of the driver
+ *   the stacked control does not separate from the ask
+ *     → this bench cannot answer this question on this facet, and it says so
+ *   the stacked control sits clearly above, and the re-ask sits with the ask
+ *     → supersession is measured rather than assumed
  *
- * "One facet, one carried segment" is resolved by a recursive walk over the
- * variant tree in SQL. A bench that mocked the store would be measuring the
- * mock, so this runs against a disposable database with the real statements,
- * the real cut, and the real assembly — and each step's variant records the one
- * it was made from, exactly as the service does:
+ * # Two facets, because one of them is the wrong instrument
+ *
+ * `marks` is the class whose delivery flickers, counted in steps of 0.082 per
+ * 1000 against an effect of about 1.0 over a floor of 6.35 — its own
+ * round-to-round spread on the SAME words is larger than the thing being
+ * measured. `hair.colour` is a REPLACEMENT facet that delivered 4/4 both ways
+ * in the caption court, measured as a continuous distance from the master over
+ * her hair. Both run; each prints its own control, and a facet whose control
+ * does not fire returns NO-READ rather than a verdict.
+ *
+ * # The store is REAL, and that is the point of the driver
  *
  *   npx tsx scripts/drive-casting-v2-segment-store-disposable.mts \
- *     --run scripts/calibration/bench-a-stacking.mts -- --rounds 3
- *
- * # Controls first, in this sitting (working law 2)
- *
- * The instrument is the marks counter, whose declared limit is that it can only
- * ORDER FRAMES OF ONE FACE. So both its controls run here, on this face, in
- * this run: her master is the floor (negative), and step 1's delivered
- * composite must read ABOVE it (positive). If the counter cannot order those
- * two, nothing below it means anything and the bench says so instead of
- * printing numbers.
+ *     --run scripts/calibration/bench-a-stacking.mts --rounds 3
  */
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
@@ -48,7 +52,7 @@ import { harvestRefinement } from "../../server/castingV2/maskedRefine";
 import { assembleWithCarriedSegments } from "../../server/castingV2/carriedSegments";
 import { persistSegmentsForVariant } from "../../server/castingV2/segmentPersistence";
 import { cutSegments } from "../../server/castingV2/segmentCuts";
-import { readRaster } from "../../server/castingV2/maskedComposite";
+import { readRaster, type Mask, type Raster } from "../../server/castingV2/maskedComposite";
 import { listLineageSegments } from "../../server/db/castingV2Segments";
 import { cheekBand, countSpecks, type Population } from "./lib/speckDensity.mjs";
 
@@ -73,41 +77,45 @@ if (!apiKey) {
 const roundsFlag = process.argv.indexOf("--rounds");
 const ROUNDS = roundsFlag > -1 ? Number(process.argv[roundsFlag + 1]) : 3;
 
-/* HER master — the face the marks counter was courted on. Its limit says the
-   counter can only order frames of ONE face, so the bench holds that one. */
 const MASTER_FILE = "output/marks-court/MASTER-run15.png";
 const master = readFileSync(MASTER_FILE);
 const meta = await sharp(master).metadata();
 const W = meta.width!;
 const H = meta.height!;
 
-/*
-  THE THREE ASKS.
+const PREAMBLE = "Edit this photograph of this exact person, changing ONLY what is listed below. ";
 
-  Steps 1 and 2 are byte-identical — that is the whole test, and writing them
-  as one constant makes it impossible for a later edit to make them differ by
-  accident. Step 3 differs ONLY by its intensity words, so the third row
-  measures the ask rather than a new sentence.
-*/
-const ASK = "Edit this photograph of this exact person, changing ONLY what is listed below. "
-  + "Give her freckles: a natural scattering of small brown freckles across the nose, "
-  + "cheeks and upper face, denser over the bridge of the nose and thinning outward — "
-  + "the same person with freckled skin, not a different face and not makeup.";
-const INTENSIFIED = "Edit this photograph of this exact person, changing ONLY what is listed below. "
-  + "Give her MANY MORE freckles, much heavier and denser: a thick scattering of small brown "
-  + "freckles across the nose, cheeks and upper face, crowded over the bridge of the nose and "
-  + "thinning outward — the same person with heavily freckled skin, not a different face and not makeup.";
-const STEPS = [
-  { key: "v1", label: "1  freckles", prompt: ASK },
-  { key: "v2", label: "2  the SAME words", prompt: ASK },
-  { key: "v3", label: "3  intensified", prompt: INTENSIFIED },
+/**
+ * The two facets fable-089 named. Steps 1 and 2 are byte-identical asks — that
+ * is the whole test — and step 3 differs only by its intensity words.
+ */
+const ARMS = [
+  {
+    facet: "marks",
+    region: "face skin",
+    described: "visibly textured, freckles",
+    measure: "specks" as const,
+    ask: `${PREAMBLE}Give her freckles: a natural scattering of small brown freckles across the nose, `
+      + "cheeks and upper face, denser over the bridge of the nose and thinning outward — "
+      + "the same person with freckled skin, not a different face and not makeup.",
+    intensified: `${PREAMBLE}Give her MANY MORE freckles, much heavier and denser: a thick scattering of `
+      + "small brown freckles across the nose, cheeks and upper face, crowded over the bridge of the nose "
+      + "and thinning outward — the same person with heavily freckled skin, not a different face and not makeup.",
+  },
+  {
+    facet: "hair.colour",
+    region: "hair",
+    described: "warm copper hair",
+    measure: "distance" as const,
+    ask: `${PREAMBLE}Change her hair colour to a warm coppery auburn.`,
+    intensified: `${PREAMBLE}Change her hair colour to a much more vivid, saturated copper red.`,
+  },
 ];
 
 const engine = createFalMaskedEditEngine({ apiKey });
 const reader = createFalRegionReader({ apiKey });
 const connection = await mysql.createConnection(databaseUrl);
 
-/* The store is armed for this user, in this process only. */
 const USER_ID = await (async () => {
   const [row] = await connection.execute<any>(
     "INSERT INTO users (openId, name, approved, emailVerified) VALUES (?, 'Bench A', 1, 1)",
@@ -119,46 +127,36 @@ process.env.CASTING_V2_SCOPE = `users:${USER_ID}`;
 process.env.CASTING_SEGMENTS_SCOPE = `users:${USER_ID}`;
 process.env.ENABLE_STORAGE_CLEANUP_WORKER = "true";
 
+let sessionId = 0;
 async function newFace(): Promise<number> {
   const [session] = await connection.execute<any>(
     "INSERT INTO casting_sessions (publicId, userId, status) VALUES (?, ?, 'open')",
     [randomUUID(), USER_ID],
   );
+  sessionId = session.insertId;
   const [roll] = await connection.execute<any>(
     "INSERT INTO casting_rolls (publicId, sessionId, userId, rollIndex, briefText, status, operationId, priceCredits)"
       + " VALUES (?, ?, ?, 0, 'bench a', 'complete', ?, 640)",
-    [randomUUID(), session.insertId, USER_ID, randomUUID()],
+    [randomUUID(), sessionId, USER_ID, randomUUID()],
   );
   const [candidate] = await connection.execute<any>(
     "INSERT INTO casting_candidates (publicId, rollId, sessionId, userId, position, status, imageKey, thumbKey)"
       + " VALUES (?, ?, ?, ?, 0, 'ready', ?, ?)",
-    [randomUUID(), roll.insertId, session.insertId, USER_ID, `bench/${randomUUID()}.png`, `bench/${randomUUID()}-t.png`],
+    [randomUUID(), roll.insertId, sessionId, USER_ID, `bench/${randomUUID()}.png`, `bench/${randomUUID()}-t.png`],
   );
-  (newFace as unknown as { sessionId?: number }).sessionId = session.insertId;
   return candidate.insertId as number;
 }
 
-/* The chain is recorded as a chain: each step's variant names the one it was
-   made from, which is what the store reads to answer "what does THIS face
-   keep" per branch (fable-091). */
 async function newVariant(candidateId: number, parentVariantId: number | null): Promise<number> {
-  const sessionId = (newFace as unknown as { sessionId: number }).sessionId;
   const [variant] = await connection.execute<any>(
     "INSERT INTO casting_candidate_variants (publicId, candidateId, sessionId, userId, status, instructions, operationId, parentVariantId)"
       + " VALUES (?, ?, ?, ?, 'ready', ?, ?, ?)",
-    [randomUUID(), candidateId, sessionId, USER_ID, JSON.stringify(["give her freckles"]), randomUUID(), parentVariantId],
+    [randomUUID(), candidateId, sessionId, USER_ID, JSON.stringify(["bench"]), randomUUID(), parentVariantId],
   );
   return variant.insertId as number;
 }
 
-/*
-  THE SEGMENT OBJECTS GO NOWHERE NEAR R2.
-
-  The bench writes crops of a face; they belong on this machine and nowhere
-  else, and a public bucket is exactly what the store's own retention rules
-  exist to keep them out of. So storage is a local map, injected — the same
-  seam the unit tests use, and the rows still go through the real statements.
-*/
+/* Crops of a face stay on this machine — never a public bucket for a fixture. */
 const objects = new Map<string, Buffer>();
 const store = async (input: { key: string; bytes: Buffer; contentType: string }) => {
   objects.set(input.key, input.bytes);
@@ -170,49 +168,68 @@ const readBytes = async (key: string) => {
   return { bytes, contentType: "image/png" };
 };
 
-type Reading = { round: number; step: string; perThousand: number; file: string; live: number };
+const masterRaster = await readRaster(master);
+
+/**
+ * HOW FAR THIS FRAME'S REGION SITS FROM THE MASTER'S, in mean levels.
+ *
+ * The right instrument for a REPLACEMENT facet: grey hair repainted copper is a
+ * large, continuous distance, and repainting already-copper hair MORE copper
+ * pushes it further. Unlike a speck count it has no quantisation floor, which is
+ * exactly what the marks arm could not survive.
+ */
+function distanceFromMaster(frame: Raster, region: Mask): number {
+  let total = 0;
+  let pixels = 0;
+  for (let pixel = 0; pixel < region.data.length; pixel += 1) {
+    if (region.data[pixel] === 0) continue;
+    const at = pixel * 3;
+    total += (Math.abs(frame.data[at] - masterRaster.data[at])
+      + Math.abs(frame.data[at + 1] - masterRaster.data[at + 1])
+      + Math.abs(frame.data[at + 2] - masterRaster.data[at + 2])) / 3;
+    pixels += 1;
+  }
+  return pixels === 0 ? 0 : total / pixels;
+}
+
+type Reading = { arm: string; round: number; step: string; value: number; file: string; carried: number };
 const readings: Reading[] = [];
+const tables: string[] = [];
 
-/* ONE population for every frame — the master's. A before/after whose
-   POPULATION moves between the before and the after is not a comparison. */
-const population: Population | null = await cheekBand(reader, MASTER_FILE);
-if (!population) throw new Error("no face read on her master — nothing below could be compared");
-const floor = await countSpecks(MASTER_FILE, population, `${OUT}/PATCH-master.png`);
-console.log(`her floor (the NEGATIVE control, in this sitting): ${floor.perThousand.toFixed(2)} per 1000 `
-  + `over ${population.pixels} skin px\n`);
+/* One population per arm, from the MASTER — a before/after whose population
+   moves between the before and the after is not a comparison. */
+const speckPopulation: Population | null = await cheekBand(reader, MASTER_FILE);
+if (!speckPopulation) throw new Error("no face read on her master — nothing below could be compared");
+const speckFloor = await countSpecks(MASTER_FILE, speckPopulation, `${OUT}/PATCH-master.png`);
+const hairRegion = await reader.region({ image: master, name: "hair" });
 
-for (let round = 1; round <= ROUNDS; round += 1) {
-  const candidateId = await newFace();
-  let anchorVariantId: number | null = null;
-  console.log(`── round ${round} — candidate ${candidateId}`);
+for (const arm of ARMS) {
+  console.log(`\n══ ARM ${arm.facet}\n`);
 
-  for (const step of STEPS) {
-    const began = Date.now();
+  /** One paint through the product's own chain, landed into the store. */
+  async function landed(input: {
+    candidateId: number; anchor: number | null; prompt: string;
+  }): Promise<{ bytes: Buffer; variantId: number; carried: number }> {
     const painted = await engine.edit({
-      prompt: step.prompt,
+      prompt: input.prompt,
       references: [{ bytes: master, contentType: "image/png" }],
       width: W,
       height: H,
     });
-
     const harvested = await harvestRefinement({
       master: { bytes: master, contentType: "image/png" },
       painted: { bytes: painted.bytes, contentType: painted.contentType },
-      facets: ["marks"],
+      facets: [arm.facet],
       reader,
       userId: USER_ID,
-      described: "visibly textured, freckles",
+      described: arm.described,
       explain: true,
     });
-
-    /* The product's own assembly: everything this face already keeps, minus
-       the facet being written. For a same-facet chain that is nothing — which
-       is the property under test, not an assumption made here. */
     const assembled = await assembleWithCarriedSegments({
       userId: USER_ID,
-      candidateId,
-      anchorVariantId,
-      writing: ["marks"],
+      candidateId: input.candidateId,
+      anchorVariantId: input.anchor,
+      writing: [arm.facet],
       master: { bytes: master, contentType: "image/png" },
       harvested: {
         bytes: harvested.bytes,
@@ -221,111 +238,142 @@ for (let round = 1; round <= ROUNDS; round += 1) {
       },
       dependencies: { readBytes },
     });
-
-    const variantId = await newVariant(candidateId, anchorVariantId);
+    const variantId = await newVariant(input.candidateId, input.anchor);
     if (assembled.evidence) {
       const composite = await readRaster(assembled.bytes);
-      const cuts = cutSegments({
-        composite,
-        applied: assembled.evidence.applied,
-        facetRegions: new Map([["marks", "face skin"]]),
-        regionMasks: assembled.evidence.masterRegions,
-      });
       await persistSegmentsForVariant({
         userId: USER_ID,
         variantId,
-        cuts,
+        cuts: cutSegments({
+          composite,
+          applied: assembled.evidence.applied,
+          facetRegions: new Map([[arm.facet, arm.region]]),
+          regionMasks: assembled.evidence.masterRegions,
+        }),
         verdict: "verified",
         verifiedAt: new Date(),
         dependencies: { store },
       });
     }
-
-    const file = `${OUT}/r${round}-${step.key}.png`;
-    writeFileSync(file, assembled.bytes);
-    const counted = await countSpecks(file, population, `${OUT}/PATCH-r${round}-${step.key}.png`);
-    /* What the NEXT edit on this branch would carry — one facet, one segment,
-       the newest version this branch filed. The row count grows; the carried
-       set must not. */
-    const live = (await listLineageSegments({ userId: USER_ID, candidateId, anchorVariantId: variantId })).length;
-    anchorVariantId = variantId;
-
-    readings.push({ round, step: step.key, perThousand: counted.perThousand, file, live });
-    console.log(
-      `   ${step.label.padEnd(20)} ${counted.perThousand.toFixed(2).padStart(6)} per 1000  `
-      + `(${(((counted.perThousand / floor.perThousand) - 1) * 100).toFixed(0)}% over her floor)  `
-      + `carried: ${live}  ${((Date.now() - began) / 1000).toFixed(0)}s`
-      + (assembled.carriedFacets.length ? `  carried: ${assembled.carriedFacets.join(",")}` : ""),
-    );
+    const carried = (await listLineageSegments({
+      userId: USER_ID, candidateId: input.candidateId, anchorVariantId: variantId,
+    })).length;
+    return { bytes: assembled.bytes, variantId, carried };
   }
+
+  async function read(file: string, bytes: Buffer, save: string): Promise<number> {
+    writeFileSync(file, bytes);
+    if (arm.measure === "specks") {
+      return (await countSpecks(file, speckPopulation!, save)).perThousand;
+    }
+    return distanceFromMaster(await readRaster(bytes), hairRegion);
+  }
+
+  for (let round = 1; round <= ROUNDS; round += 1) {
+    const candidateId = await newFace();
+    const tag = `${arm.facet.replace(/\W/g, "-")}-r${round}`;
+    console.log(`── round ${round}`);
+
+    const v1 = await landed({ candidateId, anchor: null, prompt: arm.ask });
+    const v1Value = await read(`${OUT}/${tag}-v1.png`, v1.bytes, `${OUT}/PATCH-${tag}-v1.png`);
+    readings.push({ arm: arm.facet, round, step: "v1", value: v1Value, file: `${OUT}/${tag}-v1.png`, carried: v1.carried });
+    console.log(`   1  ask            ${v1Value.toFixed(2).padStart(7)}   carried ${v1.carried}`);
+
+    const v2 = await landed({ candidateId, anchor: v1.variantId, prompt: arm.ask });
+    const v2Value = await read(`${OUT}/${tag}-v2.png`, v2.bytes, `${OUT}/PATCH-${tag}-v2.png`);
+    readings.push({ arm: arm.facet, round, step: "v2", value: v2Value, file: `${OUT}/${tag}-v2.png`, carried: v2.carried });
+    console.log(`   2  SAME words     ${v2Value.toFixed(2).padStart(7)}   carried ${v2.carried}`);
+
+    /*
+      THE STACKED CONTROL — the disease, built on purpose.
+
+      The identical re-ask, painted on the FIRST ARM'S FRAME instead of on the
+      master: v2's own shape, where the painter sees what it already did and
+      goes again. Nothing is filed for it; it exists to be measured.
+    */
+    const stacked = await engine.edit({
+      prompt: arm.ask,
+      references: [{ bytes: v1.bytes, contentType: "image/png" }],
+      width: W,
+      height: H,
+    });
+    const stackedValue = await read(`${OUT}/${tag}-stacked.png`, stacked.bytes, `${OUT}/PATCH-${tag}-stacked.png`);
+    readings.push({ arm: arm.facet, round, step: "stacked", value: stackedValue, file: `${OUT}/${tag}-stacked.png`, carried: 0 });
+    console.log(`   C  STACKED (on v1's frame)  ${stackedValue.toFixed(2).padStart(7)}`);
+
+    const v3 = await landed({ candidateId, anchor: v2.variantId, prompt: arm.intensified });
+    const v3Value = await read(`${OUT}/${tag}-v3.png`, v3.bytes, `${OUT}/PATCH-${tag}-v3.png`);
+    readings.push({ arm: arm.facet, round, step: "v3", value: v3Value, file: `${OUT}/${tag}-v3.png`, carried: v3.carried });
+    console.log(`   3  intensified    ${v3Value.toFixed(2).padStart(7)}   carried ${v3.carried}`);
+  }
+
+  /* ------------------------------------------------------- the arm's table */
+
+  const at = (step: string) => readings.filter((row) => row.arm === arm.facet && row.step === step).map((row) => row.value);
+  const mean = (values: number[]) => values.reduce((total, value) => total + value, 0) / values.length;
+  const spread = (values: number[]) => Math.max(...values) - Math.min(...values);
+  const v1s = at("v1");
+  const v2s = at("v2");
+  const stackeds = at("stacked");
+  const v3s = at("v3");
+
+  /*
+    THE NOISE, MEASURED: the widest within-arm spread of the two arms that ask
+    the SAME words. A separation smaller than that is not a separation.
+  */
+  const noise = Math.max(spread(v1s), spread(v2s));
+  const controlSeparates = mean(stackeds) - mean(v1s) > noise;
+  const supersedes = Math.abs(mean(v2s) - mean(v1s)) <= noise;
+  const intensifiedMoved = mean(v3s) > mean(v1s);
+  const carriedOne = readings
+    .filter((row) => row.arm === arm.facet && row.step !== "stacked")
+    .every((row) => row.carried === 1);
+
+  tables.push([
+    "",
+    `## ARM "${arm.facet}" — ${arm.measure === "specks" ? "specks per 1000 skin px" : "mean levels from the master, over her hair"}`,
+    "",
+    `  1  ask                ${v1s.map((value) => value.toFixed(2)).join("  ")}   mean ${mean(v1s).toFixed(2)}`,
+    `  2  the SAME words     ${v2s.map((value) => value.toFixed(2)).join("  ")}   mean ${mean(v2s).toFixed(2)}`,
+    `  C  STACKED control    ${stackeds.map((value) => value.toFixed(2)).join("  ")}   mean ${mean(stackeds).toFixed(2)}`,
+    `  3  intensified        ${v3s.map((value) => value.toFixed(2)).join("  ")}   mean ${mean(v3s).toFixed(2)}`,
+    "",
+    `  noise (widest same-words spread)  ${noise.toFixed(2)}`,
+    `  CONTROL SEPARATES   ${controlSeparates ? "yes" : "NO"} — stacked ${mean(stackeds).toFixed(2)} against the ask's ${mean(v1s).toFixed(2)}, noise ${noise.toFixed(2)}`,
+    controlSeparates
+      ? `  SUPERSEDES          ${supersedes ? "yes" : "NO"} — the re-ask sits ${Math.abs(mean(v2s) - mean(v1s)).toFixed(2)} from the ask`
+      : "  SUPERSEDES          NO-READ — this instrument cannot see stacking on this facet, so it may not rule on it",
+    `  INTENSIFIED MOVED   ${intensifiedMoved ? "yes" : "NO"} — ${mean(v3s).toFixed(2)} against ${mean(v1s).toFixed(2)}`,
+    `  carried set always 1: ${carriedOne ? "yes" : "NO"}`,
+    "",
+    `  VERDICT  ${
+      !controlSeparates
+        ? "NO-READ — the bench could not produce the disease it tests for"
+        : supersedes && intensifiedMoved && carriedOne
+          ? "PASS"
+          : "FAIL"
+    }`,
+  ].join("\n"));
 }
 
-/* ------------------------------------------------------------- the table */
-
-const at = (step: string) => readings.filter((row) => row.step === step).map((row) => row.perThousand);
-const mean = (values: number[]) => values.reduce((total, value) => total + value, 0) / values.length;
-const v1 = at("v1");
-const v2 = at("v2");
-const v3 = at("v3");
-
-/*
-  THE BAND, and why it is the SPREAD rather than a number I chose.
-
-  "Version 2 within the measured band of version 1" needs a band, and the only
-  honest one is what the same ask actually does twice — so the band is v1's own
-  round-to-round range. A v2 inside it is indistinguishable from another v1; a
-  v2 near v1+v1 is stacking, and the table prints that sum so the reader can
-  see which end the number sits at.
-*/
-const v1Range = { low: Math.min(...v1), high: Math.max(...v1) };
-const stackedWouldBe = mean(v1) + (mean(v1) - floor.perThousand);
-const superseded = mean(v2) <= v1Range.high + (v1Range.high - v1Range.low);
-const positiveControl = mean(v1) > floor.perThousand;
-const intensifiedMoved = mean(v3) > mean(v1);
-
-const table = [
+const header = [
   "",
   "# BENCH A — SAME-FACET STACKING",
   "",
-  `subject       one face (${MASTER_FILE}), ${ROUNDS} rounds, one candidate per round`,
-  `instrument    the marks counter (specks darker than local skin, on skin) — it can`,
-  "              only ORDER FRAMES OF ONE FACE, which is why this bench holds one",
-  `store         REAL, on a disposable database (${databaseUrl.replace(/\/\/[^@]+@/, "//…@").split("/").pop()})`,
-  `engine        ${engine.id}`,
-  `read at       ${new Date().toISOString()}`,
-  "",
-  `NEGATIVE control  her master reads ${floor.perThousand.toFixed(2)} — the floor, in this sitting`,
-  `POSITIVE control  step 1 reads ${mean(v1).toFixed(2)} — ${positiveControl ? "ABOVE the floor, so the counter can see the ask land" : "AT OR BELOW the floor: THE INSTRUMENT CANNOT SEE THE ASK, and nothing below is a reading"}`,
-  "",
-  `step 1  freckles          ${v1.map((value) => value.toFixed(2)).join("  ")}   mean ${mean(v1).toFixed(2)}`,
-  `step 2  the SAME words    ${v2.map((value) => value.toFixed(2)).join("  ")}   mean ${mean(v2).toFixed(2)}`,
-  `step 3  intensified       ${v3.map((value) => value.toFixed(2)).join("  ")}   mean ${mean(v3).toFixed(2)}`,
-  "",
-  `step 1's own spread       ${v1Range.low.toFixed(2)} – ${v1Range.high.toFixed(2)}  (the band, measured rather than chosen)`,
-  `what STACKING would read  ${stackedWouldBe.toFixed(2)}  (step 1 twice over her floor)`,
-  "",
-  `SUPERSEDES        ${superseded ? "yes" : "NO"} — step 2 mean ${mean(v2).toFixed(2)} against a stacked ${stackedWouldBe.toFixed(2)}`,
-  `INTENSIFIED MOVED ${intensifiedMoved ? "yes" : "NO"} — step 3 mean ${mean(v3).toFixed(2)} against step 1's ${mean(v1).toFixed(2)}`,
-  "",
-  `carried set at the end of each chain: ${readings.filter((row) => row.step === "v3").map((row) => row.live).join(", ")}  (must be 1 — one facet, one carried segment)`,
-  "",
-  `VERDICT  ${
-    positiveControl && superseded && intensifiedMoved
-      && readings.filter((row) => row.step === "v3").every((row) => row.live === 1)
-      ? "PASS"
-      : "NOT PROVEN — read the control lines above"
-  }`,
-  "",
-];
-console.log(table.join("\n"));
-writeFileSync(`${OUT}/bench-a.txt`, table.join("\n"));
+  `subject     one face (${MASTER_FILE}), ${ROUNDS} rounds per arm, one candidate per round`,
+  "store       REAL, on a disposable database",
+  `engine      ${engine.id}`,
+  `read at     ${new Date().toISOString()}`,
+  `controls    her master reads ${speckFloor.perThousand.toFixed(2)} specks per 1000 (the marks floor, in this sitting);`,
+  "            the STACKED arm is the disease built on purpose — the same re-ask painted on",
+  "            the first arm's FRAME rather than on the master, which is v2's own shape",
+].join("\n");
+
+console.log([header, ...tables, ""].join("\n"));
+writeFileSync(`${OUT}/bench-a.txt`, [header, ...tables, ""].join("\n"));
 writeFileSync(`${OUT}/bench-a.json`, JSON.stringify({
-  master: MASTER_FILE,
-  rounds: ROUNDS,
-  engine: engine.id,
-  readAt: new Date().toISOString(),
-  floor: floor.perThousand,
-  readings,
+  master: MASTER_FILE, rounds: ROUNDS, engine: engine.id,
+  readAt: new Date().toISOString(), speckFloor: speckFloor.perThousand, readings,
 }, null, 2));
 
 await connection.end();
