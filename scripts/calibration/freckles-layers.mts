@@ -77,6 +77,11 @@ const CASE = caseFlag > -1 ? String(process.argv[caseFlag + 1]) : "written";
  */
 const CASES: Record<string, {
   out: string; master: string; described: string; prompt: string; facets: string[];
+  /** Facet ids straight through, for AXIS facets that have no free subject. */
+  facetIds?: string[];
+  /** The region the amplitude table measures. Her face skin, unless the arm is
+      about something else — a hair arm measured on cheeks says nothing. */
+  region?: string;
 }> = {
   written: {
     out: "output/masked/freckles",
@@ -196,6 +201,56 @@ const CASES: Record<string, {
     facets: ["marks"],
     prompt: readFileSync("output/marks-court/run15-step3-alone-nocaption-prompt.txt", "utf8").trim(),
   },
+  /*
+    THE ARM THAT SEPARATES THE CAPTION'S WORDS FROM ITS PLACEMENT.
+
+    `refineDelta.ts:1581` composes a free clause as
+    `HEADING: <items><caption><qualifier><floor>.` — so the caption is inserted
+    BETWEEN the ask and the tail that governs it, and the strongest delivery
+    instruction in the prompt, *"a change that does not appear at all is a
+    failed render"*, ends up attached to a description of a photograph that
+    already exists rather than to the ask.
+
+    This arm is `carried-alone-nocaption` with the SAME caption, verbatim,
+    placed after the clause as its own sentence. Against `carried-alone` it
+    changes only where the caption sits; against `carried-alone-nocaption` it
+    changes only that the caption is present. If it delivers, the site is the
+    PLACEMENT and the fix is a sentence boundary; if it does not, the caption's
+    words suppress her freckles wherever they are put, which is a different and
+    larger finding.
+  */
+  "carried-alone-captionlast": {
+    out: "output/masked/freckles-alone-captionlast",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "visibly textured, freckles",
+    facets: ["marks"],
+    prompt: readFileSync("output/marks-court/run15-step3-alone-captionlast-prompt.txt", "utf8").trim(),
+  },
+  /*
+    THE SWEEP ARMS — the same two-arm test on a SECOND facet (D-152's caption
+    against `hair.colour`), composed by `composeRenderPrompt` with `EDIT_PROSE`
+    rather than written by hand. The marks wall is caption-absent 11/16 against
+    caption-present 0/16; these say whether that is a property of captions or a
+    property of low-amplitude surface facets.
+  */
+  "hair-caption": {
+    out: "output/masked/hair-caption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "copper hair",
+    facets: [],
+    facetIds: ["hair.colour"],
+    region: "hair",
+    prompt: readFileSync("output/marks-court/hair-caption-prompt.txt", "utf8").trim(),
+  },
+  "hair-nocaption": {
+    out: "output/masked/hair-nocaption",
+    master: "output/marks-court/MASTER-run15.png",
+    described: "copper hair",
+    facets: [],
+    facetIds: ["hair.colour"],
+    region: "hair",
+    prompt: readFileSync("output/marks-court/hair-nocaption-prompt.txt", "utf8").trim(),
+  },
   carried: {
     out: "output/masked/freckles-carried",
     master: "output/marks-court/MASTER-run15.png",
@@ -259,7 +314,10 @@ if (repaint || !existsSync(`${OUT}/painted.png`)) {
 const composed = await harvestRefinement({
   master: { bytes: master, contentType: "image/png" },
   painted: { bytes: painted.bytes, contentType: painted.contentType },
-  facets: chosen.facets.map((subject) => facetOfSubject(subject as Parameters<typeof facetOfSubject>[0])),
+  facets: [
+    ...chosen.facets.map((subject) => facetOfSubject(subject as Parameters<typeof facetOfSubject>[0])),
+    ...((chosen.facetIds ?? []) as Parameters<typeof harvestRefinement>[0]["facets"]),
+  ],
   reader,
   userId: 1,
   described: DESCRIBED,
@@ -299,13 +357,13 @@ const A = await raw(master);
 
 /* Her face skin, from the MASTER — the crop never comes from the frame under
    test, or the measurement wanders to where the answer is convenient. */
-const skin = await reader.region({ image: master, name: "face skin" });
+const skin = await reader.region({ image: master, name: chosen.region ?? "face skin" });
 let skinPx = 0;
 for (let i = 0; i < skin.data.length; i += 1) if (skin.data[i] > 127) skinPx += 1;
-console.log(`her face skin: ${skinPx.toLocaleString()} px (${((skinPx / (W * H)) * 100).toFixed(1)}% of frame)\n`);
+console.log(`her ${chosen.region ?? "face skin"}: ${skinPx.toLocaleString()} px (${((skinPx / (W * H)) * 100).toFixed(1)}% of frame)\n`);
 
 const THRESHOLDS = [2, 4, 8, 16, 25];
-console.log("pixels of HER FACE SKIN moved, by amplitude");
+console.log(`pixels of HER ${(chosen.region ?? "face skin").toUpperCase()} moved, by amplitude`);
 console.log(`  threshold   ${THRESHOLDS.map((t) => `>${t}`.padStart(9)).join("")}`);
 const moved: Record<string, number[]> = {};
 for (const [label, bytes] of [["painted", painted.bytes], ["composed", composed.bytes]] as const) {

@@ -215,9 +215,11 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     name: "the caption left in the already-true lane instead of sharpening the ask",
     file: "server/castingV2/refineDelta.ts",
     suites: LANE_SUITES,
+    /* The line grew a surface-facet branch on 2026-08-09; the sabotage is the
+       same one — the kept caption sent to the lane that merely asserts. */
     mutations: [{
-      find: "    if (asked.has(facet)) adopted[facet] = caption;",
-      replace: "    if (asked.has(facet)) carried[facet] = caption;",
+      find: "      if (!isSurfaceFacet(facet as Facet)) adopted[facet] = caption;",
+      replace: "      if (!isSurfaceFacet(facet as Facet)) carried[facet] = caption;",
     }],
   },
   {
@@ -356,6 +358,35 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
     file: "client/src/features/castingV2/failureCopy.ts",
     suites: ["server/castingV2/spokenSentences.test.ts"],
     mutations: [{ find: "  if (errorIsSpoken(error) && message) return message;\n" }],
+  },
+  {
+    /*
+      THE CAPTION WALL. Restoring the pre-fix line puts a surface facet's
+      realization caption back inside its own ask, which is the shape that
+      delivered her freckles 0 of 16 times.
+    */
+    name: "a surface facet's caption kept out of its own ask",
+    file: "server/castingV2/refineDelta.ts",
+    suites: ["server/castingV2/refineDelta.test.ts"],
+    mutations: [{
+      find: "      if (!isSurfaceFacet(facet as Facet)) adopted[facet] = caption;",
+      replace: "      adopted[facet] = caption;",
+    }],
+  },
+  {
+    /*
+      AND THE BOUNDARY ITSELF. If every facet answered `true` the rule would
+      strip captions from hair and eyes as well — a caption doing real work on
+      every facet the painter can tell apart from the master. The test that
+      keeps a REPLACEMENT facet's caption is what has to catch this.
+    */
+    name: "the surface boundary, so the rule cannot swallow the axis lane",
+    file: "server/castingV2/changeAmplitude.ts",
+    suites: ["server/castingV2/refineDelta.test.ts", "server/castingV2/changeAmplitude.test.ts"],
+    mutations: [{
+      find: "  return subjects.length > 0 && subjects.every((subject) => CHANGE_AMPLITUDE[subject].levels === SURFACE);",
+      replace: "  return true;",
+    }],
   },
 ];
 

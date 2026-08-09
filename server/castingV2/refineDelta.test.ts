@@ -167,6 +167,53 @@ describe("the edit prompt", () => {
     expect(contradictedFacets(composed, { eyeColour: "green" })).toEqual([]);
   });
 
+  /*
+    THE CAPTION WALL, PINNED AT THE WIRE (2026-08-09).
+
+    Measured on run-15's own face: with its caption in the ask, `marks` was
+    delivered 0 of 16 across five wordings and both placements; without it, 11
+    of 16. The same two arms on `hair.colour` read 4/4 and 4/4. So the rule is
+    scoped by amplitude, and both directions are asserted here — a test that
+    only proved the caption absent would pass just as well if the caption
+    machinery were deleted outright, and the caption is doing real work on every
+    facet the painter can tell apart from the master.
+
+    Asserted on the composed STRING rather than on `captionedFacets`, because
+    the string is what the painter receives and the whole defect was a fact that
+    reached the prompt in a shape nobody had read.
+  */
+  describe("a realization caption in the ask", () => {
+    const CAPTION = "a light scattering of small freckles, faint and sparse";
+
+    it("is DROPPED for a surface facet — it reads as a report and the render does nothing", () => {
+      const composed = composeRenderPrompt(
+        { free: { marks: "freckles" } }, prose, { marks: CAPTION },
+      );
+      expect(composed.full).toContain("MARKS: freckles");
+      expect(composed.full).not.toContain(CAPTION);
+      expect(composed.full).not.toContain("rendered exactly as this");
+      /* And it is dropped, not relocated: the already-true lane is where it
+         lived before D-152 and it contradicts the ask from there. */
+      expect(composed.captionedFacets).not.toContain("marks");
+      /* The qualifier and the delivery floor still govern the ask itself. */
+      expect(composed.full).toContain("as real marks on this person's own skin");
+      expect(composed.full).toContain("a change that does not appear at all is a failed render");
+    });
+
+    it("is KEPT for a replacement facet — the painter can tell the caption from the master", () => {
+      const kept = "warm coppery red through the whole length";
+      const composed = composeRenderPrompt({ hairColour: "copper" }, prose, { "hair.colour": kept });
+      expect(composed.full).toContain(kept);
+      expect(composed.full).toContain("rendered exactly as this");
+    });
+
+    it("still carries an UNASKED surface facet's caption — this rule is about the ask", () => {
+      const composed = composeRenderPrompt({ eyeColour: "green" }, prose, { marks: CAPTION });
+      expect(composed.full).toContain(CAPTION);
+      expect(composed.captionedFacets).toContain("marks");
+    });
+  });
+
   it("is built from the same deltas as the record, so the two cannot disagree", () => {
     const delta = { eyeColour: "green" as const, eyeShape: "almond" as const };
     const prompt = composeEditPrompt(delta, prose);

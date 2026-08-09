@@ -33,6 +33,7 @@
  * fixture that produced them.
  */
 import { FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
+import { subjectsOfFacet, type Facet } from "./refineFacets";
 
 export type AmplitudeBasis =
   /** A control was run and this is what it read. */
@@ -101,4 +102,52 @@ export function amplitudeFor(subject: FreeSubject): number {
 /** Subjects whose threshold is reasoned rather than measured — the work list. */
 export function unmeasuredAmplitudes(): FreeSubject[] {
   return FREE_SUBJECT_KEYS.filter((subject) => "reasoned" in CHANGE_AMPLITUDE[subject].basis);
+}
+
+/**
+ * IS THIS FACET'S CHANGE ONLY A FEW LEVELS DEEP?
+ *
+ * # Why a prompt lane asks a pixel-amplitude question
+ *
+ * Measured on run-15's own face and prompts, 32 paints, composites read ten
+ * times each with her bare master as a negative control in the sitting:
+ *
+ *     marks (SURFACE)        caption in the ask   0/16      no caption   11/16
+ *     hair.colour (REPLACEMENT)  caption in the ask   4/4    no caption    4/4
+ *
+ * The marks column is not a rate difference, it is a wall — five wordings, two
+ * placements, both framings, always zero. And the hair column says the caption
+ * is not the problem in general, so the boundary is real and this is where it
+ * runs.
+ *
+ * **The mechanism the two columns imply.** A caption states what a facet looked
+ * like when it last rendered, and the painter is holding the master while it
+ * reads that. For a REPLACEMENT facet the caption is manifestly false of the
+ * picture in hand — her hair is grey and the caption says warm copper — so it
+ * cannot be read as a report and the ask survives. For a SURFACE facet the
+ * described state is *indistinguishable from her master at the amplitude it
+ * describes*: "a light scattering of small freckles, faint and sparse" is
+ * exactly what unfreckled skin could plausibly look like to a reader of a
+ * 1024x1536 portrait. So the ask is absorbed into a restatement of the prior,
+ * and the correct response to being told the picture already has the thing is
+ * to change nothing.
+ *
+ * That is not a new class. `refineDelta.ts` already refuses the same shape one
+ * layer up, where the INTERPRETER returns an ask that came back as a
+ * restatement of what is already filed — for the same reason, in the same
+ * words. This closes the door the prompt composer was holding open.
+ *
+ * # The boundary is amplitude, and it is this table's own
+ *
+ * `marks` is the measured member; `skinTone`, `skinCharacter` and `cheekbones`
+ * are here because they are the same few-levels-over-a-wide-area change, which
+ * is the reasoning this table exists to make explicit rather than to hide. Each
+ * of them is one fixture away from being measured, and the fixture is written.
+ */
+export function isSurfaceFacet(facet: Facet): boolean {
+  const subjects = subjectsOfFacet(facet);
+  /* A facet no free subject answers is an AXIS facet — hair colour, eye
+     colour — and every one of those is a replacement. `every` on an empty list
+     is `true`, which would quietly make the whole axis lane surface. */
+  return subjects.length > 0 && subjects.every((subject) => CHANGE_AMPLITUDE[subject].levels === SURFACE);
 }

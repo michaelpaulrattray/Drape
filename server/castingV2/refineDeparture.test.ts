@@ -515,12 +515,47 @@ describe("a remembered realization is spoken in the lane that instructs", () => 
   const CAPTION = "A faint scatter of small light freckles across the nose and upper cheeks";
 
   it("puts the caption INSIDE the ask, not in a second clause beside it", () => {
+    /*
+      ON A REPLACEMENT FACET — and the subject changed on 2026-08-09, which is
+      the finding rather than a tidy-up.
+
+      D-152's routing is intact and this is still the lane it belongs in. What
+      was measured since is that the routing must not apply to a SURFACE facet:
+      with its caption in the ask, `marks` delivered 0 of 16 on run-15's own
+      face; without it, 11 of 16. The next test is that half, and the two
+      together are the whole rule.
+    */
+    const ACCESSORIED: RefineDelta = { free: { statedAccessories: ["small gold hoops"] } };
+    const worn = "Small plain gold hoops, about two centimetres, one in each ear";
+    const prompt = composeRenderPrompt(ACCESSORIED, PROSE, {
+      [facetOfSubject("statedAccessories")]: worn,
+    });
+
+    expect(prompt.edits).toContain(worn);
+    /* And the already-true clause has nothing left to say about them. */
+    expect(prompt.captions).not.toContain(worn);
+    expect(prompt.captionedFacets).not.toContain(facetOfSubject("statedAccessories"));
+  });
+
+  it("DROPS a surface facet's caption from the ask — it reads as a report, and the render does nothing", () => {
+    /*
+      Measured, 32 paints, composites read ten times each with her bare master
+      as a negative control in the sitting: caption present 0/16 across five
+      wordings and both placements, caption absent 11/16. The same two arms on
+      `hair.colour` read 4/4 and 4/4, which is what scopes this to amplitude
+      rather than to captions.
+
+      Dropped from BOTH lanes: the already-true lane is where it sat before
+      D-152 and it contradicts the ask from there.
+    */
     const prompt = composeRenderPrompt(FRECKLED, PROSE, { [MARKS]: CAPTION });
 
-    expect(prompt.edits).toContain(CAPTION);
-    /* And the already-true clause has nothing left to say about her marks. */
+    expect(prompt.edits).not.toContain(CAPTION);
     expect(prompt.captions).not.toContain(CAPTION);
     expect(prompt.captionedFacets).not.toContain(MARKS);
+    /* Her own words and the clause's governing tail are untouched. */
+    expect(prompt.edits).toContain("MARKS: freckles");
+    expect(prompt.edits).toContain("a change that does not appear at all is a failed render");
   });
 
   it("keeps the user's own words at the head of the clause", () => {

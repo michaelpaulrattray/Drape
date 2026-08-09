@@ -54,6 +54,7 @@ import {
 import { qualifierFor } from "./subjectQualifiers";
 import { accessoryKindOf } from "./accessoryKinds";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
+import { isSurfaceFacet } from "./changeAmplitude";
 import { composePreservation } from "./refinePreservation";
 import { captionClause } from "./realizationCaption";
 
@@ -1674,7 +1675,30 @@ export function composeRenderPrompt(
   const carried: Partial<Record<Facet, string>> = {};
   for (const [facet, caption] of Object.entries(captions)) {
     if (!caption) continue;
-    if (asked.has(facet)) adopted[facet] = caption;
+    /*
+      A SURFACE FACET'S CAPTION IS DROPPED FROM THE ASK, NOT MOVED (2026-08-09).
+
+      Measured, 32 paints on run-15's own face: with the caption in the ask, her
+      freckles were delivered **0 of 16** — five wordings, both framings, inside
+      the clause and after it. With the caption absent and nothing else changed,
+      **11 of 16**. On `hair.colour` the same two arms read 4/4 and 4/4, which
+      is what makes this a boundary rather than a verdict on captions.
+
+      `isSurfaceFacet` carries the mechanism: a few-levels change described back
+      to a painter holding the master reads as a report on the picture in hand,
+      and the answer to "it already has them" is to do nothing.
+
+      **Dropped, not carried.** The other lane is where this caption lived
+      before D-152 and it was moved out for a reason stated at length above: an
+      asked facet's caption in the already-true lane makes the prompt say
+      "change this" and "this is already true" about one facet in one breath.
+      There is no third lane, and the evidence says the words cost more than
+      they buy — so for this class the render is asked in the user's own words
+      and the specific density is bought back by the retry, not by prose.
+    */
+    if (asked.has(facet)) {
+      if (!isSurfaceFacet(facet as Facet)) adopted[facet] = caption;
+    }
     /*
       A DEPARTED FACET'S CAPTION IS DROPPED, NOT CARRIED.
 
