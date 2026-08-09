@@ -107,6 +107,7 @@ import type { Page } from "puppeteer-core";
 import { formatReport, summarize } from "../server/castingV2/reliabilityReport.js";
 import { databaseUrl, settleAttemptRows } from "./lib/attemptRows.mjs";
 import { createChecks, openDrivenPage } from "./lib/drivePage.mjs";
+import { openDatabase } from "./lib/dbConnection.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
 
 function arg(name: string, fallback = ""): string {
@@ -672,6 +673,39 @@ async function openViewer(): Promise<void> {
  * A step that collided is void — not a pass, not a failure, and never a row in
  * the delivery rate.
  */
+/**
+ * THE OBJECT KEY THE ROW SAYS THIS INSTRUCTION DELIVERED.
+ *
+ * The row is the fact and the screen is the claim (working law 1), so the
+ * landing check compares one against the other rather than against "a picture
+ * I have not seen before". Novelty passed two steps of the 2026-08-09 walk
+ * while the viewer was showing a stale face, which is exactly the shape a
+ * projection defect takes.
+ *
+ * Returns null when the walk has no database — the check then records itself
+ * as never armed rather than passing quietly on nothing.
+ */
+async function landedImageKey(instruction: string): Promise<string | null> {
+  let url: string;
+  try { url = databaseUrl(); } catch { return null; }
+  const connection = await openDatabase(url);
+  try {
+    const [rows] = await connection.query<any[]>(
+      `SELECT v.imageKey
+         FROM casting_candidate_variants v
+         JOIN casting_candidates c ON c.id = v.candidateId
+        WHERE c.publicId = ? AND v.requestText = ? AND v.imageKey IS NOT NULL
+        ORDER BY v.id DESC
+        LIMIT 1`,
+      [CANDIDATE_ID, instruction],
+    );
+    const key = rows[0]?.imageKey as string | undefined;
+    return key ? key.slice(key.lastIndexOf("/") + 1) : null;
+  } finally {
+    await connection.end();
+  }
+}
+
 async function serverUptime(): Promise<number | null> {
   try {
     const res = await fetch(`${BASE}/api/health`);
@@ -1106,8 +1140,48 @@ for (const [index, step] of WALK.entries()) {
       { timeout: 30_000, polling: 500 },
       step.instruction,
     ).catch(() => undefined);
-    shown = await page.evaluate(() =>
+    /*
+      AND THEN WAIT FOR THE PICTURE, WHICH IS A DIFFERENT QUERY.
+
+      `aria-pressed` is the panel's own state and flips on the click. The
+      picture in the viewer comes from the SHEET's candidate projection, which
+      only catches up when `selectVariant` round-trips and its two refetches
+      land — measured at up to six seconds on production. Reading the `img` the
+      instant the pick reports pressed is therefore a race, and it is the race
+      this walk lost three times in a row on 2026-08-09: it booked a product
+      defect ("the viewer is one version behind") against a product that shows
+      the right picture every time, proved afterwards by clicking all five
+      versions and reading each twice.
+
+      The honest read is a SETTLED one — the same discipline this file already
+      applies to the version stack — and the thing it settles ON is the row's
+      own object key, not "a picture this run has not seen". Steps 4 and 5 of
+      that walk passed on novelty while showing the wrong face.
+    */
+    const deliveredKey = await landedImageKey(step.instruction);
+    const readShown = async () => page.evaluate(() =>
       document.querySelector<HTMLImageElement>(".dpc-viewer__plate img")?.src ?? null);
+    const deadline = Date.now() + 30_000;
+    shown = await readShown();
+    while (Date.now() < deadline) {
+      if (deliveredKey && shown?.includes(deliveredKey)) break;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const again = await readShown();
+      if (!deliveredKey && again === shown) break;
+      shown = again;
+    }
+    if (deliveredKey) {
+      checks.check(
+        Boolean(shown?.includes(deliveredKey)),
+        `[${position}] the screen is showing the picture the ROW says was delivered`,
+        `row ${deliveredKey} · screen ${shown?.slice(shown.lastIndexOf("/") + 1) ?? "no img"}`,
+      );
+    } else {
+      checks.neverArmed(
+        `[${position}] the screen is showing the picture the ROW says was delivered`,
+        "no landed row carried an image key for this instruction",
+      );
+    }
   }
 
   await page.screenshot({
