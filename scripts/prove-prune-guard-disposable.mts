@@ -462,6 +462,36 @@ const runs: Array<{ name: string; file: string; mutations: Mutation[]; suites?: 
   },
   {
     /*
+      THE HONESTY CONDITION THE FOUNDER ATTACHED TO THE STORE. Folding carried
+      facets into the delivery denominator is the flattering-bias family in one
+      line: the rate would climb because the painter's hardest cases quietly
+      left the exam, at the exact moment he is asked to certify a number.
+    */
+    name: "carried facets staying OUT of the delivery denominator",
+    file: "server/castingV2/reliabilityReport.ts",
+    suites: ["server/castingV2/reliabilityReport.test.ts"],
+    mutations: [{
+      find: "    + tally.delivered_unverified;",
+      replace: "    + tally.delivered_unverified\n    + tally.delivered_carried;",
+    }],
+  },
+  {
+    /*
+      AND THE OTHER HALF: a carried fact that is MISSING is the store's own
+      promise failing, and must stay a false pass. Excusing it because this
+      render did not paint it rebuilds the bias through the door the carried
+      column was opened to close.
+    */
+    name: "a carried fact that is missing still counting as a false pass",
+    file: "server/castingV2/reliabilityReport.ts",
+    suites: ["server/castingV2/reliabilityReport.test.ts"],
+    mutations: [{
+      find: "  const fresh = checks.filter((check) => check.carried !== true);\n  if (fresh.length === 0) return \"delivered_carried\";",
+      replace: "  const fresh = checks.filter((check) => check.carried !== true);\n  if (checks.some((check) => check.carried === true)) return \"delivered_carried\";",
+    }],
+  },
+  {
+    /*
       THE SUB-FLAG'S COVERAGE RULE. Segments belong to candidates, and only
       Casting V2 makes those — so a segment scope reaching past the casting
       scope is inert, and an inert flag that reports itself enabled is how a

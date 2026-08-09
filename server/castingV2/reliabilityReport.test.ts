@@ -485,3 +485,117 @@ describe("an advisory miss is not a false pass, and a binding miss still is", ()
     expect(report.overall.delivered_noncompliant).toBe(1);
   });
 });
+
+/**
+ * THE SECOND COLUMN — segment permanence's honesty condition.
+ *
+ * The founder attached it to the store itself: a carried patch is recorded as
+ * CARRIED, never as a fresh delivery. The failure it forbids is not a false
+ * pass; it is subtler and worse at certification time. Once carried facets
+ * count, the per-class rate rises because the denominator has quietly lost the
+ * painter's hardest cases — a number that improves because the exam got easier.
+ */
+describe("carried facets are never fresh deliveries", () => {
+  const carried = (over: Partial<StoredCheck> = {}) => check({ carried: true, ...over });
+
+  it("classifies a render that only carried as carried, not compliant", () => {
+    expect(classifyAttempt(attempt({ verification: { checks: [carried()] } }))).toBe("delivered_carried");
+  });
+
+  it("keeps carried rows OUT of the rate's denominator entirely", () => {
+    const report = summarize([
+      attempt({ operationId: "fresh-ok", verification: { checks: [check()] } }),
+      attempt({ operationId: "carried-1", verification: { checks: [carried()] } }),
+      attempt({ operationId: "carried-2", verification: { checks: [carried()] } }),
+    ]);
+
+    // One fresh claim, one fresh pass — 100% of what was actually painted, and
+    // the two carried renders neither help nor hurt it.
+    expect(report.overall.deliveryClaims).toBe(1);
+    expect(report.overall.delivered_compliant).toBe(1);
+    expect(report.overall.delivered_carried).toBe(2);
+    expect(report.overall.deliveryRate).toBe(100);
+  });
+
+  it("does not let carrying rescue a rate the painting earned", () => {
+    /*
+      THE FLATTERING BIAS, DRIVEN. Two fresh attempts, one of them a false
+      pass, plus eight carried renders. If carried rows entered the
+      denominator the class would read 90% and clear nothing honestly; the
+      rate must stay at what the painter did — 50% — with the eight reported
+      beside it.
+    */
+    const rows = [
+      attempt({ operationId: "fresh-ok", verification: { checks: [check()] } }),
+      attempt({
+        operationId: "fresh-miss",
+        verification: { checks: [check({ verified: false })] },
+      }),
+      ...Array.from({ length: 8 }, (_unused, index) => attempt({
+        operationId: `carried-${index}`,
+        verification: { checks: [carried()] },
+      })),
+    ];
+
+    const report = summarize(rows);
+    expect(report.overall.deliveryRate).toBe(50);
+    expect(report.overall.delivered_carried).toBe(8);
+    expect(report.overall.clearsBar).toBe(false);
+  });
+
+  it("still calls a carried fact that is MISSING a false pass", () => {
+    /*
+      The store's own promise failing. She paid for those freckles once, the
+      product said it would keep them, and the frame she was charged for does
+      not have them. Excusing that as "this render did not paint it" would
+      rebuild the bias through the door this column was opened to close.
+    */
+    const row = attempt({
+      verification: { checks: [carried({ verified: false, saw: "clear skin" })] },
+    });
+    expect(classifyAttempt(row)).toBe("delivered_noncompliant");
+    expect(summarize([row]).overall.clearsBar).toBe(false);
+  });
+
+  it("judges a mixed render on what it painted, and counts the carried facet in its own class", () => {
+    const row = attempt({
+      verification: {
+        checks: [
+          check({ facet: "hair.colour", asked: "copper" }),
+          carried({ facet: "marks", asked: "a light scattering of freckles" }),
+        ],
+      },
+    });
+
+    // The row delivered fresh work and it is judged on that…
+    expect(classifyAttempt(row)).toBe("delivered_compliant");
+    // …while the carried facet's OWN class records what actually happened to it.
+    expect(classifyAttemptForClass(row, "marks")).toBe("delivered_carried");
+    expect(classifyAttemptForClass(row, "hair.colour")).toBe("delivered_compliant");
+
+    const report = summarize([row]);
+    const marks = report.byClass.find((tally) => tally.edit === "marks")!;
+    expect(marks.deliveryClaims).toBe(0);
+    expect(marks.delivered_carried).toBe(1);
+    // Not "unexercised" — that would say we never delivered it, and she has it.
+    expect(report.unexercised).toEqual([]);
+    expect(report.carriedOnly).toEqual(["marks"]);
+  });
+
+  it("prints the column, and says why it is outside the rate", () => {
+    const text = formatReport(summarize([
+      attempt({ operationId: "carried-1", verification: { checks: [carried({ facet: "marks" })] } }),
+    ]));
+    expect(text).toContain("carr");
+    expect(text).toContain("carried by stored segments: 1");
+    expect(text).toContain("outside the rate's denominator");
+    expect(text).toContain("carried only: marks");
+  });
+
+  it("treats every legacy row as painted, because nothing could have been carried", () => {
+    // No `carried` field at all — the honest default, and the one that cannot
+    // retroactively empty a historical denominator.
+    expect(classifyAttempt(attempt())).toBe("delivered_compliant");
+    expect(summarize([attempt()]).overall.delivered_carried).toBe(0);
+  });
+});

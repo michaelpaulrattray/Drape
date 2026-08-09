@@ -60,6 +60,7 @@ export type AttemptOutcome =
   | "delivered_advisory"
   | "refused_honest"
   | "delivered_unverified"
+  | "delivered_carried"
   | "delivered_compliant"
   | "unclassified";
 
@@ -72,6 +73,24 @@ export type StoredCheck = {
   read?: boolean;
   binding?: boolean;
   saw?: string;
+  /**
+   * THIS FACT WAS CARRIED, NOT PAINTED — segment permanence's honesty column.
+   *
+   * True when the facet is in the picture because a stored segment was pasted
+   * there, rather than because this render produced it. It is still a true
+   * fact about the delivered frame — she genuinely has the freckles she paid
+   * for — and it is emphatically NOT a fresh delivery.
+   *
+   * The founder's condition on the whole store, and it is not squeamishness:
+   * once carried facets count as deliveries, the per-class rate rises because
+   * the denominator has quietly lost its hardest cases, at the exact moment he
+   * is asked to certify a number. That is the flattering-bias family, and this
+   * campaign has been burned by every other member of it.
+   *
+   * Absent on every row written before segments existed, which is the honest
+   * default: nothing was carried, because nothing could be.
+   */
+  carried?: boolean;
 };
 
 export type StoredVerification = {
@@ -226,12 +245,35 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
     that does not take a finding away, which is D-235's asymmetry pointed at a
     different field.
   */
+  /*
+    A BINDING MISS COUNTS WHETHER IT WAS PAINTED OR CARRIED, and it is
+    deliberately the FIRST test.
+
+    A carried fact that is not in the picture is the store's own promise
+    failing: she paid for those freckles once, the product said it would keep
+    them, and the frame she was charged for does not have them. Excusing that
+    because "this render did not paint it" would build the flattering bias back
+    in through the door the carried column was added to close.
+  */
   if (checks.some((check) => wasRead(check) && !check.verified && check.binding !== false)) {
     return "delivered_noncompliant";
   }
-  if (checks.some((check) => wasRead(check) && !check.verified)) return "delivered_advisory";
+
+  /*
+    NOTHING FRESH HAPPENED HERE — the picture is right, and this render proved
+    nothing about painting.
+
+    Its own outcome so it sits outside the delivery denominator entirely: a
+    carried facet is arithmetic, and arithmetic that works is not evidence that
+    the painter delivers. The class's rate has to keep meaning "when we claimed
+    a fresh delivery, was it real".
+  */
+  const fresh = checks.filter((check) => check.carried !== true);
+  if (fresh.length === 0) return "delivered_carried";
+
+  if (fresh.some((check) => wasRead(check) && !check.verified)) return "delivered_advisory";
   /* Every check must be affirmatively read. One silence is not a clean sheet. */
-  if (checks.every(wasRead)) return "delivered_compliant";
+  if (fresh.every(wasRead)) return "delivered_compliant";
   return "delivered_unverified";
 }
 
@@ -263,6 +305,16 @@ export type ClassTally = {
    */
   delivered_advisory: number;
   delivered_unverified: number;
+  /**
+   * THE SECOND COLUMN — delivered, correct, and carried rather than painted.
+   *
+   * She has the thing; a stored segment put it there. Reported beside the rate
+   * and never inside it, because a rate that counted these would climb exactly
+   * as the painter's hardest cases left its denominator. Its own column is what
+   * makes the store's benefit visible without letting it flatter the number the
+   * founder certifies.
+   */
+  delivered_carried: number;
   refused_honest: number;
   refused_infra: number;
   unclassified: number;
@@ -301,6 +353,17 @@ export type ReliabilityReport = {
    * would say we measured something we did not.
    */
   unexercised: string[];
+  /**
+   * Classes whose every appearance in this window was CARRIED.
+   *
+   * Named apart from `unexercised` because they are a different fact and one
+   * word for both loses one of them: an unexercised class never delivered at
+   * all, while a carried-only class was in every picture and painted in none of
+   * them. The store worked; the painter was not on trial. Reporting the second
+   * as passing would be the flattering read, and reporting it as failing would
+   * be a lie about a face that is correct.
+   */
+  carriedOnly: string[];
 };
 
 /** D-236's bar. A number with teeth, beside D-193's. */
@@ -314,6 +377,7 @@ const emptyTally = (edit: string): ClassTally => ({
   delivered_noncompliant: 0,
   delivered_advisory: 0,
   delivered_unverified: 0,
+  delivered_carried: 0,
   refused_honest: 0,
   refused_infra: 0,
   unclassified: 0,
@@ -341,6 +405,12 @@ function finish(tally: ClassTally): ClassTally {
     `delivered_unverified` STAYS in the denominator. It is a delivery claim
     whose reading failed, and taking it out would let a reader outage lift the
     rate — the exact inflation D-235 was written against.
+  */
+  /*
+    `delivered_carried` is deliberately ABSENT from this sum — segment
+    permanence's honesty condition, held in the one line where it could be
+    quietly lost. A carried facet claims no fresh delivery, so it belongs
+    beside the rate rather than inside it.
   */
   tally.deliveryClaims = tally.delivered_compliant
     + tally.delivered_noncompliant
@@ -399,7 +469,10 @@ export function summarize(
       .filter((tally) => tally.deliveryClaims > 0 && !tally.clearsBar)
       .map((tally) => tally.edit),
     unexercised: classes
-      .filter((tally) => tally.deliveryClaims === 0)
+      .filter((tally) => tally.deliveryClaims === 0 && tally.delivered_carried === 0)
+      .map((tally) => tally.edit),
+    carriedOnly: classes
+      .filter((tally) => tally.deliveryClaims === 0 && tally.delivered_carried > 0)
       .map((tally) => tally.edit),
   };
 }
@@ -438,7 +511,7 @@ export function formatReport(report: ReliabilityReport): string {
      off twenty are different findings, and the old table hid the difference. */
   const header = "class".padEnd(22)
     + "n".padStart(4) + " claim".padStart(7) + "  ok".padStart(6) + " FALSE".padStart(7)
-    + "   adv".padStart(7) + " unver".padStart(7) + " ref-h".padStart(7)
+    + "   adv".padStart(7) + " unver".padStart(7) + " carr".padStart(7) + " ref-h".padStart(7)
     + " ref-i".padStart(7) + "   rate  bar";
   lines.push(header);
   lines.push("-".repeat(header.length));
@@ -450,6 +523,9 @@ export function formatReport(report: ReliabilityReport): string {
     + String(tally.delivered_noncompliant).padStart(7)
     + String(tally.delivered_advisory).padStart(7)
     + String(tally.delivered_unverified).padStart(7)
+    /* CARRIED sits between the delivery columns and the refusals, outside the
+       rate: it is the store working, and it is not the painter delivering. */
+    + String(tally.delivered_carried).padStart(7)
     + String(tally.refused_honest).padStart(7)
     + String(tally.refused_infra).padStart(7)
     /* A rate with no claims behind it is not 0% — it is nothing, and printing
@@ -461,6 +537,13 @@ export function formatReport(report: ReliabilityReport): string {
   lines.push(row(report.overall));
   lines.push("");
   lines.push(`credits refunded: ${report.creditsRefunded}`);
+  if (report.overall.delivered_carried > 0) {
+    lines.push(
+      `carried by stored segments: ${report.overall.delivered_carried} `
+      + "— correct in the picture, outside the rate's denominator, because a "
+      + "carried facet is arithmetic rather than a fresh delivery",
+    );
+  }
   lines.push(
     `bar: ${DELIVERY_RATE_BAR}% delivered-and-compliant per class, ${FALSE_PASS_BAR} false passes (D-236)`,
   );
@@ -471,6 +554,12 @@ export function formatReport(report: ReliabilityReport): string {
     lines.push(
       `no delivery claimed: ${report.unexercised.join(", ")} — every attempt refused, `
       + "so nothing about delivery is proven either way",
+    );
+  }
+  if (report.carriedOnly.length > 0) {
+    lines.push(
+      `carried only: ${report.carriedOnly.join(", ")} — she has these and the store `
+      + "kept them, but this window painted none of them, so the painter is unproven here",
     );
   }
   return lines.join("\n");
