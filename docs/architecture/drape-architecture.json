@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "73a1f9ec65d9a452"
+    "sourceFingerprint": "e19ff70fdf826a26"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 79
+      "moduleCount": 80
     },
     {
       "id": "domain:castingV2",
@@ -3573,6 +3573,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/segmentsOnFace.ts",
+      "path": "server/castingV2/segmentsOnFace.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/sharpness.ts",
       "path": "server/castingV2/sharpness.ts",
       "domain": "casting-v2",
@@ -5774,6 +5780,16 @@
       "id": "route:castingV2.roster",
       "namespace": "castingV2",
       "name": "roster",
+      "type": "query",
+      "auth": "protected",
+      "strictInput": true,
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.segmentsOnFace",
+      "namespace": "castingV2",
+      "name": "segmentsOnFace",
       "type": "query",
       "auth": "protected",
       "strictInput": true,
@@ -8619,6 +8635,10 @@
       "path": "server/castingV2/segmentPrune.test.ts"
     },
     {
+      "id": "test:server/castingV2/segmentsOnFace.test.ts",
+      "path": "server/castingV2/segmentsOnFace.test.ts"
+    },
+    {
       "id": "test:server/castingV2/sexCoding.test.ts",
       "path": "server/castingV2/sexCoding.test.ts"
     },
@@ -9209,6 +9229,10 @@
     {
       "id": "test:server/security/trustedImageFetch.test.ts",
       "path": "server/security/trustedImageFetch.test.ts"
+    },
+    {
+      "id": "test:server/segmentsOnFaceEndpoint.test.ts",
+      "path": "server/segmentsOnFaceEndpoint.test.ts"
     },
     {
       "id": "test:server/serverResilience.test.ts",
@@ -18588,6 +18612,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/segmentsOnFace.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentsOnFace.ts",
+      "to": "module:server/castingV2/zoneScope.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/sharpness.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -20924,6 +20958,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/segmentsOnFace.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/sheetPreview.ts",
       "kind": "imports"
     },
@@ -20935,6 +20974,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2Segments.ts",
       "kind": "imports"
     },
     {

@@ -28,6 +28,10 @@ import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
+import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
+import { segmentsOnFace } from "../castingV2/segmentsOnFace";
+import { currentValueOfFacet } from "../castingV2/refineDelta";
+import { readResolvedIdentity } from "../castingV2/rollService";
 import {
   AGE_BANDS,
   AGE_PHASES,
@@ -848,6 +852,70 @@ export const castingV2Router = router({
         // candidates, not the session).
         sheetLive: sessionId?.live ?? false,
       });
+    }),
+
+  /**
+   * WHAT THIS VERSION IS KEEPING — the segments panel's only read (fable-113,
+   * founder-cleared in fable-122).
+   *
+   * Read-only by design, and that is a product decision rather than a slice
+   * boundary: the panel tells her what her face is holding and PREFILLS a
+   * sentence when she taps a row. Nothing changes until she finishes it and
+   * asks, so there is no delete here, no restyle, and no reorder.
+   *
+   * It is derived from `listLineageSegments` — the compositor's OWN source —
+   * rather than from a second query shaped for the screen. A panel with its own
+   * notion of what is kept would eventually disagree with the picture, and the
+   * disagreement would be invisible until she noticed her freckles were listed
+   * and absent (law 4).
+   *
+   * `variantId: null` is the original, and the original keeps nothing: the first
+   * edit of a face carries nothing by definition (fable-091).
+   */
+  segmentsOnFace: protectedProcedure
+    .input(z.object({ candidateId: publicId, variantId: publicId.nullable() }).strict())
+    .query(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      if (input.variantId === null) return { rows: [] };
+
+      /* Owner proved inside the statements that read, never in a check before
+         them (invariant 1) — `resolveOwnedCandidateId` and
+         `listCandidateVariants` each carry `userId` into their own WHERE. */
+      const candidateId = await resolveOwnedCandidateId({
+        userId: ctx.user.id,
+        candidatePublicId: input.candidateId,
+      }).catch(() => null);
+      if (candidateId === null) throw new TRPCError({ code: "NOT_FOUND", message: "Candidate not found" });
+
+      const variants = await listCandidateVariants(ctx.user.id, input.candidateId);
+      const anchor = variants.find((variant) => variant.publicId === input.variantId);
+      if (!anchor) throw new TRPCError({ code: "NOT_FOUND", message: "Version not found" });
+
+      const segments = await listLineageSegments({
+        userId: ctx.user.id,
+        candidateId,
+        anchorVariantId: anchor.id,
+      });
+
+      /*
+        HER OWN WORDS FOR THE THING, taken from the variant that DELIVERED it —
+        the same string the painter was handed and the reader was asked about.
+        A row whose value cannot be found is dropped rather than shown as a
+        facet id, which is the projection's rule, not this route's.
+      */
+      const byId = new Map(variants.map((variant) => [variant.id, variant]));
+      return {
+        rows: segmentsOnFace({
+          segments,
+          deliveredValue: (segment) => {
+            const source = segment.variantId === null ? null : byId.get(segment.variantId);
+            if (!source) return null;
+            return currentValueOfFacet(readResolvedIdentity(source.internalPrompt), segment.facet);
+          },
+          urlOf: storagePublicUrl,
+        }),
+      };
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */
