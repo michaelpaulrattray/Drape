@@ -198,6 +198,44 @@ The picture is the one that matters and the recipe is the one that explains it.
 His finding was the picture reverting; a recipe that still says "down" over a
 frame that is not is the same defect with a better alibi.
 
+**A third thing is RECORDED beside them — the pinned caption — because tracing
+his own rows found finding 4's mechanism before this walk ever ran.**
+
+At the wire, v#163 → v#164:
+
+```
+v#163  "she wear her hair down"      delivered · statedDetails.hairWorn "down"
+                                     caption "Straight dark hair worn down,
+                                     center-parted, falling loosely past
+                                     shoulder length on both sides."
+v#164  "dangly cross earrings"       its PROMPT carried, as ALREADY TRUE:
+                                     "HAIR WORN: gathered — the bulk of the hair
+                                     drawn away from the face and gathered behind
+                                     the head"
+                                     delivered gathered hair · the reader marked
+                                     hairWorn verified FALSE against asked "down"
+```
+
+So **finding 4 is not the hair drifting. The later render was told to undo the
+edit she had just paid for**, and the product argued with itself about it
+afterwards. The pinned caption and the resolved recipe are two records of one
+fact, and when they part, the picture follows the caption.
+
+**This is not a claim that it is still live.** That chain rendered
+2026-08-08 23:52Z, and `59c22762` changed exactly this path eleven hours later
+(fable-118 (a3) — pin the frame she is standing on, not the one she started
+from). Whether the cure holds is what this walk is for, and it is now aimed at a
+mechanism that is understood rather than at a symptom.
+
+The pin is **recorded, not graded**, and the reason is a negative control: the
+obvious version — fail if the caption names a gathered arrangement — fails a
+*correct* walk, because v#162's own real pin reads *"worn exactly as cut — short
+enough that it is not gathered, tied or pinned at all"*, which means the opposite
+of every word in it. A regex over model-written prose cannot see negation.
+Nothing is lost: if the hair really goes back up the PICTURE check fails on its
+own. The pin adds attribution, not detection — whether the painter drifted or was
+told to — and attribution is what an observation is for.
+
 **Control:** a frame before the hair came down must read as **not** down on the
 same instrument. Without that, "still down" is a reading that has never been able
 to say otherwise. Satisfied by control D, which uses two readings the product

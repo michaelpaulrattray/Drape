@@ -1608,6 +1608,55 @@ async function runWalk(): Promise<boolean> {
         ? `read=${picture.read} verified=${picture.verified} — saw: ${String(picture.saw ?? "").slice(0, 120)}`
         : "the row carries no hairWorn check at all, so the frame was never read for it",
     );
+
+    /*
+      AND THE THIRD INSTRUMENT, WHICH IS THE EARLIEST AND THE SHARPEST — the PIN.
+
+      Traced on his own rows before this walk ever ran (v#163 → v#164, at the
+      wire): v#163 asked for her hair down, delivered it, and captioned it
+      correctly — *"Straight dark hair worn down, center-parted…"*. Its child
+      v#164, asking for earrings, was then handed **"HAIR WORN: gathered — the
+      bulk of the hair drawn away from the face and gathered behind the head"**
+      under an ALREADY TRUE clause, and the painter obeyed. The reader then
+      marked `hairWorn` verified FALSE against `asked: "down"`.
+
+      So finding 4 is not the hair drifting. **The later render was told to undo
+      the edit she had just paid for**, and the product argued with itself about
+      it afterwards.
+
+      That is a structured disagreement, not a prose one: the pinned caption and
+      the resolved recipe are two records of one fact, and when they part, the
+      PICTURE follows the caption. Checking it here catches the defect one whole
+      step before the picture does, and tells a reader which of the two lied.
+
+      **Not a claim that it is still live.** His chain rendered 2026-08-08 23:52Z
+      and `59c22762` changed exactly this path eleven hours later (fable-118 (a3):
+      pin the frame she is standing on, not the one she started from). Whether
+      the cure holds is what this walk is for.
+
+      # IT IS RECORDED, NOT GRADED, and the reason is a negative control.
+
+      The obvious version of this is a check: fail if the pinned caption names a
+      gathered arrangement. Driven against real production captions, it fails a
+      CORRECT walk — v#162's own pin reads *"worn exactly as cut — short enough
+      that it is not gathered, tied or pinned at all"*, which means the opposite
+      of every word in it. A regex over model-written prose cannot see negation,
+      and a false failure on a 125-credit walk is the expensive direction.
+
+      Nothing is lost by recording it: if the hair really does go back up, the
+      PICTURE check above fails on its own. The pin does not add detection — it
+      adds ATTRIBUTION, telling a reader whether the painter drifted or was told
+      to, and attribution is exactly what an observation is for.
+    */
+    const pin = typeof stored?.captions?.hairWorn === "string" ? stored.captions.hairWorn : null;
+    absent(
+      `[D] ${position} what this render was PINNED with, verbatim`,
+      pin
+        ? `caption: "${pin.slice(0, 180)}"${recipe ? ` · recipe says "${recipe}"` : ""} — `
+          + "read this beside the picture check above: a caption naming a gathered arrangement is "
+          + "stated to the painter as ALREADY TRUE, and the picture follows the caption"
+        : "this render carries no hairWorn caption — nothing was pinned",
+    );
   }
 
   /* ------------- E. The panel agrees with the assembly (new, free) */
