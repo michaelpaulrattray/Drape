@@ -339,6 +339,123 @@ export function validateCastingSegmentsDeliveredEnvironment(input: {
   return delivered;
 }
 
+/* ---------------------------------------- the reference-library sub-flag */
+
+/**
+ * THE REFERENCE LIBRARY — its own switch, off everywhere until the ceremony.
+ *
+ * The library is a NEW TABLE (migration 0028) on the same paid path
+ * `CASTING_V2_SCOPE` already opens for the founder. A writer shipping under
+ * that flag alone would INSERT into a table production does not have yet, on a
+ * render somebody paid for. So the table lands by ceremony and the flag is
+ * flipped afterwards; neither step alone changes behaviour, and neither alone
+ * can break a live roll.
+ *
+ * It is deliberately NOT a child of `CASTING_SEGMENTS_SCOPE`. The library is
+ * not built from the segment store and never reads it — the store seeds nothing
+ * (fable-173/196), and the two answer different questions about a face. Its
+ * parent is the casting scope, because its rows hang off a candidate.
+ */
+export const CASTING_REFERENCE_LIBRARY_SCOPE_ENV = "CASTING_REFERENCE_LIBRARY_SCOPE";
+
+export class CastingReferenceLibraryScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingReferenceLibraryScopeConfigurationError";
+  }
+}
+
+/**
+ * A library row hangs off a candidate, and only Casting V2 makes candidates. A
+ * library scope wider than the casting scope is either inert or a mistake, and
+ * from outside those look identical — so it refuses (invariant 7).
+ */
+export class CastingReferenceLibraryCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} ${detail}`);
+    this.name = "CastingReferenceLibraryCoverageError";
+  }
+}
+
+/**
+ * The library writes crops of a person's face to the public bucket. Without the
+ * cleanup worker nothing ever deletes them, so the retention promise the write
+ * transaction makes would be false at the far end — the same posture the
+ * segment store takes, for the same reason.
+ */
+export class CastingReferenceLibraryCleanupWorkerError extends Error {
+  constructor() {
+    super(
+      `${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} cannot be enabled unless ENABLE_STORAGE_CLEANUP_WORKER is exactly "true"`,
+    );
+    this.name = "CastingReferenceLibraryCleanupWorkerError";
+  }
+}
+
+export function parseCastingReferenceLibraryScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingReferenceLibraryScopeConfigurationError();
+  });
+}
+
+/** Whether this user's faces build a reference library. An AND of both flags,
+ *  for `captureCastingSegmentsEnabled`'s reason: a boot check that was never
+ *  invoked is the second way a flag pair goes wrong. */
+export function captureCastingReferenceLibraryEnabled(userId: number): boolean {
+  const library = parseCastingReferenceLibraryScope(
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+  );
+  if (!castingV2EnabledForUser(library, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+/**
+ * Whether the library is armed AT ALL, regardless of user.
+ *
+ * The retention sweep reads this one, and only to decide whether a MISSING
+ * TABLE is tolerable. Purging itself is never per-user and never flag-gated:
+ * the sweep must collect crops for every user who has any, including one
+ * removed from the scope list after their rows were written.
+ */
+export function castingReferenceLibraryArmed(): boolean {
+  return parseCastingReferenceLibraryScope(
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+  ).kind !== "off";
+}
+
+export function validateCastingReferenceLibraryEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+  cleanupWorker: string | undefined;
+}): CastingV2Scope {
+  const library = parseCastingReferenceLibraryScope(input.scope);
+  if (library.kind === "off") return library;
+
+  if (input.cleanupWorker !== "true") throw new CastingReferenceLibraryCleanupWorkerError();
+
+  const casting = parseCastingV2Scope(input.castingScope);
+  if (casting.kind === "off") {
+    throw new CastingReferenceLibraryCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a library hangs off a candidate, and nothing can create one`,
+    );
+  }
+  if (casting.kind === "all") return library;
+  if (library.kind === "all") {
+    throw new CastingReferenceLibraryCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = library.userIds.filter((userId) => !casting.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingReferenceLibraryCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return library;
+}
+
 export function validateCastingV2Environment(input: {
   scope: string | undefined;
   cleanupWorker: string | undefined;

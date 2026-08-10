@@ -164,6 +164,50 @@ sharing one reference image.
 **Backstop:** the refusal gets a test driven directly, not through an LLM that
 usually behaves (working law 3).
 
+### 2.6 Where it lives — `casting_reference_library` (migration 0028, fable-196/197)
+
+**Its own table, not a projection over `casting_segments`.** Ruled fable-196 on
+three grounds, each independently fatal to the projection: the store seeds
+nothing (D-243's audit — 7 of 14 rows are the wrong facet entirely), the key
+spaces differ (panel slots vs `facet@region`), and the library holds facts the
+segment table cannot represent — the declarative word stack, the tier, the
+stylist noun, and an introduced item's frozen introduction reference. The
+segment store stays the undo store; different facts, different keys, so this is
+not the second list working law 4 forbids.
+
+**One row is the state of ONE slot as of ONE render, plus the image that render
+froze (`anchor`) or minted (`carry`).** Both roles carry the same state columns,
+so no row is half-populated and no reader has to know which columns its role
+makes meaningless.
+
+**Rows are immutable; the live library is DERIVED.** Refinement is a tree, and a
+mutable one-row-per-slot library holds one answer for a candidate that has many
+— the shape that had a fork from B carrying D's glasses (fable-091). Each row
+names the variant that minted it; a branch's library is the newest version per
+(slot, role) along that variant's own ancestry, and **a retired NEWEST means
+gone from this branch while a retired older one means nothing at all**. A
+`variantId` of NULL means minted from the master, so the row belongs to every
+branch — that half is a LEFT JOIN, and a plain join would silently drop her own
+eyes out of every library.
+
+**`storageKey` NULL is the tier boundary, not missing data.** A surface is
+carried by words and never by a crop; an anatomy slot can hold words before
+anything has delivered it. The other combinations are refused at the write —
+an anchor without an image, a surface with a minted crop (fable-195's carve-out
+is the other role: an UPLOADED makeup reference is a legal anchor), a crop with
+no completeness reading, a crop with no frame, an anchor carrying a bbox.
+
+**Retention is not deferred to a later slice.** The candidate sweep deletes
+these rows and hands their objects to the cleanup worker inside the same
+transaction and on the same manifest as the candidate's own, from this migration
+onward, and that purge is **unconditional** — the flag governs whether rows are
+written, nothing governs whether they are deleted.
+
+**Owed, and named rather than absent:** what a SIGNED Cast keeps. Promotion will
+copy into a second table on the Cast's own lifetime, exactly as
+`casting_cast_segments` does for segments and for the same reasons. Nothing
+about this table changes when it lands, and no post-Sign edit path exists today.
+
 ---
 
 ## 3. THE EDIT LAW — what an edit is (D-244, founder, 2026-08-10)
@@ -464,6 +508,11 @@ the lip staircase, which D-244 cancelled.
 2. **The library**: slot keys, per-instance storage, minting from fresh reads,
    the completeness guard with its second read and per-kind refusal, the
    byte-identity refusal, the one-slot assembler refusal with its direct test.
+   **Persistence landed 2026-08-10** — §2.6's table, its migration, the
+   lineage-derived read, the shape refusals, the unconditional purge, and the
+   ceremony (batched to the founder with the flag). What remains of this step is
+   the MINTING path: cutting the crops, running the guard at the door, and
+   writing the rows a delivered render earns.
 3. **The recipe assembler and the repaint path**, behind the flag, dark. The
    assembler is where D-244 lives in code: it resolves each feature to
    *anchor + full word stack* (edited) or *minted crop* (carried), and it can
@@ -525,3 +574,4 @@ contract does not know the painter changed.
 | Reference COUNT is out — two references carry what five did; naming form and ask size are what remain | the count bisect, 2026-08-10 |
 | The surface row is WITHDRAWN, unearned in both directions — the specular measure's noise (0.67pp) exceeds the whole nude range it must divide, and it fails its own positive control by sign | `glossy-family-sweep-disposable.mts`, 2026-08-10 |
 | A positive control class must be labelled by a verified OUTCOME, never by the ask or the reference that produced it | the same, named as the class per working law 7 |
+| **The library is its own table, migration first; storage and reference emission are PER INSTANCE always** | **fable-196**, executed as §2.6 / migration 0028 |

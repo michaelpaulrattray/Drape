@@ -91,9 +91,17 @@ try {
   const runFlag = process.argv.indexOf("--run");
   const script = runFlag > -1 ? process.argv[runFlag + 1] : null;
   const rest = runFlag > -1 ? process.argv.slice(runFlag + 2) : [];
+  /* `--suite <file>` points the same disposable database at another vitest
+     file. The reference library needs exactly this shape — a real database, the
+     product's own statements — and a second copy of everything above would be a
+     second thing to keep in step with the migration list. */
+  const suiteFlag = process.argv.indexOf("--suite");
+  const suite = suiteFlag > -1
+    ? process.argv[suiteFlag + 1]
+    : "server/castingV2-segment-store-db.test.ts";
   const command = script
     ? ["tsx", script, ...rest]
-    : ["vitest", "run", "server/castingV2-segment-store-db.test.ts"];
+    : ["vitest", "run", suite];
 
   exitCode = await new Promise<number>((resolve) => {
     // `shell: true` on Windows: Node 20+ refuses to spawn a .cmd shim

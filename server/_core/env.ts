@@ -24,9 +24,11 @@ import {
   validateSnapshotRestoreEnvironment,
 } from "../casting/snapshotRestoreScope";
 import {
+  CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
   CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
+  validateCastingReferenceLibraryEnvironment,
   validateCastingSegmentsDeliveredEnvironment,
   validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
@@ -147,6 +149,17 @@ export function validateEnv(): void {
   validateCastingSegmentsDeliveredEnvironment({
     scope: process.env[CASTING_SEGMENTS_DELIVERED_SCOPE_ENV],
     segmentsScope: process.env[CASTING_SEGMENTS_SCOPE_ENV],
+  });
+  /*
+    The reference library (migration 0028): a new table on the paid path, so the
+    ceremony lands it and the flag is flipped afterwards. Checked against the
+    casting scope rather than the segment scope — the library is not built from
+    the segment store and never reads it.
+  */
+  validateCastingReferenceLibraryEnvironment({
+    scope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

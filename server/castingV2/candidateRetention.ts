@@ -18,6 +18,10 @@
  */
 import { randomUUID } from "node:crypto";
 
+import {
+  deleteReferenceRowsIn,
+  listPurgeableReferencesIn,
+} from "../db/castingV2ReferenceLibrary";
 import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { withTransaction } from "../db/connection";
@@ -34,6 +38,7 @@ import { createModuleLogger } from "../logging/logger";
 import { checkCandidateInvariants } from "./candidateInvariants";
 import {
   captureCastingV2Enabled,
+  castingReferenceLibraryArmed,
   castingSegmentsArmed,
   parseCastingV2Scope,
   CASTING_V2_SCOPE_ENV,
@@ -85,6 +90,23 @@ function tolerateAbsentSegmentStore(error: unknown): never | [] {
   if (!isMissingTable(error) || castingSegmentsArmed()) throw error;
   log.warn(
     "[candidateRetention] the segment store's table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the segment migration lands.",
+  );
+  return [];
+}
+
+/**
+ * The same tolerance, on the same terms, for the reference library.
+ *
+ * Its table lands by ceremony too, so the window where the code knows about
+ * `casting_reference_library` and the database does not is real — and empty,
+ * because the flag that would write a row is off until after the ceremony. The
+ * moment the library is armed, a missing table stops being an empty set and
+ * starts being a fault the sweep says out loud.
+ */
+function tolerateAbsentReferenceLibrary(error: unknown): never | [] {
+  if (!isMissingTable(error) || castingReferenceLibraryArmed()) throw error;
+  log.warn(
+    "[candidateRetention] the reference library's table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the library migration lands.",
   );
   return [];
 }
@@ -195,6 +217,33 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         }
       }
       if (segments.length > 0) await deleteSegmentRowsIn(tx, candidateIds);
+
+      /*
+        And a candidate's REFERENCE LIBRARY, on the same terms (migration 0028).
+
+        Same transaction, same manifest, same unconditional posture: the flag
+        governs whether library rows are WRITTEN, and nothing governs whether
+        they are purged. A library row holds a crop of a person's face at a
+        permanently public URL — the same artifact the segment purge above
+        exists to destroy, arrived at by a different door.
+
+        The list deliberately carries words-only rows too (a surface has a word
+        stack and no object). They hand the worker nothing and are deleted with
+        the rest, which is why the delete is keyed on the list being non-empty
+        rather than on any key having been collected.
+      */
+      const references = await listPurgeableReferencesIn(tx, candidateIds).catch(
+        (error: unknown) => tolerateAbsentReferenceLibrary(error),
+      );
+      for (const reference of references) {
+        if (reference.storageKey) {
+          storageItems.push({
+            storageKey: reference.storageKey,
+            storageBackend: "public_r2" as const,
+          });
+        }
+      }
+      if (references.length > 0) await deleteReferenceRowsIn(tx, candidateIds);
 
       if (storageItems.length > 0) {
         await createStorageCleanupManifestIn(tx, {

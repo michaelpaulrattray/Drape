@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
@@ -23,6 +23,14 @@ import {
   parseCastingV2Scope,
   validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
+  captureCastingReferenceLibraryEnabled,
+  castingReferenceLibraryArmed,
+  CastingReferenceLibraryCleanupWorkerError,
+  CastingReferenceLibraryCoverageError,
+  CastingReferenceLibraryScopeConfigurationError,
+  CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
+  parseCastingReferenceLibraryScope,
+  validateCastingReferenceLibraryEnvironment,
 } from "./castingV2Scope";
 
 /**
@@ -306,5 +314,95 @@ describe("the delivered-anchored sub-flag", () => {
 
   it("names the env var the operator actually sets", () => {
     expect(CASTING_SEGMENTS_DELIVERED_SCOPE_ENV).toBe("CASTING_SEGMENTS_DELIVERED_SCOPE");
+  });
+});
+
+/**
+ * The reference-library sub-flag (migration 0028).
+ *
+ * Its table lands on the production database by ceremony, so the flag is the
+ * ordering device: the writers deploy dark, the table arrives, then the switch.
+ * Every arm below is driven at a value it must REFUSE — a boot guard proved
+ * only by the settings that pass it is a guard nobody has seen work, and this
+ * codebase has crash-looped production on exactly that lesson from the other
+ * direction.
+ */
+describe("the reference-library sub-flag", () => {
+  const previous = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...previous };
+  });
+
+  it("is off by default and refuses anything it cannot read exactly", () => {
+    expect(parseCastingReferenceLibraryScope(undefined)).toEqual({ kind: "off" });
+    for (const raw of ["ALL", "user:1", "users:", "users:0", "true"]) {
+      expect(() => parseCastingReferenceLibraryScope(raw), raw)
+        .toThrow(CastingReferenceLibraryScopeConfigurationError);
+    }
+  });
+
+  it("asserts nothing while absent", () => {
+    expect(validateCastingReferenceLibraryEnvironment({
+      scope: undefined,
+      castingScope: "all",
+      cleanupWorker: "true",
+    })).toEqual({ kind: "off" });
+  });
+
+  it("refuses to arm without the cleanup worker", () => {
+    /* A library row is a crop of a person's face at a permanently public URL.
+       Without the worker, the purge its own write transaction promises would
+       never actually happen. */
+    expect(() => validateCastingReferenceLibraryEnvironment({
+      scope: "users:1",
+      castingScope: "users:1",
+      cleanupWorker: undefined,
+    })).toThrow(CastingReferenceLibraryCleanupWorkerError);
+  });
+
+  it("refuses to reach past the casting scope", () => {
+    expect(() => validateCastingReferenceLibraryEnvironment({
+      scope: "users:1",
+      castingScope: "off",
+      cleanupWorker: "true",
+    })).toThrow(CastingReferenceLibraryCoverageError);
+    expect(() => validateCastingReferenceLibraryEnvironment({
+      scope: "all",
+      castingScope: "users:1",
+      cleanupWorker: "true",
+    })).toThrow(CastingReferenceLibraryCoverageError);
+    expect(() => validateCastingReferenceLibraryEnvironment({
+      scope: "users:1,2",
+      castingScope: "users:1",
+      cleanupWorker: "true",
+    })).toThrow(/names users outside/);
+  });
+
+  it("accepts a scope its parent already covers", () => {
+    expect(validateCastingReferenceLibraryEnvironment({
+      scope: "users:1",
+      castingScope: "users:1,2",
+      cleanupWorker: "true",
+    })).toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is enabled only when BOTH flags name the user", () => {
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
+    expect(captureCastingReferenceLibraryEnabled(1)).toBe(true);
+    expect(captureCastingReferenceLibraryEnabled(2)).toBe(false);
+
+    /* The point-of-use AND, which closes the second way a flag pair goes
+       wrong: a boot check that was never invoked. */
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
+    expect(captureCastingReferenceLibraryEnabled(1)).toBe(false);
+  });
+
+  it("reports armed without asking about a user — the retention sweep's read", () => {
+    delete process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV];
+    expect(castingReferenceLibraryArmed()).toBe(false);
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:7";
+    expect(castingReferenceLibraryArmed()).toBe(true);
   });
 });

@@ -2562,3 +2562,122 @@ export const castingCastSegments = mysqlTable("casting_cast_segments", {
 
 export type CastingCastSegment = typeof castingCastSegments.$inferSelect;
 export type InsertCastingCastSegment = typeof castingCastSegments.$inferInsert;
+
+/** Which IMAGE a library row's key holds. See {@link castingReferenceLibrary}. */
+export const CASTING_REFERENCE_ROLES = ["anchor", "carry"] as const;
+export type CastingReferenceRole = typeof CASTING_REFERENCE_ROLES[number];
+
+/** Which carrier the tier boundary gives a feature (§3.0a, fable-192). */
+export const CASTING_REFERENCE_TIERS = ["item", "anatomy", "surface"] as const;
+export type CastingReferenceTier = typeof CASTING_REFERENCE_TIERS[number];
+
+/**
+ * THE REFERENCE LIBRARY — what a face's features ARE, ready for the painter
+ * (COMPOSITOR_SWAP_DESIGN §2, ruled fable-196; migration 0028).
+ *
+ * One row is the state of ONE feature slot as of ONE render, plus the image
+ * that render froze (`anchor`) or minted (`carry`) for it. The recipe assembler
+ * reads a whole library and emits a prompt from it; nothing else keeps a copy.
+ *
+ * # It is keyed by the PANEL'S slots, never the ledger's
+ *
+ * `casting_segments` is keyed `facet@region` — *which instruction wrote these
+ * pixels*. This is keyed `lips`, `eye@left`, `earring@right` — *what is this a
+ * picture of*. They look alike and they are not, and the ledger's own drift is
+ * the proof: "add nude lip gloss" filed itself at `makeup@face skin` on one
+ * render and `makeup@lips` on the next. The segment store stays the undo store;
+ * different facts, different keys, so this is not a second list of it.
+ *
+ * # Rows are immutable; the live library is DERIVED
+ *
+ * Refinement is a tree, and a mutable one-row-per-slot library would hold one
+ * answer for a candidate that has many — the mistake that had a fork from B
+ * carrying D's glasses (fable-091). Each row names the variant that minted it,
+ * and a branch's library is the newest version per (slot, role) along that
+ * variant's own ancestry. A retired newest means *gone from this branch*, and a
+ * fork taken before the removal still finds its own newest live.
+ *
+ * `variantId` NULL means the row was minted from the candidate's MASTER — born
+ * anatomy, or an item introduced before any edit landed — so it belongs to
+ * every branch.
+ *
+ * # `storageKey` NULL is the tier boundary, not missing data
+ *
+ * A SURFACE is carried by words and never by a crop (§3.0a), so its rows hold a
+ * word stack and no image, always. An anatomy slot with accumulated words that
+ * nothing has delivered yet is the other legal NULL. Every other combination is
+ * refused at the write.
+ */
+export const castingReferenceLibrary = mysqlTable("casting_reference_library", {
+  id: int("id").autoincrement().primaryKey(),
+  publicId: varchar("publicId", { length: 36 }).notNull(),
+  userId: int("userId").notNull(), // denormalized — single-statement ownership
+  candidateId: int("candidateId").notNull(), // →casting_candidates
+  /**
+   * The render that minted this row — provenance, and the branch it belongs to.
+   *
+   * NULL is meaningful rather than missing: minted from the candidate's own
+   * master, so every branch of the tree inherits it.
+   */
+  variantId: int("variantId"), // →casting_candidate_variants, NULL = from the master
+  role: mysqlEnum("role", CASTING_REFERENCE_ROLES).notNull(),
+  /** The panel's slot key: `lips`, `hair`, `eye@left`, `earring@right`. */
+  slot: varchar("slot", { length: 64 }).notNull(),
+  tier: mysqlEnum("tier", CASTING_REFERENCE_TIERS).notNull(),
+  /** How the slot is SPOKEN about — bare and plain: `lips`, `left earring`. */
+  noun: varchar("noun", { length: 64 }).notNull(),
+  /**
+   * The full declarative stack for this slot, oldest first — everything ever
+   * accepted about the feature, which is what D-244 line 2 regenerates from.
+   *
+   * Not a copy of `casting_candidate_variants.instructions`: those are the
+   * user's own sentences in the ledger's key space; this is declarative state
+   * in the panel's.
+   */
+  words: json("words").notNull(),
+  /** The crop or the frozen reference. NULL only where the tier allows — see above. */
+  storageKey: varchar("storageKey", { length: 512 }),
+  /** sha256 of the object's bytes: the byte-identity refusal (§2.4) and the
+   *  carry-stability proof both read this rather than re-fetching pixels. */
+  digest: varchar("digest", { length: 64 }),
+  bboxX: int("bboxX"),
+  bboxY: int("bboxY"),
+  bboxW: int("bboxW"),
+  bboxH: int("bboxH"),
+  frameWidth: int("frameWidth"),
+  frameHeight: int("frameHeight"),
+  /**
+   * What the completeness guard READ when this crop was minted (§2.4), in basis
+   * points of the region — evidence, never a gate at read time. A crop that
+   * failed the guard was refused loudly and never stored, and under D-246 no
+   * subtle reading may refuse a render after the fact.
+   */
+  guardKind: varchar("guardKind", { length: 48 }),
+  guardCoverage: int("guardCoverage"),
+  guardSpill: int("guardSpill"),
+  guardThreshold: int("guardThreshold"),
+  version: int("version").default(1).notNull(),
+  /** A fact about a VERSION, not about a slot: this branch's newest word on the
+   *  slot is "gone". Other branches keep theirs. */
+  retiredAt: timestamp("retiredAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_casting_reference_library_public").on(table.publicId),
+  /*
+    Identity. `variantId` is deliberately NOT in it: MySQL lets NULLs repeat
+    inside a unique index, so a key that a master-minted row sits outside of is
+    not a key at all — the same reasoning that made `casting_cast_segments` a
+    second table rather than a nullable column on `casting_segments`.
+  */
+  uniqueIndex("uq_casting_reference_library_identity").on(
+    table.candidateId,
+    table.slot,
+    table.role,
+    table.version,
+  ),
+  index("idx_casting_reference_library_candidate").on(table.candidateId),
+  index("idx_casting_reference_library_variant").on(table.variantId),
+]));
+
+export type CastingReferenceLibraryRow = typeof castingReferenceLibrary.$inferSelect;
+export type InsertCastingReferenceLibraryRow = typeof castingReferenceLibrary.$inferInsert;

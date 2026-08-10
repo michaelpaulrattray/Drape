@@ -25,6 +25,8 @@ const calls = {
   queueStorageCleanup: vi.fn(),
   listSegments: vi.fn(),
   deleteSegments: vi.fn(),
+  listReferences: vi.fn(),
+  deleteReferences: vi.fn(),
 };
 
 vi.mock("../db/castingV2", () => ({
@@ -69,6 +71,15 @@ vi.mock("../db/castingV2Segments", () => ({
   deleteSegmentRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteSegments(...args),
 }));
 
+/* The reference library purges on exactly the same terms (migration 0028): same
+   transaction, same manifest, unconditional. Same reason for the mock, too —
+   the statements are proved against real MySQL in
+   `server/castingV2-reference-library-db.test.ts`. */
+vi.mock("../db/castingV2ReferenceLibrary", () => ({
+  listPurgeableReferencesIn: (_tx: unknown, ...args: unknown[]) => calls.listReferences(...args),
+  deleteReferenceRowsIn: (_tx: unknown, ...args: unknown[]) => calls.deleteReferences(...args),
+}));
+
 const { runCandidateRetentionSweep } = await import("./candidateRetention");
 
 beforeEach(() => {
@@ -81,7 +92,10 @@ beforeEach(() => {
   calls.queueStorageCleanup.mockResolvedValue(undefined);
   calls.listSegments.mockResolvedValue([]);
   calls.deleteSegments.mockResolvedValue(0);
+  calls.listReferences.mockResolvedValue([]);
+  calls.deleteReferences.mockResolvedValue(0);
   delete process.env.CASTING_SEGMENTS_SCOPE;
+  delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
 });
 
 describe("the 7-day retention sweep", () => {
@@ -265,6 +279,53 @@ describe("a candidate's segments purge with it", () => {
 
     // Armed and missing is a real fault, and a warning would bury it.
     await expect(runCandidateRetentionSweep()).rejects.toThrow(/no such table/);
+  });
+
+  it("purges the reference library whatever ITS flag says, and takes the words-only rows too", async () => {
+    /*
+      The same silent, permanent failure as the segment case one flight up, and
+      it arrives by a second door: a library crop is a crop of a person's face
+      at a permanently public URL.
+
+      The words-only row is the extra trap here. A surface slot stores a word
+      stack and no object at all, so a list filtered to rows-with-keys would come
+      back empty and the delete would be skipped — the row surviving its own
+      candidate while every count read zero. The fixture holds one of each, and
+      the assertion is that the delete ran with only ONE key queued.
+    */
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "off";
+    calls.listReferences.mockResolvedValue([
+      { id: 9, storageKey: "casting-v2/library/orphan-crop.png" },
+      { id: 10, storageKey: null },
+    ]);
+
+    const result = await runCandidateRetentionSweep();
+
+    expect(calls.deleteReferences).toHaveBeenCalledWith([1]);
+    /* The candidate's own object plus the crop — and NOT a third for the
+       words-only row, which has no object to queue and is deleted anyway. */
+    expect(result.objectsQueued).toBe(2);
+    expect(calls.queueStorageCleanup).toHaveBeenCalledWith(expect.objectContaining({
+      storageItems: expect.arrayContaining([
+        { storageKey: "casting-v2/library/orphan-crop.png", storageBackend: "public_r2" },
+      ]),
+    }));
+  });
+
+  it("tolerates an absent library table only while the library is disarmed", async () => {
+    const missing = Object.assign(new Error("Table 'x.casting_reference_library' doesn't exist"), {
+      code: "ER_NO_SUCH_TABLE",
+      errno: 1146,
+    });
+    calls.listReferences.mockRejectedValue(missing);
+
+    const result = await runCandidateRetentionSweep();
+    expect(result.candidatesPurged).toBe(1);
+    expect(calls.deleteReferences).not.toHaveBeenCalled();
+
+    /* Armed and missing is a real fault, and a warning would bury it. */
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
   });
 
   it("rethrows every other database failure, armed or not", async () => {

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d59841e08f3220ed"
+    "sourceFingerprint": "e457fecc09012b3b"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 84
+      "moduleCount": 85
     },
     {
       "id": "domain:castingV2",
@@ -53,7 +53,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 46
+      "moduleCount": 47
     },
     {
       "id": "domain:evidence",
@@ -3459,6 +3459,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/referenceLibrary.ts",
+      "path": "server/castingV2/referenceLibrary.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/referenceSlots.ts",
       "path": "server/castingV2/referenceSlots.ts",
       "domain": "casting-v2",
@@ -3749,6 +3755,12 @@
     {
       "id": "module:server/db/castingV2.ts",
       "path": "server/db/castingV2.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2ReferenceLibrary.ts",
+      "path": "server/db/castingV2ReferenceLibrary.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -7589,6 +7601,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_REFERENCE_LIBRARY_SCOPE",
+      "name": "CASTING_REFERENCE_LIBRARY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_SEGMENTS_DELIVERED_SCOPE",
       "name": "CASTING_SEGMENTS_DELIVERED_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -8384,6 +8401,10 @@
       "path": "server/castingStudio.test.ts"
     },
     {
+      "id": "test:server/castingV2-reference-library-db.test.ts",
+      "path": "server/castingV2-reference-library-db.test.ts"
+    },
+    {
       "id": "test:server/castingV2-roll-domain-db.test.ts",
       "path": "server/castingV2-roll-domain-db.test.ts"
     },
@@ -8608,6 +8629,10 @@
       "path": "server/castingV2/referenceCompleteness.test.ts"
     },
     {
+      "id": "test:server/castingV2/referenceLibrary.test.ts",
+      "path": "server/castingV2/referenceLibrary.test.ts"
+    },
+    {
       "id": "test:server/castingV2/referenceSlots.test.ts",
       "path": "server/castingV2/referenceSlots.test.ts"
     },
@@ -8802,6 +8827,10 @@
     {
       "id": "test:server/creditsSQL.test.ts",
       "path": "server/creditsSQL.test.ts"
+    },
+    {
+      "id": "test:server/db/castingV2ReferenceLibrary.test.ts",
+      "path": "server/db/castingV2ReferenceLibrary.test.ts"
     },
     {
       "id": "test:server/db/migrationLag.test.ts",
@@ -17319,6 +17348,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/db/castingV2ReferenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/db/castingV2Segments.ts",
       "kind": "imports"
     },
@@ -17965,6 +17999,11 @@
     {
       "from": "module:server/castingV2/referenceCompleteness.ts",
       "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceLibrary.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
     },
     {
@@ -19189,6 +19228,26 @@
     },
     {
       "from": "module:server/db/castingV2.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:server/castingV2/referenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ReferenceLibrary.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
