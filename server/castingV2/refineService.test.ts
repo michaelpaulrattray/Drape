@@ -2746,6 +2746,81 @@ describe("a render keeps only the facets its own reading earned", () => {
     expect(keptAsks[0].facets).toHaveLength(0);
     expect(keptAsks[0].verdict, "and no verdict is invented for it").toBeNull();
   });
+
+  /*
+    AND ONLY A FACET THIS ASK WROTE (fable-143 §3a, restoring fable-102 §4).
+
+    The rule was always **written ∩ verified**. What was built was "every
+    verified, non-carried check" — a different set, because the net checks the
+    whole COMPOSED recipe: a facet an earlier step wrote, or a presentation pin
+    nobody mentioned, gets read, passes, and banks a segment for an ask that
+    never touched it.
+
+    Found on the founder's own face: `ee5d6988` variant 158, asked *"give her
+    freckles"*, filed `marks` AND `hairWorn`. The panel then showed one row —
+    the hair segment has no delivered value to be named by — so the store was
+    keeping pixels the product could not tell him about and he could not undo.
+    "From an edit" was a lie about half of what that face kept.
+
+    The reader here affirms EVERYTHING, which is the whole point: the old
+    predicate would keep both, so this fixture separates the two rules instead
+    of passing on a reader that happened to say no.
+  */
+  const readerAffirmsEverything = {
+    id: "verifier",
+    complete: async () => ({
+      /* Generous ids: the net numbers its questions, and a fixture that
+         answered only the first would prove nothing about the second. */
+      text: JSON.stringify({
+        results: [1, 2, 3, 4, 5, 6].map((id) => ({ id, present: true, saw: "clearly present in the frame" })),
+      }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never;
+
+  /** A predecessor that already wrote `makeup`, so the composed recipe holds a
+   *  facet THIS ask does not — the founder's shape, reproduced. */
+  const withEarlierMakeupStep = (): void => {
+    variantRows = [{
+      id: 601,
+      publicId: "variant-makeup",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/makeup.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["add nude lip gloss"],
+      deltas: { makeup: "nude lip gloss" },
+      stepDeltas: [{ makeup: "nude lip gloss" }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-makeup";
+  };
+
+  it("keeps the facet THIS ask wrote", async () => {
+    withEarlierMakeupStep();
+    await refineCandidate(
+      { ...freckles, verifier: readerAffirmsEverything },
+      { ...input, instruction: "give her freckles" },
+    );
+    expect(keptAsks).toHaveLength(1);
+    expect(keptAsks[0].facets, "the ask's own facet is kept").toContain("marks");
+  });
+
+  it("does NOT keep a verified facet an earlier step wrote — the founder's hairWorn row", async () => {
+    withEarlierMakeupStep();
+    await refineCandidate(
+      { ...freckles, verifier: readerAffirmsEverything },
+      { ...input, instruction: "give her freckles" },
+    );
+    expect(keptAsks).toHaveLength(1);
+    /*
+      `makeup` is in the composed recipe, was READ, and was VERIFIED — every
+      condition the old predicate asked for. It is kept only if the rule has
+      drifted back to "everything the net affirmed".
+    */
+    expect(keptAsks[0].facets, "a facet this ask never wrote earns nothing").not.toContain("makeup");
+    expect(keptAsks[0].facets, "and nothing else sneaks in either").toEqual(["marks"]);
+  });
 });
 
 /**

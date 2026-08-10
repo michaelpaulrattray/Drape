@@ -2758,11 +2758,35 @@ export async function refineCandidate(
         them again would buy a new version of the same crop on every render.
       - **Nothing at all when the reader was unavailable.** We have no reading,
         so we have no evidence, so we keep no pixels. Permanence fails closed.
+
+      # AND ONLY A FACET THIS ASK WROTE (fable-143 §3a, restoring fable-102 §4)
+
+      The rule was always **written ∩ verified**, and the built version had
+      quietly become "every verified, non-carried check". Those are not the same
+      set, because the net checks the WHOLE recipe: a pinned facet nobody
+      mentioned gets read, passes, and banks a segment.
+
+      Found on the founder's own face. `ee5d6988`, variant 158 — the ask was
+      *"give her freckles"*, and it filed **two** segments: `marks`, which he
+      asked for, and **`hairWorn`, which he did not**. The panel then showed one
+      row, because the hair segment has no delivered value to be named by, so
+      the store was keeping pixels for a facet the product could not tell him
+      about and he could not undo. Two answers to "what does this face keep" —
+      the operative one and the visible one — which is law 4's shape.
+
+      `writtenFacets` is the same set the captions already drop and the harvest
+      already asks about, reused rather than recomputed: a second derivation of
+      "what did this ask write" is the parallel copy that drifts.
     */
     const earned = verification.unavailable
       ? []
       : verification.checks
-        .filter((check) => check.read && check.verified && !carriedFacets.has(check.facet))
+        .filter((check) => (
+          check.read
+          && check.verified
+          && writtenFacets.has(check.facet)
+          && !carriedFacets.has(check.facet)
+        ))
         .map((check) => check.facet);
     await keepSegmentsFromRender({
       userId: input.userId,

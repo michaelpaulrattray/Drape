@@ -130,19 +130,69 @@ export const RATE_LIMITS = {
     maxRequests: 3,           // 3 checkout attempts per minute
     keyPrefix: 'billing',
   },
-  // Casting V2 sheet mutations (keep/discard/undo). Generous, because these
-  // are one-tap card actions a real user fires in bursts — the limit exists so
-  // a loop cannot hammer the database, not to pace human hands (plan §J).
+  /*
+    THREE CASTING BUCKETS, SPLIT BY WHO IS ASKING — and the split is the fix
+    for a real refusal, not a tidy-up.
+
+    2026-08-10, production, user 1: six 429s in one burst. Five were the
+    sheet's own `getSession` poll; the sixth was `castingV2.selectVariant` —
+    the founder's CLICK to change which version of a face he was looking at,
+    refused with "Too many requests. Please try again in 14 seconds." He was
+    not rendering. He was browsing, and the app refused him because it was
+    busy talking to itself.
+
+    One bucket held all eight casting procedures, so a background poller
+    running at a fixed machine cadence could spend the budget a human action
+    needed. **A human action must never queue behind a poller**, so the
+    buckets are separated by intent and never by module:
+
+      castingPoll   what the CLIENT asks on a timer, with no user present
+      castingRead   what a PERSON's navigation asks for, on demand
+      castingSheet  what a PERSON does — every mutation
+
+    The caps were deliberately NOT raised to fix this. A cap raised to outrun
+    a poller is a number waiting to be outrun again; the poller's own cadence
+    is gated instead (see `CastingSheet.tsx` — a quiet sheet polls slowly).
+  */
+  // Casting V2 sheet MUTATIONS (keep/discard/undo/selectVariant). Generous,
+  // because these are one-tap card actions a real user fires in bursts — the
+  // limit exists so a loop cannot hammer the database, not to pace human
+  // hands (plan §J).
   castingSheet: {
     windowMs: 60 * 1000,      // 1 minute
     maxRequests: 120,
     keyPrefix: 'casting_sheet',
   },
-  // Roll polling at the 2.5s cadence, with headroom for a second tab.
+  /*
+    THE TIMER'S OWN BUDGET, and the arithmetic is stated rather than asserted.
+
+    Two pollers run at the 2.5s cadence — the session and the viewed roll —
+    which is 24 requests a minute each, 48 for one active tab. This used to
+    claim "headroom for a second tab" and it never had any: two tabs mid-roll
+    is 96 against 60. The claim was wrong for as long as it was written, and
+    it was the comment nobody re-derived.
+
+    60 stands because the CADENCE is what changed: both pollers now go quiet
+    when nothing is arriving, so a sheet being read rather than filled costs
+    ~2/min, and only a genuinely active roll approaches this number. If this
+    cap is ever reached again the poller is the thing to look at, not the cap.
+  */
   castingPoll: {
     windowMs: 60 * 1000,      // 1 minute
     maxRequests: 60,
     keyPrefix: 'casting_poll',
+  },
+  /*
+    READS A PERSON ASKED FOR — opening a face, switching version, the roster,
+    the kept panel. Human-paced but several per action (one tap can invalidate
+    three queries), so it is sized like the mutations rather than like the
+    timer, and it is separate from BOTH so a read storm cannot refuse a keep
+    and a poller cannot refuse a read.
+  */
+  castingRead: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 120,
+    keyPrefix: 'casting_read',
   },
 } as const;
 

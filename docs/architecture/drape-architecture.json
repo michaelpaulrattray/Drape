@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "68817ab7c4cd6d92"
+    "sourceFingerprint": "f3a1072efeedd06b"
   },
   "domains": [
     {
@@ -7847,6 +7847,10 @@
       "path": "client/src/features/castingV2/sheetNotice.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/sheetPollCadence.test.ts",
+      "path": "client/src/features/castingV2/sheetPollCadence.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/sheetState.test.ts",
       "path": "client/src/features/castingV2/sheetState.test.ts"
     },
@@ -8341,6 +8345,10 @@
     {
       "id": "test:server/castingOptions.test.ts",
       "path": "server/castingOptions.test.ts"
+    },
+    {
+      "id": "test:server/castingRateLimitIntent.test.ts",
+      "path": "server/castingRateLimitIntent.test.ts"
     },
     {
       "id": "test:server/castingStudio.test.ts",

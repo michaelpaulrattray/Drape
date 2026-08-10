@@ -56,6 +56,26 @@ import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
  */
 
 const POLL_MS = 2_500;
+/**
+ * WHAT A QUIET SHEET COSTS.
+ *
+ * The session poll ran at `POLL_MS` for as long as the page was open, whether
+ * or not anything was happening — 24 requests a minute, forever. On
+ * 2026-08-10 that budget refused the founder's own click: five `getSession`
+ * polls and one `selectVariant` came back "Too many requests" while he was
+ * reading a sheet from the day before, with nothing rendering at all.
+ *
+ * `getRoll` had already been given an arrival gate, and its comment predicted
+ * this exact failure ("two tabs and the session poll and the user rate-limits
+ * themselves out of their own sheet"). The sibling was never swept — so this
+ * is that fix applied to the instance it named.
+ *
+ * Slow rather than OFF, deliberately: a session can change from another tab or
+ * from the recovery sweep, and a sheet that stopped asking would sit stale
+ * until a remount. Twelve seconds is invisible to someone reading, and it
+ * takes an idle tab from 24 requests a minute to five.
+ */
+const IDLE_POLL_MS = 12_000;
 const TERMINAL_ROLL_STATUSES = new Set(["complete", "partial", "failed", "cancelled"]);
 
 export default function CastingSheet() {
@@ -176,7 +196,27 @@ export default function CastingSheet() {
   const config = trpc.castingV2.config.useQuery({});
   const session = trpc.castingV2.getSession.useQuery(
     { sessionId },
-    { enabled: sessionId.length > 0, refetchInterval: POLL_MS },
+    {
+      enabled: sessionId.length > 0,
+      /*
+        Fast while something is arriving, slow while nothing is — the same
+        shape `getRoll` uses, for the same reason (see `IDLE_POLL_MS`).
+
+        THE SECOND CLAUSE IS THE DEADLOCK GUARD, and it is the lesson the
+        variants poll already paid for: gated on server data alone, a sheet
+        that has just dispatched sees no non-terminal roll YET, so it would
+        drop to the idle cadence in the one moment the user is actually
+        waiting. `startingRoll` is the client's own knowledge that a roll is
+        out, and it is the only thing available before the first refetch.
+      */
+      refetchInterval: (query) => {
+        if (startingRoll) return POLL_MS;
+        const rolls = query.state.data?.rolls;
+        if (!rolls) return POLL_MS;
+        const arriving = rolls.some((roll) => !TERMINAL_ROLL_STATUSES.has(roll.status));
+        return arriving ? POLL_MS : IDLE_POLL_MS;
+      },
+    },
   );
 
   const activeRollId = session.data?.activeRollId ?? null;

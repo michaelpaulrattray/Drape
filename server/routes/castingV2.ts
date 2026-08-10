@@ -243,7 +243,7 @@ export const castingV2Router = router({
     .input(z.object({}).strict())
     .query(async ({ ctx }) => {
       requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const sessions = await listOpenCastingSessions(ctx.user.id);
       return Promise.all(
         sessions.map(async (session) => {
@@ -564,7 +564,12 @@ export const castingV2Router = router({
     )
     .mutation(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      /* THE ROW THAT WAS REFUSED. This is a one-tap card action like keep and
+         discard, and it sat in the POLLING bucket until 2026-08-10, when the
+         sheet's own session poll spent the budget and this click came back
+         "Too many requests. Please try again in 14 seconds." A mutation a
+         person performs belongs with the other mutations a person performs. */
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
       /*
         THE SATISFACTION LEDGER'S TWO LIVE EVENTS (D-175).
 
@@ -630,7 +635,7 @@ export const castingV2Router = router({
     .input(z.object({ candidateId: publicId }).strict())
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const [face, variants, pending] = await Promise.all([
         getOwnedCandidateWithSelectedFace(ctx.user.id, input.candidateId),
         listCandidateVariants(ctx.user.id, input.candidateId),
@@ -716,7 +721,7 @@ export const castingV2Router = router({
     .input(z.object({}).strict())
     .query(async ({ ctx }) => {
       requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const casts = await listSignedCasts(ctx.user.id);
       return casts.map(({ model, anchorUrl, personaLine }) => ({
         castId: model.agencyId ?? "",
@@ -814,7 +819,7 @@ export const castingV2Router = router({
     .input(z.object({ castId: z.string().min(1).max(32) }).strict())
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       const [assets, lineage, promisedAngles, sessionId] = await Promise.all([
@@ -877,7 +882,7 @@ export const castingV2Router = router({
     .input(z.object({ candidateId: publicId, variantId: publicId.nullable() }).strict())
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       /* No version selected means the original, which keeps nothing — and an
          empty list renders no panel at all, so the pronoun is never used. */
       if (input.variantId === null) return { possessive: "their", rows: [] };
