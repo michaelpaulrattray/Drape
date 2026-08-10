@@ -155,12 +155,13 @@ export type ReferenceImageToRecord = {
 /**
  * What the guard turned away, on a row that files words because of it.
  *
- * The crop is carried for the two refusals a HUMAN settles and no others
- * (`REFUSALS_THAT_KEEP_THEIR_CROP`): `noSpecimen`, which exists in order to
- * produce the specimen, and `disputedDelivery`, where the reader and the painter
- * disagree and the pixels are the only thing that can say which was wrong. The
- * other four refuse a picture that must not be adopted, and storing those would
- * build a gallery of exactly the crops the guard exists to keep out.
+ * The crop is carried for the refusals a HUMAN settles and no others, and the
+ * membership is exactly `REFUSALS_THAT_KEEP_THEIR_CROP` — read there, not here.
+ * It was two when this column group landed (`noSpecimen`, `disputedDelivery`)
+ * and is four today; the reason each one earns its pixels is written beside the
+ * list in `referenceCompleteness.ts`. The rest refuse a picture that must not be
+ * adopted, and storing those would build a gallery of exactly the crops the
+ * guard exists to keep out.
  */
 export type ReferenceRefusalToRecord = {
   reason: GuardRefusalReason;
@@ -169,7 +170,7 @@ export type ReferenceRefusalToRecord = {
   /** Basis points. Absent when the refusal recorded no reading (`readDidNotSettle`). */
   coverage?: number;
   /**
-   * The pixels, for the two human-settled refusals alone. Both keys or neither
+   * The pixels, for the human-settled refusals alone. Both keys or neither
    * — a crop without its mask cannot be cut out or measured, and a mask alone
    * shapes nothing.
    *
@@ -253,20 +254,26 @@ function assertGeometry(geometry: ReferenceGeometry): void {
  * painter. Every rule below is one way that could stop being true:
  *
  *   a reason that is not the guard's   a string nobody can interpret is not
- *                                      evidence, and a seventh reason arriving
+ *                                      evidence, and a NEW reason arriving
  *                                      without this door being opened is the
- *                                      silent version of the same thing
+ *                                      silent version of the same thing. The
+ *                                      count is `GUARD_REFUSAL_REASONS.length`
+ *                                      and is not restated here — this line said
+ *                                      "a seventh" while the list held eight
  *   refused AND delivered              a crop that passed the guard is not
  *                                      refused; a row claiming both is two
  *                                      answers to "what happened at the door"
- *   a crop kept for another reason     only the two refusals a HUMAN settles
- *                                      keep pixels: `noSpecimen`, which produces
- *                                      the specimen, and `disputedDelivery`,
- *                                      which settles reader-versus-painter.
- *                                      Keeping a `subjectAbsent` crop would
- *                                      store a picture of where the thing would
- *                                      have been, and put it in front of the
- *                                      one person able to adopt it
+ *   a crop kept for another reason     only the refusals a HUMAN settles keep
+ *                                      pixels, and which those are is
+ *                                      `REFUSALS_THAT_KEEP_THEIR_CROP`'s to say
+ *                                      — the check below derives from it rather
+ *                                      than naming members, which is why the
+ *                                      set could grow from two to four without
+ *                                      this guard needing an edit. Keeping a
+ *                                      `subjectAbsent` crop would store a
+ *                                      picture of where the thing would have
+ *                                      been, and put it in front of the one
+ *                                      person able to adopt it
  *   half a crop                        a crop without its mask cannot be cut
  *                                      out or re-measured; a mask alone shapes
  *                                      nothing

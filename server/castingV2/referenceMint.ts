@@ -185,7 +185,9 @@ export type MintedSlot =
     reason: "surface" | "noQuestion" | "noSide" | "noRegion" | "guardRefused";
     detail?: string;
     /** The refused crop's pixels were kept for a human to look at — true for the
-     *  two refusals a human settles rather than an instrument. */
+     *  refusals in `REFUSALS_THAT_KEEP_THEIR_CROP`, which a human settles rather
+     *  than an instrument. That list is the membership; this line does not
+     *  count it. */
     keptForAdoption?: true;
   }
   /**
@@ -546,21 +548,24 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         /*
           THE REFUSAL GOES ON THE ROW, and for one reason the PIXELS do too.
 
-          Every refusal records what happened at the door: which of the six it
-          was, the specimen family it was judged against, and the number it read
-          if a reading happened. That is the difference between "this slot has
-          words" and "this slot has words BECAUSE its crop was turned away for
-          this reason at this coverage" — and it is the difference between
-          buying a render to find out and reading the row.
+          Every refusal records what happened at the door: which of
+          `GUARD_REFUSAL_REASONS` it was, the specimen family it was judged
+          against, and the number it read if a reading happened. That is the
+          difference between "this slot has words" and "this slot has words
+          BECAUSE its crop was turned away for this reason at this coverage" —
+          and it is the difference between buying a render to find out and
+          reading the row.
 
-          Two of them keep the crop as well, and both for the same reason: they
-          are the refusals only a HUMAN can settle. `noSpecimen` exists in order
-          to produce the specimen — the kind has no measured positive, so no
-          number here is earned. `disputedDelivery` exists to settle whether the
-          painter or the reader was wrong, which no instrument in this system can
-          decide. The keys are the refusal's own, never `storageKey` — the
-          assembler builds its prompt from `storageKey` and cannot see these,
-          which is what makes an uncertified picture safe to keep at all.
+          Some of them keep the crop as well, and the membership is
+          `REFUSALS_THAT_KEEP_THEIR_CROP`'s to state rather than this comment's
+          (it was two when this was written and is four today; the reasons for
+          each are in `referenceCompleteness.ts` beside the list). What they
+          share is that only a HUMAN can settle them — either because the crop
+          is unjudgeable by any instrument here, or because the instrument that
+          judged it stands on a bar thin enough that an eye overturns it. The
+          keys are the refusal's own, never `storageKey` — the assembler builds
+          its prompt from `storageKey` and cannot see these, which is what makes
+          an uncertified picture safe to keep at all.
         */
         /*
           THE NUMBER ON THE ROW IS THE ONE THAT REFUSED IT.

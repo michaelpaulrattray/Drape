@@ -67,8 +67,8 @@ export type ReferenceGuardReading = {
  *
  * On a row that has one, this is the whole of what the refusal left behind: the
  * reason, the specimen family it was judged against, the number it read if a
- * reading happened, and — for the two refusals a human settles — the pixels
- * themselves.
+ * reading happened, and — for the refusals a human settles, whichever those are
+ * today (`REFUSALS_THAT_KEEP_THEIR_CROP`) — the pixels themselves.
  *
  * It is deliberately a group of its own rather than fields beside
  * {@link StoredReference.storageKey}: those keys are what make a crop ride into
@@ -84,8 +84,10 @@ export type ReferenceRefusal = {
   kind: string;
   /** Basis points of the region. NULL when the refusal recorded no reading. */
   coverage: number | null;
-  /** The refused crop and its mask. Present for the refusals a human settles —
-   *  `noSpecimen` and `disputedDelivery` — and null for the rest. */
+  /** The refused crop and its mask. Present for the refusals a human settles,
+   *  which are `REFUSALS_THAT_KEEP_THEIR_CROP` and nothing this comment
+   *  restates — the set was two when the column group landed and is four now,
+   *  and a comment that counts them is a copy that drifts. Null for the rest. */
   contentKey: string | null;
   maskKey: string | null;
   /** Where that crop sat on the frame it was cut from. Present exactly when the
