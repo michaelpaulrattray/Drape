@@ -114,6 +114,7 @@ export function CandidateViewer({
   onIndexChange,
   onClose,
   below,
+  beside,
   overlay,
   wait,
 }: {
@@ -132,6 +133,19 @@ export function CandidateViewer({
    * viewer the room and the package could no longer use.
    */
   below?: React.ReactNode;
+  /**
+   * What stands BESIDE the picture, in a column of its own — the face's panel.
+   *
+   * It is not `below` and the distinction is load-bearing. `below` shares the
+   * viewer's one vertical axis with the picture, and this viewer's rule is that
+   * *the panel is short and fixed, the image is the elastic one*. Panel v2 is the
+   * whole catalogue — sixteen rows, ~1200px — so as a `below` it took every pixel
+   * and the photograph rendered at 0×0 (shift 27, `output/panel-v2/`). A column
+   * beside the picture never competes with it for height, which is also the
+   * structure the founder's own mock has: versions left, picture centre, the
+   * panel docked right, only the ask box across the bottom.
+   */
+  beside?: React.ReactNode;
   /**
    * What is laid OVER the picture, inside the plate — the face's own regions,
    * where a caller has them (fable-200).
@@ -153,6 +167,20 @@ export function CandidateViewer({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        /*
+          A CONTROL INSIDE MAY OWN ESCAPE, and this listener is capture-phase, so
+          without asking it never finds out. The scoped box on the picture says
+          in its own code that Esc closes IT and spends nothing; what actually
+          happened was that the whole viewer closed underneath it, because this
+          ran first and `stopPropagation` in a child cannot reach a capture
+          listener on the document.
+
+          Same class as the ←/→ carve-out below — a global key handler eating a
+          key an inner control owns — so it gets the same shape of answer, and a
+          generic one: the viewer asks whether the event came from something that
+          claims the key, and never learns what that something is.
+        */
+        if ((event.target as HTMLElement | null)?.closest?.("[data-owns-escape]")) return;
         event.stopPropagation();
         onClose();
         return;
@@ -181,15 +209,36 @@ export function CandidateViewer({
       otherwise closing it returns you somewhere else in the sheet, and the
       candidate you were comparing against has moved.
     */
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
-      document.body.style.overflow = previousOverflow;
     };
   }, [onClose, onIndexChange, canStep, index, frames.length]);
+
+  /*
+    FOCUS IS TAKEN ONCE, WHEN THE VIEWER OPENS — and never again.
+
+    It used to live in the effect above, whose dependencies include the callers'
+    inline `onClose`/`onIndexChange`. Those are new objects on every render of the
+    sheet, so the effect re-ran on every render and dragged focus back to the
+    close button each time: the scoped box on the picture opened with the caret in
+    its field and lost it before a second character could be typed, and Escape —
+    now belonging to the close button — shut the whole viewer instead of the box.
+
+    Empty deps, so it happens at open and stays where the person put it. The
+    body-scroll lock moves here for the same reason: it is a fact about the
+    viewer being open, not about who its callbacks currently are.
+  */
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    /* The page behind must not scroll while a full-screen viewer is open —
+       otherwise closing it returns you somewhere else in the sheet, and the
+       candidate you were comparing against has moved. */
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
 
   if (!frame) return null;
 
@@ -213,7 +262,10 @@ export function CandidateViewer({
       */
       onClick={(event) => {
         const target = event.target as HTMLElement;
-        if (target.closest("img, .dpc-viewer__chrome, .dpc-refine, .dpc-regions")) return;
+        /* Every slot this viewer renders belongs to the surface, including the
+           dock beside the picture — left out of this list, a tap on a panel row
+           read as a tap on the scrim and closed the whole viewer. */
+        if (target.closest("img, .dpc-viewer__chrome, .dpc-viewer__dock, .dpc-refine, .dpc-regions")) return;
         onClose();
       }}
     >
@@ -245,46 +297,53 @@ export function CandidateViewer({
         </button>
       </div>
 
-      <figure className="dpc-viewer__frame" data-wait={wait ? "true" : "false"}>
-        {/*
-          The picture and everything laid over it share one box, so the dots and
-          the type land on the IMAGE rather than on the letterboxing beside it.
-          An overlay measured against the figure would drift the moment a
-          portrait and a landscape frame sat in the same viewer.
-        */}
-        <span className="dpc-viewer__plate">
-          <img src={frame.url} alt={frame.personaLine ?? frame.label} />
-          {/* The face's own regions, in the same box as the picture. */}
-          {overlay}
-          {wait ? (
-            <>
-              <span className="dpc-viewer__dots" aria-hidden="true" />
-              <span className="dpc-viewer__falloff" aria-hidden="true" />
-              <span className="dpc-viewer__wait" role="status">
-                <span className="dpc-viewer__waitSaid">{wait.instruction}</span>
-                <span className="dpc-viewer__waitMeta">
-                  <span>{STAGE_WORDS[wait.stage]}</span>
-                  <span className="dpc-viewer__waitTypical">{TYPICAL_WAIT}</span>
-                  {wait.extra ? (
-                    <span className="dpc-viewer__waitTypical">
-                      {`and ${wait.extra} more running`}
-                    </span>
-                  ) : null}
+      {/*
+        THE STAGE: the picture, and whatever stands beside it. One row, so the
+        panel's own length can never be taken out of the photograph's height.
+      */}
+      <div className="dpc-viewer__stage" data-beside={beside ? "true" : "false"}>
+        <figure className="dpc-viewer__frame" data-wait={wait ? "true" : "false"}>
+          {/*
+            The picture and everything laid over it share one box, so the dots and
+            the type land on the IMAGE rather than on the letterboxing beside it.
+            An overlay measured against the figure would drift the moment a
+            portrait and a landscape frame sat in the same viewer.
+          */}
+          <span className="dpc-viewer__plate">
+            <img src={frame.url} alt={frame.personaLine ?? frame.label} />
+            {/* The face's own regions, in the same box as the picture. */}
+            {overlay}
+            {wait ? (
+              <>
+                <span className="dpc-viewer__dots" aria-hidden="true" />
+                <span className="dpc-viewer__falloff" aria-hidden="true" />
+                <span className="dpc-viewer__wait" role="status">
+                  <span className="dpc-viewer__waitSaid">{wait.instruction}</span>
+                  <span className="dpc-viewer__waitMeta">
+                    <span>{STAGE_WORDS[wait.stage]}</span>
+                    <span className="dpc-viewer__waitTypical">{TYPICAL_WAIT}</span>
+                    {wait.extra ? (
+                      <span className="dpc-viewer__waitTypical">
+                        {`and ${wait.extra} more running`}
+                      </span>
+                    ) : null}
+                  </span>
                 </span>
+              </>
+            ) : null}
+          </span>
+          <figcaption className="dpc-viewer__caption">
+            <span className="dp-chrome">{frame.label}</span>
+            {frame.personaLine ? <span>{frame.personaLine}</span> : null}
+            {canStep ? (
+              <span className="dp-chrome dpc-viewer__count">
+                {index + 1} / {frames.length}
               </span>
-            </>
-          ) : null}
-        </span>
-        <figcaption className="dpc-viewer__caption">
-          <span className="dp-chrome">{frame.label}</span>
-          {frame.personaLine ? <span>{frame.personaLine}</span> : null}
-          {canStep ? (
-            <span className="dp-chrome dpc-viewer__count">
-              {index + 1} / {frames.length}
-            </span>
-          ) : null}
-        </figcaption>
-      </figure>
+            ) : null}
+          </figcaption>
+        </figure>
+        {beside ? <aside className="dpc-viewer__dock">{beside}</aside> : null}
+      </div>
       {below}
     </div>,
     document.body,

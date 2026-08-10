@@ -42,10 +42,14 @@ describe("one selection, two views of it", () => {
   it("passes the SAME model object to the panel and to the picture", async () => {
     const sheet = withoutProse(await readFile(SHEET, "utf8"));
     expect(sheet).toContain("const faceSelection = useFaceSelection()");
-    /* Once, and given to both — not two calls returning two models. */
+    /*
+      Once, and given to both — not two calls returning two models. Both take it
+      as the same prop now that the panel stands beside the picture rather than
+      inside the refine panel; two occurrences of one binding is the shape that
+      proves it, and a third `useFaceSelection()` is the thing to catch.
+    */
     expect(sheet.match(/useFaceSelection\(\)/g)).toHaveLength(1);
-    expect(sheet).toContain("selection={faceSelection}");
-    expect(sheet).toContain("selection: faceSelection,");
+    expect(sheet.match(/selection=\{faceSelection\}/g)).toHaveLength(2);
   });
 
   it("lights a matched pair on both sides, because the row is about both slots", async () => {
@@ -76,11 +80,69 @@ describe("the picture promises only what was measured", () => {
   });
 });
 
+/**
+ * THE PANEL DOES NOT COME OUT OF THE PHOTOGRAPH.
+ *
+ * Shift 27's render check, mechanized. The viewer's own rule was *"the panel is
+ * short and fixed, the image is the elastic one"*, and panel v2 is the whole
+ * catalogue — sixteen rows, ~1200px. Handed to `below`, it took every pixel and
+ * the picture rendered at 0×0 while every test in this file passed.
+ *
+ * These are the source-level halves. The half that can actually fail is in
+ * `scripts/drive-face-panel-evidence.mts`, which measures the plate in a real
+ * browser with the panel on — a CSS assertion cannot fail on a collapsed
+ * element, and that is exactly what it did.
+ */
+describe("the panel stands beside the picture, never on top of its height", () => {
+  it("is handed to the viewer as `beside`, not as part of `below`", async () => {
+    const sheet = withoutProse(await readFile(SHEET, "utf8"));
+    const beside = sheet.slice(sheet.indexOf("beside={"));
+    expect(beside.slice(0, beside.indexOf("/>"))).toContain("<FacePanel");
+    /* And the refine panel below no longer carries it — one panel, one place. */
+    const below = sheet.slice(sheet.indexOf("<RefinePanel"));
+    expect(below.slice(0, below.indexOf("/>"))).not.toContain("face={");
+  });
+
+  it("puts the stage on a row, so the panel's length is never the picture's", async () => {
+    const [viewer, css] = await Promise.all([readFile(VIEWER, "utf8"), readFile(CSS, "utf8")]);
+    const stage = viewer.slice(viewer.indexOf('className="dpc-viewer__stage"'));
+    expect(stage.slice(0, stage.indexOf("</div>"))).toContain("{beside}");
+    const rule = css.slice(css.indexOf(".dpc-viewer__stage {"));
+    expect(rule.slice(0, rule.indexOf("}"))).toContain("flex-direction: row");
+  });
+
+  it("counts the dock as part of the surface, so a row tap is not a scrim tap", async () => {
+    const viewer = await readFile(VIEWER, "utf8");
+    const close = viewer.slice(viewer.indexOf("const target = event.target as HTMLElement"));
+    /* Missing from this list, every tap on a panel row closed the viewer — the
+       row prefilled the ask box of a panel that was being unmounted. */
+    expect(close.slice(0, close.indexOf("onClose()"))).toContain(".dpc-viewer__dock");
+  });
+
+  it("gives the dock its own scroll rather than the viewport's", async () => {
+    const css = await readFile(CSS, "utf8");
+    const dock = css.slice(css.indexOf(".dpc-viewer__dock {"));
+    const body = dock.slice(0, dock.indexOf("}"));
+    expect(body).toContain("overflow-y: auto");
+    expect(body).toContain("min-height: 0");
+  });
+});
+
 describe("the box on the picture is the ask box, at the feature", () => {
   it("submits through the SAME paid handler the ask box submits through", async () => {
     const sheet = withoutProse(await readFile(SHEET, "utf8"));
     expect(sheet).toContain("onAsk={askRefine}");
     expect(sheet).toContain("onRefine={askRefine}");
+  });
+
+  it("owns Escape while it is open, instead of closing the viewer under itself", async () => {
+    const [regions, viewer] = await Promise.all([readFile(REGIONS, "utf8"), readFile(VIEWER, "utf8")]);
+    /* The claim, and the one place that reads it. Without the second half the
+       first is decoration: the viewer's listener is capture-phase, so a child's
+       stopPropagation never reaches it and the whole viewer closed instead. */
+    expect(regions).toContain('data-owns-escape="true"');
+    const escape = viewer.slice(viewer.indexOf('event.key === "Escape"'));
+    expect(escape.slice(0, escape.indexOf("onClose()"))).toContain("[data-owns-escape]");
   });
 
   it("spends nothing when it is dismissed", async () => {

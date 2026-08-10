@@ -113,8 +113,19 @@ describe("the one image grammar", () => {
       picture are click targets that open a scoped edit box, and a click that
       opens an edit box must not also close the picture being edited.
     */
+    /*
+      MEMBERSHIP, NOT THE WHOLE SENTENCE. This pinned the selector list verbatim
+      and went stale every time a slot joined it — twice by the comments above,
+      a third time when the panel docked beside the picture. What the law is
+      about is that each surface inside the viewer counts as inside; quoting the
+      punctuation between them tests the string, not the rule.
+    */
     const viewer = await readFile(VIEWER, "utf8");
-    expect(viewer).toContain('target.closest("img, .dpc-viewer__chrome, .dpc-refine, .dpc-regions")');
+    const close = viewer.slice(viewer.indexOf("const target = event.target as HTMLElement"));
+    const test = close.slice(0, close.indexOf("onClose()"));
+    for (const surface of ["img", ".dpc-viewer__chrome", ".dpc-viewer__dock", ".dpc-refine", ".dpc-regions"]) {
+      expect(test).toContain(surface);
+    }
     expect(viewer).not.toContain("event.target === event.currentTarget");
   });
 

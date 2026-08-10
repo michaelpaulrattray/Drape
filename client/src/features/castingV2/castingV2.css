@@ -607,6 +607,65 @@
 }
 
 /*
+  THE STAGE — the picture and the panel that stands beside it.
+
+  The rule above holds only while what sits under the picture is short. Panel v2
+  is the whole catalogue, and as a `below` it took ~1200px of a 1000px viewport:
+  the image, being the elastic one, yielded to nothing at all (measured at 0×0,
+  shift 27). So the panel is not under the picture, it is beside it — which is
+  also the founder's own mock: versions left, picture centre, panel docked right,
+  only the ask box across the bottom.
+*/
+.dpc-viewer__stage {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: 16px;
+  /* The row may shrink; without this the flex column refuses to make it
+     smaller than its content and the whole stage overflows the scrim. */
+  min-height: 0;
+  max-width: 100%;
+}
+
+.dpc-viewer__dock {
+  /* The mock's own column, to the pixel. Narrow enough that a sixteen-row list
+     reads as a list rather than as a second screen. */
+  flex: 0 0 292px;
+  width: 292px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--r-lg);
+  /*
+    NO SURFACE OF ITS OWN — it sits on the scrim, exactly like the refine panel
+    under the picture. `--surface` was tried and it is white in the light theme,
+    while `--onScrim` is white in BOTH themes (a scrim is dark in both). The
+    result was a white panel of white words: every assertion about the copy
+    passed and none of it could be read.
+  */
+  background: transparent;
+}
+
+/*
+  A NARROW WINDOW HAS NO ROOM BESIDE THE PICTURE, and stacking is the honest
+  answer — but the panel goes back to being SHORT when it does, or it starves the
+  photograph exactly the way it did before.
+*/
+@media (max-width: 1080px) {
+  .dpc-viewer__stage {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .dpc-viewer__dock {
+    flex: 0 1 auto;
+    width: min(100%, 520px);
+    max-height: 34vh;
+  }
+}
+
+/*
   Download and close share one row now. They were absolutely positioned to the
   same corner before download existed; the chrome wrapper owns the position and
   these own only their shape, or the two would sit on top of each other.
@@ -2809,6 +2868,7 @@
   flex-direction: column;
   gap: 10px;
   width: 100%;
+  padding: 14px 12px;
 }
 
 .dpc-face__head { display: flex; flex-direction: column; gap: 2px; }
@@ -2885,9 +2945,11 @@
 
 .dpc-face__thumb {
   flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  /* The mock's own size. Sixteen 44px rows in a 292px column read as a second
+     screen; at 34 the list reads as a list. */
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
   background-color: color-mix(in srgb, var(--onScrim) 8%, transparent);
   background-size: contain;
   background-position: center;
@@ -2922,13 +2984,21 @@
   text-overflow: ellipsis;
 }
 
-/* Their own words for it, which is what the row is actually about. */
+/*
+  Their own words for it, which is what the row is actually about — so in a
+  292px column they WRAP rather than truncate. "auburn, worn up in a loose…" is
+  the carrier of record with its record cut off; two lines costs a few pixels and
+  keeps the sentence.
+*/
 .dpc-face__words {
   font-size: 11.5px;
+  line-height: 1.35;
   color: color-mix(in srgb, var(--onScrim) 72%, transparent);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .dpc-face__from {

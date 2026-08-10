@@ -38,6 +38,7 @@ import {
   type ViewerFrame,
 } from "@/features/castingV2/components/CandidateViewer";
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
+import { FacePanel } from "@/features/castingV2/components/FacePanel";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
@@ -860,6 +861,19 @@ export default function CastingSheet() {
   const faceSelection = useFaceSelection();
   const facePanelData = face.data?.enabled ? face.data : null;
   const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
+  /*
+    ONE DRAFT, THREE DOORS. The ask box under the picture, a row tapped in the
+    panel beside it, and the feature clicked on the picture itself all write the
+    same sentence — so the sentence is held here, where all three can reach it,
+    rather than inside whichever component happened to own the field.
+  */
+  const [askDraft, setAskDraft] = useState("");
+  /*
+    v1 AND v2 ARE NEVER BOTH ON SCREEN. They answer different questions — what
+    this version KEEPS versus everything that can be changed — so two lists would
+    be two answers. Derived, not mirrored: v2 armed means v1 is handed nothing.
+  */
+  const keptRows = facePanelData ? [] : (kept.data?.rows ?? []);
 
   /*
     The refinement the picture narrates while it runs (D-169).
@@ -1010,6 +1024,14 @@ export default function CastingSheet() {
   useEffect(() => {
     knownVariantIds.current = null;
     boughtHere.current = new Set();
+    /*
+      AND A NEW SENTENCE. `RefinePanel` used to be keyed by the face, so its own
+      state died with it; the draft is held here now, so the clearing has to be
+      too — or walking the viewer with ←/→ carries a half-typed instruction onto
+      the next candidate and the box spends 25 credits on whoever you landed on.
+    */
+    setAskDraft("");
+    faceSelection.select(null);
   }, [viewerCandidateId]);
 
   /*
@@ -1722,6 +1744,22 @@ export default function CastingSheet() {
               onAsk={askRefine}
             />
           ) : null}
+          /*
+            EVERYTHING ABOUT THIS FACE, BESIDE THE PICTURE — not under it.
+
+            Under it, the catalogue's sixteen rows took the whole viewport and
+            the photograph rendered at 0×0 (shift 27's render check, measured).
+            Beside it is also the founder's own mock: versions left, picture
+            centre, the panel docked right, only the ask box across the bottom.
+          */
+          beside={facePanelData && viewerRefinable ? (
+            <FacePanel
+              groups={facePanelData.groups}
+              possessive={facePanelData.possessive}
+              selection={faceSelection}
+              onScope={setAskDraft}
+            />
+          ) : null}
           onIndexChange={(next) => setViewerCandidateId(viewerFrames[next]?.candidateId ?? null)}
           onClose={() => setViewerCandidateId(null)}
           /*
@@ -1750,19 +1788,16 @@ export default function CastingSheet() {
               */
               busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
               outcome={refineOutcome}
-              /* Empty until the segment store is armed for this account, and an
-                 empty list renders nothing at all. */
-              kept={kept.data?.rows ?? []}
+              /* Empty until the segment store is armed for this account — and
+                 empty by construction whenever panel v2 is, since v2 replaces v1
+                 rather than joining it. An empty list renders nothing at all. */
+              kept={keptRows}
               /* The heading's one derived word — his/her/their, from the server,
                  which is the only side that may read a face's sex. */
               keptPossessive={kept.data?.possessive ?? "their"}
-              /* Panel v2 REPLACES v1 for an account the library is armed for —
-                 two lists of one face would be two answers to one question. */
-              face={facePanelData ? {
-                groups: facePanelData.groups,
-                possessive: facePanelData.possessive,
-                selection: faceSelection,
-              } : undefined}
+              /* The one sentence all three doors write into. */
+              draft={askDraft}
+              onDraft={setAskDraft}
               reask={reaskOptions ? { question: refineOutcome ?? "", options: reaskOptions } : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a

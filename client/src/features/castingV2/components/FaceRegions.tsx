@@ -118,6 +118,10 @@ export function FaceRegions({
       {open && openRow?.box ? (
         <form
           className="dpc-regions__ask"
+          /* Escape belongs to this box while it is open, and the viewer's own
+             capture-phase listener has no other way to know — see the handler
+             below and `CandidateViewer`'s Escape branch. */
+          data-owns-escape="true"
           style={{
             left: `${((openRow.box.x + openRow.box.width / 2) / openRow.box.frame.width) * 100}%`,
             top: `${((openRow.box.y + openRow.box.height) / openRow.box.frame.height) * 100}%`,

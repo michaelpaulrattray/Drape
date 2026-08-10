@@ -1,9 +1,5 @@
-import { useState } from "react";
-
 import { Button } from "@/foundation";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
-import { FacePanel, type FacePanelGroup } from "./FacePanel";
-import type { FaceSelectionModel } from "./faceSelection";
 
 /**
  * Refining one face — the panel under the expanded picture (M8).
@@ -101,7 +97,8 @@ export function RefinePanel({
   onDismissOutcome,
   kept = [],
   keptPossessive = "their",
-  face,
+  draft,
+  onDraft,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -156,21 +153,19 @@ export function RefinePanel({
    */
   keptPossessive?: string;
   /**
-   * PANEL v2, and it REPLACES v1 rather than joining it.
+   * THE ASK BOX'S TEXT, HELD ABOVE THIS PANEL — because it now has three doors.
    *
-   * Absent until the reference library is armed for this account. Two lists of
-   * one face on one screen would be two answers to "what is she holding" — and
-   * v1 answers a narrower question (what this version KEEPS) than v2 does
-   * (everything that can be changed), so the two disagree by construction.
+   * Typing here is one; tapping a row in the face panel is another, and that
+   * panel no longer lives inside this component (it stands beside the picture,
+   * where the founder's mock puts it and where its length cannot starve the
+   * photograph); clicking the feature on the picture is the third. A draft owned
+   * by one of the three doors is a draft the other two cannot open.
    */
-  face?: {
-    groups: readonly FacePanelGroup[];
-    possessive: string;
-    /** Shared with the regions over the picture — one selection, two views. */
-    selection: FaceSelectionModel;
-  };
+  draft: string;
+  onDraft: (value: string) => void;
 }) {
-  const [instruction, setInstruction] = useState("");
+  const instruction = draft;
+  const setInstruction = onDraft;
   const trimmed = instruction.trim();
   /*
     ARE THEY ABOUT TO BUY THE SAME EDIT TWICE? (D-161)
@@ -324,26 +319,22 @@ export function RefinePanel({
       ) : null}
 
       {/*
-        WHAT SHE IS KEEPING, immediately above the box it writes into (fable-113).
+        WHAT SHE IS KEEPING — panel v1, immediately above the box it writes into
+        (fable-113). Tapping a row prefills the ask, so the row and the field it
+        fills are adjacent and the cause of the text appearing is visible in one
+        glance.
 
-        Placed here rather than beside the stack on purpose: tapping a row
-        prefills the ask, so the row and the field it fills are adjacent and the
-        cause of the text appearing is visible in one glance.
+        Panel v2 is NOT here. It is the whole catalogue rather than a short list
+        of what one version keeps, and at that length it belongs beside the
+        picture instead of under it — `CandidateViewer`'s `beside`. The caller
+        hands this one an empty list whenever v2 is armed, so the two are never
+        two answers to one question.
       */}
-      {face ? (
-        <FacePanel
-          groups={face.groups}
-          possessive={face.possessive}
-          selection={face.selection}
-          onScope={(prefill) => setInstruction(prefill)}
-        />
-      ) : (
-        <SegmentsOnFace
-          rows={kept}
-          possessive={keptPossessive}
-          onPrefill={(prefill) => setInstruction(prefill)}
-        />
-      )}
+      <SegmentsOnFace
+        rows={kept}
+        possessive={keptPossessive}
+        onPrefill={(prefill) => setInstruction(prefill)}
+      />
 
       <form
         className="dpc-refine__ask"
