@@ -16,6 +16,7 @@ import mysql from "mysql2/promise";
 import { currentValueOfFacet } from "../server/castingV2/refineDelta";
 import { readResolvedIdentity } from "../server/castingV2/rollService";
 import { nameForFacet, facetsNeedingNames } from "../server/castingV2/segmentsOnFace";
+import { pronounsForSex } from "../server/castingV2/castPronouns";
 import type { Facet } from "../server/castingV2/refineFacets";
 
 const url = process.env.DATABASE_URL;
@@ -40,7 +41,7 @@ for (const row of rows as Record<string, any>[]) {
   const identity = readResolvedIdentity(prompt);
   const named: string[] = [];
   for (const facet of facets) {
-    const name = nameForFacet(facet, currentValueOfFacet(identity, facet));
+    const name = nameForFacet(facet, currentValueOfFacet(identity, facet), pronounsForSex(identity?.sex));
     if (name) named.push(`${facet}="${name}"`);
   }
   console.log(

@@ -1,10 +1,11 @@
 {
   "//": "THE SCRIPTS TREE, which tsconfig.json does not include. Every 'typecheck clean' run against the main config silently skipped scripts/ — the walk driver, the calibration fixtures and the refund script were only ever validated by running them, which is a poor place to discover a typo in a money script. Scripts are .mts run by tsx as ESM, so top-level await and modern iteration are legal here even though the app's own module setting forbids them. Server and shared come along because scripts import them.",
+  "//dom.iterable": "Not optional, and its absence made this whole gate red. A browser-driving script spreads a NodeList on nearly every line — `[...document.querySelectorAll(...)]` — and plain `dom` types a NodeList without `[Symbol.iterator]`, so tsc rejected 94 correct lines across seven drivers. The tempting repair was to rewrite all 94 as `Array.from`, and that is churn standing in for the one-line cause: the scripts run under tsx against a real browser where a NodeList has always been iterable, so the LIB was wrong and the code never was.",
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "esnext",
     "target": "es2022",
-    "lib": ["es2023", "dom"],
+    "lib": ["es2023", "dom", "dom.iterable"],
     "moduleResolution": "bundler",
     "noEmit": true
   },

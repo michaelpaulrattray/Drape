@@ -2039,7 +2039,7 @@ let seededItemId = 0;
     check(
       "SD4 nickname names the draft WITHOUT minting",
       sdNick === 200 && sdState?.name === "SD Nickname" && sdState?.status === "draft",
-      JSON.stringify({ status: sdNick, ...sdState }),
+      JSON.stringify({ http: sdNick, ...sdState }),
     );
 
     // The mint path still refuses namelessness — naming is fused to minting
@@ -3390,10 +3390,16 @@ if (process.env.RUN_GATE_FAIL === "1") {
   check("PERF5 keyboard nudge responds within 1.5s", nudgeMs < 1500, `${nudgeMs}ms`);
 
   const metrics = await page.metrics();
+  /* `JSHeapUsedSize` is optional on the CDP payload, and a NO-READ is evidence
+     rather than absence: comparing `undefined` reported a clean bill of health
+     for an instrument that never answered. */
+  const heapBytes = metrics.JSHeapUsedSize;
   check(
     "PERF6 36-node board stays below 256MB JS heap",
-    metrics.JSHeapUsedSize < 256 * 1024 * 1024,
-    `${Math.round(metrics.JSHeapUsedSize / 1024 / 1024)}MB`,
+    heapBytes !== undefined && heapBytes < 256 * 1024 * 1024,
+    heapBytes === undefined
+      ? "NO READ — the browser reported no heap metric"
+      : `${Math.round(heapBytes / 1024 / 1024)}MB`,
   );
 
   await conn.execute(`DELETE FROM board_edges WHERE boardId = ?`, [boardId]);

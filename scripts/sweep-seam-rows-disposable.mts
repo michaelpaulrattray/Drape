@@ -61,7 +61,7 @@ const DAYS = Number(arg("days", "30"));
 */
 const SELFTEST_ROWS = SEAM_CONTROL_ROWS;
 
-let rows: any[];
+let rows: readonly any[];
 if (SELFTEST) {
   rows = SELFTEST_ROWS;
   console.log("SELFTEST — two synthetic rows, no database touched.\n");

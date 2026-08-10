@@ -55,6 +55,7 @@ import { regionNameOf } from "../server/castingV2/maskedRefine";
 import { currentValueOfFacet } from "../server/castingV2/refineDelta";
 import { readResolvedIdentity } from "../server/castingV2/rollService";
 import { nameForFacet } from "../server/castingV2/segmentsOnFace";
+import { pronounsForSex } from "../server/castingV2/castPronouns";
 import type { Facet } from "../server/castingV2/refineFacets";
 import { openDatabase } from "./lib/dbConnection.mts";
 
@@ -151,8 +152,11 @@ for (const step of PLAN) {
   const prompt = typeof variant.internalPrompt === "string"
     ? JSON.parse(variant.internalPrompt)
     : variant.internalPrompt;
-  const value = currentValueOfFacet(readResolvedIdentity(prompt), step.facet);
-  const name = nameForFacet(step.facet, value);
+  const identity = readResolvedIdentity(prompt);
+  const value = currentValueOfFacet(identity, step.facet);
+  /* This face's own pronoun, from its own record — the panel derives it the
+     same way, and a seed that named a man's eyes "hers" would seed the defect. */
+  const name = nameForFacet(step.facet, value, pronounsForSex(identity?.sex));
   const region = regionNameOf(step.facet);
   if (!name) throw new Error(`variant ${step.variantId} has no delivered value for ${step.facet}`);
   if (!region) throw new Error(`${step.facet} has no region and can never own pixels`);
