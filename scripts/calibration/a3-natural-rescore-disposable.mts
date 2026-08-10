@@ -1,4 +1,28 @@
 /**
+ * ⚠ THE VERDICT THIS SCRIPT PRINTS IS WITHDRAWN — 2026-08-10, shift 23.
+ *
+ * It closes by calling the founding case "2 of 3" against the natural band. It
+ * is not 2 of 3, and it is not 0 of 3 either: the specular measure it depends
+ * on cannot resolve the question in the nude region at all.
+ *
+ *   · three paints of ONE identical prompt spread 0.67pp on this measure —
+ *     wider than every gloss difference the campaign has ever read
+ *   · read backwards, it fails its own positive control by SIGN: the frames
+ *     with gloss STRUCK read higher (mean 2.46%) than the frame with gloss
+ *     ASKED FOR (2.28%)
+ *   · the natural band it scores against was, in turn, built from a family
+ *     labelled "glossy" because of what was SENT to it, never what came back
+ *
+ * The FULLNESS half of the table below is untouched and still stands — that
+ * measure has a 0.10pp noise floor and the margins clear it. So the honest
+ * verdict on the founding case is: **fuller, yes, on all three; on the gloss,
+ * no verdict is available.** See glossy-family-sweep-disposable.mts.
+ *
+ * Kept rather than deleted, because the founder was given its number and the
+ * correction has to be findable from the same file.
+ *
+ * ---
+ *
  * a3, RE-SCORED AGAINST THE NATURAL BAND — founder ruling, fable-188.
  *
  * *"Natural shine is fine; gloss is makeup, it's obvious."* So removing gloss
@@ -81,9 +105,13 @@ for (const index of [1, 2, 3]) {
   );
 }
 
-console.log(`\nTHE FOUNDING CASE, under the founder's own definition: ${natural} of ${scored} came back`);
-console.log("to her natural lips AND fuller. The remaining frame sits above the natural band.");
-console.log("\nCAVEAT, and it is not small: the natural band rests on ONE bare specimen plus a family");
-console.log("whose own naturalness is inferred from this cell's carry finding rather than measured");
-console.log("directly. A second bare specimen — one paint — would put it on its own feet.");
+console.log(`\nTHE FOUNDING CASE, as this script scored it: ${natural} of ${scored} came back to her`);
+console.log("natural lips AND fuller.");
+console.log("\n⚠ THAT VERDICT IS WITHDRAWN (2026-08-10). The second bare specimen the caveat asked");
+console.log("for was bought — three of them — and they did not shore the band up, they collapsed");
+console.log("it: three paints of one identical prompt spread 0.67pp, wider than every gloss");
+console.log("difference here. Read backwards the measure fails its own positive control by sign,");
+console.log("putting gloss-STRUCK frames above the gloss-ASKED one. So the gloss column above is");
+console.log("no verdict in EITHER direction. The fullness column stands: all three came back");
+console.log("fuller, on a measure whose noise floor is 0.10pp. See glossy-family-sweep-disposable.");
 process.exit(0);

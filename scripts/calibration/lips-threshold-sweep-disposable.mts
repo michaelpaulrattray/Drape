@@ -1,5 +1,30 @@
 /* Calibrating the gloss instrument on CONTROL specimens only — master (bare)
-   against the glossy family — before any arm exists to fit it to. */
+   against the glossy family — before any arm exists to fit it to.
+
+   WITHDRAWN 2026-08-10, shift 23, and this is the ROOT of the class rather than
+   another instance of it. `glossy: true` below labels thirteen frames as the
+   positive class because each was SENT a gloss crop. That is a label taken from
+   the INPUT, not from the delivered pixels — it assumes the very thing the
+   instrument was built to test. Fitting a threshold to it cannot fail to
+   confirm it.
+
+   What the label was worth, measured afterwards: three paints of one identical
+   prompt spread 0.67pp on this measure, wider than the gap between any two
+   groups here; and the measure reads gloss-STRUCK frames above the gloss-ASKED
+   frame, so it fails its own positive control by SIGN. The +50 choice this
+   script selected is therefore unearned in the nude region. It survives only
+   where the specimens are extreme and outcome-verified — a maximal wet ask at
+   3.60% and a matte control at 0.26%.
+
+   THE CLASS, for the sweep: a control class defined by what was ASKED FOR or
+   SENT rather than by what was DELIVERED. Any instrument fitted to such a class
+   inherits the assumption it was meant to test. A positive control must be
+   labelled by a verified outcome — which in practice means an extreme ask that
+   the measure can be seen to order — or it is not a control.
+
+   See glossy-family-sweep-disposable.mts for the reading. Kept, not deleted:
+   the numbers it prints are still the numbers, and re-running it against an
+   outcome-labelled class is the natural next use. */
 import sharp from "sharp";
 import { readFile } from "node:fs/promises";
 import { loadMaskFile } from "../lib/shapeOnFace.mts";

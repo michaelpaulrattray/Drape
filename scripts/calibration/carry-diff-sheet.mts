@@ -74,5 +74,14 @@ await writeFile(`${DIFF}/SHEET-configuration-diff.png`, await sharp({
 
 console.log(`wrote ${DIFF}/SHEET-configuration-diff.png  (${tiles.length} tiles, one scale)`);
 console.log("The gloss tiles carry a SHINE number, not a fullness one — that crop was asked to");
-console.log("change a surface, and the natural band tops out at 2.75%.");
+console.log("change a surface.");
+console.log("");
+console.log("WITHDRAWN 2026-08-10, shift 23 — the sentence that used to close this line said the");
+console.log("natural band tops out at 2.75%, and therefore that the gloss tiles show a crop");
+console.log("failing. The specular measure moves 0.67pp across three paints of ONE identical");
+console.log("prompt, which is wider than every gloss difference the campaign has read; and it");
+console.log("reads gloss-STRUCK frames above the gloss-ASKED frame, so it fails its own positive");
+console.log("control. The two shine NUMBERS on the sheet are what they always were. What is gone");
+console.log("is the verdict attached to them: those tiles show a reading the instrument cannot");
+console.log("make, in either direction. See glossy-family-sweep-disposable.mts.");
 process.exit(0);

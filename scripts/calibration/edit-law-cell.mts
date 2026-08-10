@@ -334,6 +334,25 @@ console.log(
  * BARE      at or below the bare master's own reading
  * UNDECIDED between them
  *
+ * ⚠ BOTH EDGES OF THIS RULE ARE WITHDRAWN in the nude region (2026-08-10, shift
+ * 23). PRESENT is anchored on "the glossy family's floor" — a family labelled
+ * positive because a gloss crop was SENT to it, never because gloss was
+ * measured coming back. BARE is anchored on ONE unpainted specimen, and a paint
+ * is not a photograph. Bought afterwards: three paints of a single identical
+ * prompt spread 0.67pp on this measure, wider than the whole natural-to-nude
+ * range it is being asked to divide; and read backwards it puts gloss-STRUCK
+ * frames above the gloss-ASKED frame, failing its own positive control by sign.
+ *
+ * So in the nude region every verdict this rule produces should be read as
+ * UNDECIDED whatever it prints. It keeps its range only at the extremes, where
+ * the specimens are outcome-verified: a maximal wet ask (3.60%) and a matte
+ * control (0.26%). The FULLNESS instrument beside it is unaffected — its noise
+ * floor is 0.10pp and its margins clear it.
+ *
+ * Left in place rather than re-anchored because re-anchoring wants a positive
+ * class labelled by delivered pixels, and that class does not exist yet.
+ * glossy-family-sweep-disposable.mts holds the reading.
+ *
  * **Decided on the PRIMARY threshold alone.** The secondary is printed in every
  * table and deliberately does not vote: the range control proved +35 blind at
  * the top (a maximal gloss lands inside the ordinary family), and requiring

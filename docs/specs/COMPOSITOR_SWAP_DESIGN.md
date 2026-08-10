@@ -198,29 +198,55 @@ shine". A matte lip is a different ask, and verification scores removal against
 her own natural band, not against a matte specimen. The stylist's ontology
 governs (working law 8): gloss is makeup; skin and lips have natural sheen.
 
-### 3.0a The tier boundary is MEASURED, not assumed (2026-08-10)
+### 3.0a The tier boundary is measured on TWO of its three rows (2026-08-10)
 
 D-241 and D-244 put **surfaces on words** and **introduced things on
-references** before any evidence for that split existed. The edit-law cell and
-its configuration diff measured it, and the engine draws the line in the same
-place:
+references** before any evidence for that split existed. The edit-law cell, its
+configuration diff and the count bisect measured what a reference crop can do to
+a master that disagrees with it:
 
 | what a reference crop asks of the master | does it carry? |
 |---|---|
 | **ADD** what the master lacks (a hoop) | **yes**, outright |
-| **CHANGE a geometry** the master owns (lip fullness) | **partly**, and only in a favourable recipe |
-| **CHANGE a surface** the master owns (gloss) | **no** — 0 of 3, in the recipe that carries a hoop |
+| **CHANGE a geometry** the master owns (lip fullness) | **partly** — 3 of 3 clear of the arm's own null by more than the engine's own spread, at about a third of the crop's value |
+| **CHANGE a surface** the master owns (gloss) | **NOT MEASURED — the instrument cannot resolve it** |
 
 **The crop is outvoted by the master in proportion to how much it contradicts
-it.** So words are the carrier of record for what they govern, crops are the
-carrier of record for introduced items, and the architecture's tier boundary is
-now a measurement rather than a judgment call.
+it** — on the two rows that have a working instrument. So words are the carrier
+of record for what they govern and crops are the carrier of record for
+introduced items, but note what that sentence now rests on: the ADD and GEOMETRY
+rows are measurements; **the SURFACE row is still the founder's judgment call,
+and this document should not claim otherwise.**
 
-Two consequences for the build: the assembler must always emit the
-**configuration proven to carry** (named references, proven order and count),
-and anatomy/surface features keep their words in the stack rather than trusting
-a crop alone. **One arm is still owed** before this is final — the carrying
-recipe with two references, which separates reference COUNT from naming form.
+**Why the surface row was withdrawn (2026-08-10, shift 23).** Three paints of a
+single identical prompt spread **0.67pp** on the specular measure. Every gloss
+difference the campaign has read — the crop-sent family against the never-sent
+family (0.10pp), the gloss arm against the natural band (0.34pp) — is smaller
+than that. And read backwards, the measure fails its own positive control: the
+frames with gloss **struck** read *higher* (mean 2.46%) than the frame with
+gloss **asked for** (2.28%). A measure that cannot order its own quantity cannot
+adjudicate in either direction. It has range only at the extremes — a maximal
+wet ask (3.60%) and a matte control (0.26%) — and the product lives in the nude
+region between them. `scripts/calibration/glossy-family-sweep-disposable.mts`
+holds the reading.
+
+Two things are withdrawn with it, and neither is replaced by its opposite:
+opus-135's "the thirteen were never glossy", and the founding case's **2 of 3**
+verdict on gloss removal. Both are **unearned**, not reversed. The founding
+case's *fullness* half is untouched — that measure has a noise floor of 0.10pp
+and its margins clear it.
+
+Two consequences for the build, both unchanged by the withdrawal: the assembler
+must always emit the **configuration proven to carry** (named references, proven
+naming form), and anatomy/surface features keep their words in the stack rather
+than trusting a crop alone — which is now the *only* thing standing behind the
+surface tier, and so matters more rather than less.
+
+**The owed arm has run.** The carrying recipe with **two** references carried
+fullness 3 of 3 (4.73 / 4.50 / 4.46% against a null of 4.23–4.33%), so
+**reference count is out, and crop position with it**. What remains of the
+bundle is **naming form and ask size** — name each reference for what it is, and
+do not ask for a region redraw in the same breath.
 
 ### 3.1 What this makes IMPOSSIBLE — and therefore what we do not build
 
