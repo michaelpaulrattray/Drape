@@ -203,6 +203,12 @@ transaction and on the same manifest as the candidate's own, from this migration
 onward, and that purge is **unconditional** — the flag governs whether rows are
 written, nothing governs whether they are deleted.
 
+**Two objects per minted crop**, for the reason `casting_segments` keeps two:
+the recipe carries a rectangular crop (§5.1) and the panel shows a cutout, so
+`storageKey` is the rectangle and `maskKey` is the mask. The mask is also the
+only artifact that could re-measure a stored crop's coverage. An uploaded anchor
+is not a cut and carries neither mask nor bbox — both are refused on one.
+
 **Owed, and named rather than absent:** what a SIGNED Cast keeps. Promotion will
 copy into a second table on the Cast's own lifetime, exactly as
 `casting_cast_segments` does for segments and for the same reasons. Nothing
@@ -508,11 +514,16 @@ the lip staircase, which D-244 cancelled.
 2. **The library**: slot keys, per-instance storage, minting from fresh reads,
    the completeness guard with its second read and per-kind refusal, the
    byte-identity refusal, the one-slot assembler refusal with its direct test.
-   **Persistence landed 2026-08-10** — §2.6's table, its migration, the
-   lineage-derived read, the shape refusals, the unconditional purge, and the
-   ceremony (batched to the founder with the flag). What remains of this step is
-   the MINTING path: cutting the crops, running the guard at the door, and
-   writing the rows a delivered render earns.
+   **Landed 2026-08-10, dark behind `CASTING_REFERENCE_LIBRARY_SCOPE`:**
+   §2.6's table with its migration (**applied to production by ceremony the same
+   day — 26 columns, identity key unique, zero rows**), the lineage-derived
+   read, the shape refusals, the unconditional purge, and the MINT
+   (`castingV2/referenceMint.ts`) — cut fresh, guard at the door with its
+   injected second reader, manifest before bytes, rows after. A refused crop
+   records its slot's WORDS rather than nothing: writing no row would leave the
+   previous crop riding while the words moved on, which is two instructions
+   about one feature. What remains is the SLOT CATALOGUE that gives a caller
+   each slot's segmentation question, guard kind, tier and noun.
 3. **The recipe assembler and the repaint path**, behind the flag, dark. The
    assembler is where D-244 lives in code: it resolves each feature to
    *anchor + full word stack* (edited) or *minted crop* (carried), and it can
