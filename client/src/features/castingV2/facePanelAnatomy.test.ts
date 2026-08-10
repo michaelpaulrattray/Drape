@@ -190,6 +190,31 @@ describe("the box on the picture is the ask box, at the feature", () => {
     expect(css).toContain(".dpc-regions__field:focus { outline: none; }");
     expect(css).toContain(".dpc-regions__ask:focus-within");
   });
+
+  it("DRAWS ITS BOXES THIN AND WHITE — founder ruling, product-wide (fable-230)", async () => {
+    /*
+      *"Bounding-box overlays are THIN WHITE, not red — everywhere."* A standing
+      design rule for any on-image geometry: the palette is monochrome and a red
+      box is an alarm the picture is not sounding. These boxes say *here*, not
+      *wrong*.
+
+      Mechanised rather than remembered, because it is exactly the kind of rule a
+      later hand breaks by reaching for a "highlight" colour. It is asserted on
+      the CSS text: 1px borders, and no hue anywhere in the region rules — the
+      pack's own exhibit builder took the same correction in
+      `scripts/build-library-demo-pack.mts`.
+    */
+    const css = await readFile(CSS, "utf8");
+    const rules = css.slice(css.indexOf(".dpc-regions__box"), css.indexOf(".dpc-regions__tag"));
+    expect(rules).toContain("border: 1px solid transparent");
+    expect(rules).toContain("border-color: #FFFFFF");
+    /* Every colour in the block is black, white or a mix of them. A hex that is
+       not grey — #ff2d55, the red the pack used to draw — fails here. */
+    for (const hex of rules.match(/#[0-9a-fA-F]{6}/g) ?? []) {
+      expect(hex.slice(1, 3).toLowerCase(), hex).toBe(hex.slice(3, 5).toLowerCase());
+      expect(hex.slice(3, 5).toLowerCase(), hex).toBe(hex.slice(5, 7).toLowerCase());
+    }
+  });
 });
 
 describe("the panel's copy, classified", () => {

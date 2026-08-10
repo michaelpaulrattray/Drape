@@ -76,9 +76,21 @@ try {
   const refusals = rows as Refusal[];
   if (refusals.length === 0) throw new Error("no kept refusals to build a pack from");
 
-  /* THE NEWEST RENDER'S refusals, together — a pack that mixed two renders'
-     boxes onto one frame would be a picture of a face that never existed. */
-  const newest = String(refusals[0]!.frameKey);
+  /*
+    THE NEWEST RENDER'S refusals, together — a pack that mixed two renders'
+    boxes onto one frame would be a picture of a face that never existed.
+
+    `--frame <key suffix>` PINS it instead, and it exists because "newest" is a
+    moving target: re-running this to correct one thing about a delivered pack
+    would silently rebuild it around whatever render landed since, and the prose
+    beside the pictures would go on quoting the old numbers. A pack somebody has
+    read is an artifact with a frame, not a query.
+  */
+  const pinned = flag("frame");
+  const newest = pinned
+    ? String(refusals.find((row) => String(row.frameKey).endsWith(pinned))?.frameKey
+      ?? (() => { throw new Error(`no refusal on a frame ending "${pinned}"`); })())
+    : String(refusals[0]!.frameKey);
   const together = refusals.filter((row) => String(row.frameKey) === newest);
   const frame = await fetchImageBytes(`${bucket}/${newest}`);
   const meta = await sharp(frame.bytes).metadata();
@@ -121,11 +133,15 @@ try {
       .toFile(`${stem}-cutout-x10.png`);
 
     layers.push({ input: cutout, left: row.refusedBboxX, top: row.refusedBboxY });
+    /* THIN WHITE, never red — founder ruling, 2026-08-11 (fable-230), standing
+       and product-wide for any on-image geometry. The palette is monochrome and
+       a red box is an alarm the picture is not sounding: these boxes say "here",
+       not "wrong". Same rule governs the panel's boxes in `FaceRegions.tsx`. */
     layers.push({
       input: Buffer.from(
         `<svg width="${meta.width}" height="${meta.height}">`
         + `<rect x="${row.refusedBboxX}" y="${row.refusedBboxY}" width="${row.refusedBboxW}"`
-        + ` height="${row.refusedBboxH}" fill="none" stroke="#ff2d55" stroke-width="3"/></svg>`,
+        + ` height="${row.refusedBboxH}" fill="none" stroke="#ffffff" stroke-width="1"/></svg>`,
       ),
     });
     const fill = (lit / (row.refusedBboxW * row.refusedBboxH)) * 100;
