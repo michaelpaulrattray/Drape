@@ -365,7 +365,7 @@ describe("a mask that does not come back on the first try", () => {
       maskAttempts += 1;
       /* The specimen's own shape: a connect failure, not a status. */
       if (maskAttempts < 3) throw new TypeError("fetch failed");
-      return new Response(bytes, { status: 200, headers: { "content-type": "image/png" } });
+      return new Response(new Uint8Array(bytes), { status: 200, headers: { "content-type": "image/png" } });
     }));
     const reader = createFalRegionReader({ apiKey: "test-key" });
 
@@ -420,7 +420,7 @@ describe("a mask that does not come back on the first try", () => {
       maskAttempts += 1;
       return maskAttempts === 1
         ? new Response("upstream", { status: 503 })
-        : new Response(bytes, { status: 200, headers: { "content-type": "image/png" } });
+        : new Response(new Uint8Array(bytes), { status: 200, headers: { "content-type": "image/png" } });
     }));
     const reader = createFalRegionReader({ apiKey: "test-key" });
 
@@ -433,7 +433,7 @@ describe("a mask that does not come back on the first try", () => {
       if (String(url).includes("fal.run")) return sam3Answer();
       /* The failure mode that read thirty faces as bare, one layer up: a
          status nobody can complain about, carrying a document. */
-      return new Response(APP_INDEX_HTML, { status: 200, headers: { "content-type": "text/html" } });
+      return new Response(new Uint8Array(APP_INDEX_HTML), { status: 200, headers: { "content-type": "text/html" } });
     }));
     const reader = createFalRegionReader({ apiKey: "test-key" });
 

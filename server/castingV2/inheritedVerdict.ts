@@ -45,19 +45,25 @@
  *   copied. Do not tidy this into "inherit the boolean".
  */
 import type { Facet } from "./refineFacets";
-import { regionNameOf } from "./maskedRefine";
+import { regionNameOf, type HarvestEvidence } from "./maskedRefine";
 import type { Mask } from "./maskedComposite";
 import type { FacetCheck } from "./renderVerification";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/inheritedVerdict");
 
-export type CompositeEvidence = {
-  /** Where the composite was allowed to differ from the master. */
-  applied: Mask;
-  /** Master regions by the segmentation question that produced them. */
-  masterRegions: ReadonlyMap<string, Mask>;
-};
+/**
+ * The two fields of the harvest's evidence this module needs — NARROWED from
+ * the shared shape rather than restated.
+ *
+ * `Pick` and not a copy, because the copy is what went wrong one module over:
+ * `assembleWithCarriedSegments` re-listed the same two names and silently
+ * dropped `deliveredRegions`, and the delivered-anchored cut was inert on every
+ * render that carried a segment. A deliberate narrowing says *these two are all
+ * I use*; a re-declaration says nothing at all and drifts on the day the shape
+ * grows a third field.
+ */
+export type CompositeEvidence = Pick<HarvestEvidence, "applied" | "masterRegions">;
 
 /**
  * Do these two masks share a single pixel?

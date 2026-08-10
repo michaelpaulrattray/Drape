@@ -34,7 +34,7 @@ import { createModuleLogger } from "../logging/logger";
 import { encodeCut, cutSegments, type SegmentCut } from "./segmentCuts";
 import { captureCastingSegmentsEnabled, deliveredAnchoredSegmentsEnabled } from "./castingV2Scope";
 import { readRaster, type Mask } from "./maskedComposite";
-import { regionNameOf } from "./maskedRefine";
+import { regionNameOf, type HarvestEvidence } from "./maskedRefine";
 import type { Facet } from "./refineFacets";
 
 const log = createModuleLogger("castingV2/segmentPersistence");
@@ -76,11 +76,10 @@ export async function keepSegmentsFromRender(input: {
   /** The delivered frame, with the composite's own working attached. */
   image: {
     bytes: Buffer;
-    evidence?: {
-      applied: Mask;
-      masterRegions: ReadonlyMap<string, Mask>;
-      deliveredRegions?: ReadonlyMap<string, Mask>;
-    } | null;
+    /* The shared shape, not a copy of it — see `HarvestEvidence`, which has one
+       name and one place precisely because a re-listed copy of it dropped the
+       delivered map for every render that carried a segment. */
+    evidence?: HarvestEvidence | null;
   };
   /** The facets this render answered — the same set the harvest cut for. */
   facets: readonly Facet[];
