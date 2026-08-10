@@ -546,6 +546,177 @@ function computeFindings(
   return findings.sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/* ------------------------------------------------------- re-declared shapes */
+
+/**
+ * A SHAPE RE-LISTED INSTEAD OF NARROWED FROM — the copy that drifts, found
+ * mechanically (fable-211, on the three specimens of 2026-08-11).
+ *
+ * # The class, in its own numbers
+ *
+ * One shape (`HarvestEvidence`: `applied`, `masterRegions`, `deliveredRegions`)
+ * was re-declared in three separate modules of one tree inside a fortnight. The
+ * live one cost a feature: `assembleWithCarriedSegments` re-listed two of the
+ * three fields, so `deliveredRegions` was silently dropped on every render that
+ * carried a segment — which is every render after the first kept one. The
+ * delivered-anchored cut (10% → 88.7% of what the customer actually bought) was
+ * inert for a week and **nothing could see it**: the pass-through branch handed
+ * the whole object along, so the map was present whenever no segment was
+ * carried, and the local re-declaration made TypeScript agree with the omission.
+ *
+ * A type that names two or more fields of another module's exported shape is a
+ * COPY. `Pick`, `Omit`, an intersection with a reference, or the shape itself
+ * are all references and none of them can lose a field this way — so the check
+ * is: naming the fields is the defect, and every honest way of narrowing is a
+ * type REFERENCE rather than a literal.
+ *
+ * # Why it is scoped, and why it is scoped to imports
+ *
+ * Two fields of a shape is a weak signal on its own: `{ width, height }` is a
+ * subset of half the geometry in this repository and none of those are copies.
+ * The signal comes from the pair of conditions — the local literal's fields are
+ * a subset of a shape the file's own module graph says it ALREADY IMPORTS. A
+ * file that imports the module holding the original is a file whose author had
+ * the real shape in hand and re-typed it anyway.
+ *
+ * Scoped to `server/castingV2` because that is where the class was measured and
+ * where the tree's own typecheck gate already holds tests to the same bar. It
+ * widens the day a specimen turns up elsewhere — not before, because a checker
+ * tuned on a corpus it has never been run against is a checker nobody trusts by
+ * its third false positive.
+ */
+const SHAPE_COPY_ROOT = "server/castingV2/";
+/** How many fields make a match too big to be coincidence, even when several
+ *  shapes fit. Chosen from the measured run, not from taste — see below. */
+const AMBIGUOUS_COPY_FIELDS = 3;
+
+type NamedShape = { module: string; name: string; props: readonly string[] };
+
+/** The exported object shapes a module offers other modules. */
+function exportedShapesOf(sourceFile: SourceFile, module: string): NamedShape[] {
+  const shapes: NamedShape[] = [];
+  for (const alias of sourceFile.getTypeAliases()) {
+    if (!alias.isExported()) continue;
+    const literal = alias.getTypeNode();
+    if (!literal || literal.getKind() !== SyntaxKind.TypeLiteral) continue;
+    shapes.push({ module, name: alias.getName(), props: propertyNamesOf(literal) });
+  }
+  for (const declaration of sourceFile.getInterfaces()) {
+    if (!declaration.isExported()) continue;
+    shapes.push({
+      module,
+      name: declaration.getName(),
+      props: declaration.getProperties().map((property) => property.getName()).sort(),
+    });
+  }
+  return shapes.filter((shape) => shape.props.length >= 2);
+}
+
+function propertyNamesOf(literal: Node): readonly string[] {
+  return literal
+    .getChildrenOfKind(SyntaxKind.SyntaxList)
+    .flatMap((list) => list.getChildrenOfKind(SyntaxKind.PropertySignature))
+    .map((property) => property.getName())
+    .sort();
+}
+
+/**
+ * Whether this literal is one half of `Something & { … }`.
+ *
+ * That idiom is a reference plus an addition — it cannot lose a field, which is
+ * the whole defect — so it is exempt, and only when the intersection really does
+ * name the shape being matched against.
+ */
+function narrowsFrom(literal: Node, shapeName: string): boolean {
+  const parent = literal.getParent();
+  if (!parent || parent.getKind() !== SyntaxKind.IntersectionType) return false;
+  return parent
+    .getChildrenOfKind(SyntaxKind.SyntaxList)
+    .flatMap((list) => list.getChildren())
+    .some((sibling) => sibling !== literal && sibling.getText().includes(shapeName));
+}
+
+export function shapeCopyFindings(project: Project, files: readonly string[]): Finding[] {
+  const inScope = files.filter(
+    (file) => file.startsWith(SHAPE_COPY_ROOT) && !file.endsWith(".test.ts"),
+  );
+  const relativeOf = (sourceFile: SourceFile) =>
+    path.relative(repoRoot, sourceFile.getFilePath()).replaceAll("\\", "/");
+
+  const shapes: NamedShape[] = [];
+  const filesByPath = new Map<string, SourceFile>();
+  for (const sourceFile of project.getSourceFiles()) {
+    const relative = relativeOf(sourceFile);
+    if (!inScope.includes(relative)) continue;
+    filesByPath.set(relative, sourceFile);
+    shapes.push(...exportedShapesOf(sourceFile, relative));
+  }
+
+  const findings: Finding[] = [];
+  for (const [relative, sourceFile] of filesByPath) {
+    /* The modules this file already has in hand. A shape it does not import is
+       a shape whose fields it may coincide with innocently. */
+    const imported = new Set(
+      sourceFile
+        .getImportDeclarations()
+        .map((declaration) => declaration.getModuleSpecifierSourceFile())
+        .filter((target): target is SourceFile => target !== undefined)
+        .map(relativeOf),
+    );
+
+    for (const literal of sourceFile.getDescendantsOfKind(SyntaxKind.TypeLiteral)) {
+      const props = propertyNamesOf(literal);
+      if (props.length < 2) continue;
+      const matched = shapes.filter((shape) => (
+        shape.module !== relative
+        && imported.has(shape.module)
+        && props.every((name) => shape.props.includes(name))
+        && !narrowsFrom(literal, shape.name)
+        /*
+          MOST OF A SHAPE, OR IT IS NOT THAT SHAPE.
+
+          The claim a finding makes is "this literal IS X, re-typed" — and that
+          claim needs the literal to be most of X. Measured on this tree, the
+          minority matches are all one phenomenon: `{ bytes, contentType }`
+          appears in five modules and lands inside `MaskedRefineResult`, which
+          has seven fields. Two of seven is a pair of ordinary words that a
+          bigger shape happens to contain, not a copy of it. Two of three is
+          `HarvestEvidence` with `deliveredRegions` dropped, which is the live
+          defect this check exists for.
+
+          Half is the boundary of "most of it" rather than a tuned constant —
+          and the fraction is printed in every message, so a reader can see the
+          strength of each claim instead of taking the threshold's word for it.
+        */
+        && props.length * 2 >= shape.props.length
+      ));
+      if (matched.length === 0) continue;
+      /*
+        AND AMBIGUITY IS THE OTHER HALF OF THE NOISE FLOOR, also measured: the
+        first run over this tree found 42 hits, most of them a local
+        `{ width, height }` matching Raster AND Mask AND MatteRequest at once. A
+        literal that fits several shapes is not a copy of any of them. Past
+        three fields, coincidence stops being the likelier explanation whether
+        it is ambiguous or not.
+      */
+      if (matched.length > 1 && props.length < AMBIGUOUS_COPY_FIELDS) continue;
+      const named = matched
+        .map((shape) => `${props.length} of ${shape.name}'s ${shape.props.length} fields (${shape.module})`)
+        .join(", ");
+      findings.push({
+        id: `finding:redeclared-shape:${relative}:${literal.getStartLineNumber()}`,
+        severity: "warn",
+        kind: "redeclared-shape",
+        subject: `${relative}:${literal.getStartLineNumber()}`,
+        message:
+          `Names ${named} — a module that imports a shape and re-lists its fields has written a copy, `
+          + `and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit.`,
+      });
+    }
+  }
+  return findings;
+}
+
 /* ------------------------------------------------------------------- build */
 
 /**
@@ -624,7 +795,11 @@ export function buildAtlas() {
     }));
 
   const edges = collectImportEdges(project);
-  const findings = [...computeFindings(procedures, modules, edges), ...annotationFindings()].sort((a, b) => a.id.localeCompare(b.id));
+  const findings = [
+    ...computeFindings(procedures, modules, edges),
+    ...annotationFindings(),
+    ...shapeCopyFindings(project, sourceFiles),
+  ].sort((a, b) => a.id.localeCompare(b.id));
 
   return {
     meta: {
