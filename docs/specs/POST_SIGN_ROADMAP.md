@@ -187,11 +187,29 @@ superseded it — fable-071/080).
   services end with an explicit `process.exit(0)`, and the park
   checklist's hygiene step becomes a `Get-CimInstance Win32_Process`
   sweep **by command line** rather than a claim from memory.
-- **A CORS rule on the image buckets** (added 2026-08-10, fable-127;
-  founder-queue item 5): wanted on merits before the M12 face chart,
-  which will draw many masked thumbnails. Not urgent — the segments
-  panel routes its stencils through `/api/image-proxy`, which is the
-  product's own established answer and needs no infrastructure.
+- **A CORS rule on the image buckets** — ✅ **DONE and VERIFIED IN A
+  BROWSER, 2026-08-10.** The founder applied both policies himself
+  (fable-176); `scripts/verify-bucket-cors.mts` then proved it the only
+  way that counts. A CORS misfire is silent — the image loads, paints,
+  looks perfect, and the canvas is quietly tainted — so the probe is
+  `getImageData` on a canvas the image was drawn into, from two origins
+  at once:
+
+  ```
+  PASS  ON the allow-list    localhost:3000  loaded, pixels readable [82,88,86,255]
+  PASS  NOT on it (control)  localhost:4321  did not load at all
+  ```
+
+  The negative control is what makes the pass mean anything: a checker
+  that only runs against the allowed origin cannot fail. **So the panel
+  and the M12 face chart may read stencils directly**, and
+  `/api/image-proxy` stays as the fallback for any host not on the
+  bucket's list (boards still use it). One note for whoever reads the
+  output: the script prints `allow-origin header (none)` on the passing
+  arm, and that is correct — the browser does not expose that header to
+  script. At the wire, `curl` with an allowed `Origin` gets
+  `Access-Control-Allow-Origin: http://localhost:3000` and a foreign one
+  gets nothing.
 
 ## 8. Dormant founder items — mostly CLOSED 2026-08-09 (fable-122)
 
