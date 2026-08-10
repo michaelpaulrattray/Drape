@@ -37,7 +37,7 @@ mailbox archive, memory, and DECISION_LOG by the lost-pin audit of
   honestly draw one (opus-094); the row returns the day the catalogue is
   invoked.
 
-## 1. Latency investigation (first, after the walk campaign)
+## 1. Latency AND COST program (first, after the walk campaign; founder-elevated 2026-08-10)
 
 Median 39s → 151s regression (2026-08-08); founder: "5 minutes for 1
 generation is absurd." Stopwatch every stage before optimising.
@@ -49,6 +49,15 @@ ordered fable-067/068, never reported done). Related: first-generation
 paint softness (hair ~0.51–0.56, brows ~0.48–0.56 vs master, twice
 measured) → the **engine sharpness comparison** (NBP vs GPT2 on
 hair/brows) rides with item 6's routing question.
+**COST half (founder, 2026-08-10: "costs are getting ridiculous — after
+we lock everything in we need to optimize massively, both render times
+and cost"):** a per-render call census (calls × model × when), the
+invoice split campaign-instrumentation vs product-per-render, and
+cost-per-render vs the 25-credit price per edit class. Named levers:
+master-region CACHING (same unchanged master re-segmented every render
+— free win, may land pre-program), retry economics per class (every
+miss costs two paints), NBP routing pending its n≥20 court, and
+text-call budgets (verification readings are the OpenRouter driver).
 
 **Filed here by fable-132, deliberately NOT slipped in behind the D-238
 fix:** a bilateral region now costs **three** segmentation calls instead of
