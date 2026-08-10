@@ -112,13 +112,33 @@ try {
        cutout is the arc of metal, and the difference between those two readings
        is the whole of last shift's glasses/earring argument. */
     const maskRaw = await sharp(mask.bytes).greyscale().raw().toBuffer({ resolveWithObject: true });
-    const cutout = await sharp(crop.bytes)
-      .removeAlpha()
-      .joinChannel(maskRaw.data, {
-        raw: { width: maskRaw.info.width, height: maskRaw.info.height, channels: 1 },
-      })
-      .png()
-      .toBuffer();
+    const cropRaw = await sharp(crop.bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    if (cropRaw.info.width !== maskRaw.info.width || cropRaw.info.height !== maskRaw.info.height) {
+      throw new Error(
+        `${row.slot}: the crop is ${cropRaw.info.width}x${cropRaw.info.height} and its mask is `
+        + `${maskRaw.info.width}x${maskRaw.info.height} — they are not a pair`,
+      );
+    }
+    /*
+      THE ALPHA IS WRITTEN BYTE BY BYTE, and that is not fussiness.
+
+      The obvious `sharp(crop).removeAlpha().joinChannel(mask).png()` silently
+      produces a THREE-channel PNG: the joined channel is dropped on the way out,
+      so the "cutout" is the rectangle again, wearing the name of a shape. It was
+      caught by looking at the artifact — the cutout and the crop were the same
+      picture — and not by any assertion, which is why the rehearsal now measures
+      the alpha rather than the file's existence.
+    */
+    const rgba = Buffer.alloc(cropRaw.info.width * cropRaw.info.height * 4);
+    for (let pixel = 0; pixel < cropRaw.info.width * cropRaw.info.height; pixel += 1) {
+      rgba[pixel * 4] = cropRaw.data[pixel * cropRaw.info.channels]!;
+      rgba[pixel * 4 + 1] = cropRaw.data[pixel * cropRaw.info.channels + 1]!;
+      rgba[pixel * 4 + 2] = cropRaw.data[pixel * cropRaw.info.channels + 2]!;
+      rgba[pixel * 4 + 3] = maskRaw.data[pixel]!;
+    }
+    const cutout = await sharp(rgba, {
+      raw: { width: cropRaw.info.width, height: cropRaw.info.height, channels: 4 },
+    }).png().toBuffer();
     await writeFile(`${stem}-cutout.png`, cutout);
 
     let lit = 0;

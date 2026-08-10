@@ -35,6 +35,7 @@ import { readdir, readFile, rm, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import mysql from "mysql2/promise";
+import sharp from "sharp";
 
 const PREFIX = "drape_refusal_viewer_";
 const OUT = "output/refusal-viewer-rehearsal";
@@ -106,6 +107,22 @@ async function isPng(file: string): Promise<boolean> {
   return bytes !== null && bytes.length > 8 && bytes.subarray(0, 4).toString("hex") === "89504e47";
 }
 
+/**
+ * A CUTOUT THAT KEEPS EVERYTHING IS NOT A CUTOUT.
+ *
+ * The first version of the viewer wrote a three-channel PNG — `joinChannel`
+ * drops the joined channel on the way out — so the "cutout" was the rectangle
+ * again under a different name. Nothing here noticed, because the arm asserted
+ * the file was a PNG. It now reads the alpha: some pixels transparent, some
+ * opaque, and neither extreme.
+ */
+async function alphaOf(file: string): Promise<{ opaque: number; total: number }> {
+  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let opaque = 0;
+  for (let index = 3; index < data.length; index += info.channels) if (data[index]! > 0) opaque += 1;
+  return { opaque, total: info.width * info.height };
+}
+
 let exitCode = 1;
 try {
   await rm(OUT, { recursive: true, force: true });
@@ -168,7 +185,21 @@ try {
     console.log(`[rehearsal]   ${file} — ${size} bytes`);
   }
   if (!first.output.includes("drawn")) throw new Error("the table did not report the placement as drawn");
-  console.log("\n[rehearsal] ARM 1 PASSED — crop, cutout and the crop drawn on her own frame");
+
+  /* The cutout is a SHAPE or it is nothing. */
+  const alpha = await alphaOf(`${OUT}/01-lips-v1-cutout.png`);
+  if (alpha.opaque === alpha.total) {
+    throw new Error(
+      `the cutout keeps every one of its ${alpha.total} pixels — the mask was not applied as alpha,`
+      + " so this is the rectangle wearing the name of a shape",
+    );
+  }
+  if (alpha.opaque === 0) throw new Error("the cutout keeps nothing at all — the mask was applied inverted");
+  console.log(
+    `[rehearsal]   cutout alpha: ${alpha.opaque}/${alpha.total} opaque `
+    + `(${((alpha.opaque / alpha.total) * 100).toFixed(1)}%)`,
+  );
+  console.log("\n[rehearsal] ARM 1 PASSED — crop, a cutout that is a real shape, and it drawn on her own frame");
 
   /* --------------------------------------- 2. the frame sizes disagree */
 
