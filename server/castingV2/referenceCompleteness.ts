@@ -101,7 +101,16 @@ export const COMPLETENESS_SPECIMENS: Readonly<Record<string, CompletenessSpecime
   hair: {
     positive: 0.946,
     negative: 0.125,
-    source: "D-243 store audit: the delivered-anchored cut of v#163 against row 13, the founder's fringe",
+    /* Both specimens named by the row that holds them, checked against
+       production while reading the founder pack back: the positive is
+       `casting_segments` #13 (v#163, `hairWorn@hair`, 364×467) and the negative
+       is #9 (v#153, 354×187). This string previously read "against row 13, the
+       founder's fringe", which attached the fringe to the POSITIVE's row — the
+       numbers were always right and the docblock above was always unambiguous,
+       but the one adopted bar in the system should not carry a label that names
+       the wrong artifact. */
+    source: "D-243 store audit: the delivered-anchored cut of v#163 (casting_segments #13) "
+      + "against the founder's fringe on v#153 (#9)",
   },
 };
 
