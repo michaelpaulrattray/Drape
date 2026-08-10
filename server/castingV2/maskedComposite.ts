@@ -86,6 +86,27 @@ export async function writePng(raster: Raster): Promise<Buffer> {
 }
 
 /**
+ * The same, for a one-channel mask — and LOSSLESS is the whole requirement.
+ *
+ * The alpha this writes is the thing a boundary argument turns on. A re-encode
+ * that moved a single edge value by one would destroy the evidence it exists to
+ * carry, which is the same reason the diagnostic capture refuses to store its
+ * frames as WebP.
+ */
+export async function writeMaskPng(mask: Mask): Promise<Buffer> {
+  return sharp(mask.data, {
+    raw: { width: mask.width, height: mask.height, channels: 1 },
+  })
+    /* Stated, because sharp promotes a one-channel raw input to truecolour on
+       the way out and the result was a three-channel PNG of a greyscale mask —
+       three copies of every alpha value, and a reader who checked the channel
+       count would have been told this was a picture. */
+    .toColourspace("b-w")
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+/**
  * Feather a hard mask into a blend ramp.
  *
  * Gaussian rather than a box blur because a box blur leaves a visible straight

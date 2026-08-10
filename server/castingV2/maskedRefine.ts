@@ -67,6 +67,7 @@ import {
   harvestGate,
   outsideMaskUnchanged,
   readRaster,
+  writeMaskPng,
   writePng,
   type Mask,
   type Raster,
@@ -1712,6 +1713,29 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
         frames: [
           { name: "painted", bytes: input.painted.bytes },
           { name: "composite", bytes: await writePng(composed.composite) },
+          /*
+            AND THE ALPHA WE ACTUALLY PAINTED WITH (fable-233 §3).
+
+            `applied` is `min(feather(zone), edgeMatte)` — computed here and,
+            until now, discarded. It is the term that decides every boundary
+            argument this refusal is about, and without it "the painter drew it
+            wrong" and "our own cut lost ground" are indistinguishable from the
+            two frames beside it. Run-9 refused at 62 boundary pixels, in the
+            middle of a range with no specimen either side, and the frame that
+            would settle it does not exist.
+
+            It costs nothing new: the capture's own contract already named it
+            (`DiagnosticFrame`: *"`painted`, `composite`, `applied`"*), and it
+            rides the same scope, the same private bucket, the same
+            reserve-before-write and the same purge promise as the other two.
+            One more registered object on a refusal, on one account.
+
+            **This is the half of the gap that is free.** The attribution that
+            had to be withdrawn was a DELIVERED render, and this site fires only
+            on `composite_fault` — capturing `applied` on delivery is outside the
+            founder's narrow approval and is his line, not ours.
+          */
+          { name: "applied", bytes: await writeMaskPng(composed.applied) },
         ],
       });
       /*

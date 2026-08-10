@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
+
+/*
+  THE CAPTURE IS SPIED, NOT REPLACED — the real one still runs, and it is inert
+  without the scope flag, so nothing about these tests' behaviour changes. The
+  spy exists so the `applied` frame can be asserted ON THE OUTGOING CALL
+  (invariant 5) rather than on a constant beside it: a diagnostic that is never
+  handed to the capture is a diagnostic nobody will find missing.
+*/
+vi.mock("./diagnosticCapture", async (importOriginal) => {
+  const real = await importOriginal<typeof import("./diagnosticCapture")>();
+  return { ...real, captureRefusedRender: vi.fn(real.captureRefusedRender) };
+});
+const { captureRefusedRender } = await import("./diagnosticCapture");
 
 import {
   MASKED_EDITING_SCOPE,
@@ -1282,6 +1295,50 @@ describe("a composite that tore the frame does not get delivered", () => {
 
     expect(failure).toBeInstanceOf(ProviderError);
     expect((failure as ProviderError).failureClass).toBe("composite_fault");
+  });
+
+  it("HANDS THE CAPTURE THE ALPHA IT PAINTED WITH, not just the two pictures", async () => {
+    /*
+      fable-233 §3. `applied` is the term every boundary argument turns on and
+      it was computed and thrown away — so "the painter drew it wrong" and "our
+      own cut lost ground" were indistinguishable from the frames we kept. Run-9
+      refused at 62 boundary pixels with no specimen either side and the frame
+      that would settle it does not exist.
+
+      Asserted on the outgoing call, because the capture is inert without the
+      scope flag: a test that watched the bucket would pass on a call that was
+      never made. And the bytes are opened rather than counted — a frame named
+      `applied` carrying the composite would be the same defect wearing the fix.
+    */
+    vi.mocked(captureRefusedRender).mockClear();
+    await harvestRefinement({
+      master: { bytes: await masterOf(), contentType: "image/png" },
+      painted: { bytes: await wreckedOf(), contentType: "image/png" },
+      facets: [facetOfSubject("marks")],
+      reader,
+      userId: 1,
+      described: "freckles",
+    }).catch(() => null);
+
+    const call = vi.mocked(captureRefusedRender).mock.calls.at(-1)?.[0];
+    expect(call?.reason).toBe("composite_fault");
+    expect(call?.frames.map((frame) => frame.name)).toEqual(["painted", "composite", "applied"]);
+
+    const applied = call!.frames.find((frame) => frame.name === "applied")!;
+    const composite = call!.frames.find((frame) => frame.name === "composite")!;
+    const meta = await sharp(applied.bytes).metadata();
+    /* One channel, at the size of the picture the argument is about. The first
+       version of this read 3 — sharp promotes a one-channel raw input to
+       truecolour unless told otherwise, so the "mask" was three copies of every
+       alpha value. Kept as an assertion because that is invisible by eye. */
+    expect(meta.channels).toBe(1);
+    expect(meta.width).toBe(W);
+    expect(meta.height).toBe(H);
+    /* And it is the ALPHA, not the picture wearing its name. */
+    expect(applied.bytes.equals(composite.bytes)).toBe(false);
+    const alpha = await sharp(applied.bytes).greyscale().raw().toBuffer();
+    expect(alpha.some((value) => value === 0)).toBe(true);
+    expect(alpha.some((value) => value > 0)).toBe(true);
   });
 
   it("SHADOWS an edge-moving edit — records the seam and delivers anyway", async () => {
