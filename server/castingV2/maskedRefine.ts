@@ -302,6 +302,70 @@ export type MaskedRefineInput = {
   explain?: boolean;
 };
 
+/**
+ * WHAT A COMPOSITE CAN PROVE ABOUT ITSELF — one shape, one name, one place.
+ *
+ * It has a name because it is PASSED THROUGH three layers and rebuilt in one of
+ * them, and a rebuild that re-lists its own fields is the copy that drifts
+ * (working law 4). `assembleWithCarriedSegments` re-listed two of three, so
+ * `deliveredRegions` was dropped on exactly the renders that carried a segment
+ * — the delivered-anchored cut silently inert on the second edit of any face,
+ * while every test and every type still read green.
+ */
+export type HarvestEvidence = {
+  /** Where the composite was allowed to differ from the master. */
+  applied: Mask;
+  /**
+   * The geography of this render, by the question that produced it.
+   *
+   * Two kinds of answer live in one map, and the difference is stated here
+   * rather than left to be inferred:
+   *
+   * - **Segmented** — a region the reader drew on the MASTER. The great
+   *   majority, and what the name has always meant.
+   * - **PLACED** — an addition's destination corridor, which no reader could
+   *   have drawn because the thing was not there yet (D-213). Filed under the
+   *   accessory's kind id, which is the same string the segmenter would be
+   *   asked if the thing already existed (`LANDMARK_OF_ACCESSORY.region`).
+   *
+   * The second kind is why accessories could never be kept. The corridor was
+   * built, unioned into the zone and then dropped on the floor, so the segment
+   * cutter — which looks a facet's ground up in this map by NAME — found
+   * nothing for `statedAccessories` and filed nothing, on every face, on every
+   * render this campaign has paid for.
+   */
+  masterRegions: ReadonlyMap<string, Mask>;
+  /**
+   * WHERE THE THING IS NOW — the same questions, asked of the DELIVERED frame.
+   *
+   * The silhouette half of `own(facet) = applied ∩ (region(delivered) ∪
+   * region(master))`. A master-anchored segment can only ever keep the ground
+   * the thing used to occupy, and the things a customer buys live where the
+   * master has nothing: hair worn down lives on her shoulders, and her
+   * master's hair region is a bun. Measured on the founder's own v#163 — the
+   * store kept 100% of what it was given and **10% of what she bought**.
+   *
+   * # It costs no vision call, and that is not luck
+   *
+   * The harvest already asks this exact question for its own content gate
+   * (`regionOf("painted", …)`, one call per question, memoised). Until this
+   * map existed the answer was computed, used once and dropped for every
+   * ordinary region. This is the same read, kept.
+   *
+   * # Why it is a SECOND map rather than a wider `masterRegions`
+   *
+   * `masterRegions` has another consumer: `detailForVerification` cuts the
+   * reader's magnified crop from it. Folding the delivered extent in would
+   * move the box a stochastic reader is shown on a paid render, as a side
+   * effect of a change to the STORAGE path. Two questions, two meanings, two
+   * maps; the segment cutter is the only thing that unions them.
+   *
+   * Absent, or missing a name, means the delivered read did not settle — and
+   * a claim is never built on a reading that did not happen (design rule 2).
+   */
+  deliveredRegions?: ReadonlyMap<string, Mask>;
+};
+
 export type MaskedRefineResult = {
   bytes: Buffer;
   contentType: string;
@@ -351,59 +415,7 @@ export type MaskedRefineResult = {
    * Present on the product path, unlike `explain` — the verification step is not
    * calibration.
    */
-  evidence?: {
-    /** Where the composite was allowed to differ from the master. */
-    applied: Mask;
-    /**
-     * The geography of this render, by the question that produced it.
-     *
-     * Two kinds of answer live in one map, and the difference is stated here
-     * rather than left to be inferred:
-     *
-     * - **Segmented** — a region the reader drew on the MASTER. The great
-     *   majority, and what the name has always meant.
-     * - **PLACED** — an addition's destination corridor, which no reader could
-     *   have drawn because the thing was not there yet (D-213). Filed under the
-     *   accessory's kind id, which is the same string the segmenter would be
-     *   asked if the thing already existed (`LANDMARK_OF_ACCESSORY.region`).
-     *
-     * The second kind is why accessories could never be kept. The corridor was
-     * built, unioned into the zone and then dropped on the floor, so the segment
-     * cutter — which looks a facet's ground up in this map by NAME — found
-     * nothing for `statedAccessories` and filed nothing, on every face, on every
-     * render this campaign has paid for.
-     */
-    masterRegions: ReadonlyMap<string, Mask>;
-    /**
-     * WHERE THE THING IS NOW — the same questions, asked of the DELIVERED frame.
-     *
-     * The silhouette half of `own(facet) = applied ∩ (region(delivered) ∪
-     * region(master))`. A master-anchored segment can only ever keep the ground
-     * the thing used to occupy, and the things a customer buys live where the
-     * master has nothing: hair worn down lives on her shoulders, and her
-     * master's hair region is a bun. Measured on the founder's own v#163 — the
-     * store kept 100% of what it was given and **10% of what she bought**.
-     *
-     * # It costs no vision call, and that is not luck
-     *
-     * The harvest already asks this exact question for its own content gate
-     * (`regionOf("painted", …)`, one call per question, memoised). Until this
-     * map existed the answer was computed, used once and dropped for every
-     * ordinary region. This is the same read, kept.
-     *
-     * # Why it is a SECOND map rather than a wider `masterRegions`
-     *
-     * `masterRegions` has another consumer: `detailForVerification` cuts the
-     * reader's magnified crop from it. Folding the delivered extent in would
-     * move the box a stochastic reader is shown on a paid render, as a side
-     * effect of a change to the STORAGE path. Two questions, two meanings, two
-     * maps; the segment cutter is the only thing that unions them.
-     *
-     * Absent, or missing a name, means the delivered read did not settle — and
-     * a claim is never built on a reading that did not happen (design rule 2).
-     */
-    deliveredRegions?: ReadonlyMap<string, Mask>;
-  };
+  evidence?: HarvestEvidence;
   /**
    * The masks this composite was actually built from, when `explain` was asked
    * for. `applied` is the canonical one: it is the only boundary source that

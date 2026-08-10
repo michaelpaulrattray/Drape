@@ -330,6 +330,44 @@ describe("assembling a render with what she already has", () => {
     expect(result.evidence?.applied.data[1 * 8 + 1]).toBe(255);
   });
 
+  /*
+    THE FIELD THE REBUILD USED TO DROP.
+
+    The carried branch built a fresh evidence object naming `applied` and
+    `masterRegions`, so `deliveredRegions` — the whole of the delivered-anchored
+    cut, 10% → 88.7% on the founder's own v#163 — vanished on exactly the renders
+    that carried a segment. That is every render after the first kept one, and
+    nothing could see it: the pass-through branch hands the SAME object along, so
+    the map was present whenever nothing was carried, and this file had
+    re-declared the type without the field so TypeScript agreed.
+
+    Driven on the carried branch specifically, because the uncarried one passes
+    with the bug in place.
+  */
+  it("keeps the delivered regions through an assembly that carried a segment", async () => {
+    const deliveredRegions = new Map([["hair", mask8(() => 128)]]);
+    const result = await assembleWithCarriedSegments({
+      userId: 1,
+      candidateId: 9,
+      anchorVariantId: 4,
+      writing: ["hair.colour"],
+      master: await masterPng(),
+      harvested: {
+        bytes: await png(8, 8, 3, 10),
+        contentType: "image/png",
+        evidence: { applied: mask8(() => 0), masterRegions: new Map(), deliveredRegions },
+      },
+      dependencies: { enabledFor, list: async () => [row()], readBytes: await objects() },
+    });
+
+    // The branch really did carry something — otherwise this asserts the
+    // pass-through path and proves nothing about the rebuild.
+    expect(result.carriedFacets).toEqual(["marks"]);
+    expect(result.evidence?.deliveredRegions).toBe(deliveredRegions);
+    // And the one field the rebuild is allowed to change is still changed.
+    expect(result.evidence?.applied.data[1 * 8 + 1]).toBe(255);
+  });
+
   it("carries the loader's exclusions into the same record as the assembly's", async () => {
     const readable = await objects();
     const result = await assembleWithCarriedSegments({

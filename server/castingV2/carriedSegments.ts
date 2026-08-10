@@ -33,6 +33,7 @@ import { storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { captureCastingSegmentsEnabled } from "./castingV2Scope";
 import { readRaster, writePng, type Mask } from "./maskedComposite";
+import type { HarvestEvidence } from "./maskedRefine";
 import { ProviderError } from "../providers/types";
 import { assembleComposite, type AssemblyEvidence, type CarriedSegment } from "./segmentAssembly";
 
@@ -54,7 +55,7 @@ export type AssembledRender = {
   bytes: Buffer;
   contentType: string;
   /** The harvest's evidence, with `applied` widened to the carried ground. */
-  evidence: { applied: Mask; masterRegions: ReadonlyMap<string, Mask> } | null;
+  evidence: HarvestEvidence | null;
   /** Facets present because a segment was pasted — the report's carried column. */
   carriedFacets: string[];
   /** What the assembly did, for the record. Null when nothing was carried. */
@@ -224,7 +225,7 @@ export async function assembleWithCarriedSegments(input: {
   harvested: {
     bytes: Buffer;
     contentType: string;
-    evidence?: { applied: Mask; masterRegions: ReadonlyMap<string, Mask> } | null;
+    evidence?: HarvestEvidence | null;
   };
   dependencies?: CarriedSegmentDependencies;
 }): Promise<AssembledRender> {
@@ -311,13 +312,23 @@ export async function assembleWithCarriedSegments(input: {
   return {
     bytes: await writePng(assembled.raster),
     contentType: "image/png",
-    evidence: {
-      /* Widened to the carried ground: the verification step's argument is
-         "outside this, the picture IS the master", and a carried segment moved
-         pixels the paint never touched. */
-      applied: assembled.evidence.applied,
-      masterRegions: input.harvested.evidence.masterRegions,
-    },
+    /*
+      THE HARVEST'S EVIDENCE, WITH ONE FIELD OVERRIDDEN — spread rather than
+      re-listed, and the difference was a live defect.
+
+      Re-listing named `applied` and `masterRegions` and silently dropped
+      `deliveredRegions`, so the delivered-anchored cut (the 10% → 88.7% one)
+      was inert on exactly the renders that carried a segment — which is every
+      render after the first kept one. Nothing could see it: the pass-through
+      branch handed the same object along, so the map was there whenever no
+      segment was carried, and the type had been re-declared narrow in this file
+      so TypeScript agreed with the omission.
+
+      `applied` is widened deliberately: the verification step's argument is
+      "outside this, the picture IS the master", and a carried segment moved
+      pixels the paint never touched.
+    */
+    evidence: { ...input.harvested.evidence, applied: assembled.evidence.applied },
     carriedFacets: assembled.carriedFacets,
     assembly,
   };
