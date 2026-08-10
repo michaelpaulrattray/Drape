@@ -35,9 +35,11 @@
  *                                 that did not pass through the door
  *   a crop with no geometry       refused — a mask and a crop mean nothing
  *                                 except against a frame of the same size
- *   an anchor with geometry       refused — an anchor is an upload, not a cut,
- *                                 and a bbox on one is a claim about a frame it
- *                                 was never in
+ *   a crop with no mask           refused — the panel shows a cutout, and a
+ *                                 coverage reading whose subject cannot be
+ *                                 re-measured is a number with no artifact
+ *   an anchor with a mask or a    refused — an anchor is an upload, not a cut
+ *   bbox
  *
  * # Retention is not in this file's gift
  *
@@ -110,7 +112,8 @@ export class ReferenceLibraryShapeError extends Error {
       | "imageWithoutDigest"
       | "cropWithoutGuard"
       | "cropWithoutGeometry"
-      | "anchorWithGeometry"
+      | "cropWithoutMask"
+      | "anchorIsNotACut"
       | "manifestMissing",
     detail: string,
   ) {
@@ -120,8 +123,12 @@ export class ReferenceLibraryShapeError extends Error {
 }
 
 export type ReferenceImageToRecord = {
+  /** The RECTANGULAR crop — what a recipe sends (§5.1). */
   storageKey: string;
-  /** sha256 hex of the object's bytes. */
+  /** The single-channel mask that makes it a cutout for the panel. Present on a
+   *  minted crop; absent on an uploaded anchor, which is not a cut. */
+  maskKey?: string;
+  /** sha256 hex of the crop's bytes. */
   digest: string;
   /** Present on a minted crop; absent on an uploaded anchor. */
   geometry?: ReferenceGeometry;
@@ -223,9 +230,15 @@ export function assertReferenceRowShape(row: ReferenceRowToRecord): void {
     );
   }
   if (row.role === "anchor") {
+    if (row.image.maskKey) {
+      throw new ReferenceLibraryShapeError(
+        "anchorIsNotACut",
+        `${row.slot}'s anchor carries a mask, but an anchor is an upload rather than a cut`,
+      );
+    }
     if (row.image.geometry) {
       throw new ReferenceLibraryShapeError(
-        "anchorWithGeometry",
+        "anchorIsNotACut",
         `${row.slot}'s anchor carries a bbox, but an anchor is an upload rather than a cut and was never in a frame`,
       );
     }
@@ -238,6 +251,12 @@ export function assertReferenceRowShape(row: ReferenceRowToRecord): void {
     );
   }
   assertGeometry(row.image.geometry);
+  if (!row.image.maskKey) {
+    throw new ReferenceLibraryShapeError(
+      "cropWithoutMask",
+      `${row.slot}'s crop has no mask; the panel shows a cutout and the guard's reading can only be re-measured against one`,
+    );
+  }
   if (!row.image.guard) {
     throw new ReferenceLibraryShapeError(
       "cropWithoutGuard",
@@ -293,6 +312,7 @@ async function insertVersionedReferenceIn(
       noun: input.row.noun,
       words: [...input.row.words],
       storageKey: image?.storageKey ?? null,
+      maskKey: image?.maskKey ?? null,
       digest: image?.digest ?? null,
       bboxX: image?.geometry?.bbox.x ?? null,
       bboxY: image?.geometry?.bbox.y ?? null,
@@ -440,6 +460,7 @@ function toStoredReference(
        normalized here so no caller has to know which one it got. */
     words: parseWords(row.words),
     storageKey: row.storageKey,
+    maskKey: row.maskKey,
     digest: row.digest,
     geometry: hasGeometry
       ? {
@@ -642,7 +663,7 @@ export async function retireReferenceSlot(input: {
 export async function listPurgeableReferencesIn(
   tx: TransactionHandle,
   candidateIds: readonly number[],
-): Promise<Array<{ id: number; storageKey: string | null }>> {
+): Promise<Array<{ id: number; storageKey: string | null; maskKey: string | null }>> {
   if (candidateIds.length === 0) return [];
   /*
     EVERY row, including the words-only ones that hold no object at all.
@@ -655,6 +676,7 @@ export async function listPurgeableReferencesIn(
     .select({
       id: castingReferenceLibrary.id,
       storageKey: castingReferenceLibrary.storageKey,
+      maskKey: castingReferenceLibrary.maskKey,
     })
     .from(castingReferenceLibrary)
     .where(inArray(castingReferenceLibrary.candidateId, [...candidateIds]));

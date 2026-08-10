@@ -31,7 +31,13 @@ function crop(overrides: Partial<ReferenceRowToRecord> = {}): ReferenceRowToReco
     tier: "anatomy",
     noun: "hair",
     words: ["a blunt shoulder-length bob"],
-    image: { storageKey: "casting-v2/library/abc.png", digest: "a".repeat(64), geometry, guard },
+    image: {
+      storageKey: "casting-v2/library/abc.png",
+      maskKey: "casting-v2/library/abc-mask.png",
+      digest: "a".repeat(64),
+      geometry,
+      guard,
+    },
     ...overrides,
   };
 }
@@ -69,12 +75,17 @@ describe("what a row of each role may hold", () => {
       .toBe("anchorWithoutImage");
   });
 
-  it("refuses an anchor carrying a bbox it was never cut from", () => {
+  it("refuses an anchor carrying a bbox or a mask — it was never cut", () => {
     expect(reasonOf(crop({
       role: "anchor",
       tier: "item",
       image: { storageKey: "flash-sheet.png", digest: "b".repeat(64), geometry },
-    }))).toBe("anchorWithGeometry");
+    }))).toBe("anchorIsNotACut");
+    expect(reasonOf(crop({
+      role: "anchor",
+      tier: "item",
+      image: { storageKey: "flash-sheet.png", maskKey: "cut.png", digest: "b".repeat(64) },
+    }))).toBe("anchorIsNotACut");
   });
 
   it("takes an uploaded anchor: an image, no geometry, no guard reading", () => {
@@ -121,19 +132,28 @@ describe("what a row of each role may hold", () => {
 describe("what a stored crop must be able to say about itself", () => {
   it("refuses a crop with no completeness reading", () => {
     expect(reasonOf(crop({
-      image: { storageKey: "crop.png", digest: "d".repeat(64), geometry },
+      image: { storageKey: "crop.png", maskKey: "mask.png", digest: "d".repeat(64), geometry },
     }))).toBe("cropWithoutGuard");
   });
 
   it("refuses a crop with no frame", () => {
     expect(reasonOf(crop({
-      image: { storageKey: "crop.png", digest: "d".repeat(64), guard },
+      image: { storageKey: "crop.png", maskKey: "mask.png", digest: "d".repeat(64), guard },
     }))).toBe("cropWithoutGeometry");
+  });
+
+  /* The panel shows a CUTOUT and the recipe sends the RECTANGLE (§5.1). A crop
+     stored without its mask can be sent and never shown, and its coverage
+     reading could never be re-measured against anything. */
+  it("refuses a crop with no mask", () => {
+    expect(reasonOf(crop({
+      image: { storageKey: "crop.png", digest: "d".repeat(64), geometry, guard },
+    }))).toBe("cropWithoutMask");
   });
 
   it("refuses an image with no digest — the byte-identity refusal reads it", () => {
     expect(reasonOf(crop({
-      image: { storageKey: "crop.png", digest: "  ", geometry, guard },
+      image: { storageKey: "crop.png", maskKey: "mask.png", digest: "  ", geometry, guard },
     }))).toBe("imageWithoutDigest");
   });
 
@@ -143,6 +163,7 @@ describe("what a stored crop must be able to say about itself", () => {
     expect(() => assertReferenceRowShape(crop({
       image: {
         storageKey: "crop.png",
+        maskKey: "mask.png",
         digest: "e".repeat(64),
         geometry: {
           bbox: { x: 900, y: 20, width: 300, height: 80 },

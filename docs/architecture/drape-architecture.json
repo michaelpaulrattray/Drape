@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e457fecc09012b3b"
+    "sourceFingerprint": "cd8618620a5593b3"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 85
+      "moduleCount": 86
     },
     {
       "id": "domain:castingV2",
@@ -3461,6 +3461,12 @@
     {
       "id": "module:server/castingV2/referenceLibrary.ts",
       "path": "server/castingV2/referenceLibrary.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceMint.ts",
+      "path": "server/castingV2/referenceMint.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8631,6 +8637,10 @@
     {
       "id": "test:server/castingV2/referenceLibrary.test.ts",
       "path": "server/castingV2/referenceLibrary.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceMint.test.ts",
+      "path": "server/castingV2/referenceMint.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceSlots.test.ts",
@@ -18004,6 +18014,56 @@
     {
       "from": "module:server/castingV2/referenceLibrary.ts",
       "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/referenceCompleteness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/db/castingV2ReferenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {

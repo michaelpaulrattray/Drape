@@ -67,7 +67,7 @@ try {
   const names = columns.map((column) => column.Field);
   for (const required of [
     "userId", "candidateId", "variantId", "role", "slot", "tier", "noun", "words",
-    "storageKey", "digest", "bboxX", "bboxY", "bboxW", "bboxH", "frameWidth", "frameHeight",
+    "storageKey", "maskKey", "digest", "bboxX", "bboxY", "bboxW", "bboxH", "frameWidth", "frameHeight",
     "guardKind", "guardCoverage", "guardSpill", "guardThreshold", "version", "retiredAt",
   ]) {
     if (!names.includes(required)) {
@@ -83,7 +83,7 @@ try {
     impossible to write, and the failure would arrive on a paid render.
   */
   const nullable = new Map(columns.map((column) => [column.Field, column.Null === "YES"]));
-  for (const column of ["variantId", "storageKey", "digest", "retiredAt"]) {
+  for (const column of ["variantId", "storageKey", "maskKey", "digest", "retiredAt"]) {
     if (nullable.get(column) !== true) {
       throw new Error(`${column} must be NULLable and is not — stop and investigate`);
     }

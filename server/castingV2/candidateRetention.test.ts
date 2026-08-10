@@ -295,16 +295,20 @@ describe("a candidate's segments purge with it", () => {
     */
     process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "off";
     calls.listReferences.mockResolvedValue([
-      { id: 9, storageKey: "casting-v2/library/orphan-crop.png" },
-      { id: 10, storageKey: null },
+      {
+        id: 9,
+        storageKey: "casting-v2/library/orphan-crop.png",
+        maskKey: "casting-v2/library/orphan-mask.png",
+      },
+      { id: 10, storageKey: null, maskKey: null },
     ]);
 
     const result = await runCandidateRetentionSweep();
 
     expect(calls.deleteReferences).toHaveBeenCalledWith([1]);
-    /* The candidate's own object plus the crop — and NOT a third for the
-       words-only row, which has no object to queue and is deleted anyway. */
-    expect(result.objectsQueued).toBe(2);
+    /* The candidate's own object plus the crop AND its mask — and nothing for
+       the words-only row, which has no object to queue and is deleted anyway. */
+    expect(result.objectsQueued).toBe(3);
     expect(calls.queueStorageCleanup).toHaveBeenCalledWith(expect.objectContaining({
       storageItems: expect.arrayContaining([
         { storageKey: "casting-v2/library/orphan-crop.png", storageBackend: "public_r2" },

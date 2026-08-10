@@ -236,11 +236,12 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         (error: unknown) => tolerateAbsentReferenceLibrary(error),
       );
       for (const reference of references) {
-        if (reference.storageKey) {
-          storageItems.push({
-            storageKey: reference.storageKey,
-            storageBackend: "public_r2" as const,
-          });
+        /* The crop AND its mask — two objects per minted row, like a segment's.
+           Either may be absent (an uploaded anchor has no mask; a words-only row
+           has neither), and an absent one is skipped rather than queued as a
+           key nothing will find. */
+        for (const key of [reference.storageKey, reference.maskKey]) {
+          if (key) storageItems.push({ storageKey: key, storageBackend: "public_r2" as const });
         }
       }
       if (references.length > 0) await deleteReferenceRowsIn(tx, candidateIds);

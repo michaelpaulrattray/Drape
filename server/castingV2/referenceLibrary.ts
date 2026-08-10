@@ -67,6 +67,7 @@ export type StoredReference = {
   noun: string;
   words: readonly string[];
   storageKey: string | null;
+  maskKey: string | null;
   digest: string | null;
   geometry: ReferenceGeometry | null;
   guard: ReferenceGuardReading | null;

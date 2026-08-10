@@ -88,6 +88,14 @@
 -- the write helper, which is where a database CHECK constraint would be if MySQL
 -- 5.7 could be relied on to enforce one.
 --
+-- TWO OBJECTS PER MINTED CROP, for the same reason `casting_segments` keeps
+-- two: the RECIPE carries a rectangular crop (§5.1, fable-183 — cutouts lost as
+-- references), and the PANEL shows a cutout. `storageKey` is the rectangle;
+-- `maskKey` is the single-channel mask that turns it into one. The mask is also
+-- the only thing that could ever re-measure a stored crop's coverage, and a
+-- guard reading whose subject cannot be re-read is a number with no artifact
+-- behind it. An UPLOADED anchor has neither a mask nor a bbox: it is not a cut.
+--
 -- `words` is the FULL declarative stack for the slot, oldest first — everything
 -- ever accepted about this feature, which is what D-244 line 2 regenerates from.
 -- It is not a copy of `casting_candidate_variants.instructions`: those are the
@@ -129,6 +137,7 @@ CREATE TABLE `casting_reference_library` (
 	`noun` varchar(64) NOT NULL,
 	`words` json NOT NULL,
 	`storageKey` varchar(512),
+	`maskKey` varchar(512),
 	`digest` char(64),
 	`bboxX` int,
 	`bboxY` int,

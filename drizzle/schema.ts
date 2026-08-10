@@ -2635,8 +2635,13 @@ export const castingReferenceLibrary = mysqlTable("casting_reference_library", {
    * in the panel's.
    */
   words: json("words").notNull(),
-  /** The crop or the frozen reference. NULL only where the tier allows — see above. */
+  /** The RECTANGULAR crop, or the frozen reference. NULL only where the tier
+   *  allows — see above. This is what a recipe sends (§5.1). */
   storageKey: varchar("storageKey", { length: 512 }),
+  /** The single-channel mask that makes the crop a CUTOUT for the panel, and the
+   *  only artifact that could re-measure its coverage. Absent on an uploaded
+   *  anchor, which is not a cut. */
+  maskKey: varchar("maskKey", { length: 512 }),
   /** sha256 of the object's bytes: the byte-identity refusal (§2.4) and the
    *  carry-stability proof both read this rather than re-fetching pixels. */
   digest: varchar("digest", { length: 64 }),

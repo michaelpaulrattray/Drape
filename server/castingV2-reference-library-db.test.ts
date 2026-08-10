@@ -52,7 +52,7 @@ describeWithDatabase("the reference library (disposable DB)", () => {
     rows: Parameters<typeof library.recordReferenceRows>[0]["rows"];
   }) {
     const keys = input.rows
-      .map((row) => row.image?.storageKey)
+      .flatMap((row) => [row.image?.storageKey, row.image?.maskKey])
       .filter((key): key is string => Boolean(key));
     let cleanupBatchId: string | undefined;
     if (keys.length > 0) {
@@ -86,7 +86,13 @@ describeWithDatabase("the reference library (disposable DB)", () => {
       tier: "anatomy" as const,
       noun: slot,
       words,
-      image: { storageKey, digest: randomUUID().replace(/-/g, "").padEnd(64, "0"), geometry, guard },
+      image: {
+        storageKey,
+        maskKey: `${storageKey.replace(/\.png$/, "")}-mask.png`,
+        digest: randomUUID().replace(/-/g, "").padEnd(64, "0"),
+        geometry,
+        guard,
+      },
     };
   }
 
