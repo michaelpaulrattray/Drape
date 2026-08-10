@@ -218,6 +218,37 @@ against the corrected rule, both hoops refuse:
 Costs nothing — two passes over a mask the guard already holds, no vision call —
 and the number is recomputable from the stored mask, so it needs no column.
 
+#### 2.4c The earring bar — CENTRELINE, not area (fable-228, adopted 2026-08-11)
+
+Area cannot judge a hoop (§2.4b). Length can: `|dilate(crop,1) ∩ thin(region)| /
+|thin(region)|` — how much of the region's own centreline runs within a pixel of
+the crop. A one-pixel registration difference is beneath its notice by
+construction; a missing segment is not.
+
+```
+kind        earring, per-side, RING-LIKE ONLY — studs and solid earrings stay
+            with the area instrument, which works on them
+bar         97.6%   lib#8, two eyes: complete (hair's rule — the coverage of the
+                    one crop proven complete, never a midpoint)
+negative    74.0%   lib#9, two eyes: incomplete (a crescent plus a detached
+                    fragment). Also 38.1% and 20.0% on v#144's pair, both
+                    incomplete, both far below. No interleaving.
+resolution  0.0 pts under one-pixel registration · 16.7 pts under symmetric
+            erosion — 16.7 < 23.6, so this instrument PASSES the §2.4b law the
+            area measure failed, at 1.4×
+```
+
+**Three caveats ride with the number wherever it is quoted**, as hair's do:
+
+1. **`n(positive) = 1`.**
+2. **The worst-case model is this door's own blind spot.** On a three-pixel ring,
+   thinning and reader noise are the same bytes, so the door catches a MISSING
+   SEGMENT and cannot catch thinning. A thickness sensor is separate work.
+3. **Specimen-event clause.** The first eye-labelled COMPLETE crop this bar
+   refuses is an escalation, not a silent failure: the family re-opens with the
+   new specimen in hand. That is how a one-positive bar earns more positives
+   honestly.
+
 **Thin kinds are not words-forever.** The accessory CARRY bar (§ fable-183,
 shape-on-face ≥ 0.85) is a different instrument and works on hoops; only the
 mint door's AREA check fails. The adoption sitting may still admit a thin-kind
@@ -718,6 +749,7 @@ contract does not know the painter changed.
 | **A bilateral kind still has no specimen** | **OPEN, and it is now the only thing between the founder's hoop and the library.** `earring`, `eye`, `ear` and `brow` refuse at `noSpecimen` — with an honest per-side coverage attached, which is what makes the refusal productive. | A dev refine per specimen-bearing kind on the real paid path, each delivered cut eye-verified ONCE and adopted (fable-210). A master read cannot supply it: it scores 100% against itself by construction. |
 | ~~**A subtle-quality kind cannot produce its own specimen**~~ | **CLOSED 2026-08-11 (§2.4a).** The specimen path ran through the `verified` gate, so a kind whose asks keep failing it could never be cut at all. A disputed facet's crop is now kept as `disputedDelivery` — refused, never stored, invisible to the fold, and openable by a human. | — |
 | **`applied` is stored nowhere** | **NAMED GAP, 2026-08-11 (fable-224).** The cut is `applied ∩ (delivered ∪ master)` and `applied` is `min(feather(zone), edgeMatte)`, computed in the compositor and discarded. So **a cut that loses ground cannot be diagnosed from any artifact we keep** — the painted frame's lesson (founder-queue item 1) one layer over. Found when an attribution-by-elimination failed its own control (20/15 px the crop could not own) and had to be withdrawn. | Storing it, or a dev re-run instrumented to dump it. Whether it ships is a later decision; that it is a gap is a fact now. |
+| **The read-back caption is stored nowhere, and it decides whether a paid render reaches the library at all** | **NAMED GAP, 2026-08-11.** Three hoop renders were bought; all three earned `statedAccessories @ earring` (their segments prove it), and only one minted library rows. `mintedSlotsForRender` is pure and its inputs are three: the earned facets (identical, persisted), the accessory kind (identical, derived from three instructions that all name hoops), and the CAPTIONS — which are persisted nowhere. By elimination over an enumerated input set, the other two renders' read-back failed soft, so every slot filed `noWords` and the mint was never called. A paid render then contributes nothing to the library, silently. | Persisting the read-back, or persisting the mint's no-slot outcomes. Same class as `applied`-stored-nowhere: the input that decides an outcome is not kept, so the outcome cannot be explained after the fact. |
 | **A "contested" mark on the panel** | **PARKED as product taste, not smuggled (fable-222).** A `disputedDelivery` row is internal evidence: the user already renders their verdict by keeping or re-rolling, and a badge would put an instrument's opinion back on a surface D-246 just cleaned. | The founder wanting it, with a mock. Not an engineering decision. |
 | **A thin-kind door instrument** | **OPEN, and bounded (fable-224).** `notScorableByArea` says honestly that area cannot judge a hoop; it does not give hoops a door. | A proposal WITH controls — the disc, the one-pixel line, and these two hoops — e.g. coverage after a 1 px dilation of both masks, which spends the sub-pixel noise before measuring. Never a tuned constant. |
 | **Laterality assumes she faces the camera** | **DECLARED, 2026-08-11.** `regionSides` labels the image's right half as her left. On a frame shot from behind or mirrored, the two instances swap names — the same assumption `canthalTilt` has always made, now in one function rather than four call sites. | A facing read, if one is ever worth a call. The blast radius today is a pair of instance keys, and divergence is derived from words. |
@@ -762,3 +794,4 @@ contract does not know the painter changed.
 | **A DISPUTED delivery keeps its crop — never stored, never a version, never billed differently; one declared vision call per disputed facet** | **fable-220 §3**, executed as §2.4a |
 | **A verdict inside its own resolution is not a verdict — an instrument shows its resolution is smaller than the gap it adjudicates, or refuses to score by name** | **fable-224**, executed as §2.4b |
 | A hoop worn through a lobe IS a crescent open at the top; the "incomplete ring" verdict measured her earring against something the photograph never contained | the bright magnified frames, 2026-08-11 (law 8 from the pixels' side) |
+| **The `earring` bar is CENTRELINE at 97.6%, ring-like only, with n=1, the thinning blind spot, and the specimen-event clause riding on it** | **fable-228**, executed as §2.4c. Door diff owed. |
