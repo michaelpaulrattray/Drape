@@ -232,6 +232,19 @@ async function differenceStrip(labels: string[]): Promise<Tile[]> {
   return tiles;
 }
 
+/*
+  PAINT COUNTS COME FROM THE CELLS, NOT FROM THE RUN'S OWN COUNTERS.
+
+  `calls.nbpNew`/`calls.gpt2New` are what THIS run bought, and the run that
+  wrote this JSON was a resume in which every paint came off disk — so those
+  counters read 0 and 0, and the first version of this caption told the founder
+  "14 Nano Banana Pro paints and 0 GPT Image 2 paints". The cells know their own
+  n regardless of who paid for them; the framing probe is the one NBP paint that
+  belongs to no cell, so it is added by name.
+*/
+const nbpPaints = (bench.cell1?.n ?? 0) + (bench.cell2?.n ?? 0) + (bench.framing?.nbpAspectPinned ? 1 : 0);
+const gpt2Paints = bench.cell2Gpt2?.n ?? 0;
+
 const item = (cell: any, name: string) => cell?.items?.[name];
 const fixed = (value: number | undefined, places = 1) =>
   value === undefined ? "—" : value.toFixed(places);
@@ -243,7 +256,14 @@ const fixed = (value: number | undefined, places = 1) =>
   const SLOTS: { key: string; label: string }[] = [
     { key: "casting-v2/candidates/5b9a6e1b-667c-4f03-abf9-c3eea4f249c5.png", label: "1 — her master photograph" },
     { key: "casting-v2/segments/ab9ef497-77c7-4871-a99f-f386383b2985-content.png", label: "2 — her freckles" },
-    { key: "casting-v2/segments/3649a9bc-782c-4265-8a09-9fd7f0ee542b-content.png", label: "3 — her hairstyle" },
+    /* HIS CATCH, NAMED IN THE PACK RATHER THAN ANSWERED ELSEWHERE (fable-164).
+       The founder looked at this tile and said it is not her hairstyle, it is
+       her fringe. He is right, and the tile is faithful — the slot is fetched
+       live from the production key below, so the engine really was handed a
+       fringe band under that name. Every stored segment in production was cut
+       by the MASTER-ANCHORED cutter (the ~10% class); the delivered-anchored
+       cutter that captures 88.7% is still dark and has never re-cut a row. */
+    { key: "casting-v2/segments/3649a9bc-782c-4265-8a09-9fd7f0ee542b-content.png", label: "3 — “her hairstyle” — HIS CATCH: this is a FRINGE BAND, not the hairstyle" },
     { key: "casting-v2/segments/68e45d40-df00-46be-b80d-9427a9985937-content.png", label: "4 — her lip gloss" },
   ];
   const tiles: Tile[] = [];
@@ -261,8 +281,14 @@ const fixed = (value: number | undefined, places = 1) =>
     n: 1,
     title: "The claim under test",
     question: "“NBP will reliably copy any hairstyle or reference image onto the original.” — the founder, on the record",
-    reading: `Every paint below was given the same five references: her master photograph, and crops of her freckles, her hairstyle, her lip gloss and this hoop. Nothing chains — each paint starts from the master. ${bench.calls.nbpNew + bench.calls.reusedFromDisk} Nano Banana Pro paints and ${bench.calls.gpt2New} GPT Image 2 paints, on the Unfussed cast.`,
-    rows: [{ caption: "The five slots, exactly as they were handed to the painter", tiles }],
+    reading: `Every paint below was given the same five references: her master photograph, and crops of her freckles, her hairstyle, her lip gloss and this hoop. Nothing chains — each paint starts from the master. ${nbpPaints} Nano Banana Pro paints and ${gpt2Paints} GPT Image 2 paints, on the Unfussed cast.`,
+    rows: [{
+      caption: "The five slots, exactly as they were handed to the painter — slot 3 is the one he caught: "
+        + "a stored segment from the old master-anchored cutter, so “her hairstyle” reached the engine as a fringe band. "
+        + "The stability findings survive it (a partial reference holds partially-stable as a full one holds fully-stable); "
+        + "the reference LIBRARY does not, and is re-cut before it is built.",
+      tiles,
+    }],
   });
 }
 
@@ -358,7 +384,10 @@ body.light section { border-color: #d5d5d5; }
 h2 { font-size: 18px; font-weight: 500; margin: 0 0 6px; }
 .q { opacity: 0.72; font-size: 14px; max-width: 78ch; line-height: 1.6; margin: 0 0 16px; }
 pre { font-size: 12px; line-height: 1.65; opacity: 0.75; background: rgba(127,127,127,0.08);
-      padding: 12px 14px; border-radius: 4px; overflow-x: auto; margin: 0 0 24px; }
+      padding: 12px 14px; border-radius: 4px; margin: 0 0 24px;
+      /* wrap rather than scroll: a reading that runs off the right edge of an
+         evidence document is a reading he will not read. */
+      white-space: pre-wrap; word-break: break-word; }
 .caption { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.5; margin: 24px 0 10px; }
 .strip { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
 figure { margin: 0; }
