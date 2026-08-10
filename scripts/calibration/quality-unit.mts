@@ -190,3 +190,6 @@ for (const [index, row] of deep.entries()) {
 
 writeFileSync(`${OUT}/results.json`, JSON.stringify({ condensation, restoration }, null, 2));
 console.log(`\nwritten to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

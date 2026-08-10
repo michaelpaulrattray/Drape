@@ -73,3 +73,6 @@ for (const engine of ["nbp", "gpt2"]) {
   console.log(`  zone pixels the gate SOFTENS OR REVERTS: ${reverted} of ${inZone.length}`
     + ` (${((reverted / inZone.length) * 100).toFixed(1)}%)`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

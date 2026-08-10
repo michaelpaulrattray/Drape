@@ -149,3 +149,6 @@ if (fresh?.imageKey) {
 
 writeFileSync(`${OUT}/manifest.json`, JSON.stringify(manifest, null, 2));
 console.log(`\nspecimens in ${OUT} — hand over BEFORE the refresh runs`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

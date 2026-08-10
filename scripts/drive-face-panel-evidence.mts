@@ -618,3 +618,6 @@ for (const theme of THEMES) {
 await writeFile(path.join(OUT, "checks.json"), JSON.stringify(records, null, 2));
 print();
 if (failures().length > 0) process.exit(1);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

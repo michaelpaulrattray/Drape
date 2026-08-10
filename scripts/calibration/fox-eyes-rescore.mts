@@ -69,3 +69,6 @@ for (const engine of ["gpt2", "nbp", "flux"]) {
   if (!trend || !anat) { console.log(`${engine.padEnd(5)} incomplete`); continue; }
   console.log(`${engine.padEnd(5)} ${(anat.delta - trend.delta >= 0 ? "+" : "")}${(anat.delta - trend.delta).toFixed(2)}deg`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

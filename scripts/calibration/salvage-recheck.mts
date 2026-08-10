@@ -116,3 +116,6 @@ for (const name of ["recovered-1", "recovered-2", "built-step4"]) {
 
 writeFileSync(`${OUT}/salvage-recheck.json`, JSON.stringify(results, null, 2));
 console.log(`\nwritten to ${OUT}/salvage-recheck.json`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

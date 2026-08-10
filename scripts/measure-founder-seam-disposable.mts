@@ -130,3 +130,6 @@ console.log(
   + "amplitude, and no threshold on |step| can be lowered far enough to find it without\n"
   + "drowning in texture.",
 );
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

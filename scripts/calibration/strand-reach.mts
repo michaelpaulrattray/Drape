@@ -188,3 +188,6 @@ console.log("the wall held on every one — 0 px of her own shirt moved, at ever
 
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify({ painterReach, movedThreshold: MOVED, rows }, null, 2)}\n`);
 console.log(`\nwritten to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

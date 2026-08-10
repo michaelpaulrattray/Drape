@@ -43,3 +43,6 @@ await sharp({ create: { width, height, channels: 3, background: { r: 20, g: 20, 
   .toFile("output/marks-court/STACK-run15.png");
 
 console.log(`written output/marks-court/STACK-run15.png — ${width}x${height}, top to bottom: ${LABELS.join(" / ")}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

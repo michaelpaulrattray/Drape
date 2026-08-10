@@ -148,7 +148,7 @@ async function main() {
   console.log(execute ? `${totalUpdated} row(s) updated.` : "No rows updated (dry-run).");
 }
 
-main().catch((err) => {
+main().then(() => process.exit(0)).catch((err) => {
   console.error(err);
   process.exit(1);
 });

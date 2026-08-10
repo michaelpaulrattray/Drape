@@ -153,3 +153,6 @@ for (const specimen of specimens) {
 
 writeFileSync(`${OUT}/salvage.json`, JSON.stringify(results, null, 2));
 console.log(`\nwritten to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

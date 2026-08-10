@@ -52,3 +52,6 @@ for (const entry of CASES) {
   console.log(`${entry.name.padEnd(34)} present ${present}/${REPEAT}`);
   for (const saw of saws) console.log(`    ${saw.slice(0, 88)}`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

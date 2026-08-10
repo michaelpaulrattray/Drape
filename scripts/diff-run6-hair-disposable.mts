@@ -78,7 +78,7 @@ async function main(): Promise<void> {
   render("02-lipgloss → 03-earrings (reader flipped between these two)", blockDeltas(two, three, width, height));
 }
 
-main().catch((error) => {
+main().then(() => process.exit(0)).catch((error) => {
   console.error(error);
-  process.exitCode = 1;
+  process.exit(1);
 });

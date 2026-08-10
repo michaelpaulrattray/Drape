@@ -235,3 +235,6 @@ if (failures > 0) {
   process.exit(1);
 }
 console.log("[schema] migration 0017 verified on a disposable database");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

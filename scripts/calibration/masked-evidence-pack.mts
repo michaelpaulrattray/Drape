@@ -133,3 +133,6 @@ console.log("    per row: everything SAM 3 calls eyeglasses | lenses alone | fra
 console.log("    row 1 chunky rims, row 2 fine wire");
 
 console.log(`\nevidence pack written to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

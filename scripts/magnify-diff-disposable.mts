@@ -31,3 +31,6 @@ for (const file of await readdir(DIR)) {
   await writeFile(path.join(DIR, file.replace("-diff.png", "-diff-x12.png")), out);
   console.log(file.replace("-diff.png", "-diff-x12.png"));
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

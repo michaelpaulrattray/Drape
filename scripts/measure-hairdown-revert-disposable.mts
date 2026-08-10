@@ -129,3 +129,6 @@ console.log(
   "\nThe store kept what it was given to keep. What it was given is the master's own hair\n"
   + "region — and an arrangement change lives mostly outside it.",
 );
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

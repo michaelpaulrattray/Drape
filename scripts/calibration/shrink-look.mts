@@ -57,3 +57,6 @@ await sharp({ create: { width: CROP.width * terms.length + 36, height: CROP.heig
   .png()
   .toFile(`${OUT}/TERMS-100.png`);
 console.log(`TERMS-100.png — ${terms.join(" | ")}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

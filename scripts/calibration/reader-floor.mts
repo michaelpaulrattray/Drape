@@ -144,3 +144,6 @@ if (masterSaw > 0) {
     + "faint render. The floor sits near this amplitude either way, which is noise the bar "
     + "cannot tell from a real defect.");
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -82,3 +82,6 @@ for (const row of rows) {
 
 writeFileSync("output/marks-court/run12-prompts.json", `${JSON.stringify(dump, null, 2)}\n`);
 console.log(`\nwritten output/marks-court/run12-prompts.json`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

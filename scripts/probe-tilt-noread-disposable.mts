@@ -76,3 +76,6 @@ for (const row of specimens) {
 
 console.log("\nIf the control reads and the sheet does not, the path works and the frames are the cause.");
 console.log("If nothing reads, the path is the suspect and the sheet is innocent.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

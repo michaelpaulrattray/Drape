@@ -373,3 +373,6 @@ for (const row of rows) {
   );
 }
 console.log(`\nnegatives written to ${OUT} — white kept, red amputated. LOOK AT THEM.`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

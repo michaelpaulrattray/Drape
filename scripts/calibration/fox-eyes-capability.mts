@@ -187,3 +187,6 @@ const landed = rows.filter((row) => row.delta !== null && row.delta > RESOLUTION
 console.log(landed.length > 0
   ? `\n${landed.length} arm(s) restructured: ${landed.map((row) => `${row.engine}/${row.prose} +${row.delta!.toFixed(1)}deg`).join(", ")}`
   : `\nNO ARM restructured beyond the instrument's resolution on a face with a real delta to give.`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -84,3 +84,6 @@ for (const s of CASES) {
   console.log(`  GAUNTLET-${s.name}.png — master / C / C-gated / D / D-gated at 100%`);
 }
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify(report,null,2)}\n`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

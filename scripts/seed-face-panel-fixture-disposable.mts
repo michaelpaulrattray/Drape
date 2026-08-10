@@ -116,3 +116,6 @@ const [after] = await conn.query(
 console.log("\nthe fixture now:");
 for (const row of after) console.log(" ", JSON.stringify(row));
 await conn.end();
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

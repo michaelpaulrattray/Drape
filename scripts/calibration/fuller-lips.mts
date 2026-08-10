@@ -117,3 +117,6 @@ await sharp({ create: { width: CROP.width * 4 + 36, height: CROP.height, channel
   .composite(cells.map((input, i) => ({ input, left: i * (CROP.width + 12), top: 0 })))
   .png().toFile(`${OUT}/LIPS-100.png`);
 console.log(`\nLIPS-100.png — master | painted | composed | difference x5, native resolution`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

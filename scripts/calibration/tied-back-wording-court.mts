@@ -142,3 +142,6 @@ for (const key of Object.keys(WORDINGS)) {
     + `splits ${mine.filter((row) => new Set(row.verdicts).size > 1).length}`,
   );
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

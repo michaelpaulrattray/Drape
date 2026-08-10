@@ -20,3 +20,6 @@ const [rows] = await connection.query<any[]>(
 );
 await connection.end();
 for (const row of rows) console.log(JSON.stringify(row, null, 2));
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

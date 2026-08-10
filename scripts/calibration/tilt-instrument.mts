@@ -171,3 +171,6 @@ console.log(
 );
 
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify({ specimen: SPECIMEN, samples: SAMPLES, rows, worstResidual, usable }, null, 2)}\n`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -112,3 +112,6 @@ console.log(wearing > 0
   ? "The instrument CAN say bespectacled, so the tray's zero is a finding and not a silence."
   : "The instrument said zero here too. Before believing the tray, suspect the reader: "
     + "a counter that has only ever answered zero has not been shown to answer anything else.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

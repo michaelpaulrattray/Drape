@@ -89,3 +89,6 @@ for (const r of rows) {
     + `  thickest ${thickest * 2 - 1} px`
     + `  depth-1 shell ${String(shell).padStart(4)} px = ${((shell / area) * 100).toFixed(1)}% of the area`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

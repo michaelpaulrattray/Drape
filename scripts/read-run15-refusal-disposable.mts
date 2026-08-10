@@ -34,3 +34,6 @@ for (const row of rows) {
   console.log(`${utc(row.createdAt)}  ${String(row.status).padEnd(10)} `
     + `${String(row.failureClass ?? "—").padEnd(16)} cost ${String(row.pointsCost).padStart(3)}  "${row.instruction}"`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

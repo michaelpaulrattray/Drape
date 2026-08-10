@@ -263,7 +263,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
+main().then(() => process.exit(0)).catch((error) => {
   console.error("[disposable] R7-7G schema failed:", error);
-  process.exitCode = 1;
+  process.exit(1);
 });

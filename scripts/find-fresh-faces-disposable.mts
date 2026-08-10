@@ -44,3 +44,6 @@ for (const row of rows) {
     + `${String(row.createdAt).slice(0, 16)}  ${row.brief}`);
 }
 console.log(`\nthe walk needs a BESPECTACLED face — step 5 is "remove her glasses".`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

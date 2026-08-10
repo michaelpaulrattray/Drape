@@ -284,3 +284,6 @@ for (const rule of ["chain", "anchored"] as const) {
 }
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify({ specimen: SPECIMEN, sequence: SEQUENCE, baseSharp, baseTone, rows }, null, 2)}\n`);
 console.log(`\nwritten to ${OUT} — steadiness is the founder's eye on STRIP-chain.jpg vs STRIP-anchored.jpg`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

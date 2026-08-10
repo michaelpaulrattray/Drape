@@ -177,3 +177,6 @@ for (const arm of ARMS) {
 }
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify({ instruction: INSTRUCTION, arms: ARMS, rows }, null, 2)}\n`);
 console.log(`\nThe numbers narrow it; EYES-bare.png vs EYES-spectacled.png decide it.`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

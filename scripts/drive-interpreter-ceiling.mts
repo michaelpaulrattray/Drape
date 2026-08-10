@@ -100,3 +100,6 @@ for (const ceiling of CEILINGS) {
       + `   other ${tally.other}`);
   }
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

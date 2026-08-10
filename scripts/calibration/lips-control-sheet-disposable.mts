@@ -26,3 +26,6 @@ await writeFile("output/edit-law/SHEET-lips-control.png", await sharp({
 }).composite(rows.map((input, i) => ({ input, left: metas.slice(0, i).reduce((t, m) => t + m.width!, 0), top: 0 })))
   .png().toBuffer());
 console.log("wrote output/edit-law/SHEET-lips-control.png");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

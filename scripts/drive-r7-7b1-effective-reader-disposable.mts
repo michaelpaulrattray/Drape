@@ -173,13 +173,13 @@ async function main() {
 
 main().then(
   () => {
-    process.exitCode = 0;
+    process.exit(0);
   },
   (error) => {
     console.error(
       "[disposable] failed:",
       error instanceof Error ? error.message : "unknown error",
     );
-    process.exitCode = 1;
+    process.exit(1);
   },
 );

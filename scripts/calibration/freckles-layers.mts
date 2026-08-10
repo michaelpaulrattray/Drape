@@ -498,3 +498,6 @@ await sharp({
   .toBuffer()
   .then((buffer) => writeFileSync(`${OUT}/FACES.png`, buffer));
 console.log(`\nmaster / painted / composed at 100% → ${OUT}/FACES.png`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -7,3 +7,6 @@ const [rows] = await c.query<any[]>(
 console.log(`${rows.length} library rows`);
 for (const r of rows) console.log(` #${r.id} ${String(r.slot).padEnd(16)} v${r.variantId} ${String(r.refusedReason ?? "stored").padEnd(18)} ${r.refusedCoverage === null ? "" : (r.refusedCoverage/100).toFixed(1)+"%"} ${r.hasCrop ? "· pixels" : ""}`);
 await c.end();
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

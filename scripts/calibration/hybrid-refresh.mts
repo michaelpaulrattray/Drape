@@ -244,3 +244,6 @@ await sharp({
 }).composite(tiles.map((input, index) => ({ input, left: 480 * index, top: 0 })))
   .png().toFile(`${OUT}/refresh-sheet.png`);
 console.log("\n  sheet: output/quality-unit/refresh-sheet.png (base · drifted · refreshed)");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

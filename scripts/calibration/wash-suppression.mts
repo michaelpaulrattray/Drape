@@ -86,3 +86,6 @@ await sharp({ create:{ width: box.width, height: box.height*cells.length+8*(cell
   .composite(cells.map((input,i)=>({input,left:0,top:i*(box.height+8)}))).png().toFile(`${OUT}/WASH-fringe.png`);
 console.log("wrote WASH-fringe.png — master / C / C-gated / D / D-gated at 100%");
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify(rows,null,2)}\n`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

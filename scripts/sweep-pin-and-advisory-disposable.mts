@@ -159,3 +159,6 @@ console.log(
   `\nCredits spent on renders carrying an absence-shaped advisory miss: `
   + `${presence.reduce((total, entry) => total + entry.row.pointsCost, 0)}`,
 );
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

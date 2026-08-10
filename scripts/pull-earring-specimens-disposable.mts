@@ -116,3 +116,6 @@ for (const row of rows) {
 
 await connection.end();
 console.log(`crops in ${OUT} — CHOOSE the specimens by looking at them.`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

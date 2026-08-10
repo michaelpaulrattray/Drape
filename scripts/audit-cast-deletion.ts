@@ -450,7 +450,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().then(() => process.exit(0)).catch((error) => {
   console.error("[cast-deletion-audit] failed:", error instanceof Error ? error.message : error);
-  process.exitCode = 1;
+  process.exit(1);
 });

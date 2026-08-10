@@ -63,3 +63,6 @@ console.log(`\n${usable.length} of ${rows.length} specimens carry a real delta f
 if (usable.length === 0) console.log("NONE QUALIFY — the probe needs a face cast for the purpose.");
 else console.log(`Flattest: ${usable[0].file} at ${usable[0].meanDeg.toFixed(1)}deg`);
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify(rows, null, 2)}\n`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

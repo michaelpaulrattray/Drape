@@ -43,3 +43,6 @@ console.log(`  path A: mean spread ${a.spread.toFixed(2)} | duplicate pairs ${a.
 console.log(`  path B: mean spread ${b.spread.toFixed(2)} | duplicate pairs ${b.duplicates} | closest ${b.closest.toFixed(1)}`);
 console.log(`  spread change: ${(((b.spread - a.spread) / a.spread) * 100).toFixed(1)}%`);
 console.log(`  duplicate change: ${a.duplicates} → ${b.duplicates}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

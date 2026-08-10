@@ -95,3 +95,6 @@ for (const step of [1, 2, 3, 4]) {
 
 writeFileSync(`${OUT}/identity-rescore.json`, JSON.stringify(rows, null, 2));
 console.log(`\nwritten to ${OUT}/identity-rescore.json`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

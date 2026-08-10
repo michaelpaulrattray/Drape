@@ -142,3 +142,6 @@ await sharp({ create: { width: 420 * 3 + 24, height: h, channels: 3, background:
   .png()
   .toFile(`${OUT}/TRIPTYCH.png`);
 console.log(`\nTRIPTYCH.png — master | painted | composed`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

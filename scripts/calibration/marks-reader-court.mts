@@ -386,3 +386,6 @@ for (const lens of LENSES) {
 }
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify({ readings: REPEAT, rows }, null, 2)}\n`);
 console.log(`\nwritten ${OUT}/results.json`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

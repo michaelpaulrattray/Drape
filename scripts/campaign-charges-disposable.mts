@@ -38,3 +38,6 @@ for (const row of recent) {
   console.log(`  ${String(row.amount).padStart(5)}  ${String(row.type).padEnd(11)} `
     + `${String(row.referenceId ?? "").slice(0, 46).padEnd(46)} ${utc(row.createdAt)}`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

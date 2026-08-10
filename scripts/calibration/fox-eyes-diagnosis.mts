@@ -78,3 +78,6 @@ const crops = await Promise.all(cells.map((b) => sharp(b).extract(box).png().toB
 await sharp({ create: { width: box.width, height: box.height*3+16, channels: 3, background: "#0A0A0A" } })
   .composite(crops.map((input,i)=>({input,left:0,top:i*(box.height+8)}))).png().toFile(`${OUT}/EYES.png`);
 console.log("\nEYES.png — master / as-composed / stronger, at 100%");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

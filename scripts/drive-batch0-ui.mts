@@ -161,3 +161,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log("\nAll Batch 0 UI invariants hold.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

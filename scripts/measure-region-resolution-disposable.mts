@@ -41,3 +41,6 @@ for (const r of rows) {
     + `   gap a bar here must divide ${(gap * 100).toFixed(1)}%`
     + `   → ${coverage < 1 && resolution >= gap ? "notScorableByArea" : "scorable"}`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

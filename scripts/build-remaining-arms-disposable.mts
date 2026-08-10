@@ -45,3 +45,6 @@ writeFileSync("output/marks-court/MASTER-run15-848.png", resized);
 const meta = await sharp(resized).metadata();
 console.log(`matched master: ${meta.width}x${meta.height} — both multiples of 16: `
   + `${meta.width! % 16 === 0 && meta.height! % 16 === 0}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

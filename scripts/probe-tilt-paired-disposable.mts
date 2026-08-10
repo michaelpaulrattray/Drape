@@ -54,3 +54,6 @@ for (const [label, file] of specimens) {
 }
 
 console.log("\nSame woman, same eyes — fox eyes was refused, so nothing ever edited them.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

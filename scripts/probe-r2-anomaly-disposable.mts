@@ -57,3 +57,6 @@ for (let pixel = 0; pixel < a.info.width * a.info.height; pixel += 1) {
 const total = a.info.width * a.info.height;
 console.log(`\npainted vs composed: ${((differing / total) * 100).toFixed(1)}% of the frame differs `
   + `at all, ${((loud / total) * 100).toFixed(1)}% loudly`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -150,9 +150,18 @@ async function main() {
   } finally {
     await browser.close();
     for (const server of servers) server.close();
-    /* A script touching a server never exits on its own. */
-    process.exit(process.exitCode ?? 0);
   }
 }
 
-void main();
+/* A script exits when its work is done — a browser and two servers leave the
+   loop alive, and so does anything else this ever grows to hold. The exit moved
+   out of the `finally` and onto the call so that BOTH arms are visible in one
+   statement: the happy one carries the verdict `main` recorded, and a throw
+   before the `try` (a browser that will not launch) still ends the process. */
+main().then(
+  () => process.exit(process.exitCode ?? 0),
+  (error) => {
+    console.error("[cors] failed:", error instanceof Error ? error.message : error);
+    process.exit(1);
+  },
+);

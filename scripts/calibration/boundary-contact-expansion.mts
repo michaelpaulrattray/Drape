@@ -106,3 +106,6 @@ for (const engine of ["nbp", "gpt2", "flux"]) {
 
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify({ master: MASTER_FILE, radii: RADII, rows }, null, 2)}\n`);
 console.log(`written to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

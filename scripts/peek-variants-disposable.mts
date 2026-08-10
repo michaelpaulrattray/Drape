@@ -7,3 +7,6 @@ for (const r of rows) console.log(`v${r.id} ${r.status ?? ""} ${new Date(r.creat
 const [seg] = await c.query<any[]>("select id, variantId, region from casting_segments order by id desc limit 6");
 for (const r of seg) console.log(`seg#${r.id} v${r.variantId} ${r.region}`);
 await c.end();
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

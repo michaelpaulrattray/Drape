@@ -283,3 +283,6 @@ for (const engine of ["nbp", "gpt2"]) {
       + `  (painted ${rider.paintedPixels} px inside the applied mask)`);
   }
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

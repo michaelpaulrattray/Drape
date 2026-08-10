@@ -55,7 +55,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().then(() => process.exit(0)).catch((error) => {
   console.error("[generation-lock-audit] failed:", error);
-  process.exitCode = 1;
+  process.exit(1);
 });

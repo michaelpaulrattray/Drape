@@ -6,3 +6,6 @@ const [rows] = await c.query<any[]>(
   + " from casting_reference_library l left join casting_candidate_variants v on v.id=l.variantId where l.slot like 'earring%' order by l.id");
 for (const r of rows) console.log(`#${r.id} ${r.slot} v${r.variantId} key=${!!r.hasKey} mask=${!!r.hasMask} bboxW=${r.bboxW} frame=${!!r.hasFrame}`);
 await c.end();
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

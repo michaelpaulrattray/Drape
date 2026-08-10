@@ -160,3 +160,6 @@ await sharp({
   .toBuffer()
   .then((buffer) => writeFileSync(`${OUT}/ARMS.png`, buffer));
 console.log(`master / shipped clause / qualified clause at 100% → ${OUT}/ARMS.png`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

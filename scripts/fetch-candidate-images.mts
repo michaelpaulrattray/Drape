@@ -70,3 +70,6 @@ for (const [index, row] of rows.entries()) {
 }
 writeFileSync(`${OUT}/manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(`\n${manifest.length} images in ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

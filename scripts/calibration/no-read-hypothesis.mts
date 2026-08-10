@@ -153,3 +153,6 @@ const confirmed = rescued.length > 0
 console.log(confirmed
   ? "\nCONFIRMED — the no-reads were the STRONGEST deliveries, not absent data. The instrument was blind to exactly the renders it most needed to score, and the matrix understated NBP."
   : "\nNOT CONFIRMED on these numbers. Say so rather than let the story stand — the zone fix may still be worth keeping for coverage.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

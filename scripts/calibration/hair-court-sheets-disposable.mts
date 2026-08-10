@@ -51,3 +51,6 @@ for (let sheet = 0; sheet * PER_SHEET < masters.length; sheet += 1) {
 }
 
 writeFileSync(`${OUT}/sheet-order.json`, JSON.stringify(masters.map((m) => m.candidateId)));
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

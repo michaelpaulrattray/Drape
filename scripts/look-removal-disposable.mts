@@ -17,3 +17,6 @@ for (const [name, file] of [
   await sharp(sized).extract(window).png().toFile(`${OUT}/LOOK-${name}.png`);
   console.log(`written ${OUT}/LOOK-${name}.png`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

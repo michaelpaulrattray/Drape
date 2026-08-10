@@ -112,3 +112,6 @@ const after = await readFalBalanceUsd(falKey!).catch(() => null);
 console.log(`fal balance after:  ${after === null ? "unknown" : `$${after.toFixed(2)}`}`);
 if (before !== null && after !== null) console.log(`spent: $${(before - after).toFixed(2)}`);
 console.log(`\nwritten to ${outDir}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

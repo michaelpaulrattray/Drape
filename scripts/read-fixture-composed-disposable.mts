@@ -126,3 +126,6 @@ for (const arm of ARMS.filter((candidate) => !ONLY || candidate.prefix.includes(
   }
   console.log(`${arm.name.padEnd(44)} delivered ${delivered}/${cells.length}   ${cells.join("  ")}`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

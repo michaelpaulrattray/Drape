@@ -165,3 +165,6 @@ for (const candidate of CANDIDATES) {
 
 writeFileSync(`${OUT}/results.json`, JSON.stringify({ specimen: SPECIMEN, rows }, null, 2));
 console.log(`\nmasks written to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

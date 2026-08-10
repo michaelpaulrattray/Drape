@@ -19,3 +19,6 @@ for (const [name, columns] of byName) console.log(`  ${name}: ${columns.join(", 
 const [kind] = await conn.query("SHOW COLUMNS FROM `storage_cleanup_batches` LIKE 'kind'");
 console.log("  cleanup kinds:", (kind as Array<{ Type: string }>)[0]?.Type);
 await conn.end();
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

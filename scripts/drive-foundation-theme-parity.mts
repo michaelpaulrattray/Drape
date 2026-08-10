@@ -285,3 +285,6 @@ if (failures.length > 0) {
 console.log(
   `\n[theme-parity] OK — ${written.length} shots in ${path.relative(process.cwd(), OUT_DIR)} (open index.html)`,
 );
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

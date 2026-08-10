@@ -48,3 +48,6 @@ const withCaptions = mintedSlotsForRender({
 });
 console.log(`  slots ${withCaptions.slots.map((s) => s.slot).join(", ")}`);
 await c.end();
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

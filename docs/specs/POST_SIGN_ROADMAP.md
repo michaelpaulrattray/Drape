@@ -178,7 +178,8 @@ superseded it — fable-071/080).
   world guards** (list in the 2026-08-09 audit) — guard when next
   touched, or burn down in one sitting.
 - Hygiene batch (L2, added 2026-08-10, fable-127): **a script that
-  touches an app service never exits.** `getDb()` hands out a
+  touches an app service never exits** — ✅ **CLOSED 2026-08-11
+  (burn-down ordered in fable-246).** `getDb()` hands out a
   module-level pool with no exported shutdown, so the process stays
   resident with all its work done — eighteen such processes from four
   scripts were found alive from the previous day, and the shift that
@@ -187,6 +188,23 @@ superseded it — fable-071/080).
   services end with an explicit `process.exit(0)`, and the park
   checklist's hygiene step becomes a `Get-CimInstance Win32_Process`
   sweep **by command line** rather than a claim from memory.
+
+  The sweep touched **182 scripts** and landed with the guard that
+  keeps it closed, `server/scriptExitDiscipline.test.ts`, in one
+  commit — the sweep alone reopens with the next script written.
+
+  The scope is **every entrypoint under `scripts/`**, not every script
+  that imports an app service, and the narrower rule was tried first:
+  it excluded its own origin case. `buy-hoop-specimens-disposable.mts`
+  — the spend script found resident for 3h20m — reaches the app
+  through `await import("../server/…")`, which a scan of `from "…"`
+  lines cannot see, and opens its own `mysql2` connection besides.
+  Widening it by naming the packages that hold a handle would have
+  been a mirror (working law 4), so the derived split is used instead:
+  a file nothing imports is an entrypoint and exits; a file something
+  imports is a module and must never exit. The guard checks the LAST
+  STATEMENT, because the resident script had contained
+  `process.exit(0)` all along, forty lines from the end, in a branch.
 - **A CORS rule on the image buckets** — ✅ **DONE and VERIFIED IN A
   BROWSER, 2026-08-10.** The founder applied both policies himself
   (fable-176); `scripts/verify-bucket-cors.mts` then proved it the only

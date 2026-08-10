@@ -241,3 +241,6 @@ for (const row of chosen) {
 console.log(controlFailures === 0
   ? "\ncontrol held on every row: no crop owns ground neither read granted."
   : `\n${controlFailures} CONTROL FAILURE(S) — the attribution above is withdrawn.`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

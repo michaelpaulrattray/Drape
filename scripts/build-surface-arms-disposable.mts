@@ -53,3 +53,6 @@ console.log(`WITHOUT (${without.full.length})\n${without.full}\n`);
 console.log(withCaption.replace(` — rendered exactly as this: ${CAPTION}`, "") === without.full
   ? "→ the two prompts differ by the caption interpolation and NOTHING else"
   : "→ *** NOT A CONTROLLED ARM ***");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

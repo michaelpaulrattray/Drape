@@ -109,3 +109,6 @@ for (const frame of FRAMES) {
     + `   ${perThousand.toFixed(2).padStart(8)}   ${perThousand >= floor ? "+" : "−"}`
     + `${Math.abs(perThousand - floor).toFixed(2)} (${(((perThousand / floor) - 1) * 100).toFixed(0)}%)`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

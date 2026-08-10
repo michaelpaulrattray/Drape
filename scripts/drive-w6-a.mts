@@ -347,3 +347,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log('W6-A drive complete: 12/12 PASS');
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

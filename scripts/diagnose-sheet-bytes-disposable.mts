@@ -135,3 +135,6 @@ console.log(inDev > 0 && inProduction === 0
   : inProduction === sheet.length
     ? "VERDICT: production serves them all. The earlier reading was the one at fault."
     : "VERDICT: neither bucket serves them — the objects may genuinely not exist. Product finding.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

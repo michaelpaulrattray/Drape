@@ -155,3 +155,6 @@ for (const chain of [...new Set(cells.map((cell) => cell.chain))]) {
   }).composite(composite).png().toFile(`${OUT}/chain${chain}-sheet.png`);
   console.log(`sheet: chain${chain}-sheet.png`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

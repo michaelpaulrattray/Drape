@@ -259,3 +259,6 @@ for (const { label, png } of sheet) {
   console.log(`  ${name}`);
 }
 console.log("\nLOOK AT THE SHEET. Complete or not is an eye's call, not this table's.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

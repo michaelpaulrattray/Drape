@@ -101,3 +101,6 @@ if (url) {
 } else {
   console.log("\nno image URL in the response — read the stored row for the outcome");
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

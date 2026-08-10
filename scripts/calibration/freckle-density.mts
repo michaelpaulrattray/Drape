@@ -261,3 +261,6 @@ for (const frame of FRAMES) {
 }
 writeFileSync(`${OUT}/freckle-density.json`, `${JSON.stringify({ rows }, null, 2)}\n`);
 console.log(`\npatches written to ${OUT} — look at them before believing the numbers`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

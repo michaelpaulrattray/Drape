@@ -192,3 +192,6 @@ if (wrong > 0) {
   console.error(`\n${wrong} frame(s) read the wrong way — the thresholds no longer fit the specimen.`);
   process.exitCode = 1;
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -51,3 +51,6 @@ const strippedOfCaption = withCaption.full.replace(`, rendered exactly as this: 
 console.log(strippedOfCaption === without.full
   ? "→ the two prompts differ by the caption interpolation and NOTHING else"
   : `→ *** THEY DIFFER BY MORE THAN THE CAPTION — this is not a controlled arm ***\n${strippedOfCaption}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

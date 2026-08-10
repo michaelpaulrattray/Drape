@@ -217,7 +217,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(() => {
+main().then(() => process.exit(0)).catch(() => {
   process.stderr.write("all_body_ink_migration_failed\n");
-  process.exitCode = 1;
+  process.exit(1);
 });

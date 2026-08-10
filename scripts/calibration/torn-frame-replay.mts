@@ -162,3 +162,6 @@ console.log(
   + "\nmistaken for one again."
   + "\nThe two tear bands must go to zero; her cheeks must not.",
 );
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -147,3 +147,6 @@ writeFileSync(`${OUT}/overlapping-gauntlet.json`, `${JSON.stringify({
   framesExpected: 24, framesRead: Array.from(readings.values()).reduce((total, cell) => total + cell.ratios.length, 0),
   rows,
 }, null, 2)}\n`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

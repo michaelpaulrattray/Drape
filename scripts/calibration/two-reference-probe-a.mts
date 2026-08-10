@@ -80,3 +80,6 @@ for (const cell of removals) {
 }
 
 writeFileSync(`${OUT}/probe-a.txt`, lines.join("\n"));
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

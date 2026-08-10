@@ -45,3 +45,6 @@ const token = await new SignJWT({ openId, appId, name: "Dogfood Walk" })
   .sign(new TextEncoder().encode(secret));
 
 console.log(token);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

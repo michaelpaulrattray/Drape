@@ -37,3 +37,6 @@ writeFileSync("output/masked/nbp-probe.png", painted.bytes);
 const back = await sharp(painted.bytes).metadata();
 console.log(`asked for ${W}x${H}, got ${back.width}x${back.height} — `
   + `${back.width === W && back.height === H ? "HONOURED" : "*** IGNORED, and this is why the harvest threw ***"}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

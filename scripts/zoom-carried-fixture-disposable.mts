@@ -36,3 +36,6 @@ await sharp({
   .composite(tiles.map((input, index) => ({ input, left: 0, top: index * (tileHeight + 6) })))
   .png().toFile(`${DIR}/ZOOM-nose.png`);
 console.log(`written ${DIR}/ZOOM-nose.png — master / painted / composed`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

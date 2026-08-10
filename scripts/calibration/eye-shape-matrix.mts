@@ -196,3 +196,6 @@ for (const engine of ["nbp", "gpt2"]) {
   );
 }
 console.log("\nThe number narrows it. REALISM FOR THE SUBJECT decides it, and that is the founder's eye on the sheets.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

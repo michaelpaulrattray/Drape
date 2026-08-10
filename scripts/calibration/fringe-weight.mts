@@ -114,3 +114,6 @@ await sharp({ create: { width: box.width, height: box.height*3+16, channels: 3, 
   .composite(cells.map((input,i)=>({input,left:0,top:i*(box.height+8)}))).png().toFile(`${OUT}/WEIGHT.png`);
 console.log("WEIGHT.png — master / as-asked / wispier, 100%");
 writeFileSync(`${OUT}/weight.json`, `${JSON.stringify({ instruction: WISPY, rows }, null, 2)}\n`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

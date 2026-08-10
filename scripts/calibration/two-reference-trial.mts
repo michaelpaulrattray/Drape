@@ -392,3 +392,6 @@ for (const [chainIndex, candidate] of usable.entries()) {
 }
 
 console.log(`\n${cells.length} positions measured. Faces and results.json in ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

@@ -113,3 +113,6 @@ console.log(
   `\nSAFETY failures: ${safetyFailures}  (must be 0)\nDelivery misses: ${deliveryMisses} of ${BRIEFS.length * RUNS}`,
 );
 process.exitCode = safetyFailures > 0 ? 1 : 0;
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

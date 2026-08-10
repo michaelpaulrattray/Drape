@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bbd7bc97826285e3"
+    "sourceFingerprint": "90951f1c568a508e"
   },
   "domains": [
     {
@@ -9417,6 +9417,10 @@
     {
       "id": "test:server/routes/modelCreatePayload.test.ts",
       "path": "server/routes/modelCreatePayload.test.ts"
+    },
+    {
+      "id": "test:server/scriptExitDiscipline.test.ts",
+      "path": "server/scriptExitDiscipline.test.ts"
     },
     {
       "id": "test:server/security/adminSecurity.test.ts",

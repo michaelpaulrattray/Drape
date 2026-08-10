@@ -169,3 +169,6 @@ if (rates.coherence) {
   console.log("coherence  : no row carries the statistic yet");
 }
 console.log("\nA week of dogfooding turns this into the flip decision. It is not one yet.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

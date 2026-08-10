@@ -68,3 +68,6 @@ for (const [index, row] of rows.entries()) {
 
 writeFileSync("output/marks-court/run12-replay.json", `${JSON.stringify(dump, null, 2)}\n`);
 console.log(`\nwritten output/marks-court/run12-replay.json`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

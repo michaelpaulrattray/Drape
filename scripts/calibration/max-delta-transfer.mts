@@ -300,3 +300,6 @@ writeFileSync(
 );
 console.log(`\nwritten to ${OUT}`);
 console.log("Occlusion honesty on SHRINK is a founder-eye call — no metric is claimed for it.");
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

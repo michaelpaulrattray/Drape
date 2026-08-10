@@ -141,3 +141,6 @@ if (measured.length > 0) {
     .png().toFile(`${OUT}/EYES-REPLICATE.png`);
   console.log(`\nEYES-REPLICATE.png rows: master / ${measured.map((row) => `${row.prose}-${row.run}`).join(" / ")}`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

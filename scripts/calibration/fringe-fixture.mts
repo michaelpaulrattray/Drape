@@ -357,3 +357,6 @@ for (const scenario of CASES) {
 
 writeFileSync(`${OUT}/results.json`, `${JSON.stringify({ master: MASTER, browLine, cases: report }, null, 2)}\n`);
 console.log(`\nwritten to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

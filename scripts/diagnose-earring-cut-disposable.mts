@@ -244,3 +244,6 @@ for (const row of rows as Row[]) {
   }
   console.log(`    difference pictures: ${stem}-read*-diff.png  (white = the crop, red = read-but-not-cropped)`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

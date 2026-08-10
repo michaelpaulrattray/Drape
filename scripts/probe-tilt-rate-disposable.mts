@@ -87,3 +87,6 @@ console.log(
       : "\nFrames make it UNRELIABLE rather than impossible: it sometimes reads and sometimes does not, "
         + "on the same brief and the same frames. The gate's problem is the no-read branch, whatever causes it.",
 );
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

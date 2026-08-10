@@ -539,3 +539,6 @@ if (failures.length > 0) {
   for (const f of failures) console.log(`  · ${f}`);
   process.exit(1);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

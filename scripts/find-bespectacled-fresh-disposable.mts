@@ -120,3 +120,6 @@ if (unread.length > 0) {
   console.log(`The ${unread.length} no-read faces are NOT evidence of anything. `
     + `"Zero bespectacled" is a claim about the ${looked} that were looked at.`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

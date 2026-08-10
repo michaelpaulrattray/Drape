@@ -9,3 +9,6 @@ for (const r of rows) {
 const [bal] = await c.query<any[]>("select balance, creditsUsed from points where userId=1");
 console.log("balance", bal[0]?.balance, "used", bal[0]?.creditsUsed);
 await c.end();
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

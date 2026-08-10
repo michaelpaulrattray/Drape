@@ -230,3 +230,6 @@ await sharp({
   .toFile(`${OUT}/sheet.png`);
 
 console.log(`\nspecimens in ${OUT} — sheet.png is base | drift | restored, per step`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

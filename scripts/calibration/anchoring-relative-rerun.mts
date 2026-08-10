@@ -302,3 +302,6 @@ writeFileSync(`${OUT}/results.json`, `${JSON.stringify({
   anyClipped, sequence: SEQUENCE, rows,
 }, null, 2)}\n`);
 console.log(`\nwritten to ${OUT}`);
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);

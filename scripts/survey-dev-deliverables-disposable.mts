@@ -50,3 +50,6 @@ for (const row of rows as Record<string, any>[]) {
   );
   console.log(`    ${named.length ? named.join("  ") : "(nothing nameable)"}`);
 }
+
+/* A script exits when its work is done — an app service leaves the loop alive (fable-127/246). */
+process.exit(0);
