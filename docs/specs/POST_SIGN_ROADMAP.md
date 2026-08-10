@@ -150,7 +150,10 @@ superseded it — fable-071/080).
 
 - **Klieg rebrand M5b** (L4, founder-held): domain cutover, OAuth
   redirect, Resend domain, Stripe copy + the tail: TM knockout
-  search, .ai/.studio/typo domains, social handles.
+  search, .ai/.studio/typo domains, social handles. **Plus (added
+  2026-08-10): the R2 CORS policy on `drape-production` names the
+  Railway domain verbatim — add the new domain to AllowedOrigins at
+  cutover or in-browser pixel reads break silently.**
 - **Hero assets** (L5): `hero/*` never migrated from Manus — home
   hero 502s in dev AND prod; needs founder's source files +
   `scripts/upload-hero-v3.mjs`.
