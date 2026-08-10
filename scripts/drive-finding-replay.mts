@@ -1285,11 +1285,21 @@ async function runWalk(): Promise<boolean> {
     const counted = await countEarringPair(Buffer.from(await response.arrayBuffer()), `walk-${index + 1}-v${row.id}`);
     countedAt.set(index, counted);
     /*
-      ONE HOOP DELIVERED AND CHARGED IS A FALSE PASS, and it fails the run
-      outright. The pixels decide it; the stored verdict's own words are
-      recorded beside them, because D-235's asymmetry is what made the original
-      miss legible — *"gold hoop earring visible on visible ear"*, singular, one
-      ear, accepted.
+      ONE HOOP DELIVERED IS THE FINDING, and it fails the run outright. The
+      pixels decide it; the stored verdict's own words are recorded beside them,
+      because D-235's asymmetry is what made the original miss legible — *"gold
+      hoop earring visible on visible ear"*, singular, one ear, accepted.
+
+      RE-DERIVED UNDER D-246 (2026-08-11): a failure here is a defect report, not
+      a billing dispute. The two sentences used to be one — "delivered AND
+      CHARGED is a false pass" asserted that the money should have come back —
+      and under D-246 the runtime refuses only its four classes. This one is
+      inside them: a pair is one thing in the user's ontology, so half of it is
+      the asked thing ABSENT rather than a subtle shortfall in it, and the build
+      already agrees (accessories are presence-BINDING and the pair clause rides
+      the question). The money check below is a separate assertion on purpose,
+      so a walk that fails on the pixels and finds the credits handled correctly
+      says exactly that.
 
       Unless an ear is not THERE — a NO-READ, recorded as one: unarmed, which
       fails the run, because a walk that cannot see her ears has not closed

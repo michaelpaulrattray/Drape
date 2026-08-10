@@ -347,3 +347,82 @@ Written 2026-08-10. The specification came first on purpose, so the assertions
 were chosen against his findings rather than against what was easy to measure —
 and where the build had to depart from it (A's instrument, E's arithmetic, C's
 crop) the departure is recorded above rather than smoothed over.
+
+---
+
+# Re-derived under D-246 (2026-08-11)
+
+D-246 §3 requires it in as many words: *"the replay walk and Tier A scoring adopt
+existence-and-catastrophe bars rather than subtle-instrument claims."* This
+section is that re-derivation. It was done by reading the driver rather than the
+memory of it, and every claim below names what was read.
+
+**The headline is that almost nothing moves, and the reason is not luck.** Each
+assertion above was chosen against a thing the founder SAW — one earring, an
+earring that moved, a seam, hair that went back up — and a thing he can see is by
+construction an existence claim. The one assertion about a subtle quantity (C,
+the seam) was already written as *recorded, never graded*, months before D-246
+gave that posture a name.
+
+## Each assertion, in D-246's own four classes
+
+D-246's catastrophic classes are (a) a damaged frame, (b) identity loss, (c) the
+asked thing **completely absent**, measured against her own words, and (d)
+process death or charge-without-delivery.
+
+| | What it reads | Class | Under D-246 |
+|---|---|---|---|
+| **A** | an independent pixel count on each half of the frame, plus `charged − refunded == delivered × 25` | (c) + (d) | **GATE.** unchanged |
+| **B** | the carried accessory segment's own pixels, byte for byte, between two delivered frames | (c) | **GATE.** unchanged |
+| **C** | the seam verdict rides the row; the number is the output | — | **OBSERVATION.** was never graded |
+| **D** | the resolved recipe still names an arrangement; the product's own recorded reading of the delivered frame agrees | (c) | **GATE in the bench only** — see below |
+| **E** | every panel row joins a live segment row by object key | bookkeeping | **GATE.** unchanged |
+
+Nothing in the driver grades amplitude, hue, thickness, gloss or degree. Checked
+by reading, not asserted: `drive-finding-replay.mts` reaches a verdict through
+exactly four kinds of thing — a pixel count (`countEarringPair`), a byte
+comparison (`adjudicateCarried`), a database join, and arithmetic on credits.
+
+## The two things that DO move
+
+**1. A walk failure and a refund are no longer the same sentence.** The original
+text of A reads *"one hoop delivered and charged is a false pass"*, which
+silently asserts that the money should have come back. Under D-246 the runtime
+refuses only the four classes, so the walk must be able to say **"the finding
+recurred, and no refund was owed"** without contradicting itself. Assertion D is
+where this is sharpest: `hairWorn` rides the row as a NON-BINDING fact
+(`refineService.ts` — `facts.push({ facet, asked: pinned, binding: false })`),
+so a D failure is a finding that correctly moved no money. **A red D is a defect
+report, not a billing dispute**, and the run's summary should be read that way.
+
+**2. A's runtime half needs its own sentence, because it is a product policy and
+not an instrument.** Is half a pair inside class (c)? *"Gold hoop earrings"* is
+one thing in the user's ontology — earrings come in matching pairs (working law
+8, and the pair law is already in both the painter's clause and the reader's
+question) — so one hoop is **the asked thing absent**, not a subtle shortfall in
+it. The current build already agrees: accessories are presence-**binding**
+(`presence = facet === facetOfSubject("statedAccessories")`, `binding: true`),
+and the pair clause rides the question. So the walk's bar and the runtime's bar
+are the same bar today, and this paragraph exists so that a later softening of
+one is visibly a change to both.
+
+## What did NOT change, and why that is a finding rather than an omission
+
+- **The controls stay blocking for every assertion, including C's.** D-246
+  demotes subtle instruments from runtime authority; it does not license an
+  unproven instrument in a bench. `--spend` still executes `--controls` and
+  refuses on a red one. An observation whose reader has never been shown able to
+  express a finding is not an observation, it is a blank line (working law 2).
+- **D-235's asymmetry and D-236's bar are untouched here** because this walk only
+  ever asserted existence: `read === true` before `verified === true` in D,
+  `neverArmed` rather than a pass on an unreadable ear in A. D-246 §3 narrows
+  those two rulings to the catastrophic classes, and this document has no claim
+  outside them to narrow.
+- **The step table, the order and the price are unchanged.** 125 credits, 250 for
+  the twice-clean bar.
+
+**Nothing in `scripts/drive-finding-replay.mts` was edited by this
+re-derivation.** That is the honest outcome and it is stated rather than dressed
+up as work: the walk was built to existence bars, D-246 ratified existence bars,
+and the change is in what the run's report is allowed to CLAIM — which lives in
+this document and in the reading of the result, not in the harness.
