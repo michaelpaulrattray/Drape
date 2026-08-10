@@ -78,6 +78,10 @@ export type ReferenceRefusal = {
   /** The refused crop and its mask. Present for `noSpecimen` alone. */
   contentKey: string | null;
   maskKey: string | null;
+  /** Where that crop sat on the frame it was cut from. Present exactly when the
+   *  keys are: the stored mask is crop-local, so without this the pixels can be
+   *  looked at and never placed back on her face. */
+  geometry: ReferenceGeometry | null;
 };
 
 /** One library row, as stored. The shape the fold reasons about. */

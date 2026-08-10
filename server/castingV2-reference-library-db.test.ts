@@ -447,7 +447,7 @@ describeWithDatabase("the reference library (disposable DB)", () => {
           reason: "noSpecimen",
           kind: "earring",
           coverage: 9560,
-          crop: { contentKey: refusedContentKey, maskKey: refusedMaskKey },
+          crop: { contentKey: refusedContentKey, maskKey: refusedMaskKey, geometry },
         },
       }],
     });
@@ -467,6 +467,10 @@ describeWithDatabase("the reference library (disposable DB)", () => {
       coverage: 9560,
       contentKey: refusedContentKey,
       maskKey: refusedMaskKey,
+      /* The box comes back too: the stored mask is crop-local, so this is the
+         only thing that can put her hoop back on her own frame — which is what
+         the adoption sitting looks at. */
+      geometry,
     });
 
     await connection.execute(

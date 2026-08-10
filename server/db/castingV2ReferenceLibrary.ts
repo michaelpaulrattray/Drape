@@ -166,9 +166,16 @@ export type ReferenceRefusalToRecord = {
   kind: string;
   /** Basis points. Absent when the refusal recorded no reading (`readDidNotSettle`). */
   coverage?: number;
-  /** The pixels, for `noSpecimen` alone. Both keys or neither — a crop without
-   *  its mask cannot be cut out or measured, and a mask alone shapes nothing. */
-  crop?: { contentKey: string; maskKey: string };
+  /**
+   * The pixels, for `noSpecimen` alone. Both keys or neither — a crop without
+   * its mask cannot be cut out or measured, and a mask alone shapes nothing.
+   *
+   * `geometry` is required with them and not optional: the stored mask is
+   * written at the cut's own box size, so the box is the only thing that can
+   * put the crop back on the face it came from — and the demonstration these
+   * columns exist for is her hoop drawn on her own frame.
+   */
+  crop?: { contentKey: string; maskKey: string; geometry: ReferenceGeometry };
 };
 
 export type ReferenceRowToRecord = {
@@ -308,6 +315,11 @@ function assertRefusalShape(row: ReferenceRowToRecord): void {
       `${row.slot}'s refused crop needs both its content and its mask; one without the other cannot be looked at as a cutout or measured again`,
     );
   }
+  /* The same rule the delivered side has enforced since 0028, and for the same
+     sentence: a crop means nothing except against the frame it was cut from.
+     The mask is written at the box's own size, so a kept crop with no box is a
+     picture nobody can place. */
+  assertGeometry(refusal.crop.geometry);
 }
 
 /**
@@ -448,6 +460,12 @@ async function insertVersionedReferenceIn(
       refusedReason: refusal?.reason ?? null,
       refusedKind: refusal?.kind ?? null,
       refusedCoverage: refusal?.coverage ?? null,
+      refusedBboxX: refusal?.crop?.geometry.bbox.x ?? null,
+      refusedBboxY: refusal?.crop?.geometry.bbox.y ?? null,
+      refusedBboxW: refusal?.crop?.geometry.bbox.width ?? null,
+      refusedBboxH: refusal?.crop?.geometry.bbox.height ?? null,
+      refusedFrameWidth: refusal?.crop?.geometry.frame.width ?? null,
+      refusedFrameHeight: refusal?.crop?.geometry.frame.height ?? null,
       version,
       createdAt: input.now,
     })
@@ -576,6 +594,9 @@ function toStoredReference(
     && row.frameWidth !== null && row.frameHeight !== null;
   const hasGuard = row.guardKind !== null && row.guardCoverage !== null
     && row.guardSpill !== null && row.guardThreshold !== null;
+  const hasRefusedGeometry = row.refusedBboxX !== null && row.refusedBboxY !== null
+    && row.refusedBboxW !== null && row.refusedBboxH !== null
+    && row.refusedFrameWidth !== null && row.refusedFrameHeight !== null;
   return {
     id: row.id,
     publicId: row.publicId,
@@ -617,6 +638,17 @@ function toStoredReference(
         coverage: row.refusedCoverage,
         contentKey: row.refusedContentKey,
         maskKey: row.refusedMaskKey,
+        geometry: hasRefusedGeometry
+          ? {
+            bbox: {
+              x: row.refusedBboxX!,
+              y: row.refusedBboxY!,
+              width: row.refusedBboxW!,
+              height: row.refusedBboxH!,
+            },
+            frame: { width: row.refusedFrameWidth!, height: row.refusedFrameHeight! },
+          }
+          : null,
       },
     version: row.version,
     retiredAt: row.retiredAt === null ? null : new Date(row.retiredAt),

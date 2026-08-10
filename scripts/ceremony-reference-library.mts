@@ -3,8 +3,8 @@
  * and 0029).
  *
  * TWO migrations now, and both are inert on their own: 0028 is a new table
- * nothing reads yet, 0029 adds five nullable columns to it that nothing on the
- * rendering path ever reads. They land AHEAD of the code that writes them,
+ * nothing reads yet, 0029 adds eleven nullable columns to it that nothing on
+ * the rendering path ever reads. They land AHEAD of the code that writes them,
  * which is the ordering this program runs under: **the migration lands before
  * the code that names it.** An INSERT naming an absent column is not inert, and
  * the render that would do it is a paid one.
@@ -97,6 +97,8 @@ try {
        writer's INSERT would name something the table does not have, on a paid
        render, at the moment a guard turns a crop away. */
     "refusedContentKey", "refusedMaskKey", "refusedReason", "refusedKind", "refusedCoverage",
+    "refusedBboxX", "refusedBboxY", "refusedBboxW", "refusedBboxH",
+    "refusedFrameWidth", "refusedFrameHeight",
   ]) {
     if (!names.includes(required)) {
       throw new Error(`casting_reference_library is missing ${required} — stop and investigate`);
@@ -117,6 +119,8 @@ try {
        row is not a refusal" means, so a NOT NULL here would make the seven rows
        already in the table illegal and every ordinary mint impossible. */
     "refusedContentKey", "refusedMaskKey", "refusedReason", "refusedKind", "refusedCoverage",
+    "refusedBboxX", "refusedBboxY", "refusedBboxW", "refusedBboxH",
+    "refusedFrameWidth", "refusedFrameHeight",
   ]) {
     if (nullable.get(column) !== true) {
       throw new Error(`${column} must be NULLable and is not — stop and investigate`);

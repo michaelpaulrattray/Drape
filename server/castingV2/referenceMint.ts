@@ -460,7 +460,14 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
              insert. A refused crop written outside that order is a piece of a
              face at a URL no row knows about. */
           planned.push({ cut, contentKey: refusedContentKey, maskKey: refusedMaskKey });
-          refusal.crop = { contentKey: refusedContentKey, maskKey: refusedMaskKey };
+          refusal.crop = {
+            contentKey: refusedContentKey,
+            maskKey: refusedMaskKey,
+            /* The box, because the mask is written at the box's own size — the
+               refused pixels are meant to be looked at ON her frame, and this
+               is the only thing that can put them back there. */
+            geometry: { bbox: cut.box, frame: cut.frame },
+          };
         }
         rows.push({
           role: "carry",

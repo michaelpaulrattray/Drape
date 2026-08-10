@@ -192,15 +192,36 @@ describe("what a refused crop may say about itself", () => {
     ...overrides,
   });
 
-  it("takes a refusal that keeps its pixels, both keys present", () => {
+  const keptCrop = {
+    contentKey: "casting-v2/library/x-refused.png",
+    maskKey: "casting-v2/library/x-refused-mask.png",
+    geometry,
+  };
+
+  it("takes a refusal that keeps its pixels, both keys and its box", () => {
     expect(reasonOf(refused({
+      refusal: { reason: "noSpecimen", kind: "earring", coverage: 9560, crop: keptCrop },
+    }))).toBe("accepted");
+  });
+
+  /* The mislabelled-frame class again, on the refused side of the door. The
+     stored mask is written at the box's own size, so a box measured against a
+     different picture puts her hoop somewhere she never wore one. */
+  it("refuses a kept crop whose box leaves its own frame", () => {
+    expect(() => assertReferenceRowShape(refused({
       refusal: {
         reason: "noSpecimen",
         kind: "earring",
         coverage: 9560,
-        crop: { contentKey: "casting-v2/library/x-refused.png", maskKey: "casting-v2/library/x-refused-mask.png" },
+        crop: {
+          ...keptCrop,
+          geometry: {
+            bbox: { x: 900, y: 20, width: 300, height: 80 },
+            frame: { width: 1024, height: 1536 },
+          },
+        },
       },
-    }))).toBe("accepted");
+    }))).toThrow(/outside its own frame/);
   });
 
   it("takes a refusal that recorded no reading at all", () => {
@@ -237,7 +258,7 @@ describe("what a refused crop may say about itself", () => {
         reason: "underCaptured",
         kind: "hair",
         coverage: 1250,
-        crop: { contentKey: "a.png", maskKey: "a-mask.png" },
+        crop: { contentKey: "a.png", maskKey: "a-mask.png", geometry },
       },
     }))).toBe("refusedCropIsNotAdoptable");
   });
@@ -248,7 +269,7 @@ describe("what a refused crop may say about itself", () => {
         reason: "noSpecimen",
         kind: "earring",
         coverage: 9560,
-        crop: { contentKey: "a.png", maskKey: "   " },
+        crop: { contentKey: "a.png", maskKey: "   ", geometry },
       },
     }))).toBe("refusedCropWithoutMask");
   });

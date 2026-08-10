@@ -15,7 +15,7 @@
 -- So a refused crop's bytes are kept, and this is the column group that names
 -- them.
 --
--- PURELY ADDITIVE. Five nullable columns on one table; no existing column
+-- PURELY ADDITIVE. Eleven nullable columns on one table; no existing column
 -- changes, no index changes, and every row already written stays legal — the
 -- new columns are NULL on all of them, which is exactly what they mean.
 --
@@ -89,6 +89,28 @@
 -- values live in `referenceCompleteness.ts` and are checked at the write.
 --
 -- ============================================================================
+-- AND WHY THE GEOMETRY IS HERE, DECIDED BY A PROPERTY OF THE ARTIFACT
+-- ============================================================================
+--
+-- The question was whether a kept crop needs its box, and the criterion is what
+-- the stored MASK is registered against (fable-217): a whole-frame mask carries
+-- its own placement, and six ints would be a second copy of it; a crop-local
+-- mask does not, and placement is then recoverable from nothing.
+--
+-- `encodeCut` writes the mask at the CUT'S OWN BOX SIZE — `SegmentCut.mask` is
+-- documented as *"the mask, cropped to its own box"* and the PNG is that raw
+-- buffer. So the artifact is crop-local, and without these six columns the
+-- refused pixels could be looked at but never placed on the face they came from.
+-- The founder's demonstration is *her hoop, drawn on her own frame*, so the
+-- placement is not a nicety.
+--
+-- It also finishes a rule this table already enforces on the other side of the
+-- door: a delivered crop with no geometry is REFUSED at the write, because *a
+-- crop means nothing except against the frame it was cut from.* A refused crop
+-- is still a crop. The bbox-inside-its-own-frame check applies here too — a box
+-- that leaves its frame was measured against a different picture.
+--
+-- ============================================================================
 -- RETENTION IS UNCHANGED IN SHAPE AND WIDER IN REACH
 -- ============================================================================
 --
@@ -103,4 +125,10 @@ ALTER TABLE `casting_reference_library`
 	ADD COLUMN `refusedMaskKey` varchar(512),
 	ADD COLUMN `refusedReason` varchar(32),
 	ADD COLUMN `refusedKind` varchar(48),
-	ADD COLUMN `refusedCoverage` int;
+	ADD COLUMN `refusedCoverage` int,
+	ADD COLUMN `refusedBboxX` int,
+	ADD COLUMN `refusedBboxY` int,
+	ADD COLUMN `refusedBboxW` int,
+	ADD COLUMN `refusedBboxH` int,
+	ADD COLUMN `refusedFrameWidth` int,
+	ADD COLUMN `refusedFrameHeight` int;

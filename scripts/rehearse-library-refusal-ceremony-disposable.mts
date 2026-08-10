@@ -45,6 +45,12 @@ const REFUSED_COLUMNS = [
   "refusedReason",
   "refusedKind",
   "refusedCoverage",
+  "refusedBboxX",
+  "refusedBboxY",
+  "refusedBboxW",
+  "refusedBboxH",
+  "refusedFrameWidth",
+  "refusedFrameHeight",
 ];
 
 function databaseUrlFromDotEnv(): string | null {
@@ -163,7 +169,10 @@ try {
   if (survivor[0].slot !== "lips" || survivor[0].version !== 1) {
     throw new Error("the surviving row's own columns changed under the alter");
   }
-  console.log("\n[rehearsal] ARM 1 PASSED — five nullable columns, the existing row intact and NULL in all of them");
+  console.log(
+    `\n[rehearsal] ARM 1 PASSED — ${REFUSED_COLUMNS.length} nullable columns, `
+    + "the existing row intact and NULL in all of them",
+  );
 
   /* --------------------------------------------------- 2. the second run */
 

@@ -2693,6 +2693,21 @@ export const castingReferenceLibrary = mysqlTable("casting_reference_library", {
   /** Basis points of the region, like {@link guardCoverage}. Absent when the
    *  refusal recorded no reading at all (`readDidNotSettle`). */
   refusedCoverage: int("refusedCoverage"),
+  /**
+   * Where the kept crop sat on the frame it was cut from.
+   *
+   * Its stored mask is CROP-LOCAL (`encodeCut` writes the cut's own box), so
+   * without these the pixels can be looked at and never placed — and the
+   * demonstration this column group exists for is her hoop drawn on her own
+   * face. Same rule as a delivered crop's geometry, on the same reasoning: a
+   * crop means nothing except against the frame it came from.
+   */
+  refusedBboxX: int("refusedBboxX"),
+  refusedBboxY: int("refusedBboxY"),
+  refusedBboxW: int("refusedBboxW"),
+  refusedBboxH: int("refusedBboxH"),
+  refusedFrameWidth: int("refusedFrameWidth"),
+  refusedFrameHeight: int("refusedFrameHeight"),
   version: int("version").default(1).notNull(),
   /** A fact about a VERSION, not about a slot: this branch's newest word on the
    *  slot is "gone". Other branches keep theirs. */

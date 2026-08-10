@@ -206,7 +206,14 @@ describe("what the mint keeps", () => {
       reason: "noSpecimen",
       kind: "lips",
       coverage: 10_000,
-      crop: { contentKey: bench.stored[0], maskKey: bench.stored[1] },
+      crop: {
+        contentKey: bench.stored[0],
+        maskKey: bench.stored[1],
+        /* The box it was cut from, because the mask is written at the box's own
+           size — without this the pixels could be looked at and never placed on
+           the face they came from. */
+        geometry: { bbox: HAIR, frame: { width: 40, height: 40 } },
+      },
     });
     expect(row.words).toEqual(["a blunt shoulder-length bob"]);
   });
