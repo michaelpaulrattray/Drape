@@ -173,7 +173,12 @@ async function main(): Promise<void> {
       read: guardRead,
       enabledFor: () => true,
       store: async ({ key, bytes }) => {
-        const name = key.endsWith("-mask.png") ? `${written.length}-mask.png` : `${written.length}.png`;
+        /* A crop and its mask are one thing looked at two ways, so they share
+           an index — otherwise the pair reads as two unrelated files and the
+           eye has to reconstruct which mask belongs to which crop. */
+        const mask = key.endsWith("-mask.png");
+        const pair = Math.floor(written.length / 2);
+        const name = mask ? `${pair}-mask.png` : `${pair}.png`;
         writeFileSync(path.join(OUT, name), bytes);
         written.push(name);
         return { key };
