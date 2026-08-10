@@ -86,10 +86,19 @@ export type SlotSpec = {
   noun: string;
   /** The full declarative stack for the slot as of this render. */
   words: readonly string[];
-  /** The segmentation question that names this slot's region on a frame. */
-  question: string;
-  /** The completeness specimen family whose threshold applies (`hair`, `lips`). */
-  guardKind: string;
+  /**
+   * The segmentation question that names this slot's region on a frame.
+   *
+   * **NULL is a real answer** and it is the catalogue's, not a missing value:
+   * the region vocabulary has no question that names a jawline, and the nearest
+   * one (`face skin`) would file a crop of her whole face under the name "her
+   * jaw" — complete against the wrong boundary. Such a slot is carried by words
+   * by construction, and it still gets its row.
+   */
+  question: string | null;
+  /** The completeness specimen family whose threshold applies (`hair`, `lips`).
+   *  Null exactly when {@link SlotSpec.question} is. */
+  guardKind: string | null;
 };
 
 export type MintedSlot =
@@ -97,9 +106,11 @@ export type MintedSlot =
   | {
     slot: FeatureSlot;
     outcome: "words-only";
-    /** `surface` — the tier never mints a crop. `noRegion` — this render has no
-     *  evidence about the slot. `guardRefused` — a crop was cut and turned away. */
-    reason: "surface" | "noRegion" | "guardRefused";
+    /** `surface` — the tier never mints a crop. `noQuestion` — no segmentation
+     *  question names this slot, so there is nothing honest to cut. `noRegion` —
+     *  this render has no evidence about the slot. `guardRefused` — a crop was
+     *  cut and turned away. */
+    reason: "surface" | "noQuestion" | "noRegion" | "guardRefused";
     detail?: string;
   };
 
@@ -217,11 +228,35 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       able to certify a crop for it, and every vision call spent on one would be
       spent to produce something the write helper would then reject.
     */
-    const cuttable = input.slots.filter((slot) => slot.tier !== "surface");
+    const cuttable = input.slots.filter(
+      (slot): slot is SlotSpec & { question: string; guardKind: string } => (
+        slot.tier !== "surface" && slot.question !== null && slot.guardKind !== null
+      ),
+    );
     for (const slot of input.slots) {
       if (slot.tier !== "surface") continue;
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
       outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "surface" });
+    }
+    /*
+      A SLOT WITH NO QUESTION IS NOT A SLOT WITH NO WORDS. The catalogue hands
+      one of these when the region vocabulary has nothing that names the feature
+      — her jaw, her teeth, her skin — and the alternative to a words-only row
+      is a crop of the nearest bigger region wearing the smaller name. The row
+      is written for the same reason a refused crop's is: the words are the
+      carrier of record, and a slot that files nothing leaves its previous crop
+      riding beside words that have moved on.
+    */
+    for (const slot of input.slots) {
+      if (slot.tier === "surface") continue;
+      if (slot.question !== null && slot.guardKind !== null) continue;
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "words-only",
+        reason: "noQuestion",
+        detail: "no segmentation question names this slot, so there is nothing honest to cut",
+      });
     }
 
     const frame = await readRaster(input.frame.bytes);

@@ -205,6 +205,33 @@ describe("what the mint never cuts", () => {
     expect(bench.stored).toEqual([]);
   });
 
+  it("never cuts a slot with no question of its own, and still keeps its words", async () => {
+    /*
+      The catalogue hands these: her jaw, her teeth, her skin — features the
+      region vocabulary has no question for. The alternative to this row is a
+      crop of the nearest bigger region wearing the smaller name, which is the
+      defect the catalogue exists to make unreachable. It must cost no vision
+      call: a question-less slot has nothing to ask about.
+    */
+    let reads = 0;
+    const bench = harness();
+    const withCount = {
+      ...bench,
+      dependencies: { ...bench.dependencies, read: async () => { reads += 1; return rect(HAIR); } },
+    };
+    const result = await mint(
+      [hairSlot({ slot: "jaw", noun: "jaw", words: ["a softer jawline"], question: null, guardKind: null })],
+      withCount,
+    );
+
+    expect(result.outcome).toBe("stored");
+    expect(result.slots[0]).toMatchObject({ slot: "jaw", outcome: "words-only", reason: "noQuestion" });
+    expect(reads).toBe(0);
+    expect(bench.stored).toEqual([]);
+    expect(bench.rows[0]).toMatchObject({ slot: "jaw", words: ["a softer jawline"] });
+    expect(bench.rows[0]!.image).toBeUndefined();
+  });
+
   it("records words for a slot this render has no evidence about", async () => {
     const bench = harness();
     const result = await mintReferencesForRender({

@@ -209,6 +209,56 @@ the recipe carries a rectangular crop (§5.1) and the panel shows a cutout, so
 only artifact that could re-measure a stored crop's coverage. An uploaded anchor
 is not a cut and carries neither mask nor bbox — both are refused on one.
 
+### 2.7 The slot catalogue — what each slot is and how to ask about it (fable-201/202)
+
+`castingV2/referenceSlotCatalogue.ts`. The mint takes a slot's identity as input
+and refuses nothing on that axis, so this is the table that answers all four —
+**question, guard kind, tier, noun** — for every slot the product can name, plus
+the panel `group` and which frame the question may be asked of.
+
+- **No question is invented.** Every one is taken from a table that already owns
+  one (`regionNameOf` for the facet vocabulary, `LANDMARK_OF_ACCESSORY.region`
+  for what a face wears), and a slot whose facets disagree about their region
+  refuses to resolve rather than picking. D-213: a segmenter is never asked an
+  open question.
+- **A slot with no question of its own is WORDS-ONLY by construction**, and the
+  mint writes its row (new outcome `noQuestion`, no vision call). The region
+  vocabulary is coarser than the stylist's, and the gap is not rounded off:
+  there is no question that names a jawline, and cutting `face skin` for one
+  would file **a crop of her whole face under the name "her jaw"** — which then
+  measures 100% complete against the boundary it was cut from. `jaw`, `chin`,
+  `cheekbone`, `teeth`, `lashes` are broader-region cases; `skin` is the
+  narrower one (her skin is all her visible skin — a tan does not stop at the
+  jaw, law 8). What closes this is open-vocabulary regions (roadmap §5), not a
+  bigger crop.
+- **A laterality word is never in a question.** SAM 3 asked "left earring" and
+  "right earring" returned the same hoop twice; asked "earring" on a frame
+  wearing two it returned one mask. So a per-instance slot asks the plain class
+  noun and the SIDE comes from the frame it is asked of (`frame: "ownSide"` —
+  her own midline, one half at a time). With the side in the question, the cut
+  and the guard's second read would ask the same wrong question and agree
+  perfectly about the wrong ear.
+- **The guard kind IS the question**, derived rather than typed twice — a
+  specimen family is "what a complete crop of this thing looks like", and the
+  thing is what the question names. It gets its own column the day a measured
+  specimen makes a family broader than one question.
+- **No slot has tier `surface`**, and that is fable-201's ruling rather than an
+  omission: a surface worn on anatomy is ONE anatomy slot whose stack holds the
+  surface words (gloss rides `lips`, a tan and freckles ride `skin`, makeup
+  rides the slots it is worn on per fable-168). The tier stays reachable for
+  fable-195's uploaded-anchor carve-out and the parked face chart. The founder's
+  earlier *"crops stay bare"* idea was **superseded by D-244 itself** — a crop
+  never rides its own feature's edit, so purity stopped mattering; do not
+  resurrect mint-tagging.
+- **Only `hair` can actually mint a crop today.** Every other slot with a good
+  question is refused at the door for having no positive specimen, and writes its
+  words. That is fable-173 working as designed, and the refusal is what produces
+  the specimen.
+- **Total over the refine vocabulary by test**: every facet either names the slot
+  its words land in or carries the reason it has none — `ink` is OWED (its slots
+  come with the tattoo studio, where the question is a placement rather than a
+  region) and `expression` is out by D-136.
+
 **Owed, and named rather than absent:** what a SIGNED Cast keeps. Promotion will
 copy into a second table on the Cast's own lifetime, exactly as
 `casting_cast_segments` does for segments and for the same reasons. Nothing
@@ -522,8 +572,10 @@ the lip staircase, which D-244 cancelled.
    injected second reader, manifest before bytes, rows after. A refused crop
    records its slot's WORDS rather than nothing: writing no row would leave the
    previous crop riding while the words moved on, which is two instructions
-   about one feature. What remains is the SLOT CATALOGUE that gives a caller
-   each slot's segmentation question, guard kind, tier and noun.
+   about one feature. **The SLOT CATALOGUE landed 2026-08-10 (§2.7)** — slot →
+   question, guard kind, tier, noun, panel group and which frame the question may
+   be asked of, with the question-less slots words-only by construction. What
+   remains of this step is a CALLER: nothing composes a mint from it yet.
 3. **The recipe assembler and the repaint path**, behind the flag, dark. The
    assembler is where D-244 lives in code: it resolves each feature to
    *anchor + full word stack* (edited) or *minted crop* (carried), and it can
@@ -586,3 +638,4 @@ contract does not know the painter changed.
 | The surface row is WITHDRAWN, unearned in both directions — the specular measure's noise (0.67pp) exceeds the whole nude range it must divide, and it fails its own positive control by sign | `glossy-family-sweep-disposable.mts`, 2026-08-10 |
 | A positive control class must be labelled by a verified OUTCOME, never by the ask or the reference that produced it | the same, named as the class per working law 7 |
 | **The library is its own table, migration first; storage and reference emission are PER INSTANCE always** | **fable-196**, executed as §2.6 / migration 0028 |
+| A surface worn on anatomy is ONE anatomy slot, tier `anatomy`, surface words in its stack; "crops stay bare" superseded by D-244 | **fable-201**, executed as §2.7 |

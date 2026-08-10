@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cd8618620a5593b3"
+    "sourceFingerprint": "3dbad04ff247ad7c"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 86
+      "moduleCount": 87
     },
     {
       "id": "domain:castingV2",
@@ -3467,6 +3467,12 @@
     {
       "id": "module:server/castingV2/referenceMint.ts",
       "path": "server/castingV2/referenceMint.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "path": "server/castingV2/referenceSlotCatalogue.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8641,6 +8647,10 @@
     {
       "id": "test:server/castingV2/referenceMint.test.ts",
       "path": "server/castingV2/referenceMint.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceSlotCatalogue.test.ts",
+      "path": "server/castingV2/referenceSlotCatalogue.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceSlots.test.ts",
@@ -18064,6 +18074,36 @@
     {
       "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/referenceMint.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
     {
