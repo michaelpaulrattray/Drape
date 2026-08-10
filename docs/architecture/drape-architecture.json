@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "536992b328fc8342"
+    "sourceFingerprint": "f4d8affb8738a145"
   },
   "domains": [
     {
@@ -18166,6 +18166,11 @@
     },
     {
       "from": "module:server/castingV2/referenceCompleteness.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceCompleteness.ts",
       "to": "module:server/castingV2/segmentCuts.ts",
       "kind": "imports"
     },
@@ -18182,6 +18187,11 @@
     {
       "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
       "kind": "imports"
     },
     {

@@ -327,6 +327,83 @@ describe("the corridor an addition is painted into is named, so it can be cut ag
     expect(claimsAt(result.evidence?.masterRegions.get("hair"), 45, 32), "not widened by the painted read").toBe(false);
   });
 
+  /**
+   * AND THE PAIR ARRIVES AS TWO THINGS, out of the same call.
+   *
+   * A pair of hoops read whole is one mask with two hoops in it, and every
+   * per-instance library slot filed WORDS because of that — `earring@left` cut
+   * from it is a picture of both, scoring 100% against the union it came from.
+   *
+   * The two assertions that matter are the labelling (her left is the image's
+   * RIGHT half, the subject's own laterality, as everywhere else in the product)
+   * and the ACCOUNTING: the whole-frame answer is derived from this split rather
+   * than read again, so a bilateral region still costs exactly what it cost
+   * yesterday. If `region` were ever called for the same name as well, the pair
+   * would be paid for twice and the two answers could disagree about where the
+   * midline was.
+   */
+  it("keeps the two sides of a pair apart, out of the reads it was already making", async () => {
+    const master = await bareFace();
+    const wholeFrameAsks: string[] = [];
+    const sideAsks: string[] = [];
+    const half = (mask: Mask, keep: (x: number) => boolean): Mask => {
+      const data = Buffer.alloc(W * H, 0);
+      for (let y = 0; y < H; y += 1) {
+        for (let x = 0; x < W; x += 1) if (keep(x)) data[y * W + x] = mask.data[y * W + x]!;
+      }
+      return { data, width: W, height: H };
+    };
+    const base = readerFor({ master, onPainted: () => deliveredHoops(), seen: wholeFrameAsks });
+    const reader: RegionReader = {
+      ...base,
+      regionSides: async ({ image, name }) => {
+        /* Only a bilateral name has sides — everything else answers null, and
+           the caller falls back to the whole-frame question. */
+        if (name !== "earring") return null;
+        const which = Buffer.compare(image, master) === 0 ? "master" : "painted";
+        sideAsks.push(`${which}:${name}`);
+        const whole = which === "master" ? empty() : deliveredHoops();
+        /* Her left is the image's right half. One mapping, the reader's. */
+        return { left: half(whole, (x) => x >= W / 2), right: half(whole, (x) => x < W / 2) };
+      },
+    };
+
+    /* THE CONTROL: the same render read by the same reader WITHOUT the
+       capability, so the accounting below is a comparison and not a guess. */
+    const controlAsks: string[] = [];
+    await harvestHoops({
+      reader: readerFor({ master, onPainted: () => deliveredHoops(), seen: controlAsks }),
+    });
+
+    const result = await harvestHoops({ reader });
+
+    const delivered = result.evidence?.deliveredSideRegions?.get("earring");
+    expect(claimsAt(delivered?.left, RIGHT_LOBE.x, RIGHT_LOBE.y), "her left hoop").toBe(true);
+    expect(claimsAt(delivered?.left, LEFT_LOBE.x, LEFT_LOBE.y), "and only hers").toBe(false);
+    expect(claimsAt(delivered?.right, LEFT_LOBE.x, LEFT_LOBE.y), "her right hoop").toBe(true);
+
+    /*
+      And the pair is cuttable, which for an ADDITION is the whole question: her
+      master wears no earrings, so the corridor is the only master ground there
+      is — and the same predicate that unions a placed name's delivered read into
+      `masterRegions` puts its two sides here.
+    */
+    expect(result.evidence?.masterSideRegions?.has("earring")).toBe(true);
+
+    /*
+      THE ACCOUNTING, against the control: every earring question the plain
+      reader was asked whole-frame, the sided reader was asked once — as a side
+      read. Not one extra, and the whole-frame question was not asked at all.
+    */
+    const earringAsks = (asks: string[]) => asks.filter((ask) => ask.endsWith(":earring"));
+    expect(earringAsks(controlAsks).length, "the fixture asks about her earrings at all").toBeGreaterThan(0);
+    expect(sideAsks).toEqual(earringAsks(controlAsks));
+    expect(earringAsks(wholeFrameAsks)).toEqual([]);
+    /* Yet the whole-frame map is still right — it is the union of the two. */
+    expect(claimsAt(result.evidence?.deliveredRegions?.get("earring"), LEFT_LOBE.x, LEFT_LOBE.y)).toBe(true);
+    expect(claimsAt(result.evidence?.deliveredRegions?.get("earring"), RIGHT_LOBE.x, RIGHT_LOBE.y)).toBe(true);
+  });
+
   it("hands the SAME painted read out under its own name — the silhouette's arrived ground", async () => {
     /*
       The other half of the control above, and the two are deliberately in one

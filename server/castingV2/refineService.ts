@@ -2893,9 +2893,25 @@ export async function refineCandidate(
             as `readDidNotSettle` and file "we could not tell" over a picture
             that told us plainly.
           */
-          const read: MintRegionReader = async ({ frame, question }) => (
-            reader.region({ image: frame, name: question, absentIsAnswer: true })
-          );
+          const read: MintRegionReader = async ({ frame, question, side }) => {
+            if (side === undefined) {
+              return reader.region({ image: frame, name: question, absentIsAnswer: true });
+            }
+            /*
+              A SIDE IS SCOPED BY THE READER OR IT IS NOT SCOPED AT ALL.
+
+              Asked about one hoop, the whole-frame answer is both of them, and
+              scoring a crop of one against a region of two produces a number
+              around 50% that means nothing except that the question was wrong.
+              A reader without the capability returns null here, which the guard
+              reads as `readDidNotSettle` — the one refusal that records no
+              reading, so nothing measured against the wrong boundary can ever
+              become this kind's specimen.
+            */
+            if (!reader.regionSides) return null;
+            const sides = await reader.regionSides({ image: frame, name: question, absentIsAnswer: true });
+            return sides ? sides[side] : null;
+          };
 
           const minted = await mintReferencesForRender({
             userId: input.userId,
@@ -2908,6 +2924,11 @@ export async function refineCandidate(
             applied: image.evidence?.applied ?? null,
             masterRegions: image.evidence?.masterRegions ?? new Map(),
             deliveredRegions: image.evidence?.deliveredRegions ?? null,
+            /* The split the harvest already performed and used to throw away —
+               without it every per-side slot files words, which is what the
+               whole library did until today. */
+            masterSideRegions: image.evidence?.masterSideRegions ?? null,
+            deliveredSideRegions: image.evidence?.deliveredSideRegions ?? null,
             slots,
             knownDigests: known,
             operationId,

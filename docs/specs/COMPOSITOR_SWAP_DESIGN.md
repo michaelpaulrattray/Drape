@@ -584,19 +584,30 @@ the lip staircase, which D-244 cancelled.
    all. The whole block is wrapped: a library failure must never refund a picture
    she is already looking at.
 
-   **A per-side slot files WORDS and no crop, and no coverage number is taken.**
-   Every region the mint is handed is a whole-frame read, and the bilateral
-   reader unions both sides into one mask by construction — so `earring@left`
-   and `earring@right` would be cut from identical pixels, scored against the
-   same union, and BOTH would read complete while containing both of her
-   earrings. That is the wrong-boundary class at the library's door, and a
-   refusal carrying a reading would be worse than the refusal: "the refusal is
-   also the thing that produces the specimen", so the number would become
-   `earring`'s threshold. **What closes it is a side-scoped region read** — the
-   split the reader already performs internally, exposed rather than
-   reimplemented (a second midline is law 4's copy). Until then a pair is
-   carried by words, which is all the panel needs: divergence is derived from
-   words, never from pixels.
+   **A per-side slot is cut from HER OWN SIDE, and scored against it — landed
+   2026-08-11 (fable-211).** `RegionReader.regionSides` is a second, optional
+   method returning the split the bilateral reader was already performing and
+   throwing away; `region` is now the union OF that split, so a pair still costs
+   exactly three calls and there is one midline in the system. The harvest
+   carries the two sides out on `evidence.masterSideRegions` /
+   `deliveredSideRegions` — the same reads, filed apart — and the mint cuts
+   `earring@left` from her left and asks the guard about her left.
+
+   The keys are ANATOMICAL (`left` is her left, the image's right half in a
+   frame she faces), which is the product's convention everywhere: the tilt
+   reader takes the smaller x as her right eye, and the panel row reads "her
+   left earring". It assumes she faces the camera, and nothing in a segmentation
+   call can tell otherwise — stated here rather than buried, and confined to one
+   function.
+
+   **The refusal survives as the honest fallback.** A reader without the
+   capability produces `noSide` — words, no crop, and NO COVERAGE NUMBER — and
+   a guard that cannot scope to a side returns nothing, which is
+   `readDidNotSettle`, the one refusal that records no reading. Neither ever
+   guesses a split. That matters because "the refusal is also the thing that
+   produces the specimen": a crop of one hoop scored against a read of both
+   measures ~50% of a region it entirely contains, and that number would have
+   become `earring`'s threshold.
 3. **The recipe assembler and the repaint path**, behind the flag, dark. The
    assembler is where D-244 lives in code: it resolves each feature to
    *anchor + full word stack* (edited) or *minted crop* (carried), and it can
@@ -622,7 +633,9 @@ contract does not know the painter changed.
 | **Contamination instrument** (what a paint borrowed from a crop's background) | **DEFERRED WITH TRIGGER** (fable-184). Shape and material catch invented FORM and invented MATERIAL; neither counts borrowing. It was never built and that is stated as owed, not absent. | Build it **when an occlusion-aware cutter reopens the crop-vs-cutout question** (§5.1). Until then the format ruling stands on shape + material. |
 | **img-left / img-right asymmetry** | **OPEN ROW.** Ten for ten on GPT2 the smaller, more occluded hoop scores worse. Mechanism proposed, untested. | Test it **only if the edit-law cell shows the same lean** (fable-183). Meanwhile the standing rule already contains the risk: per-instance worst-of-n, never averaged. |
 | **Occlusion-aware cutter** | Not built. Named as the cause of the cutout arm's loss. | A cutter that completes rather than amputates at occluders, then a re-test of §5.1. |
-| **Side-scoped region reads for the mint** | **DECLARED SHORTCUT, 2026-08-11.** A per-side slot files words and no crop, and takes no coverage reading — every region the mint is handed is a whole-frame union of both sides, so a crop of one would be a picture of two under the name of one, and its number would become that kind's specimen. Nothing is lost today: no bilateral kind has a positive specimen, so every one of them would have been refused at the door anyway. | Expose the side split `falRegionReader.bilateral` already performs internally — one call per side, each side its own picture — and hand the mint a region keyed per instance. A second midline derivation in the mint is law 4's copy and must not be written. |
+| ~~**Side-scoped region reads for the mint**~~ | **CLOSED 2026-08-11.** `regionSides` returns the split the reader was already making; `region` is the union of it, so the pair costs no extra call and there is one midline. The mint cuts each instance from her own side and the guard is asked about that side. The `noSide` refusal remains for a reader without the capability, and takes no reading. | — |
+| **A bilateral kind still has no specimen** | **OPEN, and it is now the only thing between the founder's hoop and the library.** `earring`, `eye`, `ear` and `brow` refuse at `noSpecimen` — with an honest per-side coverage attached, which is what makes the refusal productive. | A dev refine per specimen-bearing kind on the real paid path, each delivered cut eye-verified ONCE and adopted (fable-210). A master read cannot supply it: it scores 100% against itself by construction. |
+| **Laterality assumes she faces the camera** | **DECLARED, 2026-08-11.** `regionSides` labels the image's right half as her left. On a frame shot from behind or mirrored, the two instances swap names — the same assumption `canthalTilt` has always made, now in one function rather than four call sites. | A facing read, if one is ever worth a call. The blast radius today is a pair of instance keys, and divergence is derived from words. |
 
 ---
 

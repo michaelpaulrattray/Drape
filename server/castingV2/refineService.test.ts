@@ -281,24 +281,35 @@ vi.mock("./segmentPersistence", () => ({
  * handed it. The only thing that proves this caller composed a slot list is the
  * list the mint was actually called with.
  */
-const mintAsks: Array<{
+type MintAsk = {
   slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string }>;
   variantId: number | null;
   knownDigests: ReadonlyMap<string, string> | undefined;
   deliveredRegions: unknown;
-}> = [];
+  masterSideRegions: ReadonlyMap<string, unknown> | null | undefined;
+  deliveredSideRegions: ReadonlyMap<string, unknown> | null | undefined;
+  /** The guard's own reader, so a test can drive it rather than trust it. */
+  read: ((input: { frame: Buffer; question: string; side?: string }) => Promise<unknown>) | undefined;
+};
+const mintAsks: MintAsk[] = [];
 vi.mock("./referenceMint", () => ({
   mintReferencesForRender: vi.fn(async (ask: {
     slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string }>;
     variantId: number | null;
     knownDigests?: ReadonlyMap<string, string>;
     deliveredRegions?: unknown;
+    masterSideRegions?: ReadonlyMap<string, unknown> | null;
+    deliveredSideRegions?: ReadonlyMap<string, unknown> | null;
+    dependencies?: { read?: MintAsk["read"] };
   }) => {
     mintAsks.push({
       slots: ask.slots,
       variantId: ask.variantId,
       knownDigests: ask.knownDigests,
       deliveredRegions: ask.deliveredRegions,
+      masterSideRegions: ask.masterSideRegions,
+      deliveredSideRegions: ask.deliveredSideRegions,
+      read: ask.dependencies?.read,
     });
     return { outcome: "stored" as const, slots: [] };
   }),
@@ -3049,6 +3060,98 @@ describe("the render tells the library what it made of her", () => {
     expect(mintAsks[0].slots.map((slot) => slot.frame)).toEqual(["ownSide", "ownSide"]);
     expect(mintAsks[0].slots[0]!.words).toEqual(mintAsks[0].slots[1]!.words);
     expect(mintAsks[0].slots[0]!.words[0]).toContain("cross earrings");
+  });
+
+  /**
+   * AND THE SPLIT THE HARVEST MADE REACHES THE MINT, with the guard's reader
+   * able to ask about one side.
+   *
+   * Both halves are asserted on the CALL. The mint's own bench proves what it
+   * does with a side map, and the reader's proves the split — neither can see
+   * whether this service passes one to the other, which is the gap that let two
+   * green benches sit over an inert segment store for a week.
+   */
+  it("passes the harvest's per-side reads on, and a guard that can ask about a side", async () => {
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    const sides = { left: "her left" as unknown, right: "her right" as unknown };
+    const sideAsks: Array<string | undefined> = [];
+
+    await refineCandidate(
+      {
+        ...onFlag,
+        /* A harvest that carries the split, as the real one now does. */
+        harvest: (async (harvestInput: { painted: { bytes: Buffer; contentType: string } }) => ({
+          bytes: harvestInput.painted.bytes,
+          contentType: harvestInput.painted.contentType,
+          outcome: "flag-off" as const,
+          evidence: {
+            applied: { data: Buffer.alloc(1), width: 1, height: 1 },
+            masterRegions: new Map(),
+            masterSideRegions: new Map([["earring", sides]]),
+            deliveredSideRegions: new Map([["earring", sides]]),
+          },
+        })) as never,
+        regions: {
+          region: async () => ({ data: Buffer.alloc(1), width: 1, height: 1 }),
+          regionSides: async ({ name }: { name: string }) => {
+            sideAsks.push(name);
+            return sides as never;
+          },
+          subject: async () => ({ data: Buffer.alloc(1), width: 1, height: 1 }),
+          landmark: async () => [],
+        } as never,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0].masterSideRegions?.get("earring")).toBe(sides);
+    expect(mintAsks[0].deliveredSideRegions?.get("earring")).toBe(sides);
+
+    /* And the guard's reader, driven rather than trusted: asked about a side it
+       goes to the side reader and returns THAT side, never the union. */
+    const answer = await mintAsks[0].read!({
+      frame: Buffer.alloc(1),
+      question: "earring",
+      side: "left",
+    });
+    expect(sideAsks).toEqual(["earring"]);
+    expect(answer).toBe(sides.left);
+  });
+
+  it("CONTROL — a reader with no side capability answers nothing rather than the union", async () => {
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    const union = { data: Buffer.alloc(1), width: 1, height: 1 };
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        /* Production's reader before today, and any stub that has not opted in. */
+        regions: {
+          region: async () => union,
+          subject: async () => union,
+          landmark: async () => [],
+        } as never,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    const read = mintAsks[0].read!;
+    /* Asked whole-frame it still answers — the capability is additive. */
+    expect(await read({ frame: Buffer.alloc(1), question: "earring" })).toBe(union);
+    /* Asked about ONE side it refuses, and the refusal is what keeps a coverage
+       measured against both hoops from becoming the earring kind's specimen. */
+    expect(await read({ frame: Buffer.alloc(1), question: "earring", side: "left" })).toBeNull();
   });
 
   it("hands the mint the digests this branch already holds", async () => {

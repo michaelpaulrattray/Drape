@@ -24,7 +24,7 @@ import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
-import type { RegionReader } from "./maskedRefine";
+import type { RegionReader, SideRegions } from "./maskedRefine";
 
 const log = createModuleLogger("castingV2/falRegionReader");
 
@@ -361,16 +361,35 @@ export function createFalRegionReader(input: {
     return every.length === 1 ? every[0] : unionMasks(...every);
   };
 
+  /** A frame-sized mask holding nothing — the shape of "there is none of this
+   *  here", sized once so no caller has to compute it a second time. */
+  const emptyLike = async (image: Buffer, name: string): Promise<Mask> => {
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(image).metadata();
+    const width = meta.width ?? 0;
+    const height = meta.height ?? 0;
+    if (!width || !height) throw new MaskError(`cannot size an empty ${name} mask for this image`);
+    return { data: Buffer.alloc(width * height, 0), width, height };
+  };
+
   /**
-   * ONE SIDE AT A TIME, each side its own picture. See `BILATERAL` for the
+   * THE TWO HALVES, KEPT APART — one side to a picture. See `BILATERAL` for the
    * measurement that made this the method.
    *
-   * Returns null when NEITHER side had anything — which is now a real reading of
-   * two pictures rather than two words the model ignored, and is therefore fit to
-   * reach `absentIsAnswer`. One side answering alone is also a real answer: a
-   * head turned away genuinely has one visible ear.
+   * Returned in IMAGE order, because that is the only thing this function
+   * actually knows: it cut the frame at an x and asked each piece. Which of them
+   * is HER left is a fact about anatomy, and it is applied once, in
+   * `regionSides`, rather than here.
+   *
+   * `null` for a side that held nothing — a real reading of a real picture, and
+   * therefore fit to reach `absentIsAnswer`. One side answering alone is also a
+   * real answer: a head turned away genuinely has one visible ear. `null` for the
+   * WHOLE result means there was no split to make.
    */
-  const bilateral = async (image: Buffer, name: string): Promise<Mask | null> => {
+  const bilateralHalves = async (image: Buffer, name: string): Promise<{
+    atImageLeft: Mask | null;
+    atImageRight: Mask | null;
+  } | null> => {
     const sharp = (await import("sharp")).default;
     const meta = await sharp(image).metadata();
     const width = meta.width ?? 0;
@@ -378,7 +397,7 @@ export function createFalRegionReader(input: {
     if (!width || !height) throw new MaskError(`cannot read a ${name} on an image with no size`);
     const noun = singularOf(name);
     /* A picture one pixel wide has no two sides to cut between. */
-    if (width < 2) return askRegion(image, noun, "all");
+    if (width < 2) return null;
 
     const face = await askRegion(image, "face", "all");
     const axis = face ? centroidX(face) : null;
@@ -396,11 +415,31 @@ export function createFalRegionReader(input: {
       return mask ? placeInFrame(mask, crop, width, height) : null;
     }));
 
-    const found = sides.filter((mask): mask is Mask => mask !== null);
     log.debug(
-      { name, noun, sides: found.length, midline, byFace: axis !== null },
+      {
+        name,
+        noun,
+        sides: sides.filter((mask) => mask !== null).length,
+        midline,
+        byFace: axis !== null,
+      },
       "[falRegionReader] bilateral read, one side to a picture",
     );
+    return { atImageLeft: sides[0], atImageRight: sides[1] };
+  };
+
+  /**
+   * The same two halves, unioned — what a caller asking about the whole frame
+   * means by "her ears".
+   *
+   * The union is DERIVED from the split rather than read separately, which is
+   * what makes `regionSides` cost nothing: both answers come out of one set of
+   * calls, and there is exactly one midline in the system.
+   */
+  const bilateral = async (image: Buffer, name: string): Promise<Mask | null> => {
+    const halves = await bilateralHalves(image, name);
+    if (halves === null) return askRegion(image, singularOf(name), "all");
+    const found = [halves.atImageLeft, halves.atImageRight].filter((mask): mask is Mask => mask !== null);
     if (found.length === 0) return null;
     return found.length === 1 ? found[0] : unionMasks(...found);
   };
@@ -422,13 +461,8 @@ export function createFalRegionReader(input: {
       */
       const absent = async (): Promise<Mask> => {
         if (!absentIsAnswer) throw new MaskError(`the segmenter found no ${name} to edit`);
-        const sharp = (await import("sharp")).default;
-        const meta = await sharp(image).metadata();
-        const width = meta.width ?? 0;
-        const height = meta.height ?? 0;
-        if (!width || !height) throw new MaskError(`cannot size an empty ${name} mask for this image`);
         log.debug({ name }, "[falRegionReader] nothing there, and nothing there is the answer");
-        return { data: Buffer.alloc(width * height, 0), width, height };
+        return emptyLike(image, name);
       };
 
       if (BILATERAL.has(name)) {
@@ -438,6 +472,58 @@ export function createFalRegionReader(input: {
       const mask = await askRegion(image, name);
       if (!mask) return absent();
       return mask;
+    },
+
+    /**
+     * THE SAME READ, WITH THE TWO SIDES STILL APART.
+     *
+     * `region` has always performed this split and then thrown it away, and the
+     * union is the only reason a per-side crop could not be cut: `earring@left`
+     * taken from a mask of both hoops is a picture of two things under the name
+     * of one, and it scores 100% against the very union it came from. So the
+     * sides are handed back instead of merged, and the caller that wants the
+     * whole region unions them (`bilateral` above, which is what `region` uses).
+     *
+     * # `null` is a capability answer, not a reading
+     *
+     * A name this reader does not read two-sidedly — a nose, a mouth, a
+     * hairstyle — has no sides to give, and neither does a frame too narrow to
+     * cut. `null` says exactly that, **before any call is spent**, and the
+     * caller falls back to `region`. It never means "there is none of this
+     * here": that answer is two empty masks, and only when the caller has said
+     * absence is an answer.
+     *
+     * # `left` IS HER LEFT
+     *
+     * The halves come back in image order and are relabelled here, once. The
+     * product's laterality is the subject's own throughout — `canthalTilt`
+     * reads the smaller x as her RIGHT eye, the panel says "her left earring",
+     * and the R7 server-authority ruling is that left and right always mean the
+     * subject's anatomy and never the viewer's side of the image.
+     *
+     * **What that assumes, stated rather than buried: that she is facing the
+     * camera.** On a frame shot from behind, or one somebody mirrored, the
+     * labels are swapped, and nothing in a segmentation call can tell. It is
+     * the same assumption the tilt reader has always made, and it is the reason
+     * the mapping lives in one function instead of at four call sites.
+     */
+    async regionSides({ image, name, absentIsAnswer }): Promise<SideRegions | null> {
+      assertPicture(image, name);
+      if (!BILATERAL.has(name)) return null;
+      const halves = await bilateralHalves(image, name);
+      if (halves === null) return null;
+
+      if (halves.atImageLeft === null && halves.atImageRight === null) {
+        if (!absentIsAnswer) throw new MaskError(`the segmenter found no ${name} to edit`);
+        log.debug({ name }, "[falRegionReader] neither side wears one, and that is the answer");
+        return { left: await emptyLike(image, name), right: await emptyLike(image, name) };
+      }
+      /* Allocated per side rather than shared: two names for one buffer is an
+         alias waiting for the first caller that writes through it. */
+      return {
+        left: halves.atImageRight ?? await emptyLike(image, name),
+        right: halves.atImageLeft ?? await emptyLike(image, name),
+      };
     },
 
     async subject({ image }) {

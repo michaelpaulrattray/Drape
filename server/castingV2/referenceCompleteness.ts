@@ -55,6 +55,7 @@
  * threshold fitted to its own assumption.
  */
 import type { Mask } from "./maskedComposite";
+import type { Instance } from "./referenceSlots";
 import type { SegmentBox } from "./segmentCuts";
 
 /**
@@ -236,13 +237,26 @@ export function guardReference(input: GuardInput): GuardVerdict {
   return { ok: true, kind: input.kind, reading, threshold };
 }
 
-/** Reads a region on a frame. `null` when the reading did not settle. */
-export type RegionReader = (input: { frame: Buffer; question: string }) => Promise<Mask | null>;
+/**
+ * Reads a region on a frame. `null` when the reading did not settle.
+ *
+ * `side` narrows the question to one instance of a bilateral region, and it is
+ * not decoration: a crop of `earring@left` scored against a read of BOTH hoops
+ * measures about half of a region it fully contains, and the guard would file
+ * that number as the kind's first specimen. A reader that cannot scope to a
+ * side must return `null` when asked for one — `readDidNotSettle` is the honest
+ * outcome, and it is the one refusal that records no number at all.
+ */
+export type RegionReader = (
+  input: { frame: Buffer; question: string; side?: Instance },
+) => Promise<Mask | null>;
 
 export type MintInput = {
   kind: string;
   /** The segmentation question that names this kind's region. */
   question: string;
+  /** Which instance of it, for a slot that is one of a pair. */
+  side?: Instance;
   /** The frame the crop claims to represent — the one the guard reads. */
   frame: Buffer;
   crop: { mask: Mask; box: SegmentBox };
@@ -264,7 +278,7 @@ export async function mintGuardedReference(
 ): Promise<GuardVerdict> {
   let guardRead: Mask | null = null;
   try {
-    guardRead = await read({ frame: input.frame, question: input.question });
+    guardRead = await read({ frame: input.frame, question: input.question, side: input.side });
   } catch {
     guardRead = null; /* a throw is a reading that did not happen, not a no */
   }

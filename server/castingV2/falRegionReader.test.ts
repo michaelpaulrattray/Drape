@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { createFalRegionReader } from "./falRegionReader";
-import { MaskError } from "./maskGeometry";
+import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 
 /** The reader's own singularisation, restated only where a test must predict it. */
@@ -330,6 +330,123 @@ describe("falRegionReader cuts the frame instead of naming a side", () => {
     /* And where absence is NOT an answer, it is a refusal rather than an empty
        mask — the half of the asymmetry that stops a paid render changing nothing. */
     await expect(reader.region({ image, name: "eyes" })).rejects.toBeInstanceOf(MaskError);
+  });
+
+  /**
+   * AND THE SAME READ WITH THE TWO SIDES STILL APART.
+   *
+   * The split above has always happened and has always been thrown away. Every
+   * per-instance library slot — `earring@left`, `eye@right` — filed WORDS
+   * because of that union and nothing else: a crop taken from a mask of both
+   * hoops is a picture of two things under the name of one, and it scores 100%
+   * against the very union it was cut from.
+   *
+   * What matters in these is not that a pair comes back. It is that the pair
+   * comes back for THE SAME PRICE (three calls, the plain noun, no adjective),
+   * that the whole-frame answer is derived from it rather than read again, and
+   * that a reader with nothing to say about sides says so instead of guessing.
+   */
+  it("hands back one mask per side, for the same three calls the union costs", async () => {
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const sides = await reader.regionSides!({ image: await frame(), name: "eyes" });
+
+    expect(sides).not.toBeNull();
+    for (const [which, mask] of Object.entries(sides!)) {
+      expect({ width: mask.width, height: mask.height }, `her ${which}, in the whole frame`)
+        .toEqual({ width: WIDTH, height: HEIGHT });
+    }
+    /* Each side holds one blob and it is entirely on one side of her midline —
+       the property the union destroyed. */
+    const left = acrossMidline(sides!.left, WIDTH / 2);
+    const right = acrossMidline(sides!.right, WIDTH / 2);
+    expect(left.left + left.right, "her left holds one instance").toBe(20 * 24);
+    expect(right.left + right.right, "and her right holds the other").toBe(20 * 24);
+
+    /* THE SAME PRICE. The face, then the plain noun once per side. */
+    expect(prompts).toEqual(["face", "eye", "eye"]);
+  });
+
+  /**
+   * HER LEFT IS THE IMAGE'S RIGHT, and it is decided in one place.
+   *
+   * The product's laterality is the subject's own everywhere it appears — the
+   * tilt reader takes the smaller x as her RIGHT eye, the panel row reads "her
+   * left earring", and the R7 server-authority ruling says left and right never
+   * mean the viewer's side of the image. A reader that returned image-order
+   * halves under those names would file the founder's left hoop as his right,
+   * and no later step could tell.
+   */
+  it("labels the sides anatomically — her left is the image's right half", async () => {
+    stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const sides = await reader.regionSides!({ image: await frame(), name: "earring" });
+
+    expect(acrossMidline(sides!.left, WIDTH / 2).left, "nothing of her left sits in the image's left half").toBe(0);
+    expect(acrossMidline(sides!.right, WIDTH / 2).right, "nor her right in the image's right half").toBe(0);
+  });
+
+  /**
+   * The derivation, asserted rather than assumed: `region` is the union of these
+   * two and not a fourth call. If it ever stops being, a bilateral region costs
+   * twice and the two answers can disagree about where the midline was.
+   */
+  it("is the same reading the whole-frame question answers with, unioned", async () => {
+    stubSam3({ sides: "both" });
+    const whole = await createFalRegionReader({ apiKey: "test-key" })
+      .region({ image: await frame(), name: "eyes" });
+    vi.unstubAllGlobals();
+
+    const { prompts } = stubSam3({ sides: "both" });
+    const sides = await createFalRegionReader({ apiKey: "test-key" })
+      .regionSides!({ image: await frame(), name: "eyes" });
+
+    expect(prompts).toHaveLength(3);
+    expect(Buffer.compare(unionMasks(sides!.left, sides!.right).data, whole.data)).toBe(0);
+  });
+
+  it("answers null for a region that has no sides — and spends nothing finding out", async () => {
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    /* A hairstyle is one thing. So is a nose, and so is a frame one pixel wide. */
+    expect(await reader.regionSides!({ image: await frame(), name: "hair" })).toBeNull();
+    expect(await reader.regionSides!({ image: PNG, name: "eyes" })).toBeNull();
+    expect(prompts, "null is a capability answer, not a reading").toEqual([]);
+  });
+
+  it("gives the other side as empty when only one side wears one", async () => {
+    stubSam3({ sides: "one" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const sides = await reader.regionSides!({ image: await frame(), name: "ear" });
+
+    const held = [sides!.left, sides!.right].map((mask) => mask.data.filter((value) => value > 0).length);
+    /* Exactly one side, and which one depends on which crop won the race — the
+       assertion that matters is that the empty one is a full-size empty mask
+       rather than a missing key the caller has to interpret. */
+    expect(held.filter((count) => count > 0)).toHaveLength(1);
+    expect(held).toContain(20 * 24);
+    for (const mask of [sides!.left, sides!.right]) {
+      expect({ width: mask.width, height: mask.height }).toEqual({ width: WIDTH, height: HEIGHT });
+    }
+  });
+
+  it("refuses two empty sides unless the caller said absence is an answer", async () => {
+    stubSam3({ sides: "none" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const image = await frame();
+
+    const empty = await reader.regionSides!({ image, name: "eyes", absentIsAnswer: true });
+    expect(empty!.left.data.every((value) => value === 0)).toBe(true);
+    expect(empty!.right.data.every((value) => value === 0)).toBe(true);
+    /* Two masks, not one buffer under two names — an alias is a defect waiting
+       for the first caller that writes through it. */
+    expect(empty!.left.data).not.toBe(empty!.right.data);
+
+    await expect(reader.regionSides!({ image, name: "eyes" })).rejects.toBeInstanceOf(MaskError);
   });
 });
 

@@ -207,6 +207,18 @@ const scaled = (fraction: number, width: number, height: number) =>
   Math.max(4, Math.round(Math.min(width, height) * fraction));
 
 /**
+ * ONE BILATERAL REGION, AS TWO — each side a WHOLE-FRAME mask, so a caller that
+ * holds one of them is holding it in the same coordinates as everything else it
+ * owns and never has to know where the cut was made.
+ *
+ * The keys are the subject's own: `left` is HER left. Every instance key in the
+ * library means the same thing (`referenceSlots`), the panel says "her left
+ * earring", and the tilt reader has read the smaller x as her right eye since
+ * long before this existed.
+ */
+export type SideRegions = { left: Mask; right: Mask };
+
+/**
  * What a region looks like to this module. One call per named region, so the
  * caller owns which segmenter answers and this owns what is done with it.
  */
@@ -228,6 +240,34 @@ export type RegionReader = {
    * is depends on the question.
    */
   region(input: { image: Buffer; name: string; absentIsAnswer?: boolean }): Promise<Mask>;
+  /**
+   * THE SAME REGION WITH ITS TWO SIDES STILL APART — optional, and the option
+   * is the point.
+   *
+   * A bilateral region is read one side to a picture already; `region` unions
+   * the two before anyone else sees them, and that union is why nothing per-side
+   * can be cut. A crop of both her earrings filed as `earring@left` scores 100%
+   * against the union it was cut from — the wrong-boundary class, wearing a
+   * number.
+   *
+   * It is a SECOND METHOD rather than an option on `region` because an option
+   * that changes the return shape makes every caller carry both types forever
+   * (fable-211). Being optional is what keeps the honest fallback honest: a
+   * reader without this capability produces a REFUSAL with the true reason, and
+   * never a guessed split.
+   *
+   * `null` means *this name has no sides for me* — asked of a nose, or of a
+   * frame too narrow to cut — and costs nothing. It is not "there is none here";
+   * that answer is two empty masks, and only when `absentIsAnswer` says so.
+   *
+   * The keys are ANATOMICAL: `left` is her left, which in a frame she faces the
+   * camera in is the image's right half.
+   */
+  regionSides?(input: {
+    image: Buffer;
+    name: string;
+    absentIsAnswer?: boolean;
+  }): Promise<SideRegions | null>;
   /** A soft whole-subject matte, for edge ramps. */
   subject(input: { image: Buffer }): Promise<Mask>;
   /**
@@ -364,6 +404,21 @@ export type HarvestEvidence = {
    * a claim is never built on a reading that did not happen (design rule 2).
    */
   deliveredRegions?: ReadonlyMap<string, Mask>;
+  /**
+   * THE BILATERAL NAMES WITH THEIR TWO SIDES STILL APART, on each frame.
+   *
+   * The same reads as the two maps above, kept instead of merged: the union in
+   * `masterRegions` is what the composite works on, and the split is what a
+   * per-instance library slot has to be cut from. Both come out of one set of
+   * calls, so this costs no vision call — it is `deliveredRegions`' own bargain
+   * one question over.
+   *
+   * A name appears here only when the reader can answer two-sidedly; anything
+   * else is simply absent, which is what the mint reads as *no side to cut* and
+   * files as words. There is no entry meaning "we guessed".
+   */
+  masterSideRegions?: ReadonlyMap<string, SideRegions>;
+  deliveredSideRegions?: ReadonlyMap<string, SideRegions>;
 };
 
 export type MaskedRefineResult = {
@@ -1012,31 +1067,52 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   /* One paid segmentation per distinct question. Two facets that ask the same
      thing — `hair.cut` and `hair.colour` both segment "hair" — are one call. */
   const asked = new Map<string, Promise<Mask>>();
+  /*
+    AND THE SAME READS WITH THEIR SIDES APART, under the same keys.
+
+    Not a second set of calls: `regionSides` performs the split `region` was
+    performing anyway, and the union below is DERIVED from it. So the memo holds
+    one promise per side-capable name and the whole-frame answer is a view of it
+    — the alternative, asking both ways, would pay for every bilateral region
+    twice to learn something the first call already knew.
+  */
+  const askedSides = new Map<string, Promise<SideRegions | null>>();
+  /*
+    A GUARD ON THE PATH THAT ACTUALLY RUNS.
+
+    `requestMatte` checks this and `requestMatte` has no callers, so until today
+    nothing checked it where masks are really acquired. A reader returning a
+    differently-sized mask misaligns every subsequent index by a row and reports
+    nothing: the composite would still produce bytes, the guarantee would still
+    "hold" against its own wrong mask, and the picture would be quietly wrong.
+    **Never resize a mask to fit** — that is a resample on the one path that
+    promises not to have one, and it moves every edge it touches.
+  */
+  const singleChannel = (mask: Mask, what: string): Mask => {
+    if (mask.data.length !== mask.width * mask.height) {
+      throw new MaskError(`the "${what}" mask is ${mask.data.length} bytes for ${mask.width}x${mask.height} — not single-channel`);
+    }
+    return mask;
+  };
   const regionOf = (which: "master" | "painted", name: string, absentIsAnswer = false) => {
     const key = `${which}:${name}:${absentIsAnswer}`;
-    const pending = asked.get(key)
-      ?? input.reader.region({
-        image: which === "master" ? input.master.bytes : input.painted.bytes,
-        name,
-        absentIsAnswer,
-      }).then((mask) => {
-        /*
-          A GUARD ON THE PATH THAT ACTUALLY RUNS.
+    const already = asked.get(key);
+    if (already) return already;
 
-          `requestMatte` checks this and `requestMatte` has no callers, so until
-          today nothing checked it where masks are really acquired. A reader
-          returning a differently-sized mask misaligns every subsequent index by
-          a row and reports nothing: the composite would still produce bytes, the
-          guarantee would still "hold" against its own wrong mask, and the
-          picture would be quietly wrong. **Never resize a mask to fit** — that
-          is a resample on the one path that promises not to have one, and it
-          moves every edge it touches.
-        */
-        if (mask.data.length !== mask.width * mask.height) {
-          throw new MaskError(`the "${name}" mask is ${mask.data.length} bytes for ${mask.width}x${mask.height} — not single-channel`);
-        }
-        return mask;
-      });
+    const image = which === "master" ? input.master.bytes : input.painted.bytes;
+    const split = input.reader.regionSides
+      ? input.reader.regionSides({ image, name, absentIsAnswer })
+      : Promise.resolve(null);
+    askedSides.set(key, split);
+    const pending = split.then(async (sides) => {
+      if (!sides) return input.reader.region({ image, name, absentIsAnswer });
+      /* Each half is checked in its own right: the union of two bad strides
+         would be caught here, but a side handed on to the library never passes
+         through it. */
+      singleChannel(sides.left, `${name} (her left)`);
+      singleChannel(sides.right, `${name} (her right)`);
+      return unionMasks(sides.left, sides.right);
+    }).then((mask) => singleChannel(mask, name));
     asked.set(key, pending);
     return pending;
   };
@@ -1713,6 +1789,8 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
       applied: composed.applied,
       masterRegions: await settledMasterRegions(asked, placed),
       deliveredRegions: await settledDeliveredRegions(asked),
+      masterSideRegions: await settledSideRegions(askedSides, belongsToMaster(placed)),
+      deliveredSideRegions: await settledSideRegions(askedSides, belongsToDelivered),
     },
     ...(input.explain
       ? {
@@ -1827,15 +1905,64 @@ async function settledRegions(
   return settled;
 }
 
+/**
+ * WHICH READS BELONG TO WHICH MAP — one predicate per map, named once.
+ *
+ * The whole-frame maps and the side maps are the SAME reads filed two ways, so
+ * they must agree about membership. A second copy of "master, plus the painted
+ * read of a placed name" is the copy that drifts: the day somebody widens one,
+ * the sides quietly stop matching the union they were split from.
+ */
+const belongsToMaster = (placed?: ReadonlyMap<string, unknown>) => (
+  ({ which, name }: { which: string; name: string }) => (
+    which === "master" || (which === "painted" && Boolean(placed?.has(name)))
+  )
+);
+const belongsToDelivered = ({ which }: { which: string; name: string }) => which === "painted";
+
 async function settledMasterRegions(
   asked: ReadonlyMap<string, Promise<Mask>>,
   placed?: ReadonlyMap<string, Mask>,
 ): Promise<ReadonlyMap<string, Mask>> {
-  return settledRegions(
-    asked,
-    ({ which, name }) => which === "master" || (which === "painted" && Boolean(placed?.has(name))),
-    placed,
+  return settledRegions(asked, belongsToMaster(placed), placed);
+}
+
+/**
+ * The same settling, for the reads that came back as two sides.
+ *
+ * `placed` seeds nothing here on purpose: an addition's corridor is a
+ * DESTINATION, drawn from landmarks rather than read off a picture, and it has
+ * no left and right of its own. What a placed accessory does get is its own
+ * PAINTED read, split per side by the same predicate the whole-frame map uses —
+ * which is how a pair of hoops that did not exist on the master still arrives
+ * here as two things.
+ *
+ * A name whose read did not settle, or whose reader cannot answer two-sidedly,
+ * is simply absent. There is no entry meaning "we guessed which side".
+ */
+async function settledSideRegions(
+  askedSides: ReadonlyMap<string, Promise<SideRegions | null>>,
+  keep: (question: { which: string; name: string }) => boolean,
+): Promise<ReadonlyMap<string, SideRegions>> {
+  const settled = new Map<string, SideRegions>();
+  await Promise.all(
+    Array.from(askedSides.entries()).map(async ([key, pending]) => {
+      const question = askedQuestion(key);
+      if (!keep(question)) return;
+      try {
+        const sides = await pending;
+        if (!sides) return;
+        const already = settled.get(question.name);
+        settled.set(question.name, already
+          ? {
+            left: unionMasks(already.left, sides.left),
+            right: unionMasks(already.right, sides.right),
+          }
+          : sides);
+      } catch { /* a no-region, and the caller reads that as "look again". */ }
+    }),
   );
+  return settled;
 }
 
 /**
@@ -1855,7 +1982,7 @@ async function settledMasterRegions(
 async function settledDeliveredRegions(
   asked: ReadonlyMap<string, Promise<Mask>>,
 ): Promise<ReadonlyMap<string, Mask>> {
-  return settledRegions(asked, ({ which }) => which === "painted");
+  return settledRegions(asked, belongsToDelivered);
 }
 
 /**
