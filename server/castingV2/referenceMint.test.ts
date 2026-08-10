@@ -149,6 +149,13 @@ describe("what the mint keeps", () => {
     expect(bench.rows[0]!.image).toBeUndefined();
     expect(bench.rows[0]!.words).toEqual(["a blunt shoulder-length bob"]);
     expect(bench.batchId).toBeUndefined();
+
+    /* And the row SAYS SO (migration 0029): the refusal, the family it was
+       judged against, and the number it read — the difference between "this
+       slot has words" and "this slot has words because its crop covered 12.5%
+       of the hair it claimed to be". Its pixels are NOT kept: this refusal
+       measured against a real bar and was right to turn the crop away. */
+    expect(bench.rows[0]!.refusal).toEqual({ reason: "underCaptured", kind: "hair", coverage: 1250 });
   });
 
   it("treats a read that did not settle as a refusal, never as a pass", async () => {
@@ -159,15 +166,49 @@ describe("what the mint keeps", () => {
 
     expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
     expect(bench.stored).toEqual([]);
+    /* No coverage AT ALL, because no reading happened. A zero here would be a
+       number nobody measured wearing the clothes of one that was. */
+    expect(bench.rows[0]!.refusal).toEqual({ reason: "readDidNotSettle", kind: "hair" });
   });
 
-  it("refuses a kind with no positive specimen rather than borrowing hair's number", async () => {
+  /*
+    THE ONE REFUSAL WHOSE PIXELS ARE KEPT (migration 0029, fable-214/215).
+
+    `noSpecimen` refuses because nobody has ever measured what a complete crop of
+    this kind looks like — so the refusal exists in order to produce the
+    specimen, and the pixels are the only instrument that can. Before this, the
+    crop was thrown away and the only way to see it again was to buy the render
+    again.
+  */
+  it("keeps the crop of a kind nobody has measured, in columns the painter cannot see", async () => {
     const bench = harness();
     const result = await mint([hairSlot({ slot: "lips", noun: "lips", guardKind: "lips" })], bench);
 
-    expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
+    expect(result.slots[0]).toMatchObject({
+      outcome: "words-only",
+      reason: "guardRefused",
+      keptForAdoption: true,
+    });
     expect(result.slots[0]).toHaveProperty("detail", expect.stringContaining("no completeness specimen"));
-    expect(bench.stored).toEqual([]);
+
+    /* Two objects, and both reserved for cleanup BEFORE either was written —
+       the same order a delivered crop goes in, because a refused crop is the
+       same artifact and the crash between the two is the same crash. */
+    expect(bench.stored).toHaveLength(2);
+    expect(bench.manifests[0]).toEqual(bench.stored);
+    expect(bench.batchId).toBeDefined();
+
+    const row = bench.rows[0]!;
+    /* NOT `image`. That is the whole design: `storageKey` is what rides into
+       the next render's prompt, and this picture is by definition uncertified. */
+    expect(row.image).toBeUndefined();
+    expect(row.refusal).toEqual({
+      reason: "noSpecimen",
+      kind: "lips",
+      coverage: 10_000,
+      crop: { contentKey: bench.stored[0], maskKey: bench.stored[1] },
+    });
+    expect(row.words).toEqual(["a blunt shoulder-length bob"]);
   });
 
   it("refuses a crop byte-identical to one the library already holds", async () => {
@@ -185,7 +226,29 @@ describe("what the mint keeps", () => {
 
     expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
     expect(result.slots[0]).toHaveProperty("detail", expect.stringContaining("byte-identical to skin"));
+    /* Nothing stored, and deliberately: these bytes already exist at the other
+       slot's key, so keeping a second copy for adoption would be the same
+       picture filed twice — D-242's shape inside the refusal group itself. */
     expect(bench.stored).toEqual([]);
+    expect(bench.rows[0]!.refusal).toMatchObject({ reason: "duplicateOfSlot", kind: "hair" });
+    expect(bench.rows[0]!.refusal?.crop).toBeUndefined();
+  });
+
+  /*
+    A CROP OF WHERE THE THING WOULD HAVE BEEN. The frame does not wear the
+    subject, so any crop of it is a fabrication with a well-formed bounding box
+    (fable-181) — and it is exactly the picture that must NOT be put in front of
+    the person deciding what complete looks like.
+  */
+  it("records a subject-absent refusal and keeps none of its pixels", async () => {
+    const bench = harness({ guardRead: { data: Buffer.alloc(40 * 40, 0), width: 40, height: 40 } });
+    const result = await mint([hairSlot()], bench);
+
+    expect(result.slots[0]).toMatchObject({ outcome: "words-only", reason: "guardRefused" });
+    expect(result.slots[0]).not.toHaveProperty("keptForAdoption");
+    expect(bench.stored).toEqual([]);
+    expect(bench.rows[0]!.refusal).toMatchObject({ reason: "subjectAbsent", kind: "hair" });
+    expect(bench.rows[0]!.refusal?.crop).toBeUndefined();
   });
 });
 

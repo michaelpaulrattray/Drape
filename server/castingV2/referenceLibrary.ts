@@ -54,6 +54,32 @@ export type ReferenceGuardReading = {
   threshold: number;
 };
 
+/**
+ * THE CROP THE GUARD TURNED AWAY, and why (migration 0029).
+ *
+ * On a row that has one, this is the whole of what the refusal left behind: the
+ * reason, the specimen family it was judged against, the number it read if a
+ * reading happened, and — for `noSpecimen` alone — the pixels themselves.
+ *
+ * It is deliberately a group of its own rather than fields beside
+ * {@link StoredReference.storageKey}: those keys are what make a crop ride into
+ * the next render's prompt, and this picture is by definition uncertified.
+ * `deriveLibrary` below builds its entries from `storageKey` only, so a refused
+ * crop cannot reach the assembler even by mistake — structural, not remembered.
+ */
+export type ReferenceRefusal = {
+  reason: string;
+  /** The specimen family the reading belongs to — `hair`, `earring`. NOT the
+   *  slot: a coverage adopted under the wrong family is the wrong-boundary
+   *  class, and `earring@left` is not a family. */
+  kind: string;
+  /** Basis points of the region. NULL when the refusal recorded no reading. */
+  coverage: number | null;
+  /** The refused crop and its mask. Present for `noSpecimen` alone. */
+  contentKey: string | null;
+  maskKey: string | null;
+};
+
 /** One library row, as stored. The shape the fold reasons about. */
 export type StoredReference = {
   id: number;
@@ -71,6 +97,10 @@ export type StoredReference = {
   digest: string | null;
   geometry: ReferenceGeometry | null;
   guard: ReferenceGuardReading | null;
+  /** What was turned away at the door, on a row that carries no crop because of
+   *  it. NULL on every delivered row and on every words-only row that was never
+   *  guarded at all (a surface, or a slot with no question). */
+  refusal: ReferenceRefusal | null;
   version: number;
   retiredAt: Date | null;
   createdAt: Date;

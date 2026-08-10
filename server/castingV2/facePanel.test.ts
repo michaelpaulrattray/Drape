@@ -31,6 +31,7 @@ function row(overrides: Partial<StoredReference> & { slot: string }): StoredRefe
     digest: null,
     geometry: null,
     guard: null,
+    refusal: null,
     version: 1,
     retiredAt: null,
     createdAt: new Date(2026, 7, 10, 12, 0, id),

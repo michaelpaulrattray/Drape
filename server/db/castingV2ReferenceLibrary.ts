@@ -72,11 +72,20 @@ import {
   liveReferences,
   type ReferenceGeometry,
   type ReferenceGuardReading,
+  type ReferenceRefusal,
   type StoredReference,
 } from "../castingV2/referenceLibrary";
+/* The guard's own list of reasons, imported rather than restated: a column that
+   stores one of five strings and a type that names five strings drift the day a
+   sixth is added, and the drift is invisible until a row cannot be read back. */
+import {
+  GUARD_REFUSAL_REASONS,
+  REFUSAL_THAT_KEEPS_ITS_CROP,
+  type GuardRefusalReason,
+} from "../castingV2/referenceCompleteness";
 import { withTransaction, getDb, type TransactionHandle } from "./connection";
 
-export type { ReferenceGeometry, ReferenceGuardReading, StoredReference };
+export type { ReferenceGeometry, ReferenceGuardReading, ReferenceRefusal, StoredReference };
 
 function assertPositiveId(value: number, name: string): void {
   if (!Number.isSafeInteger(value) || value <= 0) {
@@ -114,7 +123,13 @@ export class ReferenceLibraryShapeError extends Error {
       | "cropWithoutGeometry"
       | "cropWithoutMask"
       | "anchorIsNotACut"
-      | "manifestMissing",
+      | "manifestMissing"
+      | "refusalNotAReason"
+      | "refusedAndDelivered"
+      | "refusedCropWithoutMask"
+      | "refusedCropIsNotAdoptable"
+      | "anchorIsNotGuarded"
+      | "surfaceWasNeverCut",
     detail: string,
   ) {
     super(detail);
@@ -136,6 +151,26 @@ export type ReferenceImageToRecord = {
   guard?: ReferenceGuardReading;
 };
 
+/**
+ * What the guard turned away, on a row that files words because of it.
+ *
+ * The crop is carried for `noSpecimen` and nothing else (§the migration's
+ * header): that refusal exists in order to produce the specimen, and a human
+ * looking at the pixels is the only instrument that can. The other four refuse
+ * a picture that must not be adopted, and storing those would build a gallery
+ * of exactly the crops the guard exists to keep out.
+ */
+export type ReferenceRefusalToRecord = {
+  reason: GuardRefusalReason;
+  /** The specimen family judged, never the slot. */
+  kind: string;
+  /** Basis points. Absent when the refusal recorded no reading (`readDidNotSettle`). */
+  coverage?: number;
+  /** The pixels, for `noSpecimen` alone. Both keys or neither — a crop without
+   *  its mask cannot be cut out or measured, and a mask alone shapes nothing. */
+  crop?: { contentKey: string; maskKey: string };
+};
+
 export type ReferenceRowToRecord = {
   role: CastingReferenceRole;
   /** A PANEL SLOT: `lips`, `eye@left`, `earring@right`. Never `facet@region`. */
@@ -146,6 +181,10 @@ export type ReferenceRowToRecord = {
   words: readonly string[];
   /** Absent for a words-only row — a surface, or anatomy nothing has delivered. */
   image?: ReferenceImageToRecord;
+  /** Present when this slot files words BECAUSE a crop was turned away. Never
+   *  beside {@link ReferenceRowToRecord.image}: a row is a delivered crop or a
+   *  refused one, and a crop that passed the guard is not refused. */
+  refusal?: ReferenceRefusalToRecord;
 };
 
 export type RecordReferenceRowsInput = {
@@ -197,6 +236,81 @@ function assertGeometry(geometry: ReferenceGeometry): void {
 }
 
 /**
+ * THE REFUSED CROP'S OWN RULES (migration 0029).
+ *
+ * They exist because the whole value of the column group is that a picture
+ * nobody has certified can be opened by a human and can never be handed to the
+ * painter. Every rule below is one way that could stop being true:
+ *
+ *   a reason that is not the guard's   a string nobody can interpret is not
+ *                                      evidence, and a sixth reason arriving
+ *                                      without this door being opened is the
+ *                                      silent version of the same thing
+ *   refused AND delivered              a crop that passed the guard is not
+ *                                      refused; a row claiming both is two
+ *                                      answers to "what happened at the door"
+ *   a crop kept for another reason     only `noSpecimen` produces a specimen.
+ *                                      Keeping a `subjectAbsent` crop would
+ *                                      store a picture of where the thing would
+ *                                      have been, and put it in front of the
+ *                                      one person able to adopt it
+ *   half a crop                        a crop without its mask cannot be cut
+ *                                      out or re-measured; a mask alone shapes
+ *                                      nothing
+ *   an anchor with a refusal           an anchor is an upload; it never passes
+ *                                      the guard, so it never fails it
+ *   a surface with a refusal           a surface is never cut at all, so no
+ *                                      crop of one was ever turned away
+ */
+function assertRefusalShape(row: ReferenceRowToRecord): void {
+  const refusal = row.refusal;
+  if (!refusal) return;
+  if (!(GUARD_REFUSAL_REASONS as readonly string[]).includes(refusal.reason)) {
+    throw new ReferenceLibraryShapeError(
+      "refusalNotAReason",
+      `"${refusal.reason}" is not one of the guard's refusals (${GUARD_REFUSAL_REASONS.join(", ")})`,
+    );
+  }
+  if (row.role !== "carry") {
+    throw new ReferenceLibraryShapeError(
+      "anchorIsNotGuarded",
+      `${row.slot}'s anchor carries a refusal, but an anchor is an upload and never passes through the guard`,
+    );
+  }
+  if (row.tier === "surface") {
+    throw new ReferenceLibraryShapeError(
+      "surfaceWasNeverCut",
+      `${row.slot} is a surface, which is never cut, so no crop of it can have been turned away`,
+    );
+  }
+  if (refusal.kind.trim() === "") {
+    throw new ReferenceLibraryShapeError(
+      "refusalNotAReason",
+      `${row.slot}'s refusal names no specimen family, and a coverage belongs to a kind rather than to a slot`,
+    );
+  }
+  if (row.image) {
+    throw new ReferenceLibraryShapeError(
+      "refusedAndDelivered",
+      `${row.slot} carries both a stored crop and a refusal; a crop that passed the guard was not turned away`,
+    );
+  }
+  if (!refusal.crop) return;
+  if (refusal.reason !== REFUSAL_THAT_KEEPS_ITS_CROP) {
+    throw new ReferenceLibraryShapeError(
+      "refusedCropIsNotAdoptable",
+      `${row.slot} was refused as ${refusal.reason} and its pixels are not kept; only ${REFUSAL_THAT_KEEPS_ITS_CROP} exists in order to produce a specimen`,
+    );
+  }
+  if (refusal.crop.contentKey.trim() === "" || refusal.crop.maskKey.trim() === "") {
+    throw new ReferenceLibraryShapeError(
+      "refusedCropWithoutMask",
+      `${row.slot}'s refused crop needs both its content and its mask; one without the other cannot be looked at as a cutout or measured again`,
+    );
+  }
+}
+
+/**
  * The shape rules, in one place, applied to one row.
  *
  * Exported so they can be driven directly rather than through a database —
@@ -222,6 +336,7 @@ export function assertReferenceRowShape(row: ReferenceRowToRecord): void {
       `${row.slot} is a surface and is carried by words alone; a minted crop must not be stored for it`,
     );
   }
+  assertRefusalShape(row);
   if (!row.image) return;
   if (row.image.digest.trim() === "" || row.image.storageKey.trim() === "") {
     throw new ReferenceLibraryShapeError(
@@ -299,6 +414,7 @@ async function insertVersionedReferenceIn(
 
   const publicId = randomUUID();
   const image = input.row.image;
+  const refusal = input.row.refusal;
   const [inserted] = await tx
     .insert(castingReferenceLibrary)
     .values({
@@ -324,6 +440,14 @@ async function insertVersionedReferenceIn(
       guardCoverage: image?.guard?.coverage ?? null,
       guardSpill: image?.guard?.spill ?? null,
       guardThreshold: image?.guard?.threshold ?? null,
+      /* The refusal's own group, named on every insert like every other
+         optional column. It is NULL on a delivered row, and NULL is what
+         "nothing was turned away here" means. */
+      refusedContentKey: refusal?.crop?.contentKey ?? null,
+      refusedMaskKey: refusal?.crop?.maskKey ?? null,
+      refusedReason: refusal?.reason ?? null,
+      refusedKind: refusal?.kind ?? null,
+      refusedCoverage: refusal?.coverage ?? null,
       version,
       createdAt: input.now,
     })
@@ -356,7 +480,12 @@ export async function recordReferenceRows(
   if (input.rows.length === 0) return [];
   for (const row of input.rows) assertReferenceRowShape(row);
 
-  const carriesObjects = input.rows.some((row) => row.image !== undefined);
+  /* A REFUSED CROP IS OBJECTS TOO. Its bytes go to the same permanently public
+     bucket by the same route, so it needs the same manifest — the reservation
+     before the write is what makes a crashed mint collect its own litter, and a
+     refused crop nothing knows about is the one nobody would ever go looking
+     for. */
+  const carriesObjects = input.rows.some((row) => row.image !== undefined || row.refusal?.crop !== undefined);
   if (carriesObjects && !input.cleanupBatchId) {
     throw new ReferenceLibraryShapeError(
       "manifestMissing",
@@ -476,6 +605,19 @@ function toStoredReference(
         threshold: row.guardThreshold!,
       }
       : null,
+    /* The REASON is what makes a row a refusal — the crop is optional (only
+       `noSpecimen` keeps one) and the coverage is optional (`readDidNotSettle`
+       records no number at all), so keying on either of those would read half
+       the refusals back as ordinary words-only rows. */
+    refusal: row.refusedReason === null
+      ? null
+      : {
+        reason: row.refusedReason,
+        kind: row.refusedKind ?? "",
+        coverage: row.refusedCoverage,
+        contentKey: row.refusedContentKey,
+        maskKey: row.refusedMaskKey,
+      },
     version: row.version,
     retiredAt: row.retiredAt === null ? null : new Date(row.retiredAt),
     createdAt: new Date(row.createdAt),
@@ -663,7 +805,13 @@ export async function retireReferenceSlot(input: {
 export async function listPurgeableReferencesIn(
   tx: TransactionHandle,
   candidateIds: readonly number[],
-): Promise<Array<{ id: number; storageKey: string | null; maskKey: string | null }>> {
+): Promise<Array<{
+  id: number;
+  storageKey: string | null;
+  maskKey: string | null;
+  refusedContentKey: string | null;
+  refusedMaskKey: string | null;
+}>> {
   if (candidateIds.length === 0) return [];
   /*
     EVERY row, including the words-only ones that hold no object at all.
@@ -671,12 +819,19 @@ export async function listPurgeableReferencesIn(
     things — "no rows" and "no objects" — and the caller decides whether to
     delete on the length of this list. A surface slot's row would then survive
     its own candidate.
+
+    FOUR KEYS PER ROW, not two (migration 0029). A refused crop is the same
+    artifact as a delivered one — a piece of a person's face at a permanently
+    public URL — and it is arrived at by a route the sweep had never heard of.
+    A purge that does not name a key is a promise the worker cannot keep.
   */
   return tx
     .select({
       id: castingReferenceLibrary.id,
       storageKey: castingReferenceLibrary.storageKey,
       maskKey: castingReferenceLibrary.maskKey,
+      refusedContentKey: castingReferenceLibrary.refusedContentKey,
+      refusedMaskKey: castingReferenceLibrary.refusedMaskKey,
     })
     .from(castingReferenceLibrary)
     .where(inArray(castingReferenceLibrary.candidateId, [...candidateIds]));

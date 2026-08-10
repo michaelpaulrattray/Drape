@@ -52,7 +52,15 @@ describeWithDatabase("the reference library (disposable DB)", () => {
     rows: Parameters<typeof library.recordReferenceRows>[0]["rows"];
   }) {
     const keys = input.rows
-      .flatMap((row) => [row.image?.storageKey, row.image?.maskKey])
+      .flatMap((row) => [
+        row.image?.storageKey,
+        row.image?.maskKey,
+        /* A refused crop's pair is objects too (migration 0029), and it goes on
+           the same manifest by the same rule — the production write refuses
+           without one. */
+        row.refusal?.crop?.contentKey,
+        row.refusal?.crop?.maskKey,
+      ])
       .filter((key): key is string => Boolean(key));
     let cleanupBatchId: string | undefined;
     if (keys.length > 0) {
@@ -409,5 +417,75 @@ describeWithDatabase("the reference library (disposable DB)", () => {
       [cropKey],
     );
     expect(items[0]!.n).toBe(1);
+  });
+
+  /*
+    THE REFUSED CROP, END TO END (migration 0029).
+
+    Two claims that only a real database can settle: the refusal group comes
+    back off the row exactly as it went in — so the adoption sitting can open
+    the picture FROM the row rather than from a log line — and the sweep carries
+    its two keys onto the manifest. The second is the one that would rot
+    quietly: the sweep's SELECT used to name two columns, and a purge that does
+    not name a key leaves a piece of a person's face at a public URL forever
+    while every count in the report reads correct.
+  */
+  it("keeps a noSpecimen refusal's picture on the row, and purges it with the face", async () => {
+    const face = await newFace(owner);
+    const refusedContentKey = `casting-v2/library/${randomUUID()}-refused.png`;
+    const refusedMaskKey = `casting-v2/library/${randomUUID()}-refused-mask.png`;
+    await fileRows({
+      userId: owner,
+      variantId: face.variantId,
+      rows: [{
+        role: "carry",
+        slot: "earring@left",
+        tier: "item",
+        noun: "left earring",
+        words: ["a thin gold hoop"],
+        refusal: {
+          reason: "noSpecimen",
+          kind: "earring",
+          coverage: 9560,
+          crop: { contentKey: refusedContentKey, maskKey: refusedMaskKey },
+        },
+      }],
+    });
+
+    const [stored] = await library.listLineageReferences({
+      userId: owner,
+      candidateId: face.candidateId,
+      anchorVariantId: face.variantId,
+    });
+    /* Not `storageKey`: the assembler builds its prompt from that column and
+       must never be able to see this picture. */
+    expect(stored!.storageKey).toBeNull();
+    expect(stored!.maskKey).toBeNull();
+    expect(stored!.refusal).toEqual({
+      reason: "noSpecimen",
+      kind: "earring",
+      coverage: 9560,
+      contentKey: refusedContentKey,
+      maskKey: refusedMaskKey,
+    });
+
+    await connection.execute(
+      "UPDATE casting_candidates SET status = 'expired', expiresAt = DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE id = ?",
+      [face.candidateId],
+    );
+    await retention.runCandidateRetentionSweep(new Date());
+
+    const [rows] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM casting_reference_library WHERE candidateId = ?",
+      [face.candidateId],
+    );
+    expect(rows[0]!.n).toBe(0);
+
+    const [items] = await connection.query<RowDataPacket[]>(
+      "SELECT storageKey FROM storage_cleanup_items WHERE storageKey IN (?, ?)",
+      [refusedContentKey, refusedMaskKey],
+    );
+    expect(items.map((item) => item.storageKey).sort())
+      .toEqual([refusedContentKey, refusedMaskKey].sort());
   });
 });

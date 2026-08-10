@@ -149,9 +149,39 @@ export type GuardPass = {
   threshold: number;
 };
 
+/**
+ * Every way the door says no, in one list.
+ *
+ * Named rather than inlined because the library row now RECORDS the reason
+ * (migration 0029), and a stored string whose legal values live only inside a
+ * type annotation is a column nobody can validate at the write.
+ */
+export const GUARD_REFUSAL_REASONS = [
+  "subjectAbsent",
+  "readDidNotSettle",
+  "noSpecimen",
+  "underCaptured",
+  "duplicateOfSlot",
+] as const;
+
+export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
+
+/**
+ * The one refusal whose PIXELS are kept (fable-214 option (ii)).
+ *
+ * It is the refusal that exists in order to produce the specimen: the kind has
+ * no measured positive, so the guard cannot say what complete looks like, so it
+ * turns the crop away — and the crop is the only thing a human can look at to
+ * decide. The other four are refusals of a picture that should not be adopted:
+ * `subjectAbsent` is a crop of where the thing would have been, `duplicateOfSlot`
+ * already has its bytes at another slot, `underCaptured` was measured against a
+ * real bar and refused correctly, and `readDidNotSettle` scored nothing at all.
+ */
+export const REFUSAL_THAT_KEEPS_ITS_CROP: GuardRefusalReason = "noSpecimen";
+
 export type GuardRefusal = {
   ok: false;
-  reason: "subjectAbsent" | "readDidNotSettle" | "noSpecimen" | "underCaptured" | "duplicateOfSlot";
+  reason: GuardRefusalReason;
   kind: string;
   detail: string;
   /** Present when a reading happened — a refusal nobody can diagnose is a

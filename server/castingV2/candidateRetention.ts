@@ -239,8 +239,19 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         /* The crop AND its mask — two objects per minted row, like a segment's.
            Either may be absent (an uploaded anchor has no mask; a words-only row
            has neither), and an absent one is skipped rather than queued as a
-           key nothing will find. */
-        for (const key of [reference.storageKey, reference.maskKey]) {
+           key nothing will find.
+
+           AND THE REFUSED CROP'S PAIR (migration 0029), on exactly the same
+           terms. Those bytes are the same thing — a crop of a person's face at
+           a permanently public URL — and the only difference is that a guard
+           turned them away, which is a reason to keep them from the painter
+           rather than a reason to let them outlive the face. */
+        for (const key of [
+          reference.storageKey,
+          reference.maskKey,
+          reference.refusedContentKey,
+          reference.refusedMaskKey,
+        ]) {
           if (key) storageItems.push({ storageKey: key, storageBackend: "public_r2" as const });
         }
       }

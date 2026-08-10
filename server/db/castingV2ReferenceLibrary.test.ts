@@ -174,3 +174,102 @@ describe("what a stored crop must be able to say about itself", () => {
     }))).toThrow(/outside its own frame/);
   });
 });
+
+/*
+  THE REFUSED CROP'S OWN DOOR (migration 0029).
+
+  These columns exist so a picture nobody has certified can be opened by a human
+  and can never be handed to the painter. Each rule below is one way that stops
+  being true — and the closest legal row to each one has to pass, or the rule is
+  just an outage nobody has hit yet.
+*/
+describe("what a refused crop may say about itself", () => {
+  const refused = (overrides: Partial<ReferenceRowToRecord> = {}): ReferenceRowToRecord => crop({
+    image: undefined,
+    refusal: { reason: "noSpecimen", kind: "earring", coverage: 9560 },
+    slot: "earring@left",
+    noun: "left earring",
+    ...overrides,
+  });
+
+  it("takes a refusal that keeps its pixels, both keys present", () => {
+    expect(reasonOf(refused({
+      refusal: {
+        reason: "noSpecimen",
+        kind: "earring",
+        coverage: 9560,
+        crop: { contentKey: "casting-v2/library/x-refused.png", maskKey: "casting-v2/library/x-refused-mask.png" },
+      },
+    }))).toBe("accepted");
+  });
+
+  it("takes a refusal that recorded no reading at all", () => {
+    /* `readDidNotSettle` is the one refusal with no number. A zero here would be
+       a measurement nobody made. */
+    expect(reasonOf(refused({ refusal: { reason: "readDidNotSettle", kind: "earring" } }))).toBe("accepted");
+  });
+
+  it("refuses a reason the guard cannot produce", () => {
+    expect(reasonOf(refused({
+      refusal: { reason: "tooSmall" as never, kind: "earring" },
+    }))).toBe("refusalNotAReason");
+  });
+
+  it("refuses a refusal that names no specimen family", () => {
+    /* The number would be adopted as a KIND's positive specimen, and a slot is
+       not a kind: `earring@left` is one hoop, `earring` is what complete looks
+       like for hoops. */
+    expect(reasonOf(refused({ refusal: { reason: "noSpecimen", kind: "  " } }))).toBe("refusalNotAReason");
+  });
+
+  it("refuses a row that is both delivered and refused", () => {
+    expect(reasonOf(crop({
+      refusal: { reason: "underCaptured", kind: "hair", coverage: 1250 },
+    }))).toBe("refusedAndDelivered");
+  });
+
+  /* Only `noSpecimen` exists in order to produce a specimen. Keeping a
+     `subjectAbsent` crop would store a picture of where the thing would have
+     been and put it in front of the one person able to adopt it. */
+  it("refuses keeping the pixels of any other refusal", () => {
+    expect(reasonOf(refused({
+      refusal: {
+        reason: "underCaptured",
+        kind: "hair",
+        coverage: 1250,
+        crop: { contentKey: "a.png", maskKey: "a-mask.png" },
+      },
+    }))).toBe("refusedCropIsNotAdoptable");
+  });
+
+  it("refuses half a kept crop", () => {
+    expect(reasonOf(refused({
+      refusal: {
+        reason: "noSpecimen",
+        kind: "earring",
+        coverage: 9560,
+        crop: { contentKey: "a.png", maskKey: "   " },
+      },
+    }))).toBe("refusedCropWithoutMask");
+  });
+
+  it("refuses a refusal on an anchor — an upload never passes the guard", () => {
+    expect(reasonOf(refused({
+      role: "anchor",
+      image: {
+        storageKey: "casting-v2/library/anchor.png",
+        digest: "b".repeat(64),
+      },
+      refusal: { reason: "noSpecimen", kind: "earring" },
+    }))).toBe("anchorIsNotGuarded");
+  });
+
+  it("refuses a refusal on a surface — a surface is never cut at all", () => {
+    expect(reasonOf(refused({
+      slot: "skin",
+      tier: "surface",
+      noun: "skin",
+      refusal: { reason: "noSpecimen", kind: "face skin" },
+    }))).toBe("surfaceWasNeverCut");
+  });
+});

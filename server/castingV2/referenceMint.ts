@@ -64,7 +64,11 @@ import { captureCastingReferenceLibraryEnabled } from "./castingV2Scope";
 import { cutSegments, encodeCut, type SegmentCut } from "./segmentCuts";
 import { readRaster, type Mask } from "./maskedComposite";
 import type { SideRegions } from "./maskedRefine";
-import { mintGuardedReference, type RegionReader } from "./referenceCompleteness";
+import {
+  mintGuardedReference,
+  REFUSAL_THAT_KEEPS_ITS_CROP,
+  type RegionReader,
+} from "./referenceCompleteness";
 import { parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 
@@ -132,6 +136,9 @@ export type MintedSlot =
      *  a crop was cut and turned away. */
     reason: "surface" | "noQuestion" | "noSide" | "noRegion" | "guardRefused";
     detail?: string;
+    /** The refused crop's pixels were kept for a human to look at — true only
+     *  for `noSpecimen`, the refusal that exists to produce the specimen. */
+    keptForAdoption?: true;
   };
 
 export type MintResult = {
@@ -422,12 +429,53 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           },
           `[library] a crop was turned away at the door — ${verdict.detail}`,
         );
-        rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
+        /*
+          THE REFUSAL GOES ON THE ROW, and for one reason the PIXELS do too.
+
+          Every refusal records what happened at the door: which of the five it
+          was, the specimen family it was judged against, and the number it read
+          if a reading happened. That is the difference between "this slot has
+          words" and "this slot has words BECAUSE its crop was turned away for
+          this reason at this coverage" — and it is the difference between
+          buying a render to find out and reading the row.
+
+          `noSpecimen` keeps its crop as well, because that refusal exists in
+          order to produce the specimen: the kind has no measured positive, so
+          no number here is earned, so a human has to look at the pixels and say
+          what complete means for it. The keys are the refusal's own, never
+          `storageKey` — the assembler builds its prompt from `storageKey` and
+          cannot see these, which is what makes an uncertified picture safe to
+          keep at all.
+        */
+        const refusal: ReferenceRowToRecord["refusal"] = {
+          reason: verdict.reason,
+          kind: verdict.kind,
+          ...(verdict.reading ? { coverage: bp(verdict.reading.coverage) } : {}),
+        };
+        if (verdict.reason === REFUSAL_THAT_KEEPS_ITS_CROP) {
+          const refusedContentKey = `${LIBRARY_KEY_PREFIX}/${randomUUID()}-refused.png`;
+          const refusedMaskKey = `${LIBRARY_KEY_PREFIX}/${randomUUID()}-refused-mask.png`;
+          /* Onto the same plan as a stored crop, so it goes onto the same
+             manifest before any byte is written and is discharged by the same
+             insert. A refused crop written outside that order is a piece of a
+             face at a URL no row knows about. */
+          planned.push({ cut, contentKey: refusedContentKey, maskKey: refusedMaskKey });
+          refusal.crop = { contentKey: refusedContentKey, maskKey: refusedMaskKey };
+        }
+        rows.push({
+          role: "carry",
+          slot: slot.slot,
+          tier: slot.tier,
+          noun: slot.noun,
+          words: slot.words,
+          refusal,
+        });
         outcomes.push({
           slot: slot.slot,
           outcome: "words-only",
           reason: "guardRefused",
           detail: verdict.detail,
+          ...(refusal.crop ? { keptForAdoption: true as const } : {}),
         });
         continue;
       }
@@ -497,6 +545,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         operationId: input.operationId,
         minted: recorded.map((row) => `${row.slot}@v${row.version}`),
         refused: outcomes.filter((slot) => slot.outcome === "words-only" && slot.reason === "guardRefused")
+          .map((slot) => slot.slot),
+        /* The ones whose pixels are now sitting somewhere a human can open
+           them. This is the line an adoption sitting starts from. */
+        keptForAdoption: outcomes
+          .filter((slot) => slot.outcome === "words-only" && slot.keptForAdoption)
           .map((slot) => slot.slot),
       },
       "[library] minted this render's references",

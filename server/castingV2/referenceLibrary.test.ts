@@ -35,6 +35,7 @@ function row(overrides: Partial<StoredReference> & { slot: string }): StoredRefe
       frame: { width: 100, height: 100 },
     },
     guard: { kind: "hair", coverage: 9460, spill: 0, threshold: 9460 },
+    refusal: null,
     version: 1,
     retiredAt: null,
     createdAt: new Date(2026, 7, 10, 12, 0, id),
