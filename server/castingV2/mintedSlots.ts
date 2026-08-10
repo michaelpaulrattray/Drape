@@ -19,6 +19,15 @@
  * live row along this branch's ancestry already holds them, and writing an
  * identical row every render would turn a version history into a heartbeat.
  *
+ * # And one list beside it: what this render wrote and its own reader DISPUTED
+ *
+ * Those slots come out marked (`disputed`), and the mint treats a marked slot
+ * completely differently — never stored, never filed as words, kept only as
+ * pixels a human can look at to decide whether the painter or the reader was
+ * wrong (fable-220 §3, `referenceMint`). This module's only job in that is to
+ * name the slots and to settle the collision: **a slot reached by both lists is
+ * earned.**
+ *
  * # The words are the CAPTIONS, and a slot's stack is its facets' captions
  *
  * `capturedCaptions` is the read-back of the render that actually landed, keyed
@@ -46,6 +55,22 @@ import type { Facet } from "./refineFacets";
 export type MintedSlotsInput = {
   /** The facets this render wrote, verified and did not carry. */
   earned: readonly Facet[];
+  /**
+   * The facets this render WROTE and its own reader then DISPUTED (fable-220 §3).
+   *
+   * `read && !verified && written && !carried` — the reader looked at the
+   * delivered frame and said the change is not there. The render was delivered
+   * and charged (D-187/D-246, untouched); what these slots come here for is
+   * their PIXELS, because whether the painter failed or the reader did is a
+   * question no instrument in this system can answer and a crop settles at a
+   * glance.
+   *
+   * They are marked, never merged: the mint stores none of them and files words
+   * for none of them. A slot that is both earned and disputed — `hair.cut`
+   * verified, `hair.colour` disputed, one `hair` slot — is EARNED, because the
+   * render did deliver something into it and the crop is certifiable.
+   */
+  disputed?: readonly Facet[];
   /**
    * The landed render's read-back, by facet — carried facets included.
    *
@@ -113,31 +138,46 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
   const unfiled: MintedSlotsResult["unfiled"] = [];
   const seen = new Set<string>();
 
-  for (const facet of input.earned) {
-    const definitions = slotsForFacet(facet, { accessoryKind: input.accessoryKind });
-    if (definitions.length === 0) {
-      /* The reason comes from the ASSIGNMENT rather than from what the caller
-         happened to pass, so a decided absence and an unnamed object never wear
-         each other's label. */
-      unfiled.push({ facet, reason: unfiledReasonFor(facet) });
-      continue;
-    }
-    for (const definition of definitions) {
-      if (seen.has(definition.slot)) continue;
-      const facets = facetsOfSlot(definition.slot) ?? [];
-      const words = facets
-        .map((member) => captionWording(input.captions[member]).trim())
-        .filter((caption) => caption !== "");
-      if (words.length === 0) {
-        unfiled.push({ facet, reason: "noWords" });
+  const collect = (facets: readonly Facet[], disputed: boolean) => {
+    for (const facet of facets) {
+      const definitions = slotsForFacet(facet, { accessoryKind: input.accessoryKind });
+      if (definitions.length === 0) {
+        /* The reason comes from the ASSIGNMENT rather than from what the caller
+           happened to pass, so a decided absence and an unnamed object never wear
+           each other's label. */
+        unfiled.push({ facet, reason: unfiledReasonFor(facet) });
         continue;
       }
-      const spec = slotSpecFor(definition.slot, words);
-      if (spec === null) continue;
-      seen.add(definition.slot);
-      slots.push(spec);
+      for (const definition of definitions) {
+        if (seen.has(definition.slot)) continue;
+        const members = facetsOfSlot(definition.slot) ?? [];
+        const words = members
+          .map((member) => captionWording(input.captions[member]).trim())
+          .filter((caption) => caption !== "");
+        if (words.length === 0) {
+          unfiled.push({ facet, reason: "noWords" });
+          continue;
+        }
+        const spec = slotSpecFor(definition.slot, words);
+        if (spec === null) continue;
+        seen.add(definition.slot);
+        slots.push(disputed ? { ...spec, disputed: true } : spec);
+      }
     }
-  }
+  };
+
+  /*
+    EARNED FIRST, AND `seen` IS WHAT MAKES THAT A RULE RATHER THAN AN ORDERING.
+
+    Two facets of one slot can come back with different verdicts — the ask wrote
+    both, the reader saw one land and not the other. The slot is then EARNED: a
+    crop of it is a picture of a feature the render did change and the guard can
+    certify, and marking it disputed would throw away a good reference over a
+    disagreement about a neighbouring facet. Running `earned` to completion
+    before `disputed` is looked at is the whole of that rule.
+  */
+  collect(input.earned, false);
+  collect(input.disputed ?? [], true);
 
   return { slots, unfiled };
 }

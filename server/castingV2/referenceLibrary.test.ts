@@ -107,6 +107,103 @@ describe("which rows are live", () => {
   });
 });
 
+/**
+ * RULE 3 — a disputed row is evidence, not a version (fable-220 §3).
+ *
+ * The failure it prevents is silent and expensive: the row is the newest carry
+ * row for its slot, it holds no `storageKey`, and the crop that had been riding
+ * into every prompt simply stops. A disputed ask would then change what the
+ * painter sees on the NEXT paid render — which is delivery, and delivery was
+ * ruled untouched.
+ */
+describe("a disputed delivery's row", () => {
+  const disputedRow = (slot: string, version: number) => row({
+    slot,
+    version,
+    /* The shape the mint writes: no delivered crop, a refusal carrying one. */
+    storageKey: null,
+    maskKey: null,
+    digest: null,
+    geometry: null,
+    guard: null,
+    words: ["natural, slim, no pronounced cupid's bow"],
+    refusal: {
+      reason: "disputedDelivery",
+      kind: "lips",
+      coverage: 8870,
+      contentKey: "casting-v2/library/x-refused.png",
+      maskKey: "casting-v2/library/x-refused-mask.png",
+      geometry: { bbox: { x: 0, y: 0, width: 10, height: 10 }, frame: { width: 100, height: 100 } },
+    },
+  });
+
+  it("does not become the slot's newest version, however new it is", () => {
+    const delivered = row({ slot: "lips", version: 4, storageKey: "the-good-crop.png" });
+    const live = liveReferences([delivered, disputedRow("lips", 5)]);
+
+    expect(live).toHaveLength(1);
+    expect(live[0]!.storageKey).toBe("the-good-crop.png");
+  });
+
+  it("CHANGES THE ASSEMBLER'S LIBRARY BY EXACTLY NOTHING", () => {
+    /* The additivity property, driven rather than argued: the same rows with and
+       without a disputed row produce the same library. If this ever fails, a
+       disputed ask has started editing the next render's prompt. */
+    const before = [
+      row({ slot: "lips", version: 4, words: ["full, a soft nude"] }),
+      row({ slot: "hair", version: 1, words: ["a blunt bob"] }),
+    ];
+    expect(deriveLibrary([...before, disputedRow("lips", 5)]))
+      .toEqual(deriveLibrary(before));
+  });
+
+  it("CONTROL — a noSpecimen refusal IS a version, and drops the stale crop", () => {
+    /*
+      The other refusal that keeps its pixels behaves the opposite way, and it
+      must: that render EARNED its slot, the words moved on, and leaving the old
+      crop riding beside them is two instructions about one feature. Same column
+      group, same kept pixels, different verdict about the feature — so the
+      distinction is real rather than a spelling.
+    */
+    const delivered = row({ slot: "earring@left", version: 1, storageKey: "the-old-hoop.png" });
+    const refused = row({
+      slot: "earring@left",
+      version: 2,
+      storageKey: null,
+      maskKey: null,
+      digest: null,
+      geometry: null,
+      guard: null,
+      words: ["a thin gold hoop"],
+      refusal: {
+        reason: "noSpecimen",
+        kind: "earring",
+        coverage: 6520,
+        contentKey: "casting-v2/library/y-refused.png",
+        maskKey: "casting-v2/library/y-refused-mask.png",
+        geometry: { bbox: { x: 0, y: 0, width: 10, height: 10 }, frame: { width: 100, height: 100 } },
+      },
+    });
+
+    const live = liveReferences([delivered, refused]);
+    expect(live).toHaveLength(1);
+    expect(live[0]!.storageKey).toBeNull();
+    expect(deriveLibrary([delivered, refused])[0]).toEqual({
+      slot: "earring@left",
+      tier: "anatomy",
+      noun: "earring@left",
+      words: ["a thin gold hoop"],
+    });
+  });
+
+  it("leaves a slot it is the ONLY row for out of the library entirely", () => {
+    /* No previous version to protect, and still nothing to say: the render made
+       no verified account of this feature, so the assembler hears nothing about
+       it — exactly as it did before any of this was built. */
+    expect(deriveLibrary([disputedRow("lips", 1)])).toEqual([]);
+  });
+});
+
 describe("the library the assembler is handed", () => {
   it("gives a slot its anchor and its carry as one entry", () => {
     const entries = deriveLibrary([

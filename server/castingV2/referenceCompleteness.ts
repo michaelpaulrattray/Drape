@@ -26,6 +26,12 @@
  *    threshold is a number nobody measured, wearing the clothes of one that was.
  *  - **`underCaptured`** — the fringe itself. Refused loudly; never stored
  *    quietly.
+ *  - **`disputedDelivery`** (fable-220 §3) — the ask WROTE this slot's facet and
+ *    the render's own reader then said the change is not in the picture. Nothing
+ *    is wrong with the crop as a crop; what is unsettled is whether the painter
+ *    failed or the reader did. It may not enter the library — the previous
+ *    version stays newest and stays good — and its pixels are the only artifact
+ *    that can settle which of the two was wrong.
  *
  * And one more that is about the KEY rather than the pixels: **`duplicateOfSlot`**
  * — a crop byte-identical to another slot's crop is two rows holding one fact
@@ -162,22 +168,62 @@ export const GUARD_REFUSAL_REASONS = [
   "noSpecimen",
   "underCaptured",
   "duplicateOfSlot",
+  "disputedDelivery",
 ] as const;
 
 export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
 
 /**
- * The one refusal whose PIXELS are kept (fable-214 option (ii)).
+ * The refusals whose PIXELS are kept (fable-214 option (ii), fable-220 §3).
  *
- * It is the refusal that exists in order to produce the specimen: the kind has
- * no measured positive, so the guard cannot say what complete looks like, so it
- * turns the crop away — and the crop is the only thing a human can look at to
- * decide. The other four are refusals of a picture that should not be adopted:
- * `subjectAbsent` is a crop of where the thing would have been, `duplicateOfSlot`
- * already has its bytes at another slot, `underCaptured` was measured against a
- * real bar and refused correctly, and `readDidNotSettle` scored nothing at all.
+ * Both are refusals that exist **in order to be settled by a human looking at
+ * the picture**, and neither is a judgement that the crop is bad:
+ *
+ *   `noSpecimen`        the kind has no measured positive, so the guard cannot
+ *                       say what complete looks like here. The crop is the only
+ *                       thing that can teach it.
+ *   `disputedDelivery`  the ask wrote this facet and the reader said it did not
+ *                       land. The crop is the only thing that can say which of
+ *                       the two was wrong.
+ *
+ * The other four refuse a picture that must not be adopted: `subjectAbsent` is a
+ * crop of where the thing would have been, `duplicateOfSlot` already has its
+ * bytes at another slot, `underCaptured` was measured against a real bar and
+ * refused correctly, and `readDidNotSettle` scored nothing at all. Keeping any
+ * of those would build a gallery of exactly the crops the guard exists to keep
+ * out, and put it in front of the one person able to adopt them.
  */
-export const REFUSAL_THAT_KEEPS_ITS_CROP: GuardRefusalReason = "noSpecimen";
+export const REFUSALS_THAT_KEEP_THEIR_CROP: readonly GuardRefusalReason[] = [
+  "noSpecimen",
+  "disputedDelivery",
+];
+
+export function refusalKeepsItsCrop(reason: GuardRefusalReason): boolean {
+  return REFUSALS_THAT_KEEP_THEIR_CROP.includes(reason);
+}
+
+/**
+ * THE REFUSAL WHOSE ROW IS EVIDENCE AND NOT A VERSION (`referenceLibrary`'s fold).
+ *
+ * Every other row this table holds is an account of what a feature IS, and the
+ * newest one per (slot, role) is the branch's answer. A `disputedDelivery` row
+ * is not that. It is a question — *did the ask land?* — parked beside the
+ * pixels that answer it, and the render that raised it delivered no verified
+ * account of the feature at all.
+ *
+ * So the fold skips it, and the consequence is the point: **the slot's previous
+ * version stays newest and stays good.** Without this the row would be the
+ * newest carry row, it carries no `storageKey`, and the crop that was riding
+ * into every prompt would silently stop — a disputed ask quietly changing what
+ * the painter sees on the NEXT paid render. That is delivery, and fable-220 §3
+ * ruled delivery untouched: only the pixels gain an afterlife.
+ *
+ * Named separately from {@link REFUSALS_THAT_KEEP_THEIR_CROP} because it is a
+ * different property that happens to coincide on one reason today. `noSpecimen`
+ * IS a version — that render earned its slot, the words moved on, and a crop
+ * nobody could certify is honestly reported as a slot with words and no picture.
+ */
+export const REFUSAL_THAT_IS_EVIDENCE_ONLY: GuardRefusalReason = "disputedDelivery";
 
 export type GuardRefusal = {
   ok: false;
@@ -210,6 +256,18 @@ export type GuardInput = {
   guardRead: Mask | null;
   /** Digests already in the library, by slot. Two rows may not hold one fact. */
   mintedDigests?: ReadonlyMap<string, string>;
+  /**
+   * THIS ASK WROTE THE FACET AND THE RENDER'S OWN READER DISPUTED IT.
+   *
+   * Not a property of the crop — a property of the render behind it. It arrives
+   * here rather than being applied to the verdict afterwards so that the whole
+   * precedence lives in one function: the three refusals ABOVE it are about
+   * whether this is a real, unique picture of the subject at all, and they win,
+   * because a crop of nothing settles nothing. Everything BELOW it is a
+   * completeness judgement, and no completeness number can decide a question
+   * about delivery.
+   */
+  disputed?: boolean;
 };
 
 export function guardReference(input: GuardInput): GuardVerdict {
@@ -240,6 +298,37 @@ export function guardReference(input: GuardInput): GuardVerdict {
     return {
       ok: false, reason: "duplicateOfSlot", kind: input.kind, reading,
       detail: `this crop is byte-identical to ${duplicate[0]}'s, and two slots may not hold one fact`,
+    };
+  }
+
+  /*
+    AND HERE, BEFORE ANY THRESHOLD IS CONSULTED (fable-220 §3).
+
+    A disputed crop is refused however well it measures, because the question it
+    fails is not a question about the crop. The ask wrote this facet; the render's
+    own reader looked at the delivered frame and said the change is not there. Two
+    things follow, and they are the whole design:
+
+      the library does not move    an unverified delivery may not become what the
+                                   next render KNOWS this feature is. The previous
+                                   version stays newest and stays good — D-235's
+                                   asymmetry, which the `earned` gate has always
+                                   applied one layer up by filing nothing at all.
+      the pixels stay              because "the reader was wrong" and "the painter
+                                   was wrong" are indistinguishable from the row,
+                                   and identical from every instrument we have.
+                                   The crop is the artifact that separates them,
+                                   and a human is the instrument.
+
+    D-246 disarmed subtle-quality detectors as gates on money. This is the same
+    class one layer down, gating PIXELS: billing and delivery are untouched
+    (D-187/D-246 — the ask stayed delivered and charged), and all that changes is
+    that a disputed facet's crop now has an afterlife for human eyes.
+  */
+  if (input.disputed) {
+    return {
+      ok: false, reason: "disputedDelivery", kind: input.kind, reading,
+      detail: `this render's reader disputed that the ask landed on ${input.kind}; the crop reads ${(reading.coverage * 100).toFixed(1)}% and is kept for a human rather than adopted`,
     };
   }
 
@@ -292,6 +381,8 @@ export type MintInput = {
   crop: { mask: Mask; box: SegmentBox };
   digest: string;
   mintedDigests?: ReadonlyMap<string, string>;
+  /** This ask wrote the facet and the render's reader disputed the delivery. */
+  disputed?: boolean;
 };
 
 /**
@@ -318,5 +409,6 @@ export async function mintGuardedReference(
     digest: input.digest,
     guardRead,
     mintedDigests: input.mintedDigests,
+    disputed: input.disputed,
   });
 }

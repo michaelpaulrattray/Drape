@@ -15,9 +15,12 @@ import { describe, expect, it } from "vitest";
 import type { Mask } from "./maskedComposite";
 import {
   COMPLETENESS_SPECIMENS,
+  GUARD_REFUSAL_REASONS,
   guardReference,
   measureCoverage,
   mintGuardedReference,
+  refusalKeepsItsCrop,
+  REFUSALS_THAT_KEEP_THEIR_CROP,
   thresholdFor,
 } from "./referenceCompleteness";
 import type { SegmentBox } from "./segmentCuts";
@@ -149,6 +152,112 @@ describe("the door — what enters the library and what does not", () => {
     if (verdict.ok) return;
     expect(verdict.reason).toBe("duplicateOfSlot");
     expect(verdict.detail).toContain("skin");
+  });
+});
+
+describe("a DISPUTED delivery — the refusal that is not about the crop (fable-220 §3)", () => {
+  const hairRegion = region(FRAME.width, FRAME.height, HAIR);
+
+  it("NO DISPUTED CROP EVER PASSES — every arrangement that otherwise would", () => {
+    /*
+      The one that has to be exhaustive rather than illustrative, because the
+      mint's own refusal to store a disputed crop is unreachable by construction
+      and this is what makes the construction true. Each row below passes or is
+      softly refused when nobody disputes it; every one of them is
+      `disputedDelivery` when somebody does.
+    */
+    const arrangements = [
+      { what: "a kind with a specimen, at the bar", kind: "hair", crop: crop(HAIR), undisputed: true as const },
+      {
+        what: "a kind with a specimen, under the bar",
+        kind: "hair",
+        crop: crop({ x: 10, y: 10, width: 40, height: 5 }),
+        undisputed: "underCaptured" as const,
+      },
+      { what: "a kind with no specimen at all", kind: "lips", crop: crop(HAIR), undisputed: "noSpecimen" as const },
+    ];
+    for (const arrangement of arrangements) {
+      const shared = { kind: arrangement.kind, crop: arrangement.crop, digest: "aa", guardRead: hairRegion };
+      const without = guardReference(shared);
+      expect(without.ok, arrangement.what).toBe(arrangement.undisputed === true);
+      if (!without.ok) expect(without.reason, arrangement.what).toBe(arrangement.undisputed);
+
+      const disputedVerdict = guardReference({ ...shared, disputed: true });
+      expect(disputedVerdict.ok, arrangement.what).toBe(false);
+      if (disputedVerdict.ok) continue;
+      expect(disputedVerdict.reason, arrangement.what).toBe("disputedDelivery");
+      /* The number rides along — it is what the adoption sitting reads beside
+         the picture, and a refusal nobody can diagnose is one somebody disables. */
+      expect(disputedVerdict.reading, arrangement.what).toBeDefined();
+    }
+  });
+
+  it("names the kind and the number it read, so the row can be argued with", () => {
+    const verdict = guardReference({
+      kind: "lips", crop: crop({ x: 10, y: 10, width: 40, height: 20 }), digest: "aa",
+      guardRead: hairRegion, disputed: true,
+    });
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) return;
+    expect(verdict.kind).toBe("lips");
+    expect(verdict.reading!.coverage).toBeCloseTo(0.5, 5);
+    expect(verdict.detail).toContain("50.0%");
+    expect(verdict.detail).toContain("disputed");
+  });
+
+  it("THE THREE STRUCTURAL REFUSALS WIN — a dispute never displaces them", () => {
+    /*
+      Precedence, driven rather than asserted in a comment. A crop of a frame
+      that does not wear the thing is a fabrication whether or not delivery is
+      disputed; a read that did not settle scored nothing to argue about; and a
+      crop whose bytes already sit at another slot needs no second copy. In all
+      three there is nothing a human could look at that would settle anything,
+      which is exactly why the mint writes no row for them.
+    */
+    const absent = guardReference({
+      kind: "hair", crop: crop(HAIR), digest: "aa", disputed: true,
+      guardRead: region(FRAME.width, FRAME.height, { x: 0, y: 0, width: 0, height: 0 }),
+    });
+    expect(absent.ok).toBe(false);
+    if (!absent.ok) expect(absent.reason).toBe("subjectAbsent");
+
+    const unread = guardReference({
+      kind: "hair", crop: crop(HAIR), digest: "aa", guardRead: null, disputed: true,
+    });
+    expect(unread.ok).toBe(false);
+    if (!unread.ok) expect(unread.reason).toBe("readDidNotSettle");
+
+    const duplicate = guardReference({
+      kind: "hair", crop: crop(HAIR), digest: "ff", guardRead: hairRegion, disputed: true,
+      mintedDigests: new Map([["skin", "ff"]]),
+    });
+    expect(duplicate.ok).toBe(false);
+    if (!duplicate.ok) expect(duplicate.reason).toBe("duplicateOfSlot");
+  });
+
+  it("carries the dispute through the reader-taking entry point", async () => {
+    const verdict = await mintGuardedReference(
+      {
+        kind: "hair", question: "hair", frame: Buffer.from("the delivered frame"),
+        crop: crop(HAIR), digest: "aa", disputed: true,
+      },
+      async () => hairRegion,
+    );
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) return;
+    expect(verdict.reason).toBe("disputedDelivery");
+  });
+
+  it("only the two human-settled refusals keep their pixels", () => {
+    /* The list the write helper enforces, pinned where it is defined. A seventh
+       reason arriving without this test changing is the silent version of
+       widening the gallery the guard exists to keep empty. */
+    expect([...REFUSALS_THAT_KEEP_THEIR_CROP].sort())
+      .toEqual(["disputedDelivery", "noSpecimen"]);
+    for (const reason of GUARD_REFUSAL_REASONS) {
+      expect(refusalKeepsItsCrop(reason), reason)
+        .toBe(reason === "noSpecimen" || reason === "disputedDelivery");
+    }
   });
 });
 

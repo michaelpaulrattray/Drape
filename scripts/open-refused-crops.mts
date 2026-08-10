@@ -90,13 +90,26 @@ try {
     console.log(
       "No kept refusals for this account yet."
       + (candidatePublicId ? ` (candidate ${candidatePublicId})` : "")
-      + "\nA refusal keeps its pixels only when the guard's reason is `noSpecimen`, and only"
-      + "\non renders made after migration 0029 and the library flag were both live.",
+      + "\nA refusal keeps its pixels for two reasons only — `noSpecimen` and"
+      + "\n`disputedDelivery` — and only on renders made after migration 0029 and the"
+      + "\nlibrary flag were both live.",
     );
   }
 
+  /*
+    THE REASON COLUMN IS THE SITTING'S FIRST QUESTION, not a footnote.
+
+      noSpecimen        "is this crop a COMPLETE <kind>?" — an answer sets the
+                        kind's bar, so a crop nobody calls complete sets nothing.
+      disputedDelivery  "did the ask LAND?" — the reader said no; the picture
+                        says whether the reader or the painter was wrong. It
+                        adjudicates, and it never sets a bar.
+
+    Two different questions about superficially identical rows, so the column is
+    wide enough for the longer word rather than truncating it into the shorter.
+  */
   console.log(
-    `slot                 kind        reason      guard%   box                fill%   frame`,
+    `slot                 kind        reason            guard%   box                fill%   frame`,
   );
   for (const [index, row] of rows.entries()) {
     const stem = path.join(
@@ -181,7 +194,7 @@ try {
     written += 1;
     console.log(
       `${String(row.slot).padEnd(20)} ${String(row.refusedKind ?? "—").padEnd(11)} `
-      + `${String(row.refusedReason).padEnd(11)} `
+      + `${String(row.refusedReason).padEnd(17)} `
       + `${row.refusedCoverage === null ? "  —   " : `${(row.refusedCoverage / 100).toFixed(1)}%`.padStart(6)} `
       + `${`${row.refusedBboxX},${row.refusedBboxY} ${row.refusedBboxW}x${row.refusedBboxH}`.padEnd(18)} `
       + `${fill.toFixed(1).padStart(5)}   ${framed}`,

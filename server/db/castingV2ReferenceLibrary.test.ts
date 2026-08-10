@@ -13,6 +13,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  GUARD_REFUSAL_REASONS,
+  refusalKeepsItsCrop,
+} from "../castingV2/referenceCompleteness";
+import {
   assertReferenceRowShape,
   ReferenceLibraryShapeError,
   type ReferenceRowToRecord,
@@ -249,18 +253,37 @@ describe("what a refused crop may say about itself", () => {
     }))).toBe("refusedAndDelivered");
   });
 
-  /* Only `noSpecimen` exists in order to produce a specimen. Keeping a
-     `subjectAbsent` crop would store a picture of where the thing would have
-     been and put it in front of the one person able to adopt it. */
-  it("refuses keeping the pixels of any other refusal", () => {
+  it("takes a DISPUTED delivery's crop, which is the other refusal a human settles", () => {
+    /* fable-220 §3. The reader said the ask did not land and the crop is the only
+       thing that can say whether it was the reader or the painter that was wrong
+       — so these pixels go in the same column group, under their own reason. */
     expect(reasonOf(refused({
-      refusal: {
-        reason: "underCaptured",
-        kind: "hair",
-        coverage: 1250,
-        crop: { contentKey: "a.png", maskKey: "a-mask.png", geometry },
-      },
-    }))).toBe("refusedCropIsNotAdoptable");
+      slot: "lips",
+      noun: "lips",
+      refusal: { reason: "disputedDelivery", kind: "lips", coverage: 8870, crop: keptCrop },
+    }))).toBe("accepted");
+  });
+
+  /* Only the two refusals a HUMAN settles keep pixels — `noSpecimen`, which
+     produces the specimen, and `disputedDelivery`, which settles reader against
+     painter. Keeping a `subjectAbsent` crop would store a picture of where the
+     thing would have been and put it in front of the one person able to adopt
+     it. Every other reason is enumerated here so a seventh cannot arrive quietly
+     carrying pixels. */
+  it("refuses keeping the pixels of any other refusal", () => {
+    const notKept = GUARD_REFUSAL_REASONS
+      .filter((reason) => !refusalKeepsItsCrop(reason));
+    expect(notKept).toEqual(["subjectAbsent", "readDidNotSettle", "underCaptured", "duplicateOfSlot"]);
+    for (const reason of notKept) {
+      expect(reasonOf(refused({
+        refusal: {
+          reason,
+          kind: "hair",
+          coverage: 1250,
+          crop: { contentKey: "a.png", maskKey: "a-mask.png", geometry },
+        },
+      })), reason).toBe("refusedCropIsNotAdoptable");
+    }
   });
 
   it("refuses half a kept crop", () => {

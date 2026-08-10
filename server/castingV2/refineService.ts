@@ -2833,6 +2833,33 @@ export async function refineCandidate(
       Same list, same discipline: `earned` is written ∩ verified ∩ not-carried,
       derived once above for the segments and reused here rather than recomputed.
 
+      # AND ONE LIST THE SEGMENT STORE DELIBERATELY DOES NOT GET (fable-220 §3)
+
+      `disputed` is written ∩ READ-BUT-NOT-VERIFIED ∩ not-carried: the ask wrote
+      the facet and this render's own reader looked at the delivered frame and
+      said the change is not there. `lips` — *"a fuller cupid's bow"*, read true,
+      verified false — is the founding case.
+
+      It goes to the library and NOWHERE else, and the two halves of that are
+      both deliberate:
+
+        not to the segments   permanence keeps pixels a render EARNED. Filing an
+                              unverified one would make the loss the truth on the
+                              next lineage walk — the `marks@v2` incident, which
+                              is why the `earned` gate exists at all.
+        not to billing        D-187/D-246 are untouched. The render was delivered
+                              and charged before this line runs, and nothing here
+                              can revisit either.
+
+      What it buys is one row per disputed facet carrying the crop, because "the
+      reader was wrong" and "the painter was wrong" are indistinguishable from
+      every instrument we have and obvious to a person looking at the picture.
+      Costed honestly: one vision call per disputed facet, and the mint's log
+      line says how many it spent.
+
+      Unavailable stays empty for both. No reading is no evidence, and a dispute
+      is a reading that happened.
+
       # The whole thing is wrapped, because a bookkeeping failure must never
       # take back a delivered picture
 
@@ -2848,8 +2875,19 @@ export async function refineCandidate(
       ?? captureCastingReferenceLibraryEnabled;
     if (libraryEnabled(input.userId)) {
       try {
+        const disputed = verification.unavailable
+          ? []
+          : verification.checks
+            .filter((check) => (
+              check.read
+              && !check.verified
+              && writtenFacets.has(check.facet)
+              && !carriedFacets.has(check.facet)
+            ))
+            .map((check) => check.facet);
         const { slots, unfiled } = mintedSlotsForRender({
           earned,
+          disputed,
           captions: capturedCaptions,
           /* What the instruction said the worn object IS — derived once above,
              beside the region override that has to name the same object. */
@@ -2858,7 +2896,13 @@ export async function refineCandidate(
         if (unfiled.length > 0) {
           log.info(
             { operationId, variant: variant.publicId, unfiled },
-            "[refineService] a facet this render earned had no library slot to file in",
+            "[refineService] a facet this render wrote had no library slot to file in",
+          );
+        }
+        if (disputed.length > 0) {
+          log.info(
+            { operationId, variant: variant.publicId, disputed },
+            "[refineService] this render's reader disputed a facet the ask wrote — its crop is cut for a human, not for the library",
           );
         }
         if (slots.length > 0) {

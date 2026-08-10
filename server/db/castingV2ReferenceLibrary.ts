@@ -80,7 +80,8 @@ import {
    sixth is added, and the drift is invisible until a row cannot be read back. */
 import {
   GUARD_REFUSAL_REASONS,
-  REFUSAL_THAT_KEEPS_ITS_CROP,
+  REFUSALS_THAT_KEEP_THEIR_CROP,
+  refusalKeepsItsCrop,
   type GuardRefusalReason,
 } from "../castingV2/referenceCompleteness";
 import { withTransaction, getDb, type TransactionHandle } from "./connection";
@@ -154,11 +155,12 @@ export type ReferenceImageToRecord = {
 /**
  * What the guard turned away, on a row that files words because of it.
  *
- * The crop is carried for `noSpecimen` and nothing else (§the migration's
- * header): that refusal exists in order to produce the specimen, and a human
- * looking at the pixels is the only instrument that can. The other four refuse
- * a picture that must not be adopted, and storing those would build a gallery
- * of exactly the crops the guard exists to keep out.
+ * The crop is carried for the two refusals a HUMAN settles and no others
+ * (`REFUSALS_THAT_KEEP_THEIR_CROP`): `noSpecimen`, which exists in order to
+ * produce the specimen, and `disputedDelivery`, where the reader and the painter
+ * disagree and the pixels are the only thing that can say which was wrong. The
+ * other four refuse a picture that must not be adopted, and storing those would
+ * build a gallery of exactly the crops the guard exists to keep out.
  */
 export type ReferenceRefusalToRecord = {
   reason: GuardRefusalReason;
@@ -167,8 +169,9 @@ export type ReferenceRefusalToRecord = {
   /** Basis points. Absent when the refusal recorded no reading (`readDidNotSettle`). */
   coverage?: number;
   /**
-   * The pixels, for `noSpecimen` alone. Both keys or neither — a crop without
-   * its mask cannot be cut out or measured, and a mask alone shapes nothing.
+   * The pixels, for the two human-settled refusals alone. Both keys or neither
+   * — a crop without its mask cannot be cut out or measured, and a mask alone
+   * shapes nothing.
    *
    * `geometry` is required with them and not optional: the stored mask is
    * written at the cut's own box size, so the box is the only thing that can
@@ -250,13 +253,16 @@ function assertGeometry(geometry: ReferenceGeometry): void {
  * painter. Every rule below is one way that could stop being true:
  *
  *   a reason that is not the guard's   a string nobody can interpret is not
- *                                      evidence, and a sixth reason arriving
+ *                                      evidence, and a seventh reason arriving
  *                                      without this door being opened is the
  *                                      silent version of the same thing
  *   refused AND delivered              a crop that passed the guard is not
  *                                      refused; a row claiming both is two
  *                                      answers to "what happened at the door"
- *   a crop kept for another reason     only `noSpecimen` produces a specimen.
+ *   a crop kept for another reason     only the two refusals a HUMAN settles
+ *                                      keep pixels: `noSpecimen`, which produces
+ *                                      the specimen, and `disputedDelivery`,
+ *                                      which settles reader-versus-painter.
  *                                      Keeping a `subjectAbsent` crop would
  *                                      store a picture of where the thing would
  *                                      have been, and put it in front of the
@@ -303,10 +309,10 @@ function assertRefusalShape(row: ReferenceRowToRecord): void {
     );
   }
   if (!refusal.crop) return;
-  if (refusal.reason !== REFUSAL_THAT_KEEPS_ITS_CROP) {
+  if (!refusalKeepsItsCrop(refusal.reason)) {
     throw new ReferenceLibraryShapeError(
       "refusedCropIsNotAdoptable",
-      `${row.slot} was refused as ${refusal.reason} and its pixels are not kept; only ${REFUSAL_THAT_KEEPS_ITS_CROP} exists in order to produce a specimen`,
+      `${row.slot} was refused as ${refusal.reason} and its pixels are not kept; only ${REFUSALS_THAT_KEEP_THEIR_CROP.join(" and ")} exist to be settled by a human looking at the crop`,
     );
   }
   if (refusal.crop.contentKey.trim() === "" || refusal.crop.maskKey.trim() === "") {

@@ -21,6 +21,13 @@
  *    ANCESTOR's older earring and put it straight back on — the undo visibly
  *    not working, with an older pair coming back. A fork taken before the
  *    removal still finds its own newest live and keeps it.
+ * 3. **A `disputedDelivery` row is evidence, not a version** (fable-220 §3). It
+ *    holds pixels a human must look at to settle whether the reader or the
+ *    painter was wrong, and until somebody does, this render has said nothing
+ *    about what the feature IS. Counting it would make it the newest carry row —
+ *    a row with no `storageKey` — and the crop that had been riding into every
+ *    prompt would silently stop. A disputed ask must not change what the painter
+ *    sees on the next paid render.
  *
  * # Where a slot's STATE comes from
  *
@@ -30,6 +37,7 @@
  * render's account of one feature), so the two roles cannot disagree except
  * across renders — where the newer one is simply right.
  */
+import { REFUSAL_THAT_IS_EVIDENCE_ONLY } from "./referenceCompleteness";
 import type {
   FeatureSlot,
   FeatureTier,
@@ -59,7 +67,8 @@ export type ReferenceGuardReading = {
  *
  * On a row that has one, this is the whole of what the refusal left behind: the
  * reason, the specimen family it was judged against, the number it read if a
- * reading happened, and — for `noSpecimen` alone — the pixels themselves.
+ * reading happened, and — for the two refusals a human settles — the pixels
+ * themselves.
  *
  * It is deliberately a group of its own rather than fields beside
  * {@link StoredReference.storageKey}: those keys are what make a crop ride into
@@ -75,7 +84,8 @@ export type ReferenceRefusal = {
   kind: string;
   /** Basis points of the region. NULL when the refusal recorded no reading. */
   coverage: number | null;
-  /** The refused crop and its mask. Present for `noSpecimen` alone. */
+  /** The refused crop and its mask. Present for the refusals a human settles —
+   *  `noSpecimen` and `disputedDelivery` — and null for the rest. */
   contentKey: string | null;
   maskKey: string | null;
   /** Where that crop sat on the frame it was cut from. Present exactly when the
@@ -111,7 +121,7 @@ export type StoredReference = {
 };
 
 /**
- * The live rows of a lineage walk — rule 1 and rule 2, and nothing else.
+ * The live rows of a lineage walk — rules 1, 2 and 3, and nothing else.
  *
  * Input order is preserved: the walk returns oldest first, and that order is
  * the user's own edit order, which is the order the panel and the assembler
@@ -120,6 +130,10 @@ export type StoredReference = {
 export function liveReferences(rows: readonly StoredReference[]): StoredReference[] {
   const newest = new Map<string, StoredReference>();
   for (const row of rows) {
+    /* Rule 3, before the version comparison rather than after it: a disputed row
+       must not even be a candidate for newest, or it would displace the crop it
+       has no verdict about. */
+    if (row.refusal?.reason === REFUSAL_THAT_IS_EVIDENCE_ONLY) continue;
     const key = `${row.slot} ${row.role}`;
     const held = newest.get(key);
     if (!held || row.version > held.version) newest.set(key, row);

@@ -282,7 +282,7 @@ vi.mock("./segmentPersistence", () => ({
  * list the mint was actually called with.
  */
 type MintAsk = {
-  slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string }>;
+  slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string; disputed?: boolean }>;
   variantId: number | null;
   knownDigests: ReadonlyMap<string, string> | undefined;
   deliveredRegions: unknown;
@@ -294,7 +294,7 @@ type MintAsk = {
 const mintAsks: MintAsk[] = [];
 vi.mock("./referenceMint", () => ({
   mintReferencesForRender: vi.fn(async (ask: {
-    slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string }>;
+    slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string; disputed?: boolean }>;
     variantId: number | null;
     knownDigests?: ReadonlyMap<string, string>;
     deliveredRegions?: unknown;
@@ -3204,6 +3204,80 @@ describe("the render tells the library what it made of her", () => {
     /* A row with no words asserts only that a feature exists, which the
        catalogue already says for free. */
     expect(mintAsks).toHaveLength(0);
+  });
+
+  /**
+   * THE DISPUTED FACET — the founding case, driven at the wire (fable-220 §3).
+   *
+   * `lips`, asked *"a fuller cupid's bow"*, read TRUE and verified FALSE: the
+   * reader looked at the delivered frame and said the change is not there. The
+   * render is delivered and charged (D-187/D-246), and the only thing that
+   * changes is that its crop now gets cut for a human to look at.
+   *
+   * Both halves are asserted here because only this caller can be wrong about
+   * them: that the mint is told, and that permanence is NOT.
+   */
+  const readerDisputes = (saw: string) => ({
+    id: "verifier",
+    complete: async () => ({
+      text: JSON.stringify({ results: [{ id: 1, present: false, saw }] }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never);
+
+  it("sends a facet its own reader disputed to the LIBRARY and never to permanence", async () => {
+    captionsRead = { lips: "Natural, slim, no pronounced fuller cupid's bow visible" };
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerDisputes("lips appear natural, slim, no pronounced fuller cupid's bow visible"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { lips: ["a fuller cupid's bow"] } },
+        }),
+      },
+      { ...input, instruction: "give her a fuller cupid's bow" },
+    );
+
+    expect(mintAsks, "the library was told about the disputed facet").toHaveLength(1);
+    expect(mintAsks[0].slots.map((slot) => [slot.slot, slot.disputed ?? false]))
+      .toEqual([["lips", true]]);
+    /* The words are the read-back of the frame that landed, which is what makes
+       the kept crop worth opening: the sentence and the picture disagree with
+       the ask in the same direction, or one of them is wrong. */
+    expect(mintAsks[0].slots[0]!.words[0]).toContain("no pronounced fuller cupid's bow");
+
+    /* AND THE HALF THAT MUST NOT MOVE. Permanence keeps pixels a render EARNED;
+       filing an unverified one would make the loss the truth on the next lineage
+       walk, which is the `marks@v2` incident the `earned` gate exists for. */
+    expect(keptAsks).toHaveLength(1);
+    expect(keptAsks[0]!.facets).toEqual([]);
+    expect(keptAsks[0]!.verdict).toBeNull();
+  });
+
+  it("CONTROL — the same facet, believed, is unmarked and DOES reach permanence", async () => {
+    /* The negative control for the test above: change nothing but the reader's
+       answer. If both arms did not move, the marking would be a constant. */
+    captionsRead = { lips: "Full, with a pronounced cupid's bow" };
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("a fuller, more defined cupid's bow"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { lips: ["a fuller cupid's bow"] } },
+        }),
+      },
+      { ...input, instruction: "give her a fuller cupid's bow" },
+    );
+
+    expect(mintAsks[0].slots.map((slot) => [slot.slot, slot.disputed ?? false]))
+      .toEqual([["lips", false]]);
+    expect(keptAsks[0]!.facets).toEqual(["lips"]);
+    expect(keptAsks[0]!.verdict).toBe("verified");
   });
 
   it("CONTROL — with the flag dark it never speaks to the library at all", async () => {

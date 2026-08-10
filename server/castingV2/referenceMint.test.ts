@@ -89,13 +89,14 @@ function harness(options: {
 async function mint(slots: SlotSpec[], harnessed: ReturnType<typeof harness>, extra: {
   applied?: Mask | null;
   knownDigests?: Map<string, string>;
+  masterRegions?: Map<string, Mask>;
 } = {}) {
   return mintReferencesForRender({
     userId: 1,
     variantId: 11,
     frame: { bytes: await frameBytes() },
     applied: extra.applied === undefined ? rect({ x: 0, y: 0, width: 40, height: 40 }) : extra.applied,
-    masterRegions: new Map([["hair", rect(HAIR)]]),
+    masterRegions: extra.masterRegions ?? new Map([["hair", rect(HAIR)]]),
     slots,
     knownDigests: extra.knownDigests,
     dependencies: harnessed.dependencies,
@@ -256,6 +257,145 @@ describe("what the mint keeps", () => {
     expect(bench.stored).toEqual([]);
     expect(bench.rows[0]!.refusal).toMatchObject({ reason: "subjectAbsent", kind: "hair" });
     expect(bench.rows[0]!.refusal?.crop).toBeUndefined();
+  });
+});
+
+/**
+ * A DISPUTED SLOT — the ask wrote it, the render's own reader said it did not
+ * land, and the crop is the only thing that can say which of the two was wrong
+ * (fable-220 §3).
+ *
+ * Every case below is a form of one rule: **pixels or nothing.** A disputed slot
+ * is never stored and never files words, so it either leaves a crop a human can
+ * open or it leaves the library exactly as this render found it.
+ */
+describe("what the mint does with a disputed delivery", () => {
+  it("keeps the crop and stores NOTHING, on a kind whose bar it would have cleared", async () => {
+    /*
+      The load-bearing one. This is `hair` at 100% coverage against a real
+      threshold — the arrangement that stores a live reference on any other
+      render. Disputed, it is refused, and the previous version of this slot
+      stays newest and stays good.
+    */
+    const bench = harness();
+    const result = await mint([hairSlot({ disputed: true })], bench);
+
+    expect(result.outcome).toBe("stored");
+    expect(result.slots[0]).toEqual({
+      slot: "hair", outcome: "disputed", kept: true, coverage: 1,
+    });
+
+    const row = bench.rows[0]!;
+    /* NOT `image`, on a crop that measured perfectly. `storageKey` is what rides
+       into the next render's prompt, and an unverified delivery may not. */
+    expect(row.image).toBeUndefined();
+    expect(row.refusal).toEqual({
+      reason: "disputedDelivery",
+      kind: "hair",
+      coverage: 10_000,
+      crop: {
+        contentKey: bench.stored[0],
+        maskKey: bench.stored[1],
+        geometry: { bbox: HAIR, frame: { width: 40, height: 40 } },
+      },
+    });
+    /* Same order as every other crop: reserved for deletion before written. */
+    expect(bench.stored).toHaveLength(2);
+    expect(bench.manifests[0]).toEqual(bench.stored);
+  });
+
+  it("writes NO ROW AT ALL when there are no pixels worth a human's time", async () => {
+    /*
+      The frame does not wear the thing, so the two readers agree and there is
+      nothing to adjudicate. A words-only row here would be a version bump for a
+      delivery this render's own reader disputed — so the library is left
+      untouched, which is what a disputed facet did before any of this existed.
+    */
+    const bench = harness({ guardRead: { data: Buffer.alloc(40 * 40, 0), width: 40, height: 40 } });
+    const result = await mint([hairSlot({ disputed: true })], bench);
+
+    expect(result.outcome).toBe("nothing-to-keep");
+    expect(result.slots[0]).toMatchObject({
+      slot: "hair", outcome: "disputed", kept: false, reason: "subjectAbsent",
+    });
+    expect(bench.rows).toEqual([]);
+    expect(bench.stored).toEqual([]);
+    expect(bench.manifests).toEqual([]);
+  });
+
+  it("writes no row and buys no reading when the read did not settle", async () => {
+    const bench = harness({ guardRead: null });
+    const result = await mint([hairSlot({ disputed: true })], bench);
+
+    expect(result.slots[0]).toMatchObject({ outcome: "disputed", kept: false, reason: "readDidNotSettle" });
+    expect(bench.rows).toEqual([]);
+  });
+
+  it("writes no row for a disputed slot nothing can be cut for, and spends no vision call", async () => {
+    /* A surface, a slot with no question, and a slot this frame has no region
+       for. Each files words when it is earned; each files nothing when it is
+       disputed, because the row would carry no picture and the words would
+       assert a delivery the reader denied. */
+    let reads = 0;
+    const bench = harness();
+    const counted = {
+      ...bench,
+      dependencies: { ...bench.dependencies, read: async () => { reads += 1; return rect(HAIR); } },
+    };
+    const result = await mint([
+      hairSlot({ slot: "skin", tier: "surface", noun: "skin", question: "face skin", guardKind: "skin", disputed: true }),
+      hairSlot({ slot: "jaw", noun: "jaw", question: null, guardKind: null, disputed: true }),
+      hairSlot({ slot: "eyebrows", noun: "eyebrows", question: "eyebrows", guardKind: "eyebrows", disputed: true }),
+    ], counted);
+
+    expect(result.outcome).toBe("nothing-to-keep");
+    expect(result.slots).toEqual([
+      { slot: "skin", outcome: "disputed", kept: false, reason: "surface" },
+      {
+        slot: "jaw",
+        outcome: "disputed",
+        kept: false,
+        reason: "noQuestion",
+        detail: expect.stringContaining("nothing a human could settle"),
+      },
+      { slot: "eyebrows", outcome: "disputed", kept: false, reason: "noRegion" },
+    ]);
+    expect(reads).toBe(0);
+    expect(bench.rows).toEqual([]);
+  });
+
+  it("files one render's earned slot and its disputed slot side by side", async () => {
+    /* Two slots, two verdicts, one transaction — and the shapes are opposites:
+       the earned one is an image with a guard reading, the disputed one is a
+       refusal with a crop nobody may show the painter. */
+    const bench = harness({ guardRead: undefined });
+    const eyes = { x: 4, y: 30, width: 20, height: 6 };
+    const scoped = {
+      ...bench,
+      dependencies: {
+        ...bench.dependencies,
+        read: async (asked?: { question: string }) => (asked?.question === "hair" ? rect(HAIR) : rect(eyes)),
+      },
+    };
+    const result = await mint([
+      hairSlot(),
+      hairSlot({ slot: "eyebrows", noun: "eyebrows", question: "eyebrows", guardKind: "eyebrows", disputed: true }),
+    ], scoped, {
+      masterRegions: new Map([["hair", rect(HAIR)], ["eyebrows", rect(eyes)]]),
+    });
+
+    expect(result.slots).toEqual([
+      { slot: "hair", outcome: "stored", coverage: 1 },
+      { slot: "eyebrows", outcome: "disputed", kept: true, coverage: 1 },
+    ]);
+    expect(bench.rows).toHaveLength(2);
+    expect(bench.rows[0]!.image).toBeDefined();
+    expect(bench.rows[0]!.refusal).toBeUndefined();
+    expect(bench.rows[1]!.image).toBeUndefined();
+    expect(bench.rows[1]!.refusal).toMatchObject({ reason: "disputedDelivery", kind: "eyebrows" });
+    /* Four objects on one manifest, registered before any of them was written. */
+    expect(bench.stored).toHaveLength(4);
+    expect(bench.manifests[0]).toEqual(bench.stored);
   });
 });
 

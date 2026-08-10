@@ -144,6 +144,37 @@ frame it claims to represent**, and:
 - **a crop byte-identical to another slot's crop is refused by construction** —
   D-242 one layer up: two rows holding one fact
 
+#### 2.4a The DISPUTED delivery — a refusal that is not about the crop (fable-220 §3)
+
+The mint's source list is `earned` = **written ∩ verified ∩ not-carried**, which
+had a structural consequence nobody had named: **a kind whose asks keep failing
+the `verified` gate can never acquire a completeness specimen**, because no crop
+of it is ever cut. `lips` was not waiting for a specimen — on this path it could
+not produce one. A subtle-quality detector gating PIXELS one layer below where
+D-246 disarmed it.
+
+So a facet the ask **wrote** and this render's own reader **disputed**
+(`read && !verified && !carried`) is now cut and guarded, and then:
+
+| | |
+|---|---|
+| never stored | an unverified delivery does not become what the next render knows the feature IS |
+| files no words | a words-only row would be a version bump for a delivery its own reader denied |
+| keeps its pixels | `disputedDelivery` on the row — crop, mask and box — for the one instrument that can settle whether the reader or the painter was wrong |
+| **is not a version** | the fold skips it (`liveReferences` rule 3), so the slot's previous crop keeps riding. A disputed ask must not change what the painter sees on the next paid render |
+
+A disputed slot with no crop to keep — a surface, no question, no side, no
+region, or one of the three structural refusals — writes **nothing at all**,
+which is exactly what it did before this existed. The whole change is additive:
+`deriveLibrary` returns the same library with or without these rows.
+
+**Billing and delivery are untouched** (D-187/D-246): the ask stays
+delivered-and-charged, and the only new cost is **one vision call per disputed
+facet**, declared in the mint's log line (`disputedReads`). The precedence lives
+in `guardReference` alone: the three refusals about whether this is a real,
+unique picture of the subject come first; a dispute only ever displaces a
+completeness verdict.
+
 ### 2.5 One slot, one reference, per render (fable-174 — founder)
 
 The recipe assembler **REFUSES at build** any recipe where two references claim
@@ -635,6 +666,7 @@ contract does not know the painter changed.
 | **Occlusion-aware cutter** | Not built. Named as the cause of the cutout arm's loss. | A cutter that completes rather than amputates at occluders, then a re-test of §5.1. |
 | ~~**Side-scoped region reads for the mint**~~ | **CLOSED 2026-08-11.** `regionSides` returns the split the reader was already making; `region` is the union of it, so the pair costs no extra call and there is one midline. The mint cuts each instance from her own side and the guard is asked about that side. The `noSide` refusal remains for a reader without the capability, and takes no reading. | — |
 | **A bilateral kind still has no specimen** | **OPEN, and it is now the only thing between the founder's hoop and the library.** `earring`, `eye`, `ear` and `brow` refuse at `noSpecimen` — with an honest per-side coverage attached, which is what makes the refusal productive. | A dev refine per specimen-bearing kind on the real paid path, each delivered cut eye-verified ONCE and adopted (fable-210). A master read cannot supply it: it scores 100% against itself by construction. |
+| ~~**A subtle-quality kind cannot produce its own specimen**~~ | **CLOSED 2026-08-11 (§2.4a).** The specimen path ran through the `verified` gate, so a kind whose asks keep failing it could never be cut at all. A disputed facet's crop is now kept as `disputedDelivery` — refused, never stored, invisible to the fold, and openable by a human. | — |
 | **Laterality assumes she faces the camera** | **DECLARED, 2026-08-11.** `regionSides` labels the image's right half as her left. On a frame shot from behind or mirrored, the two instances swap names — the same assumption `canthalTilt` has always made, now in one function rather than four call sites. | A facing read, if one is ever worth a call. The blast radius today is a pair of instance keys, and divergence is derived from words. |
 
 ---
@@ -674,3 +706,4 @@ contract does not know the painter changed.
 | A positive control class must be labelled by a verified OUTCOME, never by the ask or the reference that produced it | the same, named as the class per working law 7 |
 | **The library is its own table, migration first; storage and reference emission are PER INSTANCE always** | **fable-196**, executed as §2.6 / migration 0028 |
 | A surface worn on anatomy is ONE anatomy slot, tier `anatomy`, surface words in its stack; "crops stay bare" superseded by D-244 | **fable-201**, executed as §2.7 |
+| **A DISPUTED delivery keeps its crop — never stored, never a version, never billed differently; one declared vision call per disputed facet** | **fable-220 §3**, executed as §2.4a |

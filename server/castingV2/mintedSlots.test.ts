@@ -169,3 +169,75 @@ describe("the slots a render files", () => {
       .toEqual({ slots: [], unfiled: [] });
   });
 });
+
+/**
+ * THE DISPUTED LIST — what the ask wrote and this render's own reader denied
+ * (fable-220 §3). This module's whole job in it is to name the slots and to
+ * settle the collision; the mint decides what a marked slot may do.
+ */
+describe("the slots a render DISPUTES", () => {
+  it("marks a disputed slot and no other", () => {
+    const { slots } = mintedSlotsForRender({
+      earned: ["nose"],
+      disputed: ["lips"],
+      captions: { nose: "Straight bridge", lips: "Natural, slim, no pronounced cupid's bow" },
+    });
+
+    expect(slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([
+      ["nose", false],
+      ["lips", true],
+    ]);
+    /* The words are the read-back of the frame that landed — the honest sentence
+       about what is actually there, which is what makes the crop worth opening. */
+    expect(slots[1]!.words).toEqual(["Natural, slim, no pronounced cupid's bow"]);
+  });
+
+  it("EARNED WINS when two facets of one slot disagree", () => {
+    /*
+      One ask, one slot, two verdicts: the reader saw the colour land and not the
+      cut. The slot is earned — the render did change it and the guard can certify
+      the crop — and marking it disputed over a neighbouring facet would throw away
+      a good reference. The order of the two lists is the whole of this rule, so it
+      is driven from both directions.
+    */
+    const captions = { "hair.cut": "A blunt bob at the jaw", "hair.colour": "Copper" };
+    const both = mintedSlotsForRender({ earned: ["hair.colour"], disputed: ["hair.cut"], captions });
+    expect(both.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
+
+    const reversed = mintedSlotsForRender({ earned: ["hair.cut"], disputed: ["hair.colour"], captions });
+    expect(reversed.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
+  });
+
+  it("files a disputed accessory as both of its sides, both marked", () => {
+    const { slots } = mintedSlotsForRender({
+      earned: [],
+      disputed: ["statedAccessories"],
+      captions: { statedAccessories: "Small gold studs" },
+      accessoryKind: "earring",
+    });
+
+    expect(slots.map((slot) => slot.slot)).toEqual(["earring@left", "earring@right"]);
+    expect(slots.every((slot) => slot.disputed)).toBe(true);
+  });
+
+  it("reports a disputed facet with nowhere to file exactly as an earned one", () => {
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: [],
+      disputed: ["makeup", "lips"],
+      captions: { makeup: "A soft nude lip" },
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiled).toEqual([
+      { facet: "makeup", reason: "notASlot" },
+      { facet: "lips", reason: "noWords" },
+    ]);
+  });
+
+  it("is exactly today's behaviour when nothing is disputed", () => {
+    /* The flag-shaped property: an absent list changes nothing. */
+    const captions = { lips: "Full", nose: "Straight bridge" };
+    expect(mintedSlotsForRender({ earned: ["lips", "nose"], captions }))
+      .toEqual(mintedSlotsForRender({ earned: ["lips", "nose"], disputed: [], captions }));
+  });
+});

@@ -42,6 +42,30 @@
  *
  * The refusal is loud either way, and it is in the result the caller records.
  *
+ * # A DISPUTED slot is the one exception to all of that (fable-220 §3)
+ *
+ * The ask wrote the facet; the render's own reader then said the change is not
+ * in the delivered picture. Under D-187/D-246 that is advisory — the render was
+ * delivered and charged, and nothing here revisits either. But the library's
+ * `earned` gate meant such a slot was never cut at all, so a kind whose asks
+ * keep failing the `verified` gate could never acquire the completeness
+ * specimen that would let it in. A subtle-quality detector, gating PIXELS one
+ * layer below where D-246 disarmed it.
+ *
+ * So a disputed slot IS cut and IS guarded, and then:
+ *
+ *   it is never stored          an unverified delivery does not become what the
+ *                               next render knows this feature is; the previous
+ *                               version stays newest and stays good
+ *   it files no words           a words-only row would be a version bump for a
+ *                               delivery its own reader disputed
+ *   it keeps its pixels         `disputedDelivery` on the row, crop and mask and
+ *                               box, for the one instrument that can settle
+ *                               whether the reader or the painter was wrong
+ *
+ * A disputed slot with no crop to keep therefore writes nothing at all, which is
+ * exactly what it did before this existed.
+ *
  * # Failure is silent to the user and loud in the log
  *
  * If any of this fails the delivered picture stands, the face simply keeps no
@@ -66,7 +90,8 @@ import { readRaster, type Mask } from "./maskedComposite";
 import type { SideRegions } from "./maskedRefine";
 import {
   mintGuardedReference,
-  REFUSAL_THAT_KEEPS_ITS_CROP,
+  refusalKeepsItsCrop,
+  type GuardRefusalReason,
   type RegionReader,
 } from "./referenceCompleteness";
 import { parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
@@ -122,7 +147,30 @@ export type SlotSpec = {
    * for one.
    */
   frame: SlotFrame;
+  /**
+   * THE ASK WROTE THIS SLOT AND THE RENDER'S OWN READER DISPUTED THE DELIVERY
+   * (fable-220 §3).
+   *
+   * A disputed slot is here for its PIXELS and nothing else. It is cut and
+   * guarded like any other, it can never be stored, and — unlike every other
+   * slot in this list — **it files no words-only row.** That asymmetry is the
+   * approved scope exactly: a disputed row exists to be looked at, so a disputed
+   * slot with no crop to look at writes nothing and leaves the library precisely
+   * as this render found it.
+   *
+   * It is a property of the SLOT rather than of the render because two facets
+   * can land in one slot with different verdicts — `hair.cut` verified,
+   * `hair.colour` disputed — and the verified one wins. `mintedSlots` settles
+   * that before the list arrives here.
+   */
+  disputed?: boolean;
 };
+
+/** Why a disputed slot kept no pixels: the guard's own refusal, or the reason
+ *  no crop was ever cut for it. */
+export type DisputedNothingKept =
+  | GuardRefusalReason
+  | "surface" | "noQuestion" | "noSide" | "noRegion";
 
 export type MintedSlot =
   | { slot: FeatureSlot; outcome: "stored"; coverage: number }
@@ -136,9 +184,27 @@ export type MintedSlot =
      *  a crop was cut and turned away. */
     reason: "surface" | "noQuestion" | "noSide" | "noRegion" | "guardRefused";
     detail?: string;
-    /** The refused crop's pixels were kept for a human to look at — true only
-     *  for `noSpecimen`, the refusal that exists to produce the specimen. */
+    /** The refused crop's pixels were kept for a human to look at — true for the
+     *  two refusals a human settles rather than an instrument. */
     keptForAdoption?: true;
+  }
+  /**
+   * A slot whose delivery this render's reader disputed. Never `stored`, never
+   * `words-only`: it either left a crop for a human or it left nothing.
+   */
+  | {
+    slot: FeatureSlot;
+    outcome: "disputed";
+    /** A row was written carrying the refused pixels. */
+    kept: true;
+    coverage: number;
+  }
+  | {
+    slot: FeatureSlot;
+    outcome: "disputed";
+    kept: false;
+    reason: DisputedNothingKept;
+    detail?: string;
   };
 
 export type MintResult = {
@@ -341,8 +407,30 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       if (delivered) deliveredToCut.set(key, delivered[side]);
       cuttable.push({ ...slot, question, guardKind, regionKey: key, side });
     }
+    /*
+      A DISPUTED SLOT NEVER FILES WORDS — the three loops below all skip one, and
+      each skip is the same sentence: this slot is in the list for its pixels, and
+      a words-only row for it would be a version bump asserting a delivery its own
+      reader disputed. Today such a slot files nothing at all; after this change it
+      files nothing at all UNLESS there is a crop to look at. Strictly additive, on
+      purpose (fable-220 §3's "only the PIXELS gain an afterlife").
+    */
+    const disputedNothingKept = (slot: SlotSpec, reason: DisputedNothingKept, detail?: string) => {
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "disputed",
+        kept: false,
+        reason,
+        ...(detail === undefined ? {} : { detail }),
+      });
+    };
+
     for (const slot of input.slots) {
       if (slot.tier !== "surface") continue;
+      if (slot.disputed) {
+        disputedNothingKept(slot, "surface");
+        continue;
+      }
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
       outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "surface" });
     }
@@ -358,6 +446,14 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     for (const slot of input.slots) {
       if (slot.tier === "surface") continue;
       if (slot.question !== null && slot.guardKind !== null) continue;
+      if (slot.disputed) {
+        disputedNothingKept(
+          slot,
+          "noQuestion",
+          "no segmentation question names this slot, so there is nothing to cut and nothing a human could settle",
+        );
+        continue;
+      }
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
       outcomes.push({
         slot: slot.slot,
@@ -367,6 +463,10 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       });
     }
     for (const { slot, detail } of sideless) {
+      if (slot.disputed) {
+        disputedNothingKept(slot, "noSide", detail);
+        continue;
+      }
       rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
       outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "noSide", detail });
     }
@@ -385,11 +485,20 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
        arrived this render or three renders ago. */
     const digests = new Map(input.knownDigests ?? []);
 
+    /* One vision call per disputed facet is the declared price of settling
+       reader-versus-painter (fable-220 §3, condition 2), and it is counted here
+       so the log line states what was spent rather than implying it. */
+    let disputedReads = 0;
+
     for (const slot of cuttable) {
       const cut = cutBySlot.get(slot.slot);
       if (!cut) {
         /* No evidence about this slot on this frame. Not a failure: the words
            still record, and the next render treats it exactly as today. */
+        if (slot.disputed) {
+          disputedNothingKept(slot, "noRegion");
+          continue;
+        }
         rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
         outcomes.push({ slot: slot.slot, outcome: "words-only", reason: "noRegion" });
         continue;
@@ -415,7 +524,12 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         crop: { mask: cut.mask, box: cut.box },
         digest,
         mintedDigests: digests,
+        /* The guard owns the precedence: the three refusals about whether this
+           is a real, unique picture of the subject come FIRST, and a dispute
+           only ever displaces a completeness verdict. */
+        ...(slot.disputed ? { disputed: true } : {}),
       }, read);
+      if (slot.disputed) disputedReads += 1;
 
       if (!verdict.ok) {
         log.warn(
@@ -432,27 +546,28 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         /*
           THE REFUSAL GOES ON THE ROW, and for one reason the PIXELS do too.
 
-          Every refusal records what happened at the door: which of the five it
+          Every refusal records what happened at the door: which of the six it
           was, the specimen family it was judged against, and the number it read
           if a reading happened. That is the difference between "this slot has
           words" and "this slot has words BECAUSE its crop was turned away for
           this reason at this coverage" — and it is the difference between
           buying a render to find out and reading the row.
 
-          `noSpecimen` keeps its crop as well, because that refusal exists in
-          order to produce the specimen: the kind has no measured positive, so
-          no number here is earned, so a human has to look at the pixels and say
-          what complete means for it. The keys are the refusal's own, never
-          `storageKey` — the assembler builds its prompt from `storageKey` and
-          cannot see these, which is what makes an uncertified picture safe to
-          keep at all.
+          Two of them keep the crop as well, and both for the same reason: they
+          are the refusals only a HUMAN can settle. `noSpecimen` exists in order
+          to produce the specimen — the kind has no measured positive, so no
+          number here is earned. `disputedDelivery` exists to settle whether the
+          painter or the reader was wrong, which no instrument in this system can
+          decide. The keys are the refusal's own, never `storageKey` — the
+          assembler builds its prompt from `storageKey` and cannot see these,
+          which is what makes an uncertified picture safe to keep at all.
         */
         const refusal: ReferenceRowToRecord["refusal"] = {
           reason: verdict.reason,
           kind: verdict.kind,
           ...(verdict.reading ? { coverage: bp(verdict.reading.coverage) } : {}),
         };
-        if (verdict.reason === REFUSAL_THAT_KEEPS_ITS_CROP) {
+        if (refusalKeepsItsCrop(verdict.reason)) {
           const refusedContentKey = `${LIBRARY_KEY_PREFIX}/${randomUUID()}-refused.png`;
           const refusedMaskKey = `${LIBRARY_KEY_PREFIX}/${randomUUID()}-refused-mask.png`;
           /* Onto the same plan as a stored crop, so it goes onto the same
@@ -469,6 +584,22 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
             geometry: { bbox: cut.box, frame: cut.frame },
           };
         }
+        /*
+          AND A DISPUTED SLOT WITH NOTHING TO SHOW WRITES NO ROW AT ALL.
+
+          Reached when the guard refused it for one of the three reasons that
+          come BEFORE the dispute: the frame does not wear the thing, the read
+          did not settle, or another slot already holds these exact bytes. In
+          each of those there is no crop worth a human's time, and the words
+          would be a version bump for a delivery this render's own reader
+          disputed. So the library is left exactly as this render found it —
+          which is what it does today for every disputed facet — and the refusal
+          is in the log line above rather than on a row.
+        */
+        if (slot.disputed && !refusal.crop) {
+          disputedNothingKept(slot, verdict.reason, verdict.detail);
+          continue;
+        }
         rows.push({
           role: "carry",
           slot: slot.slot,
@@ -477,14 +608,37 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           words: slot.words,
           refusal,
         });
-        outcomes.push({
-          slot: slot.slot,
-          outcome: "words-only",
-          reason: "guardRefused",
-          detail: verdict.detail,
-          ...(refusal.crop ? { keptForAdoption: true as const } : {}),
-        });
+        outcomes.push(slot.disputed
+          ? {
+            slot: slot.slot,
+            outcome: "disputed",
+            kept: true,
+            coverage: verdict.reading?.coverage ?? 0,
+          }
+          : {
+            slot: slot.slot,
+            outcome: "words-only",
+            reason: "guardRefused",
+            detail: verdict.detail,
+            ...(refusal.crop ? { keptForAdoption: true as const } : {}),
+          });
         continue;
+      }
+
+      /*
+        UNREACHABLE BY CONSTRUCTION, and it throws rather than storing.
+
+        `guardReference` returns `disputedDelivery` before it consults any
+        threshold, so a disputed slot cannot arrive here. If a later edit
+        reorders that, the failure would be silent and expensive — an unverified
+        delivery quietly becoming what the next render KNOWS this feature is. A
+        throw costs this render its references and costs the user nothing (the
+        catch below keeps the picture), which is the right side to fail on. The
+        ordering itself is pinned exhaustively at the guard, where it can be
+        driven; this line only refuses to be the place it goes wrong.
+      */
+      if (slot.disputed) {
+        throw new Error(`${slot.slot}'s delivery was disputed and the guard passed it; a disputed crop may never enter the library`);
       }
 
       const contentKey = `${LIBRARY_KEY_PREFIX}/${randomUUID()}.png`;
@@ -558,6 +712,19 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         keptForAdoption: outcomes
           .filter((slot) => slot.outcome === "words-only" && slot.keptForAdoption)
           .map((slot) => slot.slot),
+        /* THE DISPUTED FACETS AND WHAT THEY COST, declared rather than implied
+           (fable-220 §3, condition 2). `disputedReads` is one vision call each,
+           spent on slots this render will file nothing for unless the crop is
+           kept — so the line says what was bought and what it bought. */
+        disputedReads,
+        disputedKept: outcomes
+          .filter((slot) => slot.outcome === "disputed" && slot.kept)
+          .map((slot) => slot.slot),
+        disputedNothingKept: outcomes
+          .filter((slot): slot is Extract<MintedSlot, { outcome: "disputed"; kept: false }> => (
+            slot.outcome === "disputed" && !slot.kept
+          ))
+          .map((slot) => `${slot.slot}:${slot.reason}`),
       },
       "[library] minted this render's references",
     );
