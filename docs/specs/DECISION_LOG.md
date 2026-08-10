@@ -8226,4 +8226,72 @@ using `accessoryKinds.pairClauseFor` runs before any accessory tolerance is set.
 
 ---
 
+## D-242 — The first dogfood finding ever, closed at its root: the reader could only see one of a pair.
+
+**2026-08-10.** Logged at fable-171's direction, because it closes an account
+that has been open since the founder's first evening with the product.
+
+**The original finding.** He asked for "gold hoop earrings" and got ONE, on
+v#156, with the other ear fully visible and bare — then the same single hoop on
+the OTHER ear on v#157. Verification passed both. That became working law 8's
+founding example (*earrings come in matching pairs*), and the fix at the time
+was the pair law: `pairClauseFor`, the both-ears question, the occluded third
+verdict. **Those patched the surface, and they were right to.**
+
+**The root, found today by an instrument that refused to run.** A counter built
+for the C′ pair cell was controlled against three frames whose answer had been
+established by cropping both ears and looking — pair, pair, single. It read
+SINGLE three times and stopped. Driven at the wire through the product's own
+module on a frame where both hoops are plainly visible:
+
+```
+"earring"   ONE component,  786px, all of it on one side of her
+"ear"       TWO components, 2557px and 2553px, one per side
+```
+
+**The bilateral branch was sound; the name list was the defect.**
+`falRegionReader`'s `BILATERAL` was three hand-authored anatomical names, and
+`"earring"` was not among them — while `LANDMARK_OF_ACCESSORY` had recorded
+`pair: true` on that entry all along, with a `bothSides` field whose own doc
+comment says it is how to name both sides *"in the painter's clause and the
+reader's."* **The reader never read it.** Two lists holding one fact, drifted:
+**working law 4**, and D-238's class, whose sweep cleared `landmark()` and
+`bornWornDetector` — both anatomy — and never reached the accessory names.
+
+So for the whole life of the pair law, the instrument checking it could see one
+hoop of two, and which one varied by frame. Some of what looked like a painter
+dropping an earring was a reader dropping it.
+
+**Fixed by derivation** (`e9eda482`): `BILATERAL` now takes its accessory half
+from the accessory table's own `pair` column, so a paired accessory added there
+is bilateral without anyone remembering the file. Swept both directions — the
+anatomy names `REGION_OF_FACET` sends were already covered, and the table's
+other two entries are correctly `pair: false`. One sibling existed and it is the
+one found. Sabotaged both directions: removing the derivation turns both new
+tests red; changing the table moves code and expectation together.
+
+**Then the painters were re-asked properly** (`f2a05b0a`). With
+`pairClauseFor`'s own clause, n=5 per engine, the fixed reader, and both arms
+cropped and looked at again:
+
+| | singular clause (the founder's own tally) | the product's pair clause, n=5 |
+|---|---|---|
+| Nano Banana Pro | *"only ever a single earring, one ear"* | **5 of 5 PAIR** |
+| GPT Image 2 | pair mostly, single sometimes | **5 of 5 PAIR** |
+
+**The engine was obeying us exactly, in both directions.** It was never an
+earring defect in either painter. It was our clause and our reader.
+
+**Two standing lessons.** A literalist engine is safe exactly when our
+instructions are provably correct and dangerous when they are silently wrong —
+this shift found two silently-wrong inputs in one evening. And every earring
+figure in the C′ bench report is **struck rather than adjusted**, because a
+number produced by a disproven instrument is not a number to be corrected.
+
+**Cost, declared:** an earring region read now costs three provider calls
+instead of one, the same terms every bilateral region has always paid. Flagged
+to the latency-and-cost program; acceptable behind `users:1`.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
