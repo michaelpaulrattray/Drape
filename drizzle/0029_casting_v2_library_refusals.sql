@@ -1,0 +1,106 @@
+-- THE REFUSED CROP KEEPS ITS PICTURE (fable-214 option (ii), ruled fable-215).
+--
+-- The library's front door refuses a crop it cannot certify — that guard is what
+-- keeps another fringe out of every later render (`referenceCompleteness.ts`).
+-- One of its refusals is different from the rest:
+--
+--   `noSpecimen`  this KIND has no positive specimen, so it has no threshold,
+--                 so the guard refuses rather than borrowing hair's number.
+--
+-- That refusal exists **in order to produce the specimen**. And until now it
+-- threw away the one artifact that could: the pixels a human has to look at to
+-- say "yes, that is a complete earring." A refusal whose evidence is discarded
+-- can only ever be answered by buying the render again.
+--
+-- So a refused crop's bytes are kept, and this is the column group that names
+-- them.
+--
+-- PURELY ADDITIVE. Five nullable columns on one table; no existing column
+-- changes, no index changes, and every row already written stays legal — the
+-- new columns are NULL on all of them, which is exactly what they mean.
+--
+-- ============================================================================
+-- WHY THIS IS A NEW COLUMN GROUP AND NOT THE `image` ONE, OR A THIRD `role`
+-- ============================================================================
+--
+-- The load-bearing property is that **nothing on the recipe path can read
+-- these**. An unverified picture must be openable by a human and invisible to
+-- the assembler, and the way to guarantee that is structural rather than
+-- remembered:
+--
+--   * `storageKey`/`maskKey` are what make a crop RIDE into the next render's
+--     prompt. A refused crop put there would hand the painter the exact picture
+--     the guard exists to turn away. It is the same field, so no reader could
+--     tell the two apart, and the guard would have become decorative.
+--   * `role` stays the two-value enum it was (`anchor`, `carry`). A third role
+--     would widen the enum every existing reader switches on, and each of them
+--     would then have an unowned branch — the unowned-axis class, which in this
+--     codebase falls to the loudest prior on every tile at once.
+--
+-- A refusal row is therefore a WORDS-ONLY row (which it already was, and for a
+-- good reason: the slot's words are the carrier of record, and writing no row
+-- at all would leave the previous crop riding beside words that have moved on)
+-- plus a group of columns that only a human ever opens.
+--
+-- ============================================================================
+-- THE CONTRACT THE WRITE HELPER ENFORCES, BECAUSE MySQL CANNOT BE ASKED TO
+-- ============================================================================
+--
+--   both keys or neither          a crop without its mask cannot be measured
+--                                 or cut out, and a mask without its crop is a
+--                                 stencil for nothing
+--   keys ⇒ reason = 'noSpecimen'  the ONLY refusal whose pixels are kept. A
+--                                 `subjectAbsent` crop is a picture of where
+--                                 the thing would have been — a fabrication
+--                                 with a well-formed box, and storing it would
+--                                 invite exactly the adoption it must not get.
+--                                 `duplicateOfSlot` already has its bytes at
+--                                 another slot. `underCaptured` was measured
+--                                 against a real bar and refused correctly.
+--   keys ⇒ `storageKey` IS NULL   a row is a delivered crop or a refused one;
+--                                 a crop that passed the guard is not refused,
+--                                 and one that did not is not delivered
+--   reason ⇒ role = 'carry'       an anchor is an upload, never guarded
+--   coverage ⇒ reason             a number with no refusal behind it is a
+--                                 reading nobody can place
+--   kind ⇔ reason                 every guard verdict names the specimen family
+--                                 it judged against
+--
+-- ============================================================================
+-- WHY `refusedKind` EXISTS, WHICH IS THE ONE COLUMN BEYOND THE OBVIOUS FOUR
+-- ============================================================================
+--
+-- `refusedCoverage` is the number that would be ADOPTED as a kind's positive
+-- specimen, and a specimen belongs to a KIND (`hair`, `earring`), not to a slot
+-- (`earring@left`). The two are not the same string and the mapping is not the
+-- reader's to guess: the catalogue derives a slot's guard kind from its
+-- segmentation question, so `fringe` is judged as `hair` and an accessory takes
+-- its accessory region's name. A number adopted under the wrong family is the
+-- wrong-boundary class — a measurement about one thing adjudicating another —
+-- and this program has paid for that four times.
+--
+-- `guardKind` cannot carry it: that column records what the guard read when a
+-- crop was MINTED, and these rows have no minted crop. One column meaning two
+-- things depending on a sibling's nullness is how a reader learns to guess.
+--
+-- Not a MySQL enum, deliberately, and for the reason the `role` enum is not
+-- being widened: a new refusal reason would otherwise be a migration, and the
+-- guard's reason list is code that moves faster than a ceremony. The five legal
+-- values live in `referenceCompleteness.ts` and are checked at the write.
+--
+-- ============================================================================
+-- RETENTION IS UNCHANGED IN SHAPE AND WIDER IN REACH
+-- ============================================================================
+--
+-- These are two more objects at permanently public keys holding a crop of a
+-- person's face, so they are swept on exactly the terms the delivered ones are:
+-- the candidate sweep collects them onto the same cleanup manifest inside the
+-- same transaction, unconditionally and never gated on the feature flag. The
+-- sweep's SELECT must name these two columns the day the writer does — a purge
+-- that does not know about a key is a promise the worker cannot keep.
+ALTER TABLE `casting_reference_library`
+	ADD COLUMN `refusedContentKey` varchar(512),
+	ADD COLUMN `refusedMaskKey` varchar(512),
+	ADD COLUMN `refusedReason` varchar(32),
+	ADD COLUMN `refusedKind` varchar(48),
+	ADD COLUMN `refusedCoverage` int;

@@ -1,11 +1,16 @@
 /**
- * Ceremony — the reference library (`casting_reference_library`, migration 0028).
+ * Ceremony — the reference library (`casting_reference_library`, migrations 0028
+ * and 0029).
  *
- * ONE migration, and it is a new table nothing reads yet. It lands AHEAD of the
- * code that writes it, which is the ordering this program runs under: **the
- * migration lands before the code that names it.** A new table is inert on its
- * own; an INSERT into an absent table is not, and the render that would do it
- * is a paid one.
+ * TWO migrations now, and both are inert on their own: 0028 is a new table
+ * nothing reads yet, 0029 adds five nullable columns to it that nothing on the
+ * rendering path ever reads. They land AHEAD of the code that writes them,
+ * which is the ordering this program runs under: **the migration lands before
+ * the code that names it.** An INSERT naming an absent column is not inert, and
+ * the render that would do it is a paid one.
+ *
+ * Re-running after 0028 has already been applied is expected and safe — that is
+ * how 0029 arrives, and each step reports APPLIED or ALREADY APPLIED for itself.
  *
  * Run ONLY via:
  *   railway.cmd run --service MySQL -- npx tsx scripts/ceremony-reference-library.mts
@@ -61,7 +66,26 @@ try {
     console.log("1. casting_reference_library  APPLIED");
   }
 
-  /* --------------------------------------------------- 2. read it back */
+  /* ------------------------------------ 2. the refused crop's own columns */
+
+  /*
+    Migration 0029. Keyed on one of its own columns rather than on a version
+    table: the question "has this run" is answered by the database's own shape,
+    which is the only thing that can be wrong in a way that matters here.
+  */
+  const [before] = await conn.query<any[]>("SHOW COLUMNS FROM `casting_reference_library`");
+  if (before.some((column) => column.Field === "refusedContentKey")) {
+    console.log("2. refused-crop columns       ALREADY APPLIED");
+  } else {
+    const sql = await readFile("drizzle/0029_casting_v2_library_refusals.sql", "utf8");
+    for (const statement of sql.split("--> statement-breakpoint")) {
+      const trimmed = statement.trim();
+      if (trimmed) await conn.query(trimmed);
+    }
+    console.log("2. refused-crop columns       APPLIED");
+  }
+
+  /* --------------------------------------------------- 3. read it back */
 
   const [columns] = await conn.query<any[]>("SHOW COLUMNS FROM `casting_reference_library`");
   const names = columns.map((column) => column.Field);
@@ -69,6 +93,10 @@ try {
     "userId", "candidateId", "variantId", "role", "slot", "tier", "noun", "words",
     "storageKey", "maskKey", "digest", "bboxX", "bboxY", "bboxW", "bboxH", "frameWidth", "frameHeight",
     "guardKind", "guardCoverage", "guardSpill", "guardThreshold", "version", "retiredAt",
+    /* 0029 — the refused crop's own group. A column missing here means the
+       writer's INSERT would name something the table does not have, on a paid
+       render, at the moment a guard turns a crop away. */
+    "refusedContentKey", "refusedMaskKey", "refusedReason", "refusedKind", "refusedCoverage",
   ]) {
     if (!names.includes(required)) {
       throw new Error(`casting_reference_library is missing ${required} — stop and investigate`);
@@ -83,7 +111,13 @@ try {
     impossible to write, and the failure would arrive on a paid render.
   */
   const nullable = new Map(columns.map((column) => [column.Field, column.Null === "YES"]));
-  for (const column of ["variantId", "storageKey", "maskKey", "digest", "retiredAt"]) {
+  for (const column of [
+    "variantId", "storageKey", "maskKey", "digest", "retiredAt",
+    /* Every 0029 column, on every row that already exists: NULL is what "this
+       row is not a refusal" means, so a NOT NULL here would make the seven rows
+       already in the table illegal and every ordinary mint impossible. */
+    "refusedContentKey", "refusedMaskKey", "refusedReason", "refusedKind", "refusedCoverage",
+  ]) {
     if (nullable.get(column) !== true) {
       throw new Error(`${column} must be NULLable and is not — stop and investigate`);
     }
@@ -115,8 +149,17 @@ try {
   if (identity.some((row: any) => row.Non_unique !== 0)) {
     throw new Error("the identity key is not unique — stop and investigate");
   }
+  /* The rows that were already there, counted AFTER the alter rather than
+     assumed to have survived it. An additive migration cannot lose a row, and
+     "cannot" is the word that precedes every incident in this program's log. */
+  const [surviving] = await conn.query<any[]>(
+    "SELECT COUNT(*) AS n, COUNT(`refusedContentKey`) AS refused FROM `casting_reference_library`",
+  );
   console.log(
-    `2. read back                  ${names.length} columns; identity key UNIQUE on (${identityColumns.join(", ")})`,
+    `3. read back                  ${names.length} columns; identity key UNIQUE on (${identityColumns.join(", ")})`,
+  );
+  console.log(
+    `                              ${surviving[0].n} row(s) present, ${surviving[0].refused} carrying a refused crop`,
   );
 
   console.log("\nCEREMONY COMPLETE. Next, IN THIS ORDER:");

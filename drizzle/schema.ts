@@ -2661,6 +2661,38 @@ export const castingReferenceLibrary = mysqlTable("casting_reference_library", {
   guardCoverage: int("guardCoverage"),
   guardSpill: int("guardSpill"),
   guardThreshold: int("guardThreshold"),
+  /**
+   * THE CROP THE GUARD TURNED AWAY (migration 0029, fable-214/215).
+   *
+   * A `noSpecimen` refusal is the one refusal that exists in order to produce
+   * the specimen — the kind has no measured positive, so no number here is
+   * earned, so the guard refuses and a human must look at the pixels to say
+   * what complete means for it. These columns are those pixels and that
+   * reading.
+   *
+   * **Nothing on the recipe path reads them, and that is the design.** The keys
+   * are deliberately not `storageKey`/`maskKey`: those are what make a crop ride
+   * into the next render's prompt, and an unverified picture must be openable by
+   * a human and invisible to the assembler. Structural, not remembered.
+   *
+   * `refusedKind` is the specimen family the number belongs to — `hair`,
+   * `earring` — which is not the slot (`earring@left`) and is not derivable from
+   * it without the catalogue. A coverage adopted under the wrong family is the
+   * wrong-boundary class. `guardKind` cannot carry it: that one records what was
+   * read when a crop was MINTED, and a refusal minted nothing.
+   *
+   * The write helper enforces the shape MySQL cannot: both keys or neither,
+   * keys only on `noSpecimen`, never beside a `storageKey`, `carry` role only.
+   */
+  refusedContentKey: varchar("refusedContentKey", { length: 512 }),
+  refusedMaskKey: varchar("refusedMaskKey", { length: 512 }),
+  /** One of `referenceCompleteness.ts`'s five reasons. Text rather than an enum
+   *  so a new reason is a deploy and not a database ceremony. */
+  refusedReason: varchar("refusedReason", { length: 32 }),
+  refusedKind: varchar("refusedKind", { length: 48 }),
+  /** Basis points of the region, like {@link guardCoverage}. Absent when the
+   *  refusal recorded no reading at all (`readDidNotSettle`). */
+  refusedCoverage: int("refusedCoverage"),
   version: int("version").default(1).notNull(),
   /** A fact about a VERSION, not about a slot: this branch's newest word on the
    *  slot is "gone". Other branches keep theirs. */
