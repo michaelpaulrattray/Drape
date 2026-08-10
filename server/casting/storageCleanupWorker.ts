@@ -58,6 +58,69 @@ export function storageCleanupHealthRequiresAttention(
   );
 }
 
+/**
+ * SAY IT WHEN IT CHANGES, AND ONCE AN HOUR OTHERWISE.
+ *
+ * The health counts are CUMULATIVE — `failedBatches` is every batch that has
+ * ever failed — so a single historic failure made this warn every 60 seconds
+ * forever. It did: two days of identical lines reading `failedBatches: 5`, at
+ * `warn`, in production. Nobody read the fifth one, which is the point. An
+ * alert ignored for a week is invariant 7 with a schedule, and the cost was
+ * real — those five batches were the founder's diagnostic frames failing to
+ * delete, and the noise is why it took a log sweep looking for something else
+ * to notice.
+ *
+ * So: a line when the picture CHANGES, a heartbeat at most hourly while it
+ * stays bad, and — the half that is easy to forget — **a line when it clears**.
+ * Silence after a warning is ambiguous between "fixed" and "the worker died";
+ * saying so out loud is what makes the quiet trustworthy.
+ */
+type HealthReportState = { fingerprint: string; at: number; wasBad: boolean };
+const healthReport: HealthReportState = { fingerprint: "", at: 0, wasBad: false };
+export const STORAGE_CLEANUP_HEALTH_HEARTBEAT_MS = 60 * 60 * 1000;
+
+export function reportStorageCleanupHealth(
+  health: StorageCleanupHealth,
+  now: number = Date.now(),
+  sink: { warn: typeof log.warn; info: typeof log.info } = log,
+): "logged" | "suppressed" | "recovered" {
+  const bad = storageCleanupHealthRequiresAttention(health);
+  if (!bad) {
+    if (!healthReport.wasBad) return "suppressed";
+    healthReport.wasBad = false;
+    healthReport.fingerprint = "";
+    healthReport.at = now;
+    sink.info(health, "[StorageCleanup] cleanup health is clear again");
+    return "recovered";
+  }
+  /* The counts that decide the verdict, not the whole object: a timestamp or a
+     millisecond age drifting by one would make every sweep look like a change
+     and put us straight back to a line a minute. */
+  const fingerprint = JSON.stringify([
+    health.partialBatches, health.failedBatches, health.staleLeases,
+    health.cleanupPendingEvidenceReceipts, health.failedEvidenceManifests,
+    health.pendingPrivateBatches, health.retainedFailedItems,
+  ]);
+  const changed = fingerprint !== healthReport.fingerprint;
+  const stale = now - healthReport.at >= STORAGE_CLEANUP_HEALTH_HEARTBEAT_MS;
+  if (!changed && !stale) return "suppressed";
+  healthReport.fingerprint = fingerprint;
+  healthReport.at = now;
+  healthReport.wasBad = true;
+  sink.warn(
+    { ...health, why: changed ? "changed" : "hourly heartbeat" },
+    "[StorageCleanup] cleanup health requires attention",
+  );
+  return "logged";
+}
+
+/** For tests, which must not inherit a previous case's memo. */
+export function resetStorageCleanupHealthReport(): void {
+  healthReport.fingerprint = "";
+  healthReport.at = 0;
+  healthReport.wasBad = false;
+}
+
 export async function processNextStorageCleanupBatch(input: {
   now?: Date;
   clock?: () => Date;
@@ -194,9 +257,7 @@ export function startStorageCleanupWorker(): void {
         await settleNextCompletedIntentOnlyCleanup();
       }
       const health = await getStorageCleanupHealth();
-      if (storageCleanupHealthRequiresAttention(health)) {
-        log.warn(health, "[StorageCleanup] cleanup health requires attention");
-      }
+      reportStorageCleanupHealth(health);
     } catch (error) {
       log.error({ err: error }, "[StorageCleanup] worker sweep failed safely");
     } finally {

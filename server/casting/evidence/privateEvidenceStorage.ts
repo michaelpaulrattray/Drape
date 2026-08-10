@@ -12,6 +12,7 @@ import {
 import { supportedImageMime } from "../../security/trustedImageFetch";
 import {
   EvidenceDeliveryError,
+  isPrivateEvidenceDeletableKey,
   parseEvidenceStorageKey,
   type EvidenceDeleteResult,
   type PrivateEvidenceStorageAdapter,
@@ -288,9 +289,11 @@ export function createPrivateEvidenceStorageAdapter(
     },
 
     async deleteExact(key) {
-      try {
-        parseEvidenceStorageKey(key);
-      } catch {
+      /* Every shape this bucket legitimately holds, enumerated — the evidence
+         keys AND the casting diagnostic frames. See
+         `isPrivateEvidenceDeletableKey`: guarding with the evidence parser
+         alone is what left six of the founder's frames undeletable. */
+      if (!isPrivateEvidenceDeletableKey(key)) {
         return {
           success: false,
           errorCode: "private_storage_invalid_request",

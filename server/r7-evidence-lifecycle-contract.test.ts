@@ -33,10 +33,23 @@ describe("R7-7C3 evidence lifecycle contract", () => {
     expect(plan).toBeLessThan(settleBefore);
     expect(settleBefore).toBeLessThan(deleteBatch);
     expect(deleteBatch).toBeLessThan(settleAfter);
-    expect(run).toContain("storageCleanupHealthRequiresAttention(health)");
+    /*
+      The sweep still reads the health every time — through the REPORTER since
+      2026-08-10, which decides whether to say anything. That indirection is the
+      fix for a warning that fired every 60 seconds for two days; the contract
+      this test defends is "health is evaluated on every sweep, after the
+      delete", so it now pins the reporter here AND the predicate inside it,
+      rather than pinning one call site and being satisfied.
+    */
+    expect(run).toContain("reportStorageCleanupHealth(health)");
+    const reporter = worker.slice(
+      worker.indexOf("export function reportStorageCleanupHealth"),
+      worker.indexOf("export function resetStorageCleanupHealthReport"),
+    );
+    expect(reporter).toContain("storageCleanupHealthRequiresAttention(health)");
     const healthGuard = worker.slice(
       worker.indexOf("export function storageCleanupHealthRequiresAttention"),
-      worker.indexOf("export async function processNextStorageCleanupBatch"),
+      worker.indexOf("type HealthReportState"),
     );
     expect(healthGuard).toContain("cleanupPendingEvidenceReceipts");
     expect(healthGuard).toContain("failedEvidenceManifests");

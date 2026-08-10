@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f3a1072efeedd06b"
+    "sourceFingerprint": "78d7c534279f2fda"
   },
   "domains": [
     {
@@ -8873,6 +8873,10 @@
     {
       "id": "test:server/phase-a-quota.test.ts",
       "path": "server/phase-a-quota.test.ts"
+    },
+    {
+      "id": "test:server/privateEvidencePurge.test.ts",
+      "path": "server/privateEvidencePurge.test.ts"
     },
     {
       "id": "test:server/profile.test.ts",

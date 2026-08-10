@@ -75,6 +75,37 @@ function positiveId(value: number): boolean {
   return Number.isSafeInteger(value) && value > 0;
 }
 
+/**
+ * THE DIAGNOSTIC FRAMES ARE IN THIS BUCKET TOO, and the deleter did not know it.
+ *
+ * `casting-v2/diagnostics/<userId>/<operationId>/<name>.png` — the painted frame
+ * and mask kept when one of the founder's renders is refused, written by
+ * `diagnosticCapture` and approved by him on the promise that the cleanup worker
+ * sweeps them.
+ *
+ * **That promise was not being kept, and this is why.** `deleteExact` guarded
+ * itself with `parseEvidenceStorageKey`, which only knows the R7 evidence shape,
+ * so every diagnostic delete returned `private_storage_invalid_request` with
+ * `retryable: false` and stopped forever. Six frames of his face, five failed
+ * batches, nothing ever scheduled to try again — and the worker shouted about it
+ * once a minute for two days while the count told nobody what it was.
+ *
+ * The guard's PURPOSE was always "refuse to delete anything that is not ours",
+ * and that purpose is right. It was implemented as "must be an R7 evidence key",
+ * which is a narrower thing that silently became wrong the moment this bucket
+ * held a second kind of object. So it is now what it always meant: an
+ * enumerated list of the shapes this bucket legitimately holds. A third kind
+ * arriving must be added here, deliberately, and its absence fails CLOSED —
+ * the object is retained rather than a stranger deleted.
+ */
+const DIAGNOSTIC_KEY_PATTERN = new RegExp(
+  `^casting-v2/diagnostics/([1-9][0-9]*)/(${UUID_PATTERN})/[a-zA-Z0-9_-]{1,64}\\.png$`,
+);
+
+export function isPrivateEvidenceDeletableKey(key: string): boolean {
+  return EVIDENCE_KEY_PATTERN.test(key) || DIAGNOSTIC_KEY_PATTERN.test(key);
+}
+
 export function parseEvidenceStorageKey(key: string): ParsedEvidenceKey {
   const match = EVIDENCE_KEY_PATTERN.exec(key);
   if (!match) throw new EvidenceDeliveryError("invalid_key");
