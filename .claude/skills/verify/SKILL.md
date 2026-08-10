@@ -27,6 +27,15 @@ executablePath: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.e
 
 Set the cookie with `page.setCookie({ name: 'app_session_id', value: TOKEN, domain: 'localhost', path: '/' })` before the first goto.
 
+## Before you conclude a surface is broken — the four readings that cost a shift
+
+1. **Wait on the thing, never on the clock.** `waitForSelector` on the element itself, and record how long it took. Shift 26 concluded "panel v2 does not appear" from a fixed 4-second sleep; the panel arrives at ~4.9s because it can only ask once a prior query has told it which version is selected, and the database is remote. A fixed sleep reports a slow answer as no answer.
+2. **Wait on the BYTES for anything painted.** A background image or a CSS mask that has not decoded photographs as an empty box, which is indistinguishable from the element painting nothing. Preload every `url(...)` off the computed style, then measure.
+3. **A reading of a painted thing is a DELTA, never an absolute.** Elements sit over blurred photographs, so an empty 44px box is full of someone else's colour. Photograph the element, then photograph it again with the thing under test disabled (block the stencil at the network layer; force `color: transparent`), and diff. Zero means it painted nothing. Both current instruments live in `scripts/drive-face-panel-evidence.mts`.
+4. **Measure the element you are not testing, too.** A new panel took every pixel of the viewer and the photograph beside it rendered 0×0 while every assertion about the panel passed. Assert the neighbour keeps its size.
+
+Every check records what it SAW (D-235) — `scripts/lib/drivePage.mts` has the collector; an `ok` with no observation behind it is not a reading. A driver whose surface is absent must FAIL rather than skip.
+
 ## Driving gotchas
 
 - SPA state matters: Zustand stores persist across in-app navigation but reset on `page.goto`. To test in-app flows, click real UI; `goto` only tests cold loads.
