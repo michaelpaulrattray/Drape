@@ -8399,4 +8399,74 @@ claiming one feature.
 
 ---
 
+## D-244 — THE EDIT LAW. Words change, crops carry; every edit regenerates its feature from its anchor plus the full word stack.
+
+**2026-08-10, founder-confirmed (relayed fable-182).** *"This isn't Photoshop."*
+That sentence is the governing design of the compositor swap, and it settles by
+construction four questions that had been open for three shifts.
+
+### The law
+
+1. **Words change; crops carry. Never both for one feature in one render.**
+2. **Every edit REGENERATES its feature from its ANCHOR + that feature's FULL
+   word stack** (every accumulated word, including the new delta). One
+   generation from the anchor, always. **A feature's own crop never rides in its
+   own edit.**
+3. **Anchors.** Anatomy and surfaces → the MASTER. Introduced items → their
+   FROZEN INTRODUCTION REFERENCE (D-192): a tattoo upload converted to a flash
+   sheet (D-138), makeup copied from an image → that image, a lip shape taken
+   from an image → that image. Born-worn accessories (her own glasses) → the
+   MASTER, because they are already in it.
+4. **The delivered result is re-cropped and THAT crop is the feature's carry
+   reference** for renders that do not touch it — pixel-frozen until it is
+   edited again. Editing an accessory instance mints a completely new crop.
+5. **Removal = strike the words** (and/or drop the introduced reference) and
+   regenerate from the anchor plus what survives. The same mechanic as any other
+   edit; no rollback-versus-rebuild fork exists.
+
+### What it makes unreachable — and therefore what is NOT built
+
+- **Degradation machinery: unnecessary by construction.** No feature is ever
+  more than one generation from its anchor, so there is no staircase to gauge.
+  fable-179's gauge and word-ledger re-ground are **MOOT — obsoleted, not
+  rejected** (the re-ground is what every edit already is), and the lip
+  staircase bench is cancelled as a threshold-finder. **Nothing is owed from
+  it**: no generation or detail-ratio columns, and therefore no migration.
+- **The contaminated mint** (gloss baked into a fuller-lips crop, then riding
+  the lips' own next edit) is unreachable. No pixel-provenance tagging.
+- **The removal contradiction** is unreachable, same reason.
+- **fable-175 §1's edit recipe is SUPERSEDED** — edits carry the full word stack
+  from the anchor, not delta-words plus the current crop. The ratchet survives
+  only as the CARRY side: a minted crop rides untouched renders byte-identical.
+
+### The one thing that becomes load-bearing
+
+**The word stack's completeness.** Line 2 regenerates from *the full stack*, so
+a lost or empty delta is a silently forgotten edit. Mint time asserts non-empty
+delta words for every word-tier and anatomy ask.
+
+### The declared trade — chosen with eyes open
+
+Editing a feature re-derives its earlier look from words, so an exact accepted
+look **may shift a hair** when that same feature is edited again. Only the
+edited feature; everything else is pixel-frozen. Stated, weighed, accepted.
+
+### Masks are promoted from hygiene to foundation
+
+The founder's second sentence — *"we need to make sure we have the mask
+working"* — follows from the first: under this law every carry reference is cut
+with a region mask. The completeness guard, fresh-full-read seeding, split-frame
+bilateral instances and occlusion honesty are the swap's foundation, not
+adjacent tidying. Recorded in `COMPOSITOR_SWAP_DESIGN.md` §0.
+
+### Ordered before it is built on
+
+The **edit-law cell** (fixture lane): gloss → fuller → remove-gloss; carry
+stability under an unrelated edit; an introduced item edited from its frozen
+anchor; a single-instance edit with the other instance pixel-held. Verified in
+both D-235 columns — delivered for the edited feature, carried for every
+untouched one.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

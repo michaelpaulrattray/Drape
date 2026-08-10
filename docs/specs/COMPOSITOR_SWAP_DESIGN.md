@@ -6,6 +6,36 @@ here is new judgment: every rule below traces to a founder ruling or a Fable
 ruling, and where a choice was left open the choice is marked **OPEN** rather
 than quietly made.*
 
+*Revised 2026-08-10, shift 22, to **D-244 — the Edit Law** (founder-confirmed,
+fable-182), and to fable-183's reference-format and tolerance rulings. §3 is
+rewritten wholesale; §3.3's degradation machinery is **MOOT by construction**
+rather than rejected. The mask work is promoted out of hygiene into §0, because
+the founder said "we need to make sure we have the mask working" and under the
+Edit Law the region masks are the scissors for every crop the product owns.*
+
+---
+
+## 0. What everything below stands on: the masks
+
+The Edit Law says a feature is regenerated from an ANCHOR plus words, and that
+what carries between renders is a CROP. Both of those are cut with a region
+mask. So the mask work is not adjacent to the swap — it is the swap's
+foundation, and it is listed first for that reason (fable-182, founder):
+
+1. **The completeness guard** (§2.4) — a crop that does not contain its feature
+   is the fringe defect, and it enters the library silently unless a second,
+   independent read refuses it.
+2. **Fresh-full-read seeding** (§2.3) — every reference is minted from a fresh
+   region read on a frame that actually wears the thing.
+3. **Split-frame bilateral instances** (§2.2) — one crop per instance, which is
+   what makes "edit one ear, hold the other" expressible at all.
+4. **Occlusion honesty** (fable-183) — our cutter amputates a hoop where hair
+   crosses it. That is the fringe class in an occluder's costume, and it now
+   sits on the completeness guard's defect list.
+
+None of these are optional preconditions to be revisited later; a swap built on
+a dishonest mask ships a product that quietly forgets features.
+
 ---
 
 ## 1. What is being swapped
@@ -136,44 +166,80 @@ usually behaves (working law 3).
 
 ---
 
-## 3. The ask, and what mints a reference
+## 3. THE EDIT LAW — what an edit is (D-244, founder, 2026-08-10)
 
-**Words propose; acceptance mints the reference** (fable-166 §3, generalized
-from eye.colour). For any "new value" ask on a reference-carried facet — a
-colour she does not have, a style she has never worn — there is no reference to
-send, so the ask is carried by WORDS; the **accepted delivered frame** then
-becomes that slot's reference for every render after.
+*"This isn't Photoshop."* The founder's sentence is the whole design. An edit is
+not a patch applied to the last picture; it is a **regeneration of one feature
+from its origin**, with everything ever said about that feature said again.
 
-This is why the tier table has no standing "eye.colour is words or reference"
-row: the architecture answers it.
+### 3.0 The law, in five lines
 
----
+1. **Words change; crops carry. Never both for one feature in one render.**
+2. **Every edit REGENERATES its feature from its ANCHOR + the feature's FULL
+   word stack** — all accumulated words including the new delta. One generation
+   from the anchor, always. **A feature's own crop never rides in its own edit.**
+3. **Anchors.** Anatomy and surfaces → the **MASTER**. Introduced items → their
+   **FROZEN INTRODUCTION REFERENCE** (D-192): a tattoo upload converted to a
+   flash sheet (D-138), makeup copied from an image → that image, a lip shape
+   taken from an image → that image. Born-worn accessories (her own glasses) →
+   the **MASTER**, because they are in it.
+4. **The delivered result is re-cropped, and THAT crop is the feature's carry
+   reference** for every render that does not touch it — pixel-frozen until the
+   feature is edited again. Editing an accessory instance mints a **completely
+   new** crop (per-instance, fable-162/167).
+5. **Removal = strike the words** (and/or drop the introduced reference) and
+   regenerate from the anchor plus what survives. It is the same mechanic as any
+   other edit; there is no rollback-versus-rebuild fork to design.
 
-### 3.1 The slot is a RATCHET (fable-175)
+### 3.1 What this makes IMPOSSIBLE — and therefore what we do not build
 
-Same-feature edits compose **in time, not in parallel**. "Change her lip shape,
-then add gloss" is two renders, and after each accepted one the slot's reference
-is **RE-MINTED with everything so far baked into the pixels** (shape, then
-shape+gloss).
+The law's value is mostly negative: whole classes of machinery become
+unreachable rather than merely unnecessary.
 
-- **An ask's words carry only the DELTA; the reference carries the accumulated
-  truth.** A shape can never be "forgotten" by a later surface ask, because it
-  is not an instruction — it is the picture. So fable-174's one-slot invariant
-  holds here without exception.
-- **Routing composes too.** The shape ask may route NBP-anatomical, the surface
-  ask GPT2. Irrelevant to the slot, which only records accepted deliveries: the
-  reference is engine-agnostic memory.
-- **Removal is an EDIT or a ROLLBACK, never a blind revert.** Either words
-  remove the surface while the current reference carries and the shape survives
-  (re-mint on acceptance), or the slot rolls back to a prior entry in its own
-  lineage. "Revert to the born crop" is right ONLY when the removed thing is the
-  slot's sole accepted change. *(This corrects fable-168 §4 — update the tier
-  doc where that is transcribed.)*
-- **Verification is per ask**: a surface ask verifies the gloss delivered AND
-  the shape held — the delivered/carried pair the two-column reliability report
-  already expresses.
+- **Degradation over a long chain cannot accumulate.** No feature is ever more
+  than **one generation from its anchor**. fable-179's gauge/word-ledger
+  re-ground is **MOOT — obsoleted, not rejected** — and the lip staircase bench
+  is cancelled as a threshold-finder. See §3.3.
+- **The contaminated mint is unreachable.** Gloss baked into a fuller-lips crop
+  can never ride the lips' own next edit, because a crop never participates in
+  its own feature's edit. No tagging machinery, no provenance flags on pixels.
+- **The removal contradiction is unreachable**, for the same reason.
+- **fable-175 §1's edit recipe is SUPERSEDED.** Edits carry the full word stack
+  from the anchor, not delta-words plus the current crop. The ratchet survives
+  **only as the carry side** — see §3.2.
 
-### 3.2 Every generation is paid surface (fable-180 — CONFIRMED founder law)
+### 3.2 What survives: the carry side, and minting
+
+**Words propose; acceptance mints the reference** (fable-166 §3) still stands,
+and is now the law's fourth line. For a "new value" ask on a reference-carried
+facet — a colour she does not have, a style she has never worn — there is no
+reference to send, so the ask is carried by WORDS; the **accepted delivered
+frame** is then re-cropped into that slot's carry reference.
+
+- **Carry is pixel-frozen.** A render that does not touch a feature sends that
+  feature's minted crop unchanged, byte-identical. That is the ratchet's
+  surviving half and it is what makes "her earrings did not move when I changed
+  her hair" true rather than hoped.
+- **Routing composes.** A shape ask may route NBP-anatomical and a surface ask
+  GPT2; the slot only records accepted deliveries, so the reference is
+  engine-agnostic memory.
+- **Verification is per ask, in two columns**: the ask's own feature verifies
+  as DELIVERED, every untouched feature verifies as CARRIED. That is the
+  delivered/carried pair the reliability report already expresses (D-235).
+- **fable-168 §4's "revert to the born crop"** has no separate existence any
+  more: removal is line 5, and regenerating from the anchor with the words
+  struck *is* the revert, without a special case. *(This supersedes fable-175
+  §3's correction of it — recorded here because the mailbox was that rule's
+  only transcription.)*
+
+### 3.2a The declared trade — the founder chose it with his eyes open
+
+Editing a feature re-derives its earlier look from words, so **an exact accepted
+look may shift a hair when that same feature is edited again**. Only the edited
+feature moves; everything else is pixel-frozen. Stated, weighed, accepted
+(fable-182). Do not build a mitigation for it without a fresh ruling.
+
+### 3.3 Every generation is paid surface (fable-180 — CONFIRMED founder law)
 
 **No flow anywhere generates a render the user can walk away from for free.** A
 generate-then-decline flow is a free render on the platform's money every time a
@@ -189,23 +255,31 @@ user declines. This is a standing product law, not a detail of any one feature:
   frame was already bought and refunded, so showing it costs nothing new and is
   not a preview mechanic.
 
-### 3.3 Degradation over a long chain — PROPOSED, NOT CONFIRMED
+### 3.4 Degradation over a long chain — **MOOT under D-244**
 
-fable-177's refuse-if-softer bar was **withdrawn**: the founder overruled it
-("of course it will degrade over 3–4 edits… her original crop needs to be an
-anchor"). A rule that refuses the inevitable would strangle multi-edit features.
+The history, kept because it is how the law was reached:
 
-fable-179 proposes a replacement — the master crop as a **measuring gauge**
-rather than a wall, refusal reserved for single-step collapse, and a
-**word-ledger re-ground** that repaints the feature from the pristine master
-plus the slot's accumulated delta words. **It is explicitly not founder-
-confirmed. Do not build against it.** It is recorded here as design input only.
+- fable-177 proposed a refuse-if-softer bar. The founder **overruled** it ("of
+  course it will degrade over 3–4 edits… her original crop needs to be an
+  anchor"). A rule that refuses the inevitable would strangle multi-edit
+  features.
+- fable-179 then proposed a gauge instead of a wall, plus a **word-ledger
+  re-ground** repainting the feature from the pristine master plus accumulated
+  delta words.
+- **D-244 obsoletes both.** The re-ground is not an occasional repair — it is
+  what *every* edit already is. And there is nothing left to gauge: a feature is
+  never more than one generation from its anchor, so the staircase whose steps
+  the gauge would count does not exist.
 
-If it is confirmed, two consequences are already known: the mint record gains
-generation and detail-ratio columns (**and a new column on a written table means
-the migration lands first** — the standing law), and the word ledger's
-completeness becomes load-bearing, so mint time must assert that the delta words
-are non-empty for every word-tier and anatomy ask.
+**fable-179 is MOOT, not rejected**, and nothing is owed from it. In particular
+the two consequences it carried are **not** owed: no generation/detail-ratio
+columns on the mint record, and therefore no migration.
+
+**The one thing it leaves behind is load-bearing**: the word stack's
+completeness. Line 2 of the law regenerates from *the full word stack*, so a
+lost or empty delta is a silently forgotten edit. Mint time must assert that
+the delta words are non-empty for every word-tier and anatomy ask, and the
+edit-law cell (§6.1) is where that assertion is first driven.
 
 ## 4. Verification, per tier
 
@@ -218,12 +292,27 @@ Provisional at **n=3**, worst-of-three not mean, and **the n goes in every
 report that cites it**:
 
 ```
-GPT Image 2      shape-on-face ≥ 0.977   on-face drift ≤ 2 px
-Nano Banana Pro  shape-on-face ≥ 0.915   (its head wanders 58–67 px between paints)
+anatomy / surfaces
+  GPT Image 2      shape-on-face ≥ 0.977   on-face drift ≤ 2 px      (n=3)
+  Nano Banana Pro  shape-on-face ≥ 0.915                             (n=3)
+                                     (its head wanders 58–67 px between paints)
+
+accessory carry — RATIFIED fable-183, from the accessory instance cell
+  GPT Image 2      per-instance ≥ 0.85   worst-of-n, never averaged  (n=5)
+  Nano Banana Pro  NOT ROUTED for accessory carry
 ```
 
-**Widening is mandatory before any certification walk counts.** The accessory
-tolerance is set from the accessory instance cell's numbers.
+**NBP is not routed for accessory carry**, and the reason is a promise rather
+than a preference: its worst instance scored **0.525** and its bands run ~10%
+thin, so a bar loose enough to pass it is a bar that blesses **a different
+earring** — which is exactly what D-241 promises will not happen. Its
+anatomical routes (fox-eyes) are untouched by this.
+
+**Per instance, never averaged across instances.** The cell's img-left/img-right
+lean (§7) is the reason: a mean would pass the easy ear by carrying the hard one.
+
+**Widening is mandatory before any certification walk counts** — every n above
+is provisional and travels inside any number that cites it.
 
 ### 4.2 Word tier — and its realism clause
 
@@ -262,9 +351,44 @@ Both measured this shift (D-243), so the swap does not have to guess:
   (fable-165 §4): the floating-item look is the design language, and it is
   available today.
 
+### 5.1 REFERENCE FORMAT: recipes carry RECTANGULAR CROPS (fable-183)
+
+**Ruled.** On the routed engine the crop arm won both measures against the
+cutout arm, so **every reference a recipe sends is a rectangular crop** until an
+occlusion-aware cutter exists and a re-test says otherwise. **Cutouts remain the
+PANEL's display format** (fable-165 §4) — the two uses are now deliberately
+different formats, which is worth saying out loud so a later reader does not
+"unify" them.
+
+**And the reason the cutout lost is ours, not the founder's hypothesis.** Our
+cutter amputates the arc of a hoop where hair crosses it; a ring that stops
+mid-air *asks* to be completed, so the cutout invited the very invention it was
+meant to prevent. **Occlusion amputation therefore joins the completeness
+guard's defect list** (§0.4) — the fringe class, occluder edition. When the
+cutter is fixed, this ruling is re-tested rather than assumed.
+
 ---
 
 ## 6. Build order
+
+### 6.1 The EDIT-LAW CELL comes before any swap code (fable-182 §TEST, founder-ordered)
+
+The law is a claim about what a picture does when it is edited, and it has never
+been driven. It is measured before it is built on. Fixture lane, on the Unfussed
+lineage, count and cost stated before a dollar is spent, four scenarios:
+
+| | scenario | what it must show |
+|---|---|---|
+| a | **gloss → fuller → remove gloss** (the thread's founding case) | the removal comes back **bare AND fuller** — words struck, the shape that was never struck survives |
+| b | **carry stability** | edit her hair; the untouched lips crop rides **byte-identical** in the recipe, and the delivered lips hold |
+| c | **introduced-item edit** | an earring from the cell's own frames, "make it bigger" regenerated from its **frozen intro anchor + words**, a new crop minted |
+| d | **instance edit** | one ear only; the other ear **pixel-held** |
+
+Verified per D-235 in both columns — **delivered** for the edited feature,
+**carried** for every untouched one — with tiles for the founder. This replaces
+the lip staircase, which D-244 cancelled.
+
+### 6.2 Then the swap itself
 
 1. **The degenerate case, first and on a fixture**: no-library cast, words-only
    ask, through the new compositor. It is condition 1 of the ruling and the
@@ -272,7 +396,10 @@ Both measured this shift (D-243), so the swap does not have to guess:
 2. **The library**: slot keys, per-instance storage, minting from fresh reads,
    the completeness guard with its second read and per-kind refusal, the
    byte-identity refusal, the one-slot assembler refusal with its direct test.
-3. **The recipe assembler and the repaint path**, behind the flag, dark.
+3. **The recipe assembler and the repaint path**, behind the flag, dark. The
+   assembler is where D-244 lives in code: it resolves each feature to
+   *anchor + full word stack* (edited) or *minted crop* (carried), and it can
+   never hand a feature its own crop on its own edit.
 4. **Verification per tier**, including the realism clause.
 5. **The replay walk, re-derived to per-tier promises** — the specimen source
    for the flip decision.
@@ -280,6 +407,16 @@ Both measured this shift (D-243), so the swap does not have to guess:
 
 Per-slice billing and the refund law are untouched at every step: the money
 contract does not know the painter changed.
+
+---
+
+## 7. Open items — carried deliberately, each with what would close it
+
+| item | state | what closes it |
+|---|---|---|
+| **Contamination instrument** (what a paint borrowed from a crop's background) | **DEFERRED WITH TRIGGER** (fable-184). Shape and material catch invented FORM and invented MATERIAL; neither counts borrowing. It was never built and that is stated as owed, not absent. | Build it **when an occlusion-aware cutter reopens the crop-vs-cutout question** (§5.1). Until then the format ruling stands on shape + material. |
+| **img-left / img-right asymmetry** | **OPEN ROW.** Ten for ten on GPT2 the smaller, more occluded hoop scores worse. Mechanism proposed, untested. | Test it **only if the edit-law cell shows the same lean** (fable-183). Meanwhile the standing rule already contains the risk: per-instance worst-of-n, never averaged. |
+| **Occlusion-aware cutter** | Not built. Named as the cause of the cutout arm's loss. | A cutter that completes rather than amputates at occluders, then a re-test of §5.1. |
 
 ---
 
@@ -300,3 +437,11 @@ contract does not know the painter changed.
 | Store seeds nothing; second-read guard; per-kind refuse-until-specimen; panel slots not ledger keys | fable-173 |
 | One slot, one reference, per render | fable-174 (founder) |
 | Store coverage audit; both transport capabilities | D-243 |
+| **THE EDIT LAW — words change, crops carry; regenerate from anchor + full word stack; removal strikes words; every edit mints a new crop** | **D-244 (founder), fable-182** |
+| Masks are the swap's foundation, not its hygiene (§0) | fable-182 (founder) |
+| Degradation machinery MOOT by construction; fable-179 obsoleted; lip staircase cancelled | D-244 |
+| fable-175 §1's edit recipe superseded; ratchet survives as the carry side only | D-244 |
+| Accessory carry ≥ 0.85 worst-of-n on GPT2 (n=5); NBP NOT ROUTED for accessory carry | fable-183 |
+| Recipes carry rectangular CROPS; cutouts are the panel's display format only | fable-183 |
+| Occlusion amputation joins the completeness guard's defect list | fable-183 |
+| Contamination instrument deferred with a trigger; asymmetry an open row | fable-184 |
