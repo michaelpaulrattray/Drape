@@ -140,6 +140,64 @@ row: the architecture answers it.
 
 ---
 
+### 3.1 The slot is a RATCHET (fable-175)
+
+Same-feature edits compose **in time, not in parallel**. "Change her lip shape,
+then add gloss" is two renders, and after each accepted one the slot's reference
+is **RE-MINTED with everything so far baked into the pixels** (shape, then
+shape+gloss).
+
+- **An ask's words carry only the DELTA; the reference carries the accumulated
+  truth.** A shape can never be "forgotten" by a later surface ask, because it
+  is not an instruction — it is the picture. So fable-174's one-slot invariant
+  holds here without exception.
+- **Routing composes too.** The shape ask may route NBP-anatomical, the surface
+  ask GPT2. Irrelevant to the slot, which only records accepted deliveries: the
+  reference is engine-agnostic memory.
+- **Removal is an EDIT or a ROLLBACK, never a blind revert.** Either words
+  remove the surface while the current reference carries and the shape survives
+  (re-mint on acceptance), or the slot rolls back to a prior entry in its own
+  lineage. "Revert to the born crop" is right ONLY when the removed thing is the
+  slot's sole accepted change. *(This corrects fable-168 §4 — update the tier
+  doc where that is transcribed.)*
+- **Verification is per ask**: a surface ask verifies the gloss delivered AND
+  the shape held — the delivered/carried pair the two-column reliability report
+  already expresses.
+
+### 3.2 Every generation is paid surface (fable-180 — CONFIRMED founder law)
+
+**No flow anywhere generates a render the user can walk away from for free.** A
+generate-then-decline flow is a free render on the platform's money every time a
+user declines. This is a standing product law, not a detail of any one feature:
+**check every future UX proposal against it.**
+
+- A re-grounding or refresh, if its design is ever confirmed, runs **INSIDE the
+  paid render** — the recipe substitutes for the drifted crop on that render,
+  same price, no preview, no second generation. It just generates.
+- **Decline = the existing free rollback.** Versions already exist; rolling back
+  buys nothing.
+- Distinguished and untouched: the roadmap's show-the-refused-frame item. That
+  frame was already bought and refunded, so showing it costs nothing new and is
+  not a preview mechanic.
+
+### 3.3 Degradation over a long chain — PROPOSED, NOT CONFIRMED
+
+fable-177's refuse-if-softer bar was **withdrawn**: the founder overruled it
+("of course it will degrade over 3–4 edits… her original crop needs to be an
+anchor"). A rule that refuses the inevitable would strangle multi-edit features.
+
+fable-179 proposes a replacement — the master crop as a **measuring gauge**
+rather than a wall, refusal reserved for single-step collapse, and a
+**word-ledger re-ground** that repaints the feature from the pristine master
+plus the slot's accumulated delta words. **It is explicitly not founder-
+confirmed. Do not build against it.** It is recorded here as design input only.
+
+If it is confirmed, two consequences are already known: the mint record gains
+generation and detail-ratio columns (**and a new column on a written table means
+the migration lands first** — the standing law), and the word ledger's
+completeness becomes load-bearing, so mint time must assert that the delta words
+are non-empty for every word-tier and anatomy ask.
+
 ## 4. Verification, per tier
 
 The bar is **per tier**, and D-235's asymmetry applies to each tier's own
@@ -179,11 +237,14 @@ guard rail).
 
 Both measured this shift (D-243), so the swap does not have to guess:
 
-- **`mask_url` is not a bounding parameter.** GPT Image 2's edit endpoint
-  publishes a mask input; the canonical RGBA form is accepted and ignored, and a
-  greyscale+alpha form returns **a different person at HTTP 200**. The field
-  stays unsent. C′ scopes by CROP and by VERIFICATION, exactly as ruled — there
-  is no engine-side bound to lean on, and nothing here reopens per-region patch
+- **`mask_url` is BANNED from every product path** (fable-178, pinned in
+  `server/providers/falImages.ts`). Not "unused" — banned, with its reason: the
+  canonical RGBA form is accepted and ignored, and a greyscale+alpha form
+  returns **a different person at HTTP 200** with the mask verified well-formed
+  afterwards. A stub field that fails by substituting a stranger's face on a
+  paid render is a trap, not a parameter. The ban lifts only through a fresh
+  probe carrying this one as its negative control. C′ scopes by CROP and by
+  VERIFICATION exactly as ruled, and nothing here reopens per-region patch
   thinking.
 - **There is no item-level matting.** BiRefNet mattes the ear, not the earring.
   So cutout references are made from the binary region mask for **crisp-edged

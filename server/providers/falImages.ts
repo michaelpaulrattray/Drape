@@ -45,6 +45,37 @@ import { ProviderError, type CandidateRequest, type CreativeEngine, type ImageRe
  */
 export const BANNED_ENGINES = ["fal-ai/flux-2-pro", "fal-ai/flux-2-pro/edit"] as const;
 
+/**
+ * ⛔ `mask_url` IS BANNED FROM EVERY PRODUCT PATH — fable-178, 2026-08-10.
+ *
+ * The edit endpoint's published schema carries a mask input:
+ *
+ *     mask_url : string | null
+ *       "The URL of the mask image to use for the generation.
+ *        This indicates what part of the image to edit."
+ *
+ * It does not bound the repaint, and the way it fails is the reason for the
+ * word "banned" rather than "unused". Measured on this transport, with the
+ * unmasked control in the same sitting (`scripts/calibration/mask-url-probe.mts`,
+ * D-243):
+ *
+ *   RGBA, box transparent      accepted and IGNORED — 156,912 changed pixels
+ *                              against the control's 157,795
+ *   RGB, box white             very nearly the same
+ *   greyscale+alpha            **A COMPLETELY DIFFERENT WOMAN**, 99.9% of the
+ *                              frame changed, HTTP 200, no error — and the mask
+ *                              file was verified well-formed AFTERWARDS, so
+ *                              "malformed input" is not the explanation
+ *
+ * A stub field that fails by substituting a stranger's face on a paid render is
+ * not a parameter, it is a trap. **Do not send it.** If fal ever documents the
+ * field properly, the ban lifts only through a fresh probe carrying this one as
+ * its negative control.
+ *
+ * (C′'s own per-render verification — reference match plus face-anchored drift
+ * — would catch an identity swap loudly. That is defence in depth, not a reason
+ * to touch the field.)
+ */
 export const FAL_GPT_IMAGE_2 = "openai/gpt-image-2";
 export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
 
