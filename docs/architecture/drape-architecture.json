@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fcaedde266a4da79"
+    "sourceFingerprint": "11f1710f59540a48"
   },
   "domains": [
     {
@@ -17541,6 +17541,11 @@
     {
       "from": "module:server/castingV2/eyeShapeRouting.ts",
       "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
     },
     {

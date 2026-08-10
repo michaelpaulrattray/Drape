@@ -21,6 +21,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch";
+import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
@@ -153,7 +154,38 @@ function assertPicture(image: Buffer, question: string): void {
  * one extra round trip, the two sides still going out in parallel. That is the
  * price of not silently editing one of a customer's eyes.
  */
-const BILATERAL = new Set(["ear", "eyes", "eyebrows"]);
+/*
+  AND THE ACCESSORY HALF OF THIS SET WAS A SECOND LIST (2026-08-10).
+
+  The three names above are anatomy, and `REGION_OF_FACET` sends exactly those
+  three bilateral ones — so that half is complete. The accessory half was not
+  here at all: `LANDMARK_OF_ACCESSORY` sends `"earring"`, its entry already
+  records `pair: true` with a `bothSides` phrase whose own doc comment says it
+  is "how to name both sides, in the painter's clause AND THE READER'S" — and
+  the reader never read it. Two lists holding one fact, drifted (working law 4).
+
+  Proven at the wire before it was changed, on a frame where both hoops are
+  plainly visible (`scripts/prove-earring-not-bilateral-disposable.mts`,
+  GPT Image 2 paint `cell2g-1`):
+
+    "earring"   ONE component, 786px, all of it on one side of her
+    "ear"       TWO components, 2557px and 2553px, one per side
+
+  The branch was sound; the name list was the defect. So the accessory table's
+  own `pair` column is now the source, and this set derives from it rather than
+  restating it — add a paired accessory to that table and the reader follows.
+
+  This is D-238's class (a bilateral region answered as a single instance) and
+  its sweep did not reach here: it cleared `landmark()` and `bornWornDetector`,
+  both of which are anatomy. Cost is the same one extra call per bilateral
+  region, now also paid on earrings — flagged to the latency-and-cost program.
+*/
+const BILATERAL = new Set([
+  "ear",
+  "eyes",
+  "eyebrows",
+  ...LANDMARK_OF_ACCESSORY.filter((entry) => entry.pair).map((entry) => entry.region),
+]);
 
 /** The noun ONE SIDE of a bilateral region is asked by. */
 function singularOf(name: string): string {

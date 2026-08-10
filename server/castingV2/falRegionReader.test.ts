@@ -1,9 +1,13 @@
 import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { createFalRegionReader } from "./falRegionReader";
 import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
+
+/** The reader's own singularisation, restated only where a test must predict it. */
+const singularOfRegion = (name: string): string => (name === "eyes" ? "eye" : name.replace(/s$/, ""));
 
 /**
  * WHAT THE READER MUST DO WITH BYTES THAT ARE NOT A PICTURE.
@@ -234,6 +238,59 @@ describe("falRegionReader cuts the frame instead of naming a side", () => {
     /* Assert at the wire: the face, then one plain noun per side. No adjective. */
     expect(prompts).toEqual(["face", "eye", "eye"]);
     expect(prompts.some((prompt) => /^(left|right) /.test(prompt))).toBe(false);
+  });
+
+  /**
+   * A PAIR OF EARRINGS IS BILATERAL, AND THIS SET USED TO SAY IT WAS NOT.
+   *
+   * `LANDMARK_OF_ACCESSORY` already recorded `pair: true` for the earring
+   * entry, and `bothSides`'s own doc comment says it is how to name both sides
+   * "in the painter's clause and the reader's" — but the reader's set was three
+   * hand-written anatomical names and never consulted it. Measured on a real
+   * frame where both hoops are visible: `"earring"` returned ONE component,
+   * `"ear"` returned two.
+   *
+   * The assertion is at the wire, on the prompts actually sent, because the
+   * union's pixels alone would pass with one side read twice.
+   */
+  it("asks about an EARRING one side at a time, because the accessory table says it is a pair", async () => {
+    const { prompts } = stubSam3({ sides: "both" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const mask = await reader.region({ image: await frame(), name: "earring" });
+
+    const split = acrossMidline(mask, WIDTH / 2);
+    expect(split.left, "a hoop on her left").toBeGreaterThan(0);
+    expect(split.right, "and a hoop on her right").toBeGreaterThan(0);
+
+    /* The face first, then the plain noun once per side. Never an adjective. */
+    expect(prompts).toEqual(["face", "earring", "earring"]);
+  });
+
+  /**
+   * DERIVED, NOT MIRRORED — the reason the row above is not simply a fourth
+   * hand-written string.
+   *
+   * Every `pair: true` entry in the accessory table must take the bilateral
+   * path, and every `pair: false` one must not. A future paired accessory added
+   * to that table is then bilateral without anyone remembering this file, and a
+   * copy of the list here would be the drift that caused the defect.
+   */
+  it("follows the accessory table's own pair column, in both directions", async () => {
+    for (const entry of LANDMARK_OF_ACCESSORY) {
+      const { prompts } = stubSam3({ sides: "both" });
+      const reader = createFalRegionReader({ apiKey: "test-key" });
+      await reader.region({ image: await frame(), name: entry.region });
+
+      if (entry.pair) {
+        expect(prompts, `${entry.region} is a pair, so it is asked once per side`)
+          .toEqual(["face", singularOfRegion(entry.region), singularOfRegion(entry.region)]);
+      } else {
+        expect(prompts, `${entry.region} is worn singly, so it is asked once, whole`)
+          .toEqual([entry.region]);
+      }
+      vi.unstubAllGlobals();
+    }
   });
 
   it("gives the whole frame's coordinates back even when a side answers at the wrong size", async () => {
