@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "494965d4cfd92d52"
+    "sourceFingerprint": "786bef92c43a0c22"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 89
+      "moduleCount": 90
     },
     {
       "id": "domain:castingV2",
@@ -3485,6 +3485,12 @@
     {
       "id": "module:server/castingV2/recipeAssembler.ts",
       "path": "server/castingV2/recipeAssembler.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceCentreline.ts",
+      "path": "server/castingV2/referenceCentreline.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8697,6 +8703,10 @@
     {
       "id": "test:server/castingV2/recipeAssembler.test.ts",
       "path": "server/castingV2/recipeAssembler.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceCentreline.test.ts",
+      "path": "server/castingV2/referenceCentreline.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceCompleteness.test.ts",
@@ -18164,8 +18174,23 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/referenceCentreline.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceCentreline.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/referenceCompleteness.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceCompleteness.ts",
+      "to": "module:server/castingV2/referenceCentreline.ts",
       "kind": "imports"
     },
     {
@@ -25306,6 +25331,13 @@
       "severity": "warn",
       "kind": "redeclared-shape",
       "subject": "server/castingV2/maskGeometry.ts:293",
+      "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/referenceCentreline.ts:50",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/referenceCentreline.ts:50",
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

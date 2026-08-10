@@ -33,12 +33,28 @@
  *    version stays newest and stays good — and its pixels are the only artifact
  *    that can settle which of the two was wrong.
  *
+ *  - **`brokenOutline`** (fable-228) — the shape was too nearly all edge for area
+ *    to judge, so the LENGTH instrument judged it instead (§2.4c), and part of
+ *    the region's own centreline is outside the crop. Its pixels are kept, and
+ *    for the opposite reason to the three above: that bar rests on one positive,
+ *    so the refusal itself is the thing that might be wrong.
+ *
  * And one more that is about the KEY rather than the pixels: **`duplicateOfSlot`**
  * — a crop byte-identical to another slot's crop is two rows holding one fact
  * (D-242, one layer up). `marks` and `makeup` at `face skin` produced exactly
  * this in production, three times.
  *
- * # THE INSTRUMENT, AND WHAT LABELS ITS CONTROLS
+ * # TWO INSTRUMENTS, AND THE DOOR CHOOSES BY MEASURING THE REGION
+ *
+ * Area (`|crop ∩ region| / |region|`) is the first and judges most kinds. It
+ * cannot judge a hoop — two-thirds of a hoop is its own outline — and §2.4b's
+ * standing law makes it say so instead of producing a number. Where it says so,
+ * the LENGTH instrument (`referenceCentreline.ts`) takes the crop: how much of
+ * the region's own centreline runs within a pixel of it. Which one adjudicated
+ * travels on the verdict as {@link Adjudication}, because 97.6% means two
+ * different things depending on the answer.
+ *
+ * # THE FIRST INSTRUMENT, AND WHAT LABELS ITS CONTROLS
  *
  * Coverage is `|crop ∩ region| / |region|`, measured against a fresh full read
  * of the region on the frame the crop claims to represent. The intersection is
@@ -61,6 +77,7 @@
  * threshold fitted to its own assumption.
  */
 import type { Mask } from "./maskedComposite";
+import { CENTRELINE_BLIND_TO, measureCentreline } from "./referenceCentreline";
 import type { Instance } from "./referenceSlots";
 import type { SegmentBox } from "./segmentCuts";
 
@@ -101,6 +118,81 @@ export const COMPLETENESS_SPECIMENS: Readonly<Record<string, CompletenessSpecime
 export function thresholdFor(kind: string): number | null {
   const specimens = COMPLETENESS_SPECIMENS[kind];
   return specimens ? specimens.positive : null;
+}
+
+/**
+ * THE SECOND FAMILY — for kinds whose bar was measured with the LENGTH
+ * instrument (`referenceCentreline.ts`, §2.4c, ruled in fable-228).
+ *
+ * A separate table rather than a `measure` field on the first, because the two
+ * are not alternatives a kind chooses between: **which one adjudicates is
+ * MEASURED at the door, per crop, from the region's own shape** (see
+ * {@link guardReference}). A kind may honestly own a bar in both — a stud
+ * earring is area-scorable and a hoop is not, and they arrive under one kind
+ * name — and the day one does, the row must say which instrument judged it.
+ * `referenceCompleteness.test.ts` holds that tripwire: no kind may appear in
+ * both tables while the library row carries no instrument column.
+ *
+ * ## The caveats ride WITH the number — all three, everywhere it is quoted
+ *
+ * fable-228 adopted 97.6% on `n(positive) = 1`, which is hair's shape with a
+ * quarter of hair's margin (23.6 points against 82.1). So the fields below are
+ * not decoration:
+ *
+ *  - `positives` — the count, stated, so a reader grades the bar instead of
+ *    trusting it. One.
+ *  - `resolutionPts` — 16.7, against a gap of 23.6 that is DERIVED from the two
+ *    specimens rather than restated beside them ({@link centrelineMarginFor}).
+ *    1.4×: the instrument passes §2.4b's law that the area measure failed, and it
+ *    passes it *marginally*, under the erosion model that is also this door's own
+ *    blind spot ({@link CENTRELINE_BLIND_TO}).
+ *  - `specimenEvent` — the escalation clause, and it is the reason a refusal
+ *    here KEEPS ITS CROP: a one-positive bar can only earn more positives if the
+ *    crops it turns away can be looked at. A bar this thin has to be falsifiable
+ *    by the thing it refuses.
+ */
+export type CentrelineSpecimens = {
+  /** Centreline coverage read on a crop a human verdict called complete. */
+  positive: number;
+  /** And on one a human verdict called incomplete. */
+  negative: number;
+  /** How many positives the bar rests on. One is not a scandal; one unstated is. */
+  positives: number;
+  /** The instrument's worst-case resolution, in points, on the positive —
+   *  measured under symmetric erosion, which is the unfair model AND the exact
+   *  model of the defect this door cannot see. */
+  resolutionPts: number;
+  specimenEvent: string;
+  source: string;
+};
+
+export const CENTRELINE_SPECIMENS: Readonly<Record<string, CentrelineSpecimens>> = {
+  earring: {
+    positive: 0.976,
+    negative: 0.740,
+    positives: 1,
+    resolutionPts: 16.7,
+    specimenEvent:
+      "the first crop an eye calls COMPLETE that this bar refuses re-opens the family with that crop as its second positive; it is an escalation, never a silent failure",
+    source:
+      "fable-228, from opus-170/171: lib#8 v#142 left (complete, one continuous crescent) against lib#9 v#142 right (incomplete, a crescent plus a detached fragment); v#144's pair read 38.1 and 20.0, both incomplete, no interleaving",
+  },
+};
+
+/**
+ * How many times its own worst-case resolution the bar's gap is — §2.4b's law
+ * turned on the instrument that answers §2.4b.
+ *
+ * Derived from the two specimens rather than stored beside them: a second number
+ * shadowing `positive − negative` is a copy, and a copy of a bar drifts from the
+ * bar. Below 1 the family is not usable at all — the instrument would be
+ * adjudicating inside its own noise, which is the exact failure that took area
+ * off hoops. `earring` is 23.6 / 16.7 = 1.4, which is thin and is stated as thin.
+ */
+export function centrelineMarginFor(kind: string): number | null {
+  const family = CENTRELINE_SPECIMENS[kind];
+  if (!family) return null;
+  return ((family.positive - family.negative) * 100) / family.resolutionPts;
 }
 
 /**
@@ -227,11 +319,35 @@ export function measureCoverage(
   };
 }
 
+/**
+ * WHICH INSTRUMENT PRODUCED THE VERDICT — and it is one field, not a convention.
+ *
+ * Two measures live at this door and they answer different questions of the same
+ * two masks: `area` is `|crop ∩ region| / |region|`, `centreline` is
+ * `|dilate(crop,1) ∩ thin(region)| / |thin(region)|`. A row recording 97.6%
+ * without saying which of them read it is the display default doing two jobs —
+ * the class this campaign keeps paying for — so the number, its bar and its
+ * instrument travel together in {@link Adjudication} and are persisted from it
+ * without a conditional at the write.
+ */
+export type GuardInstrument = "area" | "centreline";
+
+export type Adjudication = {
+  instrument: GuardInstrument;
+  /** The reading that decided — in the deciding instrument's own units. */
+  coverage: number;
+  /** The bar it was measured against, from that instrument's specimen family. */
+  threshold: number;
+};
+
 export type GuardPass = {
   ok: true;
   kind: string;
+  /** The AREA reading, always taken and always real — `spill` in particular is
+   *  instrument-independent and is what says a crop strayed outside its region. */
   reading: CoverageReading;
-  threshold: number;
+  /** What actually decided. Persist from here; never re-derive it. */
+  judged: Adjudication;
 };
 
 /**
@@ -249,6 +365,7 @@ export const GUARD_REFUSAL_REASONS = [
   "duplicateOfSlot",
   "disputedDelivery",
   "notScorableByArea",
+  "brokenOutline",
 ] as const;
 
 export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
@@ -268,6 +385,18 @@ export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
  *   `notScorableByArea`  the shape is mostly its own outline, so coverage cannot
  *                        divide anything on it. Only an eye can say whether this
  *                        crop is the whole of the metal.
+ *   `brokenOutline`      the length instrument DID judge it and found part of the
+ *                        region's centreline outside the crop — but that bar
+ *                        stands on one positive with a 1.4× margin, and its own
+ *                        specimen-event clause (§2.4c) says the first crop an eye
+ *                        calls complete that it refuses re-opens the family. A
+ *                        bar that thin has to be falsifiable by the thing it
+ *                        turns away, and it can only be falsified by an eye on
+ *                        the picture. This is the one refusal kept because the
+ *                        REFUSAL may be wrong, rather than because the crop is
+ *                        unjudgeable — and when the bar earns more positives, it
+ *                        should move to the discarding side and join
+ *                        `underCaptured`.
  *
  * The other four refuse a picture that must not be adopted: `subjectAbsent` is a
  * crop of where the thing would have been, `duplicateOfSlot` already has its
@@ -280,6 +409,7 @@ export const REFUSALS_THAT_KEEP_THEIR_CROP: readonly GuardRefusalReason[] = [
   "noSpecimen",
   "disputedDelivery",
   "notScorableByArea",
+  "brokenOutline",
 ];
 
 export function refusalKeepsItsCrop(reason: GuardRefusalReason): boolean {
@@ -317,6 +447,9 @@ export type GuardRefusal = {
   /** Present when a reading happened — a refusal nobody can diagnose is a
    *  refusal somebody will disable. */
   reading?: CoverageReading;
+  /** Present when an instrument reached a verdict — so a refused row records the
+   *  number in the units of the measure that refused it, not in the other one's. */
+  judged?: Adjudication;
 };
 
 export type GuardVerdict = GuardPass | GuardRefusal;
@@ -449,10 +582,60 @@ export function guardReference(input: GuardInput): GuardVerdict {
   const resolution = shellFraction(input.guardRead);
   const gap = adjudicatedGapFor(input.kind, reading.coverage);
   if (reading.coverage < 1 && resolution >= gap) {
-    return {
-      ok: false, reason: "notScorableByArea", kind: input.kind, reading,
-      detail: `${(resolution * 100).toFixed(1)}% of this ${input.kind} region is one-pixel edge, so a single pixel of boundary is worth more than the ${(gap * 100).toFixed(1)} points a bar here would have to divide; ${(reading.coverage * 100).toFixed(1)}% is not a verdict on this shape`,
+    /*
+      AND HERE THE SECOND INSTRUMENT GETS ITS TURN — §2.4c, ruled in fable-228.
+
+      **The routing is a MEASUREMENT, not a name.** fable-228 scoped the earring
+      bar to "ring-like only — studs and solid earrings stay with the area
+      instrument, which works on them", and the way that is enforced is that this
+      branch is only reached when the area instrument has just declared itself
+      inapplicable ON THIS REGION: the region is so nearly all edge that one pixel
+      of boundary outweighs the whole gap a bar here would divide. A stud's region
+      is a blob, its shell fraction is small, and it never arrives — it takes the
+      area path and refuses with `noSpecimen` until somebody measures a stud.
+
+      That matters more than it looks. The length measure's failure mode is
+      exactly the silhouette-for-material confusion: a thin sliver through the
+      middle of a solid disc runs along the whole of that disc's skeleton and
+      holds a tenth of its material, so a centreline bar applied to a blob would
+      wave through a crop that keeps the centre and loses the thing. The shell
+      fraction is what keeps blobs out, and it is measured on the region the guard
+      already holds, per crop, at no cost.
+
+      ONE DEGENERATE CORNER, deliberate and left alone: a crop whose AREA reading
+      is exactly 1.0 takes §2.4b's ceiling exemption above and never reaches here,
+      so on a hoop it refuses with `noSpecimen` where the length instrument would
+      have passed it at 100%. It requires two independent vision reads to agree on
+      every pixel of a hoop, so it is a synthetic case rather than a reachable
+      one; the exemption is fable-224's standing law and is not moved to tidy a
+      corner. `noSpecimen` keeps its crop, so nothing is lost when it happens.
+    */
+    const family = CENTRELINE_SPECIMENS[input.kind];
+    if (!family) {
+      return {
+        ok: false, reason: "notScorableByArea", kind: input.kind, reading,
+        detail: `${(resolution * 100).toFixed(1)}% of this ${input.kind} region is one-pixel edge, so a single pixel of boundary is worth more than the ${(gap * 100).toFixed(1)} points a bar here would have to divide; ${(reading.coverage * 100).toFixed(1)}% is not a verdict on this shape`,
+      };
+    }
+    const length = measureCentreline(input.crop, input.guardRead);
+    const judged: Adjudication = {
+      instrument: "centreline", coverage: length.coverage, threshold: family.positive,
     };
+    if (length.coverage < family.positive) {
+      /*
+        Refused, and the PIXELS ARE KEPT — the specimen-event clause is the
+        reason, and it is the opposite of `underCaptured`'s. Hair's bar refuses
+        against 82.1 points and 14 audited rows; this one refuses against 23.6
+        points and a single positive. So the detail names its own weakness — the
+        count it rests on and the defect it is blind to — on the same line as the
+        number, and the crop survives for the eye that can overturn it.
+      */
+      return {
+        ok: false, reason: "brokenOutline", kind: input.kind, reading, judged,
+        detail: `${(length.coverage * 100).toFixed(1)}% of this ${input.kind}'s own centreline runs within a pixel of the crop, under the ${(family.positive * 100).toFixed(1)}% of the one crop proven complete (n=${family.positives}, ${length.spinePixels} px of spine); this bar is blind to ${CENTRELINE_BLIND_TO}, so an eye that calls this crop complete overturns it`,
+      };
+    }
+    return { ok: true, kind: input.kind, reading, judged };
   }
 
   const threshold = thresholdFor(input.kind);
@@ -476,7 +659,10 @@ export function guardReference(input: GuardInput): GuardVerdict {
     };
   }
 
-  return { ok: true, kind: input.kind, reading, threshold };
+  return {
+    ok: true, kind: input.kind, reading,
+    judged: { instrument: "area", coverage: reading.coverage, threshold },
+  };
 }
 
 /**

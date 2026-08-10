@@ -13,8 +13,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { Mask } from "./maskedComposite";
+import { measureCentreline } from "./referenceCentreline";
 import {
   adjudicatedGapFor,
+  centrelineMarginFor,
+  CENTRELINE_SPECIMENS,
   COMPLETENESS_SPECIMENS,
   GUARD_REFUSAL_REASONS,
   guardReference,
@@ -90,7 +93,7 @@ describe("the door — what enters the library and what does not", () => {
     });
     expect(verdict.ok).toBe(true);
     if (!verdict.ok) return;
-    expect(verdict.threshold).toBe(0.946);
+    expect(verdict.judged).toEqual({ instrument: "area", coverage: 1, threshold: 0.946 });
   });
 
   it("REFUSES the fringe, loudly and with the number attached", () => {
@@ -254,7 +257,7 @@ describe("a DISPUTED delivery — the refusal that is not about the crop (fable-
     /* The list the write helper enforces, pinned where it is defined. A new
        reason arriving without this test changing is the silent version of
        widening the gallery the guard exists to keep empty. */
-    const kept = ["disputedDelivery", "noSpecimen", "notScorableByArea"];
+    const kept = ["brokenOutline", "disputedDelivery", "noSpecimen", "notScorableByArea"];
     expect([...REFUSALS_THAT_KEEP_THEIR_CROP].sort()).toEqual(kept);
     for (const reason of GUARD_REFUSAL_REASONS) {
       expect(refusalKeepsItsCrop(reason), reason).toBe(kept.includes(reason));
@@ -307,10 +310,20 @@ describe("what one pixel of boundary is worth", () => {
     const resolution = shellFraction(hoop);
     expect(resolution).toBeGreaterThan(0.4);
 
-    /* The crop takes the bottom of the ring only, so the shortfall is real and
-       smaller than the resolution — which is exactly the founder's case. */
+    /*
+      The crop takes the bottom of the ring only, so the shortfall is real and
+      smaller than the resolution — which is exactly the founder's case.
+
+      **The kind is `lips` and no longer `earring`, and the reason is the whole of
+      §2.4c.** This rule has not changed: area still declines to score a shape
+      that is nearly all edge, and that is what is asserted here. What changed is
+      what happens NEXT for a kind that has a length specimen — `earring` now
+      continues to the centreline instrument instead of stopping, which is the
+      block below. A thin kind with no such specimen still stops here, and that is
+      the arm this test guards.
+    */
     const verdict = guardReference({
-      kind: "earring", crop: crop({ x: 8, y: 20, width: 25, height: 13 }), digest: "aa", guardRead: hoop,
+      kind: "lips", crop: crop({ x: 8, y: 20, width: 25, height: 13 }), digest: "aa", guardRead: hoop,
     });
     expect(verdict.ok).toBe(false);
     if (verdict.ok) return;
@@ -398,6 +411,181 @@ describe("what one pixel of boundary is worth", () => {
     });
     expect(disputed.ok).toBe(false);
     if (!disputed.ok) expect(disputed.reason).toBe("disputedDelivery");
+  });
+});
+
+/**
+ * THE SECOND DOOR — §2.4c, fable-228. The length instrument, at the guard.
+ *
+ * `referenceCentreline.test.ts` controls the instrument itself. This is about
+ * the DOOR: which crops reach it, which do not, what a refusal from it means,
+ * and the one property that keeps it honest — **nothing routes here by name.**
+ */
+describe("the length instrument at the door — reached by measurement, never by name", () => {
+  const CENTRE = 50;
+  const at = (x: number, y: number) => Math.hypot(x - CENTRE, y - CENTRE);
+  const angleAt = (x: number, y: number) => {
+    const degrees = (Math.atan2(y - CENTRE, x - CENTRE) * 180) / Math.PI;
+    return degrees < 0 ? degrees + 360 : degrees;
+  };
+
+  /** A frame-sized mask from a predicate. */
+  function shaped(fill: (x: number, y: number) => boolean): Mask {
+    const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
+    for (let y = 0; y < FRAME.height; y += 1) {
+      for (let x = 0; x < FRAME.width; x += 1) if (fill(x, y)) data[y * FRAME.width + x] = 255;
+    }
+    return { data, width: FRAME.width, height: FRAME.height };
+  }
+  /** The same, as a crop whose box is the whole frame. */
+  const cropOf = (fill: (x: number, y: number) => boolean) => ({
+    mask: shaped(fill),
+    box: { x: 0, y: 0, width: FRAME.width, height: FRAME.height },
+  });
+
+  /* A hoop: a three-pixel band, the founder's own proportions. */
+  const ring = (x: number, y: number) => at(x, y) >= 9.5 && at(x, y) <= 12.5;
+  const hoop = shaped(ring);
+  /* A stud: the same earring kind, a solid shape. */
+  const stud = shaped((x, y) => at(x, y) <= 12.5);
+
+  it("PASSES a hoop the area instrument had just refused to score", () => {
+    /*
+      The crop holds the inner two of the ring's three pixels — under 1.0 by area,
+      so §2.4b's ceiling exemption does not apply and the area measure declares
+      itself inapplicable. The length instrument then finds the whole of the
+      region's centreline within a pixel of the crop, and the crop enters.
+
+      This is the shift the whole diff exists for: before it, this crop got
+      `notScorableByArea` and a number nobody could adopt.
+    */
+    const verdict = guardReference({
+      kind: "earring", digest: "aa", guardRead: hoop,
+      crop: cropOf((x, y) => at(x, y) >= 9.5 && at(x, y) <= 11.5),
+    });
+    expect(verdict.ok).toBe(true);
+    if (!verdict.ok) return;
+    expect(verdict.judged.instrument).toBe("centreline");
+    expect(verdict.judged.threshold).toBe(0.976);
+    expect(verdict.judged.coverage).toBeGreaterThanOrEqual(0.976);
+    /* And the area reading is still on the verdict, still true, and no longer
+       pretending to be the verdict. */
+    expect(verdict.reading.coverage).toBeLessThan(1);
+  });
+
+  it("REFUSES a hoop with an arc missing — as `brokenOutline`, and KEEPS ITS PIXELS", () => {
+    const verdict = guardReference({
+      kind: "earring", digest: "aa", guardRead: hoop,
+      crop: cropOf((x, y) => ring(x, y) && !(angleAt(x, y) >= 200 && angleAt(x, y) < 320)),
+    });
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) return;
+    expect(verdict.reason).toBe("brokenOutline");
+    expect(verdict.judged!.instrument).toBe("centreline");
+    expect(verdict.judged!.coverage).toBeLessThan(0.976);
+    /*
+      THE SPECIMEN-EVENT CLAUSE IS WHY THE PIXELS STAY. This bar rests on one
+      positive with a 1.4× margin; the first crop an eye calls complete that it
+      refuses re-opens the family. A refusal that might itself be wrong has to be
+      falsifiable by the thing it refused, and only an eye can do that.
+    */
+    expect(refusalKeepsItsCrop(verdict.reason)).toBe(true);
+    /* The refusal states its own weakness on the same line as its number: how
+       many positives it rests on, and what it cannot see. */
+    expect(verdict.detail).toContain("n=1");
+    expect(verdict.detail).toContain("thinning");
+  });
+
+  it("A STUD NEVER REACHES IT — though the length measure would have waved the crop through", () => {
+    /*
+      THE CONTROL THAT MATTERS MOST, and it is the silhouette-for-material
+      confusion caught before it can happen.
+
+      A sliver through the middle of a solid earring runs along the whole of that
+      earring's skeleton while holding a seventh of its metal. Judged by length it
+      is perfect. It is not judged by length, because the routing is a measurement
+      of the REGION: a stud is a blob, its shell fraction is small, the area
+      instrument is comfortably applicable, and the crop takes the area path and
+      refuses for want of a stud specimen.
+
+      Same `kind` string, same door, different instrument — decided by the shape
+      in front of it and not by the word "earring".
+    */
+    const sliver = cropOf((x, y) => at(x, y) <= 12.5 && Math.abs(y - CENTRE) <= 1);
+    /* Not "high" — PERFECT. The length instrument would have scored this crop
+       1.000 and the door would have adopted it as a reference to a whole
+       earring. Asserted exactly, because a loose bound here would let the
+       control weaken without anybody noticing. */
+    expect(measureCentreline(sliver, stud).coverage).toBe(1);
+
+    const verdict = guardReference({ kind: "earring", digest: "aa", guardRead: stud, crop: sliver });
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) return;
+    expect(verdict.reason).toBe("noSpecimen");
+    expect(verdict.judged).toBeUndefined();
+    expect(verdict.reading!.coverage).toBeLessThan(0.2);
+  });
+
+  it("A KIND WITH NO LENGTH FAMILY still refuses with `notScorableByArea`", () => {
+    /* fable-228 kept it: a thin kind with no centreline specimen has no bar on
+       either instrument, and the honest answer is still that this shape cannot be
+       scored — not a borrowed number from the one kind that has been measured. */
+    const verdict = guardReference({
+      kind: "lips", digest: "aa", guardRead: hoop,
+      crop: cropOf((x, y) => at(x, y) >= 9.5 && at(x, y) <= 11.5),
+    });
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) return;
+    expect(verdict.reason).toBe("notScorableByArea");
+    expect(verdict.judged).toBeUndefined();
+  });
+
+  it("HAIR STILL GOES THROUGH THE AREA PATH — a second instrument is not a re-route", () => {
+    const hairRegion = region(FRAME.width, FRAME.height, HAIR);
+    const verdict = guardReference({
+      kind: "hair", crop: crop(HAIR), digest: "aa", guardRead: hairRegion,
+    });
+    expect(verdict.ok).toBe(true);
+    if (!verdict.ok) return;
+    expect(verdict.judged.instrument).toBe("area");
+    expect(CENTRELINE_SPECIMENS.hair).toBeUndefined();
+  });
+
+  it("the bar carries its caveats IN THE CODE, and its margin is derived", () => {
+    /*
+      fable-228 adopted 97.6% with three riders, and a rider that lives only in a
+      mailbox message is a rider somebody quotes the number without. So: the
+      positive count is a field, the escalation clause is a field, and the margin
+      is COMPUTED from the two specimens rather than stored beside them — a copy
+      of `positive − negative` would drift from it the day a second positive lands.
+    */
+    const family = CENTRELINE_SPECIMENS.earring!;
+    expect(family.positive).toBe(0.976);
+    expect(family.negative).toBe(0.740);
+    expect(family.positives).toBe(1);
+    expect(family.specimenEvent).toContain("COMPLETE");
+    /* 23.6 points against a 16.7-point worst-case resolution. Over 1, so the
+       instrument passes the law the area measure failed — and barely. */
+    expect(centrelineMarginFor("earring")).toBeCloseTo(1.41, 2);
+    expect(centrelineMarginFor("hair")).toBeNull();
+  });
+
+  it("TRIPWIRE: no kind may own a bar on BOTH instruments while the row cannot say which read it", () => {
+    /*
+      The library row records `guardKind`, `guardCoverage` and `guardThreshold`,
+      and NOT the instrument — adding that column is a migration, which is
+      founder-gated, and it is not owed while a kind's name determines its
+      instrument unambiguously. Today it does: `hair` is area-only, `earring` is
+      centreline-only.
+
+      The day a kind honestly owns both — a measured stud specimen alongside the
+      hoop bar — two rows reading 97.6% would mean different things and nothing
+      on either row would say which. That is the display-default-doing-two-jobs
+      class, and this test is the tripwire that makes it impossible to create
+      quietly: the column lands first, or the second family does not.
+    */
+    const both = Object.keys(CENTRELINE_SPECIMENS).filter((kind) => kind in COMPLETENESS_SPECIMENS);
+    expect(both).toEqual([]);
   });
 });
 

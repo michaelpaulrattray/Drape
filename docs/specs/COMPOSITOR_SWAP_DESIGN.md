@@ -249,6 +249,56 @@ resolution  0.0 pts under one-pixel registration · 16.7 pts under symmetric
    new specimen in hand. That is how a one-positive bar earns more positives
    honestly.
 
+#### 2.4d The door itself — how a crop reaches the length instrument (shipped 2026-08-11)
+
+`server/castingV2/referenceCentreline.ts` is the instrument; the routing is four
+lines inside `guardReference` and the important thing about it is what it is NOT:
+
+```
+the crop is measured by AREA first, always
+  ↓ area declares itself inapplicable  (§2.4b: coverage < 1 and resolution ≥ gap)
+  ↓ does this KIND have a centreline specimen family?
+      no   →  notScorableByArea        (unchanged — a thin kind with no bar)
+      yes  →  the length instrument adjudicates
+                 ≥ 97.6%  →  the crop enters, judged: {instrument: "centreline"}
+                 <  97.6% →  brokenOutline — refused, AND ITS PIXELS ARE KEPT
+```
+
+**"Ring-like only" is enforced as a MEASUREMENT, never as a name.** Nothing routes
+here because it is called an earring. A crop reaches the length instrument only
+when the region in front of the guard is so nearly all edge that area cannot
+divide anything on it — which a hoop is and a stud is not. That is not a detail:
+the length measure's own failure mode is silhouette-for-material, and a sliver
+through the middle of a solid stud runs the whole of that stud's skeleton while
+holding a seventh of its metal. The test drives exactly that crop: by length it
+scores **1.000 — a perfect reading on a crop of almost nothing** — and the door
+refuses it with `noSpecimen`, because it never arrives at the instrument that
+would have been fooled.
+
+**`brokenOutline` keeps its crop, and for the opposite reason to the other three.**
+`noSpecimen`, `disputedDelivery` and `notScorableByArea` keep pixels because the
+crop is *unjudgeable*. This one keeps them because the *refusal may be wrong*: the
+bar rests on one positive at a 1.4× margin, and the specimen-event clause can only
+fire if an eye can see what was turned away. When the family earns more positives
+it should move to the discarding side and join `underCaptured`.
+
+**The verdict now says which instrument read it** (`judged: {instrument, coverage,
+threshold}`), and the mint persists the deciding instrument's own number and bar
+with no conditional at the write — 97.6% area and 97.6% length are different
+facts, and a row carrying one under the other's name is the display default doing
+two jobs. The row has no instrument COLUMN (that is a migration, and it is not
+owed while a kind's name fixes its instrument unambiguously); what guards it is a
+tripwire test — **no kind may own a bar on both instruments** until the column
+lands first.
+
+**One degenerate corner, left alone deliberately.** A crop whose *area* reading is
+exactly 1.0 takes §2.4b's ceiling exemption and never reaches the length
+instrument, so on a hoop it refuses with `noSpecimen` where length would have
+passed it at 100%. It needs two independent vision reads to agree on every pixel
+of a hoop, so it is synthetic rather than reachable; the exemption is fable-224's
+standing law and is not moved to tidy a corner. `noSpecimen` keeps its crop, so
+nothing is lost if it ever happens.
+
 **Thin kinds are not words-forever.** The accessory CARRY bar (§ fable-183,
 shape-on-face ≥ 0.85) is a different instrument and works on hoops; only the
 mint door's AREA check fails. The adoption sitting may still admit a thin-kind
@@ -751,7 +801,7 @@ contract does not know the painter changed.
 | **`applied` is stored nowhere** | **NAMED GAP, 2026-08-11 (fable-224).** The cut is `applied ∩ (delivered ∪ master)` and `applied` is `min(feather(zone), edgeMatte)`, computed in the compositor and discarded. So **a cut that loses ground cannot be diagnosed from any artifact we keep** — the painted frame's lesson (founder-queue item 1) one layer over. Found when an attribution-by-elimination failed its own control (20/15 px the crop could not own) and had to be withdrawn. | Storing it, or a dev re-run instrumented to dump it. Whether it ships is a later decision; that it is a gap is a fact now. |
 | **The read-back caption is stored nowhere, and it decides whether a paid render reaches the library at all** | **NAMED GAP, 2026-08-11.** Three hoop renders were bought; all three earned `statedAccessories @ earring` (their segments prove it), and only one minted library rows. `mintedSlotsForRender` is pure and its inputs are three: the earned facets (identical, persisted), the accessory kind (identical, derived from three instructions that all name hoops), and the CAPTIONS — which are persisted nowhere. By elimination over an enumerated input set, the other two renders' read-back failed soft, so every slot filed `noWords` and the mint was never called. A paid render then contributes nothing to the library, silently. | Persisting the read-back, or persisting the mint's no-slot outcomes. Same class as `applied`-stored-nowhere: the input that decides an outcome is not kept, so the outcome cannot be explained after the fact. |
 | **A "contested" mark on the panel** | **PARKED as product taste, not smuggled (fable-222).** A `disputedDelivery` row is internal evidence: the user already renders their verdict by keeping or re-rolling, and a badge would put an instrument's opinion back on a surface D-246 just cleaned. | The founder wanting it, with a mock. Not an engineering decision. |
-| **A thin-kind door instrument** | **OPEN, and bounded (fable-224).** `notScorableByArea` says honestly that area cannot judge a hoop; it does not give hoops a door. | A proposal WITH controls — the disc, the one-pixel line, and these two hoops — e.g. coverage after a 1 px dilation of both masks, which spends the sub-pixel noise before measuring. Never a tuned constant. |
+| ~~**A thin-kind door instrument**~~ | **CLOSED 2026-08-11 (§2.4d).** `referenceCentreline.ts` is the length instrument, shipped with its controls: the thinner's fixed point, the disc that proves it really thins, the ring's topology, the one-pixel allowance measured against three, and its blind spot driven from the side that costs something. `notScorableByArea` survives for a thin kind with no length specimen. | — |
 | **Laterality assumes she faces the camera** | **DECLARED, 2026-08-11.** `regionSides` labels the image's right half as her left. On a frame shot from behind or mirrored, the two instances swap names — the same assumption `canthalTilt` has always made, now in one function rather than four call sites. | A facing read, if one is ever worth a call. The blast radius today is a pair of instance keys, and divergence is derived from words. |
 
 ---
@@ -794,4 +844,4 @@ contract does not know the painter changed.
 | **A DISPUTED delivery keeps its crop — never stored, never a version, never billed differently; one declared vision call per disputed facet** | **fable-220 §3**, executed as §2.4a |
 | **A verdict inside its own resolution is not a verdict — an instrument shows its resolution is smaller than the gap it adjudicates, or refuses to score by name** | **fable-224**, executed as §2.4b |
 | A hoop worn through a lobe IS a crescent open at the top; the "incomplete ring" verdict measured her earring against something the photograph never contained | the bright magnified frames, 2026-08-11 (law 8 from the pixels' side) |
-| **The `earring` bar is CENTRELINE at 97.6%, ring-like only, with n=1, the thinning blind spot, and the specimen-event clause riding on it** | **fable-228**, executed as §2.4c. Door diff owed. |
+| **The `earring` bar is CENTRELINE at 97.6%, ring-like only, with n=1, the thinning blind spot, and the specimen-event clause riding on it** | **fable-228**, executed as §2.4c — door diff SHIPPED (`referenceCentreline.ts`, §2.4d) |

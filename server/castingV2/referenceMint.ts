@@ -562,10 +562,22 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           assembler builds its prompt from `storageKey` and cannot see these,
           which is what makes an uncertified picture safe to keep at all.
         */
+        /*
+          THE NUMBER ON THE ROW IS THE ONE THAT REFUSED IT.
+
+          Two instruments live at the door and they read the same two masks in
+          different units (§2.4c). `judged` is present whenever one of them
+          reached a verdict, and it carries its own reading — so a `brokenOutline`
+          row records the centreline percentage that turned the crop away, not the
+          area percentage that had already declined to judge it. Where no
+          instrument adjudicated (the structural refusals), the area reading is
+          still the honest thing to record: it is what was measured.
+        */
+        const refused = verdict.judged?.coverage ?? verdict.reading?.coverage;
         const refusal: ReferenceRowToRecord["refusal"] = {
           reason: verdict.reason,
           kind: verdict.kind,
-          ...(verdict.reading ? { coverage: bp(verdict.reading.coverage) } : {}),
+          ...(refused === undefined ? {} : { coverage: bp(refused) }),
         };
         if (refusalKeepsItsCrop(verdict.reason)) {
           const refusedContentKey = `${LIBRARY_KEY_PREFIX}/${randomUUID()}-refused.png`;
@@ -658,9 +670,14 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
           geometry: { bbox: cut.box, frame: cut.frame },
           guard: {
             kind: verdict.kind,
-            coverage: bp(verdict.reading.coverage),
+            /* From the adjudication, unconditionally: the reading and the bar
+               are the deciding instrument's own, so they are comparable to each
+               other on the row. `spill` stays the area figure because it is
+               instrument-independent — it says the crop strayed outside its
+               region, which is true in whatever units the verdict was reached. */
+            coverage: bp(verdict.judged.coverage),
             spill: bp(verdict.reading.spill),
-            threshold: bp(verdict.threshold),
+            threshold: bp(verdict.judged.threshold),
           },
         },
       });
