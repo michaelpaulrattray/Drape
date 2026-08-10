@@ -8097,4 +8097,133 @@ refutation filed as a red assertion reads as a broken product forever after.
 
 ---
 
+## D-241 — The compositor is REFERENCE-CONDITIONED REPAINT. Masks scope the crop and the verification; nothing is pasted back as delivery.
+
+**2026-08-10, founder.** Recorded by fable-157 on his third statement of the
+same intent, the third arriving with the annoyance of a man who had watched
+weeks of seam-fighting on an architecture he never asked for:
+
+> Masked, cropped, and **referenced** was the design the entire time — *"exactly
+> how grok works."* Pixel-perfect pasting onto the original is **an impossible
+> ask**, and he honestly thought reference-conditioned repaint was what we were
+> building all along.
+
+**The architecture, in one sentence.** Every render paints from the PRISTINE
+MASTER plus a cropped reference of each delivered edit — *this is the exact
+earring, this is the exact hairstyle, these are the glasses*. One generation
+deep, forever. Nothing chains, so there are no generations to compound; and
+nothing is composited back, so there is no seam to blend.
+
+### Why nobody caught it for four seams — working law 8's own shape
+
+His July ruling said edits "are always editable through precise edits and
+removable by removing the REFERENCE IMAGE and text associated". That sentence
+described a **reference library**. The seat read *segments* as **byte patches**
+and the program built paste-compositing on top of it. Two ontologies, one word,
+four founder-visible seams before the divergence surfaced.
+
+This is the fringe incident exactly (law 8): the founder assumed the obvious
+ontology, engineering optimized the provable one, and nobody put the two in one
+room. **Logged against the reviewer, not the executor** — fable-155 places the
+fork at the fable-060-era reading of the segments ruling.
+
+### The addendum, same sitting (fable-158) — the full recipe and the two carry tiers
+
+1. Cast a sheet → select a cast → **auto-detect, crop and segment ALL her
+   original details into the panel**. Those crops ARE the reference library's
+   seed, which is what makes panel v2's detect-by-default load-bearing rather
+   than decorative.
+2. **An edit updates the slot; it never stacks a layer.** Editing hair CHANGES
+   the hair segment's reference. The panel is always the current truth, one row
+   per feature. Fork semantics are unchanged — a version's segment set is what
+   that image holds.
+3. **A new item births a new segment** with its own original reference.
+   Removal = remove the reference and its words.
+4. **Two carry tiers, with different promises:**
+   - **Reference-carried (things)** — hair, earrings, glasses, tattoos.
+     Carried as crop references; the painter copies them onto the master each
+     render. D-138's flash sheets slot in natively, frozen references having
+     been their law already.
+   - **Word-carried (surfaces)** — freckles, skin texture. Carried by their
+     recorded language and **regenerated** each render. The founder rules the
+     variation acceptable in his own words: *"okay to be reimagined or
+     regenerated with the words that carry them."*
+
+**The render recipe is therefore: master + tier-1 reference crops + tier-2 words
++ the ask.** That sentence is the compositor's spec.
+
+**Per-tier verification bars.** Reference tier: matches its reference inside the
+calibrated band. Word tier: delivers what the words say — class delivery, the
+existing walk machinery's bar — with **no cross-version pixel-stability claim**.
+The zero-false-pass law (D-235) applies to each tier's own promise, not to a
+single shared one.
+
+**Engine choice is ROUTING, not architecture** (fable-159, on the founder's own
+observation that the recipe could run on GPT Image 2). The compositor is built
+against the transport interface and hard-codes no engine.
+
+### The tier split is DERIVED, and it was not fitted
+
+`scripts/derive-carry-tiers-disposable.mts` assigns the tier from
+`CHANGE_AMPLITUDE`, which the program already recorded for every free subject —
+no second list is authored, per derive-never-mirror. The amplitude classes ARE
+the tier question in different words: SURFACE has no silhouette to crop, so it
+is word-carried; REPLACEMENT is opaque where it is and absent where it is not,
+so it is a croppable thing; RESTRUCTURE moves a boundary while the interior
+stays itself, so its crop is a crop of the face — ambiguous.
+
+Over the 24 facets: **9 reference-carried, 4 word-carried, 11 ambiguous.** The
+check that the rule is honest rather than fitted: fable-158 named `makeup`,
+`brows` and `lips` as ambiguous from taste, before any of this was written, and
+the derived rule lands **3 of 3** of them in the ambiguous column without ever
+consulting them. (`lip gloss` and `lip colour` fold into `lips`; **`nails` is
+not in the vocabulary at all** — no facet, no subject, no region.)
+
+The one derived row worth a taste check is **`eye.colour` → reference-carried**:
+it is REPLACEMENT by amplitude and an iris crop is a real reference, but it is
+not a *thing* in the way a hoop is.
+
+### The bench that was ordered to test it: C′ CONFIRMED, and the engine is the story
+
+`docs/specs/CASTING_V2_CPRIME_BENCH_REPORT.md`, 2026-08-10. 14 paints, 57 region
+reads, 0 NO-READs, $1.95 of provider spend, fixture lane, no user credits.
+
+His stated hypothesis — *"NBP will reliably copy any hairstyle or reference
+image onto the original"* — is **confirmed at flicker resolution**, on the same
+recipe through two painters:
+
+| | Nano Banana Pro | GPT Image 2 |
+|---|---|---|
+| glasses / hair, shape agreement on the face | 0.971 / 0.961 | **0.988 / 0.982** |
+| the head's own position between paints | 58–67 px | **0.5 px** |
+| the size it returns for a 1024×1536 master | 928×1136, and 928×1138 once | **1024×1536** |
+| cost per render | $0.150 (list) | **$0.099 (measured)** |
+
+**Both engines copy a reference well; only one hands back her own picture.** The
+seam class does not need blending — it evaporates, because nothing is pasted.
+And the ask lands without disturbing what the references hold: cell 2's figures
+sit inside cell 1's own spread.
+
+**Ruled from it:** build **pure C′, routed to GPT Image 2**, against the
+transport interface. Hybrid-D (byte-restore on unasked ground) is **not built** —
+its precondition is only half-met even on the exact-geometry engine, and what it
+fixes is a verification convenience rather than anything the customer sees.
+
+**Two instrument lessons, both of which changed a verdict before it shipped.**
+The head-motion control: 92% of what first read as item drift under NBP was the
+head moving, and without it this entry would say "references do not hold"
+instead of "framing does not hold". And the shape instrument's own identity
+control read 0.953 where it had to read 1.000 — a forward scatter perforating
+the mask — which, once fixed, showed the eyeballed impression that NBP
+re-invents the glasses was **wrong**. Measured beat eyeballed, in the direction
+that weakened our own case.
+
+**Not claimed:** anything about either engine and accessories. The earring
+figures on both painters are confounded by a pair question — the bench's clause
+said "the same hoop, on the same ear" (singular) to a fixture wearing a pair,
+and one GPT Image 2 paint of three delivered a single hoop. A pair-aware cell
+using `accessoryKinds.pairClauseFor` runs before any accessory tolerance is set.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
