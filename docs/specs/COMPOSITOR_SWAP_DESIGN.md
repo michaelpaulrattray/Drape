@@ -503,4 +503,7 @@ contract does not know the painter changed.
 | Occlusion amputation joins the completeness guard's defect list | fable-183 |
 | Contamination instrument deferred with a trigger; asymmetry an open row | fable-184 |
 | Removal compiles to the NATURAL state, not to matte | fable-188 (founder) |
-| The tier boundary measured: add carries, geometry partly, surface not at all | the edit-law cell + configuration diff, fable-189 |
+| The tier boundary measured on two rows: add carries, geometry partly | the edit-law cell + configuration diff, fable-189 |
+| Reference COUNT is out — two references carry what five did; naming form and ask size are what remain | the count bisect, 2026-08-10 |
+| The surface row is WITHDRAWN, unearned in both directions — the specular measure's noise (0.67pp) exceeds the whole nude range it must divide, and it fails its own positive control by sign | `glossy-family-sweep-disposable.mts`, 2026-08-10 |
+| A positive control class must be labelled by a verified OUTCOME, never by the ask or the reference that produced it | the same, named as the class per working law 7 |
