@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9840e47ac8ffaa54"
+    "sourceFingerprint": "75204811eec7ddd3"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 82
+      "moduleCount": 84
     },
     {
       "id": "domain:castingV2",
@@ -3449,6 +3449,18 @@
     {
       "id": "module:server/castingV2/recipeAssembler.ts",
       "path": "server/castingV2/recipeAssembler.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceCompleteness.ts",
+      "path": "server/castingV2/referenceCompleteness.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceSlots.ts",
+      "path": "server/castingV2/referenceSlots.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8586,6 +8598,14 @@
     {
       "id": "test:server/castingV2/recipeAssembler.test.ts",
       "path": "server/castingV2/recipeAssembler.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceCompleteness.test.ts",
+      "path": "server/castingV2/referenceCompleteness.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceSlots.test.ts",
+      "path": "server/castingV2/referenceSlots.test.ts"
     },
     {
       "id": "test:server/castingV2/refineDelta.test.ts",
@@ -17931,6 +17951,16 @@
     {
       "from": "module:server/castingV2/recipeAssembler.ts",
       "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceCompleteness.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceCompleteness.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
       "kind": "imports"
     },
     {
