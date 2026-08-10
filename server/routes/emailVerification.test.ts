@@ -6,6 +6,13 @@
  */
 import { describe, it, expect } from "vitest";
 
+import { allowColdImports } from "../testing/coldImportTimeout";
+
+/* This file's tests are dominated by cold module loading, not by logic —
+   see `coldImportTimeout.ts` for the flake this ends and why the raise is
+   here rather than global (fable-233 §5). */
+allowColdImports();
+
 describe("generateVerificationToken", () => {
   it("generates a 96-character hex string", async () => {
     const { generateVerificationToken } = await import("./emailVerification");

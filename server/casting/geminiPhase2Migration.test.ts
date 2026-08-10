@@ -11,6 +11,13 @@
 
 import { describe, it, expect } from "vitest";
 
+import { allowColdImports } from "../testing/coldImportTimeout";
+
+/* This file's tests are dominated by cold module loading, not by logic —
+   see `coldImportTimeout.ts` for the flake this ends and why the raise is
+   here rather than global (fable-233 §5). */
+allowColdImports();
+
 // ============================================================================
 // IMPORT VERIFICATION — ensure all Phase 2 exports are accessible
 // ============================================================================

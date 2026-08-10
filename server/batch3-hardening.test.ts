@@ -6,6 +6,13 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { allowColdImports } from "./testing/coldImportTimeout";
+
+/* This file's tests are dominated by cold module loading, not by logic —
+   see `coldImportTimeout.ts` for the flake this ends and why the raise is
+   here rather than global (fable-233 §5). */
+allowColdImports();
+
 // ─── Fix 12: Placeholder Detection ────────────────────────────────────────
 
 describe("Placeholder Image Detection", () => {

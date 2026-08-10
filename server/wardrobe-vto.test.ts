@@ -7,6 +7,13 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 
+import { allowColdImports } from "./testing/coldImportTimeout";
+
+/* This file's tests are dominated by cold module loading, not by logic —
+   see `coldImportTimeout.ts` for the flake this ends and why the raise is
+   here rather than global (fable-233 §5). */
+allowColdImports();
+
 // ── Store-level VTO History Tests ─────────────────────────────
 describe("VTO History (extended)", () => {
   let store: typeof import("../client/src/features/wardrobe/stores/useWardrobeStore");

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "326694ff73adf912"
+    "sourceFingerprint": "6cf049dabef13bc9"
   },
   "domains": [
     {
@@ -143,7 +143,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 27
+      "moduleCount": 28
     },
     {
       "id": "domain:wardrobe",
@@ -4554,6 +4554,12 @@
       "id": "module:server/stripe/webhooks.ts",
       "path": "server/stripe/webhooks.ts",
       "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/coldImportTimeout.ts",
+      "path": "server/testing/coldImportTimeout.ts",
+      "domain": "unassigned",
       "lifecycle": "active"
     },
     {
