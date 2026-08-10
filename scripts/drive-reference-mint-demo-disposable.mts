@@ -198,9 +198,20 @@ async function main(): Promise<void> {
   console.log(`\noutcome ${result.outcome}\n`);
   const width = Math.max(...result.slots.map((slot) => slot.slot.length));
   for (const slot of result.slots) {
-    console.log(slot.outcome === "stored"
-      ? `  ${slot.slot.padEnd(width)}  STORED      ${(slot.coverage * 100).toFixed(1)}%`
-      : `  ${slot.slot.padEnd(width)}  words-only  ${slot.reason}${slot.detail ? ` — ${slot.detail}` : ""}`);
+    /* Three outcomes now, not two: a DISPUTED slot is never stored and never
+       files words, so printing it as either would be a lie about what happened
+       (fable-220 §3). */
+    if (slot.outcome === "stored") {
+      console.log(`  ${slot.slot.padEnd(width)}  STORED      ${(slot.coverage * 100).toFixed(1)}%`);
+      continue;
+    }
+    if (slot.outcome === "disputed") {
+      console.log(slot.kept
+        ? `  ${slot.slot.padEnd(width)}  DISPUTED    crop kept for a human — ${(slot.coverage * 100).toFixed(1)}%`
+        : `  ${slot.slot.padEnd(width)}  DISPUTED    nothing kept: ${slot.reason}${slot.detail ? ` — ${slot.detail}` : ""}`);
+      continue;
+    }
+    console.log(`  ${slot.slot.padEnd(width)}  words-only  ${slot.reason}${slot.detail ? ` — ${slot.detail}` : ""}`);
   }
   console.log(`\ncrops written to ${OUT} — LOOK AT THEM. ${written.length} file(s).`);
 }
