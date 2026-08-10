@@ -332,3 +332,114 @@ describe("falRegionReader cuts the frame instead of naming a side", () => {
     await expect(reader.region({ image, name: "eyes" })).rejects.toBeInstanceOf(MaskError);
   });
 });
+
+/**
+ * THE MASK FETCH, WHICH IS A SECOND NETWORK CALL AND USED TO HAVE NO DEFENCES.
+ *
+ * The specimen is dated and measured: on 2026-08-11 `v3b.fal.media` and
+ * `v3.fal.media` both refused TCP connections for about ten minutes while
+ * `queue.fal.run` answered normally. DNS resolved fine; the connect timed out.
+ * SAM 3 returned mask URLs the whole time and not one of them could be fetched.
+ *
+ * With the old bare `fetch(url)` every masked render in that window refused at
+ * the segmenter — a paid path taken down by a blip on the one call with nothing
+ * in the way. Both arms are driven here: the blip that recovers, and the outage
+ * that does not.
+ */
+describe("a mask that does not come back on the first try", () => {
+  /** A real 2×2 PNG, so the mask decodes all the way down. */
+  const maskPng = async () => sharp(Buffer.alloc(2 * 2, 255), { raw: { width: 2, height: 2, channels: 1 } })
+    .png().toBuffer();
+
+  /** SAM 3's own answer: one URL, never the bytes. */
+  const sam3Answer = () => new Response(JSON.stringify({ masks: [{ url: "https://v3b.fal.media/x.png" }] }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+
+  it("recovers from a transient failure instead of refusing a paid render", async () => {
+    const bytes = await maskPng();
+    let maskAttempts = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => {
+      if (String(url).includes("fal.run")) return sam3Answer();
+      maskAttempts += 1;
+      /* The specimen's own shape: a connect failure, not a status. */
+      if (maskAttempts < 3) throw new TypeError("fetch failed");
+      return new Response(bytes, { status: 200, headers: { "content-type": "image/png" } });
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const mask = await reader.region({ image: PNG, name: "lips" });
+
+    expect(maskAttempts, "it tried again rather than giving up on the first refusal").toBe(3);
+    expect(mask.width).toBe(2);
+    expect(mask.height).toBe(2);
+  });
+
+  it("gives up after its attempts and says the reading did not happen", async () => {
+    let maskAttempts = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => {
+      if (String(url).includes("fal.run")) return sam3Answer();
+      maskAttempts += 1;
+      throw new TypeError("fetch failed");
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const error = await reader.region({ image: PNG, name: "lips" }).catch((caught: unknown) => caught);
+
+    expect(maskAttempts, "bounded — a retry that never stops is an outage of its own").toBe(3);
+    expect(error).toBeInstanceOf(MaskError);
+    /*
+      A `MaskError` is *this reading did not happen*, which every caller on the
+      product path already treats as a refusal rather than as a confident empty
+      answer. `absentIsAnswer` must not rescue it: nothing was read.
+    */
+    expect((error as Error).message).toContain("could not be fetched");
+  });
+
+  it("does not retry an answer that will not change — a 404 is the answer", async () => {
+    let maskAttempts = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => {
+      if (String(url).includes("fal.run")) return sam3Answer();
+      maskAttempts += 1;
+      return new Response("gone", { status: 404 });
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await expect(reader.region({ image: PNG, name: "lips" })).rejects.toBeInstanceOf(MaskError);
+    /* Three attempts at a permanent answer only delays the honest refusal the
+       caller is already waiting on. */
+    expect(maskAttempts).toBe(1);
+  });
+
+  it("retries a 500, because a server that is unwell may be well in a moment", async () => {
+    const bytes = await maskPng();
+    let maskAttempts = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => {
+      if (String(url).includes("fal.run")) return sam3Answer();
+      maskAttempts += 1;
+      return maskAttempts === 1
+        ? new Response("upstream", { status: 503 })
+        : new Response(bytes, { status: 200, headers: { "content-type": "image/png" } });
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    expect((await reader.region({ image: PNG, name: "lips" })).width).toBe(2);
+    expect(maskAttempts).toBe(2);
+  });
+
+  it("refuses an error page served at 200 rather than handing it to sharp", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: unknown) => {
+      if (String(url).includes("fal.run")) return sam3Answer();
+      /* The failure mode that read thirty faces as bare, one layer up: a
+         status nobody can complain about, carrying a document. */
+      return new Response(APP_INDEX_HTML, { status: 200, headers: { "content-type": "text/html" } });
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const error = await reader.region({ image: PNG, name: "lips" }).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(MaskError);
+    expect((error as Error).message).toContain("not a picture");
+  });
+});

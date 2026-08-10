@@ -77,10 +77,84 @@ async function toMask(bytes: Buffer): Promise<Mask> {
   return { data, width: info.width, height: info.height };
 }
 
-async function fetchMask(url: string): Promise<Mask> {
+/**
+ * THE MASK FETCH IS A SECOND NETWORK CALL, AND IT USED TO HAVE NO DEFENCES.
+ *
+ * SAM 3 does not return a mask; it returns a URL to one, on fal's media CDN —
+ * a different host from the API, reached by a bare `fetch` with no timeout, no
+ * retry and no status check. On 2026-08-11 that host was unreachable for about
+ * **ten minutes** while `queue.fal.run` answered normally: DNS resolved,
+ * TCP connect timed out at 10s, every mask fetch failed. In that window every
+ * masked render in production would have refused at the segmenter — a paid path
+ * taken down by a blip on the one call that had nothing in the way.
+ *
+ * Three things, and each closes a different failure:
+ *
+ * - **A bounded retry**, because the specimen was transient and the alternative
+ *   is refunding a render the provider was perfectly willing to serve.
+ * - **A timeout**, because the default is the platform's and a request that
+ *   hangs holds a paid operation's lease open behind it.
+ * - **A status check and a medium check**, because a URL that answers with an
+ *   error page answers with HTTP 200 more often than anyone expects, and the
+ *   sweep that read thirty faces as bare did exactly that one layer up.
+ *
+ * **A 4xx is not retried** (except 429): a mask that is not there will not be
+ * there in 250ms, and three attempts at a permanent answer only delays the
+ * honest refusal the caller is waiting for.
+ */
+const MASK_FETCH_ATTEMPTS = 3;
+const MASK_FETCH_TIMEOUT_MS = 15_000;
+const MASK_FETCH_BACKOFF_MS = 250;
+
+/** Whether this failure is worth a second look, or is simply the answer. */
+function worthRetrying(status: number | null): boolean {
+  if (status === null) return true; /* a network error — the specimen's own shape */
+  if (status === 429) return true;
+  return status >= 500;
+}
+
+async function fetchMaskBytes(url: string, signal?: AbortSignal): Promise<Buffer> {
+  let last = "";
+  for (let attempt = 1; attempt <= MASK_FETCH_ATTEMPTS; attempt += 1) {
+    let retryable = true;
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(MASK_FETCH_TIMEOUT_MS) });
+      if (!response.ok) {
+        retryable = worthRetrying(response.status);
+        throw new MaskError(`the mask store answered ${response.status}`);
+      }
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error) {
+      last = error instanceof Error ? error.message : String(error);
+      /* The caller gave up while we were waiting — a further attempt would be
+         work nobody is listening for. */
+      if (signal?.aborted) break;
+      if (!retryable || attempt === MASK_FETCH_ATTEMPTS) break;
+      log.warn(
+        { attempt, of: MASK_FETCH_ATTEMPTS, err: last },
+        "[falRegionReader] a mask did not come back — trying again",
+      );
+      await new Promise((resolve) => setTimeout(resolve, MASK_FETCH_BACKOFF_MS * attempt));
+    }
+  }
+  throw new MaskError(`the mask could not be fetched — ${last}`);
+}
+
+async function fetchMask(url: string, signal?: AbortSignal): Promise<Mask> {
   const raw = url.startsWith("data:")
     ? Buffer.from(url.split(",")[1], "base64")
-    : Buffer.from(await (await fetch(url)).arrayBuffer());
+    : await fetchMaskBytes(url, signal);
+  /*
+    A MASK IS A PICTURE, and bytes may only answer a question about pictures if
+    they are provably one. Without this, an error page reaches `toMask` and
+    fails as an unreadable sharp buffer — the right outcome by luck, wearing a
+    message that names the wrong thing.
+  */
+  try {
+    assertImageBytes(raw, "mask");
+  } catch (error) {
+    throw new MaskError(`what came back from the mask store is not a picture: ${(error as Error).message}`);
+  }
   return toMask(raw);
 }
 
@@ -282,8 +356,8 @@ export function createFalRegionReader(input: {
       .map((entry) => (typeof entry === "string" ? entry : entry?.url))
       .filter((url): url is string => typeof url === "string" && url.length > 0);
     if (urls.length === 0) return null;
-    if (keep === "first") return fetchMask(urls[0]);
-    const every = await Promise.all(urls.map((url) => fetchMask(url)));
+    if (keep === "first") return fetchMask(urls[0], signal);
+    const every = await Promise.all(urls.map((url) => fetchMask(url, signal)));
     return every.length === 1 ? every[0] : unionMasks(...every);
   };
 
@@ -373,7 +447,7 @@ export function createFalRegionReader(input: {
       }, signal);
       const url = json?.mask_image?.url ?? json?.image?.url;
       if (!url) throw new MaskError("the matting model returned no mask");
-      return fetchMask(url);
+      return fetchMask(url, signal);
     },
 
     async landmark({ image, name }) {
