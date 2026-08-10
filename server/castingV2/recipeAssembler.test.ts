@@ -27,7 +27,7 @@ describe("the degenerate case — a cast with no library and a words-only ask", 
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [],
-      asks: [{ slot: "lips", noun: "lips", words: "give her a soft nude lip gloss" }],
+      asks: [{ slot: "lips", noun: "lips", words: "a soft nude lip gloss" }],
     });
 
     expect(recipe.ok).toBe(true);
@@ -38,7 +38,7 @@ describe("the degenerate case — a cast with no library and a words-only ask", 
     expect(recipe.sentences).toEqual([recipe.references[0]!.sentence]);
     expect(recipe.carried).toEqual([]);
     expect(recipe.edited).toEqual(["lips"]);
-    expect(recipe.wordStacks.get("lips")).toEqual(["give her a soft nude lip gloss"]);
+    expect(recipe.wordStacks.get("lips")).toEqual(["a soft nude lip gloss"]);
   });
 
   it("takes the same code path as a furnished cast — there is no second path", () => {
@@ -48,10 +48,10 @@ describe("the degenerate case — a cast with no library and a words-only ask", 
     const furnished = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [lips({ carry: { key: "mint/lips.png" } })],
-      asks: [{ slot: "hair", noun: "hair", words: "wear it in a low bun" }],
+      asks: [{ slot: "hair", noun: "hair", words: "gathered into a low bun" }],
     });
     const degenerate = assembleRecipe({
-      master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "hair", noun: "hair", words: "wear it in a low bun" }],
+      master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "hair", noun: "hair", words: "gathered into a low bun" }],
     });
     expect(furnished.ok && degenerate.ok).toBe(true);
     if (!furnished.ok || !degenerate.ok) return;
@@ -65,7 +65,7 @@ describe("D-244 line 2 — a feature's own crop never rides in its own edit", ()
     const refusal = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [lips({ carry: { key: "mint/lips.png" } })],
-      asks: [{ slot: "lips", words: "make her lips noticeably fuller" }],
+      asks: [{ slot: "lips", words: "noticeably fuller lips" }],
     });
 
     expect(refusal.ok).toBe(false);
@@ -78,13 +78,13 @@ describe("D-244 line 2 — a feature's own crop never rides in its own edit", ()
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [lips()], /* gloss already accepted; no crop, so nothing to contaminate */
-      asks: [{ slot: "lips", words: "make her lips noticeably fuller" }],
+      asks: [{ slot: "lips", words: "noticeably fuller lips" }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.wordStacks.get("lips")).toEqual([
       "a soft nude lip gloss",
-      "make her lips noticeably fuller",
+      "noticeably fuller lips",
     ]);
   });
 
@@ -93,9 +93,9 @@ describe("D-244 line 2 — a feature's own crop never rides in its own edit", ()
       master: MASTER, pronouns: SHE,
       library: [
         lips({ carry: { key: "mint/lips.png" } }),
-        { slot: "earring@left", tier: "item", noun: "hoop on her left ear", words: ["a gold hoop"], carry: { key: "mint/left.png" } },
+        { slot: "earring@left", tier: "item", noun: "left earring", words: ["a gold hoop"], carry: { key: "mint/left.png" } },
       ],
-      asks: [{ slot: "hair", noun: "hair", words: "wear it gathered into a low bun" }],
+      asks: [{ slot: "hair", noun: "hair", words: "gathered into a low bun" }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
@@ -119,20 +119,20 @@ describe("D-244 line 3 — an introduced item regenerates from its FROZEN anchor
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [{ ...flash }],
-      asks: [{ slot: "tattoo@forearm", words: "make it larger" }],
+      asks: [{ slot: "tattoo@forearm", words: "larger" }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.references[1]!.role).toEqual({ kind: "anchor", slot: "tattoo@forearm" });
     expect(recipe.references[1]!.image.key).toBe("library/flash-swallow.png");
-    expect(recipe.wordStacks.get("tattoo@forearm")).toEqual(["a fine-line swallow", "make it larger"]);
+    expect(recipe.wordStacks.get("tattoo@forearm")).toEqual(["a fine-line swallow", "larger"]);
   });
 
   it("still refuses when that item ALSO holds a minted crop — the anchor does not excuse it", () => {
     const refusal = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [{ ...flash, carry: { key: "mint/tattoo.png" } }],
-      asks: [{ slot: "tattoo@forearm", words: "make it larger" }],
+      asks: [{ slot: "tattoo@forearm", words: "larger" }],
     });
     expect(refusal.ok).toBe(false);
     if (refusal.ok) return;
@@ -143,10 +143,10 @@ describe("D-244 line 3 — an introduced item regenerates from its FROZEN anchor
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [
-        { slot: "earring@left", tier: "item", noun: "hoop on her left ear", words: ["a gold hoop"], anchor: { key: "library/hoop.png" } },
-        { slot: "earring@right", tier: "item", noun: "hoop on her right ear", words: ["a gold hoop"], carry: { key: "mint/right.png" } },
+        { slot: "earring@left", tier: "item", noun: "left earring", words: ["a gold hoop"], anchor: { key: "library/hoop.png" } },
+        { slot: "earring@right", tier: "item", noun: "right earring", words: ["a gold hoop"], carry: { key: "mint/right.png" } },
       ],
-      asks: [{ slot: "earring@left", words: "make that hoop noticeably bigger" }],
+      asks: [{ slot: "earring@left", words: "noticeably bigger" }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
@@ -233,7 +233,7 @@ describe("the ordinals and the sentences are built in one pass", () => {
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [
-        { slot: "earring@left", tier: "item", noun: "hoop on her left ear", words: ["a gold hoop"], anchor: { key: "library/hoop.png" } },
+        { slot: "earring@left", tier: "item", noun: "left earring", words: ["a gold hoop"], anchor: { key: "library/hoop.png" } },
         { slot: "lips", tier: "anatomy", noun: "lips", words: ["gloss"], carry: { key: "mint/lips.png" } },
         { slot: "hair", tier: "anatomy", noun: "hair", words: ["worn down"], carry: { key: "mint/hair.png" } },
       ],
@@ -261,7 +261,7 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
     slot: "skin", tier: "surface", noun: "skin", words: ["an even golden tan"],
   };
   const hoop: LibraryEntry = {
-    slot: "earring@left", tier: "item", noun: "hoop on her left ear",
+    slot: "earring@left", tier: "item", noun: "left earring",
     words: ["a wide gold hoop"], carry: { key: "mint/left.png" },
   };
 
@@ -277,17 +277,18 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
     expect(recipe.references.map((reference) => reference.role)).toEqual([
       { kind: "master" }, { kind: "carry", slot: "hair" },
     ]);
-    expect(recipe.standing.map((standing) => standing.slot)).toEqual(["hair"]);
-    /* And the words point at the crop by the ordinal it actually occupies, so
-       the two halves of the carry contract name the same thing. */
-    expect(recipe.standing[0]!.sentence).toBe(
-      "Keep her hair exactly as in reference 2: worn down, a blunt fringe.",
+    /* And the words ride ON that reference — the founder's confirmed format,
+       named then described — so the two halves of the carry contract are one
+       sentence about one thing rather than two instructions. */
+    expect(recipe.standing).toEqual([]); /* the words rode on the reference */
+    expect(recipe.references[1]!.sentence).toBe(
+      "Reference 2 is the exact hair she has — worn down, a blunt fringe, unchanged.",
     );
   });
 
   it("SURFACE: the words ride and nothing else does — there is no crop to send", () => {
     const recipe = assembleRecipe({
-      master: MASTER, pronouns: SHE, library: [tan], asks: [{ slot: "hair", noun: "hair", words: "wear it up" }],
+      master: MASTER, pronouns: SHE, library: [tan], asks: [{ slot: "hair", noun: "hair", words: "worn up" }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
@@ -306,7 +307,7 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
     const refusal = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [{ ...tan, carry: { key: "mint/skin.png" } }],
-      asks: [{ slot: "hair", noun: "hair", words: "wear it up" }],
+      asks: [{ slot: "hair", noun: "hair", words: "worn up" }],
     });
     expect(refusal.ok).toBe(false);
     if (refusal.ok) return;
@@ -327,15 +328,20 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
     expect(refusal.reason).toBe("surfaceCarriesCrop");
   });
 
-  it("ITEM: the crop carries and the item is NOT described again", () => {
-    /* The one tier whose crop carried outright. Saying it twice would put a
-       word stack and a reference in competition over the same feature. */
+  it("ITEM: the crop carries, and its words ride ON the reference, never beside it", () => {
+    /* The one tier whose crop carried outright. A description DERIVED from the
+       item's own record strengthens the reference (fable-194's format); a word
+       stack living beside it would be two instructions about one feature, which
+       is the thing that would drift. */
     const recipe = assembleRecipe({
-      master: MASTER, pronouns: SHE, library: [hoop], asks: [{ slot: "hair", noun: "hair", words: "wear it up" }],
+      master: MASTER, pronouns: SHE, library: [hoop], asks: [{ slot: "hair", noun: "hair", words: "worn up" }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.references[1]!.role).toEqual({ kind: "carry", slot: "earring@left" });
+    expect(recipe.references[1]!.sentence).toBe(
+      "Reference 2 is the exact left earring she has — a wide gold hoop, unchanged.",
+    );
     expect(recipe.standing).toEqual([]);
     expect(recipe.carried).toEqual(["earring@left"]);
   });
@@ -347,13 +353,13 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE,
       library: [hair({ carry: undefined }), tan],
-      asks: [{ slot: "hair", words: "cut it to the collarbone" }],
+      asks: [{ slot: "hair", words: "cut to the collarbone" }],
     });
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.standing.map((standing) => standing.slot)).toEqual(["skin"]);
     expect(recipe.wordStacks.get("hair")).toEqual([
-      "worn down", "a blunt fringe", "cut it to the collarbone",
+      "worn down", "a blunt fringe", "cut to the collarbone",
     ]);
     expect(recipe.carried).not.toContain("hair");
   });
@@ -371,14 +377,15 @@ describe("the carry contract, per tier (fable-192 — measured, not precautionar
       { kind: "carry", slot: "earring@left" },
       { kind: "carry", slot: "hair" },
     ]);
-    expect(recipe.standing.map((standing) => standing.slot)).toEqual(["hair", "skin"]);
+    /* Only the surface stands alone: the hair said its words on reference 3. */
+    expect(recipe.standing.map((standing) => standing.slot)).toEqual(["skin"]);
     expect(recipe.carried).toEqual(["earring@left", "hair", "skin"]);
   });
 });
 
 describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifact", () => {
   const hoop: LibraryEntry = {
-    slot: "earring@left", tier: "item", noun: "wide gold hoop on her left ear",
+    slot: "earring@left", tier: "item", noun: "left earring",
     words: ["a wide gold hoop"], carry: { key: "mint/left.png" },
   };
   const hair: LibraryEntry = {
@@ -416,10 +423,8 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.prompt).toBe(
       "Reference 1 is the photograph of this person — reproduce her exactly:" +
       " same face, same pose, same lighting, same framing, same background." +
-      " Reference 2 is the exact wide gold hoop on her left ear she has —" +
-      " the same wide gold hoop on her left ear, unchanged." +
-      " Reference 3 is the exact hair she has — the same hair, unchanged." +
-      " Keep her hair exactly as in reference 3: worn down." +
+      " Reference 2 is the exact left earring she has — a wide gold hoop, unchanged." +
+      " Reference 3 is the exact hair she has — worn down, unchanged." +
       " Keep her skin exactly: an even golden tan." +
       " Change only her lips: noticeably fuller.",
     );
@@ -464,8 +469,7 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.prompt).toContain("reproduce him exactly");
-    expect(recipe.prompt).toContain("the exact hair he has");
-    expect(recipe.prompt).toContain("Keep his hair exactly as in reference 2: cropped short.");
+    expect(recipe.prompt).toContain("the exact hair he has — cropped short, unchanged.");
     expect(recipe.prompt).toContain("Change only his lips:");
   });
 
@@ -515,6 +519,115 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.ask).toBe("");
-    expect(recipe.prompt.endsWith("Keep her hair exactly as in reference 2: worn down.")).toBe(true);
+    expect(recipe.prompt.endsWith("Reference 2 is the exact hair she has — worn down, unchanged.")).toBe(true);
+  });
+});
+
+describe("the declarative-state contract with our own interpreter (fable-195)", () => {
+  /*
+    Ruled after opus-140 raised it: the stack is "everything ever said about
+    this feature" and it is re-said IN FULL on every edit, so imperatives cannot
+    accumulate — "make it bigger, make it bigger" says nothing a painter can
+    act on, while "a wide gold hoop, noticeably bigger" describes a state.
+
+    This is a contract between our own modules, checked at the boundary the
+    interpreter's output crosses. It is not a detector judging a picture, so it
+    does not collide with D-246.
+  */
+  it("REFUSES an ask that arrives as an instruction rather than a state", () => {
+    for (const imperative of [
+      "make her lips fuller",
+      "add a gold hoop",
+      "remove the gloss",
+      "give her freckles",
+      "change her eye colour to green",
+      "wear it up",
+    ]) {
+      const refusal = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "lips", noun: "lips", words: imperative }],
+      });
+      expect(refusal.ok, imperative).toBe(false);
+      if (refusal.ok) return;
+      expect(refusal.reason).toBe("wordsNotDeclarative");
+    }
+  });
+
+  it("REFUSES a stored stack that holds one, wherever it came from", () => {
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [lips({ words: ["a soft nude lip gloss", "make them fuller"] })],
+      asks: [{ slot: "hair", noun: "hair", words: "gathered into a low bun" }],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("wordsNotDeclarative");
+    expect(refusal.slot).toBe("lips");
+  });
+
+  it("passes the state phrases the interpreter owes", () => {
+    /* And the marker stays short on purpose: a longer list starts refusing
+       legitimate participles, which would push the interpreter toward stilted
+       language to satisfy a spelling check. */
+    for (const declarative of [
+      "noticeably fuller lips",
+      "a wide gold hoop",
+      "worn down, centre-parted",
+      "painted a deep red",
+      "set in a low bun",
+      "cut to the collarbone",
+      "taken up into a chignon",
+    ]) {
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "lips", noun: "lips", words: declarative }],
+      });
+      expect(recipe.ok, declarative).toBe(true);
+    }
+  });
+});
+
+describe("a surface's UPLOADED reference is an anchor, and anchors are legal (fable-195)", () => {
+  const uploadedLook: LibraryEntry = {
+    slot: "makeup@eyes", tier: "surface", noun: "eye makeup",
+    words: ["a smoked liner"], anchor: { key: "library/look-she-uploaded.png" },
+  };
+
+  it("rides on the surface's own edit — the founder's stored makeup reference", () => {
+    /* "That image will need to be stored as the makeup reference." It is a
+       FROZEN INTRODUCTION reference, not a minted carry crop, and the refusal
+       below must not catch it. */
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [uploadedLook],
+      asks: [{ slot: "makeup@eyes", words: "a softer, browner smoke" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references[1]!.role).toEqual({ kind: "anchor", slot: "makeup@eyes" });
+    expect(recipe.references[1]!.image.key).toBe("library/look-she-uploaded.png");
+  });
+
+  it("and on a render that touches something else, its words stand alone", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [uploadedLook],
+      asks: [{ slot: "hair", noun: "hair", words: "gathered into a low bun" }],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references).toHaveLength(1); /* the anchor rides its own edit only */
+    expect(recipe.standing.map((standing) => standing.sentence)).toEqual([
+      "Keep her eye makeup exactly: a smoked liner.",
+    ]);
+  });
+
+  it("but a MINTED carry crop for that same slot is still refused", () => {
+    const refusal = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{ ...uploadedLook, carry: { key: "mint/makeup.png" } }],
+      asks: [{ slot: "hair", noun: "hair", words: "gathered into a low bun" }],
+    });
+    expect(refusal.ok).toBe(false);
+    if (refusal.ok) return;
+    expect(refusal.reason).toBe("surfaceCarriesCrop");
   });
 });

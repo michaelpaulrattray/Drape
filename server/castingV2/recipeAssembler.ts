@@ -135,8 +135,10 @@ export type LibraryEntry = {
   /**
    * How the slot is spoken about — the stylist's wording, not the engineer's key.
    *
-   * **Always bare**: `"lips"`, `"hair"`, `"left eye"`, `"wide gold hoop on her
-   * left ear"`. Every template below supplies its own determiner — "the exact
+   * **Always bare, and plain**: `"lips"`, `"hair"`, `"left eye"`, `"left
+   * earring"`. The NOUN names the slot; the DESCRIPTION rider carries the
+   * specifics, so "the exact left earring she has — a wide gold hoop, unchanged"
+   * says each thing once. Every template below supplies its own determiner — "the exact
    * ${noun}", "keep ${possessive} ${noun}" — and a determiner that arrived with
    * the noun would queue behind them ("the exact the wide gold hoop"). A part of
    * her takes the possessive; a worn item takes an article. That is the
@@ -233,7 +235,8 @@ export type RecipeRefusal = {
     | "removeNotInStack"
     | "surfaceCarriesCrop"
     | "nounNotBare"
-    | "slotNotNamed";
+    | "slotNotNamed"
+    | "wordsNotDeclarative";
   slot: FeatureSlot;
   detail: string;
 };
@@ -242,6 +245,23 @@ export type AssembleResult = Recipe | RecipeRefusal;
 
 /** A possessive replaces an article; it never queues behind one. */
 const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
+
+/**
+ * THE DECLARATIVE-STATE CONTRACT (fable-195), and it is a contract with our own
+ * interpreter rather than a detector judging a picture.
+ *
+ * The stack is *everything ever said about this feature*, and it is re-said in
+ * full on every edit. Imperatives do not accumulate: `"make it bigger"` twice
+ * says nothing coherent, while `"a wide gold hoop"` then `"noticeably bigger"`
+ * describes a state that can be painted. So the interpreter owns converting an
+ * ask into a state phrase, and this is the marker that keeps it honest.
+ *
+ * Deliberately a SHORT list of unambiguous imperatives. It is a spelling check
+ * on our own module boundary, not a judgment about language — a long list would
+ * start refusing legitimate participles ("set in a low bun", "painted nails").
+ */
+const IMPERATIVE_OPENER =
+  /^(?:make|add|give|remove|change|turn|put|apply|draw|paint|swap|replace|use|lose|delete|erase|increase|decrease|take|wear)\b/i;
 
 /**
  * THE ASK, kept small on purpose.
@@ -275,6 +295,27 @@ function askSentence(
   }
   if (clauses.length === 0) return "";
   return `Change only ${clauses.join("; ")}.`;
+}
+
+/**
+ * THE DESCRIPTION RIDER (fable-194, founder-confirmed): every reference is NAMED
+ * for what it is, optionally followed by a SHORT DESCRIPTION that strengthens it.
+ *
+ * **Derived from the slot's own record at emission, never authored beside it**
+ * (fable-195). That is what keeps it from becoming the thing this assembler
+ * refuses elsewhere — two instructions about one feature. A description
+ * generated from the entry's own accepted words cannot diverge from them,
+ * because there is nowhere for it to diverge to.
+ *
+ * It also settles where anatomy's word half rides. fable-192 requires the word
+ * stack in EVERY recipe; a slot with a reference now carries its words on that
+ * reference's own sentence, and a slot without one gets a standing sentence.
+ * Said once, attached to the thing it is about.
+ */
+function describe(entry: LibraryEntry): string {
+  return entry.words.length === 0
+    ? `the same ${entry.noun}, unchanged`
+    : `${entry.words.join(", ")}, unchanged`;
 }
 
 /**
@@ -334,6 +375,13 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const nextOrdinal = () => references.length + 1;
 
   for (const entry of input.library) {
+    const imperative = entry.words.find((word) => IMPERATIVE_OPENER.test(word.trim()));
+    if (imperative !== undefined) {
+      return {
+        ok: false, reason: "wordsNotDeclarative", slot: entry.slot,
+        detail: `${entry.slot} holds "${imperative}", which is an instruction rather than a state; the stack is re-said in full on every edit and imperatives do not accumulate`,
+      };
+    }
     if (LEADING_DETERMINER.test(entry.noun)) {
       /*
         The templates below supply the possessive, and a possessive REPLACES an
@@ -352,6 +400,13 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
   for (const ask of input.asks) {
     const entry = bySlot.get(ask.slot);
+    if (ask.words !== undefined && IMPERATIVE_OPENER.test(ask.words.trim())) {
+      /* The interpreter's own output, checked at the boundary it crosses. */
+      return {
+        ok: false, reason: "wordsNotDeclarative", slot: ask.slot,
+        detail: `the ask for ${ask.slot} reads "${ask.words}", which is an instruction; the interpreter owes a state phrase`,
+      };
+    }
     const stack = stackFor(entry, ask);
     if ("missing" in stack) {
       return {
@@ -438,7 +493,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       each caller's prose.
     */
     sentences.push(
-      `Reference ${nextOrdinal()} is the exact ${entry.noun} ${pronouns.subject} ${has} — the same ${entry.noun}, unchanged.`,
+      `Reference ${nextOrdinal()} is the exact ${entry.noun} ${pronouns.subject} ${has} — ${describe(entry)}.`,
     );
     references.push({
       role: { kind: "carry", slot: entry.slot },
@@ -460,9 +515,15 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       it again would put a word stack and a reference in competition over one
       feature.
     */
-    if (entry.tier === "item" || entry.words.length === 0) continue;
-    const ordinal = ordinalOf.get(entry.slot);
-    const where = ordinal === undefined ? "" : ` as in reference ${ordinal}`;
+    if (entry.words.length === 0) continue;
+    /*
+      A slot that sent a reference has already said its words, on that
+      reference's own sentence. This list is what must stand ALONE: a surface,
+      which never sends a crop at all, and an anatomy slot nothing has delivered
+      yet. Saying it twice in one prompt is not emphasis, it is two instructions.
+    */
+    if (ordinalOf.has(entry.slot)) continue;
+    if (entry.tier === "item") continue;
     standing.push({
       slot: entry.slot,
       noun: entry.noun,
@@ -470,7 +531,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       /* Imperative, so one form serves a plural noun and a singular one alike —
          "her lips remains" and "her hair remain" are both wrong, and a template
          that can produce either is a template that will. */
-      sentence: `Keep ${possessive} ${entry.noun} exactly${where}: ${entry.words.join(", ")}.`,
+      sentence: `Keep ${possessive} ${entry.noun} exactly: ${entry.words.join(", ")}.`,
     });
   }
 
