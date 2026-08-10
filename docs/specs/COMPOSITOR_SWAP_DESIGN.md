@@ -88,6 +88,15 @@ References are minted fresh, at library-build time:
 - **edit-carried references** — the delivered-anchored cutter on the DELIVERED
   frame (`applied ∩ (region(delivered) ∪ region(master))`, the 88.7% cut)
 
+**And the frame must contain the thing** (fable-181, generalizing the fringe
+class): *a reference cut from a frame that lacks its subject is a fabrication,
+whatever the cutter's quality.* An edit-carried instance reference is cut from a
+**delivered frame that wears the thing**, never from a master that does not.
+Caught live when the accessory cell's first draft tried to cut per-ear crops
+from a candidate master whose ears are bare, and the reader answered *"the
+segmenter found no earring to edit"* — the fixture refusing was the only thing
+between that draft and a cell measuring references to nothing.
+
 ### 2.4 The completeness guard at the door
 
 Every reference crop is checked against a **fresh full read of its region on the
