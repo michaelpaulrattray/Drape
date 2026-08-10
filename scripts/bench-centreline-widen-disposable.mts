@@ -140,13 +140,27 @@ function coverage(a: Shape, b: Shape): number {
 
 await mkdir(CACHE, { recursive: true });
 const connection = await mysql.createConnection({ uri, timezone: "Z" });
+/*
+  BOTH SIDES OF THE DOOR, because a bar needs crops that were kept as well as
+  crops that were turned away — and the kept ones cost nothing extra: rows #2/#3
+  and #6/#7 are per-side earring crops the library STORED on earlier renders,
+  with the same cutter's mask at `maskKey`. `COALESCE` picks whichever column
+  group the row actually filled; the geometry columns are the matching pair.
+*/
 const [library] = await connection.query<any[]>(`
-  SELECT CONCAT('lib#', l.id) id, l.slot, l.refusedMaskKey mk, l.refusedBboxX bx, l.refusedBboxY by_,
-         l.refusedBboxW bw, l.refusedBboxH bh, l.refusedFrameWidth fw, l.refusedFrameHeight fh,
+  SELECT CONCAT('lib#', l.id) id, l.slot,
+         COALESCE(l.refusedMaskKey, l.maskKey) mk,
+         COALESCE(l.refusedBboxX, l.bboxX) bx, COALESCE(l.refusedBboxY, l.bboxY) by_,
+         COALESCE(l.refusedBboxW, l.bboxW) bw, COALESCE(l.refusedBboxH, l.bboxH) bh,
+         COALESCE(l.refusedFrameWidth, l.frameWidth) fw,
+         COALESCE(l.refusedFrameHeight, l.frameHeight) fh,
+         COALESCE(l.refusedReason, 'stored') door,
          v.imageKey frame, v.id vid
     FROM casting_reference_library l
     LEFT JOIN casting_candidate_variants v ON v.id = l.variantId
-   WHERE l.refusedContentKey IS NOT NULL`);
+   WHERE (l.refusedContentKey IS NOT NULL OR l.storageKey IS NOT NULL)
+     AND l.slot LIKE 'earring%'
+   ORDER BY l.id`);
 const [segments] = await connection.query<any[]>(`
   SELECT CONCAT('seg#', s.id) id, CONCAT(s.region, '@whole') slot, s.maskKey mk, s.bboxX bx, s.bboxY by_,
          s.bboxW bw, s.bboxH bh, s.frameWidth fw, s.frameHeight fh, v.imageKey frame, v.id vid
@@ -205,7 +219,7 @@ for (const row of [...library, ...segments] as any[]) {
   const thinned = read(erode(crop));
   const shifted = read(shift(crop, 1, 0));
 
-  console.log(`${String(row.id + " " + row.slot).padEnd(24)}`
+  console.log(`${String(`${row.id} ${row.slot} ${row.door ?? ""}`).padEnd(42)}`
     + `${String(area(crop)).padStart(5)} ${String(area(region)).padStart(6)} ${String(area(spine)).padStart(5)} | `
     + `${(asIs * 100).toFixed(1).padStart(6)}%          | `
     + `${((asIs - thinned) * 100).toFixed(1).padStart(6)}     ${((asIs - shifted) * 100).toFixed(1).padStart(6)}  | `
