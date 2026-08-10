@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "75204811eec7ddd3"
+    "sourceFingerprint": "cf4a402a1aaa111a"
   },
   "domains": [
     {
@@ -8486,6 +8486,10 @@
     {
       "id": "test:server/castingV2/compositeIntegrity.test.ts",
       "path": "server/castingV2/compositeIntegrity.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/d246VerificationBar.test.ts",
+      "path": "server/castingV2/d246VerificationBar.test.ts"
     },
     {
       "id": "test:server/castingV2/deployCollision.test.ts",

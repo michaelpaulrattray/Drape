@@ -8469,4 +8469,93 @@ untouched one.
 
 ---
 
+## D-246 — DETECTORS GATE DISASTERS ONLY. Subtle quality is delivered, and the person looking at it decides.
+
+**2026-08-10, founder ruling (confirmed in the sitting, relayed fable-194).** In
+his own substance: *people understand that AI image generation cannot guarantee
+outcomes; detectors must not block real generations because the detectors are
+flawed; refund only on complete or catastrophic failure; we cannot build a
+detector per trait, especially into fantasy characters.*
+
+### The rule
+
+1. **Runtime gates are the CATASTROPHIC classes only.** Four, and they are
+   enumerated rather than described:
+   (a) a **damaged frame** — tear, duplication, integrity;
+   (b) **identity loss** — it is not her;
+   (c) the asked thing **COMPLETELY ABSENT** — existence measured against her
+       own words, which is now the whole runtime compliance bar;
+   (d) **process death or charge-without-delivery**.
+   These refuse and refund exactly as they do today.
+2. **Subtle quality is DELIVERED, never gated.** Amplitude, hue, thickness,
+   gloss level, exact shade, degree — shown to the person who asked for it, who
+   re-rolls or refines (paid) or rolls back (free). No detector verdict blocks
+   or refunds on a subtle call. D-187's *advisory never refunds* generalizes:
+   advisory readings may be RECORDED for trends and never enforced.
+3. **D-235 and D-236 survive, NARROWED.** Zero false passes and the 95%-per-class
+   bar apply to the catastrophic classes, where the instruments are reliable.
+   The replay walk and Tier A scoring adopt existence-and-catastrophe bars
+   rather than subtle-instrument claims. This unblocks the surface class, whose
+   certification no longer waits on a gloss instrument that does not exist.
+4. **Subtle instruments are demoted to bench and dev tools.** They keep auditing
+   trends and finding OUR bugs — which is their actual record — and they lose
+   all runtime authority. The paired forced-choice VLM gloss judge is
+   **CANCELLED as a product gate**; build it later only if a bench needs it.
+5. **The scaling rationale, on the record:** per-trait detectors cannot follow
+   the product into open vocabulary and fantasy casts. Eyes scale; detectors do
+   not.
+
+### What it supersedes
+
+- **fable-166 §2's realism clause** — *"a neon iris is a REFUSED frame"* — is
+  superseded. Neon green is subtle, not catastrophic: it ships and the user
+  judges. Taste is answered by ROUTING, not by gating.
+- The verification stage of the compositor swap (§6.2 step 4) is existence and
+  catastrophe gates, with subtle readings recorded for trends only.
+
+### The disarm sweep, and what it actually found
+
+Ordered as part of the ruling (working law 7: fix the class, not the instance).
+Every runtime path in the casting product that can refuse or refund a render was
+read and classified. **The three clauses named in the ruling turned out never to
+have been armed:**
+
+| named target | state in the code |
+|---|---|
+| the amplitude clause | `changeAmplitude` is imported once, for `isSurfaceFacet`. It classifies; it gates nothing. |
+| the coherence enforce plan | `seam.coherence` is recorded on the row and, in `maskedRefine`'s own words, *"acted on by nothing — one specimen is not a calibration"*. |
+| fable-166 §2's neon-iris refusal | never built. Superseded before it landed. |
+
+What *can* refuse, and where each lands under the rule:
+
+| path | reads | class | verdict |
+|---|---|---|---|
+| `detectRenderFault` (refine and roll) | a damaged or duplicated frame | (a) | keep |
+| `compositeSeam` → `composite_fault` | our own composite tore the frame | (a) | keep — already enforced only where an edge-moving edit is impossible |
+| the identity gate / `backViewGate` | it is not her | (b) | keep |
+| the verification net, `binding` facts | a named value or a removal, judged for EXISTENCE — the reader's own prompt says *"only answer that a thing is not present when you cannot find it at all"* and *"size and prominence are degree, never presence"* | (c) | keep |
+| `carriedSegments` → `segment_store` | her kept edits could not be read | (d) | keep |
+| the already-true gate | a subtle tilt measurement — but it asks a free question BEFORE the charge and never refunds | not a gate | keep, noted |
+
+**Two findings the sweep raised that the ruling did not name**, both on the paid
+Sign path and both left standing for a decision rather than changed:
+
+- **`judgeOrFailClosed` fails CLOSED when the conformance judge is
+  unavailable** — a paid, possibly perfect view is refused because the checker
+  could not be reached. That is the founder's sentence exactly (*"detectors must
+  not block real generations because the detectors are flawed"*), and it
+  contradicts the house style stated in `backViewGate`: *"infra failures fail
+  OPEN … a broken checker must never block a paid generation."* It also
+  contradicts §I/D-92, which chose fail-closed deliberately. The verdict already
+  carries `unjudged: true`, so the change would be surgical.
+- **The conformance judge's `wardrobe` axis** is the least existence-shaped of
+  its three. It is defensible as a set-level catastrophe (one package, one
+  outfit) rather than a subtle call, which is why it was not touched.
+
+`server/castingV2/d246VerificationBar.test.ts` pins the enumeration: a new
+failure class that can refuse a paid render fails the suite until somebody
+classifies it against this ruling.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
