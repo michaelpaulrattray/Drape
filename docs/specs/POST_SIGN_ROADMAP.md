@@ -96,6 +96,18 @@ D-138 stands:** ALL ink — asked or reference-supplied — via the
 FLASH-SHEET path (mannequin templates, tone ladder, no text);
 references frozen at introduction (D-192); D-139/140/141 carry.
 
+**Makeup face charts (founder idea, 2026-08-10 — parked here, not
+ruled):** "maybe it should be designed on a face mannequin same as
+the tattoos idea — every iteration of makeup is stored on a
+mannequin face." I.e. a whole makeup LOOK designed/recorded on a
+neutral mannequin face chart (the real MUA tool), frozen at
+introduction like a flash sheet, transferable to any cast, removable
+as one thing. Sits ON TOP of the ruled per-feature handling
+(fable-168: words propose, acceptance mints the anatomy-slot
+reference — per-feature slots remain the source of truth). The
+fable-168 "grouped Makeup look row" taste question folds into this
+item; both deferred together until this studio's turn.
+
 ## 4. "Show her the refused frame" (walk-campaign's END; founder judges)
 
 Founder 2026-08-09 (fable-106): option to show a twice-refused render
