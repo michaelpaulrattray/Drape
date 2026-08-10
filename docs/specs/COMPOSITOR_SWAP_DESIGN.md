@@ -175,6 +175,56 @@ in `guardReference` alone: the three refusals about whether this is a real,
 unique picture of the subject come first; a dispute only ever displaces a
 completeness verdict.
 
+#### 2.4b A verdict inside its own resolution is not a verdict (fable-224 — standing law)
+
+The founder's hoops read 65.2% and 54.0% and the pictures were called
+*"incomplete rings"*. Both halves of that were wrong, and the diagnosis is worth
+more than the fix:
+
+- **A hoop worn through a lobe is a crescent open at the top.** The verdict
+  measured her earring against a complete ring the photograph never contained.
+  Law 8 arriving from the pixels' side.
+- **Two-thirds of a hoop crop is its own outline** (measured: 198 px, thickest 3
+  px, 66.7% one-pixel shell; controls a solid disc at 12.4% and a one-pixel line
+  at 100%). One pixel of boundary is worth more than the whole verdict.
+
+So the guard now asks whether its instrument applies before it produces a number
+somebody will adopt:
+
+```
+resolution = shellFraction(region)          the region's own one-pixel edge share
+gap        = specimens ? positive − negative : 1 − coverage
+if coverage < 1 and resolution ≥ gap  →  notScorableByArea (keeps its crop)
+```
+
+Both arms are **measured, not chosen**. With specimens the gap is the distance
+the instrument was shown able to separate (hair: 94.6 − 12.5 = 82.1 points).
+With none, the reading itself is what would become the bar, and the least a bar
+must do is tell its own crop from a complete one — so the gap is the shortfall.
+A reading at the ceiling is exempt: there is no shortfall for the uncertainty to
+swallow.
+
+**The first version used "half the range" as the fallback and it did not fire on
+the specimens that produced it** — the hoop regions measure 41.8% and 49.3%,
+enormous and both under a half. Recorded because a rule that cannot fire on its
+own founding case is a checker that cannot fail wearing a derivation. Measured
+against the corrected rule, both hoops refuse:
+
+| | coverage | region resolution | gap | verdict |
+|---|---|---|---|---|
+| `earring@left` | 65.2% | 41.8% | 34.8 pts | `notScorableByArea` |
+| `earring@right` | 54.0% | 49.3% | 46.0 pts | `notScorableByArea` |
+
+Costs nothing — two passes over a mask the guard already holds, no vision call —
+and the number is recomputable from the stored mask, so it needs no column.
+
+**Thin kinds are not words-forever.** The accessory CARRY bar (§ fable-183,
+shape-on-face ≥ 0.85) is a different instrument and works on hoops; only the
+mint door's AREA check fails. The adoption sitting may still admit a thin-kind
+exemplar by eye, and a thin-kind door instrument (tolerance-dilated agreement,
+which spends the sub-pixel noise before measuring) is proposed-with-controls
+work, not taste.
+
 ### 2.5 One slot, one reference, per render (fable-174 — founder)
 
 The recipe assembler **REFUSES at build** any recipe where two references claim
@@ -667,6 +717,9 @@ contract does not know the painter changed.
 | ~~**Side-scoped region reads for the mint**~~ | **CLOSED 2026-08-11.** `regionSides` returns the split the reader was already making; `region` is the union of it, so the pair costs no extra call and there is one midline. The mint cuts each instance from her own side and the guard is asked about that side. The `noSide` refusal remains for a reader without the capability, and takes no reading. | — |
 | **A bilateral kind still has no specimen** | **OPEN, and it is now the only thing between the founder's hoop and the library.** `earring`, `eye`, `ear` and `brow` refuse at `noSpecimen` — with an honest per-side coverage attached, which is what makes the refusal productive. | A dev refine per specimen-bearing kind on the real paid path, each delivered cut eye-verified ONCE and adopted (fable-210). A master read cannot supply it: it scores 100% against itself by construction. |
 | ~~**A subtle-quality kind cannot produce its own specimen**~~ | **CLOSED 2026-08-11 (§2.4a).** The specimen path ran through the `verified` gate, so a kind whose asks keep failing it could never be cut at all. A disputed facet's crop is now kept as `disputedDelivery` — refused, never stored, invisible to the fold, and openable by a human. | — |
+| **`applied` is stored nowhere** | **NAMED GAP, 2026-08-11 (fable-224).** The cut is `applied ∩ (delivered ∪ master)` and `applied` is `min(feather(zone), edgeMatte)`, computed in the compositor and discarded. So **a cut that loses ground cannot be diagnosed from any artifact we keep** — the painted frame's lesson (founder-queue item 1) one layer over. Found when an attribution-by-elimination failed its own control (20/15 px the crop could not own) and had to be withdrawn. | Storing it, or a dev re-run instrumented to dump it. Whether it ships is a later decision; that it is a gap is a fact now. |
+| **A "contested" mark on the panel** | **PARKED as product taste, not smuggled (fable-222).** A `disputedDelivery` row is internal evidence: the user already renders their verdict by keeping or re-rolling, and a badge would put an instrument's opinion back on a surface D-246 just cleaned. | The founder wanting it, with a mock. Not an engineering decision. |
+| **A thin-kind door instrument** | **OPEN, and bounded (fable-224).** `notScorableByArea` says honestly that area cannot judge a hoop; it does not give hoops a door. | A proposal WITH controls — the disc, the one-pixel line, and these two hoops — e.g. coverage after a 1 px dilation of both masks, which spends the sub-pixel noise before measuring. Never a tuned constant. |
 | **Laterality assumes she faces the camera** | **DECLARED, 2026-08-11.** `regionSides` labels the image's right half as her left. On a frame shot from behind or mirrored, the two instances swap names — the same assumption `canthalTilt` has always made, now in one function rather than four call sites. | A facing read, if one is ever worth a call. The blast radius today is a pair of instance keys, and divergence is derived from words. |
 
 ---
@@ -707,3 +760,5 @@ contract does not know the painter changed.
 | **The library is its own table, migration first; storage and reference emission are PER INSTANCE always** | **fable-196**, executed as §2.6 / migration 0028 |
 | A surface worn on anatomy is ONE anatomy slot, tier `anatomy`, surface words in its stack; "crops stay bare" superseded by D-244 | **fable-201**, executed as §2.7 |
 | **A DISPUTED delivery keeps its crop — never stored, never a version, never billed differently; one declared vision call per disputed facet** | **fable-220 §3**, executed as §2.4a |
+| **A verdict inside its own resolution is not a verdict — an instrument shows its resolution is smaller than the gap it adjudicates, or refuses to score by name** | **fable-224**, executed as §2.4b |
+| A hoop worn through a lobe IS a crescent open at the top; the "incomplete ring" verdict measured her earring against something the photograph never contained | the bright magnified frames, 2026-08-11 (law 8 from the pixels' side) |

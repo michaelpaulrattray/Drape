@@ -264,12 +264,22 @@ describe("what a refused crop may say about itself", () => {
     }))).toBe("accepted");
   });
 
-  /* Only the two refusals a HUMAN settles keep pixels — `noSpecimen`, which
-     produces the specimen, and `disputedDelivery`, which settles reader against
-     painter. Keeping a `subjectAbsent` crop would store a picture of where the
-     thing would have been and put it in front of the one person able to adopt
-     it. Every other reason is enumerated here so a seventh cannot arrive quietly
-     carrying pixels. */
+  it("takes a crop of a shape the instrument cannot score (fable-224)", () => {
+    /* Two-thirds of a hoop is its own outline, so no coverage number divides
+       anything on it. The pixels are kept because an EYE can still say whether
+       the crop is the whole of the visible metal. */
+    expect(reasonOf(refused({
+      refusal: { reason: "notScorableByArea", kind: "earring", coverage: 6520, crop: keptCrop },
+    }))).toBe("accepted");
+  });
+
+  /* Only the refusals a HUMAN settles keep pixels — `noSpecimen`, which produces
+     the specimen, `disputedDelivery`, which settles reader against painter, and
+     `notScorableByArea`, where only an eye can judge the shape at all. Keeping a
+     `subjectAbsent` crop would store a picture of where the thing would have
+     been and put it in front of the one person able to adopt it. Every other
+     reason is enumerated here so a new one cannot arrive quietly carrying
+     pixels. */
   it("refuses keeping the pixels of any other refusal", () => {
     const notKept = GUARD_REFUSAL_REASONS
       .filter((reason) => !refusalKeepsItsCrop(reason));

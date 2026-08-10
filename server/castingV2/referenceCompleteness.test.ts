@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Mask } from "./maskedComposite";
 import {
+  adjudicatedGapFor,
   COMPLETENESS_SPECIMENS,
   GUARD_REFUSAL_REASONS,
   guardReference,
@@ -21,6 +22,7 @@ import {
   mintGuardedReference,
   refusalKeepsItsCrop,
   REFUSALS_THAT_KEEP_THEIR_CROP,
+  shellFraction,
   thresholdFor,
 } from "./referenceCompleteness";
 import type { SegmentBox } from "./segmentCuts";
@@ -248,16 +250,154 @@ describe("a DISPUTED delivery — the refusal that is not about the crop (fable-
     expect(verdict.reason).toBe("disputedDelivery");
   });
 
-  it("only the two human-settled refusals keep their pixels", () => {
-    /* The list the write helper enforces, pinned where it is defined. A seventh
+  it("only the human-settled refusals keep their pixels", () => {
+    /* The list the write helper enforces, pinned where it is defined. A new
        reason arriving without this test changing is the silent version of
        widening the gallery the guard exists to keep empty. */
-    expect([...REFUSALS_THAT_KEEP_THEIR_CROP].sort())
-      .toEqual(["disputedDelivery", "noSpecimen"]);
+    const kept = ["disputedDelivery", "noSpecimen", "notScorableByArea"];
+    expect([...REFUSALS_THAT_KEEP_THEIR_CROP].sort()).toEqual(kept);
     for (const reason of GUARD_REFUSAL_REASONS) {
-      expect(refusalKeepsItsCrop(reason), reason)
-        .toBe(reason === "noSpecimen" || reason === "disputedDelivery");
+      expect(refusalKeepsItsCrop(reason), reason).toBe(kept.includes(reason));
     }
+  });
+});
+
+/**
+ * THE INSTRUMENT'S OWN RESOLUTION — fable-224's standing law, and the measure
+ * it rests on gets both controls before it judges anything.
+ *
+ * *A verdict inside its own resolution is not a verdict.* Coverage on a hoop
+ * cannot separate a good crop from a bad one, because two-thirds of a hoop is
+ * its own outline and one pixel of boundary is worth more than the whole scale.
+ */
+describe("what one pixel of boundary is worth", () => {
+  it("CONTROLS: a solid disc is barely edge, a one-pixel line is nothing else", () => {
+    /* The two shapes whose answers come from geometry rather than from this
+       function. Without them the measure could return a constant and every
+       verdict below would still look right. */
+    const disc = { data: Buffer.alloc(41 * 41, 0), width: 41, height: 41 };
+    for (let y = 0; y < 41; y += 1) {
+      for (let x = 0; x < 41; x += 1) {
+        if ((x - 20) ** 2 + (y - 20) ** 2 <= 400) disc.data[y * 41 + x] = 255;
+      }
+    }
+    expect(shellFraction(disc)).toBeCloseTo(0.124, 2);
+
+    const line = { data: Buffer.alloc(41 * 41, 0), width: 41, height: 41 };
+    for (let x = 4; x < 37; x += 1) line.data[20 * 41 + x] = 255;
+    expect(shellFraction(line)).toBe(1);
+
+    /* And nothing at all is not a division by zero. */
+    expect(shellFraction({ data: Buffer.alloc(16, 0), width: 4, height: 4 })).toBe(0);
+  });
+
+  it("REFUSES TO SCORE a hoop whose shortfall is smaller than one pixel of its edge", () => {
+    /*
+      A ring of the founder's own proportions — outer radius 12, three pixels
+      thick — with a crop that holds the lower two-thirds of it. His own hoops
+      measured 41.8% and 49.3% edge against shortfalls of 34.8 and 46.0 points.
+    */
+    const hoop = { data: Buffer.alloc(41 * 41, 0), width: 41, height: 41 };
+    for (let y = 0; y < 41; y += 1) {
+      for (let x = 0; x < 41; x += 1) {
+        const radius = Math.hypot(x - 20, y - 20);
+        if (radius <= 12 && radius >= 9) hoop.data[y * 41 + x] = 255;
+      }
+    }
+    const resolution = shellFraction(hoop);
+    expect(resolution).toBeGreaterThan(0.4);
+
+    /* The crop takes the bottom of the ring only, so the shortfall is real and
+       smaller than the resolution — which is exactly the founder's case. */
+    const verdict = guardReference({
+      kind: "earring", crop: crop({ x: 8, y: 20, width: 25, height: 13 }), digest: "aa", guardRead: hoop,
+    });
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) return;
+    expect(1 - verdict.reading!.coverage).toBeLessThan(resolution);
+    /* NOT `noSpecimen`. The difference is the whole ruling: `noSpecimen` says
+       "measure one and we will have a bar", and on this shape no measurement of
+       one would ever produce a usable bar. */
+    expect(verdict.reason).toBe("notScorableByArea");
+    expect(verdict.detail).toContain("one-pixel edge");
+    expect(refusalKeepsItsCrop(verdict.reason)).toBe(true);
+  });
+
+  it("a reading at the CEILING is always scorable — there is no shortfall to be unsure about", () => {
+    /* The degenerate arm, driven so it stays deliberate: a crop holding all of
+       an independent read of its own region is as complete as this instrument
+       can certify, and refusing it for having a zero gap would be reading the
+       rule instead of applying it. */
+    const hoop = { data: Buffer.alloc(41 * 41, 0), width: 41, height: 41 };
+    for (let y = 0; y < 41; y += 1) {
+      for (let x = 0; x < 41; x += 1) {
+        const radius = Math.hypot(x - 20, y - 20);
+        if (radius <= 12 && radius >= 9) hoop.data[y * 41 + x] = 255;
+      }
+    }
+    const verdict = guardReference({
+      kind: "earring", crop: crop({ x: 8, y: 8, width: 25, height: 25 }), digest: "aa", guardRead: hoop,
+    });
+    expect(verdict.ok).toBe(false);
+    if (verdict.ok) return;
+    expect(verdict.reading!.coverage).toBe(1);
+    expect(verdict.reason).toBe("noSpecimen");
+  });
+
+  it("HAIR IS UNTOUCHED — a measured gap of 82.1 points against a few of edge", () => {
+    /*
+      The regression that matters. The bar the whole library rests on was
+      measured on this instrument, so a rule that quietly stopped scoring hair
+      would take the one working kind down with the broken one. The gap is the
+      SPECIMENS' distance (94.6 − 12.5), never the reading's distance from the
+      bar — the second would open a dead band around every threshold and refuse
+      good crops for being near it.
+    */
+    expect(adjudicatedGapFor("hair", 0.5)).toBeCloseTo(0.821, 3);
+    /* A kind with no specimens is judged against its own shortfall — nothing
+       is chosen, and the reading is what would become the bar. */
+    expect(adjudicatedGapFor("earring", 0.652)).toBeCloseTo(0.348, 3);
+
+    const hairRegion = region(FRAME.width, FRAME.height, HAIR);
+    expect(shellFraction(hairRegion)).toBeLessThan(0.821);
+
+    const passing = guardReference({
+      kind: "hair", crop: crop(HAIR), digest: "aa", guardRead: hairRegion,
+    });
+    expect(passing.ok).toBe(true);
+
+    /* And the fringe still fails as `underCaptured` — measured against a real
+       bar and refused correctly, its pixels NOT kept. */
+    const fringe = guardReference({
+      kind: "hair", crop: crop({ x: 10, y: 10, width: 40, height: 5 }), digest: "bb", guardRead: hairRegion,
+    });
+    expect(fringe.ok).toBe(false);
+    if (fringe.ok) return;
+    expect(fringe.reason).toBe("underCaptured");
+    expect(refusalKeepsItsCrop(fringe.reason)).toBe(false);
+  });
+
+  it("the structural three and a dispute still come FIRST", () => {
+    /* Precedence, on the thinnest possible shape: an instrument that does not
+       apply is still not a reason to file a crop of nothing, or to re-file bytes
+       another slot already holds, or to bury a delivery dispute under a
+       measurement complaint. */
+    const line = { data: Buffer.alloc(41 * 41, 0), width: 41, height: 41 };
+    for (let x = 4; x < 37; x += 1) line.data[20 * 41 + x] = 255;
+    const thinCrop = crop({ x: 4, y: 20, width: 33, height: 1 });
+
+    const duplicate = guardReference({
+      kind: "earring", crop: thinCrop, digest: "ff", guardRead: line,
+      mintedDigests: new Map([["skin", "ff"]]),
+    });
+    expect(duplicate.ok).toBe(false);
+    if (!duplicate.ok) expect(duplicate.reason).toBe("duplicateOfSlot");
+
+    const disputed = guardReference({
+      kind: "earring", crop: thinCrop, digest: "aa", guardRead: line, disputed: true,
+    });
+    expect(disputed.ok).toBe(false);
+    if (!disputed.ok) expect(disputed.reason).toBe("disputedDelivery");
   });
 });
 

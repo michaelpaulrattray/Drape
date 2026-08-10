@@ -103,6 +103,85 @@ export function thresholdFor(kind: string): number | null {
   return specimens ? specimens.positive : null;
 }
 
+/**
+ * THE INSTRUMENT'S OWN RESOLUTION — what one pixel of boundary is worth, as a
+ * fraction of the thing being measured.
+ *
+ * A Chebyshev distance transform, two passes, exact for this metric. The
+ * returned fraction is the share of a mask's area that sits one pixel from its
+ * own edge: erode the shape by a single pixel and that is what disappears.
+ *
+ *   a solid disc, r=20     12.4%   —  a boundary disagreement costs a few points
+ *   a one-pixel line      100.0%   —  a boundary disagreement costs everything
+ *   the founder's hoop     66.7%   —  two-thirds of it IS its own outline
+ *
+ * Those first two are the controls, driven in the test file before this
+ * function is allowed to say anything about a hoop; the third is the reading
+ * that made it necessary.
+ */
+export function shellFraction(mask: Mask): number {
+  const { width, height, data } = mask;
+  const BIG = 1 << 20;
+  const distance = new Int32Array(width * height);
+  for (let index = 0; index < width * height; index += 1) {
+    distance[index] = data[index]! > 0 ? BIG : 0;
+  }
+  const at = (x: number, y: number) => (
+    x < 0 || y < 0 || x >= width || y >= height ? 0 : distance[y * width + x]!
+  );
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (distance[y * width + x] === 0) continue;
+      distance[y * width + x] = Math.min(
+        distance[y * width + x]!,
+        at(x - 1, y) + 1, at(x, y - 1) + 1, at(x - 1, y - 1) + 1, at(x + 1, y - 1) + 1,
+      );
+    }
+  }
+  for (let y = height - 1; y >= 0; y -= 1) {
+    for (let x = width - 1; x >= 0; x -= 1) {
+      if (distance[y * width + x] === 0) continue;
+      distance[y * width + x] = Math.min(
+        distance[y * width + x]!,
+        at(x + 1, y) + 1, at(x, y + 1) + 1, at(x + 1, y + 1) + 1, at(x - 1, y + 1) + 1,
+      );
+    }
+  }
+  let area = 0;
+  let shell = 0;
+  for (let index = 0; index < distance.length; index += 1) {
+    const depth = distance[index]!;
+    if (depth === 0) continue;
+    area += 1;
+    if (depth === 1) shell += 1;
+  }
+  return area === 0 ? 0 : shell / area;
+}
+
+/**
+ * THE GAP THIS READING'S BAR WOULD HAVE TO DIVIDE — and it is measured, never
+ * chosen.
+ *
+ * With specimens the gap is the distance the instrument was SHOWN able to
+ * separate: hair's 94.6% complete against its 12.5% fringe, 82.1 points.
+ *
+ * With none, the reading itself is what would be adopted as the bar, and the
+ * least a bar must do is tell its own crop apart from a complete one. So the
+ * gap is this crop's shortfall — `1 − coverage`. Nothing is picked.
+ *
+ * **The first version of this used half the range as the fallback and it was
+ * wrong in the most instructive way: measured against the founder's own hoops it
+ * did not fire.** Their regions read 41.8% and 49.3% one-pixel edge — enormous,
+ * and both under a half. The constant was doing all the work and doing it badly;
+ * the shortfall is 34.8 and 46.0 points, and against those the same resolutions
+ * are decisive. A rule that does not fire on the specimen that produced it is a
+ * checker that cannot fail, wearing a derivation.
+ */
+export function adjudicatedGapFor(kind: string, coverage: number): number {
+  const specimens = COMPLETENESS_SPECIMENS[kind];
+  return specimens ? specimens.positive - specimens.negative : 1 - coverage;
+}
+
 export type CoverageReading = {
   /** `|crop ∩ region| / |region|` — how much of the subject the crop contains. */
   coverage: number;
@@ -169,6 +248,7 @@ export const GUARD_REFUSAL_REASONS = [
   "underCaptured",
   "duplicateOfSlot",
   "disputedDelivery",
+  "notScorableByArea",
 ] as const;
 
 export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
@@ -179,12 +259,15 @@ export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
  * Both are refusals that exist **in order to be settled by a human looking at
  * the picture**, and neither is a judgement that the crop is bad:
  *
- *   `noSpecimen`        the kind has no measured positive, so the guard cannot
- *                       say what complete looks like here. The crop is the only
- *                       thing that can teach it.
- *   `disputedDelivery`  the ask wrote this facet and the reader said it did not
- *                       land. The crop is the only thing that can say which of
- *                       the two was wrong.
+ *   `noSpecimen`         the kind has no measured positive, so the guard cannot
+ *                        say what complete looks like here. The crop is the only
+ *                        thing that can teach it.
+ *   `disputedDelivery`   the ask wrote this facet and the reader said it did not
+ *                        land. The crop is the only thing that can say which of
+ *                        the two was wrong.
+ *   `notScorableByArea`  the shape is mostly its own outline, so coverage cannot
+ *                        divide anything on it. Only an eye can say whether this
+ *                        crop is the whole of the metal.
  *
  * The other four refuse a picture that must not be adopted: `subjectAbsent` is a
  * crop of where the thing would have been, `duplicateOfSlot` already has its
@@ -196,6 +279,7 @@ export type GuardRefusalReason = typeof GUARD_REFUSAL_REASONS[number];
 export const REFUSALS_THAT_KEEP_THEIR_CROP: readonly GuardRefusalReason[] = [
   "noSpecimen",
   "disputedDelivery",
+  "notScorableByArea",
 ];
 
 export function refusalKeepsItsCrop(reason: GuardRefusalReason): boolean {
@@ -329,6 +413,45 @@ export function guardReference(input: GuardInput): GuardVerdict {
     return {
       ok: false, reason: "disputedDelivery", kind: input.kind, reading,
       detail: `this render's reader disputed that the ask landed on ${input.kind}; the crop reads ${(reading.coverage * 100).toFixed(1)}% and is kept for a human rather than adopted`,
+    };
+  }
+
+  /*
+    AND HERE THE INSTRUMENT IS ASKED WHETHER IT APPLIES AT ALL — fable-224's
+    standing law: **a verdict inside its own resolution is not a verdict.**
+
+    Coverage is `|crop ∩ region| / |region|`, so one pixel of disagreement about
+    where the subject's edge runs moves the number by the REGION's own shell
+    fraction. The denominator is what decides that, which is why the region is
+    measured here and not the crop — though on the specimens that produced this
+    rule the two are within a point of each other, both being the same hoop.
+
+    It is ONE comparison, against the gap this reading's bar would have to
+    divide (`adjudicatedGapFor`) — measured in both arms, never chosen.
+
+    ONE EXEMPTION, and it is not a fudge: **a reading at the ceiling is always
+    scorable.** A crop holding 100% of an independent read of its own region is
+    as complete as this instrument can ever certify; there is no shortfall for
+    the uncertainty to swallow, so there is nothing for it to be uncertain about.
+    Without that clause every perfect crop would be refused for having a gap of
+    zero, which is the degenerate reading of the rule rather than the rule.
+
+    Measured on the founder's own hoops, which is what this exists for:
+
+      earring@left    region 41.8% edge   shortfall 34.8 pts   → not scorable
+      earring@right   region 49.3% edge   shortfall 46.0 pts   → not scorable
+      hair (v#163)    a solid blob        gap 82.1 pts measured → scores fine
+
+    Costs nothing: two passes over a mask the guard already holds, no vision
+    call. And the number is recomputable from the stored mask at any time, which
+    is why it needs no column of its own.
+  */
+  const resolution = shellFraction(input.guardRead);
+  const gap = adjudicatedGapFor(input.kind, reading.coverage);
+  if (reading.coverage < 1 && resolution >= gap) {
+    return {
+      ok: false, reason: "notScorableByArea", kind: input.kind, reading,
+      detail: `${(resolution * 100).toFixed(1)}% of this ${input.kind} region is one-pixel edge, so a single pixel of boundary is worth more than the ${(gap * 100).toFixed(1)} points a bar here would have to divide; ${(reading.coverage * 100).toFixed(1)}% is not a verdict on this shape`,
     };
   }
 
