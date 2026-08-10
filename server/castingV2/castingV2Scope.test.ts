@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
   CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   CastingSegmentsCleanupWorkerError,
+  CastingSegmentsDeliveredCoverageError,
+  CastingSegmentsDeliveredScopeConfigurationError,
+  deliveredAnchoredSegmentsEnabled,
+  parseCastingSegmentsDeliveredScope,
+  validateCastingSegmentsDeliveredEnvironment,
   CastingSegmentsCoverageError,
   CastingSegmentsScopeConfigurationError,
   CastingV2ValidatorConfigurationError,
@@ -222,5 +228,83 @@ describe("the segment sub-flag", () => {
 
   it("names the env var the operator actually sets", () => {
     expect(CASTING_SEGMENTS_SCOPE_ENV).toBe("CASTING_SEGMENTS_SCOPE");
+  });
+});
+
+/**
+ * The silhouette sub-sub-flag.
+ *
+ * It governs HOW a segment is cut, so it is inert without the segment store —
+ * and inert is indistinguishable from mistaken from outside, which is why it
+ * refuses rather than quietly doing nothing. Same shape as the flag above it,
+ * one level deeper, and driven the same way: every refusing direction driven,
+ * not described.
+ */
+describe("the delivered-anchored sub-flag", () => {
+  it("is off by default and asserts nothing", () => {
+    expect(parseCastingSegmentsDeliveredScope(undefined)).toEqual({ kind: "off" });
+    expect(validateCastingSegmentsDeliveredEnvironment({
+      scope: undefined,
+      segmentsScope: "off",
+    })).toEqual({ kind: "off" });
+  });
+
+  it("refuses anything it cannot read exactly", () => {
+    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "true"]) {
+      expect(() => parseCastingSegmentsDeliveredScope(raw), raw)
+        .toThrow(CastingSegmentsDeliveredScopeConfigurationError);
+    }
+  });
+
+  it("refuses a scope reaching past the segment scope, in each way it can", () => {
+    expect(() => validateCastingSegmentsDeliveredEnvironment({
+      scope: "users:1",
+      segmentsScope: undefined,
+    })).toThrow(CastingSegmentsDeliveredCoverageError);
+    expect(() => validateCastingSegmentsDeliveredEnvironment({
+      scope: "all",
+      segmentsScope: "users:1",
+    })).toThrow(CastingSegmentsDeliveredCoverageError);
+    expect(() => validateCastingSegmentsDeliveredEnvironment({
+      scope: "users:1,2",
+      segmentsScope: "users:1",
+    })).toThrow(/names users outside CASTING_SEGMENTS_SCOPE: 2/);
+  });
+
+  it("accepts the ask — user 1, inside a segment scope that already covers him", () => {
+    expect(validateCastingSegmentsDeliveredEnvironment({
+      scope: "users:1",
+      segmentsScope: "users:1",
+    })).toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("reads the WHOLE chain at the point of use, not just its own flag", () => {
+    const previous = { ...process.env };
+    try {
+      process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+      process.env[CASTING_SEGMENTS_SCOPE_ENV] = "users:1";
+      process.env[CASTING_SEGMENTS_DELIVERED_SCOPE_ENV] = "users:1";
+      expect(deliveredAnchoredSegmentsEnabled(1)).toBe(true);
+      expect(deliveredAnchoredSegmentsEnabled(2)).toBe(false);
+
+      /* Each parent turned off on its own must turn this off too — otherwise a
+         segment could be cut a way its own store is not even armed for. */
+      process.env[CASTING_SEGMENTS_SCOPE_ENV] = "off";
+      expect(deliveredAnchoredSegmentsEnabled(1)).toBe(false);
+      process.env[CASTING_SEGMENTS_SCOPE_ENV] = "users:1";
+      process.env[CASTING_V2_SCOPE_ENV] = "off";
+      expect(deliveredAnchoredSegmentsEnabled(1)).toBe(false);
+
+      /* And absent is off, which is the state every deployment is in today. */
+      process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+      delete process.env[CASTING_SEGMENTS_DELIVERED_SCOPE_ENV];
+      expect(deliveredAnchoredSegmentsEnabled(1)).toBe(false);
+    } finally {
+      process.env = previous;
+    }
+  });
+
+  it("names the env var the operator actually sets", () => {
+    expect(CASTING_SEGMENTS_DELIVERED_SCOPE_ENV).toBe("CASTING_SEGMENTS_DELIVERED_SCOPE");
   });
 });

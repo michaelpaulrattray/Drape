@@ -326,6 +326,37 @@ describe("the corridor an addition is painted into is named, so it can be cut ag
 
     expect(claimsAt(result.evidence?.masterRegions.get("hair"), 45, 32), "not widened by the painted read").toBe(false);
   });
+
+  it("hands the SAME painted read out under its own name — the silhouette's arrived ground", async () => {
+    /*
+      The other half of the control above, and the two are deliberately in one
+      place: the painted answer is not smuggled into the master map, AND it is
+      not thrown away. It comes out under `deliveredRegions`, where a consumer
+      has to name what it is asking for.
+
+      Until this map existed the harvest computed this answer for its own
+      content gate, used it once and dropped it — which is why a segment could
+      only ever keep the ground the thing used to occupy.
+    */
+    const master = await png((x) => (x < 30 ? [40, 30, 25] : SKIN));
+    const result = await harvestRefinement({
+      master: { bytes: master, contentType: "image/png" },
+      painted: { bytes: await png((x) => (x < 20 ? [40, 30, 25] : SKIN)), contentType: "image/png" },
+      facets: ["hair.cut"],
+      reader: readerFor({
+        master,
+        onMaster: () => box(0, 0, 30, H),
+        /* The delivered hair reaches ground the master's never did — her
+           shoulders, on the real face this design is written about. */
+        onPainted: () => box(0, 0, 50, H),
+      }),
+      userId: 1,
+    });
+
+    expect(claimsAt(result.evidence?.deliveredRegions?.get("hair"), 45, 32), "the arrived ground").toBe(true);
+    /* And the two maps disagree, which is the entire point of there being two. */
+    expect(claimsAt(result.evidence?.masterRegions.get("hair"), 45, 32)).toBe(false);
+  });
 });
 
 describe("an accessory segment is cut, kept and carried like any other facet", () => {

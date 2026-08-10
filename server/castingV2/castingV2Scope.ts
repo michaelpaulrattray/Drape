@@ -243,6 +243,102 @@ export function validateCastingSegmentsEnvironment(input: {
   return segments;
 }
 
+/* ------------------------------------ the delivered-anchored sub-sub-flag */
+
+/**
+ * DELIVERED-ANCHORED SEGMENTS — the silhouette change, on its own switch.
+ *
+ * `CASTING_SEGMENTS_SCOPE` is already open for the founder, so a segment cut
+ * differently under that flag alone would change what his very next paid render
+ * keeps, on the day it deployed. This change is small in code and large in
+ * consequence: it moves a segment's territory from *where the thing used to be*
+ * to *where the thing now is*, which manufactures a boundary class no seam
+ * instrument in this product has ever been calibrated against
+ * (`CASTING_V2_DELIVERED_ANCHORED_SEGMENTS_DESIGN.md`, "The seam implication").
+ *
+ * The design's own prerequisite is that the coherence statistic be recorded
+ * first. It IS recorded, on every render, beside amplitude — and the table held
+ * **zero verdicts** on 2026-08-10 because nobody had rendered since. So the
+ * mechanism is there and the specimens are not, and that is precisely a reason
+ * for a switch rather than a reason to argue about a date.
+ *
+ * Absent means off. Off means `cutSegments` is handed no delivered map and
+ * behaves byte-for-byte as it did before this existed.
+ */
+export const CASTING_SEGMENTS_DELIVERED_SCOPE_ENV = "CASTING_SEGMENTS_DELIVERED_SCOPE";
+
+export class CastingSegmentsDeliveredScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_SEGMENTS_DELIVERED_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingSegmentsDeliveredScopeConfigurationError";
+  }
+}
+
+/**
+ * A delivered-anchored cut is a way of cutting a segment, so it is inert for a
+ * user whose faces keep no segments at all. Inert and mistaken look identical
+ * from outside, so it refuses rather than quietly doing nothing (invariant 7) —
+ * the same rule the segment scope takes against the casting scope.
+ */
+export class CastingSegmentsDeliveredCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_SEGMENTS_DELIVERED_SCOPE_ENV} ${detail}`);
+    this.name = "CastingSegmentsDeliveredCoverageError";
+  }
+}
+
+export function parseCastingSegmentsDeliveredScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingSegmentsDeliveredScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's segments are cut from the DELIVERED thing's own extent.
+ *
+ * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
+ * boot check already refuses a scope that reaches past its parent, and this is
+ * the same rule enforced again where it is used, because a boot check that was
+ * never invoked is the second way a flag pair goes wrong.
+ */
+export function deliveredAnchoredSegmentsEnabled(userId: number): boolean {
+  const delivered = parseCastingSegmentsDeliveredScope(
+    process.env[CASTING_SEGMENTS_DELIVERED_SCOPE_ENV],
+  );
+  if (!castingV2EnabledForUser(delivered, userId)) return false;
+  return captureCastingSegmentsEnabled(userId);
+}
+
+export function validateCastingSegmentsDeliveredEnvironment(input: {
+  scope: string | undefined;
+  segmentsScope: string | undefined;
+}): CastingV2Scope {
+  const delivered = parseCastingSegmentsDeliveredScope(input.scope);
+  if (delivered.kind === "off") return delivered;
+
+  const segments = parseCastingSegmentsScope(input.segmentsScope);
+  if (segments.kind === "off") {
+    throw new CastingSegmentsDeliveredCoverageError(
+      `cannot be enabled while ${CASTING_SEGMENTS_SCOPE_ENV} is off — there is no segment to cut differently`,
+    );
+  }
+  if (segments.kind === "all") return delivered;
+  if (delivered.kind === "all") {
+    throw new CastingSegmentsDeliveredCoverageError(
+      `cannot be "all" while ${CASTING_SEGMENTS_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = delivered.userIds.filter((userId) => !segments.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingSegmentsDeliveredCoverageError(
+      `names users outside ${CASTING_SEGMENTS_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return delivered;
+}
+
 export function validateCastingV2Environment(input: {
   scope: string | undefined;
   cleanupWorker: string | undefined;

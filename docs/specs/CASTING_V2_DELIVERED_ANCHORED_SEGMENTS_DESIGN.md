@@ -1,7 +1,35 @@
 # Segments anchored to the DELIVERED thing
 
-*Design document. No code has been written. Ordered by fable-118 after founder
-finding #4; every number in it is measured on production artifacts.*
+*Design document. Ordered by fable-118 after founder finding #4; every number in
+it is measured on production artifacts.*
+
+> ## BUILT, DARK, AND MEASURED — 2026-08-10 (shift 20)
+>
+> Behind `CASTING_SEGMENTS_DELIVERED_SCOPE` (absent = off; nothing in production
+> is cut differently until a founder flips one Railway variable). The shipped
+> cutter, run twice over the founder's own v#163 frames out of production R2
+> (`scripts/measure-delivered-anchored-cut-disposable.mts`):
+>
+> ```
+> DELIVERED by the paid edit          232,370 px   (the first measurement's own figure)
+>   master-anchored — today            23,231 px    10.0%   arrived      0 · departed   0
+>   delivered-anchored                206,044 px    88.7%   arrived 182,813 · departed 330
+>
+> CONTROL  master-anchored 23,231 against the stored segment's 23,231 — 1.00x
+> ```
+>
+> **The cost line below is wrong in our favour and stays for the record.** There
+> is no extra segmentation call: `harvestRefinement` already reads
+> `region(name, painted)` for its own content gate, memoised, once per question
+> — it was computed, used and then discarded for every ordinary region. The
+> build kept it instead of buying it again.
+>
+> Two things the document asks for that are NOT in this build, stated rather
+> than assumed: the arrived/departed split is **logged, not persisted** (the row
+> stores geometry as columns, so a new number is a migration and the migration
+> goes first), and **rule 4 has no numeric cap** — growth is bounded by
+> `applied`, which is the composite's own governed territory, and the accounting
+> above is what makes an overreaching reading visible instead.
 
 ---
 

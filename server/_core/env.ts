@@ -24,8 +24,10 @@ import {
   validateSnapshotRestoreEnvironment,
 } from "../casting/snapshotRestoreScope";
 import {
+  CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
   CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
+  validateCastingSegmentsDeliveredEnvironment,
   validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
 } from "../castingV2/castingV2Scope";
@@ -135,6 +137,16 @@ export function validateEnv(): void {
     scope: process.env[CASTING_SEGMENTS_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+  });
+  /*
+    And how those segments are CUT — the delivered-anchored silhouette change,
+    one flag deeper again, checked against the segment scope for the same
+    reason that one is checked against the casting scope: a switch that reaches
+    past its parent is inert or wrong, and the two look the same from outside.
+  */
+  validateCastingSegmentsDeliveredEnvironment({
+    scope: process.env[CASTING_SEGMENTS_DELIVERED_SCOPE_ENV],
+    segmentsScope: process.env[CASTING_SEGMENTS_SCOPE_ENV],
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

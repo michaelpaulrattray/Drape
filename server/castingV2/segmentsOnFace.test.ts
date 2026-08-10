@@ -9,6 +9,7 @@ import {
 } from "./segmentsOnFace";
 import { pronounsForSex } from "./castPronouns";
 import { facetOfSubject } from "./refineFacets";
+import { currentValueOfFacet } from "./refineDelta";
 
 /** The three faces this panel has to be able to describe. */
 const SHE = pronounsForSex("female");
@@ -190,5 +191,87 @@ describe("the panel's rows", () => {
       expect(Object.keys(row).some((key) => /version/i.test(key))).toBe(false);
       expect(JSON.stringify(row)).not.toMatch(/\bv[0-9]+\b/);
     }
+  });
+});
+
+/**
+ * §3b — A HAIR SEGMENT THE PANEL CANNOT NAME DOES NOT SHIP (fable-143).
+ *
+ * The condition Fable folded into the silhouette build as a hard requirement,
+ * discharged as a JOIN rather than as two halves. Both halves were already
+ * covered and the seam between them was not: `currentValueOfFacet` is tested in
+ * `refineDelta`, `nameForFacet` is tested above, and nothing asserted that the
+ * string one produces is a string the other can use.
+ *
+ * That seam is exactly where law 4's shape lives — "the store and the panel
+ * holding two different answers to what this face keeps" — and it is the shape
+ * that actually occurred: `ee5d6988` v158 banked a `hairWorn` segment the panel
+ * showed no row for.
+ *
+ * The values below are the founder's OWN production rows, read at the wire in
+ * opus-110: `statedDetails.hairWorn` was `"down"` on v#163 and `"tied up"` on
+ * v#91. A fixture invented here would prove the join over a value the product
+ * never files.
+ */
+describe("a hairWorn segment is nameable, end to end", () => {
+  const identityWith = (hairWorn: string) => ({
+    realized: { statedDetails: { hairWorn } },
+  } as never);
+
+  it("reads the delivered value and turns it into a row the stylist would say", () => {
+    for (const [delivered, expected] of [
+      ["down", "Her hair, down"],
+      ["tied up", "Her hair, tied up"],
+    ] as const) {
+      const value = currentValueOfFacet(identityWith(delivered), facetOfSubject("hairWorn"));
+      expect(value, "the store's own value, from where the chain files it").toBe(delivered);
+      expect(nameForFacet("hairWorn", value, SHE)).toBe(expected);
+    }
+  });
+
+  it("survives the whole projection, with its prefill and its provenance", () => {
+    const [row] = segmentsOnFace({
+      segments: [{
+        publicId: "seg-hair",
+        facet: facetOfSubject("hairWorn"),
+        provenance: "edit_patch",
+        variantId: 163,
+        maskKey: "m.png",
+        contentKey: "c.png",
+      }],
+      deliveredValue: () => currentValueOfFacet(identityWith("down"), facetOfSubject("hairWorn")),
+      urlOf: (key) => `https://pub.example/${key}`,
+      pronouns: SHE,
+    });
+
+    expect(row.name).toBe("Her hair, down");
+    expect(row.from).toBe("from an edit");
+    /* Tapping it opens HER sentence about her own hair — the thing an undo and
+       a re-ask both need, and the thing a nameless segment cannot offer. */
+    expect(row.prefill).toBe("her hair, down — ");
+  });
+
+  it("CONTROL — a face whose chain never wrote hairWorn gets NO row, not a blank one", () => {
+    /*
+      The negative control the requirement implies. If this ever renders a row,
+      the panel has started naming a facet from something other than what the
+      chain delivered — which is the direction that puts a name on pixels
+      nobody bought.
+    */
+    expect(currentValueOfFacet({ realized: {} } as never, facetOfSubject("hairWorn"))).toBeNull();
+    const rows = segmentsOnFace({
+      segments: [{
+        publicId: "seg-hair",
+        facet: facetOfSubject("hairWorn"),
+        provenance: "edit_patch",
+        variantId: 158,
+        maskKey: "m.png",
+        contentKey: "c.png",
+      }],
+      deliveredValue: () => currentValueOfFacet({ realized: {} } as never, facetOfSubject("hairWorn")),
+      urlOf: (key) => key,
+      pronouns: SHE,
+    });
+    expect(rows).toEqual([]);
   });
 });

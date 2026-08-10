@@ -32,7 +32,7 @@ import { recordEditPatchSegments, type RecordedSegment } from "../db/castingV2Se
 import { storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { encodeCut, cutSegments, type SegmentCut } from "./segmentCuts";
-import { captureCastingSegmentsEnabled } from "./castingV2Scope";
+import { captureCastingSegmentsEnabled, deliveredAnchoredSegmentsEnabled } from "./castingV2Scope";
 import { readRaster, type Mask } from "./maskedComposite";
 import { regionNameOf } from "./maskedRefine";
 import type { Facet } from "./refineFacets";
@@ -47,6 +47,8 @@ export type SegmentPersistenceDependencies = {
   record?: typeof recordEditPatchSegments;
   /** The flag read, injectable so a test can drive both sides of it. */
   enabledFor?: (userId: number) => boolean;
+  /** The silhouette flag, likewise — see `deliveredAnchoredSegmentsEnabled`. */
+  deliveredAnchoredFor?: (userId: number) => boolean;
 };
 
 export type SegmentPersistenceResult = {
@@ -74,7 +76,11 @@ export async function keepSegmentsFromRender(input: {
   /** The delivered frame, with the composite's own working attached. */
   image: {
     bytes: Buffer;
-    evidence?: { applied: Mask; masterRegions: ReadonlyMap<string, Mask> } | null;
+    evidence?: {
+      applied: Mask;
+      masterRegions: ReadonlyMap<string, Mask>;
+      deliveredRegions?: ReadonlyMap<string, Mask>;
+    } | null;
   };
   /** The facets this render answered — the same set the harvest cut for. */
   facets: readonly Facet[];
@@ -107,13 +113,56 @@ export async function keepSegmentsFromRender(input: {
     }
     if (facetRegions.size === 0) return { outcome: "nothing-to-keep", segments: [] };
 
+    /*
+      THE SILHOUETTE SWITCH, and it is read HERE rather than inside the cutter.
+
+      `cutSegments` is a pure function over rasters and stays that way — a flag
+      read inside it would make the same inputs produce two different answers
+      depending on an environment variable, which is the one property that
+      makes it testable at all. Off, the cutter is handed nothing and behaves
+      exactly as it did before the delivered map existed.
+    */
+    const deliveredAnchored = input.dependencies?.deliveredAnchoredFor
+      ?? deliveredAnchoredSegmentsEnabled;
+    const deliveredMasks = deliveredAnchored(input.userId)
+      ? input.image.evidence.deliveredRegions ?? null
+      : null;
+
     const composite = await readRaster(input.image.bytes);
     const cuts = cutSegments({
       composite,
       applied: input.image.evidence.applied,
       facetRegions,
       regionMasks: input.image.evidence.masterRegions,
+      deliveredMasks,
     });
+
+    /*
+      WHAT THE UNION ACTUALLY BOUGHT, per facet, on every render that files one.
+
+      The design is a claim about pixels — 10% of a paid arrangement edit kept,
+      90% reverting — so the thing that says whether it worked is a count off
+      the real cut, not a green test. Logged even when it is zero: a silhouette
+      change that bought nothing on a real face is the finding, and it is only
+      visible if the zero is written down beside the reading that produced it.
+    */
+    if (cuts.some((cut) => cut.deliveredRead)) {
+      log.info(
+        {
+          userId: input.userId,
+          variantId: input.variantId,
+          operationId: input.operationId,
+          ground: cuts.map((cut) => ({
+            facet: cut.facet,
+            pixels: cut.pixels,
+            arrived: cut.arrivedPixels,
+            departed: cut.departedPixels,
+            read: cut.deliveredRead,
+          })),
+        },
+        "[segments] delivered-anchored ground",
+      );
+    }
 
     return await persistSegmentsForVariant({
       userId: input.userId,

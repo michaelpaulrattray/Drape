@@ -26,6 +26,7 @@
  */
 import sharp from "sharp";
 
+import { unionMasks } from "./maskGeometry";
 import type { Mask, Raster } from "./maskedComposite";
 
 export type SegmentBox = { x: number; y: number; width: number; height: number };
@@ -44,6 +45,38 @@ export type SegmentCut = {
   frame: { width: number; height: number };
   /** How many pixels this segment actually owns. Never zero: see above. */
   pixels: number;
+  /**
+   * ARRIVED GROUND — owned pixels the MASTER's own reading did not claim.
+   *
+   * The whole point of the delivered union, as a number rather than as a
+   * belief. Zero on every master-anchored cut this product has ever filed; on
+   * the founder's v#163 it is the hair on her shoulders, which is 90% of what
+   * she paid for. Reported rather than capped: growth is already bounded by
+   * `applied`, and a segmenter having a bad day should be VISIBLE in a log
+   * line, not silently trimmed to a number somebody guessed.
+   */
+  arrivedPixels: number;
+  /**
+   * DEPARTED GROUND — owned pixels the master claimed and the delivered
+   * reading did not.
+   *
+   * Where the thing used to be and no longer is: her vacated bun. Not an
+   * optimisation and not a leftover — paste the arrived ground alone onto a
+   * later render and she gets her hair down AND the bun still there.
+   *
+   * **Zero when `deliveredRead` is false**, because with no delivered reading
+   * nothing is known about what departed. A zero that means "not measured"
+   * reading as "none departed" is the silent-zero class, so the flag below
+   * carries the difference rather than the number pretending to.
+   */
+  departedPixels: number;
+  /**
+   * Whether a delivered reading existed for this region at all.
+   *
+   * The denominator for the two counts above. Without it a master-anchored cut
+   * and a delivered-anchored cut that found nothing new are the same row.
+   */
+  deliveredRead: boolean;
 };
 
 function assertSameShape(a: { width: number; height: number }, b: { width: number; height: number }, what: string): void {
@@ -138,6 +171,32 @@ export function cutSegments(input: {
   facetRegions: ReadonlyMap<string, string>;
   /** The master regions the harvest already segmented, by question. */
   regionMasks: ReadonlyMap<string, Mask>;
+  /**
+   * WHERE THE SAME QUESTIONS LAND ON THE DELIVERED FRAME.
+   *
+   * `own(facet) = applied ∩ ( region(facet, delivered) ∪ region(facet, master) )`
+   * — the delivered-anchored design, at the one line that decides what a
+   * segment owns. Absent, or missing a name, and this function behaves exactly
+   * as it did before the union existed, which is the regression anchor.
+   *
+   * # The four rules, and where each one actually lives
+   *
+   * 1. *Later delivery wins the overlap.* Not here — `assembleComposite`
+   *    already claims per pixel, later wins, and records every resolution.
+   * 2. *A segment may not claim ground its own reading did not find.* Here,
+   *    and structurally: a delivered read that did not settle is simply not in
+   *    this map, and a master read that did not settle still files nothing at
+   *    all. A delivered-only ground can never open a segment that would not
+   *    have opened anyway.
+   * 3. *Departed ground is surrendered first.* The master half IS the departed
+   *    ground, and it is what shipped before this change; same-facet
+   *    supersession already retires an earlier row whole.
+   * 4. *Growth is bounded by the ask.* By `applied`, which is the composite's
+   *    own governed territory — a facet cannot grow anywhere the paint was not
+   *    allowed to go. What this adds is the accounting (`arrivedPixels`), so a
+   *    reading that overreached is a number somebody can see.
+   */
+  deliveredMasks?: ReadonlyMap<string, Mask> | null;
 }): SegmentCut[] {
   assertSameShape(input.composite, input.applied, "the applied mask does not match the composite");
   const frame = { width: input.composite.width, height: input.composite.height };
@@ -153,13 +212,45 @@ export function cutSegments(input: {
     if (!regionMask) continue;
     assertSameShape(regionMask, input.applied, `the ${region} region does not match the composite`);
 
-    const owned = intersectMasks(input.applied, regionMask);
+    /*
+      THE UNION, and the gate above is deliberately left on the MASTER read.
+
+      A facet whose master region was never segmented still files nothing, even
+      when the delivered frame has an opinion about it: the delivered union is
+      additive to a claim, never the thing that opens one. That keeps this
+      change unable to file a segment the old code would not have filed at all,
+      which is the property that makes it safe to reason about.
+    */
+    const deliveredMask = input.deliveredMasks?.get(region) ?? null;
+    if (deliveredMask) {
+      assertSameShape(deliveredMask, input.applied, `the delivered ${region} region does not match the composite`);
+    }
+    const ground = deliveredMask ? unionMasks(regionMask, deliveredMask) : regionMask;
+
+    const owned = intersectMasks(input.applied, ground);
     const box = boundsOf(owned);
     if (!box) continue;
 
     const mask = cropMask(owned, box);
+    /*
+      THE SPLIT, counted on the same pixels the segment actually owns rather
+      than on the region masks — a count taken off the inputs would describe
+      ground `applied` never granted.
+    */
     let pixels = 0;
-    for (let at = 0; at < mask.data.length; at += 1) if (mask.data[at] > 0) pixels += 1;
+    let arrivedPixels = 0;
+    let departedPixels = 0;
+    for (let y = 0; y < box.height; y += 1) {
+      for (let x = 0; x < box.width; x += 1) {
+        if (mask.data[y * box.width + x] === 0) continue;
+        pixels += 1;
+        if (!deliveredMask) continue;
+        const at = (box.y + y) * input.applied.width + (box.x + x);
+        const onMaster = regionMask.data[at] > 0;
+        if (!onMaster) arrivedPixels += 1;
+        else if (deliveredMask.data[at] === 0) departedPixels += 1;
+      }
+    }
     if (pixels === 0) continue;
 
     cuts.push({
@@ -170,6 +261,9 @@ export function cutSegments(input: {
       box,
       frame,
       pixels,
+      arrivedPixels,
+      departedPixels,
+      deliveredRead: Boolean(deliveredMask),
     });
   }
 

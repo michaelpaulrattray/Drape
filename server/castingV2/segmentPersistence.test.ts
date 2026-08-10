@@ -203,3 +203,51 @@ describe("cutting a landed render", () => {
     expect(events).toEqual([]);
   });
 });
+
+/**
+ * THE SILHOUETTE SWITCH, ASSERTED AT THE WIRE.
+ *
+ * `segmentCuts.test.ts` proves the union is arithmetic; this proves the union
+ * REACHES it on the product path, through the flag, from the harvest's own
+ * evidence. Both benches once passed while the segment store was inert, and the
+ * lesson written down from that was to assert on the outgoing thing in the
+ * caller's own suite rather than on a constant nearby.
+ *
+ * The assertion is the recorded GEOMETRY — the row a later render pastes from —
+ * because that is the artifact, and a spy on the cutter would only prove an
+ * argument was passed.
+ */
+describe("delivered-anchored cutting, through the flag", () => {
+  /* Her master's hair is a bun at the crown; the paint reached her shoulders. */
+  const applied = mask(8, 8, (_x, y) => y < 6);
+  const evidence = {
+    applied,
+    masterRegions: new Map([["hair", mask(8, 8, (_x, y) => y < 2)]]),
+    deliveredRegions: new Map([["hair", mask(8, 8, (_x, y) => y >= 3 && y < 6)]]),
+  };
+
+  const geometryFrom = async (deliveredAnchoredFor: () => boolean) => {
+    const sharp = (await import("sharp")).default;
+    const bytes = await sharp(composite.data, { raw: { width: 8, height: 8, channels: 3 } })
+      .png().toBuffer();
+    await keepSegmentsFromRender({
+      userId: 1,
+      variantId: 2,
+      image: { bytes, evidence },
+      facets: ["hairWorn"] as never,
+      dependencies: { ...(dependencies as object), deliveredAnchoredFor } as never,
+    });
+    const [written] = calls.record.mock.calls[0] as [{ patches: Array<{ geometry: { bbox: unknown } }> }];
+    return written.patches[0].geometry.bbox;
+  };
+
+  it("keeps only the vacated bun while the switch is off", async () => {
+    /* Dark is the deployed state, so this is the assertion that says a deploy
+       of this change moves nothing on his face. */
+    expect(await geometryFrom(() => false)).toEqual({ x: 0, y: 0, width: 8, height: 2 });
+  });
+
+  it("keeps the hair she was delivered once it is on", async () => {
+    expect(await geometryFrom(() => true)).toEqual({ x: 0, y: 0, width: 8, height: 6 });
+  });
+});

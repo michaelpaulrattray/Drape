@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "78d7c534279f2fda"
+    "sourceFingerprint": "fcaedde266a4da79"
   },
   "domains": [
     {
@@ -7562,6 +7562,11 @@
     {
       "id": "flag:CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
       "name": "CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_SEGMENTS_DELIVERED_SCOPE",
+      "name": "CASTING_SEGMENTS_DELIVERED_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -18571,6 +18576,11 @@
     {
       "from": "module:server/castingV2/segmentCuts.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/segmentCuts.ts",
+      "to": "module:server/castingV2/maskGeometry.ts",
       "kind": "imports"
     },
     {

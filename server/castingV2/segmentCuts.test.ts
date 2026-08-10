@@ -145,3 +145,106 @@ describe("cutting a render into segments", () => {
     expect(encoded.mask.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * THE SILHOUETTE — cutting from where the thing NOW IS, not where it used to be.
+ *
+ * The founder's v#163 in miniature, and the shape is the whole argument. Her
+ * master's hair is a bun at the crown; the hair she paid for hangs on her
+ * shoulders; the paint was allowed to touch both. Master-anchored, the segment
+ * keeps the bun and 90% of what she bought reverts on the next render.
+ *
+ * Every case here is driven in BOTH directions, because the failure this
+ * machinery is most likely to have is a union that quietly does nothing.
+ */
+describe("delivered-anchored ground", () => {
+  const composite = raster(8, 8, (x, y) => [x * 8, y * 8, 64]);
+  /* The paint reached the crown AND the shoulders — 8 rows wide, rows 0..5. */
+  const applied = mask(8, 8, (_x, y) => y < 6);
+  /* Her master's hair: the bun, two rows at the crown. */
+  const bun = mask(8, 8, (_x, y) => y < 2);
+  /* The hair she was delivered: three rows over her shoulders. */
+  const shoulders = mask(8, 8, (_x, y) => y >= 3 && y < 6);
+  const facetRegions = new Map([["hairWorn", "hair"]]);
+  const regionMasks = new Map([["hair", bun]]);
+
+  const cutWith = (deliveredMasks?: ReadonlyMap<string, Mask> | null) => cutSegments({
+    composite, applied, facetRegions, regionMasks, ...(deliveredMasks !== undefined ? { deliveredMasks } : {}),
+  });
+
+  it("keeps only the vacated bun when nobody asks the delivered frame — the disease", () => {
+    const [cut] = cutWith();
+    /* 8 wide × 2 rows. Everything she actually bought is outside it. */
+    expect(cut.pixels).toBe(16);
+    expect(cut.box).toEqual({ x: 0, y: 0, width: 8, height: 2 });
+    /* And the counts say the reading never happened, rather than saying zero. */
+    expect(cut.deliveredRead).toBe(false);
+    expect({ arrived: cut.arrivedPixels, departed: cut.departedPixels }).toEqual({ arrived: 0, departed: 0 });
+  });
+
+  it("keeps the bun AND the shoulders when it does — arrived and departed, counted apart", () => {
+    const [cut] = cutWith(new Map([["hair", shoulders]]));
+    /* The union: two rows of departed bun plus three rows of arrived hair. */
+    expect(cut.pixels).toBe(40);
+    expect(cut.box).toEqual({ x: 0, y: 0, width: 8, height: 6 });
+    expect(cut.deliveredRead).toBe(true);
+    expect({ arrived: cut.arrivedPixels, departed: cut.departedPixels }).toEqual({ arrived: 24, departed: 16 });
+    /* 16 → 40 is the founder's 10% becoming the whole thing, on a toy face. */
+    expect(cut.pixels).toBeGreaterThan(cutWith().at(0)!.pixels);
+  });
+
+  it("changes NOTHING when the delivered reading finds the thing where it always was", () => {
+    /* The negative control the union needs. A `hair.colour` edit does not move
+       the hair, so delivered == master, and a cut that grew here would be the
+       union inventing ground rather than recovering it. */
+    const same = cutWith(new Map([["hair", bun]]));
+    const before = cutWith();
+    expect(same[0].pixels).toBe(before[0].pixels);
+    expect(same[0].box).toEqual(before[0].box);
+    /* Nothing arrived and nothing departed: a recolour vacates no ground, which
+       is the reading these two numbers exist to be able to say. */
+    expect({ arrived: same[0].arrivedPixels, departed: same[0].departedPixels })
+      .toEqual({ arrived: 0, departed: 0 });
+  });
+
+  it("changes NOTHING when the delivered reading finds nothing at all", () => {
+    /* `absentIsAnswer` makes "nowhere" a legitimate answer — a removal, or a
+       segmenter that cannot see a two-pixel wire. It must union to exactly the
+       master's own ground rather than erasing it. */
+    const [cut] = cutWith(new Map([["hair", mask(8, 8, () => false)]]));
+    expect(cut.pixels).toBe(16);
+    expect({ arrived: cut.arrivedPixels, departed: cut.departedPixels }).toEqual({ arrived: 0, departed: 16 });
+    expect(cut.deliveredRead).toBe(true);
+  });
+
+  it("never opens a segment on a delivered reading alone — rule 2, at the gate", () => {
+    /* The master read did not settle for this region. The delivered frame has
+       an opinion; it is not allowed to be the thing that files a claim. */
+    const cuts = cutSegments({
+      composite,
+      applied,
+      facetRegions,
+      regionMasks: new Map(),
+      deliveredMasks: new Map([["hair", shoulders]]),
+    });
+    expect(cuts).toEqual([]);
+  });
+
+  it("cannot claim ground the paint was never allowed to touch — rule 4's bound", () => {
+    /* The segmenter has a bad day and calls her whole face hair. `applied` is
+       the bound: nothing outside it can be owned, whatever the reading says. */
+    const [cut] = cutWith(new Map([["hair", mask(8, 8, () => true)]]));
+    expect(cut.pixels).toBe(48); // 8 × 6 — the applied region, and not one pixel more
+    expect(cut.box.y + cut.box.height).toBe(6);
+  });
+
+  it("refuses a delivered mask that does not match the frame under test", () => {
+    expect(() => cutSegments({
+      composite,
+      applied,
+      facetRegions,
+      regionMasks,
+      deliveredMasks: new Map([["hair", mask(4, 4, () => true)]]),
+    })).toThrow(/delivered hair region does not match/);
+  });
+});

@@ -374,6 +374,35 @@ export type MaskedRefineResult = {
      * render this campaign has paid for.
      */
     masterRegions: ReadonlyMap<string, Mask>;
+    /**
+     * WHERE THE THING IS NOW — the same questions, asked of the DELIVERED frame.
+     *
+     * The silhouette half of `own(facet) = applied ∩ (region(delivered) ∪
+     * region(master))`. A master-anchored segment can only ever keep the ground
+     * the thing used to occupy, and the things a customer buys live where the
+     * master has nothing: hair worn down lives on her shoulders, and her
+     * master's hair region is a bun. Measured on the founder's own v#163 — the
+     * store kept 100% of what it was given and **10% of what she bought**.
+     *
+     * # It costs no vision call, and that is not luck
+     *
+     * The harvest already asks this exact question for its own content gate
+     * (`regionOf("painted", …)`, one call per question, memoised). Until this
+     * map existed the answer was computed, used once and dropped for every
+     * ordinary region. This is the same read, kept.
+     *
+     * # Why it is a SECOND map rather than a wider `masterRegions`
+     *
+     * `masterRegions` has another consumer: `detailForVerification` cuts the
+     * reader's magnified crop from it. Folding the delivered extent in would
+     * move the box a stochastic reader is shown on a paid render, as a side
+     * effect of a change to the STORAGE path. Two questions, two meanings, two
+     * maps; the segment cutter is the only thing that unions them.
+     *
+     * Absent, or missing a name, means the delivered read did not settle — and
+     * a claim is never built on a reading that did not happen (design rule 2).
+     */
+    deliveredRegions?: ReadonlyMap<string, Mask>;
   };
   /**
    * The masks this composite was actually built from, when `explain` was asked
@@ -1671,6 +1700,7 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
     evidence: {
       applied: composed.applied,
       masterRegions: await settledMasterRegions(asked, placed),
+      deliveredRegions: await settledDeliveredRegions(asked),
     },
     ...(input.explain
       ? {
@@ -1746,26 +1776,74 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
  * it means the same thing here is how a map comes to hold two kinds of answer
  * under one name without saying so.
  */
-async function settledMasterRegions(
+/**
+ * `<which>:<name>:<absentIsAnswer>` — the question is the middle field.
+ *
+ * ONE parser, because there are now two readers of this memo and a second copy
+ * of a key format is a second thing to keep in step with `regionOf` (law 4).
+ */
+function askedQuestion(key: string): { which: string; name: string } {
+  const which = key.slice(0, key.indexOf(":"));
+  return { which, name: key.slice(which.length + 1, key.lastIndexOf(":")) };
+}
+
+/**
+ * Settle a subset of the memo into a map by region name.
+ *
+ * `keep` decides which reads belong to the map being built, so the two callers
+ * differ by their predicate and by nothing else. Only SETTLED reads: a promise
+ * that rejected is not evidence, and awaiting one here would make a later step
+ * pay for a call the composite already gave up on.
+ */
+async function settledRegions(
   asked: ReadonlyMap<string, Promise<Mask>>,
-  placed?: ReadonlyMap<string, Mask>,
+  keep: (question: { which: string; name: string }) => boolean,
+  seed?: ReadonlyMap<string, Mask>,
 ): Promise<ReadonlyMap<string, Mask>> {
-  const settled = new Map<string, Mask>(placed ? Array.from(placed.entries()) : []);
+  const settled = new Map<string, Mask>(seed ? Array.from(seed.entries()) : []);
   await Promise.all(
     Array.from(asked.entries()).map(async ([key, pending]) => {
-      /* `<which>:<name>:<absentIsAnswer>` — the question is the middle field. */
-      const which = key.slice(0, key.indexOf(":"));
-      const name = key.slice(which.length + 1, key.lastIndexOf(":"));
-      if (which === "painted" && !placed?.has(name)) return;
-      if (which !== "master" && which !== "painted") return;
+      const question = askedQuestion(key);
+      if (!keep(question)) return;
       try {
         const read = await pending;
-        const already = settled.get(name);
-        settled.set(name, already ? unionMasks(already, read) : read);
+        const already = settled.get(question.name);
+        settled.set(question.name, already ? unionMasks(already, read) : read);
       } catch { /* a no-region, and the caller reads that as "look again". */ }
     }),
   );
   return settled;
+}
+
+async function settledMasterRegions(
+  asked: ReadonlyMap<string, Promise<Mask>>,
+  placed?: ReadonlyMap<string, Mask>,
+): Promise<ReadonlyMap<string, Mask>> {
+  return settledRegions(
+    asked,
+    ({ which, name }) => which === "master" || (which === "painted" && Boolean(placed?.has(name))),
+    placed,
+  );
+}
+
+/**
+ * WHERE EACH ASKED-ABOUT THING IS IN THE DELIVERED FRAME.
+ *
+ * The painted half of the memo, under the region's own name — the arrived
+ * ground of `own(facet) = applied ∩ (delivered ∪ master)`. Same reads
+ * `settledMasterRegions` throws away for an ordinary name, kept under a map
+ * that says what they are instead of being smuggled into one that does not.
+ *
+ * Every painted name, including a placed one. The accessory case already
+ * unions its delivered extent into `masterRegions` (fable-120 half 1) and
+ * union is idempotent, so appearing in both maps changes no cut — and leaving
+ * it out of this one would make "the delivered extent, by name" false for
+ * exactly the facet class that needed it first.
+ */
+async function settledDeliveredRegions(
+  asked: ReadonlyMap<string, Promise<Mask>>,
+): Promise<ReadonlyMap<string, Mask>> {
+  return settledRegions(asked, ({ which }) => which === "painted");
 }
 
 /**
