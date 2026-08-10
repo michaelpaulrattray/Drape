@@ -8294,4 +8294,109 @@ to the latency-and-cost program; acceptable behind `users:1`.
 
 ---
 
+## D-243 — The reference library seeds from NOTHING that is already stored, and two transport capabilities were measured shut.
+
+**2026-08-10.** The founder caught it on the C′ pack: the tile captioned *"her
+hairstyle"* was a **fringe**. Root cause was known (every stored segment was cut
+by the master-anchored cutter). fable-164 ordered the sweep; this is what the
+sweep found, and what was ruled from it (fable-173, fable-174).
+
+### The audit — hair was not the exception
+
+Every non-retired row in production, measured against a **fresh full read of its
+own region on the frame the row itself names**. Coverage is
+`|crop ∩ region| / |region|`; spill is what falls outside. The identity control
+(a region scored as its own crop) read **100.0% on 14 of 14 rows** and worst
+spill was **6.5%** — the two defects that would move together did not move, so
+the crops land inside their regions and are simply small.
+
+```
+                        n   worst  median    best        positive specimen: 94.6%
+ON-ASK
+  eye.colour@eyes       1   78.7%   78.7%   78.7%
+  hairWorn@hair         1   12.5%   12.5%   12.5%   ← his fringe
+  makeup@face skin      1   34.8%   34.8%   34.8%
+  makeup@lips           1   66.1%   66.1%   66.1%
+  marks@face skin       3   23.0%   32.9%   54.3%
+OFF-ASK
+  hairWorn@hair         2    1.3%    1.3%    1.3%
+  makeup@face skin      2   34.2%   58.7%   58.7%
+  marks@face skin       3   34.2%   34.8%   58.7%
+```
+
+**No kind in the store reaches the positive specimen.** Hair was the visible one
+because a partial hair crop looks like a different haircut.
+
+**And half the store is a facet the render never wrote** — 7 of 14 rows: a hair
+segment filed by *"give her freckles"*, a makeup segment filed by *"remove her
+glasses"*. Not a new defect: the write path was closed by fable-143 §3a
+(written ∩ verified), and `refineService.ts` names variant 158 — one of these
+very rows — as the specimen that closed it. **Every mis-filed row predates the
+gate; no row has been written since it, so the gate's evidence is the suite and
+not the store.** The gate stopped the bleeding and nobody cleaned the floor.
+
+Two further findings, both about the KEY rather than the pixels:
+
+- **Two facets, one identical crop.** `marks` and `makeup` both live at region
+  `face skin`, and a cut is `applied ∩ region`, so three variants each produced
+  byte-identical crops under two facet names. `segmentCuts` declares this
+  deliberate — per-facet undo needs its own row.
+- **One facet, two regions.** *"add nude lip gloss"* filed `makeup@face skin`
+  (45,197 px) on one render and `makeup@lips` (2,083 px) on another.
+
+**Glasses: NOT-RUN, not clean.** Zero rows — there are no `detected_born` rows
+at all, and `casting_cast_segments` does not exist as a table in production.
+
+### Ruled — the library's four rules
+
+1. **The existing store seeds NOTHING.** Not re-cut, not superseded: ignored.
+   Re-cutting an off-ask row produces a well-made crop of a feature nobody asked
+   about. The rows stay live for undo, which is what they were built for.
+2. **References are minted by a fresh full region read at library-build time**,
+   and **the completeness guard runs on a SECOND, independent read** — a guard
+   sharing its subject's read is the checker that cannot fail.
+3. **Per-kind thresholds, derived at build time, REFUSING where no positive
+   specimen exists.** One number from the hair pair applied to lips would be the
+   wrong-boundary class's fifth appearance. No provisional number.
+4. **`facet@region` is the UNDO LEDGER's key and the library must not inherit
+   it** (fable-173). The library's keys are the PANEL's feature slots — the
+   stylist's ontology: lips, eyes per instance, hair, skin, each accessory
+   instance; makeup is worn state ON those slots. Both key findings above
+   dissolve rather than get patched. The placement drift stays filed as a known
+   ledger artifact, with no fix owed under seeds-nothing.
+
+### And the recipe invariant (fable-174, founder)
+
+**One slot, one reference, per render.** The assembler REFUSES at build any
+recipe where two references claim the same feature slot. Charts and flash sheets
+are introduction-time references: on the applying render they REPLACE the slot's
+reference; on acceptance the delivered per-feature crops are minted as the
+carried references and the chart never rides again. A contact sheet packing many
+ITEMS into one slot-image is unaffected — the invariant is about two references
+claiming one feature.
+
+### Two transport capabilities, measured shut
+
+- **`mask_url` does not bound the repaint.** fal's schema for
+  `openai/gpt-image-2/edit` carries a mask input we never send. Four arms, with
+  the unmasked control in the same sitting: the canonical RGBA mask is
+  **accepted and ignored** (156,912 changed pixels against the control's
+  157,795), the RGB mask very nearly so — and a greyscale+alpha mask returned
+  **a completely different woman at HTTP 200**, 99.9% of the frame changed, the
+  mask itself verified well-formed afterwards. *A mask shape this transport does
+  not understand does not fail; it produces someone else and reports success.*
+  C′ gains no bounding parameter, and the field stays unsent.
+- **No item-level matting exists on this transport.** BiRefNet with
+  `model: "Matting"` mattes the EAR, not the earring — IoU 0.034–0.039 against
+  the region reader's own earring mask while claiming half the crop, and 0.129
+  even on a crop that is almost nothing but hoop. `vitmatte` and `matte-anything`
+  are not published; BEN and Bria are the same subject-remover class; EVF-SAM's
+  `blur_mask` is a blurred binary outline and is refused under the fidelity law.
+  **So cutout references run for crisp-edged items on the binary mask — whose
+  true alpha is very nearly binary anyway — and hair is declared NOT-RUN.**
+  Panel thumbnails get their floating-item look today, on the reader already
+  paid for.
+
+---
+
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
