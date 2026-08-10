@@ -2,6 +2,8 @@ import { useState } from "react";
 
 import { Button } from "@/foundation";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
+import { FacePanel, type FacePanelGroup } from "./FacePanel";
+import type { FaceSelectionModel } from "./faceSelection";
 
 /**
  * Refining one face — the panel under the expanded picture (M8).
@@ -99,6 +101,7 @@ export function RefinePanel({
   onDismissOutcome,
   kept = [],
   keptPossessive = "their",
+  face,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -152,6 +155,20 @@ export function RefinePanel({
    * render at all.
    */
   keptPossessive?: string;
+  /**
+   * PANEL v2, and it REPLACES v1 rather than joining it.
+   *
+   * Absent until the reference library is armed for this account. Two lists of
+   * one face on one screen would be two answers to "what is she holding" — and
+   * v1 answers a narrower question (what this version KEEPS) than v2 does
+   * (everything that can be changed), so the two disagree by construction.
+   */
+  face?: {
+    groups: readonly FacePanelGroup[];
+    possessive: string;
+    /** Shared with the regions over the picture — one selection, two views. */
+    selection: FaceSelectionModel;
+  };
 }) {
   const [instruction, setInstruction] = useState("");
   const trimmed = instruction.trim();
@@ -313,11 +330,20 @@ export function RefinePanel({
         prefills the ask, so the row and the field it fills are adjacent and the
         cause of the text appearing is visible in one glance.
       */}
-      <SegmentsOnFace
-        rows={kept}
-        possessive={keptPossessive}
-        onPrefill={(prefill) => setInstruction(prefill)}
-      />
+      {face ? (
+        <FacePanel
+          groups={face.groups}
+          possessive={face.possessive}
+          selection={face.selection}
+          onScope={(prefill) => setInstruction(prefill)}
+        />
+      ) : (
+        <SegmentsOnFace
+          rows={kept}
+          possessive={keptPossessive}
+          onPrefill={(prefill) => setInstruction(prefill)}
+        />
+      )}
 
       <form
         className="dpc-refine__ask"

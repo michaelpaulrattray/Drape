@@ -108,8 +108,13 @@ describe("the one image grammar", () => {
       The CODE is right: clicking inside the panel you are typing into must not
       close the picture you are editing. The test was quoting a stale selector.
     */
+    /*
+      `.dpc-regions` joined the list with panel v2: the regions laid OVER the
+      picture are click targets that open a scoped edit box, and a click that
+      opens an edit box must not also close the picture being edited.
+    */
     const viewer = await readFile(VIEWER, "utf8");
-    expect(viewer).toContain('target.closest("img, .dpc-viewer__chrome, .dpc-refine")');
+    expect(viewer).toContain('target.closest("img, .dpc-viewer__chrome, .dpc-refine, .dpc-regions")');
     expect(viewer).not.toContain("event.target === event.currentTarget");
   });
 

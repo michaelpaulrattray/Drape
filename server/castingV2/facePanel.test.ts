@@ -9,6 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 
+import type { CastPronouns } from "./castPronouns";
 import { facePanel, type PanelRow } from "./facePanel";
 import type { StoredReference } from "./referenceLibrary";
 
@@ -37,10 +38,10 @@ function row(overrides: Partial<StoredReference> & { slot: string }): StoredRefe
   };
 }
 
-const SHE = { subject: "she", object: "her", possessive: "her", plural: false } as const;
-const HE = { subject: "he", object: "him", possessive: "his", plural: false } as const;
+const SHE: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
+const HE: CastPronouns = { subject: "he", object: "him", possessive: "his", plural: false };
 
-function panel(rows: StoredReference[], pronouns: typeof SHE = SHE) {
+function panel(rows: StoredReference[], pronouns: CastPronouns = SHE) {
   return facePanel({
     rows,
     pronouns,
@@ -49,7 +50,7 @@ function panel(rows: StoredReference[], pronouns: typeof SHE = SHE) {
   });
 }
 
-function allRows(rows: StoredReference[], pronouns: typeof SHE = SHE): PanelRow[] {
+function allRows(rows: StoredReference[], pronouns: CastPronouns = SHE): PanelRow[] {
   return panel(rows, pronouns).groups.flatMap((group) => group.rows);
 }
 

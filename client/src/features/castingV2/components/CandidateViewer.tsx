@@ -114,6 +114,7 @@ export function CandidateViewer({
   onIndexChange,
   onClose,
   below,
+  overlay,
   wait,
 }: {
   /** The set being walked. One image is a set of one. */
@@ -131,6 +132,17 @@ export function CandidateViewer({
    * viewer the room and the package could no longer use.
    */
   below?: React.ReactNode;
+  /**
+   * What is laid OVER the picture, inside the plate — the face's own regions,
+   * where a caller has them (fable-200).
+   *
+   * Inside the plate rather than the figure for the same reason the wait
+   * treatment is: an overlay measured against the figure drifts the moment a
+   * portrait and a landscape frame share a viewer, and a region box drawn a few
+   * per cent off is a click target over the wrong feature. Passed in, so this
+   * component stays the one image grammar and does not learn what a slot is.
+   */
+  overlay?: React.ReactNode;
   /** A refinement running on this face — the picture becomes its loader. */
   wait?: ViewerWait | null;
 }) {
@@ -201,7 +213,7 @@ export function CandidateViewer({
       */
       onClick={(event) => {
         const target = event.target as HTMLElement;
-        if (target.closest("img, .dpc-viewer__chrome, .dpc-refine")) return;
+        if (target.closest("img, .dpc-viewer__chrome, .dpc-refine, .dpc-regions")) return;
         onClose();
       }}
     >
@@ -242,6 +254,8 @@ export function CandidateViewer({
         */}
         <span className="dpc-viewer__plate">
           <img src={frame.url} alt={frame.personaLine ?? frame.label} />
+          {/* The face's own regions, in the same box as the picture. */}
+          {overlay}
           {wait ? (
             <>
               <span className="dpc-viewer__dots" aria-hidden="true" />

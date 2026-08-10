@@ -38,6 +38,8 @@ import {
   type ViewerFrame,
 } from "@/features/castingV2/components/CandidateViewer";
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
+import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
+import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
 import { SignConfirm } from "@/features/castingV2/components/SignConfirm";
 
@@ -835,12 +837,130 @@ export default function CastingSheet() {
   );
 
   /*
+    PANEL v2 — everything about this face, from the reference library.
+
+    Dark until `CASTING_REFERENCE_LIBRARY_SCOPE` names this account: off, the
+    server answers `enabled: false` with no rows and the panel above stays
+    exactly as it is today. Same cadence as the v1 read and the variants list —
+    what a face holds changes only when a refinement lands.
+  */
+  const face = trpc.castingV2.facePanel.useQuery(
+    {
+      candidateId: viewerCandidateId ?? "",
+      variantId: variants.data?.selectedVariantId ?? null,
+    },
+    { enabled: viewerRefinable && Boolean(viewerCandidateId) },
+  );
+
+  /*
+    ONE SELECTION, TWO VIEWS OF IT (fable-200): the panel's rows and the regions
+    laid over the picture. Held here because they are rendered by two different
+    children — and held ONCE, because a fact stored twice drifts.
+  */
+  const faceSelection = useFaceSelection();
+  const facePanelData = face.data?.enabled ? face.data : null;
+  const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
+
+  /*
     The refinement the picture narrates while it runs (D-169).
 
     Newest first, because the newest is the one they just asked for; the others
     are counted rather than listed, since a picture cannot narrate two things
     and pretending otherwise would be the overclaim this whole treatment avoids.
   */
+  /*
+    THE ONE PAID EDIT, called from two places (fable-200).
+
+    The ask box under the picture and the box that opens ON the picture are two
+    views of the same request, so they are one handler rather than two that look
+    alike — a second copy of this closure is the drift this codebase keeps
+    meeting, and here it would drift on the thing that spends money.
+  */
+  function askRefine(instruction: string) {
+    if (!viewerCandidateId) return;
+
+    /*
+      THE LAST OUTCOME GOES WHEN A NEW ONE IS ASKED FOR.
+
+      D-154 keeps an outcome until it is dismissed, which is right
+      for reading a refusal — and wrong the moment the next
+      instruction is submitted: the walk found a refusal about a
+      necklace sitting above a live "Refining…" for something else
+      entirely, so the panel was describing the wrong request. Until
+      dismissed means until superseded, too.
+    */
+    setRefineOutcome(null);
+    setReaskOptions(null);
+    /*
+      THE ANSWER GOES BACK THROUGH THE BOX (D-180).
+
+      The outstanding question travels as the sentence that raised
+      it, and the server re-derives what was asked. Cleared here
+      whatever happens next: if this submission is not an answer it
+      is a new instruction, and one question cannot stay open across
+      two of them.
+    */
+    const answering = pendingReask.current;
+    pendingReask.current = null;
+    void refine
+      .mutateAsync({
+        clientRequestId: crypto.randomUUID(),
+        candidateId: viewerCandidateId,
+        instruction,
+        ...(answering ? { answering } : {}),
+      })
+      .then(async (result) => {
+        /*
+          A QUESTION, NOT AN OUTCOME — and it costs nothing.
+
+          Rendered as a plain sentence in the panel that already
+          carries refusals and confessions (D-180): same voice, same
+          place, no modal. Answering it is typing, because the box
+          is the interface.
+        */
+        if (result?.kind === "asked" && result.reask) {
+          pendingReask.current = instruction;
+          setRefineOutcome(result.reask.question);
+          setReaskOptions(result.reask.options);
+          return;
+        }
+        /* Bought HERE, so its arrival is not a late lander (D-161). */
+        if (result?.variantId) boughtHere.current.add(result.variantId);
+        /*
+          A FREE OUTCOME SAYS SO (D-163 rule 4).
+
+          Undoing, and removing a step that lands back on a picture
+          they already have, cost nothing — and silence would leave
+          someone assuming they had just spent 25 credits on a face
+          they were already looking at. The panel owns it, like
+          every other outcome here (D-154).
+        */
+        if (result?.kind === "selected" && result.note) setRefineOutcome(result.note);
+        await variants.refetch();
+        await invalidate();
+      })
+      /*
+        The refusal IS the product surface here (§13). It arrives as
+        a toast because the panel has no other place to say
+        something — and it says "nothing was charged" itself, which
+        is the only part a user needs immediately.
+      */
+      /*
+        IN THE PANEL, not a toast (D-154). The founder's first
+        failure was a long unreadable pill that vanished before it
+        could be read, and a refusal that names its wall is
+        worthless at 2.1 seconds.
+      */
+      /*
+        OUR SENTENCE, NEVER THE ERROR'S (run-9). This was
+        `error.message`, so a gateway's plain-text 502 reached the
+        panel as "Unexpected token 'u', "upstream error" is not
+        valid JSON" — the same string already fixed once for roll
+        dispatch, kept alive here because that fix was never swept.
+      */
+      .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
+  }
+
   const pendingForViewer = variants.data?.pending ?? [];
   const narrating = pendingForViewer.at(-1) ?? null;
   const viewerWait = narrating
@@ -1588,6 +1708,20 @@ export default function CastingSheet() {
             out" and the count says the rest.
           */
           wait={viewerWait}
+          /*
+            THE FACE'S OWN REGIONS, over the picture (fable-200). Only where a
+            box was actually measured — a rectangle over the wrong pixels is a
+            promise that clicking there edits that thing.
+          */
+          overlay={facePanelData && viewerRefinable ? (
+            <FaceRegions
+              rows={faceRows}
+              selection={faceSelection}
+              priceCredits={refinePrice}
+              busy={refine.isPending || (variants.data?.pending?.length ?? 0) > 0}
+              onAsk={askRefine}
+            />
+          ) : null}
           onIndexChange={(next) => setViewerCandidateId(viewerFrames[next]?.candidateId ?? null)}
           onClose={() => setViewerCandidateId(null)}
           /*
@@ -1622,6 +1756,13 @@ export default function CastingSheet() {
               /* The heading's one derived word — his/her/their, from the server,
                  which is the only side that may read a face's sex. */
               keptPossessive={kept.data?.possessive ?? "their"}
+              /* Panel v2 REPLACES v1 for an account the library is armed for —
+                 two lists of one face would be two answers to one question. */
+              face={facePanelData ? {
+                groups: facePanelData.groups,
+                possessive: facePanelData.possessive,
+                selection: faceSelection,
+              } : undefined}
               reask={reaskOptions ? { question: refineOutcome ?? "", options: reaskOptions } : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a
@@ -1631,88 +1772,7 @@ export default function CastingSheet() {
                 setReaskOptions(null);
                 setRefineOutcome(null);
               }}
-              onRefine={(instruction) => {
-                /*
-                  THE LAST OUTCOME GOES WHEN A NEW ONE IS ASKED FOR.
-
-                  D-154 keeps an outcome until it is dismissed, which is right
-                  for reading a refusal — and wrong the moment the next
-                  instruction is submitted: the walk found a refusal about a
-                  necklace sitting above a live "Refining…" for something else
-                  entirely, so the panel was describing the wrong request. Until
-                  dismissed means until superseded, too.
-                */
-                setRefineOutcome(null);
-                setReaskOptions(null);
-                /*
-                  THE ANSWER GOES BACK THROUGH THE BOX (D-180).
-
-                  The outstanding question travels as the sentence that raised
-                  it, and the server re-derives what was asked. Cleared here
-                  whatever happens next: if this submission is not an answer it
-                  is a new instruction, and one question cannot stay open across
-                  two of them.
-                */
-                const answering = pendingReask.current;
-                pendingReask.current = null;
-                void refine
-                  .mutateAsync({
-                    clientRequestId: crypto.randomUUID(),
-                    candidateId: viewerCandidateId,
-                    instruction,
-                    ...(answering ? { answering } : {}),
-                  })
-                  .then(async (result) => {
-                    /*
-                      A QUESTION, NOT AN OUTCOME — and it costs nothing.
-
-                      Rendered as a plain sentence in the panel that already
-                      carries refusals and confessions (D-180): same voice, same
-                      place, no modal. Answering it is typing, because the box
-                      is the interface.
-                    */
-                    if (result?.kind === "asked" && result.reask) {
-                      pendingReask.current = instruction;
-                      setRefineOutcome(result.reask.question);
-                      setReaskOptions(result.reask.options);
-                      return;
-                    }
-                    /* Bought HERE, so its arrival is not a late lander (D-161). */
-                    if (result?.variantId) boughtHere.current.add(result.variantId);
-                    /*
-                      A FREE OUTCOME SAYS SO (D-163 rule 4).
-
-                      Undoing, and removing a step that lands back on a picture
-                      they already have, cost nothing — and silence would leave
-                      someone assuming they had just spent 25 credits on a face
-                      they were already looking at. The panel owns it, like
-                      every other outcome here (D-154).
-                    */
-                    if (result?.kind === "selected" && result.note) setRefineOutcome(result.note);
-                    await variants.refetch();
-                    await invalidate();
-                  })
-                  /*
-                    The refusal IS the product surface here (§13). It arrives as
-                    a toast because the panel has no other place to say
-                    something — and it says "nothing was charged" itself, which
-                    is the only part a user needs immediately.
-                  */
-                  /*
-                    IN THE PANEL, not a toast (D-154). The founder's first
-                    failure was a long unreadable pill that vanished before it
-                    could be read, and a refusal that names its wall is
-                    worthless at 2.1 seconds.
-                  */
-                  /*
-                    OUR SENTENCE, NEVER THE ERROR'S (run-9). This was
-                    `error.message`, so a gateway's plain-text 502 reached the
-                    panel as "Unexpected token 'u', "upstream error" is not
-                    valid JSON" — the same string already fixed once for roll
-                    dispatch, kept alive here because that fix was never swept.
-                  */
-                  .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
-              }}
+              onRefine={askRefine}
               onSelect={(variantId) => {
                 void chooseVariant
                   .mutateAsync({ candidateId: viewerCandidateId, variantId })

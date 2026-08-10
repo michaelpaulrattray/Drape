@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "74ba6a9ac6117eda"
+    "sourceFingerprint": "dd72679c06a7f29e"
   },
   "domains": [
     {
@@ -43,7 +43,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 24
+      "moduleCount": 27
     },
     {
       "id": "domain:client-shared",
@@ -1455,6 +1455,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/FacePanel.tsx",
+      "path": "client/src/features/castingV2/components/FacePanel.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/FaceRegions.tsx",
+      "path": "client/src/features/castingV2/components/FaceRegions.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/HeroMotion.tsx",
       "path": "client/src/features/castingV2/components/HeroMotion.tsx",
       "domain": "castingV2",
@@ -1487,6 +1499,12 @@
     {
       "id": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "path": "client/src/features/castingV2/components/SignConfirm.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/faceSelection.ts",
+      "path": "client/src/features/castingV2/components/faceSelection.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7877,6 +7895,10 @@
       "path": "client/src/features/castingV2/dockAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/facePanelAnatomy.test.ts",
+      "path": "client/src/features/castingV2/facePanelAnatomy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/failureCopy.test.ts",
       "path": "client/src/features/castingV2/failureCopy.test.ts"
     },
@@ -11817,8 +11839,33 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/FacePanel.tsx",
+      "to": "module:client/src/features/castingV2/components/faceSelection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/FaceRegions.tsx",
+      "to": "module:client/src/features/castingV2/components/FacePanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/FaceRegions.tsx",
+      "to": "module:client/src/features/castingV2/components/faceSelection.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/components/FacePanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/components/faceSelection.ts",
       "kind": "imports"
     },
     {
@@ -13764,6 +13811,16 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/FaceRegions.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/faceSelection.ts",
       "kind": "imports"
     },
     {

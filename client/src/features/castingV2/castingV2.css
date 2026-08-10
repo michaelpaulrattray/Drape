@@ -2794,3 +2794,272 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ---- panel v2: everything about this face, and the regions on the picture ---- */
+
+/*
+  The same surface language as `.dpc-kept`: this panel lives on the SCRIM under
+  the expanded picture, beside a field already written in `--onScrim`. The mock
+  is a card on `--surface`, and rendering that treatment here would put a white
+  panel on a dark viewer — structure quoted, surface derived from the neighbours
+  (the UI contract's own distinction).
+*/
+.dpc-face {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.dpc-face__head { display: flex; flex-direction: column; gap: 2px; }
+
+.dpc-face__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 560;
+  letter-spacing: 0.01em;
+  color: var(--onScrim);
+}
+
+.dpc-face__sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--onScrim) 62%, transparent);
+}
+
+.dpc-face__group { display: flex; flex-direction: column; gap: 2px; }
+
+/*
+  A section heading, not a label: it names the part of a person the rows below
+  are about, so it is quiet and it does not compete with their own words.
+*/
+.dpc-face__groupName {
+  margin: 6px 0 2px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--onScrim) 46%, transparent);
+}
+
+.dpc-face__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dpc-face__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dpc-face__row:hover,
+.dpc-face__row[data-lit="true"] {
+  background: color-mix(in srgb, var(--onScrim) 10%, transparent);
+}
+
+/* The row that is being talked about right now — the same fact the picture's
+   own region is drawing, read from one selection. */
+.dpc-face__row[data-active="true"] {
+  background: color-mix(in srgb, var(--onScrim) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--onScrim) 30%, transparent);
+}
+
+/* The border carries focus — no inner ring on a row, same law as the field. */
+.dpc-face__row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--onScrim) 52%, transparent);
+}
+
+.dpc-face__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background-color: color-mix(in srgb, var(--onScrim) 8%, transparent);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-source-type: luminance;
+  mask-mode: luminance;
+}
+
+/*
+  NO CROP IS NOT A FAILED CROP. Most slots have never been cut on this face, so
+  the placeholder is a faint outline rather than a filled square — a grey block
+  reads as a picture that did not load.
+*/
+.dpc-face__thumb--none {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--onScrim) 14%, transparent);
+}
+
+.dpc-face__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.dpc-face__name {
+  font-size: 13px;
+  color: var(--onScrim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Their own words for it, which is what the row is actually about. */
+.dpc-face__words {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--onScrim) 72%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dpc-face__from {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--onScrim) 58%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- the regions, laid over the picture itself ---- */
+
+.dpc-regions {
+  position: absolute;
+  inset: 0;
+  /* The layer never swallows a click; only its own boxes do. */
+  pointer-events: none;
+}
+
+.dpc-regions__away {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+/*
+  A REGION IS DRAWN QUIETLY UNTIL IT IS POINTED AT. Permanent boxes over
+  someone's face turn a portrait into a diagram; the outline appears on hover and
+  the one being edited stays lit.
+*/
+.dpc-regions__box {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.dpc-regions__box[data-lit="true"],
+.dpc-regions__box:hover {
+  border-color: color-mix(in srgb, #FFFFFF 78%, transparent);
+  background: color-mix(in srgb, #FFFFFF 8%, transparent);
+}
+
+.dpc-regions__box[data-active="true"] {
+  border-color: #FFFFFF;
+  background: color-mix(in srgb, #FFFFFF 12%, transparent);
+}
+
+.dpc-regions__box:focus-visible {
+  outline: 2px solid #FFFFFF;
+  outline-offset: 1px;
+}
+
+/* The name rides with the box only while it is pointed at. */
+.dpc-regions__tag {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: #FFFFFF;
+  background: color-mix(in srgb, #000000 62%, transparent);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.dpc-regions__box[data-lit="true"] .dpc-regions__tag,
+.dpc-regions__box[data-active="true"] .dpc-regions__tag,
+.dpc-regions__box:hover .dpc-regions__tag {
+  opacity: 1;
+}
+
+/*
+  THE BOX THAT OPENS WHERE THE FEATURE IS. It hangs under the region and is
+  centred on it, so the thing being edited is never behind the thing editing it.
+*/
+.dpc-regions__ask {
+  position: absolute;
+  transform: translate(-50%, 8px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #000000 78%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000000 40%, transparent);
+  pointer-events: auto;
+  max-width: min(420px, 92%);
+}
+
+.dpc-regions__field {
+  flex: 1 1 auto;
+  min-width: 180px;
+  border: 0;
+  background: transparent;
+  color: #FFFFFF;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+/* No inner outline on a field — the container carries focus (the standing law). */
+.dpc-regions__field:focus { outline: none; }
+
+.dpc-regions__ask:focus-within {
+  box-shadow: 0 8px 24px color-mix(in srgb, #000000 40%, transparent),
+              0 0 0 1px color-mix(in srgb, #FFFFFF 46%, transparent);
+}
+
+.dpc-regions__submit {
+  flex: none;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #111112;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.dpc-regions__submit:disabled { opacity: 0.5; cursor: default; }
+
+.dpc-regions__price {
+  flex: none;
+  padding-right: 4px;
+  font-size: 11.5px;
+  color: color-mix(in srgb, #FFFFFF 62%, transparent);
+}

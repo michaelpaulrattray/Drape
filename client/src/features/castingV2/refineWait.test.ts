@@ -152,7 +152,10 @@ describe("the answer chips are the typed path, not a second one", () => {
   */
   it("clears the question and its chips when the next instruction is sent", async () => {
     const sheet = await readFile(SHEET, "utf8");
-    const submit = sheet.slice(sheet.indexOf("onRefine={(instruction) => {"));
+    /* The submit path is now the named `askRefine`, called by the ask box AND
+       by the box that opens on the picture (fable-200) — one handler, because a
+       second copy of it would drift on the thing that spends money. */
+    const submit = sheet.slice(sheet.indexOf("function askRefine(instruction: string) {"));
     const beforeMutation = submit.slice(0, submit.indexOf("refine"));
     expect(beforeMutation).toContain("setRefineOutcome(null)");
     expect(beforeMutation).toContain("setReaskOptions(null)");
