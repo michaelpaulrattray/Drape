@@ -338,10 +338,19 @@ lost or empty delta is a silently forgotten edit. Mint time must assert that
 the delta words are non-empty for every word-tier and anatomy ask, and the
 edit-law cell (§6.1) is where that assertion is first driven.
 
-## 4. Verification, per tier
+## 4. Verification — existence and catastrophe (D-246, 2026-08-10)
 
-The bar is **per tier**, and D-235's asymmetry applies to each tier's own
-promise — an affirmative without a reading is not a pass.
+**REWRITTEN by the founder's ruling.** *Detectors gate disasters only.* The
+runtime bar is four catastrophic classes — a damaged frame, identity loss, the
+asked thing **completely absent**, process death — and nothing else. Subtle
+quality is DELIVERED: amplitude, hue, thickness, gloss level, exact shade,
+degree are shown to the person who asked for them, who re-rolls (paid) or rolls
+back (free). Advisory readings are recorded for trends and never enforced.
+
+The per-tier numbers below are **retained as routing and bench evidence**, not as
+runtime gates. D-235's asymmetry still governs every reading that is taken — an
+affirmative without a reading is not a pass — and D-236's bars now apply to the
+catastrophic classes, where the instruments are reliable.
 
 ### 4.1 Reference tier
 
@@ -371,13 +380,15 @@ lean (§7) is the reason: a mean would pass the easy ear by carrying the hard on
 **Widening is mandatory before any certification walk counts** — every n above
 is provisional and travels inside any number that cites it.
 
-### 4.2 Word tier — and its realism clause
+### 4.2 Word tier — the realism clause is SUPERSEDED (D-246)
 
-A colour or surface ask verifies as **changed AND within natural amplitude**
-(fable-166). Wire the existing `changeAmplitude`/qualifier machinery; do not
-build a new instrument. **A neon iris is a REFUSED frame.** Calibrate the range
-from the named specimens: cell2-3/4 negative, cell2-1/2 and the GPT2 arm
-positive.
+fable-166 §2 required a colour or surface ask to verify as *changed AND within
+natural amplitude*, and called **a neon iris a REFUSED frame**. D-246 supersedes
+that: neon green is subtle, not catastrophic. **It ships and the user judges.**
+
+The clause was never built, so nothing was disarmed — but the class behind it is
+still true and still useful, in its proper place: **taste is answered by ROUTING,
+never by gating.**
 
 The class behind the clause: **NBP over-delivers word asks** — a literalist that
 amplifies (singular clause → single hoop, "green" → neon), where GPT2 carries a
@@ -457,9 +468,13 @@ the lip staircase, which D-244 cancelled.
    assembler is where D-244 lives in code: it resolves each feature to
    *anchor + full word stack* (edited) or *minted crop* (carried), and it can
    never hand a feature its own crop on its own edit.
-4. **Verification per tier**, including the realism clause.
-5. **The replay walk, re-derived to per-tier promises** — the specimen source
-   for the flip decision.
+4. **Verification: existence and catastrophe gates only** (D-246) — subtle
+   readings recorded for trends, never enforced. The disarm sweep is part of
+   this step; its result is in the D-246 entry and pinned by
+   `d246VerificationBar.test.ts`.
+5. **The replay walk, re-derived to D-246 bars** — per-class existence
+   delivery, zero catastrophic false passes, and the founder's eye for taste.
+   The specimen source for the flip decision.
 6. **The flip**: founder-queue, one Railway variable.
 
 Per-slice billing and the refund law are untouched at every step: the money
@@ -502,6 +517,9 @@ contract does not know the painter changed.
 | Recipes carry rectangular CROPS; cutouts are the panel's display format only | fable-183 |
 | Occlusion amputation joins the completeness guard's defect list | fable-183 |
 | Contamination instrument deferred with a trigger; asymmetry an open row | fable-184 |
+| **Detectors gate disasters only; subtle quality is delivered; the realism clause and the VLM gloss judge are superseded/cancelled** | **D-246 (founder), fable-194/195** |
+| Reference format: NAMED, then a short description derived from the slot's own record | fable-194 (founder), fable-195 |
+| Word stacks are DECLARATIVE STATE; the interpreter owes a state phrase | fable-195 |
 | Removal compiles to the NATURAL state, not to matte | fable-188 (founder) |
 | The tier boundary measured on two rows: add carries, geometry partly | the edit-law cell + configuration diff, fable-189 |
 | Reference COUNT is out — two references carry what five did; naming form and ask size are what remain | the count bisect, 2026-08-10 |
