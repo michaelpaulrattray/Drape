@@ -291,15 +291,46 @@ describe("generation failures", () => {
 });
 
 describe("the judge cannot be trusted to be available", () => {
-  it("refuses to land a view it could not check", async () => {
+  it("DELIVERS a view it could not check, rather than charging nothing for it", async () => {
+    /*
+      D-246, amending D-92 (founder: *detectors must not block real generations
+      because the detectors are flawed*). "We decided it was wrong" and "we
+      could not tell" are different facts about a slot the customer paid for,
+      and only the first is a reason to take the picture away.
+
+      This test asserted the opposite until 2026-08-10, and it was the last
+      place in the product where a broken checker still took a customer's money
+      for a picture that may have been perfect — while deleting the frame on the
+      way out, so nobody could ever tell which it had been.
+    */
     const judge = () => vi.fn(async () => {
       throw new ProviderError("transport", "judge unreachable");
     });
     const result = await buildCastPackage(deps({ judge }), input);
 
-    // Fail closed: "we could not check it" is never "it is fine".
+    expect(result.committed).toHaveLength(CAST_PACKAGE_VIEWS.length);
+    expect(result.failed).toHaveLength(0);
+    expect(result.refundedCredits).toBe(0);
+    expect(result.totalLoss).toBe(false);
+  });
+
+  it("still refuses a view the judge LOOKED AT and rejected", async () => {
+    /*
+      D-92's purpose, intact. View conformance is theatre unless it can fail,
+      and it can: what died is failing a view nobody ever saw.
+    */
+    const judge = () => vi.fn(async () => ({
+      pass: false,
+      method: "judged",
+      axes: {
+        identity: { pass: false, note: "a different person" },
+        angle: { pass: true, note: "" },
+        wardrobe: { pass: true, note: "" },
+      },
+    }));
+    const result = await buildCastPackage(deps({ judge } as never), input);
+
     expect(result.committed).toHaveLength(0);
-    // And an unjudgeable package is a total loss, so the base returns too.
     expect(result.refundedCredits).toBe(450);
   });
 });

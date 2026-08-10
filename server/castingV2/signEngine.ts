@@ -70,9 +70,14 @@ export function castingViewConformanceJudge(): ViewConformanceJudge {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       /*
-        No judge, no Sign. §I's fail-closed law: where no trustworthy verifier
-        exists the request refuses BEFORE the spend, rather than landing
-        unjudged views and calling the absence of an opinion a pass.
+        No judge, no Sign — and this refusal is UNTOUCHED by D-246.
+
+        There is a difference between "the checker broke mid-render, after the
+        customer paid" and "this deployment has no checker at all". The first is
+        the founder's flawed-detector case and now delivers (see
+        `packageOrchestrator`); the second is a configuration mistake caught
+        BEFORE any spend, which costs nobody a picture and nobody a credit.
+        §I's law lives here, at the door, where refusing is free.
       */
       throw new Error("OPENROUTER_API_KEY is required to validate a signed Cast package");
     }

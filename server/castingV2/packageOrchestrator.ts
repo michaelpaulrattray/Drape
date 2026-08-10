@@ -16,10 +16,16 @@
  * Three properties are worth stating because each of them is a defect we would
  * otherwise ship:
  *
- * 1. **Nothing lands unjudged.** A generation that cannot be checked — the judge
- *    refused, was unreachable, or answered something unreadable — fails and
- *    refunds. Landing it would mean the only guarantee Sign sells (this is the
- *    same person) resting on the absence of an opinion.
+ * 1. **The judge may fail what it JUDGED, never what it never saw** (D-246,
+ *    amending D-92). A view the judge looked at and rejected still fails and
+ *    refunds — D-92's purpose is intact, and view conformance is still theatre
+ *    unless it can fail. But a view the judge could not reach, or answered
+ *    unreadably about, is now DELIVERED and recorded as `unjudged`. The founder's
+ *    ruling is the authority: *detectors must not block real generations because
+ *    the detectors are flawed.* This was the last place in the product where a
+ *    broken checker still took a customer's money for a picture that may have
+ *    been perfect — and the frame was deleted on the way out, so nobody could
+ *    ever tell which it had been.
  * 2. **One regeneration, then the slot fails named-and-refunded.** Ported from
  *    the legacy back-view gate (D-39/D-40): a second attempt is worth its cost,
  *    a third is a slot machine.
@@ -380,14 +386,32 @@ async function buildOneView(
         contentType: image.contentType,
       });
 
-      const verdict = await judgeOrFailClosed(judge, {
+      const verdict = await judgeUnjudgedOnFailure(judge, {
         angle,
         anchor: input.anchor,
         candidate: { bytes: image.bytes, contentType: image.contentType },
       });
       verdicts.push(verdict);
 
-      if (!verdict.pass) {
+      if (verdict.unjudged) {
+        /*
+          D-246, amending D-92: **"we decided it was wrong" and "we could not
+          tell" are different facts about a slot the customer paid for**, and
+          only the first is a reason to take the picture away. The verdict has
+          carried that distinction since it was written — the comment on
+          `unjudged` says in as many words that the second "is the one that
+          needs an alarm" — and until now both landed in the same branch.
+
+          So it delivers, loudly. The alarm is the log line and the `unjudged`
+          flag on the row; the guarantee Sign sells is not weakened, because a
+          judge that DID look and DID reject still refuses below.
+        */
+        log.error(
+          { operationId: input.operationId, angle, attempt, method: verdict.method },
+          "[packageOrchestrator] the view could not be judged — DELIVERING and recording it, "
+          + "rather than charging nothing for a picture that may be perfect (D-246)",
+        );
+      } else if (!verdict.pass) {
         const failedAxes = (Object.keys(verdict.axes) as Array<keyof typeof verdict.axes>)
           .filter((axis) => !verdict.axes[axis].pass);
         lastReason = conformanceReason(failedAxes, verdict);
@@ -485,14 +509,20 @@ async function buildOneView(
 }
 
 /**
- * The judge, with the fail-closed rule applied to its own failures.
+ * The judge, with its own failures turned into an HONEST verdict rather than a
+ * verdict at all.
  *
- * The judge itself converts a refusal or an unreadable answer into a failing
- * verdict; what reaches here is a transport failure that survived its retries,
- * and that has to fail too. "We could not check it" is never "it is fine" —
- * §I's fail-closed law is the reason identity work is allowed to cost money.
+ * The judge converts a refusal or an unreadable answer into `unjudged`; what
+ * reaches here is a transport failure that survived its retries, and it gets the
+ * same treatment. **`unjudged` is not "it failed" — it is "nobody looked"**, and
+ * since D-246 the caller delivers on it and records the fact.
+ *
+ * §I's fail-closed law is not repealed by that. It said a check that reports
+ * success loudest exactly when it understood nothing is worthless, and that is
+ * still true: nothing here reports success. It reports that no opinion exists,
+ * which is a different sentence and lands on the row as one.
  */
-async function judgeOrFailClosed(
+async function judgeUnjudgedOnFailure(
   judge: ViewConformanceJudge,
   input: Parameters<ViewConformanceJudge>[0],
 ): Promise<ViewConformanceVerdict> {
@@ -501,7 +531,7 @@ async function judgeOrFailClosed(
   } catch (error) {
     log.error(
       { angle: input.angle, err: error },
-      "[packageOrchestrator] the conformance judge failed — the view cannot land",
+      "[packageOrchestrator] the conformance judge failed — no opinion exists about this view",
     );
     const axis = { pass: false, note: "the view could not be checked" };
     return {

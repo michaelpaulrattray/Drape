@@ -13,7 +13,10 @@
  * Contract (D-39/D-46): one auto-retry on failure, then fail
  * named-and-refunded — enforced by the caller (mintPackage/refreshSlots).
  * Infra failures fail OPEN (house style, matching wardrobe/identityCheck):
- * a broken checker must never block a paid generation.
+ * a broken checker must never block a paid generation. **That house style is
+ * now the founder's ruling** (D-246, 2026-08-10) rather than this file's local
+ * habit, and `packageOrchestrator` was brought into line with it the same day:
+ * a detector may fail what it judged and never what it never saw.
  *
  * D-46 calibration note (logged): motion poses drift more — if the walk
  * gate over-rejects, tune its prompt below before it churns refunds on

@@ -8556,6 +8556,35 @@ Sign path and both left standing for a decision rather than changed:
 failure class that can refuse a paid render fails the suite until somebody
 classifies it against this ruling.
 
+### D-246a — the fail-closed split. An AMENDMENT to D-92, not a repeal.
+
+**Ruled fable-196, same day, on the first of the two findings above.** The
+conformance judge **may fail what it JUDGED, and never what it never saw.**
+
+- A view the judge looked at and rejected still fails, refunds its slice, and
+  records its per-axis verdict. **D-92's purpose is intact** — view conformance
+  is still theatre unless it can fail, and it can.
+- A view the judge could not reach, refused to answer about, or answered
+  unreadably about is **DELIVERED and recorded as `unjudged`**. Nothing here
+  reports success; it reports that no opinion exists, which is a different
+  sentence and lands on the row as one.
+
+The verdict has carried that distinction since it was written — the comment on
+`unjudged` says in as many words that *"we decided it was wrong" and "we could
+not tell" are different facts about a slot the customer paid for, and the second
+is the one that needs an alarm.* Both landed in the same branch until today. It
+was the last place in the product where a broken checker still took a customer's
+money for a picture that may have been perfect, while deleting the frame on the
+way out so nobody could ever tell which it had been.
+
+**Untouched:** `signEngine`'s refusal to construct a judge at all when
+`OPENROUTER_API_KEY` is absent. A deployment with no checker is a configuration
+mistake caught before any spend — refusing there costs nobody a picture and
+nobody a credit, which is the opposite of the case D-246 is about.
+
+`packageOrchestrator.test.ts` asserts both halves; the test that asserted the
+old contract was rewritten rather than deleted, with the ruling in its comment.
+
 ---
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.
