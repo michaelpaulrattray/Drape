@@ -14,8 +14,8 @@
  *
  * # It REFUSES rather than repairs
  *
- * Three refusals, and each is a `RecipeRefusal` the caller can act on rather
- * than an exception to be swallowed:
+ * Every refusal is a `RecipeRefusal` the caller can act on rather than an
+ * exception to be swallowed:
  *
  *  - **`carriesItsOwnEdit`** — D-244 line 2. A recipe that hands a feature its
  *    own crop while editing it is the contaminated mint, and the whole law
@@ -29,6 +29,32 @@
  *    forgotten edit; an ask that carries no words for a slot with no anchor
  *    would regenerate the feature from the master with nothing said about it,
  *    which is a quiet revert dressed as an edit.
+ *  - **`surfaceCarriesCrop`** — the carry contract below. A surface that holds
+ *    a minted crop is a slot built against the one tier that has no working
+ *    instrument to catch it, so it is refused at construction instead.
+ *  - **`nounNotBare`** and **`slotNotNamed`** — the prompt is built here, so
+ *    the grammar it needs is checked here. A feature the render cannot name is
+ *    a feature it cannot ask about, and a determiner that arrived with a noun
+ *    queues behind the one the template supplies.
+ *
+ * # THE CARRY CONTRACT, PER TIER (fable-192, measured — not precautionary)
+ *
+ * The count bisect and the configuration diff measured what a reference crop can
+ * do to a master that disagrees with it, and the answer is graded (§3.0a):
+ *
+ *   introduced ITEM     the crop is the carrier            proven outright
+ *   ANATOMY             the crop rides AND the word stack rides in EVERY
+ *                       recipe — words are the carrier of record, the crop is
+ *                       an assist worth about a third of its own value
+ *   SURFACE             words only, always. No crop ever rides for a surface,
+ *                       and there is currently no instrument that can certify
+ *                       one if it did.
+ *
+ * *"Measurable is not delivered."* A crop that wins a third of the distance is
+ * not what a customer would call *"she has those lips"*, so crop strength alone
+ * never backs a carry promise for anatomy. That is why anatomy's words ride even
+ * on renders that do not touch it, and why this is behavior here rather than
+ * advice in a document.
  *
  * # The reference ORDINALS and the prompt sentences are derived together
  *
@@ -49,6 +75,8 @@
  * Nothing calls this yet. It lands dark by having no call site, which is the
  * only kind of dark a pure function needs.
  */
+
+import type { CastPronouns } from "./castPronouns";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -72,8 +100,27 @@ export type ReferenceRole =
    *  Rides untouched renders byte-identical; never its own slot's edit. */
   | { kind: "carry"; slot: FeatureSlot };
 
+/**
+ * Which carrier the tier boundary gives this feature (§3.0a, fable-192).
+ *
+ * It is REQUIRED on every entry and has no default. A defaulted tier is the
+ * unowned-axis class: every entry would silently fall to whichever value the
+ * author happened to type first, identically, and nothing downstream would
+ * show it.
+ */
+export type FeatureTier =
+  /** Introduced and worn: an earring, a tattoo, her own glasses. Crop carries. */
+  | "item"
+  /** Geometry the master owns: lips, eyes, brows, hair, the shape of her face.
+   *  Crop rides AND the words ride, every render. */
+  | "anatomy"
+  /** Worn state on a slot: gloss, a tan, a makeup look. Words only, always. */
+  | "surface";
+
 export type LibraryEntry = {
   slot: FeatureSlot;
+  /** The carrier this feature gets. See {@link FeatureTier}. */
+  tier: FeatureTier;
   /**
    * Present only for INTRODUCED features. Anatomy and surfaces have no anchor
    * entry: their anchor is the master, and the master is always reference 1.
@@ -85,13 +132,24 @@ export type LibraryEntry = {
   carry?: ReferenceImage;
   /** Every word ever accepted about this slot, oldest first. The full stack. */
   words: readonly string[];
-  /** How the slot is spoken about in a reference sentence — the stylist's
-   *  wording, not the engineer's key. */
+  /**
+   * How the slot is spoken about — the stylist's wording, not the engineer's key.
+   *
+   * **Always bare**: `"lips"`, `"hair"`, `"left eye"`, `"wide gold hoop on her
+   * left ear"`. Every template below supplies its own determiner — "the exact
+   * ${noun}", "keep ${possessive} ${noun}" — and a determiner that arrived with
+   * the noun would queue behind them ("the exact the wide gold hoop"). A part of
+   * her takes the possessive; a worn item takes an article. That is the
+   * worn-versus-hers distinction `segmentsOnFace` already draws, one layer up.
+   */
   noun: string;
 };
 
 export type Ask = {
   slot: FeatureSlot;
+  /** Needed only for a slot the library has never held — a feature the render
+   *  cannot name is a feature it cannot ask about. */
+  noun?: string;
   /** The DELTA — what this render adds. Empty only when `remove` is set. */
   words?: string;
   /**
@@ -104,6 +162,9 @@ export type Ask = {
 
 export type AssembleInput = {
   master: ReferenceImage;
+  /** The cast's own pronouns, never assumed. `segmentsOnFace` shipped "hers"
+   *  onto a male candidate's face before this was passed rather than guessed. */
+  pronouns: CastPronouns;
   /** The cast's reference library. An empty library is the degenerate case. */
   library: readonly LibraryEntry[];
   asks: readonly Ask[];
@@ -112,9 +173,23 @@ export type AssembleInput = {
 export type RecipeReference = {
   role: ReferenceRole;
   image: ReferenceImage;
-  /** The sentence naming this reference by its ordinal, or null for the master
-   *  (whose sentence is the identity clause the caller owns). */
-  sentence: string | null;
+  /** The sentence naming this reference by the ordinal it actually occupies.
+   *  The master's is the identity clause, and it is reference 1. */
+  sentence: string;
+};
+
+/**
+ * A feature nobody touched this render, whose words ride anyway.
+ *
+ * Anatomy and surfaces both get one: for anatomy the sentence rides BESIDE the
+ * carried crop (words are the carrier of record, the crop is the assist); for a
+ * surface it is the only thing that rides at all.
+ */
+export type StandingWords = {
+  slot: FeatureSlot;
+  noun: string;
+  words: readonly string[];
+  sentence: string;
 };
 
 export type Recipe = {
@@ -123,22 +198,84 @@ export type Recipe = {
   references: readonly RecipeReference[];
   /** The slots this render edits — the DELIVERED column of verification. */
   edited: readonly FeatureSlot[];
-  /** The slots riding a minted crop — the CARRIED column. */
+  /** Every slot this render promises to hold — the CARRIED column. An item or
+   *  anatomy slot carries by crop, a surface by words alone; all three are
+   *  promises, so all three are verified. */
   carried: readonly FeatureSlot[];
   /** Per edited slot, the full word stack that regenerates it. */
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>;
   /** The reference sentences, in ordinal order, ready to join with the ask. */
   sentences: readonly string[];
+  /** The carry contract's word half, in library order — anatomy and surfaces
+   *  that this render does not touch but must still say out loud. */
+  standing: readonly StandingWords[];
+  /** The change instruction, in the proven small-ask frame. Empty when nothing
+   *  is asked (a pure carry render). */
+  ask: string;
+  /**
+   * THE WHOLE PROMPT, in send order, and the only text a caller sends.
+   *
+   * It is built here so that "reference 3 is her hair" is true of the array
+   * that actually goes out. A caller that composed its own prose from the parts
+   * would be the second list this codebase keeps meeting — right until someone
+   * reorders the references and nobody notices, because the drift is invisible
+   * in every output except the picture.
+   */
+  prompt: string;
 };
 
 export type RecipeRefusal = {
   ok: false;
-  reason: "carriesItsOwnEdit" | "slotTwiceReferenced" | "emptyWordStack" | "removeNotInStack";
+  reason:
+    | "carriesItsOwnEdit"
+    | "slotTwiceReferenced"
+    | "emptyWordStack"
+    | "removeNotInStack"
+    | "surfaceCarriesCrop"
+    | "nounNotBare"
+    | "slotNotNamed";
   slot: FeatureSlot;
   detail: string;
 };
 
 export type AssembleResult = Recipe | RecipeRefusal;
+
+/** A possessive replaces an article; it never queues behind one. */
+const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
+
+/**
+ * THE ASK, kept small on purpose.
+ *
+ * The bisect stripped the carrying recipe to two references and it still
+ * carried, so what survived of the bundle is the naming form and **the size of
+ * the ask** — name each reference for what it is, and do not ask for a region
+ * redraw in the same breath (§3.0a, fable-192). Building the sentence here is
+ * what makes that behavior rather than advice: a caller cannot paste a
+ * paragraph into a frame it does not own.
+ *
+ * The clause states the feature's WHOLE target state — the full word stack, not
+ * the delta alone — because that is what D-244 line 2 regenerates from.
+ */
+function askSentence(
+  asks: readonly Ask[],
+  bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+  possessive: string,
+): string | { unnamed: FeatureSlot } {
+  const clauses: string[] = [];
+  for (const ask of asks) {
+    const entry = bySlot.get(ask.slot);
+    const noun = entry?.noun ?? ask.noun;
+    if (noun === undefined || noun.trim() === "") return { unnamed: ask.slot };
+    /* A worn item takes an article; a part of her takes the possessive
+       (`segmentsOnFace`'s worn-vs-hers distinction, one layer up, and the same
+       reason: a stylist speaks about a thing, and about her). */
+    const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
+    clauses.push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+  }
+  if (clauses.length === 0) return "";
+  return `Change only ${clauses.join("; ")}.`;
+}
 
 /**
  * The word stack a slot regenerates from on THIS render.
@@ -159,20 +296,57 @@ function stackFor(entry: LibraryEntry | undefined, ask: Ask): readonly string[] 
   return survived;
 }
 
+/**
+ * THE IDENTITY CLAUSE — reference 1, named the way the carrying recipe named it.
+ *
+ * The pronoun tracks the cast rather than the specimen the form was measured on
+ * (`segmentsOnFace` paid for that lesson: a male candidate's eyes called "hers"
+ * in front of his own face). The FORM is what carried; the pronoun never was
+ * part of it.
+ */
+function identityClause(pronouns: CastPronouns): string {
+  return [
+    `Reference 1 is the photograph of this person — reproduce ${pronouns.object} exactly:`,
+    "same face, same pose, same lighting, same framing, same background.",
+  ].join(" ");
+}
+
 export function assembleRecipe(input: AssembleInput): AssembleResult {
   const bySlot = new Map(input.library.map((entry) => [entry.slot, entry]));
   const edited = input.asks.map((ask) => ask.slot);
   const editedSet = new Set(edited);
+  const pronouns = input.pronouns;
+  const possessive = pronouns.possessive;
+  const has = pronouns.plural ? "have" : "has";
 
+  const identity = identityClause(pronouns);
   const references: RecipeReference[] = [
-    { role: { kind: "master" }, image: input.master, sentence: null },
+    { role: { kind: "master" }, image: input.master, sentence: identity },
   ];
   const wordStacks = new Map<FeatureSlot, readonly string[]>();
   const claimed = new Set<FeatureSlot>();
-  const sentences: string[] = [];
+  const sentences: string[] = [identity];
+  /** Which reference each carried slot ended up at, so a standing sentence can
+   *  point at it by the ordinal it actually occupies. */
+  const ordinalOf = new Map<FeatureSlot, number>();
 
   /** Ordinal in the sent array: the master is 1, so the next is length + 1. */
   const nextOrdinal = () => references.length + 1;
+
+  for (const entry of input.library) {
+    if (LEADING_DETERMINER.test(entry.noun)) {
+      /*
+        The templates below supply the possessive, and a possessive REPLACES an
+        article rather than queueing behind it — "her a mullet" and "her the
+        lips" were both live in real data before `segmentsOnFace` fixed the same
+        grammar one layer up. A worn ITEM names itself and keeps its article.
+      */
+      return {
+        ok: false, reason: "nounNotBare", slot: entry.slot,
+        detail: `${entry.slot}'s noun "${entry.noun}" starts with a determiner; recipe nouns are bare and every template supplies its own`,
+      };
+    }
+  }
 
   /* ---- the EDITED slots: anchor + full word stack, never their own crop ---- */
 
@@ -207,7 +381,10 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       };
     }
     claimed.add(ask.slot);
-    sentences.push(`Reference ${nextOrdinal()} is ${entry.noun}, exactly as it was introduced.`);
+    ordinalOf.set(ask.slot, nextOrdinal());
+    sentences.push(
+      `Reference ${nextOrdinal()} is the exact ${entry.noun} as it was introduced — the same ${entry.noun}.`,
+    );
     references.push({
       role: { kind: "anchor", slot: ask.slot },
       image: entry.anchor,
@@ -217,8 +394,22 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
   /* ---- the CARRIED slots: the minted crop, pixel-frozen ---- */
 
-  const carried: FeatureSlot[] = [];
   for (const entry of input.library) {
+    if (entry.carry && entry.tier === "surface") {
+      /*
+        A surface's carrier is words, always — that tier's crop was never proven
+        to carry and there is currently no instrument that could certify one if
+        it were. A minted surface crop means something upstream built a slot
+        against the tier boundary, and it is refused here rather than sent.
+        Checked before the edited/untouched split, because the defect is that the
+        crop EXISTS, not that this particular render would have sent it.
+      */
+      return {
+        ok: false, reason: "surfaceCarriesCrop", slot: entry.slot,
+        detail: `${entry.slot} is a surface and is carried by words only; a minted crop must not ride for it`,
+      };
+    }
+
     if (!entry.carry) continue;
     if (editedSet.has(entry.slot)) {
       /*
@@ -238,14 +429,73 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       };
     }
     claimed.add(entry.slot);
-    sentences.push(`Reference ${nextOrdinal()} is ${entry.noun}, exactly as it is now — keep it exactly.`);
+    ordinalOf.set(entry.slot, nextOrdinal());
+    /*
+      THE PROVEN NAMING FORM. "Reference N is the exact X ${subject} ${has}" is
+      the wording the carrying recipe used, and the bisect held it fixed while
+      it stripped everything else away — count and position fell, naming and ask
+      size are what survived (§3.0a). So it is emitted here rather than left to
+      each caller's prose.
+    */
+    sentences.push(
+      `Reference ${nextOrdinal()} is the exact ${entry.noun} ${pronouns.subject} ${has} — the same ${entry.noun}, unchanged.`,
+    );
     references.push({
       role: { kind: "carry", slot: entry.slot },
       image: entry.carry,
       sentence: sentences[sentences.length - 1]!,
     });
-    carried.push(entry.slot);
   }
 
-  return { ok: true, references, edited, carried, wordStacks, sentences };
+  /* ---- the carry contract's WORD half: what rides without being edited ---- */
+
+  const standing: StandingWords[] = [];
+  for (const entry of input.library) {
+    if (editedSet.has(entry.slot)) continue;
+    /*
+      fable-192, measured rather than precautionary. A surface has no other
+      carrier at all; anatomy's crop wins about a third of the distance against
+      a master that disagrees with it, so the words ride BESIDE the crop rather
+      than being replaced by it. An ITEM's crop carried outright, and describing
+      it again would put a word stack and a reference in competition over one
+      feature.
+    */
+    if (entry.tier === "item" || entry.words.length === 0) continue;
+    const ordinal = ordinalOf.get(entry.slot);
+    const where = ordinal === undefined ? "" : ` as in reference ${ordinal}`;
+    standing.push({
+      slot: entry.slot,
+      noun: entry.noun,
+      words: entry.words,
+      /* Imperative, so one form serves a plural noun and a singular one alike —
+         "her lips remains" and "her hair remain" are both wrong, and a template
+         that can produce either is a template that will. */
+      sentence: `Keep ${possessive} ${entry.noun} exactly${where}: ${entry.words.join(", ")}.`,
+    });
+  }
+
+  /*
+    CARRIED is derived from the library in one filter rather than accumulated in
+    the two loops above — a second list built alongside a source of truth drifts
+    from it (working law 4), and this one would have had to agree with both.
+  */
+  const carried = input.library
+    .filter((entry) => !editedSet.has(entry.slot))
+    .filter((entry) => entry.carry !== undefined || (entry.tier !== "item" && entry.words.length > 0))
+    .map((entry) => entry.slot);
+
+  const ask = askSentence(input.asks, bySlot, wordStacks, possessive);
+  if (typeof ask !== "string") {
+    return {
+      ok: false, reason: "slotNotNamed", slot: ask.unnamed,
+      detail: `${ask.unnamed} has no library entry and the ask carries no noun, so the render cannot say what it is changing`,
+    };
+  }
+
+  return {
+    ok: true, references, edited, carried, wordStacks, sentences, standing, ask,
+    prompt: [...sentences, ...standing.map((entry) => entry.sentence), ask]
+      .filter((line) => line !== "")
+      .join(" "),
+  };
 }

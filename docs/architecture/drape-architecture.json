@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4227def89892f079"
+    "sourceFingerprint": "9840e47ac8ffaa54"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 81
+      "moduleCount": 82
     },
     {
       "id": "domain:castingV2",
@@ -3533,6 +3533,12 @@
     {
       "id": "module:server/castingV2/renderVerification.ts",
       "path": "server/castingV2/renderVerification.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/repaintRender.ts",
+      "path": "server/castingV2/repaintRender.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8636,6 +8642,10 @@
     {
       "id": "test:server/castingV2/renderVerification.test.ts",
       "path": "server/castingV2/renderVerification.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/repaintRender.test.ts",
+      "path": "server/castingV2/repaintRender.test.ts"
     },
     {
       "id": "test:server/castingV2/retentionExemption.test.ts",
@@ -17919,6 +17929,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
@@ -18415,6 +18430,16 @@
     },
     {
       "from": "module:server/castingV2/renderVerification.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintRender.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintRender.ts",
       "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
