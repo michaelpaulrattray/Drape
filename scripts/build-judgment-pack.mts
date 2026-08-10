@@ -76,7 +76,11 @@ const blocks: Block[] = [
     look:
       "Is the STACKED tile visibly deeper or darker than the other two? If the product's re-ask "
       + "looks like the first ask and only the stacked one has piled up, the architecture is doing "
-      + "its job.",
+      + "its job. — This bench also ran a FRECKLES arm, and it is not shown here on purpose: on "
+      + "that facet the instrument could not build the disease at all (the stacked control did not "
+      + "separate from the ask), so its verdict is NO-READ and it is entitled to no conclusion in "
+      + "either direction. Pictures beside a null reading would invite one. The hair-colour arm "
+      + "below is the one that carries a verdict.",
     readings: excerpt(BENCH_A, 'ARM "hair.colour"', 12),
     rows: [1, 2, 3].map((round) => ({
       caption: `Round ${round}`,
@@ -146,10 +150,12 @@ const blocks: Block[] = [
       + "bucket: candidate f9e9cb81 (\"Unfussed\") segment #8 marks@v1, and your own candidate "
       + "ee5d6988 (\"Sharp-eyed\") segment #11 marks@v1.",
     look:
-      "On the difference tile, anything that is not black is a pixel that moved — and what moved has "
-      + "a shape. It traces the rim of the glasses, because the last render in both chains was "
-      + "\"remove her glasses\", and on the first row it also traces the hoop earring a step in "
-      + "between added. Everything else — the whole freckled expanse of her cheeks — is black. The "
+      "On the difference tile, anything that is not black is a pixel that moved — and every white "
+      + "region has a name. Both rows are lit along the brow and along the curve where the glasses "
+      + "sat, because the last render in each chain was \"remove her glasses\". The first row is "
+      + "also lit across her MOUTH: a nude-lip-gloss step sits between its two frames. The second "
+      + "row's mouth is dark, because that chain asked for lip gloss and the render was refused, so "
+      + "nothing landed. Everything else — the whole freckled expanse of her cheeks — is black. The "
       + "freckles did not change; the things she asked to change did.",
     readings:
       "candidate f9e9cb81 \"Unfussed\" · segment #8 marks@v1 · bbox 332,302 363x423\n"
