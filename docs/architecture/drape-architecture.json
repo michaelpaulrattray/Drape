@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "158f13a3cdbcbe6b"
+    "sourceFingerprint": "fbd5a1e13e7078ef"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 88
+      "moduleCount": 89
     },
     {
       "id": "domain:castingV2",
@@ -3437,6 +3437,12 @@
     {
       "id": "module:server/castingV2/maskedRefine.ts",
       "path": "server/castingV2/maskedRefine.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/mintedSlots.ts",
+      "path": "server/castingV2/mintedSlots.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8643,6 +8649,10 @@
     {
       "id": "test:server/castingV2/maskedRefine.test.ts",
       "path": "server/castingV2/maskedRefine.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/mintedSlots.test.ts",
+      "path": "server/castingV2/mintedSlots.test.ts"
     },
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
@@ -17511,6 +17521,11 @@
     },
     {
       "from": "module:server/castingV2/carriedSegments.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/carriedSegments.ts",
       "to": "module:server/castingV2/segmentAssembly.ts",
       "kind": "imports"
     },
@@ -17945,6 +17960,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:server/castingV2/realizationCaption.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:server/castingV2/referenceMint.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/mintedSlots.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/casting/atomicCredits.ts",
       "kind": "imports"
@@ -18157,6 +18192,11 @@
     {
       "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/castingV2/referenceCompleteness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
     },
     {
@@ -18536,6 +18576,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/mintedSlots.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/presentationState.ts",
       "kind": "imports"
     },
@@ -18547,6 +18592,21 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/realizedAxes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/referenceCompleteness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/referenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/referenceMint.ts",
       "kind": "imports"
     },
     {
@@ -18632,6 +18692,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
     {

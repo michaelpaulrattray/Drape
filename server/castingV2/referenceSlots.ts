@@ -41,6 +41,21 @@
 export const INSTANCES = ["left", "right"] as const;
 export type Instance = (typeof INSTANCES)[number];
 
+/**
+ * WHICH FRAME A SLOT'S QUESTION MAY BE ASKED OF.
+ *
+ * `ownSide` is not a hint. A bilateral slot asked of the WHOLE frame gets back
+ * whichever instance the segmenter felt like naming — and worse, the reader
+ * unions both sides into one mask, so `earring@left` and `earring@right` would
+ * be cut from the same pixels, scored against the same union, and each read
+ * "complete" while containing both of her earrings.
+ *
+ * It lives HERE rather than in the catalogue because the catalogue and the mint
+ * both need it and the catalogue imports the mint's `SlotSpec` — one direction
+ * of a dependency, not a cycle.
+ */
+export type SlotFrame = "wholeFrame" | "ownSide";
+
 export type ParsedSlot = {
   /** The feature: `eye`, `earring`, `hair`. */
   feature: string;

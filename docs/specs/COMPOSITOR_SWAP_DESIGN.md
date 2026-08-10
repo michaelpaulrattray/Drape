@@ -574,8 +574,29 @@ the lip staircase, which D-244 cancelled.
    previous crop riding while the words moved on, which is two instructions
    about one feature. **The SLOT CATALOGUE landed 2026-08-10 (§2.7)** — slot →
    question, guard kind, tier, noun, panel group and which frame the question may
-   be asked of, with the question-less slots words-only by construction. What
-   remains of this step is a CALLER: nothing composes a mint from it yet.
+   be asked of, with the question-less slots words-only by construction.
+   **The CALLER landed 2026-08-11**, in `refineService` immediately after
+   `keepSegmentsFromRender` and reusing that step's own `earned` list (written ∩
+   verified ∩ not-carried — one derivation, two stores). `castingV2/mintedSlots.ts`
+   turns those facets into slots and their captions into each slot's word stack;
+   the accessory family resolves through the SAME `accessoryKindOf` string the
+   harvest and the segment cutter use, which is what gives an earring a slot at
+   all. The whole block is wrapped: a library failure must never refund a picture
+   she is already looking at.
+
+   **A per-side slot files WORDS and no crop, and no coverage number is taken.**
+   Every region the mint is handed is a whole-frame read, and the bilateral
+   reader unions both sides into one mask by construction — so `earring@left`
+   and `earring@right` would be cut from identical pixels, scored against the
+   same union, and BOTH would read complete while containing both of her
+   earrings. That is the wrong-boundary class at the library's door, and a
+   refusal carrying a reading would be worse than the refusal: "the refusal is
+   also the thing that produces the specimen", so the number would become
+   `earring`'s threshold. **What closes it is a side-scoped region read** — the
+   split the reader already performs internally, exposed rather than
+   reimplemented (a second midline is law 4's copy). Until then a pair is
+   carried by words, which is all the panel needs: divergence is derived from
+   words, never from pixels.
 3. **The recipe assembler and the repaint path**, behind the flag, dark. The
    assembler is where D-244 lives in code: it resolves each feature to
    *anchor + full word stack* (edited) or *minted crop* (carried), and it can
@@ -601,6 +622,7 @@ contract does not know the painter changed.
 | **Contamination instrument** (what a paint borrowed from a crop's background) | **DEFERRED WITH TRIGGER** (fable-184). Shape and material catch invented FORM and invented MATERIAL; neither counts borrowing. It was never built and that is stated as owed, not absent. | Build it **when an occlusion-aware cutter reopens the crop-vs-cutout question** (§5.1). Until then the format ruling stands on shape + material. |
 | **img-left / img-right asymmetry** | **OPEN ROW.** Ten for ten on GPT2 the smaller, more occluded hoop scores worse. Mechanism proposed, untested. | Test it **only if the edit-law cell shows the same lean** (fable-183). Meanwhile the standing rule already contains the risk: per-instance worst-of-n, never averaged. |
 | **Occlusion-aware cutter** | Not built. Named as the cause of the cutout arm's loss. | A cutter that completes rather than amputates at occluders, then a re-test of §5.1. |
+| **Side-scoped region reads for the mint** | **DECLARED SHORTCUT, 2026-08-11.** A per-side slot files words and no crop, and takes no coverage reading — every region the mint is handed is a whole-frame union of both sides, so a crop of one would be a picture of two under the name of one, and its number would become that kind's specimen. Nothing is lost today: no bilateral kind has a positive specimen, so every one of them would have been refused at the door anyway. | Expose the side split `falRegionReader.bilateral` already performs internally — one call per side, each side its own picture — and hand the mint a region keyed per instance. A second midline derivation in the mint is law 4's copy and must not be written. |
 
 ---
 

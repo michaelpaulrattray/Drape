@@ -134,7 +134,15 @@ import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type 
 import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments";
 import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
-import { captureCastingSegmentsEnabled } from "./castingV2Scope";
+import { mintReferencesForRender } from "./referenceMint";
+import { mintedSlotsForRender } from "./mintedSlots";
+import { liveReferences } from "./referenceLibrary";
+import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
+import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
+import {
+  captureCastingReferenceLibraryEnabled,
+  captureCastingSegmentsEnabled,
+} from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
 import { COVERAGE_BANDS, coverage } from "./maskGeometry";
@@ -309,6 +317,16 @@ export type RefineServiceDependencies = {
   storeImage?: (
     input: { key: string; bytes: Buffer; contentType: string },
   ) => Promise<{ key: string; url: string }>;
+  /**
+   * Whether this face builds a reference library — read ONCE per render.
+   *
+   * The predicate rather than a boolean, and the same one handed to the mint, so
+   * the caller's decision to do the work and the mint's decision to accept it
+   * can never be two different answers. The caller has to read it too: composing
+   * the ask list is free, but the digests the duplicate check needs are a
+   * database round trip, and a dark deploy must not pay for one.
+   */
+  referenceLibraryEnabled?: (userId: number) => boolean;
 };
 
 async function defaultStoreImage(input: { key: string; bytes: Buffer; contentType: string }) {
@@ -2802,6 +2820,116 @@ export async function refineCandidate(
       verifiedAt: earned.length > 0 ? new Date() : null,
       operationId,
     });
+
+    /*
+      AND TELL THE LIBRARY WHAT THIS FACE NOW IS (the reference library, §2.3).
+
+      The segment store above keeps the pixels an EDIT delivered, so the next
+      render does not re-roll them; this keeps what the FEATURE is, so the next
+      render knows her lips before it is asked about them. Two stores, two
+      questions, and the mint deliberately consults neither the other's rows nor
+      its own (fable-173): every reference is cut fresh from this frame.
+
+      Same list, same discipline: `earned` is written ∩ verified ∩ not-carried,
+      derived once above for the segments and reused here rather than recomputed.
+
+      # The whole thing is wrapped, because a bookkeeping failure must never
+      # take back a delivered picture
+
+      `mintReferencesForRender` catches its own failures and returns `failed`,
+      but everything BEFORE it — the flag read, the digest query, the slot
+      composition — is this function's own code running inside the request's
+      outer try, whose catch refunds. A throw here would hand back a render the
+      user is already looking at. That is the exact shape the satisfaction
+      ledger's try/catch below was written for, and it is a synchronous throw
+      rather than a rejected promise that walks past a `.catch()`.
+    */
+    const libraryEnabled = dependencies.referenceLibraryEnabled
+      ?? captureCastingReferenceLibraryEnabled;
+    if (libraryEnabled(input.userId)) {
+      try {
+        const { slots, unfiled } = mintedSlotsForRender({
+          earned,
+          captions: capturedCaptions,
+          /* What the instruction said the worn object IS — derived once above,
+             beside the region override that has to name the same object. */
+          accessoryKind: accessoryRegion,
+        });
+        if (unfiled.length > 0) {
+          log.info(
+            { operationId, variant: variant.publicId, unfiled },
+            "[refineService] a facet this render earned had no library slot to file in",
+          );
+        }
+        if (slots.length > 0) {
+          /*
+            THE DIGESTS THIS BRANCH ALREADY HOLDS, so a byte-identical crop is
+            caught whether it arrived this render or three renders ago. `marks`
+            and `makeup` at `face skin` produced exactly that in production,
+            three separate times — the walk, not the fold's entries, because a
+            RETIRED row's bytes are still bytes at a key and a new row pointing
+            at the same picture is still two rows holding one fact.
+
+            The anchor is this variant: its own rows do not exist yet, so the
+            walk climbs its parents and returns the library as it stood when
+            this render started.
+          */
+          const known = new Map<string, string>();
+          for (const row of liveReferences(await listLineageReferences({
+            userId: input.userId,
+            candidateId: variant.candidateId,
+            anchorVariantId: variant.id,
+          }))) {
+            if (row.digest) known.set(row.slot, row.digest);
+          }
+
+          const reader = dependencies.regions ?? defaultRegionReader();
+          /*
+            THE GUARD'S OWN READ, and `absentIsAnswer` is true on purpose.
+
+            Asked of the DELIVERED frame, nothing found means the frame does not
+            wear the thing — which the guard turns into `subjectAbsent`, the
+            honest refusal (fable-181). Refusing to answer instead would arrive
+            as `readDidNotSettle` and file "we could not tell" over a picture
+            that told us plainly.
+          */
+          const read: MintRegionReader = async ({ frame, question }) => (
+            reader.region({ image: frame, name: question, absentIsAnswer: true })
+          );
+
+          const minted = await mintReferencesForRender({
+            userId: input.userId,
+            variantId: variant.id,
+            frame: { bytes: image.bytes },
+            /* The composite's own working, kept rather than re-derived — the
+               same evidence the segment store cuts from, so a reference and a
+               segment of one render can never disagree about where the paint
+               was allowed to go. */
+            applied: image.evidence?.applied ?? null,
+            masterRegions: image.evidence?.masterRegions ?? new Map(),
+            deliveredRegions: image.evidence?.deliveredRegions ?? null,
+            slots,
+            knownDigests: known,
+            operationId,
+            dependencies: { read, enabledFor: libraryEnabled },
+          });
+          log.info(
+            {
+              operationId,
+              variant: variant.publicId,
+              outcome: minted.outcome,
+              slots: minted.slots,
+            },
+            "[refineService] the library was told what this render made of her",
+          );
+        }
+      } catch (error) {
+        log.warn(
+          { err: error, operationId, variant: variant.publicId },
+          "[refineService] this render's references were not minted — the picture stands",
+        );
+      }
+    }
 
     /*
       THE LEDGER'S OTHER TWO EVENTS (D-175), written once the render has landed.

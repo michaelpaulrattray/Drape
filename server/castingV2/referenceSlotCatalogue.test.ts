@@ -266,6 +266,27 @@ describe("what the mint is handed", () => {
       words: ["a blunt bob", "copper"],
       question: "hair",
       guardKind: "hair",
+      frame: "wholeFrame",
+    });
+  });
+
+  /*
+    THE FRAME TRAVELS WITH THE SPEC, and it is the mint's whole defence against
+    cutting one of a pair from a union of both.
+
+    `toEqual` above is exhaustive on purpose: a field the catalogue knows and
+    forgets to pass is a decision made here and lost on the way, which is how a
+    per-side slot would arrive at the mint looking like any other.
+  */
+  it("carries a per-side slot's own-side frame through to the mint's spec", () => {
+    expect(slotSpecFor("earring@left", ["dangly gold crosses"])).toEqual({
+      slot: "earring@left",
+      tier: "item",
+      noun: "left earring",
+      words: ["dangly gold crosses"],
+      question: "earring",
+      guardKind: "earring",
+      frame: "ownSide",
     });
   });
 

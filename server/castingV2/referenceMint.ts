@@ -64,6 +64,7 @@ import { captureCastingReferenceLibraryEnabled } from "./castingV2Scope";
 import { cutSegments, encodeCut, type SegmentCut } from "./segmentCuts";
 import { readRaster, type Mask } from "./maskedComposite";
 import { mintGuardedReference, type RegionReader } from "./referenceCompleteness";
+import type { SlotFrame } from "./referenceSlots";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 
 const log = createModuleLogger("castingV2/referenceMint");
@@ -99,6 +100,23 @@ export type SlotSpec = {
   /** The completeness specimen family whose threshold applies (`hair`, `lips`).
    *  Null exactly when {@link SlotSpec.question} is. */
   guardKind: string | null;
+  /**
+   * The frame this slot's question may be asked of.
+   *
+   * `ownSide` is a REFUSAL TO CUT here, and it is the opposite of an oversight.
+   * Every region this mint is handed is a whole-frame read, and the reader
+   * unions a bilateral region's two sides into one mask by construction
+   * (`falRegionReader.bilateral`) — so cutting `earring@left` from it would
+   * produce a crop of BOTH her earrings, score it against the same union, and
+   * read it as complete. That is the wrong-boundary class, and this door is
+   * where it would enter the library wearing a number.
+   *
+   * So a per-side slot carries WORDS until the mint is handed a side-scoped
+   * region, and no coverage is measured for it at all — deliberately, because
+   * "the refusal is also the thing that produces the specimen" and a specimen
+   * measured against both ears would then be adopted for one.
+   */
+  frame: SlotFrame;
 };
 
 export type MintedSlot =
@@ -107,10 +125,11 @@ export type MintedSlot =
     slot: FeatureSlot;
     outcome: "words-only";
     /** `surface` — the tier never mints a crop. `noQuestion` — no segmentation
-     *  question names this slot, so there is nothing honest to cut. `noRegion` —
-     *  this render has no evidence about the slot. `guardRefused` — a crop was
-     *  cut and turned away. */
-    reason: "surface" | "noQuestion" | "noRegion" | "guardRefused";
+     *  question names this slot, so there is nothing honest to cut. `noSide` —
+     *  the slot is one of a pair and every region here is a whole-frame union.
+     *  `noRegion` — this render has no evidence about the slot. `guardRefused` —
+     *  a crop was cut and turned away. */
+    reason: "surface" | "noQuestion" | "noSide" | "noRegion" | "guardRefused";
     detail?: string;
   };
 
@@ -230,7 +249,10 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
     */
     const cuttable = input.slots.filter(
       (slot): slot is SlotSpec & { question: string; guardKind: string } => (
-        slot.tier !== "surface" && slot.question !== null && slot.guardKind !== null
+        slot.tier !== "surface"
+        && slot.question !== null
+        && slot.guardKind !== null
+        && slot.frame !== "ownSide"
       ),
     );
     for (const slot of input.slots) {
@@ -256,6 +278,34 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
         outcome: "words-only",
         reason: "noQuestion",
         detail: "no segmentation question names this slot, so there is nothing honest to cut",
+      });
+    }
+    /*
+      ONE OF A PAIR, AND ONLY A WHOLE-FRAME REGION TO CUT IT FROM.
+
+      The slot has a perfectly good question — `earring`, `eye`, `ear` — and
+      that is precisely the problem: asked of the whole frame it comes back as
+      the UNION of both sides, so `@left` and `@right` would be cut from one
+      mask and each scored against it. Both would read complete. Both would be
+      a picture of two things under the name of one.
+
+      No coverage is taken, on purpose. A refusal here carrying a number would
+      hand the next person a specimen measured against both of her ears, and the
+      guard adopts a kind's specimen for every instance of it.
+
+      The words still file, and for a pair they are the whole of what the panel
+      needs: divergence is derived from words, never from pixels (referenceSlots).
+    */
+    for (const slot of input.slots) {
+      if (slot.tier === "surface") continue;
+      if (slot.question === null || slot.guardKind === null) continue;
+      if (slot.frame !== "ownSide") continue;
+      rows.push({ role: "carry", slot: slot.slot, tier: slot.tier, noun: slot.noun, words: slot.words });
+      outcomes.push({
+        slot: slot.slot,
+        outcome: "words-only",
+        reason: "noSide",
+        detail: `"${slot.question}" is read as a whole-frame union of both sides, so a crop of it filed as ${slot.noun} would contain the other one too`,
       });
     }
 

@@ -85,21 +85,14 @@ import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { regionNameOf } from "./maskedRefine";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 import type { SlotSpec } from "./referenceMint";
-import { parseSlot, slotKey, INSTANCES, type Instance } from "./referenceSlots";
+import { parseSlot, slotKey, INSTANCES, type Instance, type SlotFrame } from "./referenceSlots";
 import type { Facet } from "./refineFacets";
+
+export type { SlotFrame };
 
 /** The panel's sections. One list, so the UI derives its headings rather than
  *  keeping a second answer to "where does her jaw go". */
 export type SlotGroup = "face" | "hair" | "body" | "accessories";
-
-/**
- * WHICH FRAME A SLOT'S QUESTION MAY BE ASKED OF.
- *
- * `ownSide` is not a hint. A bilateral slot asked of the whole frame gets back
- * whichever instance the segmenter felt like naming, and nothing downstream can
- * tell which one it was.
- */
-export type SlotFrame = "wholeFrame" | "ownSide";
 
 export type SlotDefinition = {
   slot: FeatureSlot;
@@ -533,6 +526,66 @@ export function catalogueSlots(): SlotDefinition[] {
 }
 
 /**
+ * THE SLOTS ONE FEATURE OCCUPIES — one, or one per side.
+ *
+ * A caller that knows the feature (`hair`, `earring`) should never have to know
+ * whether it is worn in twos: `slotDefinition("earring")` refuses by design, and
+ * a caller papering over that refusal by appending `@left` itself is the second
+ * list this catalogue exists to prevent.
+ *
+ * `null` — not `[]` — for a feature the catalogue has never heard of, because
+ * "this feature has no slots" and "nobody catalogued this feature" are different
+ * answers and only one of them is a bug.
+ */
+export function slotsForFeature(feature: string): SlotDefinition[] | null {
+  const entry = entryOf(feature);
+  if (entry === undefined) return null;
+  return entry.instances.of === "perSide"
+    ? INSTANCES.map((instance) => definitionOf(entry, instance))
+    : [definitionOf(entry, null)];
+}
+
+/** The facets whose words land in this slot's stack, in catalogue order. */
+export function facetsOfSlot(slot: FeatureSlot): readonly Facet[] | null {
+  const parsed = parseSlot(slot);
+  if (parsed === null) return null;
+  return entryOf(parsed.feature)?.facets ?? null;
+}
+
+/**
+ * WHERE THIS FACET'S WORDS GO, resolved all the way to slots.
+ *
+ * `FACET_SLOTS` answers with a feature, a FAMILY, or a reason it is not a slot;
+ * this turns all three into the list a writer can actually file against, and the
+ * family is where the accessory gap is closed.
+ *
+ * **An accessory's slot comes from the described OBJECT, not from the facet.**
+ * `statedAccessories` is one facet over every kind of thing a face can wear — an
+ * earring at the lobe, glasses at the eyes — which is exactly why it has no
+ * region of its own and why the harvest already derives a kind from the words
+ * (`accessoryKindOf`). That derivation is the caller's to make and to pass in
+ * here; deriving it a second time from the same words in this module is the copy
+ * that drifts, and the two would then disagree about whether an ask was about
+ * ears or eyes.
+ *
+ * A kind the table does not know returns `[]` rather than an invented slot: the
+ * honest answer is that this product cannot yet name what she is wearing.
+ */
+export function slotsForFacet(
+  facet: Facet,
+  context: { accessoryKind?: string | null } = {},
+): SlotDefinition[] {
+  const assignment = FACET_SLOTS[facet];
+  if ("notASlot" in assignment) return [];
+  if ("family" in assignment) {
+    const kind = context.accessoryKind;
+    if (!kind) return [];
+    return slotsForFeature(kind.replace(/ /g, "-")) ?? [];
+  }
+  return slotsForFeature(assignment.feature) ?? [];
+}
+
+/**
  * The mint's input for one slot, composed from this slot's own record plus the
  * stack the render is filing.
  *
@@ -551,5 +604,6 @@ export function slotSpecFor(slot: FeatureSlot, words: readonly string[]): SlotSp
     words,
     question: definition.question,
     guardKind: definition.guardKind,
+    frame: definition.frame,
   };
 }

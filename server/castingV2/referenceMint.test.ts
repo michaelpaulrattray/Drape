@@ -39,6 +39,7 @@ function hairSlot(overrides: Partial<SlotSpec> = {}): SlotSpec {
     words: ["a blunt shoulder-length bob"],
     question: "hair",
     guardKind: "hair",
+    frame: "wholeFrame",
     ...overrides,
   };
 }
@@ -230,6 +231,65 @@ describe("what the mint never cuts", () => {
     expect(bench.stored).toEqual([]);
     expect(bench.rows[0]).toMatchObject({ slot: "jaw", words: ["a softer jawline"] });
     expect(bench.rows[0]!.image).toBeUndefined();
+  });
+
+  /*
+    ONE OF A PAIR, CUT FROM A WHOLE-FRAME UNION — the refusal that has to be a
+    refusal rather than a low score.
+
+    The bilateral reader unions both sides into one mask by construction, so
+    `earring@left` and `earring@right` would be cut from the same pixels, scored
+    against the same union, and BOTH would read complete while containing both
+    of her earrings. That is the wrong-boundary class at the library's door.
+
+    Two things are asserted and the second is the one that matters: no crop, and
+    NO COVERAGE NUMBER. "The refusal is also the thing that produces the
+    specimen" — a refusal here carrying a reading would hand the next person a
+    number measured against both ears, and the guard adopts a kind's specimen
+    for every instance of it.
+  */
+  it("never cuts one of a pair while every region it has is a whole-frame union", async () => {
+    let reads = 0;
+    const bench = harness();
+    const withCount = {
+      ...bench,
+      dependencies: { ...bench.dependencies, read: async () => { reads += 1; return rect(HAIR); } },
+    };
+    const earring = (instance: "left" | "right") => hairSlot({
+      slot: `earring@${instance}`,
+      tier: "item",
+      noun: `${instance} earring`,
+      words: ["dangly cross earrings in gold"],
+      question: "earring",
+      guardKind: "earring",
+      frame: "ownSide",
+    });
+
+    const result = await mintReferencesForRender({
+      userId: 1,
+      variantId: 11,
+      frame: { bytes: await frameBytes() },
+      applied: rect({ x: 0, y: 0, width: 40, height: 40 }),
+      /* The region IS there — this is not `noRegion` in disguise. */
+      masterRegions: new Map([["earring", rect(HAIR)]]),
+      slots: [earring("left"), earring("right")],
+      dependencies: withCount.dependencies as never,
+    });
+
+    expect(result.outcome).toBe("stored");
+    expect(result.slots).toEqual([
+      expect.objectContaining({ slot: "earring@left", outcome: "words-only", reason: "noSide" }),
+      expect.objectContaining({ slot: "earring@right", outcome: "words-only", reason: "noSide" }),
+    ]);
+    expect(reads).toBe(0);
+    expect(bench.stored).toEqual([]);
+    /* Both sides file their words, and they match — which is what lets the
+       panel speak about them as one row. */
+    expect(bench.rows.map((row) => row.slot)).toEqual(["earring@left", "earring@right"]);
+    expect(bench.rows[0]!.words).toEqual(bench.rows[1]!.words);
+    expect(bench.rows[0]!.image).toBeUndefined();
+    /* No number, anywhere, that a later reader could mistake for a specimen. */
+    expect(JSON.stringify(result.slots)).not.toContain("coverage");
   });
 
   it("records words for a slot this render has no evidence about", async () => {

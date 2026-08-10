@@ -273,6 +273,57 @@ vi.mock("./segmentPersistence", () => ({
   }),
 }));
 
+/**
+ * What the render asked the LIBRARY to keep — captured, never supplied.
+ *
+ * Assert at the wire: both benches passed once while the segment store was
+ * inert, because each proved its own half against arguments the harness had
+ * handed it. The only thing that proves this caller composed a slot list is the
+ * list the mint was actually called with.
+ */
+const mintAsks: Array<{
+  slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string }>;
+  variantId: number | null;
+  knownDigests: ReadonlyMap<string, string> | undefined;
+  deliveredRegions: unknown;
+}> = [];
+vi.mock("./referenceMint", () => ({
+  mintReferencesForRender: vi.fn(async (ask: {
+    slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string }>;
+    variantId: number | null;
+    knownDigests?: ReadonlyMap<string, string>;
+    deliveredRegions?: unknown;
+  }) => {
+    mintAsks.push({
+      slots: ask.slots,
+      variantId: ask.variantId,
+      knownDigests: ask.knownDigests,
+      deliveredRegions: ask.deliveredRegions,
+    });
+    return { outcome: "stored" as const, slots: [] };
+  }),
+}));
+
+/**
+ * WHAT THE READ-BACK SAYS ABOUT THIS RENDER, by facet.
+ *
+ * Empty by default, which is what the real one returns here anyway: it needs a
+ * text engine and there is none in this suite, so it fails soft to null. Mocked
+ * rather than left alone only so the library cases can have words at all —
+ * every other case in this file sees exactly the behaviour it saw before.
+ */
+let captionsRead: Partial<Record<string, string>> = {};
+vi.mock("./realizationCaption", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./realizationCaption")>()),
+  captionRealization: vi.fn(async ({ facet }: { facet: string }) => captionsRead[facet] ?? null),
+}));
+
+/** The digests this branch already holds. Empty unless a test says otherwise. */
+let lineageReferences: Array<Record<string, unknown>> = [];
+vi.mock("../db/castingV2ReferenceLibrary", () => ({
+  listLineageReferences: vi.fn(async () => lineageReferences),
+}));
+
 vi.mock("./signEngine", () => ({
   castingIdentityEngine: () => ({
     id: "test",
@@ -295,6 +346,7 @@ vi.mock("./signEngine", () => ({
 
 const { refineCandidate } = await import("./refineService");
 const { claimVariant } = await import("../db/castingV2Variants");
+const { listLineageReferences } = await import("../db/castingV2ReferenceLibrary");
 const { arrangementWording } = await import("./hairArrangement");
 
 beforeEach(() => {
@@ -302,6 +354,9 @@ beforeEach(() => {
   sentPrompts.length = 0;
   carriedAsks.length = 0;
   keptAsks.length = 0;
+  mintAsks.length = 0;
+  lineageReferences = [];
+  captionsRead = {};
   assembleAsks.length = 0;
   carriedRowsFixture = [];
   ledger.charges.length = 0;
@@ -2942,5 +2997,154 @@ describe("the service says where an accessory lives, from the words in the ask",
     await refineCandidate({ ...greenEyes, harvest: capture.harvest as never }, input);
 
     expect(capture.overrides[0]?.statedAccessories).toBeUndefined();
+  });
+});
+
+/**
+ * WHAT THE RENDER TELLS THE LIBRARY — asserted on the call, not near it.
+ *
+ * The mint itself is proved in `referenceMint.test.ts` and the composition in
+ * `mintedSlots.test.ts`. Neither of them can see whether this service ever
+ * speaks to either, and that gap is not hypothetical: two benches passed for a
+ * week while the segment store was inert, each proving its own half against
+ * arguments its harness had handed it.
+ */
+describe("the render tells the library what it made of her", () => {
+  const onFlag = { referenceLibraryEnabled: () => true };
+  const readerSees = (saw: string) => ({
+    id: "verifier",
+    complete: async () => ({
+      text: JSON.stringify({ results: [{ id: 1, present: true, saw }] }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never);
+
+  /*
+    THE EARRING, WHICH IS THE GAP THIS CALLER WAS BUILT AROUND.
+
+    `statedAccessories` maps to a FAMILY rather than a slot, because the region
+    depends on the described object: an earring is at the lobe and glasses are
+    at the eyes. So the slot's kind AND its side come from the placement layer,
+    and this is the assertion that the caller reaches for it rather than filing
+    the facet under its own name.
+  */
+  it("files a paid earring as two per-side slots, saying the same thing", async () => {
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    expect(mintAsks, "the library was told about this render").toHaveLength(1);
+    expect(mintAsks[0].slots.map((slot) => slot.slot)).toEqual(["earring@left", "earring@right"]);
+    expect(mintAsks[0].slots.map((slot) => slot.frame)).toEqual(["ownSide", "ownSide"]);
+    expect(mintAsks[0].slots[0]!.words).toEqual(mintAsks[0].slots[1]!.words);
+    expect(mintAsks[0].slots[0]!.words[0]).toContain("cross earrings");
+  });
+
+  it("hands the mint the digests this branch already holds", async () => {
+    captionsRead = { statedAccessories: "Thin gold wire-frame glasses" };
+    lineageReferences = [{
+      id: 1,
+      slot: "glasses",
+      role: "carry",
+      version: 2,
+      digest: "deadbeef",
+      retiredAt: null,
+      createdAt: new Date("2026-08-10T00:00:00Z"),
+    }];
+
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("thin gold wire frames"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["thin gold wire-frame glasses"] } },
+        }),
+      },
+      { ...input, instruction: "put her in thin gold wire-frame glasses" },
+    );
+
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0].slots.map((slot) => slot.slot)).toEqual(["glasses"]);
+    /* Two rows may not hold one fact, and the collision that bit three times in
+       production was ACROSS renders — so the check needs what came before. */
+    expect(mintAsks[0].knownDigests?.get("glasses")).toBe("deadbeef");
+  });
+
+  it("files nothing when the render's read-back left the slot with no words", async () => {
+    captionsRead = {};
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    /* A row with no words asserts only that a feature exists, which the
+       catalogue already says for free. */
+    expect(mintAsks).toHaveLength(0);
+  });
+
+  it("CONTROL — with the flag dark it never speaks to the library at all", async () => {
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    await refineCandidate(
+      {
+        /* No `referenceLibraryEnabled` — production's shape today. */
+        harvest: unmasked,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    expect(mintAsks, "a dark deploy mints nothing").toHaveLength(0);
+    /* And it does not pay for the digest query either — the flag is read once,
+       by the caller, before any of this costs anything. */
+    expect(vi.mocked(listLineageReferences)).not.toHaveBeenCalled();
+  });
+
+  it("a library failure never takes back the picture she is already looking at", async () => {
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    vi.mocked(listLineageReferences).mockRejectedValueOnce(new Error("the database said no"));
+
+    const result = await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    /* The render landed and was charged for. A bookkeeping failure that
+       refunded a delivered picture is the exact shape this try/catch exists
+       for, and it is a synchronous throw that would walk past a `.catch()`. */
+    expect(result.kind).toBe("rendered");
+    expect(ledger.refunds).toHaveLength(0);
   });
 });
