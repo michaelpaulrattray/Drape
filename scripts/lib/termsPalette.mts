@@ -45,6 +45,45 @@
  * draws with; otherwise "only the palette moved" is a claim rather than a fact.
  */
 
+/**
+ * THE BOX, AND WHY IT NEEDS A HALF PIXEL.
+ *
+ * `stroke="#ffffff" stroke-width="1"` on integer coordinates does NOT draw a
+ * white pixel. An SVG stroke straddles its path, so a 1px stroke at y=455 covers
+ * 454.5–455.5 and the rasteriser splits it across BOTH rows at half coverage.
+ * Read off the delivered pack: rows 454 and 455 came back `166,150,136` and
+ * `162,145,131` — two pixels wide, 55% opacity, and tinted WARM by the skin
+ * showing through. The source said thin, white and monochrome; the bytes said
+ * two-pixel, grey and warm, and the guard that read the source string could not
+ * tell the difference.
+ *
+ * Offsetting by half a pixel puts the stroke inside one pixel exactly. Measured
+ * over the same box, top edge meant for row 8:
+ *
+ *   integer coords, as delivered   row 7 = 128,128,128   row 8 = 128,128,128
+ *                                  no pure white anywhere — the two-pixel smudge
+ *   `crispEdges` alone             row 7 = 255,255,255   row 8 = 0,0,0
+ *                                  CRISP AND ONE ROW TOO HIGH
+ *   half-pixel offset alone        row 7 = 0,0,0         row 8 = 255,255,255
+ *   both                           identical to the offset alone
+ *
+ * So the offset does the whole job and `crispEdges` is not carried: its only
+ * solo effect is to move the box off the thing it is pointing at, which is the
+ * wrong-boundary class wearing a tidy edge. The offset assumes whole-pixel box
+ * coordinates, so they are rounded here rather than assumed — every caller
+ * passes database bbox integers today, and an assumption that is free to
+ * enforce should not be left as one.
+ */
+export const boxOutlineSvg = (
+  width: number,
+  height: number,
+  boxes: ReadonlyArray<{ x: number; y: number; width: number; height: number }>,
+): string => `<svg width="${width}" height="${height}">`
+  + boxes.map((box) => `<rect x="${Math.round(box.x) + 0.5}" y="${Math.round(box.y) + 0.5}"`
+    + ` width="${Math.max(0, Math.round(box.width) - 1)}" height="${Math.max(0, Math.round(box.height) - 1)}"`
+    + ` fill="none" stroke="#ffffff" stroke-width="1"/>`).join("")
+  + "</svg>";
+
 export type TermClass = "kept" | "lostDelivered" | "lostMasterOnly" | "controlFailure";
 
 /** Mid-grey. One tone for "lost", because both lost sets are the same finding. */

@@ -41,6 +41,7 @@ import sharp from "sharp";
 
 import { openDatabase, utc } from "./lib/dbConnection.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mjs";
+import { boxOutlineSvg } from "./lib/termsPalette.mts";
 
 function flag(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -178,11 +179,10 @@ try {
            at 3px: the same line the pack builder was corrected away from in
            `ebcea900`, still here because that fix went to the instance and not
            to the class. It is a box that says "here", not "wrong". */
-        const outline = Buffer.from(
-          `<svg width="${meta.width}" height="${meta.height}">`
-          + `<rect x="${row.refusedBboxX}" y="${row.refusedBboxY}" width="${row.refusedBboxW}"`
-          + ` height="${row.refusedBboxH}" fill="none" stroke="#ffffff" stroke-width="1"/></svg>`,
-        );
+        const outline = Buffer.from(boxOutlineSvg(meta.width!, meta.height!, [{
+          x: Number(row.refusedBboxX), y: Number(row.refusedBboxY),
+          width: Number(row.refusedBboxW), height: Number(row.refusedBboxH),
+        }]));
         const onFrame = await sharp(frame.bytes)
           .modulate({ brightness: 0.35 })
           .composite([

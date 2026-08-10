@@ -23,6 +23,7 @@ import sharp from "sharp";
 
 import { openDatabase, utc } from "./lib/dbConnection.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mjs";
+import { boxOutlineSvg } from "./lib/termsPalette.mts";
 
 function flag(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -136,13 +137,16 @@ try {
     /* THIN WHITE, never red — founder ruling, 2026-08-11 (fable-230), standing
        and product-wide for any on-image geometry. The palette is monochrome and
        a red box is an alarm the picture is not sounding: these boxes say "here",
-       not "wrong". Same rule governs the panel's boxes in `FaceRegions.tsx`. */
+       not "wrong". Same rule governs the panel's boxes in `FaceRegions.tsx`.
+
+       Drawn through `boxOutlineSvg`, which carries the half-pixel offset. The
+       first version of this line was the right colour and still came out a
+       two-pixel WARM band, because an integer-coordinate stroke straddles two
+       rows at half coverage — see there. */
     layers.push({
-      input: Buffer.from(
-        `<svg width="${meta.width}" height="${meta.height}">`
-        + `<rect x="${row.refusedBboxX}" y="${row.refusedBboxY}" width="${row.refusedBboxW}"`
-        + ` height="${row.refusedBboxH}" fill="none" stroke="#ffffff" stroke-width="1"/></svg>`,
-      ),
+      input: Buffer.from(boxOutlineSvg(meta.width!, meta.height!, [{
+        x: row.refusedBboxX, y: row.refusedBboxY, width: row.refusedBboxW, height: row.refusedBboxH,
+      }])),
     });
     const fill = (lit / (row.refusedBboxW * row.refusedBboxH)) * 100;
     lines.push(

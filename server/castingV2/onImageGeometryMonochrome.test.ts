@@ -3,9 +3,11 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import sharp from "sharp";
+
 import {
   paintTerm, checkerAt, checkerCell, CHECKERED, LOST_GREY, DIMMED_FRAME_CEILING, TERM_LEGEND,
-  type TermClass,
+  boxOutlineSvg, type TermClass,
 } from "../../scripts/lib/termsPalette.mts";
 
 /**
@@ -107,6 +109,102 @@ describe("on-image geometry is monochrome, everywhere (founder ruling, fable-230
     expect(nonGreyColoursIn(`/* it drew #ff2d55 before the ruling */`)).toEqual([]);
     expect(nonGreyColoursIn(`const s = 'stroke="#ffffff"';`)).toEqual([]);
     expect(nonGreyColoursIn(`colour = [158, 158, 158];`)).toEqual([]);
+  });
+});
+
+describe("the box is thin and white IN THE PIXELS, not in the source string", () => {
+  /*
+    The delivered pack passed every check that read the source — `#ffffff`,
+    `stroke-width="1"` — and put a TWO-pixel, 55%-opacity, faintly WARM band on
+    the founder's frame, because an integer-coordinate SVG stroke straddles two
+    rows at half coverage. Rows 454 and 455 of `00-her-frame-with-every-box.png`
+    came back `166,150,136` and `162,145,131`, and the exhibit held not one pure
+    white pixel.
+
+    So this drives the rasteriser and reads the result. Assert at the wire: the
+    contract is about what lands on the image, not about the string near it.
+  */
+  const render = async (svg: string) => {
+    const canvas = await sharp({
+      create: { width: 40, height: 40, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 1 } },
+    }).png().toBuffer();
+    return sharp(canvas).composite([{ input: Buffer.from(svg) }]).ensureAlpha().raw()
+      .toBuffer({ resolveWithObject: true });
+  };
+  const rowRuns = (data: Buffer, width: number, y: number): number[] => {
+    const runs: number[] = [];
+    let run = 0;
+    for (let x = 0; x <= width; x += 1) {
+      const at = (y * width + x) * 4;
+      const white = x < width && data[at] === 255 && data[at + 1] === 255 && data[at + 2] === 255;
+      if (white) { run += 1; continue; }
+      if (run > 0) runs.push(run);
+      run = 0;
+    }
+    return runs;
+  };
+
+  it("draws PURE WHITE — not a blend of white and whatever is underneath", async () => {
+    const { data, info } = await render(boxOutlineSvg(40, 40, [{ x: 8, y: 8, width: 20, height: 20 }]));
+    let white = 0;
+    for (let pixel = 0; pixel < info.width * info.height; pixel += 1) {
+      const at = pixel * 4;
+      if (data[at] === 255 && data[at + 1] === 255 && data[at + 2] === 255) white += 1;
+    }
+    expect(white, "no pure-white pixel — the stroke is being blended, as it was on the delivered pack").toBeGreaterThan(0);
+  });
+
+  it("draws ONE pixel, not two — the half-pixel offset, proved on the raster", async () => {
+    const { data, info } = await render(boxOutlineSvg(40, 40, [{ x: 8, y: 8, width: 20, height: 20 }]));
+    /* Across the middle of the box, the only white is the two vertical edges,
+       one pixel each. A straddled stroke gives runs of 2 — or no white at all. */
+    expect(rowRuns(data, info.width, 18)).toEqual([1, 1]);
+    /* And the top edge is a single row: the row above it carries no white. */
+    expect(rowRuns(data, info.width, 7)).toEqual([]);
+    expect(rowRuns(data, info.width, 8).length).toBe(1);
+  });
+
+  const whiteCount = (data: Buffer, info: { width: number; height: number }) => {
+    let white = 0;
+    for (let pixel = 0; pixel < info.width * info.height; pixel += 1) {
+      const at = pixel * 4;
+      if (data[at] === 255 && data[at + 1] === 255 && data[at + 2] === 255) white += 1;
+    }
+    return white;
+  };
+
+  it("CAN FAIL — the integer-coordinate stroke the pack actually shipped", async () => {
+    const straddled = `<svg width="40" height="40">`
+      + `<rect x="8" y="8" width="20" height="20" fill="none" stroke="#ffffff" stroke-width="1"/></svg>`;
+    const { data, info } = await render(straddled);
+    /* Exactly the delivered defect: no pure white anywhere, and the "1px" edge
+       spread over two rows at half coverage. If this ever starts passing, the
+       rasteriser changed and the offset should be re-argued, not kept by habit. */
+    expect(whiteCount(data, info)).toBe(0);
+    const grey = `${data[(7 * info.width + 18) * 4]},${data[(8 * info.width + 18) * 4]}`;
+    expect(grey).toBe("128,128");
+  });
+
+  it("REFUSES the tidy-looking near-miss: crisp edges that move the box a row", async () => {
+    /*
+      `shape-rendering="crispEdges"` also removes the smudge, and it is the fix a
+      reader reaches for first. On its own it snaps the straddled stroke to the
+      row ABOVE — a crisp, white, correctly-thin box pointing one pixel off the
+      thing it is meant to point at. A bounding box that is wrong about WHERE is
+      the wrong-boundary class wearing a tidy edge, so it is named here rather
+      than left as a plausible future simplification of the offset.
+    */
+    const crisp = `<svg width="40" height="40" shape-rendering="crispEdges">`
+      + `<rect x="8" y="8" width="20" height="20" fill="none" stroke="#ffffff" stroke-width="1"/></svg>`;
+    const { data, info } = await render(crisp);
+    expect(whiteCount(data, info)).toBeGreaterThan(0);
+    expect(rowRuns(data, info.width, 7).length, "crispEdges alone puts the top edge on row 7").toBeGreaterThan(0);
+    expect(rowRuns(data, info.width, 8)).toEqual([1, 1]);
+
+    /* What the shipped helper does with the same box, for the contrast. */
+    const ours = await render(boxOutlineSvg(40, 40, [{ x: 8, y: 8, width: 20, height: 20 }]));
+    expect(rowRuns(ours.data, ours.info.width, 7)).toEqual([]);
+    expect(rowRuns(ours.data, ours.info.width, 8).length).toBe(1);
   });
 });
 
