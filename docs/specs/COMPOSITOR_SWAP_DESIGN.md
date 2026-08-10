@@ -191,6 +191,37 @@ from its origin**, with everything ever said about that feature said again.
    regenerate from the anchor plus what survives. It is the same mechanic as any
    other edit; there is no rollback-versus-rebuild fork to design.
 
+**Removal compiles to the NATURAL state, never to an extreme** (founder,
+fable-188): *"natural shine is fine; gloss is makeup, it's obvious."* The
+product wording is **"no lip gloss, her natural lips"** — never "matte, no
+shine". A matte lip is a different ask, and verification scores removal against
+her own natural band, not against a matte specimen. The stylist's ontology
+governs (working law 8): gloss is makeup; skin and lips have natural sheen.
+
+### 3.0a The tier boundary is MEASURED, not assumed (2026-08-10)
+
+D-241 and D-244 put **surfaces on words** and **introduced things on
+references** before any evidence for that split existed. The edit-law cell and
+its configuration diff measured it, and the engine draws the line in the same
+place:
+
+| what a reference crop asks of the master | does it carry? |
+|---|---|
+| **ADD** what the master lacks (a hoop) | **yes**, outright |
+| **CHANGE a geometry** the master owns (lip fullness) | **partly**, and only in a favourable recipe |
+| **CHANGE a surface** the master owns (gloss) | **no** — 0 of 3, in the recipe that carries a hoop |
+
+**The crop is outvoted by the master in proportion to how much it contradicts
+it.** So words are the carrier of record for what they govern, crops are the
+carrier of record for introduced items, and the architecture's tier boundary is
+now a measurement rather than a judgment call.
+
+Two consequences for the build: the assembler must always emit the
+**configuration proven to carry** (named references, proven order and count),
+and anatomy/surface features keep their words in the stack rather than trusting
+a crop alone. **One arm is still owed** before this is final — the carrying
+recipe with two references, which separates reference COUNT from naming form.
+
 ### 3.1 What this makes IMPOSSIBLE — and therefore what we do not build
 
 The law's value is mostly negative: whole classes of machinery become
@@ -445,3 +476,5 @@ contract does not know the painter changed.
 | Recipes carry rectangular CROPS; cutouts are the panel's display format only | fable-183 |
 | Occlusion amputation joins the completeness guard's defect list | fable-183 |
 | Contamination instrument deferred with a trigger; asymmetry an open row | fable-184 |
+| Removal compiles to the NATURAL state, not to matte | fable-188 (founder) |
+| The tier boundary measured: add carries, geometry partly, surface not at all | the edit-law cell + configuration diff, fable-189 |
