@@ -9,6 +9,26 @@ STOPLINE untouched, campaign ceiling still net 1,410 of 5,000.*
 0 were NO-READs. Provider spend $1.95.** Logs: `output/cprime-bench-run.log`,
 `output/cprime-bench-run2.log`. Frames and masks: `output/cprime/`.
 
+> ### ⚠ EVERY EARRING FIGURE IN THIS REPORT IS VOID (added 2026-08-10, after the fact)
+>
+> Chasing the earring anomaly to its cause found a defect **in our own reader,
+> not in either painter**: `falRegionReader`'s `BILATERAL` set was a
+> hand-authored list of three anatomical names, and `"earring"` — which
+> `accessoryKinds` already records as `pair: true` — was not in it. Driven at
+> the wire on a frame where both hoops are plainly visible: `"earring"` returned
+> **one** component, `"ear"` returned **two**.
+>
+> So every earring number below was measured by an instrument that could see
+> one hoop of two, and which hoop it saw varied between frames. **They are
+> struck, not adjusted.** Fixed in `e9eda482` (the set now derives from the
+> accessory table's own `pair` column); the fix is proven against the three
+> frames whose answer had been established by eye — it now reads PAIR, PAIR,
+> SINGLE where it previously read SINGLE three times.
+>
+> **Nothing else in this report is affected**: the glasses, hair, head-motion,
+> geometry and cost findings never went through that name. The pair cell
+> ordered by fable-161 re-measures accessories on both engines.
+
 ---
 
 ## The founder's claim, answered in his own terms, first line
@@ -167,10 +187,10 @@ is the reference doing exactly what the founder said it would. What NBP will not
 hold is *where she is*: the head wanders 58 px mean and 106 px worst between
 paints of an identical request, and re-crops the picture on top of that (§5).
 
-**The earring column is confounded on this engine too** — 0.363 shape agreement
-against 0.971 for glasses on the same frames. The pair question (§4) has not
-been ruled out for NBP either, and this report makes no claim about either
-engine and accessories.
+**The earring column is STRUCK** (see the notice at the top): 0.363 against
+0.971 for glasses on the same frames was the signature of a reader seeing one
+hoop of two, not of a painter dropping one. No claim is made about either
+engine and accessories from this bench.
 
 **The ask costs the referenced items almost nothing.** Every cell-2 figure sits
 inside cell 1's own spread — glasses 1.7 against 1.2, earring 5.4 against 6.1,
@@ -222,7 +242,7 @@ painter had simply handed back reference 1, and it did not.
 (`output/cprime/EARS-master-vs-paint.png`): **the master wears no earrings at
 all.** The hoops in every paint came from the reference crop, cut from v#156.
 
-### The earring number is a PAIR failure, not a fidelity failure
+### The earring number was our own reader, and chasing it found a live defect
 
 201 px of drift against a head that moved 0.5 px demanded an explanation, so the
 frames were opened rather than the number reported.
@@ -234,16 +254,27 @@ and 2 deliver the matching pair of hoops; paint 3 delivers one.** The reader
 then finds "earring" at the midpoint of two hoops in two paints and on one ear
 in the third, and reports 300 px of drift for an item that never moved.
 
-**The prompt is at least as culpable as the engine.** The bench's reference
-clause says *"the exact gold hoop earring she is wearing — the same hoop, on the
-same ear"* — singular — and the fixture wears a pair. Two paints of three
-supplied the pair anyway. This is the founder's own ontology (working law 8:
-earrings come in matching pairs) meeting a prompt that spoke in the singular,
-and the codebase already owns the fix: `accessoryKinds.pairClauseFor`.
+**Two culprits, and the second was ours.**
 
-**Filed, not concluded:** the pair question needs its own small cell with a
-pair-aware clause before anyone says GPT Image 2 drops earrings. n=3 with a
-singular prompt does not support that claim, and this report does not make it.
+The prompt is one: the bench's reference clause says *"the exact gold hoop
+earring she is wearing — the same hoop, on the same ear"* — singular — to a
+fixture wearing a pair. That is the founder's own ontology (working law 8:
+earrings come in matching pairs) meeting a prompt that spoke in the singular,
+and the codebase already owns the clause it should have sent —
+`pairClauseFor("gold hoop earring")` returns *", one on each ear, a matching
+pair"*.
+
+**The reader is the other, and it is the one that mattered.** A counter written
+to settle the pair question refused to run: controlled against these same three
+frames, whose answer was already established by cropping both ears and looking,
+it read SINGLE, SINGLE, SINGLE where the eye read PAIR, PAIR, SINGLE. The
+instrument was wrong, and the instrument was the product's own region reader —
+see the notice at the top and D-238's class. Fixed in `e9eda482`; the same
+counter over the same frames now agrees with the eye 3 of 3.
+
+**Filed, not concluded:** the pair question is re-measured by fable-161's own
+cell, n≥5, on both engines, with the product's own clause and the fixed reader.
+Nothing about accessories is claimed until it lands.
 
 ---
 
@@ -436,11 +467,54 @@ Cell 1's job under fable-157 was to calibrate the bar, and it does:
 
 ---
 
+## 8a. The pair cell — ordered by fable-161, run the same day
+
+The hole §4 declared, closed. Same fixture, same five references, same ask —
+the only change is the earring clause, and it is not written by hand:
+`pairClauseFor("gold hoop earring")` returns **", one on each ear, a matching
+pair"**, read from the same table the mask-cutter and the placement corridor
+read.
+
+```
+                                       pairs delivered
+GPT Image 2, 1024x1536, n=5                 5 of 5
+Nano Banana Pro, 1K,    n=5                 5 of 5
+                                           ────────
+                                           10 of 10
+
+baseline — the SINGULAR clause, from the bench    2 of 3, GPT Image 2 only
+```
+
+**Both painters deliver the pair, every time, once asked properly.** The
+per-hoop components are comfortably above the counter's 150 px floor on every
+frame (GPT Image 2 563–736 px, Nano Banana Pro 993–1,626 px), so nothing here
+turns on the threshold.
+
+**Verified twice, independently.** The counter was controlled first against the
+three bench frames whose answer had been established by cropping both ears and
+looking — it agrees 3 of 3 — and then both arms were cropped and looked at
+again (`output/cprime/EARS-paircell-gpt2.png`,
+`output/cprime/EARS-paircell-nbp.png`). Eye and counter agree on all ten.
+
+**What this does NOT establish.** The clause is the intended variable, but the
+2-of-3 baseline was measured with a different clause *and* read by eye before
+the reader was fixed, so this is a strong signal rather than a controlled A/B.
+At n=5 per engine, "10 of 10" is the honest statement; "the clause caused it" is
+not yet, and a null-clause arm at the same n would be what settles it.
+
+**The accessory tolerance is still not set.** This cell answers *does the pair
+arrive*, not *is it the same pair*. Shape agreement for accessories waits on the
+compositor swap, where it belongs.
+
+Cost: 10 paints, 20 region reads, **$1.245**.
+
+---
+
 ## 9. Handed forward
 
-- **The pair cell.** Re-run cell 2g with `pairClauseFor`'s language and n≥5,
-  before any accessory tolerance is set. Until then no claim is made about
-  either engine and accessories.
+- **The pair cell is DONE** (§8a): 10 of 10 across both engines with the
+  product's own clause. What remains is the accessory *shape* tolerance, which
+  waits on the compositor swap.
 - **The replay walk's assertions need re-deriving.** They were written against
   the paste compositor and assert byte-identity on unasked ground — a claim the
   new architecture does not make. The walk does not run against an architecture

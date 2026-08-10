@@ -33,6 +33,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fetchImageBytes } from "../lib/imageBytes.mts";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
 import { createFalMaskedEditEngine, FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "../../server/providers/falImages";
+import { NANO_BANANA_PRO_USD_PER_IMAGE } from "../../server/providers/falQueue";
+import { castingIdentityEngine } from "../../server/castingV2/signEngine";
 import { pairClauseFor } from "../../server/castingV2/accessoryKinds";
 import type { Mask } from "../../server/castingV2/maskedComposite";
 
@@ -218,38 +220,75 @@ const references = [master, cropMarks, cropHair, cropGloss]
   .map((frame) => ({ bytes: frame.bytes, contentType: "image/png" }))
   .concat([{ bytes: cropHoop, contentType: "image/png" }]);
 
+/*
+  BOTH PAINTERS (fable-161 order 1).
+
+  The clause is the variable under test, so it has to be tried on each engine
+  the program might route this job class to — otherwise "the clause works" would
+  be a claim about one painter wearing the name of a rule.
+*/
+const identity = castingIdentityEngine();
+
+const ARMS: { id: string; label: string; usd: number; paint: () => Promise<Buffer> }[] = [
+  {
+    id: "pair",
+    label: `GPT Image 2, ${master.width}x${master.height}`,
+    usd: FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE,
+    paint: async () => (await engine.edit({
+      prompt: PROMPT, references, width: master.width, height: master.height,
+    })).bytes,
+  },
+  {
+    id: "pairnbp",
+    label: "Nano Banana Pro, 1K (its own choice of size, per the bench)",
+    usd: NANO_BANANA_PRO_USD_PER_IMAGE["1K"],
+    paint: async () => (await identity.editWithReferences({
+      prompt: PROMPT, references, resolution: "1K",
+    })).bytes,
+  },
+];
+
 let paints = 0;
 let reused = 0;
-const results: { label: string; verdict: string; sizes: number[] }[] = [];
+let spend = 0;
+const byArm: Record<string, { pairs: number; read: number; results: { label: string; verdict: string; sizes: number[] }[] }> = {};
 
-console.log(`\nPAIR CELL — GPT Image 2, ${master.width}x${master.height}, n=${N}`);
-for (let index = 0; index < N; index += 1) {
-  const label = `pair-${index + 1}`;
-  let bytes = await readFile(`${OUT}/${label}.png`).catch(() => null);
-  if (bytes) { reused += 1; } else {
-    process.stdout.write(`  painting ${index + 1}/${N}… `);
-    const result = await engine.edit({ prompt: PROMPT, references, width: master.width, height: master.height });
-    bytes = result.bytes;
-    paints += 1;
-    await writeFile(`${OUT}/${label}.png`, bytes);
+for (const arm of ARMS) {
+  console.log(`\nPAIR CELL — ${arm.label}, n=${N}`);
+  const results: { label: string; verdict: string; sizes: number[] }[] = [];
+  for (let index = 0; index < N; index += 1) {
+    const label = `${arm.id}-${index + 1}`;
+    let bytes = await readFile(`${OUT}/${label}.png`).catch(() => null);
+    let fresh = false;
+    if (bytes) { reused += 1; } else {
+      process.stdout.write(`  painting ${index + 1}/${N}… `);
+      bytes = await arm.paint();
+      paints += 1; spend += arm.usd; fresh = true;
+      await writeFile(`${OUT}/${label}.png`, bytes);
+    }
+    const frame = await frameOf(label, bytes);
+    const hoops = await countHoops(frame);
+    if (!hoops) {
+      console.log(`  ${label}  NO-READ — reported as a NO-READ, not as a zero`);
+      results.push({ label, verdict: "NO-READ", sizes: [] });
+      continue;
+    }
+    const verdict = verdictOf(hoops);
+    results.push({ label, verdict, sizes: hoops.sizes });
+    console.log(`  ${label}  ${verdict.padEnd(7)}${fresh ? "" : " (reused)"}  components ${hoops.sizes.slice(0, 4).join(", ") || "none"}`);
   }
-  const frame = await frameOf(label, bytes);
-  const hoops = await countHoops(frame);
-  if (!hoops) {
-    console.log(`  ${label}  NO-READ — reported as a NO-READ, not as a zero`);
-    results.push({ label, verdict: "NO-READ", sizes: [] });
-    continue;
-  }
-  const verdict = verdictOf(hoops);
-  results.push({ label, verdict, sizes: hoops.sizes });
-  console.log(`  ${label}  ${verdict.padEnd(7)}${reused > index ? " (reused)" : ""}  components ${hoops.sizes.slice(0, 4).join(", ") || "none"}`);
+  const pairs = results.filter((row) => row.verdict === "PAIR").length;
+  const read = results.filter((row) => row.verdict !== "NO-READ").length;
+  byArm[arm.id] = { pairs, read, results };
+  console.log(
+    `  PAIRS DELIVERED: ${pairs} of ${read} that read`
+    + `${read < N ? ` (${N - read} NO-READ, excluded from the denominator)` : ""}`,
+  );
 }
 
-const pairs = results.filter((row) => row.verdict === "PAIR").length;
-const read = results.filter((row) => row.verdict !== "NO-READ").length;
-console.log(`\nPAIRS DELIVERED: ${pairs} of ${read} that read${read < N ? ` (${N - read} NO-READ, excluded from the denominator)` : ""}`);
-console.log("BASELINE, the singular clause, from the bench: 2 of 3.");
-console.log(`\n${paints} new paints · ${reused} reused · ${regionReads} region reads · spend $${(paints * FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE).toFixed(3)}`);
+console.log("\nBASELINE, the SINGULAR clause, from the bench: 2 of 3 on GPT Image 2.");
+console.log("  (and that baseline was read by eye — the reader itself could not see a pair until this shift's fix)");
+console.log(`\n${paints} new paints · ${reused} reused · ${regionReads} region reads · spend $${spend.toFixed(3)}`);
 
-await writeFile(`${OUT}/pair-cell.json`, JSON.stringify({ clause: PAIR_CLAUSE, n: N, results, pairs, read, paints }, null, 2));
+await writeFile(`${OUT}/pair-cell.json`, JSON.stringify({ clause: PAIR_CLAUSE, n: N, byArm, paints, spend }, null, 2));
 process.exit(0);
