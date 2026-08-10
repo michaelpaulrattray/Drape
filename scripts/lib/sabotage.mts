@@ -107,9 +107,15 @@ export async function sabotage(
   }
 
   writeFileSync(file, next);
+  /* A SAME-LENGTH SUBSTITUTION IS A LANDED SABOTAGE (`0.35` → `0.34`), and this
+     line used to announce it as "0 bytes added" — which reads exactly like the
+     silent non-application the helper exists to catch. The check above is the
+     honest one (`next === original`); the message now agrees with it. */
   console.log(
     `sabotage applied to ${file}: ${landed.map((m) => `${m.hits}x`).join(", ")}, `
-    + `${Math.abs(delta)} bytes ${delta > 0 ? "removed" : "added"}`,
+    + (delta === 0
+      ? "same length, content changed"
+      : `${Math.abs(delta)} bytes ${delta > 0 ? "removed" : "added"}`),
   );
 
   /*

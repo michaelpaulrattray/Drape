@@ -36,6 +36,17 @@
  * credits, no render, nothing written to any database.
  *
  *   FAL_KEY=… npx tsx scripts/diagnose-earring-cut-2-disposable.mts
+ *                    [--frame <key suffix>] [--row <id>]…
+ *
+ * PIN IT, and the reason is not hypothetical. The dev library holds FOUR kept
+ * refusals across TWO slot names: rows 8/9 on the frame this exhibit was built
+ * from, and rows 10/11 on a render that landed afterwards. Unpinned, this script
+ * iterates all of them and the second pair OVERWRITES the first at the same
+ * filename — the delivered exhibit silently becomes a picture of a different
+ * render while the prose beside it goes on quoting the old numbers. That is the
+ * defect `--frame` was added to the pack builder for (`ebcea900`); it lived here
+ * too, and the row id is now in the filename so two rows of one slot cannot
+ * collide even unpinned.
  */
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -44,12 +55,21 @@ import mysql from "mysql2/promise";
 import sharp from "sharp";
 
 import { fetchImageBytes } from "./lib/imageBytes.mts";
+import { paintTerm, magnifyExhibit, TERM_LEGEND, type TermClass } from "./lib/termsPalette.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import type { Mask } from "../server/castingV2/maskedComposite";
 
 const OUT = path.resolve("output/earring-cut-diagnosis");
 const PAD = 14;
 const ZOOM = 12;
+
+function flag(name: string): string | undefined {
+  const index = process.argv.indexOf(`--${name}`);
+  return index === -1 ? undefined : process.argv[index + 1];
+}
+const pinnedFrame = flag("frame");
+const pinnedRows = process.argv.reduce<number[]>((ids, token, index) => (
+  token === "--row" ? [...ids, Number(process.argv[index + 1])] : ids), []);
 
 const uri = process.env.DATABASE_URL!;
 const port = new URL(uri).port;
@@ -107,10 +127,20 @@ const [rows] = await connection.query<any[]>(`
    ORDER BY l.id`);
 await connection.end();
 
+/* The pin applied where the rows are chosen, so a narrowed run is visible in
+   the log rather than inferred from the files it happened to write. */
+const chosen = (rows as Row[]).filter((row) => (
+  (!pinnedFrame || String(row.variantKey ?? "").endsWith(pinnedFrame))
+  && (pinnedRows.length === 0 || pinnedRows.includes(row.id))));
+if (chosen.length === 0) throw new Error("the pin matched no row — nothing is drawn against a subject that is not there");
+console.log(`${rows.length} kept refusal(s); ${chosen.length} selected`
+  + `${pinnedFrame ? ` by --frame ${pinnedFrame}` : ""}${pinnedRows.length ? ` by --row ${pinnedRows.join(",")}` : ""}`
+  + `${!pinnedFrame && pinnedRows.length === 0 ? " — UNPINNED, every row of every render" : ""}`);
+
 const reader = createFalRegionReader({ apiKey });
 let controlFailures = 0;
 
-for (const row of rows as Row[]) {
+for (const row of chosen) {
   if (!row.variantKey || !row.masterKey) continue;
   const side = row.slot.split("@")[1] as "left" | "right" | undefined;
   const question = row.slot.split("@")[0]!;
@@ -161,14 +191,21 @@ for (const row of rows as Row[]) {
     console.log("    *** model above is wrong and its attribution means nothing.");
   }
 
-  /* FOUR COLOURS, because three sets over one hoop cannot be read in two. */
+  /* FOUR MARKS, because three sets and a control over one hoop cannot be read in
+     two — drawn in the monochrome grammar (`lib/termsPalette.mts`, and see there
+     for why tone alone could not carry four). This used to be four hues: yellow,
+     white, red, blue. */
   const overlay = Buffer.alloc(size * 4, 0);
+  const terms = new Array<TermClass | null>(size).fill(null);
   for (let index = 0; index < size; index += 1) {
-    let colour: [number, number, number] | null = null;
-    if (inCrop(index) && !inGround(index)) colour = [255, 214, 0];      /* control: must not appear */
-    else if (inCrop(index)) colour = [255, 255, 255];                    /* kept */
-    else if (inDelivered(index)) colour = [255, 45, 85];                 /* lost, and it was THERE */
-    else if (inMaster(index)) colour = [0, 160, 255];                    /* lost, master-only ground */
+    let term: TermClass | null = null;
+    if (inCrop(index) && !inGround(index)) term = "controlFailure";
+    else if (inCrop(index)) term = "kept";
+    else if (inDelivered(index)) term = "lostDelivered";
+    else if (inMaster(index)) term = "lostMasterOnly";
+    if (!term) continue;
+    terms[index] = term;
+    const colour = paintTerm(term, index % row.refusedFrameWidth, Math.floor(index / row.refusedFrameWidth));
     if (!colour) continue;
     overlay[index * 4] = colour[0];
     overlay[index * 4 + 1] = colour[1];
@@ -185,17 +222,20 @@ for (const row of rows as Row[]) {
   const top = Math.max(0, row.refusedBboxY - PAD);
   const width = Math.min(row.refusedFrameWidth - left, row.refusedBboxW + PAD * 2);
   const height = Math.min(row.refusedFrameHeight - top, row.refusedBboxH + PAD * 2);
-  const stem = path.join(OUT, `terms-${row.slot.replace(/[^a-z0-9]+/gi, "-")}`);
+  /* The row id is in the name because the slot is NOT unique: two renders of the
+     same face each file an `earring@left`, and the later one used to overwrite
+     the earlier at this path. */
+  const stem = path.join(OUT, `terms-${row.slot.replace(/[^a-z0-9]+/gi, "-")}-row${row.id}`);
   await writeFile(`${stem}.png`, composed);
-  await writeFile(
-    `${stem}-x${ZOOM}.png`,
-    await sharp(composed)
-      .extract({ left, top, width, height })
-      .resize({ width: width * ZOOM, height: height * ZOOM, kernel: "nearest" })
-      .png()
-      .toBuffer(),
-  );
-  console.log(`    ${stem}-x${ZOOM}.png   white=kept  red=lost(delivered)  blue=lost(master only)  yellow=CONTROL`);
+  /* Magnified through the shared helper, which paints the control's checker at
+     RENDER scale — at source scale an isolated control pixel becomes one flat
+     block, and half of those come out pure white, which is `kept`'s mark. */
+  await writeFile(`${stem}-x${ZOOM}.png`, await magnifyExhibit({
+    composed, box: { left, top, width, height }, zoom: ZOOM, sharp,
+    termAt: (x, y) => terms[y * row.refusedFrameWidth + x] ?? null,
+  }));
+  console.log(`    ${stem}-x${ZOOM}.png`);
+  for (const [term, sentence] of Object.entries(TERM_LEGEND)) console.log(`      ${term.padEnd(15)} ${sentence}`);
 }
 
 console.log(controlFailures === 0

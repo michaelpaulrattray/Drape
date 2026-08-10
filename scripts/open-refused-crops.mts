@@ -173,10 +173,15 @@ try {
         framed = `MISMATCH ${meta.width}x${meta.height} vs row ${row.refusedFrameWidth}x${row.refusedFrameHeight}`;
         skipped += 1;
       } else {
+        /* THIN WHITE, never red — founder ruling, 2026-08-11 (fable-230),
+           standing and product-wide for any on-image geometry. This drew #ff2d55
+           at 3px: the same line the pack builder was corrected away from in
+           `ebcea900`, still here because that fix went to the instance and not
+           to the class. It is a box that says "here", not "wrong". */
         const outline = Buffer.from(
           `<svg width="${meta.width}" height="${meta.height}">`
           + `<rect x="${row.refusedBboxX}" y="${row.refusedBboxY}" width="${row.refusedBboxW}"`
-          + ` height="${row.refusedBboxH}" fill="none" stroke="#ff2d55" stroke-width="3"/></svg>`,
+          + ` height="${row.refusedBboxH}" fill="none" stroke="#ffffff" stroke-width="1"/></svg>`,
         );
         const onFrame = await sharp(frame.bytes)
           .modulate({ brightness: 0.35 })

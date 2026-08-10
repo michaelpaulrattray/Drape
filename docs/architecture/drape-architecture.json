@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "432e8bb5125a18ef"
+    "sourceFingerprint": "738b68cabbf79fe6"
   },
   "domains": [
     {
@@ -8669,6 +8669,10 @@
     {
       "id": "test:server/castingV2/mintedSlots.test.ts",
       "path": "server/castingV2/mintedSlots.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/onImageGeometryMonochrome.test.ts",
+      "path": "server/castingV2/onImageGeometryMonochrome.test.ts"
     },
     {
       "id": "test:server/castingV2/overridePrecedence.test.ts",
