@@ -116,6 +116,8 @@ export type SlotDefinition = {
   /** The completeness specimen family. `null` exactly when `question` is. */
   guardKind: string | null;
   frame: SlotFrame;
+  /** How the pair is spoken while it matches. Present only for a per-side slot. */
+  pairNoun?: string;
   /** Present exactly when `question` is null — why, in one sentence. */
   wordsOnly?: string;
 };
@@ -154,7 +156,17 @@ type CatalogueEntry = {
    * none is caught there rather than in a panel with a missing row.
    */
   facets: readonly Facet[];
-  instances: "one" | "perSide";
+  /**
+   * ONE OF IT, OR ONE PER SIDE — and a pair carries the word it is spoken as.
+   *
+   * A pair is stored as instances and SPOKEN as one row while it matches
+   * (`presentPair`), so the plural is needed the moment a bilateral slot
+   * exists. It is DATA rather than a rule: English plurals are not a rule you
+   * want inside a paid product, and `lashes` pluralized by rule reads
+   * "lasheses". Carried on the variant so a bilateral slot cannot be added
+   * without one.
+   */
+  instances: { of: "one" } | { of: "perSide"; pairNoun: string };
   question: QuestionSource;
 };
 
@@ -171,7 +183,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "hair",
     facets: ["hair.cut", "hair.colour", "hair.texture", "hairFinish", "hairWorn"],
-    instances: "one",
+    instances: { of: "one" },
     question: { from: "facetRegion" },
   },
   {
@@ -182,7 +194,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
        under Hair rather than Face for that reason and no stronger one. */
     group: "hair",
     facets: ["facialHair"],
-    instances: "one",
+    instances: { of: "one" },
     question: { from: "facetRegion" },
   },
   {
@@ -191,7 +203,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["eye.colour", "eye.shape"],
-    instances: "perSide",
+    instances: { of: "perSide", pairNoun: "eyes" },
     question: { from: "facetRegion" },
   },
   {
@@ -200,7 +212,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["brows"],
-    instances: "perSide",
+    instances: { of: "perSide", pairNoun: "brows" },
     question: { from: "facetRegion" },
   },
   {
@@ -209,7 +221,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["lashes"],
-    instances: "perSide",
+    instances: { of: "perSide", pairNoun: "lashes" },
     question: {
       from: "none",
       relation: "broader",
@@ -222,7 +234,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["nose"],
-    instances: "one",
+    instances: { of: "one" },
     question: { from: "facetRegion" },
   },
   {
@@ -231,7 +243,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["lips"],
-    instances: "one",
+    instances: { of: "one" },
     question: { from: "facetRegion" },
   },
   {
@@ -240,7 +252,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["teeth"],
-    instances: "one",
+    instances: { of: "one" },
     question: {
       from: "none",
       relation: "broader",
@@ -253,7 +265,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["cheekbones"],
-    instances: "perSide",
+    instances: { of: "perSide", pairNoun: "cheekbones" },
     question: {
       from: "none",
       relation: "broader",
@@ -266,7 +278,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["jaw"],
-    instances: "one",
+    instances: { of: "one" },
     question: {
       from: "none",
       relation: "broader",
@@ -279,7 +291,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["chin"],
-    instances: "one",
+    instances: { of: "one" },
     question: {
       from: "none",
       relation: "broader",
@@ -292,7 +304,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     tier: "anatomy",
     group: "face",
     facets: ["ears"],
-    instances: "perSide",
+    instances: { of: "perSide", pairNoun: "ears" },
     question: { from: "facetRegion" },
   },
   {
@@ -307,7 +319,7 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
        needs an instance id from a detector, which is the tattoo studio's
        machinery (roadmap §3) — named as owed rather than approximated here. */
     facets: ["skinTone", "skinCharacter", "marks"],
-    instances: "one",
+    instances: { of: "one" },
     question: {
       from: "none",
       relation: "narrower",
@@ -325,13 +337,37 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
  * a face can wear" is the copy law 4 forbids, and `bornWornDetector` derives its
  * own classes from the same table for the same reason.
  */
+/**
+ * How each PAIRED accessory kind is spoken as one thing.
+ *
+ * Written down rather than pluralized by rule, for the same reason the anatomy
+ * entries are: `${region}s` happens to be right for earrings and would be wrong
+ * for the first kind whose plural is not an "s". A pair kind with no entry
+ * REFUSES at construction rather than reaching a customer misspelled.
+ */
+const PAIR_NOUN_OF_ACCESSORY: Record<string, string> = {
+  earring: "earrings",
+};
+
+function pairNounOfAccessory(region: string): string {
+  const plural = PAIR_NOUN_OF_ACCESSORY[region];
+  if (plural === undefined) {
+    throw new Error(
+      `"${region}" is worn in twos and has no plural in PAIR_NOUN_OF_ACCESSORY, so the panel cannot say it as one thing`,
+    );
+  }
+  return plural;
+}
+
 const ACCESSORY_SLOTS: readonly CatalogueEntry[] = LANDMARK_OF_ACCESSORY.map((entry) => ({
   feature: entry.region.replace(/ /g, "-"),
   noun: entry.region,
   tier: "item" as const,
   group: "accessories" as const,
   facets: ["statedAccessories"],
-  instances: entry.pair ? ("perSide" as const) : ("one" as const),
+  instances: entry.pair
+    ? ({ of: "perSide" as const, pairNoun: pairNounOfAccessory(entry.region) })
+    : ({ of: "one" as const }),
   question: { from: "accessoryRegion" as const, region: entry.region },
 }));
 
@@ -431,7 +467,8 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     tier: entry.tier,
     group: entry.group,
     noun,
-    frame: entry.instances === "perSide" ? ("ownSide" as const) : ("wholeFrame" as const),
+    frame: entry.instances.of === "perSide" ? ("ownSide" as const) : ("wholeFrame" as const),
+    ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 
   if (entry.question.from === "none") {
@@ -475,8 +512,8 @@ export function slotDefinition(slot: FeatureSlot): SlotDefinition | null {
   if (parsed === null) return null;
   const entry = entryOf(parsed.feature);
   if (entry === undefined) return null;
-  if (entry.instances === "perSide" && parsed.instance === undefined) return null;
-  if (entry.instances === "one" && parsed.instance !== undefined) return null;
+  if (entry.instances.of === "perSide" && parsed.instance === undefined) return null;
+  if (entry.instances.of === "one" && parsed.instance !== undefined) return null;
   return definitionOf(entry, parsed.instance ?? null);
 }
 
@@ -489,7 +526,7 @@ export function slotDefinition(slot: FeatureSlot): SlotDefinition | null {
  */
 export function catalogueSlots(): SlotDefinition[] {
   return SLOT_CATALOGUE.flatMap((entry) => (
-    entry.instances === "perSide"
+    entry.instances.of === "perSide"
       ? INSTANCES.map((instance) => definitionOf(entry, instance))
       : [definitionOf(entry, null)]
   ));

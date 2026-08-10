@@ -29,7 +29,10 @@ import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/cast
 import { captureCastingV2Enabled } from "../castingV2/castingV2Scope";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
-import { segmentsOnFace } from "../castingV2/segmentsOnFace";
+import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
+import { facePanel } from "../castingV2/facePanel";
+import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
+import { captureCastingReferenceLibraryEnabled } from "../castingV2/castingV2Scope";
 import { pronounsForSex } from "../castingV2/castPronouns";
 import { currentValueOfFacet } from "../castingV2/refineDelta";
 import { readResolvedIdentity } from "../castingV2/rollService";
@@ -939,6 +942,72 @@ export const castingV2Router = router({
           pronouns,
         }),
       };
+    }),
+
+  /**
+   * THE FACE PANEL — panel v2's only read, and it is dark until the library is.
+   *
+   * v1 (`segmentsOnFace`) lists what a version is KEEPING and stays live for
+   * everyone. This one lists what is EDITABLE, which by the founder's ruling is
+   * everything — so the rows come from the slot catalogue and the library says
+   * what each one currently is.
+   *
+   * **Gated on `CASTING_REFERENCE_LIBRARY_SCOPE`, which is unset everywhere.**
+   * The flag governs whether rows are written; a panel over an empty library
+   * would be a list of every feature with nothing said about any of them, which
+   * is true and useless. Off, this returns an empty panel and the client renders
+   * v1 exactly as today.
+   *
+   * Ownership is proved inside the statements that read (invariant 1):
+   * `resolveOwnedCandidateId`, `listCandidateVariants` and
+   * `listLineageReferences` each carry `userId` into their own WHERE.
+   */
+  facePanel: protectedProcedure
+    .input(z.object({ candidateId: publicId, variantId: publicId.nullable() }).strict())
+    .query(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
+      if (!captureCastingReferenceLibraryEnabled(ctx.user.id)) {
+        return { enabled: false as const, possessive: "their", groups: [] };
+      }
+
+      const candidateId = await resolveOwnedCandidateId({
+        userId: ctx.user.id,
+        candidatePublicId: input.candidateId,
+      }).catch(() => null);
+      if (candidateId === null) throw new TRPCError({ code: "NOT_FOUND", message: "Candidate not found" });
+
+      const variants = await listCandidateVariants(ctx.user.id, input.candidateId);
+      const anchor = input.variantId === null
+        ? null
+        : variants.find((variant) => variant.publicId === input.variantId);
+      if (input.variantId !== null && !anchor) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Version not found" });
+      }
+
+      const rows = await listLineageReferences({
+        userId: ctx.user.id,
+        candidateId,
+        anchorVariantId: anchor?.id ?? null,
+      });
+
+      /* The pronoun is a fact about the person, so it comes from the version
+         being looked at — or, with none selected, from this face's earliest
+         record of the same person (`listCandidateVariants` is ascending).
+         `castPronouns` answers `they` when the record cannot say, which is
+         correct English rather than a guess. */
+      const identity = anchor
+        ? readResolvedIdentity(anchor.internalPrompt)
+        : readResolvedIdentity(variants[0]?.internalPrompt);
+      const panel = facePanel({
+        rows,
+        pronouns: pronounsForSex(identity?.sex),
+        contentUrl: storagePublicUrl,
+        /* A CSS mask is a CORS fetch and the public bucket sends no
+           allow-origin — see `maskFetchUrl`. */
+        maskUrl: (key) => maskFetchUrl(storagePublicUrl(key)),
+      });
+      return { enabled: true as const, ...panel };
     }),
 
   /** Refunds only what never started. Delivered work is never refunded (§H.6). */

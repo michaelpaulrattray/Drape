@@ -125,6 +125,25 @@ describe("a slot with no question of its own is words-only, and says why", () =>
   });
 });
 
+describe("a pair carries the word it is spoken as", () => {
+  it("writes the plural down rather than adding an s to it", () => {
+    expect(slotDefinition("eye@left")!.pairNoun).toBe("eyes");
+    expect(slotDefinition("ear@right")!.pairNoun).toBe("ears");
+    /* The case a rule gets wrong: "lashes" pluralized reads "lasheses". */
+    expect(slotDefinition("lashes@left")!.pairNoun).toBe("lashes");
+    expect(slotDefinition("earring@left")!.pairNoun).toBe("earrings");
+  });
+
+  it("gives one to every per-side slot and to no single one", () => {
+    for (const definition of catalogueSlots()) {
+      expect(
+        definition.pairNoun !== undefined,
+        `${definition.slot} is ${definition.instance === null ? "single" : "per side"}`,
+      ).toBe(definition.instance !== null);
+    }
+  });
+});
+
 describe("the tier boundary, as the rulings left it", () => {
   it("has NO surface-tier slot — a surface worn on anatomy is the anatomy slot's stack", () => {
     expect(catalogueSlots().filter((definition) => definition.tier === "surface")).toEqual([]);
