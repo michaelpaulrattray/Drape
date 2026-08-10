@@ -1,5 +1,6 @@
 import { Button } from "@/foundation";
 import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
+import { VersionRail } from "./VersionRail";
 
 /**
  * Refining one face — the panel under the expanded picture (M8).
@@ -99,6 +100,7 @@ export function RefinePanel({
   keptPossessive = "their",
   draft,
   onDraft,
+  stackHoisted = false,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -163,6 +165,14 @@ export function RefinePanel({
    */
   draft: string;
   onDraft: (value: string) => void;
+  /**
+   * The versions are drawn ELSEWHERE — the rail beside the picture.
+   *
+   * True whenever the viewer is in the three-column shape the founder specified.
+   * The stack is not duplicated and not deleted: it is the same component,
+   * rendered by whoever owns the column it stands in.
+   */
+  stackHoisted?: boolean;
 }) {
   const instruction = draft;
   const setInstruction = onDraft;
@@ -182,89 +192,22 @@ export function RefinePanel({
   return (
     <div className="dpc-refine" onClick={(event) => event.stopPropagation()}>
       {/*
-        The stack, oldest first, with the ORIGINAL always at the head. Keeping
-        the original addressable is what makes backing out free rather than
-        another 25 credits — and D-121 is explicit that the two must not be
-        made to look alike.
+        THE STACK, unless the caller has hoisted it to the rail beside the
+        picture (fable-206, on the founder's own sentence: thumbnails left,
+        segments right, only the chatbox at the bottom). Same component either
+        way — a second copy laid out differently is two answers to "which
+        version am I looking at".
       */}
-      {variants.length > 0 || pending.length > 0 ? (
-        <div
-          className="dpc-refine__stack"
-          role="group"
-          aria-label="Versions of this face"
-        >
-          <div className="dpc-refine__step">
-            <button
-              type="button"
-              className="dpc-refine__pick"
-              aria-pressed={selectedVariantId === null}
-              aria-label="The original"
-              onClick={() => onSelect(null)}
-            >
-              {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
-              <span>Original</span>
-            </button>
-          </div>
-          {variants.map((variant, position) => (
-            <div className="dpc-refine__step" key={variant.variantId}>
-              <button
-                type="button"
-                className="dpc-refine__pick"
-                aria-pressed={selectedVariantId === variant.variantId}
-                /* Their own words are the label — the record read back as theirs. */
-                aria-label={variant.instructions.at(-1) ?? `Version ${position + 1}`}
-                /*
-                  The whole stack, and WHERE it was filed, on hover (D-162).
-                  Filing decides what a Follow inherits, so a misfile corrupts
-                  the record and not just one picture — it stays inspectable,
-                  and stops competing with the user's own words for the eye.
-                */
-                title={variant.filedAs?.length
-                  ? `${variant.instructions.join(" · ")}\nFiled as: ${variant.filedAs.join(" · ")}`
-                  : variant.instructions.join(" · ")}
-                onClick={() => onSelect(variant.variantId)}
-              >
-                {variant.imageUrl ? <img src={variant.imageUrl} alt="" /> : null}
-                <span>{variant.instructions.at(-1)}</span>
-              </button>
-              {/*
-                REMOVE'S HOME IS DESIGNED AND NOT YET BUILT (D-162).
-
-                D-121 and D-155 both ruled how removing a mid-stack instruction
-                should look, and the founder could not find it in the product
-                because it was never implemented — there is no server procedure
-                and this handler has never been passed. The affordance belongs
-                in the shared `CardMenu`, not in a second hand-rolled menu
-                (`cardMenuAnatomy.test` enforces exactly one), and it should
-                arrive with the action it opens rather than before it: a visible
-                control that does nothing is worse than the one nobody found.
-              */}
-            </div>
-          ))}
-          {/*
-            THE GHOST CHIPS (D-161) — a refinement that is running, drawn from
-            server truth so it survives closing and reopening the sheet. Not
-            selectable, because there is nothing yet to select.
-          */}
-          {pending.map((entry) => (
-            <div className="dpc-refine__step" key={entry.variantId}>
-              <div className="dpc-refine__pick dpc-refine__pick--ghost" aria-live="polite">
-  <div className="dpc-refine__ghost">
-                  {/*
-                    NOT AN EMPTY SLOT (D-169). It holds the base under the same
-                    treatment the picture above is wearing — small and dim — so
-                    the stack reads as continuous and the version being made has
-                    somewhere it obviously belongs. The word "Refining…" left
-                    with the box: the picture is narrating now.
-                  */}
-                  {originalImageUrl ? <img src={originalImageUrl} alt="" /> : null}
-                </div>
-                <span>{entry.instruction}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      {stackHoisted ? null : (
+        <VersionRail
+          variants={variants}
+          pending={pending}
+          selectedVariantId={selectedVariantId}
+          originalImageUrl={originalImageUrl}
+          onSelect={onSelect}
+          layout="row"
+        />
+      )}
 
       {/*
         A LONG WAIT SAYS SO, AND NAMES THE OUTCOME.

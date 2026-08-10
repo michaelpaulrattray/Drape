@@ -368,7 +368,13 @@ for (const theme of THEMES) {
     */
     const stage = await page.evaluate(`(() => {
       const rect = (q) => { const n = document.querySelector(q); if (!n) return null; const r = n.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; };
-      return { plate: rect(".dpc-viewer__plate"), figure: rect(".dpc-viewer__frame"), dock: rect(".dpc-viewer__dock"), box: rect(".dpc-regions__box"), panel: rect(".dpc-face") };
+      return {
+        plate: rect(".dpc-viewer__plate"), figure: rect(".dpc-viewer__frame"),
+        dock: rect(".dpc-viewer__dock"), rail: rect(".dpc-viewer__rail"),
+        box: rect(".dpc-regions__box"), panel: rect(".dpc-face"),
+        stacksUnderPicture: document.querySelectorAll(".dpc-refine .dpc-refine__stack").length,
+        railSteps: document.querySelectorAll(".dpc-viewer__rail .dpc-refine__step").length,
+      };
     })()`) as any;
     check(
       stage.plate !== null && stage.plate.w > 200 && stage.plate.h > 300,
@@ -424,6 +430,27 @@ for (const theme of THEMES) {
     } else {
       check(false, `${theme}: the panel's words are actually painted on this background`, "could not photograph the dock");
     }
+
+    /*
+      ---- HIS THREE COLUMNS: versions left, picture centre, panel right ----
+    */
+    check(
+      stage.rail !== null && stage.rail.x + stage.rail.w <= stage.plate.x + 4,
+      `${theme}: the versions stand to the LEFT of the picture`,
+      stage.rail
+        ? `rail ends at ${stage.rail.x + stage.rail.w}, the picture starts at ${stage.plate.x}`
+        : "no rail at all",
+    );
+    check(
+      stage.dock !== null && stage.dock.x >= stage.plate.x + stage.plate.w - 4,
+      `${theme}: the panel stands to the RIGHT of it`,
+      stage.dock ? `dock starts at ${stage.dock.x}, the picture ends at ${stage.plate.x + stage.plate.w}` : "no dock",
+    );
+    check(
+      stage.stacksUnderPicture === 0 && stage.railSteps > 0,
+      `${theme}: the versions are drawn once, in the rail — not twice`,
+      `${stage.railSteps} steps in the rail, ${stage.stacksUnderPicture} stacks under the picture`,
+    );
 
     /* ---- one selection, two views ---- */
     const rowSelector = `.dpc-face__row[aria-label^="${MEASURED_ROW}"]`;

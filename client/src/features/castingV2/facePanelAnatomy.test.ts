@@ -119,6 +119,24 @@ describe("the panel stands beside the picture, never on top of its height", () =
     expect(close.slice(0, close.indexOf("onClose()"))).toContain(".dpc-viewer__dock");
   });
 
+  it("puts the versions on the left and draws them exactly once", async () => {
+    const [sheet, viewer, panel] = await Promise.all([
+      readFile(SHEET, "utf8"),
+      readFile(VIEWER, "utf8"),
+      readFile(new URL("./components/RefinePanel.tsx", import.meta.url), "utf8"),
+    ]);
+    /* The founder's sentence has two halves and they are one ruling: thumbnails
+       left, segments right, only the chatbox at the bottom. */
+    const before = withoutProse(sheet).slice(withoutProse(sheet).indexOf("before={"));
+    expect(before.slice(0, before.indexOf("/>"))).toContain("<VersionRail");
+    const stage = viewer.slice(viewer.indexOf('className="dpc-viewer__stage"'));
+    expect(stage.slice(0, stage.indexOf("</div>"))).toContain("{before}");
+    /* And the stack under the picture stands down when it does, so a version is
+       never drawn twice in one viewer. */
+    expect(withoutProse(sheet)).toContain("stackHoisted={Boolean(facePanelData)}");
+    expect(withoutProse(panel)).toContain("{stackHoisted ? null : (");
+  });
+
   it("gives the dock its own scroll rather than the viewport's", async () => {
     const css = await readFile(CSS, "utf8");
     const dock = css.slice(css.indexOf(".dpc-viewer__dock {"));

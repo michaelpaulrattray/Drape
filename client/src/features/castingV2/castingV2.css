@@ -693,6 +693,13 @@
   /* The image gets the room; the caption sits under it, never over it. */
   max-height: 100%;
   min-height: 0;
+  /*
+    THE SAME CEILING THE PICTURE HAS. Without it the figure is as wide as its
+    widest child, which is the caption row, and in the three-column stage that
+    pushed the versions and the panel out to the window's own edges with a
+    quarter of the screen of empty scrim between each and the photograph.
+  */
+  max-width: min(100%, 760px);
 }
 
 /*
@@ -2863,6 +2870,42 @@
   panel on a dark viewer — structure quoted, surface derived from the neighbours
   (the UI contract's own distinction).
 */
+/*
+  THE VERSIONS, IN A COLUMN — the left half of the founder's sentence.
+
+  Same steps, same width, same selection grammar as the row under the picture;
+  the direction is the whole difference. It scrolls itself for the same reason
+  the dock does: twelve refinements is the ceiling, and twelve 64px steps is
+  taller than a viewer.
+*/
+.dpc-refine__stack[data-layout="column"] {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dpc-viewer__rail {
+  flex: 0 0 auto;
+  display: flex;
+  min-height: 0;
+  align-items: flex-start;
+}
+
+@media (max-width: 1080px) {
+  /* No room for three columns. The rail goes back to being a row above the
+     picture rather than a column squeezed beside it. */
+  .dpc-viewer__rail { width: 100%; justify-content: center; }
+  .dpc-refine__stack[data-layout="column"] {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: 26vh;
+  }
+}
+
 .dpc-face {
   display: flex;
   flex-direction: column;

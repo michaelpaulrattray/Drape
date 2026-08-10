@@ -39,6 +39,7 @@ import {
 } from "@/features/castingV2/components/CandidateViewer";
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { FacePanel } from "@/features/castingV2/components/FacePanel";
+import { VersionRail } from "@/features/castingV2/components/VersionRail";
 import { FaceRegions } from "@/features/castingV2/components/FaceRegions";
 import { useFaceSelection } from "@/features/castingV2/components/faceSelection";
 import { KeptTray } from "@/features/castingV2/components/KeptTray";
@@ -868,6 +869,29 @@ export default function CastingSheet() {
     rather than inside whichever component happened to own the field.
   */
   const [askDraft, setAskDraft] = useState("");
+  /*
+    CHOOSING A VERSION, from either column that draws them.
+
+    Named rather than inlined now that the rail beside the picture and the stack
+    under it are the same control in two layouts — a second copy of this handler
+    is a second answer to what selecting a version does.
+  */
+  const selectVariant = (variantId: string | null) => {
+    if (!viewerCandidateId) return;
+    void chooseVariant
+      .mutateAsync({ candidateId: viewerCandidateId, variantId })
+      .then(async () => {
+        await variants.refetch();
+        await invalidate();
+      })
+      /*
+        OUR SENTENCE, NEVER THE ERROR'S (run-9). This was `error.message`, so a
+        gateway's plain-text 502 reached the panel as "Unexpected token 'u',
+        "upstream error" is not valid JSON" — the same string already fixed once
+        for roll dispatch, kept alive here because that fix was never swept.
+      */
+      .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
+  };
   /*
     v1 AND v2 ARE NEVER BOTH ON SCREEN. They answer different questions — what
     this version KEEPS versus everything that can be changed — so two lists would
@@ -1752,6 +1776,22 @@ export default function CastingSheet() {
             Beside it is also the founder's own mock: versions left, picture
             centre, the panel docked right, only the ask box across the bottom.
           */
+          /*
+            THE VERSIONS ON THE LEFT — the other half of his sentence
+            (fable-206). Three columns arrive together with the panel, and only
+            with it: off the flag the viewer keeps exactly today's shape, so a
+            dark deploy changes nothing anybody sees.
+          */
+          before={facePanelData && viewerRefinable ? (
+            <VersionRail
+              variants={variants.data?.variants ?? []}
+              pending={variants.data?.pending ?? []}
+              selectedVariantId={variants.data?.selectedVariantId ?? null}
+              originalImageUrl={variants.data?.originalImageUrl ?? null}
+              onSelect={selectVariant}
+              layout="column"
+            />
+          ) : null}
           beside={facePanelData && viewerRefinable ? (
             <FacePanel
               groups={facePanelData.groups}
@@ -1798,6 +1838,9 @@ export default function CastingSheet() {
               /* The one sentence all three doors write into. */
               draft={askDraft}
               onDraft={setAskDraft}
+              /* Drawn in the rail beside the picture whenever the three-column
+                 shape is on — the same component, not a second stack. */
+              stackHoisted={Boolean(facePanelData)}
               reask={reaskOptions ? { question: refineOutcome ?? "", options: reaskOptions } : null}
               onDismissOutcome={() => {
                 // Dismissing the question withdraws it. The next sentence is a
@@ -1808,22 +1851,7 @@ export default function CastingSheet() {
                 setRefineOutcome(null);
               }}
               onRefine={askRefine}
-              onSelect={(variantId) => {
-                void chooseVariant
-                  .mutateAsync({ candidateId: viewerCandidateId, variantId })
-                  .then(async () => {
-                    await variants.refetch();
-                    await invalidate();
-                  })
-                  /*
-                    OUR SENTENCE, NEVER THE ERROR'S (run-9). This was
-                    `error.message`, so a gateway's plain-text 502 reached the
-                    panel as "Unexpected token 'u', "upstream error" is not
-                    valid JSON" — the same string already fixed once for roll
-                    dispatch, kept alive here because that fix was never swept.
-                  */
-                  .catch((error: unknown) => setRefineOutcome(refineFailureMessage(error)));
-              }}
+              onSelect={selectVariant}
             />
           ) : null}
         />

@@ -114,6 +114,7 @@ export function CandidateViewer({
   onIndexChange,
   onClose,
   below,
+  before,
   beside,
   overlay,
   wait,
@@ -146,6 +147,15 @@ export function CandidateViewer({
    * panel docked right, only the ask box across the bottom.
    */
   beside?: React.ReactNode;
+  /**
+   * What stands to the LEFT of the picture — the versions of this face.
+   *
+   * The other half of the same ruling as `beside`: *"thumbnails to appear on the
+   * LEFT side and the segments to appear on the RIGHT, only the chatbox is at
+   * the bottom."* Passed in for the same reason everything else here is — this
+   * component is the one image grammar and does not learn what a version is.
+   */
+  before?: React.ReactNode;
   /**
    * What is laid OVER the picture, inside the plate — the face's own regions,
    * where a caller has them (fable-200).
@@ -262,10 +272,12 @@ export function CandidateViewer({
       */
       onClick={(event) => {
         const target = event.target as HTMLElement;
-        /* Every slot this viewer renders belongs to the surface, including the
-           dock beside the picture — left out of this list, a tap on a panel row
-           read as a tap on the scrim and closed the whole viewer. */
-        if (target.closest("img, .dpc-viewer__chrome, .dpc-viewer__dock, .dpc-refine, .dpc-regions")) return;
+        /* Every slot this viewer renders belongs to the surface — the rail and
+           the dock included. Left out of this list, a tap on a panel row read as
+           a tap on the scrim and closed the whole viewer. */
+        if (target.closest(
+          "img, .dpc-viewer__chrome, .dpc-viewer__rail, .dpc-viewer__dock, .dpc-refine, .dpc-regions",
+        )) return;
         onClose();
       }}
     >
@@ -302,6 +314,7 @@ export function CandidateViewer({
         panel's own length can never be taken out of the photograph's height.
       */}
       <div className="dpc-viewer__stage" data-beside={beside ? "true" : "false"}>
+        {before ? <aside className="dpc-viewer__rail">{before}</aside> : null}
         <figure className="dpc-viewer__frame" data-wait={wait ? "true" : "false"}>
           {/*
             The picture and everything laid over it share one box, so the dots and
