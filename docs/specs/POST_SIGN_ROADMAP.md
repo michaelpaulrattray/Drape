@@ -205,6 +205,16 @@ founder-ratified, no longer provisional).
 
 ## 9. Shelved-with-trigger register (durable in DECISION_LOG; pointers here)
 
+**The contamination instrument** (what a paint borrowed from a reference
+crop's background) — deferred by fable-184 with an explicit trigger: build
+it **when an occlusion-aware cutter reopens the crop-vs-cutout question**
+(`COMPOSITOR_SWAP_DESIGN.md` §5.1/§7). Until then the reference-format
+ruling stands on shape + material, and neither of those counts borrowing.
+Beside it, the **img-left/img-right hoop asymmetry** is an open row rather
+than a shelved item: test the mechanism only if the edit-law cell leans the
+same way. Both are stated as owed rather than absent.
+
+
 Hair-matting shop (trigger: strand-gap artifacts visible to the
 founder in a real case); fine strand tips clipped (cosmetic ceiling,
 future shop round); advisory degree/intensity check (bounded by item

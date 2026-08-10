@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7789fbe3fc48d4ac"
+    "sourceFingerprint": "4227def89892f079"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 80
+      "moduleCount": 81
     },
     {
       "id": "domain:castingV2",
@@ -3443,6 +3443,12 @@
     {
       "id": "module:server/castingV2/realizedAxes.ts",
       "path": "server/castingV2/realizedAxes.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/recipeAssembler.ts",
+      "path": "server/castingV2/recipeAssembler.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8570,6 +8576,10 @@
     {
       "id": "test:server/castingV2/realizedAxes.test.ts",
       "path": "server/castingV2/realizedAxes.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/recipeAssembler.test.ts",
+      "path": "server/castingV2/recipeAssembler.test.ts"
     },
     {
       "id": "test:server/castingV2/refineDelta.test.ts",
