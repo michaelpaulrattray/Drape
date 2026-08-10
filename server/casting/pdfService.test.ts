@@ -149,8 +149,18 @@ describe('PDF Service', () => {
     const result = await generatePremiumIdentityPdf(mockPdfData);
     const text = new TextDecoder('latin1').decode(result);
     // D-74: the current customer identity document is fixed at 1K.
-    expect(text).toContain('1024');
-    expect(text).not.toContain('2048');
+    //
+    // Assert the certificate's own PROSE, never the bare number. A PDF carries a
+    // random hex file identifier — `/ID [ <E87D2048…> ]` — and '1024'/'2048' are
+    // four hex-alphabet characters, so they turn up inside it by chance at about
+    // 0.044% per document. That is not theoretical: on 2026-08-11 a run went red
+    // on `/ID <E87D20485E2D53354C3185DDC91CDB76>` while the certificate said 1K
+    // throughout. The same accident runs the other way — `toContain('1024')` over
+    // the whole file could pass on an identifier alone, with the resolution row
+    // deleted. `×` is 0xD7 and is not a hex digit, so only the rendered row
+    // `(1K \(1024×1024\)) Tj` can satisfy these two.
+    expect(text).toContain('1024×1024');
+    expect(text).not.toContain('2048×2048');
     expect(text).not.toContain('3840x5120');
   });
 
