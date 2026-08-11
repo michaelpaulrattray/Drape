@@ -1,6 +1,7 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
-const c = await mysql.createConnection(process.env.DATABASE_URL!);
+import { openDatabase } from "./lib/dbConnection.mts";
+const c = await openDatabase(process.env.DATABASE_URL!);
 const [cols] = await c.query<any[]>("SHOW COLUMNS FROM casting_candidate_variants");
 console.log(cols.map((r:any)=>r.Field).join(", "));
 const [rows] = await c.query<any[]>(

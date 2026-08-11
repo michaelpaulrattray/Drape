@@ -1,6 +1,7 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
-const c = await mysql.createConnection(process.env.DATABASE_URL!);
+import { openDatabase } from "./lib/dbConnection.mts";
+const c = await openDatabase(process.env.DATABASE_URL!);
 const [rows] = await c.query<any[]>(
   "select id, slot, variantId, refusedReason, refusedCoverage, refusedContentKey is not null hasCrop"
   + " from casting_reference_library order by id");

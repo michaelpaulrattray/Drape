@@ -15,6 +15,7 @@ import {
 import {
   assertEvidenceComposerSchemaWithClient,
 } from "../server/casting/evidence/evidenceComposerSchema";
+import { openPool } from "./lib/dbConnection.mts";
 
 const PREVIOUS_TAG = "0013_r7_ink_add_candidates";
 const TARGET_TAG = "0014_r7_evidence_accepted_asset";
@@ -46,7 +47,7 @@ async function main(): Promise<void> {
   const previousHash = createHash("sha256").update(previousSql).digest("hex");
   const targetHash = createHash("sha256").update(targetSql).digest("hex");
 
-  const pool = mysql.createPool({
+  const pool = openPool({
     uri: args.databaseUrl,
     connectTimeout: 15_000,
     connectionLimit: 1,

@@ -32,6 +32,7 @@ import { randomUUID } from "node:crypto";
 import mysql from "mysql2/promise";
 
 import { assertOneWorld, APP_WRITE_PATH_KEYS } from "./lib/worldGuard.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const USER_ID = 1;
 const CANDIDATE_ID = 359;
@@ -69,7 +70,7 @@ if (!captureCastingReferenceLibraryEnabled(USER_ID)) {
 }
 assertOneWorld(APP_WRITE_PATH_KEYS);
 
-const connection = await mysql.createConnection(process.env.DATABASE_URL!);
+const connection = await openDatabase(process.env.DATABASE_URL!);
 const [candidates] = await connection.query(
   "select id, publicId from casting_candidates where id=? and userId=?",
   [CANDIDATE_ID, USER_ID],

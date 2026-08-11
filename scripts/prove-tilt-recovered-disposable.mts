@@ -49,6 +49,7 @@ import { createChecks } from "./lib/drivePage.mts";
 import { deletedBilateralReader } from "./lib/deletedBilateralBranch.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { readCanthalTilt } from "../server/castingV2/eyeShapeRouting";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -74,7 +75,7 @@ const SPECIMENS = [
 
 /* ----------------------------------------------------------------- the run */
 
-const connection = await mysql.createConnection({
+const connection = await openDatabase({
   uri: process.env[databaseKey]!, timezone: "Z",
 } as mysql.ConnectionOptions);
 const { check, records, print } = createChecks();

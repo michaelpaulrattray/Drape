@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_r7_5d_disposable_";
 
@@ -44,7 +45,7 @@ async function main() {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection({ uri: serverUrl.toString(), connectTimeout: 15_000 });
+  const admin = await openDatabase({ uri: serverUrl.toString(), connectTimeout: 15_000 });
   let created = false;
   try {
     const [databaseRows] = await admin.query("SHOW DATABASES");
@@ -54,7 +55,7 @@ async function main() {
     if (stale.length) throw new Error(`Refusing: stale disposable databases require review (${stale.join(", ")})`);
     await admin.query(`CREATE DATABASE \`${databaseName}\``);
     created = true;
-    const test = await mysql.createConnection({ uri: testUrl.toString(), connectTimeout: 15_000 });
+    const test = await openDatabase({ uri: testUrl.toString(), connectTimeout: 15_000 });
     try {
       await applyAllMigrations(test);
     } finally {

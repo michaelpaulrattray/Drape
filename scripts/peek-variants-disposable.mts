@@ -1,6 +1,7 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
-const c = await mysql.createConnection(process.env.DATABASE_URL!);
+import { openDatabase } from "./lib/dbConnection.mts";
+const c = await openDatabase(process.env.DATABASE_URL!);
 const [rows] = await c.query<any[]>(
   "select id, publicId, createdAt, status from casting_candidate_variants where candidateId=359 order by id desc limit 8");
 for (const r of rows) console.log(`v${r.id} ${r.status ?? ""} ${new Date(r.createdAt).toISOString()}`);

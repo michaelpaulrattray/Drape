@@ -34,17 +34,53 @@ import mysql from "mysql2/promise";
  * not use for typed columns — and it was wrong. Measured, both before and after
  * setting this: the typed round-trip is correct either way, and nothing on disk
  * is re-interpreted, because nothing was ever written in local time.
+ *
+ * # Why it takes an options object as well as a URL (shift 36)
+ *
+ * The sweep that put every script behind this door found call sites of two
+ * shapes: `createConnection(url)` and `createConnection({ uri, connectTimeout })`.
+ * A helper that accepted only a URL would have forced the second shape to drop
+ * its options to come inside — a behaviour change smuggled in by a hygiene
+ * sweep — so it accepts either, and the swap at each site is the callee alone.
+ *
+ * `timezone` is applied AFTER the caller's options rather than before, because
+ * this module exists to be the one place that decides it. A caller passing
+ * `timezone: "local"` is asking for the bug by name; it does not get it.
  */
-export function openDatabase(url = process.env.DATABASE_URL): Promise<mysql.Connection> {
-  if (!url) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
+export function openDatabase(
+  input: string | mysql.ConnectionOptions | undefined = process.env.DATABASE_URL,
+): Promise<mysql.Connection> {
+  const options = typeof input === "string" || input === undefined
+    ? { uri: input }
+    : { ...input };
+  if (!options.uri) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
   return mysql.createConnection({
-    uri: url,
+    ...options,
     /*
       The whole reason this module exists. Everything in the database is UTC;
-      this stops the driver guessing otherwise.
+      this stops the driver guessing otherwise. LAST, so it cannot be overridden
+      by a caller's own object.
     */
     timezone: "Z",
   } as mysql.ConnectionOptions);
+}
+
+/**
+ * THE SAME DOOR, FOR A POOL.
+ *
+ * Four migration appliers open a pool rather than a connection, and a pool with
+ * no `timezone` misreads a DATETIME exactly as a connection does. Sweeping only
+ * the connections would have left half of the class behind — and half a class is
+ * how this one survived a documented helper for as long as it did.
+ */
+export function openPool(
+  input: string | mysql.PoolOptions | undefined = process.env.DATABASE_URL,
+): mysql.Pool {
+  const options = typeof input === "string" || input === undefined
+    ? { uri: input }
+    : { ...input };
+  if (!options.uri) throw new Error("no DATABASE_URL — pass one explicitly for a production ceremony");
+  return mysql.createPool({ ...options, timezone: "Z" } as mysql.PoolOptions);
 }
 
 /**

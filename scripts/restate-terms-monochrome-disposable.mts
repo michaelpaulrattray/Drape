@@ -37,6 +37,7 @@ import { fetchImageBytes } from "./lib/imageBytes.mts";
 import {
   paintTerm, magnifyExhibit, LOST_GREY, TERM_LEGEND, DIMMED_FRAME_CEILING, type TermClass,
 } from "./lib/termsPalette.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 /* The palette the delivered exhibit was drawn in. Archaeology, not grammar —
    it lives here rather than in the palette module because it describes one
@@ -69,7 +70,7 @@ if (new URL(uri).port !== "52008") throw new Error("not the dev database");
 const bucket = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
 
 await mkdir(OUT, { recursive: true });
-const connection = await mysql.createConnection({ uri, timezone: "Z" });
+const connection = await openDatabase({ uri, timezone: "Z" });
 const [rows] = await connection.query<any[]>(`
   SELECT l.id, l.slot,
          l.refusedBboxX, l.refusedBboxY, l.refusedBboxW, l.refusedBboxH,

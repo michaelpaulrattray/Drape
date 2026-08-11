@@ -16,6 +16,7 @@ import path from "node:path";
 import os from "node:os";
 import { SignJWT } from "jose";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const MODE = process.env.W5_DRIVE_MODE ?? "legitimate";
@@ -39,7 +40,7 @@ type Evidence = {
   legs: Array<Record<string, unknown>>;
 };
 
-const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+const conn = await openDatabase(process.env.DATABASE_URL!);
 await conn.execute(
   `INSERT INTO users (openId, name, email, approved, emailVerified, role)
    VALUES ('verify-bot-local', 'Verify Bot', 'verify-bot@local.test', 1, 1, 'user')

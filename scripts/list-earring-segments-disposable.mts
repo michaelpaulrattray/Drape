@@ -1,8 +1,9 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 const uri = process.env.DATABASE_URL!;
 console.log("port", new URL(uri).port);
-const c = await mysql.createConnection({ uri, timezone: "Z" });
+const c = await openDatabase({ uri, timezone: "Z" });
 const [cols] = await c.query<any[]>("SHOW COLUMNS FROM casting_segments");
 console.log(cols.map((r: any) => r.Field).join(", "));
 const [rows] = await c.query<any[]>(

@@ -26,6 +26,7 @@ import mysql from "mysql2/promise";
 import sharp from "sharp";
 
 import { detectRenderFault } from "../server/castingV2/renderFault";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PUBLIC = process.env.R2_PUBLIC_URL!;
 
@@ -72,7 +73,7 @@ async function synthesiseGrid(
     .toBuffer();
 }
 
-const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+const conn = await openDatabase(process.env.DATABASE_URL!);
 const [rows] = await conn.query<any[]>(
   `SELECT imageKey FROM casting_candidates WHERE imageKey IS NOT NULL ORDER BY id DESC LIMIT 200`);
 await conn.end();

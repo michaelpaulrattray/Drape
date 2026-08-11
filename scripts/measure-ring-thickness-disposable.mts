@@ -15,6 +15,7 @@ import "dotenv/config";
 import mysql from "mysql2/promise";
 import sharp from "sharp";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 type Shape = { w: number; h: number; data: Uint8Array };
 
@@ -76,7 +77,7 @@ function shellFractionOf(shape: Shape): { area: number; thickest: number; shell:
 const uri = process.env.DATABASE_URL!;
 if (new URL(uri).port !== "52008") throw new Error("not the dev database");
 const bucket = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
-const c = await mysql.createConnection({ uri, timezone: "Z" });
+const c = await openDatabase({ uri, timezone: "Z" });
 const [rows] = await c.query<any[]>(
   "SELECT slot, refusedMaskKey k, refusedBboxW w, refusedBboxH h FROM casting_reference_library"
   + " WHERE refusedContentKey IS NOT NULL ORDER BY id");

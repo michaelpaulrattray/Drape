@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_r7_1c_disposable_";
 
@@ -44,11 +45,11 @@ async function main() {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection(serverUrl.toString());
+  const admin = await openDatabase(serverUrl.toString());
   try {
     await admin.query(`CREATE DATABASE \`${databaseName}\``);
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
-    const testConnection = await mysql.createConnection(testUrl.toString());
+    const testConnection = await openDatabase(testUrl.toString());
     try {
       await applyAllMigrations(testConnection);
     } finally {

@@ -14,6 +14,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.MYSQL_PUBLIC_URL ?? process.env.DATABASE_URL;
 const publicBase = process.env.R2_PUBLIC_URL;
@@ -29,7 +30,7 @@ const WANTED = arg("candidates").split(",").map((id) => id.trim()).filter(Boolea
 const OUT = arg("out", "output/masked/bare-faced");
 mkdirSync(OUT, { recursive: true });
 
-const connection = await mysql.createConnection(url);
+const connection = await openDatabase(url);
 const [rows] = WANTED.length > 0
   ? await connection.query<any[]>(
     `SELECT c.publicId AS candidate, c.position, c.imageKey, r.publicId AS roll, r.briefText

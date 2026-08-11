@@ -22,6 +22,7 @@
  */
 import "dotenv/config";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const DRAFT_AUTO_NAME = "Draft Model";
 
@@ -39,7 +40,7 @@ async function main() {
   const host = new URL(url).host;
   console.log(`[audit] READ-ONLY model-status audit against ${host}\n`);
 
-  const conn = await mysql.createConnection(url);
+  const conn = await openDatabase(url);
   try {
     const [byStatus] = await conn.query(
       "SELECT status, COUNT(*) AS n FROM models GROUP BY status ORDER BY status"

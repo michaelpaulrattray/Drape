@@ -29,6 +29,7 @@ import mysql from "mysql2/promise";
 
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { HAIR_ARRANGEMENTS } from "../server/castingV2/hairArrangement.js";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -43,7 +44,7 @@ if (!url) { console.error("no database url — run under `railway run --service 
 const DAYS = Number(arg("days", "30"));
 const VOCABULARY = new Set<string>(Object.values(HAIR_ARRANGEMENTS));
 
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
 const [rows] = await connection.query<any[]>(
   `SELECT v.id, v.publicId, v.userId, v.candidateId, v.parentVariantId, v.requestText,
           v.status, v.pointsCost, v.imageKey, v.stepDeltas, v.internalPrompt, v.createdAt

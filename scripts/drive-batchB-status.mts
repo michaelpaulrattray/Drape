@@ -43,6 +43,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 // ── Hard safety gates (before ANY connection or write) ─────────────────────
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
@@ -124,7 +125,7 @@ const check = (name: string, ok: boolean, detail = "") => {
 };
 
 // ── Session ────────────────────────────────────────────────────────────────
-const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+const conn = await openDatabase(process.env.DATABASE_URL!);
 
 // Everything past this point runs inside try/finally: fixtures are tracked
 // incrementally from the FIRST insert, so a mid-setup crash still cleans up.

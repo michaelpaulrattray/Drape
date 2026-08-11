@@ -17,6 +17,7 @@ import { readFileSync } from "node:fs";
 import mysql from "mysql2/promise";
 
 import { adjudicateCarried, formatCarriedVerdict, type RecordedIntersection } from "./lib/carriedAdjudicator.mjs";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -30,7 +31,7 @@ if (!publicBase) { console.error("PUBLIC_BASE (the bucket's public url) is requi
 const candidatePublicId = arg("candidate");
 if (!candidatePublicId) { console.error("--candidate <publicId> is required"); process.exit(1); }
 
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
 
 /*
   EVERY variant, including the ones that never landed — a refused render still

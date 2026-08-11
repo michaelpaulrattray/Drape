@@ -20,6 +20,7 @@ import mysql from "mysql2/promise";
 import sharp from "sharp";
 
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -40,7 +41,7 @@ const OUT = arg("out", "output/pack/carried");
 if (!candidatePrefix) { console.error("--candidate <publicId prefix> is required"); process.exit(1); }
 mkdirSync(OUT, { recursive: true });
 
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
 const query = async (sql: string, params: unknown[] = []): Promise<any[]> => {
   const [rows] = await connection.query<any[]>(sql, params);
   return rows;

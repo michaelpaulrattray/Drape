@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import mysql, { type ResultSetHeader } from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_r7_7c1_disposable_";
 
@@ -61,7 +62,7 @@ async function main() {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection({
+  const admin = await openDatabase({
     uri: serverUrl.toString(),
     connectTimeout: 15_000,
   });
@@ -79,7 +80,7 @@ async function main() {
     created = true;
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
 
-    const connection = await mysql.createConnection({
+    const connection = await openDatabase({
       uri: testUrl.toString(),
       connectTimeout: 15_000,
     });

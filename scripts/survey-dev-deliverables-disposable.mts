@@ -18,12 +18,13 @@ import { readResolvedIdentity } from "../server/castingV2/rollService";
 import { nameForFacet, facetsNeedingNames } from "../server/castingV2/segmentsOnFace";
 import { pronounsForSex } from "../server/castingV2/castPronouns";
 import type { Facet } from "../server/castingV2/refineFacets";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is not set");
 if (process.env.MYSQL_PUBLIC_URL) throw new Error("refusing to run beside a production URL");
 
-const connection = await mysql.createConnection(url);
+const connection = await openDatabase(url);
 const [rows] = await connection.query(
   `SELECT id, candidateId, userId, requestText, internalPrompt
      FROM casting_candidate_variants

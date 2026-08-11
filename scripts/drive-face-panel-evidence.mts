@@ -42,6 +42,7 @@ import sharp from "sharp";
 import type { Page } from "puppeteer-core";
 
 import { openDrivenPage, createChecks } from "./lib/drivePage.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -63,7 +64,7 @@ if (!secret || !appId) throw new Error("JWT_SECRET and VITE_APP_ID are required 
 
 /* The fixture is on the founder's own account, so the session is his. Read,
    never printed. */
-const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+const conn = await openDatabase(process.env.DATABASE_URL!);
 const [owners] = await conn.query("SELECT openId FROM users WHERE id = 1") as any[];
 await conn.end();
 if (!owners[0]?.openId) throw new Error("no owner account to drive as");

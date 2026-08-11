@@ -34,6 +34,7 @@ import sharp from "sharp";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { shellFraction } from "../server/castingV2/referenceCompleteness";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const OUT = path.resolve("output/thin-kind-door");
 const CACHE = path.join(OUT, "cache");
@@ -139,7 +140,7 @@ function coverage(a: Shape, b: Shape): number {
 }
 
 await mkdir(CACHE, { recursive: true });
-const connection = await mysql.createConnection({ uri, timezone: "Z" });
+const connection = await openDatabase({ uri, timezone: "Z" });
 /*
   BOTH SIDES OF THE DOOR, because a bar needs crops that were kept as well as
   crops that were turned away — and the kept ones cost nothing extra: rows #2/#3

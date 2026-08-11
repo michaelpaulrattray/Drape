@@ -11,6 +11,7 @@ import {
   PrivateEvidenceSchemaMismatchError,
   assertPrivateEvidenceCleanupSchemaWithClient,
 } from "../server/casting/evidence/privateEvidenceSchema";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_r7_7c5a_disposable_";
 
@@ -68,7 +69,7 @@ async function main() {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection({
+  const admin = await openDatabase({
     uri: serverUrl.toString(),
     connectTimeout: 15_000,
   });
@@ -86,7 +87,7 @@ async function main() {
     created = true;
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
 
-    const connection = await mysql.createConnection({
+    const connection = await openDatabase({
       uri: testUrl.toString(),
       connectTimeout: 15_000,
     });

@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import mysql, { type ResultSetHeader } from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_r7_5b_disposable_";
 
@@ -48,7 +49,7 @@ async function main() {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection({ uri: serverUrl.toString(), connectTimeout: 15_000 });
+  const admin = await openDatabase({ uri: serverUrl.toString(), connectTimeout: 15_000 });
   let created = false;
   try {
     const [databaseRows] = await admin.query("SHOW DATABASES");
@@ -62,7 +63,7 @@ async function main() {
     created = true;
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
 
-    const testConnection = await mysql.createConnection({ uri: testUrl.toString(), connectTimeout: 15_000 });
+    const testConnection = await openDatabase({ uri: testUrl.toString(), connectTimeout: 15_000 });
     const legacyOperationId = randomUUID();
     let legacyModelId = 0;
     let legacyItemId = 0;

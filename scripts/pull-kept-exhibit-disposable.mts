@@ -24,6 +24,7 @@ import mysql from "mysql2/promise";
 import sharp from "sharp";
 
 import { fetchImageBytes } from "./lib/imageBytes.mjs";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function flag(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -36,7 +37,7 @@ const outDir = flag("out") ?? "output/founder-pack";
 const url = process.env.MYSQL_PUBLIC_URL;
 if (!url) throw new Error("run under `railway.cmd run --service MySQL` — this reads production");
 
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as mysql.ConnectionOptions);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as mysql.ConnectionOptions);
 try {
   await mkdir(outDir, { recursive: true });
   const [rows] = await connection.query<any[]>(`

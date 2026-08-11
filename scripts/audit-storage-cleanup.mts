@@ -15,11 +15,12 @@ import {
   parseJsonValue,
 } from "../server/casting/deletionAudit";
 import { auditEvidenceOrphans } from "../server/casting/evidence/evidenceOrphanAudit";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const args = parseCastDeletionAuditArgs(process.argv.slice(2));
 process.env.DATABASE_URL = args.databaseUrl;
 process.env.R2_PUBLIC_URL = args.currentPublicUrl;
-const connection = await mysql.createConnection({ uri: args.databaseUrl, connectTimeout: 15_000 });
+const connection = await openDatabase({ uri: args.databaseUrl, connectTimeout: 15_000 });
 
 type Reference = { storageKey?: unknown; url?: unknown };
 const referenced = new Set<string>();

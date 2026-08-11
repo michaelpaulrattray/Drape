@@ -14,6 +14,7 @@ import {
   assertPrivateEvidenceScopeOff,
   parsePrivateEvidenceCeremonyArgs,
 } from "../server/casting/evidence/privateEvidenceCeremony";
+import { openPool } from "./lib/dbConnection.mts";
 
 const PREVIOUS_TAG = "0011_r7_evidence_ingestion";
 const TARGET_TAG = "0012_r7_private_evidence_cleanup_backend";
@@ -47,7 +48,7 @@ async function main(): Promise<void> {
   const targetSql = await readFile(`drizzle/${TARGET_TAG}.sql`, "utf8");
   const previousHash = createHash("sha256").update(previousSql).digest("hex");
   const targetHash = createHash("sha256").update(targetSql).digest("hex");
-  const pool = mysql.createPool({
+  const pool = openPool({
     uri: args.databaseUrl,
     connectTimeout: 15_000,
     connectionLimit: 1,

@@ -31,6 +31,7 @@ import mysql from "mysql2/promise";
 import sharp from "sharp";
 
 import { assertOneWorld, readLocalEnvFile } from "./lib/worldGuard.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -56,7 +57,7 @@ process.env.DATABASE_URL = process.env[databaseKey];
    not a fact (the sibling lesson worldGuard was written from). */
 const OPEN_ID = "google_109438922864282769159";
 
-const connection = await mysql.createConnection({
+const connection = await openDatabase({
   uri: process.env.DATABASE_URL!, timezone: "Z",
 } as mysql.ConnectionOptions);
 

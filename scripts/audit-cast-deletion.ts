@@ -30,6 +30,7 @@ import {
   parseJsonValue,
   readCastProvenance,
 } from "../server/casting/deletionAudit";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 type AuditRow = RowDataPacket & Record<string, unknown>;
 
@@ -354,7 +355,7 @@ async function main() {
     console.warn("[cast-deletion-audit] explicit production read-only authorization flag is present");
   }
 
-  const connection = await mysql.createConnection(args.databaseUrl);
+  const connection = await openDatabase(args.databaseUrl);
   await rows(connection, "START TRANSACTION READ ONLY");
   try {
     const hasDeletedAt = await scalar(connection, `

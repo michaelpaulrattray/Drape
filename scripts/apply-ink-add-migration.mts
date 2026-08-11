@@ -18,6 +18,7 @@ import {
 import {
   assertPrivateEvidenceCleanupSchemaWithClient,
 } from "../server/casting/evidence/privateEvidenceSchema";
+import { openPool } from "./lib/dbConnection.mts";
 
 const PREVIOUS_TAG = "0012_r7_private_evidence_cleanup_backend";
 const TARGET_TAG = "0013_r7_ink_add_candidates";
@@ -63,7 +64,7 @@ async function main(): Promise<void> {
   const previousHash = createHash("sha256").update(previousSql).digest("hex");
   const targetHash = createHash("sha256").update(targetSql).digest("hex");
 
-  const pool = mysql.createPool({
+  const pool = openPool({
     uri: args.databaseUrl,
     connectTimeout: 15_000,
     connectionLimit: 1,

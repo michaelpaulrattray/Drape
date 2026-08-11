@@ -10,8 +10,9 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
 import { mintedSlotsForRender } from "../server/castingV2/mintedSlots";
+import { openDatabase } from "./lib/dbConnection.mts";
 
-const c = await mysql.createConnection(process.env.DATABASE_URL!);
+const c = await openDatabase(process.env.DATABASE_URL!);
 
 /* WHAT THE RENDER EARNED, as persisted: the segment store files exactly the
    earned ∩ cuttable facets, so its rows are the surviving evidence of that list. */

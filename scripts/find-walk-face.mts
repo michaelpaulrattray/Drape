@@ -16,6 +16,7 @@
  *   railway.cmd run --service MySQL npx tsx scripts/find-walk-face.mts
  */
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.MYSQL_PUBLIC_URL ?? process.env.DATABASE_URL;
 if (!url) {
@@ -23,7 +24,7 @@ if (!url) {
   process.exit(1);
 }
 
-const connection = await mysql.createConnection(url);
+const connection = await openDatabase(url);
 
 /* ---- 1. Where has anyone actually REFINED? Those are the walk's footprints. */
 console.log("=== candidates carrying refinement history (most recent variant first) ===\n");

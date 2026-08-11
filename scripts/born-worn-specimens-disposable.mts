@@ -16,6 +16,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.MYSQL_PUBLIC_URL ?? process.env.DATABASE_URL;
 if (!url) {
@@ -41,7 +42,7 @@ if (!publicBase) {
   process.exit(1);
 }
 
-const connection = await mysql.createConnection(url);
+const connection = await openDatabase(url);
 
 async function arm(where: string, limit: number) {
   const [rows] = await connection.query<any[]>(

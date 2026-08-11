@@ -15,6 +15,7 @@ import {
 } from "../server/casting/evidence/evidenceComposerDeploymentCeremony";
 import { assertEvidencePackageScopeOff } from "../server/casting/evidence/evidenceAcceptedAssetMigrationCeremony";
 import { assertEvidenceComposerSchemaWithClient } from "../server/casting/evidence/evidenceComposerSchema";
+import { openPool } from "./lib/dbConnection.mts";
 
 const PREVIOUS_TAG = "0014_r7_evidence_accepted_asset";
 const TARGET_TAGS = [
@@ -74,7 +75,7 @@ async function main(): Promise<void> {
     ),
   );
 
-  const pool = mysql.createPool({
+  const pool = openPool({
     uri: args.databaseUrl,
     connectTimeout: 15_000,
     connectionLimit: 1,

@@ -40,7 +40,7 @@ await db.insert(castingSessions).values({
   expiresAt: marker,
 });
 
-const bare = await mysql.createConnection(process.env.DATABASE_URL!);
+const bare = await openDatabase(process.env.DATABASE_URL!);
 const fixed = await openDatabase();
 
 const [stored] = await bare.query<any[]>(

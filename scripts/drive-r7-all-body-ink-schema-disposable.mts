@@ -12,6 +12,7 @@ import {
   EvidenceComposerSchemaMismatchError,
   assertEvidenceComposerSchemaWithClient,
 } from "../server/casting/evidence/evidenceComposerSchema";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_r7_7g_schema_disposable_";
 
@@ -78,7 +79,7 @@ async function main(): Promise<void> {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection({
+  const admin = await openDatabase({
     uri: serverUrl.toString(),
     connectTimeout: 15_000,
   });
@@ -95,7 +96,7 @@ async function main(): Promise<void> {
     created = true;
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
 
-    const connection = await mysql.createConnection({
+    const connection = await openDatabase({
       uri: testUrl.toString(),
       connectTimeout: 15_000,
       enableKeepAlive: true,

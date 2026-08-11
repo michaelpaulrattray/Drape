@@ -2,6 +2,7 @@ import 'dotenv/config';
 import mysql from 'mysql2/promise';
 import { bootstrapModelSnapshot } from '../server/casting/snapshotBootstrap';
 import { getDb } from '../server/db/connection';
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const APP_ID = process.env.VITE_APP_ID ?? '';
@@ -25,7 +26,7 @@ if (
   throw new Error('Browser verification requires the guarded Railway development MySQL database');
 }
 
-const connection = await mysql.createConnection(DATABASE_URL);
+const connection = await openDatabase(DATABASE_URL);
 
 async function fixtureUserId(): Promise<number> {
   await connection.execute(

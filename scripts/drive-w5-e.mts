@@ -11,6 +11,7 @@ import { SignJWT } from 'jose';
 import JSZip from 'jszip';
 import mysql from 'mysql2/promise';
 import puppeteer from 'puppeteer-core';
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const BASE = process.env.VERIFY_BASE_URL ?? 'http://localhost:3001';
 if (!/^http:\/\/localhost:\d+$/.test(BASE)) throw new Error(`Refusing non-local base: ${BASE}`);
@@ -33,7 +34,7 @@ const check = (name: string, ok: boolean, detail = '') => {
 };
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const conn = await mysql.createConnection(process.env.DATABASE_URL);
+const conn = await openDatabase(process.env.DATABASE_URL);
 await conn.execute(
   `INSERT INTO users (openId, name, email, approved, emailVerified, role)
    VALUES ('verify-bot-local', 'Verify Bot', 'verify-bot@local.test', 1, 1, 'user')

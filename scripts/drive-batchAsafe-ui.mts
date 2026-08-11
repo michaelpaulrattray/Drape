@@ -23,6 +23,7 @@ import "dotenv/config";
 import { SignJWT } from "jose";
 import mysql from "mysql2/promise";
 import puppeteer from "puppeteer-core";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
@@ -35,7 +36,7 @@ const check = (name: string, ok: boolean, detail = "") => {
 };
 
 // ── Session + seeds ────────────────────────────────────────────────────────
-const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+const conn = await openDatabase(process.env.DATABASE_URL!);
 await conn.execute(
   `INSERT INTO users (openId, name, email, approved, emailVerified, role)
    VALUES ('verify-bot-local', 'Verify Bot', 'verify-bot@local.test', 1, 1, 'user')

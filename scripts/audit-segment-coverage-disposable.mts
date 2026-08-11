@@ -52,6 +52,7 @@ import { assertOneWorld } from "./lib/worldGuard.mts";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import type { Mask } from "../server/castingV2/maskedComposite";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const INVENTORY = process.argv.includes("--inventory");
 const SELFTEST = process.argv.includes("--selftest");
@@ -116,7 +117,7 @@ async function inventory(): Promise<Row[]> {
     console.error("no database url — run under `railway.cmd run --service MySQL`");
     process.exit(1);
   }
-  const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+  const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
   const [rows] = await connection.query<any[]>(
     `SELECT s.id, s.publicId, s.userId, s.candidateId, s.variantId, s.provenance,
             s.facet, s.region, s.version, s.maskKey, s.contentKey,

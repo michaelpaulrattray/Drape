@@ -19,6 +19,7 @@ import {
   parsePrivateEvidenceCeremonyArgs,
 } from "../server/casting/evidence/privateEvidenceCeremony";
 import { assertReadOnlyAuditSql } from "../server/casting/deletionAudit";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const SYNTHETIC_USER_ID = 2_147_483_647;
 const SYNTHETIC_MODEL_ID = 2_147_483_646;
@@ -30,7 +31,7 @@ async function collect(body: AsyncIterable<Uint8Array>): Promise<Buffer> {
 }
 
 async function readOnlySyntheticIdFence(databaseUrl: string): Promise<void> {
-  const connection = await mysql.createConnection({
+  const connection = await openDatabase({
     uri: databaseUrl,
     connectTimeout: 15_000,
   });

@@ -32,6 +32,7 @@
 import mysql from "mysql2/promise";
 
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback: string): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -47,7 +48,7 @@ assertOneWorld(["DATABASE_URL"]);
 const url = process.env.DATABASE_URL;
 if (!url) { console.error("no DATABASE_URL — the app's own helper reads it, so it must be given one"); process.exit(1); }
 
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
 const query = async (sql: string, params: unknown[] = []): Promise<any[]> => {
   const [rows] = await connection.query<any[]>(sql, params);
   return rows;

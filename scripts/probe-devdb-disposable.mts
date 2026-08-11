@@ -1,10 +1,11 @@
 /** Disposable: read the dev database's own account of the segment store. */
 import "dotenv/config";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("no DATABASE_URL");
-const conn = await mysql.createConnection(url);
+const conn = await openDatabase(url);
 const [cols] = await conn.query("SHOW COLUMNS FROM `casting_segments`");
 for (const col of cols as Array<{ Field: string; Type: string; Null: string; Default: unknown }>) {
   console.log(`  ${col.Field.padEnd(14)} ${col.Type.padEnd(42)} ${col.Null === "YES" ? "NULL" : "NOT NULL"}`);

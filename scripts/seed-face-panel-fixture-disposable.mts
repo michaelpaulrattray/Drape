@@ -33,12 +33,13 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
 import { randomUUID } from "node:crypto";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const CANDIDATE = "d508cd29-9ba7-455f-89a3-40d77ec1ab97";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is required");
-const conn = await mysql.createConnection(url);
+const conn = await openDatabase(url);
 
 const [candidates] = await conn.query(
   "SELECT id, userId FROM casting_candidates WHERE publicId = ?",

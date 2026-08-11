@@ -49,6 +49,7 @@ import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { measureCoverage, shellFraction } from "../server/castingV2/referenceCompleteness";
 import type { Mask } from "../server/castingV2/maskedComposite";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const OUT = path.resolve("output/thin-kind-door");
 const CACHE = path.join(OUT, "cache");
@@ -232,7 +233,7 @@ function coverage(a: Shape, b: Shape): number {
 }
 
 await mkdir(CACHE, { recursive: true });
-const connection = await mysql.createConnection({ uri, timezone: "Z" });
+const connection = await openDatabase({ uri, timezone: "Z" });
 const [rows] = await connection.query<any[]>(`
   SELECT l.slot, l.refusedMaskKey mk, l.refusedBboxX bx, l.refusedBboxY by_, l.refusedBboxW bw,
          l.refusedBboxH bh, l.refusedFrameWidth fw, l.refusedFrameHeight fh, v.imageKey frame

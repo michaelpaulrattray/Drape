@@ -96,6 +96,7 @@ import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { readResolvedIdentity } from "../server/castingV2/rollService";
 import { currentValueOfFacet } from "../server/castingV2/refineDelta";
 import type { Mask } from "../server/castingV2/maskedComposite";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -394,7 +395,7 @@ function centroidX(mask: Mask): number | null {
   return total === 0 ? null : weighted / total;
 }
 
-const connection = await mysql.createConnection({
+const connection = await openDatabase({
   uri: process.env[databaseKey]!, timezone: "Z",
 } as mysql.ConnectionOptions);
 const reader = createFalRegionReader({ apiKey });

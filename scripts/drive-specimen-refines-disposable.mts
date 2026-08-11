@@ -60,6 +60,7 @@ import { selectVariant } from "../server/db/castingV2Variants";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { measureCoverage } from "../server/castingV2/referenceCompleteness";
 import type { Mask } from "../server/castingV2/maskedComposite";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const OUT = path.join("output", "specimens");
 const USER_ID = 1;
@@ -134,7 +135,7 @@ async function main(): Promise<void> {
   if (!apiKey) throw new Error("FAL_KEY is required — a specimen needs the reader that will judge it");
   const reader = createFalRegionReader({ apiKey });
 
-  const connection = await mysql.createConnection(process.env.DATABASE_URL!);
+  const connection = await openDatabase(process.env.DATABASE_URL!);
   const [candidates] = await connection.query(
     "select id, publicId from casting_candidates where id=? and userId=?",
     [CANDIDATE_ID, USER_ID],

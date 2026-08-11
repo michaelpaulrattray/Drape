@@ -7,12 +7,13 @@ import path from "node:path";
 import mysql from "mysql2/promise";
 import sharp from "sharp";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const OUT = path.resolve("output/earring-cut-diagnosis");
 const uri = process.env.DATABASE_URL!;
 if (new URL(uri).port !== "52008") throw new Error("not the dev database");
 const bucket = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
-const c = await mysql.createConnection({ uri, timezone: "Z" });
+const c = await openDatabase({ uri, timezone: "Z" });
 const [rows] = await c.query<any[]>(`
   SELECT l.slot, l.refusedBboxX x, l.refusedBboxY y, l.refusedBboxW w, l.refusedBboxH h,
          v.imageKey AS variantKey, cd.imageKey AS masterKey

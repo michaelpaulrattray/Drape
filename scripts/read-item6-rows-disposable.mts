@@ -2,11 +2,12 @@
  *  must be pinned to, plus the charge each one carries. Reads only. */
 import mysql from "mysql2/promise";
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 const key = process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL";
 assertOneWorld([key]);
 const url = process.env[key];
 if (!url) { console.error("no database url"); process.exit(1); }
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
 const [rows] = await connection.query<any[]>(
   `SELECT v.id, v.publicId, v.userId, v.requestText, v.status, v.pointsCost, v.operationId,
           v.createdAt, o.chargedCredits, o.refundedCredits, o.chargeReferenceId

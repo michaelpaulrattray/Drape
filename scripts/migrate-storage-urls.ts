@@ -23,6 +23,7 @@
  */
 import "dotenv/config";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 /** Every column that stores a full storage/CDN URL. Key columns are relative
  * keys and are unaffected by the host change, so they are not listed. */
@@ -99,7 +100,7 @@ async function main() {
   for (const p of oldPrefixes) console.log(`Old prefix: ${p}`);
   console.log("");
 
-  const conn = await mysql.createConnection(databaseUrl);
+  const conn = await openDatabase(databaseUrl);
   let totalMatched = 0;
   let totalUpdated = 0;
 

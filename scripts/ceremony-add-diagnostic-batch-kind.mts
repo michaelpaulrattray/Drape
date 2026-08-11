@@ -10,6 +10,7 @@
  * worlds lesson, opus-039/worldGuard).
  */
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.MYSQL_PUBLIC_URL;
 if (!url) {
@@ -28,7 +29,7 @@ const WANT = "casting_diagnostic_cleanup";
 const TARGET_ENUM =
   "enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup','casting_candidate_cleanup','casting_diagnostic_cleanup')";
 
-const conn = await mysql.createConnection(url);
+const conn = await openDatabase(url);
 try {
   const [rows] = await conn.query("SHOW COLUMNS FROM `storage_cleanup_batches` LIKE 'kind'");
   const col = (rows as Array<{ Type: string }>)[0];

@@ -13,6 +13,7 @@ import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_castingv2_schema_";
 const SAFE_NAME = new RegExp(`^${PREFIX}[a-z0-9]+$`);
@@ -80,7 +81,7 @@ assertNotProduction(url, databaseUrlFromDotEnv() === active);
 const databaseName = `${PREFIX}${Math.random().toString(36).slice(2, 10)}`;
 if (!SAFE_NAME.test(databaseName)) throw new Error("generated an unsafe database name");
 
-const server = await mysql.createConnection({
+const server = await openDatabase({
   host: url.hostname,
   port: Number(url.port || 3306),
   user: decodeURIComponent(url.username),

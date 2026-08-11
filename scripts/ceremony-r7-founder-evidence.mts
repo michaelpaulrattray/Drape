@@ -33,6 +33,7 @@ import { getDb } from "../server/db/connection";
 import { assertOneWorld } from "./lib/worldGuard.mts";
 import { getUserById } from "../server/db/users";
 import { appRouter } from "../server/routers";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 interface TargetRow extends RowDataPacket {
   userEmail: string | null;
@@ -521,7 +522,7 @@ async function main(): Promise<void> {
   process.env.DATABASE_URL = args.databaseUrl;
   assertOneWorld(["DATABASE_URL"]);
   try {
-    connection = await mysql.createConnection({
+    connection = await openDatabase({
       uri: args.databaseUrl,
       connectTimeout: 15_000,
     });

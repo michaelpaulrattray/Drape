@@ -61,6 +61,7 @@ import { assertOneWorld, readLocalEnvFile } from "./lib/worldGuard.mts";
 import { createChecks } from "./lib/drivePage.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import type { Mask } from "../server/castingV2/maskedComposite";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -276,7 +277,7 @@ globalThis.fetch = (async (input: any, init?: any) => {
 
 /* ------------------------------------------------------------------- the run */
 
-const connection = await mysql.createConnection({
+const connection = await openDatabase({
   uri: process.env[databaseKey]!, timezone: "Z",
 } as mysql.ConnectionOptions);
 const reader = createFalRegionReader({ apiKey });

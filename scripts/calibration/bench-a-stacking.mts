@@ -55,6 +55,7 @@ import { cutSegments } from "../../server/castingV2/segmentCuts";
 import { readRaster, type Mask, type Raster } from "../../server/castingV2/maskedComposite";
 import { listLineageSegments } from "../../server/db/castingV2Segments";
 import { cheekBand, countSpecks, type Population } from "./lib/speckDensity.mjs";
+import { openDatabase } from "../lib/dbConnection.mts";
 
 const OUT = "output/bench-a";
 mkdirSync(OUT, { recursive: true });
@@ -114,7 +115,7 @@ const ARMS = [
 
 const engine = createFalMaskedEditEngine({ apiKey });
 const reader = createFalRegionReader({ apiKey });
-const connection = await mysql.createConnection(databaseUrl);
+const connection = await openDatabase(databaseUrl);
 
 const USER_ID = await (async () => {
   const [row] = await connection.execute<any>(

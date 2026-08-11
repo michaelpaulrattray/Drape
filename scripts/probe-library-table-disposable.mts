@@ -13,13 +13,14 @@
  */
 import "dotenv/config";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const key = process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL";
 const url = process.env[key];
 if (!url) throw new Error("no database URL");
 const parsed = new URL(url);
 
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as mysql.ConnectionOptions);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as mysql.ConnectionOptions);
 try {
   const [where] = await connection.query<any[]>("SELECT DATABASE() AS d, VERSION() AS v");
   console.log(`via ${key}  host ${parsed.hostname}:${parsed.port}  database ${where[0].d}  mysql ${where[0].v}`);

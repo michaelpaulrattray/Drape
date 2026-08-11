@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import mysql from 'mysql2/promise';
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = 'drape_r7_b4_browser_';
 const PORT = 3017;
@@ -60,7 +61,7 @@ async function dropDatabase(serverUrl: URL, databaseName: string, safeName: RegE
   for (let attempt = 1; attempt <= 5; attempt += 1) {
     let cleanup: mysql.Connection | undefined;
     try {
-      cleanup = await mysql.createConnection({
+      cleanup = await openDatabase({
         uri: serverUrl.toString(),
         connectTimeout: 15_000,
         enableKeepAlive: true,
@@ -99,7 +100,7 @@ async function main() {
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
 
-  const admin = await mysql.createConnection({ uri: serverUrl.toString(), connectTimeout: 15_000 });
+  const admin = await openDatabase({ uri: serverUrl.toString(), connectTimeout: 15_000 });
   let created = false;
   let dev: ChildProcess | undefined;
   const logs: string[] = [];
@@ -115,7 +116,7 @@ async function main() {
     await admin.query(`CREATE DATABASE \`${databaseName}\``);
     created = true;
     console.log(`[browser-disposable] created ${databaseName} on ${sourceUrl.host}`);
-    const migrated = await mysql.createConnection({ uri: testUrl.toString(), connectTimeout: 15_000 });
+    const migrated = await openDatabase({ uri: testUrl.toString(), connectTimeout: 15_000 });
     try {
       await applyMigrations(migrated);
     } finally {

@@ -15,13 +15,14 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
 import { mapLegacyRow, type LegacyBoardItemRow } from "../server/lib/boardBackfill";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const APPLY = process.argv.includes("--apply");
 
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL not set");
-  const conn = await mysql.createConnection(url);
+  const conn = await openDatabase(url);
 
   const [rows] = await conn.execute(
     `SELECT id, type, metadata, parentItemId, sourceModelId, sourceGarmentId, sourceSessionId

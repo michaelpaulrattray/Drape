@@ -20,6 +20,7 @@
  */
 import { readFile } from "node:fs/promises";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.MYSQL_PUBLIC_URL;
 if (!url) {
@@ -34,7 +35,7 @@ if (!/railway|rlwy\.net|proxy/i.test(url)) {
   process.exit(1);
 }
 
-const conn = await mysql.createConnection(url);
+const conn = await openDatabase(url);
 let failed = false;
 try {
   /* ------------------------------------------ 1. the promoted segment set */

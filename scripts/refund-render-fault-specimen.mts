@@ -41,6 +41,7 @@ import mysql from "mysql2/promise";
 
 import { addCredits, normalizeCreditReferenceId } from "../server/db/credits";
 import { candidateChargeReference } from "../server/castingV2/rollRecovery";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -68,7 +69,7 @@ export function correctionReference(operationId: string, candidatePublicId: stri
   );
 }
 
-const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+const conn = await openDatabase(process.env.DATABASE_URL!);
 
 const [rolls] = await conn.query<any[]>(
   `SELECT id, publicId, userId, operationId, priceCredits, briefText, CAST(createdAt AS CHAR) AS createdAt

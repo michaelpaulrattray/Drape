@@ -43,6 +43,7 @@
 import mysql from "mysql2/promise";
 
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 /**
  * The two rows, pinned by the identifier the product itself uses.
@@ -77,7 +78,7 @@ if (!url) {
   process.exit(1);
 }
 
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
 const query = async (sql: string, params: unknown[] = []): Promise<any[]> => {
   const [rows] = await connection.query<any[]>(sql, params);
   return rows;

@@ -16,6 +16,7 @@ import {
   summarizePrivateEvidenceBucket,
 } from "../server/casting/evidence/privateEvidenceCeremony";
 import { assertReadOnlyAuditSql } from "../server/casting/deletionAudit";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 async function main(): Promise<void> {
   const args = parsePrivateEvidenceCeremonyArgs(
@@ -29,7 +30,7 @@ async function main(): Promise<void> {
   }
   const adapter = getConfiguredPrivateEvidenceStorageAdapter();
   if (!adapter) throw new Error("private_evidence_adapter_unconfigured");
-  const connection = await mysql.createConnection({
+  const connection = await openDatabase({
     uri: args.databaseUrl,
     connectTimeout: 15_000,
   });

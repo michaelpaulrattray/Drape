@@ -44,6 +44,7 @@ import { assertOneWorld } from "./lib/worldGuard.mts";
 import {
   CLEAN_BOUNDARY_COHERENCE, FOUNDER_SEAM_COHERENCE, readSeamRow, seamRates, SEAM_CONTROL_ROWS, type SeamRow,
 } from "./lib/seamRows.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -70,7 +71,7 @@ if (SELFTEST) {
   assertOneWorld([databaseKey]);
   const url = process.env[databaseKey];
   if (!url) { console.error("no database url — run under `railway run --service MySQL`"); process.exit(1); }
-  const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+  const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
   ([rows] = await connection.query<any[]>(
     `SELECT v.id, v.publicId, v.userId, v.requestText, v.status, v.pointsCost,
             v.internalPrompt, v.createdAt

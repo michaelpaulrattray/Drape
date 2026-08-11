@@ -57,6 +57,7 @@ import sharp from "sharp";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import type { Mask } from "../server/castingV2/maskedComposite";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const OUT = path.resolve("output/earring-cut-diagnosis");
 const READS = 3;
@@ -160,7 +161,7 @@ async function differencePicture(
 }
 
 await mkdir(OUT, { recursive: true });
-const connection = await mysql.createConnection({ uri, timezone: "Z" });
+const connection = await openDatabase({ uri, timezone: "Z" });
 const [rows] = await connection.query<any[]>(`
   SELECT l.id, l.slot, l.refusedCoverage,
          l.refusedBboxX, l.refusedBboxY, l.refusedBboxW, l.refusedBboxH,

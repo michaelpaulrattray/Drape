@@ -14,6 +14,7 @@
  *   railway.cmd run --service MySQL npx tsx scripts/find-bare-faced.mts
  */
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const url = process.env.MYSQL_PUBLIC_URL ?? process.env.DATABASE_URL;
 if (!url) {
@@ -25,7 +26,7 @@ if (!url) {
    served URLs are persisted in rows and this must agree with them. */
 const publicBase = process.env.R2_PUBLIC_URL ?? "";
 
-const connection = await mysql.createConnection(url);
+const connection = await openDatabase(url);
 
 const [rows] = await connection.query<any[]>(
   `SELECT c.publicId AS candidate, c.position, c.status, c.imageKey,

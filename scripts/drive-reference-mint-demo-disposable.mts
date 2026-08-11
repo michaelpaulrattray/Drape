@@ -60,6 +60,7 @@ import { catalogueSlots } from "../server/castingV2/referenceSlotCatalogue";
 import { mintReferencesForRender, type SlotSpec } from "../server/castingV2/referenceMint";
 import type { RegionReader as MintRegionReader } from "../server/castingV2/referenceCompleteness";
 import type { Mask } from "../server/castingV2/maskedComposite";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const INVENTORY = process.argv.includes("--inventory");
 const CANDIDATE = (() => {
@@ -104,7 +105,7 @@ async function main(): Promise<void> {
   ));
   const questions = Array.from(new Set(cuttable.map((slot) => slot.question!)));
 
-  const connection = await mysql.createConnection(process.env.DATABASE_URL!);
+  const connection = await openDatabase(process.env.DATABASE_URL!);
   const [rows] = await connection.query(
     CANDIDATE === null
       ? "select id, publicId, imageKey from casting_candidates where userId=1 and imageKey is not null order by id desc limit 1"

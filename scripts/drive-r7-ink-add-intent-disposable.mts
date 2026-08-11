@@ -11,6 +11,7 @@ import mysql, {
 import sharp from "sharp";
 import type { PrivateEvidenceStorageAdapter } from "../server/casting/evidence/evidenceDelivery";
 import { assertEvidenceComposerSchemaWithClient } from "../server/casting/evidence/evidenceComposerSchema";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_r7_7d_d4a_disposable_";
 
@@ -139,7 +140,7 @@ async function main() {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection({
+  const admin = await openDatabase({
     uri: serverUrl.toString(),
     connectTimeout: 15_000,
   });
@@ -156,7 +157,7 @@ async function main() {
     await admin.query(`CREATE DATABASE \`${databaseName}\``);
     created = true;
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
-    const connection = await mysql.createConnection({
+    const connection = await openDatabase({
       uri: testUrl.toString(),
       connectTimeout: 15_000,
       enableKeepAlive: true,

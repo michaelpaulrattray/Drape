@@ -13,12 +13,13 @@ import mysql from "mysql2/promise";
 import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { adjudicatedGapFor, shellFraction } from "../server/castingV2/referenceCompleteness";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const uri = process.env.DATABASE_URL!;
 if (new URL(uri).port !== "52008") throw new Error("not the dev database");
 const bucket = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
 const apiKey = process.env.FAL_KEY!;
-const c = await mysql.createConnection({ uri, timezone: "Z" });
+const c = await openDatabase({ uri, timezone: "Z" });
 const [rows] = await c.query<any[]>(
   "SELECT l.slot, l.refusedKind k, l.refusedCoverage cov, v.imageKey f FROM casting_reference_library l"
   + " LEFT JOIN casting_candidate_variants v ON v.id = l.variantId"

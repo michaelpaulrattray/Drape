@@ -36,6 +36,7 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import mysql from "mysql2/promise";
 import sharp from "sharp";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const PREFIX = "drape_refusal_viewer_";
 const OUT = "output/refusal-viewer-rehearsal";
@@ -62,7 +63,7 @@ if (!new RegExp(`^${PREFIX}[a-z0-9]+$`).test(databaseName)) {
 }
 
 /** The specimen, read out of the LIVE table read-only — real keys, real box. */
-const source = await mysql.createConnection({ uri: active, timezone: "Z" } as mysql.ConnectionOptions);
+const source = await openDatabase({ uri: active, timezone: "Z" } as mysql.ConnectionOptions);
 const [specimens] = await source.query<any[]>(`
   SELECT l.slot, l.storageKey, l.maskKey, l.bboxX, l.bboxY, l.bboxW, l.bboxH,
          l.frameWidth, l.frameHeight, COALESCE(v.imageKey, c.imageKey) AS frameKey
@@ -80,7 +81,7 @@ console.log(
   + `${specimen.bboxX},${specimen.bboxY} in ${specimen.frameWidth}x${specimen.frameHeight}`,
 );
 
-const server = await mysql.createConnection({
+const server = await openDatabase({
   host: url.hostname,
   port: Number(url.port || 3306),
   user: decodeURIComponent(url.username),

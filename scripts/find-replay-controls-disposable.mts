@@ -19,6 +19,7 @@
 import mysql from "mysql2/promise";
 
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const databaseKey = process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL";
 assertOneWorld([databaseKey]);
@@ -26,7 +27,7 @@ const url = process.env[databaseKey];
 if (!url) throw new Error("no database url — run under `railway run --service MySQL`");
 
 const OPEN_ID = "google_109438922864282769159";
-const connection = await mysql.createConnection({ uri: url, timezone: "Z" } as any);
+const connection = await openDatabase({ uri: url, timezone: "Z" } as any);
 const query = async (sql: string, params: unknown[] = []): Promise<any[]> => {
   const [rows] = await connection.query<any[]>(sql, params);
   return rows;

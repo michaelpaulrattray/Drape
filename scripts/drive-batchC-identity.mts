@@ -32,6 +32,7 @@
 import "dotenv/config";
 import { SignJWT } from "jose";
 import mysql from "mysql2/promise";
+import { openDatabase } from "./lib/dbConnection.mts";
 
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const failures: string[] = [];
@@ -50,7 +51,7 @@ if (process.env.DRIVE_BATCHC_DISPOSABLE_DB !== "1") {
 }
 
 // ── Session ────────────────────────────────────────────────────────────────
-const conn = await mysql.createConnection(process.env.DATABASE_URL!);
+const conn = await openDatabase(process.env.DATABASE_URL!);
 await conn.execute(
   `INSERT INTO users (openId, name, email, approved, emailVerified, role)
    VALUES ('verify-bot-local', 'Verify Bot', 'verify-bot@local.test', 1, 1, 'user')
