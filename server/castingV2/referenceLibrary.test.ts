@@ -389,3 +389,108 @@ describe("the library the assembler is handed", () => {
     expect(deriveLibrary([])).toEqual([]);
   });
 });
+
+/*
+  THE LIBRARY LEARNS TO HOLD AN ABSENCE (migration 0030, fable-326/327).
+
+  Proved with pictures before any of this existed: step A took her glasses off,
+  step B asked for copper hair, and the frame came back with copper hair AND the
+  glasses, because the master wears them forever and nothing re-said the absence.
+  Each rule below is driven with the case that would pass if the rule were
+  missing.
+*/
+describe("a vacated slot", () => {
+  const VACANT = "no earrings — both earlobes bare, nothing hanging from either ear";
+
+  it("sends NO crop, even though the carry that put the earrings there is still live", () => {
+    const worn = row({
+      slot: "earring@left", role: "carry", tier: "item", noun: "left earring",
+      words: ["a wide gold hoop"], version: 1, storageKey: "hoop.png",
+    });
+    const gone = row({
+      slot: "earring@left", role: "vacancy", tier: "item", noun: "left earring",
+      words: [VACANT], version: 2, storageKey: null, maskKey: null, digest: null,
+    });
+
+    const [entry] = deriveLibrary([worn, gone]);
+
+    expect(entry!.vacant).toBe(true);
+    expect(entry!.carry).toBeUndefined();
+    expect(entry!.anchor).toBeUndefined();
+    expect(entry!.words).toEqual([VACANT]);
+  });
+
+  it("CONTROL — without the vacancy the same carry rides, which is the recipe this prevents", () => {
+    const worn = row({
+      slot: "earring@left", role: "carry", tier: "item", noun: "left earring",
+      words: ["a wide gold hoop"], version: 1, storageKey: "hoop.png",
+    });
+
+    const [entry] = deriveLibrary([worn]);
+
+    expect(entry!.vacant).toBeUndefined();
+    expect(entry!.carry).toEqual({ key: "hoop.png", sha: worn.digest });
+  });
+
+  it("is superseded by a later answer on the same slot — she puts new ones in", () => {
+    const gone = row({
+      slot: "earring@left", role: "vacancy", tier: "item", noun: "left earring",
+      words: [VACANT], version: 2, storageKey: null, maskKey: null, digest: null,
+      createdAt: new Date(2026, 7, 10, 12, 0, 1),
+    });
+    const again = row({
+      slot: "earring@left", role: "carry", tier: "item", noun: "left earring",
+      words: ["small silver studs"], version: 3, storageKey: "studs.png",
+      createdAt: new Date(2026, 7, 10, 13, 0, 0),
+    });
+
+    const [entry] = deriveLibrary([gone, again]);
+
+    expect(entry!.vacant).toBeUndefined();
+    expect(entry!.carry).toEqual({ key: "studs.png", sha: again.digest });
+    expect(entry!.words).toEqual(["small silver studs"]);
+  });
+
+  it("says the absence in the recipe on a LATER render that never mentioned it", () => {
+    const gone = row({
+      slot: "glasses", role: "vacancy", tier: "item", noun: "glasses",
+      words: ["no glasses — her face uncovered, no frames, no lenses"],
+      version: 2, storageKey: null, maskKey: null, digest: null,
+    });
+
+    const recipe = assembleRecipe({
+      master: { key: "master.png" },
+      pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
+      library: deriveLibrary([gone]),
+      /* An unrelated ask — the exact shape of the step that brought them back. */
+      asks: [{ slot: "hair", noun: "hair", words: "coloured copper" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).toContain("no glasses — her face uncovered");
+    /* And it sends the master alone: nothing pictures an absence. */
+    expect(recipe.references).toHaveLength(1);
+  });
+
+  it("CONTROL — an ITEM slot that is merely undescribed says nothing, as it always has", () => {
+    /* The same shape without the vacancy: an item carry with words. It is
+       carried by its crop and must NOT also be described, which is why the
+       standing loop skips items — the rule the vacancy has to reach past. */
+    const worn = row({
+      slot: "earring@left", role: "carry", tier: "item", noun: "left earring",
+      words: ["a wide gold hoop"], version: 1, storageKey: "hoop.png",
+    });
+
+    const recipe = assembleRecipe({
+      master: { key: "master.png" },
+      pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
+      library: deriveLibrary([worn]),
+      asks: [{ slot: "hair", noun: "hair", words: "coloured copper" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.prompt).not.toContain("Keep her left earring exactly");
+  });
+});

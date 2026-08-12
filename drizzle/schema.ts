@@ -2563,8 +2563,16 @@ export const castingCastSegments = mysqlTable("casting_cast_segments", {
 export type CastingCastSegment = typeof castingCastSegments.$inferSelect;
 export type InsertCastingCastSegment = typeof castingCastSegments.$inferInsert;
 
-/** Which IMAGE a library row's key holds. See {@link castingReferenceLibrary}. */
-export const CASTING_REFERENCE_ROLES = ["anchor", "carry"] as const;
+/**
+ * Which IMAGE a library row's key holds — and `vacancy`, which holds none.
+ *
+ * See {@link castingReferenceLibrary}. The third value (migration 0030) is the
+ * library learning to hold an ABSENCE: a slot she has taken something OFF, with
+ * words and no crop. Every reader on the recipe path filters `carry` or merges
+ * by role, so a vacancy is invisible to all of them until the code that reads it
+ * lands — which is what makes the migration and the rows dark by construction.
+ */
+export const CASTING_REFERENCE_ROLES = ["anchor", "carry", "vacancy"] as const;
 export type CastingReferenceRole = typeof CASTING_REFERENCE_ROLES[number];
 
 /** Which carrier the tier boundary gives a feature (§3.0a, fable-192). */

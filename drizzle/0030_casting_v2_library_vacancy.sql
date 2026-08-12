@@ -1,0 +1,46 @@
+-- THE LIBRARY LEARNS TO HOLD AN ABSENCE (shift 63, fable-326/327).
+--
+-- A removal on the repaint road lasted exactly one frame, and it was proved
+-- with pictures before this file was written: step A took her glasses off, step
+-- B asked for copper hair, and the frame came back with copper hair AND the
+-- glasses. Both steps would have been charged.
+--
+-- The reason is structural. Every render re-anchors on the pristine master,
+-- which wears her glasses forever, and the library can only carry features she
+-- HAS — a row is a crop plus the words that regenerate it. Nothing in it can say
+-- "this slot is empty," so the second render's sentence never mentions the
+-- glasses and the master paints them back on.
+--
+-- This is the one column change that lets a row mean that: a third `role`.
+--
+-- ============================================================================
+-- WHY A ROLE AND NOT A FLAG ON A CARRY
+-- ============================================================================
+--
+-- The load-bearing property is that today's code must not be able to pick these
+-- rows up. Every reader on the recipe path filters `role = 'carry'` (or asks
+-- `deriveLibrary`, which merges by role), so an unknown third value is
+-- INVISIBLE to all of them: the migration and any rows written after it are dark
+-- by construction rather than by a flag anybody remembers to check.
+--
+-- A `vacant` boolean on a carry row would do the exact opposite — every existing
+-- carry reader would find it, and the newest of those readers sends the row's
+-- crop into a paid render. The failure mode of the wrong choice here is a
+-- recipe that says "no earrings" while sending a picture of her earrings.
+--
+-- ============================================================================
+-- WHAT IT DOES TO EXISTING ROWS
+-- ============================================================================
+--
+-- Nothing. Widening an ENUM is additive: every stored value stays legal, no row
+-- is rewritten, the identity index UNIQUE(candidateId, slot, role, version)
+-- keeps working (a vacancy is simply a fourth column value it can hold), and no
+-- INSERT anywhere in the codebase names 'vacancy' until the code that writes it
+-- lands after this.
+--
+-- MySQL rewrites the table for a MODIFY COLUMN on some versions. The table is
+-- small (tens of rows in dev, low hundreds in production) so the lock is
+-- momentary, and it is taken while the repaint road is OFF for everyone.
+
+ALTER TABLE `casting_reference_library`
+  MODIFY COLUMN `role` ENUM('anchor','carry','vacancy') NOT NULL;

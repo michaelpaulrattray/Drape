@@ -45,8 +45,17 @@ import type {
   ReferenceImage,
 } from "./recipeAssembler";
 
-/** Which IMAGE a row's key holds — the frozen introduction, or the minted crop. */
-export type ReferenceRole = "anchor" | "carry";
+/**
+ * Which IMAGE a row's key holds — the frozen introduction, or the minted crop.
+ *
+ * And `vacancy`, which holds none, because the slot is EMPTY: she took the thing
+ * off. It is a role rather than a flag on a carry for the reason the migration
+ * states — every reader on the recipe path either asks for `carry` or merges by
+ * role, so a vacancy is invisible to all of them until something is taught to
+ * read it, and the row that would otherwise be picked up carries a picture of
+ * the very thing she removed.
+ */
+export type ReferenceRole = "anchor" | "carry" | "vacancy";
 
 export type ReferenceGeometry = {
   bbox: { x: number; y: number; width: number; height: number };
@@ -244,10 +253,12 @@ export function deriveLibrary(rows: readonly StoredReference[]): LibraryEntry[] 
     const held = bySlot.get(row.slot);
     if (!held) {
       order.push(row.slot);
-      bySlot.set(row.slot, { state: row, [row.role]: row });
+      bySlot.set(row.slot, { state: row, ...(row.role === "vacancy" ? {} : { [row.role]: row }) });
       continue;
     }
-    held[row.role] = row;
+    /* A vacancy holds no image, so it claims neither image role — it competes
+       only for `state`, below, which is where it wins or loses. */
+    if (row.role !== "vacancy") held[row.role] = row;
     /* The newer render's account of the feature is the current one. Ties (one
        render writing both roles) resolve to the same state either way. */
     if (row.version > held.state.version
@@ -258,13 +269,27 @@ export function deriveLibrary(rows: readonly StoredReference[]): LibraryEntry[] 
 
   return order.map((slot) => {
     const held = bySlot.get(slot)!;
-    const anchor = held.anchor ? imageOf(held.anchor) : undefined;
-    const carry = held.carry ? imageOf(held.carry) : undefined;
+    /*
+      A VACATED SLOT SENDS NOTHING, WHATEVER ELSE IS STILL LIVE (fable-326/327).
+
+      The rows do not go away when she takes her earrings off: the carry from the
+      render that PUT them there is still the newest carry, and it holds a
+      perfectly good picture of the thing she has just removed. Attaching it
+      beside the vacancy's words would build the one recipe this whole change
+      exists to prevent — *"no earrings"* in the sentence and a photograph of her
+      earrings in the references, on the same render.
+      Re-adding later needs no special case: the new carry is newer, so it wins
+      `state`, and its crop attaches again by the ordinary rule.
+    */
+    const vacated = held.state.role === "vacancy";
+    const anchor = vacated || !held.anchor ? undefined : imageOf(held.anchor);
+    const carry = vacated || !held.carry ? undefined : imageOf(held.carry);
     const entry: LibraryEntry = {
       slot,
       tier: held.state.tier,
       words: held.state.words,
       noun: held.state.noun,
+      ...(vacated ? { vacant: true as const } : {}),
     };
     if (anchor) entry.anchor = anchor;
     if (carry) entry.carry = carry;

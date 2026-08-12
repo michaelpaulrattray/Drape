@@ -146,6 +146,21 @@ export type LibraryEntry = {
    * worn-versus-hers distinction `segmentsOnFace` already draws, one layer up.
    */
   noun: string;
+  /**
+   * THIS SLOT IS EMPTY — she took the thing off, and the anchor still wears it.
+   *
+   * The library's third role, read (migration 0030, fable-326/327). Its `words`
+   * are the site's own vacant phrase, and they must be said on EVERY subsequent
+   * render rather than once: the master is reference 1 of every render on this
+   * road and it has her glasses on it forever, so a recipe that goes quiet about
+   * them is a recipe that paints them back. Proved with pictures before this
+   * field existed — remove, then ask for copper hair, and the glasses return.
+   *
+   * It travels as a flag rather than as "an entry with no images" because the
+   * two are not the same thing: an anatomy slot nothing has delivered yet also
+   * has no images, and it is not empty — it is undescribed.
+   */
+  vacant?: true;
 };
 
 export type Ask = {
@@ -594,6 +609,32 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const standing: StandingWords[] = [];
   for (const entry of input.library) {
     if (editedSet.has(entry.slot)) continue;
+    /*
+      AN EMPTY SLOT SAYS SO, WHATEVER TIER IT IS.
+
+      Before the two `continue`s below rather than after them, because both would
+      throw a vacancy away: an ITEM is skipped here (its crop carries it) and a
+      vacancy is precisely an item with no crop to carry it. Skipping it leaves
+      the recipe silent about a thing the master is still wearing, which is the
+      one-frame removal in one line.
+
+      The phrase is the same `vacantPhrase` the vacate ask says at edit time —
+      one sentence, one source, said in the change clause on the render that
+      removes it and standing on every render after. It is already a complete
+      state sentence naming the site ("no glasses — her face uncovered …"), so it
+      is emitted as itself rather than poured into the "Keep her X exactly"
+      template, which would produce *"Keep her glasses exactly: no glasses"*.
+    */
+    if (entry.vacant === true) {
+      if (entry.words.length === 0) continue;
+      standing.push({
+        slot: entry.slot,
+        noun: entry.noun,
+        words: entry.words,
+        sentence: `${entry.words.join(", ")}.`,
+      });
+      continue;
+    }
     /*
       fable-192, measured rather than precautionary. A surface has no other
       carrier at all; anatomy's crop wins about a third of the distance against
