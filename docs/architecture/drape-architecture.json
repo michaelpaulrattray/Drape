@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e3c6630a0ea766d0"
+    "sourceFingerprint": "fc8b516e2ada03ba"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 92
+      "moduleCount": 93
     },
     {
       "id": "domain:castingV2",
@@ -3521,6 +3521,12 @@
     {
       "id": "module:server/castingV2/referenceSlots.ts",
       "path": "server/castingV2/referenceSlots.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceWordsSupersession.ts",
+      "path": "server/castingV2/referenceWordsSupersession.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8762,6 +8768,10 @@
     {
       "id": "test:server/castingV2/referenceSlots.test.ts",
       "path": "server/castingV2/referenceSlots.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceWordsSupersession.test.ts",
+      "path": "server/castingV2/referenceWordsSupersession.test.ts"
     },
     {
       "id": "test:server/castingV2/refineDelta.test.ts",
@@ -18362,6 +18372,21 @@
     {
       "from": "module:server/castingV2/referenceSlotCatalogue.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceWordsSupersession.ts",
+      "to": "module:server/castingV2/referenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceWordsSupersession.ts",
+      "to": "module:server/castingV2/slotWordShape.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceWordsSupersession.ts",
+      "to": "module:server/db/castingV2ReferenceLibrary.ts",
       "kind": "imports"
     },
     {
