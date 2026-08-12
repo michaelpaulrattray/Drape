@@ -118,6 +118,45 @@ export function armedBornWornClasses(): readonly BornWornClass[] {
   return BORN_WORN_CLASSES.filter((entry) => entry.armed);
 }
 
+/**
+ * THE FLOOR A DELIVERED FRAME IS JUDGED AGAINST when a render claims the thing
+ * has LEFT her — the departure gate's half of this catalogue.
+ *
+ * Same segmenter, same question, same arithmetic as the detection above, so it
+ * reads the same floors: two tables would be two answers to *is this thing in
+ * this picture* and law 4 says the copies drift.
+ *
+ * # An unmeasured kind gets zero, and that is not a threshold
+ *
+ * `armed` governs whether a class may be LOOKED FOR on a master and file a row
+ * about it — an unmeasured class must not, because a coverage number with no
+ * court behind it is a guess about a customer's face. A departure is the other
+ * situation: the render has already happened, she has already asked for the
+ * thing to be gone, and the only question is whether to deliver it. Refusing to
+ * read would mean refusing every removal of an unmeasured kind — which is
+ * exactly the defect this function was written to end.
+ *
+ * So an unmeasured kind is judged at zero: not a guessed threshold but the
+ * strictest reading there is — *the segmenter found nothing of it at all*. The
+ * error it risks is refusing a delivered removal over a stray pixel, and that
+ * is the direction that does not take her money (D-235's asymmetry). The
+ * coverage is logged at the gate either way, so the court that arms these kinds
+ * can be built from real readings rather than from another opinion.
+ */
+export function departureFloorFor(kind: string | null | undefined): {
+  floor: number;
+  measured: boolean;
+  provenance: string;
+} {
+  const entry = BORN_WORN_CLASSES.find((candidate) => candidate.id === kind);
+  return {
+    floor: entry?.floor ?? 0,
+    measured: typeof entry?.floor === "number",
+    provenance: entry?.measurement
+      ?? `"${kind}" is not in the accessory catalogue at all, so nothing has been measured for it`,
+  };
+}
+
 export type BornWornDetection = {
   /** The facet the row carries. */
   facet: string;

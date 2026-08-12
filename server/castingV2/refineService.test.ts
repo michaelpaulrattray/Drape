@@ -2675,8 +2675,27 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       ok: true as const,
       delta: { absent: { statedAccessories: ["glasses"] } },
     }),
+    /*
+      THE READER'S REAL CONTRACT, not a convenient one (the fake-reader law).
+
+      This double answered *nothing found* with `null` for four days, and the
+      service duly asked `still !== null`. `RegionReader.region` is declared
+      `Promise<Mask>`, and `falRegionReader` answers "nothing found" with a
+      frame-sized mask of ZEROS — so in production the gate was true on every
+      frame and every removal was refused and refunded, while these two arms sat
+      green because both of them modelled a reader that does not exist. Driven
+      through the real reader on 2026-08-12: a removed frame came back a
+      1024×1536 mask at 0.0000% coverage, her master at 1.4095%.
+
+      So the arms are now the two MASKS the real reader can return, and the
+      answer is in their pixels rather than in their nullity.
+    */
     regions: {
-      region: async () => (finds ? { data: Buffer.alloc(1), width: 1, height: 1 } : null),
+      region: async () => (finds
+        /* Covered: 100% of a small mask, well over any floor. */
+        ? { data: Buffer.alloc(64 * 64, 255), width: 64, height: 64 }
+        /* Nothing found: `emptyLike` — a frame-sized mask holding nothing. */
+        : { data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }),
       subject: async () => null,
       landmark: async () => [],
     } as never,
@@ -2768,7 +2787,9 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   it("CONTROL — an ordinary edit files no vacancy", async () => {
     await refineCandidate({
       ...hairDown,
-      regions: { region: async () => null, subject: async () => null, landmark: async () => [] } as never,
+      /* An empty mask, not null — the reader's real "nothing there" (see the
+         note on `removing` above). */
+      regions: { region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }), subject: async () => null, landmark: async () => [] } as never,
     }, { ...input, instruction: "wear her hair down" });
 
     expect(recorded).toEqual([]);
@@ -2781,7 +2802,9 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
        render came out shadowy. Same silent reader as the first arm. */
     await refineCandidate({
       ...hairDown,
-      regions: { region: async () => null, subject: async () => null, landmark: async () => [] } as never,
+      /* An empty mask, not null — the reader's real "nothing there" (see the
+         note on `removing` above). */
+      regions: { region: async () => ({ data: Buffer.alloc(64 * 64, 0), width: 64, height: 64 }), subject: async () => null, landmark: async () => [] } as never,
     }, { ...input, instruction: "wear her hair down" });
 
     expect(painted).toHaveLength(1);

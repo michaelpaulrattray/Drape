@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4dbc2bce12d3c2af"
+    "sourceFingerprint": "eaa1f4aadb23f337"
   },
   "domains": [
     {
@@ -18685,6 +18685,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/bornWornDetector.ts",
       "kind": "imports"
     },
     {

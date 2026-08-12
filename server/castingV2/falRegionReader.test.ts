@@ -448,6 +448,38 @@ describe("falRegionReader cuts the frame instead of naming a side", () => {
 
     await expect(reader.regionSides!({ image, name: "eyes" })).rejects.toBeInstanceOf(MaskError);
   });
+
+  /**
+   * THE CONTRACT A CALLER MAY NOT GUESS AT: `region` NEVER RETURNS NULL.
+   *
+   * `refineService` adjudicated a removal with `if (still !== null)` under a
+   * comment saying a reader that found nothing would answer null. It answers
+   * `emptyLike()` — a frame-sized mask of zeros — so the comparison was true on
+   * every frame and **every removal on the repaint road was refused and
+   * refunded**, however well the painter had done the job. The service's own
+   * tests were green throughout, because their double returned the null the
+   * real reader cannot.
+   *
+   * That is what this pins. Not "an empty answer is empty" — the fact a caller
+   * got wrong: **there is nothing null-ish about the answer**, so emptiness is
+   * a question about pixels and can only be asked in pixels.
+   */
+  it("answers 'there is none of this here' with a mask of zeros, and never with null", async () => {
+    stubSam3({ sides: "none" });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const answer = await reader.region({ image: await frame(), name: "glasses", absentIsAnswer: true });
+
+    expect(answer).not.toBeNull();
+    expect(answer).not.toBeUndefined();
+    /* Frame-sized, so the caller can measure coverage against the whole picture
+       exactly as `binaryCoverage` does. */
+    expect({ width: answer.width, height: answer.height }).toEqual({ width: WIDTH, height: HEIGHT });
+    expect(answer.data.every((value) => value === 0)).toBe(true);
+    /* And the comparison the service used to make, made here, so its verdict is
+       on the record rather than in a commit message. */
+    expect(answer !== null, "the gate's old test would call this 'still in the frame'").toBe(true);
+  });
 });
 
 /**

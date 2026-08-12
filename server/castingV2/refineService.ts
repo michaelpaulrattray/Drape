@@ -162,7 +162,8 @@ import {
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
-import { COVERAGE_BANDS, coverage } from "./maskGeometry";
+import { binaryCoverage, COVERAGE_BANDS, coverage } from "./maskGeometry";
+import { departureFloorFor } from "./bornWornDetector";
 import { createFalRegionReader } from "./falRegionReader";
 import { createFalMaskedEditEngine } from "../providers/falImages";
 import {
@@ -3136,21 +3137,58 @@ export async function refineCandidate(
              catalogued accessory, so this is a guard rather than a path. */
           throw new Error(`the removal of ${slot} cannot be confirmed — that slot has no question to ask the frame`);
         }
+        /*
+          IS THE THING STILL IN THE FRAME — asked in PIXELS, because the reader
+          does not answer in nulls.
+
+          This line read `if (still !== null)` for four days, under a comment
+          saying "a refusal to answer would arrive as null". It does not.
+          `RegionReader.region` is declared `Promise<Mask>` and `falRegionReader`
+          answers *nothing found* with `emptyLike()` — a frame-sized mask of
+          zeros — so the comparison was true on every frame ever painted and
+          **every removal that reached this gate was refused and refunded**,
+          however perfectly the painter had done the job. The bench took her
+          glasses off 24 times out of 24 while the paid path went 0 for 3; the
+          difference was never the prompt (they are byte-identical) and never
+          the engine (both `fal:openai/gpt-image-2/edit`) — it was this.
+
+          Driven rather than reasoned, on 2026-08-12, through the real reader:
+          the bench's removed frame returned a 1024×1536 mask at **0.0000%**
+          coverage and her master returned one at **1.4095%**. Both non-null,
+          both refused. The reading the gate never took is right there in the
+          two numbers, and the floor between them was already measured
+          (`departureFloorFor`).
+
+          The failure direction is unchanged and deliberate: a frame that still
+          wears the thing refuses into the refund rather than delivering, and an
+          unreadable frame throws out of here for the same reason.
+        */
         const still = await reader.region({
           image: image.bytes,
           name: definition.question,
           /* Nothing found means the thing is not there, which is the answer
-             this is asking for — a refusal to answer would arrive as null and
-             is treated as "still on" below, the conservative direction. */
+             this is asking for. */
           absentIsAnswer: true,
         });
-        if (still !== null) {
+        const covered = binaryCoverage(still);
+        const { floor, measured, provenance } = departureFloorFor(definition.guardKind);
+        if (covered > floor) {
           log.warn(
-            { operationId, variant: variant.publicId, slot, question: definition.question },
+            {
+              operationId, variant: variant.publicId, slot, question: definition.question,
+              coverage: covered, floor, floorMeasured: measured,
+            },
             "[refineService] the removal did not land — the thing is still in the frame, so the render is refused rather than delivered",
           );
           throw new ProviderError("removal_not_delivered", definition.noun);
         }
+        log.info(
+          {
+            operationId, variant: variant.publicId, slot, question: definition.question,
+            coverage: covered, floor, floorMeasured: measured, provenance,
+          },
+          "[refineService] the removal landed — the site reads empty in the delivered frame",
+        );
         const retired = await (dependencies.retireSlot ?? retireReferenceSlot)({
           userId: input.userId,
           candidateId: variant.candidateId,
