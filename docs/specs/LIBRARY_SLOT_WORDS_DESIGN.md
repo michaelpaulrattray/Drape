@@ -235,6 +235,62 @@ Corollary, and it is why this was caught at all: **the receipt got read and the
 crop got opened.** A run that reports "16 rows superseded" is a claim; the
 sentences it wrote and the pixels they were written from are the facts.
 
+## And the reason it invents: it is being shown a 27-pixel picture
+
+The section above blamed the reader's *permission* to decline, which was half of
+it. The production supersession's own receipt found the other half, and it is
+smaller and more mechanical: **the crop is cut 1:1 from the frame and nothing
+enlarges it anywhere between the segmenter and the reader.** Measured off the
+stored objects rather than the geometry column — the file's dimensions equal the
+bbox exactly, on all eleven:
+
+| slot | crop | frame |
+|---|---|---|
+| earring (eight of them) | 24×83 · 27×74 · 25×98 · 28×104 · 29×107 · 32×103 · 35×59 · 36×60 | 1024×1536 |
+| hair (three) | 463×591 · 808×728 · 823×1132 | 1024×1536 |
+
+At earring scale the reader described a gold hoop **with a cross hanging from
+it** as *"Thin gold hoop earring, smooth and continuous"* — four times out of
+four. The same file resized, no information added, named the cross four times out
+of four. Nought of four hair rows lost a detail in the same run. **The defect
+tracks the size**, across one reader, one prompt, one run.
+
+So the class has two faces and one cause: too small to read, it OMITS what is
+there and INVENTS what is not.
+
+**Refuted before the cause was claimed, and recorded so nobody re-derives it.**
+The obvious suspect was the prompt's own *"describe only the thing itself —
+never anything around it"*, since a charm hanging off a hoop is plausibly
+*around* the hoop. Amending that clause changed nothing (omitted 2/2) — and on
+an occluded crop it made things worse, annexing the occluder as *"an irregular
+pale stone set within it"*. There is no stone. **The cure for a picture too small
+to read is a bigger picture, not a broader question**, and inclusive wording is
+banned in the code beside its specimen.
+
+### The read, as it now stands: the small crop decides IF, the enlarged one WHAT
+
+Two asks with two jobs, because one image cannot do both.
+
+| | picture | job | why that one |
+|---|---|---|---|
+| gate | the cut at native scale | `visible: true/false` | it is the read **measured to decline honestly** — on a hoop behind a pale occluder it answered `visible:false` twice, and the same crop enlarged stopped declining and invented a different answer each time (*"gold hoop"*, then *"silver-tone stud"*) |
+| description | the cut resized to a 512px long edge, Lanczos | the words | it is the read **measured to see** |
+
+The description may never retract the gate: a `visible:false` on the enlarged
+read falls back to the gate's own sentence, so this is never worse than the
+single read it replaced. Priced honestly: **a second vision call, and only for a
+cut small enough to need one** — a hair crop at 823px costs one, an earring at
+27px costs two.
+
+**What it does not close.** The gate is itself noisy at 27px: on the real
+cutouts it named the cross on one attempt and declined on the next. A decline
+files nothing and the older row keeps carrying, which is the conservative
+direction, but *an honest refusal and a blind one are the same JSON*. Three of
+the sixteen production rows were filed as honest empties over crops containing an
+unmistakable hoop, twice with a cross on it. If that persists, the next move is
+to enlarge the gate too and find the decline somewhere other than the reader's
+eyesight.
+
 ## What this hands chunk 3 — one problem dissolved, one created
 
 Chunk 3 is removal under the library, and D-244 describes it as *strike matching
