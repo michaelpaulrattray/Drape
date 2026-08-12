@@ -101,6 +101,50 @@ export function supersedingWordsRow(
 }
 
 /**
+ * THE KEYS THIS WRITE IS THE FIRST TO HOLD — which, for a carrier copy, is none.
+ *
+ * `recordReferenceRows` demands a cleanup manifest whenever its rows carry
+ * objects, and discharges it inside the write: the reservation-before-the-bytes
+ * that makes a crashed mint collect its own litter. A supersession refused
+ * fifteen times on that door, correctly, because a carrier-copy row does carry
+ * objects.
+ *
+ * **The obvious answer — register the same keys — is dangerous here, and the
+ * danger is the exact inverse of the one the manifest exists for.** At a mint
+ * the objects are NEW and nothing references them, so scheduling them for
+ * deletion until the row commits is right. At a supersession they are already
+ * referenced by the row being superseded, so a crash between register and write
+ * would schedule a live-referenced crop for deletion: the manifest would create
+ * an orphaned ROW instead of preventing an orphaned OBJECT.
+ *
+ * So the manifest names what the write genuinely introduces, derived rather than
+ * asserted: every key on the new row that the old row was not already holding.
+ * For a carrier copy that set is empty and the manifest is empty — the true
+ * statement, and one that cannot be quietly wrong later, because a row that ever
+ * DID introduce a key would put it back in the list.
+ */
+export function keysIntroducedBy(
+  row: ReferenceRowToRecord,
+  existing: StoredReference,
+): string[] {
+  const held = new Set([
+    existing.storageKey,
+    existing.maskKey,
+    existing.refusal?.contentKey ?? null,
+    existing.refusal?.maskKey ?? null,
+  ].filter((key): key is string => key !== null));
+
+  const carried = [
+    row.image?.storageKey,
+    row.image?.maskKey,
+    row.refusal?.crop?.contentKey,
+    row.refusal?.crop?.maskKey,
+  ].filter((key): key is string => key !== undefined);
+
+  return carried.filter((key) => !held.has(key));
+}
+
+/**
  * Is this row's existing sentence UNTRUE, rather than merely untidy?
  *
  * The rule for a slot whose re-read says nothing: blank a sentence that is

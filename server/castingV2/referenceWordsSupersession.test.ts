@@ -13,7 +13,9 @@
 import { describe, expect, it } from "vitest";
 
 import { assertReferenceRowShape } from "../db/castingV2ReferenceLibrary";
-import { supersedingWordsRow, wordsAreUntrue } from "./referenceWordsSupersession";
+import {
+  keysIntroducedBy, supersedingWordsRow, wordsAreUntrue,
+} from "./referenceWordsSupersession";
 import type { StoredReference } from "./referenceLibrary";
 
 const GEOMETRY = {
@@ -167,5 +169,65 @@ describe("wordsAreUntrue — dirty means untrue, not untidy", () => {
   it("does not blank a clean row", () => {
     expect(wordsAreUntrue(EARRING, ["a slim gold hoop"])).toBe(false);
     expect(wordsAreUntrue(EARRING, [])).toBe(false);
+  });
+});
+
+/**
+ * THE MANIFEST OF WHAT THIS WRITE INTRODUCES — which is nothing.
+ *
+ * The commit refused fifteen times on `manifestMissing`, correctly. The fix is
+ * an EMPTY manifest rather than one naming the carried keys, because at a
+ * supersession the manifest's safety property inverts: those objects are
+ * already referenced by the row being superseded, so scheduling them for
+ * deletion until the new row commits would orphan a ROW instead of protecting
+ * an OBJECT.
+ *
+ * The assertions below are on the KEYS, never on the count — "expectedCount is
+ * 0" would pass against a manifest that had lost its items for any reason.
+ */
+describe("keysIntroducedBy — a carrier copy introduces nothing", () => {
+  it("names NO key when every object is one the old row already held", () => {
+    const source = stored();
+    const row = supersedingWordsRow(source, ["Gold hoop earring with a cross charm"]);
+
+    const introduced = keysIntroducedBy(row, source);
+
+    expect(introduced).toEqual([]);
+    /* On the keys, not the length: these are the two that must not be in it,
+       and they are exactly the pixels a crash would otherwise schedule for
+       deletion while a live row still pointed at them. */
+    expect(introduced).not.toContain(source.storageKey);
+    expect(introduced).not.toContain(source.maskKey);
+  });
+
+  it("names NO key for a refusal's kept pixels either", () => {
+    const source = stored({
+      storageKey: null, maskKey: null, digest: null, geometry: null, guard: null,
+      refusal: {
+        reason: "noSpecimen", kind: "earring", coverage: 10000,
+        contentKey: "casting-v2/refused/earring.png",
+        maskKey: "casting-v2/refused/earring-mask.png",
+        geometry: GEOMETRY,
+      },
+    });
+    const row = supersedingWordsRow(source, ["a slim gold hoop"]);
+
+    const introduced = keysIntroducedBy(row, source);
+
+    expect(introduced).toEqual([]);
+    expect(introduced).not.toContain("casting-v2/refused/earring.png");
+    expect(introduced).not.toContain("casting-v2/refused/earring-mask.png");
+  });
+
+  it("DOES name a key the old row was not holding — the control that makes the empties mean something", () => {
+    /* Without this the function could return [] unconditionally and every
+       assertion above would still pass. A row that genuinely introduces an
+       object must put it back in the manifest, or this helper would be a way of
+       writing new pixels nothing is registered to clean up. */
+    const source = stored();
+    const row = supersedingWordsRow(source, ["anything"]);
+    row.image = { ...row.image!, storageKey: "casting-v2/library/NEWLY-CUT.png" };
+
+    expect(keysIntroducedBy(row, source)).toEqual(["casting-v2/library/NEWLY-CUT.png"]);
   });
 });
