@@ -13,12 +13,14 @@ import { describe, expect, it, vi } from "vitest";
  */
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { GLASSES_COVERAGE_FLOOR, wearsGlassesByPixels } from "./canthalTilt";
-import { binaryCoverage } from "./maskGeometry";
+import { COVERAGE_BANDS, binaryCoverage } from "./maskGeometry";
 import { FREE_SUBJECT_KEYS } from "./refineSubjects";
 import {
   BORN_WORN_CLASSES,
   BORN_WORN_DETECTOR,
+  EARRING_COVERAGE_FLOOR,
   armedBornWornClasses,
+  departureFloorFor,
   detectBornWorn,
   type BornWornClass,
 } from "./bornWornDetector";
@@ -58,13 +60,61 @@ describe("the born-worn catalogue's vocabulary", () => {
     expect(BORN_WORN_CLASSES).toHaveLength(LANDMARK_OF_ACCESSORY.length);
   });
 
-  it("arms only a class whose floor came from a measurement", () => {
+  /*
+    THE IMPLICATION RUNS ONE WAY, and the earring court is why that sentence
+    exists. No floor still means never armed — the safety property, unchanged.
+    A floor no longer means armed by itself: a kind may hold a measured
+    DEPARTURE floor while detection waits for the court detection needs, and
+    `deferArming` is where the table says which job the number was measured for.
+
+    This test used to assert `armed === (typeof floor === "number")`, which was
+    the coupling stated as a law. Writing the earring floor armed the detector
+    as a side effect and that assertion is what caught it — a pin doing exactly
+    its job, so it is being rewritten deliberately rather than relaxed.
+  */
+  it("never arms a class with no measured floor", () => {
     for (const entry of BORN_WORN_CLASSES) {
-      expect(entry.armed).toBe(typeof entry.floor === "number");
-      if (!entry.armed) expect(entry.measurement).toMatch(/NOT (MEASURED|CONSIDERED)/);
+      if (typeof entry.floor !== "number") {
+        expect(entry.armed, entry.id).toBe(false);
+        expect(entry.measurement).toMatch(/NOT (MEASURED|CONSIDERED)/);
+      }
     }
-    /* Slice 1 arms exactly one class, and that is the honest state of it. */
+  });
+
+  it("lets a measured floor stand without arming detection", () => {
+    const earring = BORN_WORN_CLASSES.find((entry) => entry.id === "earring")!;
+    /* The departure gate reads the floor... */
+    expect(departureFloorFor("earring").measured).toBe(true);
+    expect(departureFloorFor("earring").floor).toBe(EARRING_COVERAGE_FLOOR);
+    /* ...and the detector still does not hunt it on an untouched master. */
+    expect(earring.armed).toBe(false);
+    /*
+      The reason has to be legible from the row, or the next reader sees a
+      measured floor that is somehow inert and re-arms it.
+    */
+    expect(earring.measurement).not.toMatch(/NOT (MEASURED|CONSIDERED)/);
+
+    /* Slice 1 still arms exactly one class, and that is the honest state. */
     expect(armedBornWornClasses().map((entry) => entry.id)).toEqual(["glasses"]);
+  });
+
+  /*
+    The number itself, pinned against the court that produced it. Not a
+    tautology: it fails if anyone moves the floor without moving the
+    provenance, which is the pair that must never drift apart.
+  */
+  it("judges earrings against the court's own number, not the eyewear band", () => {
+    const earring = BORN_WORN_CLASSES.find((entry) => entry.id === "earring")!;
+    expect(earring.floor).toBe(0.0002);
+    expect(earring.measurement).toContain("0.0404");
+    expect(earring.measurement).toContain("VISIBLE BARE");
+    /*
+      The whole point of the number. The band the gate used to compare hoops to
+      was measured on GLASSES and is far above every worn earring reading the
+      court took — so this must stay strictly under it, by a lot.
+    */
+    expect(earring.floor!).toBeLessThan(COVERAGE_BANDS.eyewearFrames.min);
+    expect(earring.floor!).toBeLessThan(0.000404); // 2x under the smallest worn
   });
 
   /*
