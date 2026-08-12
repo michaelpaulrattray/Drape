@@ -2692,6 +2692,182 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(journal).toContain("land");
   });
 
+  /*
+    THE WEDGE, DRIVEN — fable-318 R2, and shift 61's walk is the specimen.
+
+    Her step 2 asked for dangly cross earrings and the frame came back with a
+    cross on one ear and a plain hoop on the other. The door refused BOTH v2
+    crops as disputed, so the branch was left holding two truths about one
+    feature: her words said crosses, and the only reference the library could
+    send was the hoops it minted a version earlier. Step 3 was *"copper hair"* —
+    an unrelated ask — and it carried the hoops, came back without the crosses
+    the branch believed she was wearing, and refused TWICE. Her innocent ask ate
+    the refund, and the face could not be edited again.
+
+    Both halves are asserted, because either alone is a different defect: the
+    contradicting crop must NOT ride, and the feature must still be SAID.
+  */
+  const earringRow = (side: "left" | "right", over: Record<string, unknown> = {}) => carryRow({
+    id: side === "left" ? 11 : 12,
+    publicId: `ref-earring-${side}`,
+    variantId: 165,
+    slot: `earring@${side}`,
+    tier: "item",
+    noun: `${side} earring`,
+    words: ["A gold hoop earring, thick smooth round tube, polished metallic shine"],
+    storageKey: `casting-v2/library/earring-${side}-v1.png`,
+    version: 1,
+    ...over,
+  });
+  /** v#166's own row: minted, refused at the door, no bytes kept. */
+  const disputedRow = (side: "left" | "right") => carryRow({
+    id: side === "left" ? 21 : 22,
+    publicId: `ref-earring-${side}-v2`,
+    variantId: 166,
+    slot: `earring@${side}`,
+    tier: "item",
+    noun: `${side} earring`,
+    words: ["A thick gold hoop earring with a smooth, rounded, glossy surface"],
+    storageKey: null,
+    version: 2,
+    refusal: { reason: "disputedDelivery" },
+  });
+
+  /** The branch as step 3 found it: wearing crosses, by her own words. */
+  const wearingCrosses = () => {
+    variantRows = [{
+      id: 166,
+      publicId: "variant-crosses",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/crosses.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["dangly cross earrings"],
+      deltas: { free: { statedAccessories: ["dangly cross earrings"] } },
+      stepDeltas: null,
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-crosses";
+  };
+
+  /** Delivers the hair and says the earrings are not on her — the reading step
+   *  3 actually got, on the frame the stale crop produced. */
+  const readerMissingTheEarrings = {
+    id: "verifier",
+    complete: async (request: { system: string; user: string }) => {
+      if (request.system.includes("how they")) {
+        return { text: JSON.stringify({ hairWorn: "down" }), truncated: false, latencyMs: 1 };
+      }
+      const results = request.user.split("\n").filter(Boolean).map((line, index) => (
+        /earring|cross/i.test(line)
+          ? { id: index + 1, present: false, absent: true, saw: "plain gold hoops, no crosses" }
+          : { id: index + 1, present: true, saw: "hair loose past the shoulders" }
+      ));
+      return { text: JSON.stringify({ results }), truncated: false, latencyMs: 1 };
+    },
+  } as never;
+
+  it("does not send a crop the branch's own words have moved past, and says the feature instead", async () => {
+    wearingCrosses();
+    lineageReferences = [
+      earringRow("left"), earringRow("right"), disputedRow("left"), disputedRow("right"),
+    ];
+
+    await refineCandidate(
+      { ...hairDown, verifier: readerMissingTheEarrings },
+      { ...input, instruction: "wear her hair down" },
+    );
+
+    expect(painted).toHaveLength(1);
+    const request = painted[0]!;
+    const bytes = request.references.map((reference) => reference.bytes);
+    /* The master alone. Neither superseded crop rode — the whole defect. */
+    expect(bytes).toEqual([TINY_MASTER_PNG]);
+    /*
+      AND THE EARRINGS ARE STILL IN THE ROOM. Without this, "do not send the
+      contradiction" and "paint her ears bare" are the same test: an ITEM with
+      no crop says nothing at all in a recipe, so the master would have taken
+      her earrings off.
+    */
+    expect(request.prompt).toContain("dangly cross earrings");
+    expect(request.prompt).toContain("the left earring");
+    expect(request.prompt).toContain("the right earring");
+  });
+
+  it("and the unrelated ask is still DELIVERED — one undeliverable thing cannot brick the chain", async () => {
+    /*
+      fable-318's condition on R2, driven through `evidencesDelivery`: the
+      crosses have no realization caption, because no render was ever
+      corroborated on them. So they are re-said on every render and they bind
+      NOTHING — her hair is what she asked for and her hair is what she gets.
+    */
+    wearingCrosses();
+    lineageReferences = [
+      earringRow("left"), earringRow("right"), disputedRow("left"), disputedRow("right"),
+    ];
+
+    await refineCandidate(
+      { ...hairDown, verifier: readerMissingTheEarrings },
+      { ...input, instruction: "wear her hair down" },
+    );
+
+    expect(ledger.charges.at(-1)?.amount).toBe(25);
+    expect(ledger.refunds, "the innocent ask paid for what it got").toHaveLength(0);
+  });
+
+  it("CONTROL — and it WOULD refuse if the crosses had ever been delivered", async () => {
+    /*
+      The arm that makes the one above a reading rather than a driver that never
+      refuses. One thing changes: the branch carries a REALIZATION caption for
+      the accessories, which `evidencesDelivery` accepts as proof some render was
+      once corroborated on them. A feature the store promised and then dropped is
+      the store failing, and it still refuses — the fifth-thing bound was only
+      ever about asks that NEVER landed.
+    */
+    wearingCrosses();
+    variantRows[0]!.internalPrompt = {
+      ...(candidateRow.internalPrompt as Record<string, unknown>),
+      captions: { statedAccessories: "gold hoops with dangling cross charms on both ears" },
+    };
+    lineageReferences = [
+      earringRow("left"), earringRow("right"), disputedRow("left"), disputedRow("right"),
+    ];
+
+    await expect(refineCandidate(
+      { ...hairDown, verifier: readerMissingTheEarrings },
+      { ...input, instruction: "wear her hair down" },
+    )).rejects.toThrow();
+    expect(ledger.refunds.at(-1)?.amount).toBe(25);
+  });
+
+  it("CONTROL — a slot whose newest version DID file its crop carries it exactly as before", async () => {
+    /*
+      The arm that makes the two above evidence rather than a driver that never
+      carries anything: one row changes — the newest version has bytes — and the
+      crop rides again.
+    */
+    wearingCrosses();
+    lineageReferences = [
+      earringRow("left"), earringRow("right"),
+      carryRow({
+        id: 21, publicId: "ref-earring-left-v2", variantId: 166,
+        slot: "earring@left", tier: "item", noun: "left earring",
+        words: ["A gold hoop with a dangling cross charm"],
+        storageKey: "casting-v2/library/earring-left-v2.png", version: 2,
+      }),
+    ];
+
+    await refineCandidate(
+      { ...hairDown, verifier: readerMissingTheEarrings },
+      { ...input, instruction: "wear her hair down" },
+    );
+
+    const bytes = painted[0]!.references.map((reference) => reference.bytes);
+    expect(bytes).toContainEqual(Buffer.from("crop:casting-v2/library/earring-left-v2.png"));
+    /* And the right ear, whose newest version is still v1, carries v1. */
+    expect(bytes).toContainEqual(Buffer.from("crop:casting-v2/library/earring-right-v1.png"));
+  });
+
+
 });
 
 describe("the record and the picture come from the same place", () => {
@@ -3722,6 +3898,7 @@ describe("the carried-clause guard matches the lane, not the word", () => {
     expect(carriedAsks[0].writing).not.toContain("marks");
     for (const prompt of sentPrompts) expect(prompt.toLowerCase()).not.toContain("marks:");
   });
+
 });
 
 /**

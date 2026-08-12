@@ -144,7 +144,9 @@ import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
 import { mintedSlotsForRender } from "./mintedSlots";
-import { deriveLibrary, libraryWithoutEditedCrops, liveReferences } from "./referenceLibrary";
+import {
+  deriveLibrary, libraryWithoutEditedCrops, liveReferences, supersededCarrySlots,
+} from "./referenceLibrary";
 import { listLineageReferences, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
@@ -2178,6 +2180,20 @@ export async function refineCandidate(
       input.userId,
     );
     const repaintOnce = async () => {
+      /*
+        THE BRANCH'S ROWS ARE READ BEFORE THE ASKS ARE BUILT (fable-318 R2).
+
+        They used to be read after, because the asks were a function of the step
+        alone. They are not: a slot whose newest crop the door refused has to be
+        re-said in WORDS by this render, and only these rows know which slots
+        those are. Read once and used twice — the same list derives the library
+        below, so the asks and the library cannot disagree about the face.
+      */
+      const branchRows = await listLineageReferences({
+        userId: input.userId,
+        candidateId: variant.candidateId,
+        anchorVariantId: variant.id,
+      });
       const asks = editDelta
         ? repaintAsksFor({
           delta: editDelta,
@@ -2187,6 +2203,16 @@ export async function refineCandidate(
           /* Derived once at the top of this block, beside the region override
              that has to name the same object. */
           accessoryKind: accessoryRegion,
+          /*
+            AND WHAT THE LIBRARY CANNOT PICTURE, SAID IN WORDS INSTEAD.
+
+            `composed` rather than `editDelta`: the point of a restoration is to
+            say what she is currently wearing, which this step said nothing
+            about. A slot only appears here when its newest version has no
+            pixels, so on an ordinary face the list is empty and not one line of
+            this changes the recipe.
+          */
+          restore: { state: composed, slots: supersededCarrySlots(branchRows) },
         })
         : repaintCannotRemove();
       if (!asks.ok) {
@@ -2222,14 +2248,7 @@ export async function refineCandidate(
         `deriveLibrary` warns about one layer down.
       */
       const editedSlots = new Set(asks.asks.map((ask) => ask.slot));
-      const library = libraryWithoutEditedCrops(
-        deriveLibrary(await listLineageReferences({
-          userId: input.userId,
-          candidateId: variant.candidateId,
-          anchorVariantId: variant.id,
-        })),
-        editedSlots,
-      );
+      const library = libraryWithoutEditedCrops(deriveLibrary(branchRows), editedSlots);
       const recipe = assembleRecipe({
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base

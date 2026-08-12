@@ -60,7 +60,7 @@ import type { HairColour } from "../../shared/castingVocabularies";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { itemsOf, facetsWrittenBy, type RefineDelta } from "./refineDelta";
 import type { FreeSubject } from "./refineSubjects";
-import { FACET_SLOTS, slotDefinition, slotsForFacet } from "./referenceSlotCatalogue";
+import { FACET_SLOTS, facetsOfSlot, slotDefinition, slotsForFacet } from "./referenceSlotCatalogue";
 import { accessoryKindOf, vacantPhraseFor } from "./accessoryKinds";
 import type { Ask, FeatureSlot } from "./recipeAssembler";
 
@@ -97,6 +97,31 @@ export type RepaintAsksInput = {
    * one string is how they come to disagree about ears and eyes.
    */
   accessoryKind?: string | null;
+  /**
+   * SLOTS WHOSE NEWEST VERSION HAS NO PIXELS, AND THE STATE TO RE-SAY THEM FROM
+   * (fable-318 R2).
+   *
+   * A crop the mint refused leaves the branch holding two truths about one
+   * feature: her words say dangly crosses, and the only reference the library
+   * can send is the gold hoops it minted a version earlier. Sending that crop
+   * hands the painter a picture of the thing she has already changed — *you do
+   * not re-photograph yesterday's earrings when she has changed them* — and
+   * dropping it without a word paints her ears bare, because an ITEM with no
+   * crop says nothing at all in the recipe.
+   *
+   * So the slot is re-asked FROM WORDS, as an edit, on this render and every
+   * render after it until the words land and the door files a crop again. An
+   * edit rather than a standing sentence for a reason worth stating: the mint
+   * files crops for the slots a render EDITED, so this is also how the library
+   * heals itself.
+   *
+   * `state` is the branch's composed recipe, not this step's delta — the point
+   * is to say what she is currently wearing, which this step said nothing about.
+   */
+  restore?: {
+    state: RefineDelta;
+    slots: readonly FeatureSlot[];
+  };
 };
 
 export type RepaintAsksRefusal = {
@@ -304,6 +329,33 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
       ok: false, reason: "nothingAsked", facet: null,
       detail: "this step writes no facet, so the recipe would carry everything, change nothing, and charge for it",
     };
+  }
+
+  /*
+    AND THE SLOTS WHOSE ONLY REFERENCE CONTRADICTS HER (fable-318 R2).
+
+    After the emptiness check on purpose: a superseded slot is not something a
+    person asked for this step, so it may ride along with a real ask and must
+    never be the whole reason a render is charged for.
+
+    Each one is said from the branch's CURRENT state — what she is wearing now,
+    per the composed recipe — and only where a slot the catalogue knows can be
+    given a phrase. A slot that cannot be said keeps its silence rather than
+    being handed the stale crop anyway: refusing to send a contradiction is the
+    half of this rule that always holds, and the words are the half that heals
+    it.
+  */
+  for (const slot of input.restore?.slots ?? []) {
+    if (wordsBySlot.has(slot) || vacateBySlot.has(slot)) continue;
+    const definition = slotDefinition(slot);
+    if (definition === null) continue;
+    const phrase = (facetsOfSlot(slot) ?? [])
+      .map((facet) => statePhrase(facet, input.restore!.state, input.prose))
+      .find((said): said is string => said !== null && said.trim() !== "");
+    if (phrase === undefined) continue;
+    order.push(slot);
+    wordsBySlot.set(slot, [phrase]);
+    nounBySlot.set(slot, definition.noun);
   }
 
   return {

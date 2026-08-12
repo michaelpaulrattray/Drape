@@ -732,11 +732,65 @@ export async function confirmVerdict(
     return { ...first, readings: 1 };
   }
 
-  const second = await reread();
+  /*
+    ONE RETRY FOR THE CONFIRMATION ITSELF (fable-318 R1).
+
+    The re-read is a vision call and it can simply fail. Until shift 62 a single
+    failed confirmation ended the question in the house's favour, so a transport
+    blip and a reader that saw nothing wrong produced the identical outcome:
+    delivered and charged. The retry costs one call, on a render already headed
+    for a re-render or a refund, and it is the cheapest of the three answers
+    below.
+  */
+  let second = await reread();
+  if (second.unavailable) second = await reread();
   if (second.unavailable) {
-    /* No second opinion available. One reading never refuses on its own. */
-    log.warn({}, "[renderVerification] no second opinion — delivering rather than refusing");
-    return { ...first, ok: true, readings: 1 };
+    /*
+      AND HERE THE TWO SILENCES ARE FINALLY TOLD APART (fable-318 R1).
+
+      A reading that is MISSING and a reading that is PRESENT, EVIDENCED AND
+      NEGATIVE are not the same event, and until shift 62 this line treated them
+      as one: "one reading never refuses on its own" delivered both. Its specimen
+      is dev v#166, a paid render whose only reading said *"left ear has a dangly
+      gold cross; right ear has a plain hoop, not a cross"* — `binding`,
+      `absent: true`, `verified: false` — and which was delivered and charged
+      because the confirming call did not come back. The house kept 25 credits on
+      a frame its own reader had described as not the thing she asked for, and
+      the branch it left behind refused her NEXT, innocent ask.
+
+      D-194's asymmetry is untouched for everything it was written about: a
+      quibble (`absent: false`), a silence (`absent` undefined), an affirmative
+      on an unreliable facet — all still deliver on one reading, and nothing new
+      can refund anybody over an adjective. What changes is the one shape the
+      founder's bar calls catastrophic: the reader was ASKED whether the thing is
+      in the picture at all and answered no.
+
+      `absenceIsTheAsk` rides with it, declared rather than inherited: a removal
+      that did not happen is the same fact reached from the other side, and the
+      field's own comment calls a miss on it "the catastrophe". Reading it here
+      keeps one rule where D-246 already put one.
+
+      This does NOT refuse. It declines to DELIVER, which hands the render to
+      `refineService`'s free second attempt — the house's own re-render, costing
+      her nothing — and only a second failure reaches the refund. The user's
+      money is never spent on a single unconfirmed reading in either direction.
+    */
+    const wordedAbsence = first.checks.filter((check) =>
+      isMiss(check) && check.binding
+      && (check.absent === true || check.absenceIsTheAsk === true));
+    if (wordedAbsence.length === 0) {
+      /* No second opinion, and nothing evidenced to act on. As it always was. */
+      log.warn({}, "[renderVerification] no second opinion — delivering rather than refusing");
+      return { ...first, ok: true, readings: 1 };
+    }
+    log.error(
+      {
+        facets: wordedAbsence.map((check) => check.facet),
+        saw: wordedAbsence.map((check) => check.saw ?? null),
+      },
+      "[renderVerification] no second opinion, and the one reading says the asked thing is ABSENT — not delivering on it",
+    );
+    return { ...first, ok: false, readings: 1 };
   }
   const secondBy = new Map(second.checks.map((check) => [keyOf(check), check]));
 

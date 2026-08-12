@@ -143,6 +143,41 @@ export function liveReferences(rows: readonly StoredReference[]): StoredReferenc
   return Array.from(newest.values()).filter((row) => row.retiredAt === null);
 }
 
+/**
+ * SLOTS WHOSE NEWEST WORD ON THE SUBJECT HAS NO PIXELS (fable-318 R2).
+ *
+ * Rule 3 above skips a disputed row so it cannot displace the crop it has no
+ * verdict about, and that is right — but it leaves the caller believing the
+ * older crop is the branch's current answer, and it is not. Shift 61's walk is
+ * the specimen: step 2 delivered cross earrings, the door refused both v2 crops
+ * as disputed, and step 3 — an unrelated ask about her hair — carried v1's plain
+ * hoops with every digest agreeing. The frame came back without the crosses the
+ * branch had been told she was wearing, the reader said so, and the innocent
+ * step took the refusal. The face could not be edited again.
+ *
+ * So the same rule is read for its other consequence: these are the slots whose
+ * carry the branch has moved past. The caller must not send their crop, and
+ * must say the feature in WORDS instead — see `RepaintAsksInput.restore`.
+ *
+ * A slot with no older crop at all is in this set too, and for the same reason:
+ * an ITEM the recipe cannot picture and does not describe is a feature the next
+ * render paints away.
+ */
+export function supersededCarrySlots(rows: readonly StoredReference[]): FeatureSlot[] {
+  const newest = new Map<FeatureSlot, StoredReference>();
+  for (const row of rows) {
+    if (row.role !== "carry" || row.retiredAt !== null) continue;
+    const held = newest.get(row.slot);
+    if (!held || row.version > held.version) newest.set(row.slot, row);
+  }
+  return Array.from(newest.entries())
+    /* The bytes are the test, not the refusal reason: a row holding no crop
+       cannot be carried whatever the door's reason for it was, and a reason
+       list here would be a second copy of the door's vocabulary. */
+    .filter(([, row]) => row.storageKey === null)
+    .map(([slot]) => slot);
+}
+
 function imageOf(row: StoredReference): ReferenceImage | undefined {
   if (row.storageKey === null) return undefined;
   return row.digest === null

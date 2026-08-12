@@ -652,3 +652,135 @@ describe("a carried fact is recorded by the reader and never refused by it", () 
     expect(settleCarriedChecks(ordinary, { facets: [] })).toBe(ordinary);
   });
 });
+
+/**
+ * NO SECOND OPINION, AND THE ONE READING SAYS THE THING IS ABSENT (fable-318 R1).
+ *
+ * The fixture is not invented: it is dev variant #166's stored verification,
+ * copied out of `internalPrompt.verification` on the row the walk paid 25
+ * credits for. The render was DELIVERED with `readings: 1` because the
+ * confirming re-read did not come back, and the reading it did have named the
+ * defect out loud. Every arm below is that row with one thing changed, so the
+ * suite can say which clause each outcome turns on.
+ */
+describe("a confirming re-read that never lands cannot deliver an evidenced absence", () => {
+  const ACCESSORIES = facetOfSubject("statedAccessories");
+
+  /** v#166, verbatim — the paid specimen. */
+  const specimen = (): RenderVerdict => ({
+    ok: false,
+    checks: [
+      {
+        facet: ACCESSORIES,
+        asked: "dangly cross earrings, one on each ear, a matching pair",
+        saw: "left ear has a dangly gold cross; right ear has a plain hoop, not a cross",
+        read: true,
+        verified: false,
+        binding: true,
+        absent: true,
+      },
+      {
+        facet: HAIR_WORN,
+        asked: "worn down — hanging, not gathered, tied or pinned up",
+        saw: "hair falls loose to shoulder length, no ties or pins visible",
+        read: true,
+        verified: true,
+        binding: false,
+      },
+    ],
+  });
+  const unavailable = async (): Promise<RenderVerdict> => ({ ok: true, checks: [], unavailable: true });
+
+  it("THE SPECIMEN — v#166's own shape does not deliver", async () => {
+    let rereads = 0;
+    const confirmed = await confirmVerdict(specimen(), async () => {
+      rereads += 1;
+      return unavailable();
+    });
+
+    expect(confirmed.ok, "delivered and charged is what this row actually did").toBe(false);
+    expect(confirmed.readings).toBe(1);
+    expect(rereads, "the confirmation is retried once before the question is settled").toBe(2);
+  });
+
+  it("and the retry is a real second chance — a confirmation that lands on the second try is used", async () => {
+    let rereads = 0;
+    const confirmed = await confirmVerdict(specimen(), async () => {
+      rereads += 1;
+      /* The second attempt at the confirmation comes back, and it AGREES the
+         earrings are wrong: two readings that agree are what a refusal is made
+         of, so this settles at two rather than falling through to the absence
+         rule above. */
+      return rereads === 1 ? await unavailable() : specimen();
+    });
+
+    expect(rereads).toBe(2);
+    expect(confirmed.readings).toBe(2);
+    expect(confirmed.ok).toBe(false);
+  });
+
+  it("CONTROL — a QUIBBLE with no second opinion still delivers (D-187 untouched)", async () => {
+    const quibble = specimen();
+    /* run-10's shape: the hoops are ON her, the reader objects to an adjective
+       she never used. `absent: false` is the reader saying so. */
+    quibble.checks[0] = {
+      ...quibble.checks[0]!,
+      absent: false,
+      saw: "gold hoops on both ears, thin and understated rather than bold",
+    };
+
+    const confirmed = await confirmVerdict(quibble, unavailable);
+
+    expect(confirmed.ok, "a quibble may not spend her refund or her wait").toBe(true);
+    expect(confirmed.readings).toBe(1);
+  });
+
+  it("CONTROL — SILENCE with no second opinion still delivers (D-235 asymmetry untouched)", async () => {
+    const silent = specimen();
+    const { absent: _dropped, ...withoutAbsence } = silent.checks[0]!;
+    silent.checks[0] = withoutAbsence;
+
+    const confirmed = await confirmVerdict(silent, unavailable);
+
+    expect(confirmed.ok, "an unanswered absence question is not an absence").toBe(true);
+    expect(confirmed.readings).toBe(1);
+  });
+
+  it("CONTROL — an unavailable FIRST reading still delivers, and never re-reads", async () => {
+    let rereads = 0;
+    const confirmed = await confirmVerdict(
+      { ok: true, checks: [], unavailable: true },
+      async () => { rereads += 1; return unavailable(); },
+    );
+
+    expect(confirmed.ok).toBe(true);
+    expect(rereads, "there is nothing to confirm").toBe(0);
+  });
+
+  it("a removal that did not happen is the same catastrophe from the other side", async () => {
+    /*
+      `absenceIsTheAsk`: the reader answers `present: false` about a line that IS
+      an absence — "no glasses" — which means the glasses are STILL THERE. The
+      reader is never asked `absent` about it (the question has two defensible
+      opposite answers), so this arm proves the rule does not depend on a field
+      that shape can never carry.
+    */
+    const removal: RenderVerdict = {
+      ok: false,
+      checks: [{
+        facet: ACCESSORIES,
+        asked: "no glasses — they have been taken off and are not in the picture",
+        saw: "black rectangular glasses still on her face",
+        read: true,
+        verified: false,
+        binding: true,
+        absenceIsTheAsk: true,
+      }],
+    };
+
+    const confirmed = await confirmVerdict(removal, unavailable);
+
+    expect(confirmed.ok).toBe(false);
+    expect(confirmed.readings).toBe(1);
+  });
+});
