@@ -233,8 +233,8 @@ const SYSTEM_PROMPT = [
   "",
   "Be strict about WHERE. Pink eyes means the irises are pink; pink eyeshadow on brown eyes",
   "is not pink eyes, it is a different thing in the same neighbourhood. Hair worn down is",
-  "not hair worn up. An earring that is present but different from the one described is",
-  "still present — describe the difference rather than failing it.",
+  "not hair worn up. An earring of the SAME KIND that is plainer, smaller or thinner than",
+  "the one described is still present — describe the difference rather than failing it.",
   "",
   "A PAIR MEANS BOTH SIDES. 'Earrings' is two earrings, one on each ear — a single earring",
   "with the other ear BARE and VISIBLE is NOT present, however good the one is. Say so, and",
@@ -290,6 +290,33 @@ const SYSTEM_PROMPT = [
   "the hoops are thinner than described, the copper reads more auburn, the beard is",
   "stubble rather than full. Both are recorded; they are not the same event and only",
   "the first is treated as a failed render.",
+  "",
+  /*
+    KIND IS NOT DEGREE, AND THE SITE BEING OCCUPIED IS NOT THE THING BEING THERE
+    (fable-314, from a paid render).
+
+    Plain gold hoops were delivered where dangly CROSS earrings were asked for.
+    Split into its own question the reader saw it perfectly — *"gold hoop
+    earrings on both ears, not dangly cross earrings"*, 5 readings out of 5 —
+    and called it `absent:false` all five times, because the two sentences above
+    were written for run-10 (hoops thinner than she pictured, refunded wrongly)
+    and cannot tell a lesser version of the asked thing from a different object
+    at the same place. So the render was charged for.
+
+    Law 8 decides it: a stylist asked for crosses and got hoops has not been
+    given a rougher version of her ask, she has been given something else. The
+    carve-out stays exactly as narrow as run-10 needs — size, prominence,
+    thickness, finish and shade are still how it was done.
+  */
+  "A DIFFERENT KIND OF THING IN THE SAME PLACE IS NOT THE ASKED-FOR THING. If cross",
+  "earrings were asked for and you can see plain hoops, the crosses are not in the",
+  "photograph — answer `\"absent\":true`, whatever else is on her ears. The test is",
+  "the NOUN: if you would have to change the name of the object to describe what you",
+  "actually see, it is absent. If the name still fits and only the adjectives are",
+  "wrong — smaller, thinner, plainer, a duller gold — it is present.",
+  "",
+  "This changes nothing about a side you CANNOT SEE. A thing hidden behind hair or",
+  "turned away from the camera is still the occluded answer above, never absent.",
   "",
   'Reply with JSON: {"results":[{"id":1,"present":true|false,"absent":true|false,"occluded":true,"saw":"..."}]}',
   '— `occluded` is optional and only ever appears beside "present":true, `absent` only',

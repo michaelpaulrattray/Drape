@@ -275,6 +275,46 @@ describe("the prompt asks for the evidence it now requires", () => {
     expect(system).toMatch(/discarded as unanswered/);
     expect(system).not.toMatch(/only where present is false/);
   });
+
+  /*
+    KIND IS NOT DEGREE — the three clauses that only work TOGETHER (fable-314).
+
+    This is a PIN, not a proof: what the reader does with these sentences was
+    measured on the frame that was charged for, five readings a question, and
+    lives in `prove-per-item-question-disposable.mts` (kind flips to absent 5/5;
+    both degree asks stay present 5/5). A unit test cannot re-derive that.
+
+    What it CAN do is stop the three from drifting apart, because each one alone
+    is a defect: the kind rule without the run-10 carve-out refunds a customer
+    for hoops thinner than she pictured, the carve-out without the kind rule is
+    the false pass this came from, and either without the occlusion sentence
+    turns a hidden ear into an absence.
+  */
+  it("tells the reader that a different OBJECT is absent and a lesser one is not", async () => {
+    let system = "";
+    const engine: TextEngine = {
+      id: "capture",
+      async complete(request) {
+        system = request.system ?? "";
+        return {
+          text: '{"results":[{"id":1,"present":true,"saw":"low bun"}]}',
+          provenance: { provider: "test", model: "capture" } as unknown as TextResult["provenance"],
+          latencyMs: 1,
+        };
+      },
+    };
+    await verifyRender({ bytes, contentType: "image/png", facts: HAIR_UP, engine });
+
+    /* The kind rule, and the noun as its test. */
+    expect(system).toMatch(/DIFFERENT KIND OF THING IN THE SAME PLACE/);
+    expect(system).toMatch(/change the name of the object/);
+    /* Run-10's carve-out, still narrow and still there. */
+    expect(system).toMatch(/SAME KIND that is plainer, smaller or thinner/);
+    expect(system).toMatch(/hoops are thinner than described/);
+    /* And the third verdict, which this must never swallow. */
+    expect(system).toMatch(/"occluded":true/);
+    expect(system).toMatch(/hidden behind hair or\s+turned away from the camera is still the occluded answer/);
+  });
 });
 
 /**

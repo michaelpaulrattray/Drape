@@ -748,6 +748,10 @@ type RepaintRecord = {
   references: Array<{ key: string; digest: string | null; kind: string | null; slot: string | null }>;
   edited: string[];
   carried: string[];
+  /** The slots this render declared VACANT — a subset of `edited`, and the one
+   *  kind of edit that owes the library nothing. Carried here because a reader
+   *  that drops the field makes every rule about it silently inert. */
+  vacated: string[];
   standing: string[];
 };
 
@@ -775,6 +779,7 @@ function readRepaintRecord(internalPrompt: unknown): RepaintRecord | null {
     })),
     edited: Array.isArray(record.edited) ? record.edited.map(String) : [],
     carried: Array.isArray(record.carried) ? record.carried.map(String) : [],
+    vacated: Array.isArray(record.vacated) ? record.vacated.map(String) : [],
     standing: Array.isArray(record.standing) ? record.standing.map(String) : [],
   };
 }
@@ -1189,6 +1194,34 @@ async function runDevControls(): Promise<void> {
       ? `${withRecord.references.length} reference(s), engine ${withRecord.engineId}, `
         + `roles [${withRecord.references.map((reference) => `${reference.kind}:${reference.slot ?? "—"}`).join(", ")}]`
       : "the reader returned nothing for a record that is there",
+  );
+  /*
+    AND THE VACATE THE RECORD USED TO DROP.
+
+    `[E]` asks that every slot a render edited be in the library, and shift 60's
+    step 5 — a real glasses removal — failed it for a slot that never had a row
+    and never should. The exemption reads `vacated` off the record, so a reader
+    that silently dropped the field would leave the rule inert and the false
+    failure standing. The record from that very step, in its own shape.
+  */
+  const withVacate = readRepaintRecord({
+    repaint: {
+      engineId: "control:engine",
+      references: [{ key: "master.png", digest: "aa", kind: "master", slot: null }],
+      edited: ["glasses"], carried: ["earring@left", "hair"], vacated: ["glasses"], standing: [],
+    },
+  });
+  check(
+    withVacate !== null && withVacate.vacated.length === 1 && withVacate.vacated[0] === "glasses",
+    "DEV 4b: the recipe reader carries the slots a render declared VACANT",
+    withVacate
+      ? `vacated [${withVacate.vacated.join(", ")}] of edited [${withVacate.edited.join(", ")}]`
+      : "the reader returned nothing for a record that is there",
+  );
+  check(
+    (withRecord?.vacated.length ?? -1) === 0,
+    "DEV 4b NEGATIVE: and an ordinary edit vacates nothing, so the exemption cannot swallow it",
+    `an edit of [${withRecord?.edited.join(", ")}] reports ${withRecord?.vacated.length ?? "no"} vacated slot(s)`,
   );
   check(
     readRepaintRecord({ prompt: "an ordinary paste", seam: { torn: false } }) === null,
@@ -2738,7 +2771,27 @@ async function runWalk(): Promise<boolean> {
         second later — a false failure, and the more dangerous direction.
       */
       const settled = libraryAtClose;
-      const owedSlots = [...new Set([...(repainted?.edited ?? []), ...(repainted?.carried ?? [])])].sort();
+      /*
+        A VACATED SLOT IS OWED NOTHING — it is owed the OPPOSITE.
+
+        This read `edited ∪ carried`, and a vacate is an edit: shift 60's step 5
+        removed her glasses, the recipe edited `glasses`, and the walk failed for
+        the library not holding a glasses row. It never held one and never
+        should — her glasses are BASE-WORN, in the master by definition, and the
+        ask is that the slot stop carrying anything. Demanding a library row for
+        a slot whose whole content is its absence is the harness measuring a
+        thing the road it is walking does not have, one shift after `[E]`'s last
+        repair of exactly that shape.
+
+        Taken from the recipe's own `vacated` list rather than re-derived from
+        the words, so the walk and the assembler cannot disagree about which
+        slots went vacant.
+      */
+      const vacated = new Set(repainted?.vacated ?? []);
+      const owedSlots = [...new Set([
+        ...(repainted?.edited ?? []).filter((slot: string) => !vacated.has(slot)),
+        ...(repainted?.carried ?? []),
+      ])].sort();
       const heldKeys = new Set(live.map((libraryRow) => libraryRow.storageKey).filter(Boolean) as string[]);
       const orphanedThumbs = step.panelContentKeys.filter((key) => !heldKeys.has(key));
       const slotsOnPanel = new Set(
