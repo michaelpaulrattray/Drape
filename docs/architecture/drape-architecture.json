@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d76e0440efa17440"
+    "sourceFingerprint": "0c1fde1d51a41518"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 90
+      "moduleCount": 91
     },
     {
       "id": "domain:castingV2",
@@ -3605,6 +3605,12 @@
     {
       "id": "module:server/castingV2/renderVerification.ts",
       "path": "server/castingV2/renderVerification.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/repaintAsks.ts",
+      "path": "server/castingV2/repaintAsks.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7676,6 +7682,11 @@
       "grammar": "off|all|users:<ids>"
     },
     {
+      "id": "flag:CASTING_REPAINT_SCOPE",
+      "name": "CASTING_REPAINT_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
       "id": "flag:CASTING_SEGMENTS_DELIVERED_SCOPE",
       "name": "CASTING_SEGMENTS_DELIVERED_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -8797,6 +8808,10 @@
     {
       "id": "test:server/castingV2/renderVerification.test.ts",
       "path": "server/castingV2/renderVerification.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/repaintAsks.test.ts",
+      "path": "server/castingV2/repaintAsks.test.ts"
     },
     {
       "id": "test:server/castingV2/repaintRender.test.ts",
@@ -18617,6 +18632,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
@@ -18668,6 +18688,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/realizedAxes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
     },
     {
@@ -18733,6 +18758,16 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/renderVerification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/repaintAsks.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/repaintRender.ts",
       "kind": "imports"
     },
     {
@@ -18858,6 +18893,41 @@
     {
       "from": "module:server/castingV2/renderVerification.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:shared/castingRealization.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:shared/castingVocabularies.ts",
       "kind": "imports"
     },
     {
@@ -25378,6 +25448,13 @@
       "kind": "redeclared-shape",
       "subject": "server/castingV2/referenceMint.ts:362",
       "message": "Names 2 of RecipeRefusal's 4 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/repaintAsks.ts:56",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/repaintAsks.ts:56",
+      "message": "Names 5 of RefineDelta's 8 fields (server/castingV2/refineDelta.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:153",

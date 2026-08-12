@@ -774,6 +774,45 @@ the lip staircase, which D-244 cancelled.
    assembler is where D-244 lives in code: it resolves each feature to
    *anchor + full word stack* (edited) or *minted crop* (carried), and it can
    never hand a feature its own crop on its own edit.
+
+   **The two modules landed 2026-08-10** (`recipeAssembler.ts`,
+   `repaintRender.ts`), dark by having no call site. **THE PRODUCTION CALLER
+   LANDED 2026-08-12**, dark behind `CASTING_REPAINT_SCOPE` — a sub-flag whose
+   parent is the LIBRARY scope rather than the casting scope, because a repaint
+   pastes nothing: a feature survives the next render because the library holds
+   a crop and the recipe carries it, so arming the repaint without a library is
+   a paid path that forgets her features. `refineService.renderOnce` takes the
+   whole road at its head rather than configuring the old one — the harvest, the
+   carried-segment assembly and the seam are the old compositor's machinery and
+   D-241 retires them.
+
+   `castingV2/repaintAsks.ts` is the one translation between the two
+   vocabularies: the delta's imperative lane becomes the recipe's declarative
+   slots, with the slots taken from the SAME `slotsForFacet` the mint files with
+   and the words from the delta and the same `EDIT_PROSE` the prompt is composed
+   with. It **refuses rather than invents** — a removal, a departure, makeup /
+   ink / expression (`notASlot`), an unnamed worn object, and a delta that
+   writes nothing at all (an empty ask list is a pure-carry recipe the assembler
+   would happily paint and bill). Every refusal, plus the assembler's own six
+   and the repaint's two, throws into the request's catch and refunds the whole
+   price (fable-281 (b)).
+
+   Two things fall out of the old machinery retiring, both by construction
+   rather than by anyone remembering: `keepSegmentsFromRender` writes nothing,
+   because its own rule is *no evidence, nothing to keep* and a repaint produces
+   no evidence; and the mint reads `applied ?? wholeFrame`, which is the honest
+   answer when the whole frame was painted.
+
+   **DECLARED SHORTFALL (opus-227 §3, ratified fable-281).** The mint's
+   `regionsToCut` is seeded from the harvest's map alone, so on this road every
+   cuttable slot falls to `noRegion` and the library files **words only**. That
+   is a capability regression against the flag-off path, it is named here before
+   it can be discovered, and what closes it is a fresh region read on the
+   DELIVERED frame per cuttable slot — §2.3's own definition of an edit-carried
+   reference, and with no `applied` the cut is `region(delivered)`, the feature's
+   whole extent on the frame that delivered it. It is a **precondition of the
+   flip, not a follow-up**, and its price is one vision call per cuttable slot
+   per render.
 4. **Verification: existence and catastrophe gates only** (D-246) — subtle
    readings recorded for trends, never enforced. The disarm sweep is part of
    this step; its result is in the D-246 entry and pinned by

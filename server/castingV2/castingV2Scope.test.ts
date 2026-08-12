@@ -31,6 +31,12 @@ import {
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   parseCastingReferenceLibraryScope,
   validateCastingReferenceLibraryEnvironment,
+  CASTING_REPAINT_SCOPE_ENV,
+  CastingRepaintCoverageError,
+  CastingRepaintScopeConfigurationError,
+  captureCastingRepaintEnabled,
+  parseCastingRepaintScope,
+  validateCastingRepaintEnvironment,
 } from "./castingV2Scope";
 
 /**
@@ -404,5 +410,82 @@ describe("the reference-library sub-flag", () => {
     expect(castingReferenceLibraryArmed()).toBe(false);
     process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:7";
     expect(castingReferenceLibraryArmed()).toBe(true);
+  });
+});
+
+describe("the compositor-swap sub-flag", () => {
+  const previous = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...previous };
+  });
+
+  it("is off by default and refuses anything it cannot read exactly", () => {
+    expect(parseCastingRepaintScope(undefined)).toEqual({ kind: "off" });
+    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "true"]) {
+      expect(() => parseCastingRepaintScope(raw), raw)
+        .toThrow(CastingRepaintScopeConfigurationError);
+    }
+  });
+
+  it("asserts nothing while absent", () => {
+    expect(validateCastingRepaintEnvironment({
+      scope: undefined,
+      libraryScope: undefined,
+    })).toEqual({ kind: "off" });
+  });
+
+  it("refuses to repaint for a user who keeps no library", () => {
+    /*
+      The whole reason this flag hangs off the library rather than off the
+      casting scope. A repaint pastes nothing back: a feature survives because
+      the library holds a crop and the recipe carries it. Armed without one,
+      every paid refine quietly forgets her features.
+    */
+    expect(() => validateCastingRepaintEnvironment({
+      scope: "users:1",
+      libraryScope: undefined,
+    })).toThrow(CastingRepaintCoverageError);
+    expect(() => validateCastingRepaintEnvironment({
+      scope: "all",
+      libraryScope: "users:1",
+    })).toThrow(CastingRepaintCoverageError);
+    expect(() => validateCastingRepaintEnvironment({
+      scope: "users:1,2",
+      libraryScope: "users:1",
+    })).toThrow(/names users outside/);
+  });
+
+  it("accepts a scope its parent already covers", () => {
+    expect(validateCastingRepaintEnvironment({
+      scope: "users:1",
+      libraryScope: "users:1,2",
+    })).toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingRepaintEnvironment({
+      scope: "users:1",
+      libraryScope: "all",
+    })).toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is enabled only when the WHOLE chain names the user", () => {
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
+    process.env[CASTING_REPAINT_SCOPE_ENV] = "users:1";
+    expect(captureCastingRepaintEnabled(1)).toBe(true);
+    expect(captureCastingRepaintEnabled(2)).toBe(false);
+
+    /* Point-of-use, each link driven on its own: a boot check that was never
+       invoked is the second way a flag pair goes wrong, and here there are
+       three links rather than two. */
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "off";
+    expect(captureCastingRepaintEnabled(1)).toBe(false);
+
+    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
+    expect(captureCastingRepaintEnabled(1)).toBe(false);
+
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    delete process.env[CASTING_REPAINT_SCOPE_ENV];
+    expect(captureCastingRepaintEnabled(1)).toBe(false);
   });
 });

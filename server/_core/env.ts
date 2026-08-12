@@ -25,10 +25,12 @@ import {
 } from "../casting/snapshotRestoreScope";
 import {
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
+  CASTING_REPAINT_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
   CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingReferenceLibraryEnvironment,
+  validateCastingRepaintEnvironment,
   validateCastingSegmentsDeliveredEnvironment,
   validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
@@ -160,6 +162,17 @@ export function validateEnv(): void {
     scope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
+  });
+  /*
+    The compositor swap (D-241): checked against the LIBRARY scope rather than
+    the casting scope, and the difference matters. A repaint pastes nothing —
+    a feature survives the next render because the library holds a crop of it
+    and the recipe carries that crop. Armed without a library, the same switch
+    would quietly turn every paid refine into one that forgets her features.
+  */
+  validateCastingRepaintEnvironment({
+    scope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
   });
 
   for (const [key, consequence] of Object.entries(OPTIONAL_VARS)) {

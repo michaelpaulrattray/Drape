@@ -142,11 +142,16 @@ import { makeupRegionFor } from "./makeupPlacement";
 import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
 import { mintedSlotsForRender } from "./mintedSlots";
-import { liveReferences } from "./referenceLibrary";
+import { deriveLibrary, liveReferences } from "./referenceLibrary";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
+import { assembleRecipe } from "./recipeAssembler";
+import { repaint, type RepaintEngine } from "./repaintRender";
+import { repaintAsksFor, repaintCannotRemove } from "./repaintAsks";
+import { pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
+  captureCastingRepaintEnabled,
   captureCastingSegmentsEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
@@ -334,6 +339,24 @@ export type RefineServiceDependencies = {
    * database round trip, and a dark deploy must not pay for one.
    */
   referenceLibraryEnabled?: (userId: number) => boolean;
+  /**
+   * The engine the REPAINT dispatches its one paint to.
+   *
+   * The same transport and the same factory as `maskedEdit` today — GPT Image 2
+   * at the master's exact pixels — and its own seam because the two are not the
+   * same decision. Routing is per class (the recipe class on GPT2, anatomical
+   * work on NBP), so the day the repaint routes differently is a day this is
+   * configured differently, and a shared field would have to be untangled under
+   * a paid path rather than named ahead of it.
+   */
+  repaintEngine?: () => RepaintEngine;
+  /**
+   * Whether this render goes through the NEW compositor — read ONCE per render.
+   *
+   * The predicate rather than a boolean, for `referenceLibraryEnabled`'s reason:
+   * the caller's decision and the flag's answer must never be two things.
+   */
+  repaintEnabled?: (userId: number) => boolean;
 };
 
 async function defaultStoreImage(input: { key: string; bytes: Buffer; contentType: string }) {
@@ -2107,6 +2130,141 @@ export async function refineCandidate(
     }
     const prompt = composedPrompt.full;
 
+    /*
+      THE NEW COMPOSITOR (D-241), dark behind `CASTING_REPAINT_SCOPE`.
+
+      The old road below renders, harvests a region, pastes the delivered pixels
+      onto the master and blends the join. This one has no join: it assembles a
+      recipe from the cast's own library — master plus a cropped reference of
+      every delivered feature, each named, with its full word stack — dispatches
+      ONE paint, and **the frame the engine returns is the delivered frame**.
+      Nothing is composited into it, so there is no seam to measure and no
+      composite fault to refuse on.
+
+      # It REFUSES into the refund rather than painting something else
+
+      Three doors can say no — the ask this product cannot yet say declaratively
+      (`repaintAsks`), the recipe D-244 forbids (`assembleRecipe`), and a
+      reference whose bytes have moved since the library minted them
+      (`repaintRender`). Every one of them throws into the request's own catch,
+      which refunds the whole price. A recipe we could not assemble honestly
+      must not become a picture somebody paid for — and `referenceBytesChanged`
+      in particular means the library and storage have diverged, which is
+      exactly when painting anyway would be worst (fable-281 (b)).
+
+      # What it deliberately does NOT produce
+
+      No `evidence`. That is not an omission: the harvest's masks exist to scope
+      a PASTE, and nothing is pasted. Two things downstream read it and both are
+      already correct without it — `keepSegmentsFromRender` returns
+      `nothing-to-keep` with no evidence (the old carrier retiring by
+      construction rather than by anyone remembering to skip it), and the mint
+      reads `applied ?? wholeFrame`, which is the honest answer when the whole
+      frame was painted. The mint's REGION source is the declared shortfall: with
+      no harvest map it files words rather than crops, and the fresh
+      delivered-frame read that closes it lands before the flag is flipped for
+      anybody (opus-227 §3, fable-281).
+    */
+    const repaintEnabled = (dependencies.repaintEnabled ?? captureCastingRepaintEnabled)(
+      input.userId,
+    );
+    const repaintOnce = async () => {
+      const asks = editDelta
+        ? repaintAsksFor({
+          delta: editDelta,
+          /* The prose the prompt above is composed with, handed over rather
+             than copied: one definition of what "copper" looks like. */
+          prose: EDIT_PROSE,
+          /* Derived once at the top of this block, beside the region override
+             that has to name the same object. */
+          accessoryKind: accessoryRegion,
+        })
+        : repaintCannotRemove();
+      if (!asks.ok) {
+        log.error(
+          { operationId, variant: variant.publicId, reason: asks.reason, facet: asks.facet },
+          "[refineService] the repaint cannot say this ask declaratively — refusing rather than painting a recipe that never mentions it",
+        );
+        throw new Error(`the repaint cannot express this ask: ${asks.detail}`);
+      }
+      /*
+        The library as it stood when this render started. The anchor is this
+        variant — its own rows do not exist yet, so the walk climbs its parents
+        — which is the same anchor the mint's duplicate check uses below, and
+        for the same reason.
+      */
+      const library = deriveLibrary(await listLineageReferences({
+        userId: input.userId,
+        candidateId: variant.candidateId,
+        anchorVariantId: variant.id,
+      }));
+      const recipe = assembleRecipe({
+        /* The master is the base this render is anchored on, by key. Every
+           render is `edit(original, …)` and `claimVariant` proved that base
+           inside the statement that proved the parent, so this cannot be got
+           wrong here. */
+        master: { key: variant.baseImageKey },
+        /* Never assumed: `segmentsOnFace` shipped "hers" onto a male
+           candidate's face before pronouns were passed rather than guessed. */
+        pronouns: pronounsForSex(currentIdentity?.sex),
+        library,
+        asks: asks.asks,
+      });
+      if (!recipe.ok) {
+        log.error(
+          { operationId, variant: variant.publicId, reason: recipe.reason, slot: recipe.slot },
+          "[refineService] the recipe D-244 would have to build is one it forbids — refusing",
+        );
+        throw new Error(`the repaint recipe was refused: ${recipe.detail}`);
+      }
+      const painted = await repaint({
+        recipe,
+        engine: (dependencies.repaintEngine ?? defaultMaskedEditEngine)(),
+        /* The master's bytes are already in hand and are the bytes the rest of
+           this request used; everything else is a library crop at its own key. */
+        load: async (image) => (image.key === variant.baseImageKey
+          ? { bytes: base.bytes, contentType: base.contentType }
+          : await (dependencies.readBytes ?? storageReadBytes)(image.key)),
+        /* The master's exact pixels — a repaint returns a frame of the same
+           size, and a resolution TIER is what produced 848x1264 for a 1024x1536
+           master once already. */
+        ...(await masterSize()),
+      });
+      if (!painted.ok) {
+        log.error(
+          { operationId, variant: variant.publicId, reason: painted.reason, key: painted.key },
+          "[refineService] a reference the library named is not the reference storage holds — refusing rather than repainting from it",
+        );
+        throw new Error(`the repaint refused its own references: ${painted.detail}`);
+      }
+      log.info(
+        {
+          operationId,
+          variant: variant.publicId,
+          engine: painted.sent.engineId,
+          /* WHAT WENT OUT, in send order — the record answers "what did we
+             actually send?" from the dispatch itself rather than from a
+             reconstruction of it. */
+          keys: painted.sent.keys,
+          edited: recipe.edited,
+          carried: recipe.carried,
+          standing: recipe.standing.map((entry) => entry.slot),
+        },
+        "[refineService] repainted the whole frame from the master and her own references",
+      );
+      return {
+        ...painted.frame,
+        /* Named rather than omitted: a repaint pastes nothing, so there is no
+           mask evidence, no carried-by-paste facet list, no assembly working
+           and no seam verdict. Every consumer below already reads these with a
+           default, and stating them here is what makes that deliberate. */
+        evidence: undefined,
+        carried: undefined,
+        assembly: undefined,
+        seam: undefined,
+      };
+    };
+
     /* ONE definition of "render this", so a retry cannot quietly differ from
        the attempt it is retrying. */
     /*
@@ -2124,6 +2282,13 @@ export async function refineCandidate(
       untouched and does not know this exists.
     */
     const renderOnce = async () => {
+      /*
+        THE SWAP, and it is a whole road rather than a step inside this one.
+        Everything below — the harvest, the carried-segment assembly, the seam —
+        is the old compositor's machinery, and D-241 retires it rather than
+        configuring it. Read once above, so a retry cannot cross roads.
+      */
+      if (repaintEnabled) return repaintOnce();
       /*
         THE ROUTING ROW THE FACE WALL ESTABLISHED, wired at last.
 

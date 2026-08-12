@@ -456,6 +456,107 @@ export function validateCastingReferenceLibraryEnvironment(input: {
   return library;
 }
 
+/* ------------------------------------------ the compositor-swap sub-flag */
+
+/**
+ * THE REPAINT — the new compositor, on its own switch (D-241, fable-277 §2).
+ *
+ * Off, this user's refines paint through the old road: full-frame engine call,
+ * masked harvest, segments pasted back, seam blended. On, the same ask assembles
+ * a recipe (`recipeAssembler`) and repaints the whole frame from the pristine
+ * master plus a cropped reference of every delivered feature (`repaintRender`),
+ * and the engine's own frame is the delivered frame — nothing is pasted.
+ *
+ * # Its parent is the LIBRARY scope, and that is the load-bearing choice
+ *
+ * Under the old road a feature survives the next render because the compositor
+ * PASTES its kept segment back. Under the repaint nothing is pasted: a feature
+ * survives because the library holds a crop of it and the recipe carries that
+ * crop. So a user repainting without a library is a user whose face silently
+ * loses every feature the paste was preserving, on the paid path — the exact
+ * class D-244 exists to close, arriving through the flag pair instead of
+ * through the code.
+ *
+ * An EMPTY library is a different thing entirely and is fine: that is the
+ * degenerate case (fable-171 condition 1), the road every new cast travels, and
+ * it assembles to the master alone plus words. Empty is not disabled.
+ *
+ * The transport is inherited rather than re-asserted here: the repaint engine is
+ * the same fal-backed one the masked path already uses, and `CASTING_V2_SCOPE`
+ * — which every scope below it must sit inside — already refuses to arm without
+ * `FAL_KEY`.
+ */
+export const CASTING_REPAINT_SCOPE_ENV = "CASTING_REPAINT_SCOPE";
+
+export class CastingRepaintScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_REPAINT_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingRepaintScopeConfigurationError";
+  }
+}
+
+/**
+ * A repaint carries features by crop, and the crops are the library's. A repaint
+ * scope reaching past the library scope is not merely inert — it is a paid path
+ * that forgets features — so it refuses rather than arming (invariant 7).
+ */
+export class CastingRepaintCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_REPAINT_SCOPE_ENV} ${detail}`);
+    this.name = "CastingRepaintCoverageError";
+  }
+}
+
+export function parseCastingRepaintScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingRepaintScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's refines go through the new compositor.
+ *
+ * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
+ * boot check already refuses a scope that reaches past its parent, and this is
+ * the same rule enforced again where it is used, because a boot check that was
+ * never invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingRepaintEnabled(userId: number): boolean {
+  const repaint = parseCastingRepaintScope(process.env[CASTING_REPAINT_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(repaint, userId)) return false;
+  return captureCastingReferenceLibraryEnabled(userId);
+}
+
+export function validateCastingRepaintEnvironment(input: {
+  scope: string | undefined;
+  libraryScope: string | undefined;
+}): CastingV2Scope {
+  const repaint = parseCastingRepaintScope(input.scope);
+  if (repaint.kind === "off") return repaint;
+
+  const library = parseCastingReferenceLibraryScope(input.libraryScope);
+  if (library.kind === "off") {
+    throw new CastingRepaintCoverageError(
+      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — a repaint carries features by crop, and without a library there are no crops to carry`,
+    );
+  }
+  if (library.kind === "all") return repaint;
+  if (repaint.kind === "all") {
+    throw new CastingRepaintCoverageError(
+      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = repaint.userIds.filter((userId) => !library.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingRepaintCoverageError(
+      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return repaint;
+}
+
 export function validateCastingV2Environment(input: {
   scope: string | undefined;
   cleanupWorker: string | undefined;

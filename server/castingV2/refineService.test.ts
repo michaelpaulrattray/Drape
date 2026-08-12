@@ -265,10 +265,24 @@ vi.mock("./carriedSegments", () => ({
 }));
 
 /** What the render asked permanence to KEEP — captured, never supplied. */
-const keptAsks: Array<{ facets: readonly string[]; verdict: string | null }> = [];
+const keptAsks: Array<{
+  facets: readonly string[];
+  verdict: string | null;
+  /** The harvest's own masks. A repaint pastes nothing and therefore produces
+   *  none, which is what makes the old carrier retire by construction. */
+  evidence: unknown;
+}> = [];
 vi.mock("./segmentPersistence", () => ({
-  keepSegmentsFromRender: vi.fn(async (ask: { facets: readonly string[]; verdict?: string | null }) => {
-    keptAsks.push({ facets: ask.facets, verdict: ask.verdict ?? null });
+  keepSegmentsFromRender: vi.fn(async (ask: {
+    facets: readonly string[];
+    verdict?: string | null;
+    image?: { evidence?: unknown };
+  }) => {
+    keptAsks.push({
+      facets: ask.facets,
+      verdict: ask.verdict ?? null,
+      evidence: ask.image?.evidence ?? null,
+    });
     return { outcome: "off" as const, segments: [] };
   }),
 }));
@@ -285,6 +299,9 @@ type MintAsk = {
   slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string; disputed?: boolean }>;
   variantId: number | null;
   knownDigests: ReadonlyMap<string, string> | undefined;
+  /** The compositor's own working. NULL on a repaint, where the whole frame was
+   *  painted and the mint's `applied ?? wholeFrame` is the honest answer. */
+  applied: unknown;
   deliveredRegions: unknown;
   masterSideRegions: ReadonlyMap<string, unknown> | null | undefined;
   deliveredSideRegions: ReadonlyMap<string, unknown> | null | undefined;
@@ -297,6 +314,7 @@ vi.mock("./referenceMint", () => ({
     slots: ReadonlyArray<{ slot: string; words: readonly string[]; frame: string; disputed?: boolean }>;
     variantId: number | null;
     knownDigests?: ReadonlyMap<string, string>;
+    applied?: unknown;
     deliveredRegions?: unknown;
     masterSideRegions?: ReadonlyMap<string, unknown> | null;
     deliveredSideRegions?: ReadonlyMap<string, unknown> | null;
@@ -306,6 +324,7 @@ vi.mock("./referenceMint", () => ({
       slots: ask.slots,
       variantId: ask.variantId,
       knownDigests: ask.knownDigests,
+      applied: ask.applied ?? null,
       deliveredRegions: ask.deliveredRegions,
       masterSideRegions: ask.masterSideRegions,
       deliveredSideRegions: ask.deliveredSideRegions,
@@ -1901,6 +1920,274 @@ describe("the order, and the money", () => {
     /* The variant row carries the same class the ledger line describes, or the
        two halves of the record disagree about one event. */
     expect(failedVariant?.failureClass).toBe("facts_missing");
+  });
+});
+
+/**
+ * THE NEW COMPOSITOR ON THE PAID PATH (D-241), dark behind
+ * `CASTING_REPAINT_SCOPE`.
+ *
+ * Everything here is asserted on WHAT WENT OUT — the request the repaint engine
+ * actually received — rather than on a constant near it (working law 5). "The
+ * master is reference 1" is a claim about element 0 of an array somebody
+ * dispatched, and the campaign has already paid twice for the version of that
+ * claim which was true of a variable and false of a request.
+ */
+describe("the repaint replaces the compositor rather than configuring it", () => {
+  /** A repaint's whole request, captured at the wire. */
+  const painted: Array<{
+    prompt: string;
+    references: ReadonlyArray<{ bytes: Buffer; contentType: string }>;
+    width: number;
+    height: number;
+  }> = [];
+
+  const repaintEngine = () => ({
+    id: "test:repaint",
+    edit: async (request: {
+      prompt: string;
+      references: ReadonlyArray<{ bytes: Buffer; contentType: string }>;
+      width: number;
+      height: number;
+    }) => {
+      painted.push(request);
+      journal.push("repaint");
+      if (engineThrows) throw engineThrows;
+      return {
+        bytes: Buffer.from("repainted"),
+        contentType: "image/png",
+        width: request.width,
+        height: request.height,
+        latencyMs: 10,
+        provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+      };
+    },
+  });
+
+  /** Distinguishable bytes per key, so "reference 2 is her lips" is provable
+   *  against the array rather than against the sentence that describes it. */
+  const readBytes = async (key: string) => (key === "casting-v2/candidates/abc.png"
+    ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
+    : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" });
+
+  const repainting = {
+    repaintEnabled: () => true,
+    repaintEngine,
+    readBytes,
+    /* The masked harvest must never be reached on this road; if it is, this
+       passthrough keeps the failure legible instead of masking a real cut. */
+    harvest: unmasked,
+  };
+
+  /** One live carry row, in the shape the lineage walk returns. */
+  const carryRow = (over: Record<string, unknown> = {}) => ({
+    id: 1,
+    publicId: "ref-1",
+    candidateId: 1,
+    variantId: null,
+    role: "carry",
+    slot: "lips",
+    tier: "anatomy",
+    noun: "lips",
+    words: ["a fuller cupid's bow"],
+    storageKey: "casting-v2/library/lips.png",
+    maskKey: null,
+    digest: null,
+    geometry: null,
+    guard: null,
+    refusal: null,
+    version: 1,
+    retiredAt: null,
+    createdAt: new Date("2026-08-11T00:00:00Z"),
+    ...over,
+  });
+
+  const hairDown = {
+    ...repainting,
+    interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "hair down" } } }),
+  };
+
+  beforeEach(() => {
+    painted.length = 0;
+  });
+
+  it("THE DEGENERATE CASE: an empty library sends the master alone, plus words", async () => {
+    /* fable-171 condition 1 — the road every new cast travels, and the first
+       fixture here for exactly that reason. It is not a special case in the
+       code either: it is what the general path does with nothing to carry. */
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    expect(painted).toHaveLength(1);
+    expect(painted[0]!.references).toHaveLength(1);
+    expect(painted[0]!.references[0]!.bytes).toEqual(TINY_MASTER_PNG);
+    expect(painted[0]!.prompt).toContain("Reference 1 is the photograph of this person");
+    expect(painted[0]!.prompt).toContain("Change only her hair: hair down.");
+    /* The master's exact pixels, never a resolution tier. */
+    expect(painted[0]!.width).toBe(32);
+    expect(painted[0]!.height).toBe(48);
+  });
+
+  it("delivers the engine's own frame, with nothing composited into it", async () => {
+    const stored: Buffer[] = [];
+    await refineCandidate({
+      ...hairDown,
+      storeImage: async (ask) => {
+        stored.push(ask.bytes);
+        return { key: ask.key, url: `https://cdn.example/${ask.key}` };
+      },
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(stored).toEqual([Buffer.from("repainted")]);
+    /* And the old road was not travelled at all: no full-frame prompt reached
+       the incumbent engine or the masked one. */
+    expect(sentPrompts).toHaveLength(0);
+    expect(journal).toContain("repaint");
+    expect(journal).not.toContain("generate");
+  });
+
+  it("carries a minted crop as its own reference, in the recipe's own order", async () => {
+    lineageReferences = [carryRow()];
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    const request = painted[0]!;
+    expect(request.references.map((reference) => reference.bytes)).toEqual([
+      TINY_MASTER_PNG,
+      Buffer.from("crop:casting-v2/library/lips.png"),
+    ]);
+    /* The sentence and the array are built in one pass, so the ordinal in the
+       prose is the ordinal in the request. Asserting both is what makes that
+       claim checkable rather than plausible. */
+    expect(request.prompt).toContain("Reference 2 is the exact lips she has");
+    expect(request.prompt).toContain("a fuller cupid's bow, unchanged");
+  });
+
+  /**
+   * A harvest that DOES hand back the compositor's working.
+   *
+   * Both assertions below are about an ABSENCE — no evidence, no `applied` —
+   * and an absence is only evidence if the fixture could have produced a
+   * presence. The suite's own passthrough returns neither on either road, so
+   * without this control the two tests would pass identically with the repaint
+   * branch deleted, which is the checker that cannot fail.
+   */
+  const composite = {
+    applied: { width: 32, height: 48, data: Buffer.alloc(32 * 48) },
+    masterRegions: new Map<string, never>(),
+  };
+  const compositing = async (ask: { painted: { bytes: Buffer; contentType: string } }) => ({
+    bytes: ask.painted.bytes,
+    contentType: ask.painted.contentType,
+    outcome: "composited" as const,
+    evidence: composite,
+  });
+
+  it("keeps no segments, because nothing was pasted", async () => {
+    /* The old carrier retiring BY CONSTRUCTION rather than by anyone
+       remembering to skip it: the store's own rule is "no evidence, nothing to
+       keep", and a repaint produces no evidence because there is no paste to
+       scope. */
+    await refineCandidate({ ...hairDown, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect(keptAsks).toHaveLength(1);
+    expect(keptAsks[0]!.evidence).toBeNull();
+  });
+
+  it("CONTROL — the same ask on the old road hands permanence its masks", async () => {
+    await refineCandidate({ ...hairDown, repaintEnabled: () => false, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect(keptAsks).toHaveLength(1);
+    expect(keptAsks[0]!.evidence).toEqual(composite);
+  });
+
+  const mintingLibrary = {
+    referenceLibraryEnabled: () => true,
+    verifier: {
+      id: "verifier",
+      complete: async (request: { system: string }) => ({
+        text: request.system.includes("how they")
+          ? JSON.stringify({ hairWorn: "down" })
+          : JSON.stringify({ results: [{ id: 1, present: true, saw: "hair worn down" }] }),
+        truncated: false,
+        latencyMs: 1,
+      }),
+    } as never,
+  };
+
+  it("tells the library the whole frame was painted", async () => {
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+      { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks).toHaveLength(1);
+    /* NULL rather than a mask — which the mint reads as `wholeFrame`, and the
+       whole frame is exactly what a repaint painted. */
+    expect(mintAsks[0]!.applied).toBeNull();
+  });
+
+  it("CONTROL — the same ask on the old road hands the mint the paste's own mask", async () => {
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({
+      ...hairDown, ...mintingLibrary, repaintEnabled: () => false, harvest: compositing,
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.applied).toEqual(composite.applied);
+  });
+
+  it("refuses an ask it cannot say declaratively, and gives the money back", async () => {
+    /* Makeup has no library slot by ruling (fable-168/201). Painting anyway
+       would send a recipe that never mentions what she asked for and charge her
+       for the result — the dropped-ask class, one door over from the gate this
+       campaign fixed this week. */
+    await expect(refineCandidate({
+      ...repainting,
+      interpret: async () => ({ ok: true as const, delta: { makeup: "a red lip" } }),
+    }, { ...input, instruction: "give her a red lip" })).rejects.toThrow();
+
+    expect(painted).toHaveLength(0);
+    expect(ledger.refunds).toEqual([
+      { amount: 25, description: "Refine refunded — the generation failed" },
+    ]);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  it("refuses a reference whose bytes are not the bytes the library minted", async () => {
+    /*
+      The pixel-frozen promise, driven through the production caller rather than
+      through the module that makes it. A digest mismatch means the library's
+      mint and the object in storage have diverged, and painting from the newer
+      one would quietly redraw a feature this render promised not to touch.
+    */
+    lineageReferences = [carryRow({ digest: "deadbeefdeadbeef" })];
+    const before = logged.length;
+
+    /* The user is told the spoken sentence, never the internal detail — so the
+       claim is proved on the RECORD the service wrote and on the money, which
+       is where a digest refusal is actually visible. */
+    await expect(refineCandidate(hairDown, { ...input, instruction: "wear her hair down" }))
+      .rejects.toThrow(/Your credits have been returned/);
+    expect(logged.slice(before).map((entry) => entry.fields.reason))
+      .toContain("referenceBytesChanged");
+
+    expect(painted).toHaveLength(0);
+    expect(ledger.refunds).toHaveLength(1);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+  });
+
+  it("does not exist for anyone the flag has not named", async () => {
+    /* The dark control, driven rather than assumed: with the predicate false
+       the same ask travels the old road, and the repaint engine is never
+       constructed, let alone dispatched to. */
+    await refineCandidate({
+      ...hairDown,
+      repaintEnabled: () => false,
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(painted).toHaveLength(0);
+    expect(journal).toContain("generate");
   });
 });
 
