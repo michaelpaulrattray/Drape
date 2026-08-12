@@ -76,6 +76,7 @@
  *   FAL_KEY=… railway.cmd run --service MySQL -- \
  *     npx tsx scripts/drive-finding-replay.mts … --spend
  */
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -181,12 +182,109 @@ if (!CONTROLS && !SPEND && !REHEARSE && !CANDIDATE) {
   process.exit(0);
 }
 
+/*
+  THE LOCAL `.env`, AND ONLY WHERE IT CANNOT BE THE WRONG ANSWER.
+
+  Every production invocation of this file runs under `railway run --service
+  MySQL`, which injects the world; a dev walk has no such wrapper and would
+  otherwise have to be handed six variables on the command line. The obvious fix
+  — a bare `import "dotenv/config"` — is the exact hazard `worldGuard` was
+  written for: inside a Railway run dotenv silently fills every variable the
+  service does not define, from the OTHER world, and the process looks normal.
+
+  So it is loaded only OUTSIDE a Railway run, which is the one place it cannot
+  mix two worlds. The guards below then prove the world it produced rather than
+  trusting it.
+*/
+if (!process.env.RAILWAY_ENVIRONMENT_NAME) await import("dotenv/config");
+
 const databaseKey = process.env.MYSQL_PUBLIC_URL ? "MYSQL_PUBLIC_URL" : "DATABASE_URL";
 assertOneWorld([databaseKey]);
+
+/*
+  ================= THE WORLD THIS RUN IS WALKING, DECLARED =================
+
+  This file used to hold ONE sentence about worlds: refuse if `--bucket` is the
+  local `.env`'s, "the dev world, and these rows are production's". Correct for
+  what it protected — `--controls` reads the founder's own production frames by
+  publicId — and it was applied at module scope to every mode, so no run of any
+  kind could name the dev world. The five-ask proof needs exactly that.
+
+  # It is not loosened here. It is turned into a THREE-WAY agreement.
+
+  Before, one direction was checked: a dev bucket inside a production run. The
+  opposite mistake — a PRODUCTION bucket inside a dev process — was caught only
+  by `assertOneWorld`, and only when the process happened to be inside a
+  `railway run`. Now the declared world, the bucket and the database must all be
+  the same world or nothing runs at all:
+
+    --world production   bucket ≠ the local .env's · database ≠ the local .env's
+    --world dev          bucket = the local .env's · database = the local .env's
+
+  `--controls` is pinned to his production frames, so it REFUSES `--world dev`
+  however the buckets are pointed — the plan's own required control, kept as a
+  refusal rather than as a convention.
+
+  # And the second door, which an amendment here does not open
+
+  `--spend` executes `runControls()` before the gate. Controls A, B and D are
+  his production frames by publicId, and 0 of 6 of them exist in the dev
+  database (driven, shift 58). So in the dev world those three are recorded
+  `absent()` with the world as the reason — never as passes — and a DEV CONTROL
+  SET is driven in their place, so the spend gate is still satisfied by
+  instruments that were proved in the same run. See `runDevControls`.
+*/
+type World = "dev" | "production";
+const declaredWorld = arg("world").toLowerCase();
+if (declaredWorld && declaredWorld !== "dev" && declaredWorld !== "production") {
+  throw new Error(`--world takes "dev" or "production", not "${declaredWorld}"`);
+}
+/* Production is the default because it is what every existing invocation means;
+   a SPEND has to say it out loud, which is the line below. */
+const WORLD: World = declaredWorld === "dev" ? "dev" : "production";
+if (SPEND && !declaredWorld) {
+  throw new Error(
+    "--world dev|production is required to spend. A walk's world is the first fact its "
+    + "report carries and the last one anybody reconstructs afterwards; naming it is cheaper "
+    + "than proving it later.",
+  );
+}
+if (CONTROLS && WORLD === "dev") {
+  throw new Error(
+    "--controls reads the founder's own production frames by publicId — there is no such thing "
+    + "as driving them in the dev world. Drop --controls, or point this at production.",
+  );
+}
+
+const localEnv = readLocalEnvFile();
 const base = arg("bucket").replace(/\/$/, "");
-if (!base) throw new Error("--bucket <public url> is required — these are production frames");
-if (base === (readLocalEnvFile().get("R2_PUBLIC_URL") ?? "").replace(/\/$/, "")) {
+if (!base) throw new Error("--bucket <public url> is required — name the bucket this run reads");
+const localBucket = (localEnv.get("R2_PUBLIC_URL") ?? "").replace(/\/$/, "");
+const bucketIsLocal = localBucket !== "" && base === localBucket;
+if (WORLD === "production" && bucketIsLocal) {
   throw new Error("--bucket is the local .env's bucket — the dev world, and these rows are production's");
+}
+if (WORLD === "dev" && !bucketIsLocal) {
+  throw new Error(
+    `--world dev was declared and --bucket is ${base}, which is not the local .env's bucket. `
+    + "A dev walk reading production bytes is the mistake this guard exists for, pointed the other way.",
+  );
+}
+/* THE DATABASE'S OWN WORLD, from the same file and by the same comparison — so a
+   dev walk cannot be pointed at production rows by an injected variable, which
+   is precisely how `railway run` hands a script the other world. */
+const databaseIsLocal = (process.env[databaseKey] ?? "") === (localEnv.get(databaseKey) ?? "__none__");
+if (WORLD === "dev" && !databaseIsLocal) {
+  throw new Error(
+    `--world dev was declared and ${databaseKey} is not the local .env's. The bucket and the `
+    + "database would be different worlds, which is the silent-substitution class worldGuard exists for.",
+  );
+}
+if (WORLD === "production" && databaseIsLocal) {
+  throw new Error(
+    `--world production was declared and ${databaseKey} is the local .env's — this process is `
+    + "holding dev rows. Run it under `railway run --service MySQL`.",
+  );
 }
 const apiKey = process.env.FAL_KEY;
 if (!apiKey) throw new Error("FAL_KEY is required — the counter is a real segmentation read");
@@ -539,6 +637,133 @@ function movedShare(mask: Mask, before: Buffer, after: Buffer): { moved: number;
 }
 
 /* ==========================================================================
+   THE NEW ROAD'S READERS — four of them, and each is a control in `runDevControls`.
+   ========================================================================== */
+
+/** One live library row, in the shape the report prints it. */
+type LibraryRow = {
+  id: number;
+  slot: string;
+  role: string;
+  tier: string;
+  words: string[];
+  storageKey: string | null;
+  maskKey: string | null;
+  digest: string | null;
+  version: number;
+  variantId: number | null;
+  refusedReason: string | null;
+  bboxW: number | null;
+  bboxH: number | null;
+};
+
+/**
+ * WHAT THIS FACE'S LIBRARY HOLDS RIGHT NOW — the proof's measurement 2, and the
+ * table assertion [E] joins the panel against on the new road.
+ *
+ * Live rows only. A retired row is *gone from this branch*, and a panel showing
+ * one would be the defect, not the baseline.
+ */
+async function liveLibraryRows(candidateId: number): Promise<LibraryRow[]> {
+  const [rows] = await connection.query<any[]>(
+    `SELECT id, slot, role, tier, words, storageKey, maskKey, digest, version, variantId,
+            refusedReason, bboxW, bboxH
+       FROM casting_reference_library
+      WHERE candidateId = ? AND retiredAt IS NULL
+      ORDER BY slot ASC, version ASC`,
+    [candidateId],
+  );
+  return (rows as any[]).map((row) => ({
+    ...row,
+    words: typeof row.words === "string" ? (() => { try { return JSON.parse(row.words); } catch { return []; } })() : (row.words ?? []),
+  })) as LibraryRow[];
+}
+
+/** The carry contract's own arithmetic — one function, used by the reader and its control. */
+function digestOfBytes(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+/**
+ * WHOSE LEDGER THIS WALK IS SPENDING — read off the face, never assumed.
+ *
+ * A constant would be right today (user 1 in both worlds) and would silently
+ * total the wrong person's credits the first time the walk was pointed at a
+ * face that is not his. `ctx.user.id` is the product's rule for this; the
+ * script's equivalent is the candidate's own row.
+ */
+let walkFaceCache: { id: number; userId: number } | null = null;
+async function walkFace(): Promise<{ id: number; userId: number }> {
+  if (walkFaceCache !== null) return walkFaceCache;
+  const [rows] = await connection.query<any[]>(
+    "SELECT id, userId FROM casting_candidates WHERE publicId = ? LIMIT 1",
+    [CANDIDATE],
+  );
+  const row = (rows as any[])[0];
+  if (typeof row?.userId !== "number") {
+    throw new Error(`no candidate ${CANDIDATE} in this world — whose ledger would this walk be reading?`);
+  }
+  walkFaceCache = { id: row.id, userId: row.userId };
+  return walkFaceCache;
+}
+const walkUserId = async (): Promise<number> => (await walkFace()).userId;
+const candidateRowId = async (): Promise<number> => (await walkFace()).id;
+
+/**
+ * The money, from the ledger rather than from the run's account of itself
+ * (measurement 5). Signed the way the ledger stores it: charges negative.
+ */
+async function creditsSpentSince(since: Date): Promise<{ rows: number; gross: number; refunded: number }> {
+  const [rows] = await connection.query<any[]>(
+    `SELECT amount FROM point_transactions WHERE userId = ? AND createdAt >= ?`,
+    [await walkUserId(), since],
+  );
+  const amounts = (rows as any[]).map((row) => Number(row.amount));
+  return {
+    rows: amounts.length,
+    gross: -amounts.filter((amount) => amount < 0).reduce((total, amount) => total + amount, 0),
+    refunded: amounts.filter((amount) => amount > 0).reduce((total, amount) => total + amount, 0),
+  };
+}
+
+/** What one repainted render actually dispatched. Null on every other road. */
+type RepaintRecord = {
+  engineId: string;
+  references: Array<{ key: string; digest: string | null; kind: string | null; slot: string | null }>;
+  edited: string[];
+  carried: string[];
+  standing: string[];
+};
+
+/**
+ * THE RECIPE AT THE WIRE, off the row itself (measurement 1).
+ *
+ * `refineService` writes `internalPrompt.repaint` on a repainted landing and on
+ * no other, so its ABSENCE is the statement "this row came down the old road" —
+ * which is why this returns null rather than an empty record. Zero references
+ * and no record are the same number and different facts.
+ */
+function readRepaintRecord(internalPrompt: unknown): RepaintRecord | null {
+  const parsed = typeof internalPrompt === "string"
+    ? (() => { try { return JSON.parse(internalPrompt); } catch { return null; } })()
+    : internalPrompt;
+  const record = (parsed as any)?.repaint;
+  if (!record || !Array.isArray(record.references)) return null;
+  return {
+    engineId: String(record.engineId ?? ""),
+    references: record.references.map((reference: any) => ({
+      key: String(reference?.key ?? ""),
+      digest: reference?.digest ?? null,
+      kind: reference?.kind ?? null,
+      slot: reference?.slot ?? null,
+    })),
+    edited: Array.isArray(record.edited) ? record.edited.map(String) : [],
+    carried: Array.isArray(record.carried) ? record.carried.map(String) : [],
+    standing: Array.isArray(record.standing) ? record.standing.map(String) : [],
+  };
+}
+
+/* ==========================================================================
    THE CONTROLS — every instrument, driven against his own stored frames.
    ========================================================================== */
 
@@ -812,6 +1037,150 @@ async function runControls(): Promise<void> {
 }
 
 /* ==========================================================================
+   THE DEV CONTROL SET — the instruments a dev-world walk actually grades with.
+   ========================================================================== */
+
+/**
+ * WHY THIS EXISTS AT ALL, rather than the walk simply skipping its controls.
+ *
+ * `--spend` executes the controls and refuses to spend if one is red. That is
+ * the rule, and the rule is what makes the walk's verdicts worth reading. Its
+ * three frame-based controls are pinned to the founder's PRODUCTION variants by
+ * publicId — 0 of 6 of them exist in the dev database (driven, shift 58) — so a
+ * dev walk that ran them would fail six controls and never spend, and a dev walk
+ * that skipped them would spend on a gate that could not close. Neither is the
+ * answer.
+ *
+ * The answer is that the dev walk grades with DIFFERENT instruments, so it must
+ * prove those instead. Each one below is a reader the five-ask proof depends on,
+ * each is driven against the world it will actually read, and each gets the two
+ * halves that make a control a control: a positive (can it see anything at all)
+ * and a negative (can it decline). None of them costs a credit.
+ *
+ *   1  the library reader        — the proof's measurement 2, and [E]'s new join
+ *   2  the crop-digest reader    — the proof's measurement 4, the carry contract
+ *   3  the ledger reader         — the proof's measurement 5
+ *   4  the recipe-at-the-wire reader — the proof's measurement 1, over the
+ *      `internalPrompt.repaint` record a repainted row now carries
+ */
+async function runDevControls(): Promise<void> {
+  console.log("\n════ DEV CONTROLS — the instruments THIS world's walk grades with ════");
+
+  /* ------------------------------------------- 1: the reference-library reader */
+
+  const [libraryRows] = await connection.query<any[]>(
+    `SELECT l.candidateId, COUNT(*) AS rows_ FROM casting_reference_library l
+      WHERE l.retiredAt IS NULL GROUP BY l.candidateId ORDER BY rows_ DESC LIMIT 1`,
+  );
+  const populated = (libraryRows as any[])[0] ?? null;
+  if (!populated) {
+    /*
+      NOT A PASS AND NOT A FAILURE. A dev database with no library row anywhere
+      cannot arm this control before the walk — but the walk's very first step
+      mints one, so the reader gets its positive half at step 1 instead. Recorded
+      so a reader of the report can see which half was taken and when.
+    */
+    absent(
+      "DEV 1: the library reader can see a row",
+      "no candidate in this world holds a live library row yet, so the positive half cannot be "
+      + "taken before the walk — step 1's own mint is where this reader first has to see something",
+    );
+  } else {
+    const found = await liveLibraryRows(populated.candidateId);
+    check(
+      found.length === Number(populated.rows_),
+      "DEV 1: the library reader can see a row",
+      `candidate ${populated.candidateId} holds ${populated.rows_} live row(s) and the reader returned `
+      + `${found.length}: ${found.map((row) => `${row.slot}/${row.role}`).join(", ").slice(0, 160)}`,
+    );
+  }
+  /* NEGATIVE — a candidate id that cannot exist. The reader must return nothing
+     rather than everything, which is what a missing WHERE looks like. */
+  const noneForImpossible = await liveLibraryRows(-1);
+  check(
+    noneForImpossible.length === 0,
+    "DEV 1 NEGATIVE: the library reader declines a candidate that does not exist",
+    `${noneForImpossible.length} row(s) for candidateId -1`,
+  );
+
+  /* ------------------------------------------------ 2: the crop-digest reader */
+
+  /*
+    The carry contract is "these bytes are the bytes the library minted", and it
+    is decided by a digest. A digest function that returned a constant would
+    report every carry as kept, so it is shown telling two nearly identical
+    buffers apart — one byte, which is the smallest change the contract has to
+    catch.
+  */
+  const bytes = Buffer.from("the same bytes, twice");
+  const altered = Buffer.from("the same bytes, twicf");
+  check(
+    digestOfBytes(bytes) === digestOfBytes(Buffer.from(bytes)),
+    "DEV 2: the crop-digest reader calls identical bytes identical",
+    `${digestOfBytes(bytes).slice(0, 16)}… twice over the same ${bytes.length} bytes`,
+  );
+  check(
+    digestOfBytes(bytes) !== digestOfBytes(altered),
+    "DEV 2 NEGATIVE: and it calls a ONE-BYTE difference different",
+    `${digestOfBytes(bytes).slice(0, 16)}… vs ${digestOfBytes(altered).slice(0, 16)}…`,
+  );
+
+  /* ------------------------------------------------------ 3: the ledger reader */
+
+  const spentBefore = await creditsSpentSince(new Date("1970-01-01T00:00:00Z"));
+  check(
+    spentBefore.rows > 0,
+    "DEV 3: the ledger reader can see this world's transactions",
+    `${spentBefore.rows} row(s), gross ${spentBefore.gross}, refunded ${spentBefore.refunded}`,
+  );
+  /* NEGATIVE — a window that closed before this world existed. Zero here is the
+     reader declining; a non-zero would mean the window is not being applied. */
+  const spentInTheFuture = await creditsSpentSince(new Date("2099-01-01T00:00:00Z"));
+  check(
+    spentInTheFuture.rows === 0,
+    "DEV 3 NEGATIVE: and it declines a window with nothing in it",
+    `${spentInTheFuture.rows} row(s) after 2099-01-01`,
+  );
+
+  /* ------------------------------------------ 4: the recipe-at-the-wire reader */
+
+  /*
+    Measurement 1 reads `internalPrompt.repaint` — the record a repainted row
+    carries of what it actually dispatched. Driven here on two fixtures rather
+    than on a row, because before the walk there is no repainted row in this
+    world to read: a row that HAS the record must be read as a repaint with its
+    references counted, and a row that has none must come back as NOT a repaint
+    rather than as a repaint of zero references. The second is the one that
+    matters — "0 references" and "no record" are the same number and completely
+    different facts.
+  */
+  const withRecord = readRepaintRecord({
+    repaint: {
+      engineId: "control:engine",
+      references: [
+        { key: "master.png", digest: "aa", kind: "master", slot: null },
+        { key: "crop.png", digest: "bb", kind: "carry", slot: "earring@left" },
+      ],
+      edited: ["hair"], carried: ["earring@left"], standing: [],
+    },
+  });
+  check(
+    withRecord !== null && withRecord.references.length === 2
+      && withRecord.references[1]!.slot === "earring@left",
+    "DEV 4: the recipe reader reads a repainted row's own record",
+    withRecord
+      ? `${withRecord.references.length} reference(s), engine ${withRecord.engineId}, `
+        + `roles [${withRecord.references.map((reference) => `${reference.kind}:${reference.slot ?? "—"}`).join(", ")}]`
+      : "the reader returned nothing for a record that is there",
+  );
+  check(
+    readRepaintRecord({ prompt: "an ordinary paste", seam: { torn: false } }) === null,
+    "DEV 4 NEGATIVE: and a row from the OLD road reads as no repaint, not as an empty one",
+    "a row carrying a seam and no repaint key",
+  );
+}
+
+/* ==========================================================================
    THE WALK — five steps, 125 credits, and the five assertions afterwards.
    ========================================================================== */
 
@@ -828,6 +1197,14 @@ type StepRecord = {
   panelContentKeys: string[];
   /** Null when the panel was absent — which is legitimate on a face keeping nothing. */
   panelRows: number | null;
+  /**
+   * WHICH panel was on screen: v2's `.dpc-face` (library-sourced) or v1's
+   * `.dpc-kept` (segment-sourced). E joins each to its own table, and recording
+   * it is what stops a future reader deducing the surface from a flag.
+   */
+  panelSurface: "face" | "kept" | null;
+  /** This face's live library, read in the same breath as the panel — measurement 2. */
+  libraryAtPanelRead: LibraryRow[];
   /**
    * THE STORE AS IT WAS WHEN THE PANEL WAS PHOTOGRAPHED.
    *
@@ -852,17 +1229,43 @@ type StepRecord = {
  * `casting_segments` — an identity, not a coordinate. The same distinction that
  * decides which tile the walk opens.
  */
+/*
+  AND THERE ARE TWO PANELS, WHICH IS WHY RUN 2 READ NOTHING ON FOUR STEPS.
+
+  `.dpc-kept` is `SegmentsOnFace`, drawn by `RefinePanel` from the segment
+  store. Panel v2 is a DIFFERENT COMPONENT with different classes —
+  `FacePanel`, `.dpc-face`, docked beside the picture — and it is sourced from
+  the REFERENCE LIBRARY. `CastingSheet.tsx:900` hands v1 an empty list whenever
+  v2 is armed ("v1 and v2 are never both on screen"), and `SegmentsOnFace`
+  returns null on zero rows, so with the library flag on the old selector
+  matches nothing at all. Run 2's `walk.json` records `panelRows: null` on all
+  five steps, which read as "the panel was absent" and was really "the harness
+  was looking at the retired surface".
+
+  So the reader names WHICH surface it found, and the assertion joins each one
+  to its own table. Guessing from the flag would be a second source of truth for
+  something the DOM states directly.
+*/
 const READ_KEPT_PANEL = `(() => {
-  const panel = document.querySelector(".dpc-kept");
-  if (!panel) return null;
-  return Array.from(panel.querySelectorAll(".dpc-kept__thumb")).map((thumb) => {
-    const background = getComputedStyle(thumb).backgroundImage || "";
-    const matched = background.match(/url\\("?([^")]+)"?\\)/);
-    return matched ? matched[1] : "";
-  });
+  const read = (panelSelector, thumbSelector, surface) => {
+    const panel = document.querySelector(panelSelector);
+    if (!panel) return null;
+    return {
+      surface,
+      urls: Array.from(panel.querySelectorAll(thumbSelector)).map((thumb) => {
+        const background = getComputedStyle(thumb).backgroundImage || "";
+        const matched = background.match(/url\\("?([^")]+)"?\\)/);
+        return matched ? matched[1] : "";
+      }),
+    };
+  };
+  return read(".dpc-face", ".dpc-face__thumb:not(.dpc-face__thumb--none)", "face")
+    ?? read(".dpc-kept", ".dpc-kept__thumb", "kept");
 })()`;
 
-async function readKeptPanel(page: any): Promise<{ keys: string[]; rows: number | null }> {
+async function readKeptPanel(page: any): Promise<{
+  keys: string[]; rows: number | null; surface: "face" | "kept" | null;
+}> {
   /*
     A SETTLED READ, for the reason every projection read in this program is one:
     the panel's rows come from their own query, and reading them the instant the
@@ -871,8 +1274,13 @@ async function readKeptPanel(page: any): Promise<{ keys: string[]; rows: number 
   */
   await page.waitForFunction(
     () => {
-      const panel = document.querySelector(".dpc-kept");
-      const rows = panel ? panel.querySelectorAll(".dpc-kept__row").length : -1;
+      /* Settled on WHICHEVER panel is on screen — counting only the retired
+         surface would return -1 twice in a row on a v2 sheet and call that
+         settled, which is a wait that cannot wait. */
+      const panel = document.querySelector(".dpc-face") ?? document.querySelector(".dpc-kept");
+      const rows = panel
+        ? panel.querySelectorAll(".dpc-face__row, .dpc-kept__row").length
+        : -1;
       const previous = (window as any).__keptRows;
       (window as any).__keptRows = rows;
       return previous !== undefined && previous === rows;
@@ -880,12 +1288,14 @@ async function readKeptPanel(page: any): Promise<{ keys: string[]; rows: number 
     { timeout: 20_000, polling: 1000 },
   ).catch(() => undefined);
 
-  const urls = await page.evaluate(READ_KEPT_PANEL) as string[] | null;
-  if (urls === null) return { keys: [], rows: null };
+  const read = await page.evaluate(READ_KEPT_PANEL) as
+    { surface: "face" | "kept"; urls: string[] } | null;
+  if (read === null) return { keys: [], rows: null, surface: null };
   return {
-    rows: urls.length,
+    rows: read.urls.length,
+    surface: read.surface,
     /* Bucket-relative, because that is how the row stores it. */
-    keys: urls.map((url) => {
+    keys: read.urls.map((url) => {
       const withoutQuery = url.split("?")[0];
       return withoutQuery.startsWith(base) ? withoutQuery.slice(base.length + 1) : withoutQuery;
     }),
@@ -1176,6 +1586,7 @@ async function runWalk(): Promise<boolean> {
       await openViewer();
       const panel = await readKeptPanel(page);
       const segmentsThen = await segmentsNow();
+      const libraryThen = await liveLibraryRows(await candidateRowId());
 
       steps.push({
         instruction: step.instruction,
@@ -1187,9 +1598,14 @@ async function runWalk(): Promise<boolean> {
         seconds: seen.seconds,
         panelContentKeys: panel.keys,
         panelRows: panel.rows,
+        panelSurface: panel.surface,
+        libraryAtPanelRead: libraryThen,
         segmentsAtPanelRead: segmentsThen,
       });
-      console.log(`   → ${seen.outcome} in ${seen.seconds}s · panel keeps ${panel.rows ?? "no panel"}`);
+      console.log(
+        `   → ${seen.outcome} in ${seen.seconds}s · ${panel.surface ?? "no"} panel `
+        + `keeps ${panel.rows ?? "—"} · library holds ${libraryThen.length} live row(s)`,
+      );
 
       await page.screenshot({
         path: `${OUT}/${String(index + 1).padStart(2, "0")}-${step.instruction.replace(/\W+/g, "-")}.png`,
@@ -1277,6 +1693,38 @@ async function runWalk(): Promise<boolean> {
       .sort((a, b) => b.id - a.id)[0] ?? null;
   const walkRows = WALK.map((step) => ({ step, row: rowOfStep(step.instruction) }));
 
+  /* ------------------------------------------- WHICH ROAD EACH STEP TRAVELLED */
+
+  /*
+    READ OFF THE ROW, NEVER OFF THE FLAG.
+
+    `CASTING_REPAINT_SCOPE` is set on the server's command line and this process
+    cannot see it; even if it could, a flag says what was CONFIGURED and the row
+    says what HAPPENED. `internalPrompt.repaint` is written by the repaint
+    landing and by nothing else, so its presence is the road, per step — which
+    also means a walk that expected the new road and got the old one reports it
+    as a finding instead of silently grading the wrong pipeline.
+  */
+  const recipeOf = (row: any | null): RepaintRecord | null =>
+    (row ? readRepaintRecord(parsePrompt(row.internalPrompt)) : null);
+  const landedSteps = walkRows.filter((entry) => entry.row?.status === "ready");
+  const repaintedSteps = landedSteps.filter((entry) => recipeOf(entry.row) !== null);
+  const road: "repaint" | "paste" | "mixed" | "none" = landedSteps.length === 0
+    ? "none"
+    : repaintedSteps.length === landedSteps.length
+      ? "repaint"
+      : repaintedSteps.length === 0 ? "paste" : "mixed";
+  check(
+    road !== "mixed",
+    "[road] every delivered step of this walk came down the SAME compositor",
+    `${repaintedSteps.length} of ${landedSteps.length} landed step(s) carry a repaint recipe — road "${road}"`
+    + (road === "mixed"
+      ? ". A walk whose steps used two compositors grades neither of them: the carried "
+        + "features of a repaint and of a paste are different artifacts"
+      : ""),
+  );
+  console.log(`\n── the road: ${road} (${repaintedSteps.length}/${landedSteps.length} landed steps repainted)`);
+
   /* ------------------------------------------------------------ the money */
 
   const charged = walkRows.reduce((total, entry) => total + Number(entry.row?.pointsCost ?? 0), 0);
@@ -1288,6 +1736,142 @@ async function runWalk(): Promise<boolean> {
     `charged ${charged}, refunded ${refunded}, net ${charged - refunded} against `
     + `${delivered} delivered × ${COST_PER_STEP}`,
   );
+  /*
+    AND THE SAME SUM FROM THE LEDGER, WHICH IS THE ONE THAT DECIDES (measurement
+    5). The rows above are the product's account of itself; `point_transactions`
+    is where the credits actually moved. Two instruments, and a disagreement
+    between them is the finding — this is the check that would have caught a
+    refund that was logged and never written.
+  */
+  const ledger = await creditsSpentSince(startedAt);
+  check(
+    ledger.gross === charged && ledger.refunded === refunded,
+    "[money] the LEDGER agrees with the rows, charge for charge",
+    `ledger: ${ledger.rows} row(s), gross ${ledger.gross}, refunded ${ledger.refunded} · `
+    + `rows: charged ${charged}, refunded ${refunded}`,
+  );
+
+  /* ------------- R1. THE RECIPE AT THE WIRE, with every reference measured */
+
+  /*
+    WHAT WAS ACTUALLY SENT, and how big each piece of it was.
+
+    Two questions live here. The first is a contract: reference 1 is the master,
+    and D-244 line 2 says a feature's own crop never rides in its own edit — both
+    read off the dispatched list rather than off the assembler that built it.
+
+    The second is OPEN, and it is the reason the dimensions are printed at all
+    (fable-296). An earring crop is cut 1:1 out of the frame, so it is 24-36px
+    wide on a 1024px portrait, and whether any engine can reproduce a feature
+    from a file that size is unanswered. Shift 57 established that a READER
+    cannot — it called a hoop-with-a-cross "smooth and continuous" at 27px and
+    named the cross on the same file enlarged. Whether the PAINTER has the same
+    floor is what this walk is the first to be able to say, so the sizes ride
+    beside each step's verdict instead of being inferred later from a key.
+  */
+  const referenceSizes = new Map<string, { width: number; height: number; bytes: number } | null>();
+  const measureReference = async (key: string) => {
+    if (referenceSizes.has(key)) return referenceSizes.get(key)!;
+    try {
+      const response = await fetch(`${base}/${key}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const sharpModule = (await import("sharp")).default;
+      const meta = await sharpModule(buffer).metadata();
+      const size = { width: meta.width ?? 0, height: meta.height ?? 0, bytes: buffer.length };
+      referenceSizes.set(key, size);
+      return size;
+    } catch {
+      referenceSizes.set(key, null);
+      return null;
+    }
+  };
+
+  for (const [index, entry] of walkRows.entries()) {
+    const position = `${index + 1}/${WALK.length}`;
+    const recipe = recipeOf(entry.row);
+    if (!recipe) {
+      absent(
+        `[R1] ${position} the recipe this render sent`,
+        entry.row
+          ? "this row carries no repaint recipe — it came down the old road, which sends no recipe"
+          : "this step wrote no row",
+      );
+      continue;
+    }
+    const measured = await Promise.all(recipe.references.map(async (reference) => ({
+      reference, size: await measureReference(reference.key),
+    })));
+    const described = measured.map(({ reference, size }) =>
+      `${reference.kind}${reference.slot ? `:${reference.slot}` : ""} `
+      + `${size ? `${size.width}×${size.height}px` : "UNREADABLE"}`).join(" · ");
+
+    check(
+      recipe.references[0]?.kind === "master",
+      `[R1] ${position} reference 1 is the master`,
+      `${recipe.references.length} reference(s) sent — ${described}`,
+    );
+    /* D-244 line 2, proved on the wire: an edited slot's own crop must not be
+       among the references. This is the law whose "unreachable" branch was
+       reachable from the real caller until `e94c3fb3`. */
+    const selfCarried = recipe.references.filter((reference) =>
+      reference.kind === "carry" && reference.slot !== null && recipe.edited.includes(reference.slot));
+    check(
+      selfCarried.length === 0,
+      `[R1] ${position} no edited slot carried its own crop (D-244 line 2)`,
+      selfCarried.length === 0
+        ? `edited [${recipe.edited.join(", ")}] · carried [${recipe.carried.join(", ")}]`
+        : `${selfCarried.map((reference) => reference.slot).join(", ")} rode in its own edit`,
+    );
+    const unreadable = measured.filter(({ size }) => size === null);
+    check(
+      unreadable.length === 0,
+      `[R1] ${position} every reference the row names is still in storage`,
+      unreadable.length === 0
+        ? `${measured.length} key(s) fetched and measured`
+        : `${unreadable.map(({ reference }) => reference.key.slice(-32)).join(", ")} could not be fetched`,
+    );
+    /* THE OPEN QUESTION, recorded rather than graded. */
+    const smallest = measured
+      .filter(({ reference, size }) => reference.kind === "carry" && size)
+      .sort((a, b) => a.size!.width - b.size!.width)[0];
+    absent(
+      `[R1] ${position} the painter-scale question — how big were the carried references`,
+      smallest
+        ? `smallest carried reference ${smallest.reference.slot}: ${smallest.size!.width}×${smallest.size!.height}px `
+          + `(${smallest.size!.bytes} bytes) · all: ${described}. Whether a painter can reproduce a feature from `
+          + "a file this size is the question this walk's delivered frames answer, and no threshold here is honest yet"
+        : "this step carried no cropped reference — nothing to measure",
+    );
+  }
+
+  /* -------------------- R2. WHAT THE LIBRARY HELD AFTER EACH STEP */
+
+  for (const [index, entry] of walkRows.entries()) {
+    const position = `${index + 1}/${WALK.length}`;
+    const step = steps[index];
+    if (!step) {
+      absent(`[R2] ${position} the library after this step`, "this step produced no record");
+      continue;
+    }
+    const rows = step.libraryAtPanelRead;
+    const refused = rows.filter((row) => row.refusedReason !== null);
+    const withCrops = rows.filter((row) => row.storageKey !== null);
+    const sizes = await Promise.all(withCrops.map(async (row) => ({
+      row, size: await measureReference(row.storageKey!),
+    })));
+    absent(
+      `[R2] ${position} the library after "${entry.step.instruction}"`,
+      `${rows.length} live row(s): `
+      + rows.map((row) => `${row.slot}/${row.role}@v${row.version}`).join(", ")
+      + ` · crops: ${sizes.map(({ row, size }) =>
+        `${row.slot} ${size ? `${size.width}×${size.height}px` : "UNREADABLE"}`).join(", ") || "none"}`
+      + ` · refused at the door: ${refused.length
+        ? refused.map((row) => `${row.slot} (${row.refusedReason})`).join(", ")
+        : "none"}`
+      + ` · words: ${rows.map((row) => `${row.slot}="${row.words.join("; ").slice(0, 60)}"`).join(" | ").slice(0, 400)}`,
+    );
+  }
 
   /* --------------------- A. Both ears, or an honest refusal (finding 1) */
 
@@ -1398,7 +1982,43 @@ async function runWalk(): Promise<boolean> {
   */
   let accessorySegments = 0;
   let carriedVerdicts = 0;
-  {
+  /*
+    ==================== B ON THE NEW ROAD IS A DIFFERENT STATEMENT ====================
+
+    Everything below measures a PASTE: a segment's stored pixels, and whether
+    they survive byte-for-byte into a later frame. A repaint pastes nothing. It
+    repaints the entire picture from the master plus a cropped reference of each
+    feature, so the earring pixels in step 3's frame are freshly painted BY
+    CONSTRUCTION and the arithmetic below would fail a correct render every
+    time. Nor is there a segment to measure: `keepSegmentsFromRender` returns
+    `nothing-to-keep` on a repaint, so `accessorySegments` is 0 — the one
+    quantity fable-133 made decisive for the whole walk.
+
+    The carry contract did not disappear; it moved. On this road the promise is
+    *the reference that rode in the recipe is exactly the reference the library
+    minted* — a claim about the crop, provable by digest at three points (the
+    row, the bytes in storage, and the digest recorded at dispatch). That is the
+    plan's measurement 4, and it is what R4 below asserts.
+
+    The two instruments that are still about the PICTURE — A's pair counter, and
+    "are the earrings still there after an unrelated ask" — run on either road
+    and are kept.
+  */
+  const accessoryRoad = recipeOf(walkRows[STEP.copperHair].row) !== null ? "repaint" : "paste";
+  if (accessoryRoad === "repaint") {
+    absent(
+      "[B] the earring pixels survive an unrelated ask, byte for byte",
+      "step 3 was REPAINTED — the whole frame is fresh paint and nothing was composited, so "
+      + "byte-identity of delivered pixels is not what this road promises. The promise it does "
+      + "make is R4's: the reference that rode is the reference the library minted",
+    );
+    absent(
+      "[B] the accessory steps minted a real `statedAccessories` segment",
+      "a repaint keeps no segments by construction (`keepSegmentsFromRender` → nothing-to-keep), "
+      + "so an earring persists as a LIBRARY ROW on this road, not as a segment. R2 above reports "
+      + "the rows and R4 below proves they carried",
+    );
+  } else {
     const hoopsRow = walkRows[STEP.hoops].row;
     const crossesRow = walkRows[STEP.crosses].row;
     const copperHairRow = walkRows[STEP.copperHair].row;
@@ -1507,24 +2127,124 @@ async function runWalk(): Promise<boolean> {
         A uses, and it answers a question the arithmetic structurally cannot: is
         the jewellery still THERE. A disagreement between the two is the finding.
       */
-      if (copperHairRow?.status === "ready" && copperHairRow.imageKey) {
-        const after = await countEarringPair(await fetchKey(copperHairRow.imageKey), `walk-3-v${copperHairRow.id}`);
+      /* The picture half of this question runs on EITHER road — see below, where
+         it was moved to when the repaint arrived. */
+    }
+  }
+
+  /*
+    AND THE PICTURE, ON EITHER ROAD — the hole in the new order, closed, and now
+    the ONLY earring-survival instrument a repaint has that looks at pixels.
+
+    Step 3 is *"copper hair"*, and hair covers ears. On the old road the byte
+    arithmetic forgives a loss the assembly RECORDED as an intersection, which is
+    right for its question ("was this accounted for") and blind to this one: if
+    the copper render wins the whole earring region and the compositor dutifully
+    writes that down, B reads KEPT over a hoop that is simply gone from her
+    picture. On the new road there is no arithmetic at all, so this is not a
+    supplement — it is the instrument.
+
+    It is the same counter A uses, and it answers what a digest structurally
+    cannot: is the jewellery still THERE.
+  */
+  {
+    const copperHairRow = walkRows[STEP.copperHair].row;
+    if (copperHairRow?.status === "ready" && copperHairRow.imageKey) {
+      const response = await fetch(`${base}/${copperHairRow.imageKey}`);
+      if (!response.ok) {
+        checks.neverArmed(
+          "[B] and the earrings are still IN THE PICTURE after the unrelated ask",
+          `step 3's frame came back HTTP ${response.status}`,
+        );
+      } else {
+        const after = await countEarringPair(
+          Buffer.from(await response.arrayBuffer()), `walk-3-v${copperHairRow.id}`,
+        );
         const before = countedAt.get(STEP.crosses) ?? null;
         if (after.unreadable.length > 0) {
           absent(
             "[B] and the earrings are still IN THE PICTURE after the unrelated ask",
-            `${after.saw} — the copper repaint put hair over the ${after.unreadable.join("/")} ear, so the `
-            + "counter cannot answer here. The byte arithmetic above is the surviving instrument",
+            `${after.saw} — the copper render put hair over the ${after.unreadable.join("/")} ear, so the `
+            + "counter cannot answer here"
+            + (accessoryRoad === "repaint"
+              ? ". On this road there is no byte arithmetic behind it, so the survival of the "
+                + "earrings across step 3 is a NO-READ rather than a pass"
+              : ". The byte arithmetic above is the surviving instrument"),
           );
         } else {
           check(
             after.present > 0 && (before === null || after.present >= before.present),
             "[B] and the earrings are still IN THE PICTURE after the unrelated ask",
             `${after.saw}`
-            + (before ? ` · step 2 had ${before.present} of 2 sides wearing one` : "")
-            + " — the arithmetic forgives a RECORDED loss, so this asks the question it cannot",
+            + (before ? ` · step 2 had ${before.present} of 2 sides wearing one` : ""),
           );
         }
+      }
+    } else {
+      absent(
+        "[B] and the earrings are still IN THE PICTURE after the unrelated ask",
+        "step 3 delivered no frame to look at",
+      );
+    }
+  }
+
+  /* ------- R4. THE CARRY CONTRACT ON THE NEW ROAD: the crop that rode is the
+     crop the library minted, proved at three points */
+
+  /*
+    A CARRIED FACT IS JUDGED BY BYTES, NEVER BY A READER (the carried-facts law).
+    On the repaint road the bytes in question are not in the delivered frame —
+    they are the REFERENCE, and the promise is that it did not move between the
+    mint and the dispatch. Three readings of the same thing, and all three have
+    to agree or the promise is not what it claims:
+
+      1. the digest the library row recorded when it minted the crop
+      2. the digest `repaint()` took of the bytes it actually dispatched
+      3. sha256 of the object in storage right now
+
+    1-vs-2 is the pixel-frozen promise the service already refuses on. 2-vs-3 is
+    the one nothing checks: bytes that changed AFTER the dispatch would leave a
+    library whose rows no longer describe what any render sent.
+  */
+  {
+    const step3 = walkRows[STEP.copperHair].row;
+    const recipe = recipeOf(step3);
+    const carriedCrops = (recipe?.references ?? []).filter((reference) =>
+      reference.kind === "carry" && reference.slot !== null);
+    if (!recipe) {
+      absent(
+        "[R4] step 3 carried the accessory references it was minted with",
+        step3 ? "step 3 came down the old road — see [B]" : "step 3 wrote no row",
+      );
+    } else if (carriedCrops.length === 0) {
+      checks.neverArmed(
+        "[R4] step 3 carried the accessory references it was minted with",
+        `step 3's recipe carried no cropped reference at all (carried slots: [${recipe.carried.join(", ")}]). `
+        + "Two paid accessory steps came before it, so a recipe with nothing to carry is the finding "
+        + "this assertion exists to catch",
+      );
+    } else {
+      const libraryNow = await liveLibraryRows(await candidateRowId());
+      for (const reference of carriedCrops) {
+        const row = libraryNow.find((entry) => entry.storageKey === reference.key);
+        let stored: string | null = null;
+        try {
+          const response = await fetch(`${base}/${reference.key}`);
+          if (response.ok) stored = digestOfBytes(Buffer.from(await response.arrayBuffer()));
+        } catch { stored = null; }
+        const dispatched = reference.digest;
+        const minted = row?.digest ?? null;
+        /* The library stores a SHORT form for reading, so agreement is a prefix
+           match in that direction — the same rule `repaint()` itself applies. */
+        const agrees = (left: string | null, right: string | null): boolean =>
+          Boolean(left && right && (left.startsWith(right) || right.startsWith(left)));
+        check(
+          agrees(dispatched, minted) && agrees(dispatched, stored),
+          `[R4] the ${reference.slot} crop step 3 carried is the crop the library minted`,
+          `minted ${minted ?? "—"} · dispatched ${dispatched?.slice(0, 16) ?? "—"} · `
+          + `in storage now ${stored?.slice(0, 16) ?? "UNREADABLE"}`
+          + (row ? "" : " — and no live library row holds this key at all"),
+        );
       }
     }
   }
@@ -1544,6 +2264,25 @@ async function runWalk(): Promise<boolean> {
     const seam = row ? readSeamRow({
       id: row.id, requestText: row.requestText, status: row.status, internalPrompt: row.internalPrompt,
     }) : null;
+    /*
+      A REPAINT HAS NO SEAM, AND THAT IS THE POINT OF IT.
+
+      `refineService` sets `seam: undefined` on this road with the reason stated
+      at the call site — "a repaint pastes nothing, so there is no mask evidence
+      … and no seam verdict". A missing verdict is therefore neither a pass nor a
+      failure here: it is the absence of a boundary. Failing it would book the
+      whole reason the compositor was replaced as a defect in the replacement.
+    */
+    const hairDownRepainted = recipeOf(row) !== null;
+    if (hairDownRepainted) {
+      absent(
+        "[C] step 4's row carries a seam verdict, torn or clean",
+        "step 4 was REPAINTED — the engine's own frame IS the delivered frame, nothing was "
+        + "composited into it, and there is no join to have an opinion about. The founder's "
+        + `"like it was pasted there" is the defect this road removes rather than measures`
+        + (seam ? ` — and yet this row carries a seam key, which would be the finding: ${JSON.stringify(seam).slice(0, 120)}` : ""),
+      );
+    } else {
     check(
       seam !== null,
       "[C] step 4's row (\"wear her hair down\") carries a seam verdict, torn or clean",
@@ -1621,6 +2360,7 @@ async function runWalk(): Promise<boolean> {
       } catch (error) {
         absent("[C] the boundary at 3× for his eye", `could not be derived — ${String(error).slice(0, 120)}`);
       }
+    }
     }
   }
 
@@ -1770,6 +2510,76 @@ async function runWalk(): Promise<boolean> {
     /* The store as it was when the panel was photographed — see the field's note. */
     const thenRows = step.segmentsAtPanelRead;
     const stored = parsePrompt(row.internalPrompt);
+    const repainted = readRepaintRecord(stored);
+
+    /*
+      ------------------------------------------------------------------
+      E ON THE NEW ROAD — the panel is v2, and it answers a different question.
+
+      v1 listed *what this version keeps* and was sourced from the segment
+      store, so a panel row and a carried facet were the same kind of thing. v2
+      lists *everything about this face*, sourced from the reference library,
+      including slots that hold only words. So the two halves of the assertion
+      are no longer symmetric:
+
+        every panel THUMB joins a LIVE library row      still a real defect —
+                                                        a picture on screen that
+                                                        the library does not hold
+        every slot this render EDITED or CARRIED
+        has a row on the panel                          still a real defect — the
+                                                        recipe named it, so the
+                                                        face is supposed to hold it
+        anything else the panel shows                   NOT a defect. v2 showing a
+                                                        slot this render never
+                                                        touched is v2 being correct
+
+      The old wording ("no more, no fewer") was already twice-corrected for v1;
+      on v2 the "no more" half stops being a near-miss and becomes structurally
+      wrong, so it is reported and never failed.
+    */
+    if (step.panelSurface === "face" || repainted !== null) {
+      const live = step.libraryAtPanelRead;
+      const owedSlots = [...new Set([...(repainted?.edited ?? []), ...(repainted?.carried ?? [])])].sort();
+      const heldKeys = new Set(live.map((libraryRow) => libraryRow.storageKey).filter(Boolean) as string[]);
+      const orphanedThumbs = step.panelContentKeys.filter((key) => !heldKeys.has(key));
+      const slotsOnPanel = new Set(
+        step.panelContentKeys
+          .map((key) => live.find((libraryRow) => libraryRow.storageKey === key)?.slot)
+          .filter((slot): slot is string => Boolean(slot)),
+      );
+      /* A slot carried by WORDS has no thumb by design (the tier boundary), so
+         the panel holds it as a row without a picture. Its presence is proved
+         from the library rather than from the DOM, which is the same store the
+         panel drew from a second earlier. */
+      const heldSlots = new Set(live.map((libraryRow) => libraryRow.slot));
+
+      if (step.panelSurface === null && owedSlots.length === 0) {
+        absent(
+          `[E] ${position} the panel agrees with the library`,
+          "no panel, and this render neither edited nor carried a slot the library holds — "
+          + "a face holding nothing renders nothing",
+        );
+      } else {
+        check(
+          orphanedThumbs.length === 0,
+          `[E] ${position} every panel thumbnail is a LIVE library row of this face`,
+          orphanedThumbs.length === 0
+            ? `${step.panelContentKeys.length} thumbnail(s), all joined to live casting_reference_library rows by storageKey`
+            : `${orphanedThumbs.length} thumbnail(s) point at no live row: ${orphanedThumbs.map((key) => key.slice(-28)).join(", ")}`,
+        );
+        const missingSlots = owedSlots.filter((slot) => !heldSlots.has(slot));
+        check(
+          missingSlots.length === 0,
+          `[E] ${position} every slot this render edited or carried is IN the library`,
+          `recipe edited [${(repainted?.edited ?? []).join(", ")}] · carried [${(repainted?.carried ?? []).join(", ")}] `
+          + `· library holds [${[...heldSlots].sort().join(", ")}] · with a thumbnail on the panel: `
+          + `[${[...slotsOnPanel].sort().join(", ")}]`
+          + (missingSlots.length ? ` — MISSING from the library: ${missingSlots.join(", ")}` : ""),
+        );
+      }
+      continue;
+    }
+
     const carried: string[] = (stored?.assembly?.segmentsApplied ?? []).map((applied: any) => String(applied.facet));
     const kept: string[] = thenRows.filter((segment) => segment.variantId === row.id).map((segment) => segment.facet);
     if (step.panelRows === null) {
@@ -1817,28 +2627,76 @@ async function runWalk(): Promise<boolean> {
     path.join(OUT, "walk.json"),
     `${JSON.stringify({
       startedAt, candidate: CANDIDATE, sessionId, steps,
-      money: { charged, refunded, delivered },
+      world: WORLD, road,
+      money: { charged, refunded, delivered, ledger },
       accessorySegments, carriedVerdicts,
+      recipes: walkRows.map((entry) => recipeOf(entry.row)),
+      referenceSizes: Object.fromEntries(referenceSizes),
+      libraryAtClose: await liveLibraryRows(await candidateRowId()),
       checks: records,
     }, null, 2)}\n`,
     "utf8",
   );
 
   /*
-    THE VERDICT. `accessorySegments === 0` is its own clause rather than one more
-    failing check, because fable-133 made it decisive: the walk is not clean
-    whatever else passes.
+    THE VERDICT, AND ITS DECISIVE CLAUSE IS ROAD-DEPENDENT.
+
+    fable-133 made "the accessory steps produced no carrier at all" decisive on
+    its own: an earring that persists as nothing but a sentence closes no
+    finding, whatever else passes. That is still the rule. What changed is what
+    the carrier IS — a `statedAccessories` SEGMENT on the paste road, and a
+    LIBRARY ROW on the repaint road, which keeps no segments by construction.
+    Reading the same clause off the same table on both roads would have failed
+    every correct repaint walk, which is the "measuring a retired surface"
+    mistake one table over from the one [E] just made.
   */
-  return failures().length === 0 && collisions === 0 && accessorySegments > 0;
+  const accessoryCarriers = road === "repaint"
+    ? (await liveLibraryRows(await candidateRowId()))
+      .filter((libraryRow) => libraryRow.slot.startsWith("earring")).length
+    : accessorySegments;
+  if (accessoryCarriers === 0) {
+    console.log(
+      `\nNO ACCESSORY CARRIER on the ${road} road — `
+      + (road === "repaint"
+        ? "no live library row for an earring slot after two paid accessory steps"
+        : "no `statedAccessories` segment on this face"),
+    );
+  }
+  return failures().length === 0 && collisions === 0 && accessoryCarriers > 0;
 }
 
 /* ==========================================================================
    The run.
    ========================================================================== */
 
+console.log(
+  `\nWORLD: ${WORLD} · bucket ${base} · ${databaseKey} → `
+  + `${new URL((process.env[databaseKey] ?? "mysql://none").replace(/^mysql:/, "http:")).host}`,
+);
+
 let controlsGreen: boolean | null = null;
 if (CONTROLS || SPEND) {
-  await runControls();
+  /*
+    THE CONTROLS THIS WORLD CAN ACTUALLY DRIVE.
+
+    A, B and D are the founder's own PRODUCTION frames, pinned by publicId. In
+    the dev world they are not absent by accident and they are not skipped: they
+    are recorded `absent()` with the world as the reason — a proven instrument
+    and a delivered measurement must never be confusable (this file's own rule,
+    stated at the top) — and the dev control set is driven in their place so the
+    spend gate still closes on instruments proved in the same run.
+  */
+  if (WORLD === "dev") {
+    absent(
+      "A / B / D — the pair counter, the accessory arithmetic and the hair reader, on his own frames",
+      "this run is in the DEV world and all six specimen frames are production rows "
+      + "(0 of 6 present here, driven shift 58). They are not skipped and they are not passed: "
+      + "the instruments this walk actually grades with are driven below",
+    );
+    await runDevControls();
+  } else {
+    await runControls();
+  }
   controlsGreen = failures().length === 0;
   console.log(
     controlsGreen
