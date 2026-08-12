@@ -55,6 +55,7 @@ import type { Facet } from "./refineFacets";
 
 /** What became of one paid attempt. Ordered worst-to-best for reporting. */
 export type AttemptOutcome =
+  | "delivered_absent"
   | "delivered_noncompliant"
   | "refused_infra"
   | "delivered_advisory"
@@ -91,6 +92,20 @@ export type StoredCheck = {
    * default: nothing was carried, because nothing could be.
    */
   carried?: boolean;
+  /**
+   * THE READER SAID THE ASKED THING IS NOT IN THE PICTURE AT ALL.
+   *
+   * See `renderVerification.FacetCheck.absent`. Here it does one job: it tells
+   * a charge for a picture that lacks what she asked for apart from a reader
+   * quibbling about a thing she got. The two shared a bucket until 2026-08-12
+   * and the first one cost 25 credits on the founder's own account without
+   * appearing anywhere in this report.
+   *
+   * Absent on every row written before the reader was asked the question, which
+   * is honest: those rows record that something was unverified and genuinely do
+   * not say which kind. They stay where they always were.
+   */
+  absent?: boolean;
 };
 
 export type StoredVerification = {
@@ -255,6 +270,35 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
     because "this render did not paint it" would build the flattering bias back
     in through the door the carried column was added to close.
   */
+  /*
+    AND THE WORST OUTCOME OF ALL IS TESTED BEFORE IT: SHE ASKED, AND IT IS NOT
+    THERE (2026-08-12, run 1 step 4).
+
+    `delivered_advisory` was built for a reader inventing a fault in a picture
+    the user got — *"thin and understated, not bold hoops"*, an adjective she
+    never used — and the reasoning below is right about that case and stays.
+    But the bucket was catching a second, opposite animal: she typed **"wear her
+    hair down"**, the frame came back with her hair in a high bun, the reader
+    said so verbatim on both renders, and it landed here as a quibble because
+    `hairWorn` was not binding. 25 credits, twice, on the founder's own account,
+    invisible to the delivery-rate bar the whole report exists to serve.
+
+    So a READ, FRESH miss the reader calls an ABSENCE gets its own line —
+    whether or not the facet was binding at the time. That last clause is the
+    point: the gate and the report must be able to disagree, or the report can
+    only ever confirm what the gate already believed, and a facet nobody thought
+    to bind stays invisible exactly as long as nobody thinks to bind it. This is
+    the instrument that would have found the defect without the walk.
+
+    Carried misses are excluded here and land in `delivered_noncompliant`
+    below — a pasted segment the reader cannot find is the store's promise
+    failing, which is a different failure with a different owner.
+  */
+  if (checks.some((check) =>
+    wasRead(check) && !check.verified && check.absent === true && check.carried !== true)) {
+    return "delivered_absent";
+  }
+
   if (checks.some((check) => wasRead(check) && !check.verified && check.binding !== false)) {
     return "delivered_noncompliant";
   }
@@ -295,6 +339,16 @@ export type ClassTally = {
   total: number;
   delivered_compliant: number;
   delivered_noncompliant: number;
+  /**
+   * DELIVERED, CHARGED, AND THE THING SHE ASKED FOR IS NOT IN THE PICTURE.
+   *
+   * D-246 class (c) as it actually reaches a customer. Counted apart from
+   * `delivered_noncompliant` because that column is about a fact the product
+   * PROMISED to keep (a carried segment the reader cannot find), and this one is
+   * about the sentence she typed and paid for. Both fail the founder's bar;
+   * they have different owners and different fixes.
+   */
+  delivered_absent: number;
   /**
    * Delivered, charged, and what HER WORDS asked for is in the picture — with
    * the reader disagreeing about a quality she never specified.
@@ -375,6 +429,7 @@ const emptyTally = (edit: string): ClassTally => ({
   total: 0,
   delivered_compliant: 0,
   delivered_noncompliant: 0,
+  delivered_absent: 0,
   delivered_advisory: 0,
   delivered_unverified: 0,
   delivered_carried: 0,
@@ -414,6 +469,7 @@ function finish(tally: ClassTally): ClassTally {
   */
   tally.deliveryClaims = tally.delivered_compliant
     + tally.delivered_noncompliant
+    + tally.delivered_absent
     + tally.delivered_advisory
     + tally.delivered_unverified;
   tally.deliveryRate = tally.deliveryClaims === 0
@@ -427,9 +483,19 @@ function finish(tally: ClassTally): ClassTally {
     nothing about delivery. Reporting an unexercised class as passing is the
     instrument telling a comfortable lie, which is what D-215 forbids.
   */
+  /*
+    AND A CHARGE FOR A MISSING THING FAILS THE BAR TOO.
+
+    `FALSE_PASS_BAR` is zero and it now governs BOTH columns. It has to: the
+    whole reason `delivered_absent` was split out is that the founder's
+    zero-false-passes number could not see the class, and splitting it without
+    adding it here would have moved the failures somewhere quieter and called
+    that a fix. A class where the user asked for something and did not get it is
+    exactly what the bar is stated about.
+  */
   tally.clearsBar = tally.deliveryClaims > 0
     && tally.deliveryRate >= DELIVERY_RATE_BAR
-    && tally.delivered_noncompliant <= FALSE_PASS_BAR;
+    && tally.delivered_noncompliant + tally.delivered_absent <= FALSE_PASS_BAR;
   return tally;
 }
 

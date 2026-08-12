@@ -56,11 +56,20 @@ import { accessoryKindOf, pairClauseFor } from "./accessoryKinds";
 import { facetOfAxis, facetOfSubject, subjectsOfFacet, type Facet } from "./refineFacets";
 import { isSurfaceFacet } from "./changeAmplitude";
 import { composePreservation } from "./refinePreservation";
-import { captionClause, captionWording, type RealizationCaptions } from "./realizationCaption";
+import { createModuleLogger } from "../logging/logger";
+import {
+  captionClause,
+  captionWording,
+  pinIdOf,
+  withoutArrangementClaims,
+  type RealizationCaptions,
+} from "./realizationCaption";
 
 /** One adjustment, not a paragraph — the brief box is where prose belongs. */
 const MAX_MAKEUP_LENGTH = 80;
 import type { ResolvedIdentity } from "./castingIntent";
+
+const log = createModuleLogger("castingV2/refineDelta");
 
 /**
  * The v1 tier, and the whole of it: **eyes only** (§5).
@@ -1714,12 +1723,47 @@ export function composeRenderPrompt(
   */
   const written = facetsWrittenBy(delta);
   const asked = facetsAnsweredBy(delta);
+  const hairWornFacet = facetOfSubject("hairWorn");
   const adopted: Partial<Record<Facet, string>> = {};
   const carried: Partial<Record<Facet, string>> = {};
   for (const [facet, entry] of Object.entries(captions)) {
     /* Both kinds of caption say the same thing to a painter; only the
        retirement rule cares which kind it is (fable-118). */
-    const caption = captionWording(entry);
+    const spoken = captionWording(entry);
+    if (!spoken) continue;
+    /*
+      A CAPTION FOR ONE FACET MUST NOT SPEAK FOR ANOTHER THAT IS BEING ASKED —
+      AND IT HAS TO BE STOPPED BEFORE THE LANES SPLIT (run 1 step 4).
+
+      v#169's prompt carried, as ALREADY TRUE, `HAIR COLOUR: Bright copper-orange
+      hair, warm reddish-brown tone, tight curls piled into a high bun.` while
+      the ask was `HAIR WORN: hair down`. Every facet-keyed rule below passed it:
+      the caption belongs to `hair.colour`, nothing asked `hair.colour` to
+      change, so nothing dropped it. Its TEXT is the contradiction.
+
+      **Pruned here rather than in the carried branch**, and the test that made
+      that necessary is worth keeping in mind: ask for copper hair AND hair down
+      in one breath — an entirely ordinary thing to type — and `hair.colour` is
+      now an ASKED facet, so the same caption reaches the painter glued to the
+      colour clause instead ("…rendered exactly as this: … piled into a high
+      bun"). Same sentence, same contradiction, third door. One prune above the
+      split closes all of them.
+
+      Scoped to renders where it can do harm: the arrangement has to actually be
+      under ask. A caption mentioning a bun on a render nobody is styling is
+      simply true, and true is what the already-true lane is for.
+    */
+    const speaksForTheAskedArrangement = facet !== hairWornFacet && asked.has(hairWornFacet);
+    const pruned = speaksForTheAskedArrangement
+      ? withoutArrangementClaims(spoken)
+      : { caption: spoken, stripped: [] as string[] };
+    if (pruned.stripped.length > 0) {
+      log.warn(
+        { facet, stripped: pruned.stripped, asked: "hairWorn" },
+        "[refineDelta] a caption spoke for the arrangement while the arrangement was being asked",
+      );
+    }
+    const caption = pruned.caption;
     if (!caption) continue;
     /*
       A SURFACE FACET'S CAPTION IS DROPPED FROM THE ASK, NOT MOVED (2026-08-09).
@@ -1743,7 +1787,42 @@ export function composeRenderPrompt(
       and the specific density is bought back by the retry, not by prose.
     */
     if (asked.has(facet)) {
-      if (!isSurfaceFacet(facet as Facet)) adopted[facet] = caption;
+      /*
+        A PIN IS A FACT ABOUT THE BASE. AN ASK IS A REQUEST TO CHANGE IT. THE
+        FIRST MUST NEVER SHARPEN THE SECOND (run 1, 2026-08-11).
+
+        Production, the founder's own account, step 5 of the replay walk. The
+        prompt it paid for:
+
+          HAIR WORN: hair down — rendered exactly as this: in a bun —
+          gathered and coiled or knotted against the head, as the same hair
+          restyled…
+
+        The ask and its own specification contradict each other inside one
+        clause, and the picture came back with a bun. `withCaption` adopts a
+        facet's caption INTO the ask so the ask is specific (D-152) — right
+        when the caption describes a render that DELIVERED the asked value, and
+        exactly wrong when it describes the state the ask is trying to replace.
+
+        The two are already told apart structurally, which is what
+        `PinnedCaption` was built for: a realization caption is prose read back
+        off a DELIVERED frame and corroborated before it is stored (D-183, the
+        captioner writes nothing when the ask did not take), while a PIN is read
+        off the MASTER by `capturePresentation` — a fact about how she was
+        before anybody asked for anything. Sharpening "hair down" with it is
+        handing the painter the old value as the definition of the new one.
+
+        Note the gap this closes rather than the symptom. Captions are dropped
+        for the facets THIS STEP writes (`dropFacets`, D-159) but adopted for
+        the facets the COMPOSED delta asks — so an earlier step's ask, still in
+        the recipe, kept pulling a base pin into its clause on every later
+        render. Step 4 asked for hair down and its own clause was clean; step 5
+        asked for nothing about hair and got the contradiction.
+
+        The pin is NOT deleted — it stays in the already-true lane for facets
+        nothing is asking to change, which is the whole of D-186's job.
+      */
+      if (!isSurfaceFacet(facet as Facet) && pinIdOf(entry) === null) adopted[facet] = caption;
     }
     /*
       A DEPARTED FACET'S CAPTION IS DROPPED, NOT CARRIED.

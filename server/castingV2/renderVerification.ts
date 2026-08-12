@@ -44,6 +44,22 @@ import { facetHeading, facetOfSubject, type Facet } from "./refineFacets";
 
 const log = createModuleLogger("castingV2/renderVerification");
 
+/**
+ * One thing the recipe names, as handed to the reader.
+ *
+ * Named rather than written inline at each seam: `absenceIsTheAsk` had to reach
+ * the check from the call site that builds removals, and a shape restated in
+ * three places is a shape that will carry the flag in two of them.
+ */
+export type VerifiableFact = {
+  facet: Facet;
+  asked: string;
+  binding?: boolean;
+  shortfall?: string;
+  /** See `FacetCheck.absenceIsTheAsk`. */
+  absenceIsTheAsk?: boolean;
+};
+
 /** One facet, what it was asked to be, and whether the picture agrees. */
 export type FacetCheck = {
   facet: Facet;
@@ -113,11 +129,85 @@ export type FacetCheck = {
    * v#156 and v#157 the empty ear was fully visible, and both were passed.
    */
   occluded?: boolean;
+  /**
+   * THE THING IS NOT IN THE PICTURE AT ALL — D-246 class (c), asked directly.
+   *
+   * `verified: false` is one word for two different events, and the difference
+   * between them is a refund:
+   *
+   *   - she asked for dangly cross earrings and there are NO earrings on her —
+   *     the asked thing is completely absent, which is the founder's own
+   *     catastrophic class and a gate;
+   *   - she asked for gold hoop earrings, they are on both ears, and the reader
+   *     marked it unverified because they were *"thin and understated, not bold
+   *     hoops"* — an adjective **she never used** (run-10). The thing is there.
+   *     Refusing that renders her a refund for a picture she got.
+   *
+   * Sniffing the two apart from `saw` prose is the mistake one layer down; the
+   * reader is ASKED, in the same call, and answers structurally. It costs no
+   * extra vision pass.
+   *
+   * # The field is an EXEMPTION, not a permission — and the suite taught me that
+   *
+   * The first cut of this required `absent === true` before a binding miss could
+   * refuse, and it broke eleven existing tests for one reason: *"a NEGATIVE
+   * without evidence stays a miss"* (D-235, and the comment in `readOnce` says
+   * in as many words that making it symmetric *"would have delivered and CHARGED
+   * for a render the reader believed was non-compliant"*). A silent reader would
+   * have bought the house a free pass on every facet, which is the very trade
+   * this campaign forbids.
+   *
+   * So the polarity is the other way. A binding miss refuses as it always did;
+   * `absent: false` is the reader's chance to say **"the thing is there, my
+   * objection is to how it was done"** and stop the refusal. Undefined changes
+   * nothing, so no old row and no quiet reader moves, and the only new
+   * behaviour is a quibble losing its teeth.
+   */
+  absent?: boolean;
+  /**
+   * THIS FACT'S SUCCESS CRITERION IS ALREADY AN ABSENCE — so a miss on it IS
+   * the catastrophe, and the reader is not asked a second time.
+   *
+   * A removal line reads *"no glasses — they have been taken off and are not in
+   * the picture"*. `present:false` on that line means the glasses are STILL
+   * THERE, which is D-246 class (c) reached from the opposite direction and has
+   * been a binding refusal since the consumer sweep found removals verified
+   * against everything except the thing that was asked for.
+   *
+   * Asking the reader "is the asked-for thing absent" about a line that IS an
+   * absence is a question with two defensible opposite answers — the glasses
+   * ARE in the picture, and that is precisely the failure — so a reader
+   * answering `absent: false` about it would be both right and catastrophic,
+   * buying the exemption for the one shape it must never cover. The fact
+   * declares itself instead, the flag is set at one call site, and a test drives
+   * it without an LLM.
+   */
+  absenceIsTheAsk?: boolean;
 };
 
 /** A real miss: read, not verified, and the picture could have answered. */
 export function isMiss(check: FacetCheck): boolean {
   return check.read && !check.verified && check.occluded !== true;
+}
+
+/**
+ * A miss that may spend the user's refusal — the gate D-246 class (c) names.
+ *
+ * Binding says *this program defines the value and can hold a reader to it*.
+ * That was the whole gate until 2026-08-12 and it is still most of it. What is
+ * new is the one way OUT: a reader that says the asked-for thing is in the
+ * picture and it is merely not how she pictured it (`absent: false`) does not
+ * get to spend her refusal. That exemption is what let the presence set widen
+ * past accessories without re-opening D-187 — a quibble cannot refund anybody
+ * on any facet, however loudly, while silence still refuses exactly as before.
+ *
+ * A fact whose success criterion IS an absence overrides the exemption; see
+ * `absenceIsTheAsk`.
+ */
+export function isRefusableMiss(check: FacetCheck): boolean {
+  if (!isMiss(check) || !check.binding) return false;
+  if (check.absenceIsTheAsk === true) return true;
+  return check.absent !== false;
 }
 
 /** Read, contradicted by nothing, and unanswerable — neither pass nor miss. */
@@ -181,9 +271,29 @@ const SYSTEM_PROMPT = [
   "You are not judging whether it is the exact shade they imagined; you are judging whether",
   "the colour changed to the thing they named.",
   "",
-  'Reply with JSON: {"results":[{"id":1,"present":true|false,"occluded":true,"saw":"..."}]}',
-  '— `occluded` is optional and only ever appears beside "present":true — and nothing',
-  "else.",
+  /*
+    THE ABSENCE QUESTION (D-246 class (c)), asked rather than inferred.
+
+    Everything above already tells the reader that size and prominence are
+    degree and that a different earring is still an earring — and it still has
+    to be turned into a number somewhere, because `present:false` is the answer
+    to BOTH "there are no earrings on her" and "these hoops are thinner than I
+    pictured". The first is the founder's catastrophic class; the second is
+    run-10, where refusing cost a customer a refund for a picture she got.
+    Asking the reader is one field on a call already being made; deducing it
+    from `saw` prose would be a sniffer that fails silently.
+  */
+  "WHEN SOMETHING IS NOT PRESENT, SAY WHICH KIND OF NOT-PRESENT IT IS. Answer",
+  '`"absent":true` only when you cannot find the asked-for thing in the photograph AT',
+  'ALL — no earrings on either ear, no tattoo anywhere, the hair is not down. Answer',
+  '`"absent":false` when the thing IS there and your objection is to how it was done —',
+  "the hoops are thinner than described, the copper reads more auburn, the beard is",
+  "stubble rather than full. Both are recorded; they are not the same event and only",
+  "the first is treated as a failed render.",
+  "",
+  'Reply with JSON: {"results":[{"id":1,"present":true|false,"absent":true|false,"occluded":true,"saw":"..."}]}',
+  '— `occluded` is optional and only ever appears beside "present":true, `absent` only',
+  'ever beside "present":false — and nothing else.',
   "",
   "`saw` is REQUIRED on EVERY line, whether present is true or false. Name what you",
   "actually see for that feature in this photograph — 'hair gathered at the nape',",
@@ -226,11 +336,11 @@ const CLOSE_PROMPT = [
 ].join("\n");
 
 /**
- * Only a READ, BINDING miss spends the user's refusal. An unread check is
- * silence: it never refuses, and it never passes either.
+ * Only a READ, BINDING, ABSENT miss spends the user's refusal. An unread check
+ * is silence: it never refuses, and it never passes either.
  */
 export function okOf(checks: ReadonlyArray<FacetCheck>): boolean {
-  return checks.every((check) => !isMiss(check) || !check.binding);
+  return checks.every((check) => !isRefusableMiss(check));
 }
 
 /**
@@ -387,7 +497,7 @@ export async function verifyRender(input: {
     answers: ReadonlyArray<Facet>;
   };
   /** `binding` false means checked and recorded, never refunded (D-187). */
-  facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean; shortfall?: string }>;
+  facts: ReadonlyArray<VerifiableFact>;
   engine?: TextEngine;
   signal?: AbortSignal;
 }): Promise<RenderVerdict> {
@@ -450,7 +560,7 @@ async function readOnce(input: {
   engine: TextEngine;
   system: string;
   image: { bytes: Buffer; contentType: string };
-  facts: ReadonlyArray<{ facet: Facet; asked: string; binding?: boolean; shortfall?: string }>;
+  facts: ReadonlyArray<VerifiableFact>;
   signal?: AbortSignal;
 }): Promise<RenderVerdict> {
   const { engine } = input;
@@ -504,6 +614,18 @@ async function readOnce(input: {
         laundromat the evidence rule exists to prevent.
       */
       const occluded = read && row.present === true && row.occluded === true;
+      /*
+        AND THE ABSENCE, WHICH ONLY EXISTS ON A NEGATIVE THAT WAS READ.
+
+        Recorded exactly as answered — never defaulted to true. A reader that
+        omits the field, hedges it, or answers a shape we did not ask for leaves
+        `absent` undefined, and an undefined absence cannot refuse (see
+        `isRefusableMiss`). That is the same asymmetry as `saw`, pointed at the
+        money: silence never takes the user's refund.
+      */
+      const absent = read && row.present === false && typeof row.absent === "boolean"
+        ? row.absent
+        : undefined;
       return {
         facet: fact.facet,
         asked: fact.asked,
@@ -512,6 +634,8 @@ async function readOnce(input: {
         verified: read && row.present === true && !occluded,
         read,
         binding: fact.binding !== false,
+        ...(absent === undefined ? {} : { absent }),
+        ...(fact.absenceIsTheAsk ? { absenceIsTheAsk: true } : {}),
         ...(occluded ? { occluded: true } : {}),
         ...(saw ? { saw } : {}),
         ...(fact.shortfall ? { shortfall: fact.shortfall } : {}),
@@ -641,7 +765,7 @@ export async function confirmVerdict(
 /** The facets that failed and are worth acting on. */
 export function missingFacts(verdict: RenderVerdict): string[] {
   return verdict.checks
-    .filter((check) => isMiss(check) && check.binding)
+    .filter(isRefusableMiss)
     .map((check) => check.asked);
 }
 
@@ -656,7 +780,7 @@ export function missingFacts(verdict: RenderVerdict): string[] {
  */
 export function shortfalls(verdict: RenderVerdict): string[] {
   return verdict.checks
-    .filter((check) => isMiss(check) && check.binding)
+    .filter(isRefusableMiss)
     .map((check) => check.shortfall ?? `without ${check.asked}`);
 }
 
@@ -672,9 +796,19 @@ export function joinClauses(clauses: ReadonlyArray<string>): string {
   return `${clauses.slice(0, -1).join(", ")} and ${clauses[clauses.length - 1]}`;
 }
 
-/** Failures the product will NOT refuse over — the reader-defect watch list. */
+/**
+ * Failures the product will NOT refuse over — the reader-defect watch list.
+ *
+ * DERIVED from the refusal predicate rather than restating half of it, because
+ * the absence gate created a third population this list would otherwise have
+ * silently dropped: a BINDING miss the reader says is not an absence — the
+ * *"thin and understated, not bold hoops"* shape. Those are exactly what the
+ * watch list is for (a reader quibbling about a delivered thing), and a
+ * hand-written `!check.binding` would have stopped seeing them the day the
+ * gate was tightened.
+ */
 export function advisoryMisses(verdict: RenderVerdict): FacetCheck[] {
-  return verdict.checks.filter((check) => isMiss(check) && !check.binding);
+  return verdict.checks.filter((check) => isMiss(check) && !isRefusableMiss(check));
 }
 
 /** Facts the reader was asked about and said nothing usable on. Never a pass. */

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b8ad28b5041d8d8c"
+    "sourceFingerprint": "d76e0440efa17440"
   },
   "domains": [
     {
@@ -8501,6 +8501,10 @@
     {
       "id": "test:server/castingV2/ageIdioms.test.ts",
       "path": "server/castingV2/ageIdioms.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/askedAndAbsent.test.ts",
+      "path": "server/castingV2/askedAndAbsent.test.ts"
     },
     {
       "id": "test:server/castingV2/axisRegistry.test.ts",
@@ -18123,6 +18127,11 @@
     },
     {
       "from": "module:server/castingV2/realizationCaption.ts",
+      "to": "module:server/castingV2/hairArrangement.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizationCaption.ts",
       "to": "module:server/castingV2/interpreter.ts",
       "kind": "imports"
     },
@@ -18379,6 +18388,11 @@
     {
       "from": "module:server/castingV2/refineDelta.ts",
       "to": "module:server/castingV2/subjectQualifiers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineDelta.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
@@ -25342,7 +25356,7 @@
       "severity": "warn",
       "kind": "redeclared-shape",
       "subject": "server/castingV2/inheritedVerdict.ts:87",
-      "message": "Names 4 of FacetCheck's 8 fields (server/castingV2/renderVerification.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+      "message": "Names 4 of VerifiableFact's 5 fields (server/castingV2/renderVerification.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/maskGeometry.ts:293",

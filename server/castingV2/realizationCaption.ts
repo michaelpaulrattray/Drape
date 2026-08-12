@@ -33,6 +33,7 @@
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { scrubBrands } from "./brandScrub";
+import { HAIR_ARRANGEMENT_IDS } from "./hairArrangement";
 import { interpreterEngine } from "./interpreter";
 import { facetHeading, type Facet } from "./refineFacets";
 
@@ -86,6 +87,28 @@ export function captionWording(entry: CaptionEntry | undefined): string {
 export function pinIdOf(entry: CaptionEntry | undefined): string | null {
   if (!entry || typeof entry === "string") return null;
   return entry.pin;
+}
+
+/**
+ * DID A RENDER EVER ACTUALLY DELIVER THIS FACET?
+ *
+ * The only evidence in the system that an ask once landed, and it is free
+ * because D-183 already built it: `captionRealization` returns **null** when
+ * the reader says the asked-for change is not visibly there, so a realization
+ * caption existing for a facet means some render was corroborated on it.
+ *
+ * A PIN is not that evidence and the distinction is the whole point — a pin is
+ * read off the MASTER by `capturePresentation`, describing how she was before
+ * anybody asked for anything. That is exactly the state a FAILED ask leaves
+ * behind, so treating it as delivery evidence would read every unfulfilled
+ * request as a fulfilled one.
+ *
+ * Its consumer is the refusal gate: an ask that has never landed must not gate
+ * the renders that come after it, or one sentence the painter cannot do blocks
+ * every later edit on the chain.
+ */
+export function evidencesDelivery(entry: CaptionEntry | undefined): boolean {
+  return entry !== undefined && captionWording(entry) !== "" && pinIdOf(entry) === null;
 }
 
 /**
@@ -265,6 +288,77 @@ export function staleCaptions(
   written: ReadonlySet<Facet>,
 ): Facet[] {
   return Object.keys(captions).filter((facet) => written.has(facet));
+}
+
+/**
+ * ARRANGEMENT WORDS, so a caption written for one facet can be caught speaking
+ * for another.
+ *
+ * The core is DERIVED from the closed vocabulary (`HAIR_ARRANGEMENT_IDS`) so it
+ * cannot drift from the list it is about. The rest are the phrasings the
+ * captioner actually produced on paid renders — a model told to describe HAIR
+ * COLOUR writes "piled into a high bun", not "bun".
+ *
+ * Bare "down" is deliberately NOT here. It is the one id that is also an
+ * ordinary English word ("toned down", "further down the shoulder"), and a
+ * matcher that strips on it would cut colour description out of prompts. The
+ * down-side phrasings that ARE unambiguous are listed instead.
+ */
+const ARRANGEMENT_WORDS: readonly string[] = [
+  ...HAIR_ARRANGEMENT_IDS.filter((id) => id !== "down"),
+  "piled", "pinned", "tied back", "pulled back", "swept back", "topknot", "top knot",
+  "chignon", "updo", "up-do", "worn down", "hanging loose", "falling loose", "loose past",
+];
+
+/**
+ * A caption with any clause that speaks for the hair's ARRANGEMENT removed.
+ *
+ * # The render this exists for
+ *
+ * Run 1, step 4, production, the founder's account. He asked *"wear her hair
+ * down"*. The prompt he paid for carried, under **ALREADY TRUE of this person
+ * and must be reproduced exactly as described**:
+ *
+ *   HAIR COLOUR: Bright copper-orange hair, warm reddish-brown tone, tight
+ *   curls piled into a high bun.
+ *
+ * The hair came back in a bun. The colour caption is a *colour* caption — it
+ * strayed into arrangement, and the already-true lane states it as fact, so the
+ * prompt asked for hair down and asserted a high bun in the same breath. This
+ * is D-159's contradiction ("a superseded caption reaching the prompt is the
+ * same crime as a dropped instruction") arriving through a door D-159 does not
+ * watch: the caption's FACET is not the one being asked, so nothing dropped it,
+ * and its TEXT is.
+ *
+ * # Why a clause and not the caption
+ *
+ * Dropping the whole caption would take the copper with the bun, on the one
+ * render where the user is changing the hair and the colour most needs
+ * carrying. Captions are comma-separated descriptive clauses by construction —
+ * the captioner's own worked examples are exactly that shape — so the clause is
+ * the unit, and what survives is the part that was always this facet's job.
+ *
+ * Applied ONLY when the arrangement is actually being asked for. A caption that
+ * mentions a bun on a render where nobody is touching the hair is simply true,
+ * and truth is what the already-true lane is for.
+ */
+export function withoutArrangementClaims(caption: string): {
+  caption: string;
+  stripped: string[];
+} {
+  const clauses = caption.split(",");
+  const kept: string[] = [];
+  const stripped: string[] = [];
+  for (const clause of clauses) {
+    const haystack = clause.toLowerCase();
+    (ARRANGEMENT_WORDS.some((word) => haystack.includes(word)) ? stripped : kept).push(clause);
+  }
+  if (stripped.length === 0) return { caption, stripped };
+  /* One full stop, and never a caption that trails off into a comma — the same
+     tidiness `tidy` enforces, for the same reason: this is a FACT handed to a
+     painter, and half a clause is a fact that stops making a claim partway. */
+  const rebuilt = kept.join(",").trim().replace(/[,;]+$/, "").replace(/\.*$/, "");
+  return { caption: rebuilt ? `${rebuilt}.` : "", stripped };
 }
 
 /**

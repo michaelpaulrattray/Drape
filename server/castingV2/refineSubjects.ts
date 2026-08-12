@@ -111,6 +111,118 @@ export type FreeSubject = keyof typeof FREE_SUBJECTS;
 export const FREE_SUBJECT_KEYS = Object.keys(FREE_SUBJECTS) as FreeSubject[];
 
 /**
+ * PRESENCE OR DEGREE — the split that decides whether an ask can REFUSE.
+ *
+ * # Why this table exists, and what it cost to learn
+ *
+ * `refineService` bound exactly one facet — `statedAccessories` — and every
+ * other free subject was advisory, so a render could come back with NONE of
+ * what the user typed, be correctly reported as such by the reader, and still
+ * be charged for. Run 1 of the replay walk (2026-08-11, production, the
+ * founder's own account) is the specimen: *"wear her hair down"* delivered a
+ * high bun, the reader said **"hair pulled up into a high curly bun, not
+ * down"** verbatim on both renders, the live reference library independently
+ * refused the crop as `disputedDelivery` — and 25 credits were charged, twice.
+ * The identical failure on the identical facet had already been refunded once
+ * as a correction on 2026-08-07 (operation `92e327ab`, *"tie her hair up"*);
+ * the response then was to make the READER re-read affirmatives (D-235), which
+ * worked perfectly and changed nothing, because nothing consulted what it saw.
+ *
+ * D-246 class (c) — *"the asked thing COMPLETELY absent"* — is a founder ruling
+ * and it is a runtime gate. The gate existed for accessories only because the
+ * specimens arrived there first, and the old comment set the condition in as
+ * many words: *"Each widening comes with its own specimens."* Run 1 is those
+ * specimens.
+ *
+ * # The split, and why it is not "bind everything"
+ *
+ * D-187 is real and stays: asking a reader whether greenish-hazel is
+ * *distinctly* "seafoam green" refunded six legitimate renders in eighteen.
+ * The distinction the product can hold a reader to is the one already written
+ * beside the old flag — **presence binds; degree advises**:
+ *
+ *   - **presence** — either the thing is in the picture or it is not. "Are
+ *     there dangly cross earrings on her." "Is her hair down." A photograph
+ *     answers it and two honest people agree on the answer.
+ *   - **degree** — a matter of shade, amount, or quality nobody has defined.
+ *     "Is this green *distinctly* seafoam." "Are these lips *fuller*." A
+ *     photograph cannot settle it and a reader asked to try invents a verdict.
+ *
+ * # What actually makes the widening safe
+ *
+ * Not the shortness of the presence list — the ABSENCE GATE beside it. A
+ * presence miss refuses only when the reader says the asked thing is *entirely
+ * absent* (`FacetCheck.absent`), never when it merely quibbles with how the
+ * thing was done. The must-not-fire specimen is run-10's: she asked for gold
+ * hoop earrings, got gold hoop earrings, and the reader marked it unverified
+ * because they were *"thin and understated, not bold hoops"* — an adjective she
+ * never used. The hoops are IN the picture, so that is not an absence, so it
+ * cannot refuse. See `renderVerification.FacetCheck.absent`.
+ *
+ * A subject classified `degree` here can never refuse however loudly a reader
+ * complains; a subject classified `presence` refuses only on a worded absence.
+ */
+export const FREE_SUBJECT_KIND: Record<FreeSubject, "presence" | "degree"> = {
+  /*
+    ── PRESENCE ──────────────────────────────────────────────────────────────
+    Four, and each is a whole thing that is either on her or not.
+  */
+  /** THE SPECIMEN'D ONE. Hair is down or it is not; the vocabulary is closed
+      (`presentationState`'s arrangement list) and the reader answers it from
+      the photograph. Two production specimens plus a prior refund. */
+  hairWorn: "presence",
+  /** Already binding before this table existed — D-160's ruling that adornment
+      is the person, and the fix that gave the free lane its first teeth. */
+  statedAccessories: "presence",
+  /** D-133 gives ink its own law, and its own law is about WHERE a design sits.
+      A tattoo asked for and not drawn is an absence, not a shade dispute. */
+  ink: "presence",
+  /** A beard asked for and not grown is an absence. "Stubble rather than the
+      full beard she asked for" is a quibble and the absence gate declines it. */
+  facialHair: "presence",
+
+  /*
+    ── DEGREE ────────────────────────────────────────────────────────────────
+    Nineteen, and every one of them is a continuum somebody would have to
+    arbitrate. None of these may ever spend a refusal.
+  */
+  /** The founding D-187 case, in both lanes. */
+  eyeColourFree: "degree",
+  eyeShapeFree: "degree",
+  /** A cut is a described SHAPE. The gap between "a bob" and "a long bob" is
+      the seafoam problem wearing a haircut, and D-187's live trial refused two
+      renders in this neighbourhood already. */
+  hairCut: "degree",
+  hairShade: "degree",
+  hairPattern: "degree",
+  hairFinish: "degree",
+  /** Explicitly ruled advisory when accessories were bound: the marks reader
+      sits at a measured floor and BYTE ADJUDICATION is its honest instrument.
+      Presence-binding it would refund provably delivered freckles. */
+  marks: "degree",
+  brows: "degree",
+  lashes: "degree",
+  nose: "degree",
+  lips: "degree",
+  teeth: "degree",
+  cheekbones: "degree",
+  jaw: "degree",
+  chin: "degree",
+  ears: "degree",
+  skinTone: "degree",
+  skinCharacter: "degree",
+  /** A continuum — "softer", "warmer", "more serious" — of which the one crisp
+      case (smiling or not) is a subset. Classified honestly rather than
+      optimistically; it can be promoted when it has a specimen of its own. */
+  expression: "degree",
+};
+
+/** Whether an ask on this subject is one the product may refuse over. */
+export function bindsOnPresence(subject: FreeSubject): boolean {
+  return FREE_SUBJECT_KIND[subject] === "presence";
+}
+
+/**
  * The one subject that files somewhere else.
  *
  * `readResolvedIdentity` passes unknown fields through whole, so an expression

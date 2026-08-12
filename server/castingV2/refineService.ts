@@ -129,7 +129,13 @@ import {
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
-import { facetHeading, facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
+import {
+  facetBindsOnPresence,
+  facetHeading,
+  facetOfAxis,
+  facetOfSubject,
+  type Facet,
+} from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments";
 import { makeupRegionFor } from "./makeupPlacement";
@@ -153,6 +159,7 @@ import {
   captionRealization,
   captionWording,
   dropFacets,
+  evidencesDelivery,
   staleCaptions,
   type RealizationCaptions,
 } from "./realizationCaption";
@@ -2315,7 +2322,8 @@ export async function refineCandidate(
           : null;
         if (!asked) return [];
         /*
-          PRESENCE BINDS; DEGREE ADVISES (fable-118 ruling (c), scoped).
+          PRESENCE BINDS; DEGREE ADVISES (fable-118 ruling (c)) — and the scope
+          is now the SUBJECT TABLE, not one hard-coded facet name.
 
           D-187's reasoning is sound and its evidence is real — asking a reader
           whether greenish-hazel is *distinctly* "seafoam green" refunded six
@@ -2325,17 +2333,71 @@ export async function refineCandidate(
           cross earrings on her" is not: either they are in the picture or they
           are not, which is the same test a REMOVAL is already binding on.
 
-          So the founder was charged 25 credits for a frame his own reader
-          described as *"small stud earrings, no dangly cross earrings
-          visible"*. Accessories only, this fix: `marks` stays advisory because
-          its reader sits at a measured floor and byte adjudication is its
-          honest instrument — presence-binding it would refund provably
-          delivered freckles. Each widening comes with its own specimens.
+          This line read `facet === facetOfSubject("statedAccessories")` until
+          2026-08-12, and the sentence that ended the old comment — *"Each
+          widening comes with its own specimens"* — was the condition. Run 1 of
+          the replay walk paid for the specimens: *"wear her hair down"*
+          delivered a high bun, twice, with the reader saying so verbatim both
+          times and 25 credits charged each time, on the same facet that had
+          already been refunded once for the same failure on 2026-08-07.
+
+          So the classification moved to `FREE_SUBJECT_KIND`, beside the
+          vocabulary it classifies, and this call site DERIVES from it (working
+          law 4 — a second list shadowing a source of truth always drifts).
+          `marks` is still advisory, and now says so where anyone adding a
+          subject will read it. What makes the widening safe is not the length
+          of the presence list but `FacetCheck.absent`: a presence miss refuses
+          only where the reader says the thing is not in the picture AT ALL.
+
+          # AND IT BINDS ON THE STEP THAT ASKS, NOT FOREVER AFTER
+
+          `facts` is built from the COMPOSED recipe, so every ask is re-checked
+          on every later render — right for a fact the product DELIVERED and
+          promised to keep, and a trap for one that never landed. Run 1 shows it
+          again: step 4 asked for hair down and did not get it, and that ask is
+          still in the recipe at step 5. Binding it there would have refused
+          *"remove her glasses"* too — and step 6, and step 7, for as long as
+          the painter kept failing that one sentence. **One undeliverable ask
+          would quietly brick every later edit on the chain**, each costing her a
+          wait and a refund and never the thing she came back for.
+
+          So a CARRIED ask binds only where there is evidence it was ever
+          delivered: a REALIZATION caption, which D-183 writes exclusively after
+          a render corroborated the ask (`captionRealization` returns null when
+          `matches !== true`). A PIN is not that evidence — `capturePresentation`
+          reads it off the master, so it describes how she was before anybody
+          asked for anything, which is precisely the state a failed ask leaves
+          behind.
+
+          Accessories keep exactly the behaviour they had: their captions are
+          realizations, so a hoop delivered at step 1 and dropped at step 5 is
+          still the store's promise failing and still refuses. Removals are
+          untouched either way — they are pushed as their own facts below, with
+          their own standing-departure rule and their own flag.
         */
-        const presence = facet === facetOfSubject("statedAccessories");
-        /* And the question carries the laterality the ask now carries, from the
-           same table, so painter and reader hold one fact in one wording. */
-        const lateral = presence ? pairClauseFor(asked) : "";
+        const presence = facetBindsOnPresence(facet)
+          && (writtenFacets.has(facet) || evidencesDelivery(carriedCaptions[facet]));
+        /*
+          And the question carries the laterality the ask now carries, from the
+          same table, so painter and reader hold one fact in one wording.
+
+          KEYED ON THE FACET, NOT ON `presence` — and that mattered the moment
+          `presence` stopped meaning "this is the accessories facet". It rode
+          the binding flag while the two were the same boolean, and this change
+          pulls them apart in both directions: `presence` is now true for
+          `hairWorn`, `ink` and `facialHair` (which have no sides to speak of),
+          and it goes FALSE for a carried accessory with no realization caption.
+          The second one is the dangerous half — the pair clause is part of the
+          PROMPT, not the gate, so a captioner outage would have quietly dropped
+          *"one on each ear, a matching pair"* out of a paid render's
+          instructions. Law 8's founding example, lost to a shared variable.
+
+          `pairClauseFor` is already safe on non-accessory text (it resolves
+          through `accessoryEntry` and returns "" when nothing matches), so this
+          is about saying what the condition IS rather than about what it
+          currently computes.
+        */
+        const lateral = facet === facetOfSubject("statedAccessories") ? pairClauseFor(asked) : "";
         return [{
           facet,
           asked: `${asked}${lateral}`,
@@ -2400,6 +2462,17 @@ export async function refineCandidate(
         */
         shortfall: departedShortfall(gone),
         binding: true,
+        /*
+          AND ITS TEETH SURVIVE THE ABSENCE GATE.
+
+          From 2026-08-12 a binding miss also needs the reader to call the thing
+          ABSENT before it may refuse. A removal's success criterion is already
+          an absence — "no glasses" is false exactly when the glasses are still
+          there — so asking that question of this line has two defensible
+          opposite answers and the gate would have turned on which way a model
+          read it. Declared here instead, at the one site that builds removals.
+        */
+        absenceIsTheAsk: true,
       });
     }
 

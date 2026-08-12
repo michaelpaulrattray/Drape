@@ -41,7 +41,7 @@
  * moment their facet is rewritten, which is the founder's own prescription.
  */
 import type { RefinableAxis } from "./refineDelta";
-import { FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
+import { bindsOnPresence, FREE_SUBJECTS, type FreeSubject } from "./refineSubjects";
 
 /** A facet id. Opaque — its only job is to be stable and to compare equal. */
 export type Facet = string;
@@ -135,4 +135,22 @@ export function axesOfFacet(facet: Facet): RefinableAxis[] {
 export function subjectsOfFacet(facet: Facet): FreeSubject[] {
   return (Object.keys(FREE_SUBJECTS) as FreeSubject[])
     .filter((subject) => facetOfSubject(subject) === facet);
+}
+
+/**
+ * Whether a MISS on this facet may spend the user's refusal — DERIVED from the
+ * subject table, never listed again here (working law 4).
+ *
+ * A facet binds when a subject that writes it is presence-shaped. Shared facets
+ * make that a real question rather than a rename: `hair.colour` is written by
+ * `hairShade`, which is degree, so the guaranteed lane's colour axis does not
+ * acquire teeth by sharing a facet id with a free subject.
+ *
+ * The old call site said `facet === facetOfSubject("statedAccessories")` — one
+ * name, hard-coded, at the one place binding is decided. That is the mirror
+ * this replaces: the classification lives with the vocabulary it classifies,
+ * and adding a free subject without classifying it fails the build.
+ */
+export function facetBindsOnPresence(facet: Facet): boolean {
+  return subjectsOfFacet(facet).some(bindsOnPresence);
 }
