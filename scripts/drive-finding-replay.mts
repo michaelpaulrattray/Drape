@@ -99,6 +99,7 @@ import { readResolvedIdentity } from "../server/castingV2/rollService";
 import { currentValueOfFacet } from "../server/castingV2/refineDelta";
 import type { Mask } from "../server/castingV2/maskedComposite";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { bindingVerdictCount, contradictedBindingVerdicts } from "./lib/verdictContradiction.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -1993,6 +1994,49 @@ async function runWalk(): Promise<boolean> {
     );
   }
 
+  /* ------------- V. A binding verdict may not contradict its own reading */
+
+  /*
+    THE WALK NOW READS WHAT IT PRINTS (fable-312 §4).
+
+    Shift 59's walk went CLEAN across 83 checks on a chain whose second step
+    charged 25 credits for a picture that did not contain what was asked for —
+    and it QUOTED the row's own contradiction into the transcript on its way
+    past, because `[A]` asks whether an earring is on both ears and one was. A
+    verdict and its `saw` sat in one string and nothing compared them.
+
+    Every BINDING facet, not just the accessory one: the shape is D-235's
+    asymmetry (an affirmative whose own reading names the shortfall) and it is
+    not the property of any single facet. Anchored on the ASKED thing rather
+    than on the presence of a negation — readers negate harmlessly all the time
+    — with the comparator's controls in `verdictContradiction.mts --prove`,
+    where the negative control caught a real defect in the rule before it was
+    ever pointed at a row.
+  */
+  for (const [index, entry] of walkRows.entries()) {
+    const position = `${index + 1}/${WALK.length}`;
+    const passed = bindingVerdictCount(entry.row?.internalPrompt);
+    if (passed === 0) {
+      absent(
+        `[V] ${position} "${entry.step.instruction}" — a binding verdict contradicted by its own saw`,
+        entry.row ? "no binding facet passed on this row — nothing to contradict" : "this step delivered nothing",
+      );
+      continue;
+    }
+    const contradicted = contradictedBindingVerdicts(entry.row?.internalPrompt);
+    check(
+      contradicted.length === 0,
+      `[V] ${position} "${entry.step.instruction}" — ${passed} binding verdict(s) agree with their own reading`,
+      contradicted.length === 0
+        ? `${passed} binding facet(s) passed and none names the asked thing as missing`
+        : contradicted.map((row) =>
+          `${row.facet} verified=true while its own saw says "${row.against.clause}" — the ask `
+          + `required "${row.against.term}" and the reader reports it missing. A BINDING facet `
+          + "passed on a render that did not deliver it, and it was charged for (D-235's "
+          + "asymmetry, paid path)").join(" · "),
+    );
+  }
+
   /* --------------------- A. Both ears, or an honest refusal (finding 1) */
 
   /*
@@ -2080,6 +2124,8 @@ async function runWalk(): Promise<boolean> {
         ? `verified=${accessory.verified} — saw: ${String(accessory.saw ?? "").slice(0, 140)}`
         : "the row carries no statedAccessories check",
     );
+    /* Whether that verdict is contradicted by its own reading is asked of
+       EVERY binding facet, one block up — see `[V]`. */
   }
 
   /* ------------------------------- B. The ears do not move (finding 2) */
