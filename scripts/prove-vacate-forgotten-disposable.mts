@@ -51,6 +51,7 @@ import { EDIT_PROSE } from "../server/castingV2/refineService";
 import { repaint, type ReferenceBytes } from "../server/castingV2/repaintRender";
 import { createFalMaskedEditEngine } from "../server/providers/falImages";
 import { verifyRender, isRefusableMiss } from "../server/castingV2/renderVerification";
+import { vacantPhraseFor } from "../server/castingV2/accessoryKinds";
 import { facetOfSubject } from "../server/castingV2/refineFacets";
 import { storageReadBytes } from "../server/storage";
 
@@ -142,15 +143,39 @@ const paint = async (label: string, delta: any) => {
 const stepA = await paint("stepA-remove-glasses", REMOVE);
 const stepB = await paint("stepB-later-ask", LATER);
 
+/*
+  AND THE SAME LATER ASK WITH THE VACANCY IN THE LIBRARY — acceptance (a).
+
+  The row is built in memory rather than written: this arm is buying the one
+  thing a unit test cannot, which is the PICTURE. That the row is filed on a
+  landed removal is proven by the service's own driven test; that the recipe
+  built from it keeps her glasses off is proven here, in pixels.
+*/
+const vacancy: StoredReference = {
+  id: -1, publicId: "in-memory", candidateId: face.id, variantId: null,
+  role: "vacancy", slot: "glasses" as any, tier: "item", noun: "glasses",
+  words: [vacantPhraseFor("glasses")!],
+  storageKey: null, maskKey: null, digest: null, geometry: null, guard: null,
+  refusal: null, version: 99, retiredAt: null, createdAt: new Date(),
+};
+rows.push(vacancy);
+const stepC = await paint("stepC-later-ask-WITH-vacancy", LATER);
+
 console.log(`\n${"=".repeat(96)}`);
 console.log(`step A said the absence: ${stepA.mentions} · glasses gone: ${stepA.verdict.gone}`);
 console.log(`step B said the absence: ${stepB.mentions} · glasses gone: ${stepB.verdict.gone}`);
+console.log(`step C carried the vacancy: ${stepC.mentions} · glasses gone: ${stepC.verdict.gone}`);
+console.log(
+  stepC.verdict.gone
+    ? "AND THE VACANCY ENDS IT: the same later ask, with the library holding an EMPTY glasses slot, says the absence again and delivers her without them."
+    : "THE VACANCY DID NOT HOLD — the sentence was there and the glasses came back anyway. Read the frame.",
+);
 console.log(
   stepA.verdict.gone && !stepB.verdict.gone
     ? "\nTHE REMOVAL LASTED ONE FRAME. The next paid step re-anchors on the pristine master,\nnothing re-says the absence, and her glasses are painted back on."
     : "\nNot the predicted shape — read the frames before concluding anything.",
 );
 console.log("=".repeat(96));
-await writeFile(path.join(OUT, "result.json"), JSON.stringify({ control, stepA, stepB }, null, 2));
+await writeFile(path.join(OUT, "result.json"), JSON.stringify({ control, stepA, stepB, stepC }, null, 2));
 await connection.end();
 process.exit(0);
