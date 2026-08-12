@@ -1134,13 +1134,31 @@ export async function refineCandidate(
           const shown = await (dependencies.readBytes ?? storageReadBytes)(
             source.imageKey ?? source.candidate.imageKey,
           );
-          const seen = await reader.region({ image: shown.bytes, name: parsed.match });
+          /*
+            ASK THE CATALOGUE'S WORD, NOT HER INFLECTION (fable-335).
+
+            This asked the segmenter `parsed.match` — whatever the customer
+            typed. Measured on a face wearing a gold hoop at each lobe: asked
+            "earrings", the reader answers NOTHING AT ALL; asked "earring", the
+            region name every other reader in this system uses, it finds them at
+            once. Its bilateral set is keyed on the singular and nothing
+            translated, so a plural word turned a face plainly wearing the thing
+            into "her face does not show it" — and the removal was refused with
+            a sentence saying her brief never asked.
+
+            Same table, same derivation as the vacant phrase: the noun names a
+            KIND and the kind names the question. A word the catalogue cannot
+            name falls back to what she typed, which is the old behaviour and
+            still the honest one for an object we have no region for.
+          */
+          const asked = accessoryKindOf(parsed.match) ?? parsed.match;
+          const seen = await reader.region({ image: shown.bytes, name: asked });
           const area = coverage(seen);
           /* Above the class band it is really there; a confident speck is not. */
           const band = COVERAGE_BANDS.eyewearFrames;
           faceWearsIt = area >= band.min;
           log.info(
-            { userId: input.userId, candidate: input.candidatePublicId, asked: parsed.match, coverage: Number(area.toFixed(5)), faceWearsIt },
+            { userId: input.userId, candidate: input.candidatePublicId, said: parsed.match, asked, coverage: Number(area.toFixed(5)), faceWearsIt },
             "[refineService] the record was silent on a removal, so her face was asked",
           );
         } catch (error) {

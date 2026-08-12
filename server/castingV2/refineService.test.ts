@@ -1977,6 +1977,85 @@ describe("a removal with no removal word is re-read as an edit", () => {
       )).rejects.toThrow(/nothing on record to take off/);
     });
 
+    /*
+      AND IT ASKS THE CATALOGUE'S WORD, NOT HER INFLECTION (fable-335).
+
+      Measured on a dev face wearing a gold hoop at each lobe: asked "earrings",
+      the real reader answers NOTHING; asked "earring", it finds them at once —
+      its bilateral set is keyed on the singular. So a customer typing the
+      plural was told her face does not show the thing she is looking at, and
+      her removal was refused with a sentence about her brief.
+
+      The double below is therefore the measured reader rather than a
+      convenient one: it answers for the catalogue's word and refuses the
+      user's inflection, which is exactly what production does.
+
+      What this does NOT prove, said out loud: that the class band is right for
+      a hoop. It is not — two hoops read 0.0558% of a frame against a 0.4% band
+      measured on glasses — and that is a separate, unmeasured repair.
+    */
+    const inflectionReader = (kindItKnows: string) => {
+      const asked: string[] = [];
+      return {
+        asked,
+        regions: {
+          region: async ({ name }: { name: string }) => {
+            asked.push(name);
+            if (name !== kindItKnows) throw new Error(`the segmenter found no ${name} to edit`);
+            const data = Buffer.alloc(32 * 48, 0);
+            /* Small — a hoop is a small object — but over the band. */
+            for (let y = 30; y < 34; y += 1) for (let x = 4; x < 12; x += 1) data[y * 32 + x] = 255;
+            return { data, width: 32, height: 48 };
+          },
+          subject: async () => ({ data: Buffer.alloc(32 * 48, 255), width: 32, height: 48 }),
+          landmark: async () => [{ x: 0.3, y: 0.4 }, { x: 0.7, y: 0.4 }],
+        },
+      };
+    };
+
+    it.each(["earrings", "hoops", "studs"])(
+      "asks the segmenter \"earring\" when she said %s, and lets the removal through",
+      async (said) => {
+        briefWorn = null;
+        const reader = inflectionReader("earring");
+        let call = 0;
+        const result = await refineCandidate({ harvest: unmasked,
+            regions: reader.regions as never,
+            interpret: (async () => {
+              call += 1;
+              return call === 1
+                ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories", match: said }
+                : { ok: true as const, delta: { free: { statedAccessories: [`no ${said}`] } } };
+            }) as never,
+          },
+          { ...input, instruction: `take her ${said} off` },
+        );
+
+        /* Asserted at the wire: the word that reached the reader, not the word
+           she typed. */
+        expect(reader.asked).toContain("earring");
+        expect(reader.asked).not.toContain(said);
+        expect(result.variantId).toBeTruthy();
+      },
+    );
+
+    it("CONTROL — a word the catalogue cannot name is still asked as she said it, and still refuses", async () => {
+      /* The fallback, driven: no kind, no translation, and the door the fix
+         must not have opened. */
+      briefWorn = null;
+      const reader = inflectionReader("earring");
+      await expect(refineCandidate({ harvest: unmasked,
+          regions: reader.regions as never,
+          interpret: async () => ({
+            ok: true as const, intent: "remove" as const,
+            subject: "statedAccessories", match: "her tiara",
+          }),
+        } as never,
+        { ...input, instruction: "take her tiara off" },
+      )).rejects.toThrow(/nothing on record to take off/);
+      expect(reader.asked).toEqual(["her tiara"]);
+    });
+
     it("charges nothing either way", async () => {
       briefWorn = null;
       await expect(refineCandidate({ harvest: unmasked,
