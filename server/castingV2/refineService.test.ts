@@ -2684,9 +2684,14 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       retired.push(ask);
       return 1;
     },
+    recordRows: async (write: Record<string, unknown>) => {
+      recorded.push(write);
+      return [];
+    },
   });
   const retired: Array<Record<string, unknown>> = [];
-  beforeEach(() => { retired.length = 0; });
+  const recorded: Array<Record<string, unknown>> = [];
+  beforeEach(() => { retired.length = 0; recorded.length = 0; });
 
   it("says the absence at the wire, and retires the slot the frame agrees is empty", async () => {
     await refineCandidate(removing(false), { ...input, instruction: "remove her glasses" });
@@ -2720,6 +2725,53 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* And it never landed: the adjudication runs before the landing, so this
        refunds a render nobody has seen rather than taking back one she has. */
     expect(journal).not.toContain("land");
+  });
+
+  /*
+    AND THE ABSENCE IS PUT ON THE RECORD, which retiring alone does not do
+    (migration 0030, fable-326/327).
+
+    Retiring stops the branch carrying her earrings. It does not stop the MASTER
+    wearing her glasses, and the master is reference 1 of every render on this
+    road. The one-frame removal was proved with pictures — remove, then ask for
+    copper hair, and the glasses come back — and this is the row that ends it.
+  */
+  it("files a VACANCY row so a later render can say the absence again", async () => {
+    await refineCandidate(removing(false), { ...input, instruction: "remove her glasses" });
+
+    expect(recorded).toHaveLength(1);
+    const rows = (recorded[0]!.rows as Array<Record<string, unknown>>);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.role).toBe("vacancy");
+    expect(rows[0]!.slot).toBe("glasses");
+    /* Words and NO crop: nothing pictures an absence. */
+    expect(rows[0]!.image).toBeUndefined();
+    expect(rows[0]!.words).toEqual(["no glasses — her face uncovered, no frames, no lenses and no rim shadow on her cheeks or brows"]);
+    /* The same sentence the wire carried this render — one phrase, one source. */
+    expect(painted[0]!.prompt).toContain("no glasses — her face uncovered");
+    /* Written against THIS render, so it belongs to this branch and no other. */
+    expect(recorded[0]!.userId).toBe(1);
+    expect(recorded[0]!.variantId).toBeTruthy();
+  });
+
+  it("does NOT file one when the removal did not land", async () => {
+    /* The row asserts something about a delivered picture. A render that
+       refuses delivered none, and a library that recorded the absence anyway
+       would tell every later render that the glasses she is still wearing are
+       gone. Same fixture as the arm above, one reader answer changed. */
+    await expect(refineCandidate(removing(true), { ...input, instruction: "remove her glasses" }))
+      .rejects.toThrow(/still in the picture/);
+
+    expect(recorded).toEqual([]);
+  });
+
+  it("CONTROL — an ordinary edit files no vacancy", async () => {
+    await refineCandidate({
+      ...hairDown,
+      regions: { region: async () => null, subject: async () => null, landmark: async () => [] } as never,
+    }, { ...input, instruction: "wear her hair down" });
+
+    expect(recorded).toEqual([]);
   });
 
   it("CONTROL — an ordinary edit retires nothing, however the reader answers", async () => {

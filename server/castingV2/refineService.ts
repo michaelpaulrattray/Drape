@@ -71,7 +71,8 @@ import {
   HAIR_TEXTURE_RENDER,
   IRIS_RENDER,
 } from "./realizedAxes";
-import { accessoryKindOf, pairClauseFor } from "./accessoryKinds";
+import { accessoryKindOf, pairClauseFor, vacantPhraseFor } from "./accessoryKinds";
+import { slotWordsRefusal } from "./slotWordShape";
 import { hairStyleByName } from "./hairStyles";
 import {
   FREE_SUBJECT_KEYS,
@@ -147,7 +148,7 @@ import { mintedSlotsForRender } from "./mintedSlots";
 import {
   deriveLibrary, libraryWithoutEditedCrops, liveReferences, supersededCarrySlots,
 } from "./referenceLibrary";
-import { listLineageReferences, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
+import { listLineageReferences, recordReferenceRows, retireReferenceSlot } from "../db/castingV2ReferenceLibrary";
 import type { RegionReader as MintRegionReader } from "./referenceCompleteness";
 import { assembleRecipe, type FeatureSlot } from "./recipeAssembler";
 import { slotDefinition } from "./referenceSlotCatalogue";
@@ -348,6 +349,9 @@ export type RefineServiceDependencies = {
   /** The library's retirement, injectable so the removal's two arms can be
    *  driven without a database (chunk 3). */
   retireSlot?: typeof retireReferenceSlot;
+  /** The vacancy write, injectable for the same reason the retirement is: a
+   *  test drives the absence being recorded without a database. */
+  recordRows?: typeof recordReferenceRows;
   /**
    * The engine the REPAINT dispatches its one paint to.
    *
@@ -3156,6 +3160,67 @@ export async function refineCandidate(
         log.info(
           { operationId, variant: variant.publicId, slot, retired },
           "[refineService] the slot is vacant and its references are retired — the library stops carrying it",
+        );
+
+        /*
+          AND THE LIBRARY IS TOLD THE SLOT IS EMPTY, which retiring alone does
+          not say (migration 0030, fable-326/327).
+
+          Retiring stops the branch CARRYING her earrings. It does not stop the
+          MASTER wearing her glasses, and the master is reference 1 of every
+          render on this road, forever. Proved with pictures before this was
+          written: remove them, then ask for copper hair, and the copper hair
+          arrives with the glasses back on her face — because the second recipe
+          had nothing to say about them and silence is an instruction to keep
+          what the anchor shows.
+
+          So a vacancy row is filed, with the site's own vacant phrase and no
+          crop, and every later recipe re-says it until a later answer on the
+          same slot supersedes it. Beside the retirement rather than in the mint
+          for the reason the retirement is here: both are things the NEXT ask
+          must read, and both must be written before the landing makes that ask
+          possible.
+        */
+        const phrase = vacantPhraseFor(definition.guardKind);
+        if (phrase === null) {
+          throw new Error(`the removal of ${slot} cannot be remembered — its kind has no vacant phrase to file`);
+        }
+        /*
+          THE DOOR'S OWN RULE, ASKED BEFORE THE WRITE RATHER THAN BY IT.
+
+          `assertReferenceRowShape` would throw anyway; asking here is what turns
+          a stack trace into a named refusal, and it names a real gap: the pair
+          phrase ("both earlobes bare") is a claim about BOTH sides, and a
+          per-side slot may not file one — the mismatched-pair rule, which exists
+          because that claim was once filed identically under each ear. Glasses
+          and a nose stud are single-instance slots and pass. So an earring
+          removal REFUSES into the refund rather than delivering a frame whose
+          absence we cannot keep: never charge for a fact the product is about to
+          forget. A per-instance phrase is authored and measured before this
+          opens, never invented at this call site.
+        */
+        const unfilable = slotWordsRefusal(slot, [phrase]);
+        if (unfilable !== null) {
+          log.error(
+            { operationId, variant: variant.publicId, slot, reason: unfilable.reason },
+            "[refineService] the removal landed and the library cannot record it — refusing rather than delivering an absence that lasts one frame",
+          );
+          throw new Error(`the removal of ${slot} cannot be recorded: ${unfilable.detail}`);
+        }
+        await (dependencies.recordRows ?? recordReferenceRows)({
+          userId: input.userId,
+          variantId: variant.id,
+          rows: [{
+            role: "vacancy",
+            slot,
+            tier: definition.tier,
+            noun: definition.noun,
+            words: [phrase],
+          }],
+        });
+        log.info(
+          { operationId, variant: variant.publicId, slot },
+          "[refineService] the vacancy is on the record — every later recipe says the absence rather than going quiet about it",
         );
       }
     }

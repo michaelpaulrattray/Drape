@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "87184e0663239f3d"
+    "sourceFingerprint": "4dbc2bce12d3c2af"
   },
   "domains": [
     {
@@ -18865,6 +18865,11 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/signEngine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/slotWordShape.ts",
       "kind": "imports"
     },
     {
