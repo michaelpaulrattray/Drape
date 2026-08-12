@@ -171,6 +171,36 @@ describes two objects and a third kind.
 a completeness specimen, it starts cutting, and this rule's table already routes
 it to its own cut. Open-vocabulary regions (roadmap §5) is the same trigger.
 
+## A one-way reader invents rather than returning nothing
+
+**The founding specimens of the class** (fable-289 ruling 3). Both are crops the
+per-slot read was actually handed, on the dev supersession of 2026-08-12, saved
+in `output/shift56/`:
+
+| crop | what is in it | what the reader said |
+|---|---|---|
+| `earring-left-v141.png` | a near-black patch, one faint curve | run 1: *"Thin gold hoop earring, smooth polished band, partially visible curve"* |
+| `earring-left-v138.png` | an unmistakable gold hoop | *"A thin gold hoop earring with a smooth, polished round band"* |
+
+The second is a good read. **The first is a confabulation** — confident,
+specific, plausible, and about pixels that contain no describable earring. The
+two sentences are near-identical; only the crops tell them apart, and only by
+being opened.
+
+Between the two runs the reader was given a way to decline (`visible: false`),
+and it then declined on v141 and still described v138. So the empties are not
+timidity — they are the reader refusing to invent.
+
+**The general shape, worth stating beyond this feature:** a reader with no way
+to answer *I cannot see it* will always produce its best guess, and a best guess
+recorded as a fact is indistinguishable from a reading. Every one-way reader in
+this system has this failure available to it. The instrument is only as good as
+its permission to return nothing.
+
+Corollary, and it is why this was caught at all: **the receipt got read and the
+crop got opened.** A run that reports "16 rows superseded" is a claim; the
+sentences it wrote and the pixels they were written from are the facts.
+
 ## What this hands chunk 3 — one problem dissolved, one created
 
 Chunk 3 is removal under the library, and D-244 describes it as *strike matching
